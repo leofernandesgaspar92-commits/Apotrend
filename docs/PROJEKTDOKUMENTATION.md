@@ -38,8 +38,9 @@ Die App läuft als **einzelne HTML-Datei** (frontend-index.html) und nutzt ein s
 ## Projektstruktur
 
 ```
-frontend-index.html          ← Gesamte App (HTML + CSS + JS in einer Datei, ~455KB)
-backend/
+frontend/
+  index.html                 ← Gesamte App (HTML + CSS + JS in einer Datei, ~455KB)
+backend/                     ← Vercel Serverless Functions
   api/
     stocks.js                ← Yahoo Finance Aktienkurse (Pfizer, Bayer, Roche, ...)
     recalls.js               ← FDA openFDA Rückrufe
@@ -47,6 +48,9 @@ backend/
     news.js                  ← Drugs.com RSS + openFDA Fallback
   vercel.json                ← Vercel-Konfiguration (CORS, Timeouts)
   package.json               ← Node.js Abhängigkeiten
+docs/
+  PROJEKTDOKUMENTATION.md    ← dieses Dokument
+ai-coach/                    ← KI-Coach-Dateien (Brand Bible, Rollen, Compliance, ...)
 ```
 
 ---
@@ -112,7 +116,7 @@ Implementiert via localStorage (Simulation — kein echter Zahlungsanbieter ange
 ## Deployment: So wird aktualisiert
 
 ### Frontend ändern:
-1. `frontend-index.html` bearbeiten
+1. `frontend/index.html` bearbeiten
 2. Im GitHub-Repo `Apotrend` als `index.html` hochladen
 3. GitHub Actions baut automatisch → ~1 Min bis live
 
