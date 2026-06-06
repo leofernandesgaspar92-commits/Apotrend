@@ -1,0 +1,43 @@
+{
+  "stand": "2026-06-06T08:00:00+02:00",
+  "hinweis": "Synthetische regulatorische Signale (Engpässe/Rückrufe), Quelle-Felder simulieren BASG/AGES.",
+  "signale": [
+    {
+      "id": "SIG-001",
+      "typ": "engpass",
+      "pzn": "1000011",
+      "wirkstoff": "Levothyroxin-Natrium",
+      "schweregrad": "hoch",
+      "quelle": "BASG (synthetisch)",
+      "datum": "2026-05-28",
+      "gueltig_bis": "2026-09-30",
+      "text": "Vertriebseinschränkung Levothyroxin 100 µg; voraussichtliche Wiederverfügbarkeit Q4.",
+      "empfohlene_alternative_pzn": "1000028"
+    },
+    {
+      "id": "SIG-002",
+      "typ": "engpass",
+      "pzn": "1000080",
+      "wirkstoff": "Amoxicillin + Clavulansäure",
+      "schweregrad": "mittel",
+      "quelle": "BASG (synthetisch)",
+      "datum": "2026-06-02",
+      "gueltig_bis": "2026-08-15",
+      "text": "Lieferengpass Amoxicillin/Clavulansäure i.v.; eingeschränkte Verfügbarkeit im Großhandel.",
+      "empfohlene_alternative_pzn": null
+    },
+    {
+      "id": "SIG-003",
+      "typ": "rueckruf",
+      "pzn": "1000035",
+      "wirkstoff": "Ibuprofen",
+      "schweregrad": "hoch",
+      "quelle": "AGES/BASG (synthetisch)",
+      "datum": "2026-06-05",
+      "gueltig_bis": null,
+      "charge": "IBU400-2410-B",
+      "text": "Chargenrückruf wegen Verpackungsfehler; betroffene Charge aus dem Verkauf nehmen.",
+      "empfohlene_alternative_pzn": null
+    }
+  ]
+}

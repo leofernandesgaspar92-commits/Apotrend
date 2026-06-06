@@ -96,10 +96,28 @@ Medizinprodukt-/Haftungsrisiko und ist zugleich Verkaufsargument.
 
 ---
 
+## D-012: Prototyp auf synthetischen Sample-Daten (schema-treu)
+
+**Datum:** 2026-06-06 · **Status:** ✅ Aktiv · **Tags:** data, prototype, process
+
+**Kontext:** Echte Daten liegen noch nicht vor (Pilot-Export, Warenverzeichnis-Lizenz, ePharmGH offen).
+Der Prototyp-Bau soll dadurch nicht blockiert werden.
+
+**Entscheidung:** Erst mit **synthetischen Sample-Daten** bauen (`assistant/data/sample/`), die
+**schema-treu** zu den realen Quellen sind (Warenverzeichnis / AVS-Export / ePharmGH / BASG, Join-Key
+**PZN**). Reale Daten später **ohne Code-Umbau** einschwenken — nur die Loader-Quelle tauschen.
+
+**Konsequenzen:** D-005/D-010/D-011 sind damit **aufgeschoben** (nach Pilot-Erhebung / Lizenzklärung);
+der Agent (D-006) kann sofort gegen Sample-Daten gebaut + evaluiert werden. Sample-Set enthält
+Demo-Szenarien (Engpass→Substitut, Rückruf→Eigenbestand, Nachbestellung, Überbestand).
+
+---
+
 ## Offene Decisions (TBD — nach Priorität)
 
 > **Reihenfolge-Entscheidung (2026-06-06):** Erst **Ist-Bestell-Workflow** in der Pilot-Apotheke
 > erheben (`research/D1_ops_bestell-workflow.md`), *dann* D-005 datengetrieben entscheiden.
+> **Daten-Decisions D-005/D-010/D-011 sind aufgeschoben** — Prototyp läuft zuerst auf Sample-Daten (D-012).
 
 - [ ] **D-005 (kritisch): Eigen-Bestands-Zugang.** AVS dominiert (600+), kein offenes API, aber
       **CSV/Excel-Export nativ**. *Vorschlag:* Start über Export-Ingestion (vendor-unabhängig); WWS-
@@ -126,6 +144,6 @@ Medizinprodukt-/Haftungsrisiko und ist zugleich Verkaufsargument.
 | Produkt / Strategie | D-001, D-003, D-007 |
 | Coach-/Team-Architektur | D-002 |
 | Plattform / Infrastruktur | D-004, D-006 |
-| Daten / Integration | D-005, D-010, D-011 |
+| Daten / Integration | D-005, D-010, D-011, D-012 |
 | Compliance / Scope | D-009 |
 | Naming | D-008 |

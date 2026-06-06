@@ -1,0 +1,41 @@
+{
+  "stand": "2026-06-06T08:00:00+02:00",
+  "hinweis": "Synthetische ePharmGH-artige Verfügbarkeitsabfrage je PZN über mehrere Großhändler.",
+  "verfuegbarkeit": [
+    {
+      "pzn": "1000011",
+      "angebote": [
+        { "grosshaendler": "Herba Chemosan", "lieferbar": false, "aep_eur": 4.21, "lieferzeit_min": null, "status": "nicht lieferbar (Engpass)" },
+        { "grosshaendler": "Phoenix", "lieferbar": false, "aep_eur": 4.21, "lieferzeit_min": null, "status": "nicht lieferbar (Engpass)" },
+        { "grosshaendler": "Kwizda", "lieferbar": false, "aep_eur": 4.21, "lieferzeit_min": null, "status": "Rückstand" }
+      ]
+    },
+    {
+      "pzn": "1000028",
+      "angebote": [
+        { "grosshaendler": "Herba Chemosan", "lieferbar": true, "aep_eur": 3.98, "lieferzeit_min": 90, "status": "lieferbar" },
+        { "grosshaendler": "Phoenix", "lieferbar": true, "aep_eur": 4.02, "lieferzeit_min": 120, "status": "lieferbar" }
+      ]
+    },
+    {
+      "pzn": "1000042",
+      "angebote": [
+        { "grosshaendler": "Herba Chemosan", "lieferbar": true, "aep_eur": 3.05, "lieferzeit_min": 90, "status": "lieferbar" },
+        { "grosshaendler": "Kwizda", "lieferbar": true, "aep_eur": 3.01, "lieferzeit_min": 150, "status": "lieferbar" }
+      ]
+    },
+    {
+      "pzn": "1000080",
+      "angebote": [
+        { "grosshaendler": "Herba Chemosan", "lieferbar": false, "aep_eur": 9.10, "lieferzeit_min": null, "status": "nicht lieferbar (Engpass)" },
+        { "grosshaendler": "Phoenix", "lieferbar": true, "aep_eur": 9.35, "lieferzeit_min": 240, "status": "lieferbar (Restmenge)" }
+      ]
+    },
+    {
+      "pzn": "1000035",
+      "angebote": [
+        { "grosshaendler": "Herba Chemosan", "lieferbar": true, "aep_eur": 2.10, "lieferzeit_min": 90, "status": "lieferbar" }
+      ]
+    }
+  ]
+}

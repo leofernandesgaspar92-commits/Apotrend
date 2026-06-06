@@ -21,6 +21,7 @@
 | **Eigen-Bestands-Zugang** | ⏳ offen — nach Workflow-Erhebung (D-005) |
 | **Produkt-Stammdaten** | ⏳ offen — Warenverzeichnis-Lizenz (D-010) |
 | Großhandels-Verfügbarkeit | ⏳ offen — ePharmGH (D-011) |
+| **Prototyp-Daten** | ✅ **Sample-Daten** schema-treu (`assistant/data/sample/`, D-012) |
 | LLM-/Tech-Stack | ⏳ offen (D-006) |
 | Geschäftsmodell | ⏳ offen (D-007) |
 
@@ -65,12 +66,12 @@ APOVERLAG/DATACARE/ARGE kontrollieren das Backbone. Details + Empfehlung: `resea
 ---
 
 ## ▶ Nächste Aktionen (Wiedereinstieg)
-1. **Pilot-Apotheke besuchen** — Ist-Bestell-Workflow erheben (`research/D1_ops_bestell-workflow.md`) +
-   anonymisierten AVS-Export mitnehmen. ← höchste Priorität (entscheidet D-005 datengetrieben)
-2. **Daten-Decisions nach der Erhebung:** D-005 (Bestands-Export), **D-010 — Warenverzeichnis-Lizenz-
-   Konditionen klären** (DATACARE/Apotheker-Verlag), D-011 (ePharmGH über das WWS der Apotheke).
-3. **D-006 anstoßen:** LLM-/Modell-Markt-Check (Datenresidenz AT/EU als harte Variable).
-4. **Phase-1-Prototyp-Skizze:** Agent über die *bestehenden* Apotrend-Feeds (Engpass/Recall/News) als erstes grounded Demo.
+1. **Prototyp-Agent gegen Sample-Daten bauen** (`assistant/data/sample/`): grounded + zitiert, deckt die
+   Demo-Szenarien ab (Engpass→Substitut, Rückruf→Eigenbestand, Nachbestellung, Überbestand). ← jetzt buildable
+2. **D-006 anstoßen:** LLM-/Modell-Markt-Check (Datenresidenz AT/EU als harte Variable) — für den Agenten.
+3. **Pilot-Apotheke besuchen** (parallel): Ist-Bestell-Workflow erheben + anonymisierten AVS-Export →
+   speist D-005; Warenverzeichnis-/ePharmGH-Nutzung der Apotheke abfragen (D-010/D-011).
+4. **Reale Daten einschwenken** (später): nur Loader-Quellen tauschen, Schemas bleiben.
 
 ---
 
@@ -87,3 +88,4 @@ APOVERLAG/DATACARE/ARGE kontrollieren das Backbone. Details + Empfehlung: `resea
 | 2026-06-05 | Coach-Infrastruktur aufgesetzt; D-001…D-004; WWS-Sensing-Erstrecherche. |
 | 2026-06-06 | Mandat geschärft (Coach=Bau-Team Apotrend, Fokus Assistant); Ordner→`coach/`; D-009 Anti-Scope; Bestell-Workflow-Desk-Research + Erhebungsleitfaden; Pilot-Apotheke bestätigt. |
 | 2026-06-06 | Daten-Fundament recherchiert (Warenverzeichnis/DATACARE · ePharmGH · EUDAMED · PZN als Join-Key); D-010/D-011 ergänzt; `research/datenquellen-architektur.md`. |
+| 2026-06-06 | Sample-Daten (schema-treu) angelegt `assistant/data/sample/` + D-012; Prototyp-Agent jetzt buildable. |
