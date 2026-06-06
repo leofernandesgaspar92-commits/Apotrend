@@ -101,9 +101,16 @@ Medizinprodukt-/Haftungsrisiko und ist zugleich Verkaufsargument.
 > **Reihenfolge-Entscheidung (2026-06-06):** Erst **Ist-Bestell-Workflow** in der Pilot-Apotheke
 > erheben (`research/D1_ops_bestell-workflow.md`), *dann* D-005 datengetrieben entscheiden.
 
-- [ ] **D-005 (kritisch): Datenzugang-Strategie.** Sensing zeigt: AVS/APOVERLAG dominiert (600+),
-      kein offenes API, aber **CSV/Excel-Export nativ**. *Vorschlag:* Start über Export-Ingestion
-      (vendor-unabhängig), tiefe WWS-Integration als Phase-2-Partnerschaft. **Noch zu entscheiden.**
+- [ ] **D-005 (kritisch): Eigen-Bestands-Zugang.** AVS dominiert (600+), kein offenes API, aber
+      **CSV/Excel-Export nativ**. *Vorschlag:* Start über Export-Ingestion (vendor-unabhängig); WWS-
+      Integration als Phase-2/3-Partnerschaft. Entscheidung **nach** Pilot-Apotheken-Erhebung.
+- [ ] **D-010 (kritisch): Produkt-/Preis-/Regulatorik-Stammdaten.** Quelle = **Warenverzeichnis**
+      (Apotheker-Verlag/DATACARE, monatlich, **kostenpflichtige Lizenz**) — PZN, AEP/KVP/PVP, **EKO**,
+      Rezeptpflicht, Zulassungsnr. *Vorschlag:* lizenzieren (unvermeidbares Backbone). Konditionen klären.
+- [ ] **D-011: Verfügbarkeits-Quelle Großhandel.** **ePharmGH** (DATACARE/ARGE; DE-Pendant MSV3) liefert
+      Bestellung + **Verfügbarkeits-Abfrage**. *Vorschlag:* auf bestehende ePharmGH-Anbindung der Apotheke
+      aufsetzen statt eigener GH-Integration. Medizinprodukte separat via **EUDAMED** (Public-API).
+      Daten-Fundament: `research/datenquellen-architektur.md`.
 - [ ] **D-006: LLM-/Tech-Stack** (Bias-Disclosure P-002) — Modell markt-geprüft wählen; Datenresidenz
       AT/EU vs. US-API als harte Variable.
 - [ ] **D-007: Geschäftsmodell** — wer zahlt (Inhaber), Preis-Modell, Verhältnis zu Apotrend-Abos.
@@ -119,6 +126,6 @@ Medizinprodukt-/Haftungsrisiko und ist zugleich Verkaufsargument.
 | Produkt / Strategie | D-001, D-003, D-007 |
 | Coach-/Team-Architektur | D-002 |
 | Plattform / Infrastruktur | D-004, D-006 |
-| Daten / Integration | D-005 |
+| Daten / Integration | D-005, D-010, D-011 |
 | Compliance / Scope | D-009 |
 | Naming | D-008 |
