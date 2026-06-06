@@ -6,7 +6,8 @@
   "description": "Apotrend AI Assistant — Decision-Co-Pilot (Prototyp auf Sample-Daten, D-012)",
   "scripts": {
     "briefing": "node src/cli.js",
-    "compare": "node src/cli.js compare"
+    "compare": "node src/cli.js compare",
+    "test": "node --test"
   },
   "engines": { "node": ">=18" }
 }

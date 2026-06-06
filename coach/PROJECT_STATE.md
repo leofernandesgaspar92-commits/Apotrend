@@ -23,7 +23,9 @@
 | Großhandels-Verfügbarkeit | ⏳ offen — ePharmGH (D-011) |
 | **Prototyp-Daten** | ✅ **Sample-Daten** schema-treu (`assistant/data/sample/`, D-012) |
 | **Prototyp-Agent** | ✅ **lauffähig** — deterministischer Decision-Engine (`assistant/`), 4 Szenarien quellenbelegt |
-| LLM-/Tech-Stack | ⏳ offen (D-006) — Narrations-Schicht-Seam steht |
+| **Eval-Harness** | ✅ 10 Tests grün (`node --test`) — Regress-Schutz |
+| Datenquelle-Seam | ✅ austauschbar (File ↔ DB/ePharmGH-Skelett) |
+| LLM-/Tech-Stack | ⏳ offen (D-006) — Markt-Recherche läuft, Narrations-Seam steht |
 | Geschäftsmodell | ⏳ offen (D-007) |
 
 ---
@@ -68,8 +70,8 @@ APOVERLAG/DATACARE/ARGE kontrollieren das Backbone. Details + Empfehlung: `resea
 
 ## ▶ Nächste Aktionen (Wiedereinstieg)
 1. ✅ **Prototyp-Agent gebaut** (`assistant/`): deterministischer Decision-Engine, 4 Szenarien quellenbelegt, lauffähig.
-2. **Eval-Harness** (Reviewer): erwartete Empfehlungen je Szenario als Test fixieren (Regress-Schutz).
-3. **D-006 anstoßen:** LLM-/Modell-Markt-Check (Datenresidenz AT/EU) → dann Narrations-Schicht anbinden.
+2. ✅ **Eval-Harness** (`assistant/test/`, 10 Tests grün) — Regress-Schutz steht.
+3. **D-006 entscheiden:** LLM-/DB-Stack mit Datenresidenz AT/EU (Markt-Recherche vorgelegt) → dann Narrations-Schicht + DB anbinden.
 4. **Pilot-Apotheke besuchen** (parallel): Ist-Bestell-Workflow + anonymisierter AVS-Export →
    speist D-005; Warenverzeichnis-/ePharmGH-Nutzung abfragen (D-010/D-011).
 5. **UI / Decision-Surface** (Schnittstelle zu Leos Plattform-Design).
@@ -92,3 +94,4 @@ APOVERLAG/DATACARE/ARGE kontrollieren das Backbone. Details + Empfehlung: `resea
 | 2026-06-06 | Daten-Fundament recherchiert (Warenverzeichnis/DATACARE · ePharmGH · EUDAMED · PZN als Join-Key); D-010/D-011 ergänzt; `research/datenquellen-architektur.md`. |
 | 2026-06-06 | Sample-Daten (schema-treu) angelegt `assistant/data/sample/` + D-012; Prototyp-Agent jetzt buildable. |
 | 2026-06-06 | Prototyp-Agent gebaut + lauffähig (`assistant/`): deterministischer Decision-Engine, Tagesbriefing + Produktvergleich, 4 Szenarien quellenbelegt. |
+| 2026-06-06 | Repository-Seam (File↔DB/ePharmGH) + Eval-Harness (10 Tests grün, `node --test`). |
