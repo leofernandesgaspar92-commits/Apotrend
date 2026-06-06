@@ -7,6 +7,7 @@
   "scripts": {
     "briefing": "node src/cli.js",
     "compare": "node src/cli.js compare",
+    "export": "node src/export.js",
     "test": "node --test"
   },
   "engines": { "node": ">=18" }

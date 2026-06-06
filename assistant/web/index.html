@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Apotrend AI Assistant — Decision-Surface (Demo)</title>
+  <style>
+    :root {
+      --bg: #f5f7f6; --card: #fff; --ink: #1c2b27; --muted: #6b7c77; --line: #e3e9e6;
+      --kritisch: #d92d20; --hoch: #e8821a; --normal: #2563eb; --info: #b59000; --niedrig: #6b7c77;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 15px/1.5 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+           background: var(--bg); color: var(--ink); }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 28px 18px 60px; }
+    header h1 { font-size: 20px; margin: 0 0 2px; }
+    header .sub { color: var(--muted); font-size: 13px; }
+    .demo-tag { display: inline-block; margin-top: 8px; padding: 2px 8px; border-radius: 99px;
+                background: #eef3f1; color: var(--muted); font-size: 12px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-left-width: 4px;
+            border-radius: 10px; padding: 14px 16px; margin: 12px 0; }
+    .card h2 { font-size: 15px; margin: 0 0 4px; display: flex; gap: 8px; align-items: baseline; }
+    .badge { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+    .card p { margin: 6px 0 8px; }
+    .src { color: var(--muted); font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+    .foot { color: var(--muted); font-size: 12px; margin-top: 24px; border-top: 1px solid var(--line); padding-top: 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>📋 Tagesbriefing</h1>
+      <div class="sub" id="sub">—</div>
+      <span class="demo-tag">Standalone-Demo · spätere Integration in Leos Plattform-Design</span>
+    </header>
+    <main id="list"></main>
+    <div class="foot">Fakten deterministisch &amp; quellenbelegt (D-012). LLM formuliert später nur (D-006, EU-resident).</div>
+  </div>
+
+  <script src="briefing.js"></script>
+  <script>
+    const COLOR = { kritisch:'var(--kritisch)', hoch:'var(--hoch)', normal:'var(--normal)', info:'var(--info)', niedrig:'var(--niedrig)' };
+    const ICON  = { kritisch:'🔴', hoch:'🟠', normal:'🔵', info:'🟡', niedrig:'⚪' };
+    const data = window.__BRIEFING__ || { meta:{}, recs:[] };
+    document.getElementById('sub').textContent =
+      `${data.meta.apotheke_name ?? 'Apotheke'} · Stand ${data.meta.stand ?? '—'}`;
+    const list = document.getElementById('list');
+    if (!data.recs.length) list.innerHTML = '<p>Keine Auffälligkeiten.</p>';
+    for (const r of data.recs) {
+      const el = document.createElement('article');
+      el.className = 'card';
+      el.style.borderLeftColor = COLOR[r.schweregrad] || 'var(--niedrig)';
+      el.innerHTML =
+        `<h2><span>${ICON[r.schweregrad] || '•'}</span>` +
+        `<span class="badge" style="color:${COLOR[r.schweregrad]}">${r.typ}</span>` +
+        `<span>${r.titel}</span></h2>` +
+        `<p>${r.details}</p>` +
+        `<div class="src">Quellen: ${(r.quellen||[]).join(', ')}</div>`;
+      list.appendChild(el);
+    }
+  </script>
+</body>
+</html>

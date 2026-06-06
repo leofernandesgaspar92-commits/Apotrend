@@ -26,6 +26,7 @@
 | **Eval-Harness** | ✅ 10 Tests grün (`node --test`) — Regress-Schutz |
 | Datenquelle-Seam | ✅ austauschbar (File ↔ DB/ePharmGH-Skelett) |
 | **LLM-/Tech-Stack** | ✅ D-006: EU-Residency-Prinzip + provider-agnostische LLM-Schicht (Vendor beim Pilot); DB Postgres+pgvector EU |
+| **Decision-Surface (UI)** | ✅ Standalone-Demo (`assistant/web/`) — Integration in Leos Design später |
 | Geschäftsmodell | ⏳ offen (D-007) |
 
 ---
@@ -72,10 +73,11 @@ APOVERLAG/DATACARE/ARGE kontrollieren das Backbone. Details + Empfehlung: `resea
 1. ✅ **Prototyp-Agent gebaut** (`assistant/`): deterministischer Decision-Engine, 4 Szenarien quellenbelegt, lauffähig.
 2. ✅ **Eval-Harness** (`assistant/test/`, 10 Tests grün) — Regress-Schutz steht.
 3. ✅ **D-006 entschieden** + LLM-Seam gebaut (`assistant/src/llm/`, EU-Residency-Prinzip).
-4. **UI / Decision-Surface** ← nächster Bau-Schritt (Schnittstelle zu Leos Plattform-Design).
-5. **Pilot-Apotheke besuchen** (parallel): Ist-Bestell-Workflow + anonymisierter AVS-Export →
-   speist D-005; Warenverzeichnis-/ePharmGH-Nutzung abfragen (D-010/D-011).
-6. **Reale Daten + Vendor einschwenken** (später): Loader-Quelle + EU-LLM-Anbieter hinter den Seams.
+4. ✅ **Decision-Surface (UI-Demo)** gebaut (`assistant/web/`) — Standalone, später in Leos Design integrieren.
+5. **Pilot-Apotheke besuchen** ← jetzt der größte offene Hebel: Ist-Bestell-Workflow + anonymisierter
+   AVS-Export → speist D-005; Warenverzeichnis-/ePharmGH-Nutzung abfragen (D-010/D-011).
+6. **Reale Daten + Vendor einschwenken** (nach Pilot): Loader-Quelle + EU-LLM-Anbieter hinter den Seams.
+7. **Leo-Sync:** Decision-Surface in das überarbeitete Plattform-Design integrieren.
 
 ---
 
@@ -96,3 +98,4 @@ APOVERLAG/DATACARE/ARGE kontrollieren das Backbone. Details + Empfehlung: `resea
 | 2026-06-06 | Prototyp-Agent gebaut + lauffähig (`assistant/`): deterministischer Decision-Engine, Tagesbriefing + Produktvergleich, 4 Szenarien quellenbelegt. |
 | 2026-06-06 | Repository-Seam (File↔DB/ePharmGH) + Eval-Harness (10 Tests grün, `node --test`). |
 | 2026-06-06 | D-006 entschieden (EU-Residency-Prinzip); provider-agnostische LLM-Schicht `assistant/src/llm/` + 3 Tests; `research/llm-stack-eu.md`. |
+| 2026-06-06 | Decision-Surface (UI-Demo) `assistant/web/` (standalone, eingebettete Daten); README/Scripts (export). |

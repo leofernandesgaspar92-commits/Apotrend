@@ -15,6 +15,9 @@ src/engine.js        ── DECISION-ENGINE = Kern-Wert: verknüpft Bestand × S
 src/narrate.js       ── Narration. Default deterministisch; LLM-Schicht (D-006) ist abgetrennter Seam,
    │                     formuliert nur GEGROUNDETE Fakten, erfindet nichts.
 src/cli.js           ── Einstieg (Tagesbriefing / Produktvergleich)
+src/llm/             ── LLM-Schicht: LlmClient (EU-Residency-Pflicht) | EuProviderStub (Vendor beim Pilot)
+src/export.js        ── exportiert Briefing → web/briefing.js
+web/index.html       ── Standalone-Decision-Surface (UI-Demo; spätere Integration in Leos Design)
 ```
 **Prinzip:** Fakten kommen deterministisch aus den Daten; ein LLM darf sie später nur *formulieren*,
 nicht *erfinden* (Gesundheits-Domäne: Halluzination = Patientenrisiko).
@@ -27,6 +30,13 @@ node src/cli.js compare 1000011 1000028   # Produktvergleich (Original ↔ Subst
 
 # Datenquelle umschalten (default file):
 APOTREND_SOURCE=db node src/cli.js   # DB-/ePharmGH-Pfad (Skelett → klarer "nicht konfiguriert"-Fehler)
+
+# Decision-Surface (UI-Demo) ansehen:
+npm run export                       # erzeugt web/briefing.js
+open web/index.html                  # im Browser (Doppelklick genügt, kein Server nötig)
+
+# Tests:
+npm test                             # node --test (13 Tests)
 ```
 
 ## Was der Prototyp kann (4 Kern-Fähigkeiten, an Sample-Szenarien)
