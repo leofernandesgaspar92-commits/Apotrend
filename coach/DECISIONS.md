@@ -108,8 +108,30 @@ Der Prototyp-Bau soll dadurch nicht blockiert werden.
 **PZN**). Reale Daten später **ohne Code-Umbau** einschwenken — nur die Loader-Quelle tauschen.
 
 **Konsequenzen:** D-005/D-010/D-011 sind damit **aufgeschoben** (nach Pilot-Erhebung / Lizenzklärung);
-der Agent (D-006) kann sofort gegen Sample-Daten gebaut + evaluiert werden. Sample-Set enthält
+der Agent kann sofort gegen Sample-Daten gebaut + evaluiert werden. Sample-Set enthält
 Demo-Szenarien (Engpass→Substitut, Rückruf→Eigenbestand, Nachbestellung, Überbestand).
+
+---
+
+## D-006: LLM-/Daten-Stack — EU-Residency als hartes Prinzip, Vendor beim Pilot
+
+**Datum:** 2026-06-06 · **Status:** ✅ Aktiv (Prinzip; konkreter Vendor offen) · **Tags:** infrastructure, llm, compliance
+
+**Kontext:** DSGVO + EU AI Act (volle Wirkung 02.08.2026) für ein Gesundheits-nahes Produkt. Markt-Recherche
+(`research/llm-stack-eu.md`): EU-resident möglich via Mistral (EU-nativ), Claude@AWS-Bedrock-Frankfurt,
+OpenAI-EU, Open-Weights self-host. **Direkte Anthropic-API = NICHT EU-resident** (Bias-Disclosure P-002).
+
+**Entscheidung:**
+1. **Hartes Prinzip: nur EU-resident** (Inferenz + Storage in EU, kein Zugriff von außen).
+2. **Provider-agnostische LLM-Schicht** jetzt (`assistant/src/llm/`); Vendor-Wahl beim Pilot.
+3. **DB:** Postgres + pgvector in EU-Region (Frankfurt), zunächst managed, hinter Repository-Seam.
+4. **Hebel:** Fakten bleiben deterministisch; LLM *formuliert* nur → Modell-Stärke zweitrangig,
+   Souveränität/Kosten dürfen gewinnen.
+
+**Verworfen:** direkte US-API ohne EU-Residency; frühe Vendor-Bindung (hinter Seam unnötig).
+
+**Konsequenzen:** `narrate.js` nutzt optionalen `LlmClient` (Default deterministisch); `EuProviderStub`
+erzwingt die EU-Pflicht; Keys/Vendor erst bei echten Daten/Pilot.
 
 ---
 
@@ -129,8 +151,8 @@ Demo-Szenarien (Engpass→Substitut, Rückruf→Eigenbestand, Nachbestellung, Ü
       Bestellung + **Verfügbarkeits-Abfrage**. *Vorschlag:* auf bestehende ePharmGH-Anbindung der Apotheke
       aufsetzen statt eigener GH-Integration. Medizinprodukte separat via **EUDAMED** (Public-API).
       Daten-Fundament: `research/datenquellen-architektur.md`.
-- [ ] **D-006: LLM-/Tech-Stack** (Bias-Disclosure P-002) — Modell markt-geprüft wählen; Datenresidenz
-      AT/EU vs. US-API als harte Variable.
+✅ **D-006 entschieden** (siehe oben): EU-Residency-Prinzip + provider-agnostische LLM-Schicht;
+Vendor beim Pilot; DB Postgres+pgvector EU.
 - [ ] **D-007: Geschäftsmodell** — wer zahlt (Inhaber), Preis-Modell, Verhältnis zu Apotrend-Abos.
 - [ ] **D-008: Produktname** des Assistenten (Arbeitstitel „Apotrend AI Assistant").
 

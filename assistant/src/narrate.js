@@ -1,6 +1,6 @@
-// Narrations-Schicht. Default = deterministisch (keine externen Calls).
-// Die LLM-Schicht (D-006 offen) ist bewusst getrennt: sie formuliert die BEREITS gegroundeten Fakten
-// natürlichsprachlich, OHNE neue Fakten zu erfinden — Quellen bleiben Pflicht.
+// Narrations-Schicht. Default = deterministisch (kein Anbieter nötig, keine externen Calls).
+// Optionale LLM-Schicht (D-006): formuliert die BEREITS gegroundeten Fakten natürlichsprachlich,
+// OHNE neue Fakten zu erfinden — Quellen bleiben Pflicht. Nur EU-resident (LlmClient.assertEuResident).
 
 const ICON = { kritisch: '🔴', hoch: '🟠', normal: '🔵', info: '🟡', niedrig: '⚪' };
 
@@ -19,15 +19,20 @@ export function renderBriefing(recs, meta = {}) {
     out.push(`   Quellen: ${r.quellen.join(', ')}`);
   }
   out.push('');
-  out.push('— Fakten deterministisch aus den Sample-Daten; jede Aussage ist quellenbelegt (D-012).');
+  out.push('— Fakten deterministisch aus den Daten; jede Aussage ist quellenbelegt (D-012).');
   return out.join('\n');
 }
 
-// Platzhalter für die spätere LLM-Schicht (D-006). Bewusst nicht an einen Anbieter gebunden.
-export async function narrateWithLLM(recs, llm) {
-  if (!llm) {
-    throw new Error('Kein LLM konfiguriert (D-006 offen) — nutze renderBriefing() deterministisch.');
-  }
-  // Vorgesehen: llm.complete({ fakten: recs, regel: "nur diese Fakten, jede Aussage mit Quelle" })
-  return renderBriefing(recs);
+// Erzeugt das Briefing. Ohne `llm` → deterministisch. Mit `llm` (EU-resident) → natürlichsprachlich,
+// aber faktengebunden (das LLM bekommt nur die fertigen Fakten + die Regel "nichts erfinden").
+export async function narrateBriefing(recs, meta = {}, { llm } = {}) {
+  if (!llm) return renderBriefing(recs, meta);
+  llm.assertEuResident?.();
+  const fakten = recs
+    .map((r) => `- [${r.typ}/${r.schweregrad}] ${r.titel}: ${r.details} (Quellen: ${r.quellen.join(', ')})`)
+    .join('\n');
+  const system =
+    'Du formulierst ein Apotheken-Tagesbriefing. Nutze AUSSCHLIESSLICH die gelieferten Fakten. ' +
+    'Erfinde nichts dazu. Behalte jede Quellenangabe bei. Kurz, sachlich, handlungsorientiert.';
+  return llm.complete({ system, prompt: `Fakten:\n${fakten}` });
 }

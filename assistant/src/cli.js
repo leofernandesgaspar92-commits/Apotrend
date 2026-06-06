@@ -8,7 +8,8 @@ import { loadContext } from './data.js';
 import { FileSource } from './sources/fileSource.js';
 import { DbSource } from './sources/dbSource.js';
 import { buildRecommendations, compareProducts } from './engine.js';
-import { renderBriefing } from './narrate.js';
+import { narrateBriefing } from './narrate.js';
+import { EuProviderStub } from './llm/euProviderStub.js';
 
 const source = process.env.APOTREND_SOURCE === 'db' ? new DbSource() : new FileSource();
 const data = await loadContext(source);
@@ -36,5 +37,16 @@ if (cmd === 'compare') {
 } else {
   const today = new Date(data.inventory.stand); // deterministisch aus den Daten
   const recs = buildRecommendations(data, today);
-  console.log(renderBriefing(recs, { apotheke_name: data.inventory.apotheke_name, stand: data.inventory.stand }));
+  // Default: deterministisch (kein Anbieter). APOTREND_LLM=<name> aktiviert den EU-Provider-Seam (Skelett).
+  const llm = process.env.APOTREND_LLM ? new EuProviderStub({ name: process.env.APOTREND_LLM }) : null;
+  const meta = { apotheke_name: data.inventory.apotheke_name, stand: data.inventory.stand };
+  let text;
+  try {
+    text = await narrateBriefing(recs, meta, { llm });
+  } catch (e) {
+    if (!llm) throw e;
+    console.error(`⚠️  LLM-Narration nicht verfügbar (${e.message}) — deterministischer Fallback.`);
+    text = await narrateBriefing(recs, meta); // ohne LLM = renderBriefing
+  }
+  console.log(text);
 }
