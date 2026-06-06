@@ -7,7 +7,8 @@ Stand: Prototyp auf **Sample-Daten** (D-012). Markt AT-first (D-003).
 ```
 data/sample/*.json   ── schema-treue Daten (Warenverzeichnis/AVS/ePharmGH/BASG), Join-Key PZN
    │
-src/data.js          ── Loader + PZN-Indizes  (reale Daten später: nur hier tauschen)
+src/sources/         ── Datenquelle-Schnittstelle: FileSource (heute) | DbSource+ePharmGH (Skelett)
+src/data.js          ── loadContext(source): baut PZN-Kontext quellen-agnostisch (Umschalt-Punkt)
    │
 src/engine.js        ── DECISION-ENGINE = Kern-Wert: verknüpft Bestand × Signale × Verfügbarkeit
    │                     × Substitution → quellenbelegte Empfehlungen. Deterministisch, keine Halluzination.
@@ -23,6 +24,9 @@ nicht *erfinden* (Gesundheits-Domäne: Halluzination = Patientenrisiko).
 cd assistant
 node src/cli.js                      # Tagesbriefing: "Was muss ich heute beachten?"
 node src/cli.js compare 1000011 1000028   # Produktvergleich (Original ↔ Substitut)
+
+# Datenquelle umschalten (default file):
+APOTREND_SOURCE=db node src/cli.js   # DB-/ePharmGH-Pfad (Skelett → klarer "nicht konfiguriert"-Fehler)
 ```
 
 ## Was der Prototyp kann (4 Kern-Fähigkeiten, an Sample-Szenarien)

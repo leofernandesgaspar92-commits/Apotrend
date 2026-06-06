@@ -1,29 +1,32 @@
-// Daten-Loader (D-012): lädt die schema-treuen Sample-Daten und baut den PZN-Join.
-// Reale Daten später: nur die Quelle hier tauschen (Warenverzeichnis / AVS-Export / ePharmGH / BASG),
-// Schemas bleiben → der Rest des Codes ändert sich nicht.
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+// Baut den Engine-Kontext aus EINER beliebigen Datenquelle (FileSource heute, DbSource später).
+// Rückgabe-Form ist fix → engine.js bleibt unverändert, egal woher die Daten kommen.
+import { FileSource } from './sources/fileSource.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SAMPLE_DIR = join(__dirname, '..', 'data', 'sample');
+export async function loadContext(source = new FileSource()) {
+  const [products, inventory, signals] = await Promise.all([
+    source.getProducts(),
+    source.getInventory(),
+    source.getSignals(),
+  ]);
 
-const loadJson = (name) => JSON.parse(readFileSync(join(SAMPLE_DIR, name), 'utf8'));
-
-export function loadData() {
-  const products = loadJson('products.json');       // ~ Warenverzeichnis
-  const inventory = loadJson('inventory.json');     // ~ AVS-Export
-  const availability = loadJson('availability.json'); // ~ ePharmGH
-  const signals = loadJson('signals.json');         // ~ BASG/AGES
+  // Verfügbarkeit wird nur für die RELEVANTE Teilmenge geholt (in Realität: ePharmGH-Live-Abfrage,
+  // pro PZN, gebündelt/gecacht). Relevant = Eigenbestand ∪ Signal-Artikel ∪ empfohlene Alternativen.
+  const neededPzns = new Set([
+    ...inventory.positionen.map((p) => p.pzn),
+    ...signals.signale.map((s) => s.pzn),
+    ...signals.signale.map((s) => s.empfohlene_alternative_pzn).filter(Boolean),
+  ]);
+  const availByPzn = new Map();
+  for (const pzn of neededPzns) {
+    availByPzn.set(pzn, await source.getAvailability(pzn));
+  }
 
   return {
     products,
     inventory,
-    availability,
     signals,
-    // PZN-Indizes (Join-Key)
     productByPzn: new Map(products.map((p) => [p.pzn, p])),
     inventoryByPzn: new Map(inventory.positionen.map((p) => [p.pzn, p])),
-    availByPzn: new Map(availability.verfuegbarkeit.map((v) => [v.pzn, v.angebote])),
+    availByPzn,
   };
 }

@@ -1,11 +1,17 @@
 // CLI-Einstieg für den Prototyp.
 //   node src/cli.js                      → Tagesbriefing ("Was muss ich heute beachten?")
 //   node src/cli.js compare <PZN> <PZN>  → Produktvergleich
-import { loadData } from './data.js';
+//
+// Datenquelle wählbar:  APOTREND_SOURCE=file (default) | db
+//   file → Sample-Daten (D-012)   ·   db → echte Anbindung (Skelett, noch nicht verdrahtet)
+import { loadContext } from './data.js';
+import { FileSource } from './sources/fileSource.js';
+import { DbSource } from './sources/dbSource.js';
 import { buildRecommendations, compareProducts } from './engine.js';
 import { renderBriefing } from './narrate.js';
 
-const data = loadData();
+const source = process.env.APOTREND_SOURCE === 'db' ? new DbSource() : new FileSource();
+const data = await loadContext(source);
 const [cmd, ...args] = process.argv.slice(2);
 
 if (cmd === 'compare') {
@@ -13,6 +19,10 @@ if (cmd === 'compare') {
   if (!pa || !pb) {
     console.error('Aufruf: node src/cli.js compare <PZN-A> <PZN-B>');
     process.exit(1);
+  }
+  // Verfügbarkeit der verglichenen PZNs sicherstellen (falls nicht im Standard-Kontext)
+  for (const pzn of [pa, pb]) {
+    if (!data.availByPzn.has(pzn)) data.availByPzn.set(pzn, await source.getAvailability(pzn));
   }
   const c = compareProducts(data, pa, pb);
   console.log(`🔎 Vergleich: ${c.a.name} (PZN ${c.a.pzn})  ↔  ${c.b.name} (PZN ${c.b.pzn})`);

@@ -61,3 +61,26 @@ Abhängigkeit ist real; Umgehung kaum möglich → als Lizenz-/Partner-Kosten ei
 > [ePharmGH-Spezifikation (AVS)](https://docplayer.org/29247570-Epharmgh-datenaustausch-apotheke-pharmagrosshandel-ueber-internet-avs-version-1-6-6-0-12-2007.html) ·
 > [EUDAMED (EU-Kommission)](https://health.ec.europa.eu/medical-devices-eudamed/overview_en) ·
 > [EUDAMED API (inoffiziell)](https://openregulatory.github.io/eudamed-api/)
+
+---
+
+## Repository-Seam im Code (vorverdrahtet)
+
+Damit der Wechsel von Sample- zu Echtdaten **nur die Datenquelle** betrifft (nicht die Logik), ist im
+Prototyp eine Datenquelle-Schnittstelle eingezogen (`assistant/src/sources/`):
+
+```
+DataSource (Interface)          getProducts · getInventory · getSignals · getAvailability(pzn)
+ ├── FileSource   ✅ heute       liest data/sample/*.json
+ └── DbSource     🔧 Skelett     products/inventory/signals ← eigene DB · availability ← ePharmGhClient (live)
+data.js  loadContext(source)     baut den Engine-Kontext quellen-agnostisch (Form fix → engine.js unverändert)
+```
+
+Umschalten per Env: `APOTREND_SOURCE=file` (default) | `db`. Der `db`-Pfad wirft bewusst klare Fehler,
+bis DB (D-004/D-006), Warenverzeichnis-Lizenz (D-010), AVS-Export (D-005) und ePharmGH (D-011) verdrahtet sind.
+
+**Anbindung pro Schicht = Implementierung einer Methode:**
+- `getProducts()` ← Warenverzeichnis-Import-Job (monatlich) in eigene DB
+- `getInventory()` ← AVS-Export-Sync (pro Apotheke, Mandanten-Filter)
+- `getSignals()` ← BASG/Rückruf-Feed-Abruf (geplant)
+- `getAvailability(pzn)` ← **ePharmGH live** über das WWS (kein DB-Query)
