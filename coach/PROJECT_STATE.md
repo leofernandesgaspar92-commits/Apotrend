@@ -22,7 +22,8 @@
 | **Produkt-Stammdaten** | ⏳ offen — Warenverzeichnis-Lizenz (D-010) |
 | Großhandels-Verfügbarkeit | ⏳ offen — ePharmGH (D-011) |
 | **Prototyp-Daten** | ✅ **Sample-Daten** schema-treu (`assistant/data/sample/`, D-012) |
-| LLM-/Tech-Stack | ⏳ offen (D-006) |
+| **Prototyp-Agent** | ✅ **lauffähig** — deterministischer Decision-Engine (`assistant/`), 4 Szenarien quellenbelegt |
+| LLM-/Tech-Stack | ⏳ offen (D-006) — Narrations-Schicht-Seam steht |
 | Geschäftsmodell | ⏳ offen (D-007) |
 
 ---
@@ -66,12 +67,13 @@ APOVERLAG/DATACARE/ARGE kontrollieren das Backbone. Details + Empfehlung: `resea
 ---
 
 ## ▶ Nächste Aktionen (Wiedereinstieg)
-1. **Prototyp-Agent gegen Sample-Daten bauen** (`assistant/data/sample/`): grounded + zitiert, deckt die
-   Demo-Szenarien ab (Engpass→Substitut, Rückruf→Eigenbestand, Nachbestellung, Überbestand). ← jetzt buildable
-2. **D-006 anstoßen:** LLM-/Modell-Markt-Check (Datenresidenz AT/EU als harte Variable) — für den Agenten.
-3. **Pilot-Apotheke besuchen** (parallel): Ist-Bestell-Workflow erheben + anonymisierten AVS-Export →
-   speist D-005; Warenverzeichnis-/ePharmGH-Nutzung der Apotheke abfragen (D-010/D-011).
-4. **Reale Daten einschwenken** (später): nur Loader-Quellen tauschen, Schemas bleiben.
+1. ✅ **Prototyp-Agent gebaut** (`assistant/`): deterministischer Decision-Engine, 4 Szenarien quellenbelegt, lauffähig.
+2. **Eval-Harness** (Reviewer): erwartete Empfehlungen je Szenario als Test fixieren (Regress-Schutz).
+3. **D-006 anstoßen:** LLM-/Modell-Markt-Check (Datenresidenz AT/EU) → dann Narrations-Schicht anbinden.
+4. **Pilot-Apotheke besuchen** (parallel): Ist-Bestell-Workflow + anonymisierter AVS-Export →
+   speist D-005; Warenverzeichnis-/ePharmGH-Nutzung abfragen (D-010/D-011).
+5. **UI / Decision-Surface** (Schnittstelle zu Leos Plattform-Design).
+6. **Reale Daten einschwenken** (später): nur Loader-Quellen tauschen, Schemas bleiben.
 
 ---
 
@@ -89,3 +91,4 @@ APOVERLAG/DATACARE/ARGE kontrollieren das Backbone. Details + Empfehlung: `resea
 | 2026-06-06 | Mandat geschärft (Coach=Bau-Team Apotrend, Fokus Assistant); Ordner→`coach/`; D-009 Anti-Scope; Bestell-Workflow-Desk-Research + Erhebungsleitfaden; Pilot-Apotheke bestätigt. |
 | 2026-06-06 | Daten-Fundament recherchiert (Warenverzeichnis/DATACARE · ePharmGH · EUDAMED · PZN als Join-Key); D-010/D-011 ergänzt; `research/datenquellen-architektur.md`. |
 | 2026-06-06 | Sample-Daten (schema-treu) angelegt `assistant/data/sample/` + D-012; Prototyp-Agent jetzt buildable. |
+| 2026-06-06 | Prototyp-Agent gebaut + lauffähig (`assistant/`): deterministischer Decision-Engine, Tagesbriefing + Produktvergleich, 4 Szenarien quellenbelegt. |

@@ -1,0 +1,12 @@
+{
+  "name": "apotrend-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Apotrend AI Assistant — Decision-Co-Pilot (Prototyp auf Sample-Daten, D-012)",
+  "scripts": {
+    "briefing": "node src/cli.js",
+    "compare": "node src/cli.js compare"
+  },
+  "engines": { "node": ">=18" }
+}
