@@ -3467,6 +3467,7 @@
     <button class="mobile-nav-btn" id="mnav-lieferant" onclick="mobileTab('lieferant',this)" data-i18n="nav.lieferant">🚚 Lieferanten</button>
     <button class="mobile-nav-btn" id="mnav-admin" onclick="mobileTab('admin',this)" data-i18n="nav.admin">⚙ Admin</button>
     <button class="mobile-nav-btn" id="mnav-api" onclick="mobileTab('api',this)" data-i18n="nav.api">⚡ API</button>
+    <button class="mobile-nav-btn" id="mnav-assistent" onclick="mobileTab('assistent',this)">🤖 KI-Assistent</button>
   </div>
 </div>
 
@@ -3591,6 +3592,8 @@
   <button class="nav-btn lieferant-nav" id="nav-lieferant" onclick="switchTab('lieferant', this)" data-i18n="nav.lieferant">🚚 Lieferanten</button>
   <button class="nav-btn admin-nav" id="nav-admin" onclick="switchTab('admin', this)" data-i18n="nav.admin">⚙ Admin</button>
   <button class="nav-btn api-nav" id="nav-api" onclick="switchTab('api', this)" data-i18n="nav.api">⚡ API</button>
+  <!-- KI-Assistent: entkoppeltes Modul (assistant/), via iframe eingebettet -->
+  <button class="nav-btn" id="nav-assistent" onclick="switchTab('assistent', this)">🤖 KI-Assistent</button>
   <button class="btn-upgrade" id="btn-upgrade" onclick="openUpgradeModal()">⬆ Upgrade</button>
   <span class="plan-badge" id="plan-badge"></span>
 </nav>
@@ -4288,6 +4291,13 @@
   <!-- ══════════════════════════════════════════
        PROGNOSEN TAB (v1.4)
   ══════════════════════════════════════════ -->
+  <!-- ===== KI-Assistent — entkoppeltes Modul aus assistant/, via iframe eingebettet (Demo, Sample-Daten) ===== -->
+  <div class="tab-panel" id="tab-assistent">
+    <div class="section-label">KI-Assistent – Decision-Co-Pilot (Demo, Sample-Daten)</div>
+    <iframe src="../assistant/web/index.html" title="Apotrend AI Assistant"
+            style="width:100%;height:75vh;border:1px solid var(--border);border-radius:12px;background:#fff;"></iframe>
+  </div>
+
   <div class="tab-panel" id="tab-prognose">
     <div class="section-label">
       <span data-i18n="sec.prognose">KI-Prognosen & Vorhersagen</span>
@@ -8021,6 +8031,7 @@ Einstellungen ändern: Profil → Benachrichtigungen`;
     lieferant: 'tab-lieferant',
     admin:     'tab-admin',
     api:       'tab-api',
+    assistent: 'tab-assistent',
   };
 
   function switchTab(name, btn) {

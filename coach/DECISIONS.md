@@ -135,6 +135,25 @@ erzwingt die EU-Pflicht; Keys/Vendor erst bei echten Daten/Pilot.
 
 ---
 
+## D-013: Plattform-Integration via entkoppeltem iframe-Tab
+
+**Datum:** 2026-06-06 · **Status:** ✅ Aktiv · **Tags:** integration, platform, architecture
+
+**Kontext:** `frontend/index.html` ist **Leos** Datei (aktiver Redesign). Tiefes Einweben des Assistenten
+riskiert Merge-Konflikte und greift in sein Design-Revier.
+
+**Entscheidung:** Integration **minimal-invasiv & entkoppelt** — neuer Tab „KI-Assistent" bindet das
+eigenständige Surface (`assistant/web/index.html`) per `<iframe>` ein. Keine Logik in Leos Datei
+dupliziert; nur Nav-Button (Desktop + Mobile) + `tabMap`-Eintrag + iframe-Panel.
+
+**Verworfen:** Assistent-Logik direkt in die 10.840-Zeilen-Datei einweben (Konflikt-/Boundary-Risiko).
+
+**Konsequenzen:** Von Leo leicht zu restylen/verschieben; native Integration nach seinem Redesign möglich.
+*Deployment-Caveat:* relativer iframe-Pfad braucht die Repo-Struktur; GitHub-Pages-Setup separat klären
+(Pages hat aktuell ohnehin kein Root-`index.html`).
+
+---
+
 ## Offene Decisions (TBD — nach Priorität)
 
 > **Reihenfolge-Entscheidung (2026-06-06):** Erst **Ist-Bestell-Workflow** in der Pilot-Apotheke

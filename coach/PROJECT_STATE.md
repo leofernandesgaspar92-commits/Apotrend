@@ -27,6 +27,7 @@
 | Datenquelle-Seam | ✅ austauschbar (File ↔ DB/ePharmGH-Skelett) |
 | **LLM-/Tech-Stack** | ✅ D-006: EU-Residency-Prinzip + provider-agnostische LLM-Schicht (Vendor beim Pilot); DB Postgres+pgvector EU |
 | **Decision-Surface (UI)** | ✅ Standalone-Demo (`assistant/web/`) — Integration in Leos Design später |
+| **Plattform-Integration** | ✅ „KI-Assistent"-Tab in `frontend/index.html` (iframe, entkoppelt, D-013) |
 | Geschäftsmodell | ⏳ offen (D-007) |
 
 ---
@@ -99,3 +100,4 @@ APOVERLAG/DATACARE/ARGE kontrollieren das Backbone. Details + Empfehlung: `resea
 | 2026-06-06 | Repository-Seam (File↔DB/ePharmGH) + Eval-Harness (10 Tests grün, `node --test`). |
 | 2026-06-06 | D-006 entschieden (EU-Residency-Prinzip); provider-agnostische LLM-Schicht `assistant/src/llm/` + 3 Tests; `research/llm-stack-eu.md`. |
 | 2026-06-06 | Decision-Surface (UI-Demo) `assistant/web/` (standalone, eingebettete Daten); README/Scripts (export). |
+| 2026-06-06 | Plattform-Integration: „KI-Assistent"-Tab in `frontend/index.html` via iframe (entkoppelt, D-013). |
