@@ -12,3 +12,17 @@ zusätzlich `coach/CLAUDE.md` lesen.
   erst zurückfragen (nicht blind mergen). Gilt bis der Owner es widerruft.
 
 - Entwicklung/Push auf der jeweils zugewiesenen Feature-Branch; PR gegen `main`.
+
+## Zielgruppe & UX-Prinzipien (vom Owner festgelegt)
+
+Die Plattform nutzen **Apotheker:innen, Ärzt:innen, Einkauf, Großhandel und Logistiker** —
+überwiegend **nicht-technische, zeitknappe** Fachleute. Deshalb gilt **extreme
+Benutzerfreundlichkeit vor Optik/Dichte**:
+
+- **Gut lesbar** vor maximaler Dichte: keine Winzig-Schrift, hoher Kontrast.
+- **Offensichtliche Bedienung**: Buttons/Klick-Elemente müssen als solche erkennbar sein
+  (klare Beschriftung, sichtbare Affordanz), keine versteckten Gesten.
+- **Klartext statt Kürzel** (z. B. „30 Tage" statt „30T"), Fachjargon vermeiden/erklären.
+- **Große, eindeutige Primär-Aktionen**; konsistente Farb-Semantik (rot = kritischer Engpass).
+- **Weniger Scrollen / auf einen Screen** bleibt Ziel — hilft allen.
+- Sicherheitsrelevante Aussagen (Engpass/Rückruf/Substitution) nur mit Quelle.
