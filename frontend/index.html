@@ -935,17 +935,19 @@
        Alles auf #tab-dashboard gescoped, damit andere Tabs unveraendert
        bleiben. Kleinere Schrift/Abstaende + Grid, das die Breite fuellt.
     ══════════════════════════════════════════════════════════════ */
-    #tab-dashboard { font-size: 13px; }
+    /* Lesbarkeit vor Dichte: kompaktes Layout, aber klar lesbare Schrift
+       (Zielgruppe: Apotheke/Arzt/Einkauf/Großhandel/Logistik, nicht-technisch). */
+    #tab-dashboard { font-size: 14px; }
     #tab-dashboard .tab-toolbar { margin-bottom: 6px; }
     #tab-dashboard .dash-marquee { margin-bottom: 8px; }
-    #tab-dashboard .marquee-item { font-size: 12px; margin: 0 20px; }
+    #tab-dashboard .marquee-item { font-size: 13px; margin: 0 20px; }
 
     #tab-dashboard .dash-kpis { gap: 8px; margin-bottom: 10px; }
-    #tab-dashboard .dash-kpi { padding: 10px 12px; border-radius: 5px; }
-    #tab-dashboard .dash-kpi .dk-icon { font-size: 14px; margin-bottom: 4px; }
-    #tab-dashboard .dash-kpi .dk-label { font-size: 10px; letter-spacing: .5px; margin-bottom: 2px; }
-    #tab-dashboard .dash-kpi .dk-value { font-size: 22px; }
-    #tab-dashboard .dash-kpi .dk-sub { font-size: 11px; margin-top: 3px; }
+    #tab-dashboard .dash-kpi { padding: 12px 14px; border-radius: 5px; }
+    #tab-dashboard .dash-kpi .dk-icon { font-size: 16px; margin-bottom: 5px; }
+    #tab-dashboard .dash-kpi .dk-label { font-size: 13px; letter-spacing: .3px; margin-bottom: 3px; }
+    #tab-dashboard .dash-kpi .dk-value { font-size: 26px; }
+    #tab-dashboard .dash-kpi .dk-sub { font-size: 12px; margin-top: 4px; }
 
     #tab-dashboard .dash-two-col { gap: 10px; grid-template-columns: 1fr 300px; }
     #tab-dashboard .dash-grid { gap: 10px; grid-template-columns: 1fr 1fr; }
@@ -956,18 +958,29 @@
     #tab-dashboard .dash-kpis,
     #tab-dashboard .widget { min-width: 0; }
     #tab-dashboard .widget { padding: 10px 12px; border-radius: 5px; box-shadow: none; }
-    #tab-dashboard .widget-title { font-size: 11px; letter-spacing: .5px; padding-bottom: 7px; margin-bottom: 8px; justify-content: flex-start; gap: 6px; }
+    #tab-dashboard .widget-title { font-size: 12.5px; letter-spacing: .3px; padding-bottom: 8px; margin-bottom: 9px; justify-content: flex-start; gap: 6px; }
     #tab-dashboard .widget-title .badge { margin-right: 2px; }
     #tab-dashboard .risk-alarm .ra-text { font-size: 13px; }
     #tab-dashboard .heatmap-cell { padding: 8px 4px; }
 
-    /* Aufklappbare Panels: Titel klickbar, Inhalt per Klick ein-/ausblenden */
+    /* Aufklappbare Panels: Titel klickbar; klar beschrifteter Button statt nur Caret,
+       damit die Bedienung fuer nicht-technische Nutzer offensichtlich ist. */
     #tab-dashboard .widget.collapsible .widget-title { cursor: pointer; user-select: none; }
     #tab-dashboard .widget.collapsible .widget-title::after {
-      content: '▾'; color: var(--text-muted); font-size: 11px; margin-left: auto; padding-left: 8px;
-      transition: transform .15s;
+      content: '▾ ausblenden';
+      margin-left: auto;
+      font-size: 11px; font-weight: 600; text-transform: none; letter-spacing: 0;
+      color: var(--text-secondary);
+      background: var(--bg-card-hover, #1c1c1c);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 3px 9px;
+      white-space: nowrap;
     }
-    #tab-dashboard .widget.collapsed .widget-title::after { transform: rotate(-90deg); }
+    #tab-dashboard .widget.collapsible .widget-title:hover::after {
+      border-color: var(--green-dim); color: var(--green);
+    }
+    #tab-dashboard .widget.collapsed .widget-title::after { content: '▸ einblenden'; }
     #tab-dashboard .widget.collapsed > *:not(.widget-title) { display: none; }
     #tab-dashboard .widget.collapsed .widget-title { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
 
@@ -3832,7 +3845,7 @@
       <div class="widget collapsible">
         <div class="widget-title" onclick="toggleWidget(this)">
           Letzte Preisänderungen
-          <span class="badge">30T</span>
+          <span class="badge">30 Tage</span>
         </div>
         <table class="mini-price-table">
           <tbody id="mini-price-tbody"><!-- filled by JS --></tbody>
