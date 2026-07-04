@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="ApoTrend – Marktintelligenz für Apotheken: Live-Engpassdaten (BASG), Rückrufe, Preis-Tracker, Community und News auf einen Blick." />
+  <meta name="theme-color" content="#00ff88" />
+  <meta property="og:title" content="ApoTrend – Marktintelligenz für Apotheker" />
+  <meta property="og:description" content="Live-Engpässe (BASG), Rückrufe, Preise, Community und News für Apotheken." />
+  <meta property="og:type" content="website" />
   <title>ApoTrend – Marktintelligenz für Apotheker</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
@@ -10814,8 +10819,10 @@ self.addEventListener('fetch', e => {
         if (idx >= 0) {
           ENGPASS_DB[idx].status = live.status;
           ENGPASS_DB[idx].bis = live.bis || ENGPASS_DB[idx].bis;
+          ENGPASS_DB[idx].live = true;      // schützt vor Demo-Zufallsdrift (Compliance)
+          ENGPASS_DB[idx].quelle = 'BASG';
         } else if (live.name && live.name !== 'N/A') {
-          ENGPASS_DB.push({ ...live, region: 'AT', land: 'Österreich' });
+          ENGPASS_DB.push({ ...live, region: 'AT', land: 'Österreich', live: true });
         }
       });
       // Quellen-Badge ehrlich setzen (Compliance): live vs. Referenzdaten
@@ -10883,16 +10890,22 @@ self.addEventListener('fetch', e => {
       });
 
       // Occasional engpass status change (20% chance on 1–2 items)
+      // WICHTIG: Nur simulierte Demo-Einträge dürfen driften. Echte BASG-Live-Daten
+      // (live===true) werden NIE zufällig verändert — sonst würde ein realer Engpass-
+      // Status verfälscht (Patientenrisiko, Regel: Engpass-Aussagen nur mit Quelle).
       if (Math.random() < 0.2) {
         const statuses = ['kritisch','eingeschraenkt','verfuegbar'];
-        const idx = Math.floor(Math.random() * ENGPASS_DB.length);
-        const oldStatus = ENGPASS_DB[idx].status;
-        const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
-        if (oldStatus !== newStatus) {
-          ENGPASS_DB[idx].status = newStatus;
-          const row = document.querySelector(`#engpass-tbody tr:nth-child(${idx+1})`);
-          if (row) row.classList.add('flash-yellow');
-          _log('Status change: ' + ENGPASS_DB[idx].name + ' → ' + newStatus);
+        const simIdx = ENGPASS_DB.reduce((acc, d, i) => { if (!d.live) acc.push(i); return acc; }, []);
+        if (simIdx.length) {
+          const idx = simIdx[Math.floor(Math.random() * simIdx.length)];
+          const oldStatus = ENGPASS_DB[idx].status;
+          const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
+          if (oldStatus !== newStatus) {
+            ENGPASS_DB[idx].status = newStatus;
+            const row = document.querySelector(`#engpass-tbody tr:nth-child(${idx+1})`);
+            if (row) row.classList.add('flash-yellow');
+            _log('Status change (sim): ' + ENGPASS_DB[idx].name + ' → ' + newStatus);
+          }
         }
       }
 

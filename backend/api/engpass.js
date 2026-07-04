@@ -177,3 +177,6 @@ export default async function handler(req, res) {
     items,
   });
 }
+
+// Named exports für Unit-Tests (Vercel importiert nur den default-Handler).
+export { parseBasgXml, mapStatus, fmtDate, decodeEntities, STATUS_RANK };
