@@ -206,6 +206,7 @@
     .main {
       padding: 16px 20px;
       display: grid;
+      grid-template-columns: minmax(0, 1fr); /* Spalte an Viewport binden: verhindert horizontales Ueberlaufen (z.B. durch das Marquee-Laufband) */
       gap: 14px;
     }
 
@@ -821,7 +822,7 @@
       text-transform: uppercase;
     }
 
-    .marquee-viewport { overflow: hidden; flex: 1; }
+    .marquee-viewport { overflow: hidden; flex: 1; min-width: 0; }
 
     .marquee-track {
       display: inline-block;
@@ -928,6 +929,47 @@
 
     @media (max-width: 1050px) { .dash-grid { grid-template-columns: 1fr 1fr; } }
     @media (max-width: 700px)  { .dash-grid { grid-template-columns: 1fr; } }
+
+    /* ══════════════════════════════════════════════════════════════
+       TERMINAL-VERDICHTUNG — kompaktes Dashboard (weniger Scrollen).
+       Alles auf #tab-dashboard gescoped, damit andere Tabs unveraendert
+       bleiben. Kleinere Schrift/Abstaende + Grid, das die Breite fuellt.
+    ══════════════════════════════════════════════════════════════ */
+    #tab-dashboard { font-size: 13px; }
+    #tab-dashboard .tab-toolbar { margin-bottom: 6px; }
+    #tab-dashboard .dash-marquee { margin-bottom: 8px; }
+    #tab-dashboard .marquee-item { font-size: 12px; margin: 0 20px; }
+
+    #tab-dashboard .dash-kpis { gap: 8px; margin-bottom: 10px; }
+    #tab-dashboard .dash-kpi { padding: 10px 12px; border-radius: 5px; }
+    #tab-dashboard .dash-kpi .dk-icon { font-size: 14px; margin-bottom: 4px; }
+    #tab-dashboard .dash-kpi .dk-label { font-size: 10px; letter-spacing: .5px; margin-bottom: 2px; }
+    #tab-dashboard .dash-kpi .dk-value { font-size: 22px; }
+    #tab-dashboard .dash-kpi .dk-sub { font-size: 11px; margin-top: 3px; }
+
+    #tab-dashboard .dash-two-col { gap: 10px; grid-template-columns: 1fr 300px; }
+    #tab-dashboard .dash-grid { gap: 10px; grid-template-columns: 1fr 1fr; }
+    /* min-width:0 verhindert, dass breite Inhalte die Grid-/Flex-Spalten aufblaehen */
+    #tab-dashboard .dash-two-col,
+    #tab-dashboard .dash-col-left,
+    #tab-dashboard .dash-grid,
+    #tab-dashboard .dash-kpis,
+    #tab-dashboard .widget { min-width: 0; }
+    #tab-dashboard .widget { padding: 10px 12px; border-radius: 5px; box-shadow: none; }
+    #tab-dashboard .widget-title { font-size: 11px; letter-spacing: .5px; padding-bottom: 7px; margin-bottom: 8px; justify-content: flex-start; gap: 6px; }
+    #tab-dashboard .widget-title .badge { margin-right: 2px; }
+    #tab-dashboard .risk-alarm .ra-text { font-size: 13px; }
+    #tab-dashboard .heatmap-cell { padding: 8px 4px; }
+
+    /* Aufklappbare Panels: Titel klickbar, Inhalt per Klick ein-/ausblenden */
+    #tab-dashboard .widget.collapsible .widget-title { cursor: pointer; user-select: none; }
+    #tab-dashboard .widget.collapsible .widget-title::after {
+      content: '▾'; color: var(--text-muted); font-size: 11px; margin-left: auto; padding-left: 8px;
+      transition: transform .15s;
+    }
+    #tab-dashboard .widget.collapsed .widget-title::after { transform: rotate(-90deg); }
+    #tab-dashboard .widget.collapsed > *:not(.widget-title) { display: none; }
+    #tab-dashboard .widget.collapsed .widget-title { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
 
     .widget {
       background: var(--bg-card);
@@ -3758,8 +3800,8 @@
     <div class="dash-grid">
 
       <!-- Heatmap -->
-      <div class="widget">
-        <div class="widget-title">
+      <div class="widget collapsible">
+        <div class="widget-title" onclick="toggleWidget(this)">
           Engpass-Heatmap nach Bundesland
           <span class="badge">AT</span>
         </div>
@@ -3778,8 +3820,8 @@
       </div>
 
       <!-- Top 3 Engpass -->
-      <div class="widget">
-        <div class="widget-title">
+      <div class="widget collapsible">
+        <div class="widget-title" onclick="toggleWidget(this)">
           Top 3 Engpass-Medikamente
           <span class="badge" style="background:var(--red-dark);color:var(--red);border-color:rgba(255,58,58,0.4);">KRITISCH</span>
         </div>
@@ -3787,8 +3829,8 @@
       </div>
 
       <!-- Letzte Preisänderungen -->
-      <div class="widget">
-        <div class="widget-title">
+      <div class="widget collapsible">
+        <div class="widget-title" onclick="toggleWidget(this)">
           Letzte Preisänderungen
           <span class="badge">30T</span>
         </div>
@@ -3798,8 +3840,8 @@
       </div>
 
       <!-- Aktive Preisalarme -->
-      <div class="widget">
-        <div class="widget-title">
+      <div class="widget collapsible">
+        <div class="widget-title" onclick="toggleWidget(this)">
           🔔 Aktive Preisalarme (<span id="alarm-count">0</span>)
           <span class="badge" style="background:var(--green-dark);color:var(--green);border-color:var(--green-dim);">ÜBERWACHT</span>
         </div>
@@ -8400,6 +8442,29 @@ self.addEventListener('fetch', e => {
     document.getElementById('install-banner').classList.remove('visible');
   }
 
+  // ── Aufklappbare Dashboard-Panels (Progressive Disclosure) ──────
+  // Klick auf den Kachel-Titel blendet den Inhalt ein/aus; Zustand je
+  // Panel bleibt in localStorage erhalten.
+  function toggleWidget(titleEl) {
+    const w = titleEl.closest('.widget');
+    if (!w) return;
+    w.classList.toggle('collapsed');
+    try {
+      const key = 'apotrend_widget_' + (titleEl.textContent || '').trim().slice(0, 40);
+      localStorage.setItem(key, w.classList.contains('collapsed') ? '1' : '0');
+    } catch (e) {}
+  }
+  function restoreWidgetStates() {
+    document.querySelectorAll('#tab-dashboard .widget.collapsible').forEach(w => {
+      const t = w.querySelector('.widget-title');
+      if (!t) return;
+      try {
+        const key = 'apotrend_widget_' + (t.textContent || '').trim().slice(0, 40);
+        if (localStorage.getItem(key) === '1') w.classList.add('collapsed');
+      } catch (e) {}
+    });
+  }
+
   // ── Offline Indicator ─────────────────────────────────────────
   function updateOfflineBar() {
     const bar = document.getElementById('offline-bar');
@@ -11060,6 +11125,7 @@ self.addEventListener('fetch', e => {
     applyLanguage();
     seedDevicesIfEmpty();
     showCookieBanner();
+    restoreWidgetStates();
     if (isLoggedIn()) resetSessionTimer();
     sessionCheckInterval = setInterval(checkSession, 5000);
   } catch (e) { console.error('bootstrap error', e); }
