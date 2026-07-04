@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ApoTrend Terminal — Apotheken-Arbeitsplatz</title>
+<style>
+  :root{
+    --bg:#F8F9FA; --card:#FFFFFF; --text:#1A1A1A; --muted:#5F6368;
+    --border:#E0E0E0; --green:#2E7D32; --green-l:#E8F5E9; --green-h:#1B5E20;
+    --red:#F44336; --red-l:#FFEBEE; --amber:#F9A825; --amber-l:#FFF8E1;
+    --radius:14px; --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05);
+    --sans:'Segoe UI',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;min-height:100vh}
+  .topbar{background:var(--card);border-bottom:1px solid var(--border);padding:14px 22px;display:flex;align-items:center;gap:18px;position:sticky;top:0;z-index:10}
+  .logo{font-size:22px;font-weight:800;color:var(--green)}
+  .logo small{font-weight:600;color:var(--muted);font-size:13px;margin-left:6px}
+  .ti-status{margin-left:auto;display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;padding:8px 16px;border-radius:24px}
+  .ti-ok{background:var(--green-l);color:var(--green)}
+  .ti-down{background:var(--red-l);color:var(--red)}
+  .dot{width:11px;height:11px;border-radius:50%;background:currentColor;animation:pulse 1.5s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .clock{font-variant-numeric:tabular-nums;color:var(--muted);font-size:15px;font-weight:600}
+  .layout{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:18px;max-width:1400px;margin:0 auto}
+  @media(max-width:900px){.layout{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px}
+  .card-head{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .card-head h2{font-size:18px;font-weight:800}
+  .badge{font-size:11px;font-weight:800;padding:3px 9px;border-radius:10px;text-transform:uppercase;letter-spacing:.4px}
+  .b-live{background:var(--green-l);color:var(--green)}
+  .b-mock{background:var(--amber-l);color:var(--amber)}
+  .btn{border:none;border-radius:24px;padding:13px 24px;font-size:16px;font-weight:700;cursor:pointer;transition:.15s;font-family:inherit}
+  .btn-primary{background:var(--green);color:#fff}
+  .btn-primary:hover{background:var(--green-h)}
+  .btn-ghost{background:var(--card);border:1.5px solid var(--border);color:var(--text)}
+  .btn-ghost:hover{border-color:var(--green);color:var(--green)}
+  .btn-danger{background:var(--red);color:#fff}
+  .btn-big{width:100%;padding:18px;font-size:18px;margin-bottom:14px}
+  .patient-box{background:var(--green-l);border-radius:12px;padding:16px;margin-bottom:16px;display:none}
+  .patient-box.show{display:block}
+  .patient-box .pname{font-size:19px;font-weight:800}
+  .patient-box .pmeta{color:var(--muted);font-size:14px;margin-top:2px}
+  .rz-item{border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;transition:.15s}
+  .rz-item:hover{border-color:var(--green)}
+  .rz-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
+  .rz-med{font-size:16px;font-weight:700}
+  .rz-meta{font-size:13px;color:var(--muted);margin-top:2px}
+  .rz-status{font-size:11px;font-weight:800;padding:4px 10px;border-radius:10px;white-space:nowrap;text-transform:uppercase}
+  .s-empfangen{background:#E3F2FD;color:#1565C0}
+  .s-in_bearbeitung{background:var(--amber-l);color:#B26A00}
+  .s-abgegeben{background:var(--green-l);color:var(--green)}
+  .s-abgerechnet{background:#ECEFF1;color:#455A64}
+  .rz-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .rz-actions .btn{padding:8px 16px;font-size:14px}
+  .stoerung-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .amp{border-radius:12px;padding:16px;text-align:center}
+  .amp .lbl{font-size:13px;font-weight:600;opacity:.85}
+  .amp .val{font-size:16px;font-weight:800;margin-top:4px}
+  .amp-ok{background:var(--green-l);color:var(--green)}
+  .amp-warn{background:var(--amber-l);color:#B26A00}
+  .amp-down{background:var(--red-l);color:var(--red)}
+  .search-row{display:flex;gap:10px;margin-bottom:14px}
+  .search-row input{flex:1;padding:13px 16px;border:1.5px solid var(--border);border-radius:24px;font-size:16px;font-family:inherit}
+  .search-row input:focus{outline:none;border-color:var(--green)}
+  .eng-result{border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .eng-name{font-weight:700}
+  .eng-sub{font-size:13px;color:var(--muted)}
+  .eng-avail{font-size:12px;font-weight:800;padding:5px 12px;border-radius:20px}
+  .a-ok{background:var(--green-l);color:var(--green)}
+  .a-knapp{background:var(--amber-l);color:#B26A00}
+  .a-no{background:var(--red-l);color:var(--red)}
+  .notfall-banner{display:none;background:var(--red);color:#fff;padding:16px 22px;font-weight:800;font-size:17px;text-align:center;align-items:center;justify-content:center;gap:14px}
+  .notfall-banner.show{display:flex}
+  .notfall-banner .btn{background:#fff;color:var(--red);padding:10px 20px}
+  .disclaimer{font-size:12px;color:var(--muted);text-align:center;padding:14px;border-top:1px solid var(--border);margin-top:8px}
+  .svc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .svc{border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:.15s}
+  .svc:hover{border-color:var(--green);background:var(--green-l)}
+  .svc .ico{font-size:30px}
+  .svc .t{font-weight:700;margin-top:8px;font-size:15px}
+  .svc .d{font-size:12px;color:var(--muted);margin-top:2px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--text);color:#fff;padding:14px 26px;border-radius:24px;font-weight:600;transition:.3s;z-index:50}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="notfall-banner" id="notfall">
+  ⚠️ TI-AUSFALL — Notfall-Modus aktiv. Bitte auf Papierrezept umstellen.
+  <button class="btn" onclick="papierWorkflow()">📄 Papier-Workflow starten</button>
+</div>
+
+<div class="topbar">
+  <div class="logo">ApoTrend <small>Terminal · Apotheke Musterstadt</small></div>
+  <div class="clock" id="clock">--:--:--</div>
+  <div class="ti-status ti-ok" id="tibadge" onclick="toggleTI()" title="Klick: TI-Ausfall simulieren" style="cursor:pointer">
+    <span class="dot"></span><span id="titext">TI verbunden</span>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- e-REZEPT -->
+  <div class="card">
+    <div class="card-head"><h2>💊 e-Rezept</h2><span class="badge b-mock">Mock · Demo</span></div>
+    <button class="btn btn-primary btn-big" onclick="ecardLesen()">📇 e-Card einlesen</button>
+    <div class="patient-box" id="patientbox">
+      <div class="pname" id="pname"></div>
+      <div class="pmeta" id="pmeta"></div>
+    </div>
+    <div id="rezepte"></div>
+  </div>
+
+  <!-- STÖRUNGS-DASHBOARD -->
+  <div class="card">
+    <div class="card-head"><h2>📡 Störungs-Dashboard</h2><span class="badge b-mock">Mock</span></div>
+    <div class="stoerung-grid" id="stoerung"></div>
+    <p style="font-size:13px;color:var(--muted);margin-top:14px">Live-Überwachung der E-Rezept-Infrastruktur. Bei Rot: automatischer Notfall-Workflow.</p>
+  </div>
+
+  <!-- ENGPASS-CHECK -->
+  <div class="card">
+    <div class="card-head"><h2>🔍 Engpass-Check</h2><span class="badge b-live">BASG Live-fähig</span></div>
+    <div class="search-row">
+      <input id="engsearch" placeholder="Medikament suchen … (z.B. Amoxicillin)" oninput="engSuche()">
+    </div>
+    <div id="engresults"></div>
+  </div>
+
+  <!-- SERVICE-PLATTFORM -->
+  <div class="card">
+    <div class="card-head"><h2>🩺 Service-Plattform</h2><span class="badge b-mock">Mock</span></div>
+    <div class="svc-grid">
+      <div class="svc" onclick="svc('Impftermin')"><div class="ico">💉</div><div class="t">Impftermine</div><div class="d">Terminmanagement</div></div>
+      <div class="svc" onclick="svc('Telemedizin')"><div class="ico">📹</div><div class="t">Telemedizin</div><div class="d">Sprechstunde</div></div>
+      <div class="svc" onclick="svc('1450-Lotse')"><div class="ico">📞</div><div class="t">1450-Lotse</div><div class="d">Arzt-Termin</div></div>
+      <div class="svc" onclick="svc('Abrechnung')"><div class="ico">🧾</div><div class="t">Abrechnung</div><div class="d">Kassen-Vorbereitung</div></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="disclaimer">
+  ⚠️ <strong>Demo-Prototyp.</strong> e-Rezept, e-Card und Störungsdaten sind
+  <strong>simuliert</strong> (Reifegrad 🟡 Mock) — echter Zugang erfordert SV-Peering-Zertifizierung.
+  Engpass-Daten stammen aus dem öffentlichen BASG-Register (🟢 Live-fähig).
+  Tipp: Klick auf „TI verbunden" oben rechts simuliert einen Ausfall → Notfall-Modus.
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Uhr ──
+function tick(){const d=new Date();document.getElementById('clock').textContent=d.toLocaleTimeString('de-AT');}
+setInterval(tick,1000);tick();
+
+// ── Toast ──
+let _tt;
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2600);}
+
+// ── TI-Status / Notfall-Modus ──
+let tiOk=true;
+function toggleTI(){tiOk=!tiOk;renderTI();renderStoerung();if(!tiOk){toast('⚠️ TI-Ausfall simuliert');}else{toast('✅ TI wieder verbunden');document.getElementById('notfall').classList.remove('show');}}
+function renderTI(){
+  const b=document.getElementById('tibadge'),t=document.getElementById('titext');
+  if(tiOk){b.className='ti-status ti-ok';t.textContent='TI verbunden';document.getElementById('notfall').classList.remove('show');}
+  else{b.className='ti-status ti-down';t.textContent='TI-Ausfall';document.getElementById('notfall').classList.add('show');}
+}
+function papierWorkflow(){toast('📄 Papierrezept-Modus aktiviert — Formulare bereit');}
+
+// ── Störungs-Dashboard ──
+function renderStoerung(){
+  const dienste=[
+    {n:'e-Rezept-Dienst',ok:tiOk},
+    {n:'e-Card-Validierung',ok:tiOk},
+    {n:'e-Medikation (ELGA)',ok:true},
+    {n:'Abrechnungs-Gateway',ok:true},
+  ];
+  document.getElementById('stoerung').innerHTML=dienste.map(d=>{
+    const cls=d.ok?'amp-ok':'amp-down';const v=d.ok?'✓ Online':'✗ Ausfall';
+    return `<div class="amp ${cls}"><div class="lbl">${d.n}</div><div class="val">${v}</div></div>`;
+  }).join('');
+}
+
+// ── e-Rezept (Mock-Provider inline) ──
+const MOCK_PATIENT={svNummer:'1234010180',name:'Maria Musterpatientin',geburtsdatum:'01.01.1980'};
+let rezepte=[];
+const UEBERGANG={empfangen:['in_bearbeitung'],in_bearbeitung:['abgegeben'],abgegeben:['abgerechnet'],abgerechnet:[]};
+const LABEL={empfangen:'Empfangen',in_bearbeitung:'In Bearbeitung',abgegeben:'Abgegeben',abgerechnet:'Abgerechnet'};
+const NEXT_BTN={empfangen:'Bearbeiten',in_bearbeitung:'Abgeben',abgegeben:'Abrechnen'};
+
+function ecardLesen(){
+  if(!tiOk){toast('⚠️ TI nicht erreichbar — Papier-Workflow nutzen');return;}
+  toast('📇 e-Card gelesen …');
+  document.getElementById('pname').textContent=MOCK_PATIENT.name;
+  document.getElementById('pmeta').textContent='SV-Nr. '+MOCK_PATIENT.svNummer+' · geb. '+MOCK_PATIENT.geburtsdatum;
+  document.getElementById('patientbox').classList.add('show');
+  rezepte=[
+    {id:'RZ-2026-0001',med:'Amoxicillin Genericon 1000 mg',menge:'1 Pkg (20 Stk)',arzt:'Dr. Weber, Wien',status:'empfangen'},
+    {id:'RZ-2026-0002',med:'Ramipril 5 mg',menge:'1 Pkg (30 Stk)',arzt:'Dr. Weber, Wien',status:'empfangen'},
+  ];
+  renderRezepte();
+}
+function naechster(id){
+  const rz=rezepte.find(r=>r.id===id);if(!rz)return;
+  const next=(UEBERGANG[rz.status]||[])[0];
+  if(!next){toast('Rezept abgeschlossen');return;}
+  rz.status=next;renderRezepte();toast('✓ '+rz.med+' → '+LABEL[next]);
+}
+function renderRezepte(){
+  document.getElementById('rezepte').innerHTML=rezepte.map(rz=>{
+    const btn=NEXT_BTN[rz.status];
+    return `<div class="rz-item">
+      <div class="rz-top">
+        <div><div class="rz-med">${rz.med}</div><div class="rz-meta">${rz.menge} · ${rz.arzt} · ${rz.id}</div></div>
+        <span class="rz-status s-${rz.status}">${LABEL[rz.status]}</span>
+      </div>
+      <div class="rz-actions">
+        ${btn?`<button class="btn btn-primary" onclick="naechster('${rz.id}')">${btn} →</button>`:'<span class="eng-sub">✓ abgeschlossen</span>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Engpass-Check (BASG-fähig; hier Demo-Daten) ──
+const ENG_DB=[
+  {n:'Amoxicillin 1000mg',w:'Amoxicillin',a:'no',alt:'Ospamox, Amoxi-Genericon'},
+  {n:'Ibuprofen 400mg',w:'Ibuprofen',a:'knapp',alt:'Brufen, Dolormin'},
+  {n:'Ramipril 5mg',w:'Ramipril',a:'ok',alt:'—'},
+  {n:'Salbutamol Spray',w:'Salbutamol',a:'no',alt:'Ventolin, Sultanol'},
+  {n:'Pantoprazol 40mg',w:'Pantoprazol',a:'ok',alt:'—'},
+  {n:'Clarithromycin 500mg',w:'Clarithromycin',a:'knapp',alt:'Azithromycin'},
+];
+const A_LBL={ok:'✓ Verfügbar',knapp:'⚠ Knapp',no:'✗ Engpass'};
+function engSuche(){
+  const q=document.getElementById('engsearch').value.toLowerCase().trim();
+  const res=ENG_DB.filter(e=>!q||e.n.toLowerCase().includes(q)||e.w.toLowerCase().includes(q));
+  document.getElementById('engresults').innerHTML=res.map(e=>`
+    <div class="eng-result">
+      <div><div class="eng-name">${e.n}</div><div class="eng-sub">${e.w}${e.a!=='ok'?' · Alt.: '+e.alt:''}</div></div>
+      <span class="eng-avail a-${e.a}">${A_LBL[e.a]}</span>
+    </div>`).join('')||'<div class="eng-sub">Keine Treffer.</div>';
+}
+
+function svc(n){toast('🩺 '+n+' — Modul (Demo) geöffnet');}
+
+// Init
+renderTI();renderStoerung();engSuche();
+</script>
+</body>
+</html>

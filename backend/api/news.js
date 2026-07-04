@@ -9,6 +9,12 @@ const FEEDS = [
   { url: 'https://www.drugs.com/feeds/new_drug_approvals.xml', source: 'Neuzulassung', cat: 'pharma' },
 ];
 
+// Sortier-Schlüssel: DD.MM.YYYY -> YYYY-MM-DD mit führenden Nullen,
+// sonst sortiert String-Vergleich z.B. "2026-7-4" nach "2026-12-1" (falsch).
+function sortKey(d) {
+  return String(d).split('.').map(x => x.padStart(2, '0')).reverse().join('-');
+}
+
 function parseRSS(xml) {
   const items = [];
   const rx = /<item>([\s\S]*?)<\/item>/gi;
@@ -81,12 +87,11 @@ export default async function handler(req, res) {
     catch (e) { errors.push('openFDA: ' + e.message); }
   }
 
-  items.sort((a, b) => {
-    const pa = a.date.split('.').reverse().join('-');
-    const pb = b.date.split('.').reverse().join('-');
-    return pb.localeCompare(pa);
-  });
+  items.sort((a, b) => sortKey(b.date).localeCompare(sortKey(a.date)));
 
   res.setHeader('Cache-Control', 's-maxage=900, stale-while-revalidate=1800');
   res.json({ ok: true, source, count: items.length, ts: new Date().toISOString(), errors: errors.length ? errors : undefined, items });
 }
+
+// Named exports für Unit-Tests (Vercel importiert nur den default-Handler).
+export { parseRSS, sortKey };

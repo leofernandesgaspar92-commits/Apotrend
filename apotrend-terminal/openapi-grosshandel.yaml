@@ -1,0 +1,171 @@
+openapi: 3.1.0
+info:
+  title: ApoTrend Engpass- & Verfügbarkeits-API (Großhandel)
+  version: 0.1.0
+  description: >
+    Einheitliche Abfrage-Schnittstelle, die ApoTrend gegenüber österreichischen
+    Pharma-Großhändlern (Herba Chemosan, Alliance Healthcare, Sanova, PHOENIX, MPV)
+    definiert. **Reifegrad 🔴/🟡:** Es existiert keine öffentliche Großhandel-API –
+    dieses Dokument ist die technische VERHANDLUNGSBASIS für EDI/API-Verträge.
+    Jeder Großhändler wird über einen eigenen Adapter auf dieses Schema gemappt.
+  contact:
+    name: ApoTrend
+    email: leofernandesgaspar92@gmail.com
+
+servers:
+  - url: https://api.apotrend.at/v1
+    description: Produktion (EU-Region)
+  - url: https://staging.api.apotrend.at/v1
+    description: Staging
+
+security:
+  - bearerAuth: []
+
+paths:
+  /verfuegbarkeit:
+    get:
+      summary: Verfügbarkeit eines Artikels bei allen angebundenen Großhändlern
+      operationId: getVerfuegbarkeit
+      parameters:
+        - name: pzn
+          in: query
+          required: true
+          description: Pharmazentralnummer (AT) oder PZN des Artikels
+          schema: { type: string, example: "0031238" }
+        - name: menge
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, default: 1 }
+      responses:
+        '200':
+          description: Verfügbarkeits-Übersicht über alle Großhändler
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerfuegbarkeitsAntwort'
+        '404': { description: Artikel unbekannt }
+        '503': { description: Kein Großhändler erreichbar }
+
+  /alternativen:
+    get:
+      summary: Alternativpräparate mit gleichem Wirkstoff
+      operationId: getAlternativen
+      parameters:
+        - name: pzn
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Liste wirkstoffgleicher Alternativen inkl. Verfügbarkeit
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  original: { $ref: '#/components/schemas/Artikel' }
+                  alternativen:
+                    type: array
+                    items: { $ref: '#/components/schemas/Alternative' }
+
+  /bestellung:
+    post:
+      summary: Bestellung bei einem Großhändler auslösen
+      operationId: postBestellung
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BestellAnfrage' }
+      responses:
+        '201':
+          description: Bestellung angenommen
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BestellBestaetigung' }
+        '409': { description: Nicht mehr verfügbar (Race) }
+
+  /haendler/status:
+    get:
+      summary: Erreichbarkeit/Health aller angebundenen Großhändler-Adapter
+      operationId: getHaendlerStatus
+      responses:
+        '200':
+          description: Adapter-Status je Großhändler
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/HaendlerStatus' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Artikel:
+      type: object
+      required: [pzn, bezeichnung, wirkstoff]
+      properties:
+        pzn:         { type: string, example: "0031238" }
+        bezeichnung: { type: string, example: "Amoxicillin Genericon 1000 mg" }
+        wirkstoff:   { type: string, example: "Amoxicillin" }
+        packungsgroesse: { type: string, example: "20 Stk" }
+
+    HaendlerVerfuegbarkeit:
+      type: object
+      properties:
+        haendler:   { type: string, enum: [herba, alliance, sanova, phoenix, mpv] }
+        verfuegbar: { type: boolean }
+        bestand:    { type: string, enum: [ausreichend, knapp, nicht_verfuegbar] }
+        lieferzeit: { type: string, example: "heute 18:00" }
+        preis_netto: { type: number, format: float, nullable: true }
+        stand:      { type: string, format: date-time }
+        quelle:     { type: string, enum: [live, cache, mock], description: Ehrliche Datenquellen-Kennung }
+
+    VerfuegbarkeitsAntwort:
+      type: object
+      properties:
+        artikel:    { $ref: '#/components/schemas/Artikel' }
+        haendler:
+          type: array
+          items: { $ref: '#/components/schemas/HaendlerVerfuegbarkeit' }
+        beste_option:
+          $ref: '#/components/schemas/HaendlerVerfuegbarkeit'
+        ts: { type: string, format: date-time }
+
+    Alternative:
+      allOf:
+        - $ref: '#/components/schemas/Artikel'
+        - type: object
+          properties:
+            aut_idem_konform: { type: boolean, description: Aut-idem-tauschbar lt. Erstattungskodex }
+            verfuegbar:       { type: boolean }
+
+    BestellAnfrage:
+      type: object
+      required: [pzn, menge, haendler, apotheke_id]
+      properties:
+        pzn:         { type: string }
+        menge:       { type: integer, minimum: 1 }
+        haendler:    { type: string, enum: [herba, alliance, sanova, phoenix, mpv] }
+        apotheke_id: { type: string }
+
+    BestellBestaetigung:
+      type: object
+      properties:
+        bestell_id:  { type: string }
+        status:      { type: string, enum: [angenommen, teilweise, abgelehnt] }
+        lieferzeit:  { type: string }
+        ts:          { type: string, format: date-time }
+
+    HaendlerStatus:
+      type: object
+      properties:
+        haendler:  { type: string }
+        erreichbar: { type: boolean }
+        adapter:   { type: string, enum: [live, mock, blocked] }
+        hinweis:   { type: string, example: "EDI-Vertrag ausstehend" }
