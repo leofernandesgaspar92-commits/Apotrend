@@ -3443,6 +3443,82 @@
 .sixr-bar { flex:1; height:8px; background:var(--bg-secondary); border-radius:4px; overflow:hidden; }
 .sixr-fill { height:100%; border-radius:4px; }
 .sixr-val { font-family:var(--font-mono); font-size:11px; min-width:34px; text-align:right; }
+
+    /* ── Dashboard 2-Column Layout ── */
+    .dash-two-col { display: grid; grid-template-columns: 1fr 320px; gap: 16px; align-items: start; }
+    @media (max-width: 900px) { .dash-two-col { grid-template-columns: 1fr; } .dash-col-right { display: none; } }
+
+    /* ── Community Sidebar (Dashboard) ── */
+    .community-sidebar { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md, 12px); padding: 14px; box-shadow: var(--shadow-sm); }
+    .cs-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .cs-title { font-weight:700; font-size:15px; color:var(--text-primary); }
+    .cs-new-btn, .cs-more-btn { font-size:12px; padding:4px 10px; border:1px solid var(--accent-green,var(--green)); color:var(--accent-green,var(--green)); background:transparent; border-radius:20px; cursor:pointer; font-weight:600; transition: all 0.2s; }
+    .cs-new-btn:hover, .cs-more-btn:hover { background:var(--accent-green,var(--green)); color:#fff; }
+    .cs-more-btn { width:100%; margin-top:10px; text-align:center; }
+    .cs-sidebar-post { padding: 10px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+    .cs-sidebar-post:last-child { border-bottom: none; }
+    .cs-sidebar-post:hover .csp-title { color: var(--accent-green,var(--green)); }
+    .csp-title { font-size:14px; font-weight:600; color:var(--text-primary); line-height:1.4; margin-bottom:4px; }
+    .csp-meta { font-size:12px; color:var(--text-muted); }
+    .csp-votes { display:inline-flex; align-items:center; gap:3px; font-size:12px; color:var(--accent-green,var(--green)); font-weight:700; }
+
+    /* ── Community Tab ── */
+    .community-layout { display: grid; grid-template-columns: 1fr 280px; gap: 20px; padding: 16px 0; align-items: start; }
+    @media (max-width: 860px) { .community-layout { grid-template-columns: 1fr; } .community-sidebar-col { display: none; } }
+    .community-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+    .community-title { font-size:22px; font-weight:800; color:var(--text-primary); }
+    .community-subtitle { font-size:14px; color:var(--text-secondary); margin-top:2px; }
+    .btn-new-post { background: var(--accent-green,var(--green)); color: #fff; border: none; border-radius: 20px; padding: 8px 18px; font-size:14px; font-weight:700; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
+    .btn-new-post:hover { background: var(--accent-green-hover,var(--green-dim)); }
+    .community-filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; align-items:center; }
+    .cf-btn { padding: 6px 14px; border-radius:20px; font-size:13px; font-weight:600; border: 1px solid var(--border); background: var(--bg-card); color:var(--text-secondary); cursor:pointer; transition:all 0.15s; }
+    .cf-btn.active, .cf-btn:hover { background:var(--accent-green,var(--green)); color:#fff; border-color:var(--accent-green,var(--green)); }
+    .cf-search { flex:1; min-width:160px; padding:6px 12px; border-radius:20px; border:1px solid var(--border); background:var(--bg-secondary); color:var(--text-primary); font-size:13px; }
+    .cs-sort { padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; border:1px solid var(--border); background:var(--bg-card); color:var(--text-secondary); cursor:pointer; }
+    .cs-sort.active { background:var(--accent-green-light,var(--green-dark)); color:var(--accent-green,var(--green)); border-color:var(--accent-green,var(--green)); }
+    .post-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md,12px); padding: 14px 16px; margin-bottom: 12px; box-shadow: var(--shadow-sm); transition: box-shadow 0.2s, border-color 0.2s; }
+    .post-card:hover { box-shadow: var(--shadow-md); border-color: var(--accent-green,var(--green)); }
+    .post-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+    .post-cat-badge { font-size:11px; font-weight:700; padding:3px 8px; border-radius:10px; text-transform:uppercase; }
+    .cat-frage   { background:#EDE7F6; color:#5E35B1; }
+    .cat-tipp    { background:#E3F2FD; color:#1565C0; }
+    .cat-engpass { background:#FBE9E7; color:#BF360C; }
+    .cat-news    { background:#E8F5E9; color:#2E7D32; }
+    .post-time { font-size:12px; color:var(--text-muted); }
+    .post-author { font-size:12px; color:var(--text-secondary); font-weight:600; }
+    .post-title { font-size:17px; font-weight:700; color:var(--text-primary); margin-bottom:6px; cursor:pointer; line-height:1.4; }
+    .post-title:hover { color:var(--accent-green,var(--green)); }
+    .post-body { font-size:14px; color:var(--text-secondary); line-height:1.6; margin-bottom:10px; }
+    .post-tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+    .post-tag { font-size:11px; padding:2px 8px; border-radius:10px; background:var(--bg-secondary); color:var(--text-muted); border:1px solid var(--border); cursor:pointer; }
+    .post-tag:hover { background:var(--accent-green-light,var(--green-dark)); color:var(--accent-green,var(--green)); }
+    .post-actions { display:flex; align-items:center; gap:14px; }
+    .vote-btn { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:20px; border:1px solid var(--border); background:var(--bg-secondary); color:var(--text-secondary); font-size:13px; font-weight:700; cursor:pointer; transition:all 0.15s; }
+    .vote-btn:hover { border-color:var(--accent-green,var(--green)); color:var(--accent-green,var(--green)); }
+    .vote-btn.voted-up   { background:var(--accent-green-light,var(--green-dark)); color:var(--accent-green,var(--green)); border-color:var(--accent-green,var(--green)); }
+    .vote-btn.voted-down { background:var(--red-dark); color:var(--red); border-color:var(--red); }
+    .post-comment-btn { font-size:13px; color:var(--text-muted); background:none; border:none; cursor:pointer; padding:4px 6px; transition:color 0.15s; }
+    .post-comment-btn:hover { color:var(--accent-green,var(--green)); }
+    .comment-section { margin-top:14px; border-top:1px solid var(--border); padding-top:12px; }
+    .comment-item { display:flex; gap:10px; margin-bottom:12px; }
+    .comment-avatar { width:32px; height:32px; border-radius:50%; background:var(--accent-green-light,var(--green-dark)); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+    .comment-body { flex:1; }
+    .comment-author { font-size:13px; font-weight:700; color:var(--text-primary); }
+    .comment-text { font-size:13px; color:var(--text-secondary); line-height:1.5; margin:2px 0 4px; }
+    .comment-time { font-size:11px; color:var(--text-muted); }
+    .comment-input-row { display:flex; gap:8px; margin-top:10px; }
+    .comment-input { flex:1; padding:8px 12px; border-radius:20px; border:1px solid var(--border); background:var(--bg-secondary); color:var(--text-primary); font-size:13px; }
+    .comment-submit { padding:8px 16px; border-radius:20px; background:var(--accent-green,var(--green)); color:#fff; border:none; font-size:13px; font-weight:700; cursor:pointer; }
+    .comment-submit:hover { background:var(--accent-green-hover,var(--green-dim)); }
+    .cs-info-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md,12px); padding:14px; box-shadow:var(--shadow-sm); }
+    .cs-info-title { font-size:15px; font-weight:700; color:var(--text-primary); margin-bottom:8px; }
+    .cs-stats-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:10px; }
+    .cs-stat { text-align:center; }
+    .cs-stat-num { font-size:20px; font-weight:800; color:var(--accent-green,var(--green)); }
+    .cs-stat-label { font-size:11px; color:var(--text-muted); }
+    .cs-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+    .cs-tag { font-size:12px; padding:3px 10px; border-radius:12px; background:var(--accent-green-light,var(--green-dark)); color:var(--accent-green,var(--green)); border:1px solid var(--accent-green,var(--green)); cursor:pointer; font-weight:600; }
+    .cs-tag:hover { background:var(--accent-green,var(--green)); color:#fff; }
   </style>
 </head>
 <body>
@@ -3589,6 +3665,7 @@
   <button class="nav-btn watchlist-nav" id="nav-watchlist" onclick="switchTab('watchlist', this)" data-i18n="nav.watchlist">★ Watchlist</button>
   <button class="nav-btn prognose-nav" id="nav-prognose" onclick="switchTab('prognose', this)" data-i18n="nav.prognose">🤖 Prognosen</button>
   <button class="nav-btn chat-nav" id="nav-chat" onclick="switchTab('chat', this)" data-i18n="nav.chat">💬 Chat<span class="chat-nav-badge" id="chat-nav-badge"></span></button>
+  <button class="nav-btn" id="nav-community" onclick="switchTab('community', this)">🏘️ Community</button>
   <button class="nav-btn lieferant-nav" id="nav-lieferant" onclick="switchTab('lieferant', this)" data-i18n="nav.lieferant">🚚 Lieferanten</button>
   <button class="nav-btn admin-nav" id="nav-admin" onclick="switchTab('admin', this)" data-i18n="nav.admin">⚙ Admin</button>
   <button class="nav-btn api-nav" id="nav-api" onclick="switchTab('api', this)" data-i18n="nav.api">⚡ API</button>
@@ -3670,6 +3747,9 @@
     </div>
 
     <!-- Widget grid -->
+    <div class="dash-two-col">
+    <div class="dash-col-left">
+
     <div class="dash-grid">
 
       <!-- Heatmap -->
@@ -3728,6 +3808,19 @@
     </div>
 
     <!-- Export widget (nur eingeloggt) -->
+    </div><!-- end dash-col-left -->
+    <div class="dash-col-right">
+      <div class="community-sidebar">
+        <div class="cs-header">
+          <span class="cs-title">🏘️ ApoTrend Community</span>
+          <button class="cs-new-btn" onclick="switchTab('community', document.getElementById('nav-community'))">Alle Posts</button>
+        </div>
+        <div id="community-sidebar-feed"></div>
+        <button class="cs-more-btn" onclick="switchTab('community', document.getElementById('nav-community'))">Mehr anzeigen →</button>
+      </div>
+    </div>
+    </div><!-- end dash-two-col -->
+
     <div class="card export-card" id="export-card" style="margin-top:14px;display:none;">
       <div class="card-title">
         Daten exportieren
@@ -5233,6 +5326,106 @@
 </div>
 
 <!-- UPGRADE PROMPT TOAST -->
+<!-- COMMUNITY TAB -->
+<div class="tab-panel" id="tab-community">
+  <div class="community-layout">
+    <div class="community-feed-col">
+      <div class="community-header">
+        <div>
+          <div class="community-title">🏘️ ApoTrend Community</div>
+          <div class="community-subtitle">Austausch für Apotheker · Fragen · Tipps · Erfahrungen</div>
+        </div>
+        <button class="btn-new-post" onclick="openNewPostModal()">✏️ Neuer Post</button>
+      </div>
+      <div class="community-filters">
+        <button class="cf-btn active" onclick="filterCommunity('all',this)">Alle</button>
+        <button class="cf-btn" onclick="filterCommunity('frage',this)">❓ Fragen</button>
+        <button class="cf-btn" onclick="filterCommunity('tipp',this)">💡 Tipps</button>
+        <button class="cf-btn" onclick="filterCommunity('engpass',this)">⚠️ Engpass</button>
+        <button class="cf-btn" onclick="filterCommunity('news',this)">📰 News</button>
+        <input class="cf-search" id="community-search" type="text" placeholder="Posts durchsuchen …" oninput="renderCommunityFeed()">
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+        <span style="font-size:13px;color:var(--text-muted);">Sortieren:</span>
+        <button class="cs-sort active" id="sort-top" onclick="setCommunitySort('top',this)">🔥 Top</button>
+        <button class="cs-sort" id="sort-new" onclick="setCommunitySort('new',this)">🆕 Neu</button>
+      </div>
+      <div id="community-feed-list"></div>
+    </div>
+    <div class="community-sidebar-col">
+      <div class="cs-info-card">
+        <div class="cs-info-title">Über diese Community</div>
+        <p style="font-size:14px;color:var(--text-secondary);line-height:1.6;">Ein sicherer Ort für Apotheker, PTA und Pharma-Fachleute. Teile Erfahrungen zu Engpässen, Preisen und Alternativen.</p>
+        <div class="cs-stats-row">
+          <div class="cs-stat"><div class="cs-stat-num" id="comm-stat-posts">0</div><div class="cs-stat-label">Posts</div></div>
+          <div class="cs-stat"><div class="cs-stat-num" id="comm-stat-members">847</div><div class="cs-stat-label">Mitglieder</div></div>
+          <div class="cs-stat"><div class="cs-stat-num" id="comm-stat-online">23</div><div class="cs-stat-label">Online</div></div>
+        </div>
+        <button class="btn-new-post" style="width:100%;margin-top:10px;" onclick="openNewPostModal()">✏️ Post erstellen</button>
+      </div>
+      <div class="cs-info-card" style="margin-top:12px;">
+        <div class="cs-info-title">📌 Regeln</div>
+        <ol style="font-size:13px;color:var(--text-secondary);line-height:1.8;padding-left:16px;">
+          <li>Respektvoller Umgang</li>
+          <li>Nur Pharma-relevante Themen</li>
+          <li>Keine Patientendaten teilen</li>
+          <li>Quellen angeben bei Fakten</li>
+        </ol>
+      </div>
+      <div class="cs-info-card" style="margin-top:12px;">
+        <div class="cs-info-title">🏷️ Top Tags</div>
+        <div class="cs-tags">
+          <span class="cs-tag" onclick="tagFilterCommunity('Engpass')">Engpass</span>
+          <span class="cs-tag" onclick="tagFilterCommunity('Generika')">Generika</span>
+          <span class="cs-tag" onclick="tagFilterCommunity('Lieferung')">Lieferung</span>
+          <span class="cs-tag" onclick="tagFilterCommunity('Preis')">Preis</span>
+          <span class="cs-tag" onclick="tagFilterCommunity('Frage')">Frage</span>
+          <span class="cs-tag" onclick="tagFilterCommunity('Tipp')">Tipp</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW POST MODAL -->
+<div class="modal-overlay" id="new-post-modal" onclick="if(event.target===this)closeNewPostModal()">
+  <div class="modal-box" style="max-width:560px;">
+    <div class="modal-title">✏️ Neuen Post erstellen</div>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:4px;">Kategorie</label>
+      <select id="new-post-cat" class="search-input" style="width:100%;">
+        <option value="frage">❓ Frage</option>
+        <option value="tipp">💡 Tipp</option>
+        <option value="engpass">⚠️ Engpass-Meldung</option>
+        <option value="news">📰 News</option>
+      </select>
+    </div>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:4px;">Titel</label>
+      <input id="new-post-title" class="search-input" style="width:100%;" type="text" placeholder="Worum geht es?" maxlength="120">
+    </div>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:4px;">Inhalt</label>
+      <textarea id="new-post-body" class="search-input" style="width:100%;height:100px;resize:vertical;" placeholder="Details, Erfahrungen, Fragen …" maxlength="1000"></textarea>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:4px;">Tags (kommagetrennt)</label>
+      <input id="new-post-tags" class="search-input" style="width:100%;" type="text" placeholder="z.B. Engpass, Generika, Frage">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn-cancel" onclick="closeNewPostModal()">Abbrechen</button>
+      <button class="btn-login" onclick="submitNewPost()">Post veröffentlichen</button>
+    </div>
+  </div>
+</div>
+
+<!-- POST DETAIL MODAL -->
+<div class="modal-overlay" id="post-detail-modal" onclick="if(event.target===this)closePostDetailModal()">
+  <div class="modal-box" style="max-width:680px;max-height:85vh;overflow-y:auto;">
+    <div id="post-detail-content"></div>
+  </div>
+</div>
+
 <div class="upgrade-prompt-toast" id="upgrade-prompt-toast"></div>
 
 <!-- Toast notification -->
@@ -8114,7 +8307,7 @@ Einstellungen ändern: Profil → Benachrichtigungen`;
   initTheme();
 
   // ── PWA: Web App Manifest (Blob URL) ──────────────────────────
-  (function injectManifest() {
+  (function injectManifest() { try {
     const manifest = {
       name: 'ApoTrend – Marktintelligenz',
       short_name: 'ApoTrend',
@@ -8135,10 +8328,11 @@ Einstellungen ändern: Profil → Benachrichtigungen`;
     link.rel = 'manifest';
     link.href = url;
     document.head.appendChild(link);
+  } catch(e) { console.warn("injectManifest skipped:", e && e.message); }
   })();
 
   // ── PWA: Service Worker (Blob URL) ────────────────────────────
-  (function registerSW() {
+  (function registerSW() { try {
     if (!('serviceWorker' in navigator)) return;
     const swCode = `
 const CACHE = 'apotrend-v1';
@@ -8173,6 +8367,7 @@ self.addEventListener('fetch', e => {
     const url = URL.createObjectURL(blob);
     navigator.serviceWorker.register(url, { scope: './' })
       .catch(() => {});
+  } catch(e) { console.warn("registerSW skipped:", e && e.message); }
   })();
 
   // ── PWA: Install Banner ────────────────────────────────────────
@@ -10623,6 +10818,29 @@ self.addEventListener('fetch', e => {
           ENGPASS_DB.push({ ...live, region: 'AT', land: 'Österreich' });
         }
       });
+      // Quellen-Badge ehrlich setzen (Compliance): live vs. Referenzdaten
+      var hint = document.getElementById('engpass-fallback-hint');
+      if (hint) {
+        if (data.live) {
+          var t = data.ts ? new Date(data.ts).toLocaleString('de-AT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+          hint.textContent = '🟢 BASG live' + (t ? ' · Stand ' + t : '');
+          hint.title = (data.disclaimer || '') + (data.stats ? ' | Gesamt: ' + data.stats.gesamt + ', kritisch: ' + data.stats.kritisch : '');
+          hint.style.color = 'var(--accent-green, var(--green))';
+        } else {
+          hint.textContent = '📌 Referenzdaten (BASG nicht erreichbar)';
+          hint.style.color = '';
+        }
+      }
+      // Dashboard-KPI "Aktive Engpässe" auf echte Zahlen umstellen
+      if (data.stats) {
+        var kpiEls = document.querySelectorAll('.dash-kpi .dk-value');
+        if (kpiEls.length) {
+          kpiEls[0].textContent = data.stats.kritisch + data.stats.eingeschraenkt;
+          var sub = kpiEls[0].parentElement.querySelector('.dk-sub');
+          if (sub) sub.textContent = data.stats.kritisch + ' kritisch · ' + data.stats.eingeschraenkt + ' eingeschränkt (BASG)';
+        }
+      }
+      if (typeof renderEngpassTable === 'function') renderEngpassTable();
       _log('Live engpass loaded (' + data.source + '): ' + data.count);
     } catch(e) { _log('fetchLiveEngpass error: ' + e.message); }
   }
@@ -10833,7 +11051,211 @@ self.addEventListener('fetch', e => {
     sessionCheckInterval = setInterval(checkSession, 5000);
   } catch (e) { console.error('bootstrap error', e); }
 
+
 </script>
+<script>
+// Community-Modul: eigener Script-Block, unabhängig vom Hauptskript
+try {
+  // ═══════════════ COMMUNITY MODULE ═══════════════
+  var LS_COMMUNITY = 'apotrend_community_posts';
+  var _communityFilter = 'all';
+  var _communitySort   = 'top';
+  var _communityTag    = '';
+
+  var COMMUNITY_SEED = [
+    { id:'p1', cat:'engpass', title:'Amoxicillin 1000mg wieder nicht lieferbar – Alternativen?',
+      body:'Seit 3 Wochen bekomme ich Amoxicillin 1000mg von keinem Großhändler mehr. Ospamox läuft auch knapp. Hat jemand gute Alternativen für ambulante Patienten?',
+      author:'Mag. pharm. Huber', time:'vor 2 Std.', votes:24, voted:null, comments:[
+        { author:'PTA Müller', time:'vor 1 Std.', text:'Wir weichen auf Augmentin aus, aber das ist ebenfalls knapp. Clarithromycin als Alternative bei leichten Infekten?', avatar:'💊' },
+        { author:'Dr. Berger', time:'vor 45 Min.', text:'BASG hat neue Engpassmeldung rausgeschickt – bis Ende Juni. Amoxi-Genericon von Genericon ist noch verfügbar!', avatar:'🏥' }
+      ], tags:['Engpass','Amoxicillin','Alternative'] },
+    { id:'p2', cat:'tipp', title:'Tipp: BASG-Engpassliste jetzt täglich prüfen lohnt sich',
+      body:'Ich checke seit letztem Monat täglich die BASG-Lieferengpass-Seite. Es gibt öfter kurzfristige Aktualisierungen, die man sonst verpasst. Empfehle das jedem.',
+      author:'Mag. Stadler', time:'vor 5 Std.', votes:18, voted:null, comments:[
+        { author:'Apotheke Zentrum', time:'vor 4 Std.', text:'Guter Tipp! Nutze dafür ApoTrend – der Engpass-Tab hier ist auch sehr hilfreich.', avatar:'🌿' }
+      ], tags:['Tipp','BASG','Workflow'] },
+    { id:'p3', cat:'frage', title:'Wie verwaltet ihr Retaxationen bei Rabattverträgen?',
+      body:'Wir haben letzte Woche eine Retaxation bekommen weil das falsche Generikum abgegeben wurde, obwohl das korrekte nicht vorrätig war. Was macht ihr in dem Fall?',
+      author:'PTA Koch', time:'vor 1 Tag', votes:31, voted:null, comments:[
+        { author:'Mag. Wolf', time:'vor 22 Std.', text:'Immer sofort bei der Kasse melden und auf das NL-Kennzeichen (Nichtverfügbarkeit) auf dem Rezept bestehen!', avatar:'⚕️' },
+        { author:'Apothekenverband', time:'vor 20 Std.', text:'Es gibt einen Retax-Schutz bei dokumentiertem Engpass. Am besten beim Österr. Apothekerverband nachfragen.', avatar:'🏛️' }
+      ], tags:['Retaxation','Generika','Frage'] },
+    { id:'p4', cat:'news', title:'FDA warnt vor kontaminierter Erythromycin-Charge – auch EU betroffen?',
+      body:'FDA hat heute eine Warnung zu Erythromycin 250mg herausgegeben (N-Nitroso-Verunreinigung). Ist bekannt ob das auch österreichische Chargen betrifft?',
+      author:'Dr. Reiter', time:'vor 8 Std.', votes:15, voted:null, comments:[
+        { author:'AGES Österreich', time:'vor 6 Std.', text:'AGES und BASG prüfen aktuell. Offizielle Mitteilung wird erwartet. Präventiv: betroffene Chargen aus dem Verkehr nehmen!', avatar:'🔬' }
+      ], tags:['Rückruf','FDA','Erythromycin'] },
+  ];
+
+  function loadCommunityPosts() {
+    try {
+      var saved = localStorage.getItem(LS_COMMUNITY);
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return COMMUNITY_SEED.map(function(p){ return Object.assign({}, p); });
+  }
+  function saveCommunityPosts(posts) {
+    try { localStorage.setItem(LS_COMMUNITY, JSON.stringify(posts)); } catch(e) {}
+  }
+
+  function renderCommunityFeed() {
+    var posts = loadCommunityPosts();
+    var se = document.getElementById('community-search');
+    var q = se ? (se.value || '').toLowerCase().trim() : '';
+    var filtered = posts.filter(function(p) {
+      if (_communityFilter !== 'all' && p.cat !== _communityFilter) return false;
+      if (_communityTag && !(p.tags || []).some(function(t){ return t.toLowerCase().indexOf(_communityTag.toLowerCase()) >= 0; })) return false;
+      if (q && (p.title + ' ' + p.body).toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    });
+    if (_communitySort === 'top') filtered.sort(function(a,b){ return (b.votes||0)-(a.votes||0); });
+    else filtered.sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+
+    var el = document.getElementById('community-feed-list');
+    if (!el) return;
+    var stat = document.getElementById('comm-stat-posts');
+    if (stat) stat.textContent = posts.length;
+
+    var CAT = { frage:'❓ Frage', tipp:'💡 Tipp', engpass:'⚠️ Engpass', news:'📰 News' };
+    el.innerHTML = filtered.map(function(p) {
+      var tags = (p.tags||[]).map(function(t){ return '<span class="post-tag" onclick="tagFilterCommunity(\''+escapeHtml(t)+'\')">#'+escapeHtml(t)+'</span>'; }).join('');
+      return '<div class="post-card">' +
+        '<div class="post-header"><span class="post-cat-badge cat-'+p.cat+'">'+(CAT[p.cat]||p.cat)+'</span><span class="post-time">'+escapeHtml(p.time||'')+'</span></div>' +
+        '<div class="post-title" onclick="openPostDetail(\''+p.id+'\')">' + escapeHtml(p.title) + '</div>' +
+        '<div class="post-body">' + escapeHtml((p.body||'').slice(0,200)) + ((p.body||'').length>200?'…':'') + '</div>' +
+        '<div class="post-tags">' + tags + '</div>' +
+        '<div class="post-actions">' +
+          '<button class="vote-btn '+(p.voted==='up'?'voted-up':'')+'" onclick="votePost(\''+p.id+'\',\'up\')">▲ <span>'+p.votes+'</span></button>' +
+          '<button class="vote-btn '+(p.voted==='down'?'voted-down':'')+'" onclick="votePost(\''+p.id+'\',\'down\')">▼</button>' +
+          '<button class="post-comment-btn" onclick="openPostDetail(\''+p.id+'\')">💬 '+((p.comments||[]).length)+' Kommentare</button>' +
+          '<span class="post-author" style="margin-left:auto;">'+escapeHtml(p.author||'')+'</span>' +
+        '</div></div>';
+    }).join('') || '<div class="comment-empty">Keine Posts gefunden.</div>';
+  }
+
+  function renderCommunitySidebar() {
+    var el = document.getElementById('community-sidebar-feed');
+    if (!el) return;
+    var posts = loadCommunityPosts();
+    posts.sort(function(a,b){ return (b.votes||0)-(a.votes||0); });
+    el.innerHTML = posts.slice(0,4).map(function(p){
+      return '<div class="cs-sidebar-post" onclick="switchTab(\'community\',document.getElementById(\'nav-community\'));setTimeout(function(){openPostDetail(\''+p.id+'\')},100)">' +
+        '<div class="csp-title">'+escapeHtml(p.title.slice(0,60))+(p.title.length>60?'…':'')+'</div>' +
+        '<div class="csp-meta"><span class="csp-votes">▲ '+p.votes+'</span> · '+escapeHtml(p.time||'')+'</div></div>';
+    }).join('');
+  }
+
+  function votePost(id, dir) {
+    var posts = loadCommunityPosts();
+    var p = posts.find(function(x){ return x.id===id; });
+    if (!p) return;
+    if (p.voted === dir) { p.voted = null; p.votes += dir==='up'?-1:1; }
+    else {
+      if (p.voted) p.votes += p.voted==='up'?-1:1;
+      p.voted = dir;
+      p.votes += dir==='up'?1:-1;
+    }
+    saveCommunityPosts(posts);
+    renderCommunityFeed();
+    renderCommunitySidebar();
+  }
+
+  function openPostDetail(id) {
+    var posts = loadCommunityPosts();
+    var p = posts.find(function(x){ return x.id===id; });
+    if (!p) return;
+    var CAT = { frage:'❓ Frage', tipp:'💡 Tipp', engpass:'⚠️ Engpass', news:'📰 News' };
+    var commentsHtml = (p.comments||[]).map(function(cm){
+      return '<div class="comment-item"><div class="comment-avatar">'+(cm.avatar||'👤')+'</div><div class="comment-body">' +
+        '<div class="comment-author">'+escapeHtml(cm.author||'')+'<span class="comment-time" style="margin-left:8px;">'+escapeHtml(cm.time||'')+'</span></div>' +
+        '<div class="comment-text">'+escapeHtml(cm.text||'')+'</div></div></div>';
+    }).join('');
+    document.getElementById('post-detail-content').innerHTML =
+      '<button onclick="closePostDetailModal()" style="float:right;background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">×</button>' +
+      '<span class="post-cat-badge cat-'+p.cat+'">'+(CAT[p.cat]||p.cat)+'</span>' +
+      '<h2 style="font-size:20px;margin:12px 0 8px;line-height:1.4;">'+escapeHtml(p.title)+'</h2>' +
+      '<div style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">'+escapeHtml(p.author||'')+' · '+escapeHtml(p.time||'')+'</div>' +
+      '<div style="font-size:15px;color:var(--text-secondary);line-height:1.7;margin-bottom:16px;">'+escapeHtml(p.body||'')+'</div>' +
+      '<div class="post-actions" style="margin-bottom:16px;">' +
+        '<button class="vote-btn '+(p.voted==='up'?'voted-up':'')+'" onclick="votePost(\''+id+'\',\'up\');openPostDetail(\''+id+'\')">▲ '+p.votes+'</button>' +
+        '<button class="vote-btn '+(p.voted==='down'?'voted-down':'')+'" onclick="votePost(\''+id+'\',\'down\');openPostDetail(\''+id+'\')">▼</button>' +
+      '</div>' +
+      '<div class="comment-section">' +
+        '<div style="font-size:15px;font-weight:700;margin-bottom:12px;">💬 Kommentare ('+(p.comments||[]).length+')</div>' + commentsHtml +
+        '<div class="comment-input-row">' +
+          '<input class="comment-input" id="comment-input-'+id+'" type="text" placeholder="Kommentar schreiben …" maxlength="500">' +
+          '<button class="comment-submit" onclick="submitComment(\''+id+'\')">Senden</button>' +
+        '</div></div>';
+    document.getElementById('post-detail-modal').style.display = 'flex';
+  }
+  function closePostDetailModal() { document.getElementById('post-detail-modal').style.display = 'none'; }
+
+  function submitComment(postId) {
+    var inp = document.getElementById('comment-input-'+postId);
+    if (!inp || !inp.value.trim()) return;
+    var posts = loadCommunityPosts();
+    var p = posts.find(function(x){ return x.id===postId; });
+    if (!p) return;
+    var name = (typeof isLoggedIn==='function' && isLoggedIn()) ? (localStorage.getItem('apotrend_current_user') || 'Anonym') : 'Gast';
+    p.comments = p.comments || [];
+    p.comments.push({ author:name, time:'gerade eben', text:inp.value.trim(), avatar:'👤' });
+    saveCommunityPosts(posts);
+    renderCommunityFeed();
+    renderCommunitySidebar();
+    openPostDetail(postId);
+  }
+
+  function openNewPostModal()  { document.getElementById('new-post-modal').style.display = 'flex'; }
+  function closeNewPostModal() { document.getElementById('new-post-modal').style.display = 'none'; }
+
+  function submitNewPost() {
+    var title = (document.getElementById('new-post-title').value||'').trim();
+    var body  = (document.getElementById('new-post-body').value||'').trim();
+    var cat   = document.getElementById('new-post-cat').value || 'frage';
+    var tags  = (document.getElementById('new-post-tags').value||'').split(',').map(function(t){ return t.trim(); }).filter(Boolean);
+    if (!title) { if (typeof showToast==='function') showToast('Bitte einen Titel eingeben.'); return; }
+    var name = (typeof isLoggedIn==='function' && isLoggedIn()) ? (localStorage.getItem('apotrend_current_user') || 'Anonym') : 'Gast';
+    var posts = loadCommunityPosts();
+    posts.unshift({ id:'p'+Date.now(), cat:cat, title:title, body:body, author:name, time:'gerade eben', votes:1, voted:'up', comments:[], tags:tags, ts:Date.now() });
+    saveCommunityPosts(posts);
+    closeNewPostModal();
+    document.getElementById('new-post-title').value = '';
+    document.getElementById('new-post-body').value  = '';
+    document.getElementById('new-post-tags').value  = '';
+    renderCommunityFeed();
+    renderCommunitySidebar();
+    if (typeof showToast==='function') showToast('Post veröffentlicht! 🎉');
+  }
+
+  function filterCommunity(cat, btn) {
+    _communityFilter = cat;
+    _communityTag = '';
+    document.querySelectorAll('.cf-btn').forEach(function(b){ b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    renderCommunityFeed();
+  }
+  function setCommunitySort(s, btn) {
+    _communitySort = s;
+    document.querySelectorAll('.cs-sort').forEach(function(b){ b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    renderCommunityFeed();
+  }
+  function tagFilterCommunity(tag) {
+    _communityTag = tag;
+    switchTab('community', document.getElementById('nav-community'));
+    setTimeout(function(){ renderCommunityFeed(); }, 50);
+  }
+
+  if (typeof tabMap !== 'undefined') tabMap['community'] = 'tab-community';
+  var _origSwitchTabC = switchTab;
+  switchTab = function(name, btn) {
+    _origSwitchTabC(name, btn);
+    if (name === 'community') setTimeout(function(){ renderCommunityFeed(); renderCommunitySidebar(); }, 30);
+  };
+  setTimeout(function(){ renderCommunitySidebar(); }, 200);
+} catch (e) { console.error("community module error", e); }
+</script>
+
 
 <!-- Data-Error-Banner -->
 <div class="data-error-banner" id="data-error-banner"></div>
