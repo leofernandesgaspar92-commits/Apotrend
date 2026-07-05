@@ -460,6 +460,38 @@
 
     .news-text strong { color: var(--text-primary); }
 
+    /* ══════════════════════════════════════════════════════════════
+       VERDICHTUNG weiterer Tabs — Lesbarkeit vor Dichte, weniger Scrollen.
+       Zielgruppe nicht-technisch: kompakt, aber klar lesbar; Overflow im
+       News-Feed hinter einen sichtbaren Button ("Alle Meldungen anzeigen").
+    ══════════════════════════════════════════════════════════════ */
+    /* Engpass-Monitor: kompaktere Tabellenzeilen, lesbare Kopfzeile */
+    #tab-engpass .eng-table th { font-size: 12px; letter-spacing: .4px; padding: 5px 8px; }
+    #tab-engpass .eng-table td { padding: 6px 8px; }
+
+    /* Preis-Tracker: kompaktere Tabellenzeilen */
+    #tab-preise table td { padding: 7px 8px; }
+
+    /* News-Feed: kompaktere Karten */
+    #tab-news .news-item { padding: 8px 0; }
+    #tab-news .news-time { font-size: 12px; }
+    #tab-news .news-text { font-size: 14px; line-height: 1.45; }
+
+    /* News-Feed: "Mehr anzeigen"-Cap — blendet lange Listen hinter einen Button */
+    #tab-news #news-feed.news-collapsed {
+      max-height: 640px; overflow: hidden;
+      -webkit-mask-image: linear-gradient(to bottom, #000 80%, transparent);
+      mask-image: linear-gradient(to bottom, #000 80%, transparent);
+    }
+    .news-more-btn {
+      display: block; width: 100%; margin-top: 10px; padding: 10px 12px;
+      background: var(--bg-card-hover, #1c1c1c); color: var(--green);
+      border: 1px solid var(--green-dim, var(--border)); border-radius: 6px;
+      font-family: var(--font-mono); font-size: 13px; font-weight: 600;
+      letter-spacing: .3px; cursor: pointer; transition: background .15s;
+    }
+    .news-more-btn:hover { background: var(--green-dark, #003322); }
+
     /* ── Alert Bar ── */
     .alert-bar {
       background: rgba(255,58,58,0.1);
@@ -4091,7 +4123,8 @@
           </div>
 
           <!-- Article list -->
-          <div id="news-feed"><!-- filled by JS --></div>
+          <div id="news-feed" class="news-collapsed"><!-- filled by JS --></div>
+          <button id="news-more-btn" class="news-more-btn" onclick="toggleNewsFeed(this)">Alle Meldungen anzeigen ▾</button>
           <div id="news-empty" class="no-results" style="display:none;">
             <span>◎</span>Keine News in dieser Kategorie
           </div>
@@ -8476,6 +8509,14 @@ self.addEventListener('fetch', e => {
         if (localStorage.getItem(key) === '1') w.classList.add('collapsed');
       } catch (e) {}
     });
+  }
+
+  // News-Feed ein-/ausklappen: lange Meldungsliste hinter einen Button legen.
+  function toggleNewsFeed(btn) {
+    const feed = document.getElementById('news-feed');
+    if (!feed) return;
+    const collapsed = feed.classList.toggle('news-collapsed');
+    btn.textContent = collapsed ? 'Alle Meldungen anzeigen ▾' : 'Weniger anzeigen ▴';
   }
 
   // ── Offline Indicator ─────────────────────────────────────────
