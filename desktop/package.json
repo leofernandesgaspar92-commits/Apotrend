@@ -4,6 +4,7 @@
   "description": "ApoTrend Desktop — Electron-Hülle um denselben Web-Kern wie die PWA (frontend/index.html). Additiv, verändert die Mobile-Version nicht.",
   "private": true,
   "author": "ApoTrend <noreply@apotrend.at>",
+  "homepage": "https://leofernandesgaspar92-commits.github.io/Apotrend/",
   "license": "UNLICENSED",
   "main": "main.js",
   "scripts": {
