@@ -983,6 +983,11 @@
 
     #tab-dashboard .dash-two-col { gap: 10px; grid-template-columns: 1fr 300px; }
     #tab-dashboard .dash-grid { gap: 10px; grid-template-columns: 1fr 1fr; }
+    /* WICHTIG: responsive Umbrueche wiederherstellen — die #id-Overrides oben
+       wuerden sonst die App-Breakpoints aushebeln und auf dem Handy 2 Spalten
+       + Sidebar in ~390px quetschen (Panels ueberlappen). */
+    @media (max-width: 900px) { #tab-dashboard .dash-two-col { grid-template-columns: 1fr; } }
+    @media (max-width: 760px) { #tab-dashboard .dash-grid { grid-template-columns: 1fr; } }
     /* min-width:0 verhindert, dass breite Inhalte die Grid-/Flex-Spalten aufblaehen */
     #tab-dashboard .dash-two-col,
     #tab-dashboard .dash-col-left,
@@ -2912,17 +2917,34 @@
       .bottom-nav { display: flex; }
       .fab { display: flex; }
 
-      /* Hide verbose header items */
+      /* Kein Seiten-Horizontalscroll auf dem Handy (Sicherheitsnetz).
+         Breite Tabellen scrollen weiter in ihrem eigenen .table-wrap. */
+      html, body { overflow-x: hidden; }
+
+      /* Header aufs Wesentliche reduzieren, damit er in Handybreite passt.
+         Weg: LIVE-Indikator, Version/Standort, Refresh + "Aktuell"-Text,
+         Sprachwahl, Uhr, WS-Status. Bleibt: Menue, Logo, Theme, Glocke, Login. */
       .header-right .ws-status,
       .header-right .clock,
-      .header-right .lang-switch { display: none; }
+      .header-right .lang-switch,
+      .header-right .live-indicator,
+      .header-right .refresh-indicator,
+      .header-right #btn-global-refresh,
+      #header-apotheke { display: none; }
+      .header-right { gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+      .logo span:last-child { display: none; } /* "OESTERREICH MARKTDATEN" ausblenden */
 
       /* KPI 1-column */
       .kpi-row { grid-template-columns: 1fr 1fr !important; }
 
-      /* Tables scrollable */
+      /* Tables scrollable: NUR Tabellen in einem .table-wrap bekommen die
+         Mindestbreite (scrollen dann horizontal im Wrapper). Sonst blaeht eine
+         breite Tabelle (z.B. dashboard .mini-price-table) das ganze Mobil-
+         Layout auf und erzeugt Seiten-Horizontalscroll. */
       .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-      table { min-width: 600px; }
+      .table-wrap table { min-width: 600px; }
+      /* Freistehende Tabellen ohne Wrapper reflowen und bleiben im Viewport */
+      .mini-price-table { min-width: 0; }
 
       /* Main padding reduced */
       .main { padding: 12px 10px; padding-bottom: 68px; }
@@ -3981,7 +4003,7 @@
       </div>
 
       <!-- Table -->
-      <div style="overflow-x:auto;">
+      <div class="table-wrap" style="overflow-x:auto;">
         <table class="eng-table" id="engpass-table">
           <thead>
             <tr>
