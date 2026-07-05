@@ -44,12 +44,12 @@ Die fertigen Installer/Pakete landen in `desktop/dist/`
   `extraResources` = Kopie von `../frontend`).
 
 ## Offene Punkte (spätere Schritte, jetzt nicht erzwungen)
-- **Icon**: `build/icon.png` ist ein generierter Platzhalter (grüner Kreis, 512×512).
-  Für ein echtes Release durch ein Marken-Icon ersetzen (512×512 PNG genügt;
+- **Icon**: `build/icon.png` (512×512) — grünes Feld mit weißem Apotheken-Kreuz.
+  Bei Bedarf durch ein finales Marken-Icon ersetzen (512×512 PNG genügt;
   electron-builder leitet `.ico`/`.icns` daraus ab).
-- **Code-Signing**: Windows (Authenticode) und macOS (Apple Developer ID +
-  Notarisierung) sind für vertrauenswürdige Installation nötig, aber optional zum
-  Testen. Ohne Signatur zeigen die Betriebssysteme Sicherheitswarnungen.
+- **Code-Signing**: Die CI ist bereits signatur-*bereit* (unsigniert, bis
+  Zertifikate hinterlegt sind). Anleitung, welche Zertifikate/Secrets nötig sind:
+  [`SIGNING.md`](SIGNING.md). Ohne Signatur zeigen die Betriebssysteme Warnungen.
 - **Auto-Update**: electron-builder unterstützt `electron-updater` (z. B. über
   GitHub Releases). Noch nicht eingerichtet.
 - **Offline**: Die App lädt einige Bibliotheken per CDN (Chart.js u. a.). Im
