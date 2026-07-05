@@ -41,8 +41,18 @@ jobs:
         working-directory: desktop
         run: npm install
 
-      - name: Build installer (unsigniert)
+      - name: Build installer
         working-directory: desktop
+        env:
+          # Code-Signing greift NUR, wenn die passenden Secrets gesetzt sind.
+          # Fehlen sie (Standard), sind die Secrets leer -> electron-builder baut
+          # unsigniert weiter (kein Fehler). Details: desktop/SIGNING.md
+          CSC_LINK: ${{ runner.os == 'Windows' && secrets.WIN_CSC_LINK || runner.os == 'macOS' && secrets.MAC_CSC_LINK || '' }}
+          CSC_KEY_PASSWORD: ${{ runner.os == 'Windows' && secrets.WIN_CSC_KEY_PASSWORD || runner.os == 'macOS' && secrets.MAC_CSC_KEY_PASSWORD || '' }}
+          # macOS-Notarisierung (nur aktiv, wenn zusaetzlich mac.notarize=true gesetzt ist)
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: npx electron-builder --publish never
 
       - name: Upload installers
