@@ -1,6 +1,8 @@
 # Baut die ApoTrend-Desktop-Installer (Windows/macOS/Linux) auf echten Runnern.
-# Loest das lokale 403-Problem (Electron-Binary-Download) und liefert die
-# fertigen Installer als Artefakte — ohne die Mobile-/PWA-Version zu beruehren.
+# - Bei Push auf desktop-build: nur bauen + als Artefakte hochladen (Verifikation).
+# - Manuell (workflow_dispatch, release=true): zusaetzlich ein DRAFT-Release mit
+#   allen Installern erstellen (finales "Publish" macht der Owner).
+# Beruehrt die Mobile-/PWA-Version nicht (frontend/index.html bleibt unveraendert).
 name: Desktop Build
 
 on:
@@ -11,6 +13,11 @@ on:
       - 'frontend/index.html'
       - '.github/workflows/desktop-build.yml'
   workflow_dispatch:
+    inputs:
+      release:
+        description: 'Draft-Release v1.0.0 mit Installern erstellen'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -48,3 +55,39 @@ jobs:
             desktop/dist/*.dmg
             desktop/dist/*.AppImage
             desktop/dist/*.deb
+
+  # Nur bei manuellem Start mit release=true: EIN Draft-Release mit allen
+  # Installern. Separater Job -> keine Race-Conditions zwischen den OS-Builds.
+  release:
+    name: Draft-Release
+    needs: build
+    if: ${{ inputs.release }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Alle Installer einsammeln
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Draft-Release erstellen/aktualisieren
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: ApoTrend Desktop v1.0.0
+          draft: true
+          body: |
+            Installierbare Desktop-Version von ApoTrend (gleicher Web-Kern wie die PWA).
+
+            **Downloads:**
+            - Windows: `.exe` (NSIS-Installer)
+            - macOS: `.dmg`
+            - Linux: `.AppImage` und `.deb`
+
+            Unsigniert — Betriebssysteme können beim ersten Start eine Warnung zeigen.
+          files: |
+            artifacts/**/*.exe
+            artifacts/**/*.dmg
+            artifacts/**/*.AppImage
+            artifacts/**/*.deb
