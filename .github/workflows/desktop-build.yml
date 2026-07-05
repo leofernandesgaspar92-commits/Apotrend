@@ -43,17 +43,31 @@ jobs:
 
       - name: Build installer
         working-directory: desktop
+        shell: bash
         env:
-          # Code-Signing greift NUR, wenn die passenden Secrets gesetzt sind.
-          # Fehlen sie (Standard), sind die Secrets leer -> electron-builder baut
-          # unsigniert weiter (kein Fehler). Details: desktop/SIGNING.md
-          CSC_LINK: ${{ runner.os == 'Windows' && secrets.WIN_CSC_LINK || runner.os == 'macOS' && secrets.MAC_CSC_LINK || '' }}
-          CSC_KEY_PASSWORD: ${{ runner.os == 'Windows' && secrets.WIN_CSC_KEY_PASSWORD || runner.os == 'macOS' && secrets.MAC_CSC_KEY_PASSWORD || '' }}
-          # macOS-Notarisierung (nur aktiv, wenn zusaetzlich mac.notarize=true gesetzt ist)
+          # Rohwerte aus Secrets. CSC_LINK wird bewusst NUR exportiert, wenn ein
+          # Zertifikat wirklich hinterlegt ist — ein leeres CSC_LINK wuerde
+          # electron-builder als "Pfad angegeben" werten und den Build brechen.
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          MAC_CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          MAC_CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: npx electron-builder --publish never
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ] && [ -n "$WIN_CSC_LINK" ]; then
+            export CSC_LINK="$WIN_CSC_LINK"
+            export CSC_KEY_PASSWORD="$WIN_CSC_KEY_PASSWORD"
+            echo "Windows: signiere mit hinterlegtem Zertifikat."
+          elif [ "$RUNNER_OS" = "macOS" ] && [ -n "$MAC_CSC_LINK" ]; then
+            export CSC_LINK="$MAC_CSC_LINK"
+            export CSC_KEY_PASSWORD="$MAC_CSC_KEY_PASSWORD"
+            echo "macOS: signiere mit hinterlegtem Zertifikat."
+          else
+            echo "Kein Zertifikat-Secret gesetzt -> unsignierter Build."
+          fi
+          npx electron-builder --publish never
 
       - name: Upload installers
         uses: actions/upload-artifact@v4
