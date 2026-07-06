@@ -101,6 +101,20 @@ jobs:
         with:
           path: artifacts
 
+      # Verhindert Duplikate: vorhandene v1.0.0-Draft-Releases zuerst entfernen,
+      # bevor unten ein frisches erstellt wird (Drafts sind per Tag nicht
+      # auffindbar, sonst entstehen mehrere gleichnamige Entwuerfe).
+      - name: Alte v1.0.0-Drafts entfernen
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ids=$(gh api "repos/${{ github.repository }}/releases" --paginate \
+                --jq '.[] | select(.tag_name=="v1.0.0" and .draft==true) | .id')
+          for id in $ids; do
+            echo "Loesche altes Draft-Release $id"
+            gh api -X DELETE "repos/${{ github.repository }}/releases/$id"
+          done
+
       - name: Draft-Release erstellen/aktualisieren
         uses: softprops/action-gh-release@v2
         with:
