@@ -5,10 +5,13 @@ Neuer, **zustandsbehafteter** Backend-Pfeiler für die Hybrid-Plattform
 zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
-> **Status: Baustein 1 — Fundament.** Organisationen · Nutzer · Mitgliedschaften ·
-> echte Auth (scrypt-Hashing) · Mandanten-Isolation + RBAC. Kanäle/Nachrichten/
-> Aufgaben (Phase 2 collab) und Feed/Kontakte (Phase 4 network) folgen als
-> nächste Bausteine.
+> **Status:**
+> - ✅ **Baustein 1 — Fundament:** Organisationen · Nutzer · Mitgliedschaften ·
+>   echte Auth (scrypt) · Mandanten-Isolation + RBAC.
+> - ✅ **Baustein 2 — collab (Teams-artig):** Kanäle · Nachrichten · Notizen ·
+>   Aufgaben — alles apothekenintern gescoped, RBAC + Isolation erzwungen.
+> - ⏳ **Baustein 3 — network (Phase 4):** Profile · Kontakte · Feed · Direktnachrichten.
+> - ⏳ **Baustein 4 — market (Phase 3):** Integration des bestehenden Kerns + Herkunfts-Flag.
 
 ## Prinzipien
 - **Repository-Seam:** Die Service-Schicht kennt nur ein Repository-Interface
@@ -29,6 +32,8 @@ server/
   src/domain/roles.js        Org-Typen, Rollen, RBAC-Fähigkeiten
   src/repo/memoryRepo.js     Repository-Interface + In-Memory-Umsetzung
   src/services/orgAuth.js    Registrierung, Login, Mitgliedschaften, Isolation
+  src/services/collab.js     Kanäle · Nachrichten · Notizen · Aufgaben (RBAC + Isolation)
+  db/collab.sql              Postgres-Schema des collab-Moduls
   test/                      node --test (ohne externe Abhängigkeiten)
 ```
 
