@@ -1,0 +1,11 @@
+{
+  "name": "apotrend-platform-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ApoTrend Plattform-Backend (Fundament: Orgs/Nutzer/Mitgliedschaften/Auth). Persistenz hinter Repository-Interface (In-Memory jetzt, Postgres/EU als Ziel).",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test"
+  }
+}
