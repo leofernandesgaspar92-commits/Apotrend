@@ -30,7 +30,7 @@ const CAPS = {
   [ROLES.APOTHEKER]:      ['collab', 'assign_tasks', 'market', 'network_post', 'network_dm', 'manage_network'],
   [ROLES.PTA]:            ['collab', 'assign_tasks', 'market'],
   [ROLES.LEHRLING]:       ['collab_assigned', 'market'],
-  [ROLES.PHARMAREFERENT]: ['market', 'network_post', 'network_dm'], // nur als Firma, nie Apotheken-intern
+  [ROLES.PHARMAREFERENT]: ['market', 'network_post', 'network_dm', 'manage_network'], // nur als Firma, nie Apotheken-intern
 };
 
 export function can(role, capability) {

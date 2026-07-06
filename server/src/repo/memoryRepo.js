@@ -24,6 +24,12 @@ export function createMemoryRepo() {
   const messages = new Map();
   const notes = new Map();
   const tasks = new Map();
+  // network-Modul
+  const connections = new Map();
+  const feedPosts = new Map();
+  const postResponses = new Map();
+  const threads = new Map();
+  const directMessages = new Map();
 
   const uuid = () => crypto.randomUUID();
   const now = () => new Date().toISOString();
@@ -140,6 +146,65 @@ export function createMemoryRepo() {
     updateTask(id, patch) { const t = tasks.get(id); if (!t) return null; Object.assign(t, patch); return { ...t }; },
     listTasks(orgId) {
       return [...tasks.values()].filter(t => t.organization_id === orgId).map(t => ({ ...t }));
+    },
+
+    // ── network-Modul ───────────────────────────────────────────────────────
+    createConnection({ requesterOrgId, addresseeOrgId }) {
+      const c = { id: uuid(), requester_org_id: requesterOrgId, addressee_org_id: addresseeOrgId, status: 'pending', created_at: now(), responded_at: null };
+      connections.set(c.id, c);
+      return { ...c };
+    },
+    getConnection(id) { const c = connections.get(id); return c ? { ...c } : null; },
+    updateConnection(id, patch) { const c = connections.get(id); if (!c) return null; Object.assign(c, patch); return { ...c }; },
+    // Verbindung zwischen zwei Orgs, egal in welcher Richtung angefragt.
+    findConnection(orgX, orgY) {
+      for (const c of connections.values()) {
+        if ((c.requester_org_id === orgX && c.addressee_org_id === orgY) ||
+            (c.requester_org_id === orgY && c.addressee_org_id === orgX)) return { ...c };
+      }
+      return null;
+    },
+    listConnectionsForOrg(orgId) {
+      return [...connections.values()].filter(c => c.requester_org_id === orgId || c.addressee_org_id === orgId).map(c => ({ ...c }));
+    },
+
+    createFeedPost({ authorOrgId, authorUserId, kind, title = null, body, visibility = 'network' }) {
+      const p = { id: uuid(), author_org_id: authorOrgId, author_user_id: authorUserId, kind, title, body, visibility, created_at: now() };
+      feedPosts.set(p.id, p);
+      return { ...p };
+    },
+    getFeedPost(id) { const p = feedPosts.get(id); return p ? { ...p } : null; },
+    listAllFeedPosts() {
+      return [...feedPosts.values()].sort((a, b) => b.created_at.localeCompare(a.created_at)).map(p => ({ ...p }));
+    },
+    createPostResponse({ postId, authorOrgId, authorUserId, body }) {
+      const r = { id: uuid(), post_id: postId, author_org_id: authorOrgId, author_user_id: authorUserId, body, created_at: now() };
+      postResponses.set(r.id, r);
+      return { ...r };
+    },
+    listPostResponses(postId) {
+      return [...postResponses.values()].filter(r => r.post_id === postId).sort((a, b) => a.created_at.localeCompare(b.created_at)).map(r => ({ ...r }));
+    },
+
+    findThread(orgX, orgY) {
+      for (const t of threads.values()) {
+        if ((t.org_a_id === orgX && t.org_b_id === orgY) || (t.org_a_id === orgY && t.org_b_id === orgX)) return { ...t };
+      }
+      return null;
+    },
+    createThread({ orgAId, orgBId }) {
+      const t = { id: uuid(), org_a_id: orgAId, org_b_id: orgBId, created_at: now() };
+      threads.set(t.id, t);
+      return { ...t };
+    },
+    getThread(id) { const t = threads.get(id); return t ? { ...t } : null; },
+    createDirectMessage({ threadId, senderOrgId, senderUserId, body }) {
+      const m = { id: uuid(), thread_id: threadId, sender_org_id: senderOrgId, sender_user_id: senderUserId, body, created_at: now() };
+      directMessages.set(m.id, m);
+      return { ...m };
+    },
+    listDirectMessages(threadId) {
+      return [...directMessages.values()].filter(m => m.thread_id === threadId).sort((a, b) => a.created_at.localeCompare(b.created_at)).map(m => ({ ...m }));
     },
   };
 }

@@ -10,8 +10,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   echte Auth (scrypt) · Mandanten-Isolation + RBAC.
 > - ✅ **Baustein 2 — collab (Teams-artig):** Kanäle · Nachrichten · Notizen ·
 >   Aufgaben — alles apothekenintern gescoped, RBAC + Isolation erzwungen.
-> - ⏳ **Baustein 3 — network (Phase 4):** Profile · Kontakte · Feed · Direktnachrichten.
+> - ✅ **Baustein 3 — network (Phase 4):** Profile · Kontakte · Feed · Direktnachrichten
+>   — org-übergreifend, aber mit expliziter Sichtbarkeit (network / nur-Kontakte).
 > - ⏳ **Baustein 4 — market (Phase 3):** Integration des bestehenden Kerns + Herkunfts-Flag.
+> - ⏳ **HTTP-/Echtzeit-Schicht** (Framework + WebSocket) — Tech-Stack-Entscheidung Phase 6.
 
 ## Prinzipien
 - **Repository-Seam:** Die Service-Schicht kennt nur ein Repository-Interface
@@ -33,7 +35,9 @@ server/
   src/repo/memoryRepo.js     Repository-Interface + In-Memory-Umsetzung
   src/services/orgAuth.js    Registrierung, Login, Mitgliedschaften, Isolation
   src/services/collab.js     Kanäle · Nachrichten · Notizen · Aufgaben (RBAC + Isolation)
+  src/services/network.js    Profile · Kontakte · Feed · Direktnachrichten (Sichtbarkeit)
   db/collab.sql              Postgres-Schema des collab-Moduls
+  db/network.sql             Postgres-Schema des network-Moduls
   test/                      node --test (ohne externe Abhängigkeiten)
 ```
 
