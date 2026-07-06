@@ -41,33 +41,39 @@ jobs:
         working-directory: desktop
         run: npm install
 
-      - name: Build installer
-        working-directory: desktop
+      # Signatur nur vorbereiten, wenn ein Zertifikat-Secret gesetzt ist: dann
+      # CSC_LINK/CSC_KEY_PASSWORD via $GITHUB_ENV setzen. Ohne Secret passiert
+      # nichts -> der Build-Step laeuft exakt wie im bekannten gruenen Zustand
+      # (Standard-Shell, keine Env-Manipulation). Details: desktop/SIGNING.md
+      - name: Signatur-Umgebung vorbereiten (optional)
         shell: bash
         env:
-          # Rohwerte aus Secrets. CSC_LINK wird bewusst NUR exportiert, wenn ein
-          # Zertifikat wirklich hinterlegt ist — ein leeres CSC_LINK wuerde
-          # electron-builder als "Pfad angegeben" werten und den Build brechen.
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
           MAC_CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
           MAC_CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           if [ "$RUNNER_OS" = "Windows" ] && [ -n "$WIN_CSC_LINK" ]; then
-            export CSC_LINK="$WIN_CSC_LINK"
-            export CSC_KEY_PASSWORD="$WIN_CSC_KEY_PASSWORD"
-            echo "Windows: signiere mit hinterlegtem Zertifikat."
+            echo "CSC_LINK=$WIN_CSC_LINK" >> "$GITHUB_ENV"
+            echo "CSC_KEY_PASSWORD=$WIN_CSC_KEY_PASSWORD" >> "$GITHUB_ENV"
+            echo "Windows-Signatur aktiv."
           elif [ "$RUNNER_OS" = "macOS" ] && [ -n "$MAC_CSC_LINK" ]; then
-            export CSC_LINK="$MAC_CSC_LINK"
-            export CSC_KEY_PASSWORD="$MAC_CSC_KEY_PASSWORD"
-            echo "macOS: signiere mit hinterlegtem Zertifikat."
+            echo "CSC_LINK=$MAC_CSC_LINK" >> "$GITHUB_ENV"
+            echo "CSC_KEY_PASSWORD=$MAC_CSC_KEY_PASSWORD" >> "$GITHUB_ENV"
+            # Apple-Notarisierung nur mitgeben, wenn macOS wirklich signiert wird
+            echo "APPLE_ID=${{ secrets.APPLE_ID }}" >> "$GITHUB_ENV"
+            echo "APPLE_APP_SPECIFIC_PASSWORD=${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" >> "$GITHUB_ENV"
+            echo "APPLE_TEAM_ID=${{ secrets.APPLE_TEAM_ID }}" >> "$GITHUB_ENV"
+            echo "macOS-Signatur aktiv."
           else
-            echo "Kein Zertifikat-Secret gesetzt -> unsignierter Build."
+            echo "Kein Zertifikat-Secret -> unsignierter Build."
           fi
-          npx electron-builder --publish never
+
+      # Identisch zum bekannten gruenen Zustand (Standard-Shell, keine env-Manipulation).
+      # Signatur greift nur, falls der vorige Schritt CSC_LINK gesetzt hat.
+      - name: Build installer
+        working-directory: desktop
+        run: npx electron-builder --publish never
 
       - name: Upload installers
         uses: actions/upload-artifact@v4
