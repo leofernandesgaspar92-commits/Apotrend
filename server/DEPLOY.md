@@ -5,6 +5,16 @@ Rabatte, News, Profile, Suche) ist ein **Node-Server** — sie kann **nicht** au
 GitHub Pages laufen (Pages liefert nur statische Dateien aus). Sie braucht einen
 **Node-fähigen Host**. Unten die einfachste Variante plus Alternativen.
 
+## 🚀 Schnellster Weg: 1-Klick auf Render
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/leofernandesgaspar92-commits/Apotrend/tree/feed-first)
+
+Auf den Button klicken → bei Render mit GitHub anmelden → Render liest die
+`render.yaml` und richtet den Dienst ein → **Apply**. Nach ~1–2 Minuten bekommst
+du eine Live-URL wie `https://apotrend-feed.onrender.com`.
+(Beim Deploy fragt Render nach `APOTREND_ADMIN_PASSWORD` — ein Passwort deiner
+Wahl für den Redaktions-/Moderations-Login setzen.)
+
 > **Wo liegt die App?** Branch `feed-first`, Unterordner `server/`.
 > Start: `npm start` (= `node src/http/server.js`), Port über `process.env.PORT`.
 > Keine externen npm-Pakete, keine Datenbank nötig — nur Node 22+.
