@@ -485,13 +485,29 @@ async function loadExchange() {
       <input id="ex_ort" placeholder="Ort (z.B. 1010 Wien)">
     </div>
     <input id="ex_note" placeholder="Hinweis (optional)" style="margin-top:6px">
+    <div class="row" style="margin-top:6px">
+      <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px">📷 Foto (z.B. Charge/Ablauf)<input type="file" id="ex_img" accept="image/*" style="display:none"></label>
+      <span class="muted" id="ex_imgname" style="font-size:13px"></span>
+      <button class="ghost small" id="ex_imgclear" style="display:none">✕</button>
+    </div>
+    <img id="ex_imgprev" style="display:none;max-width:100%;border-radius:8px;margin-top:6px" />
     <div class="row" style="margin-top:8px"><button id="ex_go">Eintrag veröffentlichen</button><span class="err" id="ex_err" style="margin-left:10px"></span></div>
     <div class="muted" style="font-size:13px;margin-top:6px">Kontakt läuft über Direktnachricht — keine öffentlichen Kontaktdaten.</div>
   </div>`);
   feed.appendChild(form);
+  let exImage = null;
+  const exImg = document.getElementById('ex_img'), exImgprev = document.getElementById('ex_imgprev');
+  const exImgname = document.getElementById('ex_imgname'), exImgclear = document.getElementById('ex_imgclear');
+  const clearEx = () => { exImage=null; exImg.value=''; exImgprev.style.display='none'; exImgprev.src=''; exImgname.textContent=''; exImgclear.style.display='none'; };
+  exImg.onchange = async () => {
+    const f = exImg.files[0]; if (!f) return;
+    try { exImage = await fileToDataUrl(f); exImgprev.src=exImage; exImgprev.style.display='block'; exImgname.textContent=f.name; exImgclear.style.display='inline-block'; document.getElementById('ex_err').textContent=''; }
+    catch(e){ document.getElementById('ex_err').textContent = e.message; clearEx(); }
+  };
+  exImgclear.onclick = clearEx;
   document.getElementById('ex_go').onclick = async () => {
     try {
-      await api('POST','/api/exchange',{ kind:v('ex_kind'), bezeichnung:v('ex_bez'), menge:v('ex_menge'), ort:v('ex_ort'), note:v('ex_note') });
+      await api('POST','/api/exchange',{ kind:v('ex_kind'), bezeichnung:v('ex_bez'), menge:v('ex_menge'), ort:v('ex_ort'), note:v('ex_note'), image:exImage });
       loadExchange();
     } catch(e){ document.getElementById('ex_err').textContent = e.message; }
   };
@@ -534,6 +550,7 @@ function exchangeCard(e) {
     </div>
     <div class="muted" style="margin-top:4px">${e.menge?'Menge: '+esc(e.menge):''}${e.menge&&e.ort?' · ':''}${e.ort?'📍 '+esc(e.ort):''}</div>
     ${e.note?`<div class="post-body" style="margin:6px 0">${esc(e.note)}</div>`:''}
+    ${e.image && /^data:image\//.test(e.image) ? `<img src="${e.image}" alt="Foto zum Eintrag" style="max-width:100%;border-radius:10px;margin-top:6px;display:block" />` : ''}
     <div class="row" style="margin-top:8px;align-items:baseline">
       <span class="handle clickable" data-openprofile="${esc(au.handle||'')}">von ${esc(au.display_name||'Unbekannt')} @${esc(au.handle||'?')}</span>
       <span class="sp" style="flex:1"></span>

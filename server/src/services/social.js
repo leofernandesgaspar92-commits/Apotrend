@@ -2,26 +2,10 @@
 // Kommentar-Threads, typisierte Reaktionen, gerichtete Follows, Home-/Öffentlich-Feed.
 // Sichtbarkeit pro Post (public/followers) wird bei JEDER Leseoperation erzwungen.
 import { ForbiddenError } from './orgAuth.js';
+import { cleanImage, cleanSourceUrl } from '../domain/media.js';
 
 const REACTION_TYPES = ['hilfreich', 'danke', 'bestaetigt', 'interessant'];
 const MAX_BODY = 1000;
-const MAX_IMAGE = 900_000; // ~ base64-Länge (Client verkleinert vorab)
-
-// Bild nur als data:image-URL (kein Fremd-Host, keine Skript-URLs).
-function cleanImage(image) {
-  if (image == null || image === '') return null;
-  const s = String(image);
-  if (!/^data:image\/(png|jpe?g|webp|gif);base64,[a-z0-9+/=\s]+$/i.test(s)) throw new Error('Ungueltiges Bildformat.');
-  if (s.length > MAX_IMAGE) throw new Error('Bild zu groß (bitte kleineres wählen).');
-  return s;
-}
-// Quelle nur als http(s)-Link (keine javascript:/data:-URLs).
-function cleanSourceUrl(url) {
-  if (url == null || url === '') return null;
-  const s = String(url).trim();
-  if (!/^https?:\/\/[^\s]{3,500}$/i.test(s)) throw new Error('Quelle muss ein http(s)-Link sein.');
-  return s;
-}
 
 export function createSocialService(social, foundationRepo, options = {}) {
   // Wer darf moderieren (Reports bearbeiten, fremde Inhalte entfernen)? Bewusst

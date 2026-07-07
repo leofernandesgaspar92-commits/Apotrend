@@ -2,6 +2,7 @@
 // Kontaktaufnahme läuft über Direktnachrichten (social.startDm) — es werden keine
 // öffentlichen Kontaktdaten getauscht.
 import { ForbiddenError } from './orgAuth.js';
+import { cleanImage } from '../domain/media.js';
 
 const KINDS = ['biete', 'suche'];
 
@@ -18,7 +19,7 @@ export function createExchangeService(exchangeRepo, social, foundationRepo) {
   }
 
   return {
-    create(actorUserId, { kind, bezeichnung, menge, ort, note }) {
+    create(actorUserId, { kind, bezeichnung, menge, ort, note, image }) {
       requireUser(actorUserId);
       if (!KINDS.includes(kind)) throw new Error('Art muss "biete" oder "suche" sein.');
       const b = String(bezeichnung ?? '').trim();
@@ -29,6 +30,7 @@ export function createExchangeService(exchangeRepo, social, foundationRepo) {
         menge: (menge ?? '').toString().trim() || null,
         ort: (ort ?? '').toString().trim() || null,
         note: (note ?? '').toString().trim() || null,
+        image: cleanImage(image),
       }));
     },
     // Offene Einträge (Standard), optional nach Art + Text (Präparat) gefiltert.

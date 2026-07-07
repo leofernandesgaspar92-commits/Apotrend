@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Fotos im Bestandsaustausch:** Biete/Suche-Einträge können ein Foto tragen
+>   (z.B. Charge/Ablaufdatum) — schafft Vertrauen beim Tausch. Bild-/Quellen-Validierung
+>   in gemeinsames Modul `domain/media.js` ausgelagert (von Social + Austausch genutzt).
+>   (96 Tests grün, im Browser verifiziert.)
 > - ✅ **Engpass ↔ Bestandsaustausch verknüpft:** an jedem Engpass ein Button
 >   „🔄 Biete/Suche" → springt in den Austausch, vorgefiltert auf den Wirkstoff
 >   (zeigt sofort, wer ihn bietet/sucht). Austausch-Reiter zusätzlich mit Textsuche

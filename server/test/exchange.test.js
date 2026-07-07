@@ -60,3 +60,11 @@ test('Ungültige Art und leere Bezeichnung werden abgelehnt', () => {
   assert.throws(() => exchange.create(a, { kind: 'tausch', bezeichnung: 'X' }), /biete.*suche/);
   assert.throws(() => exchange.create(a, { kind: 'biete', bezeichnung: '   ' }), /erforderlich/);
 });
+
+test('Eintrag mit Bild (data:image) ok, Fremd-URL abgelehnt', () => {
+  const { exchange, a } = setup();
+  const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  const e = exchange.create(a, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg', image: PNG });
+  assert.equal(e.image, PNG);
+  assert.throws(() => exchange.create(a, { kind: 'biete', bezeichnung: 'X', image: 'https://evil/x.png' }), /Bildformat/);
+});
