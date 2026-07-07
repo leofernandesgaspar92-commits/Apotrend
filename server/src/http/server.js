@@ -11,10 +11,12 @@ import { createMemoryRepo } from '../repo/memoryRepo.js';
 import { createSocialRepo } from '../repo/socialRepo.js';
 import { createShortagesRepo } from '../repo/shortagesRepo.js';
 import { createPricesRepo } from '../repo/pricesRepo.js';
+import { createRabatteRepo } from '../repo/rabatteRepo.js';
 import { createOrgAuthService, ForbiddenError } from '../services/orgAuth.js';
 import { createSocialService } from '../services/social.js';
 import { createShortagesService } from '../services/shortages.js';
 import { createPricesService } from '../services/prices.js';
+import { createRabatteService } from '../services/rabatte.js';
 import { issueToken, verifyToken } from './token.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -30,6 +32,8 @@ const shortagesRepo = createShortagesRepo();
 const shortages = createShortagesService(shortagesRepo, social);
 const pricesRepo = createPricesRepo();
 const prices = createPricesService(pricesRepo, social);
+const rabatteRepo = createRabatteRepo();
+const rabatte = createRabatteService(rabatteRepo, social);
 
 // Redaktions-Account + kuratierte News seeden (News = Beiträge im selben Feed).
 (function seedEditorial() {
@@ -52,6 +56,10 @@ function enrichPosts(posts) {
     if (p.ref_type === 'price' && p.ref_id) {
       const pr = pricesRepo.get(p.ref_id);
       if (pr) return { ...p, ref_summary: { kind: 'price', bezeichnung: pr.bezeichnung, supplier: pr.supplier, aep: pr.aep, currency: pr.currency, trend_pct: pr.trend_pct } };
+    }
+    if (p.ref_type === 'rabatt' && p.ref_id) {
+      const r = rabatteRepo.get(p.ref_id);
+      if (r) return { ...p, ref_summary: { kind: 'rabatt', bezeichnung: r.bezeichnung, supplier: r.supplier, aktionspreis: r.aktionspreis, listenpreis: r.listenpreis, currency: r.currency, rabatt_pct: r.rabatt_pct, gueltig_bis: r.gueltig_bis } };
     }
     return p;
   });
@@ -127,6 +135,15 @@ const routes = [
     return d;
   }],
   ['POST', /^\/api\/prices\/([^/]+)\/post$/, true, async ({ userId, params, body }) => prices.postAbout(userId, params[0], { body: body.body, visibility: body.visibility })],
+
+  // ── Top-10-Rabatte (Priorität 5) ──
+  ['GET', /^\/api\/rabatte$/, true, async ({ userId }) => ({ rabatte: rabatte.top10(userId) })],
+  ['GET', /^\/api\/rabatte\/([^/]+)$/, true, async ({ userId, params }) => {
+    const d = rabatte.withActivity(userId, params[0]);
+    if (!d) { const e = new Error('Rabatt-Aktion nicht gefunden'); e.status = 404; throw e; }
+    return d;
+  }],
+  ['POST', /^\/api\/rabatte\/([^/]+)\/post$/, true, async ({ userId, params, body }) => rabatte.postAbout(userId, params[0], { body: body.body, visibility: body.visibility })],
 ];
 
 const server = http.createServer(async (req, res) => {

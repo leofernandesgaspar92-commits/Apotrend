@@ -74,7 +74,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (text.length > MAX_BODY) throw new Error(`Beitrag zu lang (max ${MAX_BODY}).`);
       if (!['public', 'followers'].includes(visibility)) throw new Error('Ungueltige Sichtbarkeit.');
       if (!['post', 'news'].includes(kind)) throw new Error('Ungueltige Beitragsart.');
-      if (refType && !['shortage', 'price', 'news'].includes(refType)) throw new Error('Ungueltiger Referenztyp.');
+      if (refType && !['shortage', 'price', 'news', 'rabatt'].includes(refType)) throw new Error('Ungueltiger Referenztyp.');
       const post = social.createPost({ authorUserId: actorUserId, body: text, visibility, refType, refId, kind });
       notifyMentions(text, actorUserId, 'post', post.id);
       return post;

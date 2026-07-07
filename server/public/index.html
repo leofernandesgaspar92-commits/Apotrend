@@ -30,6 +30,8 @@
   .handle { color:var(--muted); font-weight:400; font-size:14px; }
   .verified { color:var(--green); font-size:13px; }
   .editorial { background:#eef3ff; color:#2952cc; font-size:12px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid #cdd9ff; }
+  .rank { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:30px; padding:0 6px; border-radius:999px; background:var(--green); color:#fff; font-weight:800; font-size:15px; margin-right:8px; }
+  .rabatt-badge { background:#e6f7ef; color:#00885a; font-weight:800; font-size:16px; padding:4px 12px; border-radius:999px; border:1px solid #b6e6cf; }
   .post-body { margin:8px 0; white-space:pre-wrap; line-height:1.45; }
   .vis { font-size:12px; color:var(--muted); }
   .reacts { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
@@ -153,6 +155,7 @@ async function mainScreen() {
       <button data-tab="home">🏠 Mein Feed</button>
       <button data-tab="shortages">📦 Engpässe</button>
       <button data-tab="prices">💶 Preise</button>
+      <button data-tab="rabatte">🏷️ Top-Rabatte</button>
       <button data-tab="news">📰 News</button>
     </div>
     <div id="feed"></div>
@@ -176,6 +179,7 @@ async function mainScreen() {
 function loadTab() {
   if (tab === 'shortages') return loadShortages();
   if (tab === 'prices') return loadPrices();
+  if (tab === 'rabatte') return loadRabatte();
   if (tab === 'news') return loadNews();
   loadFeed();
 }
@@ -308,6 +312,54 @@ function priceGroup(g) {
   return card;
 }
 
+async function loadRabatte() {
+  const feed = document.getElementById('feed');
+  feed.innerHTML = '<div class="muted">lädt…</div>';
+  try {
+    const d = await api('GET','/api/rabatte');
+    feed.innerHTML = '<div class="card muted" style="margin-bottom:10px">🏷️ <b>Top-10 Rabatt-Aktionen</b> · höchster Rabatt oben · nur laufende Aktionen · 📌 Referenzdaten</div>';
+    if (!d.rabatte.length) { feed.innerHTML += '<div class="card muted">Derzeit keine laufenden Aktionen.</div>'; return; }
+    d.rabatte.forEach(r => feed.appendChild(rabattCard(r)));
+  } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+}
+
+function rabattCard(r) {
+  const card = el(`<div class="card">
+    <div class="row">
+      <span class="rank">#${r.rank}</span>
+      <span class="post-author">${esc(r.bezeichnung)}</span>
+      <span class="handle">${esc(r.wirkstoff||'')}</span>
+      <span class="sp" style="flex:1"></span>
+      <span class="rabatt-badge">−${r.rabatt_pct}%</span>
+    </div>
+    <div class="row" style="margin-top:8px;align-items:baseline">
+      <span><b>${esc(r.supplier)}</b></span>
+      <span class="sp" style="flex:1"></span>
+      <span class="muted" style="text-decoration:line-through">€ ${Number(r.listenpreis).toFixed(2)}</span>
+      <span style="font-size:20px;font-weight:800;color:#00885a;margin-left:8px">€ ${Number(r.aktionspreis).toFixed(2)}</span>
+    </div>
+    <div class="muted" style="margin-top:4px">Ersparnis € ${Number(r.ersparnis).toFixed(2)} je Packung${r.min_menge?` · ab ${r.min_menge} Stück`:''} · gültig bis <b>${esc(r.gueltig_bis)}</b></div>
+    <div class="row" style="margin-top:8px">
+      <span class="muted">${r.post_count||0} Beiträge dazu</span>
+      <span class="sp" style="flex:1"></span>
+      <button class="ghost small" data-pp>✍ Dazu posten</button>
+    </div>
+    <div class="hidden" data-ppbox style="margin-top:6px">
+      <textarea data-ppinput placeholder="z.B. Lohnt sich die Aktion bei ${esc(r.supplier)}?"></textarea>
+      <div style="margin-top:4px"><button class="small" data-ppsend>Posten</button></div>
+    </div>
+  </div>`);
+  const ppbox = card.querySelector('[data-ppbox]');
+  card.querySelector('[data-pp]').onclick = () => ppbox.classList.toggle('hidden');
+  card.querySelector('[data-ppsend]').onclick = async () => {
+    const t = card.querySelector('[data-ppinput]');
+    if (!t.value.trim()) return;
+    try { await api('POST',`/api/rabatte/${r.id}/post`,{ body:t.value }); t.value=''; loadRabatte(); }
+    catch(e){ alert(e.message); }
+  };
+  return card;
+}
+
 const REACTS = [['hilfreich','👍 Hilfreich'],['danke','🙏 Danke'],['bestaetigt','✅ Bestätigt'],['interessant','💡 Interessant']];
 
 function refChip(r) {
@@ -316,6 +368,9 @@ function refChip(r) {
   if (r.kind === 'price') {
     const t = r.trend_pct>0?` ▲ +${r.trend_pct}%`:(r.trend_pct<0?` ▼ ${r.trend_pct}%`:'');
     return `<div class="vis" style="${base}">💶 Preis: <b>${esc(r.bezeichnung)}</b> — ${esc(r.supplier)} € ${Number(r.aep).toFixed(2)}${t}</div>`;
+  }
+  if (r.kind === 'rabatt') {
+    return `<div class="vis" style="${base}">🏷️ Aktion: <b>${esc(r.bezeichnung)}</b> — ${esc(r.supplier)} € ${Number(r.aktionspreis).toFixed(2)} <span style="color:#00885a">−${r.rabatt_pct}%</span> · gültig bis ${esc(r.gueltig_bis)}</div>`;
   }
   return `<div class="vis" style="${base}">📦 Engpass: <b>${esc(r.wirkstoff)}</b> — ${esc(r.bezeichnung)}</div>`;
 }
