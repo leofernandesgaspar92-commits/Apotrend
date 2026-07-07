@@ -5,7 +5,11 @@ Neuer, **zustandsbehafteter** Backend-Pfeiler für die Hybrid-Plattform
 zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
-> **Status:**
+> **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Priorität 1 — Social-Feed (Kern, personenzentriert):** Fachprofile · kurze
+>   Posts (public/followers) · Kommentar-Threads · typisierte Reaktionen · gerichtete
+>   Follows · Home-/Öffentlich-Feed. Als Nächstes: Direktnachrichten (1:1) ·
+>   Benachrichtigungen · Melden/Moderation.
 > - ✅ **Baustein 1 — Fundament:** Organisationen · Nutzer · Mitgliedschaften ·
 >   echte Auth (scrypt) · Mandanten-Isolation + RBAC.
 > - ✅ **Baustein 2 — collab (Teams-artig):** Kanäle · Nachrichten · Notizen ·
@@ -35,9 +39,12 @@ server/
   src/repo/memoryRepo.js     Repository-Interface + In-Memory-Umsetzung
   src/services/orgAuth.js    Registrierung, Login, Mitgliedschaften, Isolation
   src/services/collab.js     Kanäle · Nachrichten · Notizen · Aufgaben (RBAC + Isolation)
-  src/services/network.js    Profile · Kontakte · Feed · Direktnachrichten (Sichtbarkeit)
+  src/services/network.js    (org-zentriert; wird vom Social-Layer abgelöst)
+  src/repo/socialRepo.js     Social-Store (Profile/Posts/Kommentare/Reaktionen/Follows)
+  src/services/social.js     Prio-1-Feed: Posts · Kommentare · Reaktionen · Follows · Feed
   db/collab.sql              Postgres-Schema des collab-Moduls
-  db/network.sql             Postgres-Schema des network-Moduls
+  db/network.sql             Postgres-Schema des (abgelösten) org-network-Moduls
+  db/social.sql              Postgres-Schema des Social-Layers (Prio 1)
   test/                      node --test (ohne externe Abhängigkeiten)
 ```
 
