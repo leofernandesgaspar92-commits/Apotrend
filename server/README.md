@@ -35,6 +35,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   allen Modulen — Personen (Handle/Name/Fachgebiet), Beiträge (sichtbarkeitsgefiltert),
 >   Engpässe, Preise, Rabatte (`GET /api/search?q=`). Ergebnisseite gruppiert nach Typ.
 >   (60 Tests grün, im Browser verifiziert.)
+> - ✅ **Moderation in der UI (Löschen/Melden):** eigene Beiträge löschen (🗑,
+>   nur der Autor, serverseitig erzwungen), fremde Beiträge melden (🚩 →
+>   `POST /api/posts/:id/report`, Moderations-Queue). Erfüllt die Owner-Vorgabe
+>   „Beiträge löschen/melden". (Im Browser verifiziert.)
 > - ✅ **Priorität 8 — Direktnachrichten-Oberfläche (Kern-Feature komplett):** 1:1-Chat
 >   zwischen Apotheker:innen — Posteingang mit letzter Nachricht + Ungelesen-Zähler,
 >   Konversationsansicht (eigene/fremde Bubbles), „✉️ Nachricht" vom Profil aus,

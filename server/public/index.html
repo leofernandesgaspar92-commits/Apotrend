@@ -513,6 +513,9 @@ function postCard(p) {
     <div class="reacts">
       ${REACTS.map(([k,lab])=>`<button data-react="${k}">${lab} ${rc[k]||0}</button>`).join('')}
       <button data-comments>💬 ${p.comment_count||0} Kommentare</button>
+      <span class="sp" style="flex:1"></span>
+      ${mine ? '<button class="ghost small" data-del title="Beitrag löschen">🗑 Löschen</button>'
+             : '<button class="ghost small" data-report title="Beitrag melden">🚩 Melden</button>'}
     </div>
     <div class="comments hidden" data-cbox>
       <div data-clist></div>
@@ -525,6 +528,18 @@ function postCard(p) {
   const fb = card.querySelector('[data-follow]');
   if (fb) fb.onclick = async () => { try { await api('POST','/api/follow',{ handle:fb.dataset.follow }); loadFeed(); } catch(e){ alert(e.message);} };
   card.querySelectorAll('[data-openprofile]').forEach(el => { if (el.dataset.openprofile) el.onclick = () => openProfile(el.dataset.openprofile); });
+  const delb = card.querySelector('[data-del]');
+  if (delb) delb.onclick = async () => {
+    if (!confirm('Diesen Beitrag wirklich löschen?')) return;
+    try { await api('POST',`/api/posts/${p.id}/delete`); card.remove(); } catch(e){ alert(e.message); }
+  };
+  const repb = card.querySelector('[data-report]');
+  if (repb) repb.onclick = async () => {
+    const reason = prompt('Warum meldest du diesen Beitrag? (optional)') ?? '';
+    if (reason === null) return;
+    try { await api('POST',`/api/posts/${p.id}/report`,{ reason }); alert('Danke — der Beitrag wurde der Moderation gemeldet.'); }
+    catch(e){ alert(e.message); }
+  };
   const cbtn = card.querySelector('[data-comments]');
   const cbox = card.querySelector('[data-cbox]');
   cbtn.onclick = async () => {
