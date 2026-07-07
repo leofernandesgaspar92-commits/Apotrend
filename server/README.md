@@ -39,6 +39,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   nur der Autor, serverseitig erzwungen), fremde Beiträge melden (🚩 →
 >   `POST /api/posts/:id/report`, Moderations-Queue). Erfüllt die Owner-Vorgabe
 >   „Beiträge löschen/melden". (Im Browser verifiziert.)
+> - ✅ **Moderations-Ansicht (nur Redaktions-/Admin-Konto):** 🛡️-Queue der offenen
+>   Meldungen mit Beitrag, Melder:in und Grund; „Beitrag entfernen" oder „In Ordnung".
+>   Moderator = Konto mit `is_editorial` (Login über `APOTREND_ADMIN_EMAIL/PASSWORD`).
+>   Zugriff für Nicht-Moderator:innen serverseitig geblockt (403). (`GET /api/reports`,
+>   `POST /api/reports/:id/resolve`; im Browser + per API verifiziert.)
 > - ✅ **Priorität 8 — Direktnachrichten-Oberfläche (Kern-Feature komplett):** 1:1-Chat
 >   zwischen Apotheker:innen — Posteingang mit letzter Nachricht + Ungelesen-Zähler,
 >   Konversationsansicht (eigene/fremde Bubbles), „✉️ Nachricht" vom Profil aus,

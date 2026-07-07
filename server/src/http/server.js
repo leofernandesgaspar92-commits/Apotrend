@@ -34,7 +34,10 @@ const restoring = !!snapshot;
 const repo = createMemoryRepo();
 const orgAuth = createOrgAuthService(repo);
 const socialRepo = createSocialRepo();
-const social = createSocialService(socialRepo, repo);
+// Moderatoren = Redaktions-/Admin-Konten (Profil-Flag is_editorial).
+const social = createSocialService(socialRepo, repo, {
+  isModerator: (userId) => { const p = socialRepo.getProfileByUserId(userId); return !!(p && p.is_editorial); },
+});
 // Marktdaten nur beim Frischstart seeden; beim Wiederherstellen kommen sie aus dem Snapshot.
 const shortagesRepo = createShortagesRepo({ seed: !restoring });
 const shortages = createShortagesService(shortagesRepo, social);
@@ -52,9 +55,14 @@ if (restoring) {
   rabatteRepo.__load(snapshot.rabatte);
   console.log(`ApoTrend: Daten aus ${persistence.filePath} wiederhergestellt.`);
 } else {
-  // Redaktions-Account + kuratierte News nur beim Frischstart anlegen (sonst Dubletten).
-  const red = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'ApoTrend' }, owner: { name: 'ApoTrend-Redaktion', email: 'redaktion@apotrend.at', password: crypto.randomUUID() } });
+  // Redaktions-/Admin-Account (zugleich Moderation) + kuratierte News — nur beim
+  // Frischstart. Zugangsdaten über ENV steuerbar; sonst zufälliges Passwort, das
+  // beim Start einmalig geloggt wird, damit sich die Redaktion anmelden kann.
+  const adminEmail = process.env.APOTREND_ADMIN_EMAIL || 'redaktion@apotrend.at';
+  const adminPassword = process.env.APOTREND_ADMIN_PASSWORD || crypto.randomUUID();
+  const red = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'ApoTrend' }, owner: { name: 'ApoTrend-Redaktion', email: adminEmail, password: adminPassword } });
   social.createProfile(red.user.id, { handle: 'apotrend', displayName: 'ApoTrend-Redaktion', isEditorial: true });
+  if (!process.env.APOTREND_ADMIN_PASSWORD) console.log(`ℹ️  Redaktions-/Moderations-Login: ${adminEmail} / ${adminPassword}`);
   [
     'Kammer-Mitteilung: Neue Regelung zur E-Medikation tritt am 01.08.2026 in Kraft.',
     'BASG: Aktualisierte Engpassliste veröffentlicht — mehrere Antibiotika betroffen.',
@@ -128,7 +136,11 @@ const routes = [
     return { token: issueToken(r.user.id), user: r.user, profile: social.getProfile(r.user.id) };
   }],
 
-  ['GET', /^\/api\/me$/, true, async ({ userId }) => ({ user: repo.getUserById(userId), profile: social.getProfile(userId) })],
+  ['GET', /^\/api\/me$/, true, async ({ userId }) => ({ user: repo.getUserById(userId), profile: social.getProfile(userId), is_moderator: social.isModerator(userId) })],
+
+  // ── Moderation (nur Redaktions-/Admin-Konten) ──
+  ['GET', /^\/api\/reports$/, true, async ({ userId }) => ({ reports: social.moderationQueue(userId) })],
+  ['POST', /^\/api\/reports\/([^/]+)\/resolve$/, true, async ({ userId, params, body }) => social.resolveReport(userId, params[0], { remove: !!body.remove })],
 
   ['GET', /^\/api\/feed\/home$/, true, async ({ userId }) => ({ posts: enrichPosts(social.homeFeed(userId)) })],
   ['GET', /^\/api\/feed\/public$/, true, async ({ userId }) => ({ posts: enrichPosts(social.publicFeed(userId)) })],

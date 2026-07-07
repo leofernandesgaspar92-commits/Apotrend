@@ -28,6 +28,12 @@ services:
       # Snapshot-Persistenz aktivieren (Pfad unter /var/data = Render-Disk-Mountpoint).
       - key: APOTREND_DATA_FILE
         value: /var/data/apotrend.json
+      # Redaktions-/Moderations-Login. E-Mail frei wählbar, Passwort in Render
+      # als Secret setzen (sync:false -> Render fragt beim Deploy danach).
+      - key: APOTREND_ADMIN_EMAIL
+        value: redaktion@apotrend.at
+      - key: APOTREND_ADMIN_PASSWORD
+        sync: false
       # PORT wird von Render automatisch gesetzt — der Server liest process.env.PORT.
     # Dauerhafte Platte (nur Bezahltarif). Zum Aktivieren einkommentieren:
     # disk:

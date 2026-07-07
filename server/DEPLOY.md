@@ -88,6 +88,20 @@ berührt nur die Repo-Schicht, nicht die Services/UI.
 
 ---
 
+## Redaktions-/Moderations-Login
+
+Ein Konto mit dem Profil-Flag `is_editorial` ist zugleich **Moderation** (sieht
+die 🛡️-Queue gemeldeter Beiträge). Zugangsdaten über Umgebungsvariablen:
+
+```bash
+APOTREND_ADMIN_EMAIL=redaktion@apotrend.at
+APOTREND_ADMIN_PASSWORD=<sicheres-passwort>
+```
+
+Ohne gesetztes Passwort erzeugt der Server beim Frischstart ein zufälliges und
+**loggt es einmalig** in die Server-Konsole (`ℹ️ Redaktions-/Moderations-Login: …`).
+Für den echten Betrieb immer `APOTREND_ADMIN_PASSWORD` setzen.
+
 ## Lokal testen (ohne Host)
 
 ```bash

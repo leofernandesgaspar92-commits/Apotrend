@@ -56,6 +56,7 @@
   <span class="logo">🟢 ApoTrend</span>
   <span class="muted" id="whoami" style="color:#dff5ea;"></span>
   <span class="sp"></span>
+  <button class="bell hidden" id="btnMod" title="Moderation">🛡️</button>
   <button class="bell hidden" id="btnDm" title="Nachrichten">✉️<span class="badge hidden" id="dmBadge">0</span></button>
   <button class="bell hidden" id="btnNotif" title="Benachrichtigungen">🔔<span class="badge hidden" id="notifBadge">0</span></button>
   <button class="hidden" id="btnLogout">Abmelden</button>
@@ -77,13 +78,14 @@ const api = async (method, path, body) => {
 const el = (h) => { const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.childElementCount===1 ? t.content.firstElementChild : t.content; };
 const esc = (s) => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const app = document.getElementById('app');
-let me = null, tab = 'public';
+let me = null, tab = 'public', iAmModerator = false;
 
 // ── Auth-Screens ──
 function authScreen() {
   document.getElementById('btnLogout').classList.add('hidden');
   document.getElementById('btnNotif').classList.add('hidden');
   document.getElementById('btnDm').classList.add('hidden');
+  document.getElementById('btnMod').classList.add('hidden');
   document.getElementById('whoami').textContent = '';
   app.innerHTML = '';
   app.appendChild(el(`
@@ -129,10 +131,14 @@ function afterAuth(d) {
 async function mainScreen() {
   const meData = await api('GET','/api/me');
   me = meData.profile;
+  iAmModerator = !!meData.is_moderator;
   document.getElementById('whoami').textContent = me ? '@'+me.handle : '';
   document.getElementById('btnLogout').classList.remove('hidden');
   document.getElementById('btnNotif').classList.remove('hidden');
   document.getElementById('btnDm').classList.remove('hidden');
+  const btnMod = document.getElementById('btnMod');
+  btnMod.classList.toggle('hidden', !iAmModerator);
+  btnMod.onclick = showModeration;
   document.getElementById('btnLogout').onclick = () => { localStorage.removeItem('apo_token'); location.reload(); };
   document.getElementById('btnNotif').onclick = showNotifications;
   document.getElementById('btnDm').onclick = showDmInbox;
@@ -581,6 +587,40 @@ async function showNotifications() {
   document.getElementById('back').onclick = mainScreen;
   document.getElementById('readall').onclick = async () => { await api('POST','/api/notifications/read-all'); refreshNotifCount(); showNotifications(); };
   refreshNotifCount();
+}
+
+async function showModeration() {
+  app.innerHTML = '<div class="card muted">lädt…</div>';
+  let d;
+  try { d = await api('GET','/api/reports'); }
+  catch(e){ app.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
+  app.innerHTML = '';
+  const head = el(`<div class="card"><div class="row"><h1 style="flex:1">🛡️ Moderation</h1>
+    <button class="ghost small" id="back">Zurück</button></div>
+    <div class="muted">Offene Meldungen: ${d.reports.length}</div></div>`);
+  head.querySelector('#back').onclick = mainScreen;
+  app.appendChild(head);
+  if (!d.reports.length) { app.appendChild(el('<div class="card muted">Keine offenen Meldungen. 👍</div>')); return; }
+  d.reports.forEach(r => {
+    const post = r.post;
+    const card = el(`<div class="card">
+      <div class="muted">Gemeldet von @${esc(r.reporter_handle||'?')}${r.reason?' · Grund: '+esc(r.reason):' · kein Grund angegeben'}</div>
+      ${post ? `<div class="post-body">${esc(post.body)}</div>
+        <div class="vis">Autor: @${esc(post.author_handle||'?')}${post.deleted?' · <b style="color:#c0392b">bereits entfernt</b>':''}</div>`
+             : '<div class="muted">Zielbeitrag nicht mehr vorhanden.</div>'}
+      <div class="row" style="margin-top:10px">
+        <button class="small" data-remove style="background:#c0392b">🗑 Beitrag entfernen</button>
+        <button class="ghost small" data-ok>✓ In Ordnung (Meldung schließen)</button>
+      </div>
+    </div>`);
+    card.querySelector('[data-remove]').onclick = async () => {
+      try { await api('POST',`/api/reports/${r.id}/resolve`,{ remove:true }); showModeration(); } catch(e){ alert(e.message); }
+    };
+    card.querySelector('[data-ok]').onclick = async () => {
+      try { await api('POST',`/api/reports/${r.id}/resolve`,{ remove:false }); showModeration(); } catch(e){ alert(e.message); }
+    };
+    app.appendChild(card);
+  });
 }
 
 async function refreshDmCount() {

@@ -318,6 +318,23 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (remove && r.target_type === 'post') social.softDeletePost(r.target_id);
       return social.updateReport(reportId, { status: remove ? 'entfernt' : 'geprueft' });
     },
+    isModerator(userId) { return isModerator(userId); },
+    // Moderations-Queue: Meldungen angereichert mit Beitrags-/Melder-Infos.
+    moderationQueue(moderatorUserId, status = 'offen') {
+      if (!isModerator(moderatorUserId)) throw new ForbiddenError('Nur Moderation.');
+      return social.listReports(status).map(r => {
+        const reporter = social.getProfileByUserId(r.reporter_user_id);
+        const out = { ...r, reporter_handle: reporter ? reporter.handle : null };
+        if (r.target_type === 'post') {
+          const post = social.getPost(r.target_id);
+          if (post) {
+            const author = social.getProfileByUserId(post.author_user_id);
+            out.post = { body: post.body, deleted: !!post.deleted_at, author_handle: author ? author.handle : null };
+          }
+        }
+        return out;
+      });
+    },
 
     // ── DSGVO: endgueltiges Loeschen (Autor oder Moderation) ──
     // Soft-Delete verbirgt nur; hier wird der Inhalt tatsaechlich entfernt.
