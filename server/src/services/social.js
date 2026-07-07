@@ -5,6 +5,23 @@ import { ForbiddenError } from './orgAuth.js';
 
 const REACTION_TYPES = ['hilfreich', 'danke', 'bestaetigt', 'interessant'];
 const MAX_BODY = 1000;
+const MAX_IMAGE = 900_000; // ~ base64-Länge (Client verkleinert vorab)
+
+// Bild nur als data:image-URL (kein Fremd-Host, keine Skript-URLs).
+function cleanImage(image) {
+  if (image == null || image === '') return null;
+  const s = String(image);
+  if (!/^data:image\/(png|jpe?g|webp|gif);base64,[a-z0-9+/=\s]+$/i.test(s)) throw new Error('Ungueltiges Bildformat.');
+  if (s.length > MAX_IMAGE) throw new Error('Bild zu groß (bitte kleineres wählen).');
+  return s;
+}
+// Quelle nur als http(s)-Link (keine javascript:/data:-URLs).
+function cleanSourceUrl(url) {
+  if (url == null || url === '') return null;
+  const s = String(url).trim();
+  if (!/^https?:\/\/[^\s]{3,500}$/i.test(s)) throw new Error('Quelle muss ein http(s)-Link sein.');
+  return s;
+}
 
 export function createSocialService(social, foundationRepo, options = {}) {
   // Wer darf moderieren (Reports bearbeiten, fremde Inhalte entfernen)? Bewusst
@@ -146,15 +163,17 @@ export function createSocialService(social, foundationRepo, options = {}) {
     },
 
     // ── Posts ──
-    createPost(actorUserId, { body, visibility = 'public', refType = null, refId = null, kind = 'post' }) {
+    createPost(actorUserId, { body, visibility = 'public', refType = null, refId = null, kind = 'post', image = null, sourceUrl = null }) {
       requireUser(actorUserId);
       const text = String(body ?? '').trim();
-      if (!text) throw new Error('Beitrag darf nicht leer sein.');
+      const img = cleanImage(image);
+      const src = cleanSourceUrl(sourceUrl);
+      if (!text && !img) throw new Error('Beitrag darf nicht leer sein (Text oder Bild).');
       if (text.length > MAX_BODY) throw new Error(`Beitrag zu lang (max ${MAX_BODY}).`);
       if (!['public', 'followers'].includes(visibility)) throw new Error('Ungueltige Sichtbarkeit.');
       if (!['post', 'news'].includes(kind)) throw new Error('Ungueltige Beitragsart.');
       if (refType && !['shortage', 'price', 'news', 'rabatt'].includes(refType)) throw new Error('Ungueltiger Referenztyp.');
-      const post = social.createPost({ authorUserId: actorUserId, body: text, visibility, refType, refId, kind });
+      const post = social.createPost({ authorUserId: actorUserId, body: text, visibility, refType, refId, kind, image: img, sourceUrl: src });
       notifyMentions(text, actorUserId, 'post', post.id);
       return post;
     },

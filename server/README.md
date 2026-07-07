@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Bilder & Quellen in Beiträgen/News:** Bild posten (Client verkleinert auf
+>   ~1200px/JPEG → kleine `data:image`-URL, serverseitig auf Format/Größe geprüft, nur
+>   `data:image`, kein Fremd-Host/Skript), Quelle als http(s)-Link (`🔗 Quelle`,
+>   javascript:/data:-URLs abgelehnt). News zeigen Quellenangabe (Seed-News mit
+>   BASG/Kammer/Gehaltskasse verlinkt) — passt zur Regel „Aussagen nur mit Quelle".
+>   Body-Limit auf 2 MB erhöht. (94 Tests grün, im Browser verifiziert.)
 > - ✅ **Bestandsaustausch (Biete & Suche):** löst das tägliche Engpass-Problem —
 >   Apotheke mit Überbestand findet die, die sucht. Eigenes Modul (`db/exchange.sql`,
 >   Repo/Service/Tests), Reiter „🔄 Biete/Suche" mit Formular, Filter (Angebote/Gesuche),

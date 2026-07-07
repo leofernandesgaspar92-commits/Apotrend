@@ -88,6 +88,28 @@ const api = async (method, path, body) => {
 const el = (h) => { const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.childElementCount===1 ? t.content.firstElementChild : t.content; };
 const esc = (s) => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 // Relative Zeit in Klartext (Owner-Vorgabe: keine kryptischen Kürzel).
+// Bild lokal verkleinern (max. Kante ~1200px, JPEG) -> kleine data-URL, spart Speicher/Upload.
+function fileToDataUrl(file, maxDim = 1200, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    if (!file || !/^image\//.test(file.type)) return reject(new Error('Bitte ein Bild wählen.'));
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Bild konnte nicht gelesen werden.'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Bild ungültig.'));
+      img.onload = () => {
+        let { width, height } = img;
+        const scale = Math.min(1, maxDim / Math.max(width, height));
+        width = Math.round(width * scale); height = Math.round(height * scale);
+        const c = document.createElement('canvas'); c.width = width; c.height = height;
+        c.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(c.toDataURL('image/jpeg', quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 const relTime = (iso) => {
   if (!iso) return '';
   const d = new Date(iso), diff = (Date.now() - d.getTime()) / 1000;
@@ -185,6 +207,13 @@ async function mainScreen() {
     <div class="card">
       <label>Was gibt's Neues? (kurzer Fachbeitrag)</label>
       <textarea id="pb" placeholder="Bei uns gerade Engpass bei Amoxicillin — wer hat noch Bestand?"></textarea>
+      <input id="psrc" placeholder="🔗 Quelle (Link, optional – z.B. BASG/Kammer)" style="margin-top:6px">
+      <div class="row" style="margin-top:6px">
+        <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px">📷 Bild<input type="file" id="pimg" accept="image/*" style="display:none"></label>
+        <span class="muted" id="pimgname" style="font-size:13px"></span>
+        <button class="ghost small" id="pimgclear" style="display:none">✕ entfernen</button>
+      </div>
+      <img id="pimgprev" style="display:none;max-width:100%;border-radius:8px;margin-top:6px" />
       <div class="row" style="margin-top:8px">
         <select id="pv" style="max-width:220px">
           <option value="public">🌍 Öffentlich (alle Apotheker)</option>
@@ -212,9 +241,21 @@ async function mainScreen() {
     <div id="feed"></div>
   `));
 
+  let composeImage = null;
+  const pimg = document.getElementById('pimg'), pimgprev = document.getElementById('pimgprev');
+  const pimgname = document.getElementById('pimgname'), pimgclear = document.getElementById('pimgclear');
+  const clearImg = () => { composeImage = null; pimg.value=''; pimgprev.style.display='none'; pimgprev.src=''; pimgname.textContent=''; pimgclear.style.display='none'; };
+  pimg.onchange = async () => {
+    const f = pimg.files[0]; if (!f) return;
+    try { composeImage = await fileToDataUrl(f); pimgprev.src = composeImage; pimgprev.style.display='block'; pimgname.textContent = f.name; pimgclear.style.display='inline-block'; document.getElementById('perr').textContent=''; }
+    catch(e){ document.getElementById('perr').textContent = e.message; clearImg(); }
+  };
+  pimgclear.onclick = clearImg;
   document.getElementById('pgo').onclick = async () => {
-    try { await api('POST','/api/posts',{ body:v('pb'), visibility:document.getElementById('pv').value }); document.getElementById('pb').value=''; loadFeed(); }
-    catch(e){ document.getElementById('perr').textContent = e.message; }
+    try {
+      await api('POST','/api/posts',{ body:v('pb'), visibility:document.getElementById('pv').value, image:composeImage, sourceUrl:v('psrc') });
+      document.getElementById('pb').value=''; document.getElementById('psrc').value=''; clearImg(); loadFeed();
+    } catch(e){ document.getElementById('perr').textContent = e.message; }
   };
   document.getElementById('fgo').onclick = async () => {
     try { await api('POST','/api/follow',{ handle:v('fh') }); document.getElementById('fh').value=''; document.getElementById('ferr').textContent=''; loadFeed(); }
@@ -280,13 +321,30 @@ async function loadNews() {
   feed.appendChild(el(`<div class="card">
     <label>News teilen (Kammer-Mitteilung, Gesetzesänderung, Branchennews …)</label>
     <textarea id="nb" placeholder="Regulatorische/fachliche News, die für Kolleg:innen relevant ist…"></textarea>
+    <input id="nsrc" placeholder="🔗 Quelle (Link – empfohlen bei News)" style="margin-top:6px">
+    <div class="row" style="margin-top:6px">
+      <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px">📷 Bild<input type="file" id="nimg" accept="image/*" style="display:none"></label>
+      <span class="muted" id="nimgname" style="font-size:13px"></span>
+      <button class="ghost small" id="nimgclear" style="display:none">✕</button>
+    </div>
+    <img id="nimgprev" style="display:none;max-width:100%;border-radius:8px;margin-top:6px" />
     <div style="margin-top:8px"><button id="ngo">Als News teilen</button></div>
     <div class="err" id="nerr"></div>
   </div><div id="newslist"></div>`));
+  let newsImage = null;
+  const nimg = document.getElementById('nimg'), nimgprev = document.getElementById('nimgprev');
+  const nimgname = document.getElementById('nimgname'), nimgclear = document.getElementById('nimgclear');
+  const clearN = () => { newsImage=null; nimg.value=''; nimgprev.style.display='none'; nimgprev.src=''; nimgname.textContent=''; nimgclear.style.display='none'; };
+  nimg.onchange = async () => {
+    const f = nimg.files[0]; if (!f) return;
+    try { newsImage = await fileToDataUrl(f); nimgprev.src=newsImage; nimgprev.style.display='block'; nimgname.textContent=f.name; nimgclear.style.display='inline-block'; document.getElementById('nerr').textContent=''; }
+    catch(e){ document.getElementById('nerr').textContent = e.message; clearN(); }
+  };
+  nimgclear.onclick = clearN;
   document.getElementById('ngo').onclick = async () => {
     const t = document.getElementById('nb');
-    if (!t.value.trim()) return;
-    try { await api('POST','/api/posts',{ body:t.value, kind:'news', visibility:'public' }); t.value=''; loadNews(); }
+    if (!t.value.trim() && !newsImage) { document.getElementById('nerr').textContent='Text oder Bild nötig.'; return; }
+    try { await api('POST','/api/posts',{ body:t.value, kind:'news', visibility:'public', image:newsImage, sourceUrl:v('nsrc') }); t.value=''; document.getElementById('nsrc').value=''; clearN(); loadNews(); }
     catch(e){ document.getElementById('nerr').textContent = e.message; }
   };
   const list = document.getElementById('newslist');
@@ -702,6 +760,8 @@ function postCard(p) {
     </div>
     <div class="muted" style="font-size:13px" title="${esc(p.created_at)}">🕒 ${relTime(p.created_at)}</div>
     <div class="post-body" data-body>${linkifyMentions(p.body)}</div>
+    ${p.image && /^data:image\//.test(p.image) ? `<img src="${p.image}" alt="Bild zum Beitrag" style="max-width:100%;border-radius:10px;margin-top:8px;display:block" />` : ''}
+    ${p.source_url ? `<div style="margin-top:6px"><a href="${esc(p.source_url)}" target="_blank" rel="noopener noreferrer" class="mention">🔗 Quelle</a></div>` : ''}
     <div class="vis" data-edited ${p.edited_at?'':'style="display:none"'}>✏️ bearbeitet</div>
     ${refChip(p.ref_summary)}
     <div class="vis">${p.visibility==='public'?'🌍 öffentlich':'👥 nur Follower'}</div>
