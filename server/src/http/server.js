@@ -9,9 +9,11 @@ import { fileURLToPath } from 'node:url';
 import { createMemoryRepo } from '../repo/memoryRepo.js';
 import { createSocialRepo } from '../repo/socialRepo.js';
 import { createShortagesRepo } from '../repo/shortagesRepo.js';
+import { createPricesRepo } from '../repo/pricesRepo.js';
 import { createOrgAuthService, ForbiddenError } from '../services/orgAuth.js';
 import { createSocialService } from '../services/social.js';
 import { createShortagesService } from '../services/shortages.js';
+import { createPricesService } from '../services/prices.js';
 import { issueToken, verifyToken } from './token.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -25,13 +27,19 @@ const socialRepo = createSocialRepo();
 const social = createSocialService(socialRepo, repo);
 const shortagesRepo = createShortagesRepo();
 const shortages = createShortagesService(shortagesRepo, social);
+const pricesRepo = createPricesRepo();
+const prices = createPricesService(pricesRepo, social);
 
-// Feed-Beiträge, die einen Engpass referenzieren, um eine kurze Engpass-Info anreichern.
+// Feed-Beiträge, die ein Marktobjekt (Engpass/Preis) referenzieren, anreichern.
 function enrichPosts(posts) {
   return posts.map(p => {
     if (p.ref_type === 'shortage' && p.ref_id) {
       const s = shortagesRepo.get(p.ref_id);
-      if (s) return { ...p, ref_summary: { wirkstoff: s.wirkstoff, bezeichnung: s.bezeichnung, status: s.status } };
+      if (s) return { ...p, ref_summary: { kind: 'shortage', wirkstoff: s.wirkstoff, bezeichnung: s.bezeichnung, status: s.status } };
+    }
+    if (p.ref_type === 'price' && p.ref_id) {
+      const pr = pricesRepo.get(p.ref_id);
+      if (pr) return { ...p, ref_summary: { kind: 'price', bezeichnung: pr.bezeichnung, supplier: pr.supplier, aep: pr.aep, currency: pr.currency, trend_pct: pr.trend_pct } };
     }
     return p;
   });
@@ -97,6 +105,15 @@ const routes = [
     return d;
   }],
   ['POST', /^\/api\/shortages\/([^/]+)\/post$/, true, async ({ userId, params, body }) => shortages.postAbout(userId, params[0], { body: body.body, visibility: body.visibility })],
+
+  // ── Preise (Priorität 3) ──
+  ['GET', /^\/api\/prices$/, true, async ({ userId }) => ({ comparisons: prices.comparisons(userId) })],
+  ['GET', /^\/api\/prices\/([^/]+)$/, true, async ({ userId, params }) => {
+    const d = prices.withActivity(userId, params[0]);
+    if (!d) { const e = new Error('Preis nicht gefunden'); e.status = 404; throw e; }
+    return d;
+  }],
+  ['POST', /^\/api\/prices\/([^/]+)\/post$/, true, async ({ userId, params, body }) => prices.postAbout(userId, params[0], { body: body.body, visibility: body.visibility })],
 ];
 
 const server = http.createServer(async (req, res) => {

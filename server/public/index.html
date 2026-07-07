@@ -151,6 +151,7 @@ async function mainScreen() {
       <button data-tab="public" class="active">🌍 Öffentlich</button>
       <button data-tab="home">🏠 Mein Feed</button>
       <button data-tab="shortages">📦 Engpässe</button>
+      <button data-tab="prices">💶 Preise</button>
     </div>
     <div id="feed"></div>
   `));
@@ -170,7 +171,11 @@ async function mainScreen() {
   loadTab();
 }
 
-function loadTab() { tab === 'shortages' ? loadShortages() : loadFeed(); }
+function loadTab() {
+  if (tab === 'shortages') return loadShortages();
+  if (tab === 'prices') return loadPrices();
+  loadFeed();
+}
 
 const STATUS = { kritisch:['🔴 Kritisch','#c0392b'], eingeschraenkt:['🟠 Eingeschränkt','#c77700'], verfuegbar:['🟢 Verfügbar','#00885a'] };
 const PROV = { verified:'✔ BASG (verifiziert)', reference:'📌 Referenzdaten', simulated:'⚠ simuliert' };
@@ -226,7 +231,66 @@ function shortageCard(s) {
   return card;
 }
 
+async function loadPrices() {
+  const feed = document.getElementById('feed');
+  feed.innerHTML = '<div class="muted">lädt…</div>';
+  try {
+    const d = await api('GET','/api/prices');
+    feed.innerHTML = '';
+    d.comparisons.forEach(g => feed.appendChild(priceGroup(g)));
+  } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+}
+
+function trendStr(t) { if (t>0) return `<span style="color:#c0392b">▲ +${t}%</span>`; if (t<0) return `<span style="color:#00885a">▼ ${t}%</span>`; return '<span class="muted">±0%</span>'; }
+
+function priceGroup(g) {
+  const card = el(`<div class="card">
+    <div class="post-author">${esc(g.bezeichnung)} <span class="handle">${esc(g.wirkstoff||'')}</span></div>
+    <div class="muted" style="margin:2px 0 8px">Preisvergleich (AEP) · günstigster oben · 📌 Referenzdaten</div>
+    <div data-offers></div>
+  </div>`);
+  const box = card.querySelector('[data-offers]');
+  g.offers.forEach((o, i) => {
+    const row = el(`<div class="comment">
+      <div class="row">
+        <span>${i===0?'⭐ ':''}<b>${esc(o.supplier)}</b></span>
+        <span class="sp" style="flex:1"></span>
+        <span><b>€ ${Number(o.aep).toFixed(2)}</b> ${trendStr(o.trend_pct)}</span>
+      </div>
+      <div class="row" style="margin-top:4px">
+        <span class="muted">${o.post_count||0} Beiträge dazu</span>
+        <span class="sp" style="flex:1"></span>
+        <button class="ghost small" data-pp>✍ Dazu posten</button>
+      </div>
+      <div class="hidden" data-ppbox style="margin-top:6px">
+        <textarea data-ppinput placeholder="z.B. Preis bei ${esc(o.supplier)} gerade gestiegen…"></textarea>
+        <div style="margin-top:4px"><button class="small" data-ppsend>Posten</button></div>
+      </div>
+    </div>`);
+    const ppbox = row.querySelector('[data-ppbox]');
+    row.querySelector('[data-pp]').onclick = () => ppbox.classList.toggle('hidden');
+    row.querySelector('[data-ppsend]').onclick = async () => {
+      const t = row.querySelector('[data-ppinput]');
+      if (!t.value.trim()) return;
+      try { await api('POST',`/api/prices/${o.id}/post`,{ body:t.value }); t.value=''; loadPrices(); }
+      catch(e){ alert(e.message); }
+    };
+    box.appendChild(row);
+  });
+  return card;
+}
+
 const REACTS = [['hilfreich','👍 Hilfreich'],['danke','🙏 Danke'],['bestaetigt','✅ Bestätigt'],['interessant','💡 Interessant']];
+
+function refChip(r) {
+  if (!r) return '';
+  const base = 'background:#eef3f0;border:1px solid var(--line);border-radius:8px;padding:6px 10px;display:inline-block;margin-bottom:4px';
+  if (r.kind === 'price') {
+    const t = r.trend_pct>0?` ▲ +${r.trend_pct}%`:(r.trend_pct<0?` ▼ ${r.trend_pct}%`:'');
+    return `<div class="vis" style="${base}">💶 Preis: <b>${esc(r.bezeichnung)}</b> — ${esc(r.supplier)} € ${Number(r.aep).toFixed(2)}${t}</div>`;
+  }
+  return `<div class="vis" style="${base}">📦 Engpass: <b>${esc(r.wirkstoff)}</b> — ${esc(r.bezeichnung)}</div>`;
+}
 
 async function loadFeed() {
   const feed = document.getElementById('feed');
@@ -252,7 +316,7 @@ function postCard(p) {
       ${mine?'':'<button class="ghost small" data-follow="'+esc(a.handle)+'">Folgen</button>'}
     </div>
     <div class="post-body">${esc(p.body)}</div>
-    ${p.ref_summary?`<div class="vis" style="background:#eef3f0;border:1px solid var(--line);border-radius:8px;padding:6px 10px;display:inline-block">📦 Engpass: <b>${esc(p.ref_summary.wirkstoff)}</b> — ${esc(p.ref_summary.bezeichnung)}</div>`:''}
+    ${refChip(p.ref_summary)}
     <div class="vis">${p.visibility==='public'?'🌍 öffentlich':'👥 nur Follower'}</div>
     <div class="reacts">
       ${REACTS.map(([k,lab])=>`<button data-react="${k}">${lab} ${rc[k]||0}</button>`).join('')}

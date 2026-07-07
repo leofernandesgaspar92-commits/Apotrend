@@ -15,7 +15,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   **Herkunfts-Flag** (verifiziert/Referenz/simuliert), „Dazu posten" aus dem
 >   Engpass heraus, „X Apotheker haben dazu gepostet", Engpass-Chip am Beitrag im
 >   Feed (`posts.ref_type='shortage'`). (40 Tests grün, im Browser verifiziert.)
-> - ⏳ **Priorität 3 — Preise**, dann News (4), Top-10-Rabatte (5).
+> - ✅ **Priorität 3 — Preise (mit Feed verknüpft):** Preisvergleich je Präparat
+>   (mehrere Lieferanten, günstigster oben), Trend (▲/▼ %), Herkunfts-Flag,
+>   „Dazu posten" + Preis-Chip am Beitrag (`posts.ref_type='price'`). (43 Tests grün.)
+> - ⏳ **Priorität 4 — News**, dann Top-10-Rabatte (5).
 > - ✅ **Baustein 1 — Fundament:** Organisationen · Nutzer · Mitgliedschaften ·
 >   echte Auth (scrypt) · Mandanten-Isolation + RBAC.
 > - ✅ **Baustein 2 — collab (Teams-artig):** Kanäle · Nachrichten · Notizen ·
