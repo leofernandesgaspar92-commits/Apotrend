@@ -606,7 +606,7 @@ function postCard(p) {
   card.querySelector('[data-csend]').onclick = async () => {
     const inp = card.querySelector('[data-cinput]');
     if (!inp.value.trim()) return;
-    try { await api('POST',`/api/posts/${p.id}/comments`,{ body:inp.value }); inp.value=''; loadComments(p.id, card); loadFeed(); } catch(e){ alert(e.message); }
+    try { await api('POST',`/api/posts/${p.id}/comments`,{ body:inp.value }); inp.value=''; loadComments(p.id, card); } catch(e){ alert(e.message); }
   };
   return card;
 }
@@ -616,7 +616,44 @@ async function loadComments(postId, card) {
   list.innerHTML = '<div class="muted">lädt…</div>';
   const d = await api('GET',`/api/posts/${postId}/comments`);
   list.innerHTML = d.comments.length ? '' : '<div class="muted">Noch keine Kommentare.</div>';
-  d.comments.forEach(c => list.appendChild(el(`<div class="comment">${esc(c.body)}</div>`)));
+  d.comments.forEach(c => list.appendChild(commentRow(postId, c, card)));
+  const cb = card.querySelector('[data-comments]');
+  if (cb) cb.textContent = `💬 ${d.comments.length} Kommentare`;
+}
+
+function commentRow(postId, c, card) {
+  const au = c.author || {};
+  const mine = me && (c.author_user_id === me.user_id || au.handle === me.handle);
+  const row = el(`<div class="comment">
+    <div class="row" style="align-items:baseline">
+      <b class="clickable" data-openprofile="${esc(au.handle||'')}">${esc(au.display_name||'Unbekannt')}</b>
+      <span class="handle clickable" data-openprofile="${esc(au.handle||'')}">@${esc(au.handle||'?')}</span>
+      ${c.edited_at?'<span class="vis" style="margin-left:6px">✏️ bearbeitet</span>':''}
+      <span class="sp" style="flex:1"></span>
+      ${mine?'<button class="ghost small" data-ced>✏️</button><button class="ghost small" data-cdel>🗑</button>':''}
+    </div>
+    <div data-cbody style="margin-top:2px">${esc(c.body)}</div>
+  </div>`);
+  row.querySelectorAll('[data-openprofile]').forEach(el => { if (el.dataset.openprofile) el.onclick = () => openProfile(el.dataset.openprofile); });
+  const del = row.querySelector('[data-cdel]');
+  if (del) del.onclick = async () => {
+    if (!confirm('Kommentar löschen?')) return;
+    try { await api('POST',`/api/comments/${c.id}/delete`); loadComments(postId, card); } catch(e){ alert(e.message); }
+  };
+  const ed = row.querySelector('[data-ced]');
+  if (ed) ed.onclick = () => {
+    const bodyEl = row.querySelector('[data-cbody]');
+    if (row.querySelector('[data-cedit]')) return;
+    const box = el(`<div data-cedit style="margin-top:4px"><input data-ci value="${esc(bodyEl.textContent)}">
+      <div class="row" style="margin-top:4px"><button class="small" data-cs>Speichern</button><button class="ghost small" data-cc>Abbrechen</button></div></div>`);
+    bodyEl.style.display='none'; bodyEl.after(box);
+    box.querySelector('[data-cc]').onclick = () => { box.remove(); bodyEl.style.display=''; };
+    box.querySelector('[data-cs]').onclick = async () => {
+      try { await api('POST',`/api/comments/${c.id}/edit`,{ body: box.querySelector('[data-ci]').value }); loadComments(postId, card); }
+      catch(e){ alert(e.message); }
+    };
+  };
+  return row;
 }
 
 async function refreshNotifCount() {

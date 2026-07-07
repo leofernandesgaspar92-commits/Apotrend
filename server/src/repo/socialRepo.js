@@ -76,12 +76,14 @@ export function createSocialRepo() {
     createComment(c) {
       const cm = {
         id: uuid(), post_id: c.postId, parent_comment_id: c.parentCommentId ?? null,
-        author_user_id: c.authorUserId, body: c.body, created_at: now(), deleted_at: null,
+        author_user_id: c.authorUserId, body: c.body, created_at: now(), edited_at: null, deleted_at: null,
       };
       comments.set(cm.id, cm);
       return { ...cm };
     },
     getComment(id) { const c = comments.get(id); return c ? { ...c } : null; },
+    updateCommentBody(id, body) { const c = comments.get(id); if (!c) return null; c.body = body; c.edited_at = now(); return { ...c }; },
+    softDeleteComment(id) { const c = comments.get(id); if (c) c.deleted_at = now(); return c ? { ...c } : null; },
     listComments(postId) {
       return [...comments.values()].filter(c => c.post_id === postId && !c.deleted_at)
         .sort((a, b) => a.created_at.localeCompare(b.created_at)).map(c => ({ ...c }));

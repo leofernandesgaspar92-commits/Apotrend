@@ -190,7 +190,25 @@ export function createSocialService(social, foundationRepo, options = {}) {
     listComments(viewerUserId, postId) {
       const p = social.getPost(postId);
       if (!p || !visibleTo(p, viewerUserId)) throw new ForbiddenError('Beitrag nicht sichtbar.');
-      return social.listComments(postId);
+      return social.listComments(postId).map(c => {
+        const prof = social.getProfileByUserId(c.author_user_id);
+        return { ...c, author: prof ? { handle: prof.handle, display_name: prof.display_name } : null };
+      });
+    },
+    editComment(actorUserId, commentId, body) {
+      const c = social.getComment(commentId);
+      if (!c || c.deleted_at) throw new Error('Kommentar nicht gefunden.');
+      if (c.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Autor darf bearbeiten.');
+      const text = String(body ?? '').trim();
+      if (!text) throw new Error('Kommentar darf nicht leer sein.');
+      if (text.length > MAX_BODY) throw new Error(`Kommentar zu lang (max ${MAX_BODY}).`);
+      return social.updateCommentBody(commentId, text);
+    },
+    deleteComment(actorUserId, commentId) {
+      const c = social.getComment(commentId);
+      if (!c || c.deleted_at) throw new Error('Kommentar nicht gefunden.');
+      if (c.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Autor darf loeschen.');
+      return social.softDeleteComment(commentId);
     },
 
     // ── Reaktionen (typisiert, kein reines Like) ──

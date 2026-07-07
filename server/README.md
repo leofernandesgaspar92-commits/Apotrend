@@ -39,6 +39,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   nur der Autor, serverseitig erzwungen), fremde Beiträge melden (🚩 →
 >   `POST /api/posts/:id/report`, Moderations-Queue). Erfüllt die Owner-Vorgabe
 >   „Beiträge löschen/melden". (Im Browser verifiziert.)
+> - ✅ **Kommentare bearbeiten/löschen + Autor sichtbar:** Kommentare zeigen jetzt
+>   Verfasser:in (anklickbar → Profil); eigene Kommentare inline bearbeiten (✏️,
+>   `edited_at`) oder löschen (🗑), nur der Autor (serverseitig erzwungen). Thread
+>   bleibt beim Posten offen, Zähler aktualisiert lokal. (`POST /api/comments/:id/edit`,
+>   `/delete`; 76 Tests grün, im Browser verifiziert.)
 > - ✅ **Beitrag bearbeiten:** eigene Posts nachträglich korrigieren (inline, `✏️
 >   Bearbeiten`), `edited_at` wird gesetzt und als „✏️ bearbeitet" angezeigt. Nur der
 >   Autor (serverseitig erzwungen), gelöschte Beiträge nicht editierbar.
