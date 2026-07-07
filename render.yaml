@@ -5,10 +5,12 @@
 # WICHTIG: Die neue App liegt im Unterordner server/ auf Branch feed-first.
 # rootDir + branch sind deshalb explizit gesetzt.
 #
-# HINWEIS ZUR PERSISTENZ: Der Server hält Daten aktuell nur im Arbeitsspeicher
-# (In-Memory). Bei jedem Neustart/Deploy sind Beiträge/Profile wieder leer, nur
-# die Seed-/Redaktionsdaten laden neu. Dauerhafte Speicherung = nächster Schritt
-# (Postgres/EU hinter dem bestehenden Repository-Seam).
+# PERSISTENZ: Der Server kann seinen Zustand als JSON-Snapshot speichern
+# (APOTREND_DATA_FILE). Damit die Datei einen Neustart/Deploy überlebt, braucht
+# es eine dauerhafte Platte (Render "disk" — nur im Bezahltarif). Auf dem
+# kostenlosen Tarif ist das Dateisystem flüchtig: Daten überleben zwar einen
+# Prozess-Neustart innerhalb derselben Instanz, aber nicht ein neues Deploy.
+# Für echten Dauerbetrieb / EU-Mehr-Instanz: Postgres hinter demselben Seam.
 
 services:
   - type: web
@@ -23,4 +25,12 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "22"
+      # Snapshot-Persistenz aktivieren (Pfad unter /var/data = Render-Disk-Mountpoint).
+      - key: APOTREND_DATA_FILE
+        value: /var/data/apotrend.json
       # PORT wird von Render automatisch gesetzt — der Server liest process.env.PORT.
+    # Dauerhafte Platte (nur Bezahltarif). Zum Aktivieren einkommentieren:
+    # disk:
+    #   name: apotrend-data
+    #   mountPath: /var/data
+    #   sizeGB: 1

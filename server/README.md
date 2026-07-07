@@ -44,7 +44,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 > - ✅ **Deployment-fähig gemacht:** `/api/health`-Endpunkt, `Dockerfile`,
 >   `render.yaml` (Render-Blueprint) und **`DEPLOY.md`** (Schritt-für-Schritt für
 >   Render/Railway/Docker). App braucht einen Node-Host (nicht GitHub Pages!).
->   ⚠️ Persistenz weiterhin In-Memory → Daten pro Neustart leer (Postgres = nächster Schritt).
+> - ✅ **Persistenz (Snapshot, Built-ins-only):** kompletter Zustand als JSON
+>   auf Platte (`APOTREND_DATA_FILE`), Laden beim Start, Speichern nach jeder
+>   Schreiboperation + beim Herunterfahren (atomar). Daten überleben Neustart —
+>   **im echten Server-Neustart verifiziert**. Ohne die ENV-Variable: reines
+>   In-Memory (Tests unverändert). Postgres/EU bleibt der Cloud-Zielschritt
+>   hinter demselben Repository-Seam.
 > - ✅ **Baustein 1 — Fundament:** Organisationen · Nutzer · Mitgliedschaften ·
 >   echte Auth (scrypt) · Mandanten-Isolation + RBAC.
 > - ✅ **Baustein 2 — collab (Teams-artig):** Kanäle · Nachrichten · Notizen ·

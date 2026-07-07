@@ -54,5 +54,7 @@ export function createPricesRepo({ seed = true } = {}) {
       }));
     },
     listFlat() { return [...prices.values()].map(p => ({ ...p })); },
+    __dump() { return [...prices]; },
+    __load(rows) { if (!rows) return; prices.clear(); for (const [k, v] of rows) prices.set(k, v); },
   };
 }

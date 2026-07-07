@@ -1,0 +1,5 @@
+# Lokale Laufzeit-Daten der Snapshot-Persistenz (APOTREND_DATA_FILE) — nie committen.
+data/
+*.data.json
+apo-data*.json
+node_modules/

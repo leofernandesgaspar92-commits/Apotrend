@@ -169,5 +169,21 @@ export function createSocialRepo() {
       return [...reports.values()].filter(r => !status || r.status === status).sort((a, b) => a.created_at.localeCompare(b.created_at)).map(r => ({ ...r }));
     },
     updateReport(id, patch) { const r = reports.get(id); if (!r) return null; Object.assign(r, patch); return { ...r }; },
+
+    // ── Snapshot-Persistenz ──────────────────────────────────────────────────
+    __dump() {
+      return {
+        profiles: [...profiles], profilesByHandle: [...profilesByHandle], posts: [...posts],
+        comments: [...comments], reactions: [...reactions], follows: [...follows],
+        notifications: [...notifications], dmThreads: [...dmThreads], dmMessages: [...dmMessages], reports: [...reports],
+      };
+    },
+    __load(d) {
+      if (!d) return;
+      const fill = (map, rows) => { map.clear(); for (const [k, v] of rows || []) map.set(k, v); };
+      fill(profiles, d.profiles); fill(profilesByHandle, d.profilesByHandle); fill(posts, d.posts);
+      fill(comments, d.comments); fill(reactions, d.reactions); fill(follows, d.follows);
+      fill(notifications, d.notifications); fill(dmThreads, d.dmThreads); fill(dmMessages, d.dmMessages); fill(reports, d.reports);
+    },
   };
 }

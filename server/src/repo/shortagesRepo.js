@@ -40,5 +40,7 @@ export function createShortagesRepo({ seed = true } = {}) {
       const rank = { kritisch: 2, eingeschraenkt: 1, verfuegbar: 0 };
       return [...shortages.values()].sort((a, b) => rank[b.status] - rank[a.status]).map(s => ({ ...s }));
     },
+    __dump() { return [...shortages]; },
+    __load(rows) { if (!rows) return; shortages.clear(); for (const [k, v] of rows) shortages.set(k, v); },
   };
 }

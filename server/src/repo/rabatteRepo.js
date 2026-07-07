@@ -61,5 +61,7 @@ export function createRabatteRepo({ seed = true, today = null } = {}) {
         .map((r, i) => ({ ...r, rank: i + 1 }));
     },
     listFlat() { return [...rabatte.values()].map(r => ({ ...r })); },
+    __dump() { return [...rabatte]; },
+    __load(rows) { if (!rows) return; rabatte.clear(); for (const [k, v] of rows) rabatte.set(k, v); },
   };
 }

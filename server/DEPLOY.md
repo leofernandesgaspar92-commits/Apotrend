@@ -57,17 +57,34 @@ Für Fly.io: `fly launch` im Ordner `server/` (nutzt das Dockerfile), dann `fly 
 
 ---
 
-## Wichtig: Datenspeicherung (ehrlicher Hinweis)
+## Datenspeicherung (Persistenz)
 
-Aktuell liegen alle Daten **nur im Arbeitsspeicher** (In-Memory). Das heißt:
+Der Server kann seinen kompletten Zustand als **JSON-Snapshot** auf die Platte
+schreiben und beim Start zurückladen — Beiträge, Profile, Follows, Nachrichten
+usw. überleben dann einen Neustart.
 
-- Bei **jedem Neustart / neuen Deploy** sind Beiträge, Profile, Follows,
-  Nachrichten usw. **wieder leer**. Nur die kuratierten Seed-Daten (Beispiel-
-  Engpässe/Preise/Rabatte) und der Redaktions-Account laden automatisch neu.
-- Zum **Ausprobieren/Zeigen** reicht das vollständig.
-- Für den **echten Betrieb** kommt als nächster Schritt **Postgres (EU-Region)**
-  hinter das bereits vorhandene Repository-Interface — dann überleben Daten den
-  Neustart. Das ist bewusst noch offen (Kosten/Region/Anbieter = deine Entscheidung).
+Aktiviert wird das über eine Umgebungsvariable:
+
+```bash
+APOTREND_DATA_FILE=/pfad/zu/apotrend.json npm start
+```
+
+- **Ohne** die Variable läuft alles rein **In-Memory** (Neustart = leer). Gut für Tests.
+- **Mit** der Variable wird nach jeder Schreiboperation (gedrosselt, atomar) und
+  beim sauberen Herunterfahren gespeichert.
+
+**Wichtig je nach Host:**
+- **Render (kostenlos):** Das Dateisystem ist *flüchtig*. Daten überleben einen
+  Prozess-Neustart innerhalb derselben Instanz, aber **nicht ein neues Deploy**.
+  Für dauerhafte Speicherung eine **Render-Disk** anlegen (Bezahltarif) und den
+  Mountpfad als `APOTREND_DATA_FILE` verwenden (in `render.yaml` vorbereitet).
+- **Railway / Fly.io / eigener Server:** ein persistentes Volume mounten und
+  `APOTREND_DATA_FILE` daraufsetzen.
+
+**Ehrlicher Ausblick:** Der JSON-Snapshot ist ideal für Einzelinstanz + Ausprobieren.
+Für **echten Mehr-Instanz-Betrieb in der EU** kommt später **Postgres** hinter
+denselben Repository-Seam (die `db/*.sql`-Schemata liegen bereit). Der Umstieg
+berührt nur die Repo-Schicht, nicht die Services/UI.
 
 ---
 

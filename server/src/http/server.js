@@ -12,6 +12,7 @@ import { createSocialRepo } from '../repo/socialRepo.js';
 import { createShortagesRepo } from '../repo/shortagesRepo.js';
 import { createPricesRepo } from '../repo/pricesRepo.js';
 import { createRabatteRepo } from '../repo/rabatteRepo.js';
+import { createPersistence } from '../repo/persistence.js';
 import { createOrgAuthService, ForbiddenError } from '../services/orgAuth.js';
 import { createSocialService } from '../services/social.js';
 import { createShortagesService } from '../services/shortages.js';
@@ -24,21 +25,34 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, '..', '..', 'public');
 const PORT = process.env.PORT || 4000;
 
-// ── Dienste (einmalig, In-Memory) ──
+// ── Persistenz (optional, über APOTREND_DATA_FILE). Ohne die Variable: In-Memory. ──
+const persistence = createPersistence(process.env.APOTREND_DATA_FILE || null);
+const snapshot = persistence ? persistence.load() : null;
+const restoring = !!snapshot;
+
+// ── Dienste (einmalig) ──
 const repo = createMemoryRepo();
 const orgAuth = createOrgAuthService(repo);
 const socialRepo = createSocialRepo();
 const social = createSocialService(socialRepo, repo);
-const shortagesRepo = createShortagesRepo();
+// Marktdaten nur beim Frischstart seeden; beim Wiederherstellen kommen sie aus dem Snapshot.
+const shortagesRepo = createShortagesRepo({ seed: !restoring });
 const shortages = createShortagesService(shortagesRepo, social);
-const pricesRepo = createPricesRepo();
+const pricesRepo = createPricesRepo({ seed: !restoring });
 const prices = createPricesService(pricesRepo, social);
-const rabatteRepo = createRabatteRepo();
+const rabatteRepo = createRabatteRepo({ seed: !restoring });
 const rabatte = createRabatteService(rabatteRepo, social);
 const search = createSearchService({ social, shortagesRepo, pricesRepo, rabatteRepo });
 
-// Redaktions-Account + kuratierte News seeden (News = Beiträge im selben Feed).
-(function seedEditorial() {
+if (restoring) {
+  repo.__load(snapshot.foundation);
+  socialRepo.__load(snapshot.social);
+  shortagesRepo.__load(snapshot.shortages);
+  pricesRepo.__load(snapshot.prices);
+  rabatteRepo.__load(snapshot.rabatte);
+  console.log(`ApoTrend: Daten aus ${persistence.filePath} wiederhergestellt.`);
+} else {
+  // Redaktions-Account + kuratierte News nur beim Frischstart anlegen (sonst Dubletten).
   const red = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'ApoTrend' }, owner: { name: 'ApoTrend-Redaktion', email: 'redaktion@apotrend.at', password: crypto.randomUUID() } });
   social.createProfile(red.user.id, { handle: 'apotrend', displayName: 'ApoTrend-Redaktion', isEditorial: true });
   [
@@ -46,7 +60,25 @@ const search = createSearchService({ social, shortagesRepo, pricesRepo, rabatteR
     'BASG: Aktualisierte Engpassliste veröffentlicht — mehrere Antibiotika betroffen.',
     'Gehaltskasse: Anpassung der Großhandelskonditionen zum Quartalswechsel.',
   ].forEach(body => social.createPost(red.user.id, { body, kind: 'news' }));
-})();
+}
+
+// ── Snapshot sammeln + gedrosselt/atomar auf Platte schreiben ──
+function collectSnapshot() {
+  return {
+    foundation: repo.__dump(), social: socialRepo.__dump(),
+    shortages: shortagesRepo.__dump(), prices: pricesRepo.__dump(), rabatte: rabatteRepo.__dump(),
+  };
+}
+let saveTimer = null;
+function saveSoon() {
+  if (!persistence) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { try { persistence.save(collectSnapshot()); } catch (e) { console.error('Speichern fehlgeschlagen:', e.message); } }, 400);
+}
+function saveNow() { if (persistence) { try { persistence.save(collectSnapshot()); } catch { /* egal */ } } }
+if (persistence && !restoring) saveNow(); // Ausgangszustand (Seed) sofort sichern
+// Sauber speichern beim Herunterfahren (z.B. Deploy/Neustart auf dem Host).
+for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { saveNow(); process.exit(0); });
 
 // Feed-Beiträge, die ein Marktobjekt (Engpass/Preis) referenzieren, anreichern.
 function enrichPosts(posts) {
@@ -187,6 +219,7 @@ const server = http.createServer(async (req, res) => {
       const body = (req.method === 'POST') ? await readBody(req) : {};
       const params = (pathname.match(rx) || []).slice(1);
       const result = await handler({ userId, body, params, query: url.searchParams });
+      if (req.method === 'POST') saveSoon(); // Zustand nach jeder erfolgreichen Schreiboperation sichern
       return json(res, 200, result ?? { ok: true });
     } catch (e) {
       const code = e instanceof ForbiddenError ? 403 : (e.status || 400);

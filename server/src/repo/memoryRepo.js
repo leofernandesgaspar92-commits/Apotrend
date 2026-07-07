@@ -206,5 +206,28 @@ export function createMemoryRepo() {
     listDirectMessages(threadId) {
       return [...directMessages.values()].filter(m => m.thread_id === threadId).sort((a, b) => a.created_at.localeCompare(b.created_at)).map(m => ({ ...m }));
     },
+
+    // ── Snapshot-Persistenz (Repository-Seam-neutral) ────────────────────────
+    // Reine Datenausgabe/-einlesung; die Service-Schicht sieht davon nichts.
+    __dump() {
+      return {
+        organizations: [...organizations], users: [...users], usersByEmail: [...usersByEmail],
+        memberships: [...memberships], channels: [...channels],
+        channelMembers: [...channelMembers].map(([k, s]) => [k, [...s]]),
+        messages: [...messages], notes: [...notes], tasks: [...tasks],
+        connections: [...connections], feedPosts: [...feedPosts], postResponses: [...postResponses],
+        threads: [...threads], directMessages: [...directMessages],
+      };
+    },
+    __load(d) {
+      if (!d) return;
+      const fill = (map, rows) => { map.clear(); for (const [k, v] of rows || []) map.set(k, v); };
+      fill(organizations, d.organizations); fill(users, d.users); fill(usersByEmail, d.usersByEmail);
+      fill(memberships, d.memberships); fill(channels, d.channels);
+      channelMembers.clear(); for (const [k, arr] of d.channelMembers || []) channelMembers.set(k, new Set(arr));
+      fill(messages, d.messages); fill(notes, d.notes); fill(tasks, d.tasks);
+      fill(connections, d.connections); fill(feedPosts, d.feedPosts); fill(postResponses, d.postResponses);
+      fill(threads, d.threads); fill(directMessages, d.directMessages);
+    },
   };
 }
