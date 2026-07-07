@@ -44,6 +44,14 @@ export function createSocialRepo() {
       return id ? { ...profiles.get(id) } : null;
     },
     listProfiles() { return [...profiles.values()].map(p => ({ ...p })); },
+    updateProfile(userId, patch) {
+      const p = profiles.get(userId);
+      if (!p) return null;
+      for (const k of ['display_name', 'title', 'bio', 'specializations', 'avatar_url', 'visibility']) {
+        if (k in patch) p[k] = patch[k];
+      }
+      return { ...p };
+    },
 
     // ── Posts ──
     createPost(p) {

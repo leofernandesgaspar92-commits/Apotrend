@@ -65,6 +65,33 @@ export function createSocialService(social, foundationRepo, options = {}) {
     getProfile(handleOrUserId) {
       return social.getProfileByHandle(handleOrUserId) || social.getProfileByUserId(handleOrUserId);
     },
+    // Eigenes Profil bearbeiten (Handle bleibt als Identität unveränderlich).
+    updateProfile(actorUserId, { displayName, title, bio, specializations, visibility }) {
+      requireUser(actorUserId);
+      if (!social.getProfileByUserId(actorUserId)) throw new Error('Profil nicht gefunden.');
+      const patch = {};
+      if (displayName !== undefined) {
+        const dn = String(displayName).trim();
+        if (!dn) throw new Error('Anzeigename darf nicht leer sein.');
+        patch.display_name = dn;
+      }
+      if (title !== undefined) patch.title = String(title).trim() || null;
+      if (bio !== undefined) {
+        const b = String(bio).trim();
+        if (b.length > 500) throw new Error('Bio zu lang (max 500 Zeichen).');
+        patch.bio = b || null;
+      }
+      if (specializations !== undefined) {
+        const list = (Array.isArray(specializations) ? specializations : String(specializations).split(','))
+          .map(s => String(s).trim()).filter(Boolean).slice(0, 12);
+        patch.specializations = list;
+      }
+      if (visibility !== undefined) {
+        if (!['network', 'public'].includes(visibility)) throw new Error('Ungueltige Profil-Sichtbarkeit.');
+        patch.visibility = visibility;
+      }
+      return social.updateProfile(actorUserId, patch);
+    },
     // Profil-Detailseite: Profil + dessen sichtbare Beiträge + Zähler + Beziehung
     // zum Betrachter (folge ich? bin ich das selbst?).
     profilePage(viewerUserId, handleOrUserId) {

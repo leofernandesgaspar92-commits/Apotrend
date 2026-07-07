@@ -39,6 +39,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   nur der Autor, serverseitig erzwungen), fremde Beiträge melden (🚩 →
 >   `POST /api/posts/:id/report`, Moderations-Queue). Erfüllt die Owner-Vorgabe
 >   „Beiträge löschen/melden". (Im Browser verifiziert.)
+> - ✅ **Profil bearbeiten:** eigenes Profil pflegen — Anzeigename, Titel/Funktion,
+>   Bio (max. 500), Fachgebiete (Komma-getrennt). „✏️ Profil bearbeiten" auf dem
+>   eigenen Profil (`POST /api/profile`, nur eigenes; Handle bleibt unveränderlich).
+>   (68 Tests grün, im Browser verifiziert.)
 > - ✅ **Moderations-Ansicht (nur Redaktions-/Admin-Konto):** 🛡️-Queue der offenen
 >   Meldungen mit Beitrag, Melder:in und Grund; „Beitrag entfernen" oder „In Ordnung".
 >   Moderator = Konto mit `is_editorial` (Login über `APOTREND_ADMIN_EMAIL/PASSWORD`).

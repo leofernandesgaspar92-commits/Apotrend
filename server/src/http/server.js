@@ -159,6 +159,7 @@ const routes = [
     return { ...d, posts: enrichPosts(d.posts) };
   }],
   ['GET', /^\/api\/profiles\/([^/]+)$/, true, async ({ params }) => ({ profile: social.getProfile(params[0]) })],
+  ['POST', /^\/api\/profile$/, true, async ({ userId, body }) => ({ profile: social.updateProfile(userId, body) })],
   ['POST', /^\/api\/follow$/, true, async ({ userId, body }) => {
     const target = social.getProfile(body.handle);
     if (!target) { const e = new Error('Profil nicht gefunden'); e.status = 404; throw e; }
