@@ -148,6 +148,11 @@ const routes = [
   ['POST', /^\/api\/posts$/, true, async ({ userId, body }) => social.createPost(userId, { body: body.body, visibility: body.visibility, kind: body.kind })],
   ['GET', /^\/api\/news$/, true, async ({ userId }) => ({ posts: enrichPosts(social.newsFeed(userId)) })],
   ['GET', /^\/api\/hashtag\/([^/]+)$/, true, async ({ userId, params }) => ({ tag: decodeURIComponent(params[0]), posts: enrichPosts(social.postsByHashtag(userId, decodeURIComponent(params[0]))) })],
+  ['GET', /^\/api\/posts\/([^/]+)$/, true, async ({ userId, params }) => {
+    const p = social.getPost(userId, params[0]);
+    if (!p) { const e = new Error('Beitrag nicht gefunden'); e.status = 404; throw e; }
+    return { post: enrichPosts([p])[0] };
+  }],
   ['GET', /^\/api\/posts\/([^/]+)\/comments$/, true, async ({ userId, params }) => ({ comments: social.listComments(userId, params[0]) })],
   ['POST', /^\/api\/posts\/([^/]+)\/comments$/, true, async ({ userId, params, body }) => social.comment(userId, params[0], { body: body.body, parentCommentId: body.parentCommentId })],
   ['POST', /^\/api\/comments\/([^/]+)\/edit$/, true, async ({ userId, params, body }) => social.editComment(userId, params[0], body.body)],

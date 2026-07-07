@@ -781,15 +781,54 @@ async function refreshNotifCount() {
 }
 async function showNotifications() {
   const d = await api('GET','/api/notifications');
-  const labels = { follow:'ist dir gefolgt', comment:'hat kommentiert', reaction:'hat reagiert', mention:'hat dich erwähnt', dm:'neue Direktnachricht' };
+  const verbs = { follow:'folgt dir jetzt', comment:'hat kommentiert', reaction:'hat reagiert auf deinen Beitrag', mention:'hat dich erwähnt', dm:'hat dir geschrieben' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️' };
   app.innerHTML = '';
-  app.appendChild(el(`<div class="card"><div class="row"><h1 style="flex:1">Benachrichtigungen</h1>
+  const head = el(`<div class="card"><div class="row"><h1 style="flex:1">🔔 Benachrichtigungen</h1>
     <button class="ghost small" id="back">Zurück</button></div>
-    ${d.notifications.length ? d.notifications.map(n=>`<div class="comment">${n.read?'':'🔵 '}${labels[n.type]||n.type}</div>`).join('') : '<div class="muted">Keine Benachrichtigungen.</div>'}
-    <div style="margin-top:12px"><button class="small" id="readall">Alle als gelesen markieren</button></div></div>`));
-  document.getElementById('back').onclick = mainScreen;
-  document.getElementById('readall').onclick = async () => { await api('POST','/api/notifications/read-all'); refreshNotifCount(); showNotifications(); };
+    <div id="notiflist" style="margin-top:8px"></div>
+    <div style="margin-top:12px"><button class="small" id="readall">Alle als gelesen markieren</button></div></div>`);
+  app.appendChild(head);
+  const list = head.querySelector('#notiflist');
+  if (!d.notifications.length) list.innerHTML = '<div class="muted">Noch keine Benachrichtigungen.</div>';
+  d.notifications.forEach(n => {
+    const who = n.actor ? n.actor.display_name : 'Jemand';
+    const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:#eef6f1'}">
+      <div class="row" style="align-items:baseline">
+        <span>${icons[n.type]||'🔔'}</span>
+        <span style="margin-left:6px">${n.read?'':'<b>'}<b>${esc(who)}</b> ${esc(verbs[n.type]||n.type)}${n.read?'':'</b>'}</span>
+        <span class="sp" style="flex:1"></span>
+        <span class="muted" style="font-size:12px">${relTime(n.created_at)}</span>
+      </div></div>`);
+    row.onclick = () => {
+      if (n.type === 'follow' && n.actor) { mainScreen().then(()=>openProfile(n.actor.handle)); }
+      else if (n.type === 'dm' && n.ref_id) { openDmThread(n.ref_id); }
+      else if (n.post_id) { mainScreen().then(()=>openPost(n.post_id)); }
+      else if (n.actor) { mainScreen().then(()=>openProfile(n.actor.handle)); }
+    };
+    list.appendChild(row);
+  });
+  head.querySelector('#back').onclick = mainScreen;
+  head.querySelector('#readall').onclick = async () => { await api('POST','/api/notifications/read-all'); refreshNotifCount(); showNotifications(); };
   refreshNotifCount();
+}
+
+// Einzelbeitrag-Ansicht (z.B. aus einer Benachrichtigung heraus), Kommentare offen.
+async function openPost(postId) {
+  const feed = document.getElementById('feed');
+  if (!feed) return;
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  feed.innerHTML = '<div class="muted">lädt…</div>';
+  try {
+    const d = await api('GET','/api/posts/'+encodeURIComponent(postId));
+    feed.innerHTML = '';
+    const head = el(`<div class="card"><div class="row"><b>Beitrag</b><span class="sp" style="flex:1"></span><button class="ghost small" data-back>← zurück zum Feed</button></div></div>`);
+    head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
+    feed.appendChild(head);
+    const cardEl = postCard(d.post);
+    feed.appendChild(cardEl);
+    cardEl.querySelector('[data-comments]').click(); // Kommentare gleich aufklappen
+  } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
 }
 
 async function showModeration() {

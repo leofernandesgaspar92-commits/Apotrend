@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Benachrichtigungen: informativ + anklickbar:** zeigen jetzt Wer (Akteur-Name),
+>   Was (kommentiert/reagiert/gefolgt/erwähnt/DM) und Wann (relTime); Klick springt zum
+>   Ziel — Follow → Profil, DM → Konversation, Kommentar/Reaktion/Erwähnung → **Einzelbeitrag-
+>   Ansicht** (neu, `GET /api/posts/:id`) mit aufgeklappten Kommentaren. Ungelesene
+>   hervorgehoben. (85 Tests grün, im Browser verifiziert.)
 > - ✅ **Zeitstempel (Klartext):** Beiträge und Kommentare zeigen „vor 3 Stunden" /
 >   „gerade eben" / Datum (relTime, de-AT), Tooltip mit exaktem Zeitpunkt. Wichtig für
 >   zeitkritische Themen (Engpässe/News). (Frontend; im Browser verifiziert.)

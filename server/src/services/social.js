@@ -302,7 +302,17 @@ export function createSocialService(social, foundationRepo, options = {}) {
     },
 
     // ── Benachrichtigungen ──
-    notifications(userId) { requireUser(userId); return social.listNotifications(userId); },
+    notifications(userId) {
+      requireUser(userId);
+      return social.listNotifications(userId).map(n => {
+        const actor = n.actor_user_id ? social.getProfileByUserId(n.actor_user_id) : null;
+        // Sprung-Ziel: bei Kommentar-Referenz den zugehörigen Beitrag auflösen.
+        let post_id = null;
+        if (n.ref_type === 'post') post_id = n.ref_id;
+        else if (n.ref_type === 'comment') { const c = social.getComment(n.ref_id); post_id = c ? c.post_id : null; }
+        return { ...n, actor: actor ? { handle: actor.handle, display_name: actor.display_name } : null, post_id };
+      });
+    },
     unreadCount(userId) { requireUser(userId); return social.unreadNotificationCount(userId); },
     markNotificationRead(userId, id) {
       const list = social.listNotifications(userId);
