@@ -12,12 +12,14 @@ import { createSocialRepo } from '../repo/socialRepo.js';
 import { createShortagesRepo } from '../repo/shortagesRepo.js';
 import { createPricesRepo } from '../repo/pricesRepo.js';
 import { createRabatteRepo } from '../repo/rabatteRepo.js';
+import { createExchangeRepo } from '../repo/exchangeRepo.js';
 import { createPersistence } from '../repo/persistence.js';
 import { createOrgAuthService, ForbiddenError } from '../services/orgAuth.js';
 import { createSocialService } from '../services/social.js';
 import { createShortagesService } from '../services/shortages.js';
 import { createPricesService } from '../services/prices.js';
 import { createRabatteService } from '../services/rabatte.js';
+import { createExchangeService } from '../services/exchange.js';
 import { createSearchService } from '../services/search.js';
 import { issueToken, verifyToken } from './token.js';
 
@@ -45,6 +47,8 @@ const pricesRepo = createPricesRepo({ seed: !restoring });
 const prices = createPricesService(pricesRepo, social);
 const rabatteRepo = createRabatteRepo({ seed: !restoring });
 const rabatte = createRabatteService(rabatteRepo, social);
+const exchangeRepo = createExchangeRepo();
+const exchange = createExchangeService(exchangeRepo, social, repo);
 const search = createSearchService({ social, shortagesRepo, pricesRepo, rabatteRepo });
 
 if (restoring) {
@@ -53,6 +57,7 @@ if (restoring) {
   shortagesRepo.__load(snapshot.shortages);
   pricesRepo.__load(snapshot.prices);
   rabatteRepo.__load(snapshot.rabatte);
+  exchangeRepo.__load(snapshot.exchange);
   console.log(`ApoTrend: Daten aus ${persistence.filePath} wiederhergestellt.`);
 } else {
   // Redaktions-/Admin-Account (zugleich Moderation) + kuratierte News — nur beim
@@ -75,6 +80,7 @@ function collectSnapshot() {
   return {
     foundation: repo.__dump(), social: socialRepo.__dump(),
     shortages: shortagesRepo.__dump(), prices: pricesRepo.__dump(), rabatte: rabatteRepo.__dump(),
+    exchange: exchangeRepo.__dump(),
   };
 }
 let saveTimer = null;
@@ -220,6 +226,12 @@ const routes = [
     return d;
   }],
   ['POST', /^\/api\/rabatte\/([^/]+)\/post$/, true, async ({ userId, params, body }) => rabatte.postAbout(userId, params[0], { body: body.body, visibility: body.visibility })],
+
+  // ── Bestandsaustausch (Biete/Suche) ──
+  ['GET', /^\/api\/exchange$/, true, async ({ userId, query }) => ({ entries: exchange.list(userId, { kind: query.get('kind') || null, status: query.get('status') || 'offen' }) })],
+  ['POST', /^\/api\/exchange$/, true, async ({ userId, body }) => exchange.create(userId, { kind: body.kind, bezeichnung: body.bezeichnung, menge: body.menge, ort: body.ort, note: body.note })],
+  ['POST', /^\/api\/exchange\/([^/]+)\/resolve$/, true, async ({ userId, params }) => exchange.markResolved(userId, params[0])],
+  ['POST', /^\/api\/exchange\/([^/]+)\/delete$/, true, async ({ userId, params }) => exchange.remove(userId, params[0])],
 
   // ── Übergreifende Suche (Priorität 7) ──
   ['GET', /^\/api\/search$/, true, async ({ userId, query }) => {

@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Bestandsaustausch (Biete & Suche):** löst das tägliche Engpass-Problem —
+>   Apotheke mit Überbestand findet die, die sucht. Eigenes Modul (`db/exchange.sql`,
+>   Repo/Service/Tests), Reiter „🔄 Biete/Suche" mit Formular, Filter (Angebote/Gesuche),
+>   „✉️ Kontaktieren" (startet Direktnachricht — **keine öffentlichen Kontaktdaten**),
+>   eigene Einträge als erledigt markieren/löschen. In Snapshot-Persistenz eingebunden.
+>   (`GET/POST /api/exchange`, `/:id/resolve`, `/:id/delete`; 89 Tests grün, im Browser verifiziert.)
 > - ✅ **Benachrichtigungen: informativ + anklickbar:** zeigen jetzt Wer (Akteur-Name),
 >   Was (kommentiert/reagiert/gefolgt/erwähnt/DM) und Wann (relTime); Klick springt zum
 >   Ziel — Follow → Profil, DM → Konversation, Kommentar/Reaktion/Erwähnung → **Einzelbeitrag-

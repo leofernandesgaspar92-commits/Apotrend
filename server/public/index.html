@@ -206,6 +206,7 @@ async function mainScreen() {
       <button data-tab="shortages">📦 Engpässe</button>
       <button data-tab="prices">💶 Preise</button>
       <button data-tab="rabatte">🏷️ Top-Rabatte</button>
+      <button data-tab="exchange">🔄 Biete/Suche</button>
       <button data-tab="news">📰 News</button>
     </div>
     <div id="feed"></div>
@@ -234,6 +235,7 @@ function showWelcome(reopened) {
   document.getElementById('welcomeOverlay')?.remove();
   const steps = [
     ['📝', 'Posten & austauschen', 'Kurz teilen, was gerade wichtig ist — z.B. „Engpass bei Amoxicillin, wer hat Bestand?". Andere reagieren und antworten.'],
+    ['🔄', 'Biete & Suche (Bestandsaustausch)', 'Überbestand abzugeben oder etwas dringend gesucht? Im Reiter „Biete/Suche" eintragen — Kontakt läuft diskret per Direktnachricht.'],
     ['👥', 'Kolleg:innen folgen', 'Folge anderen Apotheker:innen (@Handle) und sieh ihre Beiträge in „Mein Feed".'],
     ['📦', 'Engpässe, 💶 Preise, 🏷️ Rabatte, 📰 News', 'Aktuelle Marktdaten in den Reitern oben — direkt aus einem Eintrag heraus dazu posten.'],
     ['✉️', 'Direktnachrichten', 'Schreib jemandem privat 1:1 über das Briefsymbol oben oder „✉️ Nachricht" am Profil.'],
@@ -267,6 +269,7 @@ function loadTab() {
   if (tab === 'shortages') return loadShortages();
   if (tab === 'prices') return loadPrices();
   if (tab === 'rabatte') return loadRabatte();
+  if (tab === 'exchange') return loadExchange();
   if (tab === 'news') return loadNews();
   loadFeed();
 }
@@ -396,6 +399,81 @@ function priceGroup(g) {
     };
     box.appendChild(row);
   });
+  return card;
+}
+
+let exchangeFilter = ''; // '', 'biete', 'suche'
+async function loadExchange() {
+  const feed = document.getElementById('feed');
+  feed.innerHTML = '';
+  // Formular zum Anlegen
+  const form = el(`<div class="card">
+    <label>🔄 Bestandsaustausch — Biete Überbestand oder Suche dringend</label>
+    <div class="row" style="margin-top:6px">
+      <select id="ex_kind" style="max-width:150px"><option value="biete">📦 Ich biete</option><option value="suche">🔎 Ich suche</option></select>
+      <input id="ex_bez" placeholder="Präparat / Wirkstoff, z.B. Amoxicillin 1000 mg" style="flex:1">
+    </div>
+    <div class="row" style="margin-top:6px">
+      <input id="ex_menge" placeholder="Menge (z.B. 20 Packungen)">
+      <input id="ex_ort" placeholder="Ort (z.B. 1010 Wien)">
+    </div>
+    <input id="ex_note" placeholder="Hinweis (optional)" style="margin-top:6px">
+    <div class="row" style="margin-top:8px"><button id="ex_go">Eintrag veröffentlichen</button><span class="err" id="ex_err" style="margin-left:10px"></span></div>
+    <div class="muted" style="font-size:13px;margin-top:6px">Kontakt läuft über Direktnachricht — keine öffentlichen Kontaktdaten.</div>
+  </div>`);
+  feed.appendChild(form);
+  document.getElementById('ex_go').onclick = async () => {
+    try {
+      await api('POST','/api/exchange',{ kind:v('ex_kind'), bezeichnung:v('ex_bez'), menge:v('ex_menge'), ort:v('ex_ort'), note:v('ex_note') });
+      loadExchange();
+    } catch(e){ document.getElementById('ex_err').textContent = e.message; }
+  };
+  // Filter
+  const filt = el(`<div class="card" style="padding:8px 12px"><div class="reacts">
+    <button class="${exchangeFilter===''?'':'ghost '}small" data-f="">Alle</button>
+    <button class="${exchangeFilter==='biete'?'':'ghost '}small" data-f="biete">📦 Angebote</button>
+    <button class="${exchangeFilter==='suche'?'':'ghost '}small" data-f="suche">🔎 Gesuche</button>
+  </div></div>`);
+  filt.querySelectorAll('[data-f]').forEach(btn => btn.onclick = () => { exchangeFilter = btn.dataset.f; loadExchange(); });
+  feed.appendChild(filt);
+  try {
+    const d = await api('GET','/api/exchange'+(exchangeFilter?'?kind='+exchangeFilter:''));
+    if (!d.entries.length) { feed.appendChild(el('<div class="card muted">Noch keine offenen Einträge. Sei der/die Erste!</div>')); return; }
+    d.entries.forEach(e => feed.appendChild(exchangeCard(e)));
+  } catch(e){ feed.appendChild(el('<div class="card err">'+esc(e.message)+'</div>')); }
+}
+
+function exchangeCard(e) {
+  const au = e.author || {};
+  const mine = me && au.handle === me.handle;
+  const isBiete = e.kind === 'biete';
+  const badge = isBiete ? '<span style="background:#e6f7ef;color:#00885a;border:1px solid #b6e6cf;border-radius:999px;padding:2px 10px;font-weight:700;font-size:13px">📦 Biete</span>'
+                        : '<span style="background:#fff4e6;color:#b26a00;border:1px solid #ffd9a8;border-radius:999px;padding:2px 10px;font-weight:700;font-size:13px">🔎 Suche</span>';
+  const card = el(`<div class="card">
+    <div class="row" style="align-items:baseline">
+      ${badge}
+      <b style="margin-left:8px">${esc(e.bezeichnung)}</b>
+      <span class="sp" style="flex:1"></span>
+      <span class="muted" style="font-size:12px">${relTime(e.created_at)}</span>
+    </div>
+    <div class="muted" style="margin-top:4px">${e.menge?'Menge: '+esc(e.menge):''}${e.menge&&e.ort?' · ':''}${e.ort?'📍 '+esc(e.ort):''}</div>
+    ${e.note?`<div class="post-body" style="margin:6px 0">${esc(e.note)}</div>`:''}
+    <div class="row" style="margin-top:8px;align-items:baseline">
+      <span class="handle clickable" data-openprofile="${esc(au.handle||'')}">von ${esc(au.display_name||'Unbekannt')} @${esc(au.handle||'?')}</span>
+      <span class="sp" style="flex:1"></span>
+      ${mine ? '<button class="ghost small" data-done>✓ Erledigt</button><button class="ghost small" data-del>🗑</button>'
+             : '<button class="small" data-contact>✉️ Kontaktieren</button>'}
+    </div>
+  </div>`);
+  card.querySelectorAll('[data-openprofile]').forEach(el => { if (el.dataset.openprofile) el.onclick = () => openProfile(el.dataset.openprofile); });
+  const contact = card.querySelector('[data-contact]');
+  if (contact) contact.onclick = async () => {
+    try { const r = await api('POST','/api/dm/start',{ handle: au.handle }); openDmThread(r.thread.id); } catch(err){ alert(err.message); }
+  };
+  const done = card.querySelector('[data-done]');
+  if (done) done.onclick = async () => { try { await api('POST',`/api/exchange/${e.id}/resolve`); loadExchange(); } catch(err){ alert(err.message); } };
+  const del = card.querySelector('[data-del]');
+  if (del) del.onclick = async () => { if (!confirm('Eintrag löschen?')) return; try { await api('POST',`/api/exchange/${e.id}/delete`); loadExchange(); } catch(err){ alert(err.message); } };
   return card;
 }
 
