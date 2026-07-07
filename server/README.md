@@ -50,10 +50,20 @@ server/
   test/                      node --test (ohne externe Abhängigkeiten)
 ```
 
+## Lauffähige App (Feed, klickbar)
+```bash
+cd server
+npm start                 # startet http://localhost:4000
+```
+Öffnen im Browser → registrieren → posten, folgen, kommentieren, reagieren.
+HTTP-API (Node-Built-ins, kein Framework) in `src/http/`, Oberfläche in `public/`.
+Persistenz derzeit **In-Memory** (Neustart = leer) — Postgres kommt hinter denselben
+Repository-Seam.
+
 ## Tests
 ```bash
 cd server
-npm test          # node --test
+npm test          # node --test (35 grün)
 ```
 
 ## Nächste Bausteine (Phase 2/4)

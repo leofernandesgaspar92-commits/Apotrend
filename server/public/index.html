@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ApoTrend — Apotheker-Netzwerk</title>
+<style>
+  :root { --green:#00a15a; --green-d:#007a44; --bg:#f4f6f5; --card:#fff; --line:#e2e6e4; --text:#1a2420; --muted:#66756e; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); font-size:16px; }
+  header { background:var(--green); color:#fff; padding:12px 16px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:5; }
+  header .logo { font-weight:800; letter-spacing:.5px; font-size:20px; }
+  header .sp { flex:1; }
+  header button { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.4); }
+  .wrap { max-width:640px; margin:0 auto; padding:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; }
+  h1 { font-size:22px; margin:0 0 12px; }
+  label { display:block; font-size:14px; color:var(--muted); margin:10px 0 4px; }
+  input, textarea, select { width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:8px; font-size:16px; font-family:inherit; }
+  textarea { resize:vertical; min-height:70px; }
+  button { background:var(--green); color:#fff; border:none; border-radius:8px; padding:11px 16px; font-size:15px; font-weight:600; cursor:pointer; }
+  button:hover { background:var(--green-d); }
+  button.ghost { background:transparent; color:var(--green); border:1px solid var(--green); }
+  button.small { padding:6px 10px; font-size:13px; }
+  .row { display:flex; gap:8px; align-items:center; }
+  .tabs { display:flex; gap:8px; margin-bottom:12px; }
+  .tabs button { flex:1; background:var(--card); color:var(--text); border:1px solid var(--line); }
+  .tabs button.active { background:var(--green); color:#fff; border-color:var(--green); }
+  .post-author { font-weight:700; }
+  .handle { color:var(--muted); font-weight:400; font-size:14px; }
+  .verified { color:var(--green); font-size:13px; }
+  .post-body { margin:8px 0; white-space:pre-wrap; line-height:1.45; }
+  .vis { font-size:12px; color:var(--muted); }
+  .reacts { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .reacts button { background:#eef3f0; color:var(--text); border:1px solid var(--line); padding:5px 10px; font-size:13px; font-weight:500; }
+  .reacts button:hover { border-color:var(--green); }
+  .muted { color:var(--muted); font-size:14px; }
+  .err { color:#c0392b; font-size:14px; margin-top:8px; }
+  .bell { position:relative; }
+  .badge { position:absolute; top:-6px; right:-6px; background:#e02a2a; color:#fff; border-radius:10px; font-size:11px; padding:1px 6px; }
+  .comments { border-top:1px solid var(--line); margin-top:10px; padding-top:10px; }
+  .comment { font-size:14px; padding:6px 0; border-bottom:1px solid var(--line); }
+  .comment:last-child { border-bottom:none; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <span class="logo">🟢 ApoTrend</span>
+  <span class="muted" id="whoami" style="color:#dff5ea;"></span>
+  <span class="sp"></span>
+  <button class="bell hidden" id="btnNotif" title="Benachrichtigungen">🔔<span class="badge hidden" id="notifBadge">0</span></button>
+  <button class="hidden" id="btnLogout">Abmelden</button>
+</header>
+<div class="wrap" id="app"></div>
+
+<script>
+const api = async (method, path, body) => {
+  const t = localStorage.getItem('apo_token');
+  const r = await fetch(path, {
+    method,
+    headers: { 'Content-Type':'application/json', ...(t ? { Authorization:'Bearer '+t } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await r.json().catch(()=>({}));
+  if (!r.ok) throw new Error(data.error || ('Fehler '+r.status));
+  return data;
+};
+const el = (h) => { const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.childElementCount===1 ? t.content.firstElementChild : t.content; };
+const esc = (s) => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const app = document.getElementById('app');
+let me = null, tab = 'public';
+
+// ── Auth-Screens ──
+function authScreen() {
+  document.getElementById('btnLogout').classList.add('hidden');
+  document.getElementById('btnNotif').classList.add('hidden');
+  document.getElementById('whoami').textContent = '';
+  app.innerHTML = '';
+  app.appendChild(el(`
+  <div class="card">
+    <h1>Anmelden</h1>
+    <label>E-Mail</label><input id="li_email" type="email" placeholder="name@apotheke.at">
+    <label>Passwort</label><input id="li_pw" type="password" placeholder="Passwort">
+    <div style="margin-top:12px"><button id="li_go">Anmelden</button></div>
+    <div class="err" id="li_err"></div>
+  </div>
+  <div class="card">
+    <h1>Neu registrieren</h1>
+    <label>Name</label><input id="rg_name" placeholder="Dr. Anna Huber">
+    <label>@Handle (öffentlicher Name im Netzwerk)</label><input id="rg_handle" placeholder="anna_huber">
+    <label>E-Mail</label><input id="rg_email" type="email" placeholder="name@apotheke.at">
+    <label>Passwort (mind. 8 Zeichen)</label><input id="rg_pw" type="password">
+    <div style="margin-top:12px"><button id="rg_go">Konto erstellen</button></div>
+    <div class="err" id="rg_err"></div>
+  </div>`));
+
+  document.getElementById('li_go').onclick = async () => {
+    try {
+      const d = await api('POST','/api/login',{ email:v('li_email'), password:v('li_pw') });
+      afterAuth(d);
+    } catch(e){ document.getElementById('li_err').textContent = e.message; }
+  };
+  document.getElementById('rg_go').onclick = async () => {
+    try {
+      const d = await api('POST','/api/register',{ name:v('rg_name'), handle:v('rg_handle'), email:v('rg_email'), password:v('rg_pw') });
+      afterAuth(d);
+    } catch(e){ document.getElementById('rg_err').textContent = e.message; }
+  };
+}
+const v = (id) => document.getElementById(id).value.trim();
+
+function afterAuth(d) {
+  localStorage.setItem('apo_token', d.token);
+  me = d.profile || d.user;
+  mainScreen();
+}
+
+// ── Haupt-Screen (Feed) ──
+async function mainScreen() {
+  const meData = await api('GET','/api/me');
+  me = meData.profile;
+  document.getElementById('whoami').textContent = me ? '@'+me.handle : '';
+  document.getElementById('btnLogout').classList.remove('hidden');
+  document.getElementById('btnNotif').classList.remove('hidden');
+  document.getElementById('btnLogout').onclick = () => { localStorage.removeItem('apo_token'); location.reload(); };
+  document.getElementById('btnNotif').onclick = showNotifications;
+  refreshNotifCount();
+
+  app.innerHTML = '';
+  app.appendChild(el(`
+    <div class="card">
+      <label>Was gibt's Neues? (kurzer Fachbeitrag)</label>
+      <textarea id="pb" placeholder="Bei uns gerade Engpass bei Amoxicillin — wer hat noch Bestand?"></textarea>
+      <div class="row" style="margin-top:8px">
+        <select id="pv" style="max-width:220px">
+          <option value="public">🌍 Öffentlich (alle Apotheker)</option>
+          <option value="followers">👥 Nur meine Follower</option>
+        </select>
+        <span class="sp" style="flex:1"></span>
+        <button id="pgo">Posten</button>
+      </div>
+      <div class="err" id="perr"></div>
+    </div>
+    <div class="card">
+      <label>Jemandem folgen (@Handle)</label>
+      <div class="row"><input id="fh" placeholder="ben_mayer"><button class="ghost small" id="fgo">Folgen</button></div>
+      <div class="err" id="ferr"></div>
+    </div>
+    <div class="tabs">
+      <button data-tab="public" class="active">🌍 Öffentlich</button>
+      <button data-tab="home">🏠 Mein Feed</button>
+    </div>
+    <div id="feed"></div>
+  `));
+
+  document.getElementById('pgo').onclick = async () => {
+    try { await api('POST','/api/posts',{ body:v('pb'), visibility:document.getElementById('pv').value }); document.getElementById('pb').value=''; loadFeed(); }
+    catch(e){ document.getElementById('perr').textContent = e.message; }
+  };
+  document.getElementById('fgo').onclick = async () => {
+    try { await api('POST','/api/follow',{ handle:v('fh') }); document.getElementById('fh').value=''; document.getElementById('ferr').textContent=''; loadFeed(); }
+    catch(e){ document.getElementById('ferr').textContent = e.message; }
+  };
+  app.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+    app.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); tab = b.dataset.tab; loadFeed();
+  });
+  loadFeed();
+}
+
+const REACTS = [['hilfreich','👍 Hilfreich'],['danke','🙏 Danke'],['bestaetigt','✅ Bestätigt'],['interessant','💡 Interessant']];
+
+async function loadFeed() {
+  const feed = document.getElementById('feed');
+  feed.innerHTML = '<div class="muted">lädt…</div>';
+  try {
+    const d = await api('GET', tab==='home' ? '/api/feed/home' : '/api/feed/public');
+    if (!d.posts.length) { feed.innerHTML = '<div class="card muted">Noch keine Beiträge. Sei der/die Erste!</div>'; return; }
+    feed.innerHTML = '';
+    d.posts.forEach(p => feed.appendChild(postCard(p)));
+  } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+}
+
+function postCard(p) {
+  const a = p.author || {};
+  const rc = p.reaction_counts || {};
+  const mine = me && a.handle === me.handle;
+  const card = el(`<div class="card">
+    <div class="row">
+      <span class="post-author">${esc(a.display_name||'Unbekannt')}</span>
+      <span class="handle">@${esc(a.handle||'?')}</span>
+      ${a.verified?'<span class="verified">✔ verifiziert</span>':''}
+      <span class="sp" style="flex:1"></span>
+      ${mine?'':'<button class="ghost small" data-follow="'+esc(a.handle)+'">Folgen</button>'}
+    </div>
+    <div class="post-body">${esc(p.body)}</div>
+    <div class="vis">${p.visibility==='public'?'🌍 öffentlich':'👥 nur Follower'}</div>
+    <div class="reacts">
+      ${REACTS.map(([k,lab])=>`<button data-react="${k}">${lab} ${rc[k]||0}</button>`).join('')}
+      <button data-comments>💬 ${p.comment_count||0} Kommentare</button>
+    </div>
+    <div class="comments hidden" data-cbox>
+      <div data-clist></div>
+      <div class="row" style="margin-top:8px"><input data-cinput placeholder="Antworten…"><button class="small" data-csend>Senden</button></div>
+    </div>
+  </div>`);
+  card.querySelectorAll('[data-react]').forEach(btn => btn.onclick = async () => {
+    try { await api('POST',`/api/posts/${p.id}/react`,{ type:btn.dataset.react }); loadFeed(); } catch(e){ alert(e.message); }
+  });
+  const fb = card.querySelector('[data-follow]');
+  if (fb) fb.onclick = async () => { try { await api('POST','/api/follow',{ handle:fb.dataset.follow }); loadFeed(); } catch(e){ alert(e.message);} };
+  const cbtn = card.querySelector('[data-comments]');
+  const cbox = card.querySelector('[data-cbox]');
+  cbtn.onclick = async () => {
+    cbox.classList.toggle('hidden');
+    if (!cbox.classList.contains('hidden')) loadComments(p.id, card);
+  };
+  card.querySelector('[data-csend]').onclick = async () => {
+    const inp = card.querySelector('[data-cinput]');
+    if (!inp.value.trim()) return;
+    try { await api('POST',`/api/posts/${p.id}/comments`,{ body:inp.value }); inp.value=''; loadComments(p.id, card); loadFeed(); } catch(e){ alert(e.message); }
+  };
+  return card;
+}
+
+async function loadComments(postId, card) {
+  const list = card.querySelector('[data-clist]');
+  list.innerHTML = '<div class="muted">lädt…</div>';
+  const d = await api('GET',`/api/posts/${postId}/comments`);
+  list.innerHTML = d.comments.length ? '' : '<div class="muted">Noch keine Kommentare.</div>';
+  d.comments.forEach(c => list.appendChild(el(`<div class="comment">${esc(c.body)}</div>`)));
+}
+
+async function refreshNotifCount() {
+  try {
+    const d = await api('GET','/api/notifications');
+    const badge = document.getElementById('notifBadge');
+    if (d.unread > 0) { badge.textContent = d.unread; badge.classList.remove('hidden'); }
+    else badge.classList.add('hidden');
+  } catch {}
+}
+async function showNotifications() {
+  const d = await api('GET','/api/notifications');
+  const labels = { follow:'ist dir gefolgt', comment:'hat kommentiert', reaction:'hat reagiert', mention:'hat dich erwähnt', dm:'neue Direktnachricht' };
+  app.innerHTML = '';
+  app.appendChild(el(`<div class="card"><div class="row"><h1 style="flex:1">Benachrichtigungen</h1>
+    <button class="ghost small" id="back">Zurück</button></div>
+    ${d.notifications.length ? d.notifications.map(n=>`<div class="comment">${n.read?'':'🔵 '}${labels[n.type]||n.type}</div>`).join('') : '<div class="muted">Keine Benachrichtigungen.</div>'}
+    <div style="margin-top:12px"><button class="small" id="readall">Alle als gelesen markieren</button></div></div>`));
+  document.getElementById('back').onclick = mainScreen;
+  document.getElementById('readall').onclick = async () => { await api('POST','/api/notifications/read-all'); refreshNotifCount(); showNotifications(); };
+  refreshNotifCount();
+}
+
+// Start
+if (localStorage.getItem('apo_token')) mainScreen().catch(authScreen);
+else authScreen();
+</script>
+</body>
+</html>
