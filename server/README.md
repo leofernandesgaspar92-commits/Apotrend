@@ -6,6 +6,9 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Zeitstempel (Klartext):** Beiträge und Kommentare zeigen „vor 3 Stunden" /
+>   „gerade eben" / Datum (relTime, de-AT), Tooltip mit exaktem Zeitpunkt. Wichtig für
+>   zeitkritische Themen (Engpässe/News). (Frontend; im Browser verifiziert.)
 > - ✅ **Onboarding/Willkommen:** beim ersten Login ein kurzer, freundlicher Overlay
 >   („So funktioniert ApoTrend": posten, folgen, Marktdaten, DMs, Suche/Themen) plus
 >   „Als App installieren"-Tipp; per ❓ jederzeit wieder aufrufbar, Merker in

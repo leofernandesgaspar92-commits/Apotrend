@@ -87,6 +87,17 @@ const api = async (method, path, body) => {
 };
 const el = (h) => { const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.childElementCount===1 ? t.content.firstElementChild : t.content; };
 const esc = (s) => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// Relative Zeit in Klartext (Owner-Vorgabe: keine kryptischen Kürzel).
+const relTime = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso), diff = (Date.now() - d.getTime()) / 1000;
+  if (diff < 45) return 'gerade eben';
+  if (diff < 5400) { const m = Math.round(diff/60); return `vor ${m} Minute${m===1?'':'n'}`; }
+  if (diff < 79200) { const h = Math.round(diff/3600); return `vor ${h} Stunde${h===1?'':'n'}`; }
+  const days = Math.round(diff/86400);
+  if (days < 7) return `vor ${days} Tag${days===1?'':'en'}`;
+  return d.toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
+};
 // Text escapen UND @Handles + #Hashtags anklickbar machen (kein @ mitten in E-Mails).
 const linkifyMentions = (s) => esc(s)
   .replace(/(^|[^\w@])@([a-z0-9_]{3,30})/gi,
@@ -611,6 +622,7 @@ function postCard(p) {
       <span class="sp" style="flex:1"></span>
       ${mine?'':'<button class="ghost small" data-follow="'+esc(a.handle)+'">Folgen</button>'}
     </div>
+    <div class="muted" style="font-size:13px" title="${esc(p.created_at)}">🕒 ${relTime(p.created_at)}</div>
     <div class="post-body" data-body>${linkifyMentions(p.body)}</div>
     <div class="vis" data-edited ${p.edited_at?'':'style="display:none"'}>✏️ bearbeitet</div>
     ${refChip(p.ref_summary)}
@@ -707,6 +719,7 @@ function commentRow(postId, c, card, depth = 0) {
     <div class="row" style="align-items:baseline">
       <b class="clickable" data-openprofile="${esc(au.handle||'')}">${esc(au.display_name||'Unbekannt')}</b>
       <span class="handle clickable" data-openprofile="${esc(au.handle||'')}">@${esc(au.handle||'?')}</span>
+      <span class="muted" style="font-size:12px;margin-left:6px" title="${esc(c.created_at)}">${relTime(c.created_at)}</span>
       ${c.edited_at?'<span class="vis" style="margin-left:6px">✏️ bearbeitet</span>':''}
       <span class="sp" style="flex:1"></span>
       ${mine?'<button class="ghost small" data-ced>✏️</button><button class="ghost small" data-cdel>🗑</button>':''}
