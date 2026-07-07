@@ -39,6 +39,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   nur der Autor, serverseitig erzwungen), fremde Beiträge melden (🚩 →
 >   `POST /api/posts/:id/report`, Moderations-Queue). Erfüllt die Owner-Vorgabe
 >   „Beiträge löschen/melden". (Im Browser verifiziert.)
+> - ✅ **Verschachtelte Antworten (Kommentar-Threads):** Antworten auf Kommentare
+>   werden als eingerückter Baum dargestellt (`parent_comment_id`), „↩ Antworten" je
+>   Kommentar, Eltern-Autor:in wird benachrichtigt. (Frontend-Baum aus flacher Liste;
+>   im Browser verifiziert.)
 > - ✅ **Kommentare bearbeiten/löschen + Autor sichtbar:** Kommentare zeigen jetzt
 >   Verfasser:in (anklickbar → Profil); eigene Kommentare inline bearbeiten (✏️,
 >   `edited_at`) oder löschen (🗑), nur der Autor (serverseitig erzwungen). Thread

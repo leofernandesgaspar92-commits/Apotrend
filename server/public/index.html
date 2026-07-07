@@ -616,15 +616,23 @@ async function loadComments(postId, card) {
   list.innerHTML = '<div class="muted">lädt…</div>';
   const d = await api('GET',`/api/posts/${postId}/comments`);
   list.innerHTML = d.comments.length ? '' : '<div class="muted">Noch keine Kommentare.</div>';
-  d.comments.forEach(c => list.appendChild(commentRow(postId, c, card)));
+  // Baum aufbauen: parent_comment_id -> Kinder, in Reihenfolge (DFS) mit Einrückung.
+  const byParent = {};
+  d.comments.forEach(c => { (byParent[c.parent_comment_id || 'root'] ||= []).push(c); });
+  const build = (key, depth) => (byParent[key] || []).forEach(c => {
+    list.appendChild(commentRow(postId, c, card, depth));
+    build(c.id, depth + 1);
+  });
+  build('root', 0);
   const cb = card.querySelector('[data-comments]');
   if (cb) cb.textContent = `💬 ${d.comments.length} Kommentare`;
 }
 
-function commentRow(postId, c, card) {
+function commentRow(postId, c, card, depth = 0) {
   const au = c.author || {};
   const mine = me && (c.author_user_id === me.user_id || au.handle === me.handle);
-  const row = el(`<div class="comment">
+  const indent = Math.min(depth, 5) * 18;
+  const row = el(`<div class="comment" style="${indent?`margin-left:${indent}px;border-left:2px solid var(--line);`:''}">
     <div class="row" style="align-items:baseline">
       <b class="clickable" data-openprofile="${esc(au.handle||'')}">${esc(au.display_name||'Unbekannt')}</b>
       <span class="handle clickable" data-openprofile="${esc(au.handle||'')}">@${esc(au.handle||'?')}</span>
@@ -633,8 +641,24 @@ function commentRow(postId, c, card) {
       ${mine?'<button class="ghost small" data-ced>✏️</button><button class="ghost small" data-cdel>🗑</button>':''}
     </div>
     <div data-cbody style="margin-top:2px">${esc(c.body)}</div>
+    <div class="row" style="margin-top:4px"><button class="ghost small" data-creply>↩ Antworten</button></div>
   </div>`);
   row.querySelectorAll('[data-openprofile]').forEach(el => { if (el.dataset.openprofile) el.onclick = () => openProfile(el.dataset.openprofile); });
+  row.querySelector('[data-creply]').onclick = () => {
+    if (row.querySelector('[data-replybox]')) return;
+    const box = el(`<div data-replybox style="margin-top:6px">
+      <input data-ri placeholder="Antwort an @${esc(au.handle||'')}…">
+      <div class="row" style="margin-top:4px"><button class="small" data-rs>Antworten</button><button class="ghost small" data-rc>Abbrechen</button></div></div>`);
+    row.appendChild(box);
+    box.querySelector('[data-ri]').focus();
+    box.querySelector('[data-rc]').onclick = () => box.remove();
+    box.querySelector('[data-rs]').onclick = async () => {
+      const val = box.querySelector('[data-ri]').value;
+      if (!val.trim()) return;
+      try { await api('POST',`/api/posts/${postId}/comments`,{ body: val, parentCommentId: c.id }); loadComments(postId, card); }
+      catch(e){ alert(e.message); }
+    };
+  };
   const del = row.querySelector('[data-cdel]');
   if (del) del.onclick = async () => {
     if (!confirm('Kommentar löschen?')) return;
