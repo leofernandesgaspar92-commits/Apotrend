@@ -18,7 +18,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 > - ✅ **Priorität 3 — Preise (mit Feed verknüpft):** Preisvergleich je Präparat
 >   (mehrere Lieferanten, günstigster oben), Trend (▲/▼ %), Herkunfts-Flag,
 >   „Dazu posten" + Preis-Chip am Beitrag (`posts.ref_type='price'`). (43 Tests grün.)
-> - ⏳ **Priorität 4 — News**, dann Top-10-Rabatte (5).
+> - ✅ **Priorität 4 — News (im selben Feed-System):** News = Beiträge mit `kind='news'` —
+>   kuratierte Redaktions-Beiträge (Account `@apotrend`, `is_editorial`, 📰-Badge) **plus**
+>   von Nutzern geteilte News. Eigene News-Ansicht (`GET /api/news`), Sichtbarkeit
+>   (public/followers) wird respektiert, News erscheinen auch im normalen Feed. (47 Tests grün, im Browser verifiziert.)
+> - ⏳ **Priorität 5 — Top-10-Rabatte.**
 > - ✅ **Baustein 1 — Fundament:** Organisationen · Nutzer · Mitgliedschaften ·
 >   echte Auth (scrypt) · Mandanten-Isolation + RBAC.
 > - ✅ **Baustein 2 — collab (Teams-artig):** Kanäle · Nachrichten · Notizen ·

@@ -29,6 +29,7 @@
   .post-author { font-weight:700; }
   .handle { color:var(--muted); font-weight:400; font-size:14px; }
   .verified { color:var(--green); font-size:13px; }
+  .editorial { background:#eef3ff; color:#2952cc; font-size:12px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid #cdd9ff; }
   .post-body { margin:8px 0; white-space:pre-wrap; line-height:1.45; }
   .vis { font-size:12px; color:var(--muted); }
   .reacts { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
@@ -152,6 +153,7 @@ async function mainScreen() {
       <button data-tab="home">🏠 Mein Feed</button>
       <button data-tab="shortages">📦 Engpässe</button>
       <button data-tab="prices">💶 Preise</button>
+      <button data-tab="news">📰 News</button>
     </div>
     <div id="feed"></div>
   `));
@@ -174,7 +176,33 @@ async function mainScreen() {
 function loadTab() {
   if (tab === 'shortages') return loadShortages();
   if (tab === 'prices') return loadPrices();
+  if (tab === 'news') return loadNews();
   loadFeed();
+}
+
+async function loadNews() {
+  const feed = document.getElementById('feed');
+  feed.innerHTML = '';
+  feed.appendChild(el(`<div class="card">
+    <label>News teilen (Kammer-Mitteilung, Gesetzesänderung, Branchennews …)</label>
+    <textarea id="nb" placeholder="Regulatorische/fachliche News, die für Kolleg:innen relevant ist…"></textarea>
+    <div style="margin-top:8px"><button id="ngo">Als News teilen</button></div>
+    <div class="err" id="nerr"></div>
+  </div><div id="newslist"></div>`));
+  document.getElementById('ngo').onclick = async () => {
+    const t = document.getElementById('nb');
+    if (!t.value.trim()) return;
+    try { await api('POST','/api/posts',{ body:t.value, kind:'news', visibility:'public' }); t.value=''; loadNews(); }
+    catch(e){ document.getElementById('nerr').textContent = e.message; }
+  };
+  const list = document.getElementById('newslist');
+  list.innerHTML = '<div class="muted">lädt…</div>';
+  try {
+    const d = await api('GET','/api/news');
+    list.innerHTML = '';
+    if (!d.posts.length) { list.innerHTML = '<div class="card muted">Noch keine News.</div>'; return; }
+    d.posts.forEach(p => list.appendChild(postCard(p)));
+  } catch(e){ list.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
 }
 
 const STATUS = { kritisch:['🔴 Kritisch','#c0392b'], eingeschraenkt:['🟠 Eingeschränkt','#c77700'], verfuegbar:['🟢 Verfügbar','#00885a'] };
@@ -311,6 +339,7 @@ function postCard(p) {
     <div class="row">
       <span class="post-author">${esc(a.display_name||'Unbekannt')}</span>
       <span class="handle">@${esc(a.handle||'?')}</span>
+      ${a.is_editorial?'<span class="editorial">📰 Redaktion</span>':''}
       ${a.verified?'<span class="verified">✔ verifiziert</span>':''}
       <span class="sp" style="flex:1"></span>
       ${mine?'':'<button class="ghost small" data-follow="'+esc(a.handle)+'">Folgen</button>'}

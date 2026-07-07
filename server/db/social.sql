@@ -15,6 +15,7 @@ create table profiles (
   specializations text[] not null default '{}',
   avatar_url      text,
   verified        boolean not null default false,  -- verifizierter Apotheker
+  is_editorial    boolean not null default false,  -- ApoTrend-Redaktion (kuratierte News)
   visibility      text not null default 'network'
                     check (visibility in ('public','network')),
   created_at      timestamptz not null default now()
@@ -25,6 +26,7 @@ create table posts (
   id             uuid primary key default gen_random_uuid(),
   author_user_id uuid not null references users(id) on delete cascade,
   body           text not null check (char_length(body) <= 1000),
+  kind           text not null default 'post' check (kind in ('post','news')),  -- News = kuratiert od. geteilt
   visibility     text not null default 'public' check (visibility in ('public','followers')),
   ref_type       text check (ref_type in ('shortage','price','news')),  -- Andockpunkt Prio 2-5
   ref_id         text,

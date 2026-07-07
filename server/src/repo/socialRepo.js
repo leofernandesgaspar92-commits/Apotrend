@@ -31,7 +31,7 @@ export function createSocialRepo() {
         user_id: p.userId, handle: key, display_name: p.displayName,
         title: p.title ?? null, pharmacy_org_id: p.pharmacyOrgId ?? null,
         bio: p.bio ?? null, specializations: p.specializations ?? [],
-        avatar_url: p.avatarUrl ?? null, verified: !!p.verified,
+        avatar_url: p.avatarUrl ?? null, verified: !!p.verified, is_editorial: !!p.isEditorial,
         visibility: p.visibility ?? 'network', created_at: now(),
       };
       profiles.set(p.userId, prof);
@@ -47,7 +47,7 @@ export function createSocialRepo() {
     // ── Posts ──
     createPost(p) {
       const post = {
-        id: uuid(), author_user_id: p.authorUserId, body: p.body,
+        id: uuid(), author_user_id: p.authorUserId, body: p.body, kind: p.kind ?? 'post',
         visibility: p.visibility ?? 'public', ref_type: p.refType ?? null, ref_id: p.refId ?? null,
         created_at: now(), edited_at: null, deleted_at: null,
       };

@@ -5,6 +5,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createMemoryRepo } from '../repo/memoryRepo.js';
 import { createSocialRepo } from '../repo/socialRepo.js';
@@ -29,6 +30,17 @@ const shortagesRepo = createShortagesRepo();
 const shortages = createShortagesService(shortagesRepo, social);
 const pricesRepo = createPricesRepo();
 const prices = createPricesService(pricesRepo, social);
+
+// Redaktions-Account + kuratierte News seeden (News = Beiträge im selben Feed).
+(function seedEditorial() {
+  const red = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'ApoTrend' }, owner: { name: 'ApoTrend-Redaktion', email: 'redaktion@apotrend.at', password: crypto.randomUUID() } });
+  social.createProfile(red.user.id, { handle: 'apotrend', displayName: 'ApoTrend-Redaktion', isEditorial: true });
+  [
+    'Kammer-Mitteilung: Neue Regelung zur E-Medikation tritt am 01.08.2026 in Kraft.',
+    'BASG: Aktualisierte Engpassliste veröffentlicht — mehrere Antibiotika betroffen.',
+    'Gehaltskasse: Anpassung der Großhandelskonditionen zum Quartalswechsel.',
+  ].forEach(body => social.createPost(red.user.id, { body, kind: 'news' }));
+})();
 
 // Feed-Beiträge, die ein Marktobjekt (Engpass/Preis) referenzieren, anreichern.
 function enrichPosts(posts) {
@@ -76,7 +88,8 @@ const routes = [
   ['GET', /^\/api\/feed\/home$/, true, async ({ userId }) => ({ posts: enrichPosts(social.homeFeed(userId)) })],
   ['GET', /^\/api\/feed\/public$/, true, async ({ userId }) => ({ posts: enrichPosts(social.publicFeed(userId)) })],
 
-  ['POST', /^\/api\/posts$/, true, async ({ userId, body }) => social.createPost(userId, { body: body.body, visibility: body.visibility })],
+  ['POST', /^\/api\/posts$/, true, async ({ userId, body }) => social.createPost(userId, { body: body.body, visibility: body.visibility, kind: body.kind })],
+  ['GET', /^\/api\/news$/, true, async ({ userId }) => ({ posts: enrichPosts(social.newsFeed(userId)) })],
   ['GET', /^\/api\/posts\/([^/]+)\/comments$/, true, async ({ userId, params }) => ({ comments: social.listComments(userId, params[0]) })],
   ['POST', /^\/api\/posts\/([^/]+)\/comments$/, true, async ({ userId, params, body }) => social.comment(userId, params[0], { body: body.body, parentCommentId: body.parentCommentId })],
   ['POST', /^\/api\/posts\/([^/]+)\/react$/, true, async ({ userId, params, body }) => social.react(userId, 'post', params[0], body.type)],

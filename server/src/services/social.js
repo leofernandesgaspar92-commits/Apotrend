@@ -48,7 +48,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     for (const t of REACTION_TYPES) counts[t] = reacts.filter(r => r.type === t).length;
     return {
       ...post,
-      author: prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified } : null,
+      author: prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified, is_editorial: prof.is_editorial } : null,
       comment_count: social.countComments(post.id),
       reaction_counts: counts,
     };
@@ -56,25 +56,26 @@ export function createSocialService(social, foundationRepo, options = {}) {
 
   return {
     // ── Profil ──
-    createProfile(actorUserId, { handle, displayName, title, pharmacyOrgId, bio, specializations, avatarUrl, visibility }) {
+    createProfile(actorUserId, { handle, displayName, title, pharmacyOrgId, bio, specializations, avatarUrl, visibility, isEditorial }) {
       requireUser(actorUserId);
       if (!handle || !/^[a-z0-9_]{3,30}$/i.test(handle)) throw new Error('Handle: 3–30 Zeichen, nur a–z 0–9 _.');
       if (!displayName) throw new Error('Anzeigename erforderlich.');
-      return social.createProfile({ userId: actorUserId, handle, displayName, title, pharmacyOrgId, bio, specializations, avatarUrl, visibility });
+      return social.createProfile({ userId: actorUserId, handle, displayName, title, pharmacyOrgId, bio, specializations, avatarUrl, visibility, isEditorial });
     },
     getProfile(handleOrUserId) {
       return social.getProfileByHandle(handleOrUserId) || social.getProfileByUserId(handleOrUserId);
     },
 
     // ── Posts ──
-    createPost(actorUserId, { body, visibility = 'public', refType = null, refId = null }) {
+    createPost(actorUserId, { body, visibility = 'public', refType = null, refId = null, kind = 'post' }) {
       requireUser(actorUserId);
       const text = String(body ?? '').trim();
       if (!text) throw new Error('Beitrag darf nicht leer sein.');
       if (text.length > MAX_BODY) throw new Error(`Beitrag zu lang (max ${MAX_BODY}).`);
       if (!['public', 'followers'].includes(visibility)) throw new Error('Ungueltige Sichtbarkeit.');
+      if (!['post', 'news'].includes(kind)) throw new Error('Ungueltige Beitragsart.');
       if (refType && !['shortage', 'price', 'news'].includes(refType)) throw new Error('Ungueltiger Referenztyp.');
-      const post = social.createPost({ authorUserId: actorUserId, body: text, visibility, refType, refId });
+      const post = social.createPost({ authorUserId: actorUserId, body: text, visibility, refType, refId, kind });
       notifyMentions(text, actorUserId, 'post', post.id);
       return post;
     },
@@ -162,6 +163,16 @@ export function createSocialService(social, foundationRepo, options = {}) {
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
         .map(decorate);
     },
+    // News-Ansicht: Beiträge der Art 'news' (kuratiert von der Redaktion ODER von
+    // Nutzern geteilt) — dasselbe Feed-System, nur gefiltert.
+    newsFeed(viewerUserId) {
+      requireUser(viewerUserId);
+      return social.listAllPosts()
+        .filter(p => p.kind === 'news' && visibleTo(p, viewerUserId))
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .map(decorate);
+    },
+
     // Beiträge, die ein externes Objekt referenzieren (z.B. einen Engpass),
     // sichtbarkeitsgefiltert + dekoriert. Basis fuer "X Apotheker haben dazu gepostet".
     postsAbout(viewerUserId, refType, refId) {
