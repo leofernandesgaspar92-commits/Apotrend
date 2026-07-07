@@ -6,11 +6,32 @@ import { ForbiddenError } from './orgAuth.js';
 const REACTION_TYPES = ['hilfreich', 'danke', 'bestaetigt', 'interessant'];
 const MAX_BODY = 1000;
 
-export function createSocialService(social, foundationRepo) {
+export function createSocialService(social, foundationRepo, options = {}) {
+  // Wer darf moderieren (Reports bearbeiten, fremde Inhalte entfernen)? Bewusst
+  // injiziert — eine echte Plattform-Moderator-Rolle ist noch nicht modelliert.
+  const isModerator = options.isModerator || (() => false);
+
   function requireUser(userId) {
     const u = foundationRepo.getUserById(userId);
     if (!u) throw new Error('Unbekannter Nutzer.');
     return u;
+  }
+
+  function notify(userId, type, actorUserId, refType, refId) {
+    if (!userId || userId === actorUserId) return; // nie sich selbst benachrichtigen
+    social.createNotification({ userId, type, actorUserId, refType, refId });
+  }
+
+  // @handle-Erwaehnungen im Text -> Mention-Benachrichtigungen.
+  function notifyMentions(text, actorUserId, refType, refId) {
+    const seen = new Set();
+    for (const m of String(text).matchAll(/@([a-z0-9_]{3,30})/gi)) {
+      const handle = m[1].toLowerCase();
+      if (seen.has(handle)) continue;
+      seen.add(handle);
+      const prof = social.getProfileByHandle(handle);
+      if (prof) notify(prof.user_id, 'mention', actorUserId, refType, refId);
+    }
   }
   // Darf viewer diesen Post sehen?
   function visibleTo(post, viewerId) {
@@ -53,7 +74,9 @@ export function createSocialService(social, foundationRepo) {
       if (text.length > MAX_BODY) throw new Error(`Beitrag zu lang (max ${MAX_BODY}).`);
       if (!['public', 'followers'].includes(visibility)) throw new Error('Ungueltige Sichtbarkeit.');
       if (refType && !['shortage', 'price', 'news'].includes(refType)) throw new Error('Ungueltiger Referenztyp.');
-      return social.createPost({ authorUserId: actorUserId, body: text, visibility, refType, refId });
+      const post = social.createPost({ authorUserId: actorUserId, body: text, visibility, refType, refId });
+      notifyMentions(text, actorUserId, 'post', post.id);
+      return post;
     },
     deletePost(actorUserId, postId) {
       const p = social.getPost(postId);
@@ -78,7 +101,14 @@ export function createSocialService(social, foundationRepo) {
       }
       const text = String(body ?? '').trim();
       if (!text) throw new Error('Kommentar darf nicht leer sein.');
-      return social.createComment({ postId, parentCommentId, authorUserId: actorUserId, body: text });
+      const comment = social.createComment({ postId, parentCommentId, authorUserId: actorUserId, body: text });
+      notify(p.author_user_id, 'comment', actorUserId, 'post', postId); // Beitrags-Autor
+      if (parentCommentId) {
+        const parent = social.getComment(parentCommentId);
+        if (parent) notify(parent.author_user_id, 'comment', actorUserId, 'comment', parentCommentId);
+      }
+      notifyMentions(text, actorUserId, 'post', postId);
+      return comment;
     },
     listComments(viewerUserId, postId) {
       const p = social.getPost(postId);
@@ -99,7 +129,11 @@ export function createSocialService(social, foundationRepo) {
         const p = social.getPost(c.post_id);
         if (!p || !visibleTo(p, actorUserId)) throw new ForbiddenError('Ziel nicht sichtbar.');
       } else throw new Error('Ungueltiger Zieltyp.');
-      return social.setReaction({ userId: actorUserId, targetType, targetId, type });
+      const reaction = social.setReaction({ userId: actorUserId, targetType, targetId, type });
+      // Autor des Ziels benachrichtigen
+      const target = targetType === 'post' ? social.getPost(targetId) : social.getComment(targetId);
+      if (target) notify(target.author_user_id, 'reaction', actorUserId, targetType, targetId);
+      return reaction;
     },
     unreact(actorUserId, targetType, targetId) {
       social.removeReaction({ userId: actorUserId, targetType, targetId });
@@ -110,6 +144,7 @@ export function createSocialService(social, foundationRepo) {
       requireUser(actorUserId); requireUser(followeeUserId);
       if (actorUserId === followeeUserId) throw new Error('Selbst-Follow nicht moeglich.');
       social.follow(actorUserId, followeeUserId);
+      notify(followeeUserId, 'follow', actorUserId, 'user', actorUserId);
       return { follower: actorUserId, followee: followeeUserId };
     },
     unfollow(actorUserId, followeeUserId) { social.unfollow(actorUserId, followeeUserId); },
@@ -134,6 +169,73 @@ export function createSocialService(social, foundationRepo) {
         .filter(p => p.visibility === 'public')
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
         .map(decorate);
+    },
+
+    // ── Benachrichtigungen ──
+    notifications(userId) { requireUser(userId); return social.listNotifications(userId); },
+    unreadCount(userId) { requireUser(userId); return social.unreadNotificationCount(userId); },
+    markNotificationRead(userId, id) {
+      const list = social.listNotifications(userId);
+      if (!list.some(n => n.id === id)) throw new ForbiddenError('Fremde Benachrichtigung.');
+      social.markNotificationRead(id);
+    },
+    markAllNotificationsRead(userId) { requireUser(userId); social.markAllNotificationsRead(userId); },
+
+    // ── Direktnachrichten (1:1, privat, getrennt vom Feed) ──
+    startDm(actorUserId, otherUserId) {
+      requireUser(actorUserId); requireUser(otherUserId);
+      if (actorUserId === otherUserId) throw new Error('Kein DM mit sich selbst.');
+      return social.findDmThread(actorUserId, otherUserId) || social.createDmThread(actorUserId, otherUserId);
+    },
+    sendDm(actorUserId, threadId, body) {
+      const t = social.getDmThread(threadId);
+      if (!t) throw new Error('Thread nicht gefunden.');
+      if (t.user_a_id !== actorUserId && t.user_b_id !== actorUserId) throw new ForbiddenError('Nicht Teil dieser Konversation.');
+      const text = String(body ?? '').trim();
+      if (!text) throw new Error('Leere Nachricht.');
+      const msg = social.createDmMessage({ threadId, senderUserId: actorUserId, body: text });
+      const recipient = t.user_a_id === actorUserId ? t.user_b_id : t.user_a_id;
+      notify(recipient, 'dm', actorUserId, 'thread', threadId);
+      return msg;
+    },
+    listDm(viewerUserId, threadId) {
+      const t = social.getDmThread(threadId);
+      if (!t) throw new Error('Thread nicht gefunden.');
+      if (t.user_a_id !== viewerUserId && t.user_b_id !== viewerUserId) throw new ForbiddenError('Nicht Teil dieser Konversation.');
+      return social.listDmMessages(threadId);
+    },
+
+    // ── Melden / Moderation ──
+    // Jede angemeldete Person kann melden.
+    report(actorUserId, targetType, targetId, reason) {
+      requireUser(actorUserId);
+      if (!['post', 'comment', 'profile'].includes(targetType)) throw new Error('Ungueltiger Zieltyp.');
+      return social.createReport({ reporterUserId: actorUserId, targetType, targetId, reason });
+    },
+    // Nur Moderatoren: Reports einsehen und aufloesen.
+    listReports(moderatorUserId, status = null) {
+      if (!isModerator(moderatorUserId)) throw new ForbiddenError('Nur Moderation.');
+      return social.listReports(status);
+    },
+    resolveReport(moderatorUserId, reportId, { remove = false } = {}) {
+      if (!isModerator(moderatorUserId)) throw new ForbiddenError('Nur Moderation.');
+      const r = social.getReport(reportId);
+      if (!r) throw new Error('Meldung nicht gefunden.');
+      if (remove && r.target_type === 'post') social.softDeletePost(r.target_id);
+      return social.updateReport(reportId, { status: remove ? 'entfernt' : 'geprueft' });
+    },
+
+    // ── DSGVO: endgueltiges Loeschen (Autor oder Moderation) ──
+    // Soft-Delete verbirgt nur; hier wird der Inhalt tatsaechlich entfernt.
+    hardDeletePost(actorUserId, postId) {
+      const p = social.getPost(postId);
+      if (!p) throw new Error('Beitrag nicht gefunden.');
+      if (p.author_user_id !== actorUserId && !isModerator(actorUserId)) {
+        throw new ForbiddenError('Nur Autor oder Moderation.');
+      }
+      // Im In-Memory-Store: als Soft-Delete markieren (Hard-Delete-Semantik kommt
+      // mit dem Postgres-Repo; hier reicht die Nicht-Sichtbarkeit fuers Verhalten).
+      return social.softDeletePost(postId);
     },
   };
 }

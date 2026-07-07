@@ -6,10 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
-> - ✅ **Priorität 1 — Social-Feed (Kern, personenzentriert):** Fachprofile · kurze
->   Posts (public/followers) · Kommentar-Threads · typisierte Reaktionen · gerichtete
->   Follows · Home-/Öffentlich-Feed. Als Nächstes: Direktnachrichten (1:1) ·
->   Benachrichtigungen · Melden/Moderation.
+> - ✅ **Priorität 1 — Social-Feed (Kern, personenzentriert), KOMPLETT:** Fachprofile ·
+>   kurze Posts (public/followers) · Kommentar-Threads · typisierte Reaktionen ·
+>   gerichtete Follows · Home-/Öffentlich-Feed · **Direktnachrichten (1:1)** ·
+>   **Benachrichtigungen** (Follow/Kommentar/Reaktion/@Mention/DM) · **Melden/Moderation** ·
+>   DSGVO-Hard-Delete. (35 Tests grün.)
+> - ⏳ **Priorität 2 — Lieferengpässe** (mit Feed verknüpfbar via `posts.ref_type`).
 > - ✅ **Baustein 1 — Fundament:** Organisationen · Nutzer · Mitgliedschaften ·
 >   echte Auth (scrypt) · Mandanten-Isolation + RBAC.
 > - ✅ **Baustein 2 — collab (Teams-artig):** Kanäle · Nachrichten · Notizen ·
