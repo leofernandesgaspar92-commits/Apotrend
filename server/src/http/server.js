@@ -77,6 +77,9 @@ const userIdFrom = (req) => verifyToken((req.headers.authorization || '').replac
 
 // Route-Tabelle: [method, regex, authRequired, handler(ctx)]
 const routes = [
+  // Health-Check für Hosting-Plattformen (kein Auth, keine Daten).
+  ['GET', /^\/api\/health$/, false, async () => ({ ok: true, service: 'apotrend', ts: new Date().toISOString() })],
+
   ['POST', /^\/api\/register$/, false, async ({ body }) => {
     const { name, email, password, handle, displayName, pharmacyName } = body;
     const reg = orgAuth.registerPharmacyWithOwner({

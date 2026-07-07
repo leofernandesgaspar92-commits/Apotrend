@@ -35,6 +35,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   allen Modulen — Personen (Handle/Name/Fachgebiet), Beiträge (sichtbarkeitsgefiltert),
 >   Engpässe, Preise, Rabatte (`GET /api/search?q=`). Ergebnisseite gruppiert nach Typ.
 >   (60 Tests grün, im Browser verifiziert.)
+> - ✅ **Deployment-fähig gemacht:** `/api/health`-Endpunkt, `Dockerfile`,
+>   `render.yaml` (Render-Blueprint) und **`DEPLOY.md`** (Schritt-für-Schritt für
+>   Render/Railway/Docker). App braucht einen Node-Host (nicht GitHub Pages!).
+>   ⚠️ Persistenz weiterhin In-Memory → Daten pro Neustart leer (Postgres = nächster Schritt).
 > - ✅ **Baustein 1 — Fundament:** Organisationen · Nutzer · Mitgliedschaften ·
 >   echte Auth (scrypt) · Mandanten-Isolation + RBAC.
 > - ✅ **Baustein 2 — collab (Teams-artig):** Kanäle · Nachrichten · Notizen ·

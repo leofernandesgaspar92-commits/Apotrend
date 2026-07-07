@@ -1,0 +1,26 @@
+# Render.com Blueprint — 1-Klick-Deployment der ApoTrend Feed-App.
+# Render erkennt diese Datei automatisch ("New + → Blueprint" auf render.com,
+# dann dieses Repo wählen). Kostenloser Tarif genügt zum Ausprobieren.
+#
+# WICHTIG: Die neue App liegt im Unterordner server/ auf Branch feed-first.
+# rootDir + branch sind deshalb explizit gesetzt.
+#
+# HINWEIS ZUR PERSISTENZ: Der Server hält Daten aktuell nur im Arbeitsspeicher
+# (In-Memory). Bei jedem Neustart/Deploy sind Beiträge/Profile wieder leer, nur
+# die Seed-/Redaktionsdaten laden neu. Dauerhafte Speicherung = nächster Schritt
+# (Postgres/EU hinter dem bestehenden Repository-Seam).
+
+services:
+  - type: web
+    name: apotrend-feed
+    runtime: node
+    plan: free
+    branch: feed-first
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # PORT wird von Render automatisch gesetzt — der Server liest process.env.PORT.
