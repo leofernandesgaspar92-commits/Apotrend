@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Onboarding/Willkommen:** beim ersten Login ein kurzer, freundlicher Overlay
+>   („So funktioniert ApoTrend": posten, folgen, Marktdaten, DMs, Suche/Themen) plus
+>   „Als App installieren"-Tipp; per ❓ jederzeit wieder aufrufbar, Merker in
+>   localStorage. (Frontend; im Browser verifiziert.)
 > - ✅ **PWA (installierbar auf allen Geräten):** `manifest.webmanifest`, App-Icons
 >   (Pharma-Kreuz), Theme-Farbe, Apple-Touch-Icon und minimaler Service Worker
 >   (`sw.js`, netzwerk-durchreichend → keine veralteten Stände). App lässt sich auf

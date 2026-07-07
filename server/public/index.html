@@ -65,6 +65,7 @@
   <span class="logo">🟢 ApoTrend</span>
   <span class="muted" id="whoami" style="color:#dff5ea;"></span>
   <span class="sp"></span>
+  <button class="bell hidden" id="btnHelp" title="Hilfe / So funktioniert ApoTrend">❓</button>
   <button class="bell hidden" id="btnMod" title="Moderation">🛡️</button>
   <button class="bell hidden" id="btnDm" title="Nachrichten">✉️<span class="badge hidden" id="dmBadge">0</span></button>
   <button class="bell hidden" id="btnNotif" title="Benachrichtigungen">🔔<span class="badge hidden" id="notifBadge">0</span></button>
@@ -101,6 +102,7 @@ function authScreen() {
   document.getElementById('btnNotif').classList.add('hidden');
   document.getElementById('btnDm').classList.add('hidden');
   document.getElementById('btnMod').classList.add('hidden');
+  document.getElementById('btnHelp').classList.add('hidden');
   document.getElementById('whoami').textContent = '';
   app.innerHTML = '';
   app.appendChild(el(`
@@ -154,6 +156,9 @@ async function mainScreen() {
   const btnMod = document.getElementById('btnMod');
   btnMod.classList.toggle('hidden', !iAmModerator);
   btnMod.onclick = showModeration;
+  const btnHelp = document.getElementById('btnHelp');
+  btnHelp.classList.remove('hidden');
+  btnHelp.onclick = () => showWelcome(true);
   document.getElementById('btnLogout').onclick = () => { localStorage.removeItem('apo_token'); location.reload(); };
   document.getElementById('btnNotif').onclick = showNotifications;
   document.getElementById('btnDm').onclick = showDmInbox;
@@ -211,6 +216,40 @@ async function mainScreen() {
     b.classList.add('active'); tab = b.dataset.tab; loadTab();
   });
   loadTab();
+  if (!localStorage.getItem('apo_welcome_seen')) showWelcome(false);
+}
+
+function showWelcome(reopened) {
+  document.getElementById('welcomeOverlay')?.remove();
+  const steps = [
+    ['📝', 'Posten & austauschen', 'Kurz teilen, was gerade wichtig ist — z.B. „Engpass bei Amoxicillin, wer hat Bestand?". Andere reagieren und antworten.'],
+    ['👥', 'Kolleg:innen folgen', 'Folge anderen Apotheker:innen (@Handle) und sieh ihre Beiträge in „Mein Feed".'],
+    ['📦', 'Engpässe, 💶 Preise, 🏷️ Rabatte, 📰 News', 'Aktuelle Marktdaten in den Reitern oben — direkt aus einem Eintrag heraus dazu posten.'],
+    ['✉️', 'Direktnachrichten', 'Schreib jemandem privat 1:1 über das Briefsymbol oben oder „✉️ Nachricht" am Profil.'],
+    ['🔎', 'Suchen & 🏷️ Themen', 'Oben nach Personen, Beiträgen, Wirkstoffen suchen. #Hashtags und @Namen sind anklickbar.'],
+  ];
+  const ov = el(`<div id="welcomeOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px">
+    <div class="card" style="max-width:520px;width:100%;max-height:90vh;overflow-y:auto">
+      <div class="row"><h1 style="flex:1;margin:0">👋 Willkommen bei ApoTrend</h1></div>
+      <p class="muted" style="margin:6px 0 14px">Das Fachnetzwerk für Apotheken — kurz erklärt:</p>
+      ${steps.map(([i,t,d])=>`<div style="display:flex;gap:12px;margin:12px 0">
+        <div style="font-size:24px;flex:0 0 auto">${i}</div>
+        <div><b>${esc(t)}</b><div class="muted" style="font-size:14px;margin-top:2px">${esc(d)}</div></div></div>`).join('')}
+      <div class="card" style="background:#eef6f1;border-color:#cfe6da;margin-top:8px">
+        <b>📲 Tipp: Als App installieren</b>
+        <div class="muted" style="font-size:14px;margin-top:4px">
+          Handy: Browser-Menü → „Zum Startbildschirm" (iPhone: Teilen → „Zum Home-Bildschirm").
+          Computer: Installations-Symbol rechts in der Adressleiste. Dann liegt ApoTrend wie eine App auf deinem Gerät.
+        </div>
+      </div>
+      <div class="row" style="margin-top:16px"><span class="sp" style="flex:1"></span>
+        <button id="welcomeClose">Los geht's →</button></div>
+    </div>
+  </div>`);
+  document.body.appendChild(ov);
+  const close = () => { localStorage.setItem('apo_welcome_seen','1'); ov.remove(); };
+  ov.querySelector('#welcomeClose').onclick = close;
+  ov.onclick = (e) => { if (e.target === ov) close(); };
 }
 
 function loadTab() {
