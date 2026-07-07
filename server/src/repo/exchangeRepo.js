@@ -11,7 +11,7 @@ export function createExchangeRepo() {
     create(e) {
       const row = {
         id: uuid(), kind: e.kind, author_user_id: e.authorUserId,
-        bezeichnung: e.bezeichnung, menge: e.menge ?? null, ort: e.ort ?? null,
+        bezeichnung: e.bezeichnung, menge: e.menge ?? null, ort: e.ort ?? null, bundesland: e.bundesland ?? null,
         note: e.note ?? null, image: e.image ?? null, status: 'offen', created_at: now(), resolved_at: null,
       };
       entries.set(row.id, row);

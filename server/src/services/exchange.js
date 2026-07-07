@@ -5,6 +5,7 @@ import { ForbiddenError } from './orgAuth.js';
 import { cleanImage } from '../domain/media.js';
 
 const KINDS = ['biete', 'suche'];
+export const BUNDESLAENDER = ['Wien', 'Niederösterreich', 'Oberösterreich', 'Steiermark', 'Tirol', 'Kärnten', 'Salzburg', 'Vorarlberg', 'Burgenland'];
 
 export function createExchangeService(exchangeRepo, social, foundationRepo) {
   function requireUser(userId) {
@@ -19,27 +20,31 @@ export function createExchangeService(exchangeRepo, social, foundationRepo) {
   }
 
   return {
-    create(actorUserId, { kind, bezeichnung, menge, ort, note, image }) {
+    create(actorUserId, { kind, bezeichnung, menge, ort, bundesland, note, image }) {
       requireUser(actorUserId);
       if (!KINDS.includes(kind)) throw new Error('Art muss "biete" oder "suche" sein.');
       const b = String(bezeichnung ?? '').trim();
       if (!b) throw new Error('Präparat/Wirkstoff erforderlich.');
       if (b.length > 200) throw new Error('Bezeichnung zu lang.');
+      const bl = bundesland ? String(bundesland).trim() : null;
+      if (bl && !BUNDESLAENDER.includes(bl)) throw new Error('Ungültiges Bundesland.');
       return decorate(exchangeRepo.create({
         kind, authorUserId: actorUserId, bezeichnung: b,
         menge: (menge ?? '').toString().trim() || null,
         ort: (ort ?? '').toString().trim() || null,
+        bundesland: bl,
         note: (note ?? '').toString().trim() || null,
         image: cleanImage(image),
       }));
     },
-    // Offene Einträge (Standard), optional nach Art + Text (Präparat) gefiltert.
-    list(viewerUserId, { kind = null, status = 'offen', q = null } = {}) {
+    // Offene Einträge (Standard), optional nach Art + Text (Präparat) + Bundesland gefiltert.
+    list(viewerUserId, { kind = null, status = 'offen', q = null, bundesland = null } = {}) {
       requireUser(viewerUserId);
       const query = q ? String(q).trim().toLowerCase() : null;
       return exchangeRepo.list()
         .filter(e => (!status || e.status === status) && (!kind || e.kind === kind)
-          && (!query || e.bezeichnung.toLowerCase().includes(query)))
+          && (!query || e.bezeichnung.toLowerCase().includes(query))
+          && (!bundesland || e.bundesland === bundesland))
         .map(decorate);
     },
     markResolved(actorUserId, id) {

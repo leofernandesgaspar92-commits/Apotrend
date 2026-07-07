@@ -61,6 +61,20 @@ test('Ungültige Art und leere Bezeichnung werden abgelehnt', () => {
   assert.throws(() => exchange.create(a, { kind: 'biete', bezeichnung: '   ' }), /erforderlich/);
 });
 
+test('Bundesland-Filter: nur Einträge aus dem gewählten Bundesland', () => {
+  const { exchange, a, b } = setup();
+  exchange.create(a, { kind: 'biete', bezeichnung: 'Amoxicillin', bundesland: 'Wien' });
+  exchange.create(b, { kind: 'biete', bezeichnung: 'Amoxicillin', bundesland: 'Tirol' });
+  assert.equal(exchange.list(a, { bundesland: 'Wien' }).length, 1);
+  assert.equal(exchange.list(a, { bundesland: 'Wien' })[0].bundesland, 'Wien');
+  assert.equal(exchange.list(a, { bundesland: 'Tirol' }).length, 1);
+});
+
+test('Ungültiges Bundesland wird abgelehnt', () => {
+  const { exchange, a } = setup();
+  assert.throws(() => exchange.create(a, { kind: 'biete', bezeichnung: 'X', bundesland: 'Bayern' }), /Bundesland/);
+});
+
 test('Eintrag mit Bild (data:image) ok, Fremd-URL abgelehnt', () => {
   const { exchange, a } = setup();
   const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';

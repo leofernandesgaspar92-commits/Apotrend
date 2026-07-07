@@ -6,6 +6,9 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Standort-Filter im Bestandsaustausch:** Einträge tragen ein Bundesland (AT,
+>   9 Länder, serverseitig validiert); im Reiter nach Bundesland filterbar — Ware in
+>   der Nähe finden. (`GET /api/exchange?bundesland=`; 98 Tests grün, im Browser verifiziert.)
 > - ✅ **Fotos im Bestandsaustausch:** Biete/Suche-Einträge können ein Foto tragen
 >   (z.B. Charge/Ablaufdatum) — schafft Vertrauen beim Tausch. Bild-/Quellen-Validierung
 >   in gemeinsames Modul `domain/media.js` ausgelagert (von Social + Austausch genutzt).

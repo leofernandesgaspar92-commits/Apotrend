@@ -468,8 +468,11 @@ function priceGroup(g) {
   return card;
 }
 
+const BUNDESLAENDER = ['Wien','Niederösterreich','Oberösterreich','Steiermark','Tirol','Kärnten','Salzburg','Vorarlberg','Burgenland'];
+const blOptions = (sel) => BUNDESLAENDER.map(b=>`<option value="${b}"${b===sel?' selected':''}>${b}</option>`).join('');
 let exchangeFilter = ''; // '', 'biete', 'suche'
 let exchangeQuery = '';   // Text-Filter (z.B. aus einem Engpass heraus vorbelegt)
+let exchangeBL = '';      // Bundesland-Filter
 async function loadExchange() {
   const feed = document.getElementById('feed');
   feed.innerHTML = '';
@@ -484,6 +487,7 @@ async function loadExchange() {
       <input id="ex_menge" placeholder="Menge (z.B. 20 Packungen)">
       <input id="ex_ort" placeholder="Ort (z.B. 1010 Wien)">
     </div>
+    <select id="ex_bl" style="margin-top:6px"><option value="">Bundesland wählen (für Umkreis-Suche)…</option>${blOptions('')}</select>
     <input id="ex_note" placeholder="Hinweis (optional)" style="margin-top:6px">
     <div class="row" style="margin-top:6px">
       <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px">📷 Foto (z.B. Charge/Ablauf)<input type="file" id="ex_img" accept="image/*" style="display:none"></label>
@@ -507,7 +511,7 @@ async function loadExchange() {
   exImgclear.onclick = clearEx;
   document.getElementById('ex_go').onclick = async () => {
     try {
-      await api('POST','/api/exchange',{ kind:v('ex_kind'), bezeichnung:v('ex_bez'), menge:v('ex_menge'), ort:v('ex_ort'), note:v('ex_note'), image:exImage });
+      await api('POST','/api/exchange',{ kind:v('ex_kind'), bezeichnung:v('ex_bez'), menge:v('ex_menge'), ort:v('ex_ort'), bundesland:v('ex_bl'), note:v('ex_note'), image:exImage });
       loadExchange();
     } catch(e){ document.getElementById('ex_err').textContent = e.message; }
   };
@@ -518,10 +522,12 @@ async function loadExchange() {
       <button class="${exchangeFilter===''?'':'ghost '}small" data-f="">Alle</button>
       <button class="${exchangeFilter==='biete'?'':'ghost '}small" data-f="biete">📦 Angebote</button>
       <button class="${exchangeFilter==='suche'?'':'ghost '}small" data-f="suche">🔎 Gesuche</button>
+      <select id="ex_blf" class="small" style="margin-left:auto"><option value="">📍 Alle Bundesländer</option>${blOptions(exchangeBL)}</select>
     </div></div>`);
   filt.querySelectorAll('[data-f]').forEach(btn => btn.onclick = () => { exchangeFilter = btn.dataset.f; loadExchange(); });
   filt.querySelector('#ex_qgo').onclick = () => { exchangeQuery = v('ex_q').trim(); loadExchange(); };
   filt.querySelector('#ex_q').addEventListener('keydown', e => { if (e.key==='Enter') { exchangeQuery = v('ex_q').trim(); loadExchange(); } });
+  filt.querySelector('#ex_blf').onchange = (ev) => { exchangeBL = ev.target.value; loadExchange(); };
   const qclear = filt.querySelector('#ex_qclear');
   if (qclear) qclear.onclick = () => { exchangeQuery=''; loadExchange(); };
   feed.appendChild(filt);
@@ -529,6 +535,7 @@ async function loadExchange() {
     const params = new URLSearchParams();
     if (exchangeFilter) params.set('kind', exchangeFilter);
     if (exchangeQuery) params.set('q', exchangeQuery);
+    if (exchangeBL) params.set('bundesland', exchangeBL);
     const d = await api('GET','/api/exchange'+(params.toString()?'?'+params.toString():''));
     if (!d.entries.length) { feed.appendChild(el(`<div class="card muted">${exchangeQuery?`Keine offenen Einträge zu „${esc(exchangeQuery)}".`:'Noch keine offenen Einträge. Sei der/die Erste!'}</div>`)); return; }
     d.entries.forEach(e => feed.appendChild(exchangeCard(e)));
@@ -548,7 +555,7 @@ function exchangeCard(e) {
       <span class="sp" style="flex:1"></span>
       <span class="muted" style="font-size:12px">${relTime(e.created_at)}</span>
     </div>
-    <div class="muted" style="margin-top:4px">${e.menge?'Menge: '+esc(e.menge):''}${e.menge&&e.ort?' · ':''}${e.ort?'📍 '+esc(e.ort):''}</div>
+    <div class="muted" style="margin-top:4px">${e.menge?'Menge: '+esc(e.menge):''}${e.menge&&(e.ort||e.bundesland)?' · ':''}${e.ort||e.bundesland?'📍 '+esc([e.ort,e.bundesland].filter(Boolean).join(', ')):''}</div>
     ${e.note?`<div class="post-body" style="margin:6px 0">${esc(e.note)}</div>`:''}
     ${e.image && /^data:image\//.test(e.image) ? `<img src="${e.image}" alt="Foto zum Eintrag" style="max-width:100%;border-radius:10px;margin-top:6px;display:block" />` : ''}
     <div class="row" style="margin-top:8px;align-items:baseline">
