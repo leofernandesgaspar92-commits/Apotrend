@@ -46,6 +46,15 @@ test('Als erledigt markieren: nur Ersteller, danach nicht mehr in offener Liste'
   assert.equal(exchange.list(a, { status: 'erledigt' }).length, 1);
 });
 
+test('Text-Filter (q) findet Einträge nach Präparat', () => {
+  const { exchange, a, b } = setup();
+  exchange.create(a, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg' });
+  exchange.create(b, { kind: 'suche', bezeichnung: 'Amoxicillin 500 mg' });
+  exchange.create(a, { kind: 'biete', bezeichnung: 'Metformin 850' });
+  assert.equal(exchange.list(a, { q: 'amoxicillin' }).length, 2);
+  assert.equal(exchange.list(a, { q: 'metformin' }).length, 1);
+});
+
 test('Ungültige Art und leere Bezeichnung werden abgelehnt', () => {
   const { exchange, a } = setup();
   assert.throws(() => exchange.create(a, { kind: 'tausch', bezeichnung: 'X' }), /biete.*suche/);

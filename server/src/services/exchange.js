@@ -31,11 +31,13 @@ export function createExchangeService(exchangeRepo, social, foundationRepo) {
         note: (note ?? '').toString().trim() || null,
       }));
     },
-    // Offene Einträge (Standard), optional nach Art gefiltert, neueste zuerst.
-    list(viewerUserId, { kind = null, status = 'offen' } = {}) {
+    // Offene Einträge (Standard), optional nach Art + Text (Präparat) gefiltert.
+    list(viewerUserId, { kind = null, status = 'offen', q = null } = {}) {
       requireUser(viewerUserId);
+      const query = q ? String(q).trim().toLowerCase() : null;
       return exchangeRepo.list()
-        .filter(e => (!status || e.status === status) && (!kind || e.kind === kind))
+        .filter(e => (!status || e.status === status) && (!kind || e.kind === kind)
+          && (!query || e.bezeichnung.toLowerCase().includes(query)))
         .map(decorate);
     },
     markResolved(actorUserId, id) {

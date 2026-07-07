@@ -228,7 +228,7 @@ const routes = [
   ['POST', /^\/api\/rabatte\/([^/]+)\/post$/, true, async ({ userId, params, body }) => rabatte.postAbout(userId, params[0], { body: body.body, visibility: body.visibility })],
 
   // ── Bestandsaustausch (Biete/Suche) ──
-  ['GET', /^\/api\/exchange$/, true, async ({ userId, query }) => ({ entries: exchange.list(userId, { kind: query.get('kind') || null, status: query.get('status') || 'offen' }) })],
+  ['GET', /^\/api\/exchange$/, true, async ({ userId, query }) => ({ entries: exchange.list(userId, { kind: query.get('kind') || null, status: query.get('status') || 'offen', q: query.get('q') || null }) })],
   ['POST', /^\/api\/exchange$/, true, async ({ userId, body }) => exchange.create(userId, { kind: body.kind, bezeichnung: body.bezeichnung, menge: body.menge, ort: body.ort, note: body.note })],
   ['POST', /^\/api\/exchange\/([^/]+)\/resolve$/, true, async ({ userId, params }) => exchange.markResolved(userId, params[0])],
   ['POST', /^\/api\/exchange\/([^/]+)\/delete$/, true, async ({ userId, params }) => exchange.remove(userId, params[0])],

@@ -384,6 +384,7 @@ function shortageCard(s) {
     <div class="reacts">
       <button data-about>💬 ${s.post_count||0} Apotheker haben dazu gepostet</button>
       <button class="ghost" data-postbtn>✍ Dazu posten</button>
+      <button class="ghost" data-exchange title="Wer bietet/sucht diesen Wirkstoff?">🔄 Biete/Suche</button>
     </div>
     <div class="comments hidden" data-postbox>
       <textarea data-pinput placeholder="Dein Beitrag zu diesem Engpass (öffentlich)…"></textarea>
@@ -393,6 +394,13 @@ function shortageCard(s) {
   </div>`);
   const postbox = card.querySelector('[data-postbox]');
   card.querySelector('[data-postbtn]').onclick = () => postbox.classList.toggle('hidden');
+  card.querySelector('[data-exchange]').onclick = () => {
+    exchangeQuery = s.wirkstoff; exchangeFilter = '';
+    tab = 'exchange';
+    document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+    document.querySelector('.tabs button[data-tab="exchange"]').classList.add('active');
+    loadTab();
+  };
   card.querySelector('[data-psend]').onclick = async () => {
     const t = card.querySelector('[data-pinput]');
     if (!t.value.trim()) return;
@@ -461,6 +469,7 @@ function priceGroup(g) {
 }
 
 let exchangeFilter = ''; // '', 'biete', 'suche'
+let exchangeQuery = '';   // Text-Filter (z.B. aus einem Engpass heraus vorbelegt)
 async function loadExchange() {
   const feed = document.getElementById('feed');
   feed.innerHTML = '';
@@ -486,17 +495,26 @@ async function loadExchange() {
       loadExchange();
     } catch(e){ document.getElementById('ex_err').textContent = e.message; }
   };
-  // Filter
-  const filt = el(`<div class="card" style="padding:8px 12px"><div class="reacts">
-    <button class="${exchangeFilter===''?'':'ghost '}small" data-f="">Alle</button>
-    <button class="${exchangeFilter==='biete'?'':'ghost '}small" data-f="biete">📦 Angebote</button>
-    <button class="${exchangeFilter==='suche'?'':'ghost '}small" data-f="suche">🔎 Gesuche</button>
-  </div></div>`);
+  // Filter + Textsuche
+  const filt = el(`<div class="card" style="padding:8px 12px">
+    <div class="row"><input id="ex_q" placeholder="Nach Präparat filtern…" value="${esc(exchangeQuery)}"><button class="ghost small" id="ex_qgo">Filtern</button>${exchangeQuery?'<button class="ghost small" id="ex_qclear">✕</button>':''}</div>
+    <div class="reacts" style="margin-top:6px">
+      <button class="${exchangeFilter===''?'':'ghost '}small" data-f="">Alle</button>
+      <button class="${exchangeFilter==='biete'?'':'ghost '}small" data-f="biete">📦 Angebote</button>
+      <button class="${exchangeFilter==='suche'?'':'ghost '}small" data-f="suche">🔎 Gesuche</button>
+    </div></div>`);
   filt.querySelectorAll('[data-f]').forEach(btn => btn.onclick = () => { exchangeFilter = btn.dataset.f; loadExchange(); });
+  filt.querySelector('#ex_qgo').onclick = () => { exchangeQuery = v('ex_q').trim(); loadExchange(); };
+  filt.querySelector('#ex_q').addEventListener('keydown', e => { if (e.key==='Enter') { exchangeQuery = v('ex_q').trim(); loadExchange(); } });
+  const qclear = filt.querySelector('#ex_qclear');
+  if (qclear) qclear.onclick = () => { exchangeQuery=''; loadExchange(); };
   feed.appendChild(filt);
   try {
-    const d = await api('GET','/api/exchange'+(exchangeFilter?'?kind='+exchangeFilter:''));
-    if (!d.entries.length) { feed.appendChild(el('<div class="card muted">Noch keine offenen Einträge. Sei der/die Erste!</div>')); return; }
+    const params = new URLSearchParams();
+    if (exchangeFilter) params.set('kind', exchangeFilter);
+    if (exchangeQuery) params.set('q', exchangeQuery);
+    const d = await api('GET','/api/exchange'+(params.toString()?'?'+params.toString():''));
+    if (!d.entries.length) { feed.appendChild(el(`<div class="card muted">${exchangeQuery?`Keine offenen Einträge zu „${esc(exchangeQuery)}".`:'Noch keine offenen Einträge. Sei der/die Erste!'}</div>`)); return; }
     d.entries.forEach(e => feed.appendChild(exchangeCard(e)));
   } catch(e){ feed.appendChild(el('<div class="card err">'+esc(e.message)+'</div>')); }
 }

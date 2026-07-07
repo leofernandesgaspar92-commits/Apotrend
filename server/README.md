@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Engpass ↔ Bestandsaustausch verknüpft:** an jedem Engpass ein Button
+>   „🔄 Biete/Suche" → springt in den Austausch, vorgefiltert auf den Wirkstoff
+>   (zeigt sofort, wer ihn bietet/sucht). Austausch-Reiter zusätzlich mit Textsuche
+>   nach Präparat (`GET /api/exchange?q=`). (95 Tests grün, im Browser verifiziert.)
 > - ✅ **Bilder & Quellen in Beiträgen/News:** Bild posten (Client verkleinert auf
 >   ~1200px/JPEG → kleine `data:image`-URL, serverseitig auf Format/Größe geprüft, nur
 >   `data:image`, kein Fremd-Host/Skript), Quelle als http(s)-Link (`🔗 Quelle`,
