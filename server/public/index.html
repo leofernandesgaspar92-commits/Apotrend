@@ -32,6 +32,10 @@
   .editorial { background:#eef3ff; color:#2952cc; font-size:12px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid #cdd9ff; }
   .rank { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:30px; padding:0 6px; border-radius:999px; background:var(--green); color:#fff; font-weight:800; font-size:15px; margin-right:8px; }
   .rabatt-badge { background:#e6f7ef; color:#00885a; font-weight:800; font-size:16px; padding:4px 12px; border-radius:999px; border:1px solid #b6e6cf; }
+  .clickable { cursor:pointer; }
+  .clickable:hover { text-decoration:underline; }
+  .avatar { display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:50%; background:var(--green); color:#fff; font-weight:800; font-size:19px; flex:0 0 auto; }
+  .spec { display:inline-block; background:#eef3f0; border:1px solid var(--line); border-radius:999px; padding:3px 10px; font-size:13px; margin:2px 2px 2px 0; }
   .post-body { margin:8px 0; white-space:pre-wrap; line-height:1.45; }
   .vis { font-size:12px; color:var(--muted); }
   .reacts { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
@@ -386,14 +390,62 @@ async function loadFeed() {
   } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
 }
 
+async function openProfile(handle) {
+  if (!handle) return;
+  const feed = document.getElementById('feed');
+  // Tab-Markierung entfernen (wir sind auf einer Detailseite)
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  feed.innerHTML = '<div class="muted">lädt…</div>';
+  try {
+    const d = await api('GET',`/api/profiles/${encodeURIComponent(handle)}/page`);
+    const p = d.profile;
+    const initials = (p.display_name||'?').split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();
+    const specs = (p.specializations||[]).map(s=>`<span class="spec">${esc(s)}</span>`).join(' ');
+    feed.innerHTML = '';
+    const head = el(`<div class="card">
+      <div><button class="ghost small" data-back>← zurück zum Feed</button></div>
+      <div class="row" style="margin-top:10px;align-items:center">
+        <span class="avatar">${esc(initials)}</span>
+        <div style="margin-left:12px">
+          <div class="row" style="align-items:center">
+            <span class="post-author" style="font-size:19px">${esc(p.display_name||'Unbekannt')}</span>
+            ${p.is_editorial?'<span class="editorial">📰 Redaktion</span>':''}
+            ${p.verified?'<span class="verified">✔ verifiziert</span>':''}
+          </div>
+          <div class="handle">@${esc(p.handle)}</div>
+          ${p.title?`<div class="muted">${esc(p.title)}</div>`:''}
+        </div>
+      </div>
+      ${p.bio?`<div class="post-body">${esc(p.bio)}</div>`:''}
+      ${specs?`<div style="margin-top:8px">${specs}</div>`:''}
+      <div class="row" style="margin-top:12px;gap:18px">
+        <span><b>${d.post_count}</b> <span class="muted">Beiträge</span></span>
+        <span><b>${d.follower_count}</b> <span class="muted">Follower</span></span>
+        <span><b>${d.following_count}</b> <span class="muted">folgt</span></span>
+        <span class="sp" style="flex:1"></span>
+        ${d.is_self?'<span class="muted">Das bist du</span>':`<button class="${d.is_following?'ghost ':''}small" data-togglefollow>${d.is_following?'✓ Du folgst — entfolgen':'+ Folgen'}</button>`}
+      </div>
+    </div>`);
+    head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
+    const tf = head.querySelector('[data-togglefollow]');
+    if (tf) tf.onclick = async () => {
+      try { await api('POST', d.is_following?'/api/unfollow':'/api/follow', { handle:p.handle }); openProfile(handle); }
+      catch(e){ alert(e.message); }
+    };
+    feed.appendChild(head);
+    if (!d.posts.length) feed.appendChild(el('<div class="card muted">Noch keine sichtbaren Beiträge.</div>'));
+    d.posts.forEach(post => feed.appendChild(postCard(post)));
+  } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+}
+
 function postCard(p) {
   const a = p.author || {};
   const rc = p.reaction_counts || {};
   const mine = me && a.handle === me.handle;
   const card = el(`<div class="card">
     <div class="row">
-      <span class="post-author">${esc(a.display_name||'Unbekannt')}</span>
-      <span class="handle">@${esc(a.handle||'?')}</span>
+      <span class="post-author clickable" data-openprofile="${esc(a.handle||'')}">${esc(a.display_name||'Unbekannt')}</span>
+      <span class="handle clickable" data-openprofile="${esc(a.handle||'')}">@${esc(a.handle||'?')}</span>
       ${a.is_editorial?'<span class="editorial">📰 Redaktion</span>':''}
       ${a.verified?'<span class="verified">✔ verifiziert</span>':''}
       <span class="sp" style="flex:1"></span>
@@ -416,6 +468,7 @@ function postCard(p) {
   });
   const fb = card.querySelector('[data-follow]');
   if (fb) fb.onclick = async () => { try { await api('POST','/api/follow',{ handle:fb.dataset.follow }); loadFeed(); } catch(e){ alert(e.message);} };
+  card.querySelectorAll('[data-openprofile]').forEach(el => { if (el.dataset.openprofile) el.onclick = () => openProfile(el.dataset.openprofile); });
   const cbtn = card.querySelector('[data-comments]');
   const cbox = card.querySelector('[data-cbox]');
   cbtn.onclick = async () => {

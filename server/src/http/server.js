@@ -103,6 +103,11 @@ const routes = [
   ['POST', /^\/api\/posts\/([^/]+)\/react$/, true, async ({ userId, params, body }) => social.react(userId, 'post', params[0], body.type)],
   ['POST', /^\/api\/posts\/([^/]+)\/delete$/, true, async ({ userId, params }) => social.deletePost(userId, params[0])],
 
+  ['GET', /^\/api\/profiles\/([^/]+)\/page$/, true, async ({ userId, params }) => {
+    const d = social.profilePage(userId, params[0]);
+    if (!d) { const e = new Error('Profil nicht gefunden'); e.status = 404; throw e; }
+    return { ...d, posts: enrichPosts(d.posts) };
+  }],
   ['GET', /^\/api\/profiles\/([^/]+)$/, true, async ({ params }) => ({ profile: social.getProfile(params[0]) })],
   ['POST', /^\/api\/follow$/, true, async ({ userId, body }) => {
     const target = social.getProfile(body.handle);

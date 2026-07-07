@@ -65,6 +65,26 @@ export function createSocialService(social, foundationRepo, options = {}) {
     getProfile(handleOrUserId) {
       return social.getProfileByHandle(handleOrUserId) || social.getProfileByUserId(handleOrUserId);
     },
+    // Profil-Detailseite: Profil + dessen sichtbare Beiträge + Zähler + Beziehung
+    // zum Betrachter (folge ich? bin ich das selbst?).
+    profilePage(viewerUserId, handleOrUserId) {
+      requireUser(viewerUserId);
+      const prof = social.getProfileByHandle(handleOrUserId) || social.getProfileByUserId(handleOrUserId);
+      if (!prof) return null;
+      const posts = social.listAllPosts()
+        .filter(p => p.author_user_id === prof.user_id && visibleTo(p, viewerUserId))
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .map(decorate);
+      return {
+        profile: prof,
+        posts,
+        follower_count: social.listFollowers(prof.user_id).length,
+        following_count: social.listFollowing(prof.user_id).length,
+        post_count: posts.length,
+        is_following: social.isFollowing(viewerUserId, prof.user_id),
+        is_self: viewerUserId === prof.user_id,
+      };
+    },
 
     // ── Posts ──
     createPost(actorUserId, { body, visibility = 'public', refType = null, refId = null, kind = 'post' }) {

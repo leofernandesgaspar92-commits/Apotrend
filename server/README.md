@@ -27,6 +27,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   Aktionen (abgelaufene ausgeblendet), Listenpreis→Aktionspreis + Ersparnis + Gültigkeit,
 >   Herkunfts-Flag, „Dazu posten" + Aktions-Chip am Beitrag (`posts.ref_type='rabatt'`).
 >   (51 Tests grün, im Browser verifiziert.)
+> - ✅ **Priorität 6 — Profil-Detailseite:** Klick auf @Handle/Name → Profilseite mit
+>   Avatar, Fachgebieten, Zählern (Beiträge/Follower/folgt), Folgen/Entfolgen und den
+>   sichtbaren Beiträgen der Person (`GET /api/profiles/:handle/page`, Sichtbarkeit
+>   erzwungen). (55 Tests grün, im Browser verifiziert.)
 > - ✅ **Baustein 1 — Fundament:** Organisationen · Nutzer · Mitgliedschaften ·
 >   echte Auth (scrypt) · Mandanten-Isolation + RBAC.
 > - ✅ **Baustein 2 — collab (Teams-artig):** Kanäle · Nachrichten · Notizen ·
