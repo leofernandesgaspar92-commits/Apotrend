@@ -641,9 +641,15 @@ function commentRow(postId, c, card, depth = 0) {
       ${mine?'<button class="ghost small" data-ced>✏️</button><button class="ghost small" data-cdel>🗑</button>':''}
     </div>
     <div data-cbody style="margin-top:2px">${esc(c.body)}</div>
-    <div class="row" style="margin-top:4px"><button class="ghost small" data-creply>↩ Antworten</button></div>
+    <div class="reacts" style="margin-top:4px">
+      ${REACTS.map(([k,lab])=>`<button class="small" data-creact="${k}">${lab.split(' ')[0]} ${(c.reaction_counts&&c.reaction_counts[k])||0}</button>`).join('')}
+      <button class="ghost small" data-creply>↩ Antworten</button>
+    </div>
   </div>`);
   row.querySelectorAll('[data-openprofile]').forEach(el => { if (el.dataset.openprofile) el.onclick = () => openProfile(el.dataset.openprofile); });
+  row.querySelectorAll('[data-creact]').forEach(btn => btn.onclick = async () => {
+    try { await api('POST',`/api/comments/${c.id}/react`,{ type:btn.dataset.creact }); loadComments(postId, card); } catch(e){ alert(e.message); }
+  });
   row.querySelector('[data-creply]').onclick = () => {
     if (row.querySelector('[data-replybox]')) return;
     const box = el(`<div data-replybox style="margin-top:6px">

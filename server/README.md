@@ -39,6 +39,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   nur der Autor, serverseitig erzwungen), fremde Beiträge melden (🚩 →
 >   `POST /api/posts/:id/report`, Moderations-Queue). Erfüllt die Owner-Vorgabe
 >   „Beiträge löschen/melden". (Im Browser verifiziert.)
+> - ✅ **Reaktionen auf Kommentare:** dieselben typisierten Reaktionen (hilfreich/
+>   danke/bestätigt/interessant) auch je Kommentar, Zähler in `listComments`,
+>   eine Reaktion je Nutzer+Ziel (umschaltbar). (`POST /api/comments/:id/react`;
+>   78 Tests grün, im Browser verifiziert.)
 > - ✅ **Verschachtelte Antworten (Kommentar-Threads):** Antworten auf Kommentare
 >   werden als eingerückter Baum dargestellt (`parent_comment_id`), „↩ Antworten" je
 >   Kommentar, Eltern-Autor:in wird benachrichtigt. (Frontend-Baum aus flacher Liste;

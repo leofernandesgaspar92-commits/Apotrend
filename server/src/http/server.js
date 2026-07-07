@@ -151,6 +151,7 @@ const routes = [
   ['POST', /^\/api\/posts\/([^/]+)\/comments$/, true, async ({ userId, params, body }) => social.comment(userId, params[0], { body: body.body, parentCommentId: body.parentCommentId })],
   ['POST', /^\/api\/comments\/([^/]+)\/edit$/, true, async ({ userId, params, body }) => social.editComment(userId, params[0], body.body)],
   ['POST', /^\/api\/comments\/([^/]+)\/delete$/, true, async ({ userId, params }) => social.deleteComment(userId, params[0])],
+  ['POST', /^\/api\/comments\/([^/]+)\/react$/, true, async ({ userId, params, body }) => social.react(userId, 'comment', params[0], body.type)],
   ['POST', /^\/api\/posts\/([^/]+)\/react$/, true, async ({ userId, params, body }) => social.react(userId, 'post', params[0], body.type)],
   ['POST', /^\/api\/posts\/([^/]+)\/edit$/, true, async ({ userId, params, body }) => social.editPost(userId, params[0], body.body)],
   ['POST', /^\/api\/posts\/([^/]+)\/delete$/, true, async ({ userId, params }) => social.deletePost(userId, params[0])],

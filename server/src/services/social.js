@@ -192,7 +192,10 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (!p || !visibleTo(p, viewerUserId)) throw new ForbiddenError('Beitrag nicht sichtbar.');
       return social.listComments(postId).map(c => {
         const prof = social.getProfileByUserId(c.author_user_id);
-        return { ...c, author: prof ? { handle: prof.handle, display_name: prof.display_name } : null };
+        const reacts = social.listReactions('comment', c.id);
+        const counts = {};
+        for (const t of REACTION_TYPES) counts[t] = reacts.filter(r => r.type === t).length;
+        return { ...c, author: prof ? { handle: prof.handle, display_name: prof.display_name } : null, reaction_counts: counts };
       });
     },
     editComment(actorUserId, commentId, body) {
