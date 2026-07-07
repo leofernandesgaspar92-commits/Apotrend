@@ -3,20 +3,43 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ApoTrend – wird geladen …</title>
-  <!-- GitHub Pages liefert im klassischen Branch-Modus die Repo-Root aus.
-       Die eigentliche App liegt in frontend/index.html — daher hier eine
-       Weiterleitung, damit /Apotrend/ direkt die App öffnet. -->
-  <meta http-equiv="refresh" content="0; url=./frontend/" />
-  <link rel="canonical" href="./frontend/" />
-  <script>location.replace('./frontend/' + location.search + location.hash);</script>
+  <title>ApoTrend – zur App</title>
+  <!-- Die aktuelle ApoTrend-App läuft als eigener Dienst (Node-Server) und nicht
+       mehr hier auf GitHub Pages. Diese Seite leitet dorthin weiter. -->
+  <meta http-equiv="refresh" content="3; url=https://apotrend-feed.onrender.com" />
+  <link rel="canonical" href="https://apotrend-feed.onrender.com" />
   <style>
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background:#0a0a0a; color:#e8e8e8;
-           display:flex; align-items:center; justify-content:center; height:100vh; margin:0; }
-    a { color:#00ff88; }
+    :root { --green:#0a8f4f; --green-dark:#0a7a45; }
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; margin:0;
+           min-height:100vh; display:flex; align-items:center; justify-content:center;
+           background:#f2f6f4; color:#1a2b22; padding:24px; }
+    .card { background:#fff; border:1px solid #dfe8e3; border-radius:16px; max-width:520px;
+            width:100%; padding:36px 32px; text-align:center; box-shadow:0 8px 30px rgba(0,0,0,.06); }
+    .logo { font-size:26px; font-weight:800; color:var(--green); margin-bottom:6px; }
+    .logo .dot { display:inline-block; width:14px; height:14px; border-radius:50%;
+                 background:var(--green); margin-right:8px; vertical-align:middle; }
+    h1 { font-size:20px; margin:14px 0 8px; }
+    p { line-height:1.5; color:#42574c; margin:8px 0; }
+    a.btn { display:inline-block; margin-top:18px; background:var(--green); color:#fff;
+            text-decoration:none; font-weight:700; font-size:17px; padding:14px 28px;
+            border-radius:10px; }
+    a.btn:hover { background:var(--green-dark); }
+    .hint { font-size:13px; color:#6b7c73; margin-top:20px; }
+    .url { font-size:14px; color:var(--green); word-break:break-all; }
   </style>
 </head>
 <body>
-  <p>ApoTrend wird geladen … falls nicht, <a href="./frontend/">hier zur App</a>.</p>
+  <div class="card">
+    <div class="logo"><span class="dot"></span>ApoTrend</div>
+    <h1>Die App ist umgezogen</h1>
+    <p>Die aktuelle ApoTrend-Plattform (Feed, Engpässe, Preise, Rabatte, News,
+       Profile, Nachrichten, Suche) läuft jetzt unter einer eigenen Adresse.</p>
+    <p>Du wirst automatisch weitergeleitet — falls nicht, hier klicken:</p>
+    <a class="btn" href="https://apotrend-feed.onrender.com">Zur ApoTrend-App →</a>
+    <p class="url">https://apotrend-feed.onrender.com</p>
+    <p class="hint">Hinweis: Beim ersten Aufruf kann die App ~30 Sekunden zum
+       „Aufwachen" brauchen. Einfach kurz warten.</p>
+  </div>
 </body>
 </html>
