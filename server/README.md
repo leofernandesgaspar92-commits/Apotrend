@@ -31,6 +31,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   Avatar, Fachgebieten, Zählern (Beiträge/Follower/folgt), Folgen/Entfolgen und den
 >   sichtbaren Beiträgen der Person (`GET /api/profiles/:handle/page`, Sichtbarkeit
 >   erzwungen). (55 Tests grün, im Browser verifiziert.)
+> - ✅ **Priorität 7 — Übergreifende Suche:** ein Suchbegriff, gebündelte Treffer aus
+>   allen Modulen — Personen (Handle/Name/Fachgebiet), Beiträge (sichtbarkeitsgefiltert),
+>   Engpässe, Preise, Rabatte (`GET /api/search?q=`). Ergebnisseite gruppiert nach Typ.
+>   (60 Tests grün, im Browser verifiziert.)
 > - ✅ **Baustein 1 — Fundament:** Organisationen · Nutzer · Mitgliedschaften ·
 >   echte Auth (scrypt) · Mandanten-Isolation + RBAC.
 > - ✅ **Baustein 2 — collab (Teams-artig):** Kanäle · Nachrichten · Notizen ·

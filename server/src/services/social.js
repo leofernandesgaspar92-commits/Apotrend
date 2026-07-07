@@ -85,6 +85,26 @@ export function createSocialService(social, foundationRepo, options = {}) {
         is_self: viewerUserId === prof.user_id,
       };
     },
+    // Personen-Suche: Handle, Anzeigename oder Fachgebiet enthält q.
+    searchProfiles(q) {
+      const s = String(q ?? '').trim().toLowerCase();
+      if (!s) return [];
+      return social.listProfiles().filter(p =>
+        p.handle.includes(s) ||
+        String(p.display_name).toLowerCase().includes(s) ||
+        (p.specializations || []).some(x => String(x).toLowerCase().includes(s))
+      );
+    },
+    // Beitrags-Suche: sichtbare Beiträge, deren Text q enthält (dekoriert).
+    searchPosts(viewerUserId, q) {
+      requireUser(viewerUserId);
+      const s = String(q ?? '').trim().toLowerCase();
+      if (!s) return [];
+      return social.listAllPosts()
+        .filter(p => visibleTo(p, viewerUserId) && String(p.body).toLowerCase().includes(s))
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .map(decorate);
+    },
 
     // ── Posts ──
     createPost(actorUserId, { body, visibility = 'public', refType = null, refId = null, kind = 'post' }) {

@@ -43,6 +43,7 @@ export function createSocialRepo() {
       const id = profilesByHandle.get(String(handle).trim().toLowerCase());
       return id ? { ...profiles.get(id) } : null;
     },
+    listProfiles() { return [...profiles.values()].map(p => ({ ...p })); },
 
     // ── Posts ──
     createPost(p) {

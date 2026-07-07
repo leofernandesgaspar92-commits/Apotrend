@@ -137,6 +137,10 @@ async function mainScreen() {
   app.innerHTML = '';
   app.appendChild(el(`
     <div class="card">
+      <label>🔎 Suche (Personen, Beiträge, Engpässe, Preise, Rabatte)</label>
+      <div class="row"><input id="sq" placeholder="z.B. Amoxicillin, Onkologie, @ben_mayer…"><button class="small" id="sgo">Suchen</button></div>
+    </div>
+    <div class="card">
       <label>Was gibt's Neues? (kurzer Fachbeitrag)</label>
       <textarea id="pb" placeholder="Bei uns gerade Engpass bei Amoxicillin — wer hat noch Bestand?"></textarea>
       <div class="row" style="margin-top:8px">
@@ -173,6 +177,9 @@ async function mainScreen() {
     try { await api('POST','/api/follow',{ handle:v('fh') }); document.getElementById('fh').value=''; document.getElementById('ferr').textContent=''; loadFeed(); }
     catch(e){ document.getElementById('ferr').textContent = e.message; }
   };
+  const runSearch = () => { const q = v('sq').trim(); if (q) renderSearch(q); };
+  document.getElementById('sgo').onclick = runSearch;
+  document.getElementById('sq').addEventListener('keydown', e => { if (e.key === 'Enter') runSearch(); });
   app.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
     app.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
     b.classList.add('active'); tab = b.dataset.tab; loadTab();
@@ -387,6 +394,45 @@ async function loadFeed() {
     if (!d.posts.length) { feed.innerHTML = '<div class="card muted">Noch keine Beiträge. Sei der/die Erste!</div>'; return; }
     feed.innerHTML = '';
     d.posts.forEach(p => feed.appendChild(postCard(p)));
+  } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+}
+
+async function renderSearch(q) {
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  feed.innerHTML = '<div class="muted">suche…</div>';
+  try {
+    const d = await api('GET','/api/search?q='+encodeURIComponent(q));
+    feed.innerHTML = '';
+    const head = el(`<div class="card"><div class="row"><b>Suchergebnisse für „${esc(d.query)}"</b><span class="sp" style="flex:1"></span><span class="muted">${d.total} Treffer</span><button class="ghost small" data-back style="margin-left:10px">← zurück</button></div></div>`);
+    head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
+    feed.appendChild(head);
+    if (!d.total) { feed.appendChild(el('<div class="card muted">Keine Treffer. Andere Schreibweise probieren?</div>')); return; }
+    const section = (title) => feed.appendChild(el(`<div class="muted" style="margin:14px 2px 4px;font-weight:700">${title}</div>`));
+    if (d.people.length) {
+      section('👥 Personen');
+      d.people.forEach(p => {
+        const specs = (p.specializations||[]).map(s=>`<span class="spec">${esc(s)}</span>`).join(' ');
+        const card = el(`<div class="card"><div class="row">
+          <span class="post-author clickable" data-openprofile="${esc(p.handle)}">${esc(p.display_name)}</span>
+          <span class="handle clickable" data-openprofile="${esc(p.handle)}">@${esc(p.handle)}</span>
+          ${p.is_editorial?'<span class="editorial">📰 Redaktion</span>':''}
+          ${p.verified?'<span class="verified">✔ verifiziert</span>':''}
+        </div>${specs?`<div style="margin-top:6px">${specs}</div>`:''}</div>`);
+        card.querySelectorAll('[data-openprofile]').forEach(el => el.onclick = () => openProfile(el.dataset.openprofile));
+        feed.appendChild(card);
+      });
+    }
+    if (d.posts.length) { section('📝 Beiträge'); d.posts.forEach(p => feed.appendChild(postCard(p))); }
+    if (d.shortages.length) { section('📦 Engpässe'); d.shortages.forEach(s => feed.appendChild(shortageCard(s))); }
+    if (d.prices.length) {
+      section('💶 Preise');
+      d.prices.forEach(pr => feed.appendChild(el(`<div class="card"><div class="row">
+        <span class="post-author">${esc(pr.bezeichnung)}</span><span class="handle">${esc(pr.wirkstoff||'')}</span>
+        <span class="sp" style="flex:1"></span><span><b>€ ${Number(pr.aep).toFixed(2)}</b> ${trendStr(pr.trend_pct)}</span></div>
+        <div class="muted">${esc(pr.supplier)} · ${esc(PROV[pr.provenance]||pr.provenance)}</div></div>`)));
+    }
+    if (d.rabatte.length) { section('🏷️ Rabatt-Aktionen'); d.rabatte.forEach((r,i) => { r.rank = i+1; feed.appendChild(rabattCard(r)); }); }
   } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
 }
 

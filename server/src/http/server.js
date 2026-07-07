@@ -17,6 +17,7 @@ import { createSocialService } from '../services/social.js';
 import { createShortagesService } from '../services/shortages.js';
 import { createPricesService } from '../services/prices.js';
 import { createRabatteService } from '../services/rabatte.js';
+import { createSearchService } from '../services/search.js';
 import { issueToken, verifyToken } from './token.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -34,6 +35,7 @@ const pricesRepo = createPricesRepo();
 const prices = createPricesService(pricesRepo, social);
 const rabatteRepo = createRabatteRepo();
 const rabatte = createRabatteService(rabatteRepo, social);
+const search = createSearchService({ social, shortagesRepo, pricesRepo, rabatteRepo });
 
 // Redaktions-Account + kuratierte News seeden (News = Beiträge im selben Feed).
 (function seedEditorial() {
@@ -149,6 +151,12 @@ const routes = [
     return d;
   }],
   ['POST', /^\/api\/rabatte\/([^/]+)\/post$/, true, async ({ userId, params, body }) => rabatte.postAbout(userId, params[0], { body: body.body, visibility: body.visibility })],
+
+  // ── Übergreifende Suche (Priorität 7) ──
+  ['GET', /^\/api\/search$/, true, async ({ userId, query }) => {
+    const r = search.search(userId, query.get('q') || '');
+    return { ...r, posts: enrichPosts(r.posts) };
+  }],
 ];
 
 const server = http.createServer(async (req, res) => {
