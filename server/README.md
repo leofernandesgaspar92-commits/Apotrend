@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **PWA (installierbar auf allen Geräten):** `manifest.webmanifest`, App-Icons
+>   (Pharma-Kreuz), Theme-Farbe, Apple-Touch-Icon und minimaler Service Worker
+>   (`sw.js`, netzwerk-durchreichend → keine veralteten Stände). App lässt sich auf
+>   Handy-Startbildschirm/Desktop „installieren" und öffnet im Vollbild — eine
+>   Codebasis für Computer/Laptop/Tablet/Smartphone, kein App-Store nötig. Statische
+>   Auslieferung um PNG/SVG/Manifest-MIME-Typen erweitert. (Im Browser verifiziert:
+>   Manifest erkannt, SW registriert.)
 > - ✅ **Priorität 1 — Social-Feed (Kern, personenzentriert), KOMPLETT:** Fachprofile ·
 >   kurze Posts (public/followers) · Kommentar-Threads · typisierte Reaktionen ·
 >   gerichtete Follows · Home-/Öffentlich-Feed · **Direktnachrichten (1:1)** ·

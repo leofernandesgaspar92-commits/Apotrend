@@ -2,8 +2,15 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>ApoTrend — Apotheker-Netzwerk</title>
+<meta name="description" content="Fachnetzwerk für Apotheken: Feed, Lieferengpässe, Preise, Rabatte, News." />
+<link rel="manifest" href="/manifest.webmanifest" />
+<meta name="theme-color" content="#00a15a" />
+<link rel="icon" type="image/png" href="/icon-192.png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="ApoTrend" />
 <style>
   :root { --green:#00a15a; --green-d:#007a44; --bg:#f4f6f5; --card:#fff; --line:#e2e6e4; --text:#1a2420; --muted:#66756e; }
   * { box-sizing:border-box; }
@@ -846,6 +853,11 @@ async function openDmThread(threadId) {
   document.getElementById('dmsend').onclick = send;
   document.getElementById('dmbody').addEventListener('keydown', e => { if (e.key==='Enter') send(); });
   refreshDmCount();
+}
+
+// PWA: Service Worker registrieren (macht die App installierbar).
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 }
 
 // Start

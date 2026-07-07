@@ -254,8 +254,14 @@ const server = http.createServer(async (req, res) => {
   }
   const serve = path.join(PUBLIC_DIR, file);
   const ext = path.extname(serve);
-  const type = ext === '.html' ? 'text/html' : ext === '.js' ? 'text/javascript' : ext === '.css' ? 'text/css' : 'text/plain';
-  res.writeHead(200, { 'Content-Type': `${type}; charset=utf-8` });
+  const MIME = {
+    '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
+    '.json': 'application/json', '.webmanifest': 'application/manifest+json',
+    '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.txt': 'text/plain',
+  };
+  const type = MIME[ext] || 'application/octet-stream';
+  const isText = /^text\/|application\/(json|manifest\+json|javascript)/.test(type);
+  res.writeHead(200, { 'Content-Type': type + (isText ? '; charset=utf-8' : '') });
   fs.createReadStream(serve).pipe(res);
 });
 
