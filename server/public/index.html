@@ -541,14 +541,15 @@ function postCard(p) {
       <span class="sp" style="flex:1"></span>
       ${mine?'':'<button class="ghost small" data-follow="'+esc(a.handle)+'">Folgen</button>'}
     </div>
-    <div class="post-body">${esc(p.body)}</div>
+    <div class="post-body" data-body>${esc(p.body)}</div>
+    <div class="vis" data-edited ${p.edited_at?'':'style="display:none"'}>✏️ bearbeitet</div>
     ${refChip(p.ref_summary)}
     <div class="vis">${p.visibility==='public'?'🌍 öffentlich':'👥 nur Follower'}</div>
     <div class="reacts">
       ${REACTS.map(([k,lab])=>`<button data-react="${k}">${lab} ${rc[k]||0}</button>`).join('')}
       <button data-comments>💬 ${p.comment_count||0} Kommentare</button>
       <span class="sp" style="flex:1"></span>
-      ${mine ? '<button class="ghost small" data-del title="Beitrag löschen">🗑 Löschen</button>'
+      ${mine ? '<button class="ghost small" data-edit title="Beitrag bearbeiten">✏️ Bearbeiten</button><button class="ghost small" data-del title="Beitrag löschen">🗑 Löschen</button>'
              : '<button class="ghost small" data-report title="Beitrag melden">🚩 Melden</button>'}
     </div>
     <div class="comments hidden" data-cbox>
@@ -566,6 +567,28 @@ function postCard(p) {
   if (delb) delb.onclick = async () => {
     if (!confirm('Diesen Beitrag wirklich löschen?')) return;
     try { await api('POST',`/api/posts/${p.id}/delete`); card.remove(); } catch(e){ alert(e.message); }
+  };
+  const editb = card.querySelector('[data-edit]');
+  if (editb) editb.onclick = () => {
+    const bodyEl = card.querySelector('[data-body]');
+    if (card.querySelector('[data-editbox]')) return; // schon offen
+    const cur = bodyEl.textContent;
+    const box = el(`<div data-editbox style="margin:8px 0">
+      <textarea data-eb>${esc(cur)}</textarea>
+      <div class="row" style="margin-top:6px"><button class="small" data-ebsave>Speichern</button><button class="ghost small" data-ebcancel>Abbrechen</button><span class="err" data-eberr style="margin-left:8px"></span></div>
+    </div>`);
+    bodyEl.style.display = 'none';
+    bodyEl.after(box);
+    box.querySelector('[data-ebcancel]').onclick = () => { box.remove(); bodyEl.style.display = ''; };
+    box.querySelector('[data-ebsave]').onclick = async () => {
+      const nv = box.querySelector('[data-eb]').value;
+      try {
+        const r = await api('POST',`/api/posts/${p.id}/edit`,{ body: nv });
+        bodyEl.textContent = r.body;
+        card.querySelector('[data-edited]').style.display = '';
+        box.remove(); bodyEl.style.display = '';
+      } catch(e){ box.querySelector('[data-eberr]').textContent = e.message; }
+    };
   };
   const repb = card.querySelector('[data-report]');
   if (repb) repb.onclick = async () => {

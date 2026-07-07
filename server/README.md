@@ -39,6 +39,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   nur der Autor, serverseitig erzwungen), fremde Beiträge melden (🚩 →
 >   `POST /api/posts/:id/report`, Moderations-Queue). Erfüllt die Owner-Vorgabe
 >   „Beiträge löschen/melden". (Im Browser verifiziert.)
+> - ✅ **Beitrag bearbeiten:** eigene Posts nachträglich korrigieren (inline, `✏️
+>   Bearbeiten`), `edited_at` wird gesetzt und als „✏️ bearbeitet" angezeigt. Nur der
+>   Autor (serverseitig erzwungen), gelöschte Beiträge nicht editierbar.
+>   (`POST /api/posts/:id/edit`; 72 Tests grün, im Browser verifiziert.)
 > - ✅ **Profil bearbeiten:** eigenes Profil pflegen — Anzeigename, Titel/Funktion,
 >   Bio (max. 500), Fachgebiete (Komma-getrennt). „✏️ Profil bearbeiten" auf dem
 >   eigenen Profil (`POST /api/profile`, nur eigenes; Handle bleibt unveränderlich).

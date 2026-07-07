@@ -64,6 +64,7 @@ export function createSocialRepo() {
       return { ...post };
     },
     getPost(id) { const p = posts.get(id); return p ? { ...p } : null; },
+    updatePostBody(id, body) { const p = posts.get(id); if (!p) return null; p.body = body; p.edited_at = now(); return { ...p }; },
     softDeletePost(id) { const p = posts.get(id); if (p) p.deleted_at = now(); return p ? { ...p } : null; },
     listAllPosts() { return [...posts.values()].filter(p => !p.deleted_at).map(p => ({ ...p })); },
     // Beiträge, die ein externes Objekt referenzieren (z.B. einen Engpass) — Feed-Andockpunkt.

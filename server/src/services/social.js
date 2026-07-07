@@ -152,6 +152,15 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (p.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Autor darf loeschen.');
       return social.softDeletePost(postId);
     },
+    editPost(actorUserId, postId, body) {
+      const p = social.getPost(postId);
+      if (!p || p.deleted_at) throw new Error('Beitrag nicht gefunden.');
+      if (p.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Autor darf bearbeiten.');
+      const text = String(body ?? '').trim();
+      if (!text) throw new Error('Beitrag darf nicht leer sein.');
+      if (text.length > MAX_BODY) throw new Error(`Beitrag zu lang (max ${MAX_BODY}).`);
+      return decorate(social.updatePostBody(postId, text));
+    },
     getPost(viewerUserId, postId) {
       const p = social.getPost(postId);
       if (!p || !visibleTo(p, viewerUserId)) return null;
