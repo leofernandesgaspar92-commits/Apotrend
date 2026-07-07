@@ -39,6 +39,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   nur der Autor, serverseitig erzwungen), fremde Beiträge melden (🚩 →
 >   `POST /api/posts/:id/report`, Moderations-Queue). Erfüllt die Owner-Vorgabe
 >   „Beiträge löschen/melden". (Im Browser verifiziert.)
+> - ✅ **@Erwähnungen anklickbar:** `@handle` in Beiträgen und Kommentaren wird
+>   grün hervorgehoben und verlinkt aufs Profil (E-Mails werden nicht fälschlich
+>   als Erwähnung erkannt). Mention-Benachrichtigung existierte schon. (Frontend;
+>   im Browser verifiziert.)
 > - ✅ **Reaktionen auf Kommentare:** dieselben typisierten Reaktionen (hilfreich/
 >   danke/bestätigt/interessant) auch je Kommentar, Zähler in `listComments`,
 >   eine Reaktion je Nutzer+Ziel (umschaltbar). (`POST /api/comments/:id/react`;

@@ -32,6 +32,7 @@
   .editorial { background:#eef3ff; color:#2952cc; font-size:12px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid #cdd9ff; }
   .rank { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:30px; padding:0 6px; border-radius:999px; background:var(--green); color:#fff; font-weight:800; font-size:15px; margin-right:8px; }
   .rabatt-badge { background:#e6f7ef; color:#00885a; font-weight:800; font-size:16px; padding:4px 12px; border-radius:999px; border:1px solid #b6e6cf; }
+  .mention { color:var(--green); font-weight:600; }
   .clickable { cursor:pointer; }
   .clickable:hover { text-decoration:underline; }
   .avatar { display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:50%; background:var(--green); color:#fff; font-weight:800; font-size:19px; flex:0 0 auto; }
@@ -77,6 +78,9 @@ const api = async (method, path, body) => {
 };
 const el = (h) => { const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.childElementCount===1 ? t.content.firstElementChild : t.content; };
 const esc = (s) => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// Text escapen UND @Handles anklickbar machen (kein @ mitten in E-Mails).
+const linkifyMentions = (s) => esc(s).replace(/(^|[^\w@])@([a-z0-9_]{3,30})/gi,
+  (m, pre, h) => `${pre}<span class="mention clickable" data-openprofile="${h}">@${h}</span>`);
 const app = document.getElementById('app');
 let me = null, tab = 'public', iAmModerator = false;
 
@@ -541,7 +545,7 @@ function postCard(p) {
       <span class="sp" style="flex:1"></span>
       ${mine?'':'<button class="ghost small" data-follow="'+esc(a.handle)+'">Folgen</button>'}
     </div>
-    <div class="post-body" data-body>${esc(p.body)}</div>
+    <div class="post-body" data-body>${linkifyMentions(p.body)}</div>
     <div class="vis" data-edited ${p.edited_at?'':'style="display:none"'}>✏️ bearbeitet</div>
     ${refChip(p.ref_summary)}
     <div class="vis">${p.visibility==='public'?'🌍 öffentlich':'👥 nur Follower'}</div>
@@ -640,7 +644,7 @@ function commentRow(postId, c, card, depth = 0) {
       <span class="sp" style="flex:1"></span>
       ${mine?'<button class="ghost small" data-ced>✏️</button><button class="ghost small" data-cdel>🗑</button>':''}
     </div>
-    <div data-cbody style="margin-top:2px">${esc(c.body)}</div>
+    <div data-cbody style="margin-top:2px">${linkifyMentions(c.body)}</div>
     <div class="reacts" style="margin-top:4px">
       ${REACTS.map(([k,lab])=>`<button class="small" data-creact="${k}">${lab.split(' ')[0]} ${(c.reaction_counts&&c.reaction_counts[k])||0}</button>`).join('')}
       <button class="ghost small" data-creply>↩ Antworten</button>
