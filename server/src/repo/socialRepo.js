@@ -57,6 +57,10 @@ export function createSocialRepo() {
     getPost(id) { const p = posts.get(id); return p ? { ...p } : null; },
     softDeletePost(id) { const p = posts.get(id); if (p) p.deleted_at = now(); return p ? { ...p } : null; },
     listAllPosts() { return [...posts.values()].filter(p => !p.deleted_at).map(p => ({ ...p })); },
+    // Beiträge, die ein externes Objekt referenzieren (z.B. einen Engpass) — Feed-Andockpunkt.
+    listPostsByRef(refType, refId) {
+      return [...posts.values()].filter(p => !p.deleted_at && p.ref_type === refType && p.ref_id === String(refId)).map(p => ({ ...p }));
+    },
 
     // ── Kommentare ──
     createComment(c) {

@@ -11,7 +11,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   gerichtete Follows · Home-/Öffentlich-Feed · **Direktnachrichten (1:1)** ·
 >   **Benachrichtigungen** (Follow/Kommentar/Reaktion/@Mention/DM) · **Melden/Moderation** ·
 >   DSGVO-Hard-Delete. (35 Tests grün.)
-> - ⏳ **Priorität 2 — Lieferengpässe** (mit Feed verknüpfbar via `posts.ref_type`).
+> - ✅ **Priorität 2 — Lieferengpässe (mit Feed verknüpft):** Engpass-Liste mit
+>   **Herkunfts-Flag** (verifiziert/Referenz/simuliert), „Dazu posten" aus dem
+>   Engpass heraus, „X Apotheker haben dazu gepostet", Engpass-Chip am Beitrag im
+>   Feed (`posts.ref_type='shortage'`). (40 Tests grün, im Browser verifiziert.)
+> - ⏳ **Priorität 3 — Preise**, dann News (4), Top-10-Rabatte (5).
 > - ✅ **Baustein 1 — Fundament:** Organisationen · Nutzer · Mitgliedschaften ·
 >   echte Auth (scrypt) · Mandanten-Isolation + RBAC.
 > - ✅ **Baustein 2 — collab (Teams-artig):** Kanäle · Nachrichten · Notizen ·

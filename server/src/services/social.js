@@ -162,6 +162,16 @@ export function createSocialService(social, foundationRepo, options = {}) {
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
         .map(decorate);
     },
+    // Beiträge, die ein externes Objekt referenzieren (z.B. einen Engpass),
+    // sichtbarkeitsgefiltert + dekoriert. Basis fuer "X Apotheker haben dazu gepostet".
+    postsAbout(viewerUserId, refType, refId) {
+      requireUser(viewerUserId);
+      return social.listPostsByRef(refType, refId)
+        .filter(p => visibleTo(p, viewerUserId))
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .map(decorate);
+    },
+
     // Entdecken: alle oeffentlichen Beiträge (netzwerkweite Reichweite).
     publicFeed(viewerUserId) {
       requireUser(viewerUserId);

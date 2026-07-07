@@ -150,6 +150,7 @@ async function mainScreen() {
     <div class="tabs">
       <button data-tab="public" class="active">🌍 Öffentlich</button>
       <button data-tab="home">🏠 Mein Feed</button>
+      <button data-tab="shortages">📦 Engpässe</button>
     </div>
     <div id="feed"></div>
   `));
@@ -164,9 +165,65 @@ async function mainScreen() {
   };
   app.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
     app.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active'); tab = b.dataset.tab; loadFeed();
+    b.classList.add('active'); tab = b.dataset.tab; loadTab();
   });
-  loadFeed();
+  loadTab();
+}
+
+function loadTab() { tab === 'shortages' ? loadShortages() : loadFeed(); }
+
+const STATUS = { kritisch:['🔴 Kritisch','#c0392b'], eingeschraenkt:['🟠 Eingeschränkt','#c77700'], verfuegbar:['🟢 Verfügbar','#00885a'] };
+const PROV = { verified:'✔ BASG (verifiziert)', reference:'📌 Referenzdaten', simulated:'⚠ simuliert' };
+
+async function loadShortages() {
+  const feed = document.getElementById('feed');
+  feed.innerHTML = '<div class="muted">lädt…</div>';
+  try {
+    const d = await api('GET','/api/shortages');
+    feed.innerHTML = '';
+    d.shortages.forEach(s => feed.appendChild(shortageCard(s)));
+  } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+}
+
+function shortageCard(s) {
+  const [slabel, scol] = STATUS[s.status] || ['?','#666'];
+  const card = el(`<div class="card">
+    <div class="row">
+      <span class="post-author">${esc(s.wirkstoff)}</span>
+      <span style="background:${scol};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${slabel}</span>
+      <span class="sp" style="flex:1"></span>
+      <span class="vis" title="Herkunft der Daten">${esc(PROV[s.provenance]||s.provenance)}</span>
+    </div>
+    <div class="post-body">${esc(s.bezeichnung)}</div>
+    <div class="muted">${s.grund?esc(s.grund)+' · ':''}gemeldet ${esc(s.gemeldet_am||'—')}</div>
+    <div class="reacts">
+      <button data-about>💬 ${s.post_count||0} Apotheker haben dazu gepostet</button>
+      <button class="ghost" data-postbtn>✍ Dazu posten</button>
+    </div>
+    <div class="comments hidden" data-postbox>
+      <textarea data-pinput placeholder="Dein Beitrag zu diesem Engpass (öffentlich)…"></textarea>
+      <div style="margin-top:6px"><button class="small" data-psend>Posten</button></div>
+    </div>
+    <div class="comments hidden" data-aboutbox></div>
+  </div>`);
+  const postbox = card.querySelector('[data-postbox]');
+  card.querySelector('[data-postbtn]').onclick = () => postbox.classList.toggle('hidden');
+  card.querySelector('[data-psend]').onclick = async () => {
+    const t = card.querySelector('[data-pinput]');
+    if (!t.value.trim()) return;
+    try { await api('POST',`/api/shortages/${s.id}/post`,{ body:t.value }); t.value=''; postbox.classList.add('hidden'); loadShortages(); }
+    catch(e){ alert(e.message); }
+  };
+  const aboutbox = card.querySelector('[data-aboutbox]');
+  card.querySelector('[data-about]').onclick = async () => {
+    aboutbox.classList.toggle('hidden');
+    if (aboutbox.classList.contains('hidden')) return;
+    aboutbox.innerHTML = '<div class="muted">lädt…</div>';
+    const d = await api('GET',`/api/shortages/${s.id}`);
+    aboutbox.innerHTML = d.posts.length ? '' : '<div class="muted">Noch keine Beiträge dazu.</div>';
+    d.posts.forEach(p => aboutbox.appendChild(el(`<div class="comment"><b>@${esc(p.author?.handle||'?')}</b>: ${esc(p.body)}</div>`)));
+  };
+  return card;
 }
 
 const REACTS = [['hilfreich','👍 Hilfreich'],['danke','🙏 Danke'],['bestaetigt','✅ Bestätigt'],['interessant','💡 Interessant']];
@@ -195,6 +252,7 @@ function postCard(p) {
       ${mine?'':'<button class="ghost small" data-follow="'+esc(a.handle)+'">Folgen</button>'}
     </div>
     <div class="post-body">${esc(p.body)}</div>
+    ${p.ref_summary?`<div class="vis" style="background:#eef3f0;border:1px solid var(--line);border-radius:8px;padding:6px 10px;display:inline-block">📦 Engpass: <b>${esc(p.ref_summary.wirkstoff)}</b> — ${esc(p.ref_summary.bezeichnung)}</div>`:''}
     <div class="vis">${p.visibility==='public'?'🌍 öffentlich':'👥 nur Follower'}</div>
     <div class="reacts">
       ${REACTS.map(([k,lab])=>`<button data-react="${k}">${lab} ${rc[k]||0}</button>`).join('')}

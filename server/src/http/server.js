@@ -8,8 +8,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createMemoryRepo } from '../repo/memoryRepo.js';
 import { createSocialRepo } from '../repo/socialRepo.js';
+import { createShortagesRepo } from '../repo/shortagesRepo.js';
 import { createOrgAuthService, ForbiddenError } from '../services/orgAuth.js';
 import { createSocialService } from '../services/social.js';
+import { createShortagesService } from '../services/shortages.js';
 import { issueToken, verifyToken } from './token.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -21,6 +23,19 @@ const repo = createMemoryRepo();
 const orgAuth = createOrgAuthService(repo);
 const socialRepo = createSocialRepo();
 const social = createSocialService(socialRepo, repo);
+const shortagesRepo = createShortagesRepo();
+const shortages = createShortagesService(shortagesRepo, social);
+
+// Feed-Beiträge, die einen Engpass referenzieren, um eine kurze Engpass-Info anreichern.
+function enrichPosts(posts) {
+  return posts.map(p => {
+    if (p.ref_type === 'shortage' && p.ref_id) {
+      const s = shortagesRepo.get(p.ref_id);
+      if (s) return { ...p, ref_summary: { wirkstoff: s.wirkstoff, bezeichnung: s.bezeichnung, status: s.status } };
+    }
+    return p;
+  });
+}
 
 // ── kleine Helfer ──
 const json = (res, code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(obj)); };
@@ -50,8 +65,8 @@ const routes = [
 
   ['GET', /^\/api\/me$/, true, async ({ userId }) => ({ user: repo.getUserById(userId), profile: social.getProfile(userId) })],
 
-  ['GET', /^\/api\/feed\/home$/, true, async ({ userId }) => ({ posts: social.homeFeed(userId) })],
-  ['GET', /^\/api\/feed\/public$/, true, async ({ userId }) => ({ posts: social.publicFeed(userId) })],
+  ['GET', /^\/api\/feed\/home$/, true, async ({ userId }) => ({ posts: enrichPosts(social.homeFeed(userId)) })],
+  ['GET', /^\/api\/feed\/public$/, true, async ({ userId }) => ({ posts: enrichPosts(social.publicFeed(userId)) })],
 
   ['POST', /^\/api\/posts$/, true, async ({ userId, body }) => social.createPost(userId, { body: body.body, visibility: body.visibility })],
   ['GET', /^\/api\/posts\/([^/]+)\/comments$/, true, async ({ userId, params }) => ({ comments: social.listComments(userId, params[0]) })],
@@ -73,6 +88,15 @@ const routes = [
 
   ['GET', /^\/api\/notifications$/, true, async ({ userId }) => ({ notifications: social.notifications(userId), unread: social.unreadCount(userId) })],
   ['POST', /^\/api\/notifications\/read-all$/, true, async ({ userId }) => { social.markAllNotificationsRead(userId); return { ok: true }; }],
+
+  // ── Lieferengpässe (Priorität 2) ──
+  ['GET', /^\/api\/shortages$/, true, async ({ userId }) => ({ shortages: shortages.listWithCounts(userId) })],
+  ['GET', /^\/api\/shortages\/([^/]+)$/, true, async ({ userId, params }) => {
+    const d = shortages.withActivity(userId, params[0]);
+    if (!d) { const e = new Error('Engpass nicht gefunden'); e.status = 404; throw e; }
+    return d;
+  }],
+  ['POST', /^\/api\/shortages\/([^/]+)\/post$/, true, async ({ userId, params, body }) => shortages.postAbout(userId, params[0], { body: body.body, visibility: body.visibility })],
 ];
 
 const server = http.createServer(async (req, res) => {
