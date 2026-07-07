@@ -39,6 +39,9 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   nur der Autor, serverseitig erzwungen), fremde Beiträge melden (🚩 →
 >   `POST /api/posts/:id/report`, Moderations-Queue). Erfüllt die Owner-Vorgabe
 >   „Beiträge löschen/melden". (Im Browser verifiziert.)
+> - ✅ **#Hashtags / Themen:** `#tag` in Beiträgen/Kommentaren wird verlinkt; Klick
+>   öffnet eine Themen-Ansicht mit allen sichtbaren Beiträgen dazu (`GET /api/hashtag/:tag`,
+>   exaktes Tag, kein Präfix-Treffer, Sichtbarkeit erzwungen). (82 Tests grün, im Browser verifiziert.)
 > - ✅ **@Erwähnungen anklickbar:** `@handle` in Beiträgen und Kommentaren wird
 >   grün hervorgehoben und verlinkt aufs Profil (E-Mails werden nicht fälschlich
 >   als Erwähnung erkannt). Mention-Benachrichtigung existierte schon. (Frontend;

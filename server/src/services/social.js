@@ -122,6 +122,18 @@ export function createSocialService(social, foundationRepo, options = {}) {
         (p.specializations || []).some(x => String(x).toLowerCase().includes(s))
       );
     },
+    // Themen-Filter: sichtbare Beiträge mit dem Hashtag #tag (ganzes Tag, dekoriert).
+    postsByHashtag(viewerUserId, tag) {
+      requireUser(viewerUserId);
+      const t = String(tag ?? '').trim().toLowerCase().replace(/^#/, '');
+      if (!t) return [];
+      const esc = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp('(^|[^\\w#])#' + esc + '(?![\\wäöüß])', 'i');
+      return social.listAllPosts()
+        .filter(p => visibleTo(p, viewerUserId) && re.test(p.body))
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .map(decorate);
+    },
     // Beitrags-Suche: sichtbare Beiträge, deren Text q enthält (dekoriert).
     searchPosts(viewerUserId, q) {
       requireUser(viewerUserId);

@@ -33,6 +33,7 @@
   .rank { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:30px; padding:0 6px; border-radius:999px; background:var(--green); color:#fff; font-weight:800; font-size:15px; margin-right:8px; }
   .rabatt-badge { background:#e6f7ef; color:#00885a; font-weight:800; font-size:16px; padding:4px 12px; border-radius:999px; border:1px solid #b6e6cf; }
   .mention { color:var(--green); font-weight:600; }
+  .hashtag { color:#2952cc; font-weight:600; }
   .clickable { cursor:pointer; }
   .clickable:hover { text-decoration:underline; }
   .avatar { display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:50%; background:var(--green); color:#fff; font-weight:800; font-size:19px; flex:0 0 auto; }
@@ -78,9 +79,12 @@ const api = async (method, path, body) => {
 };
 const el = (h) => { const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.childElementCount===1 ? t.content.firstElementChild : t.content; };
 const esc = (s) => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-// Text escapen UND @Handles anklickbar machen (kein @ mitten in E-Mails).
-const linkifyMentions = (s) => esc(s).replace(/(^|[^\w@])@([a-z0-9_]{3,30})/gi,
-  (m, pre, h) => `${pre}<span class="mention clickable" data-openprofile="${h}">@${h}</span>`);
+// Text escapen UND @Handles + #Hashtags anklickbar machen (kein @ mitten in E-Mails).
+const linkifyMentions = (s) => esc(s)
+  .replace(/(^|[^\w@])@([a-z0-9_]{3,30})/gi,
+    (m, pre, h) => `${pre}<span class="mention clickable" data-openprofile="${h}">@${h}</span>`)
+  .replace(/(^|[^\w#])#([a-z0-9äöüß_]{2,30})/gi,
+    (m, pre, t) => `${pre}<span class="hashtag clickable" data-hashtag="${t}">#${t}</span>`);
 const app = document.getElementById('app');
 let me = null, tab = 'public', iAmModerator = false;
 
@@ -412,6 +416,22 @@ async function loadFeed() {
   } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
 }
 
+async function openHashtag(tag) {
+  if (!tag) return;
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  feed.innerHTML = '<div class="muted">lädt…</div>';
+  try {
+    const d = await api('GET','/api/hashtag/'+encodeURIComponent(tag));
+    feed.innerHTML = '';
+    const head = el(`<div class="card"><div class="row"><b>🏷️ #${esc(d.tag)}</b><span class="sp" style="flex:1"></span><span class="muted">${d.posts.length} Beiträge</span><button class="ghost small" data-back style="margin-left:10px">← zurück</button></div></div>`);
+    head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
+    feed.appendChild(head);
+    if (!d.posts.length) feed.appendChild(el('<div class="card muted">Noch keine Beiträge zu diesem Thema.</div>'));
+    d.posts.forEach(p => feed.appendChild(postCard(p)));
+  } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+}
+
 async function renderSearch(q) {
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
@@ -567,6 +587,7 @@ function postCard(p) {
   const fb = card.querySelector('[data-follow]');
   if (fb) fb.onclick = async () => { try { await api('POST','/api/follow',{ handle:fb.dataset.follow }); loadFeed(); } catch(e){ alert(e.message);} };
   card.querySelectorAll('[data-openprofile]').forEach(el => { if (el.dataset.openprofile) el.onclick = () => openProfile(el.dataset.openprofile); });
+  card.querySelectorAll('[data-hashtag]').forEach(el => el.onclick = () => openHashtag(el.dataset.hashtag));
   const delb = card.querySelector('[data-del]');
   if (delb) delb.onclick = async () => {
     if (!confirm('Diesen Beitrag wirklich löschen?')) return;
@@ -651,6 +672,7 @@ function commentRow(postId, c, card, depth = 0) {
     </div>
   </div>`);
   row.querySelectorAll('[data-openprofile]').forEach(el => { if (el.dataset.openprofile) el.onclick = () => openProfile(el.dataset.openprofile); });
+  row.querySelectorAll('[data-hashtag]').forEach(el => el.onclick = () => openHashtag(el.dataset.hashtag));
   row.querySelectorAll('[data-creact]').forEach(btn => btn.onclick = async () => {
     try { await api('POST',`/api/comments/${c.id}/react`,{ type:btn.dataset.creact }); loadComments(postId, card); } catch(e){ alert(e.message); }
   });
