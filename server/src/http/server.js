@@ -128,6 +128,16 @@ const routes = [
   ['GET', /^\/api\/notifications$/, true, async ({ userId }) => ({ notifications: social.notifications(userId), unread: social.unreadCount(userId) })],
   ['POST', /^\/api\/notifications\/read-all$/, true, async ({ userId }) => { social.markAllNotificationsRead(userId); return { ok: true }; }],
 
+  // ── Direktnachrichten (1:1, privat) ──
+  ['GET', /^\/api\/dm$/, true, async ({ userId }) => ({ threads: social.dmInbox(userId), unread: social.dmUnreadTotal(userId) })],
+  ['POST', /^\/api\/dm\/start$/, true, async ({ userId, body }) => {
+    const target = social.getProfile(body.handle);
+    if (!target) { const e = new Error('Profil nicht gefunden'); e.status = 404; throw e; }
+    return { thread: social.startDm(userId, target.user_id) };
+  }],
+  ['GET', /^\/api\/dm\/([^/]+)$/, true, async ({ userId, params }) => social.dmConversation(userId, params[0])],
+  ['POST', /^\/api\/dm\/([^/]+)$/, true, async ({ userId, params, body }) => social.sendDm(userId, params[0], body.body)],
+
   // ── Lieferengpässe (Priorität 2) ──
   ['GET', /^\/api\/shortages$/, true, async ({ userId }) => ({ shortages: shortages.listWithCounts(userId) })],
   ['GET', /^\/api\/shortages\/([^/]+)$/, true, async ({ userId, params }) => {

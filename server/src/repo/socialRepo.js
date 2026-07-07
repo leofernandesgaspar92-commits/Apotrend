@@ -147,6 +147,16 @@ export function createSocialRepo() {
     listDmMessages(threadId) {
       return [...dmMessages.values()].filter(m => m.thread_id === threadId).sort((a, b) => a.created_at.localeCompare(b.created_at)).map(m => ({ ...m }));
     },
+    listDmThreadsForUser(userId) {
+      return [...dmThreads.values()].filter(t => t.user_a_id === userId || t.user_b_id === userId).map(t => ({ ...t }));
+    },
+    // Alle vom Gegenüber gesendeten, noch ungelesenen Nachrichten als gelesen markieren.
+    markDmThreadRead(threadId, readerUserId) {
+      const at = now();
+      for (const m of dmMessages.values()) {
+        if (m.thread_id === threadId && m.sender_user_id !== readerUserId && !m.read_at) m.read_at = at;
+      }
+    },
 
     // ── Moderation ──
     createReport(r) {

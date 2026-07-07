@@ -265,6 +265,39 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (t.user_a_id !== viewerUserId && t.user_b_id !== viewerUserId) throw new ForbiddenError('Nicht Teil dieser Konversation.');
       return social.listDmMessages(threadId);
     },
+    // Kurzprofil des Gesprächspartners in einem Thread.
+    dmOther(viewerUserId, thread) {
+      const otherId = thread.user_a_id === viewerUserId ? thread.user_b_id : thread.user_a_id;
+      const prof = social.getProfileByUserId(otherId);
+      return prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified, is_editorial: prof.is_editorial } : null;
+    },
+    // Posteingang: alle Konversationen mit letzter Nachricht + ungelesen-Zähler,
+    // neueste zuerst.
+    dmInbox(viewerUserId) {
+      requireUser(viewerUserId);
+      return social.listDmThreadsForUser(viewerUserId).map(t => {
+        const msgs = social.listDmMessages(t.id);
+        const last = msgs[msgs.length - 1] || null;
+        const unread = msgs.filter(m => m.sender_user_id !== viewerUserId && !m.read_at).length;
+        return { thread_id: t.id, other: this.dmOther(viewerUserId, t), last_message: last, unread, created_at: t.created_at };
+      })
+      .filter(x => x.last_message) // leere Threads (noch keine Nachricht) ausblenden
+      .sort((a, b) => (b.last_message.created_at).localeCompare(a.last_message.created_at));
+    },
+    // Konversation öffnen: Nachrichten + Partner, markiert Eingang als gelesen.
+    dmConversation(viewerUserId, threadId) {
+      const t = social.getDmThread(threadId);
+      if (!t) throw new Error('Thread nicht gefunden.');
+      if (t.user_a_id !== viewerUserId && t.user_b_id !== viewerUserId) throw new ForbiddenError('Nicht Teil dieser Konversation.');
+      social.markDmThreadRead(threadId, viewerUserId);
+      return { thread_id: threadId, other: this.dmOther(viewerUserId, t), messages: social.listDmMessages(threadId) };
+    },
+    // Gesamtzahl ungelesener DM-Nachrichten (für ein Badge in der Kopfzeile).
+    dmUnreadTotal(viewerUserId) {
+      requireUser(viewerUserId);
+      return social.listDmThreadsForUser(viewerUserId).reduce((sum, t) =>
+        sum + social.listDmMessages(t.id).filter(m => m.sender_user_id !== viewerUserId && !m.read_at).length, 0);
+    },
 
     // ── Melden / Moderation ──
     // Jede angemeldete Person kann melden.

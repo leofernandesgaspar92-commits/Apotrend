@@ -35,6 +35,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   allen Modulen — Personen (Handle/Name/Fachgebiet), Beiträge (sichtbarkeitsgefiltert),
 >   Engpässe, Preise, Rabatte (`GET /api/search?q=`). Ergebnisseite gruppiert nach Typ.
 >   (60 Tests grün, im Browser verifiziert.)
+> - ✅ **Priorität 8 — Direktnachrichten-Oberfläche (Kern-Feature komplett):** 1:1-Chat
+>   zwischen Apotheker:innen — Posteingang mit letzter Nachricht + Ungelesen-Zähler,
+>   Konversationsansicht (eigene/fremde Bubbles), „✉️ Nachricht" vom Profil aus,
+>   ✉️-Badge in der Kopfzeile, Öffnen markiert als gelesen. Fremde können Threads nicht
+>   lesen (serverseitig erzwungen). (`GET /api/dm`, `/api/dm/:id`, `POST /api/dm/start`.)
+>   (64 Tests grün, im Browser verifiziert.)
 > - ✅ **Deployment-fähig gemacht:** `/api/health`-Endpunkt, `Dockerfile`,
 >   `render.yaml` (Render-Blueprint) und **`DEPLOY.md`** (Schritt-für-Schritt für
 >   Render/Railway/Docker). App braucht einen Node-Host (nicht GitHub Pages!).

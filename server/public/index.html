@@ -56,6 +56,7 @@
   <span class="logo">🟢 ApoTrend</span>
   <span class="muted" id="whoami" style="color:#dff5ea;"></span>
   <span class="sp"></span>
+  <button class="bell hidden" id="btnDm" title="Nachrichten">✉️<span class="badge hidden" id="dmBadge">0</span></button>
   <button class="bell hidden" id="btnNotif" title="Benachrichtigungen">🔔<span class="badge hidden" id="notifBadge">0</span></button>
   <button class="hidden" id="btnLogout">Abmelden</button>
 </header>
@@ -82,6 +83,7 @@ let me = null, tab = 'public';
 function authScreen() {
   document.getElementById('btnLogout').classList.add('hidden');
   document.getElementById('btnNotif').classList.add('hidden');
+  document.getElementById('btnDm').classList.add('hidden');
   document.getElementById('whoami').textContent = '';
   app.innerHTML = '';
   app.appendChild(el(`
@@ -130,9 +132,12 @@ async function mainScreen() {
   document.getElementById('whoami').textContent = me ? '@'+me.handle : '';
   document.getElementById('btnLogout').classList.remove('hidden');
   document.getElementById('btnNotif').classList.remove('hidden');
+  document.getElementById('btnDm').classList.remove('hidden');
   document.getElementById('btnLogout').onclick = () => { localStorage.removeItem('apo_token'); location.reload(); };
   document.getElementById('btnNotif').onclick = showNotifications;
+  document.getElementById('btnDm').onclick = showDmInbox;
   refreshNotifCount();
+  refreshDmCount();
 
   app.innerHTML = '';
   app.appendChild(el(`
@@ -469,13 +474,18 @@ async function openProfile(handle) {
         <span><b>${d.follower_count}</b> <span class="muted">Follower</span></span>
         <span><b>${d.following_count}</b> <span class="muted">folgt</span></span>
         <span class="sp" style="flex:1"></span>
-        ${d.is_self?'<span class="muted">Das bist du</span>':`<button class="${d.is_following?'ghost ':''}small" data-togglefollow>${d.is_following?'✓ Du folgst — entfolgen':'+ Folgen'}</button>`}
+        ${d.is_self?'<span class="muted">Das bist du</span>':`<button class="ghost small" data-dm>✉️ Nachricht</button> <button class="${d.is_following?'ghost ':''}small" data-togglefollow>${d.is_following?'✓ Du folgst — entfolgen':'+ Folgen'}</button>`}
       </div>
     </div>`);
     head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
     const tf = head.querySelector('[data-togglefollow]');
     if (tf) tf.onclick = async () => {
       try { await api('POST', d.is_following?'/api/unfollow':'/api/follow', { handle:p.handle }); openProfile(handle); }
+      catch(e){ alert(e.message); }
+    };
+    const dmb = head.querySelector('[data-dm]');
+    if (dmb) dmb.onclick = async () => {
+      try { const r = await api('POST','/api/dm/start',{ handle:p.handle }); openDmThread(r.thread.id); }
       catch(e){ alert(e.message); }
     };
     feed.appendChild(head);
@@ -556,6 +566,87 @@ async function showNotifications() {
   document.getElementById('back').onclick = mainScreen;
   document.getElementById('readall').onclick = async () => { await api('POST','/api/notifications/read-all'); refreshNotifCount(); showNotifications(); };
   refreshNotifCount();
+}
+
+async function refreshDmCount() {
+  try {
+    const d = await api('GET','/api/dm');
+    const badge = document.getElementById('dmBadge');
+    if (d.unread > 0) { badge.textContent = d.unread; badge.classList.remove('hidden'); }
+    else badge.classList.add('hidden');
+  } catch {}
+}
+
+async function showDmInbox() {
+  const d = await api('GET','/api/dm');
+  app.innerHTML = '';
+  const box = el(`<div class="card"><div class="row"><h1 style="flex:1">✉️ Nachrichten</h1>
+    <button class="ghost small" id="back">Zurück</button></div>
+    <div class="row" style="margin:6px 0 12px"><input id="dmto" placeholder="@Handle für neue Nachricht…"><button class="small" id="dmnew">Schreiben</button></div>
+    <div id="dmthreads"></div></div>`);
+  app.appendChild(box);
+  document.getElementById('back').onclick = mainScreen;
+  document.getElementById('dmnew').onclick = async () => {
+    const h = v('dmto').trim().replace(/^@/,''); if (!h) return;
+    try { const r = await api('POST','/api/dm/start',{ handle:h }); openDmThread(r.thread.id); }
+    catch(e){ alert(e.message); }
+  };
+  const list = document.getElementById('dmthreads');
+  if (!d.threads.length) { list.innerHTML = '<div class="muted">Noch keine Konversationen. Starte oben eine neue.</div>'; }
+  else d.threads.forEach(t => {
+    const o = t.other || {};
+    const row = el(`<div class="comment clickable" style="cursor:pointer">
+      <div class="row"><b>${esc(o.display_name||'Unbekannt')}</b> <span class="handle">@${esc(o.handle||'?')}</span>
+      <span class="sp" style="flex:1"></span>${t.unread?`<span class="badge">${t.unread}</span>`:''}</div>
+      <div class="muted" style="margin-top:2px">${esc((t.last_message?.body||'').slice(0,60))}</div></div>`);
+    row.onclick = () => openDmThread(t.thread_id);
+    list.appendChild(row);
+  });
+  refreshDmCount();
+}
+
+async function openDmThread(threadId) {
+  const d = await api('GET','/api/dm/'+encodeURIComponent(threadId));
+  const o = d.other || {};
+  app.innerHTML = '';
+  const box = el(`<div class="card"><div class="row">
+      <button class="ghost small" id="back">← Nachrichten</button>
+      <span class="sp" style="flex:1"></span>
+      <b class="clickable" data-openprofile="${esc(o.handle||'')}">${esc(o.display_name||'Unbekannt')}</b>
+      <span class="handle">@${esc(o.handle||'?')}</span>
+    </div>
+    <div id="dmmsgs" style="margin:12px 0;max-height:60vh;overflow-y:auto"></div>
+    <div class="row"><input id="dmbody" placeholder="Nachricht schreiben…" style="flex:1"><button class="small" id="dmsend">Senden</button></div>
+  </div>`);
+  app.appendChild(box);
+  document.getElementById('back').onclick = showDmInbox;
+  const openP = box.querySelector('[data-openprofile]');
+  if (openP && openP.dataset.openprofile) openP.onclick = () => { mainScreen().then(()=>openProfile(openP.dataset.openprofile)); };
+  const msgs = document.getElementById('dmmsgs');
+  const render = (messages) => {
+    msgs.innerHTML = '';
+    if (!messages.length) msgs.innerHTML = '<div class="muted">Noch keine Nachrichten — sag Hallo 👋</div>';
+    messages.forEach(m => {
+      const mine = me && m.sender_user_id === me.user_id;
+      msgs.appendChild(el(`<div style="display:flex;margin:4px 0;${mine?'justify-content:flex-end':''}">
+        <div style="max-width:75%;padding:8px 12px;border-radius:12px;background:${mine?'var(--green)':'#eef3f0'};color:${mine?'#fff':'inherit'}">${esc(m.body)}</div></div>`));
+    });
+    msgs.scrollTop = msgs.scrollHeight;
+  };
+  render(d.messages);
+  const send = async () => {
+    const inp = document.getElementById('dmbody');
+    if (!inp.value.trim()) return;
+    try {
+      await api('POST','/api/dm/'+encodeURIComponent(threadId),{ body: inp.value });
+      inp.value='';
+      const fresh = await api('GET','/api/dm/'+encodeURIComponent(threadId));
+      render(fresh.messages);
+    } catch(e){ alert(e.message); }
+  };
+  document.getElementById('dmsend').onclick = send;
+  document.getElementById('dmbody').addEventListener('keydown', e => { if (e.key==='Enter') send(); });
+  refreshDmCount();
 }
 
 // Start
