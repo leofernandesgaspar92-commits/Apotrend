@@ -127,7 +127,7 @@ const linkifyMentions = (s) => esc(s)
   .replace(/(^|[^\w#])#([a-z0-9äöüß_]{2,30})/gi,
     (m, pre, t) => `${pre}<span class="hashtag clickable" data-hashtag="${t}">#${t}</span>`);
 const app = document.getElementById('app');
-let me = null, tab = 'public', iAmModerator = false;
+let me = null, tab = 'overview', iAmModerator = false;
 
 // ── Auth-Screens ──
 function authScreen() {
@@ -230,7 +230,8 @@ async function mainScreen() {
       <div class="err" id="ferr"></div>
     </div>
     <div class="tabs">
-      <button data-tab="public" class="active">🌍 Öffentlich</button>
+      <button data-tab="overview" class="active">✨ Für dich</button>
+      <button data-tab="public">🌍 Öffentlich</button>
       <button data-tab="home">🏠 Mein Feed</button>
       <button data-tab="shortages">📦 Engpässe</button>
       <button data-tab="prices">💶 Preise</button>
@@ -306,7 +307,66 @@ function showWelcome(reopened) {
   ov.onclick = (e) => { if (e.target === ov) close(); };
 }
 
+function goTab(name) {
+  tab = name;
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  const b = document.querySelector('.tabs button[data-tab="'+name+'"]'); if (b) b.classList.add('active');
+  loadTab();
+}
+
+async function loadOverview() {
+  const feed = document.getElementById('feed');
+  feed.innerHTML = '<div class="muted">lädt…</div>';
+  let d;
+  try { d = await api('GET','/api/overview'); }
+  catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
+  feed.innerHTML = '';
+  const hello = me ? (me.display_name || '@'+me.handle) : '';
+  const firstName = hello ? (hello.split(/\s+/).find(w => !/\.$/.test(w)) || hello) : '';
+  // Kennzahlen-Kacheln
+  const tile = (icon, num, label, col, go) => `<div class="ovtile" data-go="${go||''}" style="flex:1;min-width:120px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;${go?'cursor:pointer':''}">
+    <div style="font-size:26px;font-weight:800;color:${col}">${icon} ${num}</div>
+    <div class="muted" style="font-size:13px;margin-top:2px">${esc(label)}</div></div>`;
+  const head = el(`<div class="card">
+    <h1 style="margin:0 0 2px">✨ Für dich${firstName?', '+esc(firstName):''}</h1>
+    <div class="muted" style="margin-bottom:12px">Das Wichtigste auf einen Blick.</div>
+    <div class="row" style="flex-wrap:wrap;gap:10px">
+      ${tile('🔴', d.shortages.kritisch, 'kritische Engpässe', '#c0392b', 'shortages')}
+      ${tile('📦', d.exchange.biete, 'Angebote im Austausch', '#00885a', 'exchange')}
+      ${tile('🔎', d.exchange.suche, 'Gesuche im Austausch', '#b26a00', 'exchange')}
+      ${tile('🔔', d.notifications.unread, 'neue Benachrichtigungen', '#2952cc', '')}
+    </div>
+  </div>`);
+  head.querySelectorAll('.ovtile[data-go]').forEach(t => { if (t.dataset.go) t.onclick = () => goTab(t.dataset.go); });
+  head.querySelectorAll('.ovtile').forEach(t => { if (!t.dataset.go) t.onclick = () => document.getElementById('btnNotif').click(); });
+  feed.appendChild(head);
+
+  // Kritische Engpässe (Top 3)
+  if (d.shortages.top.length) {
+    const c = el(`<div class="card"><div class="row"><b>🔴 Kritische Engpässe</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>Alle ansehen</button></div>
+      ${d.shortages.top.map(s=>`<div class="comment"><b>${esc(s.wirkstoff)}</b> <span class="muted">${esc(s.bezeichnung)}</span></div>`).join('')}</div>`);
+    c.querySelector('[data-all]').onclick = () => goTab('shortages');
+    feed.appendChild(c);
+  }
+  // Neueste Austausch-Einträge
+  if (d.exchange.recent.length) {
+    const c = el(`<div class="card"><div class="row"><b>🔄 Zuletzt im Bestandsaustausch</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>Zum Austausch</button></div></div>`);
+    c.querySelector('[data-all]').onclick = () => goTab('exchange');
+    d.exchange.recent.forEach(e => c.appendChild(exchangeCard(e)));
+    feed.appendChild(c);
+  }
+  // Top-Rabatt
+  if (d.top_rabatt) {
+    const r = d.top_rabatt;
+    const c = el(`<div class="card"><div class="row"><b>🏷️ Top-Rabatt gerade</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>Alle Rabatte</button></div>
+      <div style="margin-top:6px"><b>${esc(r.bezeichnung)}</b> — ${esc(r.supplier)} <span style="color:#00885a;font-weight:700">−${r.rabatt_pct}%</span> (€ ${Number(r.aktionspreis).toFixed(2)})</div></div>`);
+    c.querySelector('[data-all]').onclick = () => goTab('rabatte');
+    feed.appendChild(c);
+  }
+}
+
 function loadTab() {
+  if (tab === 'overview') return loadOverview();
   if (tab === 'shortages') return loadShortages();
   if (tab === 'prices') return loadPrices();
   if (tab === 'rabatte') return loadRabatte();

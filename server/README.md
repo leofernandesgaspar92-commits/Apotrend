@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Startübersicht „Für dich":** neuer Standard-Reiter mit dem Wichtigsten auf
+>   einen Blick — Kennzahlen (kritische Engpässe, Angebote/Gesuche, neue
+>   Benachrichtigungen), Top-3 kritische Engpässe, zuletzt im Austausch, Top-Rabatt;
+>   alles anklickbar zum jeweiligen Bereich (`GET /api/overview`, `overviewService`
+>   komponiert getestete Dienste). (100 Tests grün, im Browser verifiziert.)
 > - ✅ **Aktives Matching (Biete ↔ Suche):** legt jemand ein Angebot an, das zu einer
 >   offenen Suche passt (gemeinsames Wirkstoff-Wort), wird die suchende Person automatisch
 >   benachrichtigt — und umgekehrt. Kein ständiges Nachschauen. Benachrichtigung mit Label,

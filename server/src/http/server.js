@@ -21,6 +21,7 @@ import { createPricesService } from '../services/prices.js';
 import { createRabatteService } from '../services/rabatte.js';
 import { createExchangeService } from '../services/exchange.js';
 import { createSearchService } from '../services/search.js';
+import { createOverviewService } from '../services/overview.js';
 import { issueToken, verifyToken } from './token.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -50,6 +51,7 @@ const rabatte = createRabatteService(rabatteRepo, social);
 const exchangeRepo = createExchangeRepo();
 const exchange = createExchangeService(exchangeRepo, social, repo);
 const search = createSearchService({ social, shortagesRepo, pricesRepo, rabatteRepo });
+const overview = createOverviewService({ shortages, exchange, social, rabatte });
 
 if (restoring) {
   repo.__load(snapshot.foundation);
@@ -143,6 +145,7 @@ const routes = [
   }],
 
   ['GET', /^\/api\/me$/, true, async ({ userId }) => ({ user: repo.getUserById(userId), profile: social.getProfile(userId), is_moderator: social.isModerator(userId) })],
+  ['GET', /^\/api\/overview$/, true, async ({ userId }) => overview.forUser(userId)],
 
   // ── Moderation (nur Redaktions-/Admin-Konten) ──
   ['GET', /^\/api\/reports$/, true, async ({ userId }) => ({ reports: social.moderationQueue(userId) })],
