@@ -1122,12 +1122,20 @@ async function loadComments(postId, card) {
   list.innerHTML = d.comments.length ? '' : '<div class="muted">Noch keine Kommentare.</div>';
   // Baum aufbauen: parent_comment_id -> Kinder, in Reihenfolge (DFS) mit Einrückung.
   const byParent = {};
+  const present = new Set(d.comments.map(c => c.id));
   d.comments.forEach(c => { (byParent[c.parent_comment_id || 'root'] ||= []).push(c); });
   const build = (key, depth) => (byParent[key] || []).forEach(c => {
     list.appendChild(commentRow(postId, c, card, depth));
     build(c.id, depth + 1);
   });
   build('root', 0);
+  // Verwaiste Antworten (Eltern-Kommentar entfernt) auf Wurzelebene zeigen, statt sie zu verstecken.
+  d.comments.forEach(c => {
+    if (c.parent_comment_id && !present.has(c.parent_comment_id)) {
+      list.appendChild(commentRow(postId, c, card, 0));
+      build(c.id, 1);
+    }
+  });
   const cb = card.querySelector('[data-comments]');
   if (cb) cb.textContent = `💬 ${d.comments.length} Kommentare`;
 }
