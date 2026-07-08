@@ -752,10 +752,38 @@ async function loadFeed() {
   feed.innerHTML = '<div class="muted">lädt…</div>';
   try {
     const d = await api('GET', tab==='home' ? '/api/feed/home' : '/api/feed/public');
-    if (!d.posts.length) { feed.innerHTML = '<div class="card muted">Noch keine Beiträge. Sei der/die Erste!</div>'; return; }
     feed.innerHTML = '';
+    if (!d.posts.length) {
+      feed.appendChild(el(`<div class="card muted">${tab==='home'?'Dein Feed ist noch leer. Folge Kolleg:innen, um ihre Beiträge zu sehen:':'Noch keine Beiträge. Sei der/die Erste!'}</div>`));
+      if (tab==='home') await renderSuggestions(feed);
+      return;
+    }
     d.posts.forEach(p => feed.appendChild(postCard(p)));
   } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+}
+
+async function renderSuggestions(feed) {
+  try {
+    const s = await api('GET','/api/suggestions/follow');
+    if (!s.suggestions.length) return;
+    const card = el('<div class="card"><b>👥 Vorschläge zum Folgen</b><div data-sug style="margin-top:6px"></div></div>');
+    const box = card.querySelector('[data-sug]');
+    s.suggestions.forEach(p => {
+      const row = el(`<div class="comment"><div class="row" style="align-items:baseline">
+        <b class="clickable" data-openprofile="${esc(p.handle)}">${esc(p.display_name)}</b>
+        <span class="handle clickable" data-openprofile="${esc(p.handle)}">@${esc(p.handle)}</span>
+        ${p.is_editorial?'<span class="editorial">📰 Redaktion</span>':''}${p.verified?'<span class="verified">✔</span>':''}
+        <span class="sp" style="flex:1"></span>
+        <button class="small" data-follow="${esc(p.handle)}">+ Folgen</button></div>
+        ${p.specializations&&p.specializations.length?`<div class="muted" style="font-size:13px;margin-top:2px">${p.specializations.map(esc).join(' · ')}</div>`:''}</div>`);
+      row.querySelectorAll('[data-openprofile]').forEach(el=>el.onclick=()=>openProfile(el.dataset.openprofile));
+      row.querySelector('[data-follow]').onclick = async (ev) => {
+        try { await api('POST','/api/follow',{ handle:p.handle }); ev.target.textContent='✓ Folgst'; ev.target.disabled=true; } catch(e){ alert(e.message); }
+      };
+      box.appendChild(row);
+    });
+    feed.appendChild(card);
+  } catch {}
 }
 
 async function openBookmarks() {

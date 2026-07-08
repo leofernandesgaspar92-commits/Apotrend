@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Folge-Vorschläge:** leerer „Mein Feed" zeigt „👥 Vorschläge zum Folgen"
+>   (Profile, denen man noch nicht folgt, aktivste zuerst) mit „+ Folgen" — hilft
+>   neuen Nutzer:innen, das Netzwerk aufzubauen. (`GET /api/suggestions/follow`;
+>   115 Tests grün, im Browser verifiziert.)
 > - ✅ **Beitrag teilen (Direktlink):** „🔗 Teilen" kopiert einen Link (`/?post=ID`);
 >   beim Öffnen springt die App direkt zum Beitrag (Deep-Link, Sichtbarkeit erzwungen).
 >   (114 Tests grün, im Browser verifiziert.)

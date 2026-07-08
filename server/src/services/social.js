@@ -113,6 +113,16 @@ export function createSocialService(social, foundationRepo, options = {}) {
         is_self: viewerUserId === prof.user_id,
       };
     },
+    // Folge-Vorschläge: Profile, denen der Betrachter noch nicht folgt (aktivste zuerst).
+    suggestFollows(viewerUserId, limit = 5) {
+      requireUser(viewerUserId);
+      const following = new Set(social.listFollowing(viewerUserId));
+      return social.listProfiles()
+        .filter(p => p.user_id !== viewerUserId && !following.has(p.user_id))
+        .map(p => ({ handle: p.handle, display_name: p.display_name, verified: p.verified, is_editorial: p.is_editorial, title: p.title, specializations: p.specializations || [], follower_count: social.listFollowers(p.user_id).length }))
+        .sort((a, b) => b.follower_count - a.follower_count)
+        .slice(0, limit);
+    },
     // Personen-Suche: Handle, Anzeigename oder Fachgebiet enthält q.
     searchProfiles(q) {
       const s = String(q ?? '').trim().toLowerCase();

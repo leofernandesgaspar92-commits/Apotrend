@@ -146,6 +146,7 @@ const routes = [
 
   ['GET', /^\/api\/me$/, true, async ({ userId }) => ({ user: repo.getUserById(userId), profile: social.getProfile(userId), is_moderator: social.isModerator(userId) })],
   ['GET', /^\/api\/overview$/, true, async ({ userId }) => overview.forUser(userId)],
+  ['GET', /^\/api\/suggestions\/follow$/, true, async ({ userId }) => ({ suggestions: social.suggestFollows(userId) })],
   ['GET', /^\/api\/me\/export$/, true, async ({ userId }) => ({ ...social.exportData(userId), exchange_entries: exchange.mine(userId) })],
   ['POST', /^\/api\/me\/password$/, true, async ({ userId, body }) => orgAuth.changePassword(userId, { oldPassword: body.oldPassword, newPassword: body.newPassword })],
   ['POST', /^\/api\/me\/delete$/, true, async ({ userId, body }) => {
