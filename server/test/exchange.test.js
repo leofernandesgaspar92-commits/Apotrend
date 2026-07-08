@@ -61,6 +61,28 @@ test('Ungültige Art und leere Bezeichnung werden abgelehnt', () => {
   assert.throws(() => exchange.create(a, { kind: 'biete', bezeichnung: '   ' }), /erforderlich/);
 });
 
+test('Aktives Matching: neues Angebot benachrichtigt die passende Suche', () => {
+  const repo = createMemoryRepo();
+  const orgAuth = createOrgAuthService(repo);
+  const social = createSocialService(createSocialRepo(), repo);
+  const exchange = createExchangeService(createExchangeRepo(), social, repo);
+  const A = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'A' }, owner: { name: 'Anna', email: 'a@a.at', password: 'geheim123' } });
+  social.createProfile(A.user.id, { handle: 'anna', displayName: 'Anna' });
+  const B = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'B' }, owner: { name: 'Ben', email: 'b@b.at', password: 'geheim123' } });
+  social.createProfile(B.user.id, { handle: 'ben', displayName: 'Ben' });
+
+  exchange.create(A.user.id, { kind: 'suche', bezeichnung: 'Amoxicillin 500 mg' });   // Anna sucht
+  exchange.create(B.user.id, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg' });    // Ben bietet -> Match
+
+  const n = social.notifications(A.user.id).find(x => x.type === 'exchange_offer');
+  assert.ok(n, 'Anna wird über das passende Angebot benachrichtigt');
+  assert.equal(n.label, 'Amoxicillin 1000 mg');
+  assert.equal(n.actor.handle, 'ben');
+  // kein Match bei anderem Wirkstoff
+  exchange.create(B.user.id, { kind: 'biete', bezeichnung: 'Metformin 850' });
+  assert.equal(social.notifications(A.user.id).filter(x => x.type === 'exchange_offer').length, 1);
+});
+
 test('Bundesland-Filter: nur Einträge aus dem gewählten Bundesland', () => {
   const { exchange, a, b } = setup();
   exchange.create(a, { kind: 'biete', bezeichnung: 'Amoxicillin', bundesland: 'Wien' });

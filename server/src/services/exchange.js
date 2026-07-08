@@ -11,6 +11,27 @@ export function createExchangeService(exchangeRepo, social, foundationRepo) {
   function requireUser(userId) {
     if (!foundationRepo.getUserById(userId)) throw new Error('Unbekannter Nutzer.');
   }
+  // Bedeutungstragende Wörter (>=4 Zeichen) für das Matching Biete<->Suche.
+  function words(text) {
+    return new Set(String(text).toLowerCase().match(/[a-zäöüß0-9]{4,}/g) || []);
+  }
+  function shareWord(a, b) { for (const w of a) if (b.has(w)) return true; return false; }
+  // Nach dem Anlegen: passende Gegen-Einträge finden und deren Autor:innen benachrichtigen.
+  function notifyMatches(entry) {
+    const opposite = entry.kind === 'biete' ? 'suche' : 'biete';
+    const mine = words(entry.bezeichnung);
+    if (!mine.size) return;
+    const type = entry.kind === 'biete' ? 'exchange_offer' : 'exchange_want';
+    const seen = new Set();
+    for (const other of exchangeRepo.list()) {
+      if (other.status !== 'offen' || other.kind !== opposite || other.id === entry.id) continue;
+      if (other.author_user_id === entry.author_user_id || seen.has(other.author_user_id)) continue;
+      if (!shareWord(mine, words(other.bezeichnung))) continue;
+      seen.add(other.author_user_id);
+      social.pushNotification({ userId: other.author_user_id, type, actorUserId: entry.author_user_id, refType: 'exchange', refId: entry.id, label: entry.bezeichnung });
+    }
+  }
+
   function decorate(e) {
     const prof = social.getProfile ? social.getProfile(e.author_user_id) : null;
     return {
@@ -28,14 +49,16 @@ export function createExchangeService(exchangeRepo, social, foundationRepo) {
       if (b.length > 200) throw new Error('Bezeichnung zu lang.');
       const bl = bundesland ? String(bundesland).trim() : null;
       if (bl && !BUNDESLAENDER.includes(bl)) throw new Error('Ungültiges Bundesland.');
-      return decorate(exchangeRepo.create({
+      const created = exchangeRepo.create({
         kind, authorUserId: actorUserId, bezeichnung: b,
         menge: (menge ?? '').toString().trim() || null,
         ort: (ort ?? '').toString().trim() || null,
         bundesland: bl,
         note: (note ?? '').toString().trim() || null,
         image: cleanImage(image),
-      }));
+      });
+      notifyMatches(created); // aktives Matching Biete<->Suche
+      return decorate(created);
     },
     // Offene Einträge (Standard), optional nach Art + Text (Präparat) + Bundesland gefiltert.
     list(viewerUserId, { kind = null, status = 'offen', q = null, bundesland = null } = {}) {

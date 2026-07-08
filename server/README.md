@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Aktives Matching (Biete ↔ Suche):** legt jemand ein Angebot an, das zu einer
+>   offenen Suche passt (gemeinsames Wirkstoff-Wort), wird die suchende Person automatisch
+>   benachrichtigt — und umgekehrt. Kein ständiges Nachschauen. Benachrichtigung mit Label,
+>   Klick öffnet den Austausch gefiltert. (`social.pushNotification`, Notif-Feld `label`;
+>   99 Tests grün, im Browser verifiziert.)
 > - ✅ **Standort-Filter im Bestandsaustausch:** Einträge tragen ein Bundesland (AT,
 >   9 Länder, serverseitig validiert); im Reiter nach Bundesland filterbar — Ware in
 >   der Nähe finden. (`GET /api/exchange?bundesland=`; 98 Tests grün, im Browser verifiziert.)

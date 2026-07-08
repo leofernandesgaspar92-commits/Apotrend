@@ -305,6 +305,11 @@ export function createSocialService(social, foundationRepo, options = {}) {
     },
 
     // ── Benachrichtigungen ──
+    // Öffentliche Benachrichtigung (z.B. vom Austausch-Modul für Matching genutzt).
+    pushNotification({ userId, type, actorUserId = null, refType = null, refId = null, label = null }) {
+      if (!userId || userId === actorUserId) return null;
+      return social.createNotification({ userId, type, actorUserId, refType, refId, label });
+    },
     notifications(userId) {
       requireUser(userId);
       return social.listNotifications(userId).map(n => {

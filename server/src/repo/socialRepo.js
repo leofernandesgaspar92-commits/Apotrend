@@ -127,7 +127,7 @@ export function createSocialRepo() {
 
     // ── Benachrichtigungen ──
     createNotification(n) {
-      const row = { id: uuid(), user_id: n.userId, type: n.type, actor_user_id: n.actorUserId ?? null, ref_type: n.refType ?? null, ref_id: n.refId ?? null, read: false, created_at: now() };
+      const row = { id: uuid(), user_id: n.userId, type: n.type, actor_user_id: n.actorUserId ?? null, ref_type: n.refType ?? null, ref_id: n.refId ?? null, label: n.label ?? null, read: false, created_at: now() };
       notifications.set(row.id, row);
       return { ...row };
     },
