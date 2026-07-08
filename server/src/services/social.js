@@ -123,6 +123,15 @@ export function createSocialService(social, foundationRepo, options = {}) {
         .sort((a, b) => b.follower_count - a.follower_count)
         .slice(0, limit);
     },
+    // Handle-Vorschläge für @-Autovervollständigung (Präfix zuerst, dann enthält).
+    searchHandles(q, limit = 6) {
+      const s = String(q ?? '').trim().toLowerCase();
+      if (!s) return [];
+      const all = social.listProfiles();
+      const starts = all.filter(p => p.handle.startsWith(s));
+      const contains = all.filter(p => !p.handle.startsWith(s) && (p.handle.includes(s) || String(p.display_name).toLowerCase().includes(s)));
+      return [...starts, ...contains].slice(0, limit).map(p => ({ handle: p.handle, display_name: p.display_name, verified: p.verified }));
+    },
     // Personen-Suche: Handle, Anzeigename oder Fachgebiet enthält q.
     searchProfiles(q) {
       const s = String(q ?? '').trim().toLowerCase();

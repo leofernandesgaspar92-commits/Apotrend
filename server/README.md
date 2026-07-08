@@ -6,6 +6,9 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **@Erwähnungs-Autovervollständigung:** beim Tippen von `@…` im Compose-/News-Feld
+>   werden passende Handles vorgeschlagen (Präfix zuerst), Auswahl fügt `@handle` ein.
+>   (`GET /api/handles?q=`; 118 Tests grün, im Browser verifiziert.)
 > - ✅ **Bilder in Kommentaren:** Foto an einen Kommentar anhängen (📷 am Kommentarfeld,
 >   Client-Verkleinerung + gemeinsame Media-Validierung), Bild-only-Kommentar erlaubt.
 >   (117 Tests grün, im Browser verifiziert.)

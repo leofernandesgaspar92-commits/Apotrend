@@ -47,6 +47,9 @@
   .rank { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:30px; padding:0 6px; border-radius:999px; background:var(--green); color:#fff; font-weight:800; font-size:15px; margin-right:8px; }
   .rabatt-badge { background:#e6f7ef; color:#00885a; font-weight:800; font-size:16px; padding:4px 12px; border-radius:999px; border:1px solid #b6e6cf; }
   .mention { color:var(--green); font-weight:600; }
+  .mention-ac { border:1px solid var(--line); border-radius:8px; background:var(--card); margin-top:4px; overflow:hidden; }
+  .mention-ac-item { padding:8px 10px; cursor:pointer; font-size:0.9em; }
+  .mention-ac-item:hover, .mention-ac-item.active { background:var(--bg); }
   .hashtag { color:#2952cc; font-weight:600; }
   .clickable { cursor:pointer; }
   .clickable:hover { text-decoration:underline; }
@@ -135,6 +138,37 @@ function fileToDataUrl(file, maxDim = 1200, quality = 0.82) {
     };
     reader.readAsDataURL(file);
   });
+}
+// @-Autovervollständigung an ein Text-/Eingabefeld hängen (schlägt Handles vor).
+function attachMentionAutocomplete(ta) {
+  let box = null;
+  const close = () => { if (box) { box.remove(); box = null; } };
+  ta.addEventListener('input', async () => {
+    const pos = ta.selectionStart;
+    const m = ta.value.slice(0, pos).match(/(^|[^\w@])@([a-z0-9_]{1,30})$/i);
+    if (!m) { close(); return; }
+    const token = m[2];
+    let handles;
+    try { handles = (await api('GET','/api/handles?q='+encodeURIComponent(token))).handles; } catch { return; }
+    if (ta.selectionStart !== pos) return; // Caret hat sich bewegt
+    close();
+    if (!handles.length) return;
+    box = el('<div class="mention-ac"></div>');
+    handles.forEach(h => {
+      const item = el(`<div class="mention-ac-item"><b>@${esc(h.handle)}</b> <span class="muted">${esc(h.display_name||'')}</span>${h.verified?' <span class="verified">✔</span>':''}</div>`);
+      item.onmousedown = (e) => {
+        e.preventDefault();
+        const start = pos - token.length - 1; // Position des '@'
+        ta.value = ta.value.slice(0, start) + '@' + h.handle + ' ' + ta.value.slice(pos);
+        const caret = start + h.handle.length + 2;
+        ta.setSelectionRange(caret, caret); close(); ta.focus();
+      };
+      box.appendChild(item);
+    });
+    ta.after(box);
+  });
+  ta.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+  ta.addEventListener('blur', () => setTimeout(close, 150));
 }
 const relTime = (iso) => {
   if (!iso) return '';
@@ -280,6 +314,7 @@ async function mainScreen() {
     catch(e){ document.getElementById('perr').textContent = e.message; clearImg(); }
   };
   pimgclear.onclick = clearImg;
+  attachMentionAutocomplete(document.getElementById('pb'));
   document.getElementById('pgo').onclick = async () => {
     try {
       await api('POST','/api/posts',{ body:v('pb'), visibility:document.getElementById('pv').value, image:composeImage, sourceUrl:v('psrc') });
@@ -434,6 +469,7 @@ async function loadNews() {
     catch(e){ document.getElementById('nerr').textContent = e.message; clearN(); }
   };
   nimgclear.onclick = clearN;
+  attachMentionAutocomplete(document.getElementById('nb'));
   document.getElementById('ngo').onclick = async () => {
     const t = document.getElementById('nb');
     if (!t.value.trim() && !newsImage) { document.getElementById('nerr').textContent='Text oder Bild nötig.'; return; }
