@@ -6,6 +6,9 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Dunkelmodus:** augenschonender Hell/Dunkel-Umschalter (🌙/☀️) im Header, in
+>   localStorage gemerkt, per CSS-Variablen (Karten/Eingaben/Kontrast angepasst,
+>   theme-color aktualisiert). (Im Browser verifiziert.)
 > - ✅ **Profil-Verifizierung (Apotheken-Nachweis):** Nutzer beantragen Verifizierung
 >   (Hinweis mit Konzession/Apotheke), Redaktion/Moderation genehmigt oder lehnt ab;
 >   Genehmigung setzt `verified` → „✔ verifiziert"-Badge an Profil und Beiträgen, plus
