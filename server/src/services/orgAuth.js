@@ -54,6 +54,12 @@ export function createOrgAuthService(repo) {
       return { ok: true };
     },
 
+    // Passwort eines eingeloggten Nutzers prüfen (z.B. vor Konto-Löschung).
+    verifyUserPassword(userId, password) {
+      const user = repo.getUserById(userId);
+      return !!(user && verifyPassword(password ?? '', user.password_hash));
+    },
+
     // ── Mandanten-Isolation (zentral, serverseitig) ─────────────────────────
     // Liefert die Rolle des Nutzers in einer Organisation — oder null, wenn er
     // NICHT Mitglied ist. Jede geschuetzte Aktion muss hierueber gehen.

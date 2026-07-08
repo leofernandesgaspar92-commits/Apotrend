@@ -83,6 +83,13 @@ export function createMemoryRepo() {
       return { ...u };
     },
 
+    // DSGVO: Nutzer + E-Mail-Zuordnung + Mitgliedschaften entfernen.
+    deleteUser(userId) {
+      const u = users.get(userId);
+      if (u) { usersByEmail.delete(u.email); users.delete(userId); }
+      for (const [id, m] of memberships) if (m.user_id === userId) memberships.delete(id);
+    },
+
     createMembership({ userId, organizationId, role }) {
       if (!users.has(userId)) throw new Error('Unbekannter User.');
       if (!organizations.has(organizationId)) throw new Error('Unbekannte Organisation.');

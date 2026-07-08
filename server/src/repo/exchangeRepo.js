@@ -23,6 +23,7 @@ export function createExchangeRepo() {
     list() {
       return [...entries.values()].sort((a, b) => b.created_at.localeCompare(a.created_at)).map(e => ({ ...e }));
     },
+    purgeUser(userId) { for (const [id, e] of entries) if (e.author_user_id === userId) entries.delete(id); },
     __dump() { return [...entries]; },
     __load(rows) { if (!rows) return; entries.clear(); for (const [k, v] of rows) entries.set(k, v); },
   };

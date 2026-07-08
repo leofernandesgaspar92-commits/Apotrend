@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Konto löschen (DSGVO — Recht auf Löschung):** mit Passwort-Bestätigung; purge
+>   über alle Repos (Profil, Beiträge, Kommentare, Reaktionen, Follows, DMs, Merkliste,
+>   Verifizierung, Austausch-Einträge, Nutzer + Login). (`POST /api/me/delete`; 114 Tests
+>   grün, end-to-end verifiziert: Login danach unmöglich, andere Daten unberührt.)
 > - ✅ **Passwort ändern:** altes Passwort prüfen (scrypt), neues (≥8) setzen
 >   (`POST /api/me/password`, `orgAuth.changePassword`). UI in der Konto-Karte am
 >   eigenen Profil. (113 Tests grün, end-to-end per API verifiziert.)

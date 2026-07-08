@@ -148,6 +148,13 @@ const routes = [
   ['GET', /^\/api\/overview$/, true, async ({ userId }) => overview.forUser(userId)],
   ['GET', /^\/api\/me\/export$/, true, async ({ userId }) => ({ ...social.exportData(userId), exchange_entries: exchange.mine(userId) })],
   ['POST', /^\/api\/me\/password$/, true, async ({ userId, body }) => orgAuth.changePassword(userId, { oldPassword: body.oldPassword, newPassword: body.newPassword })],
+  ['POST', /^\/api\/me\/delete$/, true, async ({ userId, body }) => {
+    if (!orgAuth.verifyUserPassword(userId, body.password)) { const e = new Error('Passwort ist falsch.'); e.status = 401; throw e; }
+    socialRepo.purgeUser(userId);
+    exchangeRepo.purgeUser(userId);
+    repo.deleteUser(userId);
+    return { ok: true };
+  }],
 
   // ── Moderation (nur Redaktions-/Admin-Konten) ──
   ['GET', /^\/api\/reports$/, true, async ({ userId }) => ({ reports: social.moderationQueue(userId) })],

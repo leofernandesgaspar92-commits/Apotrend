@@ -916,7 +916,19 @@ async function openProfile(handle) {
           <input id="pw_old" type="password" placeholder="Aktuelles Passwort" style="margin-top:6px">
           <input id="pw_new" type="password" placeholder="Neues Passwort (mind. 8 Zeichen)" style="margin-top:6px">
           <div class="row" style="margin-top:8px"><button class="small" id="pw_go">Passwort ändern</button><span id="pw_msg" style="margin-left:8px"></span></div>
+        </div>
+        <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
+          <b style="font-size:0.95em;color:#c0392b">Konto löschen</b>
+          <div class="muted" style="margin-top:4px">Unwiderruflich: alle deine Daten (Profil, Beiträge, Kommentare, Nachrichten, Austausch) werden gelöscht.</div>
+          <div class="row" style="margin-top:8px"><button class="ghost small" id="acc_del" style="color:#c0392b;border-color:#c0392b">Konto endgültig löschen</button></div>
         </div></div>`);
+      dcard.querySelector('#acc_del').onclick = async () => {
+        if (!confirm('Dein Konto und alle Daten werden unwiderruflich gelöscht. Fortfahren?')) return;
+        const pwd = prompt('Zur Bestätigung dein Passwort eingeben:');
+        if (!pwd) return;
+        try { await api('POST','/api/me/delete',{ password: pwd }); alert('Dein Konto wurde gelöscht.'); localStorage.removeItem('apo_token'); location.reload(); }
+        catch(e){ alert(e.message); }
+      };
       dcard.querySelector('#pw_go').onclick = async () => {
         const msg = dcard.querySelector('#pw_msg');
         try { await api('POST','/api/me/password',{ oldPassword:v('pw_old'), newPassword:v('pw_new') });

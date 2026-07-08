@@ -209,6 +209,24 @@ export function createSocialRepo() {
     },
     updateReport(id, patch) { const r = reports.get(id); if (!r) return null; Object.assign(r, patch); return { ...r }; },
 
+    // ── DSGVO: alle Daten eines Nutzers unwiderruflich entfernen ──
+    purgeUser(userId) {
+      const prof = profiles.get(userId);
+      if (prof) { profilesByHandle.delete(prof.handle); profiles.delete(userId); }
+      for (const [id, p] of posts) if (p.author_user_id === userId) posts.delete(id);
+      for (const [id, c] of comments) if (c.author_user_id === userId) comments.delete(id);
+      for (const [k, r] of reactions) if (r.user_id === userId) reactions.delete(k);
+      for (const [k, f] of follows) if (f.follower_user_id === userId || f.followee_user_id === userId) follows.delete(k);
+      for (const [id, n] of notifications) if (n.user_id === userId || n.actor_user_id === userId) notifications.delete(id);
+      for (const [id, t] of dmThreads) if (t.user_a_id === userId || t.user_b_id === userId) {
+        dmThreads.delete(id);
+        for (const [mid, m] of dmMessages) if (m.thread_id === id) dmMessages.delete(mid);
+      }
+      for (const [k, bm] of bookmarks) if (bm.user_id === userId) bookmarks.delete(k);
+      for (const [id, r] of reports) if (r.reporter_user_id === userId) reports.delete(id);
+      verifications.delete(userId);
+    },
+
     // ── Snapshot-Persistenz ──────────────────────────────────────────────────
     __dump() {
       return {
