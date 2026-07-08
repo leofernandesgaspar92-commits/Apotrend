@@ -90,6 +90,31 @@ test('decorate: rohe confirmation-User-IDs werden nicht nach außen gegeben', ()
   assert.equal(row.confirm_count, 1);
 });
 
+test('resolveShortage: Melder:in setzt wieder lieferbar + benachrichtigt Beobachter & Bestätiger', () => {
+  const { social, shortages, shortagesRepo, a, b, c } = setup();
+  const r = shortages.reportShortage(a, { wirkstoff: 'Ramipril' });
+  shortages.confirmShortage(b, r.id);           // b bestätigt
+  shortagesRepo.addWatch(c, 'Ramipril');        // c beobachtet
+  const u = shortages.resolveShortage(a, r.id);
+  assert.equal(u.status, 'verfuegbar');
+  assert.equal(social.notifications(b).filter(n => n.type === 'watch_alert').length, 1, 'Bestätiger informiert');
+  assert.equal(social.notifications(c).filter(n => n.type === 'watch_alert').length, 1, 'Beobachter informiert');
+  assert.equal(social.notifications(a).filter(n => n.type === 'watch_alert').length, 0, 'Auslöser nicht');
+});
+
+test('resolveShortage: nur Melder:in (oder Moderation) darf auflösen', () => {
+  const { shortages, a, b } = setup();
+  const r = shortages.reportShortage(a, { wirkstoff: 'Ramipril' });
+  assert.throws(() => shortages.resolveShortage(b, r.id), /meldende Apotheke|Moderation/);
+});
+
+test('resolveShortage: nach Auflösung darf Wirkstoff neu gemeldet werden (kein Dupe-Block)', () => {
+  const { shortages, a } = setup();
+  const r = shortages.reportShortage(a, { wirkstoff: 'Ramipril' });
+  shortages.resolveShortage(a, r.id);
+  assert.doesNotThrow(() => shortages.reportShortage(a, { wirkstoff: 'Ramipril' }));
+});
+
 test('purgeUser: anonymisiert Melder und entfernt dessen Bestätigungen (DSGVO)', () => {
   const { shortages, shortagesRepo, a, b } = setup();
   const r = shortages.reportShortage(a, { wirkstoff: 'Ramipril' });

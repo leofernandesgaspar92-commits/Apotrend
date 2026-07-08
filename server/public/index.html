@@ -631,6 +631,7 @@ function shortageCard(s) {
       <button class="ghost" data-exchange title="Wer bietet/sucht diesen Wirkstoff?">🔄 Biete/Suche</button>
       <button class="ghost" data-watch title="Diesen Wirkstoff beobachten">${s.watched?'⭐ Beobachtet':'☆ Beobachten'}</button>
       ${s.provenance==='community'&&!s.is_reporter?`<button class="ghost" data-confirm title="Diesen Engpass auch bei dir bestätigen">${s.i_confirmed?'✅ Bestätigt':'➕ Auch bei uns'}</button>`:''}
+      ${s.provenance==='community'&&s.is_reporter&&s.status!=='verfuegbar'?`<button class="ghost" data-resolve title="Wieder lieferbar – deine Meldung schließen">✓ Wieder lieferbar</button>`:''}
     </div>
     <div class="comments hidden" data-postbox>
       <textarea data-pinput placeholder="Dein Beitrag zu diesem Engpass (öffentlich)…"></textarea>
@@ -686,6 +687,13 @@ function shortageCard(s) {
       catch(e){ alert(e.message); confirmBtn.disabled = false; }
     };
   }
+  const resolveBtn = card.querySelector('[data-resolve]');
+  if (resolveBtn) resolveBtn.onclick = async () => {
+    if (!confirm('Diesen Engpass als wieder lieferbar melden? Beobachter:innen werden informiert.')) return;
+    resolveBtn.disabled = true;
+    try { await api('POST',`/api/shortages/${s.id}/resolve`); loadShortages(); }
+    catch(e){ alert(e.message); resolveBtn.disabled = false; }
+  };
   const watchBtn = card.querySelector('[data-watch]');
   let isWatched = !!s.watched;
   watchBtn.onclick = async () => {

@@ -13,8 +13,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   Beobachter:innen des Wirkstoffs werden sofort benachrichtigt. Andere Apotheken
 >   bestätigen mit „➕ Auch bei uns" (Zähler „N weitere Apotheken bestätigt", Melder wird
 >   informiert). Doppel-/Fehlklick-Schutz, Melder-Identität DSGVO-anonymisierbar.
->   (`POST /api/shortages/report`, `POST /api/shortages/:id/confirm`; 146 Tests grün,
->   end-to-end im Browser verifiziert.)
+>   Die meldende Apotheke (oder Moderation) schließt die Meldung mit „✓ Wieder lieferbar";
+>   Beobachter:innen **und** Bestätiger:innen werden informiert, danach ist der Wirkstoff
+>   wieder frei meldbar. (`POST /api/shortages/report|:id/confirm|:id/resolve`; 149 Tests
+>   grün, end-to-end im Browser verifiziert.)
 > - ✅ **Engpass-Status-Alarm für beobachtete Wirkstoffe:** ändert die Redaktion/
 >   Moderation den Status eines Engpasses (nur mit **Pflicht-Quelle**, http[s]-Link —
 >   sicherheitsrelevant lt. CLAUDE.md), werden alle Apotheker:innen benachrichtigt,

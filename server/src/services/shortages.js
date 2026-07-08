@@ -88,6 +88,27 @@ export function createShortagesService(shortagesRepo, social) {
       return decorate(updated, userId);
     },
 
+    // Melder:in (oder Moderation) meldet die eigene Community-Meldung als wieder lieferbar.
+    resolveShortage(userId, id) {
+      const s = shortagesRepo.get(id);
+      if (!s) { const e = new Error('Engpass nicht gefunden.'); e.status = 404; throw e; }
+      if (s.provenance !== 'community') throw new Error('Nur Community-Meldungen können so aufgelöst werden.');
+      if (s.reporter_user_id !== userId && !social.isModerator(userId)) {
+        const e = new Error('Nur die meldende Apotheke kann das auflösen.');
+        e.status = 403; throw e;
+      }
+      if (s.status === 'verfuegbar') return decorate(s, userId);
+      const today = new Date().toISOString().slice(0, 10);
+      const updated = shortagesRepo.setStatus(id, { status: 'verfuegbar', gemeldet_am: today });
+      // Beobachter:innen UND Bestätiger:innen informieren (ausser Auslöser).
+      const targets = new Set([...shortagesRepo.usersWatching(s.wirkstoff), ...(s.confirmations || [])]);
+      const label = `${s.wirkstoff} · Wieder verfügbar`;
+      for (const uid of targets) {
+        social.pushNotification({ userId: uid, type: 'watch_alert', actorUserId: userId, refType: 'shortage', refId: id, label });
+      }
+      return decorate(updated, userId);
+    },
+
     // ── Engpass-Status ändern (nur Redaktion/Moderation) + Watcher benachrichtigen ──
     // Sicherheitsrelevante Aussage => Quelle (http[s]-Link) ist Pflicht (CLAUDE.md).
     updateStatus(actorUserId, id, { status, sourceUrl }) {
