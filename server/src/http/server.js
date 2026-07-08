@@ -146,6 +146,7 @@ const routes = [
 
   ['GET', /^\/api\/me$/, true, async ({ userId }) => ({ user: repo.getUserById(userId), profile: social.getProfile(userId), is_moderator: social.isModerator(userId) })],
   ['GET', /^\/api\/overview$/, true, async ({ userId }) => overview.forUser(userId)],
+  ['GET', /^\/api\/me\/export$/, true, async ({ userId }) => ({ ...social.exportData(userId), exchange_entries: exchange.mine(userId) })],
 
   // ── Moderation (nur Redaktions-/Admin-Konten) ──
   ['GET', /^\/api\/reports$/, true, async ({ userId }) => ({ reports: social.moderationQueue(userId) })],

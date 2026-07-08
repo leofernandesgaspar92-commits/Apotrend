@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **DSGVO-Datenexport (Datenübertragbarkeit):** „⬇️ Meine Daten exportieren" auf
+>   dem eigenen Profil lädt alle eigenen Daten als JSON (Profil, Beiträge, Kommentare,
+>   Merkliste, Direktnachrichten, Verifizierung, Austausch-Einträge; `GET /api/me/export`).
+>   (110 Tests grün, Endpoint verifiziert.)
 > - ✅ **Kommentare melden:** 🚩 an fremden Kommentaren → Moderations-Queue (mit
 >   Kommentartext + „💬 Kommentar"-Kennzeichnung); „Kommentar entfernen" löscht ihn.
 >   Schließt die Moderations-Lücke (bisher nur Beiträge). (`POST /api/comments/:id/report`;

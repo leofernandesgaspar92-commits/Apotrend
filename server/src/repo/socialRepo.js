@@ -115,6 +115,8 @@ export function createSocialRepo() {
         .sort((a, b) => a.created_at.localeCompare(b.created_at)).map(c => ({ ...c }));
     },
     countComments(postId) { return [...comments.values()].filter(c => c.post_id === postId && !c.deleted_at).length; },
+    listCommentsByAuthor(userId) { return [...comments.values()].filter(c => c.author_user_id === userId && !c.deleted_at).map(c => ({ ...c })); },
+    listPostsByAuthor(userId) { return [...posts.values()].filter(p => p.author_user_id === userId && !p.deleted_at).map(p => ({ ...p })); },
 
     // ── Reaktionen (upsert: eine je Nutzer+Ziel) ──
     setReaction({ userId, targetType, targetId, type }) {

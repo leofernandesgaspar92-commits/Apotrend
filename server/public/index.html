@@ -907,6 +907,22 @@ async function openProfile(handle) {
       feed.appendChild(vcard);
       renderVerifyCard(vcard);
     }
+    if (d.is_self) {
+      const dcard = el(`<div class="card"><b>🔒 Datenschutz</b>
+        <div class="muted" style="margin-top:4px">Lade alle deine Daten (Profil, Beiträge, Kommentare, Nachrichten, Merkliste, Austausch) als Datei herunter (DSGVO).</div>
+        <div style="margin-top:8px"><button class="ghost small" id="dl_export">⬇️ Meine Daten exportieren</button></div></div>`);
+      dcard.querySelector('#dl_export').onclick = async () => {
+        try {
+          const data = await api('GET','/api/me/export');
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url; link.download = 'apotrend-meine-daten.json'; link.click();
+          URL.revokeObjectURL(url);
+        } catch(e){ alert(e.message); }
+      };
+      feed.appendChild(dcard);
+    }
     if (!d.posts.length) feed.appendChild(el('<div class="card muted">Noch keine sichtbaren Beiträge.</div>'));
     d.posts.forEach(post => feed.appendChild(postCard(post)));
   } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }

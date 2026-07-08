@@ -447,6 +447,24 @@ export function createSocialService(social, foundationRepo, options = {}) {
         .map(decorate);
     },
 
+    // ── DSGVO: Datenexport (Recht auf Datenübertragbarkeit) ──
+    exportData(userId) {
+      requireUser(userId);
+      const dms = social.listDmThreadsForUser(userId).map(t => {
+        const other = social.getProfileByUserId(t.user_a_id === userId ? t.user_b_id : t.user_a_id);
+        return { with: other ? other.handle : null, messages: social.listDmMessages(t.id) };
+      });
+      return {
+        exported_at: new Date().toISOString(),
+        profile: social.getProfileByUserId(userId),
+        posts: social.listPostsByAuthor(userId),
+        comments: social.listCommentsByAuthor(userId),
+        bookmarks_post_ids: social.listBookmarkPostIds(userId),
+        direct_messages: dms,
+        verification: social.getVerification(userId),
+      };
+    },
+
     // ── Verifizierung (Apotheken-Nachweis) ──
     // Nutzer beantragt Verifizierung (z.B. mit Konzessionsnummer/Apotheke im Hinweis).
     requestVerification(actorUserId, { note } = {}) {
