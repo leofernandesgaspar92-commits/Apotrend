@@ -723,6 +723,16 @@ async function loadPrices() {
   try {
     const d = await api('GET','/api/prices');
     feed.innerHTML = '';
+    if (d.savings && d.savings.count) {
+      const s = d.savings;
+      const head = el(`<div class="card">
+        <div class="row"><b>💶 Sparpotenzial beim Einkauf</b></div>
+        <div style="font-size:22px;font-weight:800;color:#00885a;margin-top:4px">bis zu € ${Number(s.total_abs).toFixed(2)} pro Packung</div>
+        <div class="muted" style="font-size:13px">wenn du bei ${s.count} Präparat${s.count>1?'en':''} jeweils den günstigsten Großhändler wählst.</div>
+        ${s.top.length?`<div style="margin-top:8px">${s.top.map(t=>`<div class="comment" style="font-size:14px">💰 <b>${esc(t.bezeichnung)}</b>: −€ ${Number(t.saving_abs).toFixed(2)} (−${t.saving_pct}%) bei <b>${esc(t.best_supplier)}</b></div>`).join('')}</div>`:''}
+      </div>`);
+      feed.appendChild(head);
+    }
     d.comparisons.forEach(g => feed.appendChild(priceGroup(g)));
   } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
 }
@@ -733,13 +743,14 @@ function priceGroup(g) {
   const card = el(`<div class="card">
     <div class="post-author">${esc(g.bezeichnung)} <span class="handle">${esc(g.wirkstoff||'')}</span></div>
     <div class="muted" style="margin:2px 0 8px">Preisvergleich (AEP) · günstigster oben · 📌 Referenzdaten</div>
+    ${g.saving_abs>0?`<div style="display:inline-block;background:rgba(0,136,90,.12);color:#00885a;font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">💰 −€ ${Number(g.saving_abs).toFixed(2)} pro Packung günstiger bei ${esc(g.best_supplier)}</div>`:''}
     <div data-offers></div>
   </div>`);
   const box = card.querySelector('[data-offers]');
   g.offers.forEach((o, i) => {
-    const row = el(`<div class="comment">
+    const row = el(`<div class="comment"${i===0&&g.saving_abs>0?' style="background:rgba(0,136,90,.06);border-radius:8px"':''}>
       <div class="row">
-        <span>${i===0?'⭐ ':''}<b>${esc(o.supplier)}</b></span>
+        <span>${i===0?'⭐ ':''}<b>${esc(o.supplier)}</b>${i===0?' <span style="color:#00885a;font-size:12px;font-weight:700">günstigster</span>':''}</span>
         <span class="sp" style="flex:1"></span>
         <span><b>€ ${Number(o.aep).toFixed(2)}</b> ${trendStr(o.trend_pct)}</span>
       </div>

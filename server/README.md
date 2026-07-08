@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Preisvergleich mit Sparpotenzial:** der Preis-Reiter zeigt oben, wie viel bei
+>   optimaler Großhändler-Wahl je Packung frei wird („💶 Sparpotenzial: bis zu € X pro
+>   Packung" + Top-3-Präparate); jede Vergleichsgruppe trägt ein Ersparnis-Badge
+>   („💰 −€ X günstiger bei …"), der günstigste Anbieter ist hervorgehoben. Konkreter
+>   Marge-Vorteil auf einen Blick. (`GET /api/prices` liefert `savings`; 154 Tests grün,
+>   im Browser verifiziert.)
 > - ✅ **Community-Engpassmeldung („Frühwarnnetz"):** Apotheker:innen melden selbst
 >   beobachtete Lieferengpässe („➕ Engpass melden" auf dem Engpässe-Reiter) — oft weiß
 >   die Frontline früher Bescheid als offizielle BASG-Daten. Herkunft klar als

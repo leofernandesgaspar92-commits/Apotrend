@@ -245,7 +245,7 @@ const routes = [
   ['DELETE', /^\/api\/watchlist\/([^/]+)$/, true, async ({ userId, params }) => ({ items: shortages.unwatch(userId, decodeURIComponent(params[0])) })],
 
   // ── Preise (Priorität 3) ──
-  ['GET', /^\/api\/prices$/, true, async ({ userId }) => ({ comparisons: prices.comparisons(userId) })],
+  ['GET', /^\/api\/prices$/, true, async ({ userId }) => ({ comparisons: prices.comparisons(userId), savings: prices.savingsSummary() })],
   ['GET', /^\/api\/prices\/([^/]+)$/, true, async ({ userId, params }) => {
     const d = prices.withActivity(userId, params[0]);
     if (!d) { const e = new Error('Preis nicht gefunden'); e.status = 404; throw e; }
