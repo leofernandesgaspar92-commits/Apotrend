@@ -27,11 +27,14 @@ export function createShortagesRepo({ seed = true } = {}) {
       id: s.id || uuid(), wirkstoff: s.wirkstoff, bezeichnung: s.bezeichnung,
       status: s.status || 'kritisch', grund: s.grund ?? null,
       gemeldet_am: s.gemeldet_am ?? null, voraussichtlich_bis: s.voraussichtlich_bis ?? null,
-      provenance: s.provenance || 'reference', quelle: s.quelle || 'Referenzdaten',
+      provenance: s.provenance || 'reference',
+      quelle: s.quelle === undefined ? 'Referenzdaten' : s.quelle,
+      reporter_user_id: s.reporter_user_id ?? null,
+      confirmations: Array.isArray(s.confirmations) ? [...s.confirmations] : [],
       created_at: now(),
     };
     shortages.set(row.id, row);
-    return { ...row };
+    return { ...row, confirmations: [...row.confirmations] };
   }
 
   if (seed) SEED.forEach(s => upsert(s));
@@ -48,10 +51,18 @@ export function createShortagesRepo({ seed = true } = {}) {
       if (gemeldet_am !== undefined) s.gemeldet_am = gemeldet_am;
       return { ...s };
     },
-    get(id) { const s = shortages.get(id); return s ? { ...s } : null; },
+    get(id) { const s = shortages.get(id); return s ? { ...s, confirmations: [...(s.confirmations || [])] } : null; },
     list() {
       const rank = { kritisch: 2, eingeschraenkt: 1, verfuegbar: 0 };
-      return [...shortages.values()].sort((a, b) => rank[b.status] - rank[a.status]).map(s => ({ ...s }));
+      return [...shortages.values()].sort((a, b) => rank[b.status] - rank[a.status]).map(s => ({ ...s, confirmations: [...(s.confirmations || [])] }));
+    },
+    // Bestätigung ("auch bei uns") durch eine Apotheke; kein Doppel, nicht der Melder.
+    confirm(id, userId) {
+      const s = shortages.get(id);
+      if (!s) return null;
+      if (!Array.isArray(s.confirmations)) s.confirmations = [];
+      if (userId && userId !== s.reporter_user_id && !s.confirmations.includes(userId)) s.confirmations.push(userId);
+      return { ...s, confirmations: [...s.confirmations] };
     },
 
     // ── Beobachtungsliste (Wirkstoffe je Nutzer) ──
@@ -80,7 +91,14 @@ export function createShortagesRepo({ seed = true } = {}) {
       for (const [userId, m] of watch) if (m.has(key)) out.push(userId);
       return out;
     },
-    purgeUser(userId) { watch.delete(userId); },
+    purgeUser(userId) {
+      watch.delete(userId);
+      // Melder-Identität anonymisieren, Bestätigungen des Nutzers entfernen (DSGVO).
+      for (const s of shortages.values()) {
+        if (s.reporter_user_id === userId) s.reporter_user_id = null;
+        if (Array.isArray(s.confirmations)) s.confirmations = s.confirmations.filter(u => u !== userId);
+      }
+    },
 
     __dump() { return { shortages: [...shortages], watch: [...watch].map(([u, m]) => [u, [...m]]) }; },
     __load(data) {

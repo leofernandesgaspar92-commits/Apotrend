@@ -6,6 +6,15 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Community-Engpassmeldung („Frühwarnnetz"):** Apotheker:innen melden selbst
+>   beobachtete Lieferengpässe („➕ Engpass melden" auf dem Engpässe-Reiter) — oft weiß
+>   die Frontline früher Bescheid als offizielle BASG-Daten. Herkunft klar als
+>   👥 Community-Meldung gekennzeichnet (nicht offiziell verifiziert), mit Melder-Handle.
+>   Beobachter:innen des Wirkstoffs werden sofort benachrichtigt. Andere Apotheken
+>   bestätigen mit „➕ Auch bei uns" (Zähler „N weitere Apotheken bestätigt", Melder wird
+>   informiert). Doppel-/Fehlklick-Schutz, Melder-Identität DSGVO-anonymisierbar.
+>   (`POST /api/shortages/report`, `POST /api/shortages/:id/confirm`; 146 Tests grün,
+>   end-to-end im Browser verifiziert.)
 > - ✅ **Engpass-Status-Alarm für beobachtete Wirkstoffe:** ändert die Redaktion/
 >   Moderation den Status eines Engpasses (nur mit **Pflicht-Quelle**, http[s]-Link —
 >   sicherheitsrelevant lt. CLAUDE.md), werden alle Apotheker:innen benachrichtigt,

@@ -556,7 +556,7 @@ async function loadNews() {
 }
 
 const STATUS = { kritisch:['🔴 Kritisch','#c0392b'], eingeschraenkt:['🟠 Eingeschränkt','#c77700'], verfuegbar:['🟢 Verfügbar','#00885a'] };
-const PROV = { verified:'✔ BASG (verifiziert)', reference:'📌 Referenzdaten', simulated:'⚠ simuliert' };
+const PROV = { verified:'✔ BASG (verifiziert)', reference:'📌 Referenzdaten', simulated:'⚠ simuliert', editorial:'📰 Redaktion', community:'👥 Community-Meldung' };
 
 async function loadShortages() {
   const feed = document.getElementById('feed');
@@ -564,8 +564,53 @@ async function loadShortages() {
   try {
     const d = await api('GET','/api/shortages');
     feed.innerHTML = '';
+    feed.appendChild(reportShortageCard());
     d.shortages.forEach(s => feed.appendChild(shortageCard(s)));
   } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+}
+
+// "Engpass melden": eine Apotheke meldet einen selbst beobachteten Engpass (Community).
+function reportShortageCard() {
+  const card = el(`<div class="card">
+    <div class="row"><b>➕ Engpass melden</b>
+      <span class="sp" style="flex:1"></span>
+      <button class="ghost small" data-toggle>Formular öffnen</button>
+    </div>
+    <div class="muted" style="font-size:13px;margin-top:2px">Merkst du selbst einen Lieferengpass? Melde ihn — Kolleg:innen, die den Wirkstoff beobachten, werden sofort informiert. (Kennzeichnung: 👥 Community-Meldung, nicht offiziell verifiziert.)</div>
+    <div class="hidden" data-form style="margin-top:10px">
+      <label>Wirkstoff *</label>
+      <input data-w placeholder="z.B. Pantoprazol">
+      <label style="margin-top:6px">Präparat / Bezeichnung</label>
+      <input data-b placeholder="z.B. Pantoprazol 40 mg Tabletten">
+      <label style="margin-top:6px">Status</label>
+      <select data-s>
+        <option value="kritisch">Kritischer Engpass (gar nicht lieferbar)</option>
+        <option value="eingeschraenkt">Eingeschränkt lieferbar</option>
+      </select>
+      <label style="margin-top:6px">Grund (optional)</label>
+      <input data-g placeholder="z.B. Großhandel meldet keine Verfügbarkeit">
+      <div style="margin-top:8px"><button class="small" data-send>Engpass melden</button></div>
+      <div class="err" data-err></div>
+    </div>
+  </div>`);
+  const form = card.querySelector('[data-form]');
+  const toggle = card.querySelector('[data-toggle]');
+  toggle.onclick = () => { const open = form.classList.toggle('hidden'); toggle.textContent = open ? 'Formular öffnen' : 'Schließen'; };
+  card.querySelector('[data-send]').onclick = async () => {
+    const err = card.querySelector('[data-err]'); err.textContent = '';
+    const wirkstoff = card.querySelector('[data-w]').value.trim();
+    if (!wirkstoff) { err.textContent = 'Bitte den Wirkstoff angeben.'; return; }
+    try {
+      await api('POST','/api/shortages/report',{
+        wirkstoff,
+        bezeichnung: card.querySelector('[data-b]').value.trim(),
+        status: card.querySelector('[data-s]').value,
+        grund: card.querySelector('[data-g]').value.trim(),
+      });
+      loadShortages();
+    } catch(e){ err.textContent = e.message; }
+  };
+  return card;
 }
 
 function shortageCard(s) {
@@ -579,11 +624,13 @@ function shortageCard(s) {
     </div>
     <div class="post-body">${esc(s.bezeichnung)}</div>
     <div class="muted">${s.grund?esc(s.grund)+' · ':''}gemeldet ${esc(s.gemeldet_am||'—')}</div>
+    ${s.provenance==='community'&&s.reporter?`<div class="muted" style="font-size:13px;margin-top:2px">👥 Gemeldet von <b>@${esc(s.reporter.handle)}</b>${s.reporter.verified?' <span class="verified">✔</span>':''}${s.confirm_count?` · <b style="color:#c0392b">${s.confirm_count}</b> weitere Apotheke${s.confirm_count>1?'n':''} bestätigt`:''}</div>`:''}
     <div class="reacts">
       <button data-about>💬 ${s.post_count||0} Apotheker haben dazu gepostet</button>
       <button class="ghost" data-postbtn>✍ Dazu posten</button>
       <button class="ghost" data-exchange title="Wer bietet/sucht diesen Wirkstoff?">🔄 Biete/Suche</button>
       <button class="ghost" data-watch title="Diesen Wirkstoff beobachten">${s.watched?'⭐ Beobachtet':'☆ Beobachten'}</button>
+      ${s.provenance==='community'&&!s.is_reporter?`<button class="ghost" data-confirm title="Diesen Engpass auch bei dir bestätigen">${s.i_confirmed?'✅ Bestätigt':'➕ Auch bei uns'}</button>`:''}
     </div>
     <div class="comments hidden" data-postbox>
       <textarea data-pinput placeholder="Dein Beitrag zu diesem Engpass (öffentlich)…"></textarea>
@@ -629,6 +676,14 @@ function shortageCard(s) {
         await api('POST',`/api/shortages/${s.id}/status`,{ status: card.querySelector('[data-sstatus]').value, sourceUrl: card.querySelector('[data-ssrc]').value.trim() });
         loadShortages();
       } catch(e){ serr.textContent = e.message; }
+    };
+  }
+  const confirmBtn = card.querySelector('[data-confirm]');
+  if (confirmBtn && !s.i_confirmed) {
+    confirmBtn.onclick = async () => {
+      confirmBtn.disabled = true;
+      try { await api('POST',`/api/shortages/${s.id}/confirm`); loadShortages(); }
+      catch(e){ alert(e.message); confirmBtn.disabled = false; }
     };
   }
   const watchBtn = card.querySelector('[data-watch]');
@@ -1374,8 +1429,8 @@ async function refreshNotifCount() {
 }
 async function showNotifications() {
   const d = await api('GET','/api/notifications');
-  const verbs = { follow:'folgt dir jetzt', comment:'hat kommentiert', reaction:'hat reagiert auf deinen Beitrag', mention:'hat dich erwähnt', dm:'hat dir geschrieben', exchange_offer:'bietet jetzt an, was du suchst:', exchange_want:'sucht, was du anbietest:', verified:'Dein Profil wurde verifiziert ✔', watch_alert:'Neuer Status bei deinem beobachteten Wirkstoff:' };
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐' };
+  const verbs = { follow:'folgt dir jetzt', comment:'hat kommentiert', reaction:'hat reagiert auf deinen Beitrag', mention:'hat dich erwähnt', dm:'hat dir geschrieben', exchange_offer:'bietet jetzt an, was du suchst:', exchange_want:'sucht, was du anbietest:', verified:'Dein Profil wurde verifiziert ✔', watch_alert:'Neuer Status bei deinem beobachteten Wirkstoff:', shortage_confirm:'bestätigt deinen gemeldeten Engpass:' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅' };
   app.innerHTML = '';
   const head = el(`<div class="card"><div class="row"><h1 style="flex:1">🔔 Benachrichtigungen</h1>
     <button class="ghost small" id="back">Zurück</button></div>
@@ -1403,7 +1458,7 @@ async function showNotifications() {
           document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
           const tb=document.querySelector('.tabs button[data-tab="exchange"]'); if(tb) tb.classList.add('active'); loadTab(); });
       }
-      else if (n.type === 'watch_alert') { mainScreen().then(()=>goTab('shortages')); }
+      else if (n.type === 'watch_alert' || n.type === 'shortage_confirm') { mainScreen().then(()=>goTab('shortages')); }
       else if (n.post_id) { mainScreen().then(()=>openPost(n.post_id)); }
       else if (n.actor) { mainScreen().then(()=>openProfile(n.actor.handle)); }
     };
