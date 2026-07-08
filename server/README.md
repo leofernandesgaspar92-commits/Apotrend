@@ -6,6 +6,9 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Passwort ändern:** altes Passwort prüfen (scrypt), neues (≥8) setzen
+>   (`POST /api/me/password`, `orgAuth.changePassword`). UI in der Konto-Karte am
+>   eigenen Profil. (113 Tests grün, end-to-end per API verifiziert.)
 > - ✅ **DSGVO-Datenexport (Datenübertragbarkeit):** „⬇️ Meine Daten exportieren" auf
 >   dem eigenen Profil lädt alle eigenen Daten als JSON (Profil, Beiträge, Kommentare,
 >   Merkliste, Direktnachrichten, Verifizierung, Austausch-Einträge; `GET /api/me/export`).

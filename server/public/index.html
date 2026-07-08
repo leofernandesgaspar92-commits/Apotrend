@@ -908,9 +908,21 @@ async function openProfile(handle) {
       renderVerifyCard(vcard);
     }
     if (d.is_self) {
-      const dcard = el(`<div class="card"><b>🔒 Datenschutz</b>
+      const dcard = el(`<div class="card"><b>🔒 Datenschutz & Konto</b>
         <div class="muted" style="margin-top:4px">Lade alle deine Daten (Profil, Beiträge, Kommentare, Nachrichten, Merkliste, Austausch) als Datei herunter (DSGVO).</div>
-        <div style="margin-top:8px"><button class="ghost small" id="dl_export">⬇️ Meine Daten exportieren</button></div></div>`);
+        <div style="margin-top:8px"><button class="ghost small" id="dl_export">⬇️ Meine Daten exportieren</button></div>
+        <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
+          <b style="font-size:0.95em">Passwort ändern</b>
+          <input id="pw_old" type="password" placeholder="Aktuelles Passwort" style="margin-top:6px">
+          <input id="pw_new" type="password" placeholder="Neues Passwort (mind. 8 Zeichen)" style="margin-top:6px">
+          <div class="row" style="margin-top:8px"><button class="small" id="pw_go">Passwort ändern</button><span id="pw_msg" style="margin-left:8px"></span></div>
+        </div></div>`);
+      dcard.querySelector('#pw_go').onclick = async () => {
+        const msg = dcard.querySelector('#pw_msg');
+        try { await api('POST','/api/me/password',{ oldPassword:v('pw_old'), newPassword:v('pw_new') });
+          msg.style.color='var(--green)'; msg.textContent='✓ Passwort geändert'; dcard.querySelector('#pw_old').value=''; dcard.querySelector('#pw_new').value='';
+        } catch(e){ msg.style.color='#c0392b'; msg.textContent=e.message; }
+      };
       dcard.querySelector('#dl_export').onclick = async () => {
         try {
           const data = await api('GET','/api/me/export');

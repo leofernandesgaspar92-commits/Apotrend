@@ -76,6 +76,13 @@ export function createMemoryRepo() {
       return u ? { ...u } : null;
     },
 
+    setUserPassword(userId, passwordHash) {
+      const u = users.get(userId);
+      if (!u) return null;
+      u.password_hash = passwordHash;
+      return { ...u };
+    },
+
     createMembership({ userId, organizationId, role }) {
       if (!users.has(userId)) throw new Error('Unbekannter User.');
       if (!organizations.has(organizationId)) throw new Error('Unbekannte Organisation.');

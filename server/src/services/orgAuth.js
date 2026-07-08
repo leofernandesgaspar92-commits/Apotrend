@@ -44,6 +44,16 @@ export function createOrgAuthService(repo) {
       return { ok: true, user: publicUser(user), memberships: repo.getMembershipsForUser(user.id) };
     },
 
+    // Passwort ändern (altes prüfen, neues gehasht setzen).
+    changePassword(userId, { oldPassword, newPassword }) {
+      const user = repo.getUserById(userId);
+      if (!user) throw new Error('Unbekannter Nutzer.');
+      if (!verifyPassword(oldPassword ?? '', user.password_hash)) throw new Error('Aktuelles Passwort ist falsch.');
+      if (!newPassword || String(newPassword).length < 8) throw new Error('Neues Passwort: mindestens 8 Zeichen.');
+      repo.setUserPassword(userId, hashPassword(newPassword));
+      return { ok: true };
+    },
+
     // ── Mandanten-Isolation (zentral, serverseitig) ─────────────────────────
     // Liefert die Rolle des Nutzers in einer Organisation — oder null, wenn er
     // NICHT Mitglied ist. Jede geschuetzte Aktion muss hierueber gehen.
