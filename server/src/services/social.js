@@ -316,12 +316,14 @@ export function createSocialService(social, foundationRepo, options = {}) {
     },
 
     // Entdecken: alle oeffentlichen Beiträge (netzwerkweite Reichweite).
-    publicFeed(viewerUserId) {
+    // sort: 'neu' (Standard, neueste zuerst) oder 'top' (meiste Reaktionen zuerst).
+    publicFeed(viewerUserId, { sort = 'neu' } = {}) {
       requireUser(viewerUserId);
-      return social.listAllPosts()
-        .filter(p => p.visibility === 'public')
-        .sort((a, b) => b.created_at.localeCompare(a.created_at))
-        .map(decorate);
+      const posts = social.listAllPosts().filter(p => p.visibility === 'public').map(decorate);
+      const total = (p) => Object.values(p.reaction_counts || {}).reduce((s, n) => s + n, 0);
+      if (sort === 'top') posts.sort((a, b) => total(b) - total(a) || b.created_at.localeCompare(a.created_at));
+      else posts.sort((a, b) => b.created_at.localeCompare(a.created_at));
+      return posts;
     },
 
     // ── Benachrichtigungen ──

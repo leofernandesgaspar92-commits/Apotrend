@@ -36,6 +36,8 @@
   button:hover { background:var(--green-d); }
   button.ghost { background:transparent; color:var(--green); border:1px solid var(--green); }
   button.small { padding:7px 11px; font-size:0.85em; min-height:36px; }
+  button.sortbtn { background:var(--card); color:var(--text); border:1px solid var(--line); font-weight:600; }
+  button.sortbtn.active { background:var(--green); color:#fff; border-color:var(--green); }
   .row { display:flex; gap:8px; align-items:center; }
   .tabs { display:flex; gap:8px; margin-bottom:12px; }
   .tabs button { flex:1; background:var(--card); color:var(--text); border:1px solid var(--line); }
@@ -187,7 +189,7 @@ const linkifyMentions = (s) => esc(s)
   .replace(/(^|[^\w#])#([a-z0-9äöüß_]{2,30})/gi,
     (m, pre, t) => `${pre}<span class="hashtag clickable" data-hashtag="${t}">#${t}</span>`);
 const app = document.getElementById('app');
-let me = null, tab = 'overview', iAmModerator = false;
+let me = null, tab = 'overview', iAmModerator = false, publicSort = 'neu';
 let myBookmarks = new Set();
 
 // ── Auth-Screens ──
@@ -787,8 +789,21 @@ async function loadFeed() {
   const feed = document.getElementById('feed');
   feed.innerHTML = '<div class="muted">lädt…</div>';
   try {
-    const d = await api('GET', tab==='home' ? '/api/feed/home' : '/api/feed/public');
+    const url = tab==='home' ? '/api/feed/home' : ('/api/feed/public?sort=' + publicSort);
+    const d = await api('GET', url);
     feed.innerHTML = '';
+    if (tab !== 'home') {
+      const bar = el(`<div class="row" style="gap:8px;margin-bottom:10px;align-items:center">
+        <span class="muted" style="font-size:14px">Sortieren:</span>
+        <button class="small sortbtn${publicSort==='neu'?' active':''}" data-sort="neu">🕒 Neueste</button>
+        <button class="small sortbtn${publicSort==='top'?' active':''}" data-sort="top">🔥 Beliebteste</button>
+      </div>`);
+      bar.querySelectorAll('[data-sort]').forEach(b => b.onclick = () => {
+        if (publicSort === b.dataset.sort) return;
+        publicSort = b.dataset.sort; loadFeed();
+      });
+      feed.appendChild(bar);
+    }
     if (!d.posts.length) {
       feed.appendChild(el(`<div class="card muted">${tab==='home'?'Dein Feed ist noch leer. Folge Kolleg:innen, um ihre Beiträge zu sehen:':'Noch keine Beiträge. Sei der/die Erste!'}</div>`));
       if (tab==='home') await renderSuggestions(feed);
