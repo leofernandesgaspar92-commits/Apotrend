@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Beitrag teilen (Direktlink):** „🔗 Teilen" kopiert einen Link (`/?post=ID`);
+>   beim Öffnen springt die App direkt zum Beitrag (Deep-Link, Sichtbarkeit erzwungen).
+>   (114 Tests grün, im Browser verifiziert.)
+> - ✅ **Einzelne Benachrichtigung als gelesen** beim Anklicken (`/api/notifications/:id/read`).
 > - ✅ **Konto löschen (DSGVO — Recht auf Löschung):** mit Passwort-Bestätigung; purge
 >   über alle Repos (Profil, Beiträge, Kommentare, Reaktionen, Follows, DMs, Merkliste,
 >   Verifizierung, Austausch-Einträge, Nutzer + Login). (`POST /api/me/delete`; 114 Tests
