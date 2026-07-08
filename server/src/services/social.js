@@ -403,6 +403,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       const r = social.getReport(reportId);
       if (!r) throw new Error('Meldung nicht gefunden.');
       if (remove && r.target_type === 'post') social.softDeletePost(r.target_id);
+      if (remove && r.target_type === 'comment') social.softDeleteComment(r.target_id);
       return social.updateReport(reportId, { status: remove ? 'entfernt' : 'geprueft' });
     },
     isModerator(userId) { return isModerator(userId); },
@@ -417,6 +418,12 @@ export function createSocialService(social, foundationRepo, options = {}) {
           if (post) {
             const author = social.getProfileByUserId(post.author_user_id);
             out.post = { body: post.body, deleted: !!post.deleted_at, author_handle: author ? author.handle : null };
+          }
+        } else if (r.target_type === 'comment') {
+          const c = social.getComment(r.target_id);
+          if (c) {
+            const author = social.getProfileByUserId(c.author_user_id);
+            out.post = { body: c.body, deleted: !!c.deleted_at, author_handle: author ? author.handle : null, is_comment: true };
           }
         }
         return out;

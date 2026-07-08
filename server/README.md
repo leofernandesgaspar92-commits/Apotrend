@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Kommentare melden:** 🚩 an fremden Kommentaren → Moderations-Queue (mit
+>   Kommentartext + „💬 Kommentar"-Kennzeichnung); „Kommentar entfernen" löscht ihn.
+>   Schließt die Moderations-Lücke (bisher nur Beiträge). (`POST /api/comments/:id/report`;
+>   109 Tests grün, im Browser verifiziert.)
 > - ✅ **Lesezeichen / „Merken":** Beiträge für später merken (🔖 an jedem Beitrag,
 >   Status in der App gespiegelt), Merkliste über „Für dich" öffnen. Sichtbarkeit
 >   erzwungen, gelöschte Beiträge fallen raus, in Snapshot-Persistenz. (`/api/posts/:id/bookmark`,

@@ -1060,10 +1060,18 @@ function commentRow(postId, c, card, depth = 0) {
     <div class="reacts" style="margin-top:4px">
       ${REACTS.map(([k,lab])=>`<button class="small" data-creact="${k}">${lab.split(' ')[0]} ${(c.reaction_counts&&c.reaction_counts[k])||0}</button>`).join('')}
       <button class="ghost small" data-creply>↩ Antworten</button>
+      ${mine?'':'<button class="ghost small" data-creport title="Kommentar melden">🚩</button>'}
     </div>
   </div>`);
   row.querySelectorAll('[data-openprofile]').forEach(el => { if (el.dataset.openprofile) el.onclick = () => openProfile(el.dataset.openprofile); });
   row.querySelectorAll('[data-hashtag]').forEach(el => el.onclick = () => openHashtag(el.dataset.hashtag));
+  const crep = row.querySelector('[data-creport]');
+  if (crep) crep.onclick = async () => {
+    const reason = prompt('Warum meldest du diesen Kommentar? (optional)') ?? '';
+    if (reason === null) return;
+    try { await api('POST',`/api/comments/${c.id}/report`,{ reason }); alert('Danke — der Kommentar wurde gemeldet.'); }
+    catch(e){ alert(e.message); }
+  };
   row.querySelectorAll('[data-creact]').forEach(btn => btn.onclick = async () => {
     try { await api('POST',`/api/comments/${c.id}/react`,{ type:btn.dataset.creact }); loadComments(postId, card); } catch(e){ alert(e.message); }
   });
@@ -1199,12 +1207,12 @@ async function showModeration() {
   d.reports.forEach(r => {
     const post = r.post;
     const card = el(`<div class="card">
-      <div class="muted">Gemeldet von @${esc(r.reporter_handle||'?')}${r.reason?' · Grund: '+esc(r.reason):' · kein Grund angegeben'}</div>
+      <div class="muted">${post&&post.is_comment?'💬 Kommentar ':''}Gemeldet von @${esc(r.reporter_handle||'?')}${r.reason?' · Grund: '+esc(r.reason):' · kein Grund angegeben'}</div>
       ${post ? `<div class="post-body">${esc(post.body)}</div>
         <div class="vis">Autor: @${esc(post.author_handle||'?')}${post.deleted?' · <b style="color:#c0392b">bereits entfernt</b>':''}</div>`
-             : '<div class="muted">Zielbeitrag nicht mehr vorhanden.</div>'}
+             : '<div class="muted">Ziel nicht mehr vorhanden.</div>'}
       <div class="row" style="margin-top:10px">
-        <button class="small" data-remove style="background:#c0392b">🗑 Beitrag entfernen</button>
+        <button class="small" data-remove style="background:#c0392b">🗑 ${post&&post.is_comment?'Kommentar':'Beitrag'} entfernen</button>
         <button class="ghost small" data-ok>✓ In Ordnung (Meldung schließen)</button>
       </div>
     </div>`);
