@@ -154,6 +154,7 @@ const routes = [
     if (!orgAuth.verifyUserPassword(userId, body.password)) { const e = new Error('Passwort ist falsch.'); e.status = 401; throw e; }
     socialRepo.purgeUser(userId);
     exchangeRepo.purgeUser(userId);
+    shortagesRepo.purgeUser(userId);
     repo.deleteUser(userId);
     return { ok: true };
   }],
@@ -234,6 +235,11 @@ const routes = [
   }],
   ['POST', /^\/api\/shortages\/([^/]+)\/post$/, true, async ({ userId, params, body }) => shortages.postAbout(userId, params[0], { body: body.body, visibility: body.visibility })],
 
+  // ── Beobachtungsliste (Wirkstoffe im Blick behalten) ──
+  ['GET', /^\/api\/watchlist$/, true, async ({ userId }) => ({ items: shortages.myWatchlist(userId) })],
+  ['POST', /^\/api\/watchlist$/, true, async ({ userId, body }) => ({ items: shortages.watch(userId, body.wirkstoff) })],
+  ['DELETE', /^\/api\/watchlist\/([^/]+)$/, true, async ({ userId, params }) => ({ items: shortages.unwatch(userId, decodeURIComponent(params[0])) })],
+
   // ── Preise (Priorität 3) ──
   ['GET', /^\/api\/prices$/, true, async ({ userId }) => ({ comparisons: prices.comparisons(userId) })],
   ['GET', /^\/api\/prices\/([^/]+)$/, true, async ({ userId, params }) => {
@@ -282,7 +288,7 @@ const server = http.createServer(async (req, res) => {
       const body = (req.method === 'POST') ? await readBody(req) : {};
       const params = (pathname.match(rx) || []).slice(1);
       const result = await handler({ userId, body, params, query: url.searchParams });
-      if (req.method === 'POST') saveSoon(); // Zustand nach jeder erfolgreichen Schreiboperation sichern
+      if (req.method !== 'GET') saveSoon(); // Zustand nach jeder erfolgreichen Schreiboperation sichern (POST/DELETE)
       return json(res, 200, result ?? { ok: true });
     } catch (e) {
       const code = e instanceof ForbiddenError ? 403 : (e.status || 400);

@@ -9,8 +9,10 @@ export function createOverviewService({ shortages, exchange, social, rabatte }) 
       const kritisch = sh.filter(s => s.status === 'kritisch');
       const ex = exchange.list(userId, {}); // offene Einträge
       const topR = rabatte.top10(userId)[0] || null;
+      const watchlist = shortages.myWatchlist(userId);
       return {
         shortages: { kritisch: kritisch.length, total: sh.length, top: kritisch.slice(0, 3) },
+        watchlist: { total: watchlist.length, items: watchlist, alerts: watchlist.filter(w => w.status === 'kritisch' || w.status === 'eingeschraenkt').length },
         exchange: {
           biete: ex.filter(e => e.kind === 'biete').length,
           suche: ex.filter(e => e.kind === 'suche').length,

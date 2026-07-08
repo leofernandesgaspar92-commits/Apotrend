@@ -16,8 +16,11 @@ const SEED = [
 
 export function createShortagesRepo({ seed = true } = {}) {
   const shortages = new Map();
+  // Beobachtungsliste je Nutzer: userId -> Map<wirkstoffLower, Anzeigename>
+  const watch = new Map();
   const uuid = () => crypto.randomUUID();
   const now = () => new Date().toISOString();
+  const norm = (w) => String(w || '').trim().toLowerCase();
 
   function upsert(s) {
     const row = {
@@ -40,7 +43,38 @@ export function createShortagesRepo({ seed = true } = {}) {
       const rank = { kritisch: 2, eingeschraenkt: 1, verfuegbar: 0 };
       return [...shortages.values()].sort((a, b) => rank[b.status] - rank[a.status]).map(s => ({ ...s }));
     },
-    __dump() { return [...shortages]; },
-    __load(rows) { if (!rows) return; shortages.clear(); for (const [k, v] of rows) shortages.set(k, v); },
+
+    // ── Beobachtungsliste (Wirkstoffe je Nutzer) ──
+    addWatch(userId, wirkstoff) {
+      const key = norm(wirkstoff);
+      if (!key) return;
+      if (!watch.has(userId)) watch.set(userId, new Map());
+      watch.get(userId).set(key, String(wirkstoff).trim());
+    },
+    removeWatch(userId, wirkstoff) {
+      const m = watch.get(userId);
+      if (m) { m.delete(norm(wirkstoff)); if (m.size === 0) watch.delete(userId); }
+    },
+    isWatched(userId, wirkstoff) {
+      const m = watch.get(userId);
+      return !!(m && m.has(norm(wirkstoff)));
+    },
+    listWatch(userId) {
+      const m = watch.get(userId);
+      return m ? [...m.values()] : [];
+    },
+    purgeUser(userId) { watch.delete(userId); },
+
+    __dump() { return { shortages: [...shortages], watch: [...watch].map(([u, m]) => [u, [...m]]) }; },
+    __load(data) {
+      if (!data) return;
+      // Rückwärtskompatibel: alter Snapshot war ein reines Engpass-Array.
+      const rows = Array.isArray(data) ? data : data.shortages;
+      if (rows) { shortages.clear(); for (const [k, v] of rows) shortages.set(k, v); }
+      watch.clear();
+      if (!Array.isArray(data) && data.watch) {
+        for (const [u, entries] of data.watch) watch.set(u, new Map(entries));
+      }
+    },
   };
 }

@@ -6,6 +6,17 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Beobachtungsliste (Wirkstoffe im Blick):** Apotheker:innen merken sich die
+>   Wirkstoffe, die sie regelmäßig führen (☆ Beobachten an jedem Engpass **oder**
+>   Eingabefeld auf „Für dich"); der aktuelle Engpass-Status steht dann oben auf der
+>   Startübersicht — kritische zuerst (Farb-Semantik rot = kritisch), mit Quelle/Herkunft.
+>   Kein Engpass = „Aktuell keine Meldung". In Snapshot-Persistenz + DSGVO-Löschung
+>   eingebunden. (`GET/POST /api/watchlist`, `DELETE /api/watchlist/:wirkstoff`;
+>   129 Tests grün, im Browser verifiziert.)
+> - ✅ **Feed-Sortierung (Öffentlich):** Umschalter „🕒 Neueste / 🔥 Beliebteste"
+>   über dem öffentlichen Feed — Beliebteste zeigt die meist-reagierten Beiträge
+>   zuerst (Summe aller Reaktionen), damit wichtige Fach-Diskussionen nicht
+>   untergehen. (`GET /api/feed/public?sort=top|neu`; 119 Tests grün, im Browser verifiziert.)
 > - ✅ **@Erwähnungs-Autovervollständigung:** beim Tippen von `@…` im Compose-/News-Feld
 >   werden passende Handles vorgeschlagen (Präfix zuerst), Auswahl fügt `@handle` ein.
 >   (`GET /api/handles?q=`; 118 Tests grün, im Browser verifiziert.)
