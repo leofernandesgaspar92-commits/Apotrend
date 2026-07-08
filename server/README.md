@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Lesezeichen / „Merken":** Beiträge für später merken (🔖 an jedem Beitrag,
+>   Status in der App gespiegelt), Merkliste über „Für dich" öffnen. Sichtbarkeit
+>   erzwungen, gelöschte Beiträge fallen raus, in Snapshot-Persistenz. (`/api/posts/:id/bookmark`,
+>   `/api/bookmarks`; 108 Tests grün, im Browser verifiziert.)
 > - ✅ **Austausch-Historie („Meine Einträge") + Wieder öffnen:** eigene Biete/Suche-
 >   Einträge inkl. erledigter einsehen (`GET /api/exchange/mine`), erledigte
 >   wieder öffnen (`/:id/reopen`, nur Ersteller, löst erneut Matching aus). Reiter-Filter

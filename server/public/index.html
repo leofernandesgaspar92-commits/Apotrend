@@ -154,6 +154,7 @@ const linkifyMentions = (s) => esc(s)
     (m, pre, t) => `${pre}<span class="hashtag clickable" data-hashtag="${t}">#${t}</span>`);
 const app = document.getElementById('app');
 let me = null, tab = 'overview', iAmModerator = false;
+let myBookmarks = new Set();
 
 // ── Auth-Screens ──
 function authScreen() {
@@ -223,6 +224,7 @@ async function mainScreen() {
   document.getElementById('btnDm').onclick = showDmInbox;
   refreshNotifCount();
   refreshDmCount();
+  try { myBookmarks = new Set((await api('GET','/api/bookmarks/ids')).ids); } catch { myBookmarks = new Set(); }
 
   app.innerHTML = '';
   app.appendChild(el(`
@@ -350,7 +352,7 @@ async function loadOverview() {
   const hello = me ? (me.display_name || '@'+me.handle) : '';
   const firstName = hello ? (hello.split(/\s+/).find(w => !/\.$/.test(w)) || hello) : '';
   // Kennzahlen-Kacheln
-  const tile = (icon, num, label, col, go) => `<div class="ovtile" data-go="${go||''}" style="flex:1;min-width:120px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;${go?'cursor:pointer':''}">
+  const tile = (icon, num, label, col, go) => `<div class="ovtile" data-go="${go||''}" style="flex:1;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;${go?'cursor:pointer':''}">
     <div style="font-size:26px;font-weight:800;color:${col}">${icon} ${num}</div>
     <div class="muted" style="font-size:13px;margin-top:2px">${esc(label)}</div></div>`;
   const head = el(`<div class="card">
@@ -362,9 +364,11 @@ async function loadOverview() {
       ${tile('🔎', d.exchange.suche, 'Gesuche im Austausch', '#b26a00', 'exchange')}
       ${tile('🔔', d.notifications.unread, 'neue Benachrichtigungen', '#2952cc', '')}
     </div>
+    <div class="row" style="margin-top:12px"><button class="ghost small" id="ov_bm">🔖 Meine Merkliste öffnen</button></div>
   </div>`);
   head.querySelectorAll('.ovtile[data-go]').forEach(t => { if (t.dataset.go) t.onclick = () => goTab(t.dataset.go); });
   head.querySelectorAll('.ovtile').forEach(t => { if (!t.dataset.go) t.onclick = () => document.getElementById('btnNotif').click(); });
+  head.querySelector('#ov_bm').onclick = openBookmarks;
   feed.appendChild(head);
 
   // Kritische Engpässe (Top 3)
@@ -751,6 +755,22 @@ async function loadFeed() {
   } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
 }
 
+async function openBookmarks() {
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  feed.innerHTML = '<div class="muted">lädt…</div>';
+  try {
+    const d = await api('GET','/api/bookmarks');
+    myBookmarks = new Set(d.posts.map(p=>p.id));
+    feed.innerHTML = '';
+    const head = el(`<div class="card"><div class="row"><b>🔖 Meine Merkliste</b><span class="sp" style="flex:1"></span><span class="muted">${d.posts.length}</span><button class="ghost small" data-back style="margin-left:10px">← zurück</button></div></div>`);
+    head.querySelector('[data-back]').onclick = () => goTab('overview');
+    feed.appendChild(head);
+    if (!d.posts.length) feed.appendChild(el('<div class="card muted">Noch nichts gemerkt. Tippe bei einem Beitrag auf „🔖 Merken".</div>'));
+    d.posts.forEach(p => feed.appendChild(postCard(p)));
+  } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+}
+
 async function openHashtag(tag) {
   if (!tag) return;
   const feed = document.getElementById('feed');
@@ -933,6 +953,7 @@ function postCard(p) {
     <div class="reacts">
       ${REACTS.map(([k,lab])=>`<button data-react="${k}">${lab} ${rc[k]||0}</button>`).join('')}
       <button data-comments>💬 ${p.comment_count||0} Kommentare</button>
+      <button class="ghost small" data-bookmark title="Für später merken">${myBookmarks.has(p.id)?'🔖 gemerkt':'🔖 Merken'}</button>
       <span class="sp" style="flex:1"></span>
       ${mine ? '<button class="ghost small" data-edit title="Beitrag bearbeiten">✏️ Bearbeiten</button><button class="ghost small" data-del title="Beitrag löschen">🗑 Löschen</button>'
              : '<button class="ghost small" data-report title="Beitrag melden">🚩 Melden</button>'}
@@ -949,6 +970,14 @@ function postCard(p) {
   if (fb) fb.onclick = async () => { try { await api('POST','/api/follow',{ handle:fb.dataset.follow }); loadFeed(); } catch(e){ alert(e.message);} };
   card.querySelectorAll('[data-openprofile]').forEach(el => { if (el.dataset.openprofile) el.onclick = () => openProfile(el.dataset.openprofile); });
   card.querySelectorAll('[data-hashtag]').forEach(el => el.onclick = () => openHashtag(el.dataset.hashtag));
+  const bm = card.querySelector('[data-bookmark]');
+  if (bm) bm.onclick = async () => {
+    try {
+      const r = await api('POST',`/api/posts/${p.id}/bookmark`);
+      if (r.bookmarked) myBookmarks.add(p.id); else myBookmarks.delete(p.id);
+      bm.textContent = r.bookmarked ? '🔖 gemerkt' : '🔖 Merken';
+    } catch(e){ alert(e.message); }
+  };
   const delb = card.querySelector('[data-del]');
   if (delb) delb.onclick = async () => {
     if (!confirm('Diesen Beitrag wirklich löschen?')) return;

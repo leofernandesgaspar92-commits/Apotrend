@@ -16,6 +16,7 @@ export function createSocialRepo() {
   const dmMessages = new Map();
   const reports = new Map();
   const verifications = new Map(); // userId -> Verifizierungsantrag
+  const bookmarks = new Map();      // `${userId}|${postId}` -> row
 
   const uuid = () => crypto.randomUUID();
   const now = () => new Date().toISOString();
@@ -67,6 +68,15 @@ export function createSocialRepo() {
         .sort((a, b) => a.created_at.localeCompare(b.created_at)).map(v => ({ ...v }));
     },
     updateVerification(userId, patch) { const v = verifications.get(userId); if (!v) return null; Object.assign(v, patch); return { ...v }; },
+
+    // ── Lesezeichen / Merken ──
+    addBookmark(userId, postId) { bookmarks.set(fkey(userId, postId), { user_id: userId, post_id: postId, created_at: now() }); },
+    removeBookmark(userId, postId) { bookmarks.delete(fkey(userId, postId)); },
+    isBookmarked(userId, postId) { return bookmarks.has(fkey(userId, postId)); },
+    listBookmarkPostIds(userId) {
+      return [...bookmarks.values()].filter(b => b.user_id === userId)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at)).map(b => b.post_id);
+    },
 
     // ── Posts ──
     createPost(p) {
@@ -203,7 +213,7 @@ export function createSocialRepo() {
         profiles: [...profiles], profilesByHandle: [...profilesByHandle], posts: [...posts],
         comments: [...comments], reactions: [...reactions], follows: [...follows],
         notifications: [...notifications], dmThreads: [...dmThreads], dmMessages: [...dmMessages], reports: [...reports],
-        verifications: [...verifications],
+        verifications: [...verifications], bookmarks: [...bookmarks],
       };
     },
     __load(d) {
@@ -212,7 +222,7 @@ export function createSocialRepo() {
       fill(profiles, d.profiles); fill(profilesByHandle, d.profilesByHandle); fill(posts, d.posts);
       fill(comments, d.comments); fill(reactions, d.reactions); fill(follows, d.follows);
       fill(notifications, d.notifications); fill(dmThreads, d.dmThreads); fill(dmMessages, d.dmMessages); fill(reports, d.reports);
-      fill(verifications, d.verifications);
+      fill(verifications, d.verifications); fill(bookmarks, d.bookmarks);
     },
   };
 }

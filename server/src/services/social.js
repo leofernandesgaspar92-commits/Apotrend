@@ -423,6 +423,23 @@ export function createSocialService(social, foundationRepo, options = {}) {
       });
     },
 
+    // ── Lesezeichen / Merken ──
+    toggleBookmark(userId, postId) {
+      requireUser(userId);
+      const p = social.getPost(postId);
+      if (!p || !visibleTo(p, userId)) throw new ForbiddenError('Beitrag nicht sichtbar.');
+      if (social.isBookmarked(userId, postId)) { social.removeBookmark(userId, postId); return { bookmarked: false }; }
+      social.addBookmark(userId, postId); return { bookmarked: true };
+    },
+    bookmarkIds(userId) { requireUser(userId); return social.listBookmarkPostIds(userId).filter(id => { const p = social.getPost(id); return p && visibleTo(p, userId); }); },
+    listBookmarks(userId) {
+      requireUser(userId);
+      return social.listBookmarkPostIds(userId)
+        .map(id => social.getPost(id))
+        .filter(p => p && visibleTo(p, userId))
+        .map(decorate);
+    },
+
     // ── Verifizierung (Apotheken-Nachweis) ──
     // Nutzer beantragt Verifizierung (z.B. mit Konzessionsnummer/Apotheke im Hinweis).
     requestVerification(actorUserId, { note } = {}) {
