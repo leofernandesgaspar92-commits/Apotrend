@@ -51,7 +51,7 @@ const rabatte = createRabatteService(rabatteRepo, social);
 const exchangeRepo = createExchangeRepo();
 const exchange = createExchangeService(exchangeRepo, social, repo);
 const search = createSearchService({ social, shortagesRepo, pricesRepo, rabatteRepo });
-const overview = createOverviewService({ shortages, exchange, social, rabatte });
+const overview = createOverviewService({ shortages, exchange, social, rabatte, prices });
 
 if (restoring) {
   repo.__load(snapshot.foundation);

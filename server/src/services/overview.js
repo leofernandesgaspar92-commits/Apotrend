@@ -2,7 +2,7 @@
 // Apothekerin/einen Apotheker gerade zählt — kritische Engpässe, offene Angebote/
 // Gesuche, ungelesene Benachrichtigungen/Nachrichten, Top-Rabatt. Reine Komposition
 // bereits getesteter Dienste.
-export function createOverviewService({ shortages, exchange, social, rabatte }) {
+export function createOverviewService({ shortages, exchange, social, rabatte, prices }) {
   return {
     forUser(userId) {
       const sh = shortages.listWithCounts(userId);
@@ -20,6 +20,7 @@ export function createOverviewService({ shortages, exchange, social, rabatte }) 
         },
         notifications: { unread: social.unreadCount(userId), dm_unread: social.dmUnreadTotal(userId) },
         top_rabatt: topR,
+        savings: prices ? prices.savingsSummary() : null,
       };
     },
   };

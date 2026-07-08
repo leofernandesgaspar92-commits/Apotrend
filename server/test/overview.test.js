@@ -11,6 +11,7 @@ import { createSocialService } from '../src/services/social.js';
 import { createShortagesService } from '../src/services/shortages.js';
 import { createRabatteService } from '../src/services/rabatte.js';
 import { createExchangeService } from '../src/services/exchange.js';
+import { createPricesService } from '../src/services/prices.js';
 import { createOverviewService } from '../src/services/overview.js';
 
 function setup() {
@@ -20,7 +21,8 @@ function setup() {
   const shortages = createShortagesService(createShortagesRepo(), social);
   const rabatte = createRabatteService(createRabatteRepo({ today: '2026-07-07' }), social);
   const exchange = createExchangeService(createExchangeRepo(), social, repo);
-  const overview = createOverviewService({ shortages, exchange, social, rabatte });
+  const prices = createPricesService(createPricesRepo(), social);
+  const overview = createOverviewService({ shortages, exchange, social, rabatte, prices });
   const A = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'A' }, owner: { name: 'Anna', email: 'a@a.at', password: 'geheim123' } });
   social.createProfile(A.user.id, { handle: 'anna', displayName: 'Anna' });
   return { overview, exchange, a: A.user.id };
@@ -38,4 +40,5 @@ test('Übersicht bündelt Engpässe, Austausch, Benachrichtigungen, Top-Rabatt',
   assert.equal(o.exchange.recent.length, 2);
   assert.ok('unread' in o.notifications);
   assert.ok(o.top_rabatt && o.top_rabatt.rabatt_pct > 0);
+  assert.ok(o.savings && o.savings.total_abs > 0, 'Sparpotenzial aus Preisdaten');
 });

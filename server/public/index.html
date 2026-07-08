@@ -428,6 +428,15 @@ async function loadOverview() {
     d.exchange.recent.forEach(e => c.appendChild(exchangeCard(e)));
     feed.appendChild(c);
   }
+  // Sparpotenzial beim Einkauf
+  if (d.savings && d.savings.count) {
+    const s = d.savings;
+    const c = el(`<div class="card"><div class="row"><b>💶 Sparpotenzial beim Einkauf</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>Preisvergleich</button></div>
+      <div style="font-size:20px;font-weight:800;color:#00885a;margin-top:4px">bis zu € ${Number(s.total_abs).toFixed(2)} pro Packung</div>
+      <div class="muted" style="font-size:13px">bei optimaler Großhändler-Wahl (${s.count} Präparat${s.count>1?'e':''}).</div></div>`);
+    c.querySelector('[data-all]').onclick = () => goTab('prices');
+    feed.appendChild(c);
+  }
   // Top-Rabatt
   if (d.top_rabatt) {
     const r = d.top_rabatt;
