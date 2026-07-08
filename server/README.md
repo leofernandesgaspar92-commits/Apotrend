@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Austausch-Historie („Meine Einträge") + Wieder öffnen:** eigene Biete/Suche-
+>   Einträge inkl. erledigter einsehen (`GET /api/exchange/mine`), erledigte
+>   wieder öffnen (`/:id/reopen`, nur Ersteller, löst erneut Matching aus). Reiter-Filter
+>   „🗂️ Meine". (105 Tests grün, im Browser verifiziert.)
 > - ✅ **Dunkelmodus:** augenschonender Hell/Dunkel-Umschalter (🌙/☀️) im Header, in
 >   localStorage gemerkt, per CSS-Variablen (Karten/Eingaben/Kontrast angepasst,
 >   theme-color aktualisiert). (Im Browser verifiziert.)

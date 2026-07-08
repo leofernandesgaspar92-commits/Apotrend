@@ -83,6 +83,20 @@ test('Aktives Matching: neues Angebot benachrichtigt die passende Suche', () => 
   assert.equal(social.notifications(A.user.id).filter(x => x.type === 'exchange_offer').length, 1);
 });
 
+test('Meine Einträge + Wieder öffnen', () => {
+  const { exchange, a } = setup();
+  const e = exchange.create(a, { kind: 'biete', bezeichnung: 'Ibuprofen 400' });
+  exchange.markResolved(a, e.id);
+  // in der offenen Liste weg, in "meine" (alle Status) da
+  assert.equal(exchange.list(a).length, 0);
+  assert.equal(exchange.mine(a).length, 1);
+  assert.equal(exchange.mine(a, { status: 'erledigt' }).length, 1);
+  // wieder öffnen -> erscheint wieder in offener Liste
+  exchange.reopen(a, e.id);
+  assert.equal(exchange.list(a).length, 1);
+  assert.equal(exchange.mine(a, { status: 'offen' }).length, 1);
+});
+
 test('Bundesland-Filter: nur Einträge aus dem gewählten Bundesland', () => {
   const { exchange, a, b } = setup();
   exchange.create(a, { kind: 'biete', bezeichnung: 'Amoxicillin', bundesland: 'Wien' });

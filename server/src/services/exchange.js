@@ -70,6 +70,22 @@ export function createExchangeService(exchangeRepo, social, foundationRepo) {
           && (!bundesland || e.bundesland === bundesland))
         .map(decorate);
     },
+    // Eigene Einträge (alle Status), neueste zuerst — für „Meine Einträge"/Historie.
+    mine(actorUserId, { status = null } = {}) {
+      requireUser(actorUserId);
+      return exchangeRepo.list()
+        .filter(e => e.author_user_id === actorUserId && (!status || e.status === status))
+        .map(decorate);
+    },
+    // Erledigten Eintrag wieder öffnen (nur Ersteller) — löst erneut Matching aus.
+    reopen(actorUserId, id) {
+      const e = exchangeRepo.get(id);
+      if (!e) throw new Error('Eintrag nicht gefunden.');
+      if (e.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Ersteller darf das.');
+      const updated = exchangeRepo.update(id, { status: 'offen', resolved_at: null });
+      notifyMatches(updated);
+      return decorate(updated);
+    },
     markResolved(actorUserId, id) {
       const e = exchangeRepo.get(id);
       if (!e) throw new Error('Eintrag nicht gefunden.');
