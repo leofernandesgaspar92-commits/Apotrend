@@ -12,29 +12,32 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-title" content="ApoTrend" />
 <style>
-  :root { --green:#00a15a; --green-d:#007a44; --bg:#f4f6f5; --card:#fff; --line:#e2e6e4; --text:#1a2420; --muted:#66756e; }
+  :root { --green:#00a15a; --green-d:#007a44; --bg:#f4f6f5; --card:#fff; --line:#e2e6e4; --text:#1a2420; --muted:#556860; }
   * { box-sizing:border-box; }
   body { margin:0; font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); font-size:16px; }
-  header { background:var(--green); color:#fff; padding:12px 16px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:5; }
-  header .logo { font-weight:800; letter-spacing:.5px; font-size:20px; }
+  /* Tastatur-Fokus deutlich sichtbar (Barrierefreiheit) */
+  :focus-visible { outline:3px solid #1a73e8; outline-offset:2px; }
+  header { background:var(--green); color:#fff; padding:12px 16px; display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:5; }
+  @media (max-width:560px){ #whoami { display:none; } header { gap:8px; padding:10px 12px; } }
+  header .logo { font-weight:800; letter-spacing:.5px; font-size:1.25em; }
   header .sp { flex:1; }
-  header button { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.4); }
+  header button { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.5); min-height:42px; min-width:42px; }
   .wrap { max-width:640px; margin:0 auto; padding:16px; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; }
-  h1 { font-size:22px; margin:0 0 12px; }
-  label { display:block; font-size:14px; color:var(--muted); margin:10px 0 4px; }
-  input, textarea, select { width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:8px; font-size:16px; font-family:inherit; }
+  h1 { font-size:1.4em; margin:0 0 12px; }
+  label { display:block; font-size:0.9em; color:var(--muted); margin:10px 0 4px; }
+  input, textarea, select { width:100%; padding:12px; border:1px solid var(--line); border-radius:8px; font-size:1em; font-family:inherit; min-height:46px; }
   textarea { resize:vertical; min-height:70px; }
-  button { background:var(--green); color:#fff; border:none; border-radius:8px; padding:11px 16px; font-size:15px; font-weight:600; cursor:pointer; }
+  button { background:var(--green); color:#fff; border:none; border-radius:8px; padding:12px 16px; font-size:0.95em; font-weight:600; cursor:pointer; min-height:44px; }
   button:hover { background:var(--green-d); }
   button.ghost { background:transparent; color:var(--green); border:1px solid var(--green); }
-  button.small { padding:6px 10px; font-size:13px; }
+  button.small { padding:7px 11px; font-size:0.85em; min-height:36px; }
   .row { display:flex; gap:8px; align-items:center; }
   .tabs { display:flex; gap:8px; margin-bottom:12px; }
   .tabs button { flex:1; background:var(--card); color:var(--text); border:1px solid var(--line); }
   .tabs button.active { background:var(--green); color:#fff; border-color:var(--green); }
   .post-author { font-weight:700; }
-  .handle { color:var(--muted); font-weight:400; font-size:14px; }
+  .handle { color:var(--muted); font-weight:400; font-size:0.9em; }
   .verified { color:var(--green); font-size:13px; }
   .editorial { background:#eef3ff; color:#2952cc; font-size:12px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid #cdd9ff; }
   .rank { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:30px; padding:0 6px; border-radius:999px; background:var(--green); color:#fff; font-weight:800; font-size:15px; margin-right:8px; }
@@ -48,14 +51,14 @@
   .post-body { margin:8px 0; white-space:pre-wrap; line-height:1.45; }
   .vis { font-size:12px; color:var(--muted); }
   .reacts { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
-  .reacts button { background:#eef3f0; color:var(--text); border:1px solid var(--line); padding:5px 10px; font-size:13px; font-weight:500; }
+  .reacts button { background:#eef3f0; color:var(--text); border:1px solid var(--line); padding:7px 11px; font-size:0.85em; font-weight:500; min-height:36px; }
   .reacts button:hover { border-color:var(--green); }
   .muted { color:var(--muted); font-size:14px; }
   .err { color:#c0392b; font-size:14px; margin-top:8px; }
   .bell { position:relative; }
   .badge { position:absolute; top:-6px; right:-6px; background:#e02a2a; color:#fff; border-radius:10px; font-size:11px; padding:1px 6px; }
   .comments { border-top:1px solid var(--line); margin-top:10px; padding-top:10px; }
-  .comment { font-size:14px; padding:6px 0; border-bottom:1px solid var(--line); }
+  .comment { font-size:0.9em; padding:6px 0; border-bottom:1px solid var(--line); }
   .comment:last-child { border-bottom:none; }
   .hidden { display:none; }
 </style>
@@ -65,15 +68,25 @@
   <span class="logo">🟢 ApoTrend</span>
   <span class="muted" id="whoami" style="color:#dff5ea;"></span>
   <span class="sp"></span>
-  <button class="bell hidden" id="btnHelp" title="Hilfe / So funktioniert ApoTrend">❓</button>
-  <button class="bell hidden" id="btnMod" title="Moderation">🛡️</button>
-  <button class="bell hidden" id="btnDm" title="Nachrichten">✉️<span class="badge hidden" id="dmBadge">0</span></button>
-  <button class="bell hidden" id="btnNotif" title="Benachrichtigungen">🔔<span class="badge hidden" id="notifBadge">0</span></button>
+  <button id="btnFont" title="Schriftgröße ändern" aria-label="Schriftgröße ändern" style="font-weight:800">A⁺</button>
+  <button class="bell hidden" id="btnHelp" title="Hilfe / So funktioniert ApoTrend" aria-label="Hilfe">❓</button>
+  <button class="bell hidden" id="btnMod" title="Moderation" aria-label="Moderation">🛡️</button>
+  <button class="bell hidden" id="btnDm" title="Nachrichten" aria-label="Nachrichten">✉️<span class="badge hidden" id="dmBadge">0</span></button>
+  <button class="bell hidden" id="btnNotif" title="Benachrichtigungen" aria-label="Benachrichtigungen">🔔<span class="badge hidden" id="notifBadge">0</span></button>
   <button class="hidden" id="btnLogout">Abmelden</button>
 </header>
 <div class="wrap" id="app"></div>
 
 <script>
+// ── Schriftgröße (Barrierefreiheit): Normal / Groß / Sehr groß, gespeichert ──
+const FONT_STEPS = [16, 19, 22];
+const FONT_LABELS = ['A', 'A⁺', 'A⁺⁺'];
+function applyFontScale() {
+  const lvl = Math.max(0, Math.min(2, parseInt(localStorage.getItem('apo_fontscale') || '0', 10) || 0));
+  document.body.style.fontSize = FONT_STEPS[lvl] + 'px';
+  const btn = document.getElementById('btnFont');
+  if (btn) { btn.textContent = FONT_LABELS[lvl]; btn.title = 'Schriftgröße: ' + ['Normal','Groß','Sehr groß'][lvl] + ' — tippen zum Wechseln'; }
+}
 const api = async (method, path, body) => {
   const t = localStorage.getItem('apo_token');
   const r = await fetch(path, {
@@ -1197,6 +1210,12 @@ if ('serviceWorker' in navigator) {
 }
 
 // Start
+applyFontScale();
+document.getElementById('btnFont').onclick = () => {
+  const lvl = (parseInt(localStorage.getItem('apo_fontscale') || '0', 10) + 1) % 3;
+  localStorage.setItem('apo_fontscale', String(lvl));
+  applyFontScale();
+};
 if (localStorage.getItem('apo_token')) mainScreen().catch(authScreen);
 else authScreen();
 </script>

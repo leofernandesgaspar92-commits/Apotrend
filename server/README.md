@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Barrierefreiheit / Feinschliff (Owner-UX-Vorgabe):** Schriftgrößen-Umschalter
+>   A / A⁺ / A⁺⁺ (16/19/22px, in localStorage gespeichert; zentrale Textgrößen auf `em`
+>   umgestellt, damit sie mitskalieren), sichtbarer Tastatur-Fokus, größere Klickflächen
+>   (Buttons ≥44px, Eingaben ≥46px, Touch-Ziele), höherer Kontrast (dunkleres Grau),
+>   aria-labels auf Icon-Buttons, Kopfzeile auf schmalen Screens entlastet. (Im Browser verifiziert.)
 > - ✅ **Startübersicht „Für dich":** neuer Standard-Reiter mit dem Wichtigsten auf
 >   einen Blick — Kennzahlen (kritische Engpässe, Angebote/Gesuche, neue
 >   Benachrichtigungen), Top-3 kritische Engpässe, zuletzt im Austausch, Top-Rabatt;
