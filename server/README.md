@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Profil-Verifizierung (Apotheken-Nachweis):** Nutzer beantragen Verifizierung
+>   (Hinweis mit Konzession/Apotheke), Redaktion/Moderation genehmigt oder lehnt ab;
+>   Genehmigung setzt `verified` → „✔ verifiziert"-Badge an Profil und Beiträgen, plus
+>   Benachrichtigung. Nur-Moderator-Queue, in Snapshot-Persistenz eingebunden.
+>   (`/api/verify/*`; 104 Tests grün, im Browser verifiziert.)
 > - ✅ **Barrierefreiheit / Feinschliff (Owner-UX-Vorgabe):** Schriftgrößen-Umschalter
 >   A / A⁺ / A⁺⁺ (16/19/22px, in localStorage gespeichert; zentrale Textgrößen auf `em`
 >   umgestellt, damit sie mitskalieren), sichtbarer Tastatur-Fokus, größere Klickflächen

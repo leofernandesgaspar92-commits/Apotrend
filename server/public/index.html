@@ -855,9 +855,32 @@ async function openProfile(handle) {
       catch(e){ alert(e.message); }
     };
     feed.appendChild(head);
+    if (d.is_self && !p.verified) {
+      const vcard = el('<div class="card"></div>');
+      feed.appendChild(vcard);
+      renderVerifyCard(vcard);
+    }
     if (!d.posts.length) feed.appendChild(el('<div class="card muted">Noch keine sichtbaren Beiträge.</div>'));
     d.posts.forEach(post => feed.appendChild(postCard(post)));
   } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+}
+
+async function renderVerifyCard(card) {
+  let s; try { s = await api('GET','/api/verify/me'); } catch { return; }
+  if (s.status === 'verifiziert') { card.remove(); return; }
+  if (s.status === 'offen') {
+    card.innerHTML = '<b>✔ Verifizierung</b><div class="muted" style="margin-top:4px">Dein Antrag wird von der Redaktion geprüft. Du wirst benachrichtigt.</div>';
+    return;
+  }
+  const abgelehnt = s.status === 'abgelehnt';
+  card.innerHTML = `<b>✔ Verifiziert werden</b>
+    <div class="muted" style="margin-top:4px">${abgelehnt?'Dein letzter Antrag wurde abgelehnt. ':''}Weise deine Apotheke nach (z.B. Konzessionsnummer, Apothekenname, Ort) — die Redaktion prüft es. Verifizierte Profile genießen mehr Vertrauen.</div>
+    <input id="vf_note" placeholder="z.B. Konzession 12345, Apotheke Zum Hirschen, 1010 Wien" style="margin-top:8px">
+    <div class="row" style="margin-top:8px"><button id="vf_go">Verifizierung beantragen</button><span class="err" id="vf_err" style="margin-left:8px"></span></div>`;
+  card.querySelector('#vf_go').onclick = async () => {
+    try { await api('POST','/api/verify/request',{ note: v('vf_note') }); renderVerifyCard(card); }
+    catch(e){ card.querySelector('#vf_err').textContent = e.message; }
+  };
 }
 
 function postCard(p) {
@@ -1034,8 +1057,8 @@ async function refreshNotifCount() {
 }
 async function showNotifications() {
   const d = await api('GET','/api/notifications');
-  const verbs = { follow:'folgt dir jetzt', comment:'hat kommentiert', reaction:'hat reagiert auf deinen Beitrag', mention:'hat dich erwähnt', dm:'hat dir geschrieben', exchange_offer:'bietet jetzt an, was du suchst:', exchange_want:'sucht, was du anbietest:' };
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', exchange_offer:'🔄', exchange_want:'🔄' };
+  const verbs = { follow:'folgt dir jetzt', comment:'hat kommentiert', reaction:'hat reagiert auf deinen Beitrag', mention:'hat dich erwähnt', dm:'hat dir geschrieben', exchange_offer:'bietet jetzt an, was du suchst:', exchange_want:'sucht, was du anbietest:', verified:'Dein Profil wurde verifiziert ✔' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔' };
   app.innerHTML = '';
   const head = el(`<div class="card"><div class="row"><h1 style="flex:1">🔔 Benachrichtigungen</h1>
     <button class="ghost small" id="back">Zurück</button></div>
@@ -1046,10 +1069,11 @@ async function showNotifications() {
   if (!d.notifications.length) list.innerHTML = '<div class="muted">Noch keine Benachrichtigungen.</div>';
   d.notifications.forEach(n => {
     const who = n.actor ? n.actor.display_name : 'Jemand';
+    const noWho = n.type === 'verified';
     const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:#eef6f1'}">
       <div class="row" style="align-items:baseline">
         <span>${icons[n.type]||'🔔'}</span>
-        <span style="margin-left:6px">${n.read?'':'<b>'}<b>${esc(who)}</b> ${esc(verbs[n.type]||n.type)}${n.label?' „'+esc(n.label)+'"':''}${n.read?'':'</b>'}</span>
+        <span style="margin-left:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verbs[n.type]||n.type)}${n.label?' „'+esc(n.label)+'"':''}${n.read?'':'</b>'}</span>
         <span class="sp" style="flex:1"></span>
         <span class="muted" style="font-size:12px">${relTime(n.created_at)}</span>
       </div></div>`);
@@ -1091,16 +1115,31 @@ async function openPost(postId) {
 
 async function showModeration() {
   app.innerHTML = '<div class="card muted">lädt…</div>';
-  let d;
-  try { d = await api('GET','/api/reports'); }
+  let d, vq;
+  try { d = await api('GET','/api/reports'); vq = await api('GET','/api/verify/requests'); }
   catch(e){ app.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
   app.innerHTML = '';
   const head = el(`<div class="card"><div class="row"><h1 style="flex:1">🛡️ Moderation</h1>
     <button class="ghost small" id="back">Zurück</button></div>
-    <div class="muted">Offene Meldungen: ${d.reports.length}</div></div>`);
+    <div class="muted">Offene Meldungen: ${d.reports.length} · Verifizierungs-Anträge: ${vq.requests.length}</div></div>`);
   head.querySelector('#back').onclick = mainScreen;
   app.appendChild(head);
-  if (!d.reports.length) { app.appendChild(el('<div class="card muted">Keine offenen Meldungen. 👍</div>')); return; }
+  // Verifizierungs-Anträge
+  if (vq.requests.length) {
+    app.appendChild(el('<div class="muted" style="margin:6px 2px;font-weight:700">✔ Verifizierungs-Anträge</div>'));
+    vq.requests.forEach(rq => {
+      const card = el(`<div class="card">
+        <div><b>${esc(rq.display_name||'?')}</b> <span class="handle">@${esc(rq.handle||'?')}</span></div>
+        <div class="post-body" style="margin:6px 0">${rq.note?esc(rq.note):'<span class="muted">Kein Nachweis-Hinweis angegeben.</span>'}</div>
+        <div class="row"><button class="small" data-approve>✔ Verifizieren</button><button class="ghost small" data-reject>Ablehnen</button></div>
+      </div>`);
+      card.querySelector('[data-approve]').onclick = async () => { try { await api('POST',`/api/verify/${encodeURIComponent(rq.user_id)}/resolve`,{ approve:true }); showModeration(); } catch(e){ alert(e.message); } };
+      card.querySelector('[data-reject]').onclick = async () => { try { await api('POST',`/api/verify/${encodeURIComponent(rq.user_id)}/resolve`,{ approve:false }); showModeration(); } catch(e){ alert(e.message); } };
+      app.appendChild(card);
+    });
+  }
+  if (d.reports.length) app.appendChild(el('<div class="muted" style="margin:10px 2px 6px;font-weight:700">🚩 Gemeldete Beiträge</div>'));
+  else if (!vq.requests.length) { app.appendChild(el('<div class="card muted">Keine offenen Meldungen oder Anträge. 👍</div>')); return; }
   d.reports.forEach(r => {
     const post = r.post;
     const card = el(`<div class="card">

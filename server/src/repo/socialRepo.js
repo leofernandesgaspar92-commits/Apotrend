@@ -15,6 +15,7 @@ export function createSocialRepo() {
   const dmThreads = new Map();
   const dmMessages = new Map();
   const reports = new Map();
+  const verifications = new Map(); // userId -> Verifizierungsantrag
 
   const uuid = () => crypto.randomUUID();
   const now = () => new Date().toISOString();
@@ -52,6 +53,20 @@ export function createSocialRepo() {
       }
       return { ...p };
     },
+    setProfileVerified(userId, value) { const p = profiles.get(userId); if (p) p.verified = !!value; return p ? { ...p } : null; },
+
+    // ── Verifizierungs-Anträge (ein offener je Nutzer) ──
+    upsertVerification({ userId, note }) {
+      const row = { user_id: userId, note: note ?? null, status: 'offen', created_at: now(), resolved_at: null };
+      verifications.set(userId, row);
+      return { ...row };
+    },
+    getVerification(userId) { const v = verifications.get(userId); return v ? { ...v } : null; },
+    listVerifications(status = null) {
+      return [...verifications.values()].filter(v => !status || v.status === status)
+        .sort((a, b) => a.created_at.localeCompare(b.created_at)).map(v => ({ ...v }));
+    },
+    updateVerification(userId, patch) { const v = verifications.get(userId); if (!v) return null; Object.assign(v, patch); return { ...v }; },
 
     // ── Posts ──
     createPost(p) {
@@ -188,6 +203,7 @@ export function createSocialRepo() {
         profiles: [...profiles], profilesByHandle: [...profilesByHandle], posts: [...posts],
         comments: [...comments], reactions: [...reactions], follows: [...follows],
         notifications: [...notifications], dmThreads: [...dmThreads], dmMessages: [...dmMessages], reports: [...reports],
+        verifications: [...verifications],
       };
     },
     __load(d) {
@@ -196,6 +212,7 @@ export function createSocialRepo() {
       fill(profiles, d.profiles); fill(profilesByHandle, d.profilesByHandle); fill(posts, d.posts);
       fill(comments, d.comments); fill(reactions, d.reactions); fill(follows, d.follows);
       fill(notifications, d.notifications); fill(dmThreads, d.dmThreads); fill(dmMessages, d.dmMessages); fill(reports, d.reports);
+      fill(verifications, d.verifications);
     },
   };
 }

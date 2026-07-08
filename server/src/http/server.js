@@ -151,6 +151,12 @@ const routes = [
   ['GET', /^\/api\/reports$/, true, async ({ userId }) => ({ reports: social.moderationQueue(userId) })],
   ['POST', /^\/api\/reports\/([^/]+)\/resolve$/, true, async ({ userId, params, body }) => social.resolveReport(userId, params[0], { remove: !!body.remove })],
 
+  // ── Verifizierung (Apotheken-Nachweis) ──
+  ['GET', /^\/api\/verify\/me$/, true, async ({ userId }) => social.myVerification(userId)],
+  ['POST', /^\/api\/verify\/request$/, true, async ({ userId, body }) => social.requestVerification(userId, { note: body.note })],
+  ['GET', /^\/api\/verify\/requests$/, true, async ({ userId }) => ({ requests: social.verificationQueue(userId) })],
+  ['POST', /^\/api\/verify\/([^/]+)\/resolve$/, true, async ({ userId, params, body }) => social.resolveVerification(userId, params[0], !!body.approve)],
+
   ['GET', /^\/api\/feed\/home$/, true, async ({ userId }) => ({ posts: enrichPosts(social.homeFeed(userId)) })],
   ['GET', /^\/api\/feed\/public$/, true, async ({ userId }) => ({ posts: enrichPosts(social.publicFeed(userId)) })],
 

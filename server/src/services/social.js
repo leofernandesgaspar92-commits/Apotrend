@@ -423,6 +423,42 @@ export function createSocialService(social, foundationRepo, options = {}) {
       });
     },
 
+    // ── Verifizierung (Apotheken-Nachweis) ──
+    // Nutzer beantragt Verifizierung (z.B. mit Konzessionsnummer/Apotheke im Hinweis).
+    requestVerification(actorUserId, { note } = {}) {
+      requireUser(actorUserId);
+      const prof = social.getProfileByUserId(actorUserId);
+      if (!prof) throw new Error('Profil nicht gefunden.');
+      if (prof.verified) throw new Error('Profil ist bereits verifiziert.');
+      return social.upsertVerification({ userId: actorUserId, note: String(note ?? '').trim().slice(0, 300) || null });
+    },
+    // Eigenen Verifizierungsstatus lesen (für die UI).
+    myVerification(userId) {
+      requireUser(userId);
+      const prof = social.getProfileByUserId(userId);
+      if (prof && prof.verified) return { status: 'verifiziert' };
+      const v = social.getVerification(userId);
+      return v ? { status: v.status, note: v.note, created_at: v.created_at } : { status: 'keine' };
+    },
+    // Nur Moderation: offene Verifizierungs-Anträge mit Profilinfo.
+    verificationQueue(moderatorUserId) {
+      if (!isModerator(moderatorUserId)) throw new ForbiddenError('Nur Moderation.');
+      return social.listVerifications('offen').map(v => {
+        const prof = social.getProfileByUserId(v.user_id);
+        return { ...v, handle: prof ? prof.handle : null, display_name: prof ? prof.display_name : null };
+      });
+    },
+    // Nur Moderation: Antrag genehmigen (setzt verified) oder ablehnen.
+    resolveVerification(moderatorUserId, userId, approve) {
+      if (!isModerator(moderatorUserId)) throw new ForbiddenError('Nur Moderation.');
+      if (!social.getVerification(userId)) throw new Error('Kein Antrag vorhanden.');
+      if (approve) social.setProfileVerified(userId, true);
+      const status = approve ? 'verifiziert' : 'abgelehnt';
+      social.updateVerification(userId, { status, resolved_at: new Date().toISOString() });
+      if (approve) this.pushNotification({ userId, type: 'verified', actorUserId: moderatorUserId });
+      return { user_id: userId, status };
+    },
+
     // ── DSGVO: endgueltiges Loeschen (Autor oder Moderation) ──
     // Soft-Delete verbirgt nur; hier wird der Inhalt tatsaechlich entfernt.
     hardDeletePost(actorUserId, postId) {
