@@ -193,7 +193,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     },
 
     // ── Kommentare (Thread) ──
-    comment(actorUserId, postId, { body, parentCommentId = null }) {
+    comment(actorUserId, postId, { body, parentCommentId = null, image = null }) {
       requireUser(actorUserId);
       const p = social.getPost(postId);
       if (!p || !visibleTo(p, actorUserId)) throw new ForbiddenError('Beitrag nicht sichtbar.');
@@ -202,8 +202,9 @@ export function createSocialService(social, foundationRepo, options = {}) {
         if (!parent || parent.post_id !== postId) throw new Error('Ungueltiger Eltern-Kommentar.');
       }
       const text = String(body ?? '').trim();
-      if (!text) throw new Error('Kommentar darf nicht leer sein.');
-      const comment = social.createComment({ postId, parentCommentId, authorUserId: actorUserId, body: text });
+      const img = cleanImage(image);
+      if (!text && !img) throw new Error('Kommentar darf nicht leer sein (Text oder Bild).');
+      const comment = social.createComment({ postId, parentCommentId, authorUserId: actorUserId, body: text, image: img });
       notify(p.author_user_id, 'comment', actorUserId, 'post', postId); // Beitrags-Autor
       if (parentCommentId) {
         const parent = social.getComment(parentCommentId);

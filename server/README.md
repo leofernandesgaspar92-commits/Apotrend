@@ -6,6 +6,9 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Bilder in Kommentaren:** Foto an einen Kommentar anhängen (📷 am Kommentarfeld,
+>   Client-Verkleinerung + gemeinsame Media-Validierung), Bild-only-Kommentar erlaubt.
+>   (117 Tests grün, im Browser verifiziert.)
 > - ✅ **Folge-Vorschläge:** leerer „Mein Feed" zeigt „👥 Vorschläge zum Folgen"
 >   (Profile, denen man noch nicht folgt, aktivste zuerst) mit „+ Folgen" — hilft
 >   neuen Nutzer:innen, das Netzwerk aufzubauen. (`GET /api/suggestions/follow`;

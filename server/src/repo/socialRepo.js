@@ -102,7 +102,7 @@ export function createSocialRepo() {
     createComment(c) {
       const cm = {
         id: uuid(), post_id: c.postId, parent_comment_id: c.parentCommentId ?? null,
-        author_user_id: c.authorUserId, body: c.body, created_at: now(), edited_at: null, deleted_at: null,
+        author_user_id: c.authorUserId, body: c.body, image: c.image ?? null, created_at: now(), edited_at: null, deleted_at: null,
       };
       comments.set(cm.id, cm);
       return { ...cm };

@@ -1032,7 +1032,8 @@ function postCard(p) {
     </div>
     <div class="comments hidden" data-cbox>
       <div data-clist></div>
-      <div class="row" style="margin-top:8px"><input data-cinput placeholder="Antworten…"><button class="small" data-csend>Senden</button></div>
+      <div class="row" style="margin-top:8px"><input data-cinput placeholder="Antworten…"><label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:7px 10px;border:1px solid var(--line);border-radius:8px" title="Foto anhängen">📷<input type="file" data-cimg accept="image/*" style="display:none"></label><button class="small" data-csend>Senden</button></div>
+      <img data-cimgprev style="display:none;max-width:140px;border-radius:8px;margin-top:6px" />
     </div>
   </div>`);
   card.querySelectorAll('[data-react]').forEach(btn => btn.onclick = async () => {
@@ -1096,10 +1097,20 @@ function postCard(p) {
     cbox.classList.toggle('hidden');
     if (!cbox.classList.contains('hidden')) loadComments(p.id, card);
   };
+  let commentImg = null;
+  const cimg = card.querySelector('[data-cimg]'), cimgprev = card.querySelector('[data-cimgprev]');
+  cimg.onchange = async () => {
+    const f = cimg.files[0]; if (!f) return;
+    try { commentImg = await fileToDataUrl(f); cimgprev.src = commentImg; cimgprev.style.display='block'; } catch(e){ alert(e.message); commentImg=null; }
+  };
   card.querySelector('[data-csend]').onclick = async () => {
     const inp = card.querySelector('[data-cinput]');
-    if (!inp.value.trim()) return;
-    try { await api('POST',`/api/posts/${p.id}/comments`,{ body:inp.value }); inp.value=''; loadComments(p.id, card); } catch(e){ alert(e.message); }
+    if (!inp.value.trim() && !commentImg) return;
+    try {
+      await api('POST',`/api/posts/${p.id}/comments`,{ body:inp.value, image:commentImg });
+      inp.value=''; commentImg=null; cimg.value=''; cimgprev.style.display='none'; cimgprev.src='';
+      loadComments(p.id, card);
+    } catch(e){ alert(e.message); }
   };
   return card;
 }
@@ -1135,6 +1146,7 @@ function commentRow(postId, c, card, depth = 0) {
       ${mine?'<button class="ghost small" data-ced>✏️</button><button class="ghost small" data-cdel>🗑</button>':''}
     </div>
     <div data-cbody style="margin-top:2px">${linkifyMentions(c.body)}</div>
+    ${c.image && /^data:image\//.test(c.image) ? `<img src="${c.image}" alt="Bild zum Kommentar" style="max-width:100%;border-radius:8px;margin-top:6px;display:block" />` : ''}
     <div class="reacts" style="margin-top:4px">
       ${REACTS.map(([k,lab])=>`<button class="small" data-creact="${k}">${lab.split(' ')[0]} ${(c.reaction_counts&&c.reaction_counts[k])||0}</button>`).join('')}
       <button class="ghost small" data-creply>↩ Antworten</button>
