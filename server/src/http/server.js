@@ -234,6 +234,7 @@ const routes = [
     return d;
   }],
   ['POST', /^\/api\/shortages\/([^/]+)\/post$/, true, async ({ userId, params, body }) => shortages.postAbout(userId, params[0], { body: body.body, visibility: body.visibility })],
+  ['POST', /^\/api\/shortages\/([^/]+)\/status$/, true, async ({ userId, params, body }) => shortages.updateStatus(userId, params[0], { status: body.status, sourceUrl: body.sourceUrl })],
 
   // ── Beobachtungsliste (Wirkstoffe im Blick behalten) ──
   ['GET', /^\/api\/watchlist$/, true, async ({ userId }) => ({ items: shortages.myWatchlist(userId) })],

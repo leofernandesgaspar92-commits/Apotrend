@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Engpass-Status-Alarm für beobachtete Wirkstoffe:** ändert die Redaktion/
+>   Moderation den Status eines Engpasses (nur mit **Pflicht-Quelle**, http[s]-Link —
+>   sicherheitsrelevant lt. CLAUDE.md), werden alle Apotheker:innen benachrichtigt,
+>   die diesen Wirkstoff beobachten („⭐ Neuer Status bei deinem beobachteten
+>   Wirkstoff: Amoxicillin · Wieder verfügbar"). Klick springt zu den Engpässen.
+>   Redaktions-Editor direkt an jeder Engpass-Karte. (`POST /api/shortages/:id/status`;
+>   136 Tests grün, end-to-end im Browser verifiziert.)
 > - ✅ **Beobachtungsliste (Wirkstoffe im Blick):** Apotheker:innen merken sich die
 >   Wirkstoffe, die sie regelmäßig führen (☆ Beobachten an jedem Engpass **oder**
 >   Eingabefeld auf „Für dich"); der aktuelle Engpass-Status steht dann oben auf der

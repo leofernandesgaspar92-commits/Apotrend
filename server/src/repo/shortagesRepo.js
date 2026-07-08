@@ -38,6 +38,16 @@ export function createShortagesRepo({ seed = true } = {}) {
 
   return {
     upsert,
+    // Status (+ Quelle/Herkunft) eines bestehenden Engpasses ändern, andere Felder erhalten.
+    setStatus(id, { status, quelle, provenance, gemeldet_am }) {
+      const s = shortages.get(id);
+      if (!s) return null;
+      if (status !== undefined) s.status = status;
+      if (quelle !== undefined) s.quelle = quelle;
+      if (provenance !== undefined) s.provenance = provenance;
+      if (gemeldet_am !== undefined) s.gemeldet_am = gemeldet_am;
+      return { ...s };
+    },
     get(id) { const s = shortages.get(id); return s ? { ...s } : null; },
     list() {
       const rank = { kritisch: 2, eingeschraenkt: 1, verfuegbar: 0 };
@@ -62,6 +72,13 @@ export function createShortagesRepo({ seed = true } = {}) {
     listWatch(userId) {
       const m = watch.get(userId);
       return m ? [...m.values()] : [];
+    },
+    // Alle Nutzer, die diesen Wirkstoff beobachten (für Statusänderungs-Alerts).
+    usersWatching(wirkstoff) {
+      const key = norm(wirkstoff);
+      const out = [];
+      for (const [userId, m] of watch) if (m.has(key)) out.push(userId);
+      return out;
     },
     purgeUser(userId) { watch.delete(userId); },
 

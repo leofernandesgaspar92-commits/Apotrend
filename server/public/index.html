@@ -589,6 +589,19 @@ function shortageCard(s) {
       <textarea data-pinput placeholder="Dein Beitrag zu diesem Engpass (öffentlich)…"></textarea>
       <div style="margin-top:6px"><button class="small" data-psend>Posten</button></div>
     </div>
+    ${iAmModerator?`<div class="reacts"><button class="ghost" data-statusbtn>📝 Status ändern (Redaktion)</button></div>
+    <div class="comments hidden" data-statusbox>
+      <label style="font-size:13px">Neuer Status</label>
+      <select data-sstatus>
+        <option value="kritisch">Kritischer Engpass</option>
+        <option value="eingeschraenkt">Eingeschränkt lieferbar</option>
+        <option value="verfuegbar">Wieder verfügbar</option>
+      </select>
+      <label style="font-size:13px;margin-top:6px">Quelle (Pflicht, http[s]-Link – z.B. BASG)</label>
+      <input data-ssrc placeholder="https://www.basg.gv.at/…">
+      <div style="margin-top:6px"><button class="small" data-ssave>Status speichern & Beobachter benachrichtigen</button></div>
+      <div class="err" data-serr></div>
+    </div>`:''}
     <div class="comments hidden" data-aboutbox></div>
   </div>`);
   const postbox = card.querySelector('[data-postbox]');
@@ -606,6 +619,18 @@ function shortageCard(s) {
     try { await api('POST',`/api/shortages/${s.id}/post`,{ body:t.value }); t.value=''; postbox.classList.add('hidden'); loadShortages(); }
     catch(e){ alert(e.message); }
   };
+  if (iAmModerator) {
+    const statusbox = card.querySelector('[data-statusbox]');
+    card.querySelector('[data-statusbtn]').onclick = () => statusbox.classList.toggle('hidden');
+    card.querySelector('[data-sstatus]').value = s.status;
+    card.querySelector('[data-ssave]').onclick = async () => {
+      const serr = card.querySelector('[data-serr]'); serr.textContent = '';
+      try {
+        await api('POST',`/api/shortages/${s.id}/status`,{ status: card.querySelector('[data-sstatus]').value, sourceUrl: card.querySelector('[data-ssrc]').value.trim() });
+        loadShortages();
+      } catch(e){ serr.textContent = e.message; }
+    };
+  }
   const watchBtn = card.querySelector('[data-watch]');
   let isWatched = !!s.watched;
   watchBtn.onclick = async () => {
@@ -1349,8 +1374,8 @@ async function refreshNotifCount() {
 }
 async function showNotifications() {
   const d = await api('GET','/api/notifications');
-  const verbs = { follow:'folgt dir jetzt', comment:'hat kommentiert', reaction:'hat reagiert auf deinen Beitrag', mention:'hat dich erwähnt', dm:'hat dir geschrieben', exchange_offer:'bietet jetzt an, was du suchst:', exchange_want:'sucht, was du anbietest:', verified:'Dein Profil wurde verifiziert ✔' };
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔' };
+  const verbs = { follow:'folgt dir jetzt', comment:'hat kommentiert', reaction:'hat reagiert auf deinen Beitrag', mention:'hat dich erwähnt', dm:'hat dir geschrieben', exchange_offer:'bietet jetzt an, was du suchst:', exchange_want:'sucht, was du anbietest:', verified:'Dein Profil wurde verifiziert ✔', watch_alert:'Neuer Status bei deinem beobachteten Wirkstoff:' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐' };
   app.innerHTML = '';
   const head = el(`<div class="card"><div class="row"><h1 style="flex:1">🔔 Benachrichtigungen</h1>
     <button class="ghost small" id="back">Zurück</button></div>
@@ -1361,7 +1386,7 @@ async function showNotifications() {
   if (!d.notifications.length) list.innerHTML = '<div class="muted">Noch keine Benachrichtigungen.</div>';
   d.notifications.forEach(n => {
     const who = n.actor ? n.actor.display_name : 'Jemand';
-    const noWho = n.type === 'verified';
+    const noWho = n.type === 'verified' || n.type === 'watch_alert';
     const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:#eef6f1'}">
       <div class="row" style="align-items:baseline">
         <span>${icons[n.type]||'🔔'}</span>
@@ -1378,6 +1403,7 @@ async function showNotifications() {
           document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
           const tb=document.querySelector('.tabs button[data-tab="exchange"]'); if(tb) tb.classList.add('active'); loadTab(); });
       }
+      else if (n.type === 'watch_alert') { mainScreen().then(()=>goTab('shortages')); }
       else if (n.post_id) { mainScreen().then(()=>openPost(n.post_id)); }
       else if (n.actor) { mainScreen().then(()=>openProfile(n.actor.handle)); }
     };

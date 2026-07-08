@@ -1,6 +1,11 @@
 // Engpass-Modul (Priorität 2) + Verknüpfung mit dem Feed (Priorität 1).
 // Liest Engpässe (mit Herkunfts-Flag) und verbindet sie mit den Beiträgen, die
 // sie referenzieren ("X Apotheker haben dazu gepostet").
+import { cleanSourceUrl } from '../domain/media.js';
+
+const STATUS_LABEL = { kritisch: 'Kritischer Engpass', eingeschraenkt: 'Eingeschränkt lieferbar', verfuegbar: 'Wieder verfügbar' };
+const VALID_STATUS = Object.keys(STATUS_LABEL);
+
 export function createShortagesService(shortagesRepo, social) {
   return {
     list() { return shortagesRepo.list(); },
@@ -28,6 +33,31 @@ export function createShortagesService(shortagesRepo, social) {
         post_count: social.postsAbout(viewerUserId, 'shortage', s.id).length,
         watched: shortagesRepo.isWatched(viewerUserId, s.wirkstoff),
       }));
+    },
+
+    // ── Engpass-Status ändern (nur Redaktion/Moderation) + Watcher benachrichtigen ──
+    // Sicherheitsrelevante Aussage => Quelle (http[s]-Link) ist Pflicht (CLAUDE.md).
+    updateStatus(actorUserId, id, { status, sourceUrl }) {
+      if (!social.isModerator(actorUserId)) {
+        const e = new Error('Nur Redaktion/Moderation darf den Status ändern.');
+        e.status = 403; throw e;
+      }
+      if (!VALID_STATUS.includes(status)) throw new Error('Unbekannter Status.');
+      const quelle = cleanSourceUrl(sourceUrl); // wirft ohne gültigen Link
+      if (!quelle) throw new Error('Quelle (Link) ist erforderlich.');
+      const before = shortagesRepo.get(id);
+      if (!before) { const e = new Error('Engpass nicht gefunden.'); e.status = 404; throw e; }
+      const today = new Date().toISOString().slice(0, 10);
+      const updated = shortagesRepo.setStatus(id, { status, quelle, provenance: 'editorial', gemeldet_am: today });
+
+      // Nur bei tatsächlicher Änderung die Beobachter:innen informieren.
+      if (before.status !== status) {
+        const label = `${updated.wirkstoff} · ${STATUS_LABEL[status]}`;
+        for (const uid of shortagesRepo.usersWatching(updated.wirkstoff)) {
+          social.pushNotification({ userId: uid, type: 'watch_alert', actorUserId, refType: 'shortage', refId: id, label });
+        }
+      }
+      return updated;
     },
 
     // ── Beobachtungsliste: Wirkstoffe, die ein:e Apotheker:in im Blick behalten will ──
