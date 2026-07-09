@@ -413,8 +413,8 @@ async function loadOverview() {
   head.querySelector('#ov_bm').onclick = openBookmarks;
   feed.appendChild(head);
 
-  // Meine beobachteten Wirkstoffe
-  renderWatchlistCard(feed, (d.watchlist && d.watchlist.items) || []);
+  // Meine beobachteten Wirkstoffe (mit Schnell-Vorschlägen aus kritischen Engpässen)
+  renderWatchlistCard(feed, (d.watchlist && d.watchlist.items) || [], d.shortages.top || []);
 
   // Aktionen zu beobachteten Wirkstoffen (Beobachtungsliste ↔ Rabatte)
   if (d.watch_deals && d.watch_deals.length) {
@@ -476,7 +476,7 @@ function watchStatusMeta(status) {
   return { label: 'Aktuell keine Meldung', color: 'var(--muted)', bg: 'var(--bg)', icon: '⚪' };
 }
 
-async function renderWatchlistCard(feed, items) {
+async function renderWatchlistCard(feed, items, suggestions = []) {
   const alerts = items.filter(i => i.status === 'kritisch' || i.status === 'eingeschraenkt').length;
   const card = el(`<div class="card">
     <div class="row"><b>⭐ Meine beobachteten Wirkstoffe</b>
@@ -485,6 +485,7 @@ async function renderWatchlistCard(feed, items) {
     </div>
     <div class="muted" style="font-size:13px;margin:2px 0 8px">Wirkstoffe im Blick behalten — der aktuelle Engpass-Status steht immer hier ganz oben.</div>
     <div data-wl></div>
+    <div data-wl-sug></div>
     <div class="row" style="margin-top:8px;gap:6px">
       <input data-wl-in placeholder="z.B. Amoxicillin" style="flex:1" aria-label="Wirkstoff beobachten">
       <button class="small" data-wl-add>+ Beobachten</button>
@@ -492,10 +493,30 @@ async function renderWatchlistCard(feed, items) {
     <div class="err" data-wl-err></div>
   </div>`);
   const box = card.querySelector('[data-wl]');
+  const sugBox = card.querySelector('[data-wl-sug]');
   const err = card.querySelector('[data-wl-err]');
+  // Schnell-Vorschläge aus aktuell kritischen Engpässen (nur noch nicht beobachtete).
+  function drawSuggestions(list) {
+    const have = new Set(list.map(i => i.wirkstoff.trim().toLowerCase()));
+    const open = suggestions.filter(s => s.wirkstoff && !have.has(s.wirkstoff.trim().toLowerCase()));
+    sugBox.innerHTML = '';
+    if (!open.length) return;
+    const wrap = el(`<div style="margin-top:8px"><div class="muted" style="font-size:12px">Schnell beobachten (aktuell kritisch):</div><div class="row" data-chips style="flex-wrap:wrap;gap:6px;margin-top:4px"></div></div>`);
+    const chips = wrap.querySelector('[data-chips]');
+    open.slice(0, 6).forEach(s => {
+      const chip = el(`<button class="small sortbtn">🔴 ${esc(s.wirkstoff)} +</button>`);
+      chip.onclick = async () => {
+        chip.disabled = true;
+        try { const r = await api('POST','/api/watchlist',{ wirkstoff: s.wirkstoff }); draw(r.items); }
+        catch(e){ err.textContent = e.message; chip.disabled = false; }
+      };
+      chips.appendChild(chip);
+    });
+    sugBox.appendChild(wrap);
+  }
   function draw(list) {
     box.innerHTML = '';
-    if (!list.length) { box.appendChild(el(`<div class="muted" style="font-size:14px">Noch keine Wirkstoffe. Füge unten die hinzu, die du regelmäßig führst.</div>`)); return; }
+    if (!list.length) { box.appendChild(el(`<div class="muted" style="font-size:14px">Noch keine Wirkstoffe. Füge unten die hinzu, die du regelmäßig führst.</div>`)); drawSuggestions(list); return; }
     list.forEach(it => {
       const m = watchStatusMeta(it.status);
       const row = el(`<div class="comment" style="display:flex;align-items:center;gap:8px">
@@ -515,6 +536,7 @@ async function renderWatchlistCard(feed, items) {
       };
       box.appendChild(row);
     });
+    drawSuggestions(list);
   }
   draw(items);
   const input = card.querySelector('[data-wl-in]');

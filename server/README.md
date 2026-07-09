@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Beobachtungsliste — Schnell-Vorschläge:** die Beobachtungsliste auf „Für dich"
+>   schlägt aktuell kritische Wirkstoffe als Ein-Klick-Chips vor („🔴 Amoxicillin +"),
+>   solange sie noch nicht beobachtet werden — neue Nutzer:innen kommen sofort zum
+>   Nutzen, ohne Tippen. (Frontend, aus `overview.shortages.top`; im Browser verifiziert.)
 > - ✅ **Engpässe filtern & suchen:** der Engpässe-Reiter hat eine Such- und Filterleiste
 >   (Alle / 🔴 Nur kritisch / ⭐ Beobachtet / 👥 Community) plus Textsuche nach
 >   Wirkstoff/Präparat. Filterung ohne Neu-Laden (Suchfokus bleibt erhalten) — wichtig,
