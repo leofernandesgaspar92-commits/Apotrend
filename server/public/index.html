@@ -1273,6 +1273,19 @@ async function renderSearch(q) {
     head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
     feed.appendChild(head);
     if (!d.total) { feed.appendChild(el('<div class="card muted">Keine Treffer. Andere Schreibweise probieren?</div>')); return; }
+    // Direkter Weg zur Wirkstoff-Detailseite: aus den Treffern gefundene Wirkstoffe.
+    const wset = new Map();
+    [...d.shortages, ...d.prices, ...d.rabatte].forEach(x => { if (x.wirkstoff) wset.set(x.wirkstoff.toLowerCase(), x.wirkstoff); });
+    if (wset.size) {
+      const wc = el(`<div class="card"><div class="muted" style="font-size:13px;margin-bottom:6px">💊 Alles zu einem Wirkstoff auf einer Seite:</div><div class="row" data-wchips style="flex-wrap:wrap;gap:6px"></div></div>`);
+      const box = wc.querySelector('[data-wchips]');
+      [...wset.values()].slice(0, 8).forEach(w => {
+        const chip = el(`<button class="small sortbtn">💊 ${esc(w)}</button>`);
+        chip.onclick = () => openWirkstoff(w);
+        box.appendChild(chip);
+      });
+      feed.appendChild(wc);
+    }
     const section = (title) => feed.appendChild(el(`<div class="muted" style="margin:14px 2px 4px;font-weight:700">${title}</div>`));
     if (d.people.length) {
       section('👥 Personen');
