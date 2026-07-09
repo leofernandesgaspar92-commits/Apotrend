@@ -346,10 +346,12 @@ async function mainScreen() {
 function showWelcome(reopened) {
   document.getElementById('welcomeOverlay')?.remove();
   const steps = [
+    ['⭐', 'Wirkstoffe beobachten (Frühwarnnetz)', 'Setz die Wirkstoffe, die du führst, auf deine Beobachtungsliste (☆ am Engpass oder auf „Für dich"). Ändert sich der Status oder meldet eine Kolleg:in einen Engpass, wirst du sofort benachrichtigt.'],
+    ['➕', 'Engpass selbst melden', 'Merkst du einen Lieferengpass vor den offiziellen Daten? Melde ihn im Reiter „Engpässe" — andere bestätigen mit „Auch bei uns". So wisst ihr es gemeinsam zuerst.'],
+    ['💶', 'Sparpotenzial beim Einkauf', 'Der Reiter „Preise" zeigt, wie viel du je Packung sparst, wenn du den günstigsten Großhändler wählst. „Rabatte" warnt, wenn eine Aktion bald ausläuft.'],
     ['📝', 'Posten & austauschen', 'Kurz teilen, was gerade wichtig ist — z.B. „Engpass bei Amoxicillin, wer hat Bestand?". Andere reagieren und antworten.'],
     ['🔄', 'Biete & Suche (Bestandsaustausch)', 'Überbestand abzugeben oder etwas dringend gesucht? Im Reiter „Biete/Suche" eintragen — Kontakt läuft diskret per Direktnachricht.'],
     ['👥', 'Kolleg:innen folgen', 'Folge anderen Apotheker:innen (@Handle) und sieh ihre Beiträge in „Mein Feed".'],
-    ['📦', 'Engpässe, 💶 Preise, 🏷️ Rabatte, 📰 News', 'Aktuelle Marktdaten in den Reitern oben — direkt aus einem Eintrag heraus dazu posten.'],
     ['✉️', 'Direktnachrichten', 'Schreib jemandem privat 1:1 über das Briefsymbol oben oder „✉️ Nachricht" am Profil.'],
     ['🔎', 'Suchen & 🏷️ Themen', 'Oben nach Personen, Beiträgen, Wirkstoffen suchen. #Hashtags und @Namen sind anklickbar.'],
   ];
