@@ -1023,8 +1023,11 @@ let exchangeFilter = ''; // '', 'biete', 'suche'
 let exchangeQuery = '';   // Text-Filter (z.B. aus einem Engpass heraus vorbelegt)
 let exchangeBL = '';      // Bundesland-Filter
 let exchangeMine = false;  // nur eigene Einträge (inkl. erledigte)
+let exchangeBLInit = false; // Standard-Vorbelegung auf eigenes Bundesland nur einmal
 async function loadExchange() {
   const feed = document.getElementById('feed');
+  // Standard: eigenes Bundesland vorbelegen (opt-out über „Alle Bundesländer").
+  if (!exchangeBLInit) { exchangeBLInit = true; if (me && me.bundesland && !exchangeBL) exchangeBL = me.bundesland; }
   feed.innerHTML = '';
   // Formular zum Anlegen
   const form = el(`<div class="card">

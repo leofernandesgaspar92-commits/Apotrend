@@ -6,6 +6,9 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Austausch startet im eigenen Bundesland:** hat das Profil ein Bundesland, ist der
+>   Bestandsaustausch beim ersten Öffnen darauf vorgefiltert (Ware in der Nähe zuerst);
+>   „📍 Alle Bundesländer" ist der Ein-Klick-Opt-out. (Frontend; im Browser verifiziert.)
 > - ✅ **Rabatt-Reiter: Suche + „bald ablaufend"-Filter:** Textsuche (Präparat/Wirkstoff/
 >   Lieferant) und Umschalter „Alle / ⏳ Bald ablaufend"; nur die Liste wird neu gerendert
 >   (Suchfokus bleibt), aria-pressed an den Umschaltern. (Frontend; im Browser verifiziert.)
