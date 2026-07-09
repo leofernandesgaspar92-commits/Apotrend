@@ -845,8 +845,35 @@ async function loadPrices() {
       </div>`);
       feed.appendChild(head);
     }
+    // CSV-Export für Einkauf/Großhandel (Excel-tauglich)
+    const exp = el('<div class="card"><div class="row"><b>📊 Für den Einkauf</b><span class="sp" style="flex:1"></span><button class="ghost small" data-csv>⬇️ Preisvergleich als CSV (Excel)</button></div><div class="muted" style="font-size:13px;margin-top:2px">Alle Präparate & Lieferanten mit AEP, Trend und günstigstem Anbieter — zum Weiterverarbeiten in Excel.</div></div>');
+    exp.querySelector('[data-csv]').onclick = () => exportPricesCsv(d.comparisons);
+    feed.appendChild(exp);
     d.comparisons.forEach(g => feed.appendChild(priceGroup(g)));
   } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+}
+
+// CSV im deutschen Excel-Format: Semikolon-Trenner, Komma-Dezimal, UTF-8 mit BOM.
+function exportPricesCsv(comparisons) {
+  const cell = (v) => { const s = String(v ?? ''); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const num = (n) => Number(n).toFixed(2).replace('.', ',');
+  const rows = [['Präparat', 'Wirkstoff', 'Lieferant', 'AEP (€)', 'Trend (%)', 'Günstigster', 'Ersparnis ggü. teuerstem (€)']];
+  (comparisons || []).forEach(g => {
+    g.offers.forEach((o, i) => {
+      rows.push([
+        g.bezeichnung, g.wirkstoff || '', o.supplier, num(o.aep),
+        (o.trend_pct > 0 ? '+' : '') + String(o.trend_pct).replace('.', ','),
+        i === 0 && g.saving_abs > 0 ? 'ja' : 'nein',
+        i === 0 ? num(g.saving_abs || 0) : '',
+      ]);
+    });
+  });
+  const csv = '﻿' + rows.map(r => r.map(cell).join(';')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'apotrend-preisvergleich-' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click(); URL.revokeObjectURL(url);
 }
 
 function trendStr(t) { if (t>0) return `<span style="color:#c0392b">▲ +${t}%</span>`; if (t<0) return `<span style="color:#00885a">▼ ${t}%</span>`; return '<span class="muted">±0%</span>'; }

@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Preisvergleich als CSV (für Einkauf/Großhandel):** „⬇️ Preisvergleich als CSV"
+>   auf dem Preise-Reiter lädt alle Präparate & Lieferanten (AEP, Trend, günstigster
+>   Anbieter, Ersparnis) im deutschen Excel-Format herunter (Semikolon-Trenner,
+>   Komma-Dezimal, UTF-8+BOM) — direkt weiterverarbeitbar. (Frontend; im Browser verifiziert.)
 > - ✅ **Barrierefreiheit — aria-pressed auf Umschaltern:** Sortier-, Feed-Filter-,
 >   Engpass-Filter- und Beobachten-Buttons melden ihren An/Aus-Zustand an Screenreader
 >   (`aria-pressed`, synchron beim Umschalten). (Im Browser verifiziert.)
