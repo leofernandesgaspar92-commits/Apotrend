@@ -156,6 +156,22 @@ const routes = [
       exchange: exchange.mine(userId),
     };
   }],
+  // Wirkstoff-Detailseite: alles zu einem Wirkstoff gebündelt (Engpass, Austausch,
+  // Preise, Aktionen) — komponiert aus bereits getesteten Diensten.
+  ['GET', /^\/api\/wirkstoff\/([^/]+)$/, true, async ({ userId, params }) => {
+    const name = decodeURIComponent(params[0]).trim();
+    const low = name.toLowerCase();
+    const eq = (v) => String(v || '').trim().toLowerCase() === low;
+    const ex = exchange.list(userId, { q: name });
+    return {
+      wirkstoff: name,
+      watched: shortagesRepo.isWatched(userId, name),
+      shortages: shortages.listWithCounts(userId).filter(s => eq(s.wirkstoff)),
+      prices: prices.comparisons(userId).filter(g => eq(g.wirkstoff)),
+      rabatte: rabatte.top10(userId).filter(r => eq(r.wirkstoff)),
+      exchange: { biete: ex.filter(e => e.kind === 'biete'), suche: ex.filter(e => e.kind === 'suche') },
+    };
+  }],
   ['GET', /^\/api\/suggestions\/follow$/, true, async ({ userId }) => ({ suggestions: social.suggestFollows(userId) })],
   ['GET', /^\/api\/handles$/, true, async ({ query }) => ({ handles: social.searchHandles(query.get('q') || '') })],
   ['GET', /^\/api\/me\/export$/, true, async ({ userId }) => ({ ...social.exportData(userId), exchange_entries: exchange.mine(userId) })],

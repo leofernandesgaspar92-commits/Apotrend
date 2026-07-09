@@ -540,7 +540,7 @@ async function renderWatchlistCard(feed, items, suggestions = []) {
         ${it.shortage_id?`<button class="ghost small" data-open>Ansehen</button>`:''}
         <button class="ghost small" data-rm title="Nicht mehr beobachten" aria-label="Entfernen">✕</button>
       </div>`);
-      if (it.shortage_id) row.querySelector('[data-open]').onclick = () => goTab('shortages');
+      if (it.shortage_id) row.querySelector('[data-open]').onclick = () => openWirkstoff(it.wirkstoff);
       row.querySelector('[data-rm]').onclick = async () => {
         try { const r = await api('DELETE','/api/watchlist/'+encodeURIComponent(it.wirkstoff)); draw(r.items); refreshWatchAlerts(r.items); }
         catch(e){ err.textContent = e.message; }
@@ -745,7 +745,7 @@ function shortageCard(s) {
   const [slabel, scol] = STATUS[s.status] || ['?','#666'];
   const card = el(`<div class="card">
     <div class="row">
-      <span class="post-author">${esc(s.wirkstoff)}</span>
+      <span class="post-author clickable" data-wirkstoff="${esc(s.wirkstoff)}" title="Alles zu ${esc(s.wirkstoff)} ansehen">${esc(s.wirkstoff)}</span>
       <span style="background:${scol};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${slabel}</span>
       <span class="sp" style="flex:1"></span>
       <span class="vis" title="Herkunft der Daten">${esc(PROV[s.provenance]||s.provenance)}</span>
@@ -795,6 +795,8 @@ function shortageCard(s) {
     try { await api('POST',`/api/shortages/${s.id}/post`,{ body:t.value }); t.value=''; postbox.classList.add('hidden'); loadShortages(); }
     catch(e){ alert(e.message); }
   };
+  const wname = card.querySelector('[data-wirkstoff]');
+  if (wname) wname.onclick = () => openWirkstoff(wname.dataset.wirkstoff);
   if (iAmModerator) {
     const statusbox = card.querySelector('[data-statusbox]');
     card.querySelector('[data-statusbtn]').onclick = () => statusbox.classList.toggle('hidden');
@@ -1467,6 +1469,59 @@ async function openMyActivity() {
   if (!d.exchange.length) ecard.appendChild(el('<div class="muted" style="font-size:14px;margin-top:6px">Noch keine Biete/Suche-Einträge.</div>'));
   else d.exchange.forEach(e => ecard.appendChild(exchangeCard(e)));
   feed.appendChild(ecard);
+}
+
+// Wirkstoff-Detailseite: alles zu einem Wirkstoff auf einen Blick.
+async function openWirkstoff(name) {
+  if (!name) return;
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  feed.innerHTML = '<div class="muted">lädt…</div>';
+  let d;
+  try { d = await api('GET','/api/wirkstoff/'+encodeURIComponent(name)); }
+  catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
+  feed.innerHTML = '';
+  const head = el(`<div class="card"><div><button class="ghost small" data-back>← zurück</button></div>
+    <h1 style="margin:8px 0 2px">💊 ${esc(d.wirkstoff)}</h1>
+    <div class="muted">Alles zu diesem Wirkstoff auf einen Blick.</div>
+    <div class="row" style="margin-top:10px"><button class="${d.watched?'':'ghost '}small" data-watch aria-pressed="${!!d.watched}">${d.watched?'⭐ Beobachtet':'☆ Beobachten'}</button></div></div>`);
+  head.querySelector('[data-back]').onclick = () => goTab('overview');
+  const wb = head.querySelector('[data-watch]');
+  let watched = !!d.watched;
+  wb.onclick = async () => {
+    wb.disabled = true;
+    try {
+      if (watched) { await api('DELETE','/api/watchlist/'+encodeURIComponent(d.wirkstoff)); watched = false; }
+      else { await api('POST','/api/watchlist',{ wirkstoff: d.wirkstoff }); watched = true; }
+      wb.textContent = watched ? '⭐ Beobachtet' : '☆ Beobachten';
+      wb.setAttribute('aria-pressed', String(watched));
+      wb.classList.toggle('ghost', !watched);
+    } catch(e){ alert(e.message); }
+    wb.disabled = false;
+  };
+  feed.appendChild(head);
+
+  const section = (title, count, emptyMsg, render) => {
+    const c = el(`<div class="card"><div class="row"><b>${title}</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:13px">${count}</span></div><div data-body style="margin-top:6px"></div></div>`);
+    const body = c.querySelector('[data-body]');
+    if (!count) body.appendChild(el(`<div class="muted" style="font-size:14px">${emptyMsg}</div>`));
+    else render(body);
+    feed.appendChild(c);
+  };
+
+  // Engpass-Status
+  section('📦 Engpass-Status', d.shortages.length, 'Aktuell keine Engpass-Meldung.', body => d.shortages.forEach(s => {
+    const [lab,col] = STATUS[s.status] || ['?','#666'];
+    body.appendChild(el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:12px">· ${esc(PROV[s.provenance]||s.provenance)}${s.grund?' · '+esc(s.grund):''}</span></div>`));
+  }));
+  // Bezugsquellen (biete)
+  section('🔄 Wer bietet an', d.exchange.biete.length, 'Niemand bietet diesen Wirkstoff gerade an.', body => d.exchange.biete.forEach(e => body.appendChild(exchangeCard(e))));
+  // Gesuche (suche)
+  section('🔎 Wer sucht', d.exchange.suche.length, 'Keine offenen Gesuche.', body => d.exchange.suche.forEach(e => body.appendChild(exchangeCard(e))));
+  // Preise
+  section('💶 Preisvergleich', d.prices.length, 'Keine Preisdaten zu diesem Wirkstoff.', body => d.prices.forEach(g => body.appendChild(priceGroup(g))));
+  // Rabatte
+  section('🏷️ Laufende Aktionen', d.rabatte.length, 'Keine laufende Aktion.', body => d.rabatte.forEach(r => { r.rank = r.rank || 1; body.appendChild(rabattCard(r)); }));
 }
 
 async function renderVerifyCard(card) {

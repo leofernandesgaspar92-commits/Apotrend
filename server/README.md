@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Wirkstoff-Detailseite (alles zu einem Medikament):** Klick auf einen Wirkstoff
+>   (z.B. den Titel einer Engpass-Karte oder „Ansehen" in der Beobachtungsliste) öffnet
+>   eine gebündelte Ansicht: Engpass-Status, wer bietet/sucht (Austausch), Preisvergleich
+>   und laufende Aktionen — plus Beobachten-Umschalter. Komposition am HTTP-Layer aus
+>   getesteten Diensten, Wiederverwendung aller Karten-Renderer.
+>   (`GET /api/wirkstoff/:name`; 177 Tests grün, end-to-end im Browser verifiziert.)
 > - ✅ **Engpass-Liste als CSV (aktuelle Auswahl):** „⬇️ CSV (N)" in der Filterleiste
 >   exportiert die gerade gefilterten Engpässe (Wirkstoff, Präparat, Status, Grund,
 >   Meldedatum, Herkunft, Melder, beobachtet) — u.a. zur Dokumentation der
