@@ -399,14 +399,19 @@ async function loadOverview() {
   const tile = (icon, num, label, col, go) => `<div class="ovtile" data-go="${go||''}" style="flex:1;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;${go?'cursor:pointer':''}">
     <div style="font-size:26px;font-weight:800;color:${col}">${icon} ${num}</div>
     <div class="muted" style="font-size:13px;margin-top:2px">${esc(label)}</div></div>`;
+  const tiles = [
+    tile('🔴', d.shortages.kritisch, 'kritische Engpässe', '#c0392b', 'shortages'),
+    tile('📦', d.exchange.biete, 'Angebote im Austausch', '#00885a', 'exchange'),
+    tile('🔎', d.exchange.suche, 'Gesuche im Austausch', '#b26a00', 'exchange'),
+  ];
+  if (d.savings && d.savings.count) tiles.push(tile('💶', '€ ' + Number(d.savings.total_abs).toFixed(2), 'Sparpotenzial je Packung', '#00885a', 'prices'));
+  if (d.rabatte_expiring && d.rabatte_expiring.count) tiles.push(tile('⏳', d.rabatte_expiring.count, 'Aktionen laufen bald ab', '#c77700', 'rabatte'));
+  tiles.push(tile('🔔', d.notifications.unread, 'neue Benachrichtigungen', '#2952cc', ''));
   const head = el(`<div class="card">
     <h1 style="margin:0 0 2px">✨ Für dich${firstName?', '+esc(firstName):''}</h1>
     <div class="muted" style="margin-bottom:12px">Das Wichtigste auf einen Blick.</div>
     <div class="row" style="flex-wrap:wrap;gap:10px">
-      ${tile('🔴', d.shortages.kritisch, 'kritische Engpässe', '#c0392b', 'shortages')}
-      ${tile('📦', d.exchange.biete, 'Angebote im Austausch', '#00885a', 'exchange')}
-      ${tile('🔎', d.exchange.suche, 'Gesuche im Austausch', '#b26a00', 'exchange')}
-      ${tile('🔔', d.notifications.unread, 'neue Benachrichtigungen', '#2952cc', '')}
+      ${tiles.join('')}
     </div>
     <div class="row" style="margin-top:12px"><button class="ghost small" id="ov_bm">🔖 Meine Merkliste öffnen</button></div>
   </div>`);
@@ -441,33 +446,8 @@ async function loadOverview() {
     d.exchange.recent.forEach(e => c.appendChild(exchangeCard(e)));
     feed.appendChild(c);
   }
-  // Sparpotenzial beim Einkauf
-  if (d.savings && d.savings.count) {
-    const s = d.savings;
-    const c = el(`<div class="card"><div class="row"><b>💶 Sparpotenzial beim Einkauf</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>Preisvergleich</button></div>
-      <div style="font-size:20px;font-weight:800;color:#00885a;margin-top:4px">bis zu € ${Number(s.total_abs).toFixed(2)} pro Packung</div>
-      <div class="muted" style="font-size:13px">bei optimaler Großhändler-Wahl (${s.count} Präparat${s.count>1?'e':''}).</div></div>`);
-    c.querySelector('[data-all]').onclick = () => goTab('prices');
-    feed.appendChild(c);
-  }
-  // Top-Rabatt
-  if (d.top_rabatt) {
-    const r = d.top_rabatt;
-    const c = el(`<div class="card"><div class="row"><b>🏷️ Top-Rabatt gerade</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>Alle Rabatte</button></div>
-      <div style="margin-top:6px"><b>${esc(r.bezeichnung)}</b> — ${esc(r.supplier)} <span style="color:#00885a;font-weight:700">−${r.rabatt_pct}%</span> (€ ${Number(r.aktionspreis).toFixed(2)})</div></div>`);
-    c.querySelector('[data-all]').onclick = () => goTab('rabatte');
-    feed.appendChild(c);
-  }
-  // Rabatt-Aktionen, die bald auslaufen
-  if (d.rabatte_expiring && d.rabatte_expiring.count) {
-    const e = d.rabatte_expiring; const s = e.soonest;
-    const dl = s.days_left <= 0 ? 'läuft heute ab' : (s.days_left === 1 ? 'nur noch 1 Tag' : 'nur noch ' + s.days_left + ' Tage');
-    const c = el(`<div class="card"><div class="row"><b>⏳ Aktionen laufen bald ab</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>Alle Rabatte</button></div>
-      <div class="muted" style="font-size:13px;margin-top:2px">${e.count} Aktion${e.count>1?'en enden':' endet'} in den nächsten 14 Tagen — jetzt sichern.</div>
-      <div class="comment" style="margin-top:6px">🏷️ <b>${esc(s.bezeichnung)}</b> — ${esc(s.supplier)} <span style="color:#00885a;font-weight:700">−${s.rabatt_pct}%</span> · <b style="color:${s.days_left<=3?'#c0392b':'#c77700'}">${dl}</b></div></div>`);
-    c.querySelector('[data-all]').onclick = () => goTab('rabatte');
-    feed.appendChild(c);
-  }
+  // Hinweis: Sparpotenzial, Top-Rabatt und bald ablaufende Aktionen stehen jetzt
+  // kompakt als Kennzahl-Kacheln oben (weniger Scrollen); Details auf den Reitern.
 }
 
 // Status-Anzeige für beobachtete Wirkstoffe (Farb-Semantik: rot = kritisch).

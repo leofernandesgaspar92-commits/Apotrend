@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **„Für dich" verschlankt (weniger Scrollen):** Sparpotenzial, bald ablaufende
+>   Aktionen und Top-Rabatt stehen jetzt kompakt als Kennzahl-Kacheln oben statt als je
+>   eigene Karte; die Startübersicht ist etwa halb so hoch. Persönlich-Handlungsrelevantes
+>   (Beobachtungsliste, Aktionen zu deinen Wirkstoffen, kritische Engpässe, Austausch)
+>   bleibt als Karte, Details auf den Reitern. (Im Browser verifiziert.)
 > - ✅ **Datenherkunft & Vertrauen (Legende):** auf Engpässe/Preise/Rabatte klärt eine
 >   aufklappbare Legende (Standard: zu) auf, was ✔ BASG-verifiziert / 📌 Referenzdaten /
 >   📰 Redaktion / 👥 Community-Meldung bedeuten, und macht die Quellenpflicht sichtbar
