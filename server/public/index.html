@@ -511,6 +511,18 @@ async function renderWatchlistCard(feed, items, suggestions = []) {
       };
       chips.appendChild(chip);
     });
+    if (open.length >= 2) {
+      const all = el(`<button class="small" style="margin-top:6px">⭐ Alle ${open.length} kritischen beobachten</button>`);
+      all.onclick = async () => {
+        all.disabled = true;
+        try {
+          let items = null;
+          for (const s of open) { items = (await api('POST','/api/watchlist',{ wirkstoff: s.wirkstoff })).items; }
+          if (items) draw(items);
+        } catch(e){ err.textContent = e.message; all.disabled = false; }
+      };
+      wrap.appendChild(all);
+    }
     sugBox.appendChild(wrap);
   }
   function draw(list) {
