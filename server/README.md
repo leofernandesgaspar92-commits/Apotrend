@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Zuletzt angesehene Wirkstoffe:** die Startübersicht zeigt „🕘 Zuletzt angesehen"
+>   als Chips (neueste zuerst, max 8) für den schnellen Wiedereinstieg in oft
+>   nachgeschlagene Medikamente. Nur lokal im Gerät gespeichert (localStorage, kein
+>   Server). (Im Browser verifiziert.)
 > - ✅ **HTTP-Integrationstests:** die am HTTP-Layer komponierten Endpunkte
 >   (`/api/wirkstoff/:name`, `/api/me/activity`, `/api/feed/public?filter=questions`,
 >   `/api/overview` watch_offers, 404-Fallback) werden jetzt gegen den echt gebooteten

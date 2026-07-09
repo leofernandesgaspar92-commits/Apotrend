@@ -430,6 +430,15 @@ async function loadOverview() {
   head.querySelector('#ov_bm').onclick = openBookmarks;
   feed.appendChild(head);
 
+  // Zuletzt angesehene Wirkstoffe (nur lokal) — schneller Wiedereinstieg.
+  const recent = getRecentWirkstoff();
+  if (recent.length) {
+    const rc = el(`<div class="card"><div class="muted" style="font-size:13px;margin-bottom:6px">🕘 Zuletzt angesehen:</div><div class="row" data-recent style="flex-wrap:wrap;gap:6px"></div></div>`);
+    const box = rc.querySelector('[data-recent]');
+    recent.forEach(w => { const chip = el(`<button class="small sortbtn">💊 ${esc(w)}</button>`); chip.onclick = () => openWirkstoff(w); box.appendChild(chip); });
+    feed.appendChild(rc);
+  }
+
   // Meine beobachteten Wirkstoffe (mit Schnell-Vorschlägen aus kritischen Engpässen)
   renderWatchlistCard(feed, (d.watchlist && d.watchlist.items) || [], d.shortages.top || []);
 
@@ -1494,6 +1503,17 @@ async function openMyActivity() {
   feed.appendChild(ecard);
 }
 
+// Zuletzt angesehene Wirkstoffe (nur lokal im Gerät gespeichert).
+function getRecentWirkstoff() {
+  try { return JSON.parse(localStorage.getItem('apo_recent_wirkstoff') || '[]'); } catch { return []; }
+}
+function recordRecentWirkstoff(name) {
+  if (!name) return;
+  const list = getRecentWirkstoff().filter(w => w.toLowerCase() !== name.toLowerCase());
+  list.unshift(name);
+  try { localStorage.setItem('apo_recent_wirkstoff', JSON.stringify(list.slice(0, 8))); } catch {}
+}
+
 // Wirkstoff-Detailseite: alles zu einem Wirkstoff auf einen Blick.
 async function openWirkstoff(name) {
   if (!name) return;
@@ -1503,6 +1523,7 @@ async function openWirkstoff(name) {
   let d;
   try { d = await api('GET','/api/wirkstoff/'+encodeURIComponent(name)); }
   catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
+  recordRecentWirkstoff(d.wirkstoff);
   feed.innerHTML = '';
   const head = el(`<div class="card"><div><button class="ghost small" data-back>← zurück</button></div>
     <h1 style="margin:8px 0 2px">💊 ${esc(d.wirkstoff)}</h1>
