@@ -1599,11 +1599,37 @@ async function openWirkstoff(name) {
     feed.appendChild(c);
   };
 
-  // Engpass-Status
-  section('📦 Engpass-Status', d.shortages.length, 'Aktuell keine Engpass-Meldung.', body => d.shortages.forEach(s => {
+  // Engpass-Status (+ direkt für diesen Wirkstoff melden)
+  const scard = el(`<div class="card"><div class="row"><b>📦 Engpass-Status</b><span class="sp" style="flex:1"></span>
+    <button class="ghost small" data-report>➕ Engpass melden</button></div>
+    <div data-sbody style="margin-top:6px"></div>
+    <div class="hidden" data-sform style="margin-top:8px">
+      <label style="font-size:13px">Präparat / Bezeichnung</label>
+      <input data-b placeholder="z.B. ${esc(d.wirkstoff)} 500 mg" value="${esc(d.wirkstoff)}">
+      <label style="font-size:13px;margin-top:6px">Status</label>
+      <select data-s><option value="kritisch">Kritischer Engpass</option><option value="eingeschraenkt">Eingeschränkt lieferbar</option></select>
+      <label style="font-size:13px;margin-top:6px">Grund (optional)</label>
+      <input data-g placeholder="z.B. Großhandel meldet keine Verfügbarkeit">
+      <div style="margin-top:8px"><button class="small" data-send>Als Community-Meldung senden</button></div>
+      <div class="muted" style="font-size:12px;margin-top:4px">👥 Kennzeichnung als Community-Meldung (nicht offiziell verifiziert).</div>
+      <div class="err" data-err></div>
+    </div></div>`);
+  const sbody = scard.querySelector('[data-sbody]');
+  if (!d.shortages.length) sbody.appendChild(el('<div class="muted" style="font-size:14px">Aktuell keine Engpass-Meldung.</div>'));
+  else d.shortages.forEach(s => {
     const [lab,col] = STATUS[s.status] || ['?','#666'];
-    body.appendChild(el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:12px">· ${esc(PROV[s.provenance]||s.provenance)}${s.grund?' · '+esc(s.grund):''}</span></div>`));
-  }));
+    sbody.appendChild(el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:12px">· ${esc(PROV[s.provenance]||s.provenance)}${s.grund?' · '+esc(s.grund):''}</span></div>`));
+  });
+  const sform = scard.querySelector('[data-sform]');
+  scard.querySelector('[data-report]').onclick = () => sform.classList.toggle('hidden');
+  scard.querySelector('[data-send]').onclick = async () => {
+    const err = scard.querySelector('[data-err]'); err.textContent = '';
+    try {
+      await api('POST','/api/shortages/report',{ wirkstoff: d.wirkstoff, bezeichnung: scard.querySelector('[data-b]').value.trim(), status: scard.querySelector('[data-s]').value, grund: scard.querySelector('[data-g]').value.trim() });
+      openWirkstoff(d.wirkstoff);
+    } catch(e){ err.textContent = e.message; }
+  };
+  feed.appendChild(scard);
   // Bezugsquellen (biete)
   section('🔄 Wer bietet an', d.exchange.biete.length, 'Niemand bietet diesen Wirkstoff gerade an.', body => d.exchange.biete.forEach(e => body.appendChild(exchangeCard(e))));
   // Gesuche (suche)
