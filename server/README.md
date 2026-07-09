@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Engpass-Liste als CSV (aktuelle Auswahl):** „⬇️ CSV (N)" in der Filterleiste
+>   exportiert die gerade gefilterten Engpässe (Wirkstoff, Präparat, Status, Grund,
+>   Meldedatum, Herkunft, Melder, beobachtet) — u.a. zur Dokumentation der
+>   Nichtverfügbarkeit. Gemeinsamer `downloadCsv`-Helfer mit dem Preis-Export.
+>   (Im Browser verifiziert, Zähler spiegelt den Filter.)
 > - ✅ **Preisvergleich als CSV (für Einkauf/Großhandel):** „⬇️ Preisvergleich als CSV"
 >   auf dem Preise-Reiter lädt alle Präparate & Lieferanten (AEP, Trend, günstigster
 >   Anbieter, Ersparnis) im deutschen Excel-Format herunter (Semikolon-Trenner,
