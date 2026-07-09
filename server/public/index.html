@@ -970,7 +970,9 @@ function sparkline(series) {
   const dir = series[n-1] - series[0];
   const col = dir > 0 ? '#c0392b' : (dir < 0 ? '#0b7f28' : '#9aa4ad');
   const lastX = x(n-1).toFixed(1), lastY = y(series[n-1]).toFixed(1);
-  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="Preisverlauf" style="display:block;overflow:visible">
+  const dirWord = dir > 0 ? 'steigend' : (dir < 0 ? 'fallend' : 'gleichbleibend');
+  const label = `Preisverlauf ${dirWord}: ` + series.map(v => Number(v).toFixed(2).replace('.', ',') + ' Euro').join(', ');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${label}" style="display:block;overflow:visible">
     <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     <circle cx="${lastX}" cy="${lastY}" r="2.5" fill="${col}"/>
   </svg>`;
@@ -989,7 +991,7 @@ function priceGroup(g) {
       <div class="row">
         <span>${i===0?'⭐ ':''}<b>${esc(o.supplier)}</b>${i===0?' <span style="color:#0b7f28;font-size:12px;font-weight:700">günstigster</span>':''}</span>
         <span class="sp" style="flex:1"></span>
-        <span title="Preisverlauf (letzte Werte)">${sparkline(o.series)}</span>
+        <span title="Preisverlauf (AEP): ${Array.isArray(o.series)&&o.series.length?o.series.map(v=>'€ '+Number(v).toFixed(2).replace('.',',')).join(' → '):'keine Verlaufsdaten'}">${sparkline(o.series)}</span>
         <span style="margin-left:8px"><b>€ ${Number(o.aep).toFixed(2)}</b> ${trendStr(o.trend_pct)}</span>
       </div>
       <div class="row" style="margin-top:4px">

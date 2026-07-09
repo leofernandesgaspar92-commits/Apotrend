@@ -6,6 +6,9 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Preisverlauf-Details an der Sparkline:** Hover zeigt die letzten AEP-Werte als
+>   Tooltip („€ 3,10 → € 3,08 → …"), und die Sparkline hat ein beschreibendes
+>   Screenreader-Label mit Richtung + Werten (statt nur „Preisverlauf"). (Im Browser verifiziert.)
 > - ✅ **Redaktions-Dashboard (Moderation):** die Moderations-Ansicht (🛡️, nur Redaktion)
 >   führt jetzt mit Kennzahl-Kacheln — offene Meldungen, Verifizierungs-Anträge, aktive
 >   kritische Engpässe, Community-Meldungen — für Plattform-Gesundheit auf einen Blick.
