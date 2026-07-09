@@ -6,6 +6,9 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Rabatt-Reiter: Suche + „bald ablaufend"-Filter:** Textsuche (Präparat/Wirkstoff/
+>   Lieferant) und Umschalter „Alle / ⏳ Bald ablaufend"; nur die Liste wird neu gerendert
+>   (Suchfokus bleibt), aria-pressed an den Umschaltern. (Frontend; im Browser verifiziert.)
 > - ✅ **Apotheken in deinem Bundesland:** die Startübersicht zeigt Kolleg:innen im selben
 >   Bundesland (aus dem Profil) mit Folgen-Button — Umkreis-Vernetzung für den
 >   Bestandsaustausch. (`GET /api/colleagues/nearby`; 191 Tests grün, im Browser verifiziert.)

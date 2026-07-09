@@ -192,6 +192,8 @@ const app = document.getElementById('app');
 let me = null, tab = 'overview', iAmModerator = false, publicSort = 'neu', publicFilter = 'all';
 let shortageFilter = ''; // '', 'kritisch', 'watched', 'community'
 let shortageQuery = '';  // Textsuche nach Wirkstoff/Präparat
+let rabattQuery = '';     // Textsuche im Rabatt-Reiter
+let rabattExpiring = false; // nur bald ablaufende Aktionen
 let myBookmarks = new Set();
 
 // ── Auth-Screens ──
@@ -1147,7 +1149,29 @@ async function loadRabatte() {
     feed.appendChild(provenanceLegend());
     feed.appendChild(el('<div class="card muted" style="margin-bottom:10px">🏷️ <b>Top-10 Rabatt-Aktionen</b> · höchster Rabatt oben · nur laufende Aktionen · 📌 Referenzdaten</div>'));
     if (!d.rabatte.length) { feed.appendChild(el('<div class="card muted">Derzeit keine laufenden Aktionen.</div>')); return; }
-    d.rabatte.forEach(r => feed.appendChild(rabattCard(r)));
+    const bar = el(`<div class="card">
+      <div class="row" style="gap:6px"><input data-q placeholder="🔎 Präparat, Wirkstoff oder Lieferant suchen…" value="${esc(rabattQuery)}" style="flex:1"></div>
+      <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px">
+        <button class="small sortbtn${rabattExpiring?'':' active'}" data-exp="0" aria-pressed="${!rabattExpiring}">Alle</button>
+        <button class="small sortbtn${rabattExpiring?' active':''}" data-exp="1" aria-pressed="${rabattExpiring}">⏳ Bald ablaufend</button>
+      </div></div>`);
+    feed.appendChild(bar);
+    const listBox = el('<div data-rlist></div>');
+    feed.appendChild(listBox);
+    const draw = () => {
+      const q = rabattQuery.trim().toLowerCase();
+      const list = d.rabatte.filter(r =>
+        (!rabattExpiring || r.expiring_soon) &&
+        (!q || (r.bezeichnung||'').toLowerCase().includes(q) || (r.wirkstoff||'').toLowerCase().includes(q) || (r.supplier||'').toLowerCase().includes(q)));
+      bar.querySelectorAll('[data-exp]').forEach(b => { const on = (b.dataset.exp==='1')===rabattExpiring; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
+      listBox.innerHTML = '';
+      if (!list.length) listBox.appendChild(el('<div class="card muted">Keine Aktion für diese Auswahl.</div>'));
+      else list.forEach(r => listBox.appendChild(rabattCard(r)));
+    };
+    bar.querySelectorAll('[data-exp]').forEach(b => b.onclick = () => { rabattExpiring = b.dataset.exp==='1'; draw(); });
+    const qi = bar.querySelector('[data-q]');
+    let t; qi.oninput = () => { clearTimeout(t); t = setTimeout(() => { rabattQuery = qi.value; draw(); }, 250); };
+    draw();
   } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
 }
 
