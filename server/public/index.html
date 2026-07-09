@@ -1009,7 +1009,7 @@ async function loadExchange() {
       <input id="ex_menge" placeholder="Menge (z.B. 20 Packungen)">
       <input id="ex_ort" placeholder="Ort (z.B. 1010 Wien)">
     </div>
-    <select id="ex_bl" style="margin-top:6px"><option value="">Bundesland wählen (für Umkreis-Suche)…</option>${blOptions('')}</select>
+    <select id="ex_bl" style="margin-top:6px"><option value="">Bundesland wählen (für Umkreis-Suche)…</option>${blOptions((me&&me.bundesland)||'')}</select>
     <input id="ex_note" placeholder="Hinweis (optional)" style="margin-top:6px">
     <div class="row" style="margin-top:6px">
       <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px">📷 Foto (z.B. Charge/Ablauf)<input type="file" id="ex_img" accept="image/*" style="display:none"></label>
@@ -1340,13 +1340,16 @@ function editProfileForm(p) {
     <label>Titel / Funktion (optional)</label><input id="ep_title" value="${esc(p.title||'')}" placeholder="z.B. Fachapothekerin, Einkauf">
     <label>Über mich (optional, max. 500 Zeichen)</label><textarea id="ep_bio" placeholder="Kurz zu dir und deinem Schwerpunkt…">${esc(p.bio||'')}</textarea>
     <label>Fachgebiete (mit Komma trennen)</label><input id="ep_specs" value="${esc(specs)}" placeholder="Onkologie, Diabetes, Impfen">
+    <label>Bundesland (optional)</label>
+    <select id="ep_bl"><option value="">— keine Angabe —</option>${BUNDESLAENDER.map(x=>`<option value="${x}"${x===(p.bundesland||'')?' selected':''}>${x}</option>`).join('')}</select>
+    <div class="muted" style="font-size:12px;margin-top:2px">Wird bei neuen Biete/Suche-Einträgen vorausgewählt.</div>
     <div class="row" style="margin-top:12px"><button id="ep_save">Speichern</button><span class="err" id="ep_err" style="margin-left:10px"></span></div>
   </div>`);
   feed.appendChild(form);
   document.getElementById('ep_save').onclick = async () => {
     try {
       await api('POST','/api/profile',{
-        displayName: v('ep_name'), title: v('ep_title'), bio: v('ep_bio'), specializations: v('ep_specs'),
+        displayName: v('ep_name'), title: v('ep_title'), bio: v('ep_bio'), specializations: v('ep_specs'), bundesland: v('ep_bl'),
       });
       const meData = await api('GET','/api/me'); me = meData.profile;
       document.getElementById('whoami').textContent = me ? '@'+me.handle : '';
@@ -1380,6 +1383,7 @@ async function openProfile(handle) {
           </div>
           <div class="handle">@${esc(p.handle)}</div>
           ${p.title?`<div class="muted">${esc(p.title)}</div>`:''}
+          ${p.bundesland?`<div class="muted" style="font-size:13px">📍 ${esc(p.bundesland)}</div>`:''}
         </div>
       </div>
       ${p.bio?`<div class="post-body">${esc(p.bio)}</div>`:''}

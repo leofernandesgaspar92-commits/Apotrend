@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Bundesland im Profil:** Apotheken hinterlegen ihr Bundesland (Profil bearbeiten,
+>   9 AT-Länder, serverseitig validiert). Es wird am Profil (📍) angezeigt und bei neuen
+>   Biete/Suche-Einträgen vorausgewählt — weniger Tippen, Grundlage für Umkreis-Bezug.
+>   (`social.updateProfile` bundesland; 189 Tests grün, end-to-end im Browser verifiziert.)
 > - ✅ **Follower-/Folge-Listen:** die Zahlen „Follower" und „folgt" auf jedem Profil sind
 >   jetzt anklickbar und zeigen die Personen (mit direktem Folgen/Entfolgen) — so lassen
 >   sich Kolleg:innen entdecken und Follows verwalten. (`GET /api/profiles/:handle/

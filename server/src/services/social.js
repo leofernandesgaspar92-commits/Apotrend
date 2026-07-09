@@ -3,6 +3,7 @@
 // Sichtbarkeit pro Post (public/followers) wird bei JEDER Leseoperation erzwungen.
 import { ForbiddenError } from './orgAuth.js';
 import { cleanImage, cleanSourceUrl } from '../domain/media.js';
+import { BUNDESLAENDER } from './exchange.js';
 
 const REACTION_TYPES = ['hilfreich', 'danke', 'bestaetigt', 'interessant'];
 const MAX_BODY = 1000;
@@ -69,7 +70,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       return social.getProfileByHandle(handleOrUserId) || social.getProfileByUserId(handleOrUserId);
     },
     // Eigenes Profil bearbeiten (Handle bleibt als Identität unveränderlich).
-    updateProfile(actorUserId, { displayName, title, bio, specializations, visibility }) {
+    updateProfile(actorUserId, { displayName, title, bio, specializations, visibility, bundesland }) {
       requireUser(actorUserId);
       if (!social.getProfileByUserId(actorUserId)) throw new Error('Profil nicht gefunden.');
       const patch = {};
@@ -92,6 +93,11 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (visibility !== undefined) {
         if (!['network', 'public'].includes(visibility)) throw new Error('Ungueltige Profil-Sichtbarkeit.');
         patch.visibility = visibility;
+      }
+      if (bundesland !== undefined) {
+        const bl = String(bundesland).trim();
+        if (bl && !BUNDESLAENDER.includes(bl)) throw new Error('Ungültiges Bundesland.');
+        patch.bundesland = bl || null;
       }
       return social.updateProfile(actorUserId, patch);
     },

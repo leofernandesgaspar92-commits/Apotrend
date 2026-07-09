@@ -42,3 +42,12 @@ test('Profil bearbeiten: leere Felder löschen Titel/Bio (null)', () => {
   assert.equal(p.title, null);
   assert.equal(p.bio, null);
 });
+
+test('Profil bearbeiten: gültiges Bundesland wird gesetzt, ungültiges abgelehnt', () => {
+  const { social, a } = setup();
+  const p = social.updateProfile(a, { bundesland: 'Wien' });
+  assert.equal(p.bundesland, 'Wien');
+  assert.throws(() => social.updateProfile(a, { bundesland: 'Bayern' }), /Bundesland/);
+  const cleared = social.updateProfile(a, { bundesland: '' });
+  assert.equal(cleared.bundesland, null);
+});
