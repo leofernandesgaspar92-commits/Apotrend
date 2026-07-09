@@ -25,7 +25,7 @@ function setup() {
   const overview = createOverviewService({ shortages, exchange, social, rabatte, prices });
   const A = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'A' }, owner: { name: 'Anna', email: 'a@a.at', password: 'geheim123' } });
   social.createProfile(A.user.id, { handle: 'anna', displayName: 'Anna' });
-  return { overview, exchange, a: A.user.id };
+  return { overview, exchange, shortages, a: A.user.id };
 }
 
 test('Übersicht bündelt Engpässe, Austausch, Benachrichtigungen, Top-Rabatt', () => {
@@ -41,4 +41,21 @@ test('Übersicht bündelt Engpässe, Austausch, Benachrichtigungen, Top-Rabatt',
   assert.ok('unread' in o.notifications);
   assert.ok(o.top_rabatt && o.top_rabatt.rabatt_pct > 0);
   assert.ok(o.savings && o.savings.total_abs > 0, 'Sparpotenzial aus Preisdaten');
+});
+
+test('watch_deals: beobachtete Wirkstoffe mit laufender Aktion', () => {
+  const { overview, shortages, a } = setup();
+  // Amoxicillin hat im Rabatt-Seed eine laufende Aktion (Kwizda), Ramipril auch.
+  shortages.watch(a, 'Amoxicillin');
+  shortages.watch(a, 'Gibtsnicht'); // ohne Aktion -> darf nicht auftauchen
+  const o = overview.forUser(a);
+  assert.equal(o.watch_deals.length, 1);
+  assert.equal(o.watch_deals[0].wirkstoff, 'Amoxicillin');
+  assert.ok(o.watch_deals[0].rabatt_pct > 0);
+  assert.ok(o.watch_deals[0].supplier);
+});
+
+test('watch_deals: leer, wenn nichts beobachtet wird', () => {
+  const { overview, a } = setup();
+  assert.deepEqual(overview.forUser(a).watch_deals, []);
 });

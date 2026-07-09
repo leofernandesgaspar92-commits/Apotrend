@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Aktionen zu beobachteten Wirkstoffen (Beobachtungsliste ↔ Rabatte):** läuft für
+>   einen Wirkstoff, den die Apotheke beobachtet, gerade eine Rabatt-Aktion, erscheint sie
+>   auf „Für dich" als eigene Karte („🏷️ Aktionen zu deinen Wirkstoffen" — beste Aktion je
+>   Wirkstoff, mit Ablaufhinweis). Verbindet Engpass-Beobachtung und Einkaufs-Vorteil.
+>   (`overview.watch_deals`; 160 Tests grün, API/Browser verifiziert.)
 > - ✅ **Rabatt-Ablaufwarnung:** laufende Aktionen tragen die Restlaufzeit; endet eine
 >   Aktion in ≤14 Tagen, zeigt der Rabatt-Reiter ein „⏳ nur noch X Tage"-Badge
 >   (≤3 Tage rot, sonst orange). Die Startübersicht „Für dich" warnt zusätzlich

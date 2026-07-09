@@ -12,9 +12,30 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
       const topR = topRabatte[0] || null;
       const expiringSoon = topRabatte.filter(r => r.expiring_soon);
       const watchlist = shortages.myWatchlist(userId);
+
+      // Aktionen zu beobachteten Wirkstoffen: verbindet Beobachtungsliste mit laufenden
+      // Rabatten (beste Aktion je beobachtetem Wirkstoff). Doppelnutzen auf einen Blick.
+      const dealByWirkstoff = new Map();
+      for (const r of topRabatte) {
+        const k = (r.wirkstoff || '').trim().toLowerCase();
+        if (!k) continue;
+        const cur = dealByWirkstoff.get(k);
+        if (!cur || r.rabatt_pct > cur.rabatt_pct) dealByWirkstoff.set(k, r);
+      }
+      const watchDeals = watchlist
+        .map(w => ({ wirkstoff: w.wirkstoff, deal: dealByWirkstoff.get(w.wirkstoff.trim().toLowerCase()) || null }))
+        .filter(x => x.deal)
+        .map(x => ({
+          wirkstoff: x.wirkstoff,
+          bezeichnung: x.deal.bezeichnung, supplier: x.deal.supplier,
+          rabatt_pct: x.deal.rabatt_pct, aktionspreis: x.deal.aktionspreis,
+          gueltig_bis: x.deal.gueltig_bis, days_left: x.deal.days_left, expiring_soon: x.deal.expiring_soon,
+        }));
+
       return {
         shortages: { kritisch: kritisch.length, total: sh.length, top: kritisch.slice(0, 3) },
         watchlist: { total: watchlist.length, items: watchlist, alerts: watchlist.filter(w => w.status === 'kritisch' || w.status === 'eingeschraenkt').length },
+        watch_deals: watchDeals,
         exchange: {
           biete: ex.filter(e => e.kind === 'biete').length,
           suche: ex.filter(e => e.kind === 'suche').length,

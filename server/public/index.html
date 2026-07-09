@@ -414,6 +414,15 @@ async function loadOverview() {
   // Meine beobachteten Wirkstoffe
   renderWatchlistCard(feed, (d.watchlist && d.watchlist.items) || []);
 
+  // Aktionen zu beobachteten Wirkstoffen (Beobachtungsliste ↔ Rabatte)
+  if (d.watch_deals && d.watch_deals.length) {
+    const c = el(`<div class="card"><div class="row"><b>🏷️ Aktionen zu deinen Wirkstoffen</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>Alle Rabatte</button></div>
+      <div class="muted" style="font-size:13px;margin:2px 0 6px">Für diese von dir beobachteten Wirkstoffe läuft gerade eine Aktion:</div>
+      ${d.watch_deals.map(w=>`<div class="comment">🏷️ <b>${esc(w.wirkstoff)}</b> — ${esc(w.supplier)} <span style="color:#00885a;font-weight:700">−${w.rabatt_pct}%</span> (€ ${Number(w.aktionspreis).toFixed(2)})${w.expiring_soon?` · <b style="color:${w.days_left<=3?'#c0392b':'#c77700'}">nur noch ${w.days_left<=0?'heute':w.days_left+' Tage'}</b>`:''}</div>`).join('')}</div>`);
+    c.querySelector('[data-all]').onclick = () => goTab('rabatte');
+    feed.appendChild(c);
+  }
+
   // Kritische Engpässe (Top 3)
   if (d.shortages.top.length) {
     const c = el(`<div class="card"><div class="row"><b>🔴 Kritische Engpässe</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>Alle ansehen</button></div>
