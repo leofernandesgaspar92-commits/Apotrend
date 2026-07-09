@@ -341,9 +341,12 @@ async function mainScreen() {
     b.classList.add('active'); tab = b.dataset.tab; loadTab();
   });
   loadTab();
-  // Deep-Link: /?post=ID öffnet direkt den Beitrag.
-  const sharedPost = new URLSearchParams(location.search).get('post');
+  // Deep-Links: /?post=ID öffnet einen Beitrag, /?wirkstoff=Name die Wirkstoff-Seite.
+  const params = new URLSearchParams(location.search);
+  const sharedPost = params.get('post');
+  const sharedWirkstoff = params.get('wirkstoff');
   if (sharedPost) { history.replaceState(null, '', location.pathname); openPost(sharedPost); }
+  else if (sharedWirkstoff) { history.replaceState(null, '', location.pathname); openWirkstoff(sharedWirkstoff); }
   else if (!localStorage.getItem('apo_welcome_seen')) showWelcome(false);
 }
 
@@ -1501,8 +1504,14 @@ async function openWirkstoff(name) {
   const head = el(`<div class="card"><div><button class="ghost small" data-back>← zurück</button></div>
     <h1 style="margin:8px 0 2px">💊 ${esc(d.wirkstoff)}</h1>
     <div class="muted">Alles zu diesem Wirkstoff auf einen Blick.</div>
-    <div class="row" style="margin-top:10px"><button class="${d.watched?'':'ghost '}small" data-watch aria-pressed="${!!d.watched}">${d.watched?'⭐ Beobachtet':'☆ Beobachten'}</button></div></div>`);
+    <div class="row" style="margin-top:10px;gap:8px"><button class="${d.watched?'':'ghost '}small" data-watch aria-pressed="${!!d.watched}">${d.watched?'⭐ Beobachtet':'☆ Beobachten'}</button><button class="ghost small" data-share title="Link zu dieser Wirkstoff-Seite kopieren">🔗 Teilen</button></div></div>`);
   head.querySelector('[data-back]').onclick = () => goTab('overview');
+  const shb = head.querySelector('[data-share]');
+  shb.onclick = async () => {
+    const url = location.origin + '/?wirkstoff=' + encodeURIComponent(d.wirkstoff);
+    try { await navigator.clipboard.writeText(url); shb.textContent = '✓ kopiert'; setTimeout(()=>{ shb.textContent='🔗 Teilen'; }, 1500); }
+    catch { prompt('Link zur Wirkstoff-Seite:', url); }
+  };
   const wb = head.querySelector('[data-watch]');
   let watched = !!d.watched;
   wb.onclick = async () => {

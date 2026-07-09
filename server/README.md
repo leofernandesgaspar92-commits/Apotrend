@@ -24,7 +24,9 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   und laufende Aktionen sowie Diskussion & Fragen (Beiträge, die den Wirkstoff erwähnen)
 >   — plus Beobachten-Umschalter. Komposition am HTTP-Layer aus getesteten Diensten,
 >   Wiederverwendung aller Karten-Renderer.
->   (`GET /api/wirkstoff/:name`; 177 Tests grün, end-to-end im Browser verifiziert.)
+>   (`GET /api/wirkstoff/:name`; 186 Tests grün, end-to-end im Browser verifiziert.)
+>   Teilbar per Deep-Link: „🔗 Teilen" kopiert `/?wirkstoff=Name`, beim Öffnen springt
+>   die App direkt auf die Seite (wie schon Beitrags-Links).
 >   Einstieg von überall: Wirkstoff-Namen auf Engpass-, Preis- und Rabatt-Karten sowie in
 >   der Beobachtungsliste sind klickbar und führen zur Detailseite; auch die Suche zeigt
 >   „💊 <Wirkstoff>"-Chips, die direkt dorthin springen.
