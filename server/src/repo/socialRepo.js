@@ -84,6 +84,7 @@ export function createSocialRepo() {
         id: uuid(), author_user_id: p.authorUserId, body: p.body, kind: p.kind ?? 'post',
         visibility: p.visibility ?? 'public', ref_type: p.refType ?? null, ref_id: p.refId ?? null,
         image: p.image ?? null, source_url: p.sourceUrl ?? null,
+        accepted_comment_id: null,
         created_at: now(), edited_at: null, deleted_at: null,
       };
       posts.set(post.id, post);
@@ -91,6 +92,8 @@ export function createSocialRepo() {
     },
     getPost(id) { const p = posts.get(id); return p ? { ...p } : null; },
     updatePostBody(id, body) { const p = posts.get(id); if (!p) return null; p.body = body; p.edited_at = now(); return { ...p }; },
+    // Beste Antwort einer Frage setzen/aufheben (commentId oder null).
+    setAcceptedAnswer(id, commentId) { const p = posts.get(id); if (!p) return null; p.accepted_comment_id = commentId; return { ...p }; },
     softDeletePost(id) { const p = posts.get(id); if (p) p.deleted_at = now(); return p ? { ...p } : null; },
     listAllPosts() { return [...posts.values()].filter(p => !p.deleted_at).map(p => ({ ...p })); },
     // Beiträge, die ein externes Objekt referenzieren (z.B. einen Engpass) — Feed-Andockpunkt.

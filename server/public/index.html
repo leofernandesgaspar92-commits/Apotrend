@@ -280,6 +280,9 @@ async function mainScreen() {
         <button class="ghost small" id="pimgclear" style="display:none">✕ entfernen</button>
       </div>
       <img id="pimgprev" style="display:none;max-width:100%;border-radius:8px;margin-top:6px" />
+      <label style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer;font-size:14px">
+        <input type="checkbox" id="pfrage" style="width:auto;min-height:0"> ❓ Als Fachfrage stellen (beste Antwort auswählbar)
+      </label>
       <div class="row" style="margin-top:8px">
         <select id="pv" style="max-width:220px">
           <option value="public">🌍 Öffentlich (alle Apotheker)</option>
@@ -321,8 +324,9 @@ async function mainScreen() {
   attachMentionAutocomplete(document.getElementById('pb'));
   document.getElementById('pgo').onclick = async () => {
     try {
-      await api('POST','/api/posts',{ body:v('pb'), visibility:document.getElementById('pv').value, image:composeImage, sourceUrl:v('psrc') });
-      document.getElementById('pb').value=''; document.getElementById('psrc').value=''; clearImg(); loadFeed();
+      const isFrage = document.getElementById('pfrage').checked;
+      await api('POST','/api/posts',{ body:v('pb'), visibility:document.getElementById('pv').value, image:composeImage, sourceUrl:v('psrc'), kind: isFrage ? 'frage' : 'post' });
+      document.getElementById('pb').value=''; document.getElementById('psrc').value=''; document.getElementById('pfrage').checked=false; clearImg(); loadFeed();
     } catch(e){ document.getElementById('perr').textContent = e.message; }
   };
   document.getElementById('fgo').onclick = async () => {
@@ -1349,6 +1353,10 @@ async function renderVerifyCard(card) {
   };
 }
 
+function qBadgeHtml(answered) {
+  return `<span style="display:inline-block;background:${answered?'rgba(0,136,90,.12)':'rgba(41,82,204,.12)'};color:${answered?'#00885a':'#2952cc'};font-weight:700;font-size:13px;padding:2px 10px;border-radius:999px">${answered?'✔ Beantwortet':'❓ Offene Fachfrage'}</span>`;
+}
+
 function postCard(p) {
   const a = p.author || {};
   const rc = p.reaction_counts || {};
@@ -1363,6 +1371,7 @@ function postCard(p) {
       ${mine?'':'<button class="ghost small" data-follow="'+esc(a.handle)+'">Folgen</button>'}
     </div>
     <div class="muted" style="font-size:13px" title="${esc(p.created_at)}">🕒 ${relTime(p.created_at)}</div>
+    ${p.is_question?`<div style="margin-top:4px" data-qbadge>${qBadgeHtml(p.answered)}</div>`:''}
     <div class="post-body" data-body>${linkifyMentions(p.body)}</div>
     ${p.image && /^data:image\//.test(p.image) ? `<img src="${p.image}" alt="Bild zum Beitrag" style="max-width:100%;border-radius:10px;margin-top:8px;display:block" />` : ''}
     ${p.source_url ? `<div style="margin-top:6px"><a href="${esc(p.source_url)}" target="_blank" rel="noopener noreferrer" class="mention">🔗 Quelle</a></div>` : ''}
@@ -1384,6 +1393,7 @@ function postCard(p) {
       <img data-cimgprev style="display:none;max-width:140px;border-radius:8px;margin-top:6px" />
     </div>
   </div>`);
+  card._post = p; // für Q&A (beste Antwort) im Kommentar-Thread verfügbar machen
   card.querySelectorAll('[data-react]').forEach(btn => btn.onclick = async () => {
     try { await api('POST',`/api/posts/${p.id}/react`,{ type:btn.dataset.react }); loadFeed(); } catch(e){ alert(e.message); }
   });
@@ -1492,10 +1502,16 @@ function commentRow(postId, c, card, depth = 0) {
   const au = c.author || {};
   const mine = me && (c.author_user_id === me.user_id || au.handle === me.handle);
   const indent = Math.min(depth, 5) * 18;
-  const row = el(`<div class="comment" style="${indent?`margin-left:${indent}px;border-left:2px solid var(--line);`:''}">
+  const post = card._post || {};
+  const isQuestion = post.kind === 'frage';
+  const isAccepted = isQuestion && post.accepted_comment_id === c.id;
+  const iAmAsker = me && post.author && post.author.handle === me.handle;
+  const accentStyle = isAccepted ? 'border-left:3px solid #00885a;background:rgba(0,136,90,.06);' : (indent?'border-left:2px solid var(--line);':'');
+  const row = el(`<div class="comment" style="${indent?`margin-left:${indent}px;`:''}${accentStyle}">
     <div class="row" style="align-items:baseline">
       <b class="clickable" data-openprofile="${esc(au.handle||'')}">${esc(au.display_name||'Unbekannt')}</b>
       <span class="handle clickable" data-openprofile="${esc(au.handle||'')}">@${esc(au.handle||'?')}</span>
+      ${isAccepted?'<span style="color:#00885a;font-weight:700;font-size:12px;margin-left:6px">✔ Beste Antwort</span>':''}
       <span class="muted" style="font-size:12px;margin-left:6px" title="${esc(c.created_at)}">${relTime(c.created_at)}</span>
       ${c.edited_at?'<span class="vis" style="margin-left:6px">✏️ bearbeitet</span>':''}
       <span class="sp" style="flex:1"></span>
@@ -1506,9 +1522,21 @@ function commentRow(postId, c, card, depth = 0) {
     <div class="reacts" style="margin-top:4px">
       ${REACTS.map(([k,lab])=>`<button class="small" data-creact="${k}">${lab.split(' ')[0]} ${(c.reaction_counts&&c.reaction_counts[k])||0}</button>`).join('')}
       <button class="ghost small" data-creply>↩ Antworten</button>
+      ${(isQuestion && iAmAsker && !mine)?`<button class="ghost small" data-accept title="Diese Antwort als beste markieren">${isAccepted?'✔ Beste Antwort (aufheben)':'✔ Als beste Antwort'}</button>`:''}
       ${mine?'':'<button class="ghost small" data-creport title="Kommentar melden">🚩</button>'}
     </div>
   </div>`);
+  const acceptBtn = row.querySelector('[data-accept]');
+  if (acceptBtn) acceptBtn.onclick = async () => {
+    acceptBtn.disabled = true;
+    try {
+      const nowAccepted = !isAccepted;
+      await api('POST',`/api/posts/${postId}/accept`,{ commentId: c.id });
+      if (card._post) card._post.accepted_comment_id = nowAccepted ? c.id : null;
+      const qb = card.querySelector('[data-qbadge]'); if (qb) qb.innerHTML = qBadgeHtml(nowAccepted);
+      loadComments(postId, card);
+    } catch(e){ alert(e.message); acceptBtn.disabled = false; }
+  };
   row.querySelectorAll('[data-openprofile]').forEach(el => { if (el.dataset.openprofile) el.onclick = () => openProfile(el.dataset.openprofile); });
   row.querySelectorAll('[data-hashtag]').forEach(el => el.onclick = () => openHashtag(el.dataset.hashtag));
   const crep = row.querySelector('[data-creport]');
@@ -1567,8 +1595,8 @@ async function refreshNotifCount() {
 }
 async function showNotifications() {
   const d = await api('GET','/api/notifications');
-  const verbs = { follow:'folgt dir jetzt', comment:'hat kommentiert', reaction:'hat reagiert auf deinen Beitrag', mention:'hat dich erwähnt', dm:'hat dir geschrieben', exchange_offer:'bietet jetzt an, was du suchst:', exchange_want:'sucht, was du anbietest:', verified:'Dein Profil wurde verifiziert ✔', watch_alert:'Neuer Status bei deinem beobachteten Wirkstoff:', shortage_confirm:'bestätigt deinen gemeldeten Engpass:' };
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅' };
+  const verbs = { follow:'folgt dir jetzt', comment:'hat kommentiert', reaction:'hat reagiert auf deinen Beitrag', mention:'hat dich erwähnt', dm:'hat dir geschrieben', exchange_offer:'bietet jetzt an, was du suchst:', exchange_want:'sucht, was du anbietest:', verified:'Dein Profil wurde verifiziert ✔', watch_alert:'Neuer Status bei deinem beobachteten Wirkstoff:', shortage_confirm:'bestätigt deinen gemeldeten Engpass:', answer_accepted:'hat deine Antwort als beste markiert ✔' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆' };
   app.innerHTML = '';
   const head = el(`<div class="card"><div class="row"><h1 style="flex:1">🔔 Benachrichtigungen</h1>
     <button class="ghost small" id="back">Zurück</button></div>

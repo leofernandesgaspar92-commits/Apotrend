@@ -52,6 +52,8 @@ export function createSocialService(social, foundationRepo, options = {}) {
       author: prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified, is_editorial: prof.is_editorial } : null,
       comment_count: social.countComments(post.id),
       reaction_counts: counts,
+      is_question: post.kind === 'frage',
+      answered: !!post.accepted_comment_id,
     };
   }
 
@@ -174,7 +176,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (!text && !img) throw new Error('Beitrag darf nicht leer sein (Text oder Bild).');
       if (text.length > MAX_BODY) throw new Error(`Beitrag zu lang (max ${MAX_BODY}).`);
       if (!['public', 'followers'].includes(visibility)) throw new Error('Ungueltige Sichtbarkeit.');
-      if (!['post', 'news'].includes(kind)) throw new Error('Ungueltige Beitragsart.');
+      if (!['post', 'news', 'frage'].includes(kind)) throw new Error('Ungueltige Beitragsart.');
       if (refType && !['shortage', 'price', 'news', 'rabatt'].includes(refType)) throw new Error('Ungueltiger Referenztyp.');
       const post = social.createPost({ authorUserId: actorUserId, body: text, visibility, refType, refId, kind, image: img, sourceUrl: src });
       notifyMentions(text, actorUserId, 'post', post.id);
@@ -199,6 +201,24 @@ export function createSocialService(social, foundationRepo, options = {}) {
       const p = social.getPost(postId);
       if (!p || !visibleTo(p, viewerUserId)) return null;
       return decorate(p);
+    },
+
+    // Beste Antwort einer Frage markieren/aufheben — nur der/die Fragesteller:in.
+    // commentId muss ein Kommentar dieser Frage sein; erneut derselbe => Markierung aufheben.
+    acceptAnswer(actorUserId, postId, commentId) {
+      requireUser(actorUserId);
+      const p = social.getPost(postId);
+      if (!p || p.deleted_at) throw new Error('Beitrag nicht gefunden.');
+      if (p.kind !== 'frage') throw new Error('Nur Fragen können eine beste Antwort haben.');
+      if (p.author_user_id !== actorUserId) throw new ForbiddenError('Nur der/die Fragesteller:in darf die beste Antwort wählen.');
+      let next = null;
+      if (p.accepted_comment_id !== commentId) {
+        const c = social.getComment(commentId);
+        if (!c || c.deleted_at || c.post_id !== postId) throw new Error('Ungueltige Antwort.');
+        next = commentId;
+        if (c.author_user_id !== actorUserId) notify(c.author_user_id, 'answer_accepted', actorUserId, 'post', postId);
+      }
+      return decorate(social.setAcceptedAnswer(postId, next));
     },
 
     // ── Kommentare (Thread) ──

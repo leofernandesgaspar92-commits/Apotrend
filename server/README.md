@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Fachfragen-Q&A im Feed:** Beiträge lassen sich als „❓ Fachfrage" posten
+>   (Checkbox im Compose-Feld). Die/der Fragesteller:in markiert eine Antwort als
+>   „✔ beste Antwort" — sie wird hervorgehoben, die Frage als „✔ Beantwortet"
+>   gekennzeichnet, die antwortende Person benachrichtigt (🏆). Markierung ist umschaltbar,
+>   nur der/die Fragesteller:in darf wählen, nur echte Antworten dieser Frage.
+>   (`POST /api/posts/:id/accept`, post.kind='frage', accepted_comment_id; 169 Tests grün,
+>   end-to-end im Browser verifiziert.)
 > - ✅ **„Für dich" verschlankt (weniger Scrollen):** Sparpotenzial, bald ablaufende
 >   Aktionen und Top-Rabatt stehen jetzt kompakt als Kennzahl-Kacheln oben statt als je
 >   eigene Karte; die Startübersicht ist etwa halb so hoch. Persönlich-Handlungsrelevantes
