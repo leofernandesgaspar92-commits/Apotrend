@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Preisverlauf-Sparkline:** jede Lieferanten-Zeile im Preisvergleich zeigt eine
+>   kompakte Trendlinie aus den letzten Preisen (steigend rot / fallend grün / gleich
+>   grau) — die Richtung steht zusätzlich als ▲/▼-Prozent daneben, also nie nur über
+>   Farbe (barrierefrei). Einzelserie, dünne 2px-Linie, dezent. (Frontend-SVG aus dem
+>   `series`-Feld; im Browser verifiziert.)
 > - ✅ **Beobachtungsliste — Schnell-Vorschläge:** die Beobachtungsliste auf „Für dich"
 >   schlägt aktuell kritische Wirkstoffe als Ein-Klick-Chips vor („🔴 Amoxicillin +"),
 >   solange sie noch nicht beobachtet werden — neue Nutzer:innen kommen sofort zum
