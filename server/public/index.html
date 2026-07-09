@@ -70,9 +70,12 @@
   .comment { font-size:0.9em; padding:6px 0; border-bottom:1px solid var(--line); }
   .comment:last-child { border-bottom:none; }
   .hidden { display:none; }
+  .skiplink { position:absolute; left:-9999px; top:0; z-index:20; background:var(--green); color:#fff; padding:10px 14px; border-radius:0 0 8px 0; font-weight:700; }
+  .skiplink:focus { left:0; }
 </style>
 </head>
 <body>
+<a href="#app" class="skiplink" id="skiplink">Zum Inhalt springen</a>
 <header>
   <span class="logo">🟢 ApoTrend</span>
   <span class="muted" id="whoami" style="color:#dff5ea;"></span>
@@ -85,7 +88,7 @@
   <button class="bell hidden" id="btnNotif" title="Benachrichtigungen" aria-label="Benachrichtigungen">🔔<span class="badge hidden" id="notifBadge">0</span></button>
   <button class="hidden" id="btnLogout">Abmelden</button>
 </header>
-<div class="wrap" id="app"></div>
+<main class="wrap" id="app" tabindex="-1" role="main"></main>
 
 <script>
 // ── Schriftgröße (Barrierefreiheit): Normal / Groß / Sehr groß, gespeichert ──

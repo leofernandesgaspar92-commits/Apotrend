@@ -6,6 +6,9 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Barrierefreiheit — „Zum Inhalt springen":** Skip-Link (per Tab sichtbar) springt
+>   zum Hauptinhalt (`<main id="app">` mit Fokus), damit Tastatur-/Screenreader-Nutzer:innen
+>   die Kopfleiste überspringen. (Im Browser mit Tastatur verifiziert.)
 > - ✅ **Aktuelle Themen (Trending-Hashtags):** die Startübersicht zeigt die häufigsten
 >   #Hashtags aus den letzten sichtbaren Beiträgen als Chips (mit Anzahl); Klick öffnet die
 >   Hashtag-Ansicht. (`GET /api/trending/hashtags`; 193 Tests grün, im Browser verifiziert.)
