@@ -110,6 +110,15 @@ test('GET /api/colleagues/nearby leer ohne eigenes Bundesland', async () => {
   assert.deepEqual(nearby.people, []);
 });
 
+test('GET /api/trending/hashtags zählt Hashtags aus sichtbaren Beiträgen', async () => {
+  const a = await reg('th_a' + PORT);
+  await post('/api/posts', a, { body: 'Engpass bei #Amoxicillin und #Antibiotika ' + PORT, visibility: 'public' });
+  await post('/api/posts', a, { body: 'Noch was zu #Amoxicillin ' + PORT, visibility: 'public' });
+  const d = await j('/api/trending/hashtags', a);
+  const amox = d.hashtags.find(h => h.tag.toLowerCase() === 'amoxicillin');
+  assert.ok(amox && amox.count >= 2, 'Amoxicillin mindestens 2x');
+});
+
 test('Unbekannte Route -> 404', async () => {
   const r = await fetch(BASE + '/api/gibtsnicht');
   assert.equal(r.status, 404);

@@ -189,6 +189,29 @@ export function createSocialService(social, foundationRepo, options = {}) {
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
         .map(decorate);
     },
+    // Aktuelle Themen: häufigste #Hashtags aus den letzten sichtbaren Beiträgen.
+    trendingHashtags(viewerUserId, { limit = 8, lookback = 200 } = {}) {
+      requireUser(viewerUserId);
+      const counts = new Map();     // tagLower -> count
+      const display = new Map();    // tagLower -> Original-Schreibweise (erste)
+      const posts = social.listAllPosts()
+        .filter(p => visibleTo(p, viewerUserId))
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .slice(0, lookback);
+      for (const p of posts) {
+        const seen = new Set(); // ein Beitrag zählt je Hashtag nur einmal
+        for (const m of String(p.body || '').matchAll(/(?:^|[^\wäöüß#])#([\wäöüß]{2,30})/gi)) {
+          const raw = m[1]; const key = raw.toLowerCase();
+          if (seen.has(key)) continue; seen.add(key);
+          counts.set(key, (counts.get(key) || 0) + 1);
+          if (!display.has(key)) display.set(key, raw);
+        }
+      }
+      return [...counts.entries()]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .slice(0, limit)
+        .map(([key, count]) => ({ tag: display.get(key), count }));
+    },
     // Beitrags-Suche: sichtbare Beiträge, deren Text q enthält (dekoriert).
     searchPosts(viewerUserId, q) {
       requireUser(viewerUserId);

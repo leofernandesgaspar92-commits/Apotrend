@@ -485,6 +485,22 @@ async function loadOverview() {
 
   // Apotheken im selben Bundesland (nicht-blockierend nachgeladen)
   renderNearbyColleagues(feed);
+  // Aktuelle Themen (Trending-Hashtags, nicht-blockierend)
+  renderTrendingHashtags(feed);
+}
+
+async function renderTrendingHashtags(feed) {
+  let d;
+  try { d = await api('GET','/api/trending/hashtags'); } catch { return; }
+  if (!d.hashtags || !d.hashtags.length) return;
+  const card = el(`<div class="card"><div class="muted" style="font-size:13px;margin-bottom:6px">🏷️ Aktuelle Themen:</div><div class="row" data-tt style="flex-wrap:wrap;gap:6px"></div></div>`);
+  const box = card.querySelector('[data-tt]');
+  d.hashtags.forEach(h => {
+    const chip = el(`<button class="small sortbtn">#${esc(h.tag)} <span class="muted">${h.count}</span></button>`);
+    chip.onclick = () => openHashtag(h.tag);
+    box.appendChild(chip);
+  });
+  feed.appendChild(card);
 }
 
 async function renderNearbyColleagues(feed) {

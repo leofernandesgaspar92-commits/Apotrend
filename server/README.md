@@ -6,6 +6,9 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Aktuelle Themen (Trending-Hashtags):** die Startübersicht zeigt die häufigsten
+>   #Hashtags aus den letzten sichtbaren Beiträgen als Chips (mit Anzahl); Klick öffnet die
+>   Hashtag-Ansicht. (`GET /api/trending/hashtags`; 193 Tests grün, im Browser verifiziert.)
 > - ✅ **Rabatt-Ersparnis-Hochrechnung:** jede Aktion mit Mindestmenge zeigt zusätzlich die
 >   Gesamt-Ersparnis bei Mindestabnahme („Bei Mindestabnahme (50 Stück): € 35,00 gespart")
 >   — konkreter Einkaufsvorteil statt nur Ersparnis je Packung. (Im Browser verifiziert.)

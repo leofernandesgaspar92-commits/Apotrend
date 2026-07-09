@@ -208,6 +208,7 @@ const routes = [
   ['POST', /^\/api\/posts$/, true, async ({ userId, body }) => social.createPost(userId, { body: body.body, visibility: body.visibility, kind: body.kind, image: body.image, sourceUrl: body.sourceUrl })],
   ['GET', /^\/api\/news$/, true, async ({ userId }) => ({ posts: enrichPosts(social.newsFeed(userId)) })],
   ['GET', /^\/api\/hashtag\/([^/]+)$/, true, async ({ userId, params }) => ({ tag: decodeURIComponent(params[0]), posts: enrichPosts(social.postsByHashtag(userId, decodeURIComponent(params[0]))) })],
+  ['GET', /^\/api\/trending\/hashtags$/, true, async ({ userId }) => ({ hashtags: social.trendingHashtags(userId) })],
   ['GET', /^\/api\/posts\/([^/]+)$/, true, async ({ userId, params }) => {
     const p = social.getPost(userId, params[0]);
     if (!p) { const e = new Error('Beitrag nicht gefunden'); e.status = 404; throw e; }
