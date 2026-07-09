@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Bezugsquellen zu beobachteten Wirkstoffen (Beobachtungsliste ↔ Biete/Suche):**
+>   bietet eine Apotheke einen von dir beobachteten Wirkstoff an, erscheint das auf „Für
+>   dich" („📦 Amoxicillin — 2 Angebote"), Klick springt gefiltert in den Austausch. Genau
+>   der Moment, in dem man während eines Engpasses Bestand sucht. (`overview.watch_offers`;
+>   172 Tests grün, end-to-end im Browser verifiziert.)
 > - ✅ **„Meine Aktivität" (eigenes Profil):** ein Ort für die eigenen Beiträge —
 >   Fachfragen (mit offen/beantwortet), Engpass-Meldungen (mit Status/Bestätigungen)
 >   und Austausch-Einträge, jeweils anklickbar. Komposition am HTTP-Layer aus bereits

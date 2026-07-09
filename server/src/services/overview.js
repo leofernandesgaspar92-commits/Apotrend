@@ -13,6 +13,16 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
       const expiringSoon = topRabatte.filter(r => r.expiring_soon);
       const watchlist = shortages.myWatchlist(userId);
 
+      // Bezugsquellen zu beobachteten Wirkstoffen: offene "Biete"-Einträge, deren
+      // Bezeichnung einen beobachteten Wirkstoff enthält — hilft beim Beschaffen
+      // während eines Engpasses. Nur wo es Angebote gibt.
+      const openBiete = exchange.list(userId, { kind: 'biete', status: 'offen' });
+      const watchOffers = watchlist.map(w => {
+        const key = w.wirkstoff.trim().toLowerCase();
+        const offers_count = openBiete.filter(e => (e.bezeichnung || '').toLowerCase().includes(key)).length;
+        return { wirkstoff: w.wirkstoff, status: w.status, offers_count };
+      }).filter(x => x.offers_count > 0);
+
       // Aktionen zu beobachteten Wirkstoffen: verbindet Beobachtungsliste mit laufenden
       // Rabatten (beste Aktion je beobachtetem Wirkstoff). Doppelnutzen auf einen Blick.
       const dealByWirkstoff = new Map();
@@ -36,6 +46,7 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
         shortages: { kritisch: kritisch.length, total: sh.length, top: kritisch.slice(0, 3) },
         watchlist: { total: watchlist.length, items: watchlist, alerts: watchlist.filter(w => w.status === 'kritisch' || w.status === 'eingeschraenkt').length },
         watch_deals: watchDeals,
+        watch_offers: watchOffers,
         exchange: {
           biete: ex.filter(e => e.kind === 'biete').length,
           suche: ex.filter(e => e.kind === 'suche').length,

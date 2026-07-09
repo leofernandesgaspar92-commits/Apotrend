@@ -436,6 +436,19 @@ async function loadOverview() {
     feed.appendChild(c);
   }
 
+  // Bezugsquellen zu beobachteten Wirkstoffen (Beobachtungsliste ↔ Biete/Suche)
+  if (d.watch_offers && d.watch_offers.length) {
+    const c = el(`<div class="card"><div class="row"><b>🔄 Bezugsquellen zu deinen Wirkstoffen</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>Zum Austausch</button></div>
+      <div class="muted" style="font-size:13px;margin:2px 0 6px">Für diese beobachteten Wirkstoffe bieten Apotheken gerade Bestand an:</div>
+      ${d.watch_offers.map(w=>`<div class="comment clickable" data-w="${esc(w.wirkstoff)}">📦 <b>${esc(w.wirkstoff)}</b> — <span style="color:#00885a;font-weight:700">${w.offers_count} ${w.offers_count>1?'Angebote':'Angebot'}</span> im Bestandsaustausch</div>`).join('')}</div>`);
+    c.querySelector('[data-all]').onclick = () => goTab('exchange');
+    c.querySelectorAll('[data-w]').forEach(row => row.onclick = () => {
+      exchangeQuery = row.dataset.w; exchangeFilter = 'biete'; exchangeBL = ''; exchangeMine = false;
+      goTab('exchange');
+    });
+    feed.appendChild(c);
+  }
+
   // Kritische Engpässe (Top 3)
   if (d.shortages.top.length) {
     const c = el(`<div class="card"><div class="row"><b>🔴 Kritische Engpässe</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>Alle ansehen</button></div>

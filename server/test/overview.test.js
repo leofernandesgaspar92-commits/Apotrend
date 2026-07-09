@@ -59,3 +59,20 @@ test('watch_deals: leer, wenn nichts beobachtet wird', () => {
   const { overview, a } = setup();
   assert.deepEqual(overview.forUser(a).watch_deals, []);
 });
+
+test('watch_offers: beobachteter Wirkstoff mit offenem Biete-Angebot', () => {
+  const { overview, exchange, shortages, a } = setup();
+  shortages.watch(a, 'Amoxicillin');
+  exchange.create(a, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg Filmtabletten' });
+  exchange.create(a, { kind: 'suche', bezeichnung: 'Amoxicillin gesucht' }); // suche zählt NICHT
+  const o = overview.forUser(a);
+  const wo = o.watch_offers.find(x => x.wirkstoff === 'Amoxicillin');
+  assert.ok(wo, 'Bezugsquelle vorhanden');
+  assert.equal(wo.offers_count, 1);
+});
+
+test('watch_offers: leer ohne passende Angebote', () => {
+  const { overview, shortages, a } = setup();
+  shortages.watch(a, 'Amoxicillin');
+  assert.deepEqual(overview.forUser(a).watch_offers, []);
+});
