@@ -50,7 +50,7 @@ const rabatteRepo = createRabatteRepo({ seed: !restoring });
 const rabatte = createRabatteService(rabatteRepo, social);
 const exchangeRepo = createExchangeRepo();
 const exchange = createExchangeService(exchangeRepo, social, repo, shortagesRepo);
-const search = createSearchService({ social, shortagesRepo, pricesRepo, rabatteRepo });
+const search = createSearchService({ social, shortagesRepo, pricesRepo, rabatteRepo, exchange });
 const overview = createOverviewService({ shortages, exchange, social, rabatte, prices });
 
 if (restoring) {

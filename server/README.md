@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Suche umfasst jetzt den Bestandsaustausch:** die globale Suche findet zusätzlich
+>   offene Biete/Suche-Einträge (mit Autor-Profil) — „Amoxicillin" zeigt also auch, wer
+>   gerade Bestand anbietet. (`searchService` bekommt `exchange` injiziert; 187 Tests grün,
+>   im Browser verifiziert.)
 > - ✅ **Zuletzt angesehene Wirkstoffe:** die Startübersicht zeigt „🕘 Zuletzt angesehen"
 >   als Chips (neueste zuerst, max 8) für den schnellen Wiedereinstieg in oft
 >   nachgeschlagene Medikamente. Nur lokal im Gerät gespeichert (localStorage, kein

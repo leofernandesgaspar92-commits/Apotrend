@@ -1326,6 +1326,7 @@ async function renderSearch(q) {
         <div class="muted">${esc(pr.supplier)} · ${esc(PROV[pr.provenance]||pr.provenance)}</div></div>`)));
     }
     if (d.rabatte.length) { section('🏷️ Rabatt-Aktionen'); d.rabatte.forEach((r,i) => { r.rank = i+1; feed.appendChild(rabattCard(r)); }); }
+    if (d.exchange && d.exchange.length) { section('🔄 Biete/Suche'); d.exchange.forEach(e => feed.appendChild(exchangeCard(e))); }
   } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
 }
 

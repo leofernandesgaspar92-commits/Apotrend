@@ -6,25 +6,37 @@ import { createShortagesRepo } from '../src/repo/shortagesRepo.js';
 import { createPricesRepo } from '../src/repo/pricesRepo.js';
 import { createRabatteRepo } from '../src/repo/rabatteRepo.js';
 import { createOrgAuthService } from '../src/services/orgAuth.js';
+import { createExchangeRepo } from '../src/repo/exchangeRepo.js';
 import { createSocialService } from '../src/services/social.js';
+import { createExchangeService } from '../src/services/exchange.js';
 import { createSearchService } from '../src/services/search.js';
 
 function setup() {
   const repo = createMemoryRepo();
   const orgAuth = createOrgAuthService(repo);
   const social = createSocialService(createSocialRepo(), repo);
+  const exchange = createExchangeService(createExchangeRepo(), social, repo);
   const search = createSearchService({
     social,
     shortagesRepo: createShortagesRepo(),
     pricesRepo: createPricesRepo(),
     rabatteRepo: createRabatteRepo({ today: '2026-07-07' }),
+    exchange,
   });
   const A = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'A' }, owner: { name: 'Anna', email: 'a@a.at', password: 'geheim123' } });
   social.createProfile(A.user.id, { handle: 'anna', displayName: 'Anna Huber', specializations: ['Onkologie'] });
   const B = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'B' }, owner: { name: 'Ben', email: 'b@b.at', password: 'geheim123' } });
   social.createProfile(B.user.id, { handle: 'ben', displayName: 'Ben Mayer' });
-  return { social, search, a: A.user.id, b: B.user.id };
+  return { social, search, exchange, a: A.user.id, b: B.user.id };
 }
+
+test('Suche findet offene Biete/Suche-Einträge im Bestandsaustausch', () => {
+  const { search, exchange, a } = setup();
+  exchange.create(a, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg Filmtabletten', menge: '20 Pkg' });
+  const r = search.search(a, 'Amoxicillin');
+  assert.ok(r.exchange.some(e => /Amoxicillin/i.test(e.bezeichnung)), 'Austausch-Eintrag gefunden');
+  assert.ok(r.exchange[0].author, 'mit Autor-Profil dekoriert');
+});
 
 test('Suche bündelt Treffer aus allen Modulen (Amoxicillin)', () => {
   const { social, search, a } = setup();

@@ -2,13 +2,13 @@
 // allen Modulen: Personen, Beiträge, Engpässe, Preise, Rabatte. Sichtbarkeit von
 // Beiträgen wird über die Social-Schicht (visibleTo) erzwungen. Marktdaten sind
 // nicht personenbezogen und daher frei durchsuchbar.
-export function createSearchService({ social, shortagesRepo, pricesRepo, rabatteRepo }) {
+export function createSearchService({ social, shortagesRepo, pricesRepo, rabatteRepo, exchange = null }) {
   const norm = (v) => String(v ?? '').toLowerCase();
 
   return {
     search(viewerUserId, query, { limit = 10 } = {}) {
       const q = norm(query).trim();
-      if (!q) return { query: '', people: [], posts: [], shortages: [], prices: [], rabatte: [], total: 0 };
+      if (!q) return { query: '', people: [], posts: [], shortages: [], prices: [], rabatte: [], exchange: [], total: 0 };
 
       const match = (...fields) => fields.some(f => norm(f).includes(q));
 
@@ -33,8 +33,11 @@ export function createSearchService({ social, shortagesRepo, pricesRepo, rabatte
         .sort((a, b) => b.rabatt_pct - a.rabatt_pct)
         .slice(0, limit);
 
-      const total = people.length + posts.length + shortages.length + prices.length + rabatte.length;
-      return { query: q, people, posts, shortages, prices, rabatte, total };
+      // Offene Biete/Suche-Einträge im Bestandsaustausch (mit Autor-Profil).
+      const exchangeHits = exchange ? exchange.list(viewerUserId, { q }).slice(0, limit) : [];
+
+      const total = people.length + posts.length + shortages.length + prices.length + rabatte.length + exchangeHits.length;
+      return { query: q, people, posts, shortages, prices, rabatte, exchange: exchangeHits, total };
     },
   };
 }
