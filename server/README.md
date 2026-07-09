@@ -6,6 +6,9 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Apotheken in deinem Bundesland:** die Startübersicht zeigt Kolleg:innen im selben
+>   Bundesland (aus dem Profil) mit Folgen-Button — Umkreis-Vernetzung für den
+>   Bestandsaustausch. (`GET /api/colleagues/nearby`; 191 Tests grün, im Browser verifiziert.)
 > - ✅ **Bundesland im Profil:** Apotheken hinterlegen ihr Bundesland (Profil bearbeiten,
 >   9 AT-Länder, serverseitig validiert). Es wird am Profil (📍) angezeigt und bei neuen
 >   Biete/Suche-Einträgen vorausgewählt — weniger Tippen, Grundlage für Umkreis-Bezug.

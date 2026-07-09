@@ -131,6 +131,25 @@ export function createSocialService(social, foundationRepo, options = {}) {
         .sort((a, b) => b.follower_count - a.follower_count)
         .slice(0, limit);
     },
+    // Apotheken im selben Bundesland (für Umkreis-Vernetzung). Ohne eigenes
+    // Bundesland: leere Liste. Nicht sich selbst, nicht bereits gefolgt zuerst egal.
+    colleaguesInBundesland(viewerUserId, limit = 10) {
+      requireUser(viewerUserId);
+      const meProf = social.getProfileByUserId(viewerUserId);
+      const bl = meProf && meProf.bundesland;
+      if (!bl) return { bundesland: null, people: [] };
+      const following = new Set(social.listFollowing(viewerUserId));
+      const people = social.listProfiles()
+        .filter(p => p.user_id !== viewerUserId && p.bundesland === bl)
+        .map(p => ({
+          handle: p.handle, display_name: p.display_name, verified: p.verified, is_editorial: p.is_editorial,
+          title: p.title, specializations: p.specializations || [], bundesland: p.bundesland,
+          is_following: following.has(p.user_id), follower_count: social.listFollowers(p.user_id).length,
+        }))
+        .sort((a, b) => Number(a.is_following) - Number(b.is_following) || b.follower_count - a.follower_count)
+        .slice(0, limit);
+      return { bundesland: bl, people };
+    },
     // Handle-Vorschläge für @-Autovervollständigung (Präfix zuerst, dann enthält).
     searchHandles(q, limit = 6) {
       const s = String(q ?? '').trim().toLowerCase();

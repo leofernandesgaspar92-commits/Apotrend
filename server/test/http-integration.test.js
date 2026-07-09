@@ -88,6 +88,28 @@ test('GET /api/profiles/:handle/followers|following listet Profile', async () =>
   assert.ok(following.people.some(p => p.handle === bHandle), 'a folgt b');
 });
 
+test('GET /api/colleagues/nearby findet Apotheken im selben Bundesland', async () => {
+  const a = await reg('nb_a' + PORT);
+  const b = await reg('nb_b' + PORT);
+  const c = await reg('nb_c' + PORT);
+  await post('/api/profile', a, { bundesland: 'Tirol' });
+  await post('/api/profile', b, { bundesland: 'Tirol' });
+  await post('/api/profile', c, { bundesland: 'Wien' });
+  const aHandleB = (await j('/api/me', b)).profile.handle;
+  const aHandleC = (await j('/api/me', c)).profile.handle;
+  const nearby = await j('/api/colleagues/nearby', a);
+  assert.equal(nearby.bundesland, 'Tirol');
+  assert.ok(nearby.people.some(p => p.handle === aHandleB), 'b (Tirol) gefunden');
+  assert.ok(!nearby.people.some(p => p.handle === aHandleC), 'c (Wien) NICHT gefunden');
+});
+
+test('GET /api/colleagues/nearby leer ohne eigenes Bundesland', async () => {
+  const a = await reg('nx_a' + PORT);
+  const nearby = await j('/api/colleagues/nearby', a);
+  assert.equal(nearby.bundesland, null);
+  assert.deepEqual(nearby.people, []);
+});
+
 test('Unbekannte Route -> 404', async () => {
   const r = await fetch(BASE + '/api/gibtsnicht');
   assert.equal(r.status, 404);
