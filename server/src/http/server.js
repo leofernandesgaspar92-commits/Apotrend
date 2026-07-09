@@ -49,7 +49,7 @@ const prices = createPricesService(pricesRepo, social);
 const rabatteRepo = createRabatteRepo({ seed: !restoring });
 const rabatte = createRabatteService(rabatteRepo, social);
 const exchangeRepo = createExchangeRepo();
-const exchange = createExchangeService(exchangeRepo, social, repo);
+const exchange = createExchangeService(exchangeRepo, social, repo, shortagesRepo);
 const search = createSearchService({ social, shortagesRepo, pricesRepo, rabatteRepo });
 const overview = createOverviewService({ shortages, exchange, social, rabatte, prices });
 

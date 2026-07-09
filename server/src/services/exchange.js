@@ -7,7 +7,7 @@ import { cleanImage } from '../domain/media.js';
 const KINDS = ['biete', 'suche'];
 export const BUNDESLAENDER = ['Wien', 'Niederösterreich', 'Oberösterreich', 'Steiermark', 'Tirol', 'Kärnten', 'Salzburg', 'Vorarlberg', 'Burgenland'];
 
-export function createExchangeService(exchangeRepo, social, foundationRepo) {
+export function createExchangeService(exchangeRepo, social, foundationRepo, shortagesRepo = null) {
   function requireUser(userId) {
     if (!foundationRepo.getUserById(userId)) throw new Error('Unbekannter Nutzer.');
   }
@@ -58,6 +58,12 @@ export function createExchangeService(exchangeRepo, social, foundationRepo) {
         image: cleanImage(image),
       });
       notifyMatches(created); // aktives Matching Biete<->Suche
+      // Beobachter:innen benachrichtigen, wenn jemand ihren Wirkstoff anbietet.
+      if (created.kind === 'biete' && shortagesRepo && shortagesRepo.watchersForText) {
+        for (const { userId, wirkstoff } of shortagesRepo.watchersForText(created.bezeichnung)) {
+          social.pushNotification({ userId, type: 'watch_offer', actorUserId: created.author_user_id, refType: 'exchange', refId: created.id, label: wirkstoff });
+        }
+      }
       return decorate(created);
     },
     // Offene Einträge (Standard), optional nach Art + Text (Präparat) + Bundesland gefiltert.

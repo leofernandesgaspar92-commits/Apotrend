@@ -91,6 +91,19 @@ export function createShortagesRepo({ seed = true } = {}) {
       for (const [userId, m] of watch) if (m.has(key)) out.push(userId);
       return out;
     },
+    // Beobachter:innen, deren Wirkstoff im Freitext vorkommt (z.B. Austausch-Bezeichnung).
+    // Ein Treffer je Nutzer (erster passender Wirkstoff als Label).
+    watchersForText(text) {
+      const hay = String(text || '').toLowerCase();
+      if (!hay) return [];
+      const out = [];
+      for (const [userId, m] of watch) {
+        for (const [key, display] of m) {
+          if (key && hay.includes(key)) { out.push({ userId, wirkstoff: display }); break; }
+        }
+      }
+      return out;
+    },
     purgeUser(userId) {
       watch.delete(userId);
       // Melder-Identität anonymisieren, Bestätigungen des Nutzers entfernen (DSGVO).

@@ -1669,8 +1669,8 @@ async function refreshNotifCount() {
 }
 async function showNotifications() {
   const d = await api('GET','/api/notifications');
-  const verbs = { follow:'folgt dir jetzt', comment:'hat kommentiert', reaction:'hat reagiert auf deinen Beitrag', mention:'hat dich erwähnt', dm:'hat dir geschrieben', exchange_offer:'bietet jetzt an, was du suchst:', exchange_want:'sucht, was du anbietest:', verified:'Dein Profil wurde verifiziert ✔', watch_alert:'Neuer Status bei deinem beobachteten Wirkstoff:', shortage_confirm:'bestätigt deinen gemeldeten Engpass:', answer_accepted:'hat deine Antwort als beste markiert ✔' };
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆' };
+  const verbs = { follow:'folgt dir jetzt', comment:'hat kommentiert', reaction:'hat reagiert auf deinen Beitrag', mention:'hat dich erwähnt', dm:'hat dir geschrieben', exchange_offer:'bietet jetzt an, was du suchst:', exchange_want:'sucht, was du anbietest:', verified:'Dein Profil wurde verifiziert ✔', watch_alert:'Neuer Status bei deinem beobachteten Wirkstoff:', shortage_confirm:'bestätigt deinen gemeldeten Engpass:', answer_accepted:'hat deine Antwort als beste markiert ✔', watch_offer:'Neuer Bestand zu deinem beobachteten Wirkstoff:' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦' };
   app.innerHTML = '';
   const head = el(`<div class="card"><div class="row"><h1 style="flex:1">🔔 Benachrichtigungen</h1>
     <button class="ghost small" id="back">Zurück</button></div>
@@ -1681,7 +1681,7 @@ async function showNotifications() {
   if (!d.notifications.length) list.innerHTML = '<div class="muted">Noch keine Benachrichtigungen.</div>';
   d.notifications.forEach(n => {
     const who = n.actor ? n.actor.display_name : 'Jemand';
-    const noWho = n.type === 'verified' || n.type === 'watch_alert';
+    const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer';
     const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:#eef6f1'}">
       <div class="row" style="align-items:baseline">
         <span>${icons[n.type]||'🔔'}</span>
@@ -1693,8 +1693,8 @@ async function showNotifications() {
       if (!n.read) { api('POST',`/api/notifications/${n.id}/read`).then(refreshNotifCount).catch(()=>{}); }
       if (n.type === 'follow' && n.actor) { mainScreen().then(()=>openProfile(n.actor.handle)); }
       else if (n.type === 'dm' && n.ref_id) { openDmThread(n.ref_id); }
-      else if (n.type === 'exchange_offer' || n.type === 'exchange_want') {
-        mainScreen().then(()=>{ exchangeQuery = (n.label||'').split(/\s+/)[0]; exchangeFilter=''; exchangeBL=''; tab='exchange';
+      else if (n.type === 'exchange_offer' || n.type === 'exchange_want' || n.type === 'watch_offer') {
+        mainScreen().then(()=>{ exchangeQuery = (n.label||'').split(/\s+/)[0]; exchangeFilter = n.type==='watch_offer'?'biete':''; exchangeBL=''; tab='exchange';
           document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
           const tb=document.querySelector('.tabs button[data-tab="exchange"]'); if(tb) tb.classList.add('active'); loadTab(); });
       }

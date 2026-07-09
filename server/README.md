@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Bestands-Alarm für beobachtete Wirkstoffe:** bietet eine Apotheke im Austausch
+>   Bestand an, der einen von dir beobachteten Wirkstoff enthält, wirst du sofort
+>   benachrichtigt („📦 Neuer Bestand zu deinem beobachteten Wirkstoff: Amoxicillin") —
+>   Klick öffnet den Austausch gefiltert. Der aktive Gegenpart zur Bezugsquellen-Karte.
+>   (`exchange.create` → `shortagesRepo.watchersForText`, Typ watch_offer; 177 Tests grün,
+>   end-to-end im Browser verifiziert.)
 > - ✅ **Bezugsquellen zu beobachteten Wirkstoffen (Beobachtungsliste ↔ Biete/Suche):**
 >   bietet eine Apotheke einen von dir beobachteten Wirkstoff an, erscheint das auf „Für
 >   dich" („📦 Amoxicillin — 2 Angebote"), Klick springt gefiltert in den Austausch. Genau
