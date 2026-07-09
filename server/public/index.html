@@ -1638,9 +1638,32 @@ async function openWirkstoff(name) {
   section('💶 Preisvergleich', d.prices.length, 'Keine Preisdaten zu diesem Wirkstoff.', body => d.prices.forEach(g => body.appendChild(priceGroup(g))));
   // Rabatte
   section('🏷️ Laufende Aktionen', d.rabatte.length, 'Keine laufende Aktion.', body => d.rabatte.forEach(r => { r.rank = r.rank || 1; body.appendChild(rabattCard(r)); }));
-  // Diskussion & Fragen (öffentliche Beiträge, die den Wirkstoff erwähnen)
+  // Diskussion & Fragen (öffentliche Beiträge, die den Wirkstoff erwähnen) + Compose
   const posts = d.posts || [];
-  section('💬 Diskussion & Fragen', posts.length, 'Noch keine Beiträge dazu — stell die erste Frage im Feed.', body => posts.forEach(p => body.appendChild(postCard(p))));
+  const dcard = el(`<div class="card"><div class="row"><b>💬 Diskussion & Fragen</b><span class="sp" style="flex:1"></span>
+    <button class="ghost small" data-write>✍ Beitrag verfassen</button></div>
+    <div class="hidden" data-wform style="margin-top:8px">
+      <textarea data-wt placeholder="Etwas zu ${esc(d.wirkstoff)} teilen oder fragen…"></textarea>
+      <label style="display:inline-flex;align-items:center;gap:6px;margin-top:6px;cursor:pointer;font-size:14px"><input type="checkbox" data-wq style="width:auto;min-height:0"> ❓ Als Fachfrage stellen</label>
+      <div style="margin-top:8px"><button class="small" data-wsend>Öffentlich posten</button></div>
+      <div class="err" data-werr></div>
+    </div>
+    <div data-wbody style="margin-top:8px"></div></div>`);
+  const wbody = dcard.querySelector('[data-wbody]');
+  if (!posts.length) wbody.appendChild(el('<div class="muted" style="font-size:14px">Noch keine Beiträge dazu — verfasse den ersten.</div>'));
+  else posts.forEach(p => wbody.appendChild(postCard(p)));
+  const wform = dcard.querySelector('[data-wform]');
+  dcard.querySelector('[data-write]').onclick = () => { wform.classList.toggle('hidden'); const ta = dcard.querySelector('[data-wt]'); if (!wform.classList.contains('hidden') && !ta.value) ta.value = d.wirkstoff + ': '; };
+  dcard.querySelector('[data-wsend]').onclick = async () => {
+    const werr = dcard.querySelector('[data-werr]'); werr.textContent = '';
+    const body = dcard.querySelector('[data-wt]').value.trim();
+    if (!body) { werr.textContent = 'Bitte etwas schreiben.'; return; }
+    try {
+      await api('POST','/api/posts',{ body, visibility:'public', kind: dcard.querySelector('[data-wq]').checked ? 'frage' : 'post' });
+      openWirkstoff(d.wirkstoff);
+    } catch(e){ werr.textContent = e.message; }
+  };
+  feed.appendChild(dcard);
 }
 
 async function renderVerifyCard(card) {
