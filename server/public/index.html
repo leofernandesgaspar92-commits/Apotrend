@@ -1539,6 +1539,9 @@ async function openWirkstoff(name) {
   section('💶 Preisvergleich', d.prices.length, 'Keine Preisdaten zu diesem Wirkstoff.', body => d.prices.forEach(g => body.appendChild(priceGroup(g))));
   // Rabatte
   section('🏷️ Laufende Aktionen', d.rabatte.length, 'Keine laufende Aktion.', body => d.rabatte.forEach(r => { r.rank = r.rank || 1; body.appendChild(rabattCard(r)); }));
+  // Diskussion & Fragen (öffentliche Beiträge, die den Wirkstoff erwähnen)
+  const posts = d.posts || [];
+  section('💬 Diskussion & Fragen', posts.length, 'Noch keine Beiträge dazu — stell die erste Frage im Feed.', body => posts.forEach(p => body.appendChild(postCard(p))));
 }
 
 async function renderVerifyCard(card) {

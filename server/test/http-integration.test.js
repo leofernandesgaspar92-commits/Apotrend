@@ -39,6 +39,11 @@ test('GET /api/wirkstoff/:name bündelt Engpass/Preise/Rabatte/Austausch', async
   assert.ok(d.prices.length >= 1, 'Preis-Seed vorhanden');
   assert.ok(d.exchange.biete.length >= 1, 'Biete-Eintrag gefunden');
   assert.equal(typeof d.watched, 'boolean');
+  // Diskussion: ein öffentlicher Beitrag, der den Wirkstoff erwähnt, taucht auf.
+  await post('/api/posts', a, { body: 'Bei uns Engpass bei Amoxicillin — wer hat Bestand?', visibility: 'public' });
+  const d2 = await j('/api/wirkstoff/' + encodeURIComponent('Amoxicillin'), a);
+  assert.ok(Array.isArray(d2.posts), 'posts-Feld vorhanden');
+  assert.ok(d2.posts.some(p => /Amoxicillin/i.test(p.body)), 'erwähnender Beitrag in Diskussion');
 });
 
 test('GET /api/me/activity liefert eigene Fragen, Meldungen, Austausch', async () => {

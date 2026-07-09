@@ -170,6 +170,7 @@ const routes = [
       prices: prices.comparisons(userId).filter(g => eq(g.wirkstoff)),
       rabatte: rabatte.top10(userId).filter(r => eq(r.wirkstoff)),
       exchange: { biete: ex.filter(e => e.kind === 'biete'), suche: ex.filter(e => e.kind === 'suche') },
+      posts: enrichPosts(social.searchPosts(userId, name).slice(0, 10)),
     };
   }],
   ['GET', /^\/api\/suggestions\/follow$/, true, async ({ userId }) => ({ suggestions: social.suggestFollows(userId) })],
