@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Datenherkunft & Vertrauen (Legende):** auf Engpässe/Preise/Rabatte klärt eine
+>   aufklappbare Legende (Standard: zu) auf, was ✔ BASG-verifiziert / 📌 Referenzdaten /
+>   📰 Redaktion / 👥 Community-Meldung bedeuten, und macht die Quellenpflicht sichtbar
+>   — Vertrauen für nicht-technische Fachleute. (Im Browser verifiziert.)
 > - ✅ **Preisverlauf-Sparkline:** jede Lieferanten-Zeile im Preisvergleich zeigt eine
 >   kompakte Trendlinie aus den letzten Preisen (steigend rot / fallend grün / gleich
 >   grau) — die Richtung steht zusätzlich als ▲/▼-Prozent daneben, also nie nur über

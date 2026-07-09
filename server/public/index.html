@@ -612,12 +612,32 @@ async function loadNews() {
 const STATUS = { kritisch:['🔴 Kritisch','#c0392b'], eingeschraenkt:['🟠 Eingeschränkt','#c77700'], verfuegbar:['🟢 Verfügbar','#00885a'] };
 const PROV = { verified:'✔ BASG (verifiziert)', reference:'📌 Referenzdaten', simulated:'⚠ simuliert', editorial:'📰 Redaktion', community:'👥 Community-Meldung' };
 
+// Aufklappbare Legende zur Datenherkunft — schafft Vertrauen bei nicht-technischen
+// Fachleuten und macht die Quellenpflicht sichtbar (CLAUDE.md). Standard: zugeklappt.
+function provenanceLegend() {
+  const card = el(`<div class="card" style="margin-bottom:10px">
+    <button class="ghost small" data-tgl style="width:100%;text-align:left">ℹ️ Datenherkunft & Sicherheit — woher kommen diese Angaben?</button>
+    <div class="hidden" data-body style="margin-top:8px;font-size:14px">
+      <div class="comment">✔ <b>BASG (verifiziert)</b> — offizielle Behördendaten (Bundesamt für Sicherheit im Gesundheitswesen).</div>
+      <div class="comment">📌 <b>Referenzdaten</b> — kuratierte Vergleichsdaten, nicht in Echtzeit.</div>
+      <div class="comment">📰 <b>Redaktion</b> — von der ApoTrend-Redaktion gepflegt, immer mit Quelle.</div>
+      <div class="comment">👥 <b>Community-Meldung</b> — von Kolleg:innen gemeldet, <b>nicht offiziell verifiziert</b>. Zur Orientierung, im Zweifel selbst prüfen.</div>
+      <div class="muted" style="margin-top:6px">Grundsatz: Sicherheitsrelevante Aussagen (Engpass, Rückruf, Substitution) werden nur mit Quelle geführt. Bei Community-Meldungen ist die Quelle die meldende Apotheke.</div>
+    </div>
+  </div>`);
+  const body = card.querySelector('[data-body]');
+  const btn = card.querySelector('[data-tgl]');
+  btn.onclick = () => { const open = body.classList.toggle('hidden'); btn.textContent = open ? 'ℹ️ Datenherkunft & Sicherheit — woher kommen diese Angaben?' : 'ℹ️ Datenherkunft & Sicherheit — schließen'; };
+  return card;
+}
+
 async function loadShortages() {
   const feed = document.getElementById('feed');
   feed.innerHTML = '<div class="muted">lädt…</div>';
   try {
     const d = await api('GET','/api/shortages');
     feed.innerHTML = '';
+    feed.appendChild(provenanceLegend());
     feed.appendChild(reportShortageCard());
     const bar = shortageFilterBar();
     feed.appendChild(bar);
@@ -816,6 +836,7 @@ async function loadPrices() {
   try {
     const d = await api('GET','/api/prices');
     feed.innerHTML = '';
+    feed.appendChild(provenanceLegend());
     if (d.savings && d.savings.count) {
       const s = d.savings;
       const head = el(`<div class="card">
@@ -1020,8 +1041,10 @@ async function loadRabatte() {
   feed.innerHTML = '<div class="muted">lädt…</div>';
   try {
     const d = await api('GET','/api/rabatte');
-    feed.innerHTML = '<div class="card muted" style="margin-bottom:10px">🏷️ <b>Top-10 Rabatt-Aktionen</b> · höchster Rabatt oben · nur laufende Aktionen · 📌 Referenzdaten</div>';
-    if (!d.rabatte.length) { feed.innerHTML += '<div class="card muted">Derzeit keine laufenden Aktionen.</div>'; return; }
+    feed.innerHTML = '';
+    feed.appendChild(provenanceLegend());
+    feed.appendChild(el('<div class="card muted" style="margin-bottom:10px">🏷️ <b>Top-10 Rabatt-Aktionen</b> · höchster Rabatt oben · nur laufende Aktionen · 📌 Referenzdaten</div>'));
+    if (!d.rabatte.length) { feed.appendChild(el('<div class="card muted">Derzeit keine laufenden Aktionen.</div>')); return; }
     d.rabatte.forEach(r => feed.appendChild(rabattCard(r)));
   } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
 }
