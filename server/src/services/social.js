@@ -111,12 +111,20 @@ export function createSocialService(social, foundationRepo, options = {}) {
         .filter(p => p.author_user_id === prof.user_id && visibleTo(p, viewerUserId))
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
         .map(decorate);
+      // Reputation: wie oft eine Antwort dieser Person als beste markiert wurde.
+      let best_answers = 0;
+      for (const p of social.listAllPosts()) {
+        if (!p.accepted_comment_id) continue;
+        const c = social.getComment(p.accepted_comment_id);
+        if (c && !c.deleted_at && c.author_user_id === prof.user_id) best_answers++;
+      }
       return {
         profile: prof,
         posts,
         follower_count: social.listFollowers(prof.user_id).length,
         following_count: social.listFollowing(prof.user_id).length,
         post_count: posts.length,
+        best_answers,
         is_following: social.isFollowing(viewerUserId, prof.user_id),
         is_self: viewerUserId === prof.user_id,
       };

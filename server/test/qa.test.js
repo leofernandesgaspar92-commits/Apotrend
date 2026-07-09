@@ -80,3 +80,17 @@ test('createPost: ungültige Beitragsart abgelehnt', () => {
   const { social, asker } = setup();
   assert.throws(() => social.createPost(asker, { body: 'x', kind: 'quatsch' }), /Beitragsart/);
 });
+
+test('profilePage: best_answers zählt akzeptierte Antworten der Person', () => {
+  const { social, asker, answerer } = setup();
+  const p1 = social.createPost(asker, { body: 'Frage 1?', kind: 'frage' });
+  const c1 = social.comment(answerer, p1.id, { body: 'Antwort 1' });
+  social.acceptAnswer(asker, p1.id, c1.id);
+  const p2 = social.createPost(asker, { body: 'Frage 2?', kind: 'frage' });
+  const c2 = social.comment(answerer, p2.id, { body: 'Antwort 2' });
+  social.acceptAnswer(asker, p2.id, c2.id);
+  const page = social.profilePage(asker, answerer);
+  assert.equal(page.best_answers, 2);
+  const askerPage = social.profilePage(asker, asker);
+  assert.equal(askerPage.best_answers, 0);
+});

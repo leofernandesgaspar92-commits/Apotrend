@@ -1418,6 +1418,7 @@ async function openProfile(handle) {
         <span><b>${d.post_count}</b> <span class="muted">Beiträge</span></span>
         <span class="clickable" data-followers><b>${d.follower_count}</b> <span class="muted">Follower</span></span>
         <span class="clickable" data-following><b>${d.following_count}</b> <span class="muted">folgt</span></span>
+        ${d.best_answers?`<span title="Als beste Antwort markiert"><b>🏆 ${d.best_answers}</b> <span class="muted">beste Antworten</span></span>`:''}
         <span class="sp" style="flex:1"></span>
         ${d.is_self?'<button class="ghost small" data-activity>🗂️ Meine Aktivität</button> <button class="ghost small" data-edit>✏️ Profil bearbeiten</button>':`<button class="ghost small" data-dm>✉️ Nachricht</button> <button class="${d.is_following?'ghost ':''}small" data-togglefollow>${d.is_following?'✓ Du folgst — entfolgen':'+ Folgen'}</button>`}
       </div>
