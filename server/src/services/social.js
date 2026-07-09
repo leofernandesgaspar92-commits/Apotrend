@@ -337,12 +337,25 @@ export function createSocialService(social, foundationRepo, options = {}) {
 
     // Entdecken: alle oeffentlichen Beiträge (netzwerkweite Reichweite).
     // sort: 'neu' (Standard, neueste zuerst) oder 'top' (meiste Reaktionen zuerst).
-    publicFeed(viewerUserId, { sort = 'neu' } = {}) {
+    // filter: 'questions' => nur Fachfragen, offene (unbeantwortete) zuerst.
+    publicFeed(viewerUserId, { sort = 'neu', filter = 'all' } = {}) {
       requireUser(viewerUserId);
-      const posts = social.listAllPosts().filter(p => p.visibility === 'public').map(decorate);
+      let posts = social.listAllPosts().filter(p => p.visibility === 'public').map(decorate);
+      if (filter === 'questions') {
+        posts = posts.filter(p => p.is_question);
+        // offene Fragen zuerst, dann nach gewählter Sortierung
+        posts.sort((a, b) => Number(a.answered) - Number(b.answered));
+      }
       const total = (p) => Object.values(p.reaction_counts || {}).reduce((s, n) => s + n, 0);
-      if (sort === 'top') posts.sort((a, b) => total(b) - total(a) || b.created_at.localeCompare(a.created_at));
-      else posts.sort((a, b) => b.created_at.localeCompare(a.created_at));
+      const byRecency = (a, b) => b.created_at.localeCompare(a.created_at);
+      const byTop = (a, b) => total(b) - total(a) || byRecency(a, b);
+      const cmp = sort === 'top' ? byTop : byRecency;
+      if (filter === 'questions') {
+        // stabil: offen/beantwortet-Gruppe beibehalten, innerhalb nach cmp
+        posts.sort((a, b) => (Number(a.answered) - Number(b.answered)) || cmp(a, b));
+      } else {
+        posts.sort(cmp);
+      }
       return posts;
     },
 

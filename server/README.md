@@ -6,6 +6,9 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Fragen-Filter im Öffentlich-Feed:** Umschalter „❓ Offene Fragen zuerst" zeigt nur
+>   Fachfragen, unbeantwortete oben — so finden Kolleg:innen Fragen, bei denen sie helfen
+>   können. (`GET /api/feed/public?filter=questions`; 170 Tests grün, im Browser verifiziert.)
 > - ✅ **Fachfragen-Q&A im Feed:** Beiträge lassen sich als „❓ Fachfrage" posten
 >   (Checkbox im Compose-Feld). Die/der Fragesteller:in markiert eine Antwort als
 >   „✔ beste Antwort" — sie wird hervorgehoben, die Frage als „✔ Beantwortet"

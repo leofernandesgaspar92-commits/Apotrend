@@ -170,7 +170,7 @@ const routes = [
   ['POST', /^\/api\/verify\/([^/]+)\/resolve$/, true, async ({ userId, params, body }) => social.resolveVerification(userId, params[0], !!body.approve)],
 
   ['GET', /^\/api\/feed\/home$/, true, async ({ userId }) => ({ posts: enrichPosts(social.homeFeed(userId)) })],
-  ['GET', /^\/api\/feed\/public$/, true, async ({ userId, query }) => ({ posts: enrichPosts(social.publicFeed(userId, { sort: query.get('sort') || 'neu' })) })],
+  ['GET', /^\/api\/feed\/public$/, true, async ({ userId, query }) => ({ posts: enrichPosts(social.publicFeed(userId, { sort: query.get('sort') || 'neu', filter: query.get('filter') || 'all' })) })],
 
   ['POST', /^\/api\/posts$/, true, async ({ userId, body }) => social.createPost(userId, { body: body.body, visibility: body.visibility, kind: body.kind, image: body.image, sourceUrl: body.sourceUrl })],
   ['GET', /^\/api\/news$/, true, async ({ userId }) => ({ posts: enrichPosts(social.newsFeed(userId)) })],
