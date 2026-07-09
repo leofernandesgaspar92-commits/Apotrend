@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Engpässe filtern & suchen:** der Engpässe-Reiter hat eine Such- und Filterleiste
+>   (Alle / 🔴 Nur kritisch / ⭐ Beobachtet / 👥 Community) plus Textsuche nach
+>   Wirkstoff/Präparat. Filterung ohne Neu-Laden (Suchfokus bleibt erhalten) — wichtig,
+>   da die Liste mit Community-Meldungen wächst. (Frontend-Filter über die vorhandenen
+>   Felder; 160 Tests grün, im Browser verifiziert.)
 > - ✅ **Aktionen zu beobachteten Wirkstoffen (Beobachtungsliste ↔ Rabatte):** läuft für
 >   einen Wirkstoff, den die Apotheke beobachtet, gerade eine Rabatt-Aktion, erscheint sie
 >   auf „Für dich" als eigene Karte („🏷️ Aktionen zu deinen Wirkstoffen" — beste Aktion je

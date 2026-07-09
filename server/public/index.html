@@ -190,6 +190,8 @@ const linkifyMentions = (s) => esc(s)
     (m, pre, t) => `${pre}<span class="hashtag clickable" data-hashtag="${t}">#${t}</span>`);
 const app = document.getElementById('app');
 let me = null, tab = 'overview', iAmModerator = false, publicSort = 'neu';
+let shortageFilter = ''; // '', 'kritisch', 'watched', 'community'
+let shortageQuery = '';  // Textsuche nach Wirkstoff/Präparat
 let myBookmarks = new Set();
 
 // ── Auth-Screens ──
@@ -593,8 +595,47 @@ async function loadShortages() {
     const d = await api('GET','/api/shortages');
     feed.innerHTML = '';
     feed.appendChild(reportShortageCard());
-    d.shortages.forEach(s => feed.appendChild(shortageCard(s)));
+    const bar = shortageFilterBar();
+    feed.appendChild(bar);
+    const listBox = el('<div data-shortlist></div>');
+    feed.appendChild(listBox);
+    renderShortlist(listBox, bar, d.shortages);
   } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+}
+
+// Filtert die (bereits geladenen) Engpässe und füllt nur die Listenbox — die
+// Filterleiste bleibt bestehen, damit der Suchfokus beim Tippen nicht verloren geht.
+function renderShortlist(listBox, bar, all) {
+  bar.querySelectorAll('[data-f]').forEach(b => b.classList.toggle('active', b.dataset.f === shortageFilter));
+  const q = shortageQuery.trim().toLowerCase();
+  const list = all.filter(s => {
+    if (shortageFilter === 'kritisch' && s.status !== 'kritisch') return false;
+    if (shortageFilter === 'watched' && !s.watched) return false;
+    if (shortageFilter === 'community' && s.provenance !== 'community') return false;
+    if (q && !((s.wirkstoff||'').toLowerCase().includes(q) || (s.bezeichnung||'').toLowerCase().includes(q))) return false;
+    return true;
+  });
+  listBox.innerHTML = '';
+  if (!list.length) listBox.appendChild(el('<div class="card muted">Keine Engpässe für diese Auswahl. Filter zurücksetzen oder Suchbegriff ändern.</div>'));
+  else list.forEach(s => listBox.appendChild(shortageCard(s)));
+  // Merker für Neu-Rendern nach Filter-/Suchänderung
+  renderShortlist._ctx = { listBox, bar, all };
+}
+
+// Filter- und Suchleiste für den Engpässe-Reiter.
+function shortageFilterBar() {
+  const chips = [['','Alle'],['kritisch','🔴 Nur kritisch'],['watched','⭐ Beobachtet'],['community','👥 Community']];
+  const bar = el(`<div class="card">
+    <div class="row" style="gap:6px"><input data-q placeholder="🔎 Wirkstoff oder Präparat suchen…" value="${esc(shortageQuery)}" style="flex:1"></div>
+    <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px">
+      ${chips.map(([v,l])=>`<button class="small sortbtn${shortageFilter===v?' active':''}" data-f="${v}">${l}</button>`).join('')}
+    </div>
+  </div>`);
+  const rerender = () => { const c = renderShortlist._ctx; if (c) renderShortlist(c.listBox, c.bar, c.all); };
+  bar.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { shortageFilter = b.dataset.f; rerender(); });
+  const q = bar.querySelector('[data-q]');
+  let t; q.oninput = () => { clearTimeout(t); t = setTimeout(() => { shortageQuery = q.value; rerender(); }, 250); };
+  return bar;
 }
 
 // "Engpass melden": eine Apotheke meldet einen selbst beobachteten Engpass (Community).
