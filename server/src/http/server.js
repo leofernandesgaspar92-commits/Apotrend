@@ -173,6 +173,11 @@ const routes = [
       posts: enrichPosts(social.searchPosts(userId, name).slice(0, 10)),
     };
   }],
+  ['GET', /^\/api\/profiles\/([^/]+)\/(followers|following)$/, true, async ({ userId, params }) => {
+    const d = social.followList(userId, decodeURIComponent(params[0]), params[1]);
+    if (!d) { const e = new Error('Profil nicht gefunden'); e.status = 404; throw e; }
+    return d;
+  }],
   ['GET', /^\/api\/suggestions\/follow$/, true, async ({ userId }) => ({ suggestions: social.suggestFollows(userId) })],
   ['GET', /^\/api\/handles$/, true, async ({ query }) => ({ handles: social.searchHandles(query.get('q') || '') })],
   ['GET', /^\/api\/me\/export$/, true, async ({ userId }) => ({ ...social.exportData(userId), exchange_entries: exchange.mine(userId) })],

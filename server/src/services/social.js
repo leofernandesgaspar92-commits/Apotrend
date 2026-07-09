@@ -303,6 +303,20 @@ export function createSocialService(social, foundationRepo, options = {}) {
     unfollow(actorUserId, followeeUserId) { social.unfollow(actorUserId, followeeUserId); },
     following(userId) { return social.listFollowing(userId); },
     followers(userId) { return social.listFollowers(userId); },
+    // Follower- bzw. Folge-Liste eines Profils als Profil-Kurzform (für die UI).
+    // which: 'followers' (wer folgt) | 'following' (wem gefolgt wird).
+    followList(viewerUserId, handleOrUserId, which) {
+      requireUser(viewerUserId);
+      const prof = social.getProfileByHandle(handleOrUserId) || social.getProfileByUserId(handleOrUserId);
+      if (!prof) return null;
+      const ids = which === 'followers' ? social.listFollowers(prof.user_id) : social.listFollowing(prof.user_id);
+      const people = ids.map(id => social.getProfileByUserId(id)).filter(Boolean).map(p => ({
+        handle: p.handle, display_name: p.display_name, verified: p.verified, is_editorial: p.is_editorial,
+        title: p.title, specializations: p.specializations || [],
+        is_following: social.isFollowing(viewerUserId, p.user_id), is_self: viewerUserId === p.user_id,
+      }));
+      return { handle: prof.handle, display_name: prof.display_name, which, people };
+    },
 
     // ── Feeds ──
     // Home: Beiträge von gefolgten Personen + eigene, sichtbarkeitsgefiltert.

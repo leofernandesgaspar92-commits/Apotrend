@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Follower-/Folge-Listen:** die Zahlen „Follower" und „folgt" auf jedem Profil sind
+>   jetzt anklickbar und zeigen die Personen (mit direktem Folgen/Entfolgen) — so lassen
+>   sich Kolleg:innen entdecken und Follows verwalten. (`GET /api/profiles/:handle/
+>   followers|following`; 188 Tests grün, end-to-end im Browser verifiziert.)
 > - ✅ **Suche umfasst jetzt den Bestandsaustausch:** die globale Suche findet zusätzlich
 >   offene Biete/Suche-Einträge (mit Autor-Profil) — „Amoxicillin" zeigt also auch, wer
 >   gerade Bestand anbietet. (`searchService` bekommt `exchange` injiziert; 187 Tests grün,

@@ -75,6 +75,19 @@ test('GET /api/overview enthält watch_offers für beobachteten Wirkstoff mit An
   assert.ok(o.watch_offers.some(w => w.wirkstoff === 'Pantoprazol' && w.offers_count >= 1), 'Bezugsquelle im Overview');
 });
 
+test('GET /api/profiles/:handle/followers|following listet Profile', async () => {
+  const a = await reg('fl_a' + PORT);
+  const b = await reg('fl_b' + PORT);
+  const bProfile = await j('/api/me', b);
+  const bHandle = bProfile.profile.handle;
+  const aHandle = (await j('/api/me', a)).profile.handle;
+  await post('/api/follow', a, { handle: bHandle }); // a folgt b
+  const followers = await j('/api/profiles/' + encodeURIComponent(bHandle) + '/followers', b);
+  assert.ok(followers.people.some(p => p.handle === aHandle), 'a ist Follower von b');
+  const following = await j('/api/profiles/' + encodeURIComponent(aHandle) + '/following', a);
+  assert.ok(following.people.some(p => p.handle === bHandle), 'a folgt b');
+});
+
 test('Unbekannte Route -> 404', async () => {
   const r = await fetch(BASE + '/api/gibtsnicht');
   assert.equal(r.status, 404);

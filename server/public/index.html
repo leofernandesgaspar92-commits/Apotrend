@@ -1386,8 +1386,8 @@ async function openProfile(handle) {
       ${specs?`<div style="margin-top:8px">${specs}</div>`:''}
       <div class="row" style="margin-top:12px;gap:18px">
         <span><b>${d.post_count}</b> <span class="muted">Beiträge</span></span>
-        <span><b>${d.follower_count}</b> <span class="muted">Follower</span></span>
-        <span><b>${d.following_count}</b> <span class="muted">folgt</span></span>
+        <span class="clickable" data-followers><b>${d.follower_count}</b> <span class="muted">Follower</span></span>
+        <span class="clickable" data-following><b>${d.following_count}</b> <span class="muted">folgt</span></span>
         <span class="sp" style="flex:1"></span>
         ${d.is_self?'<button class="ghost small" data-activity>🗂️ Meine Aktivität</button> <button class="ghost small" data-edit>✏️ Profil bearbeiten</button>':`<button class="ghost small" data-dm>✉️ Nachricht</button> <button class="${d.is_following?'ghost ':''}small" data-togglefollow>${d.is_following?'✓ Du folgst — entfolgen':'+ Folgen'}</button>`}
       </div>
@@ -1397,6 +1397,8 @@ async function openProfile(handle) {
     if (eb) eb.onclick = () => editProfileForm(p);
     const ab = head.querySelector('[data-activity]');
     if (ab) ab.onclick = openMyActivity;
+    head.querySelector('[data-followers]').onclick = () => openFollowList(p.handle, 'followers');
+    head.querySelector('[data-following]').onclick = () => openFollowList(p.handle, 'following');
     const tf = head.querySelector('[data-togglefollow]');
     if (tf) tf.onclick = async () => {
       try { await api('POST', d.is_following?'/api/unfollow':'/api/follow', { handle:p.handle }); openProfile(handle); }
@@ -1456,6 +1458,43 @@ async function openProfile(handle) {
     if (!d.posts.length) feed.appendChild(el('<div class="card muted">Noch keine sichtbaren Beiträge.</div>'));
     d.posts.forEach(post => feed.appendChild(postCard(post)));
   } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+}
+
+// Follower- bzw. Folge-Liste eines Profils.
+async function openFollowList(handle, which) {
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  feed.innerHTML = '<div class="muted">lädt…</div>';
+  let d;
+  try { d = await api('GET',`/api/profiles/${encodeURIComponent(handle)}/${which}`); }
+  catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
+  feed.innerHTML = '';
+  const title = which === 'followers' ? 'Follower von' : 'Gefolgt von';
+  const head = el(`<div class="card"><div><button class="ghost small" data-back>← zurück zum Profil</button></div>
+    <h1 style="margin:8px 0 0">${which==='followers'?'👥 Follower':'➡️ Folgt'}</h1>
+    <div class="muted">${which==='followers'?'Wer @'+esc(d.handle)+' folgt':'Wem @'+esc(d.handle)+' folgt'} · ${d.people.length}</div></div>`);
+  head.querySelector('[data-back]').onclick = () => openProfile(handle);
+  feed.appendChild(head);
+  if (!d.people.length) { feed.appendChild(el(`<div class="card muted">${which==='followers'?'Noch keine Follower.':'Folgt noch niemandem.'}</div>`)); return; }
+  d.people.forEach(p => {
+    const specs = (p.specializations||[]).map(s=>`<span class="spec">${esc(s)}</span>`).join(' ');
+    const card = el(`<div class="card"><div class="row" style="align-items:baseline">
+      <span class="post-author clickable" data-openprofile="${esc(p.handle)}">${esc(p.display_name||'Unbekannt')}</span>
+      <span class="handle clickable" data-openprofile="${esc(p.handle)}">@${esc(p.handle)}</span>
+      ${p.is_editorial?'<span class="editorial">📰 Redaktion</span>':''}${p.verified?'<span class="verified">✔</span>':''}
+      <span class="sp" style="flex:1"></span>
+      ${p.is_self?'':`<button class="${p.is_following?'ghost ':''}small" data-follow="${esc(p.handle)}" data-on="${p.is_following?'1':'0'}">${p.is_following?'✓ Folgst':'+ Folgen'}</button>`}
+    </div>${p.title?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(p.title)}</div>`:''}${specs?`<div style="margin-top:6px">${specs}</div>`:''}</div>`);
+    card.querySelectorAll('[data-openprofile]').forEach(el => el.onclick = () => openProfile(el.dataset.openprofile));
+    const fb = card.querySelector('[data-follow]');
+    if (fb) fb.onclick = async () => {
+      const on = fb.dataset.on === '1';
+      try { await api('POST', on?'/api/unfollow':'/api/follow', { handle: fb.dataset.follow });
+        fb.dataset.on = on?'0':'1'; fb.textContent = on?'+ Folgen':'✓ Folgst'; fb.classList.toggle('ghost', !on);
+      } catch(e){ alert(e.message); }
+    };
+    feed.appendChild(card);
+  });
 }
 
 // Eigene Aktivität an einem Ort: Fragen, Engpass-Meldungen, Austausch-Einträge.
