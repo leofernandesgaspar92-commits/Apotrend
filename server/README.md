@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **HTTP-Integrationstests:** die am HTTP-Layer komponierten Endpunkte
+>   (`/api/wirkstoff/:name`, `/api/me/activity`, `/api/feed/public?filter=questions`,
+>   `/api/overview` watch_offers, 404-Fallback) werden jetzt gegen den echt gebooteten
+>   Server getestet (nicht nur im Browser). Server exportiert `httpServer` für sauberes
+>   `close()`. (Neuer Test http-integration.test.js; 186 Tests grün.)
 > - ✅ **Produktionsreife — Sessions überleben Neustarts:** Datendurchlauf-Test
 >   (Zustand anlegen → SIGTERM/Snapshot → Neustart → prüfen) deckte auf, dass das
 >   Session-Secret pro Prozess zufällig war → jeder Deploy loggte alle aus. Jetzt aus

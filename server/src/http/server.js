@@ -347,3 +347,6 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => console.log(`ApoTrend Feed-Server läuft auf http://localhost:${PORT}`));
+
+// Für Integrationstests: erlaubt server.close(), damit der Prozess sauber endet.
+export { server as httpServer };
