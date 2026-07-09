@@ -345,8 +345,11 @@ async function mainScreen() {
   const params = new URLSearchParams(location.search);
   const sharedPost = params.get('post');
   const sharedWirkstoff = params.get('wirkstoff');
+  const deepTab = params.get('tab');
+  const validTabs = ['overview','public','home','shortages','prices','rabatte','exchange','news'];
   if (sharedPost) { history.replaceState(null, '', location.pathname); openPost(sharedPost); }
   else if (sharedWirkstoff) { history.replaceState(null, '', location.pathname); openWirkstoff(sharedWirkstoff); }
+  else if (deepTab && validTabs.includes(deepTab)) { history.replaceState(null, '', location.pathname); goTab(deepTab); }
   else if (!localStorage.getItem('apo_welcome_seen')) showWelcome(false);
 }
 
