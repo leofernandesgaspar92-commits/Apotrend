@@ -341,21 +341,14 @@ export function createSocialService(social, foundationRepo, options = {}) {
     publicFeed(viewerUserId, { sort = 'neu', filter = 'all' } = {}) {
       requireUser(viewerUserId);
       let posts = social.listAllPosts().filter(p => p.visibility === 'public').map(decorate);
-      if (filter === 'questions') {
-        posts = posts.filter(p => p.is_question);
-        // offene Fragen zuerst, dann nach gewählter Sortierung
-        posts.sort((a, b) => Number(a.answered) - Number(b.answered));
-      }
+      if (filter === 'questions') posts = posts.filter(p => p.is_question);
       const total = (p) => Object.values(p.reaction_counts || {}).reduce((s, n) => s + n, 0);
       const byRecency = (a, b) => b.created_at.localeCompare(a.created_at);
       const byTop = (a, b) => total(b) - total(a) || byRecency(a, b);
       const cmp = sort === 'top' ? byTop : byRecency;
-      if (filter === 'questions') {
-        // stabil: offen/beantwortet-Gruppe beibehalten, innerhalb nach cmp
-        posts.sort((a, b) => (Number(a.answered) - Number(b.answered)) || cmp(a, b));
-      } else {
-        posts.sort(cmp);
-      }
+      // Bei "questions": offene (unbeantwortete) Fragen zuerst, innerhalb nach cmp.
+      if (filter === 'questions') posts.sort((a, b) => (Number(a.answered) - Number(b.answered)) || cmp(a, b));
+      else posts.sort(cmp);
       return posts;
     },
 
