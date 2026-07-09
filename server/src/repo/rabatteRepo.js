@@ -51,14 +51,24 @@ export function createRabatteRepo({ seed = true, today = null } = {}) {
   return {
     upsert,
     get(id) { const r = rabatte.get(id); return r ? { ...r } : null; },
+    // Verbleibende Tage bis Aktionsende (relativ zum Vergleichsdatum), Kalendertage.
+    daysLeft(gueltig_bis) {
+      if (!gueltig_bis) return null;
+      const ms = Date.parse(gueltig_bis + 'T00:00:00Z') - Date.parse(heute() + 'T00:00:00Z');
+      return Math.round(ms / 86400000);
+    },
     // Top-10 laufende Aktionen, höchster Rabatt zuerst. Abgelaufene fliegen raus.
+    // days_left = Tage bis Aktionsende, expiring_soon = läuft in <=14 Tagen ab.
     listTop10() {
       const cutoff = heute();
       return [...rabatte.values()]
         .filter(r => r.gueltig_bis >= cutoff)
         .sort((a, b) => b.rabatt_pct - a.rabatt_pct)
         .slice(0, 10)
-        .map((r, i) => ({ ...r, rank: i + 1 }));
+        .map((r, i) => {
+          const days_left = this.daysLeft(r.gueltig_bis);
+          return { ...r, rank: i + 1, days_left, expiring_soon: days_left != null && days_left <= 14 };
+        });
     },
     listFlat() { return [...rabatte.values()].map(r => ({ ...r })); },
     __dump() { return [...rabatte]; },

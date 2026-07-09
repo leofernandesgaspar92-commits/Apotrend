@@ -445,6 +445,16 @@ async function loadOverview() {
     c.querySelector('[data-all]').onclick = () => goTab('rabatte');
     feed.appendChild(c);
   }
+  // Rabatt-Aktionen, die bald auslaufen
+  if (d.rabatte_expiring && d.rabatte_expiring.count) {
+    const e = d.rabatte_expiring; const s = e.soonest;
+    const dl = s.days_left <= 0 ? 'läuft heute ab' : (s.days_left === 1 ? 'nur noch 1 Tag' : 'nur noch ' + s.days_left + ' Tage');
+    const c = el(`<div class="card"><div class="row"><b>⏳ Aktionen laufen bald ab</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>Alle Rabatte</button></div>
+      <div class="muted" style="font-size:13px;margin-top:2px">${e.count} Aktion${e.count>1?'en enden':' endet'} in den nächsten 14 Tagen — jetzt sichern.</div>
+      <div class="comment" style="margin-top:6px">🏷️ <b>${esc(s.bezeichnung)}</b> — ${esc(s.supplier)} <span style="color:#00885a;font-weight:700">−${s.rabatt_pct}%</span> · <b style="color:${s.days_left<=3?'#c0392b':'#c77700'}">${dl}</b></div></div>`);
+    c.querySelector('[data-all]').onclick = () => goTab('rabatte');
+    feed.appendChild(c);
+  }
 }
 
 // Status-Anzeige für beobachtete Wirkstoffe (Farb-Semantik: rot = kritisch).
@@ -936,6 +946,7 @@ function rabattCard(r) {
       <span style="font-size:20px;font-weight:800;color:#00885a;margin-left:8px">€ ${Number(r.aktionspreis).toFixed(2)}</span>
     </div>
     <div class="muted" style="margin-top:4px">Ersparnis € ${Number(r.ersparnis).toFixed(2)} je Packung${r.min_menge?` · ab ${r.min_menge} Stück`:''} · gültig bis <b>${esc(r.gueltig_bis)}</b></div>
+    ${r.expiring_soon?`<div style="display:inline-block;margin-top:6px;background:${r.days_left<=3?'#c0392b':'#c77700'};color:#fff;font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px">⏳ ${r.days_left<=0?'läuft heute ab':(r.days_left===1?'nur noch 1 Tag':'nur noch '+r.days_left+' Tage')}</div>`:''}
     <div class="row" style="margin-top:8px">
       <span class="muted">${r.post_count||0} Beiträge dazu</span>
       <span class="sp" style="flex:1"></span>

@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Rabatt-Ablaufwarnung:** laufende Aktionen tragen die Restlaufzeit; endet eine
+>   Aktion in ≤14 Tagen, zeigt der Rabatt-Reiter ein „⏳ nur noch X Tage"-Badge
+>   (≤3 Tage rot, sonst orange). Die Startübersicht „Für dich" warnt zusätzlich
+>   („N Aktionen laufen bald ab" + dringendste Aktion) — kein verpasstes Angebot mehr.
+>   (`rabatteRepo.listTop10` liefert `days_left`/`expiring_soon`, Overview `rabatte_expiring`;
+>   158 Tests grün, im Browser verifiziert.)
 > - ✅ **Preisvergleich mit Sparpotenzial:** der Preis-Reiter zeigt oben, wie viel bei
 >   optimaler Großhändler-Wahl je Packung frei wird („💶 Sparpotenzial: bis zu € X pro
 >   Packung" + Top-3-Präparate); jede Vergleichsgruppe trägt ein Ersparnis-Badge

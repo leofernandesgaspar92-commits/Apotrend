@@ -8,7 +8,9 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
       const sh = shortages.listWithCounts(userId);
       const kritisch = sh.filter(s => s.status === 'kritisch');
       const ex = exchange.list(userId, {}); // offene Einträge
-      const topR = rabatte.top10(userId)[0] || null;
+      const topRabatte = rabatte.top10(userId);
+      const topR = topRabatte[0] || null;
+      const expiringSoon = topRabatte.filter(r => r.expiring_soon);
       const watchlist = shortages.myWatchlist(userId);
       return {
         shortages: { kritisch: kritisch.length, total: sh.length, top: kritisch.slice(0, 3) },
@@ -20,6 +22,7 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
         },
         notifications: { unread: social.unreadCount(userId), dm_unread: social.dmUnreadTotal(userId) },
         top_rabatt: topR,
+        rabatte_expiring: { count: expiringSoon.length, soonest: expiringSoon.sort((a, b) => a.days_left - b.days_left)[0] || null },
         savings: prices ? prices.savingsSummary() : null,
       };
     },
