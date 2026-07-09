@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Produktionsreife — Sessions überleben Neustarts:** Datendurchlauf-Test
+>   (Zustand anlegen → SIGTERM/Snapshot → Neustart → prüfen) deckte auf, dass das
+>   Session-Secret pro Prozess zufällig war → jeder Deploy loggte alle aus. Jetzt aus
+>   `APOTREND_TOKEN_SECRET` (in `render.yaml` via `generateValue` einmalig fest gesetzt);
+>   ohne Variable Warnhinweis + Dev-Fallback. Round-Trip bestätigt: Q&A-Antwort,
+>   Beobachtungsliste, Community-Bestätigung, Merkliste überstehen den Neustart bei
+>   gültiger Session. (Neuer Test token.test.js; 181 Tests grün.)
 > - ✅ **Wirkstoff-Detailseite (alles zu einem Medikament):** Klick auf einen Wirkstoff
 >   (z.B. den Titel einer Engpass-Karte oder „Ansehen" in der Beobachtungsliste) öffnet
 >   eine gebündelte Ansicht: Engpass-Status, wer bietet/sucht (Austausch), Preisvergleich

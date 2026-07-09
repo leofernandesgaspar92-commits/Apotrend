@@ -34,6 +34,11 @@ services:
         value: redaktion@apotrend.at
       - key: APOTREND_ADMIN_PASSWORD
         sync: false
+      # Stabiles Session-Secret: ohne diese Variable erhält jeder Neustart/Deploy
+      # ein neues Zufalls-Secret -> alle Nutzer:innen werden ausgeloggt. Mit
+      # generateValue erzeugt Render EINMAL ein festes Secret, das über Deploys bleibt.
+      - key: APOTREND_TOKEN_SECRET
+        generateValue: true
       # PORT wird von Render automatisch gesetzt — der Server liest process.env.PORT.
     # Dauerhafte Platte (nur Bezahltarif). Zum Aktivieren einkommentieren:
     # disk:
