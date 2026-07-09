@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Redaktions-Dashboard (Moderation):** die Moderations-Ansicht (🛡️, nur Redaktion)
+>   führt jetzt mit Kennzahl-Kacheln — offene Meldungen, Verifizierungs-Anträge, aktive
+>   kritische Engpässe, Community-Meldungen — für Plattform-Gesundheit auf einen Blick.
+>   (Im Browser als Redaktion verifiziert.)
 > - ✅ **Austausch startet im eigenen Bundesland:** hat das Profil ein Bundesland, ist der
 >   Bestandsaustausch beim ersten Öffnen darauf vorgefiltert (Ware in der Nähe zuerst);
 >   „📍 Alle Bundesländer" ist der Ein-Klick-Opt-out. (Frontend; im Browser verifiziert.)

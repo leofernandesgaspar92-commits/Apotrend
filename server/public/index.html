@@ -2044,13 +2044,23 @@ async function openPost(postId) {
 
 async function showModeration() {
   app.innerHTML = '<div class="card muted">lädt…</div>';
-  let d, vq;
-  try { d = await api('GET','/api/reports'); vq = await api('GET','/api/verify/requests'); }
+  let d, vq, sh;
+  try { d = await api('GET','/api/reports'); vq = await api('GET','/api/verify/requests'); sh = await api('GET','/api/shortages'); }
   catch(e){ app.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
   app.innerHTML = '';
-  const head = el(`<div class="card"><div class="row"><h1 style="flex:1">🛡️ Moderation</h1>
+  const krit = (sh.shortages||[]).filter(s => s.status === 'kritisch').length;
+  const comm = (sh.shortages||[]).filter(s => s.provenance === 'community').length;
+  const mtile = (icon, num, label, col) => `<div style="flex:1;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px">
+    <div style="font-size:24px;font-weight:800;color:${col}">${icon} ${num}</div><div class="muted" style="font-size:13px;margin-top:2px">${esc(label)}</div></div>`;
+  const head = el(`<div class="card"><div class="row"><h1 style="flex:1">🛡️ Redaktions-Dashboard</h1>
     <button class="ghost small" id="back">Zurück</button></div>
-    <div class="muted">Offene Meldungen: ${d.reports.length} · Verifizierungs-Anträge: ${vq.requests.length}</div></div>`);
+    <div class="muted" style="margin-bottom:10px">Plattform-Gesundheit & offene Aufgaben auf einen Blick.</div>
+    <div class="row" style="flex-wrap:wrap;gap:10px">
+      ${mtile('🚩', d.reports.length, 'offene Meldungen', '#c0392b')}
+      ${mtile('✔', vq.requests.length, 'Verifizierungs-Anträge', '#2952cc')}
+      ${mtile('🔴', krit, 'kritische Engpässe', '#c0392b')}
+      ${mtile('👥', comm, 'Community-Meldungen', '#b26a00')}
+    </div></div>`);
   head.querySelector('#back').onclick = mainScreen;
   app.appendChild(head);
   // Verifizierungs-Anträge
