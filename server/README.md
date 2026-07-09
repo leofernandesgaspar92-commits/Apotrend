@@ -6,6 +6,9 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Rabatt-Ersparnis-Hochrechnung:** jede Aktion mit Mindestmenge zeigt zusätzlich die
+>   Gesamt-Ersparnis bei Mindestabnahme („Bei Mindestabnahme (50 Stück): € 35,00 gespart")
+>   — konkreter Einkaufsvorteil statt nur Ersparnis je Packung. (Im Browser verifiziert.)
 > - ✅ **Preisverlauf-Details an der Sparkline:** Hover zeigt die letzten AEP-Werte als
 >   Tooltip („€ 3,10 → € 3,08 → …"), und die Sparkline hat ein beschreibendes
 >   Screenreader-Label mit Richtung + Werten (statt nur „Preisverlauf"). (Im Browser verifiziert.)

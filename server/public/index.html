@@ -1196,6 +1196,7 @@ function rabattCard(r) {
       <span style="font-size:20px;font-weight:800;color:#0b7f28;margin-left:8px">€ ${Number(r.aktionspreis).toFixed(2)}</span>
     </div>
     <div class="muted" style="margin-top:4px">Ersparnis € ${Number(r.ersparnis).toFixed(2)} je Packung${r.min_menge?` · ab ${r.min_menge} Stück`:''} · gültig bis <b>${esc(r.gueltig_bis)}</b></div>
+    ${r.min_menge&&r.ersparnis>0?`<div style="margin-top:4px;font-size:13px;font-weight:700;color:#0b7f28">💰 Bei Mindestabnahme (${r.min_menge} Stück): € ${(Number(r.ersparnis)*Number(r.min_menge)).toFixed(2)} gespart</div>`:''}
     ${r.expiring_soon?`<div style="display:inline-block;margin-top:6px;background:${r.days_left<=3?'#c0392b':'#c77700'};color:#fff;font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px">⏳ ${r.days_left<=0?'läuft heute ab':(r.days_left===1?'nur noch 1 Tag':'nur noch '+r.days_left+' Tage')}</div>`:''}
     <div class="row" style="margin-top:8px">
       <span class="muted">${r.post_count||0} Beiträge dazu</span>
