@@ -12,6 +12,8 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   und laufende Aktionen — plus Beobachten-Umschalter. Komposition am HTTP-Layer aus
 >   getesteten Diensten, Wiederverwendung aller Karten-Renderer.
 >   (`GET /api/wirkstoff/:name`; 177 Tests grün, end-to-end im Browser verifiziert.)
+>   Einstieg von überall: Wirkstoff-Namen auf Engpass-, Preis- und Rabatt-Karten sowie in
+>   der Beobachtungsliste sind klickbar und führen zur Detailseite.
 > - ✅ **Engpass-Liste als CSV (aktuelle Auswahl):** „⬇️ CSV (N)" in der Filterleiste
 >   exportiert die gerade gefilterten Engpässe (Wirkstoff, Präparat, Status, Grund,
 >   Meldedatum, Herkunft, Melder, beobachtet) — u.a. zur Dokumentation der

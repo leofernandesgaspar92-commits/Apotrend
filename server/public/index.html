@@ -935,7 +935,7 @@ function sparkline(series) {
 
 function priceGroup(g) {
   const card = el(`<div class="card">
-    <div class="post-author">${esc(g.bezeichnung)} <span class="handle">${esc(g.wirkstoff||'')}</span></div>
+    <div class="post-author">${esc(g.bezeichnung)} ${g.wirkstoff?`<span class="handle clickable" data-wirkstoff="${esc(g.wirkstoff)}" title="Alles zu ${esc(g.wirkstoff)}">${esc(g.wirkstoff)}</span>`:''}</div>
     <div class="muted" style="margin:2px 0 8px">Preisvergleich (AEP) · günstigster oben · 📌 Referenzdaten</div>
     ${g.saving_abs>0?`<div style="display:inline-block;background:rgba(0,136,90,.12);color:#00885a;font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">💰 −€ ${Number(g.saving_abs).toFixed(2)} pro Packung günstiger bei ${esc(g.best_supplier)}</div>`:''}
     <div data-offers></div>
@@ -969,6 +969,8 @@ function priceGroup(g) {
     };
     box.appendChild(row);
   });
+  const pw = card.querySelector('[data-wirkstoff]');
+  if (pw) pw.onclick = () => openWirkstoff(pw.dataset.wirkstoff);
   return card;
 }
 
@@ -1113,7 +1115,7 @@ function rabattCard(r) {
     <div class="row">
       <span class="rank">#${r.rank}</span>
       <span class="post-author">${esc(r.bezeichnung)}</span>
-      <span class="handle">${esc(r.wirkstoff||'')}</span>
+      ${r.wirkstoff?`<span class="handle clickable" data-wirkstoff="${esc(r.wirkstoff)}" title="Alles zu ${esc(r.wirkstoff)}">${esc(r.wirkstoff)}</span>`:''}
       <span class="sp" style="flex:1"></span>
       <span class="rabatt-badge">−${r.rabatt_pct}%</span>
     </div>
@@ -1143,6 +1145,8 @@ function rabattCard(r) {
     try { await api('POST',`/api/rabatte/${r.id}/post`,{ body:t.value }); t.value=''; loadRabatte(); }
     catch(e){ alert(e.message); }
   };
+  const rw = card.querySelector('[data-wirkstoff]');
+  if (rw) rw.onclick = () => openWirkstoff(rw.dataset.wirkstoff);
   return card;
 }
 
