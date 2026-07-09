@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **„Meine Aktivität" (eigenes Profil):** ein Ort für die eigenen Beiträge —
+>   Fachfragen (mit offen/beantwortet), Engpass-Meldungen (mit Status/Bestätigungen)
+>   und Austausch-Einträge, jeweils anklickbar. Komposition am HTTP-Layer aus bereits
+>   getesteten Diensten. (`GET /api/me/activity`; im Browser verifiziert.)
 > - ✅ **Fragen-Filter im Öffentlich-Feed:** Umschalter „❓ Offene Fragen zuerst" zeigt nur
 >   Fachfragen, unbeantwortete oben — so finden Kolleg:innen Fragen, bei denen sie helfen
 >   können. (`GET /api/feed/public?filter=questions`; 170 Tests grün, im Browser verifiziert.)

@@ -1281,12 +1281,14 @@ async function openProfile(handle) {
         <span><b>${d.follower_count}</b> <span class="muted">Follower</span></span>
         <span><b>${d.following_count}</b> <span class="muted">folgt</span></span>
         <span class="sp" style="flex:1"></span>
-        ${d.is_self?'<button class="ghost small" data-edit>✏️ Profil bearbeiten</button>':`<button class="ghost small" data-dm>✉️ Nachricht</button> <button class="${d.is_following?'ghost ':''}small" data-togglefollow>${d.is_following?'✓ Du folgst — entfolgen':'+ Folgen'}</button>`}
+        ${d.is_self?'<button class="ghost small" data-activity>🗂️ Meine Aktivität</button> <button class="ghost small" data-edit>✏️ Profil bearbeiten</button>':`<button class="ghost small" data-dm>✉️ Nachricht</button> <button class="${d.is_following?'ghost ':''}small" data-togglefollow>${d.is_following?'✓ Du folgst — entfolgen':'+ Folgen'}</button>`}
       </div>
     </div>`);
     head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
     const eb = head.querySelector('[data-edit]');
     if (eb) eb.onclick = () => editProfileForm(p);
+    const ab = head.querySelector('[data-activity]');
+    if (ab) ab.onclick = openMyActivity;
     const tf = head.querySelector('[data-togglefollow]');
     if (tf) tf.onclick = async () => {
       try { await api('POST', d.is_following?'/api/unfollow':'/api/follow', { handle:p.handle }); openProfile(handle); }
@@ -1346,6 +1348,52 @@ async function openProfile(handle) {
     if (!d.posts.length) feed.appendChild(el('<div class="card muted">Noch keine sichtbaren Beiträge.</div>'));
     d.posts.forEach(post => feed.appendChild(postCard(post)));
   } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+}
+
+// Eigene Aktivität an einem Ort: Fragen, Engpass-Meldungen, Austausch-Einträge.
+async function openMyActivity() {
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  feed.innerHTML = '<div class="muted">lädt…</div>';
+  let d;
+  try { d = await api('GET','/api/me/activity'); }
+  catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
+  feed.innerHTML = '';
+  const head = el(`<div class="card"><div><button class="ghost small" data-back>← zurück</button></div>
+    <h1 style="margin:8px 0 2px">🗂️ Meine Aktivität</h1>
+    <div class="muted">Deine Fragen, Engpass-Meldungen und Austausch-Einträge auf einen Blick.</div></div>`);
+  head.querySelector('[data-back]').onclick = () => me && openProfile(me.handle);
+  feed.appendChild(head);
+
+  // Meine Fragen
+  const qOpen = d.questions.filter(q=>!q.answered).length;
+  const qcard = el(`<div class="card"><div class="row"><b>❓ Meine Fachfragen</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:13px">${d.questions.length} gesamt${qOpen?` · ${qOpen} offen`:''}</span></div><div data-qs style="margin-top:6px"></div></div>`);
+  const qs = qcard.querySelector('[data-qs]');
+  if (!d.questions.length) qs.appendChild(el('<div class="muted" style="font-size:14px">Noch keine Fragen gestellt.</div>'));
+  else d.questions.forEach(q => {
+    const row = el(`<div class="comment clickable"><span style="color:${q.answered?'#00885a':'#2952cc'};font-weight:700">${q.answered?'✔':'❓'}</span> ${esc((q.body||'').slice(0,90))}${(q.body||'').length>90?'…':''} <span class="muted" style="font-size:12px">· ${q.comment_count||0} Antworten</span></div>`);
+    row.onclick = () => openPost(q.id);
+    qs.appendChild(row);
+  });
+  feed.appendChild(qcard);
+
+  // Meine Engpass-Meldungen
+  const rcard = el(`<div class="card"><div class="row"><b>👥 Meine Engpass-Meldungen</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:13px">${d.reports.length} gesamt</span></div><div data-rs style="margin-top:6px"></div></div>`);
+  const rs = rcard.querySelector('[data-rs]');
+  if (!d.reports.length) rs.appendChild(el('<div class="muted" style="font-size:14px">Noch keine Engpässe gemeldet.</div>'));
+  else d.reports.forEach(s => {
+    const m = watchStatusMeta(s.status);
+    const row = el(`<div class="comment clickable">${m.icon} <b>${esc(s.wirkstoff)}</b> <span style="color:${m.color};font-weight:700;font-size:12px">${m.label}</span>${s.confirm_count?` · <span class="muted" style="font-size:12px">${s.confirm_count} bestätigt</span>`:''}</div>`);
+    row.onclick = () => goTab('shortages');
+    rs.appendChild(row);
+  });
+  feed.appendChild(rcard);
+
+  // Meine Austausch-Einträge
+  const ecard = el(`<div class="card"><div class="row"><b>🔄 Meine Austausch-Einträge</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:13px">${d.exchange.length} gesamt</span></div></div>`);
+  if (!d.exchange.length) ecard.appendChild(el('<div class="muted" style="font-size:14px;margin-top:6px">Noch keine Biete/Suche-Einträge.</div>'));
+  else d.exchange.forEach(e => ecard.appendChild(exchangeCard(e)));
+  feed.appendChild(ecard);
 }
 
 async function renderVerifyCard(card) {

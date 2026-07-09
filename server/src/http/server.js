@@ -146,6 +146,16 @@ const routes = [
 
   ['GET', /^\/api\/me$/, true, async ({ userId }) => ({ user: repo.getUserById(userId), profile: social.getProfile(userId), is_moderator: social.isModerator(userId) })],
   ['GET', /^\/api\/overview$/, true, async ({ userId }) => overview.forUser(userId)],
+  // Meine Aktivität an einem Ort: eigene Fragen, Engpass-Meldungen, Austausch-Einträge.
+  ['GET', /^\/api\/me\/activity$/, true, async ({ userId }) => {
+    const page = social.profilePage(userId, userId);
+    const posts = (page && page.posts) || [];
+    return {
+      questions: posts.filter(p => p.is_question),
+      reports: shortages.listWithCounts(userId).filter(s => s.is_reporter),
+      exchange: exchange.mine(userId),
+    };
+  }],
   ['GET', /^\/api\/suggestions\/follow$/, true, async ({ userId }) => ({ suggestions: social.suggestFollows(userId) })],
   ['GET', /^\/api\/handles$/, true, async ({ query }) => ({ handles: social.searchHandles(query.get('q') || '') })],
   ['GET', /^\/api\/me\/export$/, true, async ({ userId }) => ({ ...social.exportData(userId), exchange_entries: exchange.mine(userId) })],
