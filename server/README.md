@@ -6,6 +6,9 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Barrierefreiheit — aria-pressed auf Umschaltern:** Sortier-, Feed-Filter-,
+>   Engpass-Filter- und Beobachten-Buttons melden ihren An/Aus-Zustand an Screenreader
+>   (`aria-pressed`, synchron beim Umschalten). (Im Browser verifiziert.)
 > - ✅ **Bestands-Alarm für beobachtete Wirkstoffe:** bietet eine Apotheke im Austausch
 >   Bestand an, der einen von dir beobachteten Wirkstoff enthält, wirst du sofort
 >   benachrichtigt („📦 Neuer Bestand zu deinem beobachteten Wirkstoff: Amoxicillin") —
