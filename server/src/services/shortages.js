@@ -131,7 +131,8 @@ export function createShortagesService(shortagesRepo, social) {
           social.pushNotification({ userId: uid, type: 'watch_alert', actorUserId, refType: 'shortage', refId: id, label });
         }
       }
-      return updated;
+      // wie die übrigen Mutatoren dekoriert zurückgeben (keine rohen User-IDs nach außen).
+      return decorate(updated, actorUserId);
     },
 
     // ── Beobachtungsliste: Wirkstoffe, die ein:e Apotheker:in im Blick behalten will ──

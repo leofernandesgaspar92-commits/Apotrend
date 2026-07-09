@@ -51,6 +51,15 @@ test('updateStatus: setzt Status, Quelle und Herkunft editorial', () => {
   assert.equal(shortagesRepo.get(amoxId).status, 'verfuegbar');
 });
 
+test('updateStatus: gibt dekorierte Form zurück, keine rohen Bestätiger-IDs', () => {
+  const { shortages, redUid, apoUid, amoxId } = setup();
+  shortages.confirmShortage(apoUid, amoxId); // legt eine confirmations-ID an (Amoxicillin ist zwar reference, aber Feld existiert)
+  const u = shortages.updateStatus(redUid, amoxId, { status: 'verfuegbar', sourceUrl: 'https://basg.gv.at/x' });
+  assert.equal(u.confirmations, undefined, 'rohe Bestätiger-IDs nicht nach außen');
+  assert.equal(typeof u.confirm_count, 'number');
+  assert.ok('watched' in u, 'dekorierte Felder vorhanden');
+});
+
 test('updateStatus: benachrichtigt Beobachter:innen bei Änderung', () => {
   const { social, shortages, shortagesRepo, redUid, apoUid, amoxId } = setup();
   shortagesRepo.addWatch(apoUid, 'Amoxicillin');
