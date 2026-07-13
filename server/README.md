@@ -6,6 +6,9 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Preise-Reiter: Suche:** Textsuche (Präparat/Wirkstoff/Lieferant) filtert den
+>   Preisvergleich live; nur die Listenbox wird neu gerendert (Suchfokus bleibt erhalten).
+>   (Frontend; im Browser verifiziert.)
 > - ✅ **Engpassliste drucken (Team-Aushang):** „🖨️ Drucken" auf dem Engpässe-Reiter öffnet
 >   eine druckoptimierte Ansicht der aktuellen (gefilterten) Liste — Kopf-/Navigations-/
 >   Formular-Elemente per Print-CSS ausgeblendet, Druckkopf „ApoTrend — Lieferengpässe" mit

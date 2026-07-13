@@ -207,6 +207,7 @@ let shortageFilter = ''; // '', 'kritisch', 'watched', 'community'
 let shortageQuery = '';  // Textsuche nach Wirkstoff/Präparat
 let rabattQuery = '';     // Textsuche im Rabatt-Reiter
 let rabattExpiring = false; // nur bald ablaufende Aktionen
+let priceQuery = '';      // Textsuche im Preise-Reiter
 let myBookmarks = new Set();
 
 // ── Auth-Screens ──
@@ -947,7 +948,22 @@ async function loadPrices() {
     const exp = el('<div class="card"><div class="row"><b>📊 Für den Einkauf</b><span class="sp" style="flex:1"></span><button class="ghost small" data-csv>⬇️ Preisvergleich als CSV (Excel)</button></div><div class="muted" style="font-size:13px;margin-top:2px">Alle Präparate & Lieferanten mit AEP, Trend und günstigstem Anbieter — zum Weiterverarbeiten in Excel.</div></div>');
     exp.querySelector('[data-csv]').onclick = () => exportPricesCsv(d.comparisons);
     feed.appendChild(exp);
-    d.comparisons.forEach(g => feed.appendChild(priceGroup(g)));
+    const bar = el(`<div class="card"><div class="row" style="gap:6px"><input data-pq placeholder="🔎 Präparat, Wirkstoff oder Lieferant suchen…" value="${esc(priceQuery)}" style="flex:1"></div></div>`);
+    feed.appendChild(bar);
+    const listBox = el('<div data-plist></div>');
+    feed.appendChild(listBox);
+    const draw = () => {
+      const q = priceQuery.trim().toLowerCase();
+      const list = d.comparisons.filter(g =>
+        !q || (g.bezeichnung||'').toLowerCase().includes(q) || (g.wirkstoff||'').toLowerCase().includes(q)
+           || (g.offers||[]).some(o => (o.supplier||'').toLowerCase().includes(q)));
+      listBox.innerHTML = '';
+      if (!list.length) listBox.appendChild(el('<div class="card muted">Kein Präparat für diese Suche.</div>'));
+      else list.forEach(g => listBox.appendChild(priceGroup(g)));
+    };
+    const pq = bar.querySelector('[data-pq]');
+    let t; pq.oninput = () => { clearTimeout(t); t = setTimeout(() => { priceQuery = pq.value; draw(); }, 250); };
+    draw();
   } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
 }
 
