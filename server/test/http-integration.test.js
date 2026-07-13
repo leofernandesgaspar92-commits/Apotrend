@@ -73,6 +73,20 @@ test('GET /api/feed/public?filter=questions liefert nur Fragen', async () => {
   assert.ok(d.posts.every(p => p.is_question), 'ausschließlich Fragen');
 });
 
+test('GET /api/prices: laufende Aktion, die den besten AEP unterbietet, wird eingeblendet', async () => {
+  const a = await reg('px_a' + PORT);
+  const d = await j('/api/prices', a);
+  const panto = d.comparisons.find(g => g.bezeichnung === 'Pantoprazol 40 mg');
+  assert.ok(panto, 'Pantoprazol-Gruppe vorhanden');
+  assert.ok(panto.action, 'Aktion eingeblendet (3,90 < 5,08 AEP)');
+  assert.ok(panto.action.aktionspreis < panto.best_aep, 'Aktionspreis unterbietet AEP');
+  assert.ok(panto.action.unter_aep_abs > 0, 'Ersparnis gegenüber AEP positiv');
+  // Amoxicillin: bester AEP (3,01) ist günstiger als die Aktion (3,10) -> keine Einblendung.
+  const amox = d.comparisons.find(g => g.bezeichnung === 'Amoxicillin 1000 mg');
+  assert.ok(amox, 'Amoxicillin-Gruppe vorhanden');
+  assert.equal(amox.action, null, 'keine Aktion, da AEP bereits günstiger');
+});
+
 test('GET /api/overview enthält watch_offers für beobachteten Wirkstoff mit Angebot', async () => {
   const a = await reg('ov_a' + PORT);
   const b = await reg('ov_b' + PORT);

@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Rabatt-Aktion im Preisvergleich:** Läuft für ein Präparat/einen Wirkstoff eine
+>   Rabatt-Aktion, deren Aktionspreis den besten AEP unterbietet, zeigt die Preisgruppe
+>   einen Hinweis („🏷️ Aktion günstiger als der beste Einkaufspreis" mit Lieferant,
+>   Preis, Ersparnis pro Packung, Mindestmenge, Restlaufzeit). Der Einkauf sieht die
+>   günstigere Option an einer Stelle. (`prices.comparisons` um `action` erweitert —
+>   `rabatteRepo` injiziert; Integrationstest + im Browser verifiziert.)
 > - ✅ **Engpass-Sortierung:** Der Lieferengpässe-Reiter hat einen Sortier-Umschalter
 >   („🔴 Kritischste zuerst" / „🕘 Neueste zuerst"). Kritischste = Status → Bestätigungen →
 >   Datum; Neueste = Meldedatum absteigend. Wirkt zusammen mit Filter/Suche, nur die

@@ -1,7 +1,7 @@
 // Preis-Modul (Priorität 3) + Feed-Verknüpfung (Priorität 1).
 // Preisvergleich je Präparat (mehrere Lieferanten) + "Nutzer postet dazu"
 // (posts.ref_type='price').
-export function createPricesService(pricesRepo, social) {
+export function createPricesService(pricesRepo, social, rabatteRepo = null) {
   // Ersparnis je Vergleichsgruppe: günstigster vs. teuerster Anbieter (pro Packung).
   function withSavings(g) {
     const offers = g.offers.map(o => ({ ...o }));
@@ -14,13 +14,41 @@ export function createPricesService(pricesRepo, social) {
     return { ...g, offers, best_supplier: best ? best.supplier : null, best_aep: min, saving_abs, saving_pct };
   }
 
+  // Beste laufende Rabatt-Aktion für eine Vergleichsgruppe (gleiche Bezeichnung oder
+  // gleicher Wirkstoff), sofern der Aktionspreis den besten AEP unterbietet.
+  function bestActionFor(g) {
+    if (!rabatteRepo) return null;
+    const bez = String(g.bezeichnung || '').trim().toLowerCase();
+    const ws = String(g.wirkstoff || '').trim().toLowerCase();
+    const matches = rabatteRepo.listFlat().filter(r => {
+      const days = rabatteRepo.daysLeft(r.gueltig_bis);
+      if (days != null && days < 0) return false; // abgelaufene Aktionen ignorieren
+      const rb = String(r.bezeichnung || '').trim().toLowerCase();
+      const rw = String(r.wirkstoff || '').trim().toLowerCase();
+      return (bez && rb === bez) || (ws && rw === ws);
+    });
+    if (!matches.length) return null;
+    const best = matches.reduce((a, b) => (Number(b.aktionspreis) < Number(a.aktionspreis) ? b : a));
+    if (g.best_aep == null || !(Number(best.aktionspreis) < Number(g.best_aep))) return null;
+    const days_left = rabatteRepo.daysLeft(best.gueltig_bis);
+    const unter_aep_abs = Math.round((Number(g.best_aep) - Number(best.aktionspreis)) * 100) / 100;
+    return {
+      supplier: best.supplier, aktionspreis: best.aktionspreis, rabatt_pct: best.rabatt_pct,
+      min_menge: best.min_menge, gueltig_bis: best.gueltig_bis, days_left,
+      expiring_soon: days_left != null && days_left <= 14, unter_aep_abs,
+    };
+  }
+
   return {
     // Preisvergleich, je Gruppe mit Aktivitäts-Zähler pro Angebot + Ersparnis.
     comparisons(viewerUserId) {
-      return pricesRepo.listComparisons().map(g => withSavings({
-        ...g,
-        offers: g.offers.map(o => ({ ...o, post_count: social.postsAbout(viewerUserId, 'price', o.id).length })),
-      }));
+      return pricesRepo.listComparisons().map(g => {
+        const withS = withSavings({
+          ...g,
+          offers: g.offers.map(o => ({ ...o, post_count: social.postsAbout(viewerUserId, 'price', o.id).length })),
+        });
+        return { ...withS, action: bestActionFor(withS) };
+      });
     },
 
     // Gesamt-Ersparnis: wie viel bei optimaler Lieferantenwahl je Packung frei wird.

@@ -45,8 +45,10 @@ const social = createSocialService(socialRepo, repo, {
 const shortagesRepo = createShortagesRepo({ seed: !restoring });
 const shortages = createShortagesService(shortagesRepo, social);
 const pricesRepo = createPricesRepo({ seed: !restoring });
-const prices = createPricesService(pricesRepo, social);
 const rabatteRepo = createRabatteRepo({ seed: !restoring });
+// Rabatte in den Preisvergleich einblenden: eine laufende Aktion kann günstiger
+// sein als der beste AEP — das soll der Einkauf an einer Stelle sehen.
+const prices = createPricesService(pricesRepo, social, rabatteRepo);
 const rabatte = createRabatteService(rabatteRepo, social);
 const exchangeRepo = createExchangeRepo();
 const exchange = createExchangeService(exchangeRepo, social, repo, shortagesRepo);
