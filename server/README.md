@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **„Meine Beitrag-Statistik":** „Meine Aktivität" zeigt oben eine Kennzahl-Leiste
+>   (Beiträge, Fragen inkl. offener, beste Antworten als Reputation, Engpass-Meldungen,
+>   erhaltene Bestätigungen, Austausch-Einträge) — das eigene Engagement auf einen Blick.
+>   (`/api/me/activity` um `stats` erweitert; Test + im Browser verifiziert.)
 > - ✅ **Preise-Reiter: Suche:** Textsuche (Präparat/Wirkstoff/Lieferant) filtert den
 >   Preisvergleich live; nur die Listenbox wird neu gerendert (Suchfokus bleibt erhalten).
 >   (Frontend; im Browser verifiziert.)

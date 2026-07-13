@@ -150,11 +150,22 @@ const routes = [
   ['GET', /^\/api\/me\/activity$/, true, async ({ userId }) => {
     const page = social.profilePage(userId, userId);
     const posts = (page && page.posts) || [];
-    return {
-      questions: posts.filter(p => p.is_question),
-      reports: shortages.listWithCounts(userId).filter(s => s.is_reporter),
-      exchange: exchange.mine(userId),
+    const questions = posts.filter(p => p.is_question);
+    const reports = shortages.listWithCounts(userId).filter(s => s.is_reporter);
+    const mine = exchange.mine(userId);
+    // Beitrag-Statistik: Kennzahlen des eigenen Engagements auf einen Blick.
+    const stats = {
+      posts: (page && page.post_count) || 0,
+      questions: questions.length,
+      questions_open: questions.filter(q => !q.answered).length,
+      best_answers: (page && page.best_answers) || 0,
+      reports: reports.length,
+      confirms_received: reports.reduce((n, s) => n + (s.confirm_count || 0), 0),
+      exchange: mine.length,
+      followers: (page && page.follower_count) || 0,
+      following: (page && page.following_count) || 0,
     };
+    return { questions, reports, exchange: mine, stats };
   }],
   // Wirkstoff-Detailseite: alles zu einem Wirkstoff gebündelt (Engpass, Austausch,
   // Preise, Aktionen) — komponiert aus bereits getesteten Diensten.

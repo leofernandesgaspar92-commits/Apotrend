@@ -55,6 +55,13 @@ test('GET /api/me/activity liefert eigene Fragen, Meldungen, Austausch', async (
   assert.ok(d.questions.some(x => x.id === q.id), 'eigene Frage enthalten');
   assert.ok(d.reports.some(r => r.wirkstoff === 'Ramipril' + PORT), 'eigene Meldung enthalten');
   assert.ok(d.exchange.length >= 1, 'eigener Austausch-Eintrag enthalten');
+  // Beitrag-Statistik spiegelt die eigenen Aktivitäten wider.
+  assert.ok(d.stats, 'stats-Feld vorhanden');
+  assert.ok(d.stats.questions >= 1, 'mindestens eine Frage in der Statistik');
+  assert.ok(d.stats.questions_open >= 1, 'offene Frage gezählt');
+  assert.ok(d.stats.reports >= 1, 'Meldung in der Statistik');
+  assert.ok(d.stats.exchange >= 1, 'Austausch-Eintrag in der Statistik');
+  assert.equal(typeof d.stats.best_answers, 'number', 'best_answers ist eine Zahl');
 });
 
 test('GET /api/feed/public?filter=questions liefert nur Fragen', async () => {
