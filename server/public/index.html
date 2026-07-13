@@ -205,6 +205,7 @@ const app = document.getElementById('app');
 let me = null, tab = 'overview', iAmModerator = false, publicSort = 'neu', publicFilter = 'all';
 let shortageFilter = ''; // '', 'kritisch', 'watched', 'community'
 let shortageQuery = '';  // Textsuche nach Wirkstoff/Präparat
+let shortageSort = 'kritisch'; // 'kritisch' (kritischste zuerst) | 'neu' (neueste zuerst)
 let rabattQuery = '';     // Textsuche im Rabatt-Reiter
 let rabattExpiring = false; // nur bald ablaufende Aktionen
 let priceQuery = '';      // Textsuche im Preise-Reiter
@@ -733,6 +734,7 @@ async function loadShortages() {
 // Filterleiste bleibt bestehen, damit der Suchfokus beim Tippen nicht verloren geht.
 function renderShortlist(listBox, bar, all) {
   bar.querySelectorAll('[data-f]').forEach(b => { const on = b.dataset.f === shortageFilter; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
+  bar.querySelectorAll('[data-sort]').forEach(b => { const on = b.dataset.sort === shortageSort; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
   const q = shortageQuery.trim().toLowerCase();
   const list = all.filter(s => {
     if (shortageFilter === 'kritisch' && s.status !== 'kritisch') return false;
@@ -740,6 +742,13 @@ function renderShortlist(listBox, bar, all) {
     if (shortageFilter === 'community' && s.provenance !== 'community') return false;
     if (q && !((s.wirkstoff||'').toLowerCase().includes(q) || (s.bezeichnung||'').toLowerCase().includes(q))) return false;
     return true;
+  });
+  // Sortierung: kritischste zuerst (Status → Bestätigungen → Datum) oder neueste zuerst.
+  const when = s => s.gemeldet_am || (s.created_at ? s.created_at.slice(0,10) : '');
+  const rank = { kritisch: 3, eingeschraenkt: 2, verfuegbar: 1 };
+  list.sort((a, b) => {
+    if (shortageSort === 'neu') return String(when(b)).localeCompare(String(when(a))) || (b.confirm_count||0) - (a.confirm_count||0);
+    return (rank[b.status]||0) - (rank[a.status]||0) || (b.confirm_count||0) - (a.confirm_count||0) || String(when(b)).localeCompare(String(when(a)));
   });
   listBox.innerHTML = '';
   if (!list.length) listBox.appendChild(el('<div class="card muted">Keine Engpässe für diese Auswahl. Filter zurücksetzen oder Suchbegriff ändern.</div>'));
@@ -762,6 +771,10 @@ function shortageFilterBar() {
       <button class="ghost small" data-sprint title="Aktuelle Auswahl drucken (Team-Aushang)">🖨️ Drucken</button>
       <button class="ghost small" data-scsv title="Aktuelle Auswahl als CSV (Excel) exportieren">⬇️ CSV</button>
     </div>
+    <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center">
+      <span class="muted" style="font-size:13px">Sortieren:</span>
+      ${[['kritisch','🔴 Kritischste zuerst'],['neu','🕘 Neueste zuerst']].map(([v,l])=>`<button class="small sortbtn${shortageSort===v?' active':''}" data-sort="${v}" aria-pressed="${shortageSort===v}">${l}</button>`).join('')}
+    </div>
   </div>`);
   const rerender = () => { const c = renderShortlist._ctx; if (c) renderShortlist(c.listBox, c.bar, c.all); };
   bar.querySelector('[data-sprint]').onclick = () => {
@@ -770,6 +783,7 @@ function shortageFilterBar() {
     window.print();
   };
   bar.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { shortageFilter = b.dataset.f; rerender(); });
+  bar.querySelectorAll('[data-sort]').forEach(b => b.onclick = () => { shortageSort = b.dataset.sort; rerender(); });
   bar.querySelector('[data-scsv]').onclick = () => exportShortagesCsv(renderShortlist._filtered || []);
   const q = bar.querySelector('[data-q]');
   let t; q.oninput = () => { clearTimeout(t); t = setTimeout(() => { shortageQuery = q.value; rerender(); }, 250); };

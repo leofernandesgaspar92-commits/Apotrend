@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Engpass-Sortierung:** Der Lieferengpässe-Reiter hat einen Sortier-Umschalter
+>   („🔴 Kritischste zuerst" / „🕘 Neueste zuerst"). Kritischste = Status → Bestätigungen →
+>   Datum; Neueste = Meldedatum absteigend. Wirkt zusammen mit Filter/Suche, nur die
+>   Listenbox wird neu gerendert. (Frontend; im Browser verifiziert.)
 > - ✅ **„Meine Beitrag-Statistik":** „Meine Aktivität" zeigt oben eine Kennzahl-Leiste
 >   (Beiträge, Fragen inkl. offener, beste Antworten als Reputation, Engpass-Meldungen,
 >   erhaltene Bestätigungen, Austausch-Einträge) — das eigene Engagement auf einen Blick.
