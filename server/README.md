@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Engpassliste drucken (Team-Aushang):** „🖨️ Drucken" auf dem Engpässe-Reiter öffnet
+>   eine druckoptimierte Ansicht der aktuellen (gefilterten) Liste — Kopf-/Navigations-/
+>   Formular-Elemente per Print-CSS ausgeblendet, Druckkopf „ApoTrend — Lieferengpässe" mit
+>   Stand/Filter. Zum Aushängen für nicht-digitale Kolleg:innen. (Im Browser via
+>   emulateMedia('print') verifiziert.)
 > - ✅ **Barrierefreiheit — „Zum Inhalt springen":** Skip-Link (per Tab sichtbar) springt
 >   zum Hauptinhalt (`<main id="app">` mit Fokus), damit Tastatur-/Screenreader-Nutzer:innen
 >   die Kopfleiste überspringen. (Im Browser mit Tastatur verifiziert.)

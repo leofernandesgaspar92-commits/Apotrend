@@ -72,10 +72,20 @@
   .hidden { display:none; }
   .skiplink { position:absolute; left:-9999px; top:0; z-index:20; background:var(--green); color:#fff; padding:10px 14px; border-radius:0 0 8px 0; font-weight:700; }
   .skiplink:focus { left:0; }
+  #printhead { display:none; }
+  @media print {
+    header, .tabs, .skiplink, button, input, textarea, select, .reacts, [data-report], [data-scsv], [data-statusbox], [data-postbox], [data-aboutbox] { display:none !important; }
+    body { background:#fff; color:#000; }
+    .card { border:1px solid #999; box-shadow:none; break-inside:avoid; margin-bottom:8px; }
+    #printhead { display:block; margin:0 0 12px; }
+    /* nur die Engpass-Info drucken: Melde-Formular, Legende & Filter ausblenden */
+    #feed > .card:has([data-report]), #feed > .card:has([data-tgl]), #feed > .card:has([data-q]) { display:none !important; }
+  }
 </style>
 </head>
 <body>
 <a href="#app" class="skiplink" id="skiplink">Zum Inhalt springen</a>
+<div id="printhead"><h1 style="margin:0">ApoTrend — Lieferengpässe</h1><div id="printdate" style="color:#444"></div></div>
 <header>
   <span class="logo">🟢 ApoTrend</span>
   <span class="muted" id="whoami" style="color:#dff5ea;"></span>
@@ -748,10 +758,16 @@ function shortageFilterBar() {
     <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px">
       ${chips.map(([v,l])=>`<button class="small sortbtn${shortageFilter===v?' active':''}" data-f="${v}" aria-pressed="${shortageFilter===v}">${l}</button>`).join('')}
       <span class="sp" style="flex:1"></span>
+      <button class="ghost small" data-sprint title="Aktuelle Auswahl drucken (Team-Aushang)">🖨️ Drucken</button>
       <button class="ghost small" data-scsv title="Aktuelle Auswahl als CSV (Excel) exportieren">⬇️ CSV</button>
     </div>
   </div>`);
   const rerender = () => { const c = renderShortlist._ctx; if (c) renderShortlist(c.listBox, c.bar, c.all); };
+  bar.querySelector('[data-sprint]').onclick = () => {
+    const pd = document.getElementById('printdate');
+    if (pd) pd.textContent = 'Stand: ' + new Date().toLocaleString('de-AT') + (shortageFilter?(' · Filter: '+shortageFilter):'') + (shortageQuery?(' · Suche: '+shortageQuery):'');
+    window.print();
+  };
   bar.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { shortageFilter = b.dataset.f; rerender(); });
   bar.querySelector('[data-scsv]').onclick = () => exportShortagesCsv(renderShortlist._filtered || []);
   const q = bar.querySelector('[data-q]');
