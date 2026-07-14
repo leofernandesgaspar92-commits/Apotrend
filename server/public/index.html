@@ -2208,19 +2208,23 @@ async function showDmInbox() {
     <div id="dmthreads"></div></div>`);
   app.appendChild(box);
   document.getElementById('back').onclick = mainScreen;
-  document.getElementById('dmnew').onclick = async () => {
+  const dmnew = async () => {
     const h = v('dmto').trim().replace(/^@/,''); if (!h) return;
     try { const r = await api('POST','/api/dm/start',{ handle:h }); openDmThread(r.thread.id); }
     catch(e){ alert(e.message); }
   };
+  document.getElementById('dmnew').onclick = dmnew;
+  document.getElementById('dmto').onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); dmnew(); } };
   const list = document.getElementById('dmthreads');
   if (!d.threads.length) { list.innerHTML = '<div class="muted">Noch keine Konversationen. Starte oben eine neue.</div>'; }
   else d.threads.forEach(t => {
     const o = t.other || {};
-    const row = el(`<div class="comment clickable" style="cursor:pointer">
-      <div class="row"><b>${esc(o.display_name||'Unbekannt')}</b> <span class="handle">@${esc(o.handle||'?')}</span>
-      <span class="sp" style="flex:1"></span>${t.unread?`<span class="badge">${t.unread}</span>`:''}</div>
-      <div class="muted" style="margin-top:2px">${esc((t.last_message?.body||'').slice(0,60))}</div></div>`);
+    const when = t.last_message?.created_at ? relTime(t.last_message.created_at) : '';
+    const unread = t.unread > 0;
+    const row = el(`<div class="comment clickable" style="cursor:pointer${unread?';background:rgba(11,127,40,.06);border-radius:8px':''}">
+      <div class="row"><b style="${unread?'font-weight:800':''}">${esc(o.display_name||'Unbekannt')}</b> <span class="handle">@${esc(o.handle||'?')}</span>
+      <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:12px;margin-right:6px">${when}</span>`:''}${unread?`<span class="badge">${t.unread}</span>`:''}</div>
+      <div class="muted" style="margin-top:2px${unread?';color:inherit;font-weight:600':''}">${esc((t.last_message?.body||'').slice(0,60))}</div></div>`);
     row.onclick = () => openDmThread(t.thread_id);
     list.appendChild(row);
   });
@@ -2267,6 +2271,7 @@ async function openDmThread(threadId) {
     } catch(e){ alert(e.message); }
   };
   document.getElementById('dmsend').onclick = send;
+  document.getElementById('dmbody').onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } };
   document.getElementById('dmbody').addEventListener('keydown', e => { if (e.key==='Enter') send(); });
   refreshDmCount();
 }

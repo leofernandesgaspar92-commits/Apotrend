@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Direktnachrichten benutzerfreundlicher:** Enter sendet die Nachricht (Shift+Enter
+>   für Zeilenumbruch), Enter startet auch eine neue Konversation. Die Nachrichten-Übersicht
+>   zeigt je Konversation den Zeitpunkt der letzten Nachricht (relativ) und hebt ungelesene
+>   Konversationen hervor (fetter Name, farbig hinterlegt). (Frontend; im Browser verifiziert.)
 > - ✅ **Rabatt-Aktion im Preisvergleich:** Läuft für ein Präparat/einen Wirkstoff eine
 >   Rabatt-Aktion, deren Aktionspreis den besten AEP unterbietet, zeigt die Preisgruppe
 >   einen Hinweis („🏷️ Aktion günstiger als der beste Einkaufspreis" mit Lieferant,
