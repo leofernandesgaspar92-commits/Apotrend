@@ -283,7 +283,7 @@ const routes = [
   }],
   ['POST', /^\/api\/shortages\/([^/]+)\/post$/, true, async ({ userId, params, body }) => shortages.postAbout(userId, params[0], { body: body.body, visibility: body.visibility })],
   ['POST', /^\/api\/shortages\/([^/]+)\/status$/, true, async ({ userId, params, body }) => shortages.updateStatus(userId, params[0], { status: body.status, sourceUrl: body.sourceUrl })],
-  ['POST', /^\/api\/shortages\/report$/, true, async ({ userId, body }) => shortages.reportShortage(userId, { wirkstoff: body.wirkstoff, bezeichnung: body.bezeichnung, grund: body.grund, status: body.status })],
+  ['POST', /^\/api\/shortages\/report$/, true, async ({ userId, body }) => shortages.reportShortage(userId, { wirkstoff: body.wirkstoff, bezeichnung: body.bezeichnung, grund: body.grund, status: body.status, voraussichtlichBis: body.voraussichtlichBis })],
   ['POST', /^\/api\/shortages\/([^/]+)\/confirm$/, true, async ({ userId, params }) => shortages.confirmShortage(userId, params[0])],
   ['POST', /^\/api\/shortages\/([^/]+)\/resolve$/, true, async ({ userId, params }) => shortages.resolveShortage(userId, params[0])],
 

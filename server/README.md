@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Engpass „voraussichtlich wieder lieferbar bis":** Beim Melden eines Engpasses kann
+>   optional ein Datum angegeben werden, bis wann der Engpass voraussichtlich dauert; die
+>   Engpass-Karte zeigt es prominent an („🗓️ Voraussichtlich wieder lieferbar bis …"). Datum
+>   wird serverseitig validiert (ISO YYYY-MM-DD). Zwei Referenz-Engpässe sind beispielhaft
+>   damit befüllt. (`/api/shortages/report` um `voraussichtlichBis`; Test + Browser verifiziert.)
 > - ✅ **Direktnachrichten benutzerfreundlicher:** Enter sendet die Nachricht (Shift+Enter
 >   für Zeilenumbruch), Enter startet auch eine neue Konversation. Die Nachrichten-Übersicht
 >   zeigt je Konversation den Zeitpunkt der letzten Nachricht (relativ) und hebt ungelesene

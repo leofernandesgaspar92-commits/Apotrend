@@ -195,6 +195,12 @@ const relTime = (iso) => {
   if (days < 7) return `vor ${days} Tag${days===1?'':'en'}`;
   return d.toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
 };
+// Kalendertag (YYYY-MM-DD) als deutsches Datum; bei ungültiger Eingabe Rohtext.
+const fmtDateDe = (ymd) => {
+  const t = Date.parse(String(ymd || '') + 'T00:00:00Z');
+  if (Number.isNaN(t)) return String(ymd || '');
+  return new Date(t).toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric', timeZone:'UTC' });
+};
 // Text escapen UND @Handles + #Hashtags anklickbar machen (kein @ mitten in E-Mails).
 const linkifyMentions = (s) => esc(s)
   .replace(/(^|[^\w@])@([a-z0-9_]{3,30})/gi,
@@ -810,6 +816,8 @@ function reportShortageCard() {
       </select>
       <label style="margin-top:6px">Grund (optional)</label>
       <input data-g placeholder="z.B. Großhandel meldet keine Verfügbarkeit">
+      <label style="margin-top:6px">Voraussichtlich wieder lieferbar bis (optional)</label>
+      <input data-vb type="date" title="Falls bekannt: bis wann der Engpass voraussichtlich dauert">
       <div style="margin-top:8px"><button class="small" data-send>Engpass melden</button></div>
       <div class="err" data-err></div>
     </div>
@@ -827,6 +835,7 @@ function reportShortageCard() {
         bezeichnung: card.querySelector('[data-b]').value.trim(),
         status: card.querySelector('[data-s]').value,
         grund: card.querySelector('[data-g]').value.trim(),
+        voraussichtlichBis: card.querySelector('[data-vb]').value || undefined,
       });
       loadShortages();
     } catch(e){ err.textContent = e.message; }
@@ -845,6 +854,7 @@ function shortageCard(s) {
     </div>
     <div class="post-body">${esc(s.bezeichnung)}</div>
     <div class="muted">${s.grund?esc(s.grund)+' · ':''}gemeldet ${esc(s.gemeldet_am||'—')}</div>
+    ${s.voraussichtlich_bis&&s.status!=='verfuegbar'?`<div class="muted" style="font-size:13px;margin-top:2px">🗓️ Voraussichtlich wieder lieferbar bis <b>${esc(fmtDateDe(s.voraussichtlich_bis))}</b></div>`:''}
     ${s.provenance==='community'&&s.reporter?`<div class="muted" style="font-size:13px;margin-top:2px">👥 Gemeldet von <b>@${esc(s.reporter.handle)}</b>${s.reporter.verified?' <span class="verified">✔</span>':''}${s.confirm_count?` · <b style="color:#c0392b">${s.confirm_count}</b> weitere Apotheke${s.confirm_count>1?'n':''} bestätigt`:''}</div>`:''}
     <div class="reacts">
       <button data-about>💬 ${s.post_count||0} Apotheker haben dazu gepostet</button>

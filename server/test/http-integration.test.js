@@ -73,6 +73,14 @@ test('GET /api/feed/public?filter=questions liefert nur Fragen', async () => {
   assert.ok(d.posts.every(p => p.is_question), 'ausschließlich Fragen');
 });
 
+test('POST /api/shortages/report: optionales "voraussichtlich bis"-Datum wird übernommen und validiert', async () => {
+  const a = await reg('vb_a' + PORT);
+  const ok = await (await post('/api/shortages/report', a, { wirkstoff: 'Bisoprolol' + PORT, bezeichnung: 'Bisoprolol 5mg', voraussichtlichBis: '2026-10-01' })).json();
+  assert.equal(ok.voraussichtlich_bis, '2026-10-01', 'gültiges Datum gespeichert');
+  const bad = await post('/api/shortages/report', a, { wirkstoff: 'Ramipril' + PORT + 'x', bezeichnung: 'X', voraussichtlichBis: '01.10.2026' });
+  assert.equal(bad.status, 400, 'ungültiges Datumsformat abgelehnt');
+});
+
 test('GET /api/prices: laufende Aktion, die den besten AEP unterbietet, wird eingeblendet', async () => {
   const a = await reg('px_a' + PORT);
   const d = await j('/api/prices', a);

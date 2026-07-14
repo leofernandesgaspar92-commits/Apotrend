@@ -48,13 +48,22 @@ export function createShortagesService(shortagesRepo, social) {
 
     // ── Community-Meldung: eine Apotheke meldet einen selbst beobachteten Engpass ──
     // Herkunft klar als 'community' gekennzeichnet (nicht offiziell/BASG-verifiziert).
-    reportShortage(userId, { wirkstoff, bezeichnung, grund, status = 'kritisch' }) {
+    reportShortage(userId, { wirkstoff, bezeichnung, grund, status = 'kritisch', voraussichtlichBis }) {
       const w = String(wirkstoff || '').trim();
       if (!w) throw new Error('Wirkstoff fehlt.');
       if (w.length > 120) throw new Error('Wirkstoff zu lang.');
       const bez = String(bezeichnung || '').trim() || w;
       if (bez.length > 200) throw new Error('Bezeichnung zu lang.');
       if (!VALID_STATUS.includes(status)) throw new Error('Unbekannter Status.');
+      // Optionales "voraussichtlich lieferbar bis"-Datum (Kalendertag, ISO YYYY-MM-DD).
+      let voraussichtlich_bis = null;
+      const vb = String(voraussichtlichBis || '').trim();
+      if (vb) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(vb) || Number.isNaN(Date.parse(vb + 'T00:00:00Z'))) {
+          throw new Error('Ungültiges Datum (voraussichtlich bis).');
+        }
+        voraussichtlich_bis = vb;
+      }
       // Doppel-/Fehlklick-Schutz: dieselbe Apotheke soll denselben Wirkstoff nicht
       // mehrfach offen melden (andere sollen stattdessen bestätigen).
       const dupe = shortagesRepo.list().find(s =>
@@ -67,6 +76,7 @@ export function createShortagesService(shortagesRepo, social) {
       const created = shortagesRepo.upsert({
         wirkstoff: w, bezeichnung: bez, status, grund: (grund ? String(grund).trim().slice(0, 200) : null),
         provenance: 'community', quelle: null, reporter_user_id: userId, gemeldet_am: today,
+        voraussichtlich_bis,
       });
       // Beobachter:innen dieses Wirkstoffs informieren (ausser Melder selbst).
       const label = `${w} · ${STATUS_LABEL[status]} (Community-Meldung)`;
