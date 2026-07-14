@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Antibiotika-Stewardship-Wissensecke (AMR):** Auf der Wirkstoff-Detailseite eines
+>   Antibiotikums erscheint ein quellenbelegtes Info-Panel (allgemeine Stewardship-Hinweise +
+>   offizielle AT-Quellen AGES/AURES) — ausdrücklich **keine patientenindividuelle
+>   Therapieempfehlung** (klar gekennzeichnet, hält die Medizinprodukt-Grenze ein). Erster
+>   Baustein der Antibiotic-Stewardship-Ausrichtung. (`services/amr.js` rein informativ;
+>   `/api/wirkstoff/:name` um `amr` erweitert; Integrationstest + im Browser verifiziert.)
 > - ✅ **Engpass „voraussichtlich wieder lieferbar bis":** Beim Melden eines Engpasses kann
 >   optional ein Datum angegeben werden, bis wann der Engpass voraussichtlich dauert; die
 >   Engpass-Karte zeigt es prominent an („🗓️ Voraussichtlich wieder lieferbar bis …"). Datum

@@ -1748,6 +1748,23 @@ async function openWirkstoff(name) {
   };
   feed.appendChild(head);
 
+  // Antibiotic-Stewardship-Wissensecke (nur bei Antibiotika). REIN INFORMATIV,
+  // quellenbelegt, ausdrücklich keine patientenindividuelle Therapieempfehlung.
+  if (d.amr && d.amr.is_antibiotic) {
+    const a = d.amr;
+    const panel = el(`<div class="card" style="border-left:4px solid #0b7f28">
+      <div class="row"><b>🧫 Antibiotika-Stewardship</b>
+        <span class="sp" style="flex:1"></span>
+        <span class="muted" style="font-size:12px">Information, keine Therapieempfehlung</span></div>
+      <div style="font-size:14px;margin-top:8px">${esc(a.note)}</div>
+      <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px">
+        ${(a.sources||[]).map(s=>`<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" class="small" style="display:inline-block;text-decoration:none;border:1px solid var(--line,#ccc);border-radius:8px;padding:6px 10px">🔗 ${esc(s.label)}</a>`).join('')}
+      </div>
+      <div class="muted" style="font-size:12px;margin-top:10px;font-style:italic">⚠️ ${esc(a.disclaimer)}</div>
+    </div>`);
+    feed.appendChild(panel);
+  }
+
   const section = (title, count, emptyMsg, render) => {
     const c = el(`<div class="card"><div class="row"><b>${title}</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:13px">${count}</span></div><div data-body style="margin-top:6px"></div></div>`);
     const body = c.querySelector('[data-body]');

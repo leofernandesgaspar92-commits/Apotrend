@@ -46,6 +46,17 @@ test('GET /api/wirkstoff/:name bündelt Engpass/Preise/Rabatte/Austausch', async
   assert.ok(d2.posts.some(p => /Amoxicillin/i.test(p.body)), 'erwähnender Beitrag in Diskussion');
 });
 
+test('GET /api/wirkstoff/:name: Antibiotikum liefert quellenbelegte AMR-Info, Nicht-Antibiotikum nicht', async () => {
+  const a = await reg('amr_a' + PORT);
+  const anti = await j('/api/wirkstoff/' + encodeURIComponent('Amoxicillin'), a);
+  assert.ok(anti.amr && anti.amr.is_antibiotic, 'Amoxicillin als Antibiotikum erkannt');
+  assert.ok(anti.amr.sources.length >= 1, 'mindestens eine Quelle');
+  assert.ok(anti.amr.sources.every(s => /^https:\/\//.test(s.url)), 'alle Quellen sind https-Links');
+  assert.match(anti.amr.disclaimer, /keine patientenindividuelle Therapieempfehlung/i);
+  const non = await j('/api/wirkstoff/' + encodeURIComponent('Metformin'), a);
+  assert.equal(non.amr, null, 'Metformin ist kein Antibiotikum -> keine AMR-Info');
+});
+
 test('GET /api/me/activity liefert eigene Fragen, Meldungen, Austausch', async () => {
   const a = await reg('ac_a' + PORT);
   const q = await (await post('/api/posts', a, { body: 'Testfrage?', kind: 'frage', visibility: 'public' })).json();

@@ -22,6 +22,7 @@ import { createRabatteService } from '../services/rabatte.js';
 import { createExchangeService } from '../services/exchange.js';
 import { createSearchService } from '../services/search.js';
 import { createOverviewService } from '../services/overview.js';
+import { createAmrService } from '../services/amr.js';
 import { issueToken, verifyToken } from './token.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -54,6 +55,7 @@ const exchangeRepo = createExchangeRepo();
 const exchange = createExchangeService(exchangeRepo, social, repo, shortagesRepo);
 const search = createSearchService({ social, shortagesRepo, pricesRepo, rabatteRepo, exchange });
 const overview = createOverviewService({ shortages, exchange, social, rabatte, prices });
+const amr = createAmrService();
 
 if (restoring) {
   repo.__load(snapshot.foundation);
@@ -178,6 +180,7 @@ const routes = [
     const ex = exchange.list(userId, { q: name });
     return {
       wirkstoff: name,
+      amr: amr.forWirkstoff(name),
       watched: shortagesRepo.isWatched(userId, name),
       shortages: shortages.listWithCounts(userId).filter(s => eq(s.wirkstoff)),
       prices: prices.comparisons(userId).filter(g => eq(g.wirkstoff)),
