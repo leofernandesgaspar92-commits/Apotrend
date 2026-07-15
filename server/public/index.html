@@ -1436,9 +1436,10 @@ async function openStewardship() {
     <h1 style="margin:8px 0 2px">🧫 Stewardship-Fachforum</h1>
     <div class="muted" style="font-size:14px">Anonymisierte Fachdiskussion unter Kolleg:innen zum verantwortungsvollen Antibiotikaeinsatz (AMR).</div>
     <div class="muted" style="font-size:12px;margin-top:8px;font-style:italic">⚠️ Keine Patientenberatung und keine personenbezogenen Patientendaten posten. Sicherheitsrelevante Aussagen nur mit Quelle.</div>
-    <div class="row" style="margin-top:8px"><button class="ghost small" data-pinfo>🧫 Patienten-Infokarten (mehrsprachig)</button></div></div>`);
+    <div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap"><button class="ghost small" data-pinfo>🧫 Patienten-Infokarten (mehrsprachig)</button><button class="ghost small" data-zettel>📋 Abgabe-Begleitzettel</button></div></div>`);
   head.querySelector('[data-back]').onclick = () => goTab('overview');
   head.querySelector('[data-pinfo]').onclick = () => openPatientInfo();
+  head.querySelector('[data-zettel]').onclick = () => openBegleitzettel();
   feed.appendChild(head);
   if (me) {
     const comp = el(`<div class="card"><b>Beitrag zum Thema</b>
@@ -1491,8 +1492,10 @@ async function openPatientInfo() {
     <div class="row" style="margin-top:10px;gap:6px;flex-wrap:wrap;align-items:center">
       <span data-langs style="display:flex;gap:6px;flex-wrap:wrap"></span>
       <span class="sp" style="flex:1"></span>
+      <button class="ghost small" data-zettel title="Einnahmeplan laut Verordnung erstellen">📋 Begleitzettel</button>
       <button class="ghost small" data-print>🖨️ Drucken</button></div></div>`);
   head.querySelector('[data-back]').onclick = () => goTab('overview');
+  head.querySelector('[data-zettel]').onclick = () => openBegleitzettel();
   head.querySelector('[data-print]').onclick = () => printPatientInfo(d);
   const langs = head.querySelector('[data-langs]');
   d.langs.forEach(l => {
@@ -1511,6 +1514,119 @@ async function openPatientInfo() {
     feed.appendChild(card);
   });
   feed.appendChild(el(`<div class="card muted" style="font-size:12px"><a href="${esc(d.source.url)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(d.source.label)}</a> · <span style="font-style:italic">${esc(d.disclaimer)}</span></div>`));
+}
+
+// Verordnungs-Klartext-Begleitzettel (Abgabe in der Apotheke, ohne ELGA).
+// REINE AUFBEREITUNG: formatiert ausschließlich die vom Fachpersonal laut
+// Verordnung eingegebenen Angaben als großen, mehrsprachigen Einnahmeplan.
+// Es wird KEINE Dosierung berechnet, geprüft oder vorgeschlagen.
+const ZETTEL_L = {
+  de: { title: 'Einnahmeplan', morgens: 'Morgens', mittags: 'Mittags', abends: 'Abends', nacht: 'Zur Nacht',
+    essen: { unabh: 'Einnahme unabhängig vom Essen', vor: 'Einnahme vor dem Essen', zum: 'Einnahme zum Essen', nach: 'Einnahme nach dem Essen' },
+    dauer: 'Einnahmedauer', hinweise: 'Wichtige Hinweise',
+    fragen: 'Bei Fragen wenden Sie sich an Ihre Apotheke oder Ihre Ärztin / Ihren Arzt.',
+    herkunft: 'Angaben laut Verordnung — ausgefüllt vom Apothekenpersonal.' },
+  en: { title: 'Medication schedule', morgens: 'Morning', mittags: 'Noon', abends: 'Evening', nacht: 'At night',
+    essen: { unabh: 'Take independently of meals', vor: 'Take before meals', zum: 'Take with meals', nach: 'Take after meals' },
+    dauer: 'Duration', hinweise: 'Important notes',
+    fragen: 'If you have questions, contact your pharmacy or your doctor.',
+    herkunft: 'Details as prescribed — completed by pharmacy staff.' },
+  tr: { title: 'İlaç kullanım planı', morgens: 'Sabah', mittags: 'Öğle', abends: 'Akşam', nacht: 'Gece',
+    essen: { unabh: 'Yemekten bağımsız alın', vor: 'Yemekten önce alın', zum: 'Yemekle birlikte alın', nach: 'Yemekten sonra alın' },
+    dauer: 'Kullanım süresi', hinweise: 'Önemli notlar',
+    fragen: 'Sorularınız için eczanenize veya doktorunuza başvurun.',
+    herkunft: 'Reçeteye göre bilgiler — eczane personeli tarafından dolduruldu.' },
+};
+let zettelLang = 'de';
+// Innerer Inhalt (für Vorschau und Druck identisch).
+function zettelBody(z) {
+  const L = ZETTEL_L[z.lang] || ZETTEL_L.de;
+  const cell = (v, lab) => `<div style="flex:1;min-width:90px;text-align:center;border:1px solid #9aa8a0;border-radius:8px;padding:10px 6px">
+    <div style="font-size:26px;font-weight:800;line-height:1.1">${esc(v || '0')}</div>
+    <div style="font-size:13px;margin-top:2px">${esc(lab)}</div></div>`;
+  return `<div style="font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:#4a5a51">${esc(L.title)}</div>
+    <div style="font-size:24px;font-weight:800;margin:4px 0 12px">${esc(z.praeparat)}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${cell(z.morgens, L.morgens)}${cell(z.mittags, L.mittags)}${cell(z.abends, L.abends)}${cell(z.nacht, L.nacht)}</div>
+    <div style="font-size:16px;margin-top:12px">🍽️ ${esc(L.essen[z.essen] || L.essen.unabh)}</div>
+    ${z.dauer ? `<div style="font-size:16px;margin-top:6px">📅 ${esc(L.dauer)}: <b>${esc(z.dauer)}</b></div>` : ''}
+    ${z.hinweise ? `<div style="font-size:15px;margin-top:10px"><b>${esc(L.hinweise)}:</b> ${esc(z.hinweise)}</div>` : ''}
+    <div style="font-size:14px;margin-top:14px">${esc(L.fragen)}</div>
+    <div style="font-size:11.5px;color:#4a5a51;margin-top:12px;font-style:italic">${esc(L.herkunft)}</div>`;
+}
+function printZettel(z) {
+  const w = window.open('', '_blank');
+  if (!w) { alert('Bitte Popups für den Druck erlauben.'); return; }
+  w.document.write(`<!doctype html><html lang="${esc(z.lang)}"><head><meta charset="utf-8"><title>${esc(ZETTEL_L[z.lang].title)}</title>
+    <style>body{font-family:system-ui,-apple-system,sans-serif;max-width:640px;margin:28px auto;padding:0 18px;color:#111}</style></head>
+    <body>${zettelBody(z)}<script>window.onload=function(){window.print();}<\/script></body></html>`);
+  w.document.close();
+}
+function openBegleitzettel() {
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  feed.innerHTML = '';
+  const head = el(`<div class="card" style="border-left:4px solid #0b7f28">
+    <div><button class="ghost small" data-back>← zurück</button></div>
+    <h1 style="margin:8px 0 2px">📋 Abgabe-Begleitzettel</h1>
+    <div class="muted" style="font-size:14px">Angaben laut Verordnung eingeben — ApoTrend macht daraus einen großen, gut lesbaren Einnahmeplan für Patient:innen (mehrsprachig, druckbar).</div>
+    <div class="muted" style="font-size:12px;margin-top:6px;font-style:italic">⚠️ Reine Klartext-Aufbereitung deiner Eingaben. Es wird keine Dosierung berechnet oder vorgeschlagen.</div></div>`);
+  head.querySelector('[data-back]').onclick = () => goTab('overview');
+  feed.appendChild(head);
+  const form = el(`<div class="card">
+    <label>Arzneimittel (laut Verordnung) *</label>
+    <input data-z-p placeholder="z.B. Amoxicillin 1000 mg Filmtabletten">
+    <label style="margin-top:8px">Einnahmeschema (Stück je Zeitpunkt, laut Verordnung)</label>
+    <div class="row" style="gap:6px;flex-wrap:wrap">
+      ${[['m','Morgens'],['mi','Mittags'],['a','Abends'],['n','Zur Nacht']].map(([k,l])=>`<label style="flex:1;min-width:80px;font-size:12px">${l}<input data-z-${k} value="0" style="width:100%;text-align:center"></label>`).join('')}
+    </div>
+    <label style="margin-top:8px">Einnahme & Essen</label>
+    <select data-z-e>
+      <option value="unabh">unabhängig vom Essen</option>
+      <option value="vor">vor dem Essen</option>
+      <option value="zum">zum Essen</option>
+      <option value="nach">nach dem Essen</option>
+    </select>
+    <label style="margin-top:8px">Einnahmedauer (laut Verordnung)</label>
+    <input data-z-d placeholder="z.B. 7 Tage">
+    <label style="margin-top:8px">Zusätzliche Hinweise (optional)</label>
+    <textarea data-z-h placeholder="z.B. Mit einem großen Glas Wasser einnehmen."></textarea>
+    <label style="margin-top:8px">Sprache des Zettels</label>
+    <div class="row" data-z-langs style="gap:6px;flex-wrap:wrap"></div>
+    <div class="row" style="margin-top:12px;gap:8px"><button class="small" data-z-print>🖨️ Begleitzettel drucken</button><span class="err" data-z-err style="font-size:13px"></span></div>
+  </div>`);
+  const preview = el(`<div class="card"><div class="muted" style="font-size:12px;margin-bottom:8px">Vorschau (so sieht es Patient:in):</div><div data-z-prev style="background:#fff;color:#111;border:1px solid var(--line,#ccc);border-radius:10px;padding:16px"></div></div>`);
+  const readZ = () => ({
+    lang: zettelLang,
+    praeparat: form.querySelector('[data-z-p]').value.trim(),
+    morgens: form.querySelector('[data-z-m]').value.trim(),
+    mittags: form.querySelector('[data-z-mi]').value.trim(),
+    abends: form.querySelector('[data-z-a]').value.trim(),
+    nacht: form.querySelector('[data-z-n]').value.trim(),
+    essen: form.querySelector('[data-z-e]').value,
+    dauer: form.querySelector('[data-z-d]').value.trim(),
+    hinweise: form.querySelector('[data-z-h]').value.trim(),
+  });
+  const drawPrev = () => { const z = readZ(); preview.querySelector('[data-z-prev]').innerHTML = z.praeparat ? zettelBody(z) : '<span style="color:#777">Arzneimittel eingeben, dann erscheint hier die Vorschau.</span>'; };
+  const langBox = form.querySelector('[data-z-langs]');
+  const drawLangs = () => {
+    langBox.innerHTML = '';
+    [['de','Deutsch'],['en','English'],['tr','Türkçe']].forEach(([c,l]) => {
+      const bt = el(`<button class="small sortbtn${zettelLang===c?' active':''}" aria-pressed="${zettelLang===c}">${l}</button>`);
+      bt.onclick = () => { zettelLang = c; drawLangs(); drawPrev(); };
+      langBox.appendChild(bt);
+    });
+  };
+  drawLangs();
+  form.querySelectorAll('input,textarea,select').forEach(i => i.oninput = drawPrev);
+  form.querySelector('[data-z-print]').onclick = () => {
+    const err = form.querySelector('[data-z-err]'); err.textContent = '';
+    const z = readZ();
+    if (!z.praeparat) { err.textContent = 'Bitte das Arzneimittel angeben.'; return; }
+    printZettel(z);
+  };
+  feed.appendChild(form);
+  feed.appendChild(preview);
+  drawPrev();
 }
 
 async function renderSearch(q) {

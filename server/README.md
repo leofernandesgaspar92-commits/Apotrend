@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Abgabe-Begleitzettel (Verordnungs-Klartext):** Die Apotheke gibt die Angaben laut
+>   Verordnung ein (Arzneimittel, Einnahmeschema Morgens/Mittags/Abends/Nacht, Essen, Dauer,
+>   Hinweise) — ApoTrend macht daraus einen großen, gut lesbaren Einnahmeplan mit
+>   Live-Vorschau und Druck, mehrsprachig (DE/EN/TR). **Reine Klartext-Aufbereitung der
+>   Eingaben des Fachpersonals — es wird keine Dosierung berechnet oder vorgeschlagen**
+>   (Medizinprodukt-Grenze). Vierter Stewardship-Baustein; Einstieg über Patienten-Infokarten
+>   und Fachforum. (Frontend; im Browser verifiziert inkl. Sprachwechsel + Pflichtfeld-Guard.)
 > - ✅ **Mehrsprachige Patienten-Infokarten (Antibiotika):** Kuratierte, quellenbelegte
 >   Aufklärungskarten (Deutsch/English/Türkçe) zur verständlichen Abgabe in der Apotheke —
 >   Sprachwechsel, „Kopieren" je Karte und sauberer Druck (eigenes Druckfenster). Allgemeine
