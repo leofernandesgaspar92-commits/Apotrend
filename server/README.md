@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **„Offene Fachfragen" auf der Startübersicht:** Bis zu 3 unbeantwortete Fragen
+>   anderer Kolleg:innen (eigene ausgenommen) erscheinen als klickbare Karte auf „Für dich"
+>   — Klick öffnet die Frage direkt. Bringt Fragen schneller zu Antworten und speist die
+>   „beste Antwort"-Reputation. (Frontend, nicht-blockierend nachgeladen über
+>   `filter=questions`; im Browser verifiziert inkl. „eigene Frage ausgeblendet".)
 > - ✅ **Engpass-Statusverlauf:** Jede Statusänderung wird protokolliert (Datum, Status,
 >   Herkunft, Quelle) — Ausgangsmeldung beim Anlegen, Redaktions-Updates (Quellpflicht
 >   bleibt), „wieder lieferbar". Die Engpass-Karte zeigt ab 2 Einträgen „📜 Verlauf (N)"

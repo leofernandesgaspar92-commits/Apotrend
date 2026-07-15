@@ -511,10 +511,29 @@ async function loadOverview() {
   stew.onclick = () => openStewardship();
   feed.appendChild(stew);
 
+  // Offene Fachfragen von Kolleg:innen (nicht-blockierend nachgeladen)
+  renderOpenQuestions(feed);
   // Apotheken im selben Bundesland (nicht-blockierend nachgeladen)
   renderNearbyColleagues(feed);
   // Aktuelle Themen (Trending-Hashtags, nicht-blockierend)
   renderTrendingHashtags(feed);
+}
+
+// Unbeantwortete Fachfragen anderer sichtbar machen — wer antwortet, hilft
+// Kolleg:innen und sammelt "beste Antwort"-Reputation.
+async function renderOpenQuestions(feed) {
+  let d;
+  try { d = await api('GET','/api/feed/public?filter=questions'); } catch { return; }
+  const open = (d.posts || []).filter(p => p.is_question && !p.answered && !(me && p.author && p.author.handle === me.handle)).slice(0, 3);
+  if (!open.length) return;
+  const card = el(`<div class="card"><div class="row"><b>❓ Offene Fachfragen</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:12px">Kolleg:innen warten auf Antwort</span></div><div data-oq style="margin-top:6px"></div></div>`);
+  const box = card.querySelector('[data-oq]');
+  open.forEach(q => {
+    const row = el(`<div class="comment clickable">❓ ${esc((q.body||'').slice(0,90))}${(q.body||'').length>90?'…':''} <span class="muted" style="font-size:12px">· ${q.author?'@'+esc(q.author.handle):''} · ${q.comment_count||0} Antworten</span></div>`);
+    row.onclick = () => openPost(q.id);
+    box.appendChild(row);
+  });
+  feed.appendChild(card);
 }
 
 async function renderTrendingHashtags(feed) {
