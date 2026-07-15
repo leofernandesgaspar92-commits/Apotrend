@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Engpass ↔ Stewardship-Verknüpfung:** Antibiotika-Engpässe sind serverseitig als
+>   `is_antibiotic` markiert; die Engpass-Karte zeigt dann einen Hinweis „🧫 Antibiotikum —
+>   Stewardship-Infos & Quellen", der zur quellenbelegten AMR-Wissensecke des Wirkstoffs führt.
+>   **Bewusst keine eigene Substitutionsempfehlung** (nur Verweis auf Quellen). Fünfter
+>   Stewardship-Baustein. (`/api/shortages` um `is_antibiotic` via `amr.isAntibiotic`;
+>   Integrationstest + im Browser verifiziert.)
 > - ✅ **Abgabe-Begleitzettel (Verordnungs-Klartext):** Die Apotheke gibt die Angaben laut
 >   Verordnung ein (Arzneimittel, Einnahmeschema Morgens/Mittags/Abends/Nacht, Essen, Dauer,
 >   Hinweise) — ApoTrend macht daraus einen großen, gut lesbaren Einnahmeplan mit

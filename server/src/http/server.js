@@ -287,7 +287,9 @@ const routes = [
   ['POST', /^\/api\/dm\/([^/]+)$/, true, async ({ userId, params, body }) => social.sendDm(userId, params[0], body.body)],
 
   // ── Lieferengpässe (Priorität 2) ──
-  ['GET', /^\/api\/shortages$/, true, async ({ userId }) => ({ shortages: shortages.listWithCounts(userId) })],
+  // is_antibiotic: markiert Antibiotika-Engpässe, damit das Frontend auf die
+  // quellenbelegte AMR-Wissensecke verweisen kann (keine Substitutionsempfehlung).
+  ['GET', /^\/api\/shortages$/, true, async ({ userId }) => ({ shortages: shortages.listWithCounts(userId).map(s => ({ ...s, is_antibiotic: amr.isAntibiotic(s.wirkstoff) })) })],
   ['GET', /^\/api\/shortages\/([^/]+)$/, true, async ({ userId, params }) => {
     const d = shortages.withActivity(userId, params[0]);
     if (!d) { const e = new Error('Engpass nicht gefunden'); e.status = 404; throw e; }

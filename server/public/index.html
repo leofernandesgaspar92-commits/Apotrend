@@ -862,6 +862,7 @@ function shortageCard(s) {
     <div class="post-body">${esc(s.bezeichnung)}</div>
     <div class="muted">${s.grund?esc(s.grund)+' · ':''}gemeldet ${esc(s.gemeldet_am||'—')}</div>
     ${s.voraussichtlich_bis&&s.status!=='verfuegbar'?`<div class="muted" style="font-size:13px;margin-top:2px">🗓️ Voraussichtlich wieder lieferbar bis <b>${esc(fmtDateDe(s.voraussichtlich_bis))}</b></div>`:''}
+    ${s.is_antibiotic?`<div style="margin-top:6px;font-size:13px"><span style="color:#0b7f28;font-weight:600">🧫 Antibiotikum</span> — <span class="clickable" data-amr style="color:#0b7f28;text-decoration:underline">Stewardship-Infos & Quellen</span> <span class="muted">(keine Substitutionsempfehlung ohne Quelle)</span></div>`:''}
     ${s.provenance==='community'&&s.reporter?`<div class="muted" style="font-size:13px;margin-top:2px">👥 Gemeldet von <b>@${esc(s.reporter.handle)}</b>${s.reporter.verified?' <span class="verified">✔</span>':''}${s.confirm_count?` · <b style="color:#c0392b">${s.confirm_count}</b> weitere Apotheke${s.confirm_count>1?'n':''} bestätigt`:''}</div>`:''}
     <div class="reacts">
       <button data-about>💬 ${s.post_count||0} Apotheker haben dazu gepostet</button>
@@ -907,6 +908,8 @@ function shortageCard(s) {
   };
   const wname = card.querySelector('[data-wirkstoff]');
   if (wname) wname.onclick = () => openWirkstoff(wname.dataset.wirkstoff);
+  const amrLink = card.querySelector('[data-amr]');
+  if (amrLink) amrLink.onclick = () => openWirkstoff(s.wirkstoff);
   if (iAmModerator) {
     const statusbox = card.querySelector('[data-statusbox]');
     card.querySelector('[data-statusbtn]').onclick = () => statusbox.classList.toggle('hidden');

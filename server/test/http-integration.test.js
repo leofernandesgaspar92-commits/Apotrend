@@ -46,6 +46,15 @@ test('GET /api/wirkstoff/:name bündelt Engpass/Preise/Rabatte/Austausch', async
   assert.ok(d2.posts.some(p => /Amoxicillin/i.test(p.body)), 'erwähnender Beitrag in Diskussion');
 });
 
+test('GET /api/shortages: Antibiotika-Engpässe sind als is_antibiotic markiert (für AMR-Hinweis)', async () => {
+  const a = await reg('sab_a' + PORT);
+  const d = await j('/api/shortages', a);
+  const amox = d.shortages.find(s => /Amoxicillin/i.test(s.wirkstoff));
+  assert.ok(amox && amox.is_antibiotic === true, 'Amoxicillin-Engpass als Antibiotikum markiert');
+  const nonAb = d.shortages.find(s => /Metformin/i.test(s.wirkstoff));
+  if (nonAb) assert.equal(nonAb.is_antibiotic, false, 'Metformin nicht als Antibiotikum markiert');
+});
+
 test('GET /api/patient-info: mehrsprachige Karten mit Quelle, Sprachwechsel funktioniert', async () => {
   const a = await reg('pinfo_a' + PORT);
   const de = await j('/api/patient-info', a);
