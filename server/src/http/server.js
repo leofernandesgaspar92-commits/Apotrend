@@ -23,6 +23,7 @@ import { createExchangeService } from '../services/exchange.js';
 import { createSearchService } from '../services/search.js';
 import { createOverviewService } from '../services/overview.js';
 import { createAmrService } from '../services/amr.js';
+import { createPatientInfoService } from '../services/patientInfo.js';
 import { issueToken, verifyToken } from './token.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -56,6 +57,7 @@ const exchange = createExchangeService(exchangeRepo, social, repo, shortagesRepo
 const search = createSearchService({ social, shortagesRepo, pricesRepo, rabatteRepo, exchange });
 const overview = createOverviewService({ shortages, exchange, social, rabatte, prices });
 const amr = createAmrService();
+const patientInfo = createPatientInfoService();
 
 if (restoring) {
   repo.__load(snapshot.foundation);
@@ -230,6 +232,8 @@ const routes = [
   ['GET', /^\/api\/news$/, true, async ({ userId }) => ({ posts: enrichPosts(social.newsFeed(userId)) })],
   ['GET', /^\/api\/hashtag\/([^/]+)$/, true, async ({ userId, params }) => ({ tag: decodeURIComponent(params[0]), posts: enrichPosts(social.postsByHashtag(userId, decodeURIComponent(params[0]))) })],
   ['GET', /^\/api\/trending\/hashtags$/, true, async ({ userId }) => ({ hashtags: social.trendingHashtags(userId) })],
+  // Mehrsprachige Patienten-Infokarten (Antibiotika) — für Aufklärung bei der Abgabe.
+  ['GET', /^\/api\/patient-info$/, true, async ({ query }) => patientInfo.cards(query.get('lang') || 'de')],
   ['GET', /^\/api\/posts\/([^/]+)$/, true, async ({ userId, params }) => {
     const p = social.getPost(userId, params[0]);
     if (!p) { const e = new Error('Beitrag nicht gefunden'); e.status = 404; throw e; }

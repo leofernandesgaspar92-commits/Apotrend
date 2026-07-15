@@ -1435,8 +1435,10 @@ async function openStewardship() {
     <div><button class="ghost small" data-back>← zurück</button></div>
     <h1 style="margin:8px 0 2px">🧫 Stewardship-Fachforum</h1>
     <div class="muted" style="font-size:14px">Anonymisierte Fachdiskussion unter Kolleg:innen zum verantwortungsvollen Antibiotikaeinsatz (AMR).</div>
-    <div class="muted" style="font-size:12px;margin-top:8px;font-style:italic">⚠️ Keine Patientenberatung und keine personenbezogenen Patientendaten posten. Sicherheitsrelevante Aussagen nur mit Quelle.</div></div>`);
+    <div class="muted" style="font-size:12px;margin-top:8px;font-style:italic">⚠️ Keine Patientenberatung und keine personenbezogenen Patientendaten posten. Sicherheitsrelevante Aussagen nur mit Quelle.</div>
+    <div class="row" style="margin-top:8px"><button class="ghost small" data-pinfo>🧫 Patienten-Infokarten (mehrsprachig)</button></div></div>`);
   head.querySelector('[data-back]').onclick = () => goTab('overview');
+  head.querySelector('[data-pinfo]').onclick = () => openPatientInfo();
   feed.appendChild(head);
   if (me) {
     const comp = el(`<div class="card"><b>Beitrag zum Thema</b>
@@ -1457,6 +1459,58 @@ async function openStewardship() {
   feed.appendChild(listBox);
   if (!d.posts.length) listBox.appendChild(el('<div class="card muted">Noch keine Beiträge — stell die erste Fachfrage.</div>'));
   else d.posts.forEach(p => listBox.appendChild(postCard(p)));
+}
+
+// Mehrsprachige Patienten-Infokarten (Antibiotika) — Aufklärung zur Abgabe.
+let patientLang = 'de';
+function printPatientInfo(d) {
+  const w = window.open('', '_blank');
+  if (!w) { alert('Bitte Popups für den Druck erlauben.'); return; }
+  const cards = d.cards.map(c => `<div class="c"><h2>${esc(c.icon)} ${esc(c.title)}</h2><p>${esc(c.body)}</p></div>`).join('');
+  w.document.write(`<!doctype html><html lang="${esc(d.lang)}"><head><meta charset="utf-8"><title>Antibiotika – Patienteninfo</title>
+    <style>body{font-family:system-ui,-apple-system,sans-serif;max-width:720px;margin:24px auto;padding:0 16px;color:#111}
+    h1{font-size:20px} .c{border:1px solid #cbd5cf;border-radius:8px;padding:12px 14px;margin:10px 0;break-inside:avoid}
+    h2{font-size:16px;margin:0 0 4px} p{margin:0;font-size:14px;line-height:1.5} .src{font-size:12px;color:#555;margin-top:16px}</style></head>
+    <body><h1>🧫 Antibiotika – Patienteninformation</h1>${cards}
+    <div class="src">Quelle: ${esc(d.source.label)} · ${esc(d.source.url)}<br>${esc(d.disclaimer)}</div>
+    <script>window.onload=function(){window.print();}<\/script></body></html>`);
+  w.document.close();
+}
+async function openPatientInfo() {
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  feed.innerHTML = '<div class="muted">lädt…</div>';
+  let d;
+  try { d = await api('GET','/api/patient-info?lang='+encodeURIComponent(patientLang)); }
+  catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
+  feed.innerHTML = '';
+  const head = el(`<div class="card" style="border-left:4px solid #0b7f28">
+    <div><button class="ghost small" data-back>← zurück</button></div>
+    <h1 style="margin:8px 0 2px">🧫 Patienten-Infokarten (Antibiotika)</h1>
+    <div class="muted" style="font-size:14px">Verständliche Aufklärung zur Abgabe — Sprache wählen, anzeigen oder ausdrucken.</div>
+    <div class="row" style="margin-top:10px;gap:6px;flex-wrap:wrap;align-items:center">
+      <span data-langs style="display:flex;gap:6px;flex-wrap:wrap"></span>
+      <span class="sp" style="flex:1"></span>
+      <button class="ghost small" data-print>🖨️ Drucken</button></div></div>`);
+  head.querySelector('[data-back]').onclick = () => goTab('overview');
+  head.querySelector('[data-print]').onclick = () => printPatientInfo(d);
+  const langs = head.querySelector('[data-langs]');
+  d.langs.forEach(l => {
+    const bt = el(`<button class="small sortbtn${l.code===d.lang?' active':''}">${esc(l.label)}</button>`);
+    bt.onclick = () => { patientLang = l.code; openPatientInfo(); };
+    langs.appendChild(bt);
+  });
+  feed.appendChild(head);
+  d.cards.forEach(c => {
+    const card = el(`<div class="card"><div class="row"><b>${esc(c.icon)} ${esc(c.title)}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-copy title="Text kopieren">📋 Kopieren</button></div>
+      <div style="font-size:14px;margin-top:6px">${esc(c.body)}</div></div>`);
+    card.querySelector('[data-copy]').onclick = async (e) => {
+      try { await navigator.clipboard.writeText(c.title + '\n' + c.body); e.target.textContent = '✓ kopiert'; setTimeout(()=>{ e.target.textContent='📋 Kopieren'; }, 1400); }
+      catch { prompt('Text:', c.title + '\n' + c.body); }
+    };
+    feed.appendChild(card);
+  });
+  feed.appendChild(el(`<div class="card muted" style="font-size:12px"><a href="${esc(d.source.url)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(d.source.label)}</a> · <span style="font-style:italic">${esc(d.disclaimer)}</span></div>`));
 }
 
 async function renderSearch(q) {
@@ -1806,10 +1860,12 @@ async function openWirkstoff(name) {
       <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px">
         ${(a.sources||[]).map(s=>`<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" class="small" style="display:inline-block;text-decoration:none;border:1px solid var(--line,#ccc);border-radius:8px;padding:6px 10px">🔗 ${esc(s.label)}</a>`).join('')}
         <button class="ghost small" data-forum title="Zum Stewardship-Fachforum">💬 Fachdiskussion</button>
+        <button class="ghost small" data-pinfo title="Mehrsprachige Patienten-Infokarten">🧫 Patienten-Infokarten</button>
       </div>
       <div class="muted" style="font-size:12px;margin-top:10px;font-style:italic">⚠️ ${esc(a.disclaimer)}</div>
     </div>`);
     panel.querySelector('[data-forum]').onclick = () => openStewardship();
+    panel.querySelector('[data-pinfo]').onclick = () => openPatientInfo();
     feed.appendChild(panel);
   }
 

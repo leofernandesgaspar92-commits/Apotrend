@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Mehrsprachige Patienten-Infokarten (Antibiotika):** Kuratierte, quellenbelegte
+>   Aufklärungskarten (Deutsch/English/Türkçe) zur verständlichen Abgabe in der Apotheke —
+>   Sprachwechsel, „Kopieren" je Karte und sauberer Druck (eigenes Druckfenster). Allgemeine
+>   Public-Health-Botschaften, **keine** patientenindividuelle Therapie-/Dosierungsaussage.
+>   Einstieg über AMR-Wissensecke und Stewardship-Fachforum. Dritter Stewardship-Baustein.
+>   (`services/patientInfo.js`; `/api/patient-info?lang=`; Integrationstest + im Browser verifiziert.)
 > - ✅ **Stewardship-Fachforum:** Kuratierter Themen-Einstieg (über den `#stewardship`-Hashtag)
 >   für anonymisierte Fachdiskussion zum verantwortungsvollen Antibiotikaeinsatz — mit klarem
 >   Zweck/Disclaimer („keine Patientenberatung, keine personenbezogenen Patientendaten"),

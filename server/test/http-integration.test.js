@@ -46,6 +46,21 @@ test('GET /api/wirkstoff/:name bündelt Engpass/Preise/Rabatte/Austausch', async
   assert.ok(d2.posts.some(p => /Amoxicillin/i.test(p.body)), 'erwähnender Beitrag in Diskussion');
 });
 
+test('GET /api/patient-info: mehrsprachige Karten mit Quelle, Sprachwechsel funktioniert', async () => {
+  const a = await reg('pinfo_a' + PORT);
+  const de = await j('/api/patient-info', a);
+  assert.ok(de.cards.length >= 3, 'mehrere Karten');
+  assert.equal(de.lang, 'de');
+  assert.ok(de.langs.some(l => l.code === 'tr'), 'Türkçe als Sprache verfügbar');
+  assert.match(de.source.url, /^https:\/\//);
+  assert.ok(de.disclaimer && /ersetzt nicht/i.test(de.disclaimer), 'Disclaimer vorhanden');
+  const tr = await j('/api/patient-info?lang=tr', a);
+  assert.equal(tr.lang, 'tr', 'Sprachwechsel auf Türkçe');
+  assert.notEqual(tr.cards[0].title, de.cards[0].title, 'übersetzter Titel unterscheidet sich');
+  const xx = await j('/api/patient-info?lang=xx', a);
+  assert.equal(xx.lang, 'de', 'unbekannte Sprache faellt auf Deutsch zurueck');
+});
+
 test('GET /api/hashtag/stewardship: Fachforum enthält den redaktionellen Starter-Beitrag; eigene Beiträge erscheinen', async () => {
   const a = await reg('stew_a' + PORT);
   const seeded = await j('/api/hashtag/stewardship', a);
