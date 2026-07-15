@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Preis-Trend-Warnung:** Ist der günstigste Anbieter einer Preisgruppe zuletzt
+>   spürbar teurer geworden (≥ +5 %), zeigt die Gruppe einen Warnhinweis
+>   („⚠️ Günstigster Anbieter zuletzt teurer (+X %) — Preis beobachten"). Nur Hinweis zum
+>   Beobachten, keine Kaufberatung. (Frontend, nutzt vorhandenes `trend_pct`; im Browser verifiziert.)
 > - ✅ **Engpass ↔ Stewardship-Verknüpfung:** Antibiotika-Engpässe sind serverseitig als
 >   `is_antibiotic` markiert; die Engpass-Karte zeigt dann einen Hinweis „🧫 Antibiotikum —
 >   Stewardship-Infos & Quellen", der zur quellenbelegten AMR-Wissensecke des Wirkstoffs führt.
