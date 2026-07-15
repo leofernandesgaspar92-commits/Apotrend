@@ -79,6 +79,11 @@ if (restoring) {
     { body: 'BASG: Aktualisierte Engpassliste veröffentlicht — mehrere Antibiotika betroffen.', sourceUrl: 'https://www.basg.gv.at/' },
     { body: 'Gehaltskasse: Anpassung der Großhandelskonditionen zum Quartalswechsel.', sourceUrl: 'https://www.gehaltskasse.at/' },
   ].forEach(({ body, sourceUrl }) => social.createPost(red.user.id, { body, kind: 'news', sourceUrl }));
+  // Starter-Beitrag fürs Stewardship-Fachforum (setzt Ton & Regeln, quellenbelegt).
+  social.createPost(red.user.id, {
+    body: 'Willkommen im Stewardship-Fachforum 🧫 — anonymisierte Fachdiskussion zum verantwortungsvollen Antibiotikaeinsatz. Bitte keine personenbezogenen Patientendaten posten, sicherheitsrelevante Aussagen nur mit Quelle. Grundlage zur österreichischen Resistenzlage: AURES. #stewardship',
+    kind: 'post', sourceUrl: 'https://www.ages.at/mensch/arzneimittel-medizinprodukte/antibiotika-resistenzen',
+  });
 }
 
 // ── Snapshot sammeln + gedrosselt/atomar auf Platte schreiben ──

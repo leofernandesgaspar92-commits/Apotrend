@@ -46,6 +46,15 @@ test('GET /api/wirkstoff/:name bündelt Engpass/Preise/Rabatte/Austausch', async
   assert.ok(d2.posts.some(p => /Amoxicillin/i.test(p.body)), 'erwähnender Beitrag in Diskussion');
 });
 
+test('GET /api/hashtag/stewardship: Fachforum enthält den redaktionellen Starter-Beitrag; eigene Beiträge erscheinen', async () => {
+  const a = await reg('stew_a' + PORT);
+  const seeded = await j('/api/hashtag/stewardship', a);
+  assert.ok(seeded.posts.some(p => /Stewardship-Fachforum/i.test(p.body)), 'Starter-Beitrag vorhanden');
+  await post('/api/posts', a, { body: 'Erfahrung zu kurzer Therapiedauer bei unkomplizierten Infekten? #stewardship', visibility: 'public' });
+  const after = await j('/api/hashtag/stewardship', a);
+  assert.ok(after.posts.some(p => /Therapiedauer/.test(p.body)), 'eigener #stewardship-Beitrag erscheint im Forum');
+});
+
 test('GET /api/wirkstoff/:name: Antibiotikum liefert quellenbelegte AMR-Info, Nicht-Antibiotikum nicht', async () => {
   const a = await reg('amr_a' + PORT);
   const anti = await j('/api/wirkstoff/' + encodeURIComponent('Amoxicillin'), a);

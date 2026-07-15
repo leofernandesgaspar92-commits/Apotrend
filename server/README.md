@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Stewardship-Fachforum:** Kuratierter Themen-Einstieg (über den `#stewardship`-Hashtag)
+>   für anonymisierte Fachdiskussion zum verantwortungsvollen Antibiotikaeinsatz — mit klarem
+>   Zweck/Disclaimer („keine Patientenberatung, keine personenbezogenen Patientendaten"),
+>   Composer (hängt `#stewardship` automatisch an) und redaktionellem Starter-Beitrag.
+>   Einstieg über die Startübersicht und die AMR-Wissensecke. Zweiter Stewardship-Baustein.
+>   (Reuse der bestehenden Hashtag-/Feed-Infrastruktur; Integrationstest + im Browser verifiziert.)
 > - ✅ **Antibiotika-Stewardship-Wissensecke (AMR):** Auf der Wirkstoff-Detailseite eines
 >   Antibiotikums erscheint ein quellenbelegtes Info-Panel (allgemeine Stewardship-Hinweise +
 >   offizielle AT-Quellen AGES/AURES) — ausdrücklich **keine patientenindividuelle

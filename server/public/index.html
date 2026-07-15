@@ -504,6 +504,13 @@ async function loadOverview() {
   // Hinweis: Sparpotenzial, Top-Rabatt und bald ablaufende Aktionen stehen jetzt
   // kompakt als Kennzahl-Kacheln oben (weniger Scrollen); Details auf den Reitern.
 
+  // Antibiotic-Stewardship-Fachforum (Einstieg)
+  const stew = el(`<div class="card clickable" style="border-left:4px solid #0b7f28">
+    <div class="row"><b>🧫 Stewardship-Fachforum</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:12px">Fachdiskussion (AMR)</span></div>
+    <div class="muted" style="font-size:13px;margin-top:4px">Anonymisierter Austausch zum verantwortungsvollen Antibiotikaeinsatz — keine Patientenberatung.</div></div>`);
+  stew.onclick = () => openStewardship();
+  feed.appendChild(stew);
+
   // Apotheken im selben Bundesland (nicht-blockierend nachgeladen)
   renderNearbyColleagues(feed);
   // Aktuelle Themen (Trending-Hashtags, nicht-blockierend)
@@ -1413,6 +1420,45 @@ async function openHashtag(tag) {
   } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
 }
 
+// Stewardship-Fachforum: kuratierter Themen-Einstieg über den #stewardship-Hashtag,
+// mit klarem Zweck/Disclaimer und Composer. Anonymisierte Fachdiskussion — keine
+// Patientenberatung, keine personenbezogenen Patientendaten.
+async function openStewardship() {
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  feed.innerHTML = '<div class="muted">lädt…</div>';
+  let d;
+  try { d = await api('GET','/api/hashtag/stewardship'); }
+  catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
+  feed.innerHTML = '';
+  const head = el(`<div class="card" style="border-left:4px solid #0b7f28">
+    <div><button class="ghost small" data-back>← zurück</button></div>
+    <h1 style="margin:8px 0 2px">🧫 Stewardship-Fachforum</h1>
+    <div class="muted" style="font-size:14px">Anonymisierte Fachdiskussion unter Kolleg:innen zum verantwortungsvollen Antibiotikaeinsatz (AMR).</div>
+    <div class="muted" style="font-size:12px;margin-top:8px;font-style:italic">⚠️ Keine Patientenberatung und keine personenbezogenen Patientendaten posten. Sicherheitsrelevante Aussagen nur mit Quelle.</div></div>`);
+  head.querySelector('[data-back]').onclick = () => goTab('overview');
+  feed.appendChild(head);
+  if (me) {
+    const comp = el(`<div class="card"><b>Beitrag zum Thema</b>
+      <textarea data-sf-in placeholder="Deine Fachfrage oder Erfahrung zu Antibiotic Stewardship… (wird mit #stewardship geteilt)" style="margin-top:6px;width:100%"></textarea>
+      <div class="row" style="margin-top:6px;gap:8px;align-items:center"><button class="small" data-sf-send>Im Fachforum posten</button><span class="err" data-sf-err style="font-size:13px"></span></div></div>`);
+    const ta = comp.querySelector('[data-sf-in]');
+    comp.querySelector('[data-sf-send]').onclick = async () => {
+      const err = comp.querySelector('[data-sf-err]'); err.textContent = '';
+      let body = ta.value.trim();
+      if (!body) return;
+      if (!/#stewardship\b/i.test(body)) body += ' #stewardship';
+      try { await api('POST','/api/posts',{ body, visibility:'public' }); ta.value=''; openStewardship(); }
+      catch(e){ err.textContent = e.message; }
+    };
+    feed.appendChild(comp);
+  }
+  const listBox = el('<div></div>');
+  feed.appendChild(listBox);
+  if (!d.posts.length) listBox.appendChild(el('<div class="card muted">Noch keine Beiträge — stell die erste Fachfrage.</div>'));
+  else d.posts.forEach(p => listBox.appendChild(postCard(p)));
+}
+
 async function renderSearch(q) {
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
@@ -1759,9 +1805,11 @@ async function openWirkstoff(name) {
       <div style="font-size:14px;margin-top:8px">${esc(a.note)}</div>
       <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px">
         ${(a.sources||[]).map(s=>`<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" class="small" style="display:inline-block;text-decoration:none;border:1px solid var(--line,#ccc);border-radius:8px;padding:6px 10px">🔗 ${esc(s.label)}</a>`).join('')}
+        <button class="ghost small" data-forum title="Zum Stewardship-Fachforum">💬 Fachdiskussion</button>
       </div>
       <div class="muted" style="font-size:12px;margin-top:10px;font-style:italic">⚠️ ${esc(a.disclaimer)}</div>
     </div>`);
+    panel.querySelector('[data-forum]').onclick = () => openStewardship();
     feed.appendChild(panel);
   }
 
