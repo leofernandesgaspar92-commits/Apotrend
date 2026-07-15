@@ -1031,11 +1031,14 @@ function exportShortagesCsv(list) {
   const provText = { verified: 'BASG (verifiziert)', reference: 'Referenzdaten', editorial: 'Redaktion', community: 'Community-Meldung', simulated: 'simuliert' };
   const rows = (list || []).map(s => [
     s.wirkstoff, s.bezeichnung || '', statusText[s.status] || s.status || '', s.grund || '',
-    s.gemeldet_am || '', provText[s.provenance] || s.provenance || '',
+    s.gemeldet_am || '',
+    s.status !== 'verfuegbar' ? (s.voraussichtlich_bis || '') : '',
+    s.is_antibiotic ? 'ja' : 'nein',
+    provText[s.provenance] || s.provenance || '',
     s.provenance === 'community' && s.reporter ? '@' + s.reporter.handle : '',
     s.watched ? 'ja' : 'nein',
   ]);
-  downloadCsv('apotrend-engpaesse', ['Wirkstoff', 'Präparat', 'Status', 'Grund', 'gemeldet am', 'Herkunft', 'Melder', 'beobachtet'], rows);
+  downloadCsv('apotrend-engpaesse', ['Wirkstoff', 'Präparat', 'Status', 'Grund', 'gemeldet am', 'voraussichtlich wieder lieferbar bis', 'Antibiotikum', 'Herkunft', 'Melder', 'beobachtet'], rows);
 }
 
 function trendStr(t) { if (t>0) return `<span style="color:#c0392b">▲ +${t}%</span>`; if (t<0) return `<span style="color:#0b7f28">▼ ${t}%</span>`; return '<span class="muted">±0%</span>'; }

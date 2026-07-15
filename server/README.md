@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Engpass-CSV vervollständigt:** Der Excel-Export der Engpassliste enthält jetzt auch
+>   „voraussichtlich wieder lieferbar bis" (leer bei „wieder verfügbar") und „Antibiotikum"
+>   (ja/nein) — die Spalten, die der Einkauf für Bevorratungs-/Stewardship-Planung braucht.
+>   (Frontend; im Browser verifiziert: Header + Werte je Zeile konsistent.)
 > - ✅ **Rabatte: „Beste Aktion je Wirkstoff":** Laufen zum selben Wirkstoff mehrere
 >   Aktionen, markiert die Liste die mit dem niedrigsten Aktionspreis („⭐ Beste Aktion für
 >   … (1 weitere läuft)"); die teurere Alternative bekommt einen dezenten Hinweis. Berechnung
