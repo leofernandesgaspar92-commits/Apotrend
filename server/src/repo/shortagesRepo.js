@@ -33,6 +33,8 @@ export function createShortagesRepo({ seed = true } = {}) {
       confirmations: Array.isArray(s.confirmations) ? [...s.confirmations] : [],
       created_at: now(),
     };
+    // Statusverlauf: erster Eintrag = Ausgangsmeldung (Datum, Status, Quelle, Herkunft).
+    row.history = [{ am: row.gemeldet_am || now().slice(0, 10), status: row.status, quelle: row.quelle ?? null, provenance: row.provenance }];
     shortages.set(row.id, row);
     return { ...row, confirmations: [...row.confirmations] };
   }
@@ -45,16 +47,22 @@ export function createShortagesRepo({ seed = true } = {}) {
     setStatus(id, { status, quelle, provenance, gemeldet_am }) {
       const s = shortages.get(id);
       if (!s) return null;
+      const before = s.status;
       if (status !== undefined) s.status = status;
       if (quelle !== undefined) s.quelle = quelle;
       if (provenance !== undefined) s.provenance = provenance;
       if (gemeldet_am !== undefined) s.gemeldet_am = gemeldet_am;
+      // Statusverlauf fortschreiben (nur bei echter Statusänderung).
+      if (status !== undefined && status !== before) {
+        if (!Array.isArray(s.history)) s.history = []; // alte Snapshots ohne history
+        s.history.push({ am: s.gemeldet_am || now().slice(0, 10), status, quelle: s.quelle ?? null, provenance: s.provenance });
+      }
       return { ...s };
     },
-    get(id) { const s = shortages.get(id); return s ? { ...s, confirmations: [...(s.confirmations || [])] } : null; },
+    get(id) { const s = shortages.get(id); return s ? { ...s, confirmations: [...(s.confirmations || [])], history: (s.history || []).map(h => ({ ...h })) } : null; },
     list() {
       const rank = { kritisch: 2, eingeschraenkt: 1, verfuegbar: 0 };
-      return [...shortages.values()].sort((a, b) => rank[b.status] - rank[a.status]).map(s => ({ ...s, confirmations: [...(s.confirmations || [])] }));
+      return [...shortages.values()].sort((a, b) => rank[b.status] - rank[a.status]).map(s => ({ ...s, confirmations: [...(s.confirmations || [])], history: (s.history || []).map(h => ({ ...h })) }));
     },
     // Bestätigung ("auch bei uns") durch eine Apotheke; kein Doppel, nicht der Melder.
     confirm(id, userId) {

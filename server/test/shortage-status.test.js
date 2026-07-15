@@ -84,3 +84,37 @@ test('updateStatus: Nicht-Beobachter bekommen nichts', () => {
   shortages.updateStatus(redUid, amoxId, { status: 'verfuegbar', sourceUrl: 'https://basg.gv.at/x' });
   assert.equal(social.notifications(apoUid).filter(n => n.type === 'watch_alert').length, 0);
 });
+
+test('Statusverlauf: Meldung, Redaktions-Update und Auflösung werden protokolliert', () => {
+  const { shortages, redUid, apoUid } = setup();
+  const created = shortages.reportShortage(apoUid, { wirkstoff: 'Bisoprolol', bezeichnung: 'Bisoprolol 5 mg', status: 'eingeschraenkt' });
+  assert.equal(created.history.length, 1, 'Ausgangsmeldung im Verlauf');
+  assert.equal(created.history[0].status, 'eingeschraenkt');
+  assert.equal(created.history[0].provenance, 'community');
+  // Redaktion stuft mit Quelle auf kritisch hoch
+  const upd = shortages.updateStatus(redUid, created.id, { status: 'kritisch', sourceUrl: 'https://www.basg.gv.at/meldung' });
+  assert.equal(upd.history.length, 2);
+  assert.equal(upd.history[1].status, 'kritisch');
+  assert.equal(upd.history[1].quelle, 'https://www.basg.gv.at/meldung');
+  assert.equal(upd.history[1].provenance, 'editorial');
+  // Verlauf enthält keine Nutzer-IDs
+  assert.ok(upd.history.every(h => !('user_id' in h) && !('reporter_user_id' in h)));
+});
+
+test('Statusverlauf: gleicher Status erzeugt keinen neuen Eintrag', () => {
+  const { shortages, shortagesRepo, redUid, amoxId } = setup();
+  const before = shortagesRepo.get(amoxId).history.length;
+  shortages.updateStatus(redUid, amoxId, { status: 'kritisch', sourceUrl: 'https://basg.gv.at/x' }); // war schon kritisch
+  assert.equal(shortagesRepo.get(amoxId).history.length, before, 'kein Doppel-Eintrag');
+});
+
+test('Statusverlauf: alte Snapshots ohne history brechen nicht', () => {
+  const { shortagesRepo } = setup();
+  const dump = shortagesRepo.__dump();
+  for (const [, row] of dump.shortages) delete row.history; // Snapshot von vor dem Feature
+  shortagesRepo.__load(dump);
+  const s = shortagesRepo.list()[0];
+  assert.deepEqual(s.history, [], 'history als leeres Array');
+  const upd = shortagesRepo.setStatus(s.id, { status: 'verfuegbar', quelle: 'https://basg.gv.at/x', provenance: 'editorial' });
+  assert.equal(upd.history.length, 1, 'Verlauf startet mit der ersten neuen Änderung');
+});

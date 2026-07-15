@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Engpass-Statusverlauf:** Jede Statusänderung wird protokolliert (Datum, Status,
+>   Herkunft, Quelle) — Ausgangsmeldung beim Anlegen, Redaktions-Updates (Quellpflicht
+>   bleibt), „wieder lieferbar". Die Engpass-Karte zeigt ab 2 Einträgen „📜 Verlauf (N)"
+>   (neueste zuerst, Quelle als Link). Beantwortet „seit wann kritisch — und woher wissen
+>   wir das?". Alte Snapshots ohne `history` bleiben kompatibel; keine Nutzer-IDs im
+>   Verlauf. (Repo `history` + Tests inkl. Abwärtskompatibilität; im Browser verifiziert.)
 > - ✅ **Engpass-CSV vervollständigt:** Der Excel-Export der Engpassliste enthält jetzt auch
 >   „voraussichtlich wieder lieferbar bis" (leer bei „wieder verfügbar") und „Antibiotikum"
 >   (ja/nein) — die Spalten, die der Einkauf für Bevorratungs-/Stewardship-Planung braucht.

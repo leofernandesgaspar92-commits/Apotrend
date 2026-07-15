@@ -871,7 +871,9 @@ function shortageCard(s) {
       <button class="ghost" data-watch title="Diesen Wirkstoff beobachten" aria-pressed="${!!s.watched}">${s.watched?'⭐ Beobachtet':'☆ Beobachten'}</button>
       ${s.provenance==='community'&&!s.is_reporter?`<button class="ghost" data-confirm title="Diesen Engpass auch bei dir bestätigen">${s.i_confirmed?'✅ Bestätigt':'➕ Auch bei uns'}</button>`:''}
       ${s.provenance==='community'&&s.is_reporter&&s.status!=='verfuegbar'?`<button class="ghost" data-resolve title="Wieder lieferbar – deine Meldung schließen">✓ Wieder lieferbar</button>`:''}
+      ${(s.history||[]).length>1?`<button class="ghost" data-hist title="Alle Statusänderungen mit Datum und Quelle" aria-expanded="false">📜 Verlauf (${s.history.length})</button>`:''}
     </div>
+    <div class="comments hidden" data-histbox></div>
     <div class="comments hidden" data-postbox>
       <textarea data-pinput placeholder="Dein Beitrag zu diesem Engpass (öffentlich)…"></textarea>
       <div style="margin-top:6px"><button class="small" data-psend>Posten</button></div>
@@ -910,6 +912,23 @@ function shortageCard(s) {
   if (wname) wname.onclick = () => openWirkstoff(wname.dataset.wirkstoff);
   const amrLink = card.querySelector('[data-amr]');
   if (amrLink) amrLink.onclick = () => openWirkstoff(s.wirkstoff);
+  // Statusverlauf: jede Änderung mit Datum, Status und Quelle (neueste zuerst).
+  const histBtn = card.querySelector('[data-hist]');
+  if (histBtn) histBtn.onclick = () => {
+    const box = card.querySelector('[data-histbox]');
+    const open = !box.classList.toggle('hidden');
+    histBtn.setAttribute('aria-expanded', String(open));
+    if (!open || box.childElementCount) return;
+    [...s.history].reverse().forEach(hEntry => {
+      const m = watchStatusMeta(hEntry.status);
+      // Quelle nur als Link zeigen — Text-Quellen (z.B. "Referenzdaten") stecken
+      // bereits im Herkunfts-Label und würden doppelt erscheinen.
+      const q = hEntry.quelle && /^https?:\/\//.test(hEntry.quelle)
+        ? `<a href="${esc(hEntry.quelle)}" target="_blank" rel="noopener noreferrer">Quelle 🔗</a>`
+        : '';
+      box.appendChild(el(`<div class="comment" style="font-size:13px"><b>${esc(fmtDateDe(hEntry.am))}</b> — <span style="color:${m.color};font-weight:700">${m.icon} ${m.label}</span> <span class="muted">· ${esc(PROV[hEntry.provenance]||hEntry.provenance||'')}${q?' · ':''}</span>${q}</div>`));
+    });
+  };
   if (iAmModerator) {
     const statusbox = card.querySelector('[data-statusbox]');
     card.querySelector('[data-statusbtn]').onclick = () => statusbox.classList.toggle('hidden');
