@@ -1292,6 +1292,8 @@ function rabattCard(r) {
     </div>
     <div class="muted" style="margin-top:4px">Ersparnis € ${Number(r.ersparnis).toFixed(2)} je Packung${r.min_menge?` · ab ${r.min_menge} Stück`:''} · gültig bis <b>${esc(r.gueltig_bis)}</b></div>
     ${r.min_menge&&r.ersparnis>0?`<div style="margin-top:4px;font-size:13px;font-weight:700;color:#0b7f28">💰 Bei Mindestabnahme (${r.min_menge} Stück): € ${(Number(r.ersparnis)*Number(r.min_menge)).toFixed(2)} gespart</div>`:''}
+    ${r.best_for_wirkstoff?`<div style="display:inline-block;margin-top:6px;background:rgba(11,127,40,.12);color:#0b7f28;border:1px solid rgba(11,127,40,.35);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px">⭐ Beste Aktion für ${esc(r.wirkstoff)} (${r.wirkstoff_alternatives===1?'1 weitere läuft':r.wirkstoff_alternatives+' weitere laufen'})</div>`:''}
+    ${!r.best_for_wirkstoff&&r.wirkstoff_alternatives>0?`<div class="muted" style="margin-top:6px;font-size:13px">💡 Für ${esc(r.wirkstoff)} läuft eine günstigere Aktion — siehe ⭐ in der Liste.</div>`:''}
     ${r.expiring_soon?`<div style="display:inline-block;margin-top:6px;background:${r.days_left<=3?'#c0392b':'#c77700'};color:#fff;font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px">⏳ ${r.days_left<=0?'läuft heute ab':(r.days_left===1?'nur noch 1 Tag':'nur noch '+r.days_left+' Tage')}</div>`:''}
     <div class="row" style="margin-top:8px">
       <span class="muted">${r.post_count||0} Beiträge dazu</span>

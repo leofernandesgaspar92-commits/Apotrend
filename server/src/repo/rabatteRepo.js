@@ -17,6 +17,9 @@ const SEED = [
   { bezeichnung: 'ASS 100 mg',          wirkstoff: 'Acetylsalicylsäure', supplier: 'Jacoby GM', listenpreis: 1.40, aktionspreis: 1.20, min_menge: 60, gueltig_bis: '2026-11-30' },
   { bezeichnung: 'Ramipril 5 mg',       wirkstoff: 'Ramipril',     supplier: 'Herba Chemosan', listenpreis: 4.80, aktionspreis: 4.15, min_menge: 20,  gueltig_bis: '2026-08-10' },
   { bezeichnung: 'Salbutamol Spray',    wirkstoff: 'Salbutamol',   supplier: 'Kwizda',         listenpreis: 7.90, aktionspreis: 7.10, min_menge: 10,  gueltig_bis: '2026-12-31' },
+  // Zweite laufende Aktion zum selben Wirkstoff (Ibuprofen) — für den
+  // "beste Aktion je Wirkstoff"-Vergleich.
+  { bezeichnung: 'Ibuprofen 400 mg',    wirkstoff: 'Ibuprofen',    supplier: 'Kwizda',         listenpreis: 2.35, aktionspreis: 1.80, min_menge: 30,  gueltig_bis: '2026-10-15' },
   // Abgelaufene Aktion — darf NICHT im Top-10 auftauchen (heute = 2026-07-07).
   { bezeichnung: 'Diclofenac 50 mg',    wirkstoff: 'Diclofenac',   supplier: 'Jacoby GM',      listenpreis: 3.00, aktionspreis: 1.50, min_menge: 30,  gueltig_bis: '2026-06-01' },
 ];
@@ -59,15 +62,32 @@ export function createRabatteRepo({ seed = true, today = null } = {}) {
     },
     // Top-10 laufende Aktionen, höchster Rabatt zuerst. Abgelaufene fliegen raus.
     // days_left = Tage bis Aktionsende, expiring_soon = läuft in <=14 Tagen ab.
+    // best_for_wirkstoff: laufen zum selben Wirkstoff mehrere Aktionen, wird die
+    // mit dem niedrigsten Aktionspreis markiert (über ALLE laufenden berechnet,
+    // nicht nur über die Top-10) — wirkstoff_alternatives = Zahl der weiteren.
     listTop10() {
       const cutoff = heute();
-      return [...rabatte.values()]
-        .filter(r => r.gueltig_bis >= cutoff)
+      const active = [...rabatte.values()].filter(r => r.gueltig_bis >= cutoff);
+      const byWirkstoff = new Map(); // wirkstoffLower -> { count, minPreis }
+      for (const r of active) {
+        const k = String(r.wirkstoff || '').trim().toLowerCase();
+        if (!k) continue;
+        const g = byWirkstoff.get(k) || { count: 0, minPreis: Infinity };
+        g.count += 1; g.minPreis = Math.min(g.minPreis, Number(r.aktionspreis));
+        byWirkstoff.set(k, g);
+      }
+      return active
         .sort((a, b) => b.rabatt_pct - a.rabatt_pct)
         .slice(0, 10)
         .map((r, i) => {
           const days_left = this.daysLeft(r.gueltig_bis);
-          return { ...r, rank: i + 1, days_left, expiring_soon: days_left != null && days_left <= 14 };
+          const g = byWirkstoff.get(String(r.wirkstoff || '').trim().toLowerCase());
+          const multi = !!g && g.count >= 2;
+          return {
+            ...r, rank: i + 1, days_left, expiring_soon: days_left != null && days_left <= 14,
+            best_for_wirkstoff: multi && Number(r.aktionspreis) === g.minPreis,
+            wirkstoff_alternatives: multi ? g.count - 1 : 0,
+          };
         });
     },
     listFlat() { return [...rabatte.values()].map(r => ({ ...r })); },

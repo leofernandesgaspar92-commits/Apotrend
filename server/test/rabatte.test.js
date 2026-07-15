@@ -52,6 +52,23 @@ test('Aus Rabatt heraus posten -> Beitrag referenziert die Aktion + Aktivität',
   assert.equal(again.post_count, 1);
 });
 
+test('Beste Aktion je Wirkstoff: bei mehreren Ibuprofen-Aktionen ist die günstigste markiert', () => {
+  const { rabatte, a } = setup();
+  const top = rabatte.top10(a);
+  const ibu = top.filter(r => r.wirkstoff === 'Ibuprofen');
+  assert.equal(ibu.length, 2, 'zwei laufende Ibuprofen-Aktionen im Seed');
+  const best = ibu.find(r => r.best_for_wirkstoff);
+  const other = ibu.find(r => !r.best_for_wirkstoff);
+  assert.ok(best && other, 'genau eine als beste markiert');
+  assert.equal(best.aktionspreis, 1.65, 'günstigster Aktionspreis gewinnt');
+  assert.equal(best.wirkstoff_alternatives, 1);
+  assert.equal(other.wirkstoff_alternatives, 1, 'auch die andere kennt die Alternative');
+  // Wirkstoffe mit nur einer Aktion bleiben unmarkiert (kein Stern-Spam).
+  const single = top.find(r => r.wirkstoff === 'Metformin');
+  assert.equal(single.best_for_wirkstoff, false);
+  assert.equal(single.wirkstoff_alternatives, 0);
+});
+
 test('Posten zu unbekannter Aktion wird abgelehnt', () => {
   const { rabatte, a } = setup();
   assert.throws(() => rabatte.postAbout(a, 'nope', { body: 'x' }), /nicht gefunden/);

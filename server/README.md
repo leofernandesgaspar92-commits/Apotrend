@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Rabatte: „Beste Aktion je Wirkstoff":** Laufen zum selben Wirkstoff mehrere
+>   Aktionen, markiert die Liste die mit dem niedrigsten Aktionspreis („⭐ Beste Aktion für
+>   … (1 weitere läuft)"); die teurere Alternative bekommt einen dezenten Hinweis. Berechnung
+>   über **alle** laufenden Aktionen (nicht nur Top-10). Zweite Ibuprofen-Aktion im Seed als
+>   Vergleichsfall. (`listTop10` um `best_for_wirkstoff`/`wirkstoff_alternatives`; Unit-Test +
+>   im Browser verifiziert.)
 > - ✅ **Preis-Trend-Warnung:** Ist der günstigste Anbieter einer Preisgruppe zuletzt
 >   spürbar teurer geworden (≥ +5 %), zeigt die Gruppe einen Warnhinweis
 >   („⚠️ Günstigster Anbieter zuletzt teurer (+X %) — Preis beobachten"). Nur Hinweis zum
