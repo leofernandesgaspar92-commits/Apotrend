@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — Header mit Klartext-Beschriftung:** Die Kopfzeilen-Aktionen waren
+>   bloße Glyphen (`🌙`, `A⁺`, `❓`, `✉️`, `🔔`) — für die nicht-technische Zielgruppe kryptisch
+>   (CLAUDE.md: „Klartext statt Kürzel", „klare Beschriftung"). Jetzt Icon **+** sichtbares
+>   Label: „Hell/Dunkel", „Schrift", „Hilfe", „Nachrichten", „Meldungen". Ab ≤ 980 px Icon-only
+>   (kein Umbruch). Theme-/Schrift-Toggle aktualisieren nur noch das Icon-Span (Label bleibt),
+>   `aria-label`/`title` unverändert. (Im Browser Desktop/Mobile + beide Toggles verifiziert.)
 > - ✅ **Qualitäts-Audit — semantische Farb-Tokens (Dark Mode):** Hart codierte Chip-/Badge-
 >   Farben (`#eef3f0`, `#e6f7ef`, `#fff4e6` …) schalteten im Dark Mode nicht mit und standen
 >   als grelle helle Pillen auf dunklem Grund. Neu: Tokens `--chip-bg` und

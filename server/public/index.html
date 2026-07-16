@@ -76,6 +76,10 @@
   .err { color:#c0392b; font-size:14px; margin-top:8px; }
   .bell { position:relative; }
   .badge { position:absolute; top:-6px; right:-6px; background:#e02a2a; color:#fff; border-radius:10px; font-size:11px; padding:1px 6px; }
+  /* Klartext-Beschriftung der Header-Aktionen (Zielgruppe: nicht-technisch). Auf
+     schmalen Screens Icon-only, damit die Kopfzeile nicht umbricht. */
+  .hlabel { margin-left:6px; font-size:0.84em; font-weight:600; }
+  @media (max-width: 980px) { .hlabel { display:none; } header button { min-width:42px; } }
   .comments { border-top:1px solid var(--line); margin-top:10px; padding-top:10px; }
   .comment { font-size:0.9em; padding:6px 0; border-bottom:1px solid var(--line); }
   .comment:last-child { border-bottom:none; }
@@ -100,12 +104,12 @@
   <span class="logo">🟢 ApoTrend</span>
   <span class="muted" id="whoami" style="color:#dff5ea;"></span>
   <span class="sp"></span>
-  <button id="btnTheme" title="Hell/Dunkel umschalten" aria-label="Hell/Dunkel umschalten">🌙</button>
-  <button id="btnFont" title="Schriftgröße ändern" aria-label="Schriftgröße ändern" style="font-weight:800">A⁺</button>
-  <button class="bell hidden" id="btnHelp" title="Hilfe / So funktioniert ApoTrend" aria-label="Hilfe">❓</button>
-  <button class="bell hidden" id="btnMod" title="Moderation" aria-label="Moderation">🛡️</button>
-  <button class="bell hidden" id="btnDm" title="Nachrichten" aria-label="Nachrichten">✉️<span class="badge hidden" id="dmBadge">0</span></button>
-  <button class="bell hidden" id="btnNotif" title="Benachrichtigungen" aria-label="Benachrichtigungen">🔔<span class="badge hidden" id="notifBadge">0</span></button>
+  <button id="btnTheme" title="Hell/Dunkel umschalten" aria-label="Hell/Dunkel umschalten"><span id="themeIcon">🌙</span><span class="hlabel" id="themeLabel">Dunkel</span></button>
+  <button id="btnFont" title="Schriftgröße ändern" aria-label="Schriftgröße ändern"><span id="fontIcon" style="font-weight:800">A⁺</span><span class="hlabel">Schrift</span></button>
+  <button class="bell hidden" id="btnHelp" title="Hilfe / So funktioniert ApoTrend" aria-label="Hilfe">❓<span class="hlabel">Hilfe</span></button>
+  <button class="bell hidden" id="btnMod" title="Moderation" aria-label="Moderation">🛡️<span class="hlabel">Moderation</span></button>
+  <button class="bell hidden" id="btnDm" title="Nachrichten" aria-label="Nachrichten">✉️<span class="hlabel">Nachrichten</span><span class="badge hidden" id="dmBadge">0</span></button>
+  <button class="bell hidden" id="btnNotif" title="Benachrichtigungen" aria-label="Benachrichtigungen">🔔<span class="hlabel">Meldungen</span><span class="badge hidden" id="notifBadge">0</span></button>
   <button class="hidden" id="btnLogout">Abmelden</button>
 </header>
 <main class="wrap" id="app" tabindex="-1" role="main"></main>
@@ -118,14 +122,20 @@ function applyFontScale() {
   const lvl = Math.max(0, Math.min(2, parseInt(localStorage.getItem('apo_fontscale') || '0', 10) || 0));
   document.body.style.fontSize = FONT_STEPS[lvl] + 'px';
   const btn = document.getElementById('btnFont');
-  if (btn) { btn.textContent = FONT_LABELS[lvl]; btn.title = 'Schriftgröße: ' + ['Normal','Groß','Sehr groß'][lvl] + ' — tippen zum Wechseln'; }
+  const ic = document.getElementById('fontIcon');
+  if (ic) ic.textContent = FONT_LABELS[lvl];
+  if (btn) btn.title = 'Schriftgröße: ' + ['Normal','Groß','Sehr groß'][lvl] + ' — tippen zum Wechseln';
 }
 // ── Hell/Dunkel-Modus (augenschonend), gespeichert ──
 function applyTheme() {
   const dark = localStorage.getItem('apo_theme') === 'dark';
   document.body.classList.toggle('dark', dark);
   const btn = document.getElementById('btnTheme');
-  if (btn) { btn.textContent = dark ? '☀️' : '🌙'; btn.title = dark ? 'Zu hellem Modus wechseln' : 'Zu dunklem Modus wechseln'; }
+  const ic = document.getElementById('themeIcon');
+  const lbl = document.getElementById('themeLabel');
+  if (ic) ic.textContent = dark ? '☀️' : '🌙';
+  if (lbl) lbl.textContent = dark ? 'Hell' : 'Dunkel';
+  if (btn) btn.title = dark ? 'Zu hellem Modus wechseln' : 'Zu dunklem Modus wechseln';
   const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.setAttribute('content', dark ? '#14181a' : '#0b7f28');
 }
 const api = async (method, path, body) => {
