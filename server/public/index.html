@@ -357,6 +357,7 @@ function authScreen() {
     <label>@Handle (öffentlicher Name im Netzwerk)</label><input id="rg_handle" placeholder="anna_huber">
     <label>E-Mail</label><input id="rg_email" type="email" placeholder="name@apotheke.at">
     <label>Passwort (mind. 8 Zeichen)</label><input id="rg_pw" type="password">
+    <label>Land (bestimmt Feed-Inhalte & Sprache)</label><select id="rg_country"></select>
     <div style="margin-top:12px"><button id="rg_go">Konto erstellen</button></div>
     <div class="err" id="rg_err"></div>
   </div>`));
@@ -369,10 +370,15 @@ function authScreen() {
   };
   document.getElementById('rg_go').onclick = async () => {
     try {
-      const d = await api('POST','/api/register',{ name:v('rg_name'), handle:v('rg_handle'), email:v('rg_email'), password:v('rg_pw') });
+      const d = await api('POST','/api/register',{ name:v('rg_name'), handle:v('rg_handle'), email:v('rg_email'), password:v('rg_pw'), country:v('rg_country') });
       afterAuth(d);
     } catch(e){ document.getElementById('rg_err').textContent = e.message; }
   };
+  // Länderauswahl bei der Registrierung befüllen (Feed-Inhalte + Sprache folgen dem Land).
+  ensureCountries().then(() => {
+    const sel = document.getElementById('rg_country');
+    if (sel) sel.innerHTML = countryOptionsHtml((me && me.country) || 'AT');
+  });
 }
 const v = (id) => document.getElementById(id).value.trim();
 
@@ -386,15 +392,21 @@ function afterAuth(d) {
 // Ein Wechsel des Landes filtert die Inhalte (News/Engpässe/Preise) auf dieses
 // Land und stellt die UI-Sprache automatisch auf die Landessprache um.
 let COUNTRIES_CACHE = null;
+async function ensureCountries() {
+  if (!COUNTRIES_CACHE) { try { COUNTRIES_CACHE = (await api('GET','/api/countries')).countries; } catch { COUNTRIES_CACHE = []; } }
+  return COUNTRIES_CACHE;
+}
+function countryOptionsHtml(selected) {
+  return (COUNTRIES_CACHE || [])
+    .map(c => `<option value="${esc(c.code)}"${c.code===selected?' selected':''}>${esc(c.flag)} ${esc(c.name)}</option>`)
+    .join('');
+}
 async function initCountrySwitcher() {
   const sel = document.getElementById('countrySwitch');
   if (!sel) return;
-  try { if (!COUNTRIES_CACHE) COUNTRIES_CACHE = (await api('GET','/api/countries')).countries; }
-  catch { return; }
-  const cur = (me && me.country) || 'AT';
-  sel.innerHTML = COUNTRIES_CACHE
-    .map(c => `<option value="${esc(c.code)}"${c.code===cur?' selected':''}>${esc(c.flag)} ${esc(c.name)}</option>`)
-    .join('');
+  await ensureCountries();
+  if (!COUNTRIES_CACHE.length) return;
+  sel.innerHTML = countryOptionsHtml((me && me.country) || 'AT');
   sel.classList.remove('hidden');
   sel.onchange = async () => {
     const code = sel.value;

@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3c: Länderauswahl bei der Registrierung:** Das
+>   Registrierungsformular hat jetzt ein gut sichtbares Feld „Land (bestimmt Feed-Inhalte &
+>   Sprache)" (12 Länder, Österreich als Vorauswahl, aus `GET /api/countries`). Neue Nutzer:innen
+>   starten damit sofort im richtigen Land + der passenden Sprache: nach der Registrierung lädt
+>   die App direkt in der Landessprache (z. B. Portugal → Oberfläche auf Portugiesisch). Geteilter
+>   Helfer `ensureCountries()`/`countryOptionsHtml()` (auch vom Kopfzeilen-Umschalter genutzt).
+>   (Browser verifiziert: Registrierung mit Portugal → Profil PT/pt, Navigation auf Portugiesisch.)
 > - 🌍 **Länderübergreifend — Schritt 3b: Ehrlicher Länder-Datenhinweis:** Die Live-
 >   Regulierungsdaten (Engpässe/Preise/Rabatte) stammen derzeit aus 🇦🇹 Österreich. Bei
 >   aktivem Nicht-AT-Land erscheint jetzt ganz oben auf Dashboard, Engpässen, Preisen und
