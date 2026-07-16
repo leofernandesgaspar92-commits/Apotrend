@@ -6,6 +6,14 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — Tastatur-Bedienbarkeit (a11y):** Viele klickbare Elemente waren
+>   `div`/`span.clickable` mit `onclick`, aber **ohne** `tabindex`/`role`/Tastatur-Handler —
+>   für Tastatur- und Screenreader-Nutzer:innen unerreichbar. Neu: zentrale Aufwertung per
+>   MutationObserver stampft `.clickable`-Elemente auf `tabindex=0` + `role=button` (Container
+>   mit eigenen Bedienelementen ausgenommen → keine verschachtelten Interaktiv-Elemente); ein
+>   delegierter Keydown-Handler löst sie mit Enter/Leertaste aus. Deckt alle aktuellen und
+>   künftig gerenderten klickbaren Elemente ab, ohne jede Fundstelle anzufassen.
+>   (Im Browser verifiziert: Fokus + Enter navigiert; keine Fehl-Stamps.)
 > - ✅ **Qualitäts-Audit — Header mit Klartext-Beschriftung:** Die Kopfzeilen-Aktionen waren
 >   bloße Glyphen (`🌙`, `A⁺`, `❓`, `✉️`, `🔔`) — für die nicht-technische Zielgruppe kryptisch
 >   (CLAUDE.md: „Klartext statt Kürzel", „klare Beschriftung"). Jetzt Icon **+** sichtbares

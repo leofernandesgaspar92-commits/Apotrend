@@ -2656,6 +2656,31 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 }
 
+// A11y: klickbare div/span.clickable-Elemente per Tastatur erreichbar & auslösbar
+// machen — zentral (MutationObserver), ohne jede einzelne Fundstelle anzufassen.
+// Container, die bereits eigene Bedienelemente enthalten, werden nicht selbst zum
+// Button (verhindert verschachtelte Interaktiv-Elemente).
+function makeClickableAccessible(scope) {
+  const nodes = scope && scope.querySelectorAll ? scope.querySelectorAll('.clickable') : [];
+  nodes.forEach(elm => {
+    if (elm.dataset.kbd) return;
+    if (elm.querySelector('button,a,input,select,textarea,[role="button"]')) return;
+    elm.dataset.kbd = '1';
+    if (!elm.hasAttribute('tabindex')) elm.setAttribute('tabindex', '0');
+    if (!elm.hasAttribute('role')) elm.setAttribute('role', 'button');
+  });
+}
+let _kbdScan = null;
+new MutationObserver(() => { clearTimeout(_kbdScan); _kbdScan = setTimeout(() => makeClickableAccessible(document), 60); })
+  .observe(document.body, { childList: true, subtree: true });
+document.addEventListener('keydown', e => {
+  const a = document.activeElement;
+  if ((e.key === 'Enter' || e.key === ' ') && a && a.dataset && a.dataset.kbd && a.classList.contains('clickable')) {
+    e.preventDefault(); a.click();
+  }
+});
+makeClickableAccessible(document);
+
 // Start
 applyFontScale();
 applyTheme();
