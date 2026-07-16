@@ -457,7 +457,7 @@ function showWelcome(reopened) {
 
 function goTab(name) {
   tab = name;
-  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   const b = document.querySelector('.tabs button[data-tab="'+name+'"]'); if (b) b.classList.add('active');
   loadTab();
 }
@@ -752,6 +752,14 @@ function emptyState({ icon = '🗒️', title, text = '', cta = null }) {
   return card;
 }
 
+// aria-current an der aktiven Registerkarte spiegeln (Aktiv-Zustand nicht nur
+// über Farbe, sondern auch für Screenreader/Tastatur erkennbar).
+function setTabAria() {
+  document.querySelectorAll('.tabs button').forEach(x => {
+    if (x.classList.contains('active')) x.setAttribute('aria-current', 'page');
+    else x.removeAttribute('aria-current');
+  });
+}
 // Browsertab-Titel je Ansicht setzen (Orientierung, History, Screenreader).
 const BASE_TITLE = 'ApoTrend';
 function setDocTitle(section) { document.title = section ? `${section} · ${BASE_TITLE}` : `${BASE_TITLE} — Apotheker-Netzwerk`; }
@@ -763,6 +771,7 @@ function loadTab() {
   const sc = document.getElementById('socialCompose');
   if (sc) sc.style.display = (tab === 'public' || tab === 'home') ? '' : 'none';
   setDocTitle(TAB_TITLES[tab] || '');
+  setTabAria();
   if (tab === 'overview') return loadOverview();
   if (tab === 'shortages') return loadShortages();
   if (tab === 'prices') return loadPrices();
@@ -1009,7 +1018,7 @@ function shortageCard(s) {
   card.querySelector('[data-exchange]').onclick = () => {
     exchangeQuery = s.wirkstoff; exchangeFilter = '';
     tab = 'exchange';
-    document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
     document.querySelector('.tabs button[data-tab="exchange"]').classList.add('active');
     loadTab();
   };
@@ -1558,7 +1567,7 @@ async function renderSuggestions(feed) {
 async function openBookmarks() {
   setDocTitle('Merkliste');
   const feed = document.getElementById('feed');
-  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">lädt…</div>';
   try {
     const d = await api('GET','/api/bookmarks');
@@ -1576,7 +1585,7 @@ async function openHashtag(tag) {
   setDocTitle('#' + String(tag||'').replace(/^#/, ''));
   if (!tag) return;
   const feed = document.getElementById('feed');
-  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">lädt…</div>';
   try {
     const d = await api('GET','/api/hashtag/'+encodeURIComponent(tag));
@@ -1595,7 +1604,7 @@ async function openHashtag(tag) {
 async function openStewardship() {
   setDocTitle('Stewardship-Fachforum');
   const feed = document.getElementById('feed');
-  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">lädt…</div>';
   let d;
   try { d = await api('GET','/api/hashtag/stewardship'); }
@@ -1649,7 +1658,7 @@ function printPatientInfo(d) {
 }
 async function openPatientInfo() {
   const feed = document.getElementById('feed');
-  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">lädt…</div>';
   let d;
   try { d = await api('GET','/api/patient-info?lang='+encodeURIComponent(patientLang)); }
@@ -1742,7 +1751,7 @@ function writeZettel(w, z, cards) {
 }
 function openBegleitzettel() {
   const feed = document.getElementById('feed');
-  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '';
   const head = el(`<div class="card" style="border-left:4px solid #0b7f28">
     <div><button class="ghost small" data-back>← zurück</button></div>
@@ -1822,7 +1831,7 @@ function openBegleitzettel() {
 async function renderSearch(q) {
   setDocTitle('Suche: ' + q);
   const feed = document.getElementById('feed');
-  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">suche…</div>';
   try {
     const d = await api('GET','/api/search?q='+encodeURIComponent(q));
@@ -1907,7 +1916,7 @@ async function openProfile(handle) {
   if (!handle) return;
   const feed = document.getElementById('feed');
   // Tab-Markierung entfernen (wir sind auf einer Detailseite)
-  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">lädt…</div>';
   try {
     const d = await api('GET',`/api/profiles/${encodeURIComponent(handle)}/page`);
@@ -2012,7 +2021,7 @@ async function openProfile(handle) {
 // Follower- bzw. Folge-Liste eines Profils.
 async function openFollowList(handle, which) {
   const feed = document.getElementById('feed');
-  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">lädt…</div>';
   let d;
   try { d = await api('GET',`/api/profiles/${encodeURIComponent(handle)}/${which}`); }
@@ -2052,7 +2061,7 @@ async function openFollowList(handle, which) {
 async function openMyActivity() {
   setDocTitle('Meine Aktivität');
   const feed = document.getElementById('feed');
-  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">lädt…</div>';
   let d;
   try { d = await api('GET','/api/me/activity'); }
@@ -2127,7 +2136,7 @@ async function openWirkstoff(name) {
   setDocTitle('💊 ' + name);
   if (!name) return;
   const feed = document.getElementById('feed');
-  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">lädt…</div>';
   let d;
   try { d = await api('GET','/api/wirkstoff/'+encodeURIComponent(name)); }
@@ -2543,7 +2552,7 @@ async function showNotifications() {
       else if (n.type === 'dm' && n.ref_id) { openDmThread(n.ref_id); }
       else if (n.type === 'exchange_offer' || n.type === 'exchange_want' || n.type === 'watch_offer') {
         mainScreen().then(()=>{ exchangeQuery = (n.label||'').split(/\s+/)[0]; exchangeFilter = n.type==='watch_offer'?'biete':''; exchangeBL=''; tab='exchange';
-          document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+          document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
           const tb=document.querySelector('.tabs button[data-tab="exchange"]'); if(tb) tb.classList.add('active'); loadTab(); });
       }
       else if (n.type === 'watch_alert' || n.type === 'shortage_confirm') { mainScreen().then(()=>goTab('shortages')); }
@@ -2562,7 +2571,7 @@ async function openPost(postId) {
   setDocTitle('Beitrag');
   const feed = document.getElementById('feed');
   if (!feed) return;
-  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">lädt…</div>';
   try {
     const d = await api('GET','/api/posts/'+encodeURIComponent(postId));

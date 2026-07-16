@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — aktiver Reiter mit `aria-current`:** Der aktive Reiter war nur über
+>   die Farbe erkennbar — für Screenreader- und farbsehschwache Nutzer:innen unsichtbar. Neu:
+>   zentraler `setTabAria()`-Helper spiegelt den Aktiv-Zustand als `aria-current="page"` und
+>   wird bei jeder Tab-Änderung sowie beim Öffnen von Detailseiten (Reiter dann nicht mehr
+>   „current") synchronisiert. (Browser verifiziert: overview→shortages→prices wandert korrekt,
+>   Detailseite = kein current.)
 > - ✅ **Qualitäts-Audit — Browsertab-Titel je Ansicht:** `document.title` blieb überall
 >   „ApoTrend …" — keine Orientierung im Tab, uneindeutige History, für Screenreader kein
 >   Kontext beim Seitenwechsel. Neu: `setDocTitle()` setzt pro Ansicht einen sprechenden Titel
