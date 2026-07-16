@@ -6,6 +6,14 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3h: Engpässe-Reiter (Melde-Formular + Filter) mehrsprachig:**
+>   Die größte verbliebene deutsche Fläche ist jetzt übersetzt (DE/EN/PT): die komplette
+>   Filter-/Sortier-/Suchleiste (inkl. Drucken/CSV-Tooltips, Leerzustand) und das „Engpass
+>   melden"-Formular (Beschreibung, alle Feld-Labels, Status-Optionen, Platzhalter, Senden-Button,
+>   Validierungshinweis). Nebenbei ein latenter Bug behoben: eine lokale Debounce-Variable `t`
+>   verdeckte die globale i18n-Funktion `t()` (TDZ-Absturz beim Rendern) → umbenannt. (Browser
+>   verifiziert: Reiter auf Portugiesisch inkl. offenem Formular.) Offen: Datenherkunft-Legende
+>   und die einzelnen Engpass-Zeilen.
 > - 🌍 **Länderübergreifend — Schritt 3g: „Für dich"-Startseite komplett mehrsprachig:** Die
 >   restlichen Dashboard-Karten sind jetzt übersetzt (DE/EN/PT): „Zuletzt im Bestandsaustausch",
 >   das Stewardship-Fachforum (Titel/Tag/Beschreibung), „Offene Fachfragen" (inkl. Antwort-
