@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — Browsertab-Titel je Ansicht:** `document.title` blieb überall
+>   „ApoTrend …" — keine Orientierung im Tab, uneindeutige History, für Screenreader kein
+>   Kontext beim Seitenwechsel. Neu: `setDocTitle()` setzt pro Ansicht einen sprechenden Titel
+>   („Lieferengpässe · ApoTrend", „💊 Amoxicillin · ApoTrend", „#tag", „@handle", „Suche: …",
+>   „Nachrichten/Meldungen/Moderation", Reiter-Titel); beim Abmelden zurück auf den Basistitel.
+>   (Im Browser über alle Reiter + Detailviews verifiziert.)
 > - ✅ **Qualitäts-Audit — Mobile-Überlauf durch lange Wörter/URLs behoben:** Systematischer
 >   Mobile-Scan (390 px) fand die Beitragsdetail-Seite mit **docW 643** — ein langes Wort bzw.
 >   eine lange URL ohne Leerzeichen brach das Layout (Horizontal-Scroll), weil `.post-body`

@@ -260,6 +260,7 @@ let myBookmarks = new Set();
 
 // ── Auth-Screens ──
 function authScreen() {
+  setDocTitle('');
   document.getElementById('btnLogout').classList.add('hidden');
   document.getElementById('btnNotif').classList.add('hidden');
   document.getElementById('btnDm').classList.add('hidden');
@@ -751,11 +752,17 @@ function emptyState({ icon = '🗒️', title, text = '', cta = null }) {
   return card;
 }
 
+// Browsertab-Titel je Ansicht setzen (Orientierung, History, Screenreader).
+const BASE_TITLE = 'ApoTrend';
+function setDocTitle(section) { document.title = section ? `${section} · ${BASE_TITLE}` : `${BASE_TITLE} — Apotheker-Netzwerk`; }
+const TAB_TITLES = { overview:'Für dich', public:'Öffentlicher Feed', home:'Mein Feed', shortages:'Lieferengpässe', prices:'Preise', rabatte:'Rabatte', exchange:'Biete/Suche', news:'News' };
+
 function loadTab() {
   // Compose- und Folgen-Boxen gehören zum sozialen Feed — nur dort zeigen, damit
   // die Daten-Reiter (Engpässe/Preise/Rabatte/…) nicht hinter Formularen liegen.
   const sc = document.getElementById('socialCompose');
   if (sc) sc.style.display = (tab === 'public' || tab === 'home') ? '' : 'none';
+  setDocTitle(TAB_TITLES[tab] || '');
   if (tab === 'overview') return loadOverview();
   if (tab === 'shortages') return loadShortages();
   if (tab === 'prices') return loadPrices();
@@ -1549,6 +1556,7 @@ async function renderSuggestions(feed) {
 }
 
 async function openBookmarks() {
+  setDocTitle('Merkliste');
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
   feed.innerHTML = '<div class="loading">lädt…</div>';
@@ -1565,6 +1573,7 @@ async function openBookmarks() {
 }
 
 async function openHashtag(tag) {
+  setDocTitle('#' + String(tag||'').replace(/^#/, ''));
   if (!tag) return;
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
@@ -1584,6 +1593,7 @@ async function openHashtag(tag) {
 // mit klarem Zweck/Disclaimer und Composer. Anonymisierte Fachdiskussion — keine
 // Patientenberatung, keine personenbezogenen Patientendaten.
 async function openStewardship() {
+  setDocTitle('Stewardship-Fachforum');
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
   feed.innerHTML = '<div class="loading">lädt…</div>';
@@ -1810,6 +1820,7 @@ function openBegleitzettel() {
 }
 
 async function renderSearch(q) {
+  setDocTitle('Suche: ' + q);
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
   feed.innerHTML = '<div class="loading">suche…</div>';
@@ -1892,6 +1903,7 @@ function editProfileForm(p) {
 }
 
 async function openProfile(handle) {
+  setDocTitle('@' + handle);
   if (!handle) return;
   const feed = document.getElementById('feed');
   // Tab-Markierung entfernen (wir sind auf einer Detailseite)
@@ -2038,6 +2050,7 @@ async function openFollowList(handle, which) {
 
 // Eigene Aktivität an einem Ort: Fragen, Engpass-Meldungen, Austausch-Einträge.
 async function openMyActivity() {
+  setDocTitle('Meine Aktivität');
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
   feed.innerHTML = '<div class="loading">lädt…</div>';
@@ -2111,6 +2124,7 @@ function recordRecentWirkstoff(name) {
 
 // Wirkstoff-Detailseite: alles zu einem Wirkstoff auf einen Blick.
 async function openWirkstoff(name) {
+  setDocTitle('💊 ' + name);
   if (!name) return;
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
@@ -2501,6 +2515,7 @@ async function refreshNotifCount() {
   } catch {}
 }
 async function showNotifications() {
+  setDocTitle("Benachrichtigungen");
   const d = await api('GET','/api/notifications');
   const verbs = { follow:'folgt dir jetzt', comment:'hat kommentiert', reaction:'hat reagiert auf deinen Beitrag', mention:'hat dich erwähnt', dm:'hat dir geschrieben', exchange_offer:'bietet jetzt an, was du suchst:', exchange_want:'sucht, was du anbietest:', verified:'Dein Profil wurde verifiziert ✔', watch_alert:'Neuer Status bei deinem beobachteten Wirkstoff:', shortage_confirm:'bestätigt deinen gemeldeten Engpass:', answer_accepted:'hat deine Antwort als beste markiert ✔', watch_offer:'Neuer Bestand zu deinem beobachteten Wirkstoff:' };
   const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦' };
@@ -2544,6 +2559,7 @@ async function showNotifications() {
 
 // Einzelbeitrag-Ansicht (z.B. aus einer Benachrichtigung heraus), Kommentare offen.
 async function openPost(postId) {
+  setDocTitle('Beitrag');
   const feed = document.getElementById('feed');
   if (!feed) return;
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
@@ -2561,6 +2577,7 @@ async function openPost(postId) {
 }
 
 async function showModeration() {
+  setDocTitle("Moderation");
   app.innerHTML = '<div class="loading">lädt…</div>';
   let d, vq, sh;
   try { d = await api('GET','/api/reports'); vq = await api('GET','/api/verify/requests'); sh = await api('GET','/api/shortages'); }
@@ -2629,6 +2646,7 @@ async function refreshDmCount() {
 }
 
 async function showDmInbox() {
+  setDocTitle("Nachrichten");
   const d = await api('GET','/api/dm');
   app.innerHTML = '';
   const box = el(`<div class="card"><div class="row"><h1 style="flex:1">✉️ Nachrichten</h1>
