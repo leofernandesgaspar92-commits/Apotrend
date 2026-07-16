@@ -39,7 +39,7 @@
      abgeschnitten). MUSS nach den Basisregeln stehen (gleiche Spezifität). */
   @media (max-width:560px){ #whoami { display:none; } header { gap:4px; padding:9px 8px; } header .logo { font-size:0.98em; letter-spacing:0; } header button { min-width:0; min-height:40px; padding:8px 7px; } }
   .wrap { max-width:640px; margin:0 auto; padding:16px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; overflow-wrap:anywhere; }
   h1 { font-size:1.4em; margin:0 0 12px; }
   label { display:block; font-size:0.9em; color:var(--muted); margin:10px 0 4px; }
   input, textarea, select { width:100%; padding:12px; border:1px solid var(--line); border-radius:8px; font-size:1em; font-family:inherit; min-height:46px; background:var(--card); color:var(--text); }
@@ -75,7 +75,7 @@
   .clickable:hover { text-decoration:underline; }
   .avatar { display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:50%; background:var(--green); color:#fff; font-weight:800; font-size:19px; flex:0 0 auto; }
   .spec { display:inline-block; background:var(--chip-bg); border:1px solid var(--line); border-radius:999px; padding:3px 10px; font-size:13px; margin:2px 2px 2px 0; }
-  .post-body { margin:8px 0; white-space:pre-wrap; line-height:1.45; }
+  .post-body { margin:8px 0; white-space:pre-wrap; line-height:1.45; overflow-wrap:anywhere; }
   .vis { font-size:12px; color:var(--muted); }
   .reacts { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
   .reacts button { background:var(--chip-bg); color:var(--text); border:1px solid var(--line); padding:7px 11px; font-size:0.85em; font-weight:500; min-height:36px; }

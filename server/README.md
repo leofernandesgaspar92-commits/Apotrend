@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — Mobile-Überlauf durch lange Wörter/URLs behoben:** Systematischer
+>   Mobile-Scan (390 px) fand die Beitragsdetail-Seite mit **docW 643** — ein langes Wort bzw.
+>   eine lange URL ohne Leerzeichen brach das Layout (Horizontal-Scroll), weil `.post-body`
+>   nur `white-space:pre-wrap` hatte (bricht keine langen Token). Fix: `overflow-wrap:anywhere`
+>   auf `.card` (verhindert die ganze Klasse) und `.post-body`. Ergebnis: docW **643 → 390**
+>   trotz Extrem-Langwort + langer URL; alle Reiter/Detailseiten 390. (Playwright-Scan +
+>   8-Reiter-Smoke-Test grün, Desktop unverändert.)
 > - ✅ **Qualitäts-Audit — freundliche Fehler-States mit Retry:** API-Fehler zeigten nur eine
 >   nackte rote Textzeile ohne Ausweg. Neu: `errorState()`-Karte (⚠️ „Das hat nicht geklappt" +
 >   Meldung + „↻ Erneut versuchen"). Auf alle Vollseiten-Fehler angewandt (Reiter → `loadTab`,
