@@ -4,6 +4,7 @@
 import { ForbiddenError } from './orgAuth.js';
 import { cleanImage, cleanSourceUrl } from '../domain/media.js';
 import { BUNDESLAENDER } from './exchange.js';
+import { isValidCountry, normalizeCountry, normalizeLocale } from '../data/countries.js';
 
 const REACTION_TYPES = ['hilfreich', 'danke', 'bestaetigt', 'interessant'];
 const MAX_BODY = 1000;
@@ -60,19 +61,21 @@ export function createSocialService(social, foundationRepo, options = {}) {
 
   return {
     // ── Profil ──
-    createProfile(actorUserId, { handle, displayName, title, pharmacyOrgId, bio, specializations, avatarUrl, visibility, isEditorial }) {
+    createProfile(actorUserId, { handle, displayName, title, pharmacyOrgId, bio, specializations, avatarUrl, visibility, isEditorial, country, locale }) {
       requireUser(actorUserId);
       if (!handle || !/^[a-z0-9_]{3,30}$/i.test(handle)) throw new Error('Handle: 3–30 Zeichen, nur a–z 0–9 _.');
       if (!displayName) throw new Error('Anzeigename erforderlich.');
-      return social.createProfile({ userId: actorUserId, handle, displayName, title, pharmacyOrgId, bio, specializations, avatarUrl, visibility, isEditorial });
+      const c = normalizeCountry(country);
+      return social.createProfile({ userId: actorUserId, handle, displayName, title, pharmacyOrgId, bio, specializations, avatarUrl, visibility, isEditorial, country: c, locale: normalizeLocale(locale, c) });
     },
     getProfile(handleOrUserId) {
       return social.getProfileByHandle(handleOrUserId) || social.getProfileByUserId(handleOrUserId);
     },
     // Eigenes Profil bearbeiten (Handle bleibt als Identität unveränderlich).
-    updateProfile(actorUserId, { displayName, title, bio, specializations, visibility, bundesland }) {
+    updateProfile(actorUserId, { displayName, title, bio, specializations, visibility, bundesland, country, locale }) {
       requireUser(actorUserId);
-      if (!social.getProfileByUserId(actorUserId)) throw new Error('Profil nicht gefunden.');
+      const current = social.getProfileByUserId(actorUserId);
+      if (!current) throw new Error('Profil nicht gefunden.');
       const patch = {};
       if (displayName !== undefined) {
         const dn = String(displayName).trim();
@@ -98,6 +101,15 @@ export function createSocialService(social, foundationRepo, options = {}) {
         const bl = String(bundesland).trim();
         if (bl && !BUNDESLAENDER.includes(bl)) throw new Error('Ungültiges Bundesland.');
         patch.bundesland = bl || null;
+      }
+      // Land wechseln (Länder-Switch); Sprache folgt dem Land, außer explizit gesetzt.
+      if (country !== undefined) {
+        if (!isValidCountry(country)) throw new Error('Ungültiges Land.');
+        patch.country = String(country).toUpperCase();
+        // Ohne explizite Sprache folgt die UI-Sprache automatisch dem neuen Land.
+        patch.locale = normalizeLocale(locale, patch.country);
+      } else if (locale !== undefined) {
+        patch.locale = normalizeLocale(locale, current.country);
       }
       return social.updateProfile(actorUserId, patch);
     },

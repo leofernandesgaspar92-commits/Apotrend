@@ -29,6 +29,37 @@ async function reg(handle) {
 const j = async (path, tok) => (await fetch(BASE + path, { headers: H(tok) })).json();
 const post = (path, tok, body) => fetch(BASE + path, { method: 'POST', headers: H(tok), body: JSON.stringify(body || {}) });
 
+test('GET /api/countries: 12 Länder mit Locale/Währung/Zeitzone', async () => {
+  const d = await (await fetch(BASE + '/api/countries')).json();
+  assert.equal(d.countries.length, 12, '12 Länder im MVP-Register');
+  const at = d.countries.find(c => c.code === 'AT');
+  assert.equal(at.currency, 'EUR'); assert.equal(at.locale_default, 'de'); assert.equal(at.regulator, 'BASG');
+  const br = d.countries.find(c => c.code === 'BR');
+  assert.equal(br.currency, 'BRL'); assert.equal(br.locale_default, 'pt');
+});
+
+test('Registrierung mit Land/Sprache setzt Profil; Länder-Switch aktualisiert; ungültig abgelehnt', async () => {
+  // Registrierung mit Brasilien -> country=BR, locale=pt
+  const rb = await (await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'br' + PORT, handle: 'br' + PORT, email: 'br' + PORT + '@a.at', password: 'geheim123', country: 'BR' }) })).json();
+  assert.equal(rb.profile.country, 'BR');
+  assert.equal(rb.profile.locale, 'pt', 'Sprache folgt dem Land');
+  // Länder-Switch nach Deutschland -> locale springt auf de
+  const sw = await (await post('/api/profile', rb.token, { country: 'DE' })).json();
+  assert.equal(sw.profile.country, 'DE');
+  assert.equal(sw.profile.locale, 'de');
+  // Sprache separat auf Englisch überschreiben (Land bleibt DE)
+  const en = await (await post('/api/profile', rb.token, { locale: 'en' })).json();
+  assert.equal(en.profile.country, 'DE');
+  assert.equal(en.profile.locale, 'en');
+  // ungültiges Land -> 400
+  const bad = await post('/api/profile', rb.token, { country: 'XX' });
+  assert.equal(bad.status, 400);
+  // Fallback: Registrierung ohne Land -> AT/de
+  const ra = await (await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'at' + PORT, handle: 'at' + PORT, email: 'at' + PORT + '@a.at', password: 'geheim123' }) })).json();
+  assert.equal(ra.profile.country, 'AT');
+  assert.equal(ra.profile.locale, 'de');
+});
+
 test('GET /api/wirkstoff/:name bündelt Engpass/Preise/Rabatte/Austausch', async () => {
   const a = await reg('wi_a' + PORT);
   const b = await reg('wi_b' + PORT);

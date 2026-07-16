@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 1: Länder-Fundament (Backend):** Neues Länder-Register
+>   `data/countries.js` (12 MVP-Länder: AT/DE/CH · PT/BR/AO/MZ · GB/US/NG/KE/GH mit Locale,
+>   Währung, Zeitzone, Regulator) + `GET /api/countries` (öffentlich). Profile tragen jetzt
+>   `country` + `locale`; Registrierung nimmt `country`/`locale` an (Fallback AT/de), der
+>   `POST /api/profile`-Länder-Switch aktualisiert beides (Sprache folgt automatisch dem Land,
+>   außer explizit gesetzt), ungültiges Land → 400. Fundament für i18n + länder-gescopte
+>   Inhalte. (Architektur-Dokument separat; Integrationstests grün.)
 > - ✅ **Qualitäts-Audit — aktiver Reiter mit `aria-current`:** Der aktive Reiter war nur über
 >   die Farbe erkennbar — für Screenreader- und farbsehschwache Nutzer:innen unsichtbar. Neu:
 >   zentraler `setTabAria()`-Helper spiegelt den Aktiv-Zustand als `aria-current="page"` und

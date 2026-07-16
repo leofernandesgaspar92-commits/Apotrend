@@ -35,6 +35,7 @@ export function createSocialRepo() {
         bio: p.bio ?? null, specializations: p.specializations ?? [],
         avatar_url: p.avatarUrl ?? null, verified: !!p.verified, is_editorial: !!p.isEditorial,
         bundesland: p.bundesland ?? null,
+        country: p.country ?? 'AT', locale: p.locale ?? 'de',
         visibility: p.visibility ?? 'network', created_at: now(),
       };
       profiles.set(p.userId, prof);
@@ -50,7 +51,7 @@ export function createSocialRepo() {
     updateProfile(userId, patch) {
       const p = profiles.get(userId);
       if (!p) return null;
-      for (const k of ['display_name', 'title', 'bio', 'specializations', 'avatar_url', 'visibility', 'bundesland']) {
+      for (const k of ['display_name', 'title', 'bio', 'specializations', 'avatar_url', 'visibility', 'bundesland', 'country', 'locale']) {
         if (k in patch) p[k] = patch[k];
       }
       return { ...p };
