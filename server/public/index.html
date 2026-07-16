@@ -224,6 +224,15 @@ const I18N = {
     sh_rep_until:'Voraussichtlich wieder lieferbar bis (optional)',
     sh_rep_until_t:'Falls bekannt: bis wann der Engpass voraussichtlich dauert',
     sh_rep_send:'Engpass melden', sh_rep_need_w:'Bitte den Wirkstoff angeben.',
+    prov_verified:'✔ BASG (verifiziert)', prov_reference:'📌 Referenzdaten', prov_simulated:'⚠ simuliert',
+    prov_editorial:'📰 Redaktion', prov_community:'👥 Community-Meldung',
+    pl_open:'ℹ️ Datenherkunft & Sicherheit — woher kommen diese Angaben?',
+    pl_close:'ℹ️ Datenherkunft & Sicherheit — schließen',
+    pl_v:'✔ <b>BASG (verifiziert)</b> — offizielle Behördendaten (Bundesamt für Sicherheit im Gesundheitswesen).',
+    pl_r:'📌 <b>Referenzdaten</b> — kuratierte Vergleichsdaten, nicht in Echtzeit.',
+    pl_e:'📰 <b>Redaktion</b> — von der ApoTrend-Redaktion gepflegt, immer mit Quelle.',
+    pl_c:'👥 <b>Community-Meldung</b> — von Kolleg:innen gemeldet, <b>nicht offiziell verifiziert</b>. Zur Orientierung, im Zweifel selbst prüfen.',
+    pl_note:'Grundsatz: Sicherheitsrelevante Aussagen (Engpass, Rückruf, Substitution) werden nur mit Quelle geführt. Bei Community-Meldungen ist die Quelle die meldende Apotheke.',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -273,6 +282,15 @@ const I18N = {
     sh_rep_until:'Expected back in stock by (optional)',
     sh_rep_until_t:'If known: how long the shortage is expected to last',
     sh_rep_send:'Report shortage', sh_rep_need_w:'Please enter the substance.',
+    prov_verified:'✔ BASG (verified)', prov_reference:'📌 Reference data', prov_simulated:'⚠ simulated',
+    prov_editorial:'📰 Editorial', prov_community:'👥 Community report',
+    pl_open:'ℹ️ Data source & safety — where do these figures come from?',
+    pl_close:'ℹ️ Data source & safety — close',
+    pl_v:'✔ <b>BASG (verified)</b> — official regulatory data (Austrian Federal Office for Safety in Health Care).',
+    pl_r:'📌 <b>Reference data</b> — curated comparison data, not real-time.',
+    pl_e:'📰 <b>Editorial</b> — maintained by the ApoTrend editors, always with a source.',
+    pl_c:'👥 <b>Community report</b> — reported by colleagues, <b>not officially verified</b>. For orientation; when in doubt, check yourself.',
+    pl_note:'Principle: safety-relevant statements (shortage, recall, substitution) are only shown with a source. For community reports, the source is the reporting pharmacy.',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -322,6 +340,15 @@ const I18N = {
     sh_rep_until:'Previsão de reposição até (opcional)',
     sh_rep_until_t:'Se souber: até quando se prevê que dure a falta',
     sh_rep_send:'Reportar falta', sh_rep_need_w:'Indique a substância, por favor.',
+    prov_verified:'✔ BASG (verificado)', prov_reference:'📌 Dados de referência', prov_simulated:'⚠ simulado',
+    prov_editorial:'📰 Redação', prov_community:'👥 Aviso da comunidade',
+    pl_open:'ℹ️ Origem dos dados & segurança — de onde vêm estes valores?',
+    pl_close:'ℹ️ Origem dos dados & segurança — fechar',
+    pl_v:'✔ <b>BASG (verificado)</b> — dados oficiais da autoridade (Serviço Federal Austríaco de Segurança na Saúde).',
+    pl_r:'📌 <b>Dados de referência</b> — dados de comparação curados, não em tempo real.',
+    pl_e:'📰 <b>Redação</b> — mantido pela redação da ApoTrend, sempre com fonte.',
+    pl_c:'👥 <b>Aviso da comunidade</b> — reportado por colegas, <b>não verificado oficialmente</b>. Para orientação; na dúvida, confirme.',
+    pl_note:'Princípio: afirmações relevantes para a segurança (falta, recolha, substituição) só são apresentadas com fonte. Nos avisos da comunidade, a fonte é a farmácia que reporta.',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -1061,7 +1088,9 @@ async function loadNews() {
 const STATUS_COLORS = { kritisch:'#c0392b', eingeschraenkt:'#c77700', verfuegbar:'#0b7f28' };
 const STATUS_I18N = { kritisch:'st_krit_short', eingeschraenkt:'st_eing_short', verfuegbar:'st_verf_short' };
 function statusShort(key) { return [ STATUS_I18N[key] ? t(STATUS_I18N[key]) : '?', STATUS_COLORS[key] || '#666' ]; }
-const PROV = { verified:'✔ BASG (verifiziert)', reference:'📌 Referenzdaten', simulated:'⚠ simuliert', editorial:'📰 Redaktion', community:'👥 Community-Meldung' };
+// Herkunfts-Label (übersetzt) je Datenquelle.
+const PROV_I18N = { verified:'prov_verified', reference:'prov_reference', simulated:'prov_simulated', editorial:'prov_editorial', community:'prov_community' };
+function provLabel(key) { return PROV_I18N[key] ? t(PROV_I18N[key]) : (key || ''); }
 
 // Ehrlicher Länder-Hinweis: Die Live-Regulierungsdaten (Engpässe/Preise/Rabatte)
 // stammen derzeit aus Österreich. Für andere Länder das offen ausweisen, statt
@@ -1082,18 +1111,18 @@ function countryDataNotice() {
 // Fachleuten und macht die Quellenpflicht sichtbar (CLAUDE.md). Standard: zugeklappt.
 function provenanceLegend() {
   const card = el(`<div class="card" style="margin-bottom:10px">
-    <button class="ghost small" data-tgl style="width:100%;text-align:left">ℹ️ Datenherkunft & Sicherheit — woher kommen diese Angaben?</button>
+    <button class="ghost small" data-tgl style="width:100%;text-align:left">${esc(t('pl_open'))}</button>
     <div class="hidden" data-body style="margin-top:8px;font-size:14px">
-      <div class="comment">✔ <b>BASG (verifiziert)</b> — offizielle Behördendaten (Bundesamt für Sicherheit im Gesundheitswesen).</div>
-      <div class="comment">📌 <b>Referenzdaten</b> — kuratierte Vergleichsdaten, nicht in Echtzeit.</div>
-      <div class="comment">📰 <b>Redaktion</b> — von der ApoTrend-Redaktion gepflegt, immer mit Quelle.</div>
-      <div class="comment">👥 <b>Community-Meldung</b> — von Kolleg:innen gemeldet, <b>nicht offiziell verifiziert</b>. Zur Orientierung, im Zweifel selbst prüfen.</div>
-      <div class="muted" style="margin-top:6px">Grundsatz: Sicherheitsrelevante Aussagen (Engpass, Rückruf, Substitution) werden nur mit Quelle geführt. Bei Community-Meldungen ist die Quelle die meldende Apotheke.</div>
+      <div class="comment">${t('pl_v')}</div>
+      <div class="comment">${t('pl_r')}</div>
+      <div class="comment">${t('pl_e')}</div>
+      <div class="comment">${t('pl_c')}</div>
+      <div class="muted" style="margin-top:6px">${esc(t('pl_note'))}</div>
     </div>
   </div>`);
   const body = card.querySelector('[data-body]');
   const btn = card.querySelector('[data-tgl]');
-  btn.onclick = () => { const open = body.classList.toggle('hidden'); btn.textContent = open ? 'ℹ️ Datenherkunft & Sicherheit — woher kommen diese Angaben?' : 'ℹ️ Datenherkunft & Sicherheit — schließen'; };
+  btn.onclick = () => { const open = body.classList.toggle('hidden'); btn.textContent = open ? t('pl_open') : t('pl_close'); };
   return card;
 }
 
@@ -1229,7 +1258,7 @@ function shortageCard(s) {
       <span class="post-author clickable" data-wirkstoff="${esc(s.wirkstoff)}" title="Alles zu ${esc(s.wirkstoff)} ansehen">${esc(s.wirkstoff)}</span>
       <span style="background:${scol};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${slabel}</span>
       <span class="sp" style="flex:1"></span>
-      <span class="vis" title="Herkunft der Daten">${esc(PROV[s.provenance]||s.provenance)}</span>
+      <span class="vis" title="${esc(t('pl_open'))}">${esc(provLabel(s.provenance))}</span>
     </div>
     <div class="post-body">${esc(s.bezeichnung)}</div>
     <div class="muted">${s.grund?esc(s.grund)+' · ':''}gemeldet ${esc(s.gemeldet_am||'—')}</div>
@@ -1298,7 +1327,7 @@ function shortageCard(s) {
       const q = hEntry.quelle && /^https?:\/\//.test(hEntry.quelle)
         ? `<a href="${esc(hEntry.quelle)}" target="_blank" rel="noopener noreferrer">Quelle 🔗</a>`
         : '';
-      box.appendChild(el(`<div class="comment" style="font-size:13px"><b>${esc(fmtDateDe(hEntry.am))}</b> — <span style="color:${m.color};font-weight:700">${m.icon} ${m.label}</span> <span class="muted">· ${esc(PROV[hEntry.provenance]||hEntry.provenance||'')}${q?' · ':''}</span>${q}</div>`));
+      box.appendChild(el(`<div class="comment" style="font-size:13px"><b>${esc(fmtDateDe(hEntry.am))}</b> — <span style="color:${m.color};font-weight:700">${m.icon} ${m.label}</span> <span class="muted">· ${esc(provLabel(hEntry.provenance))}${q?' · ':''}</span>${q}</div>`));
     });
   };
   if (iAmModerator) {
@@ -2129,7 +2158,7 @@ async function renderSearch(q) {
       d.prices.forEach(pr => feed.appendChild(el(`<div class="card"><div class="row">
         <span class="post-author">${esc(pr.bezeichnung)}</span><span class="handle">${esc(pr.wirkstoff||'')}</span>
         <span class="sp" style="flex:1"></span><span><b>€ ${Number(pr.aep).toFixed(2)}</b> ${trendStr(pr.trend_pct)}</span></div>
-        <div class="muted">${esc(pr.supplier)} · ${esc(PROV[pr.provenance]||pr.provenance)}</div></div>`)));
+        <div class="muted">${esc(pr.supplier)} · ${esc(provLabel(pr.provenance))}</div></div>`)));
     }
     if (d.rabatte.length) { section('🏷️ Rabatt-Aktionen'); d.rabatte.forEach((r,i) => { r.rank = i+1; feed.appendChild(rabattCard(r)); }); }
     if (d.exchange && d.exchange.length) { section('🔄 Biete/Suche'); d.exchange.forEach(e => feed.appendChild(exchangeCard(e))); }
@@ -2471,7 +2500,7 @@ async function openWirkstoff(name) {
   if (!d.shortages.length) sbody.appendChild(el('<div class="muted" style="font-size:14px">Aktuell keine Engpass-Meldung.</div>'));
   else d.shortages.forEach(s => {
     const [lab,col] = statusShort(s.status);
-    sbody.appendChild(el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:12px">· ${esc(PROV[s.provenance]||s.provenance)}${s.grund?' · '+esc(s.grund):''}</span></div>`));
+    sbody.appendChild(el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:12px">· ${esc(provLabel(s.provenance))}${s.grund?' · '+esc(s.grund):''}</span></div>`));
   });
   const sform = scard.querySelector('[data-sform]');
   scard.querySelector('[data-report]').onclick = () => sform.classList.toggle('hidden');

@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3i: Datenherkunft-Legende + Herkunfts-Labels mehrsprachig:**
+>   Die aufklappbare „Datenherkunft & Sicherheit"-Legende (inkl. Quellen-Grundsatz) und die
+>   Herkunfts-Labels (BASG/Referenz/simuliert/Redaktion/Community) sind jetzt DE/EN/PT. Das
+>   früher konstante `PROV`-Objekt wurde zu `provLabel()` (folgt der Sprache) — wirkt an allen
+>   4 Fundstellen (Engpass-Zeilen, Status-Verlauf, Preise, Wirkstoff-Seite). (Browser verifiziert:
+>   Legende & Chips auf Portugiesisch, keine JS-Fehler.) Offen: die einzelnen Engpass-Zeilen selbst.
 > - 🌍 **Länderübergreifend — Schritt 3h: Engpässe-Reiter (Melde-Formular + Filter) mehrsprachig:**
 >   Die größte verbliebene deutsche Fläche ist jetzt übersetzt (DE/EN/PT): die komplette
 >   Filter-/Sortier-/Suchleiste (inkl. Drucken/CSV-Tooltips, Leerzustand) und das „Engpass
