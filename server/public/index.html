@@ -590,6 +590,7 @@ async function renderWatchlistCard(feed, items, suggestions = []) {
     <div class="row"><b>⭐ Meine beobachteten Wirkstoffe</b>
       <span class="sp" style="flex:1"></span>
       ${alerts?`<span class="badge" style="background:#c0392b">${alerts} Meldung${alerts>1?'en':''}</span>`:''}
+      ${items.length?`<button class="ghost small" data-wl-csv title="Beobachtungsliste mit Status als CSV (Excel) — z.B. für den Handverkaufstisch" style="margin-left:8px">⬇️ CSV</button>`:''}
     </div>
     <div class="muted" style="font-size:13px;margin:2px 0 8px">Wirkstoffe im Blick behalten — der aktuelle Engpass-Status steht immer hier ganz oben.</div>
     <div data-wl></div>
@@ -603,6 +604,13 @@ async function renderWatchlistCard(feed, items, suggestions = []) {
   const box = card.querySelector('[data-wl]');
   const sugBox = card.querySelector('[data-wl-sug]');
   const err = card.querySelector('[data-wl-err]');
+  // Beobachtungsliste mit aktuellem Status als CSV (Team-Aushang am Handverkaufstisch).
+  const csvBtn = card.querySelector('[data-wl-csv]');
+  if (csvBtn) csvBtn.onclick = () => {
+    const cur = renderWatchlistCard._items || items;
+    const rows = cur.map(it => [it.wirkstoff, watchStatusMeta(it.status).label, it.bezeichnung || '']);
+    downloadCsv('apotrend-merkliste', ['Wirkstoff', 'Aktueller Status', 'Präparat'], rows);
+  };
   // Schnell-Vorschläge aus aktuell kritischen Engpässen (nur noch nicht beobachtete).
   function drawSuggestions(list) {
     const have = new Set(list.map(i => i.wirkstoff.trim().toLowerCase()));
@@ -635,6 +643,8 @@ async function renderWatchlistCard(feed, items, suggestions = []) {
     sugBox.appendChild(wrap);
   }
   function draw(list) {
+    renderWatchlistCard._items = list;         // Merker für den CSV-Export
+    if (csvBtn) csvBtn.style.display = list.length ? '' : 'none';
     box.innerHTML = '';
     if (!list.length) { box.appendChild(el(`<div class="muted" style="font-size:14px">Noch keine Wirkstoffe. Füge unten die hinzu, die du regelmäßig führst.</div>`)); drawSuggestions(list); return; }
     list.forEach(it => {

@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Merkliste als CSV exportieren:** Die beobachteten Wirkstoffe lassen sich mit ihrem
+>   aktuellen Engpass-Status als CSV (Excel) exportieren („⬇️ CSV" in der Merkliste-Karte) —
+>   z. B. als Aushang/Liste am Handverkaufstisch. Spalten: Wirkstoff, Aktueller Status,
+>   Präparat; bleibt mit der Live-Liste synchron. (Frontend; im Browser verifiziert.)
 > - ✅ **Kachel „Antibiotika-Engpässe" auf der Startübersicht:** Zeigt (wenn > 0) die Zahl
 >   aktiver Antibiotika-Engpässe als KPI-Kachel; Klick springt direkt in den Engpass-Reiter
 >   mit voraktiviertem 🧫-Filter. Verbindet die AMR-Ausrichtung mit dem Dashboard.
