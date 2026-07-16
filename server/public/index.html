@@ -244,6 +244,12 @@ const I18N = {
     sc_mod_status:'📝 Status ändern (Redaktion)', sc_mod_new:'Neuer Status',
     sc_mod_src:'Quelle (Pflicht, http[s]-Link – z.B. BASG)',
     sc_mod_save:'Status speichern & Beobachter benachrichtigen',
+    pr_savings_title:'💶 Sparpotenzial beim Einkauf', pr_savings_amount:'bis zu € {x} pro Packung',
+    pr_savings_sub_one:'wenn du bei {n} Präparat den günstigsten Großhändler wählst.',
+    pr_savings_sub_many:'wenn du bei {n} Präparaten jeweils den günstigsten Großhändler wählst.',
+    pr_at:'bei', pr_csv_title:'📊 Für den Einkauf', pr_csv_btn:'⬇️ Preisvergleich als CSV (Excel)',
+    pr_csv_sub:'Alle Präparate & Lieferanten mit AEP, Trend und günstigstem Anbieter — zum Weiterverarbeiten in Excel.',
+    pr_q_ph:'🔎 Präparat, Wirkstoff oder Lieferant suchen…', pr_empty:'Kein Präparat für diese Suche.',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -313,6 +319,12 @@ const I18N = {
     sc_mod_status:'📝 Change status (editorial)', sc_mod_new:'New status',
     sc_mod_src:'Source (required, http[s] link – e.g. BASG)',
     sc_mod_save:'Save status & notify watchers',
+    pr_savings_title:'💶 Savings on purchasing', pr_savings_amount:'up to € {x} per pack',
+    pr_savings_sub_one:'if you pick the cheapest wholesaler for {n} product.',
+    pr_savings_sub_many:'if you pick the cheapest wholesaler for each of {n} products.',
+    pr_at:'at', pr_csv_title:'📊 For purchasing', pr_csv_btn:'⬇️ Price comparison as CSV (Excel)',
+    pr_csv_sub:'All products & suppliers with list price, trend and cheapest supplier — to process further in Excel.',
+    pr_q_ph:'🔎 Search product, substance or supplier…', pr_empty:'No product for this search.',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -382,6 +394,12 @@ const I18N = {
     sc_mod_status:'📝 Alterar estado (redação)', sc_mod_new:'Novo estado',
     sc_mod_src:'Fonte (obrigatória, ligação http[s] – ex. BASG)',
     sc_mod_save:'Guardar estado & notificar quem vigia',
+    pr_savings_title:'💶 Poupança nas compras', pr_savings_amount:'até € {x} por embalagem',
+    pr_savings_sub_one:'se escolher o distribuidor mais barato para {n} produto.',
+    pr_savings_sub_many:'se escolher o distribuidor mais barato para cada um dos {n} produtos.',
+    pr_at:'em', pr_csv_title:'📊 Para as compras', pr_csv_btn:'⬇️ Comparação de preços em CSV (Excel)',
+    pr_csv_sub:'Todos os produtos e fornecedores com preço, tendência e fornecedor mais barato — para processar no Excel.',
+    pr_q_ph:'🔎 Pesquisar produto, substância ou fornecedor…', pr_empty:'Nenhum produto para esta pesquisa.',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -1425,18 +1443,18 @@ async function loadPrices() {
     if (d.savings && d.savings.count) {
       const s = d.savings;
       const head = el(`<div class="card">
-        <div class="row"><b>💶 Sparpotenzial beim Einkauf</b></div>
-        <div style="font-size:22px;font-weight:800;color:var(--ok-fg);margin-top:4px">bis zu € ${Number(s.total_abs).toFixed(2)} pro Packung</div>
-        <div class="muted" style="font-size:13px">wenn du bei ${s.count} Präparat${s.count>1?'en':''} jeweils den günstigsten Großhändler wählst.</div>
-        ${s.top.length?`<div style="margin-top:8px">${s.top.map(t=>`<div class="comment" style="font-size:14px">💰 <b>${esc(t.bezeichnung)}</b>: −€ ${Number(t.saving_abs).toFixed(2)} (−${t.saving_pct}%) bei <b>${esc(t.best_supplier)}</b></div>`).join('')}</div>`:''}
+        <div class="row"><b>${esc(t('pr_savings_title'))}</b></div>
+        <div style="font-size:22px;font-weight:800;color:var(--ok-fg);margin-top:4px">${esc(ti('pr_savings_amount', { x: Number(s.total_abs).toFixed(2) }))}</div>
+        <div class="muted" style="font-size:13px">${esc(ti(s.count>1?'pr_savings_sub_many':'pr_savings_sub_one', { n: s.count }))}</div>
+        ${s.top.length?`<div style="margin-top:8px">${s.top.map(it=>`<div class="comment" style="font-size:14px">💰 <b>${esc(it.bezeichnung)}</b>: −€ ${Number(it.saving_abs).toFixed(2)} (−${it.saving_pct}%) ${esc(t('pr_at'))} <b>${esc(it.best_supplier)}</b></div>`).join('')}</div>`:''}
       </div>`);
       feed.appendChild(head);
     }
     // CSV-Export für Einkauf/Großhandel (Excel-tauglich)
-    const exp = el('<div class="card"><div class="row"><b>📊 Für den Einkauf</b><span class="sp" style="flex:1"></span><button class="ghost small" data-csv>⬇️ Preisvergleich als CSV (Excel)</button></div><div class="muted" style="font-size:13px;margin-top:2px">Alle Präparate & Lieferanten mit AEP, Trend und günstigstem Anbieter — zum Weiterverarbeiten in Excel.</div></div>');
+    const exp = el(`<div class="card"><div class="row"><b>${esc(t('pr_csv_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-csv>${esc(t('pr_csv_btn'))}</button></div><div class="muted" style="font-size:13px;margin-top:2px">${esc(t('pr_csv_sub'))}</div></div>`);
     exp.querySelector('[data-csv]').onclick = () => exportPricesCsv(d.comparisons);
     feed.appendChild(exp);
-    const bar = el(`<div class="card"><div class="row" style="gap:6px"><input data-pq placeholder="🔎 Präparat, Wirkstoff oder Lieferant suchen…" value="${esc(priceQuery)}" style="flex:1"></div></div>`);
+    const bar = el(`<div class="card"><div class="row" style="gap:6px"><input data-pq placeholder="${esc(t('pr_q_ph'))}" value="${esc(priceQuery)}" style="flex:1"></div></div>`);
     feed.appendChild(bar);
     const listBox = el('<div data-plist></div>');
     feed.appendChild(listBox);
@@ -1446,11 +1464,11 @@ async function loadPrices() {
         !q || (g.bezeichnung||'').toLowerCase().includes(q) || (g.wirkstoff||'').toLowerCase().includes(q)
            || (g.offers||[]).some(o => (o.supplier||'').toLowerCase().includes(q)));
       listBox.innerHTML = '';
-      if (!list.length) listBox.appendChild(el('<div class="card muted">Kein Präparat für diese Suche.</div>'));
+      if (!list.length) listBox.appendChild(el(`<div class="card muted">${esc(t('pr_empty'))}</div>`));
       else list.forEach(g => listBox.appendChild(priceGroup(g)));
     };
     const pq = bar.querySelector('[data-pq]');
-    let t; pq.oninput = () => { clearTimeout(t); t = setTimeout(() => { priceQuery = pq.value; draw(); }, 250); };
+    let deb; pq.oninput = () => { clearTimeout(deb); deb = setTimeout(() => { priceQuery = pq.value; draw(); }, 250); };
     draw();
   } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }

@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3k: Preise-Reiter (Kopf) mehrsprachig:** Sparpotenzial-
+>   Kachel (mit Betrag/Anzahl-Interpolation, Singular/Plural), CSV-Export-Karte, Suchleiste und
+>   Leerzustand sind jetzt DE/EN/PT. Die lokale `let t`-Debounce-Variable in `loadPrices` wurde
+>   vorsorglich in `deb` umbenannt (gleicher latenter Shadowing-Bug wie in Schritt 3h). (Browser
+>   verifiziert: „💶 Poupança nas compras / até € 1,34 por embalagem", keine JS-Fehler.) Offen:
+>   die einzelnen Preisvergleichs-Karten (`priceGroup`).
 > - 🌍 **Länderübergreifend — Schritt 3j: Engpass-Zeilen mehrsprachig — Reiter komplett:** Die
 >   einzelnen Engpass-Karten sind jetzt übersetzt (DE/EN/PT): Melde-Info, Voraussichtlich-bis,
 >   Antibiotika-Hinweis, Community-Bestätigungen (Singular/Plural), alle Aktions-Buttons
