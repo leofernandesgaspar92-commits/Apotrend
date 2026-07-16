@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — roter Akzenttext auf Token (Dark-Kontrast):** Alle Text-Rot-Stellen
+>   (`color:#c0392b`, Trend-Pfeile, Fehlermeldungen, `watchStatusMeta`-Statusfarben) →
+>   `var(--crit-fg)` (auch Orange/Grün der Status-Pillen auf `--warn-fg`/`--ok-fg`). Im Dark
+>   Mode jetzt helles, lesbares Rot (#f0857a) statt dunklem `#c0392b`; rote Badge-Hintergründe
+>   mit weißem Text bleiben (in beiden Modi ok). Light Mode byte-gleich. (Browser Dark
+>   verifiziert: Kritisch-Pille rgb(240,133,122), Trend-Pfeile hell-rot.)
 > - ✅ **Qualitäts-Audit — grüner Akzenttext auf Token (Dark-Kontrast):** Alle inline
 >   `color:#0b7f28` (16 Stellen: Sparpotenzial, „günstigster", Quell-/CSV-Links, Badges …)
 >   → `color:var(--ok-fg)`. Im Dark Mode jetzt helles, gut lesbares Grün (#46d67a) statt des

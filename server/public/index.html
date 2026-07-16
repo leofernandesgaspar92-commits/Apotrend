@@ -73,7 +73,7 @@
   .reacts button { background:var(--chip-bg); color:var(--text); border:1px solid var(--line); padding:7px 11px; font-size:0.85em; font-weight:500; min-height:36px; }
   .reacts button:hover { border-color:var(--green); }
   .muted { color:var(--muted); font-size:14px; }
-  .err { color:#c0392b; font-size:14px; margin-top:8px; }
+  .err { color:var(--crit-fg); font-size:14px; margin-top:8px; }
   .bell { position:relative; }
   .badge { position:absolute; top:-6px; right:-6px; background:#e02a2a; color:#fff; border-radius:10px; font-size:11px; padding:1px 6px; }
   /* Klartext-Beschriftung der Header-Aktionen (Zielgruppe: nicht-technisch). Auf
@@ -599,9 +599,9 @@ async function renderNearbyColleagues(feed) {
 
 // Status-Anzeige für beobachtete Wirkstoffe (Farb-Semantik: rot = kritisch).
 function watchStatusMeta(status) {
-  if (status === 'kritisch')        return { label: 'Kritischer Engpass', color: '#c0392b', bg: 'rgba(192,57,43,.12)', icon: '🔴' };
-  if (status === 'eingeschraenkt')  return { label: 'Eingeschränkt lieferbar', color: '#b26a00', bg: 'rgba(178,106,0,.12)', icon: '🟠' };
-  if (status === 'verfuegbar')      return { label: 'Wieder verfügbar', color: '#0b7f28', bg: 'rgba(11,127,40,.12)', icon: '🟢' };
+  if (status === 'kritisch')        return { label: 'Kritischer Engpass', color: 'var(--crit-fg)', bg: 'rgba(192,57,43,.12)', icon: '🔴' };
+  if (status === 'eingeschraenkt')  return { label: 'Eingeschränkt lieferbar', color: 'var(--warn-fg)', bg: 'rgba(178,106,0,.12)', icon: '🟠' };
+  if (status === 'verfuegbar')      return { label: 'Wieder verfügbar', color: 'var(--ok-fg)', bg: 'rgba(11,127,40,.12)', icon: '🟢' };
   return { label: 'Aktuell keine Meldung', color: 'var(--muted)', bg: 'var(--bg)', icon: '⚪' };
 }
 
@@ -921,7 +921,7 @@ function shortageCard(s) {
     <div class="muted">${s.grund?esc(s.grund)+' · ':''}gemeldet ${esc(s.gemeldet_am||'—')}</div>
     ${s.voraussichtlich_bis&&s.status!=='verfuegbar'?`<div class="muted" style="font-size:13px;margin-top:2px">🗓️ Voraussichtlich wieder lieferbar bis <b>${esc(fmtDateDe(s.voraussichtlich_bis))}</b></div>`:''}
     ${s.is_antibiotic?`<div style="margin-top:6px;font-size:13px"><span style="color:var(--ok-fg);font-weight:600">🧫 Antibiotikum</span> — <span class="clickable" data-amr style="color:var(--ok-fg);text-decoration:underline">Stewardship-Infos & Quellen</span> <span class="muted">(keine Substitutionsempfehlung ohne Quelle)</span></div>`:''}
-    ${s.provenance==='community'&&s.reporter?`<div class="muted" style="font-size:13px;margin-top:2px">👥 Gemeldet von <b>@${esc(s.reporter.handle)}</b>${s.reporter.verified?' <span class="verified">✔</span>':''}${s.confirm_count?` · <b style="color:#c0392b">${s.confirm_count}</b> weitere Apotheke${s.confirm_count>1?'n':''} bestätigt`:''}</div>`:''}
+    ${s.provenance==='community'&&s.reporter?`<div class="muted" style="font-size:13px;margin-top:2px">👥 Gemeldet von <b>@${esc(s.reporter.handle)}</b>${s.reporter.verified?' <span class="verified">✔</span>':''}${s.confirm_count?` · <b style="color:var(--crit-fg)">${s.confirm_count}</b> weitere Apotheke${s.confirm_count>1?'n':''} bestätigt`:''}</div>`:''}
     <div class="reacts">
       <button data-about>💬 ${s.post_count||0} Apotheker haben dazu gepostet</button>
       <button class="ghost" data-postbtn>✍ Dazu posten</button>
@@ -1130,7 +1130,7 @@ function exportShortagesCsv(list) {
   downloadCsv('apotrend-engpaesse', ['Wirkstoff', 'Präparat', 'Status', 'Grund', 'gemeldet am', 'voraussichtlich wieder lieferbar bis', 'Antibiotikum', 'Herkunft', 'Melder', 'beobachtet'], rows);
 }
 
-function trendStr(t) { if (t>0) return `<span style="color:#c0392b">▲ +${t}%</span>`; if (t<0) return `<span style="color:var(--ok-fg)">▼ ${t}%</span>`; return '<span class="muted">±0%</span>'; }
+function trendStr(t) { if (t>0) return `<span style="color:var(--crit-fg)">▲ +${t}%</span>`; if (t<0) return `<span style="color:var(--ok-fg)">▼ ${t}%</span>`; return '<span class="muted">±0%</span>'; }
 
 // Kompakte Preisverlaufs-Linie (Sparkline) aus den letzten Preisen. Einzelserie,
 // dünne 2px-Linie; Farbe nach Netto-Richtung (steigend rot / fallend grün) — die
@@ -1163,7 +1163,7 @@ function priceGroup(g) {
   const card = el(`<div class="card">
     <div class="post-author">${esc(g.bezeichnung)} ${g.wirkstoff?`<span class="handle clickable" data-wirkstoff="${esc(g.wirkstoff)}" title="Alles zu ${esc(g.wirkstoff)}">${esc(g.wirkstoff)}</span>`:''}</div>
     <div class="muted" style="margin:2px 0 8px">Preisvergleich (AEP) · günstigster oben · 📌 Referenzdaten</div>
-    ${rose?`<div style="display:inline-block;background:#fdece9;color:#c0392b;border:1px solid #f2c6bf;font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">⚠️ Günstigster Anbieter zuletzt teurer (+${Number(cheapest.trend_pct).toFixed(1)}%) — Preis beobachten</div>`:''}
+    ${rose?`<div style="display:inline-block;background:#fdece9;color:var(--crit-fg);border:1px solid #f2c6bf;font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">⚠️ Günstigster Anbieter zuletzt teurer (+${Number(cheapest.trend_pct).toFixed(1)}%) — Preis beobachten</div>`:''}
     ${g.saving_abs>0?`<div style="display:inline-block;background:rgba(11,127,40,.12);color:var(--ok-fg);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">💰 −€ ${Number(g.saving_abs).toFixed(2)} pro Packung günstiger bei ${esc(g.best_supplier)}</div>`:''}
     ${g.action?`<div style="background:rgba(11,127,40,.08);border:1px solid rgba(11,127,40,.35);border-radius:10px;padding:8px 10px;margin-bottom:8px">
       <div style="font-weight:700;color:var(--ok-fg);font-size:14px">🏷️ Aktion günstiger als der beste Einkaufspreis</div>
@@ -1911,9 +1911,9 @@ async function openProfile(handle) {
           <div class="row" style="margin-top:8px"><button class="small" id="pw_go">Passwort ändern</button><span id="pw_msg" style="margin-left:8px"></span></div>
         </div>
         <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
-          <b style="font-size:0.95em;color:#c0392b">Konto löschen</b>
+          <b style="font-size:0.95em;color:var(--crit-fg)">Konto löschen</b>
           <div class="muted" style="margin-top:4px">Unwiderruflich: alle deine Daten (Profil, Beiträge, Kommentare, Nachrichten, Austausch) werden gelöscht.</div>
-          <div class="row" style="margin-top:8px"><button class="ghost small" id="acc_del" style="color:#c0392b;border-color:#c0392b">Konto endgültig löschen</button></div>
+          <div class="row" style="margin-top:8px"><button class="ghost small" id="acc_del" style="color:var(--crit-fg);border-color:var(--crit-fg)">Konto endgültig löschen</button></div>
         </div></div>`);
       dcard.querySelector('#acc_del').onclick = async () => {
         if (!confirm('Dein Konto und alle Daten werden unwiderruflich gelöscht. Fortfahren?')) return;
@@ -1926,7 +1926,7 @@ async function openProfile(handle) {
         const msg = dcard.querySelector('#pw_msg');
         try { await api('POST','/api/me/password',{ oldPassword:v('pw_old'), newPassword:v('pw_new') });
           msg.style.color='var(--green)'; msg.textContent='✓ Passwort geändert'; dcard.querySelector('#pw_old').value=''; dcard.querySelector('#pw_new').value='';
-        } catch(e){ msg.style.color='#c0392b'; msg.textContent=e.message; }
+        } catch(e){ msg.style.color='var(--crit-fg)'; msg.textContent=e.message; }
       };
       dcard.querySelector('#dl_export').onclick = async () => {
         try {
@@ -2548,7 +2548,7 @@ async function showModeration() {
     const card = el(`<div class="card">
       <div class="muted">${post&&post.is_comment?'💬 Kommentar ':''}Gemeldet von @${esc(r.reporter_handle||'?')}${r.reason?' · Grund: '+esc(r.reason):' · kein Grund angegeben'}</div>
       ${post ? `<div class="post-body">${esc(post.body)}</div>
-        <div class="vis">Autor: @${esc(post.author_handle||'?')}${post.deleted?' · <b style="color:#c0392b">bereits entfernt</b>':''}</div>`
+        <div class="vis">Autor: @${esc(post.author_handle||'?')}${post.deleted?' · <b style="color:var(--crit-fg)">bereits entfernt</b>':''}</div>`
              : '<div class="muted">Ziel nicht mehr vorhanden.</div>'}
       <div class="row" style="margin-top:10px">
         <button class="small" data-remove style="background:#c0392b">🗑 ${post&&post.is_comment?'Kommentar':'Beitrag'} entfernen</button>
