@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — OS-Dark-Mode respektiert:** Ohne eigene Wahl folgte die App bisher
+>   immer Light, egal wie das System eingestellt war. Jetzt: ohne gespeicherte Präferenz gilt
+>   `prefers-color-scheme` des Betriebssystems; eine manuelle Wahl hat weiter Vorrang und wird
+>   gespeichert. Der Umschalter richtet sich nun nach dem **tatsächlich angezeigten** Modus
+>   (kein toter Erstklick aus dem OS-Default heraus); OS-Wechsel werden übernommen, solange
+>   nicht manuell gewählt wurde. (Browser verifiziert: OS-dark→App dunkel, Toggle→hell+gespeichert,
+>   OS-light→hell.)
 > - ✅ **Qualitäts-Audit — Empty-States komplettiert (Rabatte/Hashtag/Follower):** Die
 >   `emptyState()`-Komponente nun auch bei leeren Rabatt-Aktionen (🏷️), leerem Hashtag-Thema
 >   (🏷️ mit `#tag`) und leeren Follower-/Folge-Listen (👥). Damit tragen alle prominenten

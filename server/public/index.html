@@ -144,9 +144,12 @@ function applyFontScale() {
   if (ic) ic.textContent = FONT_LABELS[lvl];
   if (btn) btn.title = 'Schriftgröße: ' + ['Normal','Groß','Sehr groß'][lvl] + ' — tippen zum Wechseln';
 }
-// ── Hell/Dunkel-Modus (augenschonend), gespeichert ──
+// ── Hell/Dunkel-Modus (augenschonend). Ohne eigene Wahl: OS-Einstellung
+// (prefers-color-scheme) respektieren; eine manuelle Wahl hat Vorrang. ──
+function prefersDarkOS() { return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); }
 function applyTheme() {
-  const dark = localStorage.getItem('apo_theme') === 'dark';
+  const saved = localStorage.getItem('apo_theme');
+  const dark = saved ? saved === 'dark' : prefersDarkOS();
   document.body.classList.toggle('dark', dark);
   const btn = document.getElementById('btnTheme');
   const ic = document.getElementById('themeIcon');
@@ -2728,9 +2731,19 @@ document.getElementById('btnFont').onclick = () => {
   applyFontScale();
 };
 document.getElementById('btnTheme').onclick = () => {
-  localStorage.setItem('apo_theme', localStorage.getItem('apo_theme') === 'dark' ? 'light' : 'dark');
+  // Auf Basis des tatsächlich angezeigten Modus umschalten (nicht nur localStorage),
+  // damit der erste Klick auch aus dem OS-Default heraus korrekt wechselt.
+  const nowDark = document.body.classList.contains('dark');
+  localStorage.setItem('apo_theme', nowDark ? 'light' : 'dark');
   applyTheme();
 };
+// OS-Themenwechsel übernehmen, solange die Nutzer:in nicht selbst gewählt hat.
+if (window.matchMedia) {
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  const onOsChange = () => { if (!localStorage.getItem('apo_theme')) applyTheme(); };
+  if (mq.addEventListener) mq.addEventListener('change', onOsChange);
+  else if (mq.addListener) mq.addListener(onOsChange);
+}
 if (localStorage.getItem('apo_token')) mainScreen().catch(authScreen);
 else authScreen();
 </script>
