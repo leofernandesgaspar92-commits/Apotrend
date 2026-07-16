@@ -285,6 +285,12 @@ const I18N = {
     ex_photo_alt:'Foto zum Eintrag', ex_by:'von', ex_unknown:'Unbekannt',
     ex_contact_btn:'✉️ Kontaktieren', ex_reopen:'↻ Wieder öffnen', ex_done_btn:'✓ Erledigt',
     ex_del_confirm:'Eintrag löschen?',
+    co_label:"Was gibt's Neues? (kurzer Fachbeitrag)",
+    co_ph:'Bei uns gerade Engpass bei Amoxicillin — wer hat noch Bestand?',
+    co_src_ph:'🔗 Quelle (Link, optional – z.B. BASG/Kammer)', co_img:'📷 Bild', co_img_clear:'✕ entfernen',
+    co_question:'❓ Als Fachfrage stellen (beste Antwort auswählbar)',
+    pv_public:'🌍 Öffentlich (alle Apotheker)', pv_followers:'👥 Nur meine Follower',
+    co_follow_label:'Jemandem folgen (@Handle)', co_follow_btn:'Folgen',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -395,6 +401,12 @@ const I18N = {
     ex_photo_alt:'Entry photo', ex_by:'by', ex_unknown:'Unknown',
     ex_contact_btn:'✉️ Contact', ex_reopen:'↻ Reopen', ex_done_btn:'✓ Done',
     ex_del_confirm:'Delete entry?',
+    co_label:"What's new? (short professional post)",
+    co_ph:'We have a shortage of Amoxicillin right now — who still has stock?',
+    co_src_ph:'🔗 Source (link, optional – e.g. regulator/chamber)', co_img:'📷 Image', co_img_clear:'✕ remove',
+    co_question:'❓ Ask as a professional question (mark the best answer)',
+    pv_public:'🌍 Public (all pharmacists)', pv_followers:'👥 My followers only',
+    co_follow_label:'Follow someone (@handle)', co_follow_btn:'Follow',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -505,6 +517,12 @@ const I18N = {
     ex_photo_alt:'Foto da entrada', ex_by:'de', ex_unknown:'Desconhecido',
     ex_contact_btn:'✉️ Contactar', ex_reopen:'↻ Reabrir', ex_done_btn:'✓ Concluído',
     ex_del_confirm:'Eliminar entrada?',
+    co_label:'O que há de novo? (publicação técnica curta)',
+    co_ph:'Temos falta de Amoxicilina agora — quem ainda tem stock?',
+    co_src_ph:'🔗 Fonte (ligação, opcional – ex. regulador/ordem)', co_img:'📷 Imagem', co_img_clear:'✕ remover',
+    co_question:'❓ Colocar como pergunta técnica (permite marcar a melhor resposta)',
+    pv_public:'🌍 Público (todos os farmacêuticos)', pv_followers:'👥 Só os meus seguidores',
+    co_follow_label:'Seguir alguém (@handle)', co_follow_btn:'Seguir',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -757,31 +775,31 @@ async function mainScreen() {
     </div>
     <div id="socialCompose" style="display:none">
       <div class="card">
-        <label>Was gibt's Neues? (kurzer Fachbeitrag)</label>
-        <textarea id="pb" placeholder="Bei uns gerade Engpass bei Amoxicillin — wer hat noch Bestand?"></textarea>
-        <input id="psrc" placeholder="🔗 Quelle (Link, optional – z.B. BASG/Kammer)" style="margin-top:6px">
+        <label data-i18n="co_label">Was gibt's Neues? (kurzer Fachbeitrag)</label>
+        <textarea id="pb" data-i18n-ph="co_ph" placeholder="Bei uns gerade Engpass bei Amoxicillin — wer hat noch Bestand?"></textarea>
+        <input id="psrc" data-i18n-ph="co_src_ph" placeholder="🔗 Quelle (Link, optional – z.B. BASG/Kammer)" style="margin-top:6px">
         <div class="row" style="margin-top:6px">
-          <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px">📷 Bild<input type="file" id="pimg" accept="image/*" style="display:none"></label>
+          <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px"><span data-i18n="co_img">📷 Bild</span><input type="file" id="pimg" accept="image/*" style="display:none"></label>
           <span class="muted" id="pimgname" style="font-size:13px"></span>
-          <button class="ghost small" id="pimgclear" style="display:none">✕ entfernen</button>
+          <button class="ghost small" id="pimgclear" data-i18n="co_img_clear" style="display:none">✕ entfernen</button>
         </div>
         <img id="pimgprev" style="display:none;max-width:100%;border-radius:8px;margin-top:6px" />
         <label style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer;font-size:14px">
-          <input type="checkbox" id="pfrage" style="width:auto;min-height:0"> ❓ Als Fachfrage stellen (beste Antwort auswählbar)
+          <input type="checkbox" id="pfrage" style="width:auto;min-height:0"> <span data-i18n="co_question">❓ Als Fachfrage stellen (beste Antwort auswählbar)</span>
         </label>
         <div class="row" style="margin-top:8px">
           <select id="pv" style="max-width:220px">
-            <option value="public">🌍 Öffentlich (alle Apotheker)</option>
-            <option value="followers">👥 Nur meine Follower</option>
+            <option value="public" data-i18n="pv_public">🌍 Öffentlich (alle Apotheker)</option>
+            <option value="followers" data-i18n="pv_followers">👥 Nur meine Follower</option>
           </select>
           <span class="sp" style="flex:1"></span>
-          <button id="pgo">Posten</button>
+          <button id="pgo" data-i18n="sc_post_send">Posten</button>
         </div>
         <div class="err" id="perr"></div>
       </div>
       <div class="card">
-        <label>Jemandem folgen (@Handle)</label>
-        <div class="row"><input id="fh" placeholder="ben_mayer"><button class="ghost small" id="fgo">Folgen</button></div>
+        <label data-i18n="co_follow_label">Jemandem folgen (@Handle)</label>
+        <div class="row"><input id="fh" placeholder="ben_mayer"><button class="ghost small" id="fgo" data-i18n="co_follow_btn">Folgen</button></div>
         <div class="err" id="ferr"></div>
       </div>
     </div>

@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3p: Beitrags-Composer mehrsprachig (DE/EN/PT):** Das
+>   Verfassen-Formular (Beitrag/Fachfrage, Quelle, Bild, Sichtbarkeit öffentlich/Follower, Posten)
+>   und die „Jemandem folgen"-Karte sind jetzt übersetzt — via `data-i18n`/`data-i18n-ph`, also
+>   **live beim Sprachwechsel** ohne Neuladen. (Browser verifiziert: Composer auf „Mein Feed"
+>   komplett portugiesisch.) Offen: die gerenderten Beitragskarten (`postCard`).
 > - 🌍 **Länderübergreifend — Schritt 3o: Austausch-Einträge mehrsprachig — 5. Reiter komplett:**
 >   Die einzelnen `exchangeCard`-Karten sind jetzt DE/EN/PT: Biete/Suche-Badge, Erledigt-Status,
 >   Mengen-Label, „von {Name}", Kontaktieren/Erledigt/Wieder-öffnen/Löschen. Damit sind **alle
