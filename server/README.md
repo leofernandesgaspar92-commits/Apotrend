@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — Empty-States komplettiert (Rabatte/Hashtag/Follower):** Die
+>   `emptyState()`-Komponente nun auch bei leeren Rabatt-Aktionen (🏷️), leerem Hashtag-Thema
+>   (🏷️ mit `#tag`) und leeren Follower-/Folge-Listen (👥). Damit tragen alle prominenten
+>   Vollseiten-Leerzustände dieselbe freundliche Optik; DM-Postfach bleibt bewusst als
+>   Inline-Hinweis (Karte-in-Karte vermieden). (Browser verifiziert; 8-Reiter-Smoke-Test grün.)
 > - ✅ **Qualitäts-Audit — Empty-States ausgeweitet (Suche/Merkliste/Austausch):** Die
 >   `emptyState()`-Komponente nun auch bei: Suche ohne Treffer (🔍 mit Suchbegriff),
 >   leerer Merkliste (🔖), Austausch „Meine" leer (🗂️ + CTA „Eintrag anlegen" → fokussiert

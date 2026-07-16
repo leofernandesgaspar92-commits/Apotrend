@@ -1372,7 +1372,7 @@ async function loadRabatte() {
     feed.innerHTML = '';
     feed.appendChild(provenanceLegend());
     feed.appendChild(el('<div class="card muted" style="margin-bottom:10px">🏷️ <b>Top-10 Rabatt-Aktionen</b> · höchster Rabatt oben · nur laufende Aktionen · 📌 Referenzdaten</div>'));
-    if (!d.rabatte.length) { feed.appendChild(el('<div class="card muted">Derzeit keine laufenden Aktionen.</div>')); return; }
+    if (!d.rabatte.length) { feed.appendChild(emptyState({ icon:'🏷️', title:'Derzeit keine laufenden Aktionen', text:'Aktuell sind keine Rabatt-Aktionen hinterlegt. Schau später wieder vorbei.' })); return; }
     const bar = el(`<div class="card">
       <div class="row" style="gap:6px"><input data-q placeholder="🔎 Präparat, Wirkstoff oder Lieferant suchen…" value="${esc(rabattQuery)}" style="flex:1"></div>
       <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center">
@@ -1559,7 +1559,7 @@ async function openHashtag(tag) {
     const head = el(`<div class="card"><div class="row"><b>🏷️ #${esc(d.tag)}</b><span class="sp" style="flex:1"></span><span class="muted">${d.posts.length} Beiträge</span><button class="ghost small" data-back style="margin-left:10px">← zurück</button></div></div>`);
     head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
     feed.appendChild(head);
-    if (!d.posts.length) feed.appendChild(el('<div class="card muted">Noch keine Beiträge zu diesem Thema.</div>'));
+    if (!d.posts.length) feed.appendChild(emptyState({ icon:'🏷️', title:'Noch keine Beiträge zu diesem Thema', text:`Sei der/die Erste und schreibe etwas mit #${d.tag}.` }));
     d.posts.forEach(p => feed.appendChild(postCard(p)));
   } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
 }
@@ -1996,7 +1996,9 @@ async function openFollowList(handle, which) {
     <div class="muted">${which==='followers'?'Wer @'+esc(d.handle)+' folgt':'Wem @'+esc(d.handle)+' folgt'} · ${d.people.length}</div></div>`);
   head.querySelector('[data-back]').onclick = () => openProfile(handle);
   feed.appendChild(head);
-  if (!d.people.length) { feed.appendChild(el(`<div class="card muted">${which==='followers'?'Noch keine Follower.':'Folgt noch niemandem.'}</div>`)); return; }
+  if (!d.people.length) { feed.appendChild(which==='followers'
+    ? emptyState({ icon:'👥', title:'Noch keine Follower', text:'Diesem Profil folgt noch niemand.' })
+    : emptyState({ icon:'👥', title:'Folgt noch niemandem', text:'Dieses Profil folgt aktuell keinen Kolleg:innen.' })); return; }
   d.people.forEach(p => {
     const specs = (p.specializations||[]).map(s=>`<span class="spec">${esc(s)}</span>`).join(' ');
     const card = el(`<div class="card"><div class="row" style="align-items:baseline">
