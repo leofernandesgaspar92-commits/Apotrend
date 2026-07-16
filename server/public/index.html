@@ -429,14 +429,17 @@ async function loadOverview() {
   const hello = me ? (me.display_name || '@'+me.handle) : '';
   const firstName = hello ? (hello.split(/\s+/).find(w => !/\.$/.test(w)) || hello) : '';
   // Kennzahlen-Kacheln
-  const tile = (icon, num, label, col, go) => `<div class="ovtile" data-go="${go||''}" style="flex:1;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;${go?'cursor:pointer':''}">
+  const tile = (icon, num, label, col, go, filter) => `<div class="ovtile" data-go="${go||''}" data-filter="${filter||''}" style="flex:1;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;${go?'cursor:pointer':''}">
     <div style="font-size:26px;font-weight:800;color:${col}">${icon} ${num}</div>
     <div class="muted" style="font-size:13px;margin-top:2px">${esc(label)}</div></div>`;
   const tiles = [
     tile('🔴', d.shortages.kritisch, 'kritische Engpässe', '#c0392b', 'shortages'),
+  ];
+  if (d.shortages.antibiotika) tiles.push(tile('🧫', d.shortages.antibiotika, 'Antibiotika-Engpässe', '#0b7f28', 'shortages', 'antibiotika'));
+  tiles.push(
     tile('📦', d.exchange.biete, 'Angebote im Austausch', '#0b7f28', 'exchange'),
     tile('🔎', d.exchange.suche, 'Gesuche im Austausch', '#b26a00', 'exchange'),
-  ];
+  );
   if (d.savings && d.savings.count) tiles.push(tile('💶', '€ ' + Number(d.savings.total_abs).toFixed(2), 'Sparpotenzial je Packung', '#0b7f28', 'prices'));
   if (d.rabatte_expiring && d.rabatte_expiring.count) tiles.push(tile('⏳', d.rabatte_expiring.count, 'Aktionen laufen bald ab', '#c77700', 'rabatte'));
   tiles.push(tile('🔔', d.notifications.unread, 'neue Benachrichtigungen', '#2952cc', ''));
@@ -448,7 +451,7 @@ async function loadOverview() {
     </div>
     <div class="row" style="margin-top:12px"><button class="ghost small" id="ov_bm">🔖 Meine Merkliste öffnen</button></div>
   </div>`);
-  head.querySelectorAll('.ovtile[data-go]').forEach(t => { if (t.dataset.go) t.onclick = () => goTab(t.dataset.go); });
+  head.querySelectorAll('.ovtile[data-go]').forEach(t => { if (t.dataset.go) t.onclick = () => { if (t.dataset.filter) shortageFilter = t.dataset.filter; goTab(t.dataset.go); }; });
   head.querySelectorAll('.ovtile').forEach(t => { if (!t.dataset.go) t.onclick = () => document.getElementById('btnNotif').click(); });
   head.querySelector('#ov_bm').onclick = openBookmarks;
   feed.appendChild(head);

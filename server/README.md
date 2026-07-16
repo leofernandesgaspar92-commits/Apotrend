@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Kachel „Antibiotika-Engpässe" auf der Startübersicht:** Zeigt (wenn > 0) die Zahl
+>   aktiver Antibiotika-Engpässe als KPI-Kachel; Klick springt direkt in den Engpass-Reiter
+>   mit voraktiviertem 🧫-Filter. Verbindet die AMR-Ausrichtung mit dem Dashboard.
+>   (`overview` erhält `amr` injiziert, neues Feld `shortages.antibiotika`; Tile-Deep-Link
+>   mit Filter; Test + im Browser verifiziert.)
 > - ✅ **Engpass-Filter „🧫 Antibiotika":** Neuer Filter-Chip im Lieferengpässe-Reiter zeigt
 >   nur Antibiotika-Engpässe (nutzt das `is_antibiotic`-Feld) — passend zur
 >   Stewardship-Ausrichtung, damit AMR-relevante Engpässe schnell auffindbar sind. Wirkt mit

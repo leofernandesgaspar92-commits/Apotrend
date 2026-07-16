@@ -13,6 +13,7 @@ import { createRabatteService } from '../src/services/rabatte.js';
 import { createExchangeService } from '../src/services/exchange.js';
 import { createPricesService } from '../src/services/prices.js';
 import { createOverviewService } from '../src/services/overview.js';
+import { createAmrService } from '../src/services/amr.js';
 
 function setup() {
   const repo = createMemoryRepo();
@@ -22,7 +23,7 @@ function setup() {
   const rabatte = createRabatteService(createRabatteRepo({ today: '2026-07-07' }), social);
   const exchange = createExchangeService(createExchangeRepo(), social, repo);
   const prices = createPricesService(createPricesRepo(), social);
-  const overview = createOverviewService({ shortages, exchange, social, rabatte, prices });
+  const overview = createOverviewService({ shortages, exchange, social, rabatte, prices, amr: createAmrService() });
   const A = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'A' }, owner: { name: 'Anna', email: 'a@a.at', password: 'geheim123' } });
   social.createProfile(A.user.id, { handle: 'anna', displayName: 'Anna' });
   return { overview, exchange, shortages, a: A.user.id };
@@ -41,6 +42,9 @@ test('Übersicht bündelt Engpässe, Austausch, Benachrichtigungen, Top-Rabatt',
   assert.ok('unread' in o.notifications);
   assert.ok(o.top_rabatt && o.top_rabatt.rabatt_pct > 0);
   assert.ok(o.savings && o.savings.total_abs > 0, 'Sparpotenzial aus Preisdaten');
+  // Antibiotika-Engpässe aus dem Seed (Amoxicillin, Clarithromycin sind kritisch).
+  assert.ok(o.shortages.antibiotika >= 2, 'aktive Antibiotika-Engpässe gezählt');
+  assert.ok(o.shortages.antibiotika <= o.shortages.total, 'nicht mehr als alle Engpässe');
 });
 
 test('watch_deals: beobachtete Wirkstoffe mit laufender Aktion', () => {

@@ -55,8 +55,8 @@ const rabatte = createRabatteService(rabatteRepo, social);
 const exchangeRepo = createExchangeRepo();
 const exchange = createExchangeService(exchangeRepo, social, repo, shortagesRepo);
 const search = createSearchService({ social, shortagesRepo, pricesRepo, rabatteRepo, exchange });
-const overview = createOverviewService({ shortages, exchange, social, rabatte, prices });
 const amr = createAmrService();
+const overview = createOverviewService({ shortages, exchange, social, rabatte, prices, amr });
 const patientInfo = createPatientInfoService();
 
 if (restoring) {

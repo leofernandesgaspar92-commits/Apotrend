@@ -2,11 +2,13 @@
 // Apothekerin/einen Apotheker gerade zählt — kritische Engpässe, offene Angebote/
 // Gesuche, ungelesene Benachrichtigungen/Nachrichten, Top-Rabatt. Reine Komposition
 // bereits getesteter Dienste.
-export function createOverviewService({ shortages, exchange, social, rabatte, prices }) {
+export function createOverviewService({ shortages, exchange, social, rabatte, prices, amr = null }) {
   return {
     forUser(userId) {
       const sh = shortages.listWithCounts(userId);
       const kritisch = sh.filter(s => s.status === 'kritisch');
+      // Aktive Antibiotika-Engpässe (nicht "wieder verfügbar") — für die AMR-Kachel.
+      const antibiotika = amr ? sh.filter(s => s.status !== 'verfuegbar' && amr.isAntibiotic(s.wirkstoff)).length : 0;
       const ex = exchange.list(userId, {}); // offene Einträge
       const topRabatte = rabatte.top10(userId);
       const topR = topRabatte[0] || null;
@@ -43,7 +45,7 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
         }));
 
       return {
-        shortages: { kritisch: kritisch.length, total: sh.length, top: kritisch.slice(0, 3) },
+        shortages: { kritisch: kritisch.length, total: sh.length, antibiotika, top: kritisch.slice(0, 3) },
         watchlist: { total: watchlist.length, items: watchlist, alerts: watchlist.filter(w => w.status === 'kritisch' || w.status === 'eingeschraenkt').length },
         watch_deals: watchDeals,
         watch_offers: watchOffers,
