@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3n: Biete/Suche-Reiter (Formular + Filter) mehrsprachig:**
+>   Das Bestandsaustausch-Formular (Biete/Suche, alle Felder, Foto, Veröffentlichen, Kontakt-
+>   Hinweis), die Filterleiste und alle Leerzustände sind jetzt DE/EN/PT. Ortsangaben von
+>   AT-Beispielen auf generische („Region", PLZ/Stadt) umgestellt. (Browser verifiziert:
+>   „🔄 Troca de stock…", Filter & Leerzustand auf Portugiesisch, keine JS-Fehler.) Offen: die
+>   einzelnen Austausch-Einträge (`exchangeCard`).
 > - 🌍 **Länderübergreifend — Schritt 3m: Rabatte-Reiter komplett mehrsprachig (DE/EN/PT):** Kopf,
 >   Filter (Alle/Bald ablaufend), Suche, Leerzustände und die einzelnen Rabatt-Karten (Ersparnis,
 >   Mindestabnahme, „Beste Aktion für X", Ablauf-Countdown, Posten-Feld) sind übersetzt — mit

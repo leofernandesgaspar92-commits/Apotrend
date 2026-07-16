@@ -268,6 +268,19 @@ const I18N = {
     rb_cheaper_hint:'💡 Für {w} läuft eine günstigere Aktion — siehe ⭐ in der Liste.',
     rb_exp_today:'läuft heute ab', rb_exp_one:'nur noch 1 Tag',
     rb_post_ph:'z.B. Lohnt sich die Aktion bei {supplier}?',
+    ex_form_title:'🔄 Bestandsaustausch — Biete Überbestand oder Suche dringend',
+    ex_offer:'📦 Ich biete', ex_seek:'🔎 Ich suche',
+    ex_bez_ph:'Präparat / Wirkstoff, z.B. Amoxicillin 1000 mg', ex_menge_ph:'Menge (z.B. 20 Packungen)',
+    ex_ort_ph:'Ort (z.B. Postleitzahl, Stadt)', ex_bl_ph:'Region wählen (für Umkreis-Suche)…',
+    ex_note_ph:'Hinweis (optional)', ex_photo:'📷 Foto (z.B. Charge/Ablauf)',
+    ex_publish:'Eintrag veröffentlichen',
+    ex_contact:'Kontakt läuft über Direktnachricht — keine öffentlichen Kontaktdaten.',
+    ex_q_ph:'Nach Präparat filtern…', ex_filter_btn:'Filtern',
+    ex_offers:'📦 Angebote', ex_seeks:'🔎 Gesuche', ex_mine:'🗂️ Meine', ex_all_bl:'📍 Alle Regionen',
+    ex_mine_empty_t:'Noch keine eigenen Einträge', ex_mine_empty_s:'Du hast bisher nichts angeboten oder gesucht.',
+    ex_new:'Eintrag anlegen', ex_search_empty_t:'Nichts zu „{q}"',
+    ex_search_empty_s:'Keine offenen Biete-/Suche-Einträge für diesen Begriff. Filter zurücksetzen oder anderen Begriff probieren.',
+    ex_empty_t:'Noch keine offenen Einträge', ex_empty_s:'Biete Überbestand an oder suche dringend Benötigtes — sei der/die Erste.',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -361,6 +374,19 @@ const I18N = {
     rb_cheaper_hint:'💡 A cheaper deal is running for {w} — see ⭐ in the list.',
     rb_exp_today:'ends today', rb_exp_one:'only 1 day left',
     rb_post_ph:'e.g. is the deal at {supplier} worth it?',
+    ex_form_title:'🔄 Stock exchange — offer surplus or seek urgently needed items',
+    ex_offer:'📦 I offer', ex_seek:'🔎 I seek',
+    ex_bez_ph:'Product / substance, e.g. Amoxicillin 1000 mg', ex_menge_ph:'Quantity (e.g. 20 packs)',
+    ex_ort_ph:'Location (e.g. postcode, city)', ex_bl_ph:'Choose region (for nearby search)…',
+    ex_note_ph:'Note (optional)', ex_photo:'📷 Photo (e.g. batch/expiry)',
+    ex_publish:'Publish entry',
+    ex_contact:'Contact is via direct message — no public contact details.',
+    ex_q_ph:'Filter by product…', ex_filter_btn:'Filter',
+    ex_offers:'📦 Offers', ex_seeks:'🔎 Requests', ex_mine:'🗂️ Mine', ex_all_bl:'📍 All regions',
+    ex_mine_empty_t:'No entries of your own yet', ex_mine_empty_s:'You have not offered or sought anything so far.',
+    ex_new:'Create entry', ex_search_empty_t:'Nothing for “{q}”',
+    ex_search_empty_s:'No open offer/request entries for this term. Reset the filter or try another term.',
+    ex_empty_t:'No open entries yet', ex_empty_s:'Offer surplus or seek urgently needed items — be the first.',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -454,6 +480,19 @@ const I18N = {
     rb_cheaper_hint:'💡 Há uma promoção mais barata para {w} — veja ⭐ na lista.',
     rb_exp_today:'termina hoje', rb_exp_one:'falta 1 dia',
     rb_post_ph:'ex. vale a pena a promoção em {supplier}?',
+    ex_form_title:'🔄 Troca de stock — ofereça excedente ou procure algo urgente',
+    ex_offer:'📦 Ofereço', ex_seek:'🔎 Procuro',
+    ex_bez_ph:'Produto / substância, ex. Amoxicilina 1000 mg', ex_menge_ph:'Quantidade (ex. 20 embalagens)',
+    ex_ort_ph:'Local (ex. código postal, cidade)', ex_bl_ph:'Escolher região (procura por proximidade)…',
+    ex_note_ph:'Observação (opcional)', ex_photo:'📷 Foto (ex. lote/validade)',
+    ex_publish:'Publicar entrada',
+    ex_contact:'O contacto é por mensagem direta — sem dados de contacto públicos.',
+    ex_q_ph:'Filtrar por produto…', ex_filter_btn:'Filtrar',
+    ex_offers:'📦 Ofertas', ex_seeks:'🔎 Procuras', ex_mine:'🗂️ Minhas', ex_all_bl:'📍 Todas as regiões',
+    ex_mine_empty_t:'Ainda sem entradas próprias', ex_mine_empty_s:'Até agora não ofereceu nem procurou nada.',
+    ex_new:'Criar entrada', ex_search_empty_t:'Nada para “{q}”',
+    ex_search_empty_s:'Sem entradas de oferta/procura abertas para este termo. Reponha o filtro ou tente outro termo.',
+    ex_empty_t:'Ainda sem entradas abertas', ex_empty_s:'Ofereça excedente ou procure algo urgente — seja o primeiro.',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -1669,25 +1708,25 @@ async function loadExchange() {
   feed.innerHTML = '';
   // Formular zum Anlegen
   const form = el(`<div class="card">
-    <label>🔄 Bestandsaustausch — Biete Überbestand oder Suche dringend</label>
+    <label>${esc(t('ex_form_title'))}</label>
     <div class="row" style="margin-top:6px">
-      <select id="ex_kind" style="max-width:150px"><option value="biete">📦 Ich biete</option><option value="suche">🔎 Ich suche</option></select>
-      <input id="ex_bez" placeholder="Präparat / Wirkstoff, z.B. Amoxicillin 1000 mg" style="flex:1">
+      <select id="ex_kind" style="max-width:150px"><option value="biete">${esc(t('ex_offer'))}</option><option value="suche">${esc(t('ex_seek'))}</option></select>
+      <input id="ex_bez" placeholder="${esc(t('ex_bez_ph'))}" style="flex:1">
     </div>
     <div class="row" style="margin-top:6px">
-      <input id="ex_menge" placeholder="Menge (z.B. 20 Packungen)">
-      <input id="ex_ort" placeholder="Ort (z.B. 1010 Wien)">
+      <input id="ex_menge" placeholder="${esc(t('ex_menge_ph'))}">
+      <input id="ex_ort" placeholder="${esc(t('ex_ort_ph'))}">
     </div>
-    <select id="ex_bl" style="margin-top:6px"><option value="">Bundesland wählen (für Umkreis-Suche)…</option>${blOptions((me&&me.bundesland)||'')}</select>
-    <input id="ex_note" placeholder="Hinweis (optional)" style="margin-top:6px">
+    <select id="ex_bl" style="margin-top:6px"><option value="">${esc(t('ex_bl_ph'))}</option>${blOptions((me&&me.bundesland)||'')}</select>
+    <input id="ex_note" placeholder="${esc(t('ex_note_ph'))}" style="margin-top:6px">
     <div class="row" style="margin-top:6px">
-      <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px">📷 Foto (z.B. Charge/Ablauf)<input type="file" id="ex_img" accept="image/*" style="display:none"></label>
+      <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px">${esc(t('ex_photo'))}<input type="file" id="ex_img" accept="image/*" style="display:none"></label>
       <span class="muted" id="ex_imgname" style="font-size:13px"></span>
       <button class="ghost small" id="ex_imgclear" style="display:none">✕</button>
     </div>
     <img id="ex_imgprev" style="display:none;max-width:100%;border-radius:8px;margin-top:6px" />
-    <div class="row" style="margin-top:8px"><button id="ex_go">Eintrag veröffentlichen</button><span class="err" id="ex_err" style="margin-left:10px"></span></div>
-    <div class="muted" style="font-size:13px;margin-top:6px">Kontakt läuft über Direktnachricht — keine öffentlichen Kontaktdaten.</div>
+    <div class="row" style="margin-top:8px"><button id="ex_go">${esc(t('ex_publish'))}</button><span class="err" id="ex_err" style="margin-left:10px"></span></div>
+    <div class="muted" style="font-size:13px;margin-top:6px">${esc(t('ex_contact'))}</div>
   </div>`);
   feed.appendChild(form);
   let exImage = null;
@@ -1708,13 +1747,13 @@ async function loadExchange() {
   };
   // Filter + Textsuche
   const filt = el(`<div class="card" style="padding:8px 12px">
-    <div class="row"><input id="ex_q" placeholder="Nach Präparat filtern…" value="${esc(exchangeQuery)}"><button class="ghost small" id="ex_qgo">Filtern</button>${exchangeQuery?'<button class="ghost small" id="ex_qclear">✕</button>':''}</div>
+    <div class="row"><input id="ex_q" placeholder="${esc(t('ex_q_ph'))}" value="${esc(exchangeQuery)}"><button class="ghost small" id="ex_qgo">${esc(t('ex_filter_btn'))}</button>${exchangeQuery?'<button class="ghost small" id="ex_qclear">✕</button>':''}</div>
     <div class="reacts" style="margin-top:6px">
-      <button class="${!exchangeMine&&exchangeFilter===''?'':'ghost '}small" data-f="">Alle</button>
-      <button class="${!exchangeMine&&exchangeFilter==='biete'?'':'ghost '}small" data-f="biete">📦 Angebote</button>
-      <button class="${!exchangeMine&&exchangeFilter==='suche'?'':'ghost '}small" data-f="suche">🔎 Gesuche</button>
-      <button class="${exchangeMine?'':'ghost '}small" data-mine>🗂️ Meine</button>
-      <select id="ex_blf" class="small" style="margin-left:auto" ${exchangeMine?'disabled':''}><option value="">📍 Alle Bundesländer</option>${blOptions(exchangeBL)}</select>
+      <button class="${!exchangeMine&&exchangeFilter===''?'':'ghost '}small" data-f="">${esc(t('sh_f_all'))}</button>
+      <button class="${!exchangeMine&&exchangeFilter==='biete'?'':'ghost '}small" data-f="biete">${esc(t('ex_offers'))}</button>
+      <button class="${!exchangeMine&&exchangeFilter==='suche'?'':'ghost '}small" data-f="suche">${esc(t('ex_seeks'))}</button>
+      <button class="${exchangeMine?'':'ghost '}small" data-mine>${esc(t('ex_mine'))}</button>
+      <select id="ex_blf" class="small" style="margin-left:auto" ${exchangeMine?'disabled':''}><option value="">${esc(t('ex_all_bl'))}</option>${blOptions(exchangeBL)}</select>
     </div></div>`);
   filt.querySelectorAll('[data-f]').forEach(btn => btn.onclick = () => { exchangeMine=false; exchangeFilter = btn.dataset.f; loadExchange(); });
   filt.querySelector('[data-mine]').onclick = () => { exchangeMine = !exchangeMine; loadExchange(); };
@@ -1728,7 +1767,7 @@ async function loadExchange() {
     let d;
     if (exchangeMine) {
       d = await api('GET','/api/exchange/mine');
-      if (!d.entries.length) { feed.appendChild(emptyState({ icon:'🗂️', title:'Noch keine eigenen Einträge', text:'Du hast bisher nichts angeboten oder gesucht.', cta:{ label:'Eintrag anlegen', onClick:()=>{ const b=document.getElementById('ex_bez'); if(b){ b.focus(); b.scrollIntoView({behavior:'smooth',block:'center'}); } } } })); return; }
+      if (!d.entries.length) { feed.appendChild(emptyState({ icon:'🗂️', title:t('ex_mine_empty_t'), text:t('ex_mine_empty_s'), cta:{ label:t('ex_new'), onClick:()=>{ const b=document.getElementById('ex_bez'); if(b){ b.focus(); b.scrollIntoView({behavior:'smooth',block:'center'}); } } } })); return; }
     } else {
       const params = new URLSearchParams();
       if (exchangeFilter) params.set('kind', exchangeFilter);
@@ -1736,8 +1775,8 @@ async function loadExchange() {
       if (exchangeBL) params.set('bundesland', exchangeBL);
       d = await api('GET','/api/exchange'+(params.toString()?'?'+params.toString():''));
       if (!d.entries.length) { feed.appendChild(exchangeQuery
-        ? emptyState({ icon:'🔍', title:`Nichts zu „${exchangeQuery}"`, text:'Keine offenen Biete-/Suche-Einträge für diesen Begriff. Filter zurücksetzen oder anderen Begriff probieren.' })
-        : emptyState({ icon:'🔄', title:'Noch keine offenen Einträge', text:'Biete Überbestand an oder suche dringend Benötigtes — sei der/die Erste.', cta:{ label:'Eintrag anlegen', onClick:()=>{ const b=document.getElementById('ex_bez'); if(b){ b.focus(); b.scrollIntoView({behavior:'smooth',block:'center'}); } } } })); return; }
+        ? emptyState({ icon:'🔍', title:ti('ex_search_empty_t',{q:exchangeQuery}), text:t('ex_search_empty_s') })
+        : emptyState({ icon:'🔄', title:t('ex_empty_t'), text:t('ex_empty_s'), cta:{ label:t('ex_new'), onClick:()=>{ const b=document.getElementById('ex_bez'); if(b){ b.focus(); b.scrollIntoView({behavior:'smooth',block:'center'}); } } } })); return; }
     }
     d.entries.forEach(e => feed.appendChild(exchangeCard(e)));
   } catch(e){ feed.appendChild(errorState(e.message, loadTab)); }
