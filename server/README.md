@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — grüner Akzenttext auf Token (Dark-Kontrast):** Alle inline
+>   `color:#0b7f28` (16 Stellen: Sparpotenzial, „günstigster", Quell-/CSV-Links, Badges …)
+>   → `color:var(--ok-fg)`. Im Dark Mode jetzt helles, gut lesbares Grün (#46d67a) statt des
+>   kontrastarmen dunklen `#0b7f28` auf dunklen Karten; Light Mode byte-gleich
+>   (`--ok-fg`=`#0b7f28`). (Im Browser Dark verifiziert; Screenshot bestätigt Lesbarkeit.)
 > - ✅ **Qualitäts-Audit — Tastatur-Bedienbarkeit (a11y):** Viele klickbare Elemente waren
 >   `div`/`span.clickable` mit `onclick`, aber **ohne** `tabindex`/`role`/Tastatur-Handler —
 >   für Tastatur- und Screenreader-Nutzer:innen unerreichbar. Neu: zentrale Aufwertung per

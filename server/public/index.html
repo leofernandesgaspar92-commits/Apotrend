@@ -493,7 +493,7 @@ async function loadOverview() {
   if (d.watch_deals && d.watch_deals.length) {
     const c = el(`<div class="card"><div class="row"><b>🏷️ Aktionen zu deinen Wirkstoffen</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>Alle Rabatte</button></div>
       <div class="muted" style="font-size:13px;margin:2px 0 6px">Für diese von dir beobachteten Wirkstoffe läuft gerade eine Aktion:</div>
-      ${d.watch_deals.map(w=>`<div class="comment">🏷️ <b>${esc(w.wirkstoff)}</b> — ${esc(w.supplier)} <span style="color:#0b7f28;font-weight:700">−${w.rabatt_pct}%</span> (€ ${Number(w.aktionspreis).toFixed(2)})${w.expiring_soon?` · <b style="color:${w.days_left<=3?'#c0392b':'#c77700'}">nur noch ${w.days_left<=0?'heute':w.days_left+' Tage'}</b>`:''}</div>`).join('')}</div>`);
+      ${d.watch_deals.map(w=>`<div class="comment">🏷️ <b>${esc(w.wirkstoff)}</b> — ${esc(w.supplier)} <span style="color:var(--ok-fg);font-weight:700">−${w.rabatt_pct}%</span> (€ ${Number(w.aktionspreis).toFixed(2)})${w.expiring_soon?` · <b style="color:${w.days_left<=3?'#c0392b':'#c77700'}">nur noch ${w.days_left<=0?'heute':w.days_left+' Tage'}</b>`:''}</div>`).join('')}</div>`);
     c.querySelector('[data-all]').onclick = () => goTab('rabatte');
     feed.appendChild(c);
   }
@@ -502,7 +502,7 @@ async function loadOverview() {
   if (d.watch_offers && d.watch_offers.length) {
     const c = el(`<div class="card"><div class="row"><b>🔄 Bezugsquellen zu deinen Wirkstoffen</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>Zum Austausch</button></div>
       <div class="muted" style="font-size:13px;margin:2px 0 6px">Für diese beobachteten Wirkstoffe bieten Apotheken gerade Bestand an:</div>
-      ${d.watch_offers.map(w=>`<div class="comment clickable" data-w="${esc(w.wirkstoff)}">📦 <b>${esc(w.wirkstoff)}</b> — <span style="color:#0b7f28;font-weight:700">${w.offers_count} ${w.offers_count>1?'Angebote':'Angebot'}</span> im Bestandsaustausch</div>`).join('')}</div>`);
+      ${d.watch_offers.map(w=>`<div class="comment clickable" data-w="${esc(w.wirkstoff)}">📦 <b>${esc(w.wirkstoff)}</b> — <span style="color:var(--ok-fg);font-weight:700">${w.offers_count} ${w.offers_count>1?'Angebote':'Angebot'}</span> im Bestandsaustausch</div>`).join('')}</div>`);
     c.querySelector('[data-all]').onclick = () => goTab('exchange');
     c.querySelectorAll('[data-w]').forEach(row => row.onclick = () => {
       exchangeQuery = row.dataset.w; exchangeFilter = 'biete'; exchangeBL = ''; exchangeMine = false;
@@ -920,7 +920,7 @@ function shortageCard(s) {
     <div class="post-body">${esc(s.bezeichnung)}</div>
     <div class="muted">${s.grund?esc(s.grund)+' · ':''}gemeldet ${esc(s.gemeldet_am||'—')}</div>
     ${s.voraussichtlich_bis&&s.status!=='verfuegbar'?`<div class="muted" style="font-size:13px;margin-top:2px">🗓️ Voraussichtlich wieder lieferbar bis <b>${esc(fmtDateDe(s.voraussichtlich_bis))}</b></div>`:''}
-    ${s.is_antibiotic?`<div style="margin-top:6px;font-size:13px"><span style="color:#0b7f28;font-weight:600">🧫 Antibiotikum</span> — <span class="clickable" data-amr style="color:#0b7f28;text-decoration:underline">Stewardship-Infos & Quellen</span> <span class="muted">(keine Substitutionsempfehlung ohne Quelle)</span></div>`:''}
+    ${s.is_antibiotic?`<div style="margin-top:6px;font-size:13px"><span style="color:var(--ok-fg);font-weight:600">🧫 Antibiotikum</span> — <span class="clickable" data-amr style="color:var(--ok-fg);text-decoration:underline">Stewardship-Infos & Quellen</span> <span class="muted">(keine Substitutionsempfehlung ohne Quelle)</span></div>`:''}
     ${s.provenance==='community'&&s.reporter?`<div class="muted" style="font-size:13px;margin-top:2px">👥 Gemeldet von <b>@${esc(s.reporter.handle)}</b>${s.reporter.verified?' <span class="verified">✔</span>':''}${s.confirm_count?` · <b style="color:#c0392b">${s.confirm_count}</b> weitere Apotheke${s.confirm_count>1?'n':''} bestätigt`:''}</div>`:''}
     <div class="reacts">
       <button data-about>💬 ${s.post_count||0} Apotheker haben dazu gepostet</button>
@@ -1049,7 +1049,7 @@ async function loadPrices() {
       const s = d.savings;
       const head = el(`<div class="card">
         <div class="row"><b>💶 Sparpotenzial beim Einkauf</b></div>
-        <div style="font-size:22px;font-weight:800;color:#0b7f28;margin-top:4px">bis zu € ${Number(s.total_abs).toFixed(2)} pro Packung</div>
+        <div style="font-size:22px;font-weight:800;color:var(--ok-fg);margin-top:4px">bis zu € ${Number(s.total_abs).toFixed(2)} pro Packung</div>
         <div class="muted" style="font-size:13px">wenn du bei ${s.count} Präparat${s.count>1?'en':''} jeweils den günstigsten Großhändler wählst.</div>
         ${s.top.length?`<div style="margin-top:8px">${s.top.map(t=>`<div class="comment" style="font-size:14px">💰 <b>${esc(t.bezeichnung)}</b>: −€ ${Number(t.saving_abs).toFixed(2)} (−${t.saving_pct}%) bei <b>${esc(t.best_supplier)}</b></div>`).join('')}</div>`:''}
       </div>`);
@@ -1130,7 +1130,7 @@ function exportShortagesCsv(list) {
   downloadCsv('apotrend-engpaesse', ['Wirkstoff', 'Präparat', 'Status', 'Grund', 'gemeldet am', 'voraussichtlich wieder lieferbar bis', 'Antibiotikum', 'Herkunft', 'Melder', 'beobachtet'], rows);
 }
 
-function trendStr(t) { if (t>0) return `<span style="color:#c0392b">▲ +${t}%</span>`; if (t<0) return `<span style="color:#0b7f28">▼ ${t}%</span>`; return '<span class="muted">±0%</span>'; }
+function trendStr(t) { if (t>0) return `<span style="color:#c0392b">▲ +${t}%</span>`; if (t<0) return `<span style="color:var(--ok-fg)">▼ ${t}%</span>`; return '<span class="muted">±0%</span>'; }
 
 // Kompakte Preisverlaufs-Linie (Sparkline) aus den letzten Preisen. Einzelserie,
 // dünne 2px-Linie; Farbe nach Netto-Richtung (steigend rot / fallend grün) — die
@@ -1164,9 +1164,9 @@ function priceGroup(g) {
     <div class="post-author">${esc(g.bezeichnung)} ${g.wirkstoff?`<span class="handle clickable" data-wirkstoff="${esc(g.wirkstoff)}" title="Alles zu ${esc(g.wirkstoff)}">${esc(g.wirkstoff)}</span>`:''}</div>
     <div class="muted" style="margin:2px 0 8px">Preisvergleich (AEP) · günstigster oben · 📌 Referenzdaten</div>
     ${rose?`<div style="display:inline-block;background:#fdece9;color:#c0392b;border:1px solid #f2c6bf;font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">⚠️ Günstigster Anbieter zuletzt teurer (+${Number(cheapest.trend_pct).toFixed(1)}%) — Preis beobachten</div>`:''}
-    ${g.saving_abs>0?`<div style="display:inline-block;background:rgba(11,127,40,.12);color:#0b7f28;font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">💰 −€ ${Number(g.saving_abs).toFixed(2)} pro Packung günstiger bei ${esc(g.best_supplier)}</div>`:''}
+    ${g.saving_abs>0?`<div style="display:inline-block;background:rgba(11,127,40,.12);color:var(--ok-fg);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">💰 −€ ${Number(g.saving_abs).toFixed(2)} pro Packung günstiger bei ${esc(g.best_supplier)}</div>`:''}
     ${g.action?`<div style="background:rgba(11,127,40,.08);border:1px solid rgba(11,127,40,.35);border-radius:10px;padding:8px 10px;margin-bottom:8px">
-      <div style="font-weight:700;color:#0b7f28;font-size:14px">🏷️ Aktion günstiger als der beste Einkaufspreis</div>
+      <div style="font-weight:700;color:var(--ok-fg);font-size:14px">🏷️ Aktion günstiger als der beste Einkaufspreis</div>
       <div style="font-size:13px;margin-top:2px">${esc(g.action.supplier)}: <b>€ ${Number(g.action.aktionspreis).toFixed(2)}</b> statt € ${Number(g.best_aep).toFixed(2)} (AEP) — <b>−€ ${Number(g.action.unter_aep_abs).toFixed(2)} pro Packung</b> · −${g.action.rabatt_pct}%</div>
       <div class="muted" style="font-size:12px;margin-top:2px">ab ${g.action.min_menge} Stück${g.action.expiring_soon?` · <b style="color:${g.action.days_left<=3?'#c0392b':'#c77700'}">nur noch ${g.action.days_left<=0?'heute':g.action.days_left+' Tage'}</b>`:` · gültig bis ${esc(g.action.gueltig_bis)}`} · 📌 Referenzdaten</div>
     </div>`:''}
@@ -1176,7 +1176,7 @@ function priceGroup(g) {
   g.offers.forEach((o, i) => {
     const row = el(`<div class="comment"${i===0&&g.saving_abs>0?' style="background:rgba(11,127,40,.06);border-radius:8px"':''}>
       <div class="row">
-        <span>${i===0?'⭐ ':''}<b>${esc(o.supplier)}</b>${i===0?' <span style="color:#0b7f28;font-size:12px;font-weight:700">günstigster</span>':''}</span>
+        <span>${i===0?'⭐ ':''}<b>${esc(o.supplier)}</b>${i===0?' <span style="color:var(--ok-fg);font-size:12px;font-weight:700">günstigster</span>':''}</span>
         <span class="sp" style="flex:1"></span>
         <span title="Preisverlauf (AEP): ${Array.isArray(o.series)&&o.series.length?o.series.map(v=>'€ '+Number(v).toFixed(2).replace('.',',')).join(' → '):'keine Verlaufsdaten'}">${sparkline(o.series)}</span>
         <span style="margin-left:8px"><b>€ ${Number(o.aep).toFixed(2)}</b> ${trendStr(o.trend_pct)}</span>
@@ -1386,11 +1386,11 @@ function rabattCard(r) {
       <span><b>${esc(r.supplier)}</b></span>
       <span class="sp" style="flex:1"></span>
       <span class="muted" style="text-decoration:line-through">€ ${Number(r.listenpreis).toFixed(2)}</span>
-      <span style="font-size:20px;font-weight:800;color:#0b7f28;margin-left:8px">€ ${Number(r.aktionspreis).toFixed(2)}</span>
+      <span style="font-size:20px;font-weight:800;color:var(--ok-fg);margin-left:8px">€ ${Number(r.aktionspreis).toFixed(2)}</span>
     </div>
     <div class="muted" style="margin-top:4px">Ersparnis € ${Number(r.ersparnis).toFixed(2)} je Packung${r.min_menge?` · ab ${r.min_menge} Stück`:''} · gültig bis <b>${esc(r.gueltig_bis)}</b></div>
-    ${r.min_menge&&r.ersparnis>0?`<div style="margin-top:4px;font-size:13px;font-weight:700;color:#0b7f28">💰 Bei Mindestabnahme (${r.min_menge} Stück): € ${(Number(r.ersparnis)*Number(r.min_menge)).toFixed(2)} gespart</div>`:''}
-    ${r.best_for_wirkstoff?`<div style="display:inline-block;margin-top:6px;background:rgba(11,127,40,.12);color:#0b7f28;border:1px solid rgba(11,127,40,.35);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px">⭐ Beste Aktion für ${esc(r.wirkstoff)} (${r.wirkstoff_alternatives===1?'1 weitere läuft':r.wirkstoff_alternatives+' weitere laufen'})</div>`:''}
+    ${r.min_menge&&r.ersparnis>0?`<div style="margin-top:4px;font-size:13px;font-weight:700;color:var(--ok-fg)">💰 Bei Mindestabnahme (${r.min_menge} Stück): € ${(Number(r.ersparnis)*Number(r.min_menge)).toFixed(2)} gespart</div>`:''}
+    ${r.best_for_wirkstoff?`<div style="display:inline-block;margin-top:6px;background:rgba(11,127,40,.12);color:var(--ok-fg);border:1px solid rgba(11,127,40,.35);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px">⭐ Beste Aktion für ${esc(r.wirkstoff)} (${r.wirkstoff_alternatives===1?'1 weitere läuft':r.wirkstoff_alternatives+' weitere laufen'})</div>`:''}
     ${!r.best_for_wirkstoff&&r.wirkstoff_alternatives>0?`<div class="muted" style="margin-top:6px;font-size:13px">💡 Für ${esc(r.wirkstoff)} läuft eine günstigere Aktion — siehe ⭐ in der Liste.</div>`:''}
     ${r.expiring_soon?`<div style="display:inline-block;margin-top:6px;background:${r.days_left<=3?'#c0392b':'#c77700'};color:#fff;font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px">⏳ ${r.days_left<=0?'läuft heute ab':(r.days_left===1?'nur noch 1 Tag':'nur noch '+r.days_left+' Tage')}</div>`:''}
     <div class="row" style="margin-top:8px">
@@ -1426,7 +1426,7 @@ function refChip(r) {
     return `<div class="vis" style="${base}">💶 Preis: <b>${esc(r.bezeichnung)}</b> — ${esc(r.supplier)} € ${Number(r.aep).toFixed(2)}${t}</div>`;
   }
   if (r.kind === 'rabatt') {
-    return `<div class="vis" style="${base}">🏷️ Aktion: <b>${esc(r.bezeichnung)}</b> — ${esc(r.supplier)} € ${Number(r.aktionspreis).toFixed(2)} <span style="color:#0b7f28">−${r.rabatt_pct}%</span> · gültig bis ${esc(r.gueltig_bis)}</div>`;
+    return `<div class="vis" style="${base}">🏷️ Aktion: <b>${esc(r.bezeichnung)}</b> — ${esc(r.supplier)} € ${Number(r.aktionspreis).toFixed(2)} <span style="color:var(--ok-fg)">−${r.rabatt_pct}%</span> · gültig bis ${esc(r.gueltig_bis)}</div>`;
   }
   return `<div class="vis" style="${base}">📦 Engpass: <b>${esc(r.wirkstoff)}</b> — ${esc(r.bezeichnung)}</div>`;
 }
@@ -2364,7 +2364,7 @@ function commentRow(postId, c, card, depth = 0) {
     <div class="row" style="align-items:baseline">
       <b class="clickable" data-openprofile="${esc(au.handle||'')}">${esc(au.display_name||'Unbekannt')}</b>
       <span class="handle clickable" data-openprofile="${esc(au.handle||'')}">@${esc(au.handle||'?')}</span>
-      ${isAccepted?'<span style="color:#0b7f28;font-weight:700;font-size:12px;margin-left:6px">✔ Beste Antwort</span>':''}
+      ${isAccepted?'<span style="color:var(--ok-fg);font-weight:700;font-size:12px;margin-left:6px">✔ Beste Antwort</span>':''}
       <span class="muted" style="font-size:12px;margin-left:6px" title="${esc(c.created_at)}">${relTime(c.created_at)}</span>
       ${c.edited_at?'<span class="vis" style="margin-left:6px">✏️ bearbeitet</span>':''}
       <span class="sp" style="flex:1"></span>
