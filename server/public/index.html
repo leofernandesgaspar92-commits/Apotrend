@@ -193,6 +193,13 @@ const I18N = {
     ov_t_savings:'Sparpotenzial je Packung', ov_t_expiring:'Aktionen laufen bald ab',
     ov_t_notif:'neue Benachrichtigungen', ov_bookmarks:'🔖 Meine Merkliste öffnen',
     ov_recent:'🕘 Zuletzt angesehen:',
+    wl_title:'⭐ Meine beobachteten Wirkstoffe', wl_alerts_sg:'Meldung', wl_alerts_pl:'Meldungen',
+    wl_sub:'Wirkstoffe im Blick behalten — der aktuelle Engpass-Status steht immer hier ganz oben.',
+    wl_ph:'z.B. Amoxicillin', wl_add:'+ Beobachten', wl_add_aria:'Wirkstoff beobachten',
+    wl_quick:'Schnell beobachten (aktuell kritisch):', wl_all:'⭐ Alle {n} kritischen beobachten',
+    wl_empty:'Noch keine Wirkstoffe. Füge unten die hinzu, die du regelmäßig führst.',
+    wl_view:'Ansehen', wl_remove:'Nicht mehr beobachten',
+    wl_csv_title:'Beobachtungsliste mit Status als CSV (Excel) — z.B. für den Handverkaufstisch',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -211,6 +218,13 @@ const I18N = {
     ov_t_savings:'savings per pack', ov_t_expiring:'deals expiring soon',
     ov_t_notif:'new notifications', ov_bookmarks:'🔖 Open my bookmarks',
     ov_recent:'🕘 Recently viewed:',
+    wl_title:'⭐ My watched substances', wl_alerts_sg:'alert', wl_alerts_pl:'alerts',
+    wl_sub:'Keep substances on your radar — the current shortage status always stays right at the top.',
+    wl_ph:'e.g. Amoxicillin', wl_add:'+ Watch', wl_add_aria:'Watch a substance',
+    wl_quick:'Quick-watch (currently critical):', wl_all:'⭐ Watch all {n} critical',
+    wl_empty:'No substances yet. Add the ones you stock regularly below.',
+    wl_view:'View', wl_remove:'Stop watching',
+    wl_csv_title:'Watchlist with status as CSV (Excel) — e.g. for the counter',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -229,6 +243,13 @@ const I18N = {
     ov_t_savings:'poupança por embalagem', ov_t_expiring:'promoções a expirar em breve',
     ov_t_notif:'novas notificações', ov_bookmarks:'🔖 Abrir os meus marcadores',
     ov_recent:'🕘 Vistos recentemente:',
+    wl_title:'⭐ As minhas substâncias vigiadas', wl_alerts_sg:'alerta', wl_alerts_pl:'alertas',
+    wl_sub:'Mantenha as substâncias debaixo de olho — o estado atual de falta fica sempre no topo.',
+    wl_ph:'ex. Amoxicilina', wl_add:'+ Vigiar', wl_add_aria:'Vigiar substância',
+    wl_quick:'Vigiar rápido (críticos agora):', wl_all:'⭐ Vigiar os {n} críticos',
+    wl_empty:'Ainda sem substâncias. Adicione abaixo as que tem habitualmente.',
+    wl_view:'Ver', wl_remove:'Deixar de vigiar',
+    wl_csv_title:'Lista de vigilância com estado em CSV (Excel) — ex. para o balcão',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -769,17 +790,17 @@ function watchStatusMeta(status) {
 async function renderWatchlistCard(feed, items, suggestions = []) {
   const alerts = items.filter(i => i.status === 'kritisch' || i.status === 'eingeschraenkt').length;
   const card = el(`<div class="card">
-    <div class="row"><b>⭐ Meine beobachteten Wirkstoffe</b>
+    <div class="row"><b>${esc(t('wl_title'))}</b>
       <span class="sp" style="flex:1"></span>
-      ${alerts?`<span class="badge" style="background:#c0392b">${alerts} Meldung${alerts>1?'en':''}</span>`:''}
-      ${items.length?`<button class="ghost small" data-wl-csv title="Beobachtungsliste mit Status als CSV (Excel) — z.B. für den Handverkaufstisch" style="margin-left:8px">⬇️ CSV</button>`:''}
+      ${alerts?`<span class="badge" style="background:#c0392b">${alerts} ${esc(alerts>1?t('wl_alerts_pl'):t('wl_alerts_sg'))}</span>`:''}
+      ${items.length?`<button class="ghost small" data-wl-csv title="${esc(t('wl_csv_title'))}" style="margin-left:8px">⬇️ CSV</button>`:''}
     </div>
-    <div class="muted" style="font-size:13px;margin:2px 0 8px">Wirkstoffe im Blick behalten — der aktuelle Engpass-Status steht immer hier ganz oben.</div>
+    <div class="muted" style="font-size:13px;margin:2px 0 8px">${esc(t('wl_sub'))}</div>
     <div data-wl></div>
     <div data-wl-sug></div>
     <div class="row" style="margin-top:8px;gap:6px">
-      <input data-wl-in placeholder="z.B. Amoxicillin" style="flex:1" aria-label="Wirkstoff beobachten">
-      <button class="small" data-wl-add>+ Beobachten</button>
+      <input data-wl-in placeholder="${esc(t('wl_ph'))}" style="flex:1" aria-label="${esc(t('wl_add_aria'))}">
+      <button class="small" data-wl-add>${esc(t('wl_add'))}</button>
     </div>
     <div class="err" data-wl-err></div>
   </div>`);
@@ -799,7 +820,7 @@ async function renderWatchlistCard(feed, items, suggestions = []) {
     const open = suggestions.filter(s => s.wirkstoff && !have.has(s.wirkstoff.trim().toLowerCase()));
     sugBox.innerHTML = '';
     if (!open.length) return;
-    const wrap = el(`<div style="margin-top:8px"><div class="muted" style="font-size:12px">Schnell beobachten (aktuell kritisch):</div><div class="row" data-chips style="flex-wrap:wrap;gap:6px;margin-top:4px"></div></div>`);
+    const wrap = el(`<div style="margin-top:8px"><div class="muted" style="font-size:12px">${esc(t('wl_quick'))}</div><div class="row" data-chips style="flex-wrap:wrap;gap:6px;margin-top:4px"></div></div>`);
     const chips = wrap.querySelector('[data-chips]');
     open.slice(0, 6).forEach(s => {
       const chip = el(`<button class="small sortbtn">🔴 ${esc(s.wirkstoff)} +</button>`);
@@ -811,7 +832,7 @@ async function renderWatchlistCard(feed, items, suggestions = []) {
       chips.appendChild(chip);
     });
     if (open.length >= 2) {
-      const all = el(`<button class="small" style="margin-top:6px">⭐ Alle ${open.length} kritischen beobachten</button>`);
+      const all = el(`<button class="small" style="margin-top:6px">${esc(ti('wl_all', { n: open.length }))}</button>`);
       all.onclick = async () => {
         all.disabled = true;
         try {
@@ -828,7 +849,7 @@ async function renderWatchlistCard(feed, items, suggestions = []) {
     renderWatchlistCard._items = list;         // Merker für den CSV-Export
     if (csvBtn) csvBtn.style.display = list.length ? '' : 'none';
     box.innerHTML = '';
-    if (!list.length) { box.appendChild(el(`<div class="muted" style="font-size:14px">Noch keine Wirkstoffe. Füge unten die hinzu, die du regelmäßig führst.</div>`)); drawSuggestions(list); return; }
+    if (!list.length) { box.appendChild(el(`<div class="muted" style="font-size:14px">${esc(t('wl_empty'))}</div>`)); drawSuggestions(list); return; }
     list.forEach(it => {
       const m = watchStatusMeta(it.status);
       const row = el(`<div class="comment" style="display:flex;align-items:center;gap:8px">
@@ -838,8 +859,8 @@ async function renderWatchlistCard(feed, items, suggestions = []) {
           <div style="display:inline-block;font-size:12px;font-weight:700;color:${m.color};background:${m.bg};padding:2px 8px;border-radius:999px;margin-top:2px">${m.label}</div>
           ${it.bezeichnung?`<div class="muted" style="font-size:12px;margin-top:2px">${esc(it.bezeichnung)}</div>`:''}
         </div>
-        ${it.shortage_id?`<button class="ghost small" data-open>Ansehen</button>`:''}
-        <button class="ghost small" data-rm title="Nicht mehr beobachten" aria-label="Entfernen">✕</button>
+        ${it.shortage_id?`<button class="ghost small" data-open>${esc(t('wl_view'))}</button>`:''}
+        <button class="ghost small" data-rm title="${esc(t('wl_remove'))}" aria-label="${esc(t('wl_remove'))}">✕</button>
       </div>`);
       if (it.shortage_id) row.querySelector('[data-open]').onclick = () => openWirkstoff(it.wirkstoff);
       row.querySelector('[data-rm]').onclick = async () => {

@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3e: Beobachtungslisten-Karte mehrsprachig (DE/EN/PT):**
+>   Die „Meine beobachteten Wirkstoffe"-Karte auf dem Dashboard ist jetzt vollständig übersetzt:
+>   Titel, Untertitel, Melde-Badge (Singular/Plural), Schnell-Beobachten-Vorschläge,
+>   „Alle N kritischen beobachten", Leerzustand, Eingabe-Platzhalter, Beobachten/Ansehen/
+>   Entfernen und der CSV-Tooltip. (Browser verifiziert: PT komplett portugiesisch inkl.
+>   „Vigiar os 3 críticos".) Nächste Etappe: die Status-Vokabeln (kritisch/verfügbar) und die
+>   Engpass-Vorschau darunter.
 > - 🌍 **Länderübergreifend — Schritt 3d: Dashboard-Hero mehrsprachig (DE/EN/PT):** Die
 >   „Für dich"-Startansicht — der erste Eindruck für alle Nutzer:innen — war bisher auch bei
 >   EN/PT-Oberfläche deutsch. Jetzt übersetzt: Überschrift, Untertitel, alle Kennzahl-Kacheln
