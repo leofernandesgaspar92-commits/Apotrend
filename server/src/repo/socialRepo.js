@@ -86,6 +86,7 @@ export function createSocialRepo() {
         id: uuid(), author_user_id: p.authorUserId, body: p.body, kind: p.kind ?? 'post',
         visibility: p.visibility ?? 'public', ref_type: p.refType ?? null, ref_id: p.refId ?? null,
         image: p.image ?? null, source_url: p.sourceUrl ?? null,
+        country: p.country ?? 'AT',
         accepted_comment_id: null,
         created_at: now(), edited_at: null, deleted_at: null,
       };

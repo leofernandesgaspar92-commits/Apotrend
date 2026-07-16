@@ -246,7 +246,9 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (!['public', 'followers'].includes(visibility)) throw new Error('Ungueltige Sichtbarkeit.');
       if (!['post', 'news', 'frage'].includes(kind)) throw new Error('Ungueltige Beitragsart.');
       if (refType && !['shortage', 'price', 'news', 'rabatt'].includes(refType)) throw new Error('Ungueltiger Referenztyp.');
-      const post = social.createPost({ authorUserId: actorUserId, body: text, visibility, refType, refId, kind, image: img, sourceUrl: src });
+      // Beitrag erbt das Land des Autors (Sichtbarkeits-Scope je Land).
+      const country = normalizeCountry(social.getProfileByUserId(actorUserId)?.country);
+      const post = social.createPost({ authorUserId: actorUserId, body: text, visibility, refType, refId, kind, image: img, sourceUrl: src, country });
       notifyMentions(text, actorUserId, 'post', post.id);
       return post;
     },
@@ -399,10 +401,11 @@ export function createSocialService(social, foundationRepo, options = {}) {
     },
     // News-Ansicht: Beiträge der Art 'news' (kuratiert von der Redaktion ODER von
     // Nutzern geteilt) — dasselbe Feed-System, nur gefiltert.
-    newsFeed(viewerUserId) {
+    newsFeed(viewerUserId, { country = null } = {}) {
       requireUser(viewerUserId);
+      const c = country ? normalizeCountry(country) : null;
       return social.listAllPosts()
-        .filter(p => p.kind === 'news' && visibleTo(p, viewerUserId))
+        .filter(p => p.kind === 'news' && visibleTo(p, viewerUserId) && (!c || (p.country || 'AT') === c))
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
         .map(decorate);
     },
@@ -420,9 +423,10 @@ export function createSocialService(social, foundationRepo, options = {}) {
     // Entdecken: alle oeffentlichen Beiträge (netzwerkweite Reichweite).
     // sort: 'neu' (Standard, neueste zuerst) oder 'top' (meiste Reaktionen zuerst).
     // filter: 'questions' => nur Fachfragen, offene (unbeantwortete) zuerst.
-    publicFeed(viewerUserId, { sort = 'neu', filter = 'all' } = {}) {
+    publicFeed(viewerUserId, { sort = 'neu', filter = 'all', country = null } = {}) {
       requireUser(viewerUserId);
-      let posts = social.listAllPosts().filter(p => p.visibility === 'public').map(decorate);
+      const c = country ? normalizeCountry(country) : null;
+      let posts = social.listAllPosts().filter(p => p.visibility === 'public' && (!c || (p.country || 'AT') === c)).map(decorate);
       if (filter === 'questions') posts = posts.filter(p => p.is_question);
       const total = (p) => Object.values(p.reaction_counts || {}).reduce((s, n) => s + n, 0);
       const byRecency = (a, b) => b.created_at.localeCompare(a.created_at);

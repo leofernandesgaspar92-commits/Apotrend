@@ -87,6 +87,20 @@ if (restoring) {
     body: 'Willkommen im Stewardship-Fachforum 🧫 — anonymisierte Fachdiskussion zum verantwortungsvollen Antibiotikaeinsatz. Bitte keine personenbezogenen Patientendaten posten, sicherheitsrelevante Aussagen nur mit Quelle. Grundlage zur österreichischen Resistenzlage: AURES. #stewardship',
     kind: 'post', sourceUrl: 'https://www.ages.at/mensch/arzneimittel-medizinprodukte/antibiotika-resistenzen',
   });
+  // Länder-Redaktionen (DE/BR) + je ein News-Beitrag im jeweiligen Land, damit der
+  // Länder-Switch echte, getrennte Inhalte zeigt. Beiträge erben das Land des Autors.
+  const seedCountryEditor = (country, handle, name, posts) => {
+    const u = orgAuth.registerPharmacyWithOwner({ pharmacy: { name }, owner: { name, email: handle + '@apotrend.example', password: crypto.randomUUID() } });
+    social.createProfile(u.user.id, { handle, displayName: name, isEditorial: true, country });
+    posts.forEach(({ body, sourceUrl }) => social.createPost(u.user.id, { body, kind: 'news', sourceUrl }));
+  };
+  seedCountryEditor('DE', 'apotrend_de', 'ApoTrend-Redaktion DE', [
+    { body: 'BfArM: Aktualisierte Liste von Lieferengpässen veröffentlicht — mehrere Wirkstoffe betroffen.', sourceUrl: 'https://www.bfarm.de/' },
+    { body: 'E-Rezept: bundesweite Nutzung weiter verpflichtend — Hinweise für Apotheken aktualisiert.', sourceUrl: 'https://www.bfarm.de/' },
+  ]);
+  seedCountryEditor('BR', 'apotrend_br', 'ApoTrend-Redação BR', [
+    { body: 'ANVISA: publicada atualização sobre desabastecimento de medicamentos.', sourceUrl: 'https://www.gov.br/anvisa/' },
+  ]);
 }
 
 // ── Snapshot sammeln + gedrosselt/atomar auf Platte schreiben ──
@@ -107,6 +121,15 @@ function saveNow() { if (persistence) { try { persistence.save(collectSnapshot()
 if (persistence && !restoring) saveNow(); // Ausgangszustand (Seed) sofort sichern
 // Sauber speichern beim Herunterfahren (z.B. Deploy/Neustart auf dem Host).
 for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { saveNow(); process.exit(0); });
+
+// Aktives Land für länder-gescopte Inhalte: expliziter Query-Parameter →
+// Profil-Land der/des Nutzer:in → Fallback AT.
+function activeCountry(userId, query) {
+  const q = query && query.get && query.get('country');
+  if (q) return normalizeCountry(q);
+  const prof = userId ? social.getProfile(userId) : null;
+  return normalizeCountry(prof && prof.country);
+}
 
 // Feed-Beiträge, die ein Marktobjekt (Engpass/Preis) referenzieren, anreichern.
 function enrichPosts(posts) {
@@ -230,10 +253,10 @@ const routes = [
   ['POST', /^\/api\/verify\/([^/]+)\/resolve$/, true, async ({ userId, params, body }) => social.resolveVerification(userId, params[0], !!body.approve)],
 
   ['GET', /^\/api\/feed\/home$/, true, async ({ userId }) => ({ posts: enrichPosts(social.homeFeed(userId)) })],
-  ['GET', /^\/api\/feed\/public$/, true, async ({ userId, query }) => ({ posts: enrichPosts(social.publicFeed(userId, { sort: query.get('sort') || 'neu', filter: query.get('filter') || 'all' })) })],
+  ['GET', /^\/api\/feed\/public$/, true, async ({ userId, query }) => ({ country: activeCountry(userId, query), posts: enrichPosts(social.publicFeed(userId, { sort: query.get('sort') || 'neu', filter: query.get('filter') || 'all', country: activeCountry(userId, query) })) })],
 
   ['POST', /^\/api\/posts$/, true, async ({ userId, body }) => social.createPost(userId, { body: body.body, visibility: body.visibility, kind: body.kind, image: body.image, sourceUrl: body.sourceUrl })],
-  ['GET', /^\/api\/news$/, true, async ({ userId }) => ({ posts: enrichPosts(social.newsFeed(userId)) })],
+  ['GET', /^\/api\/news$/, true, async ({ userId, query }) => ({ country: activeCountry(userId, query), posts: enrichPosts(social.newsFeed(userId, { country: activeCountry(userId, query) })) })],
   ['GET', /^\/api\/hashtag\/([^/]+)$/, true, async ({ userId, params }) => ({ tag: decodeURIComponent(params[0]), posts: enrichPosts(social.postsByHashtag(userId, decodeURIComponent(params[0]))) })],
   ['GET', /^\/api\/trending\/hashtags$/, true, async ({ userId }) => ({ hashtags: social.trendingHashtags(userId) })],
   // Mehrsprachige Patienten-Infokarten (Antibiotika) — für Aufklärung bei der Abgabe.

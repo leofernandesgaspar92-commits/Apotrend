@@ -29,6 +29,30 @@ async function reg(handle) {
 const j = async (path, tok) => (await fetch(BASE + path, { headers: H(tok) })).json();
 const post = (path, tok, body) => fetch(BASE + path, { method: 'POST', headers: H(tok), body: JSON.stringify(body || {}) });
 
+test('Newsfeed ist länder-gescopt: AT-Nutzer sieht AT-News, ?country=DE die DE-News', async () => {
+  const a = await reg('cf' + PORT); // Standard AT
+  // News des aktiven Landes (AT) enthält BASG, nicht BfArM/ANVISA
+  const atNews = await j('/api/news', a);
+  assert.equal(atNews.country, 'AT');
+  assert.ok(atNews.posts.some(p => /BASG/.test(p.body)), 'AT-News enthält BASG');
+  assert.ok(!atNews.posts.some(p => /BfArM|ANVISA/.test(p.body)), 'keine DE/BR-News im AT-Scope');
+  // Umschalten per Query -> DE-News (BfArM), keine BASG
+  const deNews = await j('/api/news?country=DE', a);
+  assert.equal(deNews.country, 'DE');
+  assert.ok(deNews.posts.some(p => /BfArM/.test(p.body)), 'DE-News enthält BfArM');
+  assert.ok(!deNews.posts.some(p => /BASG/.test(p.body)), 'keine AT-News im DE-Scope');
+  // BR
+  const brNews = await j('/api/news?country=BR', a);
+  assert.ok(brNews.posts.some(p => /ANVISA/.test(p.body)), 'BR-News enthält ANVISA');
+  // Eigener Beitrag landet im Land des Autors: nach Wechsel auf DE posten -> im DE-Feed
+  await post('/api/profile', a, { country: 'DE' });
+  await post('/api/posts', a, { body: 'Hallo aus Deutschland ' + PORT, visibility: 'public' });
+  const dePub = await j('/api/feed/public?country=DE', a);
+  assert.ok(dePub.posts.some(p => p.body.includes('Hallo aus Deutschland ' + PORT)), 'Beitrag im DE-Feed');
+  const atPub = await j('/api/feed/public?country=AT', a);
+  assert.ok(!atPub.posts.some(p => p.body.includes('Hallo aus Deutschland ' + PORT)), 'nicht im AT-Feed');
+});
+
 test('GET /api/countries: 12 Länder mit Locale/Währung/Zeitzone', async () => {
   const d = await (await fetch(BASE + '/api/countries')).json();
   assert.equal(d.countries.length, 12, '12 Länder im MVP-Register');

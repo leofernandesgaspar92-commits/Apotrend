@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 2: Newsfeed länder-gescopt:** Beiträge tragen jetzt
+>   `country` (erben das Land des Autors); `publicFeed`/`newsFeed` filtern nach aktivem Land.
+>   Endpunkte lösen das aktive Land auf (`?country=` → Profil-Land → Fallback AT) via neuem
+>   `activeCountry`-Helfer und geben es mit zurück. Seeds: DE-Redaktion (BfArM/E-Rezept) und
+>   BR-Redação (ANVISA) — der Länder-Switch zeigt echte, getrennte Inhalte. Rückwärtskompatibel
+>   (fehlendes `country` = AT). (Integrationstest: AT→BASG, DE→BfArM, BR→ANVISA, eigener
+>   Beitrag im Autor-Land; im Browser verifiziert.)
 > - 🌍 **Länderübergreifend — Schritt 1: Länder-Fundament (Backend):** Neues Länder-Register
 >   `data/countries.js` (12 MVP-Länder: AT/DE/CH · PT/BR/AO/MZ · GB/US/NG/KE/GH mit Locale,
 >   Währung, Zeitzone, Regulator) + `GET /api/countries` (öffentlich). Profile tragen jetzt
