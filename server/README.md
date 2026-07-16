@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — einheitlicher Lade-Indikator:** Die Reiter zeigten beim Laden ein
+>   blankes „lädt…" (Text). Neu: dezenter, theme-tauglicher Spinner (`.loading` mit
+>   animiertem `::before`, Rahmen aus `--line`/`--green`) plus Text — konsistent über alle
+>   18 Ladepunkte + Suche. `prefers-reduced-motion` respektiert (kein Spin). (Im Browser mit
+>   künstlich verzögerter API verifiziert: Spinner 18px, `apo-spin`, keine JS-Fehler.)
 > - ✅ **Qualitäts-Audit — Farb-Token-Migration abgeschlossen (Orange/Blau + KPI-Kacheln):**
 >   Restliche Text-Akzente auf Tokens: Orange (`#c77700`/`#b26a00`) → `--warn-fg`, Blau
 >   (`#2952cc`) → `--info-fg`; KPI-Kacheln (Für-dich + Redaktions-Dashboard), `.editorial`-

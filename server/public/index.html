@@ -74,6 +74,11 @@
   .reacts button:hover { border-color:var(--green); }
   .muted { color:var(--muted); font-size:14px; }
   .err { color:var(--crit-fg); font-size:14px; margin-top:8px; }
+  /* Einheitlicher, dezenter Lade-Indikator (Spinner + Text), theme-tauglich. */
+  .loading { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:14px; padding:8px 2px; }
+  .loading::before { content:''; width:18px; height:18px; border:3px solid var(--line); border-top-color:var(--green); border-radius:50%; animation:apo-spin .7s linear infinite; flex:none; }
+  @keyframes apo-spin { to { transform:rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .loading::before { animation:none; } }
   .bell { position:relative; }
   .badge { position:absolute; top:-6px; right:-6px; background:#e02a2a; color:#fff; border-radius:10px; font-size:11px; padding:1px 6px; }
   /* Klartext-Beschriftung der Header-Aktionen (Zielgruppe: nicht-technisch). Auf
@@ -442,7 +447,7 @@ function goTab(name) {
 
 async function loadOverview() {
   const feed = document.getElementById('feed');
-  feed.innerHTML = '<div class="muted">lädt…</div>';
+  feed.innerHTML = '<div class="loading">lädt…</div>';
   let d;
   try { d = await api('GET','/api/overview'); }
   catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
@@ -753,7 +758,7 @@ async function loadNews() {
     catch(e){ document.getElementById('nerr').textContent = e.message; }
   };
   const list = document.getElementById('newslist');
-  list.innerHTML = '<div class="muted">lädt…</div>';
+  list.innerHTML = '<div class="loading">lädt…</div>';
   try {
     const d = await api('GET','/api/news');
     list.innerHTML = '';
@@ -786,7 +791,7 @@ function provenanceLegend() {
 
 async function loadShortages() {
   const feed = document.getElementById('feed');
-  feed.innerHTML = '<div class="muted">lädt…</div>';
+  feed.innerHTML = '<div class="loading">lädt…</div>';
   try {
     const d = await api('GET','/api/shortages');
     feed.innerHTML = '';
@@ -1030,7 +1035,7 @@ function shortageCard(s) {
   card.querySelector('[data-about]').onclick = async () => {
     aboutbox.classList.toggle('hidden');
     if (aboutbox.classList.contains('hidden')) return;
-    aboutbox.innerHTML = '<div class="muted">lädt…</div>';
+    aboutbox.innerHTML = '<div class="loading">lädt…</div>';
     const d = await api('GET',`/api/shortages/${s.id}`);
     aboutbox.innerHTML = d.posts.length ? '' : '<div class="muted">Noch keine Beiträge dazu.</div>';
     d.posts.forEach(p => aboutbox.appendChild(el(`<div class="comment"><b>@${esc(p.author?.handle||'?')}</b>: ${esc(p.body)}</div>`)));
@@ -1040,7 +1045,7 @@ function shortageCard(s) {
 
 async function loadPrices() {
   const feed = document.getElementById('feed');
-  feed.innerHTML = '<div class="muted">lädt…</div>';
+  feed.innerHTML = '<div class="loading">lädt…</div>';
   try {
     const d = await api('GET','/api/prices');
     feed.innerHTML = '';
@@ -1334,7 +1339,7 @@ function exchangeCard(e) {
 
 async function loadRabatte() {
   const feed = document.getElementById('feed');
-  feed.innerHTML = '<div class="muted">lädt…</div>';
+  feed.innerHTML = '<div class="loading">lädt…</div>';
   try {
     const d = await api('GET','/api/rabatte');
     feed.innerHTML = '';
@@ -1433,7 +1438,7 @@ function refChip(r) {
 
 async function loadFeed() {
   const feed = document.getElementById('feed');
-  feed.innerHTML = '<div class="muted">lädt…</div>';
+  feed.innerHTML = '<div class="loading">lädt…</div>';
   try {
     const url = tab==='home' ? '/api/feed/home' : ('/api/feed/public?sort=' + publicSort + '&filter=' + publicFilter);
     const d = await api('GET', url);
@@ -1499,7 +1504,7 @@ async function renderSuggestions(feed) {
 async function openBookmarks() {
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
-  feed.innerHTML = '<div class="muted">lädt…</div>';
+  feed.innerHTML = '<div class="loading">lädt…</div>';
   try {
     const d = await api('GET','/api/bookmarks');
     myBookmarks = new Set(d.posts.map(p=>p.id));
@@ -1516,7 +1521,7 @@ async function openHashtag(tag) {
   if (!tag) return;
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
-  feed.innerHTML = '<div class="muted">lädt…</div>';
+  feed.innerHTML = '<div class="loading">lädt…</div>';
   try {
     const d = await api('GET','/api/hashtag/'+encodeURIComponent(tag));
     feed.innerHTML = '';
@@ -1534,7 +1539,7 @@ async function openHashtag(tag) {
 async function openStewardship() {
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
-  feed.innerHTML = '<div class="muted">lädt…</div>';
+  feed.innerHTML = '<div class="loading">lädt…</div>';
   let d;
   try { d = await api('GET','/api/hashtag/stewardship'); }
   catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
@@ -1588,7 +1593,7 @@ function printPatientInfo(d) {
 async function openPatientInfo() {
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
-  feed.innerHTML = '<div class="muted">lädt…</div>';
+  feed.innerHTML = '<div class="loading">lädt…</div>';
   let d;
   try { d = await api('GET','/api/patient-info?lang='+encodeURIComponent(patientLang)); }
   catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
@@ -1760,7 +1765,7 @@ function openBegleitzettel() {
 async function renderSearch(q) {
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
-  feed.innerHTML = '<div class="muted">suche…</div>';
+  feed.innerHTML = '<div class="loading">suche…</div>';
   try {
     const d = await api('GET','/api/search?q='+encodeURIComponent(q));
     feed.innerHTML = '';
@@ -1844,7 +1849,7 @@ async function openProfile(handle) {
   const feed = document.getElementById('feed');
   // Tab-Markierung entfernen (wir sind auf einer Detailseite)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
-  feed.innerHTML = '<div class="muted">lädt…</div>';
+  feed.innerHTML = '<div class="loading">lädt…</div>';
   try {
     const d = await api('GET',`/api/profiles/${encodeURIComponent(handle)}/page`);
     const p = d.profile;
@@ -1949,7 +1954,7 @@ async function openProfile(handle) {
 async function openFollowList(handle, which) {
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
-  feed.innerHTML = '<div class="muted">lädt…</div>';
+  feed.innerHTML = '<div class="loading">lädt…</div>';
   let d;
   try { d = await api('GET',`/api/profiles/${encodeURIComponent(handle)}/${which}`); }
   catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
@@ -1986,7 +1991,7 @@ async function openFollowList(handle, which) {
 async function openMyActivity() {
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
-  feed.innerHTML = '<div class="muted">lädt…</div>';
+  feed.innerHTML = '<div class="loading">lädt…</div>';
   let d;
   try { d = await api('GET','/api/me/activity'); }
   catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
@@ -2060,7 +2065,7 @@ async function openWirkstoff(name) {
   if (!name) return;
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
-  feed.innerHTML = '<div class="muted">lädt…</div>';
+  feed.innerHTML = '<div class="loading">lädt…</div>';
   let d;
   try { d = await api('GET','/api/wirkstoff/'+encodeURIComponent(name)); }
   catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
@@ -2328,7 +2333,7 @@ function postCard(p) {
 
 async function loadComments(postId, card) {
   const list = card.querySelector('[data-clist]');
-  list.innerHTML = '<div class="muted">lädt…</div>';
+  list.innerHTML = '<div class="loading">lädt…</div>';
   const d = await api('GET',`/api/posts/${postId}/comments`);
   list.innerHTML = d.comments.length ? '' : '<div class="muted">Noch keine Kommentare.</div>';
   // Baum aufbauen: parent_comment_id -> Kinder, in Reihenfolge (DFS) mit Einrückung.
@@ -2493,7 +2498,7 @@ async function openPost(postId) {
   const feed = document.getElementById('feed');
   if (!feed) return;
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
-  feed.innerHTML = '<div class="muted">lädt…</div>';
+  feed.innerHTML = '<div class="loading">lädt…</div>';
   try {
     const d = await api('GET','/api/posts/'+encodeURIComponent(postId));
     feed.innerHTML = '';
