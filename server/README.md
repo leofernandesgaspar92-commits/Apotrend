@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3m: Rabatte-Reiter komplett mehrsprachig (DE/EN/PT):** Kopf,
+>   Filter (Alle/Bald ablaufend), Suche, Leerzustände und die einzelnen Rabatt-Karten (Ersparnis,
+>   Mindestabnahme, „Beste Aktion für X", Ablauf-Countdown, Posten-Feld) sind übersetzt — mit
+>   Interpolation & Singular/Plural. Damit sind **vier komplette Reiter** (Dashboard, Engpässe,
+>   Preise, Rabatte) in der Landessprache. `let t`-Debounce auch hier in `deb` umbenannt. (Browser
+>   verifiziert: Rabatte-Reiter auf Portugiesisch, keine JS-Fehler.)
 > - 🌍 **Länderübergreifend — Schritt 3l: Preisvergleichs-Karten mehrsprachig — Reiter komplett:**
 >   Die einzelnen `priceGroup`-Karten sind jetzt DE/EN/PT: Vergleichs-Untertitel, Trend-Warnung,
 >   Ersparnis-Badge, Aktions-Box (statt/pro Packung/gültig-bis/nur-noch-X-Tage, mit Interpolation),

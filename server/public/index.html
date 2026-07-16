@@ -258,6 +258,16 @@ const I18N = {
     pg_only_today:'nur noch heute', pg_only_days:'nur noch {d} Tage', pg_valid:'gültig bis',
     pg_cheapest:'günstigster', pg_no_series:'keine Verlaufsdaten', pg_posts:'{n} Beiträge dazu',
     pg_post_ph:'z.B. Preis bei {supplier} gerade gestiegen…',
+    rb_header:'🏷️ <b>Top-10 Rabatt-Aktionen</b> · höchster Rabatt oben · nur laufende Aktionen ·',
+    rb_empty_t:'Derzeit keine laufenden Aktionen',
+    rb_empty_s:'Aktuell sind keine Rabatt-Aktionen hinterlegt. Schau später wieder vorbei.',
+    rb_expiring:'⏳ Bald ablaufend', rb_csv_t:'Aktuelle Auswahl als CSV (Excel) für den Einkauf',
+    rb_none:'Keine Aktion für diese Auswahl.', rb_saving:'Ersparnis € {x} je Packung',
+    rb_minorder:'💰 Bei Mindestabnahme ({n} Stück): € {x} gespart',
+    rb_best:'⭐ Beste Aktion für {w} ({alt})', rb_alt_one:'1 weitere läuft', rb_alt_many:'{n} weitere laufen',
+    rb_cheaper_hint:'💡 Für {w} läuft eine günstigere Aktion — siehe ⭐ in der Liste.',
+    rb_exp_today:'läuft heute ab', rb_exp_one:'nur noch 1 Tag',
+    rb_post_ph:'z.B. Lohnt sich die Aktion bei {supplier}?',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -341,6 +351,16 @@ const I18N = {
     pg_only_today:'today only', pg_only_days:'only {d} days left', pg_valid:'valid until',
     pg_cheapest:'cheapest', pg_no_series:'no history data', pg_posts:'{n} posts about this',
     pg_post_ph:'e.g. price at {supplier} just went up…',
+    rb_header:'🏷️ <b>Top 10 deals</b> · highest discount on top · running offers only ·',
+    rb_empty_t:'No running offers right now',
+    rb_empty_s:'There are currently no discount offers on file. Check back later.',
+    rb_expiring:'⏳ Expiring soon', rb_csv_t:'Export current selection as CSV (Excel) for purchasing',
+    rb_none:'No offer for this selection.', rb_saving:'Saving € {x} per pack',
+    rb_minorder:'💰 At minimum order ({n} units): € {x} saved',
+    rb_best:'⭐ Best deal for {w} ({alt})', rb_alt_one:'1 more running', rb_alt_many:'{n} more running',
+    rb_cheaper_hint:'💡 A cheaper deal is running for {w} — see ⭐ in the list.',
+    rb_exp_today:'ends today', rb_exp_one:'only 1 day left',
+    rb_post_ph:'e.g. is the deal at {supplier} worth it?',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -424,6 +444,16 @@ const I18N = {
     pg_only_today:'só hoje', pg_only_days:'faltam {d} dias', pg_valid:'válido até',
     pg_cheapest:'mais barato', pg_no_series:'sem histórico', pg_posts:'{n} publicações sobre isto',
     pg_post_ph:'ex. o preço em {supplier} acabou de subir…',
+    rb_header:'🏷️ <b>Top 10 descontos</b> · maior desconto no topo · só promoções ativas ·',
+    rb_empty_t:'Sem promoções ativas de momento',
+    rb_empty_s:'Não há promoções de desconto registadas. Volte mais tarde.',
+    rb_expiring:'⏳ A expirar em breve', rb_csv_t:'Exportar a seleção atual como CSV (Excel) para compras',
+    rb_none:'Nenhuma promoção para esta seleção.', rb_saving:'Poupança € {x} por embalagem',
+    rb_minorder:'💰 Na compra mínima ({n} unidades): € {x} poupados',
+    rb_best:'⭐ Melhor promoção para {w} ({alt})', rb_alt_one:'mais 1 ativa', rb_alt_many:'mais {n} ativas',
+    rb_cheaper_hint:'💡 Há uma promoção mais barata para {w} — veja ⭐ na lista.',
+    rb_exp_today:'termina hoje', rb_exp_one:'falta 1 dia',
+    rb_post_ph:'ex. vale a pena a promoção em {supplier}?',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -1761,15 +1791,15 @@ async function loadRabatte() {
     feed.innerHTML = '';
     { const n = countryDataNotice(); if (n) feed.appendChild(n); }
     feed.appendChild(provenanceLegend());
-    feed.appendChild(el('<div class="card muted" style="margin-bottom:10px">🏷️ <b>Top-10 Rabatt-Aktionen</b> · höchster Rabatt oben · nur laufende Aktionen · 📌 Referenzdaten</div>'));
-    if (!d.rabatte.length) { feed.appendChild(emptyState({ icon:'🏷️', title:'Derzeit keine laufenden Aktionen', text:'Aktuell sind keine Rabatt-Aktionen hinterlegt. Schau später wieder vorbei.' })); return; }
+    feed.appendChild(el(`<div class="card muted" style="margin-bottom:10px">${t('rb_header')} ${esc(t('prov_reference'))}</div>`));
+    if (!d.rabatte.length) { feed.appendChild(emptyState({ icon:'🏷️', title:t('rb_empty_t'), text:t('rb_empty_s') })); return; }
     const bar = el(`<div class="card">
-      <div class="row" style="gap:6px"><input data-q placeholder="🔎 Präparat, Wirkstoff oder Lieferant suchen…" value="${esc(rabattQuery)}" style="flex:1"></div>
+      <div class="row" style="gap:6px"><input data-q placeholder="${esc(t('pr_q_ph'))}" value="${esc(rabattQuery)}" style="flex:1"></div>
       <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center">
-        <button class="small sortbtn${rabattExpiring?'':' active'}" data-exp="0" aria-pressed="${!rabattExpiring}">Alle</button>
-        <button class="small sortbtn${rabattExpiring?' active':''}" data-exp="1" aria-pressed="${rabattExpiring}">⏳ Bald ablaufend</button>
+        <button class="small sortbtn${rabattExpiring?'':' active'}" data-exp="0" aria-pressed="${!rabattExpiring}">${esc(t('sh_f_all'))}</button>
+        <button class="small sortbtn${rabattExpiring?' active':''}" data-exp="1" aria-pressed="${rabattExpiring}">${esc(t('rb_expiring'))}</button>
         <span class="sp" style="flex:1"></span>
-        <button class="ghost small" data-rcsv title="Aktuelle Auswahl als CSV (Excel) für den Einkauf">⬇️ CSV</button>
+        <button class="ghost small" data-rcsv title="${esc(t('rb_csv_t'))}">⬇️ CSV</button>
       </div></div>`);
     feed.appendChild(bar);
     const listBox = el('<div data-rlist></div>');
@@ -1785,12 +1815,12 @@ async function loadRabatte() {
       shown = list;
       const csvBtn = bar.querySelector('[data-rcsv]'); if (csvBtn) csvBtn.textContent = `⬇️ CSV (${list.length})`;
       listBox.innerHTML = '';
-      if (!list.length) listBox.appendChild(el('<div class="card muted">Keine Aktion für diese Auswahl.</div>'));
+      if (!list.length) listBox.appendChild(el(`<div class="card muted">${esc(t('rb_none'))}</div>`));
       else list.forEach(r => listBox.appendChild(rabattCard(r)));
     };
     bar.querySelectorAll('[data-exp]').forEach(b => b.onclick = () => { rabattExpiring = b.dataset.exp==='1'; draw(); });
     const qi = bar.querySelector('[data-q]');
-    let t; qi.oninput = () => { clearTimeout(t); t = setTimeout(() => { rabattQuery = qi.value; draw(); }, 250); };
+    let deb; qi.oninput = () => { clearTimeout(deb); deb = setTimeout(() => { rabattQuery = qi.value; draw(); }, 250); };
     draw();
   } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
@@ -1810,19 +1840,19 @@ function rabattCard(r) {
       <span class="muted" style="text-decoration:line-through">€ ${Number(r.listenpreis).toFixed(2)}</span>
       <span style="font-size:20px;font-weight:800;color:var(--ok-fg);margin-left:8px">€ ${Number(r.aktionspreis).toFixed(2)}</span>
     </div>
-    <div class="muted" style="margin-top:4px">Ersparnis € ${Number(r.ersparnis).toFixed(2)} je Packung${r.min_menge?` · ab ${r.min_menge} Stück`:''} · gültig bis <b>${esc(r.gueltig_bis)}</b></div>
-    ${r.min_menge&&r.ersparnis>0?`<div style="margin-top:4px;font-size:13px;font-weight:700;color:var(--ok-fg)">💰 Bei Mindestabnahme (${r.min_menge} Stück): € ${(Number(r.ersparnis)*Number(r.min_menge)).toFixed(2)} gespart</div>`:''}
-    ${r.best_for_wirkstoff?`<div style="display:inline-block;margin-top:6px;background:rgba(11,127,40,.12);color:var(--ok-fg);border:1px solid rgba(11,127,40,.35);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px">⭐ Beste Aktion für ${esc(r.wirkstoff)} (${r.wirkstoff_alternatives===1?'1 weitere läuft':r.wirkstoff_alternatives+' weitere laufen'})</div>`:''}
-    ${!r.best_for_wirkstoff&&r.wirkstoff_alternatives>0?`<div class="muted" style="margin-top:6px;font-size:13px">💡 Für ${esc(r.wirkstoff)} läuft eine günstigere Aktion — siehe ⭐ in der Liste.</div>`:''}
-    ${r.expiring_soon?`<div style="display:inline-block;margin-top:6px;background:${r.days_left<=3?'#c0392b':'#c77700'};color:#fff;font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px">⏳ ${r.days_left<=0?'läuft heute ab':(r.days_left===1?'nur noch 1 Tag':'nur noch '+r.days_left+' Tage')}</div>`:''}
+    <div class="muted" style="margin-top:4px">${esc(ti('rb_saving',{x:Number(r.ersparnis).toFixed(2)}))}${r.min_menge?` · ${esc(ti('pg_from',{n:r.min_menge}))}`:''} · ${esc(t('pg_valid'))} <b>${esc(r.gueltig_bis)}</b></div>
+    ${r.min_menge&&r.ersparnis>0?`<div style="margin-top:4px;font-size:13px;font-weight:700;color:var(--ok-fg)">${esc(ti('rb_minorder',{n:r.min_menge,x:(Number(r.ersparnis)*Number(r.min_menge)).toFixed(2)}))}</div>`:''}
+    ${r.best_for_wirkstoff?`<div style="display:inline-block;margin-top:6px;background:rgba(11,127,40,.12);color:var(--ok-fg);border:1px solid rgba(11,127,40,.35);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px">${esc(ti('rb_best',{w:r.wirkstoff,alt:(r.wirkstoff_alternatives===1?t('rb_alt_one'):ti('rb_alt_many',{n:r.wirkstoff_alternatives}))}))}</div>`:''}
+    ${!r.best_for_wirkstoff&&r.wirkstoff_alternatives>0?`<div class="muted" style="margin-top:6px;font-size:13px">${esc(ti('rb_cheaper_hint',{w:r.wirkstoff}))}</div>`:''}
+    ${r.expiring_soon?`<div style="display:inline-block;margin-top:6px;background:${r.days_left<=3?'#c0392b':'#c77700'};color:#fff;font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px">⏳ ${esc(r.days_left<=0?t('rb_exp_today'):(r.days_left===1?t('rb_exp_one'):ti('pg_only_days',{d:r.days_left})))}</div>`:''}
     <div class="row" style="margin-top:8px">
-      <span class="muted">${r.post_count||0} Beiträge dazu</span>
+      <span class="muted">${esc(ti('pg_posts',{n:r.post_count||0}))}</span>
       <span class="sp" style="flex:1"></span>
-      <button class="ghost small" data-pp>✍ Dazu posten</button>
+      <button class="ghost small" data-pp>${esc(t('sc_post_about'))}</button>
     </div>
     <div class="hidden" data-ppbox style="margin-top:6px">
-      <textarea data-ppinput placeholder="z.B. Lohnt sich die Aktion bei ${esc(r.supplier)}?"></textarea>
-      <div style="margin-top:4px"><button class="small" data-ppsend>Posten</button></div>
+      <textarea data-ppinput placeholder="${esc(ti('rb_post_ph',{supplier:r.supplier}))}"></textarea>
+      <div style="margin-top:4px"><button class="small" data-ppsend>${esc(t('sc_post_send'))}</button></div>
     </div>
   </div>`);
   const ppbox = card.querySelector('[data-ppbox]');
