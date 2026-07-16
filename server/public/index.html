@@ -1309,14 +1309,16 @@ async function loadExchange() {
     let d;
     if (exchangeMine) {
       d = await api('GET','/api/exchange/mine');
-      if (!d.entries.length) { feed.appendChild(el('<div class="card muted">Du hast noch keine Einträge angelegt.</div>')); return; }
+      if (!d.entries.length) { feed.appendChild(emptyState({ icon:'🗂️', title:'Noch keine eigenen Einträge', text:'Du hast bisher nichts angeboten oder gesucht.', cta:{ label:'Eintrag anlegen', onClick:()=>{ const b=document.getElementById('ex_bez'); if(b){ b.focus(); b.scrollIntoView({behavior:'smooth',block:'center'}); } } } })); return; }
     } else {
       const params = new URLSearchParams();
       if (exchangeFilter) params.set('kind', exchangeFilter);
       if (exchangeQuery) params.set('q', exchangeQuery);
       if (exchangeBL) params.set('bundesland', exchangeBL);
       d = await api('GET','/api/exchange'+(params.toString()?'?'+params.toString():''));
-      if (!d.entries.length) { feed.appendChild(el(`<div class="card muted">${exchangeQuery?`Keine offenen Einträge zu „${esc(exchangeQuery)}".`:'Noch keine offenen Einträge. Sei der/die Erste!'}</div>`)); return; }
+      if (!d.entries.length) { feed.appendChild(exchangeQuery
+        ? emptyState({ icon:'🔍', title:`Nichts zu „${exchangeQuery}"`, text:'Keine offenen Biete-/Suche-Einträge für diesen Begriff. Filter zurücksetzen oder anderen Begriff probieren.' })
+        : emptyState({ icon:'🔄', title:'Noch keine offenen Einträge', text:'Biete Überbestand an oder suche dringend Benötigtes — sei der/die Erste.', cta:{ label:'Eintrag anlegen', onClick:()=>{ const b=document.getElementById('ex_bez'); if(b){ b.focus(); b.scrollIntoView({behavior:'smooth',block:'center'}); } } } })); return; }
     }
     d.entries.forEach(e => feed.appendChild(exchangeCard(e)));
   } catch(e){ feed.appendChild(el('<div class="card err">'+esc(e.message)+'</div>')); }
@@ -1541,7 +1543,7 @@ async function openBookmarks() {
     const head = el(`<div class="card"><div class="row"><b>🔖 Meine Merkliste</b><span class="sp" style="flex:1"></span><span class="muted">${d.posts.length}</span><button class="ghost small" data-back style="margin-left:10px">← zurück</button></div></div>`);
     head.querySelector('[data-back]').onclick = () => goTab('overview');
     feed.appendChild(head);
-    if (!d.posts.length) feed.appendChild(el('<div class="card muted">Noch nichts gemerkt. Tippe bei einem Beitrag auf „🔖 Merken".</div>'));
+    if (!d.posts.length) feed.appendChild(emptyState({ icon:'🔖', title:'Noch nichts gemerkt', text:'Tippe bei einem Beitrag auf „🔖 Merken", dann findest du ihn hier jederzeit wieder.' }));
     d.posts.forEach(p => feed.appendChild(postCard(p)));
   } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
 }
@@ -1801,7 +1803,7 @@ async function renderSearch(q) {
     const head = el(`<div class="card"><div class="row"><b>Suchergebnisse für „${esc(d.query)}"</b><span class="sp" style="flex:1"></span><span class="muted">${d.total} Treffer</span><button class="ghost small" data-back style="margin-left:10px">← zurück</button></div></div>`);
     head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
     feed.appendChild(head);
-    if (!d.total) { feed.appendChild(el('<div class="card muted">Keine Treffer. Andere Schreibweise probieren?</div>')); return; }
+    if (!d.total) { feed.appendChild(emptyState({ icon:'🔍', title:'Keine Treffer', text:`Für „${d.query}" wurde nichts gefunden. Andere Schreibweise oder ein kürzeres Stichwort probieren.` })); return; }
     // Direkter Weg zur Wirkstoff-Detailseite: aus den Treffern gefundene Wirkstoffe.
     const wset = new Map();
     [...d.shortages, ...d.prices, ...d.rabatte].forEach(x => { if (x.wirkstoff) wset.set(x.wirkstoff.toLowerCase(), x.wirkstoff); });

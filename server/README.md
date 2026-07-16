@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — Empty-States ausgeweitet (Suche/Merkliste/Austausch):** Die
+>   `emptyState()`-Komponente nun auch bei: Suche ohne Treffer (🔍 mit Suchbegriff),
+>   leerer Merkliste (🔖), Austausch „Meine" leer (🗂️ + CTA „Eintrag anlegen" → fokussiert
+>   das Formular) und offenem Austausch leer (🔄, mit/ohne Suchbegriff). Konsistente,
+>   handlungsleitende Leerzustände statt grauer Textzeilen. (Im Browser verifiziert inkl. CTA.)
 > - ✅ **Qualitäts-Audit — freundliche Empty-States (Feed):** Leere Feeds zeigten nur eine
 >   graue Textzeile. Neu: einheitliche `emptyState()`-Komponente (Icon + Titel + erklärender
 >   Text + optionale Aktion). Angewandt auf Mein Feed (📭 + Folge-Vorschläge), „Öffentlich"
