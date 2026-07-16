@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — freundliche Empty-States (Feed):** Leere Feeds zeigten nur eine
+>   graue Textzeile. Neu: einheitliche `emptyState()`-Komponente (Icon + Titel + erklärender
+>   Text + optionale Aktion). Angewandt auf Mein Feed (📭 + Folge-Vorschläge), „Öffentlich"
+>   leer (✍️ „Beitrag schreiben" → fokussiert den Composer) und Fragen-Filter leer (❓
+>   „Fachfrage stellen" → hakt Frage an + fokussiert Composer). (Im Browser verifiziert inkl.
+>   funktionierender CTA; Basis für weitere Empty-States.)
 > - ✅ **Qualitäts-Audit — Mobile-Bug behoben (Header + Tabs liefen über):** Auf dem Handy
 >   (390 px) liefen Header und die 8er-Tableiste horizontal über (docW 781 → Seiten-Scroll,
 >   4 Tabs nur per Scrollen erreichbar, „Abmelden" abgeschnitten). Jetzt: Tabs als

@@ -82,6 +82,11 @@
   .reacts button:hover { border-color:var(--green); }
   .muted { color:var(--muted); font-size:14px; }
   .err { color:var(--crit-fg); font-size:14px; margin-top:8px; }
+  /* Einheitlicher, freundlicher Leerzustand (Icon + Titel + Text + optionale Aktion). */
+  .empty { text-align:center; padding:34px 20px; }
+  .empty-ic { font-size:42px; line-height:1; }
+  .empty-t { font-size:17px; font-weight:700; margin-top:10px; }
+  .empty-s { margin-top:6px; max-width:44ch; margin-left:auto; margin-right:auto; }
   /* Einheitlicher, dezenter Lade-Indikator (Spinner + Text), theme-tauglich. */
   .loading { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:14px; padding:8px 2px; }
   .loading::before { content:''; width:18px; height:18px; border:3px solid var(--line); border-top-color:var(--green); border-radius:50%; animation:apo-spin .7s linear infinite; flex:none; }
@@ -717,6 +722,18 @@ async function renderWatchlistCard(feed, items, suggestions = []) {
 
 // Aktualisiert die kritische Kennzahl-Kachel nach Änderung der Beobachtungsliste.
 function refreshWatchAlerts() { /* Kennzahlen werden beim nächsten Overview-Aufruf frisch geladen */ }
+
+// Einheitlicher Leerzustand: Icon, Titel, erklärender Text, optionale Aktion.
+function emptyState({ icon = '🗒️', title, text = '', cta = null }) {
+  const card = el(`<div class="card empty">
+    <div class="empty-ic" aria-hidden="true">${icon}</div>
+    <div class="empty-t">${esc(title)}</div>
+    ${text ? `<div class="muted empty-s">${esc(text)}</div>` : ''}
+    ${cta ? `<div style="margin-top:12px"><button class="small" data-cta>${esc(cta.label)}</button></div>` : ''}
+  </div>`);
+  if (cta) card.querySelector('[data-cta]').onclick = cta.onClick;
+  return card;
+}
 
 function loadTab() {
   // Compose- und Folgen-Boxen gehören zum sozialen Feed — nur dort zeigen, damit
@@ -1475,10 +1492,14 @@ async function loadFeed() {
       feed.appendChild(bar);
     }
     if (!d.posts.length) {
-      const emptyMsg = tab==='home' ? 'Dein Feed ist noch leer. Folge Kolleg:innen, um ihre Beiträge zu sehen:'
-        : (publicFilter==='questions' ? 'Gerade keine offenen Fachfragen. Stell selbst eine über „❓ Als Fachfrage stellen".' : 'Noch keine Beiträge. Sei der/die Erste!');
-      feed.appendChild(el(`<div class="card muted">${emptyMsg}</div>`));
-      if (tab==='home') await renderSuggestions(feed);
+      if (tab==='home') {
+        feed.appendChild(emptyState({ icon:'📭', title:'Dein Feed ist noch leer', text:'Folge Kolleg:innen, dann erscheinen ihre Beiträge hier.' }));
+        await renderSuggestions(feed);
+      } else if (publicFilter==='questions') {
+        feed.appendChild(emptyState({ icon:'❓', title:'Keine offenen Fachfragen', text:'Gerade ist alles beantwortet. Stell selbst eine Frage — hake dazu „❓ Als Fachfrage stellen" an.', cta:{ label:'Fachfrage stellen', onClick:()=>{ const t=document.getElementById('pfrage'); if(t){ t.checked=true; } const b=document.getElementById('pb'); if(b){ b.focus(); b.scrollIntoView({behavior:'smooth',block:'center'}); } } } }));
+      } else {
+        feed.appendChild(emptyState({ icon:'✍️', title:'Noch keine Beiträge', text:'Sei der/die Erste und teile etwas mit der Community.', cta:{ label:'Beitrag schreiben', onClick:()=>{ const b=document.getElementById('pb'); if(b){ b.focus(); b.scrollIntoView({behavior:'smooth',block:'center'}); } } } }));
+      }
       return;
     }
     d.posts.forEach(p => feed.appendChild(postCard(p)));
