@@ -200,6 +200,10 @@ const I18N = {
     wl_empty:'Noch keine Wirkstoffe. Füge unten die hinzu, die du regelmäßig führst.',
     wl_view:'Ansehen', wl_remove:'Nicht mehr beobachten',
     wl_csv_title:'Beobachtungsliste mit Status als CSV (Excel) — z.B. für den Handverkaufstisch',
+    st_krit:'Kritischer Engpass', st_eing:'Eingeschränkt lieferbar', st_verf:'Wieder verfügbar',
+    st_none:'Aktuell keine Meldung',
+    st_krit_short:'🔴 Kritisch', st_eing_short:'🟠 Eingeschränkt', st_verf_short:'🟢 Verfügbar',
+    sp_crit_title:'🔴 Kritische Engpässe', sp_view_all:'Alle ansehen',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -225,6 +229,10 @@ const I18N = {
     wl_empty:'No substances yet. Add the ones you stock regularly below.',
     wl_view:'View', wl_remove:'Stop watching',
     wl_csv_title:'Watchlist with status as CSV (Excel) — e.g. for the counter',
+    st_krit:'Critical shortage', st_eing:'Limited availability', st_verf:'Available again',
+    st_none:'No current report',
+    st_krit_short:'🔴 Critical', st_eing_short:'🟠 Limited', st_verf_short:'🟢 Available',
+    sp_crit_title:'🔴 Critical shortages', sp_view_all:'View all',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -250,6 +258,10 @@ const I18N = {
     wl_empty:'Ainda sem substâncias. Adicione abaixo as que tem habitualmente.',
     wl_view:'Ver', wl_remove:'Deixar de vigiar',
     wl_csv_title:'Lista de vigilância com estado em CSV (Excel) — ex. para o balcão',
+    st_krit:'Falta crítica', st_eing:'Disponibilidade limitada', st_verf:'Disponível novamente',
+    st_none:'Sem informação atual',
+    st_krit_short:'🔴 Crítica', st_eing_short:'🟠 Limitada', st_verf_short:'🟢 Disponível',
+    sp_crit_title:'🔴 Faltas críticas', sp_view_all:'Ver todas',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -695,7 +707,7 @@ async function loadOverview() {
 
   // Kritische Engpässe (Top 3)
   if (d.shortages.top.length) {
-    const c = el(`<div class="card"><div class="row"><b>🔴 Kritische Engpässe</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>Alle ansehen</button></div>
+    const c = el(`<div class="card"><div class="row"><b>${esc(t('sp_crit_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>${esc(t('sp_view_all'))}</button></div>
       ${d.shortages.top.map(s=>`<div class="comment"><b>${esc(s.wirkstoff)}</b> <span class="muted">${esc(s.bezeichnung)}</span></div>`).join('')}</div>`);
     c.querySelector('[data-all]').onclick = () => goTab('shortages');
     feed.appendChild(c);
@@ -781,10 +793,10 @@ async function renderNearbyColleagues(feed) {
 
 // Status-Anzeige für beobachtete Wirkstoffe (Farb-Semantik: rot = kritisch).
 function watchStatusMeta(status) {
-  if (status === 'kritisch')        return { label: 'Kritischer Engpass', color: 'var(--crit-fg)', bg: 'rgba(192,57,43,.12)', icon: '🔴' };
-  if (status === 'eingeschraenkt')  return { label: 'Eingeschränkt lieferbar', color: 'var(--warn-fg)', bg: 'rgba(178,106,0,.12)', icon: '🟠' };
-  if (status === 'verfuegbar')      return { label: 'Wieder verfügbar', color: 'var(--ok-fg)', bg: 'rgba(11,127,40,.12)', icon: '🟢' };
-  return { label: 'Aktuell keine Meldung', color: 'var(--muted)', bg: 'var(--bg)', icon: '⚪' };
+  if (status === 'kritisch')        return { label: t('st_krit'), color: 'var(--crit-fg)', bg: 'rgba(192,57,43,.12)', icon: '🔴' };
+  if (status === 'eingeschraenkt')  return { label: t('st_eing'), color: 'var(--warn-fg)', bg: 'rgba(178,106,0,.12)', icon: '🟠' };
+  if (status === 'verfuegbar')      return { label: t('st_verf'), color: 'var(--ok-fg)', bg: 'rgba(11,127,40,.12)', icon: '🟢' };
+  return { label: t('st_none'), color: 'var(--muted)', bg: 'var(--bg)', icon: '⚪' };
 }
 
 async function renderWatchlistCard(feed, items, suggestions = []) {
@@ -984,7 +996,10 @@ async function loadNews() {
   } catch(e){ list.innerHTML = ''; list.appendChild(errorState(e.message, loadTab)); }
 }
 
-const STATUS = { kritisch:['🔴 Kritisch','#c0392b'], eingeschraenkt:['🟠 Eingeschränkt','#c77700'], verfuegbar:['🟢 Verfügbar','#0b7f28'] };
+// Status-Kurzlabel (übersetzt) + feste Farbe (Farb-Semantik bleibt sprachunabhängig).
+const STATUS_COLORS = { kritisch:'#c0392b', eingeschraenkt:'#c77700', verfuegbar:'#0b7f28' };
+const STATUS_I18N = { kritisch:'st_krit_short', eingeschraenkt:'st_eing_short', verfuegbar:'st_verf_short' };
+function statusShort(key) { return [ STATUS_I18N[key] ? t(STATUS_I18N[key]) : '?', STATUS_COLORS[key] || '#666' ]; }
 const PROV = { verified:'✔ BASG (verifiziert)', reference:'📌 Referenzdaten', simulated:'⚠ simuliert', editorial:'📰 Redaktion', community:'👥 Community-Meldung' };
 
 // Ehrlicher Länder-Hinweis: Die Live-Regulierungsdaten (Engpässe/Preise/Rabatte)
@@ -1147,7 +1162,7 @@ function reportShortageCard() {
 }
 
 function shortageCard(s) {
-  const [slabel, scol] = STATUS[s.status] || ['?','#666'];
+  const [slabel, scol] = statusShort(s.status);
   const card = el(`<div class="card">
     <div class="row">
       <span class="post-author clickable" data-wirkstoff="${esc(s.wirkstoff)}" title="Alles zu ${esc(s.wirkstoff)} ansehen">${esc(s.wirkstoff)}</span>
@@ -1355,7 +1370,7 @@ function exportRabatteCsv(list) {
 
 // Engpass-Liste (aktuell gefiltert) als CSV — u.a. zur Dokumentation der Nichtverfügbarkeit.
 function exportShortagesCsv(list) {
-  const statusText = { kritisch: 'Kritischer Engpass', eingeschraenkt: 'Eingeschränkt lieferbar', verfuegbar: 'Verfügbar' };
+  const statusText = { kritisch: t('st_krit'), eingeschraenkt: t('st_eing'), verfuegbar: t('st_verf') };
   const provText = { verified: 'BASG (verifiziert)', reference: 'Referenzdaten', editorial: 'Redaktion', community: 'Community-Meldung', simulated: 'simuliert' };
   const rows = (list || []).map(s => [
     s.wirkstoff, s.bezeichnung || '', statusText[s.status] || s.status || '', s.grund || '',
@@ -2394,7 +2409,7 @@ async function openWirkstoff(name) {
   const sbody = scard.querySelector('[data-sbody]');
   if (!d.shortages.length) sbody.appendChild(el('<div class="muted" style="font-size:14px">Aktuell keine Engpass-Meldung.</div>'));
   else d.shortages.forEach(s => {
-    const [lab,col] = STATUS[s.status] || ['?','#666'];
+    const [lab,col] = statusShort(s.status);
     sbody.appendChild(el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:12px">· ${esc(PROV[s.provenance]||s.provenance)}${s.grund?' · '+esc(s.grund):''}</span></div>`));
   });
   const sform = scard.querySelector('[data-sform]');

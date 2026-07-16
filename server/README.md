@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3f: Status-Vokabeln mehrsprachig (DE/EN/PT):** Die
+>   app-weit geteilten Engpass-Status (Kritisch/Eingeschränkt/Verfügbar) werden jetzt übersetzt —
+>   sowohl die Kurz-Badges (🔴/🟠/🟢) als auch die Langtexte (`watchStatusMeta`, `statusShort`,
+>   CSV-Export). Die **Farb-Semantik bleibt sprachunabhängig** (rot=kritisch, CLAUDE.md). Auch die
+>   „Kritische Engpässe"-Vorschau auf dem Dashboard ist übersetzt. (Browser verifiziert: PT-Nutzer
+>   sehen „🔴 Crítica / 🟠 Limitada / 🟢 Disponível" und „🔴 Faltas críticas".)
 > - 🌍 **Länderübergreifend — Schritt 3e: Beobachtungslisten-Karte mehrsprachig (DE/EN/PT):**
 >   Die „Meine beobachteten Wirkstoffe"-Karte auf dem Dashboard ist jetzt vollständig übersetzt:
 >   Titel, Untertitel, Melde-Badge (Singular/Plural), Schnell-Beobachten-Vorschläge,
