@@ -250,6 +250,14 @@ const I18N = {
     pr_at:'bei', pr_csv_title:'📊 Für den Einkauf', pr_csv_btn:'⬇️ Preisvergleich als CSV (Excel)',
     pr_csv_sub:'Alle Präparate & Lieferanten mit AEP, Trend und günstigstem Anbieter — zum Weiterverarbeiten in Excel.',
     pr_q_ph:'🔎 Präparat, Wirkstoff oder Lieferant suchen…', pr_empty:'Kein Präparat für diese Suche.',
+    pg_compare:'Preisvergleich (AEP) · günstigster oben ·',
+    pg_rose:'⚠️ Günstigster Anbieter zuletzt teurer (+{x}%) — Preis beobachten',
+    pg_cheaper:'💰 −€ {x} pro Packung günstiger bei {supplier}',
+    pg_act_title:'🏷️ Aktion günstiger als der beste Einkaufspreis', pg_instead:'statt',
+    pg_per_pack:'pro Packung', pg_aep:'(AEP)', pg_from:'ab {n} Stück',
+    pg_only_today:'nur noch heute', pg_only_days:'nur noch {d} Tage', pg_valid:'gültig bis',
+    pg_cheapest:'günstigster', pg_no_series:'keine Verlaufsdaten', pg_posts:'{n} Beiträge dazu',
+    pg_post_ph:'z.B. Preis bei {supplier} gerade gestiegen…',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -325,6 +333,14 @@ const I18N = {
     pr_at:'at', pr_csv_title:'📊 For purchasing', pr_csv_btn:'⬇️ Price comparison as CSV (Excel)',
     pr_csv_sub:'All products & suppliers with list price, trend and cheapest supplier — to process further in Excel.',
     pr_q_ph:'🔎 Search product, substance or supplier…', pr_empty:'No product for this search.',
+    pg_compare:'Price comparison (list) · cheapest on top ·',
+    pg_rose:'⚠️ Cheapest supplier recently more expensive (+{x}%) — watch the price',
+    pg_cheaper:'💰 −€ {x} per pack cheaper at {supplier}',
+    pg_act_title:'🏷️ Deal cheaper than the best purchase price', pg_instead:'instead of',
+    pg_per_pack:'per pack', pg_aep:'(list)', pg_from:'from {n} units',
+    pg_only_today:'today only', pg_only_days:'only {d} days left', pg_valid:'valid until',
+    pg_cheapest:'cheapest', pg_no_series:'no history data', pg_posts:'{n} posts about this',
+    pg_post_ph:'e.g. price at {supplier} just went up…',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -400,6 +416,14 @@ const I18N = {
     pr_at:'em', pr_csv_title:'📊 Para as compras', pr_csv_btn:'⬇️ Comparação de preços em CSV (Excel)',
     pr_csv_sub:'Todos os produtos e fornecedores com preço, tendência e fornecedor mais barato — para processar no Excel.',
     pr_q_ph:'🔎 Pesquisar produto, substância ou fornecedor…', pr_empty:'Nenhum produto para esta pesquisa.',
+    pg_compare:'Comparação de preços · mais barato no topo ·',
+    pg_rose:'⚠️ Fornecedor mais barato ficou mais caro (+{x}%) — vigie o preço',
+    pg_cheaper:'💰 −€ {x} por embalagem mais barato em {supplier}',
+    pg_act_title:'🏷️ Promoção mais barata que o melhor preço de compra', pg_instead:'em vez de',
+    pg_per_pack:'por embalagem', pg_aep:'(preço)', pg_from:'a partir de {n} unidades',
+    pg_only_today:'só hoje', pg_only_days:'faltam {d} dias', pg_valid:'válido até',
+    pg_cheapest:'mais barato', pg_no_series:'sem histórico', pg_posts:'{n} publicações sobre isto',
+    pg_post_ph:'ex. o preço em {supplier} acabou de subir…',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -1557,13 +1581,13 @@ function priceGroup(g) {
   const rose = cheapest && Number(cheapest.trend_pct) >= 5;
   const card = el(`<div class="card">
     <div class="post-author">${esc(g.bezeichnung)} ${g.wirkstoff?`<span class="handle clickable" data-wirkstoff="${esc(g.wirkstoff)}" title="Alles zu ${esc(g.wirkstoff)}">${esc(g.wirkstoff)}</span>`:''}</div>
-    <div class="muted" style="margin:2px 0 8px">Preisvergleich (AEP) · günstigster oben · 📌 Referenzdaten</div>
-    ${rose?`<div style="display:inline-block;background:#fdece9;color:var(--crit-fg);border:1px solid #f2c6bf;font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">⚠️ Günstigster Anbieter zuletzt teurer (+${Number(cheapest.trend_pct).toFixed(1)}%) — Preis beobachten</div>`:''}
-    ${g.saving_abs>0?`<div style="display:inline-block;background:rgba(11,127,40,.12);color:var(--ok-fg);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">💰 −€ ${Number(g.saving_abs).toFixed(2)} pro Packung günstiger bei ${esc(g.best_supplier)}</div>`:''}
+    <div class="muted" style="margin:2px 0 8px">${esc(t('pg_compare'))} ${esc(t('prov_reference'))}</div>
+    ${rose?`<div style="display:inline-block;background:#fdece9;color:var(--crit-fg);border:1px solid #f2c6bf;font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">${esc(ti('pg_rose',{x:Number(cheapest.trend_pct).toFixed(1)}))}</div>`:''}
+    ${g.saving_abs>0?`<div style="display:inline-block;background:rgba(11,127,40,.12);color:var(--ok-fg);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">${esc(ti('pg_cheaper',{x:Number(g.saving_abs).toFixed(2),supplier:g.best_supplier}))}</div>`:''}
     ${g.action?`<div style="background:rgba(11,127,40,.08);border:1px solid rgba(11,127,40,.35);border-radius:10px;padding:8px 10px;margin-bottom:8px">
-      <div style="font-weight:700;color:var(--ok-fg);font-size:14px">🏷️ Aktion günstiger als der beste Einkaufspreis</div>
-      <div style="font-size:13px;margin-top:2px">${esc(g.action.supplier)}: <b>€ ${Number(g.action.aktionspreis).toFixed(2)}</b> statt € ${Number(g.best_aep).toFixed(2)} (AEP) — <b>−€ ${Number(g.action.unter_aep_abs).toFixed(2)} pro Packung</b> · −${g.action.rabatt_pct}%</div>
-      <div class="muted" style="font-size:12px;margin-top:2px">ab ${g.action.min_menge} Stück${g.action.expiring_soon?` · <b style="color:${g.action.days_left<=3?'var(--crit-fg)':'var(--warn-fg)'}">nur noch ${g.action.days_left<=0?'heute':g.action.days_left+' Tage'}</b>`:` · gültig bis ${esc(g.action.gueltig_bis)}`} · 📌 Referenzdaten</div>
+      <div style="font-weight:700;color:var(--ok-fg);font-size:14px">${esc(t('pg_act_title'))}</div>
+      <div style="font-size:13px;margin-top:2px">${esc(g.action.supplier)}: <b>€ ${Number(g.action.aktionspreis).toFixed(2)}</b> ${esc(t('pg_instead'))} € ${Number(g.best_aep).toFixed(2)} ${esc(t('pg_aep'))} — <b>−€ ${Number(g.action.unter_aep_abs).toFixed(2)} ${esc(t('pg_per_pack'))}</b> · −${g.action.rabatt_pct}%</div>
+      <div class="muted" style="font-size:12px;margin-top:2px">${esc(ti('pg_from',{n:g.action.min_menge}))}${g.action.expiring_soon?` · <b style="color:${g.action.days_left<=3?'var(--crit-fg)':'var(--warn-fg)'}">${esc(g.action.days_left<=0?t('pg_only_today'):ti('pg_only_days',{d:g.action.days_left}))}</b>`:` · ${esc(t('pg_valid'))} ${esc(g.action.gueltig_bis)}`} · ${esc(t('prov_reference'))}</div>
     </div>`:''}
     <div data-offers></div>
   </div>`);
@@ -1571,19 +1595,19 @@ function priceGroup(g) {
   g.offers.forEach((o, i) => {
     const row = el(`<div class="comment"${i===0&&g.saving_abs>0?' style="background:rgba(11,127,40,.06);border-radius:8px"':''}>
       <div class="row">
-        <span>${i===0?'⭐ ':''}<b>${esc(o.supplier)}</b>${i===0?' <span style="color:var(--ok-fg);font-size:12px;font-weight:700">günstigster</span>':''}</span>
+        <span>${i===0?'⭐ ':''}<b>${esc(o.supplier)}</b>${i===0?` <span style="color:var(--ok-fg);font-size:12px;font-weight:700">${esc(t('pg_cheapest'))}</span>`:''}</span>
         <span class="sp" style="flex:1"></span>
-        <span title="Preisverlauf (AEP): ${Array.isArray(o.series)&&o.series.length?o.series.map(v=>'€ '+Number(v).toFixed(2).replace('.',',')).join(' → '):'keine Verlaufsdaten'}">${sparkline(o.series)}</span>
+        <span title="${Array.isArray(o.series)&&o.series.length?o.series.map(v=>'€ '+Number(v).toFixed(2).replace('.',',')).join(' → '):esc(t('pg_no_series'))}">${sparkline(o.series)}</span>
         <span style="margin-left:8px"><b>€ ${Number(o.aep).toFixed(2)}</b> ${trendStr(o.trend_pct)}</span>
       </div>
       <div class="row" style="margin-top:4px">
-        <span class="muted">${o.post_count||0} Beiträge dazu</span>
+        <span class="muted">${esc(ti('pg_posts',{n:o.post_count||0}))}</span>
         <span class="sp" style="flex:1"></span>
-        <button class="ghost small" data-pp>✍ Dazu posten</button>
+        <button class="ghost small" data-pp>${esc(t('sc_post_about'))}</button>
       </div>
       <div class="hidden" data-ppbox style="margin-top:6px">
-        <textarea data-ppinput placeholder="z.B. Preis bei ${esc(o.supplier)} gerade gestiegen…"></textarea>
-        <div style="margin-top:4px"><button class="small" data-ppsend>Posten</button></div>
+        <textarea data-ppinput placeholder="${esc(ti('pg_post_ph',{supplier:o.supplier}))}"></textarea>
+        <div style="margin-top:4px"><button class="small" data-ppsend>${esc(t('sc_post_send'))}</button></div>
       </div>
     </div>`);
     const ppbox = row.querySelector('[data-ppbox]');

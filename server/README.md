@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3l: Preisvergleichs-Karten mehrsprachig — Reiter komplett:**
+>   Die einzelnen `priceGroup`-Karten sind jetzt DE/EN/PT: Vergleichs-Untertitel, Trend-Warnung,
+>   Ersparnis-Badge, Aktions-Box (statt/pro Packung/gültig-bis/nur-noch-X-Tage, mit Interpolation),
+>   Lieferanten-Zeilen (günstigster, „N Beiträge", Posten-Feld). Damit ist der **gesamte
+>   Preise-Reiter** in der Landessprache. (Browser verifiziert: Preisvergleich auf Portugiesisch,
+>   keine JS-Fehler.)
 > - 🌍 **Länderübergreifend — Schritt 3k: Preise-Reiter (Kopf) mehrsprachig:** Sparpotenzial-
 >   Kachel (mit Betrag/Anzahl-Interpolation, Singular/Plural), CSV-Export-Karte, Suchleiste und
 >   Leerzustand sind jetzt DE/EN/PT. Die lokale `let t`-Debounce-Variable in `loadPrices` wurde
