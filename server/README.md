@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — Informationshierarchie korrigiert:** Bisher standen Suche,
+>   Post-Compose und „Jemandem folgen" **über den Tabs auf jedem Reiter** — man scrollte auf
+>   Engpässe/Preise/Rabatte erst an zwei Formularen vorbei (~660 px verschenkt). Jetzt:
+>   schlanke Suche → Tabs → Inhalt; Compose/Folgen erscheinen nur noch auf den Social-Feed-
+>   Reitern (Öffentlich/Mein Feed). Daten-Reiter starten den Inhalt bei ~256 px statt ~660 px
+>   (Inhalt „above the fold", weniger Scrollen). (Frontend-Restrukturierung; Posten/Folgen
+>   weiter funktionsfähig; im Browser verifiziert inkl. Screenshot, keine JS-Fehler.)
 > - ✅ **Rabatt-Aktionen als CSV exportieren:** Der Rabatt-Reiter bekommt (wie Preise/Engpässe)
 >   einen „⬇️ CSV (N)"-Export der aktuell gefilterten Aktionen für den Einkauf — Rang,
 >   Präparat, Wirkstoff, Lieferant, Listen-/Aktionspreis, Rabatt %, Ersparnis/Pkg,

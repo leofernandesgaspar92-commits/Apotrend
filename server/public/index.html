@@ -289,37 +289,8 @@ async function mainScreen() {
 
   app.innerHTML = '';
   app.appendChild(el(`
-    <div class="card">
-      <label>🔎 Suche (Personen, Beiträge, Engpässe, Preise, Rabatte)</label>
-      <div class="row"><input id="sq" placeholder="z.B. Amoxicillin, Onkologie, @ben_mayer…"><button class="small" id="sgo">Suchen</button></div>
-    </div>
-    <div class="card">
-      <label>Was gibt's Neues? (kurzer Fachbeitrag)</label>
-      <textarea id="pb" placeholder="Bei uns gerade Engpass bei Amoxicillin — wer hat noch Bestand?"></textarea>
-      <input id="psrc" placeholder="🔗 Quelle (Link, optional – z.B. BASG/Kammer)" style="margin-top:6px">
-      <div class="row" style="margin-top:6px">
-        <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px">📷 Bild<input type="file" id="pimg" accept="image/*" style="display:none"></label>
-        <span class="muted" id="pimgname" style="font-size:13px"></span>
-        <button class="ghost small" id="pimgclear" style="display:none">✕ entfernen</button>
-      </div>
-      <img id="pimgprev" style="display:none;max-width:100%;border-radius:8px;margin-top:6px" />
-      <label style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer;font-size:14px">
-        <input type="checkbox" id="pfrage" style="width:auto;min-height:0"> ❓ Als Fachfrage stellen (beste Antwort auswählbar)
-      </label>
-      <div class="row" style="margin-top:8px">
-        <select id="pv" style="max-width:220px">
-          <option value="public">🌍 Öffentlich (alle Apotheker)</option>
-          <option value="followers">👥 Nur meine Follower</option>
-        </select>
-        <span class="sp" style="flex:1"></span>
-        <button id="pgo">Posten</button>
-      </div>
-      <div class="err" id="perr"></div>
-    </div>
-    <div class="card">
-      <label>Jemandem folgen (@Handle)</label>
-      <div class="row"><input id="fh" placeholder="ben_mayer"><button class="ghost small" id="fgo">Folgen</button></div>
-      <div class="err" id="ferr"></div>
+    <div class="card" style="padding:10px 12px">
+      <div class="row"><input id="sq" placeholder="🔎 Suchen: Wirkstoff, Kolleg:in (@handle), Beitrag, Engpass, Preis…" aria-label="Suche"><button class="small" id="sgo">Suchen</button></div>
     </div>
     <div class="tabs">
       <button data-tab="overview" class="active">✨ Für dich</button>
@@ -330,6 +301,36 @@ async function mainScreen() {
       <button data-tab="rabatte">🏷️ Top-Rabatte</button>
       <button data-tab="exchange">🔄 Biete/Suche</button>
       <button data-tab="news">📰 News</button>
+    </div>
+    <div id="socialCompose" style="display:none">
+      <div class="card">
+        <label>Was gibt's Neues? (kurzer Fachbeitrag)</label>
+        <textarea id="pb" placeholder="Bei uns gerade Engpass bei Amoxicillin — wer hat noch Bestand?"></textarea>
+        <input id="psrc" placeholder="🔗 Quelle (Link, optional – z.B. BASG/Kammer)" style="margin-top:6px">
+        <div class="row" style="margin-top:6px">
+          <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px">📷 Bild<input type="file" id="pimg" accept="image/*" style="display:none"></label>
+          <span class="muted" id="pimgname" style="font-size:13px"></span>
+          <button class="ghost small" id="pimgclear" style="display:none">✕ entfernen</button>
+        </div>
+        <img id="pimgprev" style="display:none;max-width:100%;border-radius:8px;margin-top:6px" />
+        <label style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer;font-size:14px">
+          <input type="checkbox" id="pfrage" style="width:auto;min-height:0"> ❓ Als Fachfrage stellen (beste Antwort auswählbar)
+        </label>
+        <div class="row" style="margin-top:8px">
+          <select id="pv" style="max-width:220px">
+            <option value="public">🌍 Öffentlich (alle Apotheker)</option>
+            <option value="followers">👥 Nur meine Follower</option>
+          </select>
+          <span class="sp" style="flex:1"></span>
+          <button id="pgo">Posten</button>
+        </div>
+        <div class="err" id="perr"></div>
+      </div>
+      <div class="card">
+        <label>Jemandem folgen (@Handle)</label>
+        <div class="row"><input id="fh" placeholder="ben_mayer"><button class="ghost small" id="fgo">Folgen</button></div>
+        <div class="err" id="ferr"></div>
+      </div>
     </div>
     <div id="feed"></div>
   `));
@@ -685,6 +686,10 @@ async function renderWatchlistCard(feed, items, suggestions = []) {
 function refreshWatchAlerts() { /* Kennzahlen werden beim nächsten Overview-Aufruf frisch geladen */ }
 
 function loadTab() {
+  // Compose- und Folgen-Boxen gehören zum sozialen Feed — nur dort zeigen, damit
+  // die Daten-Reiter (Engpässe/Preise/Rabatte/…) nicht hinter Formularen liegen.
+  const sc = document.getElementById('socialCompose');
+  if (sc) sc.style.display = (tab === 'public' || tab === 'home') ? '' : 'none';
   if (tab === 'overview') return loadOverview();
   if (tab === 'shortages') return loadShortages();
   if (tab === 'prices') return loadPrices();
