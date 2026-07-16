@@ -6,6 +6,14 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3b: Ehrlicher Länder-Datenhinweis:** Die Live-
+>   Regulierungsdaten (Engpässe/Preise/Rabatte) stammen derzeit aus 🇦🇹 Österreich. Bei
+>   aktivem Nicht-AT-Land erscheint jetzt ganz oben auf Dashboard, Engpässen, Preisen und
+>   Rabatten ein klarer, mehrsprachiger Hinweis (DE/EN/PT), dass diese Zahlen aus Österreich
+>   stammen und der soziale Feed/News bereits länderspezifisch sind — statt AT-Daten
+>   stillschweigend als Landesdaten auszugeben (Quellen-/Sicherheitspflicht, CLAUDE.md).
+>   Neuer `countryDataNotice()`-Helfer + `ti()` (Platzhalter-Interpolation). (Browser verifiziert:
+>   AT ohne Hinweis; PT/GB mit Hinweis in Landessprache auf allen vier Ansichten.)
 > - 🌍 **Länderübergreifend — Schritt 3: i18n-Navigation + Land-/Sprach-Umschalter:** Neuer,
 >   framework­loser i18n-Kern im Frontend (`I18N`-Wörterbuch DE/EN/PT, `t()`, `setLocale()`,
 >   `applyI18n()` über `data-i18n`/`data-i18n-ph`/`data-i18n-title`). Übersetzt sind Navigation,

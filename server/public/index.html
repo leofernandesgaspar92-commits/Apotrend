@@ -185,6 +185,8 @@ const I18N = {
     hdr_logout:'Abmelden', country_title:'Land wechseln (stellt auch die Sprache um)',
     search_go:'Suchen', theme_dark:'Dunkel', theme_light:'Hell', font_label:'Schrift',
     theme_to_dark:'Zu dunklem Modus wechseln', theme_to_light:'Zu hellem Modus wechseln',
+    data_notice_title:'ℹ️ Hinweis zu den Daten für {land}',
+    data_notice_body:'Die Live-Regulierungsdaten (Engpässe, Preise, Rabatte) decken derzeit 🇦🇹 Österreich ab. Für {land} bauen wir sie schrittweise mit den lokalen Behörden aus. Der soziale Feed und die News sind bereits länderspezifisch — die unten gezeigten Zahlen stammen aus Österreich.',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -195,6 +197,8 @@ const I18N = {
     hdr_logout:'Log out', country_title:'Change country (also switches the language)',
     search_go:'Search', theme_dark:'Dark', theme_light:'Light', font_label:'Text size',
     theme_to_dark:'Switch to dark mode', theme_to_light:'Switch to light mode',
+    data_notice_title:'ℹ️ About the data for {land}',
+    data_notice_body:'The live regulatory data (shortages, prices, deals) currently covers 🇦🇹 Austria. For {land} we are building it out step by step with the local authorities. The social feed and news are already country-specific — the figures shown below are from Austria.',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -205,6 +209,8 @@ const I18N = {
     hdr_logout:'Sair', country_title:'Mudar de país (muda também o idioma)',
     search_go:'Pesquisar', theme_dark:'Escuro', theme_light:'Claro', font_label:'Tamanho',
     theme_to_dark:'Mudar para modo escuro', theme_to_light:'Mudar para modo claro',
+    data_notice_title:'ℹ️ Sobre os dados de {land}',
+    data_notice_body:'Os dados regulatórios em tempo real (faltas, preços, descontos) cobrem atualmente a 🇦🇹 Áustria. Para {land} estamos a construí-los passo a passo com as autoridades locais. O feed social e as notícias já são específicos por país — os números abaixo são da Áustria.',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -216,6 +222,12 @@ function setLocale(l) {
   document.documentElement.setAttribute('lang', LOCALE);
 }
 // Füllt alle [data-i18n]-Elemente (Textinhalt) und [data-i18n-ph] (Platzhalter).
+// t() mit einfacher Platzhalter-Ersetzung: ti('key', {land:'…'}) -> {land} wird ersetzt.
+function ti(key, vars) {
+  let s = t(key);
+  if (vars) for (const k in vars) s = s.split('{'+k+'}').join(vars[k]);
+  return s;
+}
 function applyI18n(root) {
   const scope = root || document;
   scope.querySelectorAll('[data-i18n]').forEach(n => { n.textContent = t(n.getAttribute('data-i18n')); });
@@ -565,6 +577,7 @@ async function loadOverview() {
   try { d = await api('GET','/api/overview'); }
   catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   feed.innerHTML = '';
+  { const n = countryDataNotice(); if (n) feed.appendChild(n); }
   const hello = me ? (me.display_name || '@'+me.handle) : '';
   const firstName = hello ? (hello.split(/\s+/).find(w => !/\.$/.test(w)) || hello) : '';
   // Kennzahlen-Kacheln
@@ -923,6 +936,21 @@ async function loadNews() {
 const STATUS = { kritisch:['🔴 Kritisch','#c0392b'], eingeschraenkt:['🟠 Eingeschränkt','#c77700'], verfuegbar:['🟢 Verfügbar','#0b7f28'] };
 const PROV = { verified:'✔ BASG (verifiziert)', reference:'📌 Referenzdaten', simulated:'⚠ simuliert', editorial:'📰 Redaktion', community:'👥 Community-Meldung' };
 
+// Ehrlicher Länder-Hinweis: Die Live-Regulierungsdaten (Engpässe/Preise/Rabatte)
+// stammen derzeit aus Österreich. Für andere Länder das offen ausweisen, statt
+// AT-Daten stillschweigend als Landesdaten zu zeigen (Sicherheits-/Quellenpflicht,
+// CLAUDE.md). Gibt null zurück, wenn das aktive Land Österreich ist.
+function countryDataNotice() {
+  const cc = (me && me.country) || 'AT';
+  if (cc === 'AT') return null;
+  const c = (COUNTRIES_CACHE || []).find(x => x.code === cc);
+  const land = c ? `${c.flag} ${c.name}` : cc;
+  return el(`<div class="card" style="border-color:var(--info-bd);background:var(--info-bg);color:var(--info-fg)">
+    <b>${esc(ti('data_notice_title', { land }))}</b>
+    <div style="margin-top:6px;font-size:14px;line-height:1.5">${esc(ti('data_notice_body', { land }))}</div>
+  </div>`);
+}
+
 // Aufklappbare Legende zur Datenherkunft — schafft Vertrauen bei nicht-technischen
 // Fachleuten und macht die Quellenpflicht sichtbar (CLAUDE.md). Standard: zugeklappt.
 function provenanceLegend() {
@@ -948,6 +976,7 @@ async function loadShortages() {
   try {
     const d = await api('GET','/api/shortages');
     feed.innerHTML = '';
+    { const n = countryDataNotice(); if (n) feed.appendChild(n); }
     feed.appendChild(provenanceLegend());
     feed.appendChild(reportShortageCard());
     const bar = shortageFilterBar();
@@ -1202,6 +1231,7 @@ async function loadPrices() {
   try {
     const d = await api('GET','/api/prices');
     feed.innerHTML = '';
+    { const n = countryDataNotice(); if (n) feed.appendChild(n); }
     feed.appendChild(provenanceLegend());
     if (d.savings && d.savings.count) {
       const s = d.savings;
@@ -1498,6 +1528,7 @@ async function loadRabatte() {
   try {
     const d = await api('GET','/api/rabatte');
     feed.innerHTML = '';
+    { const n = countryDataNotice(); if (n) feed.appendChild(n); }
     feed.appendChild(provenanceLegend());
     feed.appendChild(el('<div class="card muted" style="margin-bottom:10px">🏷️ <b>Top-10 Rabatt-Aktionen</b> · höchster Rabatt oben · nur laufende Aktionen · 📌 Referenzdaten</div>'));
     if (!d.rabatte.length) { feed.appendChild(emptyState({ icon:'🏷️', title:'Derzeit keine laufenden Aktionen', text:'Aktuell sind keine Rabatt-Aktionen hinterlegt. Schau später wieder vorbei.' })); return; }
