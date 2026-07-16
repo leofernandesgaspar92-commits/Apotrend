@@ -1604,12 +1604,21 @@ function zettelBody(z) {
     <div style="font-size:14px;margin-top:14px">${esc(L.fragen)}</div>
     <div style="font-size:11.5px;color:#4a5a51;margin-top:12px;font-style:italic">${esc(L.herkunft)}</div>`;
 }
-function printZettel(z) {
-  const w = window.open('', '_blank');
-  if (!w) { alert('Bitte Popups für den Druck erlauben.'); return; }
-  w.document.write(`<!doctype html><html lang="${esc(z.lang)}"><head><meta charset="utf-8"><title>${esc(ZETTEL_L[z.lang].title)}</title>
+// Komplette Druckseite: Einnahmeplan, optional plus Patienten-Infokarten
+// (gleiche Sprache) auf einer Folgeseite — ein Druckauftrag bei der Abgabe.
+function zettelPrintHtml(z, cards) {
+  const cardsHtml = cards ? `<div style="break-before:page;page-break-before:always">
+      <h1 style="font-size:20px">🧫 ${esc(cards.lang === 'en' ? 'Antibiotics – Patient information' : cards.lang === 'tr' ? 'Antibiyotikler – Hasta bilgisi' : 'Antibiotika – Patienteninformation')}</h1>
+      ${cards.cards.map(c => `<div style="border:1px solid #cbd5cf;border-radius:8px;padding:12px 14px;margin:10px 0;break-inside:avoid"><h2 style="font-size:16px;margin:0 0 4px">${esc(c.icon)} ${esc(c.title)}</h2><p style="margin:0;font-size:14px;line-height:1.5">${esc(c.body)}</p></div>`).join('')}
+      <div style="font-size:12px;color:#555;margin-top:14px">${esc(cards.source.label)} · ${esc(cards.source.url)}<br>${esc(cards.disclaimer)}</div>
+    </div>` : '';
+  return `<!doctype html><html lang="${esc(z.lang)}"><head><meta charset="utf-8"><title>${esc(ZETTEL_L[z.lang].title)}</title>
     <style>body{font-family:system-ui,-apple-system,sans-serif;max-width:640px;margin:28px auto;padding:0 18px;color:#111}</style></head>
-    <body>${zettelBody(z)}<script>window.onload=function(){window.print();}<\/script></body></html>`);
+    <body>${zettelBody(z)}${cardsHtml}<script>window.onload=function(){window.print();}<\/script></body></html>`;
+}
+function writeZettel(w, z, cards) {
+  w.document.open();
+  w.document.write(zettelPrintHtml(z, cards));
   w.document.close();
 }
 function openBegleitzettel() {
@@ -1643,6 +1652,9 @@ function openBegleitzettel() {
     <textarea data-z-h placeholder="z.B. Mit einem großen Glas Wasser einnehmen."></textarea>
     <label style="margin-top:8px">Sprache des Zettels</label>
     <div class="row" data-z-langs style="gap:6px;flex-wrap:wrap"></div>
+    <label style="margin-top:10px;display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer">
+      <input type="checkbox" data-z-cards style="width:auto;margin:0"> 🧫 Antibiotika-Infokarten in gewählter Sprache mitdrucken (Folgeseite)
+    </label>
     <div class="row" style="margin-top:12px;gap:8px"><button class="small" data-z-print>🖨️ Begleitzettel drucken</button><span class="err" data-z-err style="font-size:13px"></span></div>
   </div>`);
   const preview = el(`<div class="card"><div class="muted" style="font-size:12px;margin-bottom:8px">Vorschau (so sieht es Patient:in):</div><div data-z-prev style="background:#fff;color:#111;border:1px solid var(--line,#ccc);border-radius:10px;padding:16px"></div></div>`);
@@ -1669,11 +1681,19 @@ function openBegleitzettel() {
   };
   drawLangs();
   form.querySelectorAll('input,textarea,select').forEach(i => i.oninput = drawPrev);
-  form.querySelector('[data-z-print]').onclick = () => {
+  form.querySelector('[data-z-print]').onclick = async () => {
     const err = form.querySelector('[data-z-err]'); err.textContent = '';
     const z = readZ();
     if (!z.praeparat) { err.textContent = 'Bitte das Arzneimittel angeben.'; return; }
-    printZettel(z);
+    // Fenster synchron im Klick öffnen (Popup-Blocker), Inhalt danach schreiben.
+    const w = window.open('', '_blank');
+    if (!w) { err.textContent = 'Bitte Popups für den Druck erlauben.'; return; }
+    let cards = null;
+    if (form.querySelector('[data-z-cards]').checked) {
+      try { cards = await api('GET','/api/patient-info?lang='+encodeURIComponent(z.lang)); }
+      catch { /* Karten optional — Zettel drucken trotzdem */ }
+    }
+    writeZettel(w, z, cards);
   };
   feed.appendChild(form);
   feed.appendChild(preview);

@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Begleitzettel + Infokarten in einem Druck:** Im Abgabe-Begleitzettel kann per
+>   Checkbox „🧫 Antibiotika-Infokarten mitdrucken" gewählt werden — die Patienten-Infokarten
+>   erscheinen dann in derselben Sprache auf einer Folgeseite (Seitenumbruch) desselben
+>   Druckauftrags, inkl. Quelle/Disclaimer. Ein Druckvorgang bei der Abgabe statt zwei.
+>   Popup wird synchron im Klick geöffnet (kein Popup-Blocker); Karten optional — bei
+>   Ladefehler druckt der Zettel trotzdem. (Frontend; im Browser verifiziert, DE/TR.)
 > - ✅ **„Offene Fachfragen" auf der Startübersicht:** Bis zu 3 unbeantwortete Fragen
 >   anderer Kolleg:innen (eigene ausgenommen) erscheinen als klickbare Karte auf „Für dich"
 >   — Klick öffnet die Frage direkt. Bringt Fragen schneller zu Antworten und speist die
