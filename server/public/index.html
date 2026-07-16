@@ -466,7 +466,7 @@ async function loadOverview() {
   feed.innerHTML = '<div class="loading">lädt…</div>';
   let d;
   try { d = await api('GET','/api/overview'); }
-  catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
+  catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   feed.innerHTML = '';
   const hello = me ? (me.display_name || '@'+me.handle) : '';
   const firstName = hello ? (hello.split(/\s+/).find(w => !/\.$/.test(w)) || hello) : '';
@@ -726,6 +726,19 @@ async function renderWatchlistCard(feed, items, suggestions = []) {
 // Aktualisiert die kritische Kennzahl-Kachel nach Änderung der Beobachtungsliste.
 function refreshWatchAlerts() { /* Kennzahlen werden beim nächsten Overview-Aufruf frisch geladen */ }
 
+// Einheitlicher Fehlerzustand: freundliche Karte statt nackter roter Textzeile,
+// mit „Erneut versuchen"-Aktion.
+function errorState(message, onRetry) {
+  const card = el(`<div class="card empty">
+    <div class="empty-ic" aria-hidden="true">⚠️</div>
+    <div class="empty-t">Das hat nicht geklappt</div>
+    <div class="err empty-s" role="alert" style="margin-top:6px">${esc(message || 'Unbekannter Fehler. Bitte erneut versuchen.')}</div>
+    ${onRetry ? `<div style="margin-top:12px"><button class="small" data-retry>↻ Erneut versuchen</button></div>` : ''}
+  </div>`);
+  if (onRetry) card.querySelector('[data-retry]').onclick = onRetry;
+  return card;
+}
+
 // Einheitlicher Leerzustand: Icon, Titel, erklärender Text, optionale Aktion.
 function emptyState({ icon = '🗒️', title, text = '', cta = null }) {
   const card = el(`<div class="card empty">
@@ -792,7 +805,7 @@ async function loadNews() {
     list.innerHTML = '';
     if (!d.posts.length) { list.innerHTML = '<div class="card muted">Noch keine News.</div>'; return; }
     d.posts.forEach(p => list.appendChild(postCard(p)));
-  } catch(e){ list.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+  } catch(e){ list.innerHTML = ''; list.appendChild(errorState(e.message, loadTab)); }
 }
 
 const STATUS = { kritisch:['🔴 Kritisch','#c0392b'], eingeschraenkt:['🟠 Eingeschränkt','#c77700'], verfuegbar:['🟢 Verfügbar','#0b7f28'] };
@@ -830,7 +843,7 @@ async function loadShortages() {
     const listBox = el('<div data-shortlist></div>');
     feed.appendChild(listBox);
     renderShortlist(listBox, bar, d.shortages);
-  } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+  } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
 
 // Filtert die (bereits geladenen) Engpässe und füllt nur die Listenbox — die
@@ -1108,7 +1121,7 @@ async function loadPrices() {
     const pq = bar.querySelector('[data-pq]');
     let t; pq.oninput = () => { clearTimeout(t); t = setTimeout(() => { priceQuery = pq.value; draw(); }, 250); };
     draw();
-  } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+  } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
 
 // Generischer CSV-Download im deutschen Excel-Format: Semikolon-Trenner,
@@ -1324,7 +1337,7 @@ async function loadExchange() {
         : emptyState({ icon:'🔄', title:'Noch keine offenen Einträge', text:'Biete Überbestand an oder suche dringend Benötigtes — sei der/die Erste.', cta:{ label:'Eintrag anlegen', onClick:()=>{ const b=document.getElementById('ex_bez'); if(b){ b.focus(); b.scrollIntoView({behavior:'smooth',block:'center'}); } } } })); return; }
     }
     d.entries.forEach(e => feed.appendChild(exchangeCard(e)));
-  } catch(e){ feed.appendChild(el('<div class="card err">'+esc(e.message)+'</div>')); }
+  } catch(e){ feed.appendChild(errorState(e.message, loadTab)); }
 }
 
 function exchangeCard(e) {
@@ -1405,7 +1418,7 @@ async function loadRabatte() {
     const qi = bar.querySelector('[data-q]');
     let t; qi.oninput = () => { clearTimeout(t); t = setTimeout(() => { rabattQuery = qi.value; draw(); }, 250); };
     draw();
-  } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+  } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
 
 function rabattCard(r) {
@@ -1508,7 +1521,7 @@ async function loadFeed() {
       return;
     }
     d.posts.forEach(p => feed.appendChild(postCard(p)));
-  } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+  } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
 
 async function renderSuggestions(feed) {
@@ -1548,7 +1561,7 @@ async function openBookmarks() {
     feed.appendChild(head);
     if (!d.posts.length) feed.appendChild(emptyState({ icon:'🔖', title:'Noch nichts gemerkt', text:'Tippe bei einem Beitrag auf „🔖 Merken", dann findest du ihn hier jederzeit wieder.' }));
     d.posts.forEach(p => feed.appendChild(postCard(p)));
-  } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+  } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
 
 async function openHashtag(tag) {
@@ -1564,7 +1577,7 @@ async function openHashtag(tag) {
     feed.appendChild(head);
     if (!d.posts.length) feed.appendChild(emptyState({ icon:'🏷️', title:'Noch keine Beiträge zu diesem Thema', text:`Sei der/die Erste und schreibe etwas mit #${d.tag}.` }));
     d.posts.forEach(p => feed.appendChild(postCard(p)));
-  } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+  } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
 
 // Stewardship-Fachforum: kuratierter Themen-Einstieg über den #stewardship-Hashtag,
@@ -1576,7 +1589,7 @@ async function openStewardship() {
   feed.innerHTML = '<div class="loading">lädt…</div>';
   let d;
   try { d = await api('GET','/api/hashtag/stewardship'); }
-  catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
+  catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   feed.innerHTML = '';
   const head = el(`<div class="card" style="border-left:4px solid #0b7f28">
     <div><button class="ghost small" data-back>← zurück</button></div>
@@ -1630,7 +1643,7 @@ async function openPatientInfo() {
   feed.innerHTML = '<div class="loading">lädt…</div>';
   let d;
   try { d = await api('GET','/api/patient-info?lang='+encodeURIComponent(patientLang)); }
-  catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
+  catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   feed.innerHTML = '';
   const head = el(`<div class="card" style="border-left:4px solid #0b7f28">
     <div><button class="ghost small" data-back>← zurück</button></div>
@@ -1846,7 +1859,7 @@ async function renderSearch(q) {
     }
     if (d.rabatte.length) { section('🏷️ Rabatt-Aktionen'); d.rabatte.forEach((r,i) => { r.rank = i+1; feed.appendChild(rabattCard(r)); }); }
     if (d.exchange && d.exchange.length) { section('🔄 Biete/Suche'); d.exchange.forEach(e => feed.appendChild(exchangeCard(e))); }
-  } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+  } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
 
 function editProfileForm(p) {
@@ -1981,7 +1994,7 @@ async function openProfile(handle) {
     }
     if (!d.posts.length) feed.appendChild(el('<div class="card muted">Noch keine sichtbaren Beiträge.</div>'));
     d.posts.forEach(post => feed.appendChild(postCard(post)));
-  } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+  } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
 
 // Follower- bzw. Folge-Liste eines Profils.
@@ -1991,7 +2004,7 @@ async function openFollowList(handle, which) {
   feed.innerHTML = '<div class="loading">lädt…</div>';
   let d;
   try { d = await api('GET',`/api/profiles/${encodeURIComponent(handle)}/${which}`); }
-  catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
+  catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   feed.innerHTML = '';
   const title = which === 'followers' ? 'Follower von' : 'Gefolgt von';
   const head = el(`<div class="card"><div><button class="ghost small" data-back>← zurück zum Profil</button></div>
@@ -2030,7 +2043,7 @@ async function openMyActivity() {
   feed.innerHTML = '<div class="loading">lädt…</div>';
   let d;
   try { d = await api('GET','/api/me/activity'); }
-  catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
+  catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   feed.innerHTML = '';
   const head = el(`<div class="card"><div><button class="ghost small" data-back>← zurück</button></div>
     <h1 style="margin:8px 0 2px">🗂️ Meine Aktivität</h1>
@@ -2104,7 +2117,7 @@ async function openWirkstoff(name) {
   feed.innerHTML = '<div class="loading">lädt…</div>';
   let d;
   try { d = await api('GET','/api/wirkstoff/'+encodeURIComponent(name)); }
-  catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
+  catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   recordRecentWirkstoff(d.wirkstoff);
   feed.innerHTML = '';
   const head = el(`<div class="card"><div><button class="ghost small" data-back>← zurück</button></div>
@@ -2544,14 +2557,14 @@ async function openPost(postId) {
     const cardEl = postCard(d.post);
     feed.appendChild(cardEl);
     cardEl.querySelector('[data-comments]').click(); // Kommentare gleich aufklappen
-  } catch(e){ feed.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; }
+  } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
 
 async function showModeration() {
-  app.innerHTML = '<div class="card muted">lädt…</div>';
+  app.innerHTML = '<div class="loading">lädt…</div>';
   let d, vq, sh;
   try { d = await api('GET','/api/reports'); vq = await api('GET','/api/verify/requests'); sh = await api('GET','/api/shortages'); }
-  catch(e){ app.innerHTML = '<div class="card err">'+esc(e.message)+'</div>'; return; }
+  catch(e){ app.innerHTML = ''; app.appendChild(errorState(e.message, showModeration)); return; }
   app.innerHTML = '';
   const krit = (sh.shortages||[]).filter(s => s.status === 'kritisch').length;
   const comm = (sh.shortages||[]).filter(s => s.provenance === 'community').length;

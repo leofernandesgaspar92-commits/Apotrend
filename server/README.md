@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — freundliche Fehler-States mit Retry:** API-Fehler zeigten nur eine
+>   nackte rote Textzeile ohne Ausweg. Neu: `errorState()`-Karte (⚠️ „Das hat nicht geklappt" +
+>   Meldung + „↻ Erneut versuchen"). Auf alle Vollseiten-Fehler angewandt (Reiter → `loadTab`,
+>   Moderations-Dashboard → eigener Reload). Nebenbei: der bei der Spinner-Migration übersehene
+>   Moderations-Loader nutzt jetzt auch `.loading`. (Browser verifiziert: simulierter 500 zeigt
+>   die Karte, Retry lädt nach Wiederherstellung erfolgreich nach.)
 > - ✅ **Qualitäts-Audit — OS-Dark-Mode respektiert:** Ohne eigene Wahl folgte die App bisher
 >   immer Light, egal wie das System eingestellt war. Jetzt: ohne gespeicherte Präferenz gilt
 >   `prefers-color-scheme` des Betriebssystems; eine manuelle Wahl hat weiter Vorrang und wird
