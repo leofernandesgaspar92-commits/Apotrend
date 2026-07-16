@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Rabatt-Aktionen als CSV exportieren:** Der Rabatt-Reiter bekommt (wie Preise/Engpässe)
+>   einen „⬇️ CSV (N)"-Export der aktuell gefilterten Aktionen für den Einkauf — Rang,
+>   Präparat, Wirkstoff, Lieferant, Listen-/Aktionspreis, Rabatt %, Ersparnis/Pkg,
+>   Mindestmenge + Ersparnis bei Mindestmenge, gültig bis, „beste Aktion je Wirkstoff".
+>   Zähler im Button folgt Filter/Suche. (Frontend; im Browser verifiziert.)
 > - ✅ **Merkliste als CSV exportieren:** Die beobachteten Wirkstoffe lassen sich mit ihrem
 >   aktuellen Engpass-Status als CSV (Excel) exportieren („⬇️ CSV" in der Merkliste-Karte) —
 >   z. B. als Aushang/Liste am Handverkaufstisch. Spalten: Wirkstoff, Aktueller Status,

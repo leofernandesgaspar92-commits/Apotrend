@@ -1077,6 +1077,18 @@ function exportPricesCsv(comparisons) {
   downloadCsv('apotrend-preisvergleich', ['Präparat', 'Wirkstoff', 'Lieferant', 'AEP (€)', 'Trend (%)', 'Günstigster', 'Ersparnis ggü. teuerstem (€)'], rows);
 }
 
+// Rabatt-Aktionen (aktuell gefiltert) als CSV für den Einkauf.
+function exportRabatteCsv(list) {
+  const rows = (list || []).map(r => [
+    r.rank ?? '', r.bezeichnung || '', r.wirkstoff || '', r.supplier || '',
+    csvNumDe(r.listenpreis || 0), csvNumDe(r.aktionspreis || 0), csvNumDe(r.rabatt_pct || 0),
+    csvNumDe(r.ersparnis || 0), r.min_menge || '',
+    r.min_menge && r.ersparnis ? csvNumDe(Number(r.ersparnis) * Number(r.min_menge)) : '',
+    r.gueltig_bis || '', r.best_for_wirkstoff ? 'ja' : 'nein',
+  ]);
+  downloadCsv('apotrend-rabatte', ['Rang', 'Präparat', 'Wirkstoff', 'Lieferant', 'Listenpreis (€)', 'Aktionspreis (€)', 'Rabatt (%)', 'Ersparnis/Pkg (€)', 'Mindestmenge', 'Ersparnis bei Mindestmenge (€)', 'gültig bis', 'beste Aktion je Wirkstoff'], rows);
+}
+
 // Engpass-Liste (aktuell gefiltert) als CSV — u.a. zur Dokumentation der Nichtverfügbarkeit.
 function exportShortagesCsv(list) {
   const statusText = { kritisch: 'Kritischer Engpass', eingeschraenkt: 'Eingeschränkt lieferbar', verfuegbar: 'Verfügbar' };
@@ -1306,19 +1318,25 @@ async function loadRabatte() {
     if (!d.rabatte.length) { feed.appendChild(el('<div class="card muted">Derzeit keine laufenden Aktionen.</div>')); return; }
     const bar = el(`<div class="card">
       <div class="row" style="gap:6px"><input data-q placeholder="🔎 Präparat, Wirkstoff oder Lieferant suchen…" value="${esc(rabattQuery)}" style="flex:1"></div>
-      <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px">
+      <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center">
         <button class="small sortbtn${rabattExpiring?'':' active'}" data-exp="0" aria-pressed="${!rabattExpiring}">Alle</button>
         <button class="small sortbtn${rabattExpiring?' active':''}" data-exp="1" aria-pressed="${rabattExpiring}">⏳ Bald ablaufend</button>
+        <span class="sp" style="flex:1"></span>
+        <button class="ghost small" data-rcsv title="Aktuelle Auswahl als CSV (Excel) für den Einkauf">⬇️ CSV</button>
       </div></div>`);
     feed.appendChild(bar);
     const listBox = el('<div data-rlist></div>');
     feed.appendChild(listBox);
+    let shown = [];
+    bar.querySelector('[data-rcsv]').onclick = () => exportRabatteCsv(shown);
     const draw = () => {
       const q = rabattQuery.trim().toLowerCase();
       const list = d.rabatte.filter(r =>
         (!rabattExpiring || r.expiring_soon) &&
         (!q || (r.bezeichnung||'').toLowerCase().includes(q) || (r.wirkstoff||'').toLowerCase().includes(q) || (r.supplier||'').toLowerCase().includes(q)));
       bar.querySelectorAll('[data-exp]').forEach(b => { const on = (b.dataset.exp==='1')===rabattExpiring; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
+      shown = list;
+      const csvBtn = bar.querySelector('[data-rcsv]'); if (csvBtn) csvBtn.textContent = `⬇️ CSV (${list.length})`;
       listBox.innerHTML = '';
       if (!list.length) listBox.appendChild(el('<div class="card muted">Keine Aktion für diese Auswahl.</div>'));
       else list.forEach(r => listBox.appendChild(rabattCard(r)));
