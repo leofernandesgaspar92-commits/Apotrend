@@ -204,6 +204,11 @@ const I18N = {
     st_none:'Aktuell keine Meldung',
     st_krit_short:'🔴 Kritisch', st_eing_short:'🟠 Eingeschränkt', st_verf_short:'🟢 Verfügbar',
     sp_crit_title:'🔴 Kritische Engpässe', sp_view_all:'Alle ansehen',
+    sp_exch_title:'🔄 Zuletzt im Bestandsaustausch', sp_exch_go:'Zum Austausch',
+    sp_stew_title:'🧫 Stewardship-Fachforum', sp_stew_tag:'Fachdiskussion (AMR)',
+    sp_stew_sub:'Anonymisierter Austausch zum verantwortungsvollen Antibiotikaeinsatz — keine Patientenberatung.',
+    oq_title:'❓ Offene Fachfragen', oq_waiting:'Kolleg:innen warten auf Antwort',
+    oq_answer_sg:'Antwort', oq_answer_pl:'Antworten', tr_title:'🏷️ Aktuelle Themen:',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -233,6 +238,11 @@ const I18N = {
     st_none:'No current report',
     st_krit_short:'🔴 Critical', st_eing_short:'🟠 Limited', st_verf_short:'🟢 Available',
     sp_crit_title:'🔴 Critical shortages', sp_view_all:'View all',
+    sp_exch_title:'🔄 Recently in stock exchange', sp_exch_go:'Go to exchange',
+    sp_stew_title:'🧫 Stewardship forum', sp_stew_tag:'Expert discussion (AMR)',
+    sp_stew_sub:'Anonymous exchange on responsible antibiotic use — not patient advice.',
+    oq_title:'❓ Open questions', oq_waiting:'Colleagues are waiting for an answer',
+    oq_answer_sg:'answer', oq_answer_pl:'answers', tr_title:'🏷️ Trending topics:',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -262,6 +272,11 @@ const I18N = {
     st_none:'Sem informação atual',
     st_krit_short:'🔴 Crítica', st_eing_short:'🟠 Limitada', st_verf_short:'🟢 Disponível',
     sp_crit_title:'🔴 Faltas críticas', sp_view_all:'Ver todas',
+    sp_exch_title:'🔄 Recentemente na troca de stock', sp_exch_go:'Ir para a troca',
+    sp_stew_title:'🧫 Fórum de stewardship', sp_stew_tag:'Discussão técnica (RAM)',
+    sp_stew_sub:'Intercâmbio anónimo sobre o uso responsável de antibióticos — não é aconselhamento a doentes.',
+    oq_title:'❓ Perguntas em aberto', oq_waiting:'Colegas à espera de resposta',
+    oq_answer_sg:'resposta', oq_answer_pl:'respostas', tr_title:'🏷️ Temas atuais:',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -714,7 +729,7 @@ async function loadOverview() {
   }
   // Neueste Austausch-Einträge
   if (d.exchange.recent.length) {
-    const c = el(`<div class="card"><div class="row"><b>🔄 Zuletzt im Bestandsaustausch</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>Zum Austausch</button></div></div>`);
+    const c = el(`<div class="card"><div class="row"><b>${esc(t('sp_exch_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>${esc(t('sp_exch_go'))}</button></div></div>`);
     c.querySelector('[data-all]').onclick = () => goTab('exchange');
     d.exchange.recent.forEach(e => c.appendChild(exchangeCard(e)));
     feed.appendChild(c);
@@ -724,8 +739,8 @@ async function loadOverview() {
 
   // Antibiotic-Stewardship-Fachforum (Einstieg)
   const stew = el(`<div class="card clickable" style="border-left:4px solid #0b7f28">
-    <div class="row"><b>🧫 Stewardship-Fachforum</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:12px">Fachdiskussion (AMR)</span></div>
-    <div class="muted" style="font-size:13px;margin-top:4px">Anonymisierter Austausch zum verantwortungsvollen Antibiotikaeinsatz — keine Patientenberatung.</div></div>`);
+    <div class="row"><b>${esc(t('sp_stew_title'))}</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:12px">${esc(t('sp_stew_tag'))}</span></div>
+    <div class="muted" style="font-size:13px;margin-top:4px">${esc(t('sp_stew_sub'))}</div></div>`);
   stew.onclick = () => openStewardship();
   feed.appendChild(stew);
 
@@ -744,10 +759,11 @@ async function renderOpenQuestions(feed) {
   try { d = await api('GET','/api/feed/public?filter=questions'); } catch { return; }
   const open = (d.posts || []).filter(p => p.is_question && !p.answered && !(me && p.author && p.author.handle === me.handle)).slice(0, 3);
   if (!open.length) return;
-  const card = el(`<div class="card"><div class="row"><b>❓ Offene Fachfragen</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:12px">Kolleg:innen warten auf Antwort</span></div><div data-oq style="margin-top:6px"></div></div>`);
+  const card = el(`<div class="card"><div class="row"><b>${esc(t('oq_title'))}</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:12px">${esc(t('oq_waiting'))}</span></div><div data-oq style="margin-top:6px"></div></div>`);
   const box = card.querySelector('[data-oq]');
   open.forEach(q => {
-    const row = el(`<div class="comment clickable">❓ ${esc((q.body||'').slice(0,90))}${(q.body||'').length>90?'…':''} <span class="muted" style="font-size:12px">· ${q.author?'@'+esc(q.author.handle):''} · ${q.comment_count||0} Antworten</span></div>`);
+    const nAns = q.comment_count||0;
+    const row = el(`<div class="comment clickable">❓ ${esc((q.body||'').slice(0,90))}${(q.body||'').length>90?'…':''} <span class="muted" style="font-size:12px">· ${q.author?'@'+esc(q.author.handle):''} · ${nAns} ${esc(nAns===1?t('oq_answer_sg'):t('oq_answer_pl'))}</span></div>`);
     row.onclick = () => openPost(q.id);
     box.appendChild(row);
   });
@@ -758,7 +774,7 @@ async function renderTrendingHashtags(feed) {
   let d;
   try { d = await api('GET','/api/trending/hashtags'); } catch { return; }
   if (!d.hashtags || !d.hashtags.length) return;
-  const card = el(`<div class="card"><div class="muted" style="font-size:13px;margin-bottom:6px">🏷️ Aktuelle Themen:</div><div class="row" data-tt style="flex-wrap:wrap;gap:6px"></div></div>`);
+  const card = el(`<div class="card"><div class="muted" style="font-size:13px;margin-bottom:6px">${esc(t('tr_title'))}</div><div class="row" data-tt style="flex-wrap:wrap;gap:6px"></div></div>`);
   const box = card.querySelector('[data-tt]');
   d.hashtags.forEach(h => {
     const chip = el(`<button class="small sortbtn">#${esc(h.tag)} <span class="muted">${h.count}</span></button>`);

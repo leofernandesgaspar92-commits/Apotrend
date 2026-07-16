@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3g: „Für dich"-Startseite komplett mehrsprachig:** Die
+>   restlichen Dashboard-Karten sind jetzt übersetzt (DE/EN/PT): „Zuletzt im Bestandsaustausch",
+>   das Stewardship-Fachforum (Titel/Tag/Beschreibung), „Offene Fachfragen" (inkl. Antwort-
+>   Singular/Plural) und „Aktuelle Themen". Damit ist die meistgenutzte Startansicht von oben bis
+>   unten in der Landessprache. (Browser verifiziert: Stewardship- und Themen-Karte auf
+>   Portugiesisch, Vollbild-Screenshot.) Offen: die Apotheken-in-Bundesland-Karte (AT-spezifisch).
 > - 🌍 **Länderübergreifend — Schritt 3f: Status-Vokabeln mehrsprachig (DE/EN/PT):** Die
 >   app-weit geteilten Engpass-Status (Kritisch/Eingeschränkt/Verfügbar) werden jetzt übersetzt —
 >   sowohl die Kurz-Badges (🔴/🟠/🟢) als auch die Langtexte (`watchStatusMeta`, `statusShort`,
