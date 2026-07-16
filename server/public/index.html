@@ -55,14 +55,14 @@
   .post-author { font-weight:700; }
   .handle { color:var(--muted); font-weight:400; font-size:0.9em; }
   .verified { color:var(--green); font-size:13px; }
-  .editorial { background:#eef3ff; color:#2952cc; font-size:12px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid #cdd9ff; }
+  .editorial { background:var(--info-bg); color:var(--info-fg); font-size:12px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid var(--info-bd); }
   .rank { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:30px; padding:0 6px; border-radius:999px; background:var(--green); color:#fff; font-weight:800; font-size:15px; margin-right:8px; }
   .rabatt-badge { background:var(--ok-bg); color:var(--ok-fg); font-weight:800; font-size:16px; padding:4px 12px; border-radius:999px; border:1px solid var(--ok-bd); }
   .mention { color:var(--green); font-weight:600; }
   .mention-ac { border:1px solid var(--line); border-radius:8px; background:var(--card); margin-top:4px; overflow:hidden; }
   .mention-ac-item { padding:8px 10px; cursor:pointer; font-size:0.9em; }
   .mention-ac-item:hover, .mention-ac-item.active { background:var(--bg); }
-  .hashtag { color:#2952cc; font-weight:600; }
+  .hashtag { color:var(--info-fg); font-weight:600; }
   .clickable { cursor:pointer; }
   .clickable:hover { text-decoration:underline; }
   .avatar { display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:50%; background:var(--green); color:#fff; font-weight:800; font-size:19px; flex:0 0 auto; }
@@ -454,16 +454,16 @@ async function loadOverview() {
     <div style="font-size:26px;font-weight:800;color:${col}">${icon} ${num}</div>
     <div class="muted" style="font-size:13px;margin-top:2px">${esc(label)}</div></div>`;
   const tiles = [
-    tile('🔴', d.shortages.kritisch, 'kritische Engpässe', '#c0392b', 'shortages'),
+    tile('🔴', d.shortages.kritisch, 'kritische Engpässe', 'var(--crit-fg)', 'shortages'),
   ];
-  if (d.shortages.antibiotika) tiles.push(tile('🧫', d.shortages.antibiotika, 'Antibiotika-Engpässe', '#0b7f28', 'shortages', 'antibiotika'));
+  if (d.shortages.antibiotika) tiles.push(tile('🧫', d.shortages.antibiotika, 'Antibiotika-Engpässe', 'var(--ok-fg)', 'shortages', 'antibiotika'));
   tiles.push(
-    tile('📦', d.exchange.biete, 'Angebote im Austausch', '#0b7f28', 'exchange'),
-    tile('🔎', d.exchange.suche, 'Gesuche im Austausch', '#b26a00', 'exchange'),
+    tile('📦', d.exchange.biete, 'Angebote im Austausch', 'var(--ok-fg)', 'exchange'),
+    tile('🔎', d.exchange.suche, 'Gesuche im Austausch', 'var(--warn-fg)', 'exchange'),
   );
-  if (d.savings && d.savings.count) tiles.push(tile('💶', '€ ' + Number(d.savings.total_abs).toFixed(2), 'Sparpotenzial je Packung', '#0b7f28', 'prices'));
-  if (d.rabatte_expiring && d.rabatte_expiring.count) tiles.push(tile('⏳', d.rabatte_expiring.count, 'Aktionen laufen bald ab', '#c77700', 'rabatte'));
-  tiles.push(tile('🔔', d.notifications.unread, 'neue Benachrichtigungen', '#2952cc', ''));
+  if (d.savings && d.savings.count) tiles.push(tile('💶', '€ ' + Number(d.savings.total_abs).toFixed(2), 'Sparpotenzial je Packung', 'var(--ok-fg)', 'prices'));
+  if (d.rabatte_expiring && d.rabatte_expiring.count) tiles.push(tile('⏳', d.rabatte_expiring.count, 'Aktionen laufen bald ab', 'var(--warn-fg)', 'rabatte'));
+  tiles.push(tile('🔔', d.notifications.unread, 'neue Benachrichtigungen', 'var(--info-fg)', ''));
   const head = el(`<div class="card">
     <h1 style="margin:0 0 2px">✨ Für dich${firstName?', '+esc(firstName):''}</h1>
     <div class="muted" style="margin-bottom:12px">Das Wichtigste auf einen Blick.</div>
@@ -493,7 +493,7 @@ async function loadOverview() {
   if (d.watch_deals && d.watch_deals.length) {
     const c = el(`<div class="card"><div class="row"><b>🏷️ Aktionen zu deinen Wirkstoffen</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>Alle Rabatte</button></div>
       <div class="muted" style="font-size:13px;margin:2px 0 6px">Für diese von dir beobachteten Wirkstoffe läuft gerade eine Aktion:</div>
-      ${d.watch_deals.map(w=>`<div class="comment">🏷️ <b>${esc(w.wirkstoff)}</b> — ${esc(w.supplier)} <span style="color:var(--ok-fg);font-weight:700">−${w.rabatt_pct}%</span> (€ ${Number(w.aktionspreis).toFixed(2)})${w.expiring_soon?` · <b style="color:${w.days_left<=3?'#c0392b':'#c77700'}">nur noch ${w.days_left<=0?'heute':w.days_left+' Tage'}</b>`:''}</div>`).join('')}</div>`);
+      ${d.watch_deals.map(w=>`<div class="comment">🏷️ <b>${esc(w.wirkstoff)}</b> — ${esc(w.supplier)} <span style="color:var(--ok-fg);font-weight:700">−${w.rabatt_pct}%</span> (€ ${Number(w.aktionspreis).toFixed(2)})${w.expiring_soon?` · <b style="color:${w.days_left<=3?'var(--crit-fg)':'var(--warn-fg)'}">nur noch ${w.days_left<=0?'heute':w.days_left+' Tage'}</b>`:''}</div>`).join('')}</div>`);
     c.querySelector('[data-all]').onclick = () => goTab('rabatte');
     feed.appendChild(c);
   }
@@ -1168,7 +1168,7 @@ function priceGroup(g) {
     ${g.action?`<div style="background:rgba(11,127,40,.08);border:1px solid rgba(11,127,40,.35);border-radius:10px;padding:8px 10px;margin-bottom:8px">
       <div style="font-weight:700;color:var(--ok-fg);font-size:14px">🏷️ Aktion günstiger als der beste Einkaufspreis</div>
       <div style="font-size:13px;margin-top:2px">${esc(g.action.supplier)}: <b>€ ${Number(g.action.aktionspreis).toFixed(2)}</b> statt € ${Number(g.best_aep).toFixed(2)} (AEP) — <b>−€ ${Number(g.action.unter_aep_abs).toFixed(2)} pro Packung</b> · −${g.action.rabatt_pct}%</div>
-      <div class="muted" style="font-size:12px;margin-top:2px">ab ${g.action.min_menge} Stück${g.action.expiring_soon?` · <b style="color:${g.action.days_left<=3?'#c0392b':'#c77700'}">nur noch ${g.action.days_left<=0?'heute':g.action.days_left+' Tage'}</b>`:` · gültig bis ${esc(g.action.gueltig_bis)}`} · 📌 Referenzdaten</div>
+      <div class="muted" style="font-size:12px;margin-top:2px">ab ${g.action.min_menge} Stück${g.action.expiring_soon?` · <b style="color:${g.action.days_left<=3?'var(--crit-fg)':'var(--warn-fg)'}">nur noch ${g.action.days_left<=0?'heute':g.action.days_left+' Tage'}</b>`:` · gültig bis ${esc(g.action.gueltig_bis)}`} · 📌 Referenzdaten</div>
     </div>`:''}
     <div data-offers></div>
   </div>`);
@@ -2019,7 +2019,7 @@ async function openMyActivity() {
   const qs = qcard.querySelector('[data-qs]');
   if (!d.questions.length) qs.appendChild(el('<div class="muted" style="font-size:14px">Noch keine Fragen gestellt.</div>'));
   else d.questions.forEach(q => {
-    const row = el(`<div class="comment clickable"><span style="color:${q.answered?'#0b7f28':'#2952cc'};font-weight:700">${q.answered?'✔':'❓'}</span> ${esc((q.body||'').slice(0,90))}${(q.body||'').length>90?'…':''} <span class="muted" style="font-size:12px">· ${q.comment_count||0} Antworten</span></div>`);
+    const row = el(`<div class="comment clickable"><span style="color:${q.answered?'var(--ok-fg)':'var(--info-fg)'};font-weight:700">${q.answered?'✔':'❓'}</span> ${esc((q.body||'').slice(0,90))}${(q.body||'').length>90?'…':''} <span class="muted" style="font-size:12px">· ${q.comment_count||0} Antworten</span></div>`);
     row.onclick = () => openPost(q.id);
     qs.appendChild(row);
   });
@@ -2207,7 +2207,7 @@ async function renderVerifyCard(card) {
 }
 
 function qBadgeHtml(answered) {
-  return `<span style="display:inline-block;background:${answered?'rgba(11,127,40,.12)':'rgba(41,82,204,.12)'};color:${answered?'#0b7f28':'#2952cc'};font-weight:700;font-size:13px;padding:2px 10px;border-radius:999px">${answered?'✔ Beantwortet':'❓ Offene Fachfrage'}</span>`;
+  return `<span style="display:inline-block;background:${answered?'rgba(11,127,40,.12)':'rgba(41,82,204,.12)'};color:${answered?'var(--ok-fg)':'var(--info-fg)'};font-weight:700;font-size:13px;padding:2px 10px;border-radius:999px">${answered?'✔ Beantwortet':'❓ Offene Fachfrage'}</span>`;
 }
 
 function postCard(p) {
@@ -2520,10 +2520,10 @@ async function showModeration() {
     <button class="ghost small" id="back">Zurück</button></div>
     <div class="muted" style="margin-bottom:10px">Plattform-Gesundheit & offene Aufgaben auf einen Blick.</div>
     <div class="row" style="flex-wrap:wrap;gap:10px">
-      ${mtile('🚩', d.reports.length, 'offene Meldungen', '#c0392b')}
-      ${mtile('✔', vq.requests.length, 'Verifizierungs-Anträge', '#2952cc')}
-      ${mtile('🔴', krit, 'kritische Engpässe', '#c0392b')}
-      ${mtile('👥', comm, 'Community-Meldungen', '#b26a00')}
+      ${mtile('🚩', d.reports.length, 'offene Meldungen', 'var(--crit-fg)')}
+      ${mtile('✔', vq.requests.length, 'Verifizierungs-Anträge', 'var(--info-fg)')}
+      ${mtile('🔴', krit, 'kritische Engpässe', 'var(--crit-fg)')}
+      ${mtile('👥', comm, 'Community-Meldungen', 'var(--warn-fg)')}
     </div></div>`);
   head.querySelector('#back').onclick = mainScreen;
   app.appendChild(head);

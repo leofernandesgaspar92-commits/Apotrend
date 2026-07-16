@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — Farb-Token-Migration abgeschlossen (Orange/Blau + KPI-Kacheln):**
+>   Restliche Text-Akzente auf Tokens: Orange (`#c77700`/`#b26a00`) → `--warn-fg`, Blau
+>   (`#2952cc`) → `--info-fg`; KPI-Kacheln (Für-dich + Redaktions-Dashboard), `.editorial`-
+>   und `.hashtag`-Badges, „nur noch X Tage"-Restlauftext, Offene-Fragen-Icons. Nur noch
+>   Token-Definitionen und bewusste Badge-Hintergründe (weiß-auf-Farbe) tragen Roh-Hex.
+>   Im Dark Mode alle Akzentzahlen/-texte hell & lesbar; Light Mode byte-gleich. (Browser Dark
+>   verifiziert: Kacheln crit/ok/warn/info-fg; 8-Reiter-Smoke-Test grün.)
 > - ✅ **Qualitäts-Audit — roter Akzenttext auf Token (Dark-Kontrast):** Alle Text-Rot-Stellen
 >   (`color:#c0392b`, Trend-Pfeile, Fehlermeldungen, `watchStatusMeta`-Statusfarben) →
 >   `var(--crit-fg)` (auch Orange/Grün der Status-Pillen auf `--warn-fg`/`--ok-fg`). Im Dark
