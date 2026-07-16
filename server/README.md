@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3d: Dashboard-Hero mehrsprachig (DE/EN/PT):** Die
+>   „Für dich"-Startansicht — der erste Eindruck für alle Nutzer:innen — war bisher auch bei
+>   EN/PT-Oberfläche deutsch. Jetzt übersetzt: Überschrift, Untertitel, alle Kennzahl-Kacheln
+>   (kritische/Antibiotika-Engpässe, Angebote/Gesuche, Sparpotenzial, Benachrichtigungen),
+>   der Merklisten-Button und „Zuletzt angesehen". (Browser verifiziert: AT deutsch, GB englisch
+>   (dark), PT portugiesisch.) Nächste Etappe: die Beobachtungslisten-Karte darunter.
 > - 🌍 **Länderübergreifend — Schritt 3c: Länderauswahl bei der Registrierung:** Das
 >   Registrierungsformular hat jetzt ein gut sichtbares Feld „Land (bestimmt Feed-Inhalte &
 >   Sprache)" (12 Länder, Österreich als Vorauswahl, aus `GET /api/countries`). Neue Nutzer:innen

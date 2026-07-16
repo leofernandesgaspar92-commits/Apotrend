@@ -187,6 +187,12 @@ const I18N = {
     theme_to_dark:'Zu dunklem Modus wechseln', theme_to_light:'Zu hellem Modus wechseln',
     data_notice_title:'ℹ️ Hinweis zu den Daten für {land}',
     data_notice_body:'Die Live-Regulierungsdaten (Engpässe, Preise, Rabatte) decken derzeit 🇦🇹 Österreich ab. Für {land} bauen wir sie schrittweise mit den lokalen Behörden aus. Der soziale Feed und die News sind bereits länderspezifisch — die unten gezeigten Zahlen stammen aus Österreich.',
+    ov_hello:'Für dich', ov_sub:'Das Wichtigste auf einen Blick.',
+    ov_t_crit:'kritische Engpässe', ov_t_abx:'Antibiotika-Engpässe',
+    ov_t_offer:'Angebote im Austausch', ov_t_seek:'Gesuche im Austausch',
+    ov_t_savings:'Sparpotenzial je Packung', ov_t_expiring:'Aktionen laufen bald ab',
+    ov_t_notif:'neue Benachrichtigungen', ov_bookmarks:'🔖 Meine Merkliste öffnen',
+    ov_recent:'🕘 Zuletzt angesehen:',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -199,6 +205,12 @@ const I18N = {
     theme_to_dark:'Switch to dark mode', theme_to_light:'Switch to light mode',
     data_notice_title:'ℹ️ About the data for {land}',
     data_notice_body:'The live regulatory data (shortages, prices, deals) currently covers 🇦🇹 Austria. For {land} we are building it out step by step with the local authorities. The social feed and news are already country-specific — the figures shown below are from Austria.',
+    ov_hello:'For you', ov_sub:'The essentials at a glance.',
+    ov_t_crit:'critical shortages', ov_t_abx:'antibiotic shortages',
+    ov_t_offer:'offers in exchange', ov_t_seek:'requests in exchange',
+    ov_t_savings:'savings per pack', ov_t_expiring:'deals expiring soon',
+    ov_t_notif:'new notifications', ov_bookmarks:'🔖 Open my bookmarks',
+    ov_recent:'🕘 Recently viewed:',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -211,6 +223,12 @@ const I18N = {
     theme_to_dark:'Mudar para modo escuro', theme_to_light:'Mudar para modo claro',
     data_notice_title:'ℹ️ Sobre os dados de {land}',
     data_notice_body:'Os dados regulatórios em tempo real (faltas, preços, descontos) cobrem atualmente a 🇦🇹 Áustria. Para {land} estamos a construí-los passo a passo com as autoridades locais. O feed social e as notícias já são específicos por país — os números abaixo são da Áustria.',
+    ov_hello:'Para si', ov_sub:'O essencial num relance.',
+    ov_t_crit:'faltas críticas', ov_t_abx:'faltas de antibióticos',
+    ov_t_offer:'ofertas na troca', ov_t_seek:'procuras na troca',
+    ov_t_savings:'poupança por embalagem', ov_t_expiring:'promoções a expirar em breve',
+    ov_t_notif:'novas notificações', ov_bookmarks:'🔖 Abrir os meus marcadores',
+    ov_recent:'🕘 Vistos recentemente:',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -597,23 +615,23 @@ async function loadOverview() {
     <div style="font-size:26px;font-weight:800;color:${col}">${icon} ${num}</div>
     <div class="muted" style="font-size:13px;margin-top:2px">${esc(label)}</div></div>`;
   const tiles = [
-    tile('🔴', d.shortages.kritisch, 'kritische Engpässe', 'var(--crit-fg)', 'shortages'),
+    tile('🔴', d.shortages.kritisch, t('ov_t_crit'), 'var(--crit-fg)', 'shortages'),
   ];
-  if (d.shortages.antibiotika) tiles.push(tile('🧫', d.shortages.antibiotika, 'Antibiotika-Engpässe', 'var(--ok-fg)', 'shortages', 'antibiotika'));
+  if (d.shortages.antibiotika) tiles.push(tile('🧫', d.shortages.antibiotika, t('ov_t_abx'), 'var(--ok-fg)', 'shortages', 'antibiotika'));
   tiles.push(
-    tile('📦', d.exchange.biete, 'Angebote im Austausch', 'var(--ok-fg)', 'exchange'),
-    tile('🔎', d.exchange.suche, 'Gesuche im Austausch', 'var(--warn-fg)', 'exchange'),
+    tile('📦', d.exchange.biete, t('ov_t_offer'), 'var(--ok-fg)', 'exchange'),
+    tile('🔎', d.exchange.suche, t('ov_t_seek'), 'var(--warn-fg)', 'exchange'),
   );
-  if (d.savings && d.savings.count) tiles.push(tile('💶', '€ ' + Number(d.savings.total_abs).toFixed(2), 'Sparpotenzial je Packung', 'var(--ok-fg)', 'prices'));
-  if (d.rabatte_expiring && d.rabatte_expiring.count) tiles.push(tile('⏳', d.rabatte_expiring.count, 'Aktionen laufen bald ab', 'var(--warn-fg)', 'rabatte'));
-  tiles.push(tile('🔔', d.notifications.unread, 'neue Benachrichtigungen', 'var(--info-fg)', ''));
+  if (d.savings && d.savings.count) tiles.push(tile('💶', '€ ' + Number(d.savings.total_abs).toFixed(2), t('ov_t_savings'), 'var(--ok-fg)', 'prices'));
+  if (d.rabatte_expiring && d.rabatte_expiring.count) tiles.push(tile('⏳', d.rabatte_expiring.count, t('ov_t_expiring'), 'var(--warn-fg)', 'rabatte'));
+  tiles.push(tile('🔔', d.notifications.unread, t('ov_t_notif'), 'var(--info-fg)', ''));
   const head = el(`<div class="card">
-    <h1 style="margin:0 0 2px">✨ Für dich${firstName?', '+esc(firstName):''}</h1>
-    <div class="muted" style="margin-bottom:12px">Das Wichtigste auf einen Blick.</div>
+    <h1 style="margin:0 0 2px">✨ ${esc(t('ov_hello'))}${firstName?', '+esc(firstName):''}</h1>
+    <div class="muted" style="margin-bottom:12px">${esc(t('ov_sub'))}</div>
     <div class="row" style="flex-wrap:wrap;gap:10px">
       ${tiles.join('')}
     </div>
-    <div class="row" style="margin-top:12px"><button class="ghost small" id="ov_bm">🔖 Meine Merkliste öffnen</button></div>
+    <div class="row" style="margin-top:12px"><button class="ghost small" id="ov_bm">${esc(t('ov_bookmarks'))}</button></div>
   </div>`);
   head.querySelectorAll('.ovtile[data-go]').forEach(t => { if (t.dataset.go) t.onclick = () => { if (t.dataset.filter) shortageFilter = t.dataset.filter; goTab(t.dataset.go); }; });
   head.querySelectorAll('.ovtile').forEach(t => { if (!t.dataset.go) t.onclick = () => document.getElementById('btnNotif').click(); });
@@ -623,7 +641,7 @@ async function loadOverview() {
   // Zuletzt angesehene Wirkstoffe (nur lokal) — schneller Wiedereinstieg.
   const recent = getRecentWirkstoff();
   if (recent.length) {
-    const rc = el(`<div class="card"><div class="muted" style="font-size:13px;margin-bottom:6px">🕘 Zuletzt angesehen:</div><div class="row" data-recent style="flex-wrap:wrap;gap:6px"></div></div>`);
+    const rc = el(`<div class="card"><div class="muted" style="font-size:13px;margin-bottom:6px">${esc(t('ov_recent'))}</div><div class="row" data-recent style="flex-wrap:wrap;gap:6px"></div></div>`);
     const box = rc.querySelector('[data-recent]');
     recent.forEach(w => { const chip = el(`<button class="small sortbtn">💊 ${esc(w)}</button>`); chip.onclick = () => openWirkstoff(w); box.appendChild(chip); });
     feed.appendChild(rc);
