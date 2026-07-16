@@ -35,9 +35,19 @@
   header .logo { font-weight:800; letter-spacing:.5px; font-size:1.25em; }
   header .sp { flex:1; }
   header button { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.5); min-height:42px; min-width:42px; }
+  /* Länder-/Sprach-Umschalter in der Kopfzeile: klar erkennbar, lesbar (Karten-
+     Hintergrund statt Weiß-auf-Grün), kompakt genug fürs Handy. */
+  header #countrySwitch { width:auto; max-width:170px; min-height:42px; padding:8px 10px; font-size:0.92em; font-weight:600; background:var(--card); color:var(--text); border:1px solid rgba(255,255,255,.6); border-radius:8px; cursor:pointer; }
+  /* Handy: nur die Flagge zeigen (der volle Ländername erscheint beim Aufklappen);
+     spart Platz, damit die Kopfzeile in eine Zeile passt (kein Horizontal-Scroll). */
+  @media (max-width:560px){ header #countrySwitch { max-width:52px; padding:8px 4px; font-size:1.05em; } }
   /* Mobil: Header muss in eine Zeile passen (sonst Horizontal-Scroll, Logout
      abgeschnitten). MUSS nach den Basisregeln stehen (gleiche Spezifität). */
-  @media (max-width:560px){ #whoami { display:none; } header { gap:4px; padding:9px 8px; } header .logo { font-size:0.98em; letter-spacing:0; } header button { min-width:0; min-height:40px; padding:8px 7px; } }
+  /* Handy: 8 Kopf-Bedienelemente passen bei sehr schmalen Geräten (≤390px) nicht
+     in eine Zeile. Statt alles auf Winzig-Größe zu quetschen (schlecht bedienbar),
+     lassen wir die Zeile umbrechen – jedes Element bleibt komfortabel antippbar,
+     kein Horizontal-Scroll. Logo oben, Aktionen darunter. */
+  @media (max-width:560px){ #whoami { display:none; } header { gap:4px; padding:9px 8px; flex-wrap:wrap; } header .logo { font-size:0.96em; letter-spacing:0; } header button { min-width:0; min-height:40px; padding:8px 7px; } }
   .wrap { max-width:640px; margin:0 auto; padding:16px; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; overflow-wrap:anywhere; }
   h1 { font-size:1.4em; margin:0 0 12px; }
@@ -48,6 +58,7 @@
   button:hover { background:var(--green-d); }
   button.ghost { background:transparent; color:var(--green); border:1px solid var(--green); }
   button.small { padding:7px 11px; font-size:0.85em; min-height:36px; }
+  #sgo { white-space:nowrap; } /* „Search"/„Pesquisar" nicht umbrechen lassen */
   button.sortbtn { background:var(--card); color:var(--text); border:1px solid var(--line); font-weight:600; }
   button.sortbtn.active { background:var(--green); color:#fff; border-color:var(--green); }
   .row { display:flex; gap:8px; align-items:center; }
@@ -122,13 +133,14 @@
   <span class="logo">🟢 ApoTrend</span>
   <span class="muted" id="whoami" style="color:#dff5ea;"></span>
   <span class="sp"></span>
+  <select class="hidden" id="countrySwitch" data-i18n-title="country_title" title="Land wechseln (stellt auch die Sprache um)" aria-label="Land wechseln"></select>
   <button id="btnTheme" title="Hell/Dunkel umschalten" aria-label="Hell/Dunkel umschalten"><span id="themeIcon">🌙</span><span class="hlabel" id="themeLabel">Dunkel</span></button>
-  <button id="btnFont" title="Schriftgröße ändern" aria-label="Schriftgröße ändern"><span id="fontIcon" style="font-weight:800">A⁺</span><span class="hlabel">Schrift</span></button>
-  <button class="bell hidden" id="btnHelp" title="Hilfe / So funktioniert ApoTrend" aria-label="Hilfe">❓<span class="hlabel">Hilfe</span></button>
-  <button class="bell hidden" id="btnMod" title="Moderation" aria-label="Moderation">🛡️<span class="hlabel">Moderation</span></button>
-  <button class="bell hidden" id="btnDm" title="Nachrichten" aria-label="Nachrichten">✉️<span class="hlabel">Nachrichten</span><span class="badge hidden" id="dmBadge">0</span></button>
-  <button class="bell hidden" id="btnNotif" title="Benachrichtigungen" aria-label="Benachrichtigungen">🔔<span class="hlabel">Meldungen</span><span class="badge hidden" id="notifBadge">0</span></button>
-  <button class="hidden" id="btnLogout" title="Abmelden" aria-label="Abmelden">🚪<span class="hlabel">Abmelden</span></button>
+  <button id="btnFont" title="Schriftgröße ändern" aria-label="Schriftgröße ändern"><span id="fontIcon" style="font-weight:800">A⁺</span><span class="hlabel" data-i18n="font_label">Schrift</span></button>
+  <button class="bell hidden" id="btnHelp" title="Hilfe / So funktioniert ApoTrend" aria-label="Hilfe">❓<span class="hlabel" data-i18n="hdr_help">Hilfe</span></button>
+  <button class="bell hidden" id="btnMod" title="Moderation" aria-label="Moderation">🛡️<span class="hlabel" data-i18n="hdr_mod">Moderation</span></button>
+  <button class="bell hidden" id="btnDm" title="Nachrichten" aria-label="Nachrichten">✉️<span class="hlabel" data-i18n="hdr_dm">Nachrichten</span><span class="badge hidden" id="dmBadge">0</span></button>
+  <button class="bell hidden" id="btnNotif" title="Benachrichtigungen" aria-label="Benachrichtigungen">🔔<span class="hlabel" data-i18n="hdr_notif">Meldungen</span><span class="badge hidden" id="notifBadge">0</span></button>
+  <button class="hidden" id="btnLogout" title="Abmelden" aria-label="Abmelden">🚪<span class="hlabel" data-i18n="hdr_logout">Abmelden</span></button>
 </header>
 <main class="wrap" id="app" tabindex="-1" role="main"></main>
 
@@ -155,9 +167,60 @@ function applyTheme() {
   const ic = document.getElementById('themeIcon');
   const lbl = document.getElementById('themeLabel');
   if (ic) ic.textContent = dark ? '☀️' : '🌙';
-  if (lbl) lbl.textContent = dark ? 'Hell' : 'Dunkel';
-  if (btn) btn.title = dark ? 'Zu hellem Modus wechseln' : 'Zu dunklem Modus wechseln';
+  if (lbl) lbl.textContent = dark ? t('theme_light') : t('theme_dark');
+  if (btn) btn.title = dark ? t('theme_to_light') : t('theme_to_dark');
   const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.setAttribute('content', dark ? '#14181a' : '#0b7f28');
+}
+// ── Mehrsprachigkeit (DE/EN/PT) — leichtgewichtig, ohne Framework. Die Sprache
+// folgt automatisch dem gewählten Land (Owner-Vorgabe: länderbasierte Plattform).
+// Übersetzt werden die Navigation, die Suche und die Kopfzeilen-Aktionen; der
+// restliche Inhalt kommt länder-gescoped vom Server. ──
+const I18N = {
+  de: {
+    nav_overview:'✨ Für dich', nav_public:'🌍 Öffentlich', nav_home:'🏠 Mein Feed',
+    nav_shortages:'📦 Engpässe', nav_prices:'💶 Preise', nav_rabatte:'🏷️ Top-Rabatte',
+    nav_exchange:'🔄 Biete/Suche', nav_news:'📰 News',
+    search_ph:'🔎 Suchen: Wirkstoff, Kolleg:in (@handle), Beitrag, Engpass, Preis…',
+    hdr_help:'Hilfe', hdr_mod:'Moderation', hdr_dm:'Nachrichten', hdr_notif:'Meldungen',
+    hdr_logout:'Abmelden', country_title:'Land wechseln (stellt auch die Sprache um)',
+    search_go:'Suchen', theme_dark:'Dunkel', theme_light:'Hell', font_label:'Schrift',
+    theme_to_dark:'Zu dunklem Modus wechseln', theme_to_light:'Zu hellem Modus wechseln',
+  },
+  en: {
+    nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
+    nav_shortages:'📦 Shortages', nav_prices:'💶 Prices', nav_rabatte:'🏷️ Top deals',
+    nav_exchange:'🔄 Offer/Seek', nav_news:'📰 News',
+    search_ph:'🔎 Search: substance, colleague (@handle), post, shortage, price…',
+    hdr_help:'Help', hdr_mod:'Moderation', hdr_dm:'Messages', hdr_notif:'Alerts',
+    hdr_logout:'Log out', country_title:'Change country (also switches the language)',
+    search_go:'Search', theme_dark:'Dark', theme_light:'Light', font_label:'Text size',
+    theme_to_dark:'Switch to dark mode', theme_to_light:'Switch to light mode',
+  },
+  pt: {
+    nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
+    nav_shortages:'📦 Faltas', nav_prices:'💶 Preços', nav_rabatte:'🏷️ Descontos',
+    nav_exchange:'🔄 Oferta/Procura', nav_news:'📰 Notícias',
+    search_ph:'🔎 Pesquisar: substância, colega (@handle), publicação, falta, preço…',
+    hdr_help:'Ajuda', hdr_mod:'Moderação', hdr_dm:'Mensagens', hdr_notif:'Alertas',
+    hdr_logout:'Sair', country_title:'Mudar de país (muda também o idioma)',
+    search_go:'Pesquisar', theme_dark:'Escuro', theme_light:'Claro', font_label:'Tamanho',
+    theme_to_dark:'Mudar para modo escuro', theme_to_light:'Mudar para modo claro',
+  },
+};
+const SUPPORTED_LOCALES = ['de','en','pt'];
+let LOCALE = (() => { const s = localStorage.getItem('apo_locale'); return SUPPORTED_LOCALES.includes(s) ? s : 'de'; })();
+const t = (key) => (I18N[LOCALE] && I18N[LOCALE][key]) || I18N.de[key] || key;
+function setLocale(l) {
+  LOCALE = SUPPORTED_LOCALES.includes(l) ? l : 'de';
+  localStorage.setItem('apo_locale', LOCALE);
+  document.documentElement.setAttribute('lang', LOCALE);
+}
+// Füllt alle [data-i18n]-Elemente (Textinhalt) und [data-i18n-ph] (Platzhalter).
+function applyI18n(root) {
+  const scope = root || document;
+  scope.querySelectorAll('[data-i18n]').forEach(n => { n.textContent = t(n.getAttribute('data-i18n')); });
+  scope.querySelectorAll('[data-i18n-ph]').forEach(n => { n.setAttribute('placeholder', t(n.getAttribute('data-i18n-ph'))); });
+  scope.querySelectorAll('[data-i18n-title]').forEach(n => { n.setAttribute('title', t(n.getAttribute('data-i18n-title'))); });
 }
 const api = async (method, path, body) => {
   const t = localStorage.getItem('apo_token');
@@ -307,11 +370,41 @@ function afterAuth(d) {
   mainScreen();
 }
 
+// ── Länder-/Sprach-Umschalter (Kopfzeile) ──
+// Ein Wechsel des Landes filtert die Inhalte (News/Engpässe/Preise) auf dieses
+// Land und stellt die UI-Sprache automatisch auf die Landessprache um.
+let COUNTRIES_CACHE = null;
+async function initCountrySwitcher() {
+  const sel = document.getElementById('countrySwitch');
+  if (!sel) return;
+  try { if (!COUNTRIES_CACHE) COUNTRIES_CACHE = (await api('GET','/api/countries')).countries; }
+  catch { return; }
+  const cur = (me && me.country) || 'AT';
+  sel.innerHTML = COUNTRIES_CACHE
+    .map(c => `<option value="${esc(c.code)}"${c.code===cur?' selected':''}>${esc(c.flag)} ${esc(c.name)}</option>`)
+    .join('');
+  sel.classList.remove('hidden');
+  sel.onchange = async () => {
+    const code = sel.value;
+    try {
+      const r = await api('POST','/api/profile', { country: code });
+      me = r.profile || me;
+      setLocale((me && me.locale) || 'de');
+      applyI18n(); applyTheme(); // Theme-Label (Hell/Dunkel) folgt der neuen Sprache
+      loadTab(); // Inhalte des aktiven Reiters neu, jetzt fürs gewählte Land
+    } catch {
+      sel.value = (me && me.country) || 'AT'; // bei Fehler Auswahl zurücksetzen
+    }
+  };
+}
+
 // ── Haupt-Screen (Feed) ──
 async function mainScreen() {
   const meData = await api('GET','/api/me');
   me = meData.profile;
   iAmModerator = !!meData.is_moderator;
+  // Sprache folgt dem Land des Profils (Owner-Vorgabe: länderbasierte Plattform).
+  setLocale(me && me.locale ? me.locale : 'de');
   document.getElementById('whoami').textContent = me ? '@'+me.handle : '';
   document.getElementById('btnLogout').classList.remove('hidden');
   document.getElementById('btnNotif').classList.remove('hidden');
@@ -332,17 +425,17 @@ async function mainScreen() {
   app.innerHTML = '';
   app.appendChild(el(`
     <div class="card" style="padding:10px 12px">
-      <div class="row"><input id="sq" placeholder="🔎 Suchen: Wirkstoff, Kolleg:in (@handle), Beitrag, Engpass, Preis…" aria-label="Suche"><button class="small" id="sgo">Suchen</button></div>
+      <div class="row"><input id="sq" data-i18n-ph="search_ph" placeholder="🔎 Suchen: Wirkstoff, Kolleg:in (@handle), Beitrag, Engpass, Preis…" aria-label="Suche"><button class="small" id="sgo" data-i18n="search_go">Suchen</button></div>
     </div>
     <div class="tabs">
-      <button data-tab="overview" class="active">✨ Für dich</button>
-      <button data-tab="public">🌍 Öffentlich</button>
-      <button data-tab="home">🏠 Mein Feed</button>
-      <button data-tab="shortages">📦 Engpässe</button>
-      <button data-tab="prices">💶 Preise</button>
-      <button data-tab="rabatte">🏷️ Top-Rabatte</button>
-      <button data-tab="exchange">🔄 Biete/Suche</button>
-      <button data-tab="news">📰 News</button>
+      <button data-tab="overview" class="active" data-i18n="nav_overview">✨ Für dich</button>
+      <button data-tab="public" data-i18n="nav_public">🌍 Öffentlich</button>
+      <button data-tab="home" data-i18n="nav_home">🏠 Mein Feed</button>
+      <button data-tab="shortages" data-i18n="nav_shortages">📦 Engpässe</button>
+      <button data-tab="prices" data-i18n="nav_prices">💶 Preise</button>
+      <button data-tab="rabatte" data-i18n="nav_rabatte">🏷️ Top-Rabatte</button>
+      <button data-tab="exchange" data-i18n="nav_exchange">🔄 Biete/Suche</button>
+      <button data-tab="news" data-i18n="nav_news">📰 News</button>
     </div>
     <div id="socialCompose" style="display:none">
       <div class="card">
@@ -406,6 +499,9 @@ async function mainScreen() {
     app.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
     b.classList.add('active'); tab = b.dataset.tab; loadTab();
   });
+  applyI18n();          // Navigation/Suche in aktueller Sprache beschriften
+  applyTheme();         // Theme-Label (Hell/Dunkel) in aktueller Sprache
+  initCountrySwitcher(); // Länder-/Sprach-Umschalter in der Kopfzeile aktivieren
   loadTab();
   // Deep-Links: /?post=ID öffnet einen Beitrag, /?wirkstoff=Name die Wirkstoff-Seite.
   const params = new URLSearchParams(location.search);

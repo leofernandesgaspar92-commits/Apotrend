@@ -6,6 +6,16 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3: i18n-Navigation + Land-/Sprach-Umschalter:** Neuer,
+>   framework­loser i18n-Kern im Frontend (`I18N`-Wörterbuch DE/EN/PT, `t()`, `setLocale()`,
+>   `applyI18n()` über `data-i18n`/`data-i18n-ph`/`data-i18n-title`). Übersetzt sind Navigation,
+>   Suche und die gesamte Kopfzeilen-Bedienung (Hell/Dunkel, Schrift, Hilfe, Nachrichten,
+>   Meldungen, Abmelden). Neuer **Länder-Umschalter in der Kopfzeile** (aus `GET /api/countries`
+>   befüllt): ein Landwechsel schreibt das Profil-Land (`POST /api/profile`), stellt die Sprache
+>   automatisch auf die Landessprache um und lädt den aktiven Reiter länder-gescoped neu. Handy:
+>   Umschalter zeigt nur die Flagge (voller Name beim Aufklappen), Kopfzeile bricht bei sehr
+>   schmalen Geräten sauber um statt horizontal zu scrollen (docW=390). (Verifiziert im Browser:
+>   AT→DE→GB→PT wechselt Beschriftungen live, Hell/Dunkel, Desktop 1280 + Handy 390.)
 > - 🌍 **Länderübergreifend — Schritt 2: Newsfeed länder-gescopt:** Beiträge tragen jetzt
 >   `country` (erben das Land des Autors); `publicFeed`/`newsFeed` filtern nach aktivem Land.
 >   Endpunkte lösen das aktive Land auf (`?country=` → Profil-Land → Fallback AT) via neuem
