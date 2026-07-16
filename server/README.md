@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Engpass-Filter „🧫 Antibiotika":** Neuer Filter-Chip im Lieferengpässe-Reiter zeigt
+>   nur Antibiotika-Engpässe (nutzt das `is_antibiotic`-Feld) — passend zur
+>   Stewardship-Ausrichtung, damit AMR-relevante Engpässe schnell auffindbar sind. Wirkt mit
+>   Sortierung/Suche/Druck/CSV zusammen. (Frontend; im Browser verifiziert: 6 → 2 Einträge,
+>   alle als Antibiotikum markiert.)
 > - ✅ **Begleitzettel + Infokarten in einem Druck:** Im Abgabe-Begleitzettel kann per
 >   Checkbox „🧫 Antibiotika-Infokarten mitdrucken" gewählt werden — die Patienten-Infokarten
 >   erscheinen dann in derselben Sprache auf einer Folgeseite (Seitenumbruch) desselben

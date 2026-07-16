@@ -770,6 +770,7 @@ function renderShortlist(listBox, bar, all) {
   const q = shortageQuery.trim().toLowerCase();
   const list = all.filter(s => {
     if (shortageFilter === 'kritisch' && s.status !== 'kritisch') return false;
+    if (shortageFilter === 'antibiotika' && !s.is_antibiotic) return false;
     if (shortageFilter === 'watched' && !s.watched) return false;
     if (shortageFilter === 'community' && s.provenance !== 'community') return false;
     if (q && !((s.wirkstoff||'').toLowerCase().includes(q) || (s.bezeichnung||'').toLowerCase().includes(q))) return false;
@@ -794,7 +795,7 @@ function renderShortlist(listBox, bar, all) {
 
 // Filter- und Suchleiste für den Engpässe-Reiter.
 function shortageFilterBar() {
-  const chips = [['','Alle'],['kritisch','🔴 Nur kritisch'],['watched','⭐ Beobachtet'],['community','👥 Community']];
+  const chips = [['','Alle'],['kritisch','🔴 Nur kritisch'],['antibiotika','🧫 Antibiotika'],['watched','⭐ Beobachtet'],['community','👥 Community']];
   const bar = el(`<div class="card">
     <div class="row" style="gap:6px"><input data-q placeholder="🔎 Wirkstoff oder Präparat suchen…" value="${esc(shortageQuery)}" style="flex:1"></div>
     <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px">
