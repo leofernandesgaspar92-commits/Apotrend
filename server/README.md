@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3j: Engpass-Zeilen mehrsprachig — Reiter komplett:** Die
+>   einzelnen Engpass-Karten sind jetzt übersetzt (DE/EN/PT): Melde-Info, Voraussichtlich-bis,
+>   Antibiotika-Hinweis, Community-Bestätigungen (Singular/Plural), alle Aktions-Buttons
+>   (Posten/Biete-Suche/Beobachten/Bestätigen/Wieder-lieferbar/Verlauf), das Post-Feld und die
+>   Redaktions-Statusbox. Damit ist der **gesamte Engpässe-Reiter** in der Landessprache.
+>   (Browser verifiziert: Engpass-Zeile auf Portugiesisch, keine JS-Fehler.)
 > - 🌍 **Länderübergreifend — Schritt 3i: Datenherkunft-Legende + Herkunfts-Labels mehrsprachig:**
 >   Die aufklappbare „Datenherkunft & Sicherheit"-Legende (inkl. Quellen-Grundsatz) und die
 >   Herkunfts-Labels (BASG/Referenz/simuliert/Redaktion/Community) sind jetzt DE/EN/PT. Das

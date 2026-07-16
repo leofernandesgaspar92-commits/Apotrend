@@ -233,6 +233,17 @@ const I18N = {
     pl_e:'📰 <b>Redaktion</b> — von der ApoTrend-Redaktion gepflegt, immer mit Quelle.',
     pl_c:'👥 <b>Community-Meldung</b> — von Kolleg:innen gemeldet, <b>nicht offiziell verifiziert</b>. Zur Orientierung, im Zweifel selbst prüfen.',
     pl_note:'Grundsatz: Sicherheitsrelevante Aussagen (Engpass, Rückruf, Substitution) werden nur mit Quelle geführt. Bei Community-Meldungen ist die Quelle die meldende Apotheke.',
+    sc_reported:'gemeldet', sc_until:'🗓️ Voraussichtlich wieder lieferbar bis',
+    sc_abx:'🧫 Antibiotikum', sc_abx_link:'Stewardship-Infos & Quellen',
+    sc_abx_note:'(keine Substitutionsempfehlung ohne Quelle)', sc_reported_by:'👥 Gemeldet von',
+    sc_conf_one:'weitere Apotheke bestätigt', sc_conf_many:'weitere Apotheken bestätigt',
+    sc_posted:'Apotheker haben dazu gepostet', sc_post_about:'✍ Dazu posten',
+    sc_watched:'⭐ Beobachtet', sc_watch:'☆ Beobachten',
+    sc_conf_btn:'➕ Auch bei uns', sc_confd_btn:'✅ Bestätigt', sc_resolve:'✓ Wieder lieferbar',
+    sc_history:'📜 Verlauf', sc_post_ph:'Dein Beitrag zu diesem Engpass (öffentlich)…', sc_post_send:'Posten',
+    sc_mod_status:'📝 Status ändern (Redaktion)', sc_mod_new:'Neuer Status',
+    sc_mod_src:'Quelle (Pflicht, http[s]-Link – z.B. BASG)',
+    sc_mod_save:'Status speichern & Beobachter benachrichtigen',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -291,6 +302,17 @@ const I18N = {
     pl_e:'📰 <b>Editorial</b> — maintained by the ApoTrend editors, always with a source.',
     pl_c:'👥 <b>Community report</b> — reported by colleagues, <b>not officially verified</b>. For orientation; when in doubt, check yourself.',
     pl_note:'Principle: safety-relevant statements (shortage, recall, substitution) are only shown with a source. For community reports, the source is the reporting pharmacy.',
+    sc_reported:'reported', sc_until:'🗓️ Expected back in stock by',
+    sc_abx:'🧫 Antibiotic', sc_abx_link:'Stewardship info & sources',
+    sc_abx_note:'(no substitution advice without a source)', sc_reported_by:'👥 Reported by',
+    sc_conf_one:'more pharmacy confirms', sc_conf_many:'more pharmacies confirm',
+    sc_posted:'pharmacists have posted about this', sc_post_about:'✍ Post about this',
+    sc_watched:'⭐ Watched', sc_watch:'☆ Watch',
+    sc_conf_btn:'➕ Us too', sc_confd_btn:'✅ Confirmed', sc_resolve:'✓ Available again',
+    sc_history:'📜 History', sc_post_ph:'Your post about this shortage (public)…', sc_post_send:'Post',
+    sc_mod_status:'📝 Change status (editorial)', sc_mod_new:'New status',
+    sc_mod_src:'Source (required, http[s] link – e.g. BASG)',
+    sc_mod_save:'Save status & notify watchers',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -349,6 +371,17 @@ const I18N = {
     pl_e:'📰 <b>Redação</b> — mantido pela redação da ApoTrend, sempre com fonte.',
     pl_c:'👥 <b>Aviso da comunidade</b> — reportado por colegas, <b>não verificado oficialmente</b>. Para orientação; na dúvida, confirme.',
     pl_note:'Princípio: afirmações relevantes para a segurança (falta, recolha, substituição) só são apresentadas com fonte. Nos avisos da comunidade, a fonte é a farmácia que reporta.',
+    sc_reported:'reportado', sc_until:'🗓️ Previsão de reposição até',
+    sc_abx:'🧫 Antibiótico', sc_abx_link:'Informação de stewardship & fontes',
+    sc_abx_note:'(sem recomendação de substituição sem fonte)', sc_reported_by:'👥 Reportado por',
+    sc_conf_one:'outra farmácia confirma', sc_conf_many:'outras farmácias confirmam',
+    sc_posted:'farmacêuticos publicaram sobre isto', sc_post_about:'✍ Publicar sobre isto',
+    sc_watched:'⭐ Vigiada', sc_watch:'☆ Vigiar',
+    sc_conf_btn:'➕ Nós também', sc_confd_btn:'✅ Confirmado', sc_resolve:'✓ Disponível novamente',
+    sc_history:'📜 Histórico', sc_post_ph:'A sua publicação sobre esta falta (pública)…', sc_post_send:'Publicar',
+    sc_mod_status:'📝 Alterar estado (redação)', sc_mod_new:'Novo estado',
+    sc_mod_src:'Fonte (obrigatória, ligação http[s] – ex. BASG)',
+    sc_mod_save:'Guardar estado & notificar quem vigia',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -1261,35 +1294,35 @@ function shortageCard(s) {
       <span class="vis" title="${esc(t('pl_open'))}">${esc(provLabel(s.provenance))}</span>
     </div>
     <div class="post-body">${esc(s.bezeichnung)}</div>
-    <div class="muted">${s.grund?esc(s.grund)+' · ':''}gemeldet ${esc(s.gemeldet_am||'—')}</div>
-    ${s.voraussichtlich_bis&&s.status!=='verfuegbar'?`<div class="muted" style="font-size:13px;margin-top:2px">🗓️ Voraussichtlich wieder lieferbar bis <b>${esc(fmtDateDe(s.voraussichtlich_bis))}</b></div>`:''}
-    ${s.is_antibiotic?`<div style="margin-top:6px;font-size:13px"><span style="color:var(--ok-fg);font-weight:600">🧫 Antibiotikum</span> — <span class="clickable" data-amr style="color:var(--ok-fg);text-decoration:underline">Stewardship-Infos & Quellen</span> <span class="muted">(keine Substitutionsempfehlung ohne Quelle)</span></div>`:''}
-    ${s.provenance==='community'&&s.reporter?`<div class="muted" style="font-size:13px;margin-top:2px">👥 Gemeldet von <b>@${esc(s.reporter.handle)}</b>${s.reporter.verified?' <span class="verified">✔</span>':''}${s.confirm_count?` · <b style="color:var(--crit-fg)">${s.confirm_count}</b> weitere Apotheke${s.confirm_count>1?'n':''} bestätigt`:''}</div>`:''}
+    <div class="muted">${s.grund?esc(s.grund)+' · ':''}${esc(t('sc_reported'))} ${esc(s.gemeldet_am||'—')}</div>
+    ${s.voraussichtlich_bis&&s.status!=='verfuegbar'?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sc_until'))} <b>${esc(fmtDateDe(s.voraussichtlich_bis))}</b></div>`:''}
+    ${s.is_antibiotic?`<div style="margin-top:6px;font-size:13px"><span style="color:var(--ok-fg);font-weight:600">${esc(t('sc_abx'))}</span> — <span class="clickable" data-amr style="color:var(--ok-fg);text-decoration:underline">${esc(t('sc_abx_link'))}</span> <span class="muted">${esc(t('sc_abx_note'))}</span></div>`:''}
+    ${s.provenance==='community'&&s.reporter?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sc_reported_by'))} <b>@${esc(s.reporter.handle)}</b>${s.reporter.verified?' <span class="verified">✔</span>':''}${s.confirm_count?` · <b style="color:var(--crit-fg)">${s.confirm_count}</b> ${esc(s.confirm_count>1?t('sc_conf_many'):t('sc_conf_one'))}`:''}</div>`:''}
     <div class="reacts">
-      <button data-about>💬 ${s.post_count||0} Apotheker haben dazu gepostet</button>
-      <button class="ghost" data-postbtn>✍ Dazu posten</button>
-      <button class="ghost" data-exchange title="Wer bietet/sucht diesen Wirkstoff?">🔄 Biete/Suche</button>
-      <button class="ghost" data-watch title="Diesen Wirkstoff beobachten" aria-pressed="${!!s.watched}">${s.watched?'⭐ Beobachtet':'☆ Beobachten'}</button>
-      ${s.provenance==='community'&&!s.is_reporter?`<button class="ghost" data-confirm title="Diesen Engpass auch bei dir bestätigen">${s.i_confirmed?'✅ Bestätigt':'➕ Auch bei uns'}</button>`:''}
-      ${s.provenance==='community'&&s.is_reporter&&s.status!=='verfuegbar'?`<button class="ghost" data-resolve title="Wieder lieferbar – deine Meldung schließen">✓ Wieder lieferbar</button>`:''}
-      ${(s.history||[]).length>1?`<button class="ghost" data-hist title="Alle Statusänderungen mit Datum und Quelle" aria-expanded="false">📜 Verlauf (${s.history.length})</button>`:''}
+      <button data-about>💬 ${s.post_count||0} ${esc(t('sc_posted'))}</button>
+      <button class="ghost" data-postbtn>${esc(t('sc_post_about'))}</button>
+      <button class="ghost" data-exchange title="${esc(t('nav_exchange'))}">${esc(t('nav_exchange'))}</button>
+      <button class="ghost" data-watch title="${esc(t('wl_add_aria'))}" aria-pressed="${!!s.watched}">${s.watched?esc(t('sc_watched')):esc(t('sc_watch'))}</button>
+      ${s.provenance==='community'&&!s.is_reporter?`<button class="ghost" data-confirm>${s.i_confirmed?esc(t('sc_confd_btn')):esc(t('sc_conf_btn'))}</button>`:''}
+      ${s.provenance==='community'&&s.is_reporter&&s.status!=='verfuegbar'?`<button class="ghost" data-resolve>${esc(t('sc_resolve'))}</button>`:''}
+      ${(s.history||[]).length>1?`<button class="ghost" data-hist aria-expanded="false">${esc(t('sc_history'))} (${s.history.length})</button>`:''}
     </div>
     <div class="comments hidden" data-histbox></div>
     <div class="comments hidden" data-postbox>
-      <textarea data-pinput placeholder="Dein Beitrag zu diesem Engpass (öffentlich)…"></textarea>
-      <div style="margin-top:6px"><button class="small" data-psend>Posten</button></div>
+      <textarea data-pinput placeholder="${esc(t('sc_post_ph'))}"></textarea>
+      <div style="margin-top:6px"><button class="small" data-psend>${esc(t('sc_post_send'))}</button></div>
     </div>
-    ${iAmModerator?`<div class="reacts"><button class="ghost" data-statusbtn>📝 Status ändern (Redaktion)</button></div>
+    ${iAmModerator?`<div class="reacts"><button class="ghost" data-statusbtn>${esc(t('sc_mod_status'))}</button></div>
     <div class="comments hidden" data-statusbox>
-      <label style="font-size:13px">Neuer Status</label>
+      <label style="font-size:13px">${esc(t('sc_mod_new'))}</label>
       <select data-sstatus>
-        <option value="kritisch">Kritischer Engpass</option>
-        <option value="eingeschraenkt">Eingeschränkt lieferbar</option>
-        <option value="verfuegbar">Wieder verfügbar</option>
+        <option value="kritisch">${esc(t('st_krit'))}</option>
+        <option value="eingeschraenkt">${esc(t('st_eing'))}</option>
+        <option value="verfuegbar">${esc(t('st_verf'))}</option>
       </select>
-      <label style="font-size:13px;margin-top:6px">Quelle (Pflicht, http[s]-Link – z.B. BASG)</label>
+      <label style="font-size:13px;margin-top:6px">${esc(t('sc_mod_src'))}</label>
       <input data-ssrc placeholder="https://www.basg.gv.at/…">
-      <div style="margin-top:6px"><button class="small" data-ssave>Status speichern & Beobachter benachrichtigen</button></div>
+      <div style="margin-top:6px"><button class="small" data-ssave>${esc(t('sc_mod_save'))}</button></div>
       <div class="err" data-serr></div>
     </div>`:''}
     <div class="comments hidden" data-aboutbox></div>
