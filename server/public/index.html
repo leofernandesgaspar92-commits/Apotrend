@@ -32,10 +32,12 @@
   /* Tastatur-Fokus deutlich sichtbar (Barrierefreiheit) */
   :focus-visible { outline:3px solid #1a73e8; outline-offset:2px; }
   header { background:var(--green); color:#fff; padding:12px 16px; display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:5; }
-  @media (max-width:560px){ #whoami { display:none; } header { gap:8px; padding:10px 12px; } }
   header .logo { font-weight:800; letter-spacing:.5px; font-size:1.25em; }
   header .sp { flex:1; }
   header button { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.5); min-height:42px; min-width:42px; }
+  /* Mobil: Header muss in eine Zeile passen (sonst Horizontal-Scroll, Logout
+     abgeschnitten). MUSS nach den Basisregeln stehen (gleiche Spezifität). */
+  @media (max-width:560px){ #whoami { display:none; } header { gap:4px; padding:9px 8px; } header .logo { font-size:0.98em; letter-spacing:0; } header button { min-width:0; min-height:40px; padding:8px 7px; } }
   .wrap { max-width:640px; margin:0 auto; padding:16px; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; }
   h1 { font-size:1.4em; margin:0 0 12px; }
@@ -52,6 +54,12 @@
   .tabs { display:flex; gap:8px; margin-bottom:12px; }
   .tabs button { flex:1; background:var(--card); color:var(--text); border:1px solid var(--line); }
   .tabs button.active { background:var(--green); color:#fff; border-color:var(--green); }
+  /* Mobil: 8 Tabs passen nicht in eine Zeile (Horizontal-Scroll, halbe Tabs
+     unsichtbar). Als 4-Spalten-Grid umbrechen -> alle Tabs sichtbar, kein Overflow. */
+  @media (max-width: 640px) {
+    .tabs { display:grid; grid-template-columns:repeat(4, 1fr); }
+    .tabs button { flex:none; padding-left:4px; padding-right:4px; }
+  }
   .post-author { font-weight:700; }
   .handle { color:var(--muted); font-weight:400; font-size:0.9em; }
   .verified { color:var(--green); font-size:13px; }
@@ -115,7 +123,7 @@
   <button class="bell hidden" id="btnMod" title="Moderation" aria-label="Moderation">🛡️<span class="hlabel">Moderation</span></button>
   <button class="bell hidden" id="btnDm" title="Nachrichten" aria-label="Nachrichten">✉️<span class="hlabel">Nachrichten</span><span class="badge hidden" id="dmBadge">0</span></button>
   <button class="bell hidden" id="btnNotif" title="Benachrichtigungen" aria-label="Benachrichtigungen">🔔<span class="hlabel">Meldungen</span><span class="badge hidden" id="notifBadge">0</span></button>
-  <button class="hidden" id="btnLogout">Abmelden</button>
+  <button class="hidden" id="btnLogout" title="Abmelden" aria-label="Abmelden">🚪<span class="hlabel">Abmelden</span></button>
 </header>
 <main class="wrap" id="app" tabindex="-1" role="main"></main>
 

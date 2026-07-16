@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — Mobile-Bug behoben (Header + Tabs liefen über):** Auf dem Handy
+>   (390 px) liefen Header und die 8er-Tableiste horizontal über (docW 781 → Seiten-Scroll,
+>   4 Tabs nur per Scrollen erreichbar, „Abmelden" abgeschnitten). Jetzt: Tabs als
+>   **4-Spalten-Grid** (2 Reihen, alle 8 sichtbar), Header eng gesetzt und „Abmelden" als
+>   🚪-Icon (wie die übrigen Header-Aktionen). Grundursache mitbehoben: die Mobile-Media-Query
+>   stand **vor** den Basisregeln (gleiche Spezifität → wirkungslos) und liegt jetzt danach.
+>   docW = 390 (kein Überlauf); Desktop unverändert. (Präzise vermessen + Screenshot verifiziert.)
 > - ✅ **Qualitäts-Audit — einheitlicher Lade-Indikator:** Die Reiter zeigten beim Laden ein
 >   blankes „lädt…" (Text). Neu: dezenter, theme-tauglicher Spinner (`.loading` mit
 >   animiertem `::before`, Rahmen aus `--line`/`--green`) plus Text — konsistent über alle
