@@ -12,8 +12,18 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-title" content="ApoTrend" />
 <style>
-  :root { --green:#0b7f28; --green-d:#086420; --bg:#f4f6f5; --card:#fff; --line:#e2e6e4; --text:#1a2420; --muted:#556860; }
-  body.dark { --green:#22cc5c; --green-d:#1aa749; --bg:#14181a; --card:#1e2427; --line:#33403b; --text:#e7ece9; --muted:#9fb0a8; }
+  :root { --green:#0b7f28; --green-d:#086420; --bg:#f4f6f5; --card:#fff; --line:#e2e6e4; --text:#1a2420; --muted:#556860;
+    --chip-bg:#eef3f0;
+    --ok-bg:#e6f7ef; --ok-fg:#0b7f28; --ok-bd:#b6e6cf;
+    --warn-bg:#fff4e6; --warn-fg:#b26a00; --warn-bd:#ffd9a8;
+    --crit-bg:#fdece9; --crit-fg:#c0392b; --crit-bd:#f2c6bf;
+    --info-bg:#e6ecfb; --info-fg:#2952cc; --info-bd:#c9d6f7; }
+  body.dark { --green:#22cc5c; --green-d:#1aa749; --bg:#14181a; --card:#1e2427; --line:#33403b; --text:#e7ece9; --muted:#9fb0a8;
+    --chip-bg:#26302c;
+    --ok-bg:#12331e; --ok-fg:#46d67a; --ok-bd:#205834;
+    --warn-bg:#33280f; --warn-fg:#e2ac44; --warn-bd:#5a4620;
+    --crit-bg:#3a1c18; --crit-fg:#f0857a; --crit-bd:#5e2b25;
+    --info-bg:#1a2338; --info-fg:#8aa4f7; --info-bd:#33436f; }
   body.dark .reacts button, body.dark .spec { background:#2a3330; }
   body.dark input, body.dark textarea, body.dark select { background:#161b1d; }
   body.dark .editorial { background:#1e2f5a; color:#bcd0ff; border-color:#2e4680; }
@@ -47,7 +57,7 @@
   .verified { color:var(--green); font-size:13px; }
   .editorial { background:#eef3ff; color:#2952cc; font-size:12px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid #cdd9ff; }
   .rank { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:30px; padding:0 6px; border-radius:999px; background:var(--green); color:#fff; font-weight:800; font-size:15px; margin-right:8px; }
-  .rabatt-badge { background:#e6f7ef; color:#0b7f28; font-weight:800; font-size:16px; padding:4px 12px; border-radius:999px; border:1px solid #b6e6cf; }
+  .rabatt-badge { background:var(--ok-bg); color:var(--ok-fg); font-weight:800; font-size:16px; padding:4px 12px; border-radius:999px; border:1px solid var(--ok-bd); }
   .mention { color:var(--green); font-weight:600; }
   .mention-ac { border:1px solid var(--line); border-radius:8px; background:var(--card); margin-top:4px; overflow:hidden; }
   .mention-ac-item { padding:8px 10px; cursor:pointer; font-size:0.9em; }
@@ -56,11 +66,11 @@
   .clickable { cursor:pointer; }
   .clickable:hover { text-decoration:underline; }
   .avatar { display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:50%; background:var(--green); color:#fff; font-weight:800; font-size:19px; flex:0 0 auto; }
-  .spec { display:inline-block; background:#eef3f0; border:1px solid var(--line); border-radius:999px; padding:3px 10px; font-size:13px; margin:2px 2px 2px 0; }
+  .spec { display:inline-block; background:var(--chip-bg); border:1px solid var(--line); border-radius:999px; padding:3px 10px; font-size:13px; margin:2px 2px 2px 0; }
   .post-body { margin:8px 0; white-space:pre-wrap; line-height:1.45; }
   .vis { font-size:12px; color:var(--muted); }
   .reacts { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
-  .reacts button { background:#eef3f0; color:var(--text); border:1px solid var(--line); padding:7px 11px; font-size:0.85em; font-weight:500; min-height:36px; }
+  .reacts button { background:var(--chip-bg); color:var(--text); border:1px solid var(--line); padding:7px 11px; font-size:0.85em; font-weight:500; min-height:36px; }
   .reacts button:hover { border-color:var(--green); }
   .muted { color:var(--muted); font-size:14px; }
   .err { color:#c0392b; font-size:14px; margin-top:8px; }
@@ -1276,8 +1286,8 @@ function exchangeCard(e) {
   const au = e.author || {};
   const mine = me && au.handle === me.handle;
   const isBiete = e.kind === 'biete';
-  const badge = isBiete ? '<span style="background:#e6f7ef;color:#0b7f28;border:1px solid #b6e6cf;border-radius:999px;padding:2px 10px;font-weight:700;font-size:13px">📦 Biete</span>'
-                        : '<span style="background:#fff4e6;color:#b26a00;border:1px solid #ffd9a8;border-radius:999px;padding:2px 10px;font-weight:700;font-size:13px">🔎 Suche</span>';
+  const badge = isBiete ? '<span style="background:var(--ok-bg);color:var(--ok-fg);border:1px solid var(--ok-bd);border-radius:999px;padding:2px 10px;font-weight:700;font-size:13px">📦 Biete</span>'
+                        : '<span style="background:var(--warn-bg);color:var(--warn-fg);border:1px solid var(--warn-bd);border-radius:999px;padding:2px 10px;font-weight:700;font-size:13px">🔎 Suche</span>';
   const erledigt = e.status === 'erledigt';
   const doneBadge = erledigt ? ' <span style="background:var(--line);color:var(--muted);border-radius:999px;padding:2px 8px;font-size:12px;font-weight:600">✓ erledigt</span>' : '';
   const card = el(`<div class="card"${erledigt?' style="opacity:.75"':''}>
@@ -1400,7 +1410,7 @@ const REACTS = [['hilfreich','👍 Hilfreich'],['danke','🙏 Danke'],['bestaeti
 
 function refChip(r) {
   if (!r) return '';
-  const base = 'background:#eef3f0;border:1px solid var(--line);border-radius:8px;padding:6px 10px;display:inline-block;margin-bottom:4px';
+  const base = 'background:var(--chip-bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px;display:inline-block;margin-bottom:4px';
   if (r.kind === 'price') {
     const t = r.trend_pct>0?` ▲ +${r.trend_pct}%`:(r.trend_pct<0?` ▼ ${r.trend_pct}%`:'');
     return `<div class="vis" style="${base}">💶 Preis: <b>${esc(r.bezeichnung)}</b> — ${esc(r.supplier)} € ${Number(r.aep).toFixed(2)}${t}</div>`;
@@ -2610,7 +2620,7 @@ async function openDmThread(threadId) {
     messages.forEach(m => {
       const mine = me && m.sender_user_id === me.user_id;
       msgs.appendChild(el(`<div style="display:flex;margin:4px 0;${mine?'justify-content:flex-end':''}">
-        <div style="max-width:75%;padding:8px 12px;border-radius:12px;background:${mine?'var(--green)':'#eef3f0'};color:${mine?'#fff':'inherit'}">${esc(m.body)}</div></div>`));
+        <div style="max-width:75%;padding:8px 12px;border-radius:12px;background:${mine?'var(--green)':'var(--chip-bg)'};color:${mine?'#fff':'inherit'}">${esc(m.body)}</div></div>`));
     });
     msgs.scrollTop = msgs.scrollHeight;
   };

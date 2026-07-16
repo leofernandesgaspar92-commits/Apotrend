@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — semantische Farb-Tokens (Dark Mode):** Hart codierte Chip-/Badge-
+>   Farben (`#eef3f0`, `#e6f7ef`, `#fff4e6` …) schalteten im Dark Mode nicht mit und standen
+>   als grelle helle Pillen auf dunklem Grund. Neu: Tokens `--chip-bg` und
+>   `--ok/--warn/--crit/--info`-Sätze (bg/fg/bd) in `:root` **und** `body.dark`; damit
+>   umgestellt: Biete/Suche-Pillen, `.spec`-Chips, `.reacts`-Buttons, `.rabatt-badge`,
+>   Referenz-Chips, DM-Blasen. Konsistente, theme-taugliche Farben; Light Mode unverändert
+>   (Tokens = Originalwerte). Basis für weitere Token-Migration. (Im Browser Dark/Light verifiziert.)
 > - ✅ **Qualitäts-Audit — Informationshierarchie korrigiert:** Bisher standen Suche,
 >   Post-Compose und „Jemandem folgen" **über den Tabs auf jedem Reiter** — man scrollte auf
 >   Engpässe/Preise/Rabatte erst an zwei Formularen vorbei (~660 px verschenkt). Jetzt:
