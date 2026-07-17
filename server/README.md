@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3ab: Merkliste, Hashtag-Seite & Wirkstoff-Dashboard-Karten:**
+>   Die Merklisten-Seite und die Hashtag-Themenseite (Titel, Zähler, Zurück, Leerzustände) sowie
+>   die zwei bedingten „Für dich"-Karten (🏷️ Aktionen / 🔄 Bezugsquellen zu deinen Wirkstoffen,
+>   inkl. Singular/Plural & Ablauf-Countdown) sind jetzt DE/EN/PT. (Browser verifiziert: „🔖 Os
+>   meus marcadores / Ainda nada guardado / 0 publicações".)
 > - 🌍 **Länderübergreifend — Schritt 3aa: Login-/Registrierungs-Screen mehrsprachig (DE/EN/PT):**
 >   Der Anmelde-/Registrierungs-Screen (Anmelden/Neu registrieren, alle Feld-Labels, Buttons) ist
 >   jetzt übersetzt — wiederkehrende EN/PT-Nutzer:innen sehen das Eingangstor in ihrer Sprache

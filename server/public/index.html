@@ -365,6 +365,12 @@ const I18N = {
     au_login:'Anmelden', au_email:'E-Mail', au_pw:'Passwort', au_register:'Neu registrieren', au_name:'Name',
     au_handle:'@Handle (öffentlicher Name im Netzwerk)', au_pw8:'Passwort (mind. 8 Zeichen)',
     au_country:'Land (bestimmt Feed-Inhalte & Sprache)', au_create:'Konto erstellen',
+    wd_title:'🏷️ Aktionen zu deinen Wirkstoffen', wd_all:'Alle Rabatte', wd_sub:'Für diese von dir beobachteten Wirkstoffe läuft gerade eine Aktion:',
+    wo_title:'🔄 Bezugsquellen zu deinen Wirkstoffen', wo_sub:'Für diese beobachteten Wirkstoffe bieten Apotheken gerade Bestand an:',
+    wo_offers_sg:'Angebot', wo_offers_pl:'Angebote', wo_in_exchange:'im Bestandsaustausch',
+    bm_doc:'Merkliste', bm_title:'🔖 Meine Merkliste', bm_empty_t:'Noch nichts gemerkt',
+    bm_empty_s:'Tippe bei einem Beitrag auf „🔖 Merken", dann findest du ihn hier jederzeit wieder.',
+    ht_posts:'{n} Beiträge', ht_empty_t:'Noch keine Beiträge zu diesem Thema', ht_empty_s:'Sei der/die Erste und schreibe etwas mit #{tag}.',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -555,6 +561,12 @@ const I18N = {
     au_login:'Log in', au_email:'Email', au_pw:'Password', au_register:'Sign up', au_name:'Name',
     au_handle:'@handle (public name in the network)', au_pw8:'Password (min. 8 characters)',
     au_country:'Country (sets feed content & language)', au_create:'Create account',
+    wd_title:'🏷️ Deals for your substances', wd_all:'All deals', wd_sub:'A deal is currently running for these substances you watch:',
+    wo_title:'🔄 Sources for your substances', wo_sub:'Pharmacies are currently offering stock for these substances you watch:',
+    wo_offers_sg:'offer', wo_offers_pl:'offers', wo_in_exchange:'in the stock exchange',
+    bm_doc:'Bookmarks', bm_title:'🔖 My bookmarks', bm_empty_t:'Nothing saved yet',
+    bm_empty_s:'Tap “🔖 Save” on a post to find it here anytime.',
+    ht_posts:'{n} posts', ht_empty_t:'No posts on this topic yet', ht_empty_s:'Be the first and post something with #{tag}.',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -745,6 +757,12 @@ const I18N = {
     au_login:'Entrar', au_email:'E-mail', au_pw:'Palavra-passe', au_register:'Registar', au_name:'Nome',
     au_handle:'@handle (nome público na rede)', au_pw8:'Palavra-passe (mín. 8 caracteres)',
     au_country:'País (define conteúdo do feed & idioma)', au_create:'Criar conta',
+    wd_title:'🏷️ Promoções para as suas substâncias', wd_all:'Todos os descontos', wd_sub:'Há uma promoção a decorrer para estas substâncias que vigia:',
+    wo_title:'🔄 Fontes para as suas substâncias', wo_sub:'Há farmácias a oferecer stock para estas substâncias que vigia:',
+    wo_offers_sg:'oferta', wo_offers_pl:'ofertas', wo_in_exchange:'na troca de stock',
+    bm_doc:'Marcadores', bm_title:'🔖 Os meus marcadores', bm_empty_t:'Ainda nada guardado',
+    bm_empty_s:'Toque em “🔖 Guardar” numa publicação para a encontrar aqui a qualquer momento.',
+    ht_posts:'{n} publicações', ht_empty_t:'Ainda sem publicações sobre este tema', ht_empty_s:'Seja o primeiro e publique algo com #{tag}.',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -1160,18 +1178,18 @@ async function loadOverview() {
 
   // Aktionen zu beobachteten Wirkstoffen (Beobachtungsliste ↔ Rabatte)
   if (d.watch_deals && d.watch_deals.length) {
-    const c = el(`<div class="card"><div class="row"><b>🏷️ Aktionen zu deinen Wirkstoffen</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>Alle Rabatte</button></div>
-      <div class="muted" style="font-size:13px;margin:2px 0 6px">Für diese von dir beobachteten Wirkstoffe läuft gerade eine Aktion:</div>
-      ${d.watch_deals.map(w=>`<div class="comment">🏷️ <b>${esc(w.wirkstoff)}</b> — ${esc(w.supplier)} <span style="color:var(--ok-fg);font-weight:700">−${w.rabatt_pct}%</span> (€ ${Number(w.aktionspreis).toFixed(2)})${w.expiring_soon?` · <b style="color:${w.days_left<=3?'var(--crit-fg)':'var(--warn-fg)'}">nur noch ${w.days_left<=0?'heute':w.days_left+' Tage'}</b>`:''}</div>`).join('')}</div>`);
+    const c = el(`<div class="card"><div class="row"><b>${esc(t('wd_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>${esc(t('wd_all'))}</button></div>
+      <div class="muted" style="font-size:13px;margin:2px 0 6px">${esc(t('wd_sub'))}</div>
+      ${d.watch_deals.map(w=>`<div class="comment">🏷️ <b>${esc(w.wirkstoff)}</b> — ${esc(w.supplier)} <span style="color:var(--ok-fg);font-weight:700">−${w.rabatt_pct}%</span> (€ ${Number(w.aktionspreis).toFixed(2)})${w.expiring_soon?` · <b style="color:${w.days_left<=3?'var(--crit-fg)':'var(--warn-fg)'}">${esc(w.days_left<=0?t('pg_only_today'):ti('pg_only_days',{d:w.days_left}))}</b>`:''}</div>`).join('')}</div>`);
     c.querySelector('[data-all]').onclick = () => goTab('rabatte');
     feed.appendChild(c);
   }
 
   // Bezugsquellen zu beobachteten Wirkstoffen (Beobachtungsliste ↔ Biete/Suche)
   if (d.watch_offers && d.watch_offers.length) {
-    const c = el(`<div class="card"><div class="row"><b>🔄 Bezugsquellen zu deinen Wirkstoffen</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>Zum Austausch</button></div>
-      <div class="muted" style="font-size:13px;margin:2px 0 6px">Für diese beobachteten Wirkstoffe bieten Apotheken gerade Bestand an:</div>
-      ${d.watch_offers.map(w=>`<div class="comment clickable" data-w="${esc(w.wirkstoff)}">📦 <b>${esc(w.wirkstoff)}</b> — <span style="color:var(--ok-fg);font-weight:700">${w.offers_count} ${w.offers_count>1?'Angebote':'Angebot'}</span> im Bestandsaustausch</div>`).join('')}</div>`);
+    const c = el(`<div class="card"><div class="row"><b>${esc(t('wo_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>${esc(t('sp_exch_go'))}</button></div>
+      <div class="muted" style="font-size:13px;margin:2px 0 6px">${esc(t('wo_sub'))}</div>
+      ${d.watch_offers.map(w=>`<div class="comment clickable" data-w="${esc(w.wirkstoff)}">📦 <b>${esc(w.wirkstoff)}</b> — <span style="color:var(--ok-fg);font-weight:700">${w.offers_count} ${esc(w.offers_count>1?t('wo_offers_pl'):t('wo_offers_sg'))}</span> ${esc(t('wo_in_exchange'))}</div>`).join('')}</div>`);
     c.querySelector('[data-all]').onclick = () => goTab('exchange');
     c.querySelectorAll('[data-w]').forEach(row => row.onclick = () => {
       exchangeQuery = row.dataset.w; exchangeFilter = 'biete'; exchangeBL = ''; exchangeMine = false;
@@ -2237,18 +2255,18 @@ async function renderSuggestions(feed) {
 }
 
 async function openBookmarks() {
-  setDocTitle('Merkliste');
+  setDocTitle(t('bm_doc'));
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
-  feed.innerHTML = '<div class="loading">lädt…</div>';
+  feed.innerHTML = '<div class="loading">…</div>';
   try {
     const d = await api('GET','/api/bookmarks');
     myBookmarks = new Set(d.posts.map(p=>p.id));
     feed.innerHTML = '';
-    const head = el(`<div class="card"><div class="row"><b>🔖 Meine Merkliste</b><span class="sp" style="flex:1"></span><span class="muted">${d.posts.length}</span><button class="ghost small" data-back style="margin-left:10px">← zurück</button></div></div>`);
+    const head = el(`<div class="card"><div class="row"><b>${esc(t('bm_title'))}</b><span class="sp" style="flex:1"></span><span class="muted">${d.posts.length}</span><button class="ghost small" data-back style="margin-left:10px">${esc(t('search_back'))}</button></div></div>`);
     head.querySelector('[data-back]').onclick = () => goTab('overview');
     feed.appendChild(head);
-    if (!d.posts.length) feed.appendChild(emptyState({ icon:'🔖', title:'Noch nichts gemerkt', text:'Tippe bei einem Beitrag auf „🔖 Merken", dann findest du ihn hier jederzeit wieder.' }));
+    if (!d.posts.length) feed.appendChild(emptyState({ icon:'🔖', title:t('bm_empty_t'), text:t('bm_empty_s') }));
     d.posts.forEach(p => feed.appendChild(postCard(p)));
   } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
@@ -2262,10 +2280,10 @@ async function openHashtag(tag) {
   try {
     const d = await api('GET','/api/hashtag/'+encodeURIComponent(tag));
     feed.innerHTML = '';
-    const head = el(`<div class="card"><div class="row"><b>🏷️ #${esc(d.tag)}</b><span class="sp" style="flex:1"></span><span class="muted">${d.posts.length} Beiträge</span><button class="ghost small" data-back style="margin-left:10px">← zurück</button></div></div>`);
+    const head = el(`<div class="card"><div class="row"><b>🏷️ #${esc(d.tag)}</b><span class="sp" style="flex:1"></span><span class="muted">${esc(ti('ht_posts',{n:d.posts.length}))}</span><button class="ghost small" data-back style="margin-left:10px">${esc(t('search_back'))}</button></div></div>`);
     head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
     feed.appendChild(head);
-    if (!d.posts.length) feed.appendChild(emptyState({ icon:'🏷️', title:'Noch keine Beiträge zu diesem Thema', text:`Sei der/die Erste und schreibe etwas mit #${d.tag}.` }));
+    if (!d.posts.length) feed.appendChild(emptyState({ icon:'🏷️', title:t('ht_empty_t'), text:ti('ht_empty_s',{tag:d.tag}) }));
     d.posts.forEach(p => feed.appendChild(postCard(p)));
   } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
