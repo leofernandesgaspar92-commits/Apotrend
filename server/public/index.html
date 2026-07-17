@@ -1291,7 +1291,7 @@ async function loadOverview() {
   const firstName = hello ? (hello.split(/\s+/).find(w => !/\.$/.test(w)) || hello) : '';
   // Kennzahlen-Kacheln
   const tile = (icon, num, label, col, go, filter) => `<div class="ovtile" data-go="${go||''}" data-filter="${filter||''}" style="flex:1;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;${go?'cursor:pointer':''}">
-    <div style="font-size:26px;font-weight:800;color:${col}">${icon} ${num}</div>
+    <div style="font-size:26px;font-weight:800;color:${col}">${icon} <span style="white-space:nowrap">${num}</span></div>
     <div class="muted" style="font-size:13px;margin-top:2px">${esc(label)}</div></div>`;
   const tiles = [
     tile('🔴', d.shortages.kritisch, t('ov_t_crit'), 'var(--crit-fg)', 'shortages'),
