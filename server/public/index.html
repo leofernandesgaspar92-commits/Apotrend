@@ -66,7 +66,10 @@
   /* Kopfzeilen mit Abstandshalter (Titel · Spacer · Aktion) dürfen umbrechen: ein langer
      Button (z. B. CSV-Export) rutscht auf Mobil unter den Titel, statt ihn zu stauchen.
      Eingabe+Button-Zeilen (ohne .sp) bleiben einzeilig — der Button gibt nicht nach. */
-  .row:has(> .sp) { flex-wrap:wrap; }
+  .row:has(> .sp), .row:has(> h1) { flex-wrap:wrap; }
+  /* Überschrift in einer Kopfzeile hält ihre Inhaltsbreite (flex-basis:auto statt 0),
+     damit auf Mobil der Button umbricht statt die Überschrift mitten im Wort zu zerreißen. */
+  .row > h1 { flex:1 1 auto !important; }
   .tabs { display:flex; gap:8px; margin-bottom:12px; }
   .tabs button { flex:1; background:var(--card); color:var(--text); border:1px solid var(--line); }
   .tabs button.active { background:var(--green); color:#fff; border-color:var(--green); }
