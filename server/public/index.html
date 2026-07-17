@@ -362,6 +362,9 @@ const I18N = {
     md_reported_by:'Gemeldet von @{h}', md_reason:'Grund', md_no_reason:'kein Grund angegeben',
     md_author:'Autor', md_removed:'bereits entfernt', md_gone:'Ziel nicht mehr vorhanden.',
     md_remove_comment:'🗑 Kommentar entfernen', md_remove_post:'🗑 Beitrag entfernen', md_ok:'✓ In Ordnung (Meldung schließen)',
+    au_login:'Anmelden', au_email:'E-Mail', au_pw:'Passwort', au_register:'Neu registrieren', au_name:'Name',
+    au_handle:'@Handle (öffentlicher Name im Netzwerk)', au_pw8:'Passwort (mind. 8 Zeichen)',
+    au_country:'Land (bestimmt Feed-Inhalte & Sprache)', au_create:'Konto erstellen',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -549,6 +552,9 @@ const I18N = {
     md_reported_by:'Reported by @{h}', md_reason:'Reason', md_no_reason:'no reason given',
     md_author:'Author', md_removed:'already removed', md_gone:'Target no longer exists.',
     md_remove_comment:'🗑 Remove comment', md_remove_post:'🗑 Remove post', md_ok:'✓ OK (close report)',
+    au_login:'Log in', au_email:'Email', au_pw:'Password', au_register:'Sign up', au_name:'Name',
+    au_handle:'@handle (public name in the network)', au_pw8:'Password (min. 8 characters)',
+    au_country:'Country (sets feed content & language)', au_create:'Create account',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -736,6 +742,9 @@ const I18N = {
     md_reported_by:'Denunciado por @{h}', md_reason:'Motivo', md_no_reason:'sem motivo indicado',
     md_author:'Autor', md_removed:'já removido', md_gone:'O alvo já não existe.',
     md_remove_comment:'🗑 Remover comentário', md_remove_post:'🗑 Remover publicação', md_ok:'✓ OK (fechar denúncia)',
+    au_login:'Entrar', au_email:'E-mail', au_pw:'Palavra-passe', au_register:'Registar', au_name:'Nome',
+    au_handle:'@handle (nome público na rede)', au_pw8:'Palavra-passe (mín. 8 caracteres)',
+    au_country:'País (define conteúdo do feed & idioma)', au_create:'Criar conta',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -870,20 +879,20 @@ function authScreen() {
   app.innerHTML = '';
   app.appendChild(el(`
   <div class="card">
-    <h1>Anmelden</h1>
-    <label>E-Mail</label><input id="li_email" type="email" placeholder="name@apotheke.at">
-    <label>Passwort</label><input id="li_pw" type="password" placeholder="Passwort">
-    <div style="margin-top:12px"><button id="li_go">Anmelden</button></div>
+    <h1>${esc(t('au_login'))}</h1>
+    <label>${esc(t('au_email'))}</label><input id="li_email" type="email" placeholder="name@apotheke.at">
+    <label>${esc(t('au_pw'))}</label><input id="li_pw" type="password" placeholder="${esc(t('au_pw'))}">
+    <div style="margin-top:12px"><button id="li_go">${esc(t('au_login'))}</button></div>
     <div class="err" id="li_err"></div>
   </div>
   <div class="card">
-    <h1>Neu registrieren</h1>
-    <label>Name</label><input id="rg_name" placeholder="Dr. Anna Huber">
-    <label>@Handle (öffentlicher Name im Netzwerk)</label><input id="rg_handle" placeholder="anna_huber">
-    <label>E-Mail</label><input id="rg_email" type="email" placeholder="name@apotheke.at">
-    <label>Passwort (mind. 8 Zeichen)</label><input id="rg_pw" type="password">
-    <label>Land (bestimmt Feed-Inhalte & Sprache)</label><select id="rg_country"></select>
-    <div style="margin-top:12px"><button id="rg_go">Konto erstellen</button></div>
+    <h1>${esc(t('au_register'))}</h1>
+    <label>${esc(t('au_name'))}</label><input id="rg_name" placeholder="Dr. Anna Huber">
+    <label>${esc(t('au_handle'))}</label><input id="rg_handle" placeholder="anna_huber">
+    <label>${esc(t('au_email'))}</label><input id="rg_email" type="email" placeholder="name@apotheke.at">
+    <label>${esc(t('au_pw8'))}</label><input id="rg_pw" type="password">
+    <label>${esc(t('au_country'))}</label><select id="rg_country"></select>
+    <div style="margin-top:12px"><button id="rg_go">${esc(t('au_create'))}</button></div>
     <div class="err" id="rg_err"></div>
   </div>`));
 

@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3aa: Login-/Registrierungs-Screen mehrsprachig (DE/EN/PT):**
+>   Der Anmelde-/Registrierungs-Screen (Anmelden/Neu registrieren, alle Feld-Labels, Buttons) ist
+>   jetzt übersetzt — wiederkehrende EN/PT-Nutzer:innen sehen das Eingangstor in ihrer Sprache
+>   (Sprache aus `apo_locale`). (Browser verifiziert: „Entrar / Registar / Criar conta / Palavra-
+>   passe (mín. 8 caracteres)".) Rest-Detailseiten (Merkliste, Hashtag, Wirkstoff, Aktivität) folgen.
 > - 🌍 **Länderübergreifend — Schritt 3z: Moderationspanel mehrsprachig — Oberfläche 100% DE/EN/PT:**
 >   Das Redaktions-/Moderations-Dashboard (Kennzahl-Kacheln, Verifizierungs-Anträge mit
 >   Verifizieren/Ablehnen, gemeldete Beiträge/Kommentare mit Grund/Autor/Entfernen/„In Ordnung",
