@@ -11,6 +11,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   `src/data/` erfasst — **`countries.js` (Fundament der gesamten i18n-/Mehrländer-Arbeit) war
 >   nie eingecheckt**. Ein Frisch-Deploy wäre am fehlenden Import abgestürzt. Regel auf `/data/`
 >   verankert; `src/data/` wird jetzt versioniert (`countries.js` + `accountTypes.js` eingecheckt).
+> - 👥 **Kontotyp-Modell — Schritt 2: Frontend (Registrierung + Profil-Badge):** Das
+>   Registrierungsformular hat jetzt neben der Länder- eine **Kontotyp-Auswahl** (aus
+>   `GET /api/account-types`, Labels via i18n DE/EN/PT, Apotheke vorausgewählt). Auf der Profilseite
+>   erscheint der Kontotyp als Badge (z. B. „🏛️ Authority" / „🏭 Empresa farmacêutica") neben
+>   Redaktion/Verifiziert. Geteilte Helfer `ensureAccountTypes()`/`acctLabel()`. (Browser
+>   verifiziert: EN-Registrierung als „Authority" → Profil-Badge „🏛️ Authority".) Weiterhin **keine
+>   Rechte-Durchsetzung** — die folgt erst nach Freigabe.
 > - 👥 **Kontotyp-Modell — Schritt 1: Backend-Fundament (additiv, ohne Rechte-Änderung):** Spec-
 >   Deliverable „Rollen: Apotheke/Pharma/Behörde/Privat". Bewusst als **Kontotyp** (`account_type`)
 >   benannt, um die bereits bestehende Team-RBAC in `domain/roles.js` (admin/apotheker/pta/…) nicht
