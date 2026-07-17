@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3ah: Letzte Reste — Oberfläche zu 100 % mehrsprachig:** Die
+>   letzten übersehenen Strings sind jetzt DE/EN/PT: News-Leerzustand, „keine Beiträge dazu",
+>   die Referenz-Chips (🏷️ Aktion / 📦 Engpass auf verweisenden Beiträgen) und die komplette
+>   Filter-/Sortierleiste des öffentlichen Feeds (Sortieren/Anzeigen, Neueste/Beliebteste, Alle
+>   Beiträge/Offene Fragen). Lade-Spinner sprachneutral („…"). Ein voller Text-Sweep findet **keine
+>   festen deutschen UI-Strings mehr** — jede erreichbare Seite und jedes Bedienelement ist übersetzt.
 > - 🌍 **Länderübergreifend — Schritt 3ag: Abgabe-Begleitzettel-Formular — jede Seite übersetzt:**
 >   Das Formular-Chrome des Begleitzettels (Titel, Warnhinweis, alle Feld-Labels/Platzhalter,
 >   Einnahme-Zeitpunkte, Essen-Optionen, Drucken, Vorschau, Validierung) ist jetzt DE/EN/PT.

@@ -408,6 +408,8 @@ const I18N = {
     bz_notes:'Zusätzliche Hinweise (optional)', bz_notes_ph:'z.B. Mit einem großen Glas Wasser einnehmen.',
     bz_lang_label:'Sprache des Zettels', bz_cards:'🧫 Antibiotika-Infokarten in gewählter Sprache mitdrucken (Folgeseite)',
     bz_print:'🖨️ Begleitzettel drucken', bz_preview:'Vorschau (so sieht es Patient:in):', bz_preview_empty:'Arzneimittel eingeben, dann erscheint hier die Vorschau.', bz_need_med:'Bitte das Arzneimittel angeben.',
+    nw_empty:'Noch keine News.', sa_empty:'Noch keine Beiträge dazu.', rc_deal:'🏷️ Aktion:', rc_shortage:'📦 Engpass:',
+    pubf_new:'🕒 Neueste', pubf_top:'🔥 Beliebteste', pubf_show:'Anzeigen:', pubf_all:'Alle Beiträge', pubf_questions:'❓ Offene Fragen zuerst',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -641,6 +643,8 @@ const I18N = {
     bz_notes:'Additional notes (optional)', bz_notes_ph:'e.g. Take with a large glass of water.',
     bz_lang_label:'Slip language', bz_cards:'🧫 Also print antibiotic info cards in the chosen language (next page)',
     bz_print:'🖨️ Print dispensing slip', bz_preview:'Preview (what the patient sees):', bz_preview_empty:'Enter a medicine, then the preview appears here.', bz_need_med:'Please enter the medicine.',
+    nw_empty:'No news yet.', sa_empty:'No posts about it yet.', rc_deal:'🏷️ Deal:', rc_shortage:'📦 Shortage:',
+    pubf_new:'🕒 Newest', pubf_top:'🔥 Most popular', pubf_show:'Show:', pubf_all:'All posts', pubf_questions:'❓ Open questions first',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -874,6 +878,8 @@ const I18N = {
     bz_notes:'Notas adicionais (opcional)', bz_notes_ph:'ex. Tomar com um copo grande de água.',
     bz_lang_label:'Idioma da folha', bz_cards:'🧫 Imprimir também os cartões de antibióticos no idioma escolhido (página seguinte)',
     bz_print:'🖨️ Imprimir folha', bz_preview:'Pré-visualização (o que o doente vê):', bz_preview_empty:'Introduza um medicamento e a pré-visualização aparece aqui.', bz_need_med:'Indique o medicamento, por favor.',
+    nw_empty:'Ainda sem notícias.', sa_empty:'Ainda sem publicações sobre isto.', rc_deal:'🏷️ Promoção:', rc_shortage:'📦 Falta:',
+    pubf_new:'🕒 Mais recentes', pubf_top:'🔥 Mais populares', pubf_show:'Mostrar:', pubf_all:'Todas as publicações', pubf_questions:'❓ Perguntas em aberto primeiro',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -1596,7 +1602,7 @@ async function loadNews() {
   try {
     const d = await api('GET','/api/news');
     list.innerHTML = '';
-    if (!d.posts.length) { list.innerHTML = '<div class="card muted">Noch keine News.</div>'; return; }
+    if (!d.posts.length) { list.innerHTML = `<div class="card muted">${esc(t('nw_empty'))}</div>`; return; }
     d.posts.forEach(p => list.appendChild(postCard(p)));
   } catch(e){ list.innerHTML = ''; list.appendChild(errorState(e.message, loadTab)); }
 }
@@ -1892,7 +1898,7 @@ function shortageCard(s) {
     if (aboutbox.classList.contains('hidden')) return;
     aboutbox.innerHTML = '<div class="loading">…</div>';
     const d = await api('GET',`/api/shortages/${s.id}`);
-    aboutbox.innerHTML = d.posts.length ? '' : '<div class="muted">Noch keine Beiträge dazu.</div>';
+    aboutbox.innerHTML = d.posts.length ? '' : `<div class="muted">${esc(t('sa_empty'))}</div>`;
     d.posts.forEach(p => aboutbox.appendChild(el(`<div class="comment"><b>@${esc(p.author?.handle||'?')}</b>: ${esc(p.body)}</div>`)));
   };
   return card;
@@ -2291,9 +2297,9 @@ function refChip(r) {
     return `<div class="vis" style="${base}">💶 Preis: <b>${esc(r.bezeichnung)}</b> — ${esc(r.supplier)} € ${Number(r.aep).toFixed(2)}${t}</div>`;
   }
   if (r.kind === 'rabatt') {
-    return `<div class="vis" style="${base}">🏷️ Aktion: <b>${esc(r.bezeichnung)}</b> — ${esc(r.supplier)} € ${Number(r.aktionspreis).toFixed(2)} <span style="color:var(--ok-fg)">−${r.rabatt_pct}%</span> · gültig bis ${esc(r.gueltig_bis)}</div>`;
+    return `<div class="vis" style="${base}">${esc(t('rc_deal'))} <b>${esc(r.bezeichnung)}</b> — ${esc(r.supplier)} € ${Number(r.aktionspreis).toFixed(2)} <span style="color:var(--ok-fg)">−${r.rabatt_pct}%</span> · ${esc(t('pg_valid'))} ${esc(r.gueltig_bis)}</div>`;
   }
-  return `<div class="vis" style="${base}">📦 Engpass: <b>${esc(r.wirkstoff)}</b> — ${esc(r.bezeichnung)}</div>`;
+  return `<div class="vis" style="${base}">${esc(t('rc_shortage'))} <b>${esc(r.wirkstoff)}</b> — ${esc(r.bezeichnung)}</div>`;
 }
 
 async function loadFeed() {
@@ -2306,14 +2312,14 @@ async function loadFeed() {
     if (tab !== 'home') {
       const bar = el(`<div style="margin-bottom:10px">
         <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
-          <span class="muted" style="font-size:14px" id="sortlbl">Sortieren:</span>
-          <button class="small sortbtn${publicSort==='neu'?' active':''}" data-sort="neu" aria-pressed="${publicSort==='neu'}">🕒 Neueste</button>
-          <button class="small sortbtn${publicSort==='top'?' active':''}" data-sort="top" aria-pressed="${publicSort==='top'}">🔥 Beliebteste</button>
+          <span class="muted" style="font-size:14px" id="sortlbl">${esc(t('sh_sort'))}</span>
+          <button class="small sortbtn${publicSort==='neu'?' active':''}" data-sort="neu" aria-pressed="${publicSort==='neu'}">${esc(t('pubf_new'))}</button>
+          <button class="small sortbtn${publicSort==='top'?' active':''}" data-sort="top" aria-pressed="${publicSort==='top'}">${esc(t('pubf_top'))}</button>
         </div>
         <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px">
-          <span class="muted" style="font-size:14px">Anzeigen:</span>
-          <button class="small sortbtn${publicFilter==='all'?' active':''}" data-filter="all" aria-pressed="${publicFilter==='all'}">Alle Beiträge</button>
-          <button class="small sortbtn${publicFilter==='questions'?' active':''}" data-filter="questions" aria-pressed="${publicFilter==='questions'}">❓ Offene Fragen zuerst</button>
+          <span class="muted" style="font-size:14px">${esc(t('pubf_show'))}</span>
+          <button class="small sortbtn${publicFilter==='all'?' active':''}" data-filter="all" aria-pressed="${publicFilter==='all'}">${esc(t('pubf_all'))}</button>
+          <button class="small sortbtn${publicFilter==='questions'?' active':''}" data-filter="questions" aria-pressed="${publicFilter==='questions'}">${esc(t('pubf_questions'))}</button>
         </div>
       </div>`);
       bar.querySelectorAll('[data-sort]').forEach(b => b.onclick = () => {
