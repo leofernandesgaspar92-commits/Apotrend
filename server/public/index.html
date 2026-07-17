@@ -390,6 +390,14 @@ const I18N = {
     wk_ask:'❓ Als Fachfrage stellen', wk_post_public:'Öffentlich posten', wk_no_posts:'Noch keine Beiträge dazu — verfasse den ersten.', wk_need_body:'Bitte etwas schreiben.',
     sg_title:'👥 Vorschläge zum Folgen', nb_title:'📍 Apotheken in {bl}', nb_following:'✓ folgst du',
     nb_sub:'Kolleg:innen in deinem Bundesland — vernetze dich für den Bestandsaustausch.',
+    stew_doc:'Stewardship-Fachforum', stew_title:'🧫 Stewardship-Fachforum',
+    stew_sub:'Anonymisierte Fachdiskussion unter Kolleg:innen zum verantwortungsvollen Antibiotikaeinsatz (AMR).',
+    stew_warn:'⚠️ Keine Patientenberatung und keine personenbezogenen Patientendaten posten. Sicherheitsrelevante Aussagen nur mit Quelle.',
+    stew_pinfo:'🧫 Patienten-Infokarten (mehrsprachig)', stew_zettel:'📋 Abgabe-Begleitzettel',
+    stew_compose_t:'Beitrag zum Thema', stew_compose_ph:'Deine Fachfrage oder Erfahrung zu Antibiotic Stewardship… (wird mit #stewardship geteilt)',
+    stew_post_btn:'Im Fachforum posten', stew_empty:'Noch keine Beiträge — stell die erste Fachfrage.',
+    pi_title:'🧫 Patienten-Infokarten (Antibiotika)', pi_sub:'Verständliche Aufklärung zur Abgabe — Sprache wählen, anzeigen oder ausdrucken.',
+    pi_zettel_btn:'📋 Begleitzettel', pi_copy:'📋 Kopieren', pi_popup:'Bitte Popups für den Druck erlauben.',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -605,6 +613,14 @@ const I18N = {
     wk_ask:'❓ Ask as a professional question', wk_post_public:'Post publicly', wk_no_posts:'No posts about it yet — write the first.', wk_need_body:'Please write something.',
     sg_title:'👥 Suggestions to follow', nb_title:'📍 Pharmacies in {bl}', nb_following:'✓ following',
     nb_sub:'Colleagues in your region — connect for stock exchange.',
+    stew_doc:'Stewardship forum', stew_title:'🧫 Stewardship forum',
+    stew_sub:'Anonymised expert discussion among colleagues on responsible antibiotic use (AMR).',
+    stew_warn:'⚠️ No patient advice and no personal patient data. Safety-relevant statements only with a source.',
+    stew_pinfo:'🧫 Patient info cards (multilingual)', stew_zettel:'📋 Dispensing slip',
+    stew_compose_t:'Post on this topic', stew_compose_ph:'Your question or experience on antibiotic stewardship… (shared with #stewardship)',
+    stew_post_btn:'Post in the forum', stew_empty:'No posts yet — ask the first question.',
+    pi_title:'🧫 Patient info cards (antibiotics)', pi_sub:'Clear guidance for dispensing — choose language, view or print.',
+    pi_zettel_btn:'📋 Dispensing slip', pi_copy:'📋 Copy', pi_popup:'Please allow pop-ups for printing.',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -820,6 +836,14 @@ const I18N = {
     wk_ask:'❓ Colocar como pergunta técnica', wk_post_public:'Publicar publicamente', wk_no_posts:'Ainda sem publicações — seja o primeiro.', wk_need_body:'Escreva algo, por favor.',
     sg_title:'👥 Sugestões para seguir', nb_title:'📍 Farmácias em {bl}', nb_following:'✓ a seguir',
     nb_sub:'Colegas na sua região — ligue-se para a troca de stock.',
+    stew_doc:'Fórum de stewardship', stew_title:'🧫 Fórum de stewardship',
+    stew_sub:'Discussão técnica anónima entre colegas sobre o uso responsável de antibióticos (RAM).',
+    stew_warn:'⚠️ Sem aconselhamento a doentes e sem dados pessoais de doentes. Afirmações relevantes para a segurança só com fonte.',
+    stew_pinfo:'🧫 Cartões informativos (multilingue)', stew_zettel:'📋 Folha de dispensa',
+    stew_compose_t:'Publicar sobre o tema', stew_compose_ph:'A sua pergunta ou experiência sobre stewardship de antibióticos… (partilhado com #stewardship)',
+    stew_post_btn:'Publicar no fórum', stew_empty:'Ainda sem publicações — coloque a primeira pergunta.',
+    pi_title:'🧫 Cartões informativos (antibióticos)', pi_sub:'Explicação clara para a dispensa — escolha o idioma, veja ou imprima.',
+    pi_zettel_btn:'📋 Folha de dispensa', pi_copy:'📋 Copiar', pi_popup:'Permita pop-ups para imprimir.',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -2349,28 +2373,28 @@ async function openHashtag(tag) {
 // mit klarem Zweck/Disclaimer und Composer. Anonymisierte Fachdiskussion — keine
 // Patientenberatung, keine personenbezogenen Patientendaten.
 async function openStewardship() {
-  setDocTitle('Stewardship-Fachforum');
+  setDocTitle(t('stew_doc'));
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
-  feed.innerHTML = '<div class="loading">lädt…</div>';
+  feed.innerHTML = '<div class="loading">…</div>';
   let d;
   try { d = await api('GET','/api/hashtag/stewardship'); }
   catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   feed.innerHTML = '';
   const head = el(`<div class="card" style="border-left:4px solid #0b7f28">
-    <div><button class="ghost small" data-back>← zurück</button></div>
-    <h1 style="margin:8px 0 2px">🧫 Stewardship-Fachforum</h1>
-    <div class="muted" style="font-size:14px">Anonymisierte Fachdiskussion unter Kolleg:innen zum verantwortungsvollen Antibiotikaeinsatz (AMR).</div>
-    <div class="muted" style="font-size:12px;margin-top:8px;font-style:italic">⚠️ Keine Patientenberatung und keine personenbezogenen Patientendaten posten. Sicherheitsrelevante Aussagen nur mit Quelle.</div>
-    <div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap"><button class="ghost small" data-pinfo>🧫 Patienten-Infokarten (mehrsprachig)</button><button class="ghost small" data-zettel>📋 Abgabe-Begleitzettel</button></div></div>`);
+    <div><button class="ghost small" data-back>${esc(t('search_back'))}</button></div>
+    <h1 style="margin:8px 0 2px">${esc(t('stew_title'))}</h1>
+    <div class="muted" style="font-size:14px">${esc(t('stew_sub'))}</div>
+    <div class="muted" style="font-size:12px;margin-top:8px;font-style:italic">${esc(t('stew_warn'))}</div>
+    <div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap"><button class="ghost small" data-pinfo>${esc(t('stew_pinfo'))}</button><button class="ghost small" data-zettel>${esc(t('stew_zettel'))}</button></div></div>`);
   head.querySelector('[data-back]').onclick = () => goTab('overview');
   head.querySelector('[data-pinfo]').onclick = () => openPatientInfo();
   head.querySelector('[data-zettel]').onclick = () => openBegleitzettel();
   feed.appendChild(head);
   if (me) {
-    const comp = el(`<div class="card"><b>Beitrag zum Thema</b>
-      <textarea data-sf-in placeholder="Deine Fachfrage oder Erfahrung zu Antibiotic Stewardship… (wird mit #stewardship geteilt)" style="margin-top:6px;width:100%"></textarea>
-      <div class="row" style="margin-top:6px;gap:8px;align-items:center"><button class="small" data-sf-send>Im Fachforum posten</button><span class="err" data-sf-err style="font-size:13px"></span></div></div>`);
+    const comp = el(`<div class="card"><b>${esc(t('stew_compose_t'))}</b>
+      <textarea data-sf-in placeholder="${esc(t('stew_compose_ph'))}" style="margin-top:6px;width:100%"></textarea>
+      <div class="row" style="margin-top:6px;gap:8px;align-items:center"><button class="small" data-sf-send>${esc(t('stew_post_btn'))}</button><span class="err" data-sf-err style="font-size:13px"></span></div></div>`);
     const ta = comp.querySelector('[data-sf-in]');
     comp.querySelector('[data-sf-send]').onclick = async () => {
       const err = comp.querySelector('[data-sf-err]'); err.textContent = '';
@@ -2384,7 +2408,7 @@ async function openStewardship() {
   }
   const listBox = el('<div></div>');
   feed.appendChild(listBox);
-  if (!d.posts.length) listBox.appendChild(el('<div class="card muted">Noch keine Beiträge — stell die erste Fachfrage.</div>'));
+  if (!d.posts.length) listBox.appendChild(el(`<div class="card muted">${esc(t('stew_empty'))}</div>`));
   else d.posts.forEach(p => listBox.appendChild(postCard(p)));
 }
 
@@ -2392,7 +2416,7 @@ async function openStewardship() {
 let patientLang = 'de';
 function printPatientInfo(d) {
   const w = window.open('', '_blank');
-  if (!w) { alert('Bitte Popups für den Druck erlauben.'); return; }
+  if (!w) { alert(t('pi_popup')); return; }
   const cards = d.cards.map(c => `<div class="c"><h2>${esc(c.icon)} ${esc(c.title)}</h2><p>${esc(c.body)}</p></div>`).join('');
   w.document.write(`<!doctype html><html lang="${esc(d.lang)}"><head><meta charset="utf-8"><title>Antibiotika – Patienteninfo</title>
     <style>body{font-family:system-ui,-apple-system,sans-serif;max-width:720px;margin:24px auto;padding:0 16px;color:#111}
@@ -2412,14 +2436,14 @@ async function openPatientInfo() {
   catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   feed.innerHTML = '';
   const head = el(`<div class="card" style="border-left:4px solid #0b7f28">
-    <div><button class="ghost small" data-back>← zurück</button></div>
-    <h1 style="margin:8px 0 2px">🧫 Patienten-Infokarten (Antibiotika)</h1>
-    <div class="muted" style="font-size:14px">Verständliche Aufklärung zur Abgabe — Sprache wählen, anzeigen oder ausdrucken.</div>
+    <div><button class="ghost small" data-back>${esc(t('search_back'))}</button></div>
+    <h1 style="margin:8px 0 2px">${esc(t('pi_title'))}</h1>
+    <div class="muted" style="font-size:14px">${esc(t('pi_sub'))}</div>
     <div class="row" style="margin-top:10px;gap:6px;flex-wrap:wrap;align-items:center">
       <span data-langs style="display:flex;gap:6px;flex-wrap:wrap"></span>
       <span class="sp" style="flex:1"></span>
-      <button class="ghost small" data-zettel title="Einnahmeplan laut Verordnung erstellen">📋 Begleitzettel</button>
-      <button class="ghost small" data-print>🖨️ Drucken</button></div></div>`);
+      <button class="ghost small" data-zettel>${esc(t('pi_zettel_btn'))}</button>
+      <button class="ghost small" data-print>${esc(t('sh_print'))}</button></div></div>`);
   head.querySelector('[data-back]').onclick = () => goTab('overview');
   head.querySelector('[data-zettel]').onclick = () => openBegleitzettel();
   head.querySelector('[data-print]').onclick = () => printPatientInfo(d);
@@ -2431,10 +2455,10 @@ async function openPatientInfo() {
   });
   feed.appendChild(head);
   d.cards.forEach(c => {
-    const card = el(`<div class="card"><div class="row"><b>${esc(c.icon)} ${esc(c.title)}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-copy title="Text kopieren">📋 Kopieren</button></div>
+    const card = el(`<div class="card"><div class="row"><b>${esc(c.icon)} ${esc(c.title)}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-copy>${esc(t('pi_copy'))}</button></div>
       <div style="font-size:14px;margin-top:6px">${esc(c.body)}</div></div>`);
     card.querySelector('[data-copy]').onclick = async (e) => {
-      try { await navigator.clipboard.writeText(c.title + '\n' + c.body); e.target.textContent = '✓ kopiert'; setTimeout(()=>{ e.target.textContent='📋 Kopieren'; }, 1400); }
+      try { await navigator.clipboard.writeText(c.title + '\n' + c.body); e.target.textContent = t('pc_copied'); setTimeout(()=>{ e.target.textContent=t('pi_copy'); }, 1400); }
       catch { prompt('Text:', c.title + '\n' + c.body); }
     };
     feed.appendChild(card);

@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3af: Stewardship-Forum & Patienten-Infokarten (Chrome):** Die
+>   App-Beschriftungen des Stewardship-Fachforums (Titel, Warnhinweis, Verfassen-Formular, Aktions-
+>   Buttons, Leerzustand) und der Patienten-Infokarten-Seite (Titel, Untertitel, Drucken/Kopieren)
+>   sind jetzt DE/EN/PT. **Bewusst unangetastet:** die *patienten­seitigen* Inhalte selbst behalten
+>   ihren eigenen Sprachumschalter (Patient kann andere Sprache als die Fachkraft brauchen).
+>   (Browser verifiziert: „Fórum de stewardship / Publicar no fórum / Cartões informativos".)
 > - 🌍 **Länderübergreifend — Schritt 3ae: Feinschliff — Datumsformat, Entdeckungs-Karten, Dialoge:**
 >   `fmtDateDe()` formatiert Kalenderdaten jetzt **locale-korrekt** (z. B. „15/08/2026" für PT über
 >   `_bcp47`) statt fest deutsch. Übersetzt: die „Vorschläge zum Folgen"- und „Apotheken in
