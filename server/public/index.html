@@ -329,6 +329,12 @@ const I18N = {
     wc_s8_t:'Suchen & 🏷️ Themen', wc_s8_d:'Oben nach Personen, Beiträgen, Wirkstoffen suchen. #Hashtags und @Namen sind anklickbar.',
     wc_tip_t:'📲 Tipp: Als App installieren', wc_tip_d:'Handy: Browser-Menü → „Zum Startbildschirm" (iPhone: Teilen → „Zum Home-Bildschirm"). Computer: Installations-Symbol rechts in der Adressleiste. Dann liegt ApoTrend wie eine App auf deinem Gerät.',
     wc_go:"Los geht's →",
+    search_doc:'Suche', search_results_for:'Suchergebnisse für „{q}"', search_hits:'{n} Treffer',
+    search_back:'← zurück', search_none_t:'Keine Treffer',
+    search_none_s:'Für „{q}" wurde nichts gefunden. Andere Schreibweise oder ein kürzeres Stichwort probieren.',
+    search_wk:'💊 Alles zu einem Wirkstoff auf einer Seite:',
+    search_sec_people:'👥 Personen', search_sec_posts:'📝 Beiträge', search_sec_shortages:'📦 Engpässe',
+    search_sec_prices:'💶 Preise', search_sec_rabatte:'🏷️ Rabatt-Aktionen',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -483,6 +489,12 @@ const I18N = {
     wc_s8_t:'Search & 🏷️ topics', wc_s8_d:'Search for people, posts and substances at the top. #hashtags and @names are clickable.',
     wc_tip_t:'📲 Tip: install as an app', wc_tip_d:'Phone: browser menu → “Add to Home Screen” (iPhone: Share → “Add to Home Screen”). Computer: install icon on the right of the address bar. Then ApoTrend sits on your device like an app.',
     wc_go:"Let's go →",
+    search_doc:'Search', search_results_for:'Search results for “{q}”', search_hits:'{n} hits',
+    search_back:'← back', search_none_t:'No results',
+    search_none_s:'Nothing found for “{q}”. Try a different spelling or a shorter keyword.',
+    search_wk:'💊 Everything about a substance on one page:',
+    search_sec_people:'👥 People', search_sec_posts:'📝 Posts', search_sec_shortages:'📦 Shortages',
+    search_sec_prices:'💶 Prices', search_sec_rabatte:'🏷️ Discount deals',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -637,6 +649,12 @@ const I18N = {
     wc_s8_t:'Pesquisar & 🏷️ temas', wc_s8_d:'Pesquise pessoas, publicações e substâncias no topo. #hashtags e @nomes são clicáveis.',
     wc_tip_t:'📲 Dica: instalar como app', wc_tip_d:'Telemóvel: menu do browser → “Adicionar ao ecrã principal” (iPhone: Partilhar → “Adicionar ao ecrã principal”). Computador: ícone de instalação à direita da barra de endereço. Depois a ApoTrend fica no seu dispositivo como uma app.',
     wc_go:'Vamos começar →',
+    search_doc:'Pesquisa', search_results_for:'Resultados para “{q}”', search_hits:'{n} resultados',
+    search_back:'← voltar', search_none_t:'Sem resultados',
+    search_none_s:'Nada encontrado para “{q}”. Tente outra grafia ou uma palavra mais curta.',
+    search_wk:'💊 Tudo sobre uma substância numa página:',
+    search_sec_people:'👥 Pessoas', search_sec_posts:'📝 Publicações', search_sec_shortages:'📦 Faltas',
+    search_sec_prices:'💶 Preços', search_sec_rabatte:'🏷️ Promoções',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -2393,22 +2411,22 @@ function openBegleitzettel() {
 }
 
 async function renderSearch(q) {
-  setDocTitle('Suche: ' + q);
+  setDocTitle(t('search_doc') + ': ' + q);
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
-  feed.innerHTML = '<div class="loading">suche…</div>';
+  feed.innerHTML = '<div class="loading">…</div>';
   try {
     const d = await api('GET','/api/search?q='+encodeURIComponent(q));
     feed.innerHTML = '';
-    const head = el(`<div class="card"><div class="row"><b>Suchergebnisse für „${esc(d.query)}"</b><span class="sp" style="flex:1"></span><span class="muted">${d.total} Treffer</span><button class="ghost small" data-back style="margin-left:10px">← zurück</button></div></div>`);
+    const head = el(`<div class="card"><div class="row"><b>${esc(ti('search_results_for',{q:d.query}))}</b><span class="sp" style="flex:1"></span><span class="muted">${esc(ti('search_hits',{n:d.total}))}</span><button class="ghost small" data-back style="margin-left:10px">${esc(t('search_back'))}</button></div></div>`);
     head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
     feed.appendChild(head);
-    if (!d.total) { feed.appendChild(emptyState({ icon:'🔍', title:'Keine Treffer', text:`Für „${d.query}" wurde nichts gefunden. Andere Schreibweise oder ein kürzeres Stichwort probieren.` })); return; }
+    if (!d.total) { feed.appendChild(emptyState({ icon:'🔍', title:t('search_none_t'), text:ti('search_none_s',{q:d.query}) })); return; }
     // Direkter Weg zur Wirkstoff-Detailseite: aus den Treffern gefundene Wirkstoffe.
     const wset = new Map();
     [...d.shortages, ...d.prices, ...d.rabatte].forEach(x => { if (x.wirkstoff) wset.set(x.wirkstoff.toLowerCase(), x.wirkstoff); });
     if (wset.size) {
-      const wc = el(`<div class="card"><div class="muted" style="font-size:13px;margin-bottom:6px">💊 Alles zu einem Wirkstoff auf einer Seite:</div><div class="row" data-wchips style="flex-wrap:wrap;gap:6px"></div></div>`);
+      const wc = el(`<div class="card"><div class="muted" style="font-size:13px;margin-bottom:6px">${esc(t('search_wk'))}</div><div class="row" data-wchips style="flex-wrap:wrap;gap:6px"></div></div>`);
       const box = wc.querySelector('[data-wchips]');
       [...wset.values()].slice(0, 8).forEach(w => {
         const chip = el(`<button class="small sortbtn">💊 ${esc(w)}</button>`);
@@ -2419,29 +2437,29 @@ async function renderSearch(q) {
     }
     const section = (title) => feed.appendChild(el(`<div class="muted" style="margin:14px 2px 4px;font-weight:700">${title}</div>`));
     if (d.people.length) {
-      section('👥 Personen');
+      section(t('search_sec_people'));
       d.people.forEach(p => {
         const specs = (p.specializations||[]).map(s=>`<span class="spec">${esc(s)}</span>`).join(' ');
         const card = el(`<div class="card"><div class="row">
           <span class="post-author clickable" data-openprofile="${esc(p.handle)}">${esc(p.display_name)}</span>
           <span class="handle clickable" data-openprofile="${esc(p.handle)}">@${esc(p.handle)}</span>
-          ${p.is_editorial?'<span class="editorial">📰 Redaktion</span>':''}
-          ${p.verified?'<span class="verified">✔ verifiziert</span>':''}
+          ${p.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}
+          ${p.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
         </div>${specs?`<div style="margin-top:6px">${specs}</div>`:''}</div>`);
         card.querySelectorAll('[data-openprofile]').forEach(el => el.onclick = () => openProfile(el.dataset.openprofile));
         feed.appendChild(card);
       });
     }
-    if (d.posts.length) { section('📝 Beiträge'); d.posts.forEach(p => feed.appendChild(postCard(p))); }
-    if (d.shortages.length) { section('📦 Engpässe'); d.shortages.forEach(s => feed.appendChild(shortageCard(s))); }
+    if (d.posts.length) { section(t('search_sec_posts')); d.posts.forEach(p => feed.appendChild(postCard(p))); }
+    if (d.shortages.length) { section(t('search_sec_shortages')); d.shortages.forEach(s => feed.appendChild(shortageCard(s))); }
     if (d.prices.length) {
-      section('💶 Preise');
+      section(t('search_sec_prices'));
       d.prices.forEach(pr => feed.appendChild(el(`<div class="card"><div class="row">
         <span class="post-author">${esc(pr.bezeichnung)}</span><span class="handle">${esc(pr.wirkstoff||'')}</span>
         <span class="sp" style="flex:1"></span><span><b>€ ${Number(pr.aep).toFixed(2)}</b> ${trendStr(pr.trend_pct)}</span></div>
         <div class="muted">${esc(pr.supplier)} · ${esc(provLabel(pr.provenance))}</div></div>`)));
     }
-    if (d.rabatte.length) { section('🏷️ Rabatt-Aktionen'); d.rabatte.forEach((r,i) => { r.rank = i+1; feed.appendChild(rabattCard(r)); }); }
+    if (d.rabatte.length) { section(t('search_sec_rabatte')); d.rabatte.forEach((r,i) => { r.rank = i+1; feed.appendChild(rabattCard(r)); }); }
     if (d.exchange && d.exchange.length) { section('🔄 Biete/Suche'); d.exchange.forEach(e => feed.appendChild(exchangeCard(e))); }
   } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }

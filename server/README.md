@@ -6,6 +6,10 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3v: Suche mehrsprachig (DE/EN/PT):** Die Suchergebnis-Ansicht
+>   (Titel „Suchergebnisse für …", Treffer-Zähler, Zurück, Kein-Treffer-Leerzustand, der Wirkstoff-
+>   Schnellzugriff und alle Abschnitts-Überschriften Personen/Beiträge/Engpässe/Preise/Rabatte) ist
+>   jetzt übersetzt. (Browser verifiziert: „Resultados para … / 0 resultados / Sem resultados".)
 > - 🌍 **Länderübergreifend — Schritt 3u: Willkommens-/Hilfe-Overlay mehrsprachig (DE/EN/PT):**
 >   Das Onboarding-Overlay (Titel, Untertitel, alle 8 Erklär-Schritte, App-Installations-Tipp,
 >   „Los geht's") ist jetzt übersetzt — der erste Eindruck neuer Nutzer:innen und die Hilfe hinter
