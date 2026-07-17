@@ -28,6 +28,19 @@ test('Biete-Eintrag anlegen: mit Autor-Profil, Status offen', () => {
   assert.equal(e.menge, '20 Packungen');
 });
 
+test('Kontotyp-Rechte: Privatnutzer:in darf keinen Austausch-Eintrag anlegen; Fachkreis schon', () => {
+  const repo = createMemoryRepo();
+  const orgAuth = createOrgAuthService(repo);
+  const social = createSocialService(createSocialRepo(), repo);
+  const exchange = createExchangeService(createExchangeRepo(), social, repo);
+  const pro = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'Pro' }, owner: { name: 'Pro', email: 'pro@a.at', password: 'geheim123' } });
+  social.createProfile(pro.user.id, { handle: 'pro_apo', displayName: 'Profi-Apotheke', accountType: 'pharmacy' });
+  assert.doesNotThrow(() => exchange.create(pro.user.id, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg' }));
+  const priv = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'Priv' }, owner: { name: 'Priv', email: 'priv@a.at', password: 'geheim123' } });
+  social.createProfile(priv.user.id, { handle: 'privat_x', displayName: 'Privat', accountType: 'private' });
+  assert.throws(() => exchange.create(priv.user.id, { kind: 'suche', bezeichnung: 'Ibuprofen 400 mg' }), /Apotheken und Fachkreisen|reserved for pharmacies/);
+});
+
 test('Liste zeigt nur offene, nach Art filterbar', () => {
   const { exchange, a, b } = setup();
   exchange.create(a, { kind: 'biete', bezeichnung: 'Metformin 850' });

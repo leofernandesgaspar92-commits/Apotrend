@@ -284,7 +284,7 @@ const I18N = {
     ex_bez_ph:'Präparat / Wirkstoff, z.B. Amoxicillin 1000 mg', ex_menge_ph:'Menge (z.B. 20 Packungen)',
     ex_ort_ph:'Ort (z.B. Postleitzahl, Stadt)', ex_bl_ph:'Region wählen (für Umkreis-Suche)…',
     ex_note_ph:'Hinweis (optional)', ex_photo:'📷 Foto (z.B. Charge/Ablauf)',
-    ex_publish:'Eintrag veröffentlichen',
+    ex_publish:'Eintrag veröffentlichen', ex_private:'ℹ️ Der Bestandsaustausch (Biete/Suche) ist Apotheken und Fachkreisen vorbehalten. Als Privatnutzer:in kannst du Einträge lesen, aber keine anlegen.',
     ex_contact:'Kontakt läuft über Direktnachricht — keine öffentlichen Kontaktdaten.',
     ex_q_ph:'Nach Präparat filtern…', ex_filter_btn:'Filtern',
     ex_offers:'📦 Angebote', ex_seeks:'🔎 Gesuche', ex_mine:'🗂️ Meine', ex_all_bl:'📍 Alle Regionen',
@@ -526,7 +526,7 @@ const I18N = {
     ex_bez_ph:'Product / substance, e.g. Amoxicillin 1000 mg', ex_menge_ph:'Quantity (e.g. 20 packs)',
     ex_ort_ph:'Location (e.g. postcode, city)', ex_bl_ph:'Choose region (for nearby search)…',
     ex_note_ph:'Note (optional)', ex_photo:'📷 Photo (e.g. batch/expiry)',
-    ex_publish:'Publish entry',
+    ex_publish:'Publish entry', ex_private:'ℹ️ Stock exchange (offer/seek) is reserved for pharmacies and professionals. As a private user you can read entries but not create them.',
     ex_contact:'Contact is via direct message — no public contact details.',
     ex_q_ph:'Filter by product…', ex_filter_btn:'Filter',
     ex_offers:'📦 Offers', ex_seeks:'🔎 Requests', ex_mine:'🗂️ Mine', ex_all_bl:'📍 All regions',
@@ -768,7 +768,7 @@ const I18N = {
     ex_bez_ph:'Produto / substância, ex. Amoxicilina 1000 mg', ex_menge_ph:'Quantidade (ex. 20 embalagens)',
     ex_ort_ph:'Local (ex. código postal, cidade)', ex_bl_ph:'Escolher região (procura por proximidade)…',
     ex_note_ph:'Observação (opcional)', ex_photo:'📷 Foto (ex. lote/validade)',
-    ex_publish:'Publicar entrada',
+    ex_publish:'Publicar entrada', ex_private:'ℹ️ A troca de stock (ofertar/procurar) é reservada a farmácias e profissionais. Como utilizador particular pode ler as entradas, mas não criá-las.',
     ex_contact:'O contacto é por mensagem direta — sem dados de contacto públicos.',
     ex_q_ph:'Filtrar por produto…', ex_filter_btn:'Filtrar',
     ex_offers:'📦 Ofertas', ex_seeks:'🔎 Procuras', ex_mine:'🗂️ Minhas', ex_all_bl:'📍 Todas as regiões',
@@ -2161,7 +2161,11 @@ async function loadExchange() {
   // Standard: eigenes Bundesland vorbelegen (opt-out über „Alle Bundesländer").
   if (!exchangeBLInit) { exchangeBLInit = true; if (me && me.bundesland && !exchangeBL) exchangeBL = me.bundesland; }
   feed.innerHTML = '';
-  // Formular zum Anlegen
+  // Formular zum Anlegen — für Privatnutzer:innen gesperrt (professioneller B2B-Vorgang);
+  // das Backend erzwingt es zusätzlich. Lesen/Filtern der Einträge bleibt möglich.
+  if (me && me.account_type === 'private') {
+    feed.appendChild(el(`<div class="card"><label>${esc(t('ex_form_title'))}</label><div class="muted" style="font-size:13px;margin-top:6px">${esc(t('ex_private'))}</div></div>`));
+  } else {
   const form = el(`<div class="card">
     <label>${esc(t('ex_form_title'))}</label>
     <div class="row" style="margin-top:6px">
@@ -2200,6 +2204,7 @@ async function loadExchange() {
       loadExchange();
     } catch(e){ document.getElementById('ex_err').textContent = e.message; }
   };
+  } // Ende Nicht-Privat-Formular
   // Filter + Textsuche
   const filt = el(`<div class="card" style="padding:8px 12px">
     <div class="row"><input id="ex_q" placeholder="${esc(t('ex_q_ph'))}" value="${esc(exchangeQuery)}"><button class="ghost small" id="ex_qgo">${esc(t('ex_filter_btn'))}</button>${exchangeQuery?'<button class="ghost small" id="ex_qclear">✕</button>':''}</div>

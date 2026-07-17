@@ -43,6 +43,13 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
   return {
     create(actorUserId, { kind, bezeichnung, menge, ort, bundesland, note, image }) {
       requireUser(actorUserId);
+      // Bestandsaustausch ist professioneller B2B-Vorgang (Apotheken tauschen Bestand) —
+      // Privatnutzer:innen können Einträge lesen, aber keine anlegen.
+      const prof = social.getProfile(actorUserId);
+      if (prof && prof.account_type === 'private') {
+        const e = new Error('Der Bestandsaustausch (Biete/Suche) ist Apotheken und Fachkreisen vorbehalten. Als Privatnutzer:in kannst du Einträge lesen, aber keine anlegen.');
+        e.status = 403; throw e;
+      }
       if (!KINDS.includes(kind)) throw new Error('Art muss "biete" oder "suche" sein.');
       const b = String(bezeichnung ?? '').trim();
       if (!b) throw new Error('Präparat/Wirkstoff erforderlich.');
