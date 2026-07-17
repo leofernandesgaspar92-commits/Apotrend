@@ -349,6 +349,11 @@ const I18N = {
     ac_del_title:'Konto löschen', ac_del_d:'Unwiderruflich: alle deine Daten (Profil, Beiträge, Kommentare, Nachrichten, Austausch) werden gelöscht.',
     ac_del_btn:'Konto endgültig löschen', ac_del_confirm:'Dein Konto und alle Daten werden unwiderruflich gelöscht. Fortfahren?',
     ac_del_pw:'Zur Bestätigung dein Passwort eingeben:', ac_del_done:'Dein Konto wurde gelöscht.',
+    fl_back:'← zurück zum Profil', fl_h_followers:'👥 Follower', fl_h_following:'➡️ Folgt',
+    fl_who_followers:'Wer @{h} folgt', fl_who_following:'Wem @{h} folgt',
+    fl_none_fr_t:'Noch keine Follower', fl_none_fr_s:'Diesem Profil folgt noch niemand.',
+    fl_none_fg_t:'Folgt noch niemandem', fl_none_fg_s:'Dieses Profil folgt aktuell keinen Kolleg:innen.',
+    fl_following_btn:'✓ Folgst',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -523,6 +528,11 @@ const I18N = {
     ac_del_title:'Delete account', ac_del_d:'Irreversible: all your data (profile, posts, comments, messages, exchange) will be deleted.',
     ac_del_btn:'Delete account permanently', ac_del_confirm:'Your account and all data will be permanently deleted. Continue?',
     ac_del_pw:'Enter your password to confirm:', ac_del_done:'Your account has been deleted.',
+    fl_back:'← back to profile', fl_h_followers:'👥 Followers', fl_h_following:'➡️ Following',
+    fl_who_followers:'Who follows @{h}', fl_who_following:'Who @{h} follows',
+    fl_none_fr_t:'No followers yet', fl_none_fr_s:'Nobody follows this profile yet.',
+    fl_none_fg_t:'Not following anyone yet', fl_none_fg_s:'This profile currently follows no colleagues.',
+    fl_following_btn:'✓ Following',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -697,6 +707,11 @@ const I18N = {
     ac_del_title:'Eliminar conta', ac_del_d:'Irreversível: todos os seus dados (perfil, publicações, comentários, mensagens, troca) serão eliminados.',
     ac_del_btn:'Eliminar conta definitivamente', ac_del_confirm:'A sua conta e todos os dados serão eliminados definitivamente. Continuar?',
     ac_del_pw:'Introduza a sua palavra-passe para confirmar:', ac_del_done:'A sua conta foi eliminada.',
+    fl_back:'← voltar ao perfil', fl_h_followers:'👥 Seguidores', fl_h_following:'➡️ A seguir',
+    fl_who_followers:'Quem segue @{h}', fl_who_following:'Quem @{h} segue',
+    fl_none_fr_t:'Ainda sem seguidores', fl_none_fr_s:'Ninguém segue este perfil ainda.',
+    fl_none_fg_t:'Ainda não segue ninguém', fl_none_fg_s:'Este perfil não segue colegas de momento.',
+    fl_following_btn:'✓ A seguir',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -2651,30 +2666,29 @@ async function openFollowList(handle, which) {
   try { d = await api('GET',`/api/profiles/${encodeURIComponent(handle)}/${which}`); }
   catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   feed.innerHTML = '';
-  const title = which === 'followers' ? 'Follower von' : 'Gefolgt von';
-  const head = el(`<div class="card"><div><button class="ghost small" data-back>← zurück zum Profil</button></div>
-    <h1 style="margin:8px 0 0">${which==='followers'?'👥 Follower':'➡️ Folgt'}</h1>
-    <div class="muted">${which==='followers'?'Wer @'+esc(d.handle)+' folgt':'Wem @'+esc(d.handle)+' folgt'} · ${d.people.length}</div></div>`);
+  const head = el(`<div class="card"><div><button class="ghost small" data-back>${esc(t('fl_back'))}</button></div>
+    <h1 style="margin:8px 0 0">${which==='followers'?esc(t('fl_h_followers')):esc(t('fl_h_following'))}</h1>
+    <div class="muted">${which==='followers'?esc(ti('fl_who_followers',{h:d.handle})):esc(ti('fl_who_following',{h:d.handle}))} · ${d.people.length}</div></div>`);
   head.querySelector('[data-back]').onclick = () => openProfile(handle);
   feed.appendChild(head);
   if (!d.people.length) { feed.appendChild(which==='followers'
-    ? emptyState({ icon:'👥', title:'Noch keine Follower', text:'Diesem Profil folgt noch niemand.' })
-    : emptyState({ icon:'👥', title:'Folgt noch niemandem', text:'Dieses Profil folgt aktuell keinen Kolleg:innen.' })); return; }
+    ? emptyState({ icon:'👥', title:t('fl_none_fr_t'), text:t('fl_none_fr_s') })
+    : emptyState({ icon:'👥', title:t('fl_none_fg_t'), text:t('fl_none_fg_s') })); return; }
   d.people.forEach(p => {
     const specs = (p.specializations||[]).map(s=>`<span class="spec">${esc(s)}</span>`).join(' ');
     const card = el(`<div class="card"><div class="row" style="align-items:baseline">
-      <span class="post-author clickable" data-openprofile="${esc(p.handle)}">${esc(p.display_name||'Unbekannt')}</span>
+      <span class="post-author clickable" data-openprofile="${esc(p.handle)}">${esc(p.display_name||t('ex_unknown'))}</span>
       <span class="handle clickable" data-openprofile="${esc(p.handle)}">@${esc(p.handle)}</span>
-      ${p.is_editorial?'<span class="editorial">📰 Redaktion</span>':''}${p.verified?'<span class="verified">✔</span>':''}
+      ${p.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}${p.verified?'<span class="verified">✔</span>':''}
       <span class="sp" style="flex:1"></span>
-      ${p.is_self?'':`<button class="${p.is_following?'ghost ':''}small" data-follow="${esc(p.handle)}" data-on="${p.is_following?'1':'0'}">${p.is_following?'✓ Folgst':'+ Folgen'}</button>`}
+      ${p.is_self?'':`<button class="${p.is_following?'ghost ':''}small" data-follow="${esc(p.handle)}" data-on="${p.is_following?'1':'0'}">${p.is_following?esc(t('fl_following_btn')):esc(t('pf_follow'))}</button>`}
     </div>${p.title?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(p.title)}</div>`:''}${specs?`<div style="margin-top:6px">${specs}</div>`:''}</div>`);
     card.querySelectorAll('[data-openprofile]').forEach(el => el.onclick = () => openProfile(el.dataset.openprofile));
     const fb = card.querySelector('[data-follow]');
     if (fb) fb.onclick = async () => {
       const on = fb.dataset.on === '1';
       try { await api('POST', on?'/api/unfollow':'/api/follow', { handle: fb.dataset.follow });
-        fb.dataset.on = on?'0':'1'; fb.textContent = on?'+ Folgen':'✓ Folgst'; fb.classList.toggle('ghost', !on);
+        fb.dataset.on = on?'0':'1'; fb.textContent = on?t('pf_follow'):t('fl_following_btn'); fb.classList.toggle('ghost', !on);
       } catch(e){ alert(e.message); }
     };
     feed.appendChild(card);

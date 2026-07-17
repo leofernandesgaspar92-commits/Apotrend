@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3y: Follower-/Folgt-Liste mehrsprachig — Profil komplett:**
+>   Die Follower- und „Folgt"-Listen (Zurück, Überschrift, „Wer @X folgt", Leerzustände, Follow-/
+>   Entfolgen-Buttons inkl. Live-Umschaltung) sind jetzt DE/EN/PT. Damit ist die **gesamte
+>   Profil-Erfahrung** (Kopf, Bearbeiten, Konto, Follower-Listen) in der Landessprache.
+>   (Browser verifiziert: „← voltar ao perfil / 👥 Seguidores / Quem segue @… / Ainda sem seguidores".)
 > - 🌍 **Länderübergreifend — Schritt 3x: Profil bearbeiten + Datenschutz-/Konto-Karte mehrsprachig:**
 >   Das Bearbeiten-Formular (alle Feld-Labels/Platzhalter, Region-Auswahl) und die Konto-Karte
 >   (DSGVO-Datenexport, Passwort ändern, Konto löschen inkl. Bestätigungs-Dialoge) sind jetzt
