@@ -2751,10 +2751,10 @@ function editProfileForm(p) {
   const specs = (p.specializations || []).join(', ');
   const form = el(`<div class="card">
     <div class="row"><h1 style="flex:1">${esc(t('pf_edit'))}</h1><button class="ghost small" data-cancel>${esc(t('cm_cancel'))}</button></div>
-    <label>${esc(t('ep_name'))}</label><input id="ep_name" value="${esc(p.display_name||'')}">
-    <label>${esc(t('ep_func'))}</label><input id="ep_title" value="${esc(p.title||'')}" placeholder="${esc(t('ep_func_ph'))}">
-    <label>${esc(t('ep_about'))}</label><textarea id="ep_bio" placeholder="${esc(t('ep_about_ph'))}">${esc(p.bio||'')}</textarea>
-    <label>${esc(t('ep_specs_l'))}</label><input id="ep_specs" value="${esc(specs)}" placeholder="${esc(t('ep_specs_ph'))}">
+    <label for="ep_name">${esc(t('ep_name'))}</label><input id="ep_name" value="${esc(p.display_name||'')}">
+    <label for="ep_title">${esc(t('ep_func'))}</label><input id="ep_title" value="${esc(p.title||'')}" placeholder="${esc(t('ep_func_ph'))}">
+    <label for="ep_bio">${esc(t('ep_about'))}</label><textarea id="ep_bio" placeholder="${esc(t('ep_about_ph'))}">${esc(p.bio||'')}</textarea>
+    <label for="ep_specs">${esc(t('ep_specs_l'))}</label><input id="ep_specs" value="${esc(specs)}" placeholder="${esc(t('ep_specs_ph'))}">
     <label>${esc(t('ep_region'))}</label>
     <select id="ep_bl"><option value="">${esc(t('ep_none'))}</option>${BUNDESLAENDER.map(x=>`<option value="${x}"${x===(p.bundesland||'')?' selected':''}>${x}</option>`).join('')}</select>
     <div class="muted" style="font-size:12px;margin-top:2px">${esc(t('ep_region_hint'))}</div>
