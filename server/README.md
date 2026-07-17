@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3t: Direktnachrichten mehrsprachig (DE/EN/PT):** Posteingang
+>   (Titel, Neu-schreiben-Feld, Leerzustand, Konversations-Zeilen) und Thread-Ansicht (Zurück,
+>   Nachricht-Feld, Senden, „sag Hallo") sind jetzt übersetzt. Erneut einen latenten Shadowing-Bug
+>   vermieden: die `forEach(t => …)`-Laufvariable im Posteingang verdeckte die i18n-Funktion `t()`
+>   → in `th` umbenannt. (Browser verifiziert: „← Mensagens / Enviar / Escrever mensagem…".)
 > - 🌍 **Länderübergreifend — Schritt 3s: Benachrichtigungen + relative Zeit mehrsprachig:** Das
 >   Benachrichtigungen-Panel (Titel, Zurück, „Alle als gelesen", Leerzustand, alle 12 Ereignis-
 >   Verben) und die Einzelbeitrags-Ansicht sind jetzt DE/EN/PT. Wichtiger Hebel: die geteilte
