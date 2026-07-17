@@ -99,6 +99,8 @@
   .reacts { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
   .reacts button { background:var(--chip-bg); color:var(--text); border:1px solid var(--line); padding:7px 11px; font-size:0.85em; font-weight:500; min-height:36px; }
   .reacts button:hover { border-color:var(--green); }
+  .reacts button.reacted { background:var(--green); color:#fff; border-color:var(--green); font-weight:700; } /* eigene Reaktion sichtbar markiert (nochmal klicken = entfernen) */
+  body.dark .reacts button.reacted { background:var(--green); color:#fff; }
   .muted { color:var(--muted); font-size:14px; }
   .err { color:var(--crit-fg); font-size:14px; margin-top:8px; }
   /* Einheitlicher, freundlicher Leerzustand (Icon + Titel + Text + optionale Aktion). */
@@ -3182,7 +3184,7 @@ function postCard(p) {
     ${refChip(p.ref_summary)}
     <div class="vis">${p.visibility==='public'?esc(t('pc_vis_public')):esc(t('pc_vis_followers'))}</div>
     <div class="reacts">
-      ${REACTS.map(([k,keyLab])=>`<button data-react="${k}">${esc(t(keyLab))}${rc[k]?` ${rc[k]}`:''}</button>`).join('')}
+      ${REACTS.map(([k,keyLab])=>`<button data-react="${k}"${p.my_reaction===k?' class="reacted" aria-pressed="true"':' aria-pressed="false"'}>${esc(t(keyLab))}${rc[k]?` ${rc[k]}`:''}</button>`).join('')}
       <button data-comments>${esc(ti('pc_comments',{n:p.comment_count||0}))}</button>
       <button class="ghost small" data-bookmark title="${esc(t('pc_save'))}">${myBookmarks.has(p.id)?esc(t('pc_saved')):esc(t('pc_save'))}</button>
       <button class="ghost small" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button>
@@ -3326,7 +3328,7 @@ function commentRow(postId, c, card, depth = 0) {
     <div data-cbody style="margin-top:2px">${linkifyMentions(c.body)}</div>
     ${c.image && /^data:image\//.test(c.image) ? `<img src="${c.image}" alt="${esc(t('cm_img_alt'))}" style="max-width:100%;border-radius:8px;margin-top:6px;display:block" />` : ''}
     <div class="reacts" style="margin-top:4px">
-      ${REACTS.map(([k,keyLab])=>{const n=c.reaction_counts&&c.reaction_counts[k];return `<button class="small" data-creact="${k}">${esc(t(keyLab).split(' ')[0])}${n?` ${n}`:''}</button>`;}).join('')}
+      ${REACTS.map(([k,keyLab])=>{const n=c.reaction_counts&&c.reaction_counts[k];const on=c.my_reaction===k;return `<button class="small${on?' reacted':''}" data-creact="${k}" aria-pressed="${on}">${esc(t(keyLab).split(' ')[0])}${n?` ${n}`:''}</button>`;}).join('')}
       <button class="ghost small" data-creply>${esc(t('cm_reply'))}</button>
       ${(isQuestion && iAmAsker && !mine)?`<button class="ghost small" data-accept title="${esc(t('cm_accept_title'))}">${isAccepted?esc(t('cm_unaccept')):esc(t('cm_accept'))}</button>`:''}
       ${mine?'':`<button class="ghost small" data-creport title="${esc(t('cm_report_title'))}">🚩</button>`}

@@ -92,6 +92,23 @@ test('Reaktionen: typisiert, eine je Nutzer+Ziel, umschaltbar, gezaehlt', () => 
   assert.equal(decorated.comment_count, 0);
 });
 
+test('Reaktion: my_reaction markiert eigene Reaktion; dieselbe nochmal = Toggle-off', () => {
+  const { social, a, b } = setup();
+  const post = social.createPost(a, { body: 'Toggle-Test' });
+  social.react(b, 'post', post.id, 'hilfreich');
+  let db = social.getPost(b, post.id);
+  assert.equal(db.my_reaction, 'hilfreich', 'eigene Reaktion wird markiert');
+  assert.equal(db.reaction_counts.hilfreich, 1);
+  // Andere:r Betrachter:in sieht keine eigene Reaktion
+  assert.equal(social.getPost(a, post.id).my_reaction, null);
+  // Dieselbe Reaktion erneut -> entfernt (Umschalten)
+  const res = social.react(b, 'post', post.id, 'hilfreich');
+  assert.equal(res, null, 'Toggle-off gibt null zurück');
+  db = social.getPost(b, post.id);
+  assert.equal(db.my_reaction, null, 'Reaktion nach Toggle entfernt');
+  assert.equal(db.reaction_counts.hilfreich, 0);
+});
+
 test('Löschen: nur Autor, danach aus Feeds verschwunden', () => {
   const { social, a, b } = setup();
   const post = social.createPost(a, { body: 'Loeschbar' });

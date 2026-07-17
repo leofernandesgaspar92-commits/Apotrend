@@ -45,16 +45,19 @@ export function createSocialService(social, foundationRepo, options = {}) {
     return post.visibility === 'followers' && social.isFollowing(viewerId, post.author_user_id);
   }
   // Post + leichte Metadaten (Autor, Zähler) fuer die Anzeige.
-  function decorate(post) {
+  function decorate(post, viewerUserId = null) {
     const prof = social.getProfileByUserId(post.author_user_id);
     const reacts = social.listReactions('post', post.id);
     const counts = {};
     for (const t of REACTION_TYPES) counts[t] = reacts.filter(r => r.type === t).length;
+    // Eigene Reaktion der/des Betrachtenden (für Aktiv-Markierung + Umschalten in der UI).
+    const mine = viewerUserId ? reacts.find(r => r.user_id === viewerUserId) : null;
     return {
       ...post,
       author: prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified, is_editorial: prof.is_editorial, account_type: prof.account_type } : null,
       comment_count: social.countComments(post.id),
       reaction_counts: counts,
+      my_reaction: mine ? mine.type : null,
       is_question: post.kind === 'frage',
       answered: !!post.accepted_comment_id,
     };
@@ -127,7 +130,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       const posts = social.listAllPosts()
         .filter(p => p.author_user_id === prof.user_id && visibleTo(p, viewerUserId))
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
-        .map(decorate);
+        .map(p => decorate(p, viewerUserId));
       // Reputation: wie oft eine Antwort dieser Person als beste markiert wurde.
       let best_answers = 0;
       for (const p of social.listAllPosts()) {
@@ -204,7 +207,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       return social.listAllPosts()
         .filter(p => visibleTo(p, viewerUserId) && re.test(p.body))
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
-        .map(decorate);
+        .map(p => decorate(p, viewerUserId));
     },
     // Aktuelle Themen: häufigste #Hashtags aus den letzten sichtbaren Beiträgen.
     trendingHashtags(viewerUserId, { limit = 8, lookback = 200 } = {}) {
@@ -237,7 +240,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       return social.listAllPosts()
         .filter(p => visibleTo(p, viewerUserId) && String(p.body).toLowerCase().includes(s))
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
-        .map(decorate);
+        .map(p => decorate(p, viewerUserId));
     },
 
     // ── Posts ──
@@ -270,12 +273,12 @@ export function createSocialService(social, foundationRepo, options = {}) {
       const text = String(body ?? '').trim();
       if (!text) throw new Error('Beitrag darf nicht leer sein.');
       if (text.length > MAX_BODY) throw new Error(`Beitrag zu lang (max ${MAX_BODY}).`);
-      return decorate(social.updatePostBody(postId, text));
+      return decorate(social.updatePostBody(postId, text), actorUserId);
     },
     getPost(viewerUserId, postId) {
       const p = social.getPost(postId);
       if (!p || !visibleTo(p, viewerUserId)) return null;
-      return decorate(p);
+      return decorate(p, viewerUserId);
     },
 
     // Beste Antwort einer Frage markieren/aufheben — nur der/die Fragesteller:in.
@@ -293,7 +296,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
         next = commentId;
         if (c.author_user_id !== actorUserId) notify(c.author_user_id, 'answer_accepted', actorUserId, 'post', postId);
       }
-      return decorate(social.setAcceptedAnswer(postId, next));
+      return decorate(social.setAcceptedAnswer(postId, next), actorUserId);
     },
 
     // ── Kommentare (Thread) ──
@@ -325,7 +328,8 @@ export function createSocialService(social, foundationRepo, options = {}) {
         const reacts = social.listReactions('comment', c.id);
         const counts = {};
         for (const t of REACTION_TYPES) counts[t] = reacts.filter(r => r.type === t).length;
-        return { ...c, author: prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified, is_editorial: prof.is_editorial, account_type: prof.account_type } : null, reaction_counts: counts };
+        const mine = viewerUserId ? reacts.find(r => r.user_id === viewerUserId) : null;
+        return { ...c, author: prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified, is_editorial: prof.is_editorial, account_type: prof.account_type } : null, reaction_counts: counts, my_reaction: mine ? mine.type : null };
       });
     },
     editComment(actorUserId, commentId, body) {
@@ -357,6 +361,12 @@ export function createSocialService(social, foundationRepo, options = {}) {
         const p = social.getPost(c.post_id);
         if (!p || !visibleTo(p, actorUserId)) throw new ForbiddenError('Ziel nicht sichtbar.');
       } else throw new Error('Ungueltiger Zieltyp.');
+      // Umschalten: dieselbe Reaktion erneut = entfernen (gibt null zurück).
+      const existing = social.listReactions(targetType, targetId).find(r => r.user_id === actorUserId);
+      if (existing && existing.type === type) {
+        social.removeReaction({ userId: actorUserId, targetType, targetId });
+        return null;
+      }
       const reaction = social.setReaction({ userId: actorUserId, targetType, targetId, type });
       // Autor des Ziels benachrichtigen
       const target = targetType === 'post' ? social.getPost(targetId) : social.getComment(targetId);
@@ -402,7 +412,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       return social.listAllPosts()
         .filter(p => authors.has(p.author_user_id) && visibleTo(p, viewerUserId))
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
-        .map(decorate);
+        .map(p => decorate(p, viewerUserId));
     },
     // News-Ansicht: Beiträge der Art 'news' (kuratiert von der Redaktion ODER von
     // Nutzern geteilt) — dasselbe Feed-System, nur gefiltert.
@@ -412,7 +422,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       return social.listAllPosts()
         .filter(p => p.kind === 'news' && visibleTo(p, viewerUserId) && (!c || (p.country || 'AT') === c))
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
-        .map(decorate);
+        .map(p => decorate(p, viewerUserId));
     },
 
     // Beiträge, die ein externes Objekt referenzieren (z.B. einen Engpass),
@@ -422,7 +432,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       return social.listPostsByRef(refType, refId)
         .filter(p => visibleTo(p, viewerUserId))
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
-        .map(decorate);
+        .map(p => decorate(p, viewerUserId));
     },
 
     // Entdecken: alle oeffentlichen Beiträge (netzwerkweite Reichweite).
@@ -431,7 +441,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     publicFeed(viewerUserId, { sort = 'neu', filter = 'all', country = null } = {}) {
       requireUser(viewerUserId);
       const c = country ? normalizeCountry(country) : null;
-      let posts = social.listAllPosts().filter(p => p.visibility === 'public' && (!c || (p.country || 'AT') === c)).map(decorate);
+      let posts = social.listAllPosts().filter(p => p.visibility === 'public' && (!c || (p.country || 'AT') === c)).map(p => decorate(p, viewerUserId));
       if (filter === 'questions') posts = posts.filter(p => p.is_question);
       const total = (p) => Object.values(p.reaction_counts || {}).reduce((s, n) => s + n, 0);
       const byRecency = (a, b) => b.created_at.localeCompare(a.created_at);
@@ -583,7 +593,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       return social.listBookmarkPostIds(userId)
         .map(id => social.getPost(id))
         .filter(p => p && visibleTo(p, userId))
-        .map(decorate);
+        .map(p => decorate(p, userId));
     },
 
     // ── DSGVO: Datenexport (Recht auf Datenübertragbarkeit) ──
