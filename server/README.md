@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🔒 **Kontotyp-Rechte — Schritt 1: Privatnutzer:innen keine Engpass-Meldungen (Durchsetzung):**
+>   Erste echte Rechte-Durchsetzung fürs Kontotyp-Modell, direkt aus dem Owner-Prinzip
+>   „Sicherheitsrelevante Aussagen nur mit Quelle". Engpass melden/bestätigen sind
+>   Community-Aussagen mit Sicherheitsbezug → Fachkreisen (Apotheke/Pharma/Behörde) vorbehalten.
+>   Privatkonten dürfen alles **lesen/beobachten**, aber nicht melden/bestätigen. Backend
+>   (`requireProfessional`, 403) + Frontend (Hinweis statt Formular, Bestätigen-Button aus).
+>   Test grün (211). Weitere Achsen (z. B. Redaktion/Verifizierung) bleiben separat.
 > - 👍 **Eigene Reaktion sichtbar + umschaltbar:** Nach dem Reagieren war nicht erkennbar,
 >   welche Reaktion man selbst gewählt hatte (nur der Zähler stieg), und man konnte sie nicht
 >   wieder entfernen. Jetzt: Backend liefert `my_reaction` (Beiträge + Kommentare, Betrachter-
