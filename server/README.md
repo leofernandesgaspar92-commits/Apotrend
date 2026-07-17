@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3r: Kommentar-Thread mehrsprachig — Social-Flow komplett:**
+>   Kommentare sind jetzt DE/EN/PT: Leerzustand, Zähler, „Beste Antwort"-Badge & -Aktion,
+>   Antworten/Melden/Bearbeiten/Löschen, Antwort- und Bearbeiten-Boxen, Melde-Dialog. Damit ist
+>   der komplette Beitrags- & Kommentar-Fluss (Composer → Karte → Thread) in der Landessprache.
+>   (Browser verifiziert: PT-Kommentar mit „↩ Responder", keine JS-Fehler.)
 > - 🌍 **Länderübergreifend — Schritt 3q: Beitragskarten mehrsprachig (DE/EN/PT):** Die
 >   `postCard`-Karten sind jetzt übersetzt: Reaktionen (Hilfreich/Danke/Bestätigt/Interessant —
 >   `REACTS` von festem Label auf i18n-Key umgestellt, wirkt auch bei Kommentar-Reaktionen),
