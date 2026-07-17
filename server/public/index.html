@@ -1239,7 +1239,7 @@ function goTab(name) {
 
 async function loadOverview() {
   const feed = document.getElementById('feed');
-  feed.innerHTML = '<div class="loading">lädt…</div>';
+  feed.innerHTML = '<div class="loading">…</div>';
   let d;
   try { d = await api('GET','/api/overview'); }
   catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
@@ -1592,7 +1592,7 @@ async function loadNews() {
     catch(e){ document.getElementById('nerr').textContent = e.message; }
   };
   const list = document.getElementById('newslist');
-  list.innerHTML = '<div class="loading">lädt…</div>';
+  list.innerHTML = '<div class="loading">…</div>';
   try {
     const d = await api('GET','/api/news');
     list.innerHTML = '';
@@ -1645,7 +1645,7 @@ function provenanceLegend() {
 
 async function loadShortages() {
   const feed = document.getElementById('feed');
-  feed.innerHTML = '<div class="loading">lädt…</div>';
+  feed.innerHTML = '<div class="loading">…</div>';
   try {
     const d = await api('GET','/api/shortages');
     feed.innerHTML = '';
@@ -1890,7 +1890,7 @@ function shortageCard(s) {
   card.querySelector('[data-about]').onclick = async () => {
     aboutbox.classList.toggle('hidden');
     if (aboutbox.classList.contains('hidden')) return;
-    aboutbox.innerHTML = '<div class="loading">lädt…</div>';
+    aboutbox.innerHTML = '<div class="loading">…</div>';
     const d = await api('GET',`/api/shortages/${s.id}`);
     aboutbox.innerHTML = d.posts.length ? '' : '<div class="muted">Noch keine Beiträge dazu.</div>';
     d.posts.forEach(p => aboutbox.appendChild(el(`<div class="comment"><b>@${esc(p.author?.handle||'?')}</b>: ${esc(p.body)}</div>`)));
@@ -1900,7 +1900,7 @@ function shortageCard(s) {
 
 async function loadPrices() {
   const feed = document.getElementById('feed');
-  feed.innerHTML = '<div class="loading">lädt…</div>';
+  feed.innerHTML = '<div class="loading">…</div>';
   try {
     const d = await api('GET','/api/prices');
     feed.innerHTML = '';
@@ -2197,7 +2197,7 @@ function exchangeCard(e) {
 
 async function loadRabatte() {
   const feed = document.getElementById('feed');
-  feed.innerHTML = '<div class="loading">lädt…</div>';
+  feed.innerHTML = '<div class="loading">…</div>';
   try {
     const d = await api('GET','/api/rabatte');
     feed.innerHTML = '';
@@ -2298,7 +2298,7 @@ function refChip(r) {
 
 async function loadFeed() {
   const feed = document.getElementById('feed');
-  feed.innerHTML = '<div class="loading">lädt…</div>';
+  feed.innerHTML = '<div class="loading">…</div>';
   try {
     const url = tab==='home' ? '/api/feed/home' : ('/api/feed/public?sort=' + publicSort + '&filter=' + publicFilter);
     const d = await api('GET', url);
@@ -2387,7 +2387,7 @@ async function openHashtag(tag) {
   if (!tag) return;
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
-  feed.innerHTML = '<div class="loading">lädt…</div>';
+  feed.innerHTML = '<div class="loading">…</div>';
   try {
     const d = await api('GET','/api/hashtag/'+encodeURIComponent(tag));
     feed.innerHTML = '';
@@ -2460,7 +2460,7 @@ function printPatientInfo(d) {
 async function openPatientInfo() {
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
-  feed.innerHTML = '<div class="loading">lädt…</div>';
+  feed.innerHTML = '<div class="loading">…</div>';
   let d;
   try { d = await api('GET','/api/patient-info?lang='+encodeURIComponent(patientLang)); }
   catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
@@ -2718,7 +2718,7 @@ async function openProfile(handle) {
   const feed = document.getElementById('feed');
   // Tab-Markierung entfernen (wir sind auf einer Detailseite)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
-  feed.innerHTML = '<div class="loading">lädt…</div>';
+  feed.innerHTML = '<div class="loading">…</div>';
   try {
     const d = await api('GET',`/api/profiles/${encodeURIComponent(handle)}/page`);
     const p = d.profile;
@@ -2823,7 +2823,7 @@ async function openProfile(handle) {
 async function openFollowList(handle, which) {
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
-  feed.innerHTML = '<div class="loading">lädt…</div>';
+  feed.innerHTML = '<div class="loading">…</div>';
   let d;
   try { d = await api('GET',`/api/profiles/${encodeURIComponent(handle)}/${which}`); }
   catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
@@ -2937,7 +2937,7 @@ async function openWirkstoff(name) {
   if (!name) return;
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
-  feed.innerHTML = '<div class="loading">lädt…</div>';
+  feed.innerHTML = '<div class="loading">…</div>';
   let d;
   try { d = await api('GET','/api/wirkstoff/'+encodeURIComponent(name)); }
   catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
@@ -3205,7 +3205,7 @@ function postCard(p) {
 
 async function loadComments(postId, card) {
   const list = card.querySelector('[data-clist]');
-  list.innerHTML = '<div class="loading">lädt…</div>';
+  list.innerHTML = '<div class="loading">…</div>';
   const d = await api('GET',`/api/posts/${postId}/comments`);
   list.innerHTML = d.comments.length ? '' : `<div class="muted">${esc(t('cm_empty'))}</div>`;
   // Baum aufbauen: parent_comment_id -> Kinder, in Reihenfolge (DFS) mit Einrückung.
@@ -3372,7 +3372,7 @@ async function openPost(postId) {
   const feed = document.getElementById('feed');
   if (!feed) return;
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
-  feed.innerHTML = '<div class="loading">lädt…</div>';
+  feed.innerHTML = '<div class="loading">…</div>';
   try {
     const d = await api('GET','/api/posts/'+encodeURIComponent(postId));
     feed.innerHTML = '';
