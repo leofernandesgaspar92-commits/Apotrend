@@ -325,7 +325,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
         const reacts = social.listReactions('comment', c.id);
         const counts = {};
         for (const t of REACTION_TYPES) counts[t] = reacts.filter(r => r.type === t).length;
-        return { ...c, author: prof ? { handle: prof.handle, display_name: prof.display_name } : null, reaction_counts: counts };
+        return { ...c, author: prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified, is_editorial: prof.is_editorial, account_type: prof.account_type } : null, reaction_counts: counts };
       });
     },
     editComment(actorUserId, commentId, body) {

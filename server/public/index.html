@@ -3314,6 +3314,9 @@ function commentRow(postId, c, card, depth = 0) {
     <div class="row" style="align-items:baseline">
       <b class="clickable" data-openprofile="${esc(au.handle||'')}">${esc(au.display_name||t('ex_unknown'))}</b>
       <span class="handle clickable" data-openprofile="${esc(au.handle||'')}">@${esc(au.handle||'?')}</span>
+      ${au.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}
+      ${au.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
+      ${au.account_type&&au.account_type!=='pharmacy'?`<span class="spec" style="margin-left:2px">${esc(acctLabel(au.account_type))}</span>`:''}
       ${isAccepted?`<span style="color:var(--ok-fg);font-weight:700;font-size:12px;margin-left:6px">${esc(t('cm_best'))}</span>`:''}
       <span class="muted" style="font-size:12px;margin-left:6px" title="${esc(c.created_at)}">${relTime(c.created_at)}</span>
       ${c.edited_at?`<span class="vis" style="margin-left:6px">${esc(t('pc_edited'))}</span>`:''}

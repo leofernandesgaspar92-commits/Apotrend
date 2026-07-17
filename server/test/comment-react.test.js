@@ -33,3 +33,17 @@ test('Reaktion auf Kommentar: umschaltbar (eine je Nutzer+Ziel)', () => {
   assert.equal(c.reaction_counts.hilfreich, 0);
   assert.equal(c.reaction_counts.danke, 1);
 });
+
+test('listComments: Autor:innen-Payload trägt Kontotyp/verified/is_editorial (für Badges)', () => {
+  const repo = createMemoryRepo();
+  const orgAuth = createOrgAuthService(repo);
+  const social = createSocialService(createSocialRepo(), repo);
+  const P = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'P' }, owner: { name: 'Pharma', email: 'p@p.at', password: 'geheim123' } });
+  social.createProfile(P.user.id, { handle: 'pharma_ag', displayName: 'Muster Pharma AG', accountType: 'pharma' });
+  const post = social.createPost(P.user.id, { body: 'Beitrag' });
+  const c = social.comment(P.user.id, post.id, { body: 'Antwort vom Pharma-Konto' });
+  const listed = social.listComments(P.user.id, post.id).find(x => x.id === c.id);
+  assert.equal(listed.author.account_type, 'pharma', 'Kontotyp im Kommentar-Autor');
+  assert.equal(listed.author.verified, false);
+  assert.equal(listed.author.is_editorial, false);
+});
