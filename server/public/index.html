@@ -226,6 +226,7 @@ const I18N = {
     sh_sort_crit:'🔴 Kritischste zuerst', sh_sort_new:'🕘 Neueste zuerst',
     sh_empty:'Keine Engpässe für diese Auswahl. Filter zurücksetzen oder Suchbegriff ändern.',
     sh_rep_title:'➕ Engpass melden', sh_rep_open:'Formular öffnen', sh_rep_close:'Schließen',
+    sh_rep_private:'ℹ️ Als Privatnutzer:in kannst du Engpässe lesen, aber nicht selbst melden oder bestätigen. Engpass-Meldungen sind sicherheitsrelevant und Fachkreisen (Apotheke, Pharma-Unternehmen, Behörde) vorbehalten.',
     sh_rep_desc:'Merkst du selbst einen Lieferengpass? Melde ihn — Kolleg:innen, die den Wirkstoff beobachten, werden sofort informiert. (Kennzeichnung: 👥 Community-Meldung, nicht offiziell verifiziert.)',
     sh_rep_w:'Wirkstoff *', sh_rep_w_ph:'z.B. Pantoprazol', sh_rep_b:'Präparat / Bezeichnung',
     sh_rep_b_ph:'z.B. Pantoprazol 40 mg Tabletten', sh_rep_status:'Status',
@@ -467,6 +468,7 @@ const I18N = {
     sh_sort_crit:'🔴 Most critical first', sh_sort_new:'🕘 Newest first',
     sh_empty:'No shortages for this selection. Reset the filter or change the search term.',
     sh_rep_title:'➕ Report a shortage', sh_rep_open:'Open form', sh_rep_close:'Close',
+    sh_rep_private:'ℹ️ As a private user you can read shortages but not report or confirm them. Shortage reports are safety-relevant and reserved for professionals (pharmacy, pharma company, authority).',
     sh_rep_desc:'Noticing a supply shortage yourself? Report it — colleagues watching the substance are notified right away. (Labelled: 👥 community report, not officially verified.)',
     sh_rep_w:'Substance *', sh_rep_w_ph:'e.g. Pantoprazole', sh_rep_b:'Product / name',
     sh_rep_b_ph:'e.g. Pantoprazole 40 mg tablets', sh_rep_status:'Status',
@@ -708,6 +710,7 @@ const I18N = {
     sh_sort_crit:'🔴 Mais críticas primeiro', sh_sort_new:'🕘 Mais recentes primeiro',
     sh_empty:'Sem faltas para esta seleção. Reponha o filtro ou altere o termo de pesquisa.',
     sh_rep_title:'➕ Reportar uma falta', sh_rep_open:'Abrir formulário', sh_rep_close:'Fechar',
+    sh_rep_private:'ℹ️ Como utilizador particular pode ler as faltas, mas não comunicá-las nem confirmá-las. As comunicações de falta são relevantes para a segurança e reservadas a profissionais (farmácia, empresa farmacêutica, autoridade).',
     sh_rep_desc:'Notou uma falta de fornecimento? Reporte-a — os colegas que vigiam a substância são notificados de imediato. (Identificado: 👥 aviso da comunidade, não verificado oficialmente.)',
     sh_rep_w:'Substância *', sh_rep_w_ph:'ex. Pantoprazol', sh_rep_b:'Produto / designação',
     sh_rep_b_ph:'ex. Pantoprazol 40 mg comprimidos', sh_rep_status:'Estado',
@@ -1796,6 +1799,12 @@ function shortageFilterBar() {
 
 // "Engpass melden": eine Apotheke meldet einen selbst beobachteten Engpass (Community).
 function reportShortageCard() {
+  // Privatnutzer:innen: Engpass-Meldung ist Fachkreisen vorbehalten (sicherheitsrelevant).
+  // Statt des Formulars ein klarer Hinweis (das Backend erzwingt es zusätzlich).
+  if (me && me.account_type === 'private') {
+    return el(`<div class="card"><div class="row"><b>${esc(t('sh_rep_title'))}</b></div>
+      <div class="muted" style="font-size:13px;margin-top:6px">${esc(t('sh_rep_private'))}</div></div>`);
+  }
   const card = el(`<div class="card">
     <div class="row"><b>${esc(t('sh_rep_title'))}</b>
       <span class="sp" style="flex:1"></span>
@@ -1860,7 +1869,7 @@ function shortageCard(s) {
       <button class="ghost" data-postbtn>${esc(t('sc_post_about'))}</button>
       <button class="ghost" data-exchange title="${esc(t('nav_exchange'))}">${esc(t('nav_exchange'))}</button>
       <button class="ghost" data-watch title="${esc(t('wl_add_aria'))}" aria-pressed="${!!s.watched}">${s.watched?esc(t('sc_watched')):esc(t('sc_watch'))}</button>
-      ${s.provenance==='community'&&!s.is_reporter?`<button class="ghost" data-confirm>${s.i_confirmed?esc(t('sc_confd_btn')):esc(t('sc_conf_btn'))}</button>`:''}
+      ${s.provenance==='community'&&!s.is_reporter&&!(me&&me.account_type==='private')?`<button class="ghost" data-confirm>${s.i_confirmed?esc(t('sc_confd_btn')):esc(t('sc_conf_btn'))}</button>`:''}
       ${s.provenance==='community'&&s.is_reporter&&s.status!=='verfuegbar'?`<button class="ghost" data-resolve>${esc(t('sc_resolve'))}</button>`:''}
       ${(s.history||[]).length>1?`<button class="ghost" data-hist aria-expanded="false">${esc(t('sc_history'))} (${s.history.length})</button>`:''}
     </div>

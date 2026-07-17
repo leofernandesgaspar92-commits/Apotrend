@@ -22,6 +22,17 @@ export function createShortagesService(shortagesRepo, social) {
       watched: shortagesRepo.isWatched(viewerUserId, s.wirkstoff),
     };
   }
+  // Sicherheitsrelevante Engpass-Aktionen (melden/bestätigen) sind Fachkreisen vorbehalten.
+  // Privatnutzer:innen dürfen Engpässe lesen, aber nicht selbst mitmelden — direkt aus dem
+  // Owner-Prinzip: „Sicherheitsrelevante Aussagen … nur mit Quelle" (Quelle = Fachperson).
+  function requireProfessional(userId) {
+    const prof = social.getProfile(userId);
+    if (prof && prof.account_type === 'private') {
+      const e = new Error('Engpass-Meldungen sind sicherheitsrelevant und Fachkreisen (Apotheke, Pharma-Unternehmen, Behörde) vorbehalten. Als Privatnutzer:in kannst du Engpässe lesen, aber nicht melden oder bestätigen.');
+      e.status = 403;
+      throw e;
+    }
+  }
   return {
     list() { return shortagesRepo.list(); },
     get(id) { return shortagesRepo.get(id); },
@@ -49,6 +60,7 @@ export function createShortagesService(shortagesRepo, social) {
     // ── Community-Meldung: eine Apotheke meldet einen selbst beobachteten Engpass ──
     // Herkunft klar als 'community' gekennzeichnet (nicht offiziell/BASG-verifiziert).
     reportShortage(userId, { wirkstoff, bezeichnung, grund, status = 'kritisch', voraussichtlichBis }) {
+      requireProfessional(userId);
       const w = String(wirkstoff || '').trim();
       if (!w) throw new Error('Wirkstoff fehlt.');
       if (w.length > 120) throw new Error('Wirkstoff zu lang.');
@@ -88,6 +100,7 @@ export function createShortagesService(shortagesRepo, social) {
 
     // "Auch bei uns" — andere Apotheke bestätigt einen gemeldeten Engpass.
     confirmShortage(userId, id) {
+      requireProfessional(userId);
       const before = shortagesRepo.get(id);
       if (!before) { const e = new Error('Engpass nicht gefunden.'); e.status = 404; throw e; }
       const updated = shortagesRepo.confirm(id, userId);

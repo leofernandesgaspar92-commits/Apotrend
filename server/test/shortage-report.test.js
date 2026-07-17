@@ -80,6 +80,28 @@ test('confirmShortage: benachrichtigt Melder:in', () => {
   assert.match(n.label, /Ramipril/);
 });
 
+test('Kontotyp-Rechte: Privatnutzer:in darf Engpässe weder melden noch bestätigen; Fachkreis darf', () => {
+  const repo = createMemoryRepo();
+  const orgAuth = createOrgAuthService(repo);
+  const social = createSocialService(createSocialRepo(), repo);
+  const shortagesRepo = createShortagesRepo({ seed: false });
+  const shortages = createShortagesService(shortagesRepo, social);
+  // Fachkreis (Apotheke) meldet
+  const pro = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'Pro' }, owner: { name: 'Pro', email: 'pro@a.at', password: 'geheim123' } });
+  social.createProfile(pro.user.id, { handle: 'pro_apo', displayName: 'Profi-Apotheke', accountType: 'pharmacy' });
+  const rep = shortages.reportShortage(pro.user.id, { wirkstoff: 'Ramipril' });
+  assert.equal(rep.provenance, 'community');
+  // Privatnutzer:in darf NICHT melden
+  const priv = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'Priv' }, owner: { name: 'Priv', email: 'priv@a.at', password: 'geheim123' } });
+  social.createProfile(priv.user.id, { handle: 'privat_x', displayName: 'Privat', accountType: 'private' });
+  assert.throws(() => shortages.reportShortage(priv.user.id, { wirkstoff: 'Ibuprofen' }), /Fachkreisen|sicherheitsrelevant/);
+  // ... und NICHT bestätigen
+  assert.throws(() => shortages.confirmShortage(priv.user.id, rep.id), /Fachkreisen|sicherheitsrelevant/);
+  // Meldung des Fachkreises bleibt unbestätigt
+  const row = shortages.listWithCounts(pro.user.id).find(s => s.wirkstoff === 'Ramipril');
+  assert.equal(row.confirm_count, 0);
+});
+
 test('decorate: rohe confirmation-User-IDs werden nicht nach außen gegeben', () => {
   const { shortages, a, b } = setup();
   const r = shortages.reportShortage(a, { wirkstoff: 'Ramipril' });
