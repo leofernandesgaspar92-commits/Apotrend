@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — Browsertab-Titel mehrsprachig:** Die meisten Panels lokalisierten
+>   `document.title` bereits, aber die 8 Haupt-Reiter (`TAB_TITLES`) und der Standard-Zusatz
+>   „Apotheker-Netzwerk" blieben deutsch — sichtbar im Browsertab, in der History, in Lesezeichen
+>   und für Screenreader. `TAB_TITLES` auf i18n-Schlüssel umgestellt (zur Laufzeit via `t()`), der
+>   Tagline-Zusatz übersetzt. (Browser verifiziert: EN-Nutzer sieht „For you · ApoTrend",
+>   „Shortages · ApoTrend", „Prices · ApoTrend".)
 > - ✅ **Qualitäts-Audit — Engpass-Gründe mehrsprachig (Standard-Gründe):** Auffälligkeit im
 >   EN/PT-Screenshot: die Reiter-Beschriftungen waren übersetzt, aber das prominente **Grund**-Feld
 >   jeder Engpass-Karte zeigte deutsche Wörter („Herstellungsproblem", „Wirkstoffknappheit",
