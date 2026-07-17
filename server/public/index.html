@@ -310,6 +310,7 @@ const I18N = {
     cm_reply:'↩ Antworten', cm_accept:'✔ Als beste Antwort', cm_unaccept:'✔ Beste Antwort (aufheben)',
     cm_accept_title:'Diese Antwort als beste markieren', cm_report_title:'Kommentar melden',
     cm_report_prompt:'Warum meldest du diesen Kommentar? (optional)', cm_reported:'Danke — der Kommentar wurde gemeldet.',
+    pc_report_prompt:'Warum meldest du diesen Beitrag? (optional)', pc_reported:'Danke — der Beitrag wurde der Moderation gemeldet.', sh_resolve_confirm:'Diesen Engpass als wieder lieferbar melden? Beobachter:innen werden informiert.',
     cm_reply_to:'Antwort an @{handle}…', cm_reply_send:'Antworten', cm_cancel:'Abbrechen',
     cm_del_confirm:'Kommentar löschen?', cm_save:'Speichern',
     gen_back:'Zurück', notif_title:'🔔 Benachrichtigungen', notif_doc:'Benachrichtigungen',
@@ -549,6 +550,7 @@ const I18N = {
     cm_reply:'↩ Reply', cm_accept:'✔ Mark as best answer', cm_unaccept:'✔ Best answer (remove)',
     cm_accept_title:'Mark this answer as best', cm_report_title:'Report comment',
     cm_report_prompt:'Why are you reporting this comment? (optional)', cm_reported:'Thanks — the comment has been reported.',
+    pc_report_prompt:'Why are you reporting this post? (optional)', pc_reported:'Thanks — the post has been reported to moderation.', sh_resolve_confirm:'Report this shortage as available again? Watchers will be notified.',
     cm_reply_to:'Reply to @{handle}…', cm_reply_send:'Reply', cm_cancel:'Cancel',
     cm_del_confirm:'Delete comment?', cm_save:'Save',
     gen_back:'Back', notif_title:'🔔 Notifications', notif_doc:'Notifications',
@@ -788,6 +790,7 @@ const I18N = {
     cm_reply:'↩ Responder', cm_accept:'✔ Marcar como melhor resposta', cm_unaccept:'✔ Melhor resposta (remover)',
     cm_accept_title:'Marcar esta resposta como a melhor', cm_report_title:'Denunciar comentário',
     cm_report_prompt:'Porque está a denunciar este comentário? (opcional)', cm_reported:'Obrigado — o comentário foi denunciado.',
+    pc_report_prompt:'Porque está a denunciar esta publicação? (opcional)', pc_reported:'Obrigado — a publicação foi comunicada à moderação.', sh_resolve_confirm:'Comunicar esta rutura como novamente disponível? Os observadores serão notificados.',
     cm_reply_to:'Responder a @{handle}…', cm_reply_send:'Responder', cm_cancel:'Cancelar',
     cm_del_confirm:'Eliminar comentário?', cm_save:'Guardar',
     gen_back:'Voltar', notif_title:'🔔 Notificações', notif_doc:'Notificações',
@@ -1934,7 +1937,7 @@ function shortageCard(s) {
   }
   const resolveBtn = card.querySelector('[data-resolve]');
   if (resolveBtn) resolveBtn.onclick = async () => {
-    if (!confirm('Diesen Engpass als wieder lieferbar melden? Beobachter:innen werden informiert.')) return;
+    if (!confirm(t('sh_resolve_confirm'))) return;
     resolveBtn.disabled = true;
     try { await api('POST',`/api/shortages/${s.id}/resolve`); loadShortages(); }
     catch(e){ alert(e.message); resolveBtn.disabled = false; }
@@ -3241,9 +3244,9 @@ function postCard(p) {
   };
   const repb = card.querySelector('[data-report]');
   if (repb) repb.onclick = async () => {
-    const reason = prompt('Warum meldest du diesen Beitrag? (optional)') ?? '';
+    const reason = prompt(t('pc_report_prompt')) ?? '';
     if (reason === null) return;
-    try { await api('POST',`/api/posts/${p.id}/report`,{ reason }); alert('Danke — der Beitrag wurde der Moderation gemeldet.'); }
+    try { await api('POST',`/api/posts/${p.id}/report`,{ reason }); alert(t('pc_reported')); }
     catch(e){ alert(e.message); }
   };
   const cbtn = card.querySelector('[data-comments]');
