@@ -410,6 +410,7 @@ const I18N = {
     bz_print:'🖨️ Begleitzettel drucken', bz_preview:'Vorschau (so sieht es Patient:in):', bz_preview_empty:'Arzneimittel eingeben, dann erscheint hier die Vorschau.', bz_need_med:'Bitte das Arzneimittel angeben.',
     nw_empty:'Noch keine News.', sa_empty:'Noch keine Beiträge dazu.', rc_deal:'🏷️ Aktion:', rc_shortage:'📦 Engpass:',
     pubf_new:'🕒 Neueste', pubf_top:'🔥 Beliebteste', pubf_show:'Anzeigen:', pubf_all:'Alle Beiträge', pubf_questions:'❓ Offene Fragen zuerst',
+    gr_demand:'Erhöhte Nachfrage', gr_manuf:'Herstellungsproblem', gr_ration:'Kontingentierung', gr_delay:'Produktionsverzögerung', gr_api:'Wirkstoffknappheit',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -645,6 +646,7 @@ const I18N = {
     bz_print:'🖨️ Print dispensing slip', bz_preview:'Preview (what the patient sees):', bz_preview_empty:'Enter a medicine, then the preview appears here.', bz_need_med:'Please enter the medicine.',
     nw_empty:'No news yet.', sa_empty:'No posts about it yet.', rc_deal:'🏷️ Deal:', rc_shortage:'📦 Shortage:',
     pubf_new:'🕒 Newest', pubf_top:'🔥 Most popular', pubf_show:'Show:', pubf_all:'All posts', pubf_questions:'❓ Open questions first',
+    gr_demand:'Increased demand', gr_manuf:'Manufacturing problem', gr_ration:'Rationing', gr_delay:'Production delay', gr_api:'Active-ingredient shortage',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -880,6 +882,7 @@ const I18N = {
     bz_print:'🖨️ Imprimir folha', bz_preview:'Pré-visualização (o que o doente vê):', bz_preview_empty:'Introduza um medicamento e a pré-visualização aparece aqui.', bz_need_med:'Indique o medicamento, por favor.',
     nw_empty:'Ainda sem notícias.', sa_empty:'Ainda sem publicações sobre isto.', rc_deal:'🏷️ Promoção:', rc_shortage:'📦 Falta:',
     pubf_new:'🕒 Mais recentes', pubf_top:'🔥 Mais populares', pubf_show:'Mostrar:', pubf_all:'Todas as publicações', pubf_questions:'❓ Perguntas em aberto primeiro',
+    gr_demand:'Procura acrescida', gr_manuf:'Problema de fabrico', gr_ration:'Contingentação', gr_delay:'Atraso de produção', gr_api:'Escassez de princípio ativo',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -1614,6 +1617,10 @@ function statusShort(key) { return [ STATUS_I18N[key] ? t(STATUS_I18N[key]) : '?
 // Herkunfts-Label (übersetzt) je Datenquelle.
 const PROV_I18N = { verified:'prov_verified', reference:'prov_reference', simulated:'prov_simulated', editorial:'prov_editorial', community:'prov_community' };
 function provLabel(key) { return PROV_I18N[key] ? t(PROV_I18N[key]) : (key || ''); }
+// Engpass-Grund: bekannte Standard-Gründe (aus den Seed-Daten) übersetzen;
+// frei eingegebene Community-Gründe bleiben unverändert (kein Falsch-Übersetzen).
+const GRUND_I18N = { 'Erhöhte Nachfrage':'gr_demand', 'Herstellungsproblem':'gr_manuf', 'Kontingentierung':'gr_ration', 'Produktionsverzögerung':'gr_delay', 'Wirkstoffknappheit':'gr_api' };
+function grundLabel(g) { return g ? (GRUND_I18N[g] ? t(GRUND_I18N[g]) : g) : ''; }
 
 // Ehrlicher Länder-Hinweis: Die Live-Regulierungsdaten (Engpässe/Preise/Rabatte)
 // stammen derzeit aus Österreich. Für andere Länder das offen ausweisen, statt
@@ -1784,7 +1791,7 @@ function shortageCard(s) {
       <span class="vis" title="${esc(t('pl_open'))}">${esc(provLabel(s.provenance))}</span>
     </div>
     <div class="post-body">${esc(s.bezeichnung)}</div>
-    <div class="muted">${s.grund?esc(s.grund)+' · ':''}${esc(t('sc_reported'))} ${esc(s.gemeldet_am||'—')}</div>
+    <div class="muted">${s.grund?esc(grundLabel(s.grund))+' · ':''}${esc(t('sc_reported'))} ${esc(s.gemeldet_am||'—')}</div>
     ${s.voraussichtlich_bis&&s.status!=='verfuegbar'?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sc_until'))} <b>${esc(fmtDateDe(s.voraussichtlich_bis))}</b></div>`:''}
     ${s.is_antibiotic?`<div style="margin-top:6px;font-size:13px"><span style="color:var(--ok-fg);font-weight:600">${esc(t('sc_abx'))}</span> — <span class="clickable" data-amr style="color:var(--ok-fg);text-decoration:underline">${esc(t('sc_abx_link'))}</span> <span class="muted">${esc(t('sc_abx_note'))}</span></div>`:''}
     ${s.provenance==='community'&&s.reporter?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sc_reported_by'))} <b>@${esc(s.reporter.handle)}</b>${s.reporter.verified?' <span class="verified">✔</span>':''}${s.confirm_count?` · <b style="color:var(--crit-fg)">${s.confirm_count}</b> ${esc(s.confirm_count>1?t('sc_conf_many'):t('sc_conf_one'))}`:''}</div>`:''}
@@ -1986,7 +1993,7 @@ function exportShortagesCsv(list) {
   const statusText = { kritisch: t('st_krit'), eingeschraenkt: t('st_eing'), verfuegbar: t('st_verf') };
   const provText = { verified: 'BASG (verifiziert)', reference: 'Referenzdaten', editorial: 'Redaktion', community: 'Community-Meldung', simulated: 'simuliert' };
   const rows = (list || []).map(s => [
-    s.wirkstoff, s.bezeichnung || '', statusText[s.status] || s.status || '', s.grund || '',
+    s.wirkstoff, s.bezeichnung || '', statusText[s.status] || s.status || '', grundLabel(s.grund),
     s.gemeldet_am || '',
     s.status !== 'verfuegbar' ? (s.voraussichtlich_bis || '') : '',
     s.is_antibiotic ? 'ja' : 'nein',
@@ -3023,7 +3030,7 @@ async function openWirkstoff(name) {
   if (!d.shortages.length) sbody.appendChild(el(`<div class="muted" style="font-size:14px">${esc(t('wk_no_short'))}</div>`));
   else d.shortages.forEach(s => {
     const [lab,col] = statusShort(s.status);
-    sbody.appendChild(el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:12px">· ${esc(provLabel(s.provenance))}${s.grund?' · '+esc(s.grund):''}</span></div>`));
+    sbody.appendChild(el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:12px">· ${esc(provLabel(s.provenance))}${s.grund?' · '+esc(grundLabel(s.grund)):''}</span></div>`));
   });
   const sform = scard.querySelector('[data-sform]');
   scard.querySelector('[data-report]').onclick = () => sform.classList.toggle('hidden');

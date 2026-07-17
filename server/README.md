@@ -6,6 +6,14 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — Engpass-Gründe mehrsprachig (Standard-Gründe):** Auffälligkeit im
+>   EN/PT-Screenshot: die Reiter-Beschriftungen waren übersetzt, aber das prominente **Grund**-Feld
+>   jeder Engpass-Karte zeigte deutsche Wörter („Herstellungsproblem", „Wirkstoffknappheit",
+>   „Erhöhte Nachfrage", „Kontingentierung", „Produktionsverzögerung") — für UK-/PT-Kolleg:innen
+>   unlesbar. Neuer `grundLabel()`-Helfer übersetzt die fünf **bekannten Standard-Gründe** aus den
+>   Seed-Daten; **frei eingegebene Community-Gründe bleiben unverändert** (kein Falsch-Übersetzen
+>   von Nutzereingaben). Wirkt auf Karte, Wirkstoff-Seite und CSV-Export. (Browser verifiziert:
+>   „Manufacturing problem / Active-ingredient shortage / Rationing", kein deutsches Grund-Wort mehr.)
 > - ✅ **Qualitäts-Audit — Länder-Umschalter zeigt vollen Namen (Desktop):** Kritisch hinterfragt:
 >   die frühere `max-width:170px`-Deckelung des Kopfzeilen-Länderwählers schnitt längere Namen ab
 >   („🇬🇧 United Kingd…") — ausgerechnet beim **Alleinstellungsmerkmal** der Mehrländer-Plattform,
