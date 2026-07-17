@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — Länder-Umschalter zeigt vollen Namen (Desktop):** Kritisch hinterfragt:
+>   die frühere `max-width:170px`-Deckelung des Kopfzeilen-Länderwählers schnitt längere Namen ab
+>   („🇬🇧 United Kingd…") — ausgerechnet beim **Alleinstellungsmerkmal** der Mehrländer-Plattform,
+>   und das auf breitem Desktop mit reichlich Platz. Auf `max-width:240px` erhöht → der Umschalter
+>   wächst mit dem Inhalt und zeigt „🇬🇧 United Kingdom" voll an. Handy bleibt bewusst flaggen-
+>   kompakt (eigene ≤560px-Regel, docW=390, kein Overflow). (Browser verifiziert: clipped=false;
+>   Desktop 1280 + Handy 390.)
 > - 🌍 **Länderübergreifend — Schritt 3ah: Letzte Reste — Oberfläche zu 100 % mehrsprachig:** Die
 >   letzten übersehenen Strings sind jetzt DE/EN/PT: News-Leerzustand, „keine Beiträge dazu",
 >   die Referenz-Chips (🏷️ Aktion / 📦 Engpass auf verweisenden Beiträgen) und die komplette
