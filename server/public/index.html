@@ -138,14 +138,14 @@
   <span class="logo">🟢 ApoTrend</span>
   <span class="muted" id="whoami" style="color:#dff5ea;"></span>
   <span class="sp"></span>
-  <select class="hidden" id="countrySwitch" data-i18n-title="country_title" title="Land wechseln (stellt auch die Sprache um)" aria-label="Land wechseln"></select>
-  <button id="btnTheme" title="Hell/Dunkel umschalten" aria-label="Hell/Dunkel umschalten"><span id="themeIcon">🌙</span><span class="hlabel" id="themeLabel">Dunkel</span></button>
-  <button id="btnFont" title="Schriftgröße ändern" aria-label="Schriftgröße ändern"><span id="fontIcon" style="font-weight:800">A⁺</span><span class="hlabel" data-i18n="font_label">Schrift</span></button>
-  <button class="bell hidden" id="btnHelp" title="Hilfe / So funktioniert ApoTrend" aria-label="Hilfe">❓<span class="hlabel" data-i18n="hdr_help">Hilfe</span></button>
-  <button class="bell hidden" id="btnMod" title="Moderation" aria-label="Moderation">🛡️<span class="hlabel" data-i18n="hdr_mod">Moderation</span></button>
-  <button class="bell hidden" id="btnDm" title="Nachrichten" aria-label="Nachrichten">✉️<span class="hlabel" data-i18n="hdr_dm">Nachrichten</span><span class="badge hidden" id="dmBadge">0</span></button>
-  <button class="bell hidden" id="btnNotif" title="Benachrichtigungen" aria-label="Benachrichtigungen">🔔<span class="hlabel" data-i18n="hdr_notif">Meldungen</span><span class="badge hidden" id="notifBadge">0</span></button>
-  <button class="hidden" id="btnLogout" title="Abmelden" aria-label="Abmelden">🚪<span class="hlabel" data-i18n="hdr_logout">Abmelden</span></button>
+  <select class="hidden" id="countrySwitch" data-i18n-title="country_title" data-i18n-aria="country_title" title="Land wechseln (stellt auch die Sprache um)" aria-label="Land wechseln"></select>
+  <button id="btnTheme" data-i18n-title="aria_theme" data-i18n-aria="aria_theme" title="Hell/Dunkel umschalten" aria-label="Hell/Dunkel umschalten"><span id="themeIcon">🌙</span><span class="hlabel" id="themeLabel">Dunkel</span></button>
+  <button id="btnFont" data-i18n-title="font_label" data-i18n-aria="font_label" title="Schriftgröße ändern" aria-label="Schriftgröße ändern"><span id="fontIcon" style="font-weight:800">A⁺</span><span class="hlabel" data-i18n="font_label">Schrift</span></button>
+  <button class="bell hidden" id="btnHelp" data-i18n-aria="hdr_help" title="Hilfe / So funktioniert ApoTrend" aria-label="Hilfe">❓<span class="hlabel" data-i18n="hdr_help">Hilfe</span></button>
+  <button class="bell hidden" id="btnMod" data-i18n-aria="hdr_mod" title="Moderation" aria-label="Moderation">🛡️<span class="hlabel" data-i18n="hdr_mod">Moderation</span></button>
+  <button class="bell hidden" id="btnDm" data-i18n-aria="hdr_dm" title="Nachrichten" aria-label="Nachrichten">✉️<span class="hlabel" data-i18n="hdr_dm">Nachrichten</span><span class="badge hidden" id="dmBadge">0</span></button>
+  <button class="bell hidden" id="btnNotif" data-i18n-aria="hdr_notif" title="Benachrichtigungen" aria-label="Benachrichtigungen">🔔<span class="hlabel" data-i18n="hdr_notif">Meldungen</span><span class="badge hidden" id="notifBadge">0</span></button>
+  <button class="hidden" id="btnLogout" data-i18n-aria="hdr_logout" title="Abmelden" aria-label="Abmelden">🚪<span class="hlabel" data-i18n="hdr_logout">Abmelden</span></button>
 </header>
 <main class="wrap" id="app" tabindex="-1" role="main"></main>
 
@@ -188,7 +188,7 @@ const I18N = {
     search_ph:'🔎 Suchen: Wirkstoff, Kolleg:in (@handle), Beitrag, Engpass, Preis…',
     hdr_help:'Hilfe', hdr_mod:'Moderation', hdr_dm:'Nachrichten', hdr_notif:'Meldungen',
     hdr_logout:'Abmelden', country_title:'Land wechseln (stellt auch die Sprache um)',
-    search_go:'Suchen', theme_dark:'Dunkel', theme_light:'Hell', font_label:'Schrift',
+    search_go:'Suchen', theme_dark:'Dunkel', theme_light:'Hell', font_label:'Schrift', aria_theme:'Hell/Dunkel umschalten',
     theme_to_dark:'Zu dunklem Modus wechseln', theme_to_light:'Zu hellem Modus wechseln',
     data_notice_title:'ℹ️ Hinweis zu den Daten für {land}',
     data_notice_body:'Die Live-Regulierungsdaten (Engpässe, Preise, Rabatte) decken derzeit 🇦🇹 Österreich ab. Für {land} bauen wir sie schrittweise mit den lokalen Behörden aus. Der soziale Feed und die News sind bereits länderspezifisch — die unten gezeigten Zahlen stammen aus Österreich.',
@@ -427,7 +427,7 @@ const I18N = {
     search_ph:'🔎 Search: substance, colleague (@handle), post, shortage, price…',
     hdr_help:'Help', hdr_mod:'Moderation', hdr_dm:'Messages', hdr_notif:'Alerts',
     hdr_logout:'Log out', country_title:'Change country (also switches the language)',
-    search_go:'Search', theme_dark:'Dark', theme_light:'Light', font_label:'Text size',
+    search_go:'Search', theme_dark:'Dark', theme_light:'Light', font_label:'Text size', aria_theme:'Toggle light/dark',
     theme_to_dark:'Switch to dark mode', theme_to_light:'Switch to light mode',
     data_notice_title:'ℹ️ About the data for {land}',
     data_notice_body:'The live regulatory data (shortages, prices, deals) currently covers 🇦🇹 Austria. For {land} we are building it out step by step with the local authorities. The social feed and news are already country-specific — the figures shown below are from Austria.',
@@ -666,7 +666,7 @@ const I18N = {
     search_ph:'🔎 Pesquisar: substância, colega (@handle), publicação, falta, preço…',
     hdr_help:'Ajuda', hdr_mod:'Moderação', hdr_dm:'Mensagens', hdr_notif:'Alertas',
     hdr_logout:'Sair', country_title:'Mudar de país (muda também o idioma)',
-    search_go:'Pesquisar', theme_dark:'Escuro', theme_light:'Claro', font_label:'Tamanho',
+    search_go:'Pesquisar', theme_dark:'Escuro', theme_light:'Claro', font_label:'Tamanho', aria_theme:'Alternar claro/escuro',
     theme_to_dark:'Mudar para modo escuro', theme_to_light:'Mudar para modo claro',
     data_notice_title:'ℹ️ Sobre os dados de {land}',
     data_notice_body:'Os dados regulatórios em tempo real (faltas, preços, descontos) cobrem atualmente a 🇦🇹 Áustria. Para {land} estamos a construí-los passo a passo com as autoridades locais. O feed social e as notícias já são específicos por país — os números abaixo são da Áustria.',
@@ -919,6 +919,8 @@ function applyI18n(root) {
   scope.querySelectorAll('[data-i18n]').forEach(n => { n.textContent = t(n.getAttribute('data-i18n')); });
   scope.querySelectorAll('[data-i18n-ph]').forEach(n => { n.setAttribute('placeholder', t(n.getAttribute('data-i18n-ph'))); });
   scope.querySelectorAll('[data-i18n-title]').forEach(n => { n.setAttribute('title', t(n.getAttribute('data-i18n-title'))); });
+  // aria-label mehrsprachig: Icon-Buttons (auf Mobil ohne sichtbares Label) für Screenreader
+  scope.querySelectorAll('[data-i18n-aria]').forEach(n => { n.setAttribute('aria-label', t(n.getAttribute('data-i18n-aria'))); });
 }
 const api = async (method, path, body) => {
   const t = localStorage.getItem('apo_token');
@@ -1154,7 +1156,7 @@ async function mainScreen() {
   app.innerHTML = '';
   app.appendChild(el(`
     <div class="card" style="padding:10px 12px">
-      <div class="row"><input id="sq" data-i18n-ph="search_ph" placeholder="🔎 Suchen: Wirkstoff, Kolleg:in (@handle), Beitrag, Engpass, Preis…" aria-label="Suche"><button class="small" id="sgo" data-i18n="search_go">Suchen</button></div>
+      <div class="row"><input id="sq" data-i18n-ph="search_ph" data-i18n-aria="search_go" placeholder="🔎 Suchen: Wirkstoff, Kolleg:in (@handle), Beitrag, Engpass, Preis…" aria-label="Suche"><button class="small" id="sgo" data-i18n="search_go">Suchen</button></div>
     </div>
     <div class="tabs">
       <button data-tab="overview" class="active" data-i18n="nav_overview">✨ Für dich</button>
