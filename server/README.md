@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 💬 **Alle Dialoge mehrsprachig + Formular-Labels verknüpft:** Restliche hartkodierte
+>   deutsche Texte beseitigt — 15 `confirm`/`alert`/`prompt`-Dialoge (Engpass-Resolve, Beitrag
+>   melden, Clipboard-Fallbacks) laufen jetzt über `t()` (DE/EN/PT; Sweep: 0 literale Dialog-
+>   Strings). Zusätzlich tragen alle Formular-Labels (Auth-Screen + Profil bearbeiten) ein
+>   `for`-Attribut (Screenreader-Zuordnung, größere Klickfläche).
 > - 🌐 **Sprachauswahl schon vor dem Login:** Der Auth-Screen erschien in der localStorage-
 >   Sprache (Default Deutsch), der Sprachumschalter war erst nach dem Login sichtbar — ein
 >   Erstbesucher aus GB/PT/BR sah Anmeldung/Registrierung auf Deutsch ohne Umschaltmöglichkeit.
