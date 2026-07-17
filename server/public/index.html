@@ -304,6 +304,17 @@ const I18N = {
     cm_report_prompt:'Warum meldest du diesen Kommentar? (optional)', cm_reported:'Danke — der Kommentar wurde gemeldet.',
     cm_reply_to:'Antwort an @{handle}…', cm_reply_send:'Antworten', cm_cancel:'Abbrechen',
     cm_del_confirm:'Kommentar löschen?', cm_save:'Speichern',
+    gen_back:'Zurück', notif_title:'🔔 Benachrichtigungen', notif_doc:'Benachrichtigungen',
+    notif_readall:'Alle als gelesen markieren', notif_empty:'Noch keine Benachrichtigungen.',
+    notif_someone:'Jemand', post_doc:'Beitrag', post_title:'Beitrag', post_back:'← zurück zum Feed',
+    nv_follow:'folgt dir jetzt', nv_comment:'hat kommentiert', nv_reaction:'hat reagiert auf deinen Beitrag',
+    nv_mention:'hat dich erwähnt', nv_dm:'hat dir geschrieben', nv_exchange_offer:'bietet jetzt an, was du suchst:',
+    nv_exchange_want:'sucht, was du anbietest:', nv_verified:'Dein Profil wurde verifiziert ✔',
+    nv_watch_alert:'Neuer Status bei deinem beobachteten Wirkstoff:', nv_shortage_confirm:'bestätigt deinen gemeldeten Engpass:',
+    nv_answer_accepted:'hat deine Antwort als beste markiert ✔', nv_watch_offer:'Neuer Bestand zu deinem beobachteten Wirkstoff:',
+    rt_now:'gerade eben', rt_min_one:'vor 1 Minute', rt_min_many:'vor {n} Minuten',
+    rt_hour_one:'vor 1 Stunde', rt_hour_many:'vor {n} Stunden', rt_day_one:'vor 1 Tag', rt_day_many:'vor {n} Tagen',
+    _bcp47:'de-AT',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -433,6 +444,17 @@ const I18N = {
     cm_report_prompt:'Why are you reporting this comment? (optional)', cm_reported:'Thanks — the comment has been reported.',
     cm_reply_to:'Reply to @{handle}…', cm_reply_send:'Reply', cm_cancel:'Cancel',
     cm_del_confirm:'Delete comment?', cm_save:'Save',
+    gen_back:'Back', notif_title:'🔔 Notifications', notif_doc:'Notifications',
+    notif_readall:'Mark all as read', notif_empty:'No notifications yet.',
+    notif_someone:'Someone', post_doc:'Post', post_title:'Post', post_back:'← back to feed',
+    nv_follow:'now follows you', nv_comment:'commented', nv_reaction:'reacted to your post',
+    nv_mention:'mentioned you', nv_dm:'messaged you', nv_exchange_offer:'now offers what you seek:',
+    nv_exchange_want:'seeks what you offer:', nv_verified:'Your profile was verified ✔',
+    nv_watch_alert:'New status for a substance you watch:', nv_shortage_confirm:'confirms the shortage you reported:',
+    nv_answer_accepted:'marked your answer as best ✔', nv_watch_offer:'New stock for a substance you watch:',
+    rt_now:'just now', rt_min_one:'1 minute ago', rt_min_many:'{n} minutes ago',
+    rt_hour_one:'1 hour ago', rt_hour_many:'{n} hours ago', rt_day_one:'1 day ago', rt_day_many:'{n} days ago',
+    _bcp47:'en-GB',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -562,6 +584,17 @@ const I18N = {
     cm_report_prompt:'Porque está a denunciar este comentário? (opcional)', cm_reported:'Obrigado — o comentário foi denunciado.',
     cm_reply_to:'Responder a @{handle}…', cm_reply_send:'Responder', cm_cancel:'Cancelar',
     cm_del_confirm:'Eliminar comentário?', cm_save:'Guardar',
+    gen_back:'Voltar', notif_title:'🔔 Notificações', notif_doc:'Notificações',
+    notif_readall:'Marcar todas como lidas', notif_empty:'Ainda sem notificações.',
+    notif_someone:'Alguém', post_doc:'Publicação', post_title:'Publicação', post_back:'← voltar ao feed',
+    nv_follow:'começou a segui-lo', nv_comment:'comentou', nv_reaction:'reagiu à sua publicação',
+    nv_mention:'mencionou-o', nv_dm:'enviou-lhe mensagem', nv_exchange_offer:'oferece agora o que procura:',
+    nv_exchange_want:'procura o que oferece:', nv_verified:'O seu perfil foi verificado ✔',
+    nv_watch_alert:'Novo estado numa substância que vigia:', nv_shortage_confirm:'confirma a falta que reportou:',
+    nv_answer_accepted:'marcou a sua resposta como a melhor ✔', nv_watch_offer:'Novo stock numa substância que vigia:',
+    rt_now:'agora mesmo', rt_min_one:'há 1 minuto', rt_min_many:'há {n} minutos',
+    rt_hour_one:'há 1 hora', rt_hour_many:'há {n} horas', rt_day_one:'há 1 dia', rt_day_many:'há {n} dias',
+    _bcp47:'pt-PT',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -655,12 +688,12 @@ function attachMentionAutocomplete(ta) {
 const relTime = (iso) => {
   if (!iso) return '';
   const d = new Date(iso), diff = (Date.now() - d.getTime()) / 1000;
-  if (diff < 45) return 'gerade eben';
-  if (diff < 5400) { const m = Math.round(diff/60); return `vor ${m} Minute${m===1?'':'n'}`; }
-  if (diff < 79200) { const h = Math.round(diff/3600); return `vor ${h} Stunde${h===1?'':'n'}`; }
+  if (diff < 45) return t('rt_now');
+  if (diff < 5400) { const m = Math.round(diff/60); return m===1 ? t('rt_min_one') : ti('rt_min_many',{n:m}); }
+  if (diff < 79200) { const h = Math.round(diff/3600); return h===1 ? t('rt_hour_one') : ti('rt_hour_many',{n:h}); }
   const days = Math.round(diff/86400);
-  if (days < 7) return `vor ${days} Tag${days===1?'':'en'}`;
-  return d.toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
+  if (days < 7) return days===1 ? t('rt_day_one') : ti('rt_day_many',{n:days});
+  return d.toLocaleDateString(t('_bcp47'), { day:'2-digit', month:'2-digit', year:'numeric' });
 };
 // Kalendertag (YYYY-MM-DD) als deutsches Datum; bei ungültiger Eingabe Rohtext.
 const fmtDateDe = (ymd) => {
@@ -3021,25 +3054,25 @@ async function refreshNotifCount() {
   } catch {}
 }
 async function showNotifications() {
-  setDocTitle("Benachrichtigungen");
+  setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
-  const verbs = { follow:'folgt dir jetzt', comment:'hat kommentiert', reaction:'hat reagiert auf deinen Beitrag', mention:'hat dich erwähnt', dm:'hat dir geschrieben', exchange_offer:'bietet jetzt an, was du suchst:', exchange_want:'sucht, was du anbietest:', verified:'Dein Profil wurde verifiziert ✔', watch_alert:'Neuer Status bei deinem beobachteten Wirkstoff:', shortage_confirm:'bestätigt deinen gemeldeten Engpass:', answer_accepted:'hat deine Antwort als beste markiert ✔', watch_offer:'Neuer Bestand zu deinem beobachteten Wirkstoff:' };
+  const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
   const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦' };
   app.innerHTML = '';
-  const head = el(`<div class="card"><div class="row"><h1 style="flex:1">🔔 Benachrichtigungen</h1>
-    <button class="ghost small" id="back">Zurück</button></div>
+  const head = el(`<div class="card"><div class="row"><h1 style="flex:1">${esc(t('notif_title'))}</h1>
+    <button class="ghost small" id="back">${esc(t('gen_back'))}</button></div>
     <div id="notiflist" style="margin-top:8px"></div>
-    <div style="margin-top:12px"><button class="small" id="readall">Alle als gelesen markieren</button></div></div>`);
+    <div style="margin-top:12px"><button class="small" id="readall">${esc(t('notif_readall'))}</button></div></div>`);
   app.appendChild(head);
   const list = head.querySelector('#notiflist');
-  if (!d.notifications.length) list.innerHTML = '<div class="muted">Noch keine Benachrichtigungen.</div>';
+  if (!d.notifications.length) list.innerHTML = `<div class="muted">${esc(t('notif_empty'))}</div>`;
   d.notifications.forEach(n => {
-    const who = n.actor ? n.actor.display_name : 'Jemand';
+    const who = n.actor ? n.actor.display_name : t('notif_someone');
     const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer';
     const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:#eef6f1'}">
       <div class="row" style="align-items:baseline">
         <span>${icons[n.type]||'🔔'}</span>
-        <span style="margin-left:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verbs[n.type]||n.type)}${n.label?' „'+esc(n.label)+'"':''}${n.read?'':'</b>'}</span>
+        <span style="margin-left:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' „'+esc(n.label)+'"':''}${n.read?'':'</b>'}</span>
         <span class="sp" style="flex:1"></span>
         <span class="muted" style="font-size:12px">${relTime(n.created_at)}</span>
       </div></div>`);
@@ -3065,7 +3098,7 @@ async function showNotifications() {
 
 // Einzelbeitrag-Ansicht (z.B. aus einer Benachrichtigung heraus), Kommentare offen.
 async function openPost(postId) {
-  setDocTitle('Beitrag');
+  setDocTitle(t('post_doc'));
   const feed = document.getElementById('feed');
   if (!feed) return;
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
@@ -3073,7 +3106,7 @@ async function openPost(postId) {
   try {
     const d = await api('GET','/api/posts/'+encodeURIComponent(postId));
     feed.innerHTML = '';
-    const head = el(`<div class="card"><div class="row"><b>Beitrag</b><span class="sp" style="flex:1"></span><button class="ghost small" data-back>← zurück zum Feed</button></div></div>`);
+    const head = el(`<div class="card"><div class="row"><b>${esc(t('post_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-back>${esc(t('post_back'))}</button></div></div>`);
     head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
     feed.appendChild(head);
     const cardEl = postCard(d.post);

@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3s: Benachrichtigungen + relative Zeit mehrsprachig:** Das
+>   Benachrichtigungen-Panel (Titel, Zurück, „Alle als gelesen", Leerzustand, alle 12 Ereignis-
+>   Verben) und die Einzelbeitrags-Ansicht sind jetzt DE/EN/PT. Wichtiger Hebel: die geteilte
+>   `relTime()`-Funktion („gerade eben / vor N Minuten") wird jetzt übersetzt (inkl. locale-
+>   korrektem Datum via `_bcp47`) — das korrigiert **alle Zeitstempel app-weit** (Feed, Kommentare,
+>   Austausch, DMs). (Browser verifiziert: „… começou a segui-lo agora mesmo".)
 > - 🌍 **Länderübergreifend — Schritt 3r: Kommentar-Thread mehrsprachig — Social-Flow komplett:**
 >   Kommentare sind jetzt DE/EN/PT: Leerzustand, Zähler, „Beste Antwort"-Badge & -Aktion,
 >   Antworten/Melden/Bearbeiten/Löschen, Antwort- und Bearbeiten-Boxen, Melde-Dialog. Damit ist
