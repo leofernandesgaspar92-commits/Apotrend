@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3z: Moderationspanel mehrsprachig — Oberfläche 100% DE/EN/PT:**
+>   Das Redaktions-/Moderations-Dashboard (Kennzahl-Kacheln, Verifizierungs-Anträge mit
+>   Verifizieren/Ablehnen, gemeldete Beiträge/Kommentare mit Grund/Autor/Entfernen/„In Ordnung",
+>   Leerzustand) ist jetzt übersetzt. Damit ist die **gesamte Nutzeroberfläche mehrsprachig** —
+>   von Registrierung über alle Reiter, Social-Flow, Nachrichten, Profil bis Moderation.
+>   (Verifiziert: Skript parst fehlerfrei, `showModeration()` ohne JS-Fehler, alle `md_*`-Keys
+>   lösen auf PT auf, z. B. „🛡️ Painel da redação".)
 > - 🌍 **Länderübergreifend — Schritt 3y: Follower-/Folgt-Liste mehrsprachig — Profil komplett:**
 >   Die Follower- und „Folgt"-Listen (Zurück, Überschrift, „Wer @X folgt", Leerzustände, Follow-/
 >   Entfolgen-Buttons inkl. Live-Umschaltung) sind jetzt DE/EN/PT. Damit ist die **gesamte

@@ -354,6 +354,14 @@ const I18N = {
     fl_none_fr_t:'Noch keine Follower', fl_none_fr_s:'Diesem Profil folgt noch niemand.',
     fl_none_fg_t:'Folgt noch niemandem', fl_none_fg_s:'Dieses Profil folgt aktuell keinen Kolleg:innen.',
     fl_following_btn:'✓ Folgst',
+    md_doc:'Moderation', md_title:'🛡️ Redaktions-Dashboard', md_sub:'Plattform-Gesundheit & offene Aufgaben auf einen Blick.',
+    md_reports:'offene Meldungen', md_verifs:'Verifizierungs-Anträge', md_community:'Community-Meldungen',
+    md_verif_sec:'✔ Verifizierungs-Anträge', md_no_note:'Kein Nachweis-Hinweis angegeben.',
+    md_verify_btn:'✔ Verifizieren', md_reject:'Ablehnen', md_reported_sec:'🚩 Gemeldete Beiträge',
+    md_empty:'Keine offenen Meldungen oder Anträge. 👍', md_comment_prefix:'💬 Kommentar ',
+    md_reported_by:'Gemeldet von @{h}', md_reason:'Grund', md_no_reason:'kein Grund angegeben',
+    md_author:'Autor', md_removed:'bereits entfernt', md_gone:'Ziel nicht mehr vorhanden.',
+    md_remove_comment:'🗑 Kommentar entfernen', md_remove_post:'🗑 Beitrag entfernen', md_ok:'✓ In Ordnung (Meldung schließen)',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -533,6 +541,14 @@ const I18N = {
     fl_none_fr_t:'No followers yet', fl_none_fr_s:'Nobody follows this profile yet.',
     fl_none_fg_t:'Not following anyone yet', fl_none_fg_s:'This profile currently follows no colleagues.',
     fl_following_btn:'✓ Following',
+    md_doc:'Moderation', md_title:'🛡️ Editorial dashboard', md_sub:'Platform health & open tasks at a glance.',
+    md_reports:'open reports', md_verifs:'verification requests', md_community:'community reports',
+    md_verif_sec:'✔ Verification requests', md_no_note:'No proof note provided.',
+    md_verify_btn:'✔ Verify', md_reject:'Reject', md_reported_sec:'🚩 Reported posts',
+    md_empty:'No open reports or requests. 👍', md_comment_prefix:'💬 Comment ',
+    md_reported_by:'Reported by @{h}', md_reason:'Reason', md_no_reason:'no reason given',
+    md_author:'Author', md_removed:'already removed', md_gone:'Target no longer exists.',
+    md_remove_comment:'🗑 Remove comment', md_remove_post:'🗑 Remove post', md_ok:'✓ OK (close report)',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -712,6 +728,14 @@ const I18N = {
     fl_none_fr_t:'Ainda sem seguidores', fl_none_fr_s:'Ninguém segue este perfil ainda.',
     fl_none_fg_t:'Ainda não segue ninguém', fl_none_fg_s:'Este perfil não segue colegas de momento.',
     fl_following_btn:'✓ A seguir',
+    md_doc:'Moderação', md_title:'🛡️ Painel da redação', md_sub:'Saúde da plataforma & tarefas abertas num relance.',
+    md_reports:'denúncias abertas', md_verifs:'pedidos de verificação', md_community:'avisos da comunidade',
+    md_verif_sec:'✔ Pedidos de verificação', md_no_note:'Sem nota de comprovativo.',
+    md_verify_btn:'✔ Verificar', md_reject:'Rejeitar', md_reported_sec:'🚩 Publicações denunciadas',
+    md_empty:'Sem denúncias ou pedidos abertos. 👍', md_comment_prefix:'💬 Comentário ',
+    md_reported_by:'Denunciado por @{h}', md_reason:'Motivo', md_no_reason:'sem motivo indicado',
+    md_author:'Autor', md_removed:'já removido', md_gone:'O alvo já não existe.',
+    md_remove_comment:'🗑 Remover comentário', md_remove_post:'🗑 Remover publicação', md_ok:'✓ OK (fechar denúncia)',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -3224,8 +3248,8 @@ async function openPost(postId) {
 }
 
 async function showModeration() {
-  setDocTitle("Moderation");
-  app.innerHTML = '<div class="loading">lädt…</div>';
+  setDocTitle(t('md_doc'));
+  app.innerHTML = '<div class="loading">…</div>';
   let d, vq, sh;
   try { d = await api('GET','/api/reports'); vq = await api('GET','/api/verify/requests'); sh = await api('GET','/api/shortages'); }
   catch(e){ app.innerHTML = ''; app.appendChild(errorState(e.message, showModeration)); return; }
@@ -3234,43 +3258,43 @@ async function showModeration() {
   const comm = (sh.shortages||[]).filter(s => s.provenance === 'community').length;
   const mtile = (icon, num, label, col) => `<div style="flex:1;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px">
     <div style="font-size:24px;font-weight:800;color:${col}">${icon} ${num}</div><div class="muted" style="font-size:13px;margin-top:2px">${esc(label)}</div></div>`;
-  const head = el(`<div class="card"><div class="row"><h1 style="flex:1">🛡️ Redaktions-Dashboard</h1>
-    <button class="ghost small" id="back">Zurück</button></div>
-    <div class="muted" style="margin-bottom:10px">Plattform-Gesundheit & offene Aufgaben auf einen Blick.</div>
+  const head = el(`<div class="card"><div class="row"><h1 style="flex:1">${esc(t('md_title'))}</h1>
+    <button class="ghost small" id="back">${esc(t('gen_back'))}</button></div>
+    <div class="muted" style="margin-bottom:10px">${esc(t('md_sub'))}</div>
     <div class="row" style="flex-wrap:wrap;gap:10px">
-      ${mtile('🚩', d.reports.length, 'offene Meldungen', 'var(--crit-fg)')}
-      ${mtile('✔', vq.requests.length, 'Verifizierungs-Anträge', 'var(--info-fg)')}
-      ${mtile('🔴', krit, 'kritische Engpässe', 'var(--crit-fg)')}
-      ${mtile('👥', comm, 'Community-Meldungen', 'var(--warn-fg)')}
+      ${mtile('🚩', d.reports.length, t('md_reports'), 'var(--crit-fg)')}
+      ${mtile('✔', vq.requests.length, t('md_verifs'), 'var(--info-fg)')}
+      ${mtile('🔴', krit, t('ov_t_crit'), 'var(--crit-fg)')}
+      ${mtile('👥', comm, t('md_community'), 'var(--warn-fg)')}
     </div></div>`);
   head.querySelector('#back').onclick = mainScreen;
   app.appendChild(head);
   // Verifizierungs-Anträge
   if (vq.requests.length) {
-    app.appendChild(el('<div class="muted" style="margin:6px 2px;font-weight:700">✔ Verifizierungs-Anträge</div>'));
+    app.appendChild(el(`<div class="muted" style="margin:6px 2px;font-weight:700">${esc(t('md_verif_sec'))}</div>`));
     vq.requests.forEach(rq => {
       const card = el(`<div class="card">
         <div><b>${esc(rq.display_name||'?')}</b> <span class="handle">@${esc(rq.handle||'?')}</span></div>
-        <div class="post-body" style="margin:6px 0">${rq.note?esc(rq.note):'<span class="muted">Kein Nachweis-Hinweis angegeben.</span>'}</div>
-        <div class="row"><button class="small" data-approve>✔ Verifizieren</button><button class="ghost small" data-reject>Ablehnen</button></div>
+        <div class="post-body" style="margin:6px 0">${rq.note?esc(rq.note):`<span class="muted">${esc(t('md_no_note'))}</span>`}</div>
+        <div class="row"><button class="small" data-approve>${esc(t('md_verify_btn'))}</button><button class="ghost small" data-reject>${esc(t('md_reject'))}</button></div>
       </div>`);
       card.querySelector('[data-approve]').onclick = async () => { try { await api('POST',`/api/verify/${encodeURIComponent(rq.user_id)}/resolve`,{ approve:true }); showModeration(); } catch(e){ alert(e.message); } };
       card.querySelector('[data-reject]').onclick = async () => { try { await api('POST',`/api/verify/${encodeURIComponent(rq.user_id)}/resolve`,{ approve:false }); showModeration(); } catch(e){ alert(e.message); } };
       app.appendChild(card);
     });
   }
-  if (d.reports.length) app.appendChild(el('<div class="muted" style="margin:10px 2px 6px;font-weight:700">🚩 Gemeldete Beiträge</div>'));
-  else if (!vq.requests.length) { app.appendChild(el('<div class="card muted">Keine offenen Meldungen oder Anträge. 👍</div>')); return; }
+  if (d.reports.length) app.appendChild(el(`<div class="muted" style="margin:10px 2px 6px;font-weight:700">${esc(t('md_reported_sec'))}</div>`));
+  else if (!vq.requests.length) { app.appendChild(el(`<div class="card muted">${esc(t('md_empty'))}</div>`)); return; }
   d.reports.forEach(r => {
     const post = r.post;
     const card = el(`<div class="card">
-      <div class="muted">${post&&post.is_comment?'💬 Kommentar ':''}Gemeldet von @${esc(r.reporter_handle||'?')}${r.reason?' · Grund: '+esc(r.reason):' · kein Grund angegeben'}</div>
+      <div class="muted">${post&&post.is_comment?esc(t('md_comment_prefix')):''}${esc(ti('md_reported_by',{h:r.reporter_handle||'?'}))}${r.reason?' · '+esc(t('md_reason'))+': '+esc(r.reason):' · '+esc(t('md_no_reason'))}</div>
       ${post ? `<div class="post-body">${esc(post.body)}</div>
-        <div class="vis">Autor: @${esc(post.author_handle||'?')}${post.deleted?' · <b style="color:var(--crit-fg)">bereits entfernt</b>':''}</div>`
-             : '<div class="muted">Ziel nicht mehr vorhanden.</div>'}
+        <div class="vis">${esc(t('md_author'))}: @${esc(post.author_handle||'?')}${post.deleted?` · <b style="color:var(--crit-fg)">${esc(t('md_removed'))}</b>`:''}</div>`
+             : `<div class="muted">${esc(t('md_gone'))}</div>`}
       <div class="row" style="margin-top:10px">
-        <button class="small" data-remove style="background:#c0392b">🗑 ${post&&post.is_comment?'Kommentar':'Beitrag'} entfernen</button>
-        <button class="ghost small" data-ok>✓ In Ordnung (Meldung schließen)</button>
+        <button class="small" data-remove style="background:#c0392b">${post&&post.is_comment?esc(t('md_remove_comment')):esc(t('md_remove_post'))}</button>
+        <button class="ghost small" data-ok>${esc(t('md_ok'))}</button>
       </div>
     </div>`);
     card.querySelector('[data-remove]').onclick = async () => {
