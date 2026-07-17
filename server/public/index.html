@@ -3140,6 +3140,7 @@ function postCard(p) {
       <span class="handle clickable" data-openprofile="${esc(a.handle||'')}">@${esc(a.handle||'?')}</span>
       ${a.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}
       ${a.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
+      ${a.account_type&&a.account_type!=='pharmacy'?`<span class="spec" style="margin-left:2px">${esc(acctLabel(a.account_type))}</span>`:''}
       <span class="sp" style="flex:1"></span>
       ${mine?'':`<button class="ghost small" data-follow="${esc(a.handle)}">${esc(t('co_follow_btn'))}</button>`}
     </div>

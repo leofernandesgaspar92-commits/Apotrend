@@ -109,6 +109,12 @@ test('Registrierung mit Kontotyp setzt Profil; Wechsel aktualisiert; ungültig a
   // Fallback: Registrierung ohne Kontotyp -> pharmacy
   const rp = await (await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'rp' + PORT, handle: 'rp' + PORT, email: 'rp' + PORT + '@a.at', password: 'geheim123' }) })).json();
   assert.equal(rp.profile.account_type, 'pharmacy');
+  // Autor:innen-Payload im Feed trägt account_type (für den Kontotyp-Badge in der Beitragskarte)
+  await post('/api/posts', rb.token, { body: 'Kontotyp-Badge Feed-Test ' + PORT, visibility: 'public' });
+  const feed = await (await fetch(BASE + '/api/feed/public', { headers: H(rb.token) })).json();
+  const mine = feed.posts.find(p => p.author && p.author.handle === ('ro' + PORT));
+  assert.ok(mine, 'eigener Beitrag im öffentlichen Feed');
+  assert.equal(mine.author.account_type, 'pharma', 'Autor:innen-Payload trägt Kontotyp');
 });
 
 test('GET /api/wirkstoff/:name bündelt Engpass/Preise/Rabatte/Austausch', async () => {

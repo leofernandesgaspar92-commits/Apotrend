@@ -11,6 +11,14 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   `src/data/` erfasst — **`countries.js` (Fundament der gesamten i18n-/Mehrländer-Arbeit) war
 >   nie eingecheckt**. Ein Frisch-Deploy wäre am fehlenden Import abgestürzt. Regel auf `/data/`
 >   verankert; `src/data/` wird jetzt versioniert (`countries.js` + `accountTypes.js` eingecheckt).
+> - 👥 **Kontotyp-Modell — Schritt 3: Kontotyp-Badge im Newsfeed:** Beitragskarten zeigen jetzt
+>   neben dem Autor:innen-Namen den Kontotyp-Badge — aber **nur wenn abweichend von „Apotheke"**
+>   (Pharma/Behörde/Privat). So erkennen zeitknappe Fachleute auf einen Blick, ob eine Aussage von
+>   einem Pharma-Unternehmen oder einer Behörde stammt (relevant fürs Einordnen sicherheitsrelevanter
+>   Themen), ohne dass der „🏥 Apotheke"-Badge bei jedem Kolleg:innen-Beitrag zur Deko-Flut wird.
+>   Backend: Autor:innen-Payload trägt `account_type`. (Browser verifiziert: Pharma-Registrierung →
+>   Feed-Badge „🏭 Pharma-Unternehmen" in Hell **und** Dunkel, Desktop 1280 + Mobil 390.) Rein
+>   additive Anzeige — **keine Rechte-Durchsetzung**.
 > - 👥 **Kontotyp-Modell — Schritt 2: Frontend (Registrierung + Profil-Badge):** Das
 >   Registrierungsformular hat jetzt neben der Länder- eine **Kontotyp-Auswahl** (aus
 >   `GET /api/account-types`, Labels via i18n DE/EN/PT, Apotheke vorausgewählt). Auf der Profilseite

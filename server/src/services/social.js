@@ -52,7 +52,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     for (const t of REACTION_TYPES) counts[t] = reacts.filter(r => r.type === t).length;
     return {
       ...post,
-      author: prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified, is_editorial: prof.is_editorial } : null,
+      author: prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified, is_editorial: prof.is_editorial, account_type: prof.account_type } : null,
       comment_count: social.countComments(post.id),
       reaction_counts: counts,
       is_question: post.kind === 'frage',
