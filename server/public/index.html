@@ -1041,19 +1041,19 @@ function authScreen() {
   app.appendChild(el(`
   <div class="card">
     <h1>${esc(t('au_login'))}</h1>
-    <label>${esc(t('au_email'))}</label><input id="li_email" type="email" placeholder="name@apotheke.at">
-    <label>${esc(t('au_pw'))}</label><input id="li_pw" type="password" placeholder="${esc(t('au_pw'))}">
+    <label for="li_email">${esc(t('au_email'))}</label><input id="li_email" type="email" placeholder="name@apotheke.at">
+    <label for="li_pw">${esc(t('au_pw'))}</label><input id="li_pw" type="password" placeholder="${esc(t('au_pw'))}">
     <div style="margin-top:12px"><button id="li_go">${esc(t('au_login'))}</button></div>
     <div class="err" id="li_err"></div>
   </div>
   <div class="card">
     <h1>${esc(t('au_register'))}</h1>
-    <label>${esc(t('au_name'))}</label><input id="rg_name" placeholder="Dr. Anna Huber">
-    <label>${esc(t('au_handle'))}</label><input id="rg_handle" placeholder="anna_huber">
-    <label>${esc(t('au_email'))}</label><input id="rg_email" type="email" placeholder="name@apotheke.at">
-    <label>${esc(t('au_pw8'))}</label><input id="rg_pw" type="password">
-    <label>${esc(t('au_country'))}</label><select id="rg_country"></select>
-    <label>${esc(t('at_label'))}</label><select id="rg_accounttype"></select>
+    <label for="rg_name">${esc(t('au_name'))}</label><input id="rg_name" placeholder="Dr. Anna Huber">
+    <label for="rg_handle">${esc(t('au_handle'))}</label><input id="rg_handle" placeholder="anna_huber">
+    <label for="rg_email">${esc(t('au_email'))}</label><input id="rg_email" type="email" placeholder="name@apotheke.at">
+    <label for="rg_pw">${esc(t('au_pw8'))}</label><input id="rg_pw" type="password">
+    <label for="rg_country">${esc(t('au_country'))}</label><select id="rg_country"></select>
+    <label for="rg_accounttype">${esc(t('at_label'))}</label><select id="rg_accounttype"></select>
     <div style="margin-top:12px"><button id="rg_go">${esc(t('au_create'))}</button></div>
     <div class="err" id="rg_err"></div>
   </div>`));
