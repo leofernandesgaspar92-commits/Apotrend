@@ -398,6 +398,16 @@ const I18N = {
     stew_post_btn:'Im Fachforum posten', stew_empty:'Noch keine Beiträge — stell die erste Fachfrage.',
     pi_title:'🧫 Patienten-Infokarten (Antibiotika)', pi_sub:'Verständliche Aufklärung zur Abgabe — Sprache wählen, anzeigen oder ausdrucken.',
     pi_zettel_btn:'📋 Begleitzettel', pi_copy:'📋 Kopieren', pi_popup:'Bitte Popups für den Druck erlauben.',
+    bz_title:'📋 Abgabe-Begleitzettel', bz_sub:'Angaben laut Verordnung eingeben — ApoTrend macht daraus einen großen, gut lesbaren Einnahmeplan für Patient:innen (mehrsprachig, druckbar).',
+    bz_warn:'⚠️ Reine Klartext-Aufbereitung deiner Eingaben. Es wird keine Dosierung berechnet oder vorgeschlagen.',
+    bz_med:'Arzneimittel (laut Verordnung) *', bz_med_ph:'z.B. Amoxicillin 1000 mg Filmtabletten',
+    bz_schema:'Einnahmeschema (Stück je Zeitpunkt, laut Verordnung)',
+    bz_morning:'Morgens', bz_noon:'Mittags', bz_evening:'Abends', bz_night:'Zur Nacht',
+    bz_food:'Einnahme & Essen', bz_food_indep:'unabhängig vom Essen', bz_food_before:'vor dem Essen', bz_food_with:'zum Essen', bz_food_after:'nach dem Essen',
+    bz_duration:'Einnahmedauer (laut Verordnung)', bz_duration_ph:'z.B. 7 Tage',
+    bz_notes:'Zusätzliche Hinweise (optional)', bz_notes_ph:'z.B. Mit einem großen Glas Wasser einnehmen.',
+    bz_lang_label:'Sprache des Zettels', bz_cards:'🧫 Antibiotika-Infokarten in gewählter Sprache mitdrucken (Folgeseite)',
+    bz_print:'🖨️ Begleitzettel drucken', bz_preview:'Vorschau (so sieht es Patient:in):', bz_preview_empty:'Arzneimittel eingeben, dann erscheint hier die Vorschau.', bz_need_med:'Bitte das Arzneimittel angeben.',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -621,6 +631,16 @@ const I18N = {
     stew_post_btn:'Post in the forum', stew_empty:'No posts yet — ask the first question.',
     pi_title:'🧫 Patient info cards (antibiotics)', pi_sub:'Clear guidance for dispensing — choose language, view or print.',
     pi_zettel_btn:'📋 Dispensing slip', pi_copy:'📋 Copy', pi_popup:'Please allow pop-ups for printing.',
+    bz_title:'📋 Dispensing slip', bz_sub:'Enter the details as prescribed — ApoTrend turns them into a large, easy-to-read medication schedule for patients (multilingual, printable).',
+    bz_warn:'⚠️ Plain-text formatting of your entries only. No dosage is calculated or suggested.',
+    bz_med:'Medicine (as prescribed) *', bz_med_ph:'e.g. Amoxicillin 1000 mg film-coated tablets',
+    bz_schema:'Schedule (units per time, as prescribed)',
+    bz_morning:'Morning', bz_noon:'Noon', bz_evening:'Evening', bz_night:'At night',
+    bz_food:'Intake & food', bz_food_indep:'independently of meals', bz_food_before:'before meals', bz_food_with:'with meals', bz_food_after:'after meals',
+    bz_duration:'Duration (as prescribed)', bz_duration_ph:'e.g. 7 days',
+    bz_notes:'Additional notes (optional)', bz_notes_ph:'e.g. Take with a large glass of water.',
+    bz_lang_label:'Slip language', bz_cards:'🧫 Also print antibiotic info cards in the chosen language (next page)',
+    bz_print:'🖨️ Print dispensing slip', bz_preview:'Preview (what the patient sees):', bz_preview_empty:'Enter a medicine, then the preview appears here.', bz_need_med:'Please enter the medicine.',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -844,6 +864,16 @@ const I18N = {
     stew_post_btn:'Publicar no fórum', stew_empty:'Ainda sem publicações — coloque a primeira pergunta.',
     pi_title:'🧫 Cartões informativos (antibióticos)', pi_sub:'Explicação clara para a dispensa — escolha o idioma, veja ou imprima.',
     pi_zettel_btn:'📋 Folha de dispensa', pi_copy:'📋 Copiar', pi_popup:'Permita pop-ups para imprimir.',
+    bz_title:'📋 Folha de dispensa', bz_sub:'Introduza os dados conforme a prescrição — a ApoTrend cria um plano de toma grande e legível para os doentes (multilingue, imprimível).',
+    bz_warn:'⚠️ Apenas formatação em texto claro das suas entradas. Nenhuma dosagem é calculada ou sugerida.',
+    bz_med:'Medicamento (conforme prescrição) *', bz_med_ph:'ex. Amoxicilina 1000 mg comprimidos revestidos',
+    bz_schema:'Esquema (unidades por altura, conforme prescrição)',
+    bz_morning:'Manhã', bz_noon:'Almoço', bz_evening:'Noite', bz_night:'Ao deitar',
+    bz_food:'Toma & refeições', bz_food_indep:'independentemente das refeições', bz_food_before:'antes das refeições', bz_food_with:'às refeições', bz_food_after:'após as refeições',
+    bz_duration:'Duração (conforme prescrição)', bz_duration_ph:'ex. 7 dias',
+    bz_notes:'Notas adicionais (opcional)', bz_notes_ph:'ex. Tomar com um copo grande de água.',
+    bz_lang_label:'Idioma da folha', bz_cards:'🧫 Imprimir também os cartões de antibióticos no idioma escolhido (página seguinte)',
+    bz_print:'🖨️ Imprimir folha', bz_preview:'Pré-visualização (o que o doente vê):', bz_preview_empty:'Introduza um medicamento e a pré-visualização aparece aqui.', bz_need_med:'Indique o medicamento, por favor.',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -2525,38 +2555,38 @@ function openBegleitzettel() {
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '';
   const head = el(`<div class="card" style="border-left:4px solid #0b7f28">
-    <div><button class="ghost small" data-back>← zurück</button></div>
-    <h1 style="margin:8px 0 2px">📋 Abgabe-Begleitzettel</h1>
-    <div class="muted" style="font-size:14px">Angaben laut Verordnung eingeben — ApoTrend macht daraus einen großen, gut lesbaren Einnahmeplan für Patient:innen (mehrsprachig, druckbar).</div>
-    <div class="muted" style="font-size:12px;margin-top:6px;font-style:italic">⚠️ Reine Klartext-Aufbereitung deiner Eingaben. Es wird keine Dosierung berechnet oder vorgeschlagen.</div></div>`);
+    <div><button class="ghost small" data-back>${esc(t('search_back'))}</button></div>
+    <h1 style="margin:8px 0 2px">${esc(t('bz_title'))}</h1>
+    <div class="muted" style="font-size:14px">${esc(t('bz_sub'))}</div>
+    <div class="muted" style="font-size:12px;margin-top:6px;font-style:italic">${esc(t('bz_warn'))}</div></div>`);
   head.querySelector('[data-back]').onclick = () => goTab('overview');
   feed.appendChild(head);
   const form = el(`<div class="card">
-    <label>Arzneimittel (laut Verordnung) *</label>
-    <input data-z-p placeholder="z.B. Amoxicillin 1000 mg Filmtabletten">
-    <label style="margin-top:8px">Einnahmeschema (Stück je Zeitpunkt, laut Verordnung)</label>
+    <label>${esc(t('bz_med'))}</label>
+    <input data-z-p placeholder="${esc(t('bz_med_ph'))}">
+    <label style="margin-top:8px">${esc(t('bz_schema'))}</label>
     <div class="row" style="gap:6px;flex-wrap:wrap">
-      ${[['m','Morgens'],['mi','Mittags'],['a','Abends'],['n','Zur Nacht']].map(([k,l])=>`<label style="flex:1;min-width:80px;font-size:12px">${l}<input data-z-${k} value="0" style="width:100%;text-align:center"></label>`).join('')}
+      ${[['m',t('bz_morning')],['mi',t('bz_noon')],['a',t('bz_evening')],['n',t('bz_night')]].map(([k,l])=>`<label style="flex:1;min-width:80px;font-size:12px">${esc(l)}<input data-z-${k} value="0" style="width:100%;text-align:center"></label>`).join('')}
     </div>
-    <label style="margin-top:8px">Einnahme & Essen</label>
+    <label style="margin-top:8px">${esc(t('bz_food'))}</label>
     <select data-z-e>
-      <option value="unabh">unabhängig vom Essen</option>
-      <option value="vor">vor dem Essen</option>
-      <option value="zum">zum Essen</option>
-      <option value="nach">nach dem Essen</option>
+      <option value="unabh">${esc(t('bz_food_indep'))}</option>
+      <option value="vor">${esc(t('bz_food_before'))}</option>
+      <option value="zum">${esc(t('bz_food_with'))}</option>
+      <option value="nach">${esc(t('bz_food_after'))}</option>
     </select>
-    <label style="margin-top:8px">Einnahmedauer (laut Verordnung)</label>
-    <input data-z-d placeholder="z.B. 7 Tage">
-    <label style="margin-top:8px">Zusätzliche Hinweise (optional)</label>
-    <textarea data-z-h placeholder="z.B. Mit einem großen Glas Wasser einnehmen."></textarea>
-    <label style="margin-top:8px">Sprache des Zettels</label>
+    <label style="margin-top:8px">${esc(t('bz_duration'))}</label>
+    <input data-z-d placeholder="${esc(t('bz_duration_ph'))}">
+    <label style="margin-top:8px">${esc(t('bz_notes'))}</label>
+    <textarea data-z-h placeholder="${esc(t('bz_notes_ph'))}"></textarea>
+    <label style="margin-top:8px">${esc(t('bz_lang_label'))}</label>
     <div class="row" data-z-langs style="gap:6px;flex-wrap:wrap"></div>
     <label style="margin-top:10px;display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer">
-      <input type="checkbox" data-z-cards style="width:auto;margin:0"> 🧫 Antibiotika-Infokarten in gewählter Sprache mitdrucken (Folgeseite)
+      <input type="checkbox" data-z-cards style="width:auto;margin:0"> ${esc(t('bz_cards'))}
     </label>
-    <div class="row" style="margin-top:12px;gap:8px"><button class="small" data-z-print>🖨️ Begleitzettel drucken</button><span class="err" data-z-err style="font-size:13px"></span></div>
+    <div class="row" style="margin-top:12px;gap:8px"><button class="small" data-z-print>${esc(t('bz_print'))}</button><span class="err" data-z-err style="font-size:13px"></span></div>
   </div>`);
-  const preview = el(`<div class="card"><div class="muted" style="font-size:12px;margin-bottom:8px">Vorschau (so sieht es Patient:in):</div><div data-z-prev style="background:#fff;color:#111;border:1px solid var(--line,#ccc);border-radius:10px;padding:16px"></div></div>`);
+  const preview = el(`<div class="card"><div class="muted" style="font-size:12px;margin-bottom:8px">${esc(t('bz_preview'))}</div><div data-z-prev style="background:#fff;color:#111;border:1px solid var(--line,#ccc);border-radius:10px;padding:16px"></div></div>`);
   const readZ = () => ({
     lang: zettelLang,
     praeparat: form.querySelector('[data-z-p]').value.trim(),
@@ -2568,7 +2598,7 @@ function openBegleitzettel() {
     dauer: form.querySelector('[data-z-d]').value.trim(),
     hinweise: form.querySelector('[data-z-h]').value.trim(),
   });
-  const drawPrev = () => { const z = readZ(); preview.querySelector('[data-z-prev]').innerHTML = z.praeparat ? zettelBody(z) : '<span style="color:#777">Arzneimittel eingeben, dann erscheint hier die Vorschau.</span>'; };
+  const drawPrev = () => { const z = readZ(); preview.querySelector('[data-z-prev]').innerHTML = z.praeparat ? zettelBody(z) : `<span style="color:#777">${esc(t('bz_preview_empty'))}</span>`; };
   const langBox = form.querySelector('[data-z-langs]');
   const drawLangs = () => {
     langBox.innerHTML = '';
@@ -2583,10 +2613,10 @@ function openBegleitzettel() {
   form.querySelector('[data-z-print]').onclick = async () => {
     const err = form.querySelector('[data-z-err]'); err.textContent = '';
     const z = readZ();
-    if (!z.praeparat) { err.textContent = 'Bitte das Arzneimittel angeben.'; return; }
+    if (!z.praeparat) { err.textContent = t('bz_need_med'); return; }
     // Fenster synchron im Klick öffnen (Popup-Blocker), Inhalt danach schreiben.
     const w = window.open('', '_blank');
-    if (!w) { err.textContent = 'Bitte Popups für den Druck erlauben.'; return; }
+    if (!w) { err.textContent = t('pi_popup'); return; }
     let cards = null;
     if (form.querySelector('[data-z-cards]').checked) {
       try { cards = await api('GET','/api/patient-info?lang='+encodeURIComponent(z.lang)); }

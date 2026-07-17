@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3ag: Abgabe-Begleitzettel-Formular — jede Seite übersetzt:**
+>   Das Formular-Chrome des Begleitzettels (Titel, Warnhinweis, alle Feld-Labels/Platzhalter,
+>   Einnahme-Zeitpunkte, Essen-Optionen, Drucken, Vorschau, Validierung) ist jetzt DE/EN/PT.
+>   Die **patientenseitige Zettel-Sprache** (Deutsch/English/Türkçe) bleibt bewusst ein eigener
+>   Umschalter. Damit ist **jede erreichbare Seite der App übersetzt**. (Browser verifiziert:
+>   „📋 Folha de dispensa / Medicamento (conforme prescrição) / Manhã / Imprimir folha".)
 > - 🌍 **Länderübergreifend — Schritt 3af: Stewardship-Forum & Patienten-Infokarten (Chrome):** Die
 >   App-Beschriftungen des Stewardship-Fachforums (Titel, Warnhinweis, Verfassen-Formular, Aktions-
 >   Buttons, Leerzustand) und der Patienten-Infokarten-Seite (Titel, Untertitel, Drucken/Kopieren)
