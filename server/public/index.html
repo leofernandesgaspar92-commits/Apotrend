@@ -217,7 +217,7 @@ const I18N = {
     sh_q_ph:'🔎 Wirkstoff oder Präparat suchen…', sh_f_all:'Alle', sh_f_crit:'🔴 Nur kritisch',
     sh_f_abx:'🧫 Antibiotika', sh_f_watched:'⭐ Beobachtet', sh_f_comm:'👥 Community',
     sh_print:'🖨️ Drucken', sh_print_t:'Aktuelle Auswahl drucken (Team-Aushang)',
-    sh_csv_t:'Aktuelle Auswahl als CSV (Excel) exportieren', sh_sort:'Sortieren:',
+    sh_csv_t:'Aktuelle Auswahl als CSV (Excel) exportieren', sh_view_all_wk:'Alles zu {wk} ansehen', sh_sort:'Sortieren:',
     sh_sort_crit:'🔴 Kritischste zuerst', sh_sort_new:'🕘 Neueste zuerst',
     sh_empty:'Keine Engpässe für diese Auswahl. Filter zurücksetzen oder Suchbegriff ändern.',
     sh_rep_title:'➕ Engpass melden', sh_rep_open:'Formular öffnen', sh_rep_close:'Schließen',
@@ -456,7 +456,7 @@ const I18N = {
     sh_q_ph:'🔎 Search substance or product…', sh_f_all:'All', sh_f_crit:'🔴 Critical only',
     sh_f_abx:'🧫 Antibiotics', sh_f_watched:'⭐ Watched', sh_f_comm:'👥 Community',
     sh_print:'🖨️ Print', sh_print_t:'Print current selection (team notice)',
-    sh_csv_t:'Export current selection as CSV (Excel)', sh_sort:'Sort:',
+    sh_csv_t:'Export current selection as CSV (Excel)', sh_view_all_wk:'View everything about {wk}', sh_sort:'Sort:',
     sh_sort_crit:'🔴 Most critical first', sh_sort_new:'🕘 Newest first',
     sh_empty:'No shortages for this selection. Reset the filter or change the search term.',
     sh_rep_title:'➕ Report a shortage', sh_rep_open:'Open form', sh_rep_close:'Close',
@@ -695,7 +695,7 @@ const I18N = {
     sh_q_ph:'🔎 Pesquisar substância ou produto…', sh_f_all:'Todas', sh_f_crit:'🔴 Só críticas',
     sh_f_abx:'🧫 Antibióticos', sh_f_watched:'⭐ Vigiadas', sh_f_comm:'👥 Comunidade',
     sh_print:'🖨️ Imprimir', sh_print_t:'Imprimir a seleção atual (aviso da equipa)',
-    sh_csv_t:'Exportar a seleção atual como CSV (Excel)', sh_sort:'Ordenar:',
+    sh_csv_t:'Exportar a seleção atual como CSV (Excel)', sh_view_all_wk:'Ver tudo sobre {wk}', sh_sort:'Ordenar:',
     sh_sort_crit:'🔴 Mais críticas primeiro', sh_sort_new:'🕘 Mais recentes primeiro',
     sh_empty:'Sem faltas para esta seleção. Reponha o filtro ou altere o termo de pesquisa.',
     sh_rep_title:'➕ Reportar uma falta', sh_rep_open:'Abrir formulário', sh_rep_close:'Fechar',
@@ -1821,7 +1821,7 @@ function shortageCard(s) {
   const [slabel, scol] = statusShort(s.status);
   const card = el(`<div class="card">
     <div class="row">
-      <span class="post-author clickable" data-wirkstoff="${esc(s.wirkstoff)}" title="Alles zu ${esc(s.wirkstoff)} ansehen">${esc(s.wirkstoff)}</span>
+      <span class="post-author clickable" data-wirkstoff="${esc(s.wirkstoff)}" title="${esc(ti('sh_view_all_wk',{wk:s.wirkstoff}))}">${esc(s.wirkstoff)}</span>
       <span style="background:${scol};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${slabel}</span>
       <span class="sp" style="flex:1"></span>
       <span class="vis" title="${esc(t('pl_open'))}">${esc(provLabel(s.provenance))}</span>
