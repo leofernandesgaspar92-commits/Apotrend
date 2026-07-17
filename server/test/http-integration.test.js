@@ -84,6 +84,33 @@ test('Registrierung mit Land/Sprache setzt Profil; Länder-Switch aktualisiert; 
   assert.equal(ra.profile.locale, 'de');
 });
 
+test('GET /api/account-types: 4 Kontotypen mit Schlüssel und Icon', async () => {
+  const d = await (await fetch(BASE + '/api/account-types')).json();
+  assert.equal(d.account_types.length, 4, '4 Kontotypen im Register');
+  const keys = d.account_types.map(a => a.key).sort();
+  assert.deepEqual(keys, ['authority', 'pharma', 'pharmacy', 'private']);
+  const pharmacy = d.account_types.find(a => a.key === 'pharmacy');
+  assert.ok(pharmacy.icon && pharmacy.label, 'Icon und Referenz-Label vorhanden');
+});
+
+test('Registrierung mit Kontotyp setzt Profil; Wechsel aktualisiert; ungültig abgelehnt; Fallback pharmacy', async () => {
+  // Registrierung als Behörde -> account_type=authority
+  const rb = await (await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'ro' + PORT, handle: 'ro' + PORT, email: 'ro' + PORT + '@a.at', password: 'geheim123', accountType: 'authority' }) })).json();
+  assert.equal(rb.profile.account_type, 'authority');
+  // Wechsel auf Pharma-Unternehmen
+  const sw = await (await post('/api/profile', rb.token, { accountType: 'pharma' })).json();
+  assert.equal(sw.profile.account_type, 'pharma');
+  // ungültiger Kontotyp -> 400
+  const bad = await post('/api/profile', rb.token, { accountType: 'wizard' });
+  assert.equal(bad.status, 400);
+  // Kontotyp bleibt nach dem abgelehnten Versuch unverändert
+  const still = await (await fetch(BASE + '/api/profiles/' + ('ro' + PORT), { headers: H(rb.token) })).json();
+  assert.equal(still.profile.account_type, 'pharma');
+  // Fallback: Registrierung ohne Kontotyp -> pharmacy
+  const rp = await (await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'rp' + PORT, handle: 'rp' + PORT, email: 'rp' + PORT + '@a.at', password: 'geheim123' }) })).json();
+  assert.equal(rp.profile.account_type, 'pharmacy');
+});
+
 test('GET /api/wirkstoff/:name bündelt Engpass/Preise/Rabatte/Austausch', async () => {
   const a = await reg('wi_a' + PORT);
   const b = await reg('wi_b' + PORT);

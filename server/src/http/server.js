@@ -25,6 +25,7 @@ import { createOverviewService } from '../services/overview.js';
 import { createAmrService } from '../services/amr.js';
 import { createPatientInfoService } from '../services/patientInfo.js';
 import { listCountries, normalizeCountry, normalizeLocale } from '../data/countries.js';
+import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
 import { issueToken, verifyToken } from './token.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -172,7 +173,9 @@ const routes = [
     // Land + UI-Sprache bei der Registrierung (Länderauswahl); Fallback AT/de.
     const country = normalizeCountry(body.country);
     const locale = normalizeLocale(body.locale, country);
-    const profile = social.createProfile(reg.user.id, { handle, displayName: displayName || name, pharmacyOrgId: reg.organization.id, country, locale });
+    // Kontotyp bei der Registrierung (Apotheke/Pharma/Behörde/Privat); Fallback Apotheke.
+    const accountType = normalizeAccountType(body.accountType);
+    const profile = social.createProfile(reg.user.id, { handle, displayName: displayName || name, pharmacyOrgId: reg.organization.id, country, locale, accountType });
     return { token: issueToken(reg.user.id), user: reg.user, profile };
   }],
 
@@ -263,6 +266,8 @@ const routes = [
   ['GET', /^\/api\/patient-info$/, true, async ({ query }) => patientInfo.cards(query.get('lang') || 'de')],
   // Länder-Register (öffentlich): für Länderauswahl bei Registrierung + Umschalter.
   ['GET', /^\/api\/countries$/, false, async () => ({ countries: listCountries() })],
+  // Kontotyp-Register (öffentlich): für die Kontotyp-Auswahl bei der Registrierung.
+  ['GET', /^\/api\/account-types$/, false, async () => ({ account_types: listAccountTypes() })],
   ['GET', /^\/api\/posts\/([^/]+)$/, true, async ({ userId, params }) => {
     const p = social.getPost(userId, params[0]);
     if (!p) { const e = new Error('Beitrag nicht gefunden'); e.status = 404; throw e; }

@@ -6,6 +6,20 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🛠️ **Kritischer Fix: `src/data/` war fälschlich gitignored → Deploy-Bruch behoben:** Die
+>   `.gitignore`-Regel `data/` (für Laufzeit-Snapshots gedacht) hat auch den Quellcode-Ordner
+>   `src/data/` erfasst — **`countries.js` (Fundament der gesamten i18n-/Mehrländer-Arbeit) war
+>   nie eingecheckt**. Ein Frisch-Deploy wäre am fehlenden Import abgestürzt. Regel auf `/data/`
+>   verankert; `src/data/` wird jetzt versioniert (`countries.js` + `accountTypes.js` eingecheckt).
+> - 👥 **Kontotyp-Modell — Schritt 1: Backend-Fundament (additiv, ohne Rechte-Änderung):** Spec-
+>   Deliverable „Rollen: Apotheke/Pharma/Behörde/Privat". Bewusst als **Kontotyp** (`account_type`)
+>   benannt, um die bereits bestehende Team-RBAC in `domain/roles.js` (admin/apotheker/pta/…) nicht
+>   zu überladen — drei getrennte Achsen: Land (Sichtbarkeit/Sprache), Kontotyp (Teilnehmerart),
+>   Team-Rolle (interne Rechte). Neues Register `data/accountTypes.js` (4 Typen, je Schlüssel/Icon/
+>   Label) + `GET /api/account-types`. Profile tragen `account_type` (Default `pharmacy`,
+>   rückwärtskompatibel); Registrierung nimmt `accountType` an, `POST /api/profile` wechselt,
+>   ungültig → 400. **Noch KEINE Rechte-Durchsetzung** (heikler Folgeschritt, erst nach Freigabe).
+>   (2 neue Integrationstests, 208 grün.)
 > - ✅ **Qualitäts-Audit — Barrierefreiheit: Skip-Link & Druck-Kopf mehrsprachig:** Der „Zum Inhalt
 >   springen"-Skip-Link (Tastatur-/Screenreader-Navigation) und der Druck-Kopf („ApoTrend —
 >   Lieferengpässe") standen als statisches HTML fest deutsch. Beide via `data-i18n` an `applyI18n`
