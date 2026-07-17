@@ -26,11 +26,26 @@ export function createPersistence(filePath) {
         return null; // Datei fehlt/kaputt -> Frischstart
       }
     },
-    // Atomar schreiben: erst temp, dann umbenennen (kein halb geschriebener Stand).
+    // Atomar + dauerhaft schreiben: temp-Datei schreiben, per fsync auf die Platte
+    // zwingen, dann umbenennen (kein halb geschriebener Stand), dann das Verzeichnis
+    // fsyncen (damit der Rename einen Absturz überlebt). Ohne fsync könnte ein Crash
+    // direkt nach dem Schreiben trotz „erfolgreichem" write den letzten Stand verlieren.
     save(data) {
       const tmp = filePath + '.tmp';
-      fs.writeFileSync(tmp, JSON.stringify(data));
+      const fd = fs.openSync(tmp, 'w');
+      try {
+        fs.writeFileSync(fd, JSON.stringify(data));
+        fs.fsyncSync(fd);
+      } finally {
+        fs.closeSync(fd);
+      }
       fs.renameSync(tmp, filePath);
+      // Verzeichnis-Eintrag des Renames dauerhaft machen (best effort; auf manchen
+      // Plattformen/Dateisystemen nicht unterstützt — dann einfach überspringen).
+      try {
+        const dfd = fs.openSync(dir, 'r');
+        try { fs.fsyncSync(dfd); } finally { fs.closeSync(dfd); }
+      } catch { /* Verzeichnis-fsync nicht verfügbar -> ok */ }
     },
   };
 }

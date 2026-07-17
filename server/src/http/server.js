@@ -415,7 +415,17 @@ const server = http.createServer(async (req, res) => {
   fs.createReadStream(serve).pipe(res);
 });
 
-server.listen(PORT, () => console.log(`ApoTrend Feed-Server läuft auf http://localhost:${PORT}`));
+server.listen(PORT, () => {
+  console.log(`ApoTrend Feed-Server läuft auf http://localhost:${PORT}`);
+  // Persistenz-Status deutlich anzeigen: Ein Produktiv-Deploy OHNE APOTREND_DATA_FILE
+  // läuft rein im Speicher — bei jedem Neustart sind ALLE Daten weg. Das darf nicht
+  // unbemerkt passieren, darum eine laute Warnung (nicht in der Testumgebung).
+  if (persistence) {
+    console.log(`ApoTrend: Persistenz aktiv -> ${persistence.filePath}`);
+  } else if (process.env.NODE_ENV !== 'test') {
+    console.warn('⚠️  ApoTrend: KEINE Persistenz aktiv (APOTREND_DATA_FILE nicht gesetzt) — alle Daten gehen bei einem Neustart verloren. Für den Produktivbetrieb APOTREND_DATA_FILE auf einen dauerhaften Pfad setzen.');
+  }
+});
 
 // Für Integrationstests: erlaubt server.close(), damit der Prozess sauber endet.
 export { server as httpServer };
