@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3w: Profil-Kopf mehrsprachig (DE/EN/PT):** Die Profilseite
+>   (Zurück, Redaktion-/Verifiziert-Badge, Kennzahlen Beiträge/Follower/folgt/beste Antworten,
+>   Aktions-Buttons Aktivität/Bearbeiten/Nachricht/Folgen bzw. Entfolgen) ist jetzt übersetzt.
+>   (Browser verifiziert: „← voltar ao feed / Editar perfil / publicações / seguidores / a seguir".)
+>   Offen: Profil-Bearbeiten-Formular und die Datenschutz-/Konto-Karte.
 > - 🌍 **Länderübergreifend — Schritt 3v: Suche mehrsprachig (DE/EN/PT):** Die Suchergebnis-Ansicht
 >   (Titel „Suchergebnisse für …", Treffer-Zähler, Zurück, Kein-Treffer-Leerzustand, der Wirkstoff-
 >   Schnellzugriff und alle Abschnitts-Überschriften Personen/Beiträge/Engpässe/Preise/Rabatte) ist
