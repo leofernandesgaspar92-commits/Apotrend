@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌐 **Sprachauswahl schon vor dem Login:** Der Auth-Screen erschien in der localStorage-
+>   Sprache (Default Deutsch), der Sprachumschalter war erst nach dem Login sichtbar — ein
+>   Erstbesucher aus GB/PT/BR sah Anmeldung/Registrierung auf Deutsch ohne Umschaltmöglichkeit.
+>   Jetzt oben eine Sprachauswahl (Deutsch/English/Português als Autonyme, aktiver Zustand);
+>   Klick rendert Screen + Header + Theme-Label neu. Browser-verifiziert DE→EN→PT.
 > - ♿ **Header-a11y/i18n gehärtet (Screenreader in DE/EN/PT):** Auf Mobil kollabieren die
 >   Header-Buttons auf reine Icons — Screenreader-Nutzer:innen brauchen dann korrekte
 >   `aria-label`. Diese (und die Hover-`title`) waren statisch Deutsch, obwohl die Plattform 12
