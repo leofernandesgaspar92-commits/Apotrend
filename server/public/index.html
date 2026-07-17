@@ -62,7 +62,7 @@
   #sgo { white-space:nowrap; } /* „Search"/„Pesquisar" nicht umbrechen lassen */
   button.sortbtn { background:var(--card); color:var(--text); border:1px solid var(--line); font-weight:600; }
   button.sortbtn.active { background:var(--green); color:#fff; border-color:var(--green); }
-  .row { display:flex; gap:8px; align-items:center; }
+  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; } /* zu enge Zeilen brechen um (langer Button rutscht in die nächste Zeile) statt eine Überschrift zu stauchen oder Querscroll zu erzeugen */
   .tabs { display:flex; gap:8px; margin-bottom:12px; }
   .tabs button { flex:1; background:var(--card); color:var(--text); border:1px solid var(--line); }
   .tabs button.active { background:var(--green); color:#fff; border-color:var(--green); }
