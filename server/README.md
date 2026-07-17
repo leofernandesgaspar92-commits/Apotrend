@@ -6,6 +6,15 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 💾 **Backend-Persistenz produktionshärter (fsync · Warnung · Tests):** Die bestehende
+>   atomare JSON-Snapshot-Persistenz (Node-`fs`, gemäß „nur Built-ins") wurde gehärtet:
+>   (1) **fsync** auf Datei + Verzeichnis — ein Absturz direkt nach dem Schreiben verliert den
+>   letzten Stand nicht mehr; (2) **laute Startup-Warnung**, wenn ohne `APOTREND_DATA_FILE`
+>   gestartet wird (sonst liefe ein Deploy unbemerkt rein im Speicher → Daten weg bei Neustart);
+>   (3) neue `persistence.test.js` (Round-Trip verlustfrei, kaputte Datei → Frischstart, atomar).
+>   End-to-End verifiziert: Beitrag anlegen → SIGTERM → Neustart → Daten wiederhergestellt.
+>   Ein echtes relationales DB-Backend (`node:sqlite` als Built-in verfügbar, aber experimentell)
+>   bleibt ein separater Architektur-Schritt hinter demselben `__dump/__load`-Seam.
 > - 🔒 **Kontotyp-Rechte — Schritt 2: Privatnutzer:innen kein Bestandsaustausch:** Konsistente
 >   Fortsetzung — der Bestandsaustausch (Biete/Suche) ist ein professioneller B2B-Vorgang; Privat-
 >   konten lesen/filtern Einträge, legen aber keine an (Backend 403 + Frontend-Hinweis statt
