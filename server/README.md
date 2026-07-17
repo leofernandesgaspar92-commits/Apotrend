@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3ad: Wirkstoff-Detailseite mehrsprachig — letzte Seite:** Die
+>   Wirkstoff-Seite (Untertitel, Beobachten/Teilen, Antibiotika-Stewardship-Panel, Engpass-Status
+>   mit Direkt-Melden-Formular, die Abschnitte „Wer bietet/sucht", „Preisvergleich", „Laufende
+>   Aktionen" und „Diskussion & Fragen" inkl. Verfassen-Formular + Leerzustände) ist jetzt DE/EN/PT.
+>   Damit ist **jede erreichbare Nutzerseite übersetzt**. (Browser verifiziert: „Estado de falta /
+>   Quem oferece / Comparação de preços / Discussão & perguntas".)
 > - 🌍 **Länderübergreifend — Schritt 3ac: „Meine Aktivität"-Seite mehrsprachig (DE/EN/PT):** Die
 >   Aktivitätsseite (Titel, Untertitel, Beitrag-Statistik mit allen Kennzahl-Labels, „Meine
 >   Fachfragen/Engpass-Meldungen/Austausch-Einträge" inkl. Zähler, offen-Suffix, Bestätigungen und

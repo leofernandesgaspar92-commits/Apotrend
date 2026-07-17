@@ -377,6 +377,17 @@ const I18N = {
     ma_q_title:'❓ Meine Fachfragen', ma_total:'gesamt', ma_no_q:'Noch keine Fragen gestellt.',
     ma_r_title:'👥 Meine Engpass-Meldungen', ma_no_r:'Noch keine Engpässe gemeldet.', ma_confirmed:'{n} bestätigt',
     ma_e_title:'🔄 Meine Austausch-Einträge', ma_no_e:'Noch keine Biete/Suche-Einträge.',
+    wk_sub:'Alles zu diesem Wirkstoff auf einen Blick.',
+    wk_amr_title:'🧫 Antibiotika-Stewardship', wk_amr_tag:'Information, keine Therapieempfehlung',
+    wk_amr_forum:'💬 Fachdiskussion', wk_amr_pinfo:'🧫 Patienten-Infokarten',
+    wk_short_title:'📦 Engpass-Status', wk_send_community:'Als Community-Meldung senden',
+    wk_community_note:'👥 Kennzeichnung als Community-Meldung (nicht offiziell verifiziert).', wk_no_short:'Aktuell keine Engpass-Meldung.',
+    wk_offers_t:'🔄 Wer bietet an', wk_offers_e:'Niemand bietet diesen Wirkstoff gerade an.',
+    wk_seeks_t:'🔎 Wer sucht', wk_seeks_e:'Keine offenen Gesuche.',
+    wk_prices_t:'💶 Preisvergleich', wk_prices_e:'Keine Preisdaten zu diesem Wirkstoff.',
+    wk_deals_t:'🏷️ Laufende Aktionen', wk_deals_e:'Keine laufende Aktion.',
+    wk_disc_t:'💬 Diskussion & Fragen', wk_write:'✍ Beitrag verfassen', wk_write_ph:'Etwas zu {w} teilen oder fragen…',
+    wk_ask:'❓ Als Fachfrage stellen', wk_post_public:'Öffentlich posten', wk_no_posts:'Noch keine Beiträge dazu — verfasse den ersten.', wk_need_body:'Bitte etwas schreiben.',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -579,6 +590,17 @@ const I18N = {
     ma_q_title:'❓ My questions', ma_total:'total', ma_no_q:'No questions asked yet.',
     ma_r_title:'👥 My shortage reports', ma_no_r:'No shortages reported yet.', ma_confirmed:'{n} confirmed',
     ma_e_title:'🔄 My exchange entries', ma_no_e:'No offer/seek entries yet.',
+    wk_sub:'Everything about this substance at a glance.',
+    wk_amr_title:'🧫 Antibiotic stewardship', wk_amr_tag:'Information, not treatment advice',
+    wk_amr_forum:'💬 Expert discussion', wk_amr_pinfo:'🧫 Patient info cards',
+    wk_short_title:'📦 Shortage status', wk_send_community:'Send as community report',
+    wk_community_note:'👥 Labelled as a community report (not officially verified).', wk_no_short:'No shortage report right now.',
+    wk_offers_t:'🔄 Who offers', wk_offers_e:'Nobody is offering this substance right now.',
+    wk_seeks_t:'🔎 Who seeks', wk_seeks_e:'No open requests.',
+    wk_prices_t:'💶 Price comparison', wk_prices_e:'No price data for this substance.',
+    wk_deals_t:'🏷️ Running deals', wk_deals_e:'No running deal.',
+    wk_disc_t:'💬 Discussion & questions', wk_write:'✍ Write a post', wk_write_ph:'Share or ask something about {w}…',
+    wk_ask:'❓ Ask as a professional question', wk_post_public:'Post publicly', wk_no_posts:'No posts about it yet — write the first.', wk_need_body:'Please write something.',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -781,6 +803,17 @@ const I18N = {
     ma_q_title:'❓ As minhas perguntas', ma_total:'no total', ma_no_q:'Ainda sem perguntas.',
     ma_r_title:'👥 Os meus avisos de falta', ma_no_r:'Ainda sem faltas reportadas.', ma_confirmed:'{n} confirmaram',
     ma_e_title:'🔄 As minhas entradas de troca', ma_no_e:'Ainda sem entradas de oferta/procura.',
+    wk_sub:'Tudo sobre esta substância num relance.',
+    wk_amr_title:'🧫 Stewardship de antibióticos', wk_amr_tag:'Informação, não é recomendação terapêutica',
+    wk_amr_forum:'💬 Discussão técnica', wk_amr_pinfo:'🧫 Cartões informativos para doentes',
+    wk_short_title:'📦 Estado de falta', wk_send_community:'Enviar como aviso da comunidade',
+    wk_community_note:'👥 Identificado como aviso da comunidade (não verificado oficialmente).', wk_no_short:'Sem aviso de falta de momento.',
+    wk_offers_t:'🔄 Quem oferece', wk_offers_e:'Ninguém está a oferecer esta substância de momento.',
+    wk_seeks_t:'🔎 Quem procura', wk_seeks_e:'Sem procuras abertas.',
+    wk_prices_t:'💶 Comparação de preços', wk_prices_e:'Sem dados de preço para esta substância.',
+    wk_deals_t:'🏷️ Promoções ativas', wk_deals_e:'Sem promoção ativa.',
+    wk_disc_t:'💬 Discussão & perguntas', wk_write:'✍ Escrever publicação', wk_write_ph:'Partilhe ou pergunte algo sobre {w}…',
+    wk_ask:'❓ Colocar como pergunta técnica', wk_post_public:'Publicar publicamente', wk_no_posts:'Ainda sem publicações — seja o primeiro.', wk_need_body:'Escreva algo, por favor.',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -2850,15 +2883,15 @@ async function openWirkstoff(name) {
   catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   recordRecentWirkstoff(d.wirkstoff);
   feed.innerHTML = '';
-  const head = el(`<div class="card"><div><button class="ghost small" data-back>← zurück</button></div>
+  const head = el(`<div class="card"><div><button class="ghost small" data-back>${esc(t('search_back'))}</button></div>
     <h1 style="margin:8px 0 2px">💊 ${esc(d.wirkstoff)}</h1>
-    <div class="muted">Alles zu diesem Wirkstoff auf einen Blick.</div>
-    <div class="row" style="margin-top:10px;gap:8px"><button class="${d.watched?'':'ghost '}small" data-watch aria-pressed="${!!d.watched}">${d.watched?'⭐ Beobachtet':'☆ Beobachten'}</button><button class="ghost small" data-share title="Link zu dieser Wirkstoff-Seite kopieren">🔗 Teilen</button></div></div>`);
+    <div class="muted">${esc(t('wk_sub'))}</div>
+    <div class="row" style="margin-top:10px;gap:8px"><button class="${d.watched?'':'ghost '}small" data-watch aria-pressed="${!!d.watched}">${d.watched?esc(t('sc_watched')):esc(t('sc_watch'))}</button><button class="ghost small" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button></div></div>`);
   head.querySelector('[data-back]').onclick = () => goTab('overview');
   const shb = head.querySelector('[data-share]');
   shb.onclick = async () => {
     const url = location.origin + '/?wirkstoff=' + encodeURIComponent(d.wirkstoff);
-    try { await navigator.clipboard.writeText(url); shb.textContent = '✓ kopiert'; setTimeout(()=>{ shb.textContent='🔗 Teilen'; }, 1500); }
+    try { await navigator.clipboard.writeText(url); shb.textContent = t('pc_copied'); setTimeout(()=>{ shb.textContent=t('pc_share'); }, 1500); }
     catch { prompt('Link zur Wirkstoff-Seite:', url); }
   };
   const wb = head.querySelector('[data-watch]');
@@ -2868,7 +2901,7 @@ async function openWirkstoff(name) {
     try {
       if (watched) { await api('DELETE','/api/watchlist/'+encodeURIComponent(d.wirkstoff)); watched = false; }
       else { await api('POST','/api/watchlist',{ wirkstoff: d.wirkstoff }); watched = true; }
-      wb.textContent = watched ? '⭐ Beobachtet' : '☆ Beobachten';
+      wb.textContent = watched ? t('sc_watched') : t('sc_watch');
       wb.setAttribute('aria-pressed', String(watched));
       wb.classList.toggle('ghost', !watched);
     } catch(e){ alert(e.message); }
@@ -2881,14 +2914,14 @@ async function openWirkstoff(name) {
   if (d.amr && d.amr.is_antibiotic) {
     const a = d.amr;
     const panel = el(`<div class="card" style="border-left:4px solid #0b7f28">
-      <div class="row"><b>🧫 Antibiotika-Stewardship</b>
+      <div class="row"><b>${esc(t('wk_amr_title'))}</b>
         <span class="sp" style="flex:1"></span>
-        <span class="muted" style="font-size:12px">Information, keine Therapieempfehlung</span></div>
+        <span class="muted" style="font-size:12px">${esc(t('wk_amr_tag'))}</span></div>
       <div style="font-size:14px;margin-top:8px">${esc(a.note)}</div>
       <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px">
         ${(a.sources||[]).map(s=>`<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" class="small" style="display:inline-block;text-decoration:none;border:1px solid var(--line,#ccc);border-radius:8px;padding:6px 10px">🔗 ${esc(s.label)}</a>`).join('')}
-        <button class="ghost small" data-forum title="Zum Stewardship-Fachforum">💬 Fachdiskussion</button>
-        <button class="ghost small" data-pinfo title="Mehrsprachige Patienten-Infokarten">🧫 Patienten-Infokarten</button>
+        <button class="ghost small" data-forum>${esc(t('wk_amr_forum'))}</button>
+        <button class="ghost small" data-pinfo>${esc(t('wk_amr_pinfo'))}</button>
       </div>
       <div class="muted" style="font-size:12px;margin-top:10px;font-style:italic">⚠️ ${esc(a.disclaimer)}</div>
     </div>`);
@@ -2906,22 +2939,22 @@ async function openWirkstoff(name) {
   };
 
   // Engpass-Status (+ direkt für diesen Wirkstoff melden)
-  const scard = el(`<div class="card"><div class="row"><b>📦 Engpass-Status</b><span class="sp" style="flex:1"></span>
-    <button class="ghost small" data-report>➕ Engpass melden</button></div>
+  const scard = el(`<div class="card"><div class="row"><b>${esc(t('wk_short_title'))}</b><span class="sp" style="flex:1"></span>
+    <button class="ghost small" data-report>${esc(t('sh_rep_title'))}</button></div>
     <div data-sbody style="margin-top:6px"></div>
     <div class="hidden" data-sform style="margin-top:8px">
-      <label style="font-size:13px">Präparat / Bezeichnung</label>
+      <label style="font-size:13px">${esc(t('sh_rep_b'))}</label>
       <input data-b placeholder="z.B. ${esc(d.wirkstoff)} 500 mg" value="${esc(d.wirkstoff)}">
-      <label style="font-size:13px;margin-top:6px">Status</label>
-      <select data-s><option value="kritisch">Kritischer Engpass</option><option value="eingeschraenkt">Eingeschränkt lieferbar</option></select>
-      <label style="font-size:13px;margin-top:6px">Grund (optional)</label>
-      <input data-g placeholder="z.B. Großhandel meldet keine Verfügbarkeit">
-      <div style="margin-top:8px"><button class="small" data-send>Als Community-Meldung senden</button></div>
-      <div class="muted" style="font-size:12px;margin-top:4px">👥 Kennzeichnung als Community-Meldung (nicht offiziell verifiziert).</div>
+      <label style="font-size:13px;margin-top:6px">${esc(t('sh_rep_status'))}</label>
+      <select data-s><option value="kritisch">${esc(t('st_krit'))}</option><option value="eingeschraenkt">${esc(t('st_eing'))}</option></select>
+      <label style="font-size:13px;margin-top:6px">${esc(t('sh_rep_reason'))}</label>
+      <input data-g placeholder="${esc(t('sh_rep_reason_ph'))}">
+      <div style="margin-top:8px"><button class="small" data-send>${esc(t('wk_send_community'))}</button></div>
+      <div class="muted" style="font-size:12px;margin-top:4px">${esc(t('wk_community_note'))}</div>
       <div class="err" data-err></div>
     </div></div>`);
   const sbody = scard.querySelector('[data-sbody]');
-  if (!d.shortages.length) sbody.appendChild(el('<div class="muted" style="font-size:14px">Aktuell keine Engpass-Meldung.</div>'));
+  if (!d.shortages.length) sbody.appendChild(el(`<div class="muted" style="font-size:14px">${esc(t('wk_no_short'))}</div>`));
   else d.shortages.forEach(s => {
     const [lab,col] = statusShort(s.status);
     sbody.appendChild(el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:12px">· ${esc(provLabel(s.provenance))}${s.grund?' · '+esc(s.grund):''}</span></div>`));
@@ -2937,33 +2970,33 @@ async function openWirkstoff(name) {
   };
   feed.appendChild(scard);
   // Bezugsquellen (biete)
-  section('🔄 Wer bietet an', d.exchange.biete.length, 'Niemand bietet diesen Wirkstoff gerade an.', body => d.exchange.biete.forEach(e => body.appendChild(exchangeCard(e))));
+  section(t('wk_offers_t'), d.exchange.biete.length, t('wk_offers_e'), body => d.exchange.biete.forEach(e => body.appendChild(exchangeCard(e))));
   // Gesuche (suche)
-  section('🔎 Wer sucht', d.exchange.suche.length, 'Keine offenen Gesuche.', body => d.exchange.suche.forEach(e => body.appendChild(exchangeCard(e))));
+  section(t('wk_seeks_t'), d.exchange.suche.length, t('wk_seeks_e'), body => d.exchange.suche.forEach(e => body.appendChild(exchangeCard(e))));
   // Preise
-  section('💶 Preisvergleich', d.prices.length, 'Keine Preisdaten zu diesem Wirkstoff.', body => d.prices.forEach(g => body.appendChild(priceGroup(g))));
+  section(t('wk_prices_t'), d.prices.length, t('wk_prices_e'), body => d.prices.forEach(g => body.appendChild(priceGroup(g))));
   // Rabatte
-  section('🏷️ Laufende Aktionen', d.rabatte.length, 'Keine laufende Aktion.', body => d.rabatte.forEach(r => { r.rank = r.rank || 1; body.appendChild(rabattCard(r)); }));
+  section(t('wk_deals_t'), d.rabatte.length, t('wk_deals_e'), body => d.rabatte.forEach(r => { r.rank = r.rank || 1; body.appendChild(rabattCard(r)); }));
   // Diskussion & Fragen (öffentliche Beiträge, die den Wirkstoff erwähnen) + Compose
   const posts = d.posts || [];
-  const dcard = el(`<div class="card"><div class="row"><b>💬 Diskussion & Fragen</b><span class="sp" style="flex:1"></span>
-    <button class="ghost small" data-write>✍ Beitrag verfassen</button></div>
+  const dcard = el(`<div class="card"><div class="row"><b>${esc(t('wk_disc_t'))}</b><span class="sp" style="flex:1"></span>
+    <button class="ghost small" data-write>${esc(t('wk_write'))}</button></div>
     <div class="hidden" data-wform style="margin-top:8px">
-      <textarea data-wt placeholder="Etwas zu ${esc(d.wirkstoff)} teilen oder fragen…"></textarea>
-      <label style="display:inline-flex;align-items:center;gap:6px;margin-top:6px;cursor:pointer;font-size:14px"><input type="checkbox" data-wq style="width:auto;min-height:0"> ❓ Als Fachfrage stellen</label>
-      <div style="margin-top:8px"><button class="small" data-wsend>Öffentlich posten</button></div>
+      <textarea data-wt placeholder="${esc(ti('wk_write_ph',{w:d.wirkstoff}))}"></textarea>
+      <label style="display:inline-flex;align-items:center;gap:6px;margin-top:6px;cursor:pointer;font-size:14px"><input type="checkbox" data-wq style="width:auto;min-height:0"> ${esc(t('wk_ask'))}</label>
+      <div style="margin-top:8px"><button class="small" data-wsend>${esc(t('wk_post_public'))}</button></div>
       <div class="err" data-werr></div>
     </div>
     <div data-wbody style="margin-top:8px"></div></div>`);
   const wbody = dcard.querySelector('[data-wbody]');
-  if (!posts.length) wbody.appendChild(el('<div class="muted" style="font-size:14px">Noch keine Beiträge dazu — verfasse den ersten.</div>'));
+  if (!posts.length) wbody.appendChild(el(`<div class="muted" style="font-size:14px">${esc(t('wk_no_posts'))}</div>`));
   else posts.forEach(p => wbody.appendChild(postCard(p)));
   const wform = dcard.querySelector('[data-wform]');
   dcard.querySelector('[data-write]').onclick = () => { wform.classList.toggle('hidden'); const ta = dcard.querySelector('[data-wt]'); if (!wform.classList.contains('hidden') && !ta.value) ta.value = d.wirkstoff + ': '; };
   dcard.querySelector('[data-wsend]').onclick = async () => {
     const werr = dcard.querySelector('[data-werr]'); werr.textContent = '';
     const body = dcard.querySelector('[data-wt]').value.trim();
-    if (!body) { werr.textContent = 'Bitte etwas schreiben.'; return; }
+    if (!body) { werr.textContent = t('wk_need_body'); return; }
     try {
       await api('POST','/api/posts',{ body, visibility:'public', kind: dcard.querySelector('[data-wq]').checked ? 'frage' : 'post' });
       openWirkstoff(d.wirkstoff);
