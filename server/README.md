@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3u: Willkommens-/Hilfe-Overlay mehrsprachig (DE/EN/PT):**
+>   Das Onboarding-Overlay (Titel, Untertitel, alle 8 Erklär-Schritte, App-Installations-Tipp,
+>   „Los geht's") ist jetzt übersetzt — der erste Eindruck neuer Nutzer:innen und die Hilfe hinter
+>   dem ❓-Button. Steps von festen Strings auf i18n-Keys umgestellt (vermeidet zugleich das
+>   `t`-Shadowing im `.map`). (Browser verifiziert: „👋 Bem-vindo à ApoTrend / Vamos começar →".)
 > - 🌍 **Länderübergreifend — Schritt 3t: Direktnachrichten mehrsprachig (DE/EN/PT):** Posteingang
 >   (Titel, Neu-schreiben-Feld, Leerzustand, Konversations-Zeilen) und Thread-Ansicht (Zurück,
 >   Nachricht-Feld, Senden, „sag Hallo") sind jetzt übersetzt. Erneut einen latenten Shadowing-Bug
