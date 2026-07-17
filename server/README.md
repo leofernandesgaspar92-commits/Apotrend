@@ -6,6 +6,12 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3x: Profil bearbeiten + Datenschutz-/Konto-Karte mehrsprachig:**
+>   Das Bearbeiten-Formular (alle Feld-Labels/Platzhalter, Region-Auswahl) und die Konto-Karte
+>   (DSGVO-Datenexport, Passwort ändern, Konto löschen inkl. Bestätigungs-Dialoge) sind jetzt
+>   DE/EN/PT — sicherheits-/datenschutzrelevante Texte also auch in der Landessprache. Auch der
+>   „keine Beiträge"-Leerzustand und die zuvor übersehene Biete/Suche-Sektion in der Suche.
+>   (Browser verifiziert: „Editar perfil / Guardar / Privacidade & conta / Nome a apresentar…".)
 > - 🌍 **Länderübergreifend — Schritt 3w: Profil-Kopf mehrsprachig (DE/EN/PT):** Die Profilseite
 >   (Zurück, Redaktion-/Verifiziert-Badge, Kennzahlen Beiträge/Follower/folgt/beste Antworten,
 >   Aktions-Buttons Aktivität/Bearbeiten/Nachricht/Folgen bzw. Entfolgen) ist jetzt übersetzt.

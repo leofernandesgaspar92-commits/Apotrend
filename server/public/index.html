@@ -338,6 +338,17 @@ const I18N = {
     pf_posts:'Beiträge', pf_followers:'Follower', pf_following:'folgt', pf_best:'beste Antworten',
     pf_best_title:'Als beste Antwort markiert', pf_activity:'🗂️ Meine Aktivität', pf_edit:'✏️ Profil bearbeiten',
     pf_dm:'✉️ Nachricht', pf_unfollow:'✓ Du folgst — entfolgen', pf_follow:'+ Folgen',
+    pf_no_posts:'Noch keine sichtbaren Beiträge.',
+    ep_name:'Anzeigename', ep_func:'Titel / Funktion (optional)', ep_func_ph:'z.B. Fachapothekerin, Einkauf',
+    ep_about:'Über mich (optional, max. 500 Zeichen)', ep_about_ph:'Kurz zu dir und deinem Schwerpunkt…',
+    ep_specs_l:'Fachgebiete (mit Komma trennen)', ep_specs_ph:'Onkologie, Diabetes, Impfen',
+    ep_region:'Region (optional)', ep_none:'— keine Angabe —', ep_region_hint:'Wird bei neuen Biete/Suche-Einträgen vorausgewählt.',
+    ac_title:'🔒 Datenschutz & Konto', ac_export_d:'Lade alle deine Daten (Profil, Beiträge, Kommentare, Nachrichten, Merkliste, Austausch) als Datei herunter (DSGVO).',
+    ac_export_btn:'⬇️ Meine Daten exportieren', ac_pw_title:'Passwort ändern', ac_pw_old:'Aktuelles Passwort',
+    ac_pw_new:'Neues Passwort (mind. 8 Zeichen)', ac_pw_ok:'✓ Passwort geändert',
+    ac_del_title:'Konto löschen', ac_del_d:'Unwiderruflich: alle deine Daten (Profil, Beiträge, Kommentare, Nachrichten, Austausch) werden gelöscht.',
+    ac_del_btn:'Konto endgültig löschen', ac_del_confirm:'Dein Konto und alle Daten werden unwiderruflich gelöscht. Fortfahren?',
+    ac_del_pw:'Zur Bestätigung dein Passwort eingeben:', ac_del_done:'Dein Konto wurde gelöscht.',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -501,6 +512,17 @@ const I18N = {
     pf_posts:'posts', pf_followers:'followers', pf_following:'following', pf_best:'best answers',
     pf_best_title:'marked as best answer', pf_activity:'🗂️ My activity', pf_edit:'✏️ Edit profile',
     pf_dm:'✉️ Message', pf_unfollow:'✓ Following — unfollow', pf_follow:'+ Follow',
+    pf_no_posts:'No visible posts yet.',
+    ep_name:'Display name', ep_func:'Title / role (optional)', ep_func_ph:'e.g. specialist pharmacist, purchasing',
+    ep_about:'About me (optional, max. 500 characters)', ep_about_ph:'A little about you and your focus…',
+    ep_specs_l:'Specialties (comma-separated)', ep_specs_ph:'Oncology, diabetes, vaccination',
+    ep_region:'Region (optional)', ep_none:'— not specified —', ep_region_hint:'Pre-selected for new offer/seek entries.',
+    ac_title:'🔒 Privacy & account', ac_export_d:'Download all your data (profile, posts, comments, messages, watchlist, exchange) as a file (GDPR).',
+    ac_export_btn:'⬇️ Export my data', ac_pw_title:'Change password', ac_pw_old:'Current password',
+    ac_pw_new:'New password (min. 8 characters)', ac_pw_ok:'✓ Password changed',
+    ac_del_title:'Delete account', ac_del_d:'Irreversible: all your data (profile, posts, comments, messages, exchange) will be deleted.',
+    ac_del_btn:'Delete account permanently', ac_del_confirm:'Your account and all data will be permanently deleted. Continue?',
+    ac_del_pw:'Enter your password to confirm:', ac_del_done:'Your account has been deleted.',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -664,6 +686,17 @@ const I18N = {
     pf_posts:'publicações', pf_followers:'seguidores', pf_following:'a seguir', pf_best:'melhores respostas',
     pf_best_title:'marcada como melhor resposta', pf_activity:'🗂️ A minha atividade', pf_edit:'✏️ Editar perfil',
     pf_dm:'✉️ Mensagem', pf_unfollow:'✓ A seguir — deixar de seguir', pf_follow:'+ Seguir',
+    pf_no_posts:'Ainda sem publicações visíveis.',
+    ep_name:'Nome a apresentar', ep_func:'Título / função (opcional)', ep_func_ph:'ex. farmacêutica especialista, compras',
+    ep_about:'Sobre mim (opcional, máx. 500 caracteres)', ep_about_ph:'Um pouco sobre si e a sua área…',
+    ep_specs_l:'Áreas (separadas por vírgula)', ep_specs_ph:'Oncologia, diabetes, vacinação',
+    ep_region:'Região (opcional)', ep_none:'— não especificado —', ep_region_hint:'Pré-selecionado em novas entradas de oferta/procura.',
+    ac_title:'🔒 Privacidade & conta', ac_export_d:'Descarregue todos os seus dados (perfil, publicações, comentários, mensagens, lista de vigilância, troca) como ficheiro (RGPD).',
+    ac_export_btn:'⬇️ Exportar os meus dados', ac_pw_title:'Alterar palavra-passe', ac_pw_old:'Palavra-passe atual',
+    ac_pw_new:'Nova palavra-passe (mín. 8 caracteres)', ac_pw_ok:'✓ Palavra-passe alterada',
+    ac_del_title:'Eliminar conta', ac_del_d:'Irreversível: todos os seus dados (perfil, publicações, comentários, mensagens, troca) serão eliminados.',
+    ac_del_btn:'Eliminar conta definitivamente', ac_del_confirm:'A sua conta e todos os dados serão eliminados definitivamente. Continuar?',
+    ac_del_pw:'Introduza a sua palavra-passe para confirmar:', ac_del_done:'A sua conta foi eliminada.',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -2469,7 +2502,7 @@ async function renderSearch(q) {
         <div class="muted">${esc(pr.supplier)} · ${esc(provLabel(pr.provenance))}</div></div>`)));
     }
     if (d.rabatte.length) { section(t('search_sec_rabatte')); d.rabatte.forEach((r,i) => { r.rank = i+1; feed.appendChild(rabattCard(r)); }); }
-    if (d.exchange && d.exchange.length) { section('🔄 Biete/Suche'); d.exchange.forEach(e => feed.appendChild(exchangeCard(e))); }
+    if (d.exchange && d.exchange.length) { section(t('nav_exchange')); d.exchange.forEach(e => feed.appendChild(exchangeCard(e))); }
   } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
 
@@ -2478,15 +2511,15 @@ function editProfileForm(p) {
   feed.innerHTML = '';
   const specs = (p.specializations || []).join(', ');
   const form = el(`<div class="card">
-    <div class="row"><h1 style="flex:1">✏️ Profil bearbeiten</h1><button class="ghost small" data-cancel>Abbrechen</button></div>
-    <label>Anzeigename</label><input id="ep_name" value="${esc(p.display_name||'')}">
-    <label>Titel / Funktion (optional)</label><input id="ep_title" value="${esc(p.title||'')}" placeholder="z.B. Fachapothekerin, Einkauf">
-    <label>Über mich (optional, max. 500 Zeichen)</label><textarea id="ep_bio" placeholder="Kurz zu dir und deinem Schwerpunkt…">${esc(p.bio||'')}</textarea>
-    <label>Fachgebiete (mit Komma trennen)</label><input id="ep_specs" value="${esc(specs)}" placeholder="Onkologie, Diabetes, Impfen">
-    <label>Bundesland (optional)</label>
-    <select id="ep_bl"><option value="">— keine Angabe —</option>${BUNDESLAENDER.map(x=>`<option value="${x}"${x===(p.bundesland||'')?' selected':''}>${x}</option>`).join('')}</select>
-    <div class="muted" style="font-size:12px;margin-top:2px">Wird bei neuen Biete/Suche-Einträgen vorausgewählt.</div>
-    <div class="row" style="margin-top:12px"><button id="ep_save">Speichern</button><span class="err" id="ep_err" style="margin-left:10px"></span></div>
+    <div class="row"><h1 style="flex:1">${esc(t('pf_edit'))}</h1><button class="ghost small" data-cancel>${esc(t('cm_cancel'))}</button></div>
+    <label>${esc(t('ep_name'))}</label><input id="ep_name" value="${esc(p.display_name||'')}">
+    <label>${esc(t('ep_func'))}</label><input id="ep_title" value="${esc(p.title||'')}" placeholder="${esc(t('ep_func_ph'))}">
+    <label>${esc(t('ep_about'))}</label><textarea id="ep_bio" placeholder="${esc(t('ep_about_ph'))}">${esc(p.bio||'')}</textarea>
+    <label>${esc(t('ep_specs_l'))}</label><input id="ep_specs" value="${esc(specs)}" placeholder="${esc(t('ep_specs_ph'))}">
+    <label>${esc(t('ep_region'))}</label>
+    <select id="ep_bl"><option value="">${esc(t('ep_none'))}</option>${BUNDESLAENDER.map(x=>`<option value="${x}"${x===(p.bundesland||'')?' selected':''}>${x}</option>`).join('')}</select>
+    <div class="muted" style="font-size:12px;margin-top:2px">${esc(t('ep_region_hint'))}</div>
+    <div class="row" style="margin-top:12px"><button id="ep_save">${esc(t('cm_save'))}</button><span class="err" id="ep_err" style="margin-left:10px"></span></div>
   </div>`);
   feed.appendChild(form);
   document.getElementById('ep_save').onclick = async () => {
@@ -2565,31 +2598,31 @@ async function openProfile(handle) {
       renderVerifyCard(vcard);
     }
     if (d.is_self) {
-      const dcard = el(`<div class="card"><b>🔒 Datenschutz & Konto</b>
-        <div class="muted" style="margin-top:4px">Lade alle deine Daten (Profil, Beiträge, Kommentare, Nachrichten, Merkliste, Austausch) als Datei herunter (DSGVO).</div>
-        <div style="margin-top:8px"><button class="ghost small" id="dl_export">⬇️ Meine Daten exportieren</button></div>
+      const dcard = el(`<div class="card"><b>${esc(t('ac_title'))}</b>
+        <div class="muted" style="margin-top:4px">${esc(t('ac_export_d'))}</div>
+        <div style="margin-top:8px"><button class="ghost small" id="dl_export">${esc(t('ac_export_btn'))}</button></div>
         <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
-          <b style="font-size:0.95em">Passwort ändern</b>
-          <input id="pw_old" type="password" placeholder="Aktuelles Passwort" style="margin-top:6px">
-          <input id="pw_new" type="password" placeholder="Neues Passwort (mind. 8 Zeichen)" style="margin-top:6px">
-          <div class="row" style="margin-top:8px"><button class="small" id="pw_go">Passwort ändern</button><span id="pw_msg" style="margin-left:8px"></span></div>
+          <b style="font-size:0.95em">${esc(t('ac_pw_title'))}</b>
+          <input id="pw_old" type="password" placeholder="${esc(t('ac_pw_old'))}" style="margin-top:6px">
+          <input id="pw_new" type="password" placeholder="${esc(t('ac_pw_new'))}" style="margin-top:6px">
+          <div class="row" style="margin-top:8px"><button class="small" id="pw_go">${esc(t('ac_pw_title'))}</button><span id="pw_msg" style="margin-left:8px"></span></div>
         </div>
         <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
-          <b style="font-size:0.95em;color:var(--crit-fg)">Konto löschen</b>
-          <div class="muted" style="margin-top:4px">Unwiderruflich: alle deine Daten (Profil, Beiträge, Kommentare, Nachrichten, Austausch) werden gelöscht.</div>
-          <div class="row" style="margin-top:8px"><button class="ghost small" id="acc_del" style="color:var(--crit-fg);border-color:var(--crit-fg)">Konto endgültig löschen</button></div>
+          <b style="font-size:0.95em;color:var(--crit-fg)">${esc(t('ac_del_title'))}</b>
+          <div class="muted" style="margin-top:4px">${esc(t('ac_del_d'))}</div>
+          <div class="row" style="margin-top:8px"><button class="ghost small" id="acc_del" style="color:var(--crit-fg);border-color:var(--crit-fg)">${esc(t('ac_del_btn'))}</button></div>
         </div></div>`);
       dcard.querySelector('#acc_del').onclick = async () => {
-        if (!confirm('Dein Konto und alle Daten werden unwiderruflich gelöscht. Fortfahren?')) return;
-        const pwd = prompt('Zur Bestätigung dein Passwort eingeben:');
+        if (!confirm(t('ac_del_confirm'))) return;
+        const pwd = prompt(t('ac_del_pw'));
         if (!pwd) return;
-        try { await api('POST','/api/me/delete',{ password: pwd }); alert('Dein Konto wurde gelöscht.'); localStorage.removeItem('apo_token'); location.reload(); }
+        try { await api('POST','/api/me/delete',{ password: pwd }); alert(t('ac_del_done')); localStorage.removeItem('apo_token'); location.reload(); }
         catch(e){ alert(e.message); }
       };
       dcard.querySelector('#pw_go').onclick = async () => {
         const msg = dcard.querySelector('#pw_msg');
         try { await api('POST','/api/me/password',{ oldPassword:v('pw_old'), newPassword:v('pw_new') });
-          msg.style.color='var(--green)'; msg.textContent='✓ Passwort geändert'; dcard.querySelector('#pw_old').value=''; dcard.querySelector('#pw_new').value='';
+          msg.style.color='var(--green)'; msg.textContent=t('ac_pw_ok'); dcard.querySelector('#pw_old').value=''; dcard.querySelector('#pw_new').value='';
         } catch(e){ msg.style.color='var(--crit-fg)'; msg.textContent=e.message; }
       };
       dcard.querySelector('#dl_export').onclick = async () => {
@@ -2604,7 +2637,7 @@ async function openProfile(handle) {
       };
       feed.appendChild(dcard);
     }
-    if (!d.posts.length) feed.appendChild(el('<div class="card muted">Noch keine sichtbaren Beiträge.</div>'));
+    if (!d.posts.length) feed.appendChild(el(`<div class="card muted">${esc(t('pf_no_posts'))}</div>`));
     d.posts.forEach(post => feed.appendChild(postCard(post)));
   } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
