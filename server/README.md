@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🔒 **Kontotyp-Rechte — Schritt 2: Privatnutzer:innen kein Bestandsaustausch:** Konsistente
+>   Fortsetzung — der Bestandsaustausch (Biete/Suche) ist ein professioneller B2B-Vorgang; Privat-
+>   konten lesen/filtern Einträge, legen aber keine an (Backend 403 + Frontend-Hinweis statt
+>   Formular). Damit gilt: Privatkonten = Lesen + soziale Teilnahme (Posts/Kommentare/Reaktionen/
+>   Folgen), aber keine professionellen/sicherheitsrelevanten CREATE-Aktionen. Test grün (212).
 > - 🔒 **Kontotyp-Rechte — Schritt 1: Privatnutzer:innen keine Engpass-Meldungen (Durchsetzung):**
 >   Erste echte Rechte-Durchsetzung fürs Kontotyp-Modell, direkt aus dem Owner-Prinzip
 >   „Sicherheitsrelevante Aussagen nur mit Quelle". Engpass melden/bestätigen sind
