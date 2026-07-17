@@ -10,10 +10,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   Audit auf Mobil 390 fielen zwei Layout-Defekte auf: (1) der „Folgen"-Button brach
 >   mitten im Wort um; (2) auf Top-Rabatte gab es 80px Querscroll und der Rabatt-Prozentwert
 >   brach mitten in der Zahl um („−29.8%" → „−29.\n8%"). Fix in Etappen (jede per Screenshot
->   Hell+Dunkel, Desktop 1280 + Mobil 390 verifiziert): `.rabatt-badge` nowrap; `.row`
->   bekommt `flex-wrap:wrap`, sodass ein langer Aktions-Button (z. B. CSV-Export) in die
->   nächste Zeile rutscht, statt die Überschrift zu stauchen oder Querscroll zu erzeugen.
->   Kein Querscroll mehr auf allen sieben Haupt-Tabs.
+>   Hell+Dunkel, Desktop 1280 + Mobil 390 verifiziert): `.rabatt-badge` nowrap; Kopfzeilen mit
+>   Abstandshalter (`.row:has(> .sp)`) dürfen umbrechen, sodass ein langer Aktions-Button (z. B.
+>   CSV-Export) auf Mobil unter die Überschrift rutscht, statt sie zu stauchen — während
+>   Eingabe+Button-Zeilen (Suche/Folgen) einzeilig bleiben (Button neben dem Feld). Kein
+>   Querscroll mehr auf allen sieben Haupt-Tabs.
 > - 🛠️ **Kritischer Fix: `src/data/` war fälschlich gitignored → Deploy-Bruch behoben:** Die
 >   `.gitignore`-Regel `data/` (für Laufzeit-Snapshots gedacht) hat auch den Quellcode-Ordner
 >   `src/data/` erfasst — **`countries.js` (Fundament der gesamten i18n-/Mehrländer-Arbeit) war
