@@ -297,7 +297,7 @@ const I18N = {
     pc_comments:'💬 {n} Kommentare', pc_saved:'🔖 gemerkt', pc_save:'🔖 Merken', pc_share:'🔗 Teilen',
     pc_edit:'✏️ Bearbeiten', pc_delete:'🗑 Löschen', pc_report:'🚩 Melden',
     pc_reply_ph:'Antworten…', pc_send:'Senden', pc_copied:'✓ kopiert',
-    pc_answered:'✔ Beantwortet', pc_question_open:'❓ Offene Fachfrage',
+    pc_answered:'✔ Beantwortet', pc_question_open:'❓ Offene Fachfrage', pc_del_confirm:'Diesen Beitrag wirklich löschen?',
     cm_empty:'Noch keine Kommentare.', cm_best:'✔ Beste Antwort', cm_img_alt:'Bild zum Kommentar',
     cm_reply:'↩ Antworten', cm_accept:'✔ Als beste Antwort', cm_unaccept:'✔ Beste Antwort (aufheben)',
     cm_accept_title:'Diese Antwort als beste markieren', cm_report_title:'Kommentar melden',
@@ -388,6 +388,8 @@ const I18N = {
     wk_deals_t:'🏷️ Laufende Aktionen', wk_deals_e:'Keine laufende Aktion.',
     wk_disc_t:'💬 Diskussion & Fragen', wk_write:'✍ Beitrag verfassen', wk_write_ph:'Etwas zu {w} teilen oder fragen…',
     wk_ask:'❓ Als Fachfrage stellen', wk_post_public:'Öffentlich posten', wk_no_posts:'Noch keine Beiträge dazu — verfasse den ersten.', wk_need_body:'Bitte etwas schreiben.',
+    sg_title:'👥 Vorschläge zum Folgen', nb_title:'📍 Apotheken in {bl}', nb_following:'✓ folgst du',
+    nb_sub:'Kolleg:innen in deinem Bundesland — vernetze dich für den Bestandsaustausch.',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -510,7 +512,7 @@ const I18N = {
     pc_comments:'💬 {n} comments', pc_saved:'🔖 saved', pc_save:'🔖 Save', pc_share:'🔗 Share',
     pc_edit:'✏️ Edit', pc_delete:'🗑 Delete', pc_report:'🚩 Report',
     pc_reply_ph:'Reply…', pc_send:'Send', pc_copied:'✓ copied',
-    pc_answered:'✔ Answered', pc_question_open:'❓ Open question',
+    pc_answered:'✔ Answered', pc_question_open:'❓ Open question', pc_del_confirm:'Really delete this post?',
     cm_empty:'No comments yet.', cm_best:'✔ Best answer', cm_img_alt:'Comment image',
     cm_reply:'↩ Reply', cm_accept:'✔ Mark as best answer', cm_unaccept:'✔ Best answer (remove)',
     cm_accept_title:'Mark this answer as best', cm_report_title:'Report comment',
@@ -601,6 +603,8 @@ const I18N = {
     wk_deals_t:'🏷️ Running deals', wk_deals_e:'No running deal.',
     wk_disc_t:'💬 Discussion & questions', wk_write:'✍ Write a post', wk_write_ph:'Share or ask something about {w}…',
     wk_ask:'❓ Ask as a professional question', wk_post_public:'Post publicly', wk_no_posts:'No posts about it yet — write the first.', wk_need_body:'Please write something.',
+    sg_title:'👥 Suggestions to follow', nb_title:'📍 Pharmacies in {bl}', nb_following:'✓ following',
+    nb_sub:'Colleagues in your region — connect for stock exchange.',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -723,7 +727,7 @@ const I18N = {
     pc_comments:'💬 {n} comentários', pc_saved:'🔖 guardado', pc_save:'🔖 Guardar', pc_share:'🔗 Partilhar',
     pc_edit:'✏️ Editar', pc_delete:'🗑 Eliminar', pc_report:'🚩 Denunciar',
     pc_reply_ph:'Responder…', pc_send:'Enviar', pc_copied:'✓ copiado',
-    pc_answered:'✔ Respondida', pc_question_open:'❓ Pergunta em aberto',
+    pc_answered:'✔ Respondida', pc_question_open:'❓ Pergunta em aberto', pc_del_confirm:'Eliminar mesmo esta publicação?',
     cm_empty:'Ainda sem comentários.', cm_best:'✔ Melhor resposta', cm_img_alt:'Imagem do comentário',
     cm_reply:'↩ Responder', cm_accept:'✔ Marcar como melhor resposta', cm_unaccept:'✔ Melhor resposta (remover)',
     cm_accept_title:'Marcar esta resposta como a melhor', cm_report_title:'Denunciar comentário',
@@ -814,6 +818,8 @@ const I18N = {
     wk_deals_t:'🏷️ Promoções ativas', wk_deals_e:'Sem promoção ativa.',
     wk_disc_t:'💬 Discussão & perguntas', wk_write:'✍ Escrever publicação', wk_write_ph:'Partilhe ou pergunte algo sobre {w}…',
     wk_ask:'❓ Colocar como pergunta técnica', wk_post_public:'Publicar publicamente', wk_no_posts:'Ainda sem publicações — seja o primeiro.', wk_need_body:'Escreva algo, por favor.',
+    sg_title:'👥 Sugestões para seguir', nb_title:'📍 Farmácias em {bl}', nb_following:'✓ a seguir',
+    nb_sub:'Colegas na sua região — ligue-se para a troca de stock.',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -914,11 +920,11 @@ const relTime = (iso) => {
   if (days < 7) return days===1 ? t('rt_day_one') : ti('rt_day_many',{n:days});
   return d.toLocaleDateString(t('_bcp47'), { day:'2-digit', month:'2-digit', year:'numeric' });
 };
-// Kalendertag (YYYY-MM-DD) als deutsches Datum; bei ungültiger Eingabe Rohtext.
+// Kalendertag (YYYY-MM-DD) im Datumsformat der aktiven Sprache; bei ungültiger Eingabe Rohtext.
 const fmtDateDe = (ymd) => {
-  const t = Date.parse(String(ymd || '') + 'T00:00:00Z');
-  if (Number.isNaN(t)) return String(ymd || '');
-  return new Date(t).toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric', timeZone:'UTC' });
+  const ts = Date.parse(String(ymd || '') + 'T00:00:00Z');
+  if (Number.isNaN(ts)) return String(ymd || '');
+  return new Date(ts).toLocaleDateString(t('_bcp47'), { day:'2-digit', month:'2-digit', year:'numeric', timeZone:'UTC' });
 };
 // Text escapen UND @Handles + #Hashtags anklickbar machen (kein @ mitten in E-Mails).
 const linkifyMentions = (s) => esc(s)
@@ -1317,20 +1323,20 @@ async function renderNearbyColleagues(feed) {
   let d;
   try { d = await api('GET','/api/colleagues/nearby'); } catch { return; }
   if (!d.bundesland || !d.people.length) return;
-  const card = el(`<div class="card"><div class="row"><b>📍 Apotheken in ${esc(d.bundesland)}</b><span class="muted" style="font-size:13px;margin-left:8px">${d.people.length}</span></div>
-    <div class="muted" style="font-size:13px;margin:2px 0 6px">Kolleg:innen in deinem Bundesland — vernetze dich für den Bestandsaustausch.</div><div data-nb></div></div>`);
+  const card = el(`<div class="card"><div class="row"><b>${esc(ti('nb_title',{bl:d.bundesland}))}</b><span class="muted" style="font-size:13px;margin-left:8px">${d.people.length}</span></div>
+    <div class="muted" style="font-size:13px;margin:2px 0 6px">${esc(t('nb_sub'))}</div><div data-nb></div></div>`);
   const box = card.querySelector('[data-nb]');
   d.people.forEach(p => {
     const row = el(`<div class="comment"><div class="row" style="align-items:baseline">
-      <b class="clickable" data-openprofile="${esc(p.handle)}">${esc(p.display_name||'Unbekannt')}</b>
+      <b class="clickable" data-openprofile="${esc(p.handle)}">${esc(p.display_name||t('ex_unknown'))}</b>
       <span class="handle clickable" data-openprofile="${esc(p.handle)}">@${esc(p.handle)}</span>
-      ${p.is_editorial?'<span class="editorial">📰 Redaktion</span>':''}${p.verified?'<span class="verified">✔</span>':''}
+      ${p.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}${p.verified?'<span class="verified">✔</span>':''}
       <span class="sp" style="flex:1"></span>
-      ${p.is_following?'<span class="muted" style="font-size:13px">✓ folgst du</span>':`<button class="small" data-follow="${esc(p.handle)}">+ Folgen</button>`}
+      ${p.is_following?`<span class="muted" style="font-size:13px">${esc(t('nb_following'))}</span>`:`<button class="small" data-follow="${esc(p.handle)}">${esc(t('pf_follow'))}</button>`}
     </div>${p.title?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(p.title)}</div>`:''}</div>`);
     row.querySelectorAll('[data-openprofile]').forEach(el=>el.onclick=()=>openProfile(el.dataset.openprofile));
     const fb = row.querySelector('[data-follow]');
-    if (fb) fb.onclick = async (ev) => { try { await api('POST','/api/follow',{ handle:p.handle }); ev.target.textContent='✓ Folgst'; ev.target.disabled=true; } catch(e){ alert(e.message); } };
+    if (fb) fb.onclick = async (ev) => { try { await api('POST','/api/follow',{ handle:p.handle }); ev.target.textContent=t('fl_following_btn'); ev.target.disabled=true; } catch(e){ alert(e.message); } };
     box.appendChild(row);
   });
   feed.appendChild(card);
@@ -2285,15 +2291,15 @@ async function renderSuggestions(feed) {
   try {
     const s = await api('GET','/api/suggestions/follow');
     if (!s.suggestions.length) return;
-    const card = el('<div class="card"><b>👥 Vorschläge zum Folgen</b><div data-sug style="margin-top:6px"></div></div>');
+    const card = el(`<div class="card"><b>${esc(t('sg_title'))}</b><div data-sug style="margin-top:6px"></div></div>`);
     const box = card.querySelector('[data-sug]');
     s.suggestions.forEach(p => {
       const row = el(`<div class="comment"><div class="row" style="align-items:baseline">
         <b class="clickable" data-openprofile="${esc(p.handle)}">${esc(p.display_name)}</b>
         <span class="handle clickable" data-openprofile="${esc(p.handle)}">@${esc(p.handle)}</span>
-        ${p.is_editorial?'<span class="editorial">📰 Redaktion</span>':''}${p.verified?'<span class="verified">✔</span>':''}
+        ${p.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}${p.verified?'<span class="verified">✔</span>':''}
         <span class="sp" style="flex:1"></span>
-        <button class="small" data-follow="${esc(p.handle)}">+ Folgen</button></div>
+        <button class="small" data-follow="${esc(p.handle)}">${esc(t('pf_follow'))}</button></div>
         ${p.specializations&&p.specializations.length?`<div class="muted" style="font-size:13px;margin-top:2px">${p.specializations.map(esc).join(' · ')}</div>`:''}</div>`);
       row.querySelectorAll('[data-openprofile]').forEach(el=>el.onclick=()=>openProfile(el.dataset.openprofile));
       row.querySelector('[data-follow]').onclick = async (ev) => {
@@ -3087,7 +3093,7 @@ function postCard(p) {
   };
   const delb = card.querySelector('[data-del]');
   if (delb) delb.onclick = async () => {
-    if (!confirm('Diesen Beitrag wirklich löschen?')) return;
+    if (!confirm(t('pc_del_confirm'))) return;
     try { await api('POST',`/api/posts/${p.id}/delete`); card.remove(); } catch(e){ alert(e.message); }
   };
   const editb = card.querySelector('[data-edit]');
@@ -3097,7 +3103,7 @@ function postCard(p) {
     const cur = bodyEl.textContent;
     const box = el(`<div data-editbox style="margin:8px 0">
       <textarea data-eb>${esc(cur)}</textarea>
-      <div class="row" style="margin-top:6px"><button class="small" data-ebsave>Speichern</button><button class="ghost small" data-ebcancel>Abbrechen</button><span class="err" data-eberr style="margin-left:8px"></span></div>
+      <div class="row" style="margin-top:6px"><button class="small" data-ebsave>${esc(t('cm_save'))}</button><button class="ghost small" data-ebcancel>${esc(t('cm_cancel'))}</button><span class="err" data-eberr style="margin-left:8px"></span></div>
     </div>`);
     bodyEl.style.display = 'none';
     bodyEl.after(box);

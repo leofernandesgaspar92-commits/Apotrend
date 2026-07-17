@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3ae: Feinschliff — Datumsformat, Entdeckungs-Karten, Dialoge:**
+>   `fmtDateDe()` formatiert Kalenderdaten jetzt **locale-korrekt** (z. B. „15/08/2026" für PT über
+>   `_bcp47`) statt fest deutsch. Übersetzt: die „Vorschläge zum Folgen"- und „Apotheken in
+>   {Bundesland}"-Karten (inkl. Folgen/„folgst du"), die Beitrag-Bearbeiten-Box (Speichern/
+>   Abbrechen) und der Beitrag-Löschen-Dialog. (Browser verifiziert: „Sugestões para seguir /
+>   Farmácias em Lisboa / 15/08/2026", keine JS-Fehler.) Rest: 3 Spezialseiten (Stewardship-Forum,
+>   Patienten-Infokarten, Begleitzettel) + kurze Lade-Spinner.
 > - 🌍 **Länderübergreifend — Schritt 3ad: Wirkstoff-Detailseite mehrsprachig — letzte Seite:** Die
 >   Wirkstoff-Seite (Untertitel, Beobachten/Teilen, Antibiotika-Stewardship-Panel, Engpass-Status
 >   mit Direkt-Melden-Formular, die Abschnitte „Wer bietet/sucht", „Preisvergleich", „Laufende
