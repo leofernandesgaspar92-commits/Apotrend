@@ -3173,7 +3173,7 @@ function postCard(p) {
       ${a.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
       ${a.account_type&&a.account_type!=='pharmacy'?`<span class="spec" style="margin-left:2px">${esc(acctLabel(a.account_type))}</span>`:''}
       <span class="sp" style="flex:1"></span>
-      ${mine?'':`<button class="ghost small" data-follow="${esc(a.handle)}">${esc(t('co_follow_btn'))}</button>`}
+      ${mine?'':`<button class="${a.is_following?'ghost ':''}small" data-follow="${esc(a.handle)}" data-on="${a.is_following?'1':'0'}">${a.is_following?esc(t('fl_following_btn')):esc(t('co_follow_btn'))}</button>`}
     </div>
     <div class="muted" style="font-size:13px" title="${esc(p.created_at)}">🕒 ${relTime(p.created_at)}</div>
     ${p.is_question?`<div style="margin-top:4px" data-qbadge>${qBadgeHtml(p.answered)}</div>`:''}
@@ -3203,7 +3203,7 @@ function postCard(p) {
     try { await api('POST',`/api/posts/${p.id}/react`,{ type:btn.dataset.react }); loadFeed(); } catch(e){ alert(e.message); }
   });
   const fb = card.querySelector('[data-follow]');
-  if (fb) fb.onclick = async () => { try { await api('POST','/api/follow',{ handle:fb.dataset.follow }); loadFeed(); } catch(e){ alert(e.message);} };
+  if (fb) fb.onclick = async () => { const on = fb.dataset.on === '1'; try { await api('POST', on?'/api/unfollow':'/api/follow', { handle:fb.dataset.follow }); loadFeed(); } catch(e){ alert(e.message);} };
   card.querySelectorAll('[data-openprofile]').forEach(el => { if (el.dataset.openprofile) el.onclick = () => openProfile(el.dataset.openprofile); });
   card.querySelectorAll('[data-hashtag]').forEach(el => el.onclick = () => openHashtag(el.dataset.hashtag));
   const sh = card.querySelector('[data-share]');
