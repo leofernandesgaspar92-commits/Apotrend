@@ -6,6 +6,15 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 👍 **Eigene Reaktion sichtbar + umschaltbar:** Nach dem Reagieren war nicht erkennbar,
+>   welche Reaktion man selbst gewählt hatte (nur der Zähler stieg), und man konnte sie nicht
+>   wieder entfernen. Jetzt: Backend liefert `my_reaction` (Beiträge + Kommentare, Betrachter-
+>   spezifisch); die aktive Reaktion ist grün markiert (+ `aria-pressed` für Screenreader);
+>   erneuter Klick entfernt sie (`react()`-Toggle). 210 Tests grün (my_reaction + Toggle).
+> - 🏭 **Kontotyp-/Redaktions-/Verifiziert-Badges konsistent (Beiträge · Kommentare · Profil):**
+>   Kommentare zeigten nur Name+Handle — eine Antwort von Redaktion/Behörde/Pharma war nicht von
+>   einer Kolleg:innen-Antwort zu unterscheiden. Kommentar-Autor:innen-Payload trägt jetzt
+>   dieselben Felder wie Beiträge; gleiche Badges (Kontotyp nur abweichend von Apotheke).
 > - 💬 **Alle Dialoge mehrsprachig + Formular-Labels verknüpft:** Restliche hartkodierte
 >   deutsche Texte beseitigt — 15 `confirm`/`alert`/`prompt`-Dialoge (Engpass-Resolve, Beitrag
 >   melden, Clipboard-Fallbacks) laufen jetzt über `t()` (DE/EN/PT; Sweep: 0 literale Dialog-
