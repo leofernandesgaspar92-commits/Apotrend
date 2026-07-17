@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3ac: „Meine Aktivität"-Seite mehrsprachig (DE/EN/PT):** Die
+>   Aktivitätsseite (Titel, Untertitel, Beitrag-Statistik mit allen Kennzahl-Labels, „Meine
+>   Fachfragen/Engpass-Meldungen/Austausch-Einträge" inkl. Zähler, offen-Suffix, Bestätigungen und
+>   Leerzustände) ist jetzt übersetzt. (Browser verifiziert: „🗂️ A minha atividade / As minhas
+>   estatísticas / Publicações / Perguntas / Confirmações recebidas".)
 > - 🌍 **Länderübergreifend — Schritt 3ab: Merkliste, Hashtag-Seite & Wirkstoff-Dashboard-Karten:**
 >   Die Merklisten-Seite und die Hashtag-Themenseite (Titel, Zähler, Zurück, Leerzustände) sowie
 >   die zwei bedingten „Für dich"-Karten (🏷️ Aktionen / 🔄 Bezugsquellen zu deinen Wirkstoffen,

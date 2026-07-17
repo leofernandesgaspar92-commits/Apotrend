@@ -371,6 +371,12 @@ const I18N = {
     bm_doc:'Merkliste', bm_title:'🔖 Meine Merkliste', bm_empty_t:'Noch nichts gemerkt',
     bm_empty_s:'Tippe bei einem Beitrag auf „🔖 Merken", dann findest du ihn hier jederzeit wieder.',
     ht_posts:'{n} Beiträge', ht_empty_t:'Noch keine Beiträge zu diesem Thema', ht_empty_s:'Sei der/die Erste und schreibe etwas mit #{tag}.',
+    ma_doc:'Meine Aktivität', ma_title:'🗂️ Meine Aktivität', ma_sub:'Deine Fragen, Engpass-Meldungen und Austausch-Einträge auf einen Blick.',
+    ma_stats:'📊 Meine Beitrag-Statistik', ma_k_posts:'Beiträge', ma_k_questions:'Fragen', ma_open_suffix:'offen',
+    ma_k_best:'Beste Antworten', ma_k_reports:'Engpass-Meldungen', ma_k_confirms:'Bestätigungen erhalten', ma_k_exchange:'Austausch-Einträge',
+    ma_q_title:'❓ Meine Fachfragen', ma_total:'gesamt', ma_no_q:'Noch keine Fragen gestellt.',
+    ma_r_title:'👥 Meine Engpass-Meldungen', ma_no_r:'Noch keine Engpässe gemeldet.', ma_confirmed:'{n} bestätigt',
+    ma_e_title:'🔄 Meine Austausch-Einträge', ma_no_e:'Noch keine Biete/Suche-Einträge.',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -567,6 +573,12 @@ const I18N = {
     bm_doc:'Bookmarks', bm_title:'🔖 My bookmarks', bm_empty_t:'Nothing saved yet',
     bm_empty_s:'Tap “🔖 Save” on a post to find it here anytime.',
     ht_posts:'{n} posts', ht_empty_t:'No posts on this topic yet', ht_empty_s:'Be the first and post something with #{tag}.',
+    ma_doc:'My activity', ma_title:'🗂️ My activity', ma_sub:'Your questions, shortage reports and exchange entries at a glance.',
+    ma_stats:'📊 My contribution stats', ma_k_posts:'Posts', ma_k_questions:'Questions', ma_open_suffix:'open',
+    ma_k_best:'Best answers', ma_k_reports:'Shortage reports', ma_k_confirms:'Confirmations received', ma_k_exchange:'Exchange entries',
+    ma_q_title:'❓ My questions', ma_total:'total', ma_no_q:'No questions asked yet.',
+    ma_r_title:'👥 My shortage reports', ma_no_r:'No shortages reported yet.', ma_confirmed:'{n} confirmed',
+    ma_e_title:'🔄 My exchange entries', ma_no_e:'No offer/seek entries yet.',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -763,6 +775,12 @@ const I18N = {
     bm_doc:'Marcadores', bm_title:'🔖 Os meus marcadores', bm_empty_t:'Ainda nada guardado',
     bm_empty_s:'Toque em “🔖 Guardar” numa publicação para a encontrar aqui a qualquer momento.',
     ht_posts:'{n} publicações', ht_empty_t:'Ainda sem publicações sobre este tema', ht_empty_s:'Seja o primeiro e publique algo com #{tag}.',
+    ma_doc:'A minha atividade', ma_title:'🗂️ A minha atividade', ma_sub:'As suas perguntas, avisos de falta e entradas de troca num relance.',
+    ma_stats:'📊 As minhas estatísticas', ma_k_posts:'Publicações', ma_k_questions:'Perguntas', ma_open_suffix:'em aberto',
+    ma_k_best:'Melhores respostas', ma_k_reports:'Avisos de falta', ma_k_confirms:'Confirmações recebidas', ma_k_exchange:'Entradas de troca',
+    ma_q_title:'❓ As minhas perguntas', ma_total:'no total', ma_no_q:'Ainda sem perguntas.',
+    ma_r_title:'👥 Os meus avisos de falta', ma_no_r:'Ainda sem faltas reportadas.', ma_confirmed:'{n} confirmaram',
+    ma_e_title:'🔄 As minhas entradas de troca', ma_no_e:'Ainda sem entradas de oferta/procura.',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -2748,17 +2766,17 @@ async function openFollowList(handle, which) {
 
 // Eigene Aktivität an einem Ort: Fragen, Engpass-Meldungen, Austausch-Einträge.
 async function openMyActivity() {
-  setDocTitle('Meine Aktivität');
+  setDocTitle(t('ma_doc'));
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
-  feed.innerHTML = '<div class="loading">lädt…</div>';
+  feed.innerHTML = '<div class="loading">…</div>';
   let d;
   try { d = await api('GET','/api/me/activity'); }
   catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   feed.innerHTML = '';
-  const head = el(`<div class="card"><div><button class="ghost small" data-back>← zurück</button></div>
-    <h1 style="margin:8px 0 2px">🗂️ Meine Aktivität</h1>
-    <div class="muted">Deine Fragen, Engpass-Meldungen und Austausch-Einträge auf einen Blick.</div></div>`);
+  const head = el(`<div class="card"><div><button class="ghost small" data-back>${esc(t('search_back'))}</button></div>
+    <h1 style="margin:8px 0 2px">${esc(t('ma_title'))}</h1>
+    <div class="muted">${esc(t('ma_sub'))}</div></div>`);
   head.querySelector('[data-back]').onclick = () => me && openProfile(me.handle);
   feed.appendChild(head);
 
@@ -2767,44 +2785,44 @@ async function openMyActivity() {
   const kpi = (val, label, color) => `<div style="flex:1;min-width:96px;text-align:center;padding:10px 8px;background:var(--card2,rgba(0,0,0,.03));border-radius:10px">
       <div style="font-size:26px;font-weight:800;line-height:1.1;color:${color||'inherit'}">${val}</div>
       <div class="muted" style="font-size:13px;margin-top:2px">${label}</div></div>`;
-  const scard = el(`<div class="card"><div class="row"><b>📊 Meine Beitrag-Statistik</b></div>
+  const scard = el(`<div class="card"><div class="row"><b>${esc(t('ma_stats'))}</b></div>
     <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">
-      ${kpi(st.posts||0, 'Beiträge')}
-      ${kpi(st.questions||0, st.questions_open?`Fragen · ${st.questions_open} offen`:'Fragen')}
-      ${kpi(st.best_answers||0, 'Beste Antworten', st.best_answers?'#0b7f28':null)}
-      ${kpi(st.reports||0, 'Engpass-Meldungen')}
-      ${kpi(st.confirms_received||0, 'Bestätigungen erhalten')}
-      ${kpi(st.exchange||0, 'Austausch-Einträge')}
+      ${kpi(st.posts||0, t('ma_k_posts'))}
+      ${kpi(st.questions||0, st.questions_open?`${t('ma_k_questions')} · ${st.questions_open} ${t('ma_open_suffix')}`:t('ma_k_questions'))}
+      ${kpi(st.best_answers||0, t('ma_k_best'), st.best_answers?'#0b7f28':null)}
+      ${kpi(st.reports||0, t('ma_k_reports'))}
+      ${kpi(st.confirms_received||0, t('ma_k_confirms'))}
+      ${kpi(st.exchange||0, t('ma_k_exchange'))}
     </div></div>`);
   feed.appendChild(scard);
 
   // Meine Fragen
   const qOpen = d.questions.filter(q=>!q.answered).length;
-  const qcard = el(`<div class="card"><div class="row"><b>❓ Meine Fachfragen</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:13px">${d.questions.length} gesamt${qOpen?` · ${qOpen} offen`:''}</span></div><div data-qs style="margin-top:6px"></div></div>`);
+  const qcard = el(`<div class="card"><div class="row"><b>${esc(t('ma_q_title'))}</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:13px">${d.questions.length} ${esc(t('ma_total'))}${qOpen?` · ${qOpen} ${esc(t('ma_open_suffix'))}`:''}</span></div><div data-qs style="margin-top:6px"></div></div>`);
   const qs = qcard.querySelector('[data-qs]');
-  if (!d.questions.length) qs.appendChild(el('<div class="muted" style="font-size:14px">Noch keine Fragen gestellt.</div>'));
+  if (!d.questions.length) qs.appendChild(el(`<div class="muted" style="font-size:14px">${esc(t('ma_no_q'))}</div>`));
   else d.questions.forEach(q => {
-    const row = el(`<div class="comment clickable"><span style="color:${q.answered?'var(--ok-fg)':'var(--info-fg)'};font-weight:700">${q.answered?'✔':'❓'}</span> ${esc((q.body||'').slice(0,90))}${(q.body||'').length>90?'…':''} <span class="muted" style="font-size:12px">· ${q.comment_count||0} Antworten</span></div>`);
+    const row = el(`<div class="comment clickable"><span style="color:${q.answered?'var(--ok-fg)':'var(--info-fg)'};font-weight:700">${q.answered?'✔':'❓'}</span> ${esc((q.body||'').slice(0,90))}${(q.body||'').length>90?'…':''} <span class="muted" style="font-size:12px">· ${q.comment_count||0} ${esc(t('oq_answer_pl'))}</span></div>`);
     row.onclick = () => openPost(q.id);
     qs.appendChild(row);
   });
   feed.appendChild(qcard);
 
   // Meine Engpass-Meldungen
-  const rcard = el(`<div class="card"><div class="row"><b>👥 Meine Engpass-Meldungen</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:13px">${d.reports.length} gesamt</span></div><div data-rs style="margin-top:6px"></div></div>`);
+  const rcard = el(`<div class="card"><div class="row"><b>${esc(t('ma_r_title'))}</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:13px">${d.reports.length} ${esc(t('ma_total'))}</span></div><div data-rs style="margin-top:6px"></div></div>`);
   const rs = rcard.querySelector('[data-rs]');
-  if (!d.reports.length) rs.appendChild(el('<div class="muted" style="font-size:14px">Noch keine Engpässe gemeldet.</div>'));
+  if (!d.reports.length) rs.appendChild(el(`<div class="muted" style="font-size:14px">${esc(t('ma_no_r'))}</div>`));
   else d.reports.forEach(s => {
     const m = watchStatusMeta(s.status);
-    const row = el(`<div class="comment clickable">${m.icon} <b>${esc(s.wirkstoff)}</b> <span style="color:${m.color};font-weight:700;font-size:12px">${m.label}</span>${s.confirm_count?` · <span class="muted" style="font-size:12px">${s.confirm_count} bestätigt</span>`:''}</div>`);
+    const row = el(`<div class="comment clickable">${m.icon} <b>${esc(s.wirkstoff)}</b> <span style="color:${m.color};font-weight:700;font-size:12px">${m.label}</span>${s.confirm_count?` · <span class="muted" style="font-size:12px">${esc(ti('ma_confirmed',{n:s.confirm_count}))}</span>`:''}</div>`);
     row.onclick = () => goTab('shortages');
     rs.appendChild(row);
   });
   feed.appendChild(rcard);
 
   // Meine Austausch-Einträge
-  const ecard = el(`<div class="card"><div class="row"><b>🔄 Meine Austausch-Einträge</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:13px">${d.exchange.length} gesamt</span></div></div>`);
-  if (!d.exchange.length) ecard.appendChild(el('<div class="muted" style="font-size:14px;margin-top:6px">Noch keine Biete/Suche-Einträge.</div>'));
+  const ecard = el(`<div class="card"><div class="row"><b>${esc(t('ma_e_title'))}</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:13px">${d.exchange.length} ${esc(t('ma_total'))}</span></div></div>`);
+  if (!d.exchange.length) ecard.appendChild(el(`<div class="muted" style="font-size:14px;margin-top:6px">${esc(t('ma_no_e'))}</div>`));
   else d.exchange.forEach(e => ecard.appendChild(exchangeCard(e)));
   feed.appendChild(ecard);
 }
