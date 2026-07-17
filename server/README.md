@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - 🌍 **Länderübergreifend — Schritt 3q: Beitragskarten mehrsprachig (DE/EN/PT):** Die
+>   `postCard`-Karten sind jetzt übersetzt: Reaktionen (Hilfreich/Danke/Bestätigt/Interessant —
+>   `REACTS` von festem Label auf i18n-Key umgestellt, wirkt auch bei Kommentar-Reaktionen),
+>   Kommentare-Zähler, Merken/Teilen/Bearbeiten/Löschen/Melden, Sichtbarkeit (öffentlich/Follower),
+>   Verifiziert-/Redaktion-/Fachfrage-Badges, Quelle, Antwort-Feld. (Browser verifiziert: echter
+>   PT-Beitrag mit „👍 Útil / 💬 0 comentários / 🔗 Partilhar / 🌍 público".) Offen: der
+>   Kommentar-Thread (einzelne Kommentare, beste-Antwort-Flow).
 > - 🌍 **Länderübergreifend — Schritt 3p: Beitrags-Composer mehrsprachig (DE/EN/PT):** Das
 >   Verfassen-Formular (Beitrag/Fachfrage, Quelle, Bild, Sichtbarkeit öffentlich/Follower, Posten)
 >   und die „Jemandem folgen"-Karte sind jetzt übersetzt — via `data-i18n`/`data-i18n-ph`, also

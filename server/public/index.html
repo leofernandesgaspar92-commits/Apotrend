@@ -291,6 +291,13 @@ const I18N = {
     co_question:'❓ Als Fachfrage stellen (beste Antwort auswählbar)',
     pv_public:'🌍 Öffentlich (alle Apotheker)', pv_followers:'👥 Nur meine Follower',
     co_follow_label:'Jemandem folgen (@Handle)', co_follow_btn:'Folgen',
+    react_helpful:'👍 Hilfreich', react_thanks:'🙏 Danke', react_confirmed:'✅ Bestätigt', react_interesting:'💡 Interessant',
+    pc_verified:'✔ verifiziert', pc_img_alt:'Bild zum Beitrag', pc_source:'🔗 Quelle',
+    pc_edited:'✏️ bearbeitet', pc_vis_public:'🌍 öffentlich', pc_vis_followers:'👥 nur Follower',
+    pc_comments:'💬 {n} Kommentare', pc_saved:'🔖 gemerkt', pc_save:'🔖 Merken', pc_share:'🔗 Teilen',
+    pc_edit:'✏️ Bearbeiten', pc_delete:'🗑 Löschen', pc_report:'🚩 Melden',
+    pc_reply_ph:'Antworten…', pc_send:'Senden', pc_copied:'✓ kopiert',
+    pc_answered:'✔ Beantwortet', pc_question_open:'❓ Offene Fachfrage',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -407,6 +414,13 @@ const I18N = {
     co_question:'❓ Ask as a professional question (mark the best answer)',
     pv_public:'🌍 Public (all pharmacists)', pv_followers:'👥 My followers only',
     co_follow_label:'Follow someone (@handle)', co_follow_btn:'Follow',
+    react_helpful:'👍 Helpful', react_thanks:'🙏 Thanks', react_confirmed:'✅ Confirmed', react_interesting:'💡 Interesting',
+    pc_verified:'✔ verified', pc_img_alt:'Post image', pc_source:'🔗 Source',
+    pc_edited:'✏️ edited', pc_vis_public:'🌍 public', pc_vis_followers:'👥 followers only',
+    pc_comments:'💬 {n} comments', pc_saved:'🔖 saved', pc_save:'🔖 Save', pc_share:'🔗 Share',
+    pc_edit:'✏️ Edit', pc_delete:'🗑 Delete', pc_report:'🚩 Report',
+    pc_reply_ph:'Reply…', pc_send:'Send', pc_copied:'✓ copied',
+    pc_answered:'✔ Answered', pc_question_open:'❓ Open question',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -523,6 +537,13 @@ const I18N = {
     co_question:'❓ Colocar como pergunta técnica (permite marcar a melhor resposta)',
     pv_public:'🌍 Público (todos os farmacêuticos)', pv_followers:'👥 Só os meus seguidores',
     co_follow_label:'Seguir alguém (@handle)', co_follow_btn:'Seguir',
+    react_helpful:'👍 Útil', react_thanks:'🙏 Obrigado', react_confirmed:'✅ Confirmado', react_interesting:'💡 Interessante',
+    pc_verified:'✔ verificado', pc_img_alt:'Imagem da publicação', pc_source:'🔗 Fonte',
+    pc_edited:'✏️ editado', pc_vis_public:'🌍 público', pc_vis_followers:'👥 só seguidores',
+    pc_comments:'💬 {n} comentários', pc_saved:'🔖 guardado', pc_save:'🔖 Guardar', pc_share:'🔗 Partilhar',
+    pc_edit:'✏️ Editar', pc_delete:'🗑 Eliminar', pc_report:'🚩 Denunciar',
+    pc_reply_ph:'Responder…', pc_send:'Enviar', pc_copied:'✓ copiado',
+    pc_answered:'✔ Respondida', pc_question_open:'❓ Pergunta em aberto',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -1937,7 +1958,8 @@ function rabattCard(r) {
   return card;
 }
 
-const REACTS = [['hilfreich','👍 Hilfreich'],['danke','🙏 Danke'],['bestaetigt','✅ Bestätigt'],['interessant','💡 Interessant']];
+// Reaktionen: [Schlüssel, i18n-Key]. Label wird beim Rendern übersetzt (Emoji bleibt zuerst).
+const REACTS = [['hilfreich','react_helpful'],['danke','react_thanks'],['bestaetigt','react_confirmed'],['interessant','react_interesting']];
 
 function refChip(r) {
   if (!r) return '';
@@ -2741,7 +2763,7 @@ async function renderVerifyCard(card) {
 }
 
 function qBadgeHtml(answered) {
-  return `<span style="display:inline-block;background:${answered?'rgba(11,127,40,.12)':'rgba(41,82,204,.12)'};color:${answered?'var(--ok-fg)':'var(--info-fg)'};font-weight:700;font-size:13px;padding:2px 10px;border-radius:999px">${answered?'✔ Beantwortet':'❓ Offene Fachfrage'}</span>`;
+  return `<span style="display:inline-block;background:${answered?'rgba(11,127,40,.12)':'rgba(41,82,204,.12)'};color:${answered?'var(--ok-fg)':'var(--info-fg)'};font-weight:700;font-size:13px;padding:2px 10px;border-radius:999px">${esc(answered?t('pc_answered'):t('pc_question_open'))}</span>`;
 }
 
 function postCard(p) {
@@ -2750,33 +2772,33 @@ function postCard(p) {
   const mine = me && a.handle === me.handle;
   const card = el(`<div class="card">
     <div class="row">
-      <span class="post-author clickable" data-openprofile="${esc(a.handle||'')}">${esc(a.display_name||'Unbekannt')}</span>
+      <span class="post-author clickable" data-openprofile="${esc(a.handle||'')}">${esc(a.display_name||t('ex_unknown'))}</span>
       <span class="handle clickable" data-openprofile="${esc(a.handle||'')}">@${esc(a.handle||'?')}</span>
-      ${a.is_editorial?'<span class="editorial">📰 Redaktion</span>':''}
-      ${a.verified?'<span class="verified">✔ verifiziert</span>':''}
+      ${a.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}
+      ${a.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
       <span class="sp" style="flex:1"></span>
-      ${mine?'':'<button class="ghost small" data-follow="'+esc(a.handle)+'">Folgen</button>'}
+      ${mine?'':`<button class="ghost small" data-follow="${esc(a.handle)}">${esc(t('co_follow_btn'))}</button>`}
     </div>
     <div class="muted" style="font-size:13px" title="${esc(p.created_at)}">🕒 ${relTime(p.created_at)}</div>
     ${p.is_question?`<div style="margin-top:4px" data-qbadge>${qBadgeHtml(p.answered)}</div>`:''}
     <div class="post-body" data-body>${linkifyMentions(p.body)}</div>
-    ${p.image && /^data:image\//.test(p.image) ? `<img src="${p.image}" alt="Bild zum Beitrag" style="max-width:100%;border-radius:10px;margin-top:8px;display:block" />` : ''}
-    ${p.source_url ? `<div style="margin-top:6px"><a href="${esc(p.source_url)}" target="_blank" rel="noopener noreferrer" class="mention">🔗 Quelle</a></div>` : ''}
-    <div class="vis" data-edited ${p.edited_at?'':'style="display:none"'}>✏️ bearbeitet</div>
+    ${p.image && /^data:image\//.test(p.image) ? `<img src="${p.image}" alt="${esc(t('pc_img_alt'))}" style="max-width:100%;border-radius:10px;margin-top:8px;display:block" />` : ''}
+    ${p.source_url ? `<div style="margin-top:6px"><a href="${esc(p.source_url)}" target="_blank" rel="noopener noreferrer" class="mention">${esc(t('pc_source'))}</a></div>` : ''}
+    <div class="vis" data-edited ${p.edited_at?'':'style="display:none"'}>${esc(t('pc_edited'))}</div>
     ${refChip(p.ref_summary)}
-    <div class="vis">${p.visibility==='public'?'🌍 öffentlich':'👥 nur Follower'}</div>
+    <div class="vis">${p.visibility==='public'?esc(t('pc_vis_public')):esc(t('pc_vis_followers'))}</div>
     <div class="reacts">
-      ${REACTS.map(([k,lab])=>`<button data-react="${k}">${lab} ${rc[k]||0}</button>`).join('')}
-      <button data-comments>💬 ${p.comment_count||0} Kommentare</button>
-      <button class="ghost small" data-bookmark title="Für später merken">${myBookmarks.has(p.id)?'🔖 gemerkt':'🔖 Merken'}</button>
-      <button class="ghost small" data-share title="Link zum Beitrag kopieren">🔗 Teilen</button>
+      ${REACTS.map(([k,keyLab])=>`<button data-react="${k}">${esc(t(keyLab))} ${rc[k]||0}</button>`).join('')}
+      <button data-comments>${esc(ti('pc_comments',{n:p.comment_count||0}))}</button>
+      <button class="ghost small" data-bookmark title="${esc(t('pc_save'))}">${myBookmarks.has(p.id)?esc(t('pc_saved')):esc(t('pc_save'))}</button>
+      <button class="ghost small" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button>
       <span class="sp" style="flex:1"></span>
-      ${mine ? '<button class="ghost small" data-edit title="Beitrag bearbeiten">✏️ Bearbeiten</button><button class="ghost small" data-del title="Beitrag löschen">🗑 Löschen</button>'
-             : '<button class="ghost small" data-report title="Beitrag melden">🚩 Melden</button>'}
+      ${mine ? `<button class="ghost small" data-edit title="${esc(t('pc_edit'))}">${esc(t('pc_edit'))}</button><button class="ghost small" data-del title="${esc(t('pc_delete'))}">${esc(t('pc_delete'))}</button>`
+             : `<button class="ghost small" data-report title="${esc(t('pc_report'))}">${esc(t('pc_report'))}</button>`}
     </div>
     <div class="comments hidden" data-cbox>
       <div data-clist></div>
-      <div class="row" style="margin-top:8px"><input data-cinput placeholder="Antworten…"><label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:7px 10px;border:1px solid var(--line);border-radius:8px" title="Foto anhängen">📷<input type="file" data-cimg accept="image/*" style="display:none"></label><button class="small" data-csend>Senden</button></div>
+      <div class="row" style="margin-top:8px"><input data-cinput placeholder="${esc(t('pc_reply_ph'))}"><label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:7px 10px;border:1px solid var(--line);border-radius:8px" title="${esc(t('co_img'))}">📷<input type="file" data-cimg accept="image/*" style="display:none"></label><button class="small" data-csend>${esc(t('pc_send'))}</button></div>
       <img data-cimgprev style="display:none;max-width:140px;border-radius:8px;margin-top:6px" />
     </div>
   </div>`);
@@ -2791,7 +2813,7 @@ function postCard(p) {
   const sh = card.querySelector('[data-share]');
   if (sh) sh.onclick = async () => {
     const url = location.origin + '/?post=' + encodeURIComponent(p.id);
-    try { await navigator.clipboard.writeText(url); sh.textContent = '✓ kopiert'; setTimeout(()=>{ sh.textContent='🔗 Teilen'; }, 1500); }
+    try { await navigator.clipboard.writeText(url); sh.textContent = t('pc_copied'); setTimeout(()=>{ sh.textContent=t('pc_share'); }, 1500); }
     catch { prompt('Link zum Beitrag:', url); }
   };
   const bm = card.querySelector('[data-bookmark]');
@@ -2907,7 +2929,7 @@ function commentRow(postId, c, card, depth = 0) {
     <div data-cbody style="margin-top:2px">${linkifyMentions(c.body)}</div>
     ${c.image && /^data:image\//.test(c.image) ? `<img src="${c.image}" alt="Bild zum Kommentar" style="max-width:100%;border-radius:8px;margin-top:6px;display:block" />` : ''}
     <div class="reacts" style="margin-top:4px">
-      ${REACTS.map(([k,lab])=>`<button class="small" data-creact="${k}">${lab.split(' ')[0]} ${(c.reaction_counts&&c.reaction_counts[k])||0}</button>`).join('')}
+      ${REACTS.map(([k,keyLab])=>`<button class="small" data-creact="${k}">${esc(t(keyLab).split(' ')[0])} ${(c.reaction_counts&&c.reaction_counts[k])||0}</button>`).join('')}
       <button class="ghost small" data-creply>↩ Antworten</button>
       ${(isQuestion && iAmAsker && !mine)?`<button class="ghost small" data-accept title="Diese Antwort als beste markieren">${isAccepted?'✔ Beste Antwort (aufheben)':'✔ Als beste Antwort'}</button>`:''}
       ${mine?'':'<button class="ghost small" data-creport title="Kommentar melden">🚩</button>'}
