@@ -1031,6 +1031,13 @@ function authScreen() {
   document.getElementById('btnHelp').classList.add('hidden');
   document.getElementById('whoami').textContent = '';
   app.innerHTML = '';
+  // Sprachauswahl schon VOR dem Login: Erstbesucher:innen aus anderen Ländern sollen
+  // Anmeldung/Registrierung sofort in ihrer Sprache lesen (nicht erst nach dem Login).
+  const langs = [['de','Deutsch'],['en','English'],['pt','Português']];
+  app.appendChild(el(`
+  <div class="row" style="justify-content:center;gap:6px;margin-bottom:2px" role="group" aria-label="Sprache / Language / Idioma">
+    ${langs.map(([code,label])=>`<button class="sortbtn${LOCALE===code?' active':''}" data-lang="${code}" lang="${code}">${esc(label)}</button>`).join('')}
+  </div>`));
   app.appendChild(el(`
   <div class="card">
     <h1>${esc(t('au_login'))}</h1>
@@ -1051,6 +1058,12 @@ function authScreen() {
     <div class="err" id="rg_err"></div>
   </div>`));
 
+  // Sprachumschalter (nur Client-seitig; setzt LOCALE + rendert den Auth-Screen neu).
+  app.querySelectorAll('[data-lang]').forEach(btn => btn.onclick = () => {
+    setLocale(btn.getAttribute('data-lang'));
+    applyI18n(); applyTheme(); // Header (Schrift-Label, aria/title) + Theme-Label folgen der Sprache
+    authScreen();              // Login-/Registrier-Karten neu rendern
+  });
   document.getElementById('li_go').onclick = async () => {
     try {
       const d = await api('POST','/api/login',{ email:v('li_email'), password:v('li_pw') });

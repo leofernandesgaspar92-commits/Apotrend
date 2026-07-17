@@ -6,6 +6,13 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ♿ **Header-a11y/i18n gehärtet (Screenreader in DE/EN/PT):** Auf Mobil kollabieren die
+>   Header-Buttons auf reine Icons — Screenreader-Nutzer:innen brauchen dann korrekte
+>   `aria-label`. Diese (und die Hover-`title`) waren statisch Deutsch, obwohl die Plattform 12
+>   Länder in DE/EN/PT bedient. `applyI18n` unterstützt jetzt `data-i18n-aria`; alle Header-
+>   Buttons + Suchfeld sowie der dynamische Wirkstoff-Tooltip auf Engpass-Karten
+>   (`ti('sh_view_all_wk',{wk})`) sind mehrsprachig. Browser-verifiziert: aria/title wechseln
+>   de→en→pt (z. B. „Abmelden"/„Log out"/„Sair").
 > - 📱 **Mobil-Robustheit gehärtet (Qualitäts-Audit mit echten Screenshots):** Beim
 >   Audit auf Mobil 390 fielen zwei Layout-Defekte auf: (1) der „Folgen"-Button brach
 >   mitten im Wort um; (2) auf Top-Rabatte gab es 80px Querscroll und der Rabatt-Prozentwert
