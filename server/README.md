@@ -6,6 +6,11 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 (PWA/Desktop).
 
 > **Status (Neu-Priorisierung: Social-Feed = Kern):**
+> - ✅ **Qualitäts-Audit — Barrierefreiheit: Skip-Link & Druck-Kopf mehrsprachig:** Der „Zum Inhalt
+>   springen"-Skip-Link (Tastatur-/Screenreader-Navigation) und der Druck-Kopf („ApoTrend —
+>   Lieferengpässe") standen als statisches HTML fest deutsch. Beide via `data-i18n` an `applyI18n`
+>   angebunden — der Skip-Link, das wichtigste erste Element für Screenreader-Nutzer:innen, ist
+>   jetzt in der Landessprache. (Browser verifiziert: PT „Saltar para o conteúdo / ApoTrend — Faltas".)
 > - ✅ **Qualitäts-Audit — Browsertab-Titel mehrsprachig:** Die meisten Panels lokalisierten
 >   `document.title` bereits, aber die 8 Haupt-Reiter (`TAB_TITLES`) und der Standard-Zusatz
 >   „Apotheker-Netzwerk" blieben deutsch — sichtbar im Browsertab, in der History, in Lesezeichen
