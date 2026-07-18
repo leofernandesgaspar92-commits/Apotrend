@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #38 — 2026-07-18 — Alle Kern-Screens visuell verifiziert + `<html lang>`-Wächter
+- **CHECK:** Preise & Biete/Suche (bisher nur code-geprüft) real gescreenshottet (Desktop+Mobil): professionell, korrekte Farb-Semantik, gute Leerzustände, datenschutzbewusst — kein Defekt. Damit sind ALLE 8 Reiter + Onboarding + Willkommen + DM + Suche + Kontotyp-Sperren verifiziert.
+- **WORK:** Smoke-Test um `<html lang>`-Prüfung erweitert (GB→„en") — schützt den #34-Fix dauerhaft.
+- **CHECK:** Smoke 11/11 grün.
+
 ### Cycle #37 — 2026-07-18 — Wächter gegen helle Inline-Hintergründe (Dark-Mode-Schutz)
 - **THINK:** Cycle #36 rutschte durch alle Wächter — der Browser-Audit prüft Overflow/JS-Fehler, nicht Kontrast. „Instrument schärfen" statt nur den Einzelfall fixen.
 - **WORK:** Neuer Static-Audit-Detektor `hardcoded_light_bg`: helle Hex-Hintergründe (`#[def]xxxxx`) in Inline-Styles außerhalb `<style>` (wo Dark-Mode sie nicht erreicht). Regex real gegengeprüft (fängt #eef6f1/#fdece9, ignoriert dunkle).

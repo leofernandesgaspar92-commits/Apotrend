@@ -47,6 +47,9 @@ async function main() {
     await op.click('[data-country="GB"]').catch(() => {}); await op.waitForTimeout(300);
     const en = await loginHead();
     step('Land bestimmt Sprache (AT→Anmelden, GB→Log in)', de === 'Anmelden' && en === 'Log in', `${de}/${en}`);
+    // <html lang> folgt der Sprache (a11y — Screenreader-Aussprache).
+    const htmlLang = await op.evaluate(() => document.documentElement.lang);
+    step('<html lang> folgt der Sprache (GB→en)', htmlLang === 'en', `lang=${htmlLang}`);
     // Logo (grüner Punkt) führt ausgeloggt zurück zur Länderauswahl.
     await op.click('#logoHome').catch(() => {}); await op.waitForTimeout(300);
     const backToCountry = await op.evaluate(() => document.querySelectorAll('[data-country]').length);
