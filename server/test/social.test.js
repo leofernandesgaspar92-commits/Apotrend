@@ -23,6 +23,22 @@ function setup() {
   return { social, a, b, c };
 }
 
+test('Feed-Autor:innen-Payload trägt is_following (für den Folgen-Status-Button im Feed)', () => {
+  const { social, a, b } = setup();
+  const post = social.createPost(b, { body: 'Bens Beitrag', visibility: 'public' });
+  // a folgt b (noch) nicht -> is_following false; für a selbst nie relevant
+  let seenByA = social.publicFeed(a).find(p => p.id === post.id);
+  assert.equal(seenByA.author.is_following, false, 'noch nicht gefolgt');
+  // a folgt b -> is_following true
+  social.follow(a, b);
+  seenByA = social.publicFeed(a).find(p => p.id === post.id);
+  assert.equal(seenByA.author.is_following, true, 'nach follow true');
+  // Für den eigenen Beitrag ist is_following immer false (kein Selbst-Folgen-Button)
+  const own = social.createPost(a, { body: 'Annas Beitrag', visibility: 'public' });
+  const seenBySelf = social.publicFeed(a).find(p => p.id === own.id);
+  assert.equal(seenBySelf.author.is_following, false, 'eigener Beitrag: kein Folgen-Status');
+});
+
 test('Profil: Handle eindeutig und validiert', () => {
   const { social, a } = setup();
   assert.equal(social.getProfile('anna').display_name, 'Anna Huber');
