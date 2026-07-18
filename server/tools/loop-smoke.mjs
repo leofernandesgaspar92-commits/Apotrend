@@ -26,6 +26,24 @@ async function main() {
   if (!token) { console.error('❌ Registrierung fehlgeschlagen'); process.exit(2); }
 
   const browser = await chromium.launch();
+
+  // 0) Ausgeloggt: Sprachumschalter auf dem Auth-Screen wechselt die UI (i18n-Kern absichern).
+  {
+    const octx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const op = await octx.newPage();
+    await op.addInitScript(() => { localStorage.removeItem('apo_token'); localStorage.setItem('apo_welcome_seen', '1'); localStorage.setItem('apo_locale', 'de'); });
+    await op.goto(BASE, { waitUntil: 'networkidle' });
+    await op.waitForTimeout(300);
+    const heads = async () => op.evaluate(() => [...document.querySelectorAll('h1')].map(h => h.textContent.trim()).find(t => /Anmelden|Log in|Entrar/.test(t)) || '');
+    const de = await heads();
+    await op.click('[data-lang="en"]').catch(() => {}); await op.waitForTimeout(250);
+    const en = await heads();
+    await op.click('[data-lang="pt"]').catch(() => {}); await op.waitForTimeout(250);
+    const pt = await heads();
+    step('Sprachumschalter (Auth) wechselt DE→EN→PT', de === 'Anmelden' && en === 'Log in' && pt === 'Entrar', `${de}/${en}/${pt}`);
+    await octx.close();
+  }
+
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await ctx.newPage();
   const jsErrors = [];
