@@ -81,6 +81,10 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #50 — 2026-07-18 — Test für gzip/ETag/304 (schützt den Perf-Gewinn)
+- **WORK:** HTTP-Integrationstest (roh via `node:http`, da fetch gzip transparent auspackt): Accept-Encoding: gzip → `content-encoding: gzip`, ETag+no-cache gesetzt, ohne Accept-Encoding unkomprimiert, `If-None-Match` → 304.
+- **CHECK:** 219 → 220 grün.
+
 ### Cycle #49 — 2026-07-18 — Performance: gzip + ETag/304 für statische Assets
 - **THINK:** app.js (~276 KB) ging unkomprimiert & ohne Cache-Header raus — spürbar auf langsamen Apotheken-Leitungen (Zielgruppe: zeitknapp, mobil).
 - **WORK:** Statik-Handler mit `node:zlib`-gzip für Textassets (nur wenn Client es kann) + ETag (Größe+mtime) → `If-None-Match` liefert 304; `Cache-Control: no-cache` (immer revalidieren, nie veraltet). Nur Built-ins.

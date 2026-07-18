@@ -2,6 +2,18 @@
 // komponierten Endpunkte (die sonst nur im Browser verifiziert wurden).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import http from 'node:http';
+
+// Roh-GET ohne fetch — fetch dekomprimiert transparent und verschluckt content-encoding.
+function rawGet(path, headers = {}) {
+  return new Promise((resolve, reject) => {
+    http.get(BASE + path, { headers }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: Buffer.concat(chunks) }));
+    }).on('error', reject);
+  });
+}
 
 const PORT = 4200 + Math.floor(Math.random() * 300);
 process.env.PORT = String(PORT);
@@ -335,4 +347,19 @@ test('GET /api/trending/hashtags zählt Hashtags aus sichtbaren Beiträgen', asy
 test('Unbekannte Route -> 404', async () => {
   const r = await fetch(BASE + '/api/gibtsnicht');
   assert.equal(r.status, 404);
+});
+
+test('Statische Assets: gzip-Komprimierung + ETag/304-Revalidierung', async () => {
+  // gzip nur, wenn der Client es anbietet.
+  const gz = await rawGet('/app.js', { 'accept-encoding': 'gzip' });
+  assert.equal(gz.status, 200);
+  assert.equal(gz.headers['content-encoding'], 'gzip', 'Textasset wird gzip-komprimiert');
+  assert.ok(gz.headers.etag, 'ETag gesetzt');
+  assert.match(gz.headers['cache-control'] || '', /no-cache/);
+  // Ohne Accept-Encoding: unkomprimiert (Fallback).
+  const plain = await rawGet('/app.js');
+  assert.equal(plain.headers['content-encoding'], undefined, 'ohne Accept-Encoding unkomprimiert');
+  // Passendes If-None-Match -> 304 (spart erneuten Download).
+  const notMod = await rawGet('/app.js', { 'if-none-match': plain.headers.etag });
+  assert.equal(notMod.status, 304, 'unveränderte Datei -> 304');
 });
