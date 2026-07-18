@@ -14,7 +14,8 @@ die Session neu startet.
 
 | Schritt | Was hier passiert | Werkzeug |
 |--------|-------------------|----------|
-| **GATHER** | Messbare Ist-Signale sammeln | `node server/tools/loop-audit.mjs` |
+| **GATHER** | Messbare Ist-Signale (statisch) | `node server/tools/loop-audit.mjs` |
+| **GATHER+** | Mobil-Querscroll + JS-Fehler (Browser, optional) | `node server/tools/loop-browser-audit.mjs` (Server muss laufen) |
 | **THINK** | Was sagen die Zahlen? Trend seit letztem Snapshot? Echt vs. Messrauschen? | Vergleich mit letztem Cycle-Log-Eintrag |
 | **ANALYSE** | Größte Hebelwirkung finden: welche EINE Änderung bringt am meisten? | Backlog unten priorisieren |
 | **WORK** | **Eine** präzise, verifizierte Verbesserung umsetzen | Edit → `node --test` → Browser-Check (Playwright, Hell+Dunkel, 1280+390) |
@@ -76,6 +77,12 @@ Reaktions-/Folgen-Status, volle i18n DE/EN/PT (inkl. aria/title/Dialoge/Pre-Logi
 a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `server/README.md`.
 
 ## Cycle-Log
+
+### Cycle #13 — 2026-07-18 — Browser-GATHER (Mobil-Querscroll + JS-Fehler)
+- **ANALYSE:** a11y-Foundation ist top (Enter/Space-Handler, MutationObserver) — kein Fix nötig.
+  Höherer Hebel: die manuellen Mobil-Checks automatisieren.
+- **WORK:** `loop-browser-audit.mjs` — 8 Reiter × 390px × hell/dunkel: Querscroll + JS-Fehler.
+- **CHECK:** Aktueller Stand sauber (0 Overflow, 0 Fehler). GATHER hat jetzt einen UX-Regressionswächter.
 
 ### Cycle #12 — 2026-07-18 — errorState-Helper i18n
 - **GATHER:** a11y-Bereich geprüft (focus-visible + skip-link + tabindex-Helper schon vorhanden ✓);
