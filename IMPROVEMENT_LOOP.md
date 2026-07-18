@@ -31,15 +31,15 @@ die Session neu startet.
 
 ## Letzter GATHER-Snapshot
 
-_Cycle #14 · 2026-07-18_
+_Cycle #15 · 2026-07-18_
 ```
-Tests:            216/216 grün  ·  Browser-GATHER: 0 Querscroll / 0 JS-Fehler (8 Reiter, hell+dunkel)
+Tests:            217/217 grün  ·  Browser-GATHER: 0 Querscroll / 0 JS-Fehler (8 Reiter, hell+dunkel)
 i18n de/en/pt:    576/576/576  · 0 Lücken  ✓ perfekte Parität
-Hartkod. Dialoge: 0  ·  Hartkod. UI-DE: 0 (umfassend bewacht)  ·  TODO/FIXME: 0  ·  console: 0
+Hartkod. Dialoge: 0  ·  Hartkod. UI-DE: 0  ·  TODO/FIXME: 0  ·  console: 0  ·  !important: 3 (legitim)
 index.html:       ~3720 Zeilen · 267 KB   ← größtes Struktur-Signal (Monolith)
 ```
-Fortschritt: 14 Zyklen. Frontend-Mehrsprachigkeit lückenlos + bewacht (statisch UND Browser).
-Offene größere Brocken sind P3 (Backend-Fehler-i18n via Codes; Monolith; DB; Währung) → CEO.
+Fortschritt: 15 Zyklen. Frontend-i18n lückenlos + doppelt bewacht; Kontotyp-Rechte doppelt
+getestet (Service + HTTP). Offene größere Brocken sind P3 → CEO-Freigabe nötig.
 
 ## Priorisierter Backlog (Kandidaten für WORK)
 
@@ -76,6 +76,11 @@ Reaktions-/Folgen-Status, volle i18n DE/EN/PT (inkl. aria/title/Dialoge/Pre-Logi
 a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `server/README.md`.
 
 ## Cycle-Log
+
+### Cycle #15 — 2026-07-18 — HTTP-Layer-Tests für Kontotyp-Rechte
+- **ANALYSE:** Enforcement nur service-getestet → 403-Pfade am HTTP-Layer ungetestet.
+- **WORK:** Integrationstest: Privat→403 (report/confirm/exchange), Fachkonto→200, Lesen ok.
+- **CHECK:** 216→217 Tests grün. Sicherheitsrelevantes Verhalten jetzt zweifach abgesichert.
 
 ### Cycle #14 — 2026-07-18 — Clientseitige Bild-Fehler i18n
 - **WORK:** 3 frontend-geworfene Bild-Fehler via t() (img_err_*, DE/EN/PT).
