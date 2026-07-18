@@ -293,7 +293,7 @@ const I18N = {
     pubf_new:'🕒 Neueste', pubf_top:'🔥 Beliebteste', pubf_show:'Anzeigen:', pubf_all:'Alle Beiträge', pubf_questions:'❓ Offene Fragen zuerst',
     gr_demand:'Erhöhte Nachfrage', gr_manuf:'Herstellungsproblem', gr_ration:'Kontingentierung', gr_delay:'Produktionsverzögerung', gr_api:'Wirkstoffknappheit',
     dt_tagline:'Apotheker-Netzwerk', dt_overview:'Für dich', dt_public:'Öffentlicher Feed', dt_home:'Mein Feed', dt_shortages:'Lieferengpässe', dt_prices:'Preise', dt_rabatte:'Rabatte', dt_exchange:'Biete/Suche', dt_news:'News',
-    skiplink:'Zum Inhalt springen', print_head:'ApoTrend — Lieferengpässe',
+    skiplink:'Zum Inhalt springen', print_head:'ApoTrend — Lieferengpässe', offline_banner:'📴 Keine Internetverbindung — Inhalte können nicht geladen werden.',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -559,7 +559,7 @@ const I18N = {
     pubf_new:'🕒 Newest', pubf_top:'🔥 Most popular', pubf_show:'Show:', pubf_all:'All posts', pubf_questions:'❓ Open questions first',
     gr_demand:'Increased demand', gr_manuf:'Manufacturing problem', gr_ration:'Rationing', gr_delay:'Production delay', gr_api:'Active-ingredient shortage',
     dt_tagline:'Pharmacist network', dt_overview:'For you', dt_public:'Public feed', dt_home:'My feed', dt_shortages:'Shortages', dt_prices:'Prices', dt_rabatte:'Deals', dt_exchange:'Offer/Seek', dt_news:'News',
-    skiplink:'Skip to content', print_head:'ApoTrend — Shortages',
+    skiplink:'Skip to content', print_head:'ApoTrend — Shortages', offline_banner:'📴 No internet connection — content cannot be loaded.',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -825,7 +825,7 @@ const I18N = {
     pubf_new:'🕒 Mais recentes', pubf_top:'🔥 Mais populares', pubf_show:'Mostrar:', pubf_all:'Todas as publicações', pubf_questions:'❓ Perguntas em aberto primeiro',
     gr_demand:'Procura acrescida', gr_manuf:'Problema de fabrico', gr_ration:'Contingentação', gr_delay:'Atraso de produção', gr_api:'Escassez de princípio ativo',
     dt_tagline:'Rede de farmacêuticos', dt_overview:'Para si', dt_public:'Feed público', dt_home:'Meu feed', dt_shortages:'Faltas', dt_prices:'Preços', dt_rabatte:'Descontos', dt_exchange:'Oferta/Procura', dt_news:'Notícias',
-    skiplink:'Saltar para o conteúdo', print_head:'ApoTrend — Faltas',
+    skiplink:'Saltar para o conteúdo', print_head:'ApoTrend — Faltas', offline_banner:'📴 Sem ligação à internet — não é possível carregar conteúdos.',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -3622,6 +3622,16 @@ async function openDmThread(threadId) {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 }
+
+// Offline-Hinweis: zeitknappe Nutzer:innen sollen sofort verstehen, warum nichts lädt,
+// statt stiller Fehler. Bernstein-Balken oben, folgt dem Verbindungsstatus.
+function updateOfflineBanner() {
+  const el = document.getElementById('offlineBanner');
+  if (el) el.classList.toggle('hidden', navigator.onLine);
+}
+window.addEventListener('online', updateOfflineBanner);
+window.addEventListener('offline', updateOfflineBanner);
+updateOfflineBanner();
 
 // A11y: klickbare div/span.clickable-Elemente per Tastatur erreichbar & auslösbar
 // machen — zentral (MutationObserver), ohne jede einzelne Fundstelle anzufassen.

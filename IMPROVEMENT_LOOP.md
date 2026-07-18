@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #52 — 2026-07-18 — Offline-Hinweis (Verbindungsstatus)
+- **THINK:** Bricht die Leitung weg (mobil, Apotheke), gab es nur stille Fehler. Offline-Caching wäre riskant (Sicherheit: keine veralteten Engpass-/Preisdaten) — der bewusste Netzwerk-Passthrough bleibt; stattdessen ein klarer Hinweis.
+- **WORK:** Bernstein-Balken (nicht Rot — Rot bleibt kritischem Engpass vorbehalten) oben, folgt `online`/`offline`-Events; `role=status`/`aria-live`; i18n `offline_banner` (DE/EN/PT).
+- **CHECK:** Playwright-Offline-Emulation: online versteckt → offline sichtbar (EN „No internet connection…") → wieder online versteckt; Parität 643/643/643; 220 grün, Smoke 11/11, Browser-Audit grün.
+
 ### Cycle #51 — 2026-07-18 — gzip auch für API-JSON-Antworten
 - **THINK:** Nach den statischen Assets war der zweite Payload-Treiber das API-JSON (Feed/Preise) bei jeder Navigation.
 - **WORK:** `json()`-Helfer nimmt jetzt `req`, gzip-komprimiert Antworten > 512 B (kleine lohnen die CPU nicht); 4 Aufrufstellen angepasst. Test erweitert (API-gzip).

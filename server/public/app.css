@@ -118,6 +118,11 @@
   .comment { font-size:0.9em; padding:6px 0; border-bottom:1px solid var(--line); }
   .comment:last-child { border-bottom:none; }
   .hidden { display:none; }
+  /* Offline-Hinweis: gut sichtbarer Bernstein-Balken (nicht Rot — Rot bleibt dem
+     kritischen Engpass vorbehalten). Fest oben, damit er nie übersehen wird. */
+  .offline-banner { position:fixed; top:0; left:0; right:0; z-index:60; text-align:center;
+    background:var(--warn-bg); color:var(--warn-fg); border-bottom:1px solid var(--warn-bd);
+    font-weight:700; font-size:15px; padding:10px 14px; }
   .skiplink { position:absolute; left:-9999px; top:0; z-index:20; background:var(--green); color:#fff; padding:10px 14px; border-radius:0 0 8px 0; font-weight:700; }
   .skiplink:focus { left:0; }
   #printhead { display:none; }
