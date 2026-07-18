@@ -966,6 +966,9 @@ const I18N = {
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
 let LOCALE = (() => { const s = localStorage.getItem('apo_locale'); return SUPPORTED_LOCALES.includes(s) ? s : 'de'; })();
+// <html lang> beim Laden mit der aktiven Sprache synchronisieren (statisch „de"),
+// damit Screenreader engl./pt. Inhalte nicht deutsch aussprechen.
+document.documentElement.setAttribute('lang', LOCALE);
 const t = (key) => (I18N[LOCALE] && I18N[LOCALE][key]) || I18N.de[key] || key;
 function setLocale(l) {
   LOCALE = SUPPORTED_LOCALES.includes(l) ? l : 'de';

@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #34 — 2026-07-18 — `<html lang>` folgt der Sprache (a11y)
+- **THINK/CHECK:** Reales Browser-Testen zeigte: returning EN-Nutzer bootet mit engl. UI, aber `<html lang="de">` — Screenreader sprechen engl./pt. Inhalte deutsch aus.
+- **WORK:** Beim Laden `document.documentElement.setAttribute('lang', LOCALE)` (setLocale tat es schon bei Wechsel, nur der Erst-Boot fehlte).
+- **CHECK:** en→„en", pt→„pt", de→„de" real bestätigt; 219 grün, Smoke 10/10.
+
 ### Cycle #33 — 2026-07-18 — Preis-Formatierung konsistent (erzwungenes Komma entfernt)
 - **THINK:** Der Sparkline-Tooltip erzwang als EINZIGE Stelle ein deutsches Komma (`.replace('.',',')`) — inkonsistent zu den 16 anderen €-Stellen (Punkt) und falsch für en-GB.
 - **WORK:** Ausreißer entfernt → app-weit einheitliches Format. Volle locale-Money-Hilfe (~17 Stellen) als P3 vermerkt (preisnah → CEO-Freigabe).
