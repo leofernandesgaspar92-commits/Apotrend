@@ -31,16 +31,15 @@ die Session neu startet.
 
 ## Letzter GATHER-Snapshot
 
-_Cycle #12 · 2026-07-18_
+_Cycle #14 · 2026-07-18_
 ```
-Tests:            216/216 grün
-i18n de/en/pt:    573/573/573  · 0 Lücken  ✓ perfekte Parität
-Hartkod. Dialoge: 0  ·  Hartkod. UI-DE: 0 (umfassend bewacht)  ·  TODO/FIXME: 0
-console.* (FE):   0  ·  !important: 3 (alle legitim: Inline-Override + Druck)
-index.html:       ~3715 Zeilen · 266 KB   ← größtes Struktur-Signal (Monolith)
+Tests:            216/216 grün  ·  Browser-GATHER: 0 Querscroll / 0 JS-Fehler (8 Reiter, hell+dunkel)
+i18n de/en/pt:    576/576/576  · 0 Lücken  ✓ perfekte Parität
+Hartkod. Dialoge: 0  ·  Hartkod. UI-DE: 0 (umfassend bewacht)  ·  TODO/FIXME: 0  ·  console: 0
+index.html:       ~3720 Zeilen · 267 KB   ← größtes Struktur-Signal (Monolith)
 ```
-Fortschritt: 12 Zyklen. Mehrsprachigkeit lückenlos + gegen Rückfälle bewacht.
-Nächste Zyklen: neue Bereiche (a11y-Fokus, UX-Feinschliff) — Zähler/i18n-Themen sind durch.
+Fortschritt: 14 Zyklen. Frontend-Mehrsprachigkeit lückenlos + bewacht (statisch UND Browser).
+Offene größere Brocken sind P3 (Backend-Fehler-i18n via Codes; Monolith; DB; Währung) → CEO.
 
 ## Priorisierter Backlog (Kandidaten für WORK)
 
@@ -77,6 +76,11 @@ Reaktions-/Folgen-Status, volle i18n DE/EN/PT (inkl. aria/title/Dialoge/Pre-Logi
 a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `server/README.md`.
 
 ## Cycle-Log
+
+### Cycle #14 — 2026-07-18 — Clientseitige Bild-Fehler i18n
+- **WORK:** 3 frontend-geworfene Bild-Fehler via t() (img_err_*, DE/EN/PT).
+- **CHECK:** en/pt korrekt; 216 grün; Parität 576; UI-DE 0.
+- **Hinweis:** Backend-Fehlermeldungen bleiben DE — echte i18n bräuchte Fehler-Codes (P3, größer).
 
 ### Cycle #13 — 2026-07-18 — Browser-GATHER (Mobil-Querscroll + JS-Fehler)
 - **ANALYSE:** a11y-Foundation ist top (Enter/Space-Handler, MutationObserver) — kein Fix nötig.
