@@ -90,6 +90,17 @@ function run() {
       const real = hits.filter((h) => !h.includes('${'));
       return { count: real.length, samples: real.slice(0, 6).map((x) => x.replace(/\s+/g, ' ').slice(0, 52)) };
     })(),
+    // Dark-Mode-Falle: hartkodierte HELLE Hex-Hintergründe in INLINE-Styles (außerhalb
+    // des <style>-Blocks). Im <style> ist das ok — dort überschreibt body.dark via
+    // CSS-Variablen. Inline erreicht der Dark-Mode sie NICHT -> heller Text auf hellem
+    // Grund (Cycle #36). Ziel 0: solche Flächen sollen theme-aware Variablen nutzen.
+    hardcoded_light_bg: (() => {
+      const styleEnd = html.indexOf('</style>');
+      const body = styleEnd >= 0 ? html.slice(styleEnd) : html;
+      // background(-color):#[d/e/f]xxxxx = helle Farbe (hoher Startwert).
+      const hits = body.match(/background(-color)?:\s*#[def][0-9a-f]{5}/gi) || [];
+      return { count: hits.length, samples: [...new Set(hits)].slice(0, 6) };
+    })(),
     // i18n-Abdeckung (mehr = besser) und Drift-Check zwischen Sprachen.
     data_i18n_attrs: countMatches(html, /data-i18n(-ph|-title|-aria)?=/g),
     i18n_parity: i18nParity(html),
@@ -112,6 +123,8 @@ function run() {
   console.log(`Hartkod. Dialoge:   ${snapshot.hardcoded_dialogs} ${snapshot.hardcoded_dialogs === 0 ? '✓' : '⚠️'}`);
   const hu = snapshot.hardcoded_ui_de;
   console.log(`Hartkod. UI-DE:     ${hu.count} ${hu.count === 0 ? '✓' : '⚠️ ' + hu.samples.join(' | ')}`);
+  const lb = snapshot.hardcoded_light_bg;
+  console.log(`Helle Inline-BGs:   ${lb.count} ${lb.count === 0 ? '✓' : '⚠️ ' + lb.samples.join(' | ')}`);
   console.log(`TODO/FIXME:         ${snapshot.todos}`);
   console.log(`console.* (FE):     ${snapshot.frontend_console}`);
   console.log(`!important (CSS):   ${snapshot.css_important}`);

@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #37 — 2026-07-18 — Wächter gegen helle Inline-Hintergründe (Dark-Mode-Schutz)
+- **THINK:** Cycle #36 rutschte durch alle Wächter — der Browser-Audit prüft Overflow/JS-Fehler, nicht Kontrast. „Instrument schärfen" statt nur den Einzelfall fixen.
+- **WORK:** Neuer Static-Audit-Detektor `hardcoded_light_bg`: helle Hex-Hintergründe (`#[def]xxxxx`) in Inline-Styles außerhalb `<style>` (wo Dark-Mode sie nicht erreicht). Regex real gegengeprüft (fängt #eef6f1/#fdece9, ignoriert dunkle).
+- **CHECK:** Aktuell 0 ✓ (bestätigt #36-Fixes vollständig); 219 grün.
+
 ### Cycle #36 — 2026-07-18 — Dark-Mode-Kontrast: 3 hartkodierte helle Flächen behoben
 - **CHECK:** Computed-Styles im echten Browser deckten auf: Willkommens-Tipp-Box (`#eef6f1`), ungelesene Meldungs-Zeile (`#eef6f1`) und „Rosé"-Preis-Pille (`#fdece9`) behielten im Dark-Mode helle Hintergründe → heller Text auf hellem Grund (~1,1:1, unlesbar).
 - **WORK:** Auf theme-aware Variablen umgestellt (`--ok-bg/--ok-bd`, `--crit-bg/--crit-bd`). Hell unverändert, Dunkel jetzt ~10:1.
