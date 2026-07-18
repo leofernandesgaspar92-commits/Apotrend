@@ -66,7 +66,7 @@ prüft ihn erst (echt oder Rauschen?), setzt ihn dann um.
 **P2 — Robustheit / Qualität**
 - [x] ~~`!important` (3×) prüfen~~ → Cycle #12: alle legitim (Inline-Override + Druck), kein Handlungsbedarf.
 - [ ] Weitere Mobil-Audits bei neuen Views (Audit-Skript um Playwright-Overflow-Check erweitern).
-- [ ] Fehlermeldungen des Backends sind Deutsch — für echte Mehrsprachigkeit i18n-Fehlercodes.
+- [~] Backend-Fehler i18n via Codes → **Fundament + erste 2 migriert (Cycle #22)**; weitere Fehler folgen inkrementell.
 
 **P3 — architektonisch bedeutsam → ERST CEO fragen**
 - [ ] `index.html` (3684 Zeilen) modularisieren — großer Umbau, Risiko, Freigabe nötig.
@@ -78,6 +78,13 @@ Reaktions-/Folgen-Status, volle i18n DE/EN/PT (inkl. aria/title/Dialoge/Pre-Logi
 a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `server/README.md`.
 
 ## Cycle-Log
+
+### Cycle #22 — 2026-07-18 — Backend-Fehler-i18n: Fundament + erste 2 Fehler
+- **P3 (CEO-freigegeben).** AppError(code) + Server liefert `code` + api() übersetzt via `e_<code>`
+  (Fallback = Server-message). Damit werden alle e.message-Stellen automatisch mehrsprachig.
+- **WORK:** Mechanismus + shortage_pro_only/exchange_pro_only migriert (DE/EN/PT).
+- **CHECK:** End-to-End privat→Engpass-Meldung: de/en/pt korrekt. 218 grün, Parität 578, additiv/rückwärtskompatibel.
+- **REPEAT:** Weitere Fehler (Validierung: Wirkstoff fehlt, Handle-Format, …) inkrementell migrieren.
 
 ### Cycle #21 — 2026-07-18 — Browser-Werkzeuge mit Server-Auto-Start
 - **ANALYSE:** Tägliche Routine = frische Session ohne Server → audit:browser/smoke liefen nicht.
