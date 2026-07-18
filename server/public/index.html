@@ -2640,15 +2640,22 @@ async function openStewardship() {
 
 // Mehrsprachige Patienten-Infokarten (Antibiotika) — Aufklärung zur Abgabe.
 let patientLang = 'de';
+// Überschrift der Patienteninfo in der gewählten Patienten-Sprache (de/en/tr) —
+// damit gedruckte Info-Blätter nicht deutsch betitelt sind, obwohl der Inhalt engl./türk. ist.
+function patientInfoHeading(lang) {
+  return lang === 'en' ? 'Antibiotics – Patient information'
+    : lang === 'tr' ? 'Antibiyotikler – Hasta bilgisi'
+    : 'Antibiotika – Patienteninformation';
+}
 function printPatientInfo(d) {
   const w = window.open('', '_blank');
   if (!w) { alert(t('pi_popup')); return; }
   const cards = d.cards.map(c => `<div class="c"><h2>${esc(c.icon)} ${esc(c.title)}</h2><p>${esc(c.body)}</p></div>`).join('');
-  w.document.write(`<!doctype html><html lang="${esc(d.lang)}"><head><meta charset="utf-8"><title>Antibiotika – Patienteninfo</title>
+  w.document.write(`<!doctype html><html lang="${esc(d.lang)}"><head><meta charset="utf-8"><title>${esc(patientInfoHeading(d.lang))}</title>
     <style>body{font-family:system-ui,-apple-system,sans-serif;max-width:720px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:20px} .c{border:1px solid #cbd5cf;border-radius:8px;padding:12px 14px;margin:10px 0;break-inside:avoid}
     h2{font-size:16px;margin:0 0 4px} p{margin:0;font-size:14px;line-height:1.5} .src{font-size:12px;color:#555;margin-top:16px}</style></head>
-    <body><h1>🧫 Antibiotika – Patienteninformation</h1>${cards}
+    <body><h1>🧫 ${esc(patientInfoHeading(d.lang))}</h1>${cards}
     <div class="src">Quelle: ${esc(d.source.label)} · ${esc(d.source.url)}<br>${esc(d.disclaimer)}</div>
     <script>window.onload=function(){window.print();}<\/script></body></html>`);
   w.document.close();
@@ -2733,7 +2740,7 @@ function zettelBody(z) {
 // (gleiche Sprache) auf einer Folgeseite — ein Druckauftrag bei der Abgabe.
 function zettelPrintHtml(z, cards) {
   const cardsHtml = cards ? `<div style="break-before:page;page-break-before:always">
-      <h1 style="font-size:20px">🧫 ${esc(cards.lang === 'en' ? 'Antibiotics – Patient information' : cards.lang === 'tr' ? 'Antibiyotikler – Hasta bilgisi' : 'Antibiotika – Patienteninformation')}</h1>
+      <h1 style="font-size:20px">🧫 ${esc(patientInfoHeading(cards.lang))}</h1>
       ${cards.cards.map(c => `<div style="border:1px solid #cbd5cf;border-radius:8px;padding:12px 14px;margin:10px 0;break-inside:avoid"><h2 style="font-size:16px;margin:0 0 4px">${esc(c.icon)} ${esc(c.title)}</h2><p style="margin:0;font-size:14px;line-height:1.5">${esc(c.body)}</p></div>`).join('')}
       <div style="font-size:12px;color:#555;margin-top:14px">${esc(cards.source.label)} · ${esc(cards.source.url)}<br>${esc(cards.disclaimer)}</div>
     </div>` : '';

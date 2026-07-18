@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #35 — 2026-07-18 — Patienteninfo-Druck: Titel folgt der Patientensprache
+- **THINK:** `printPatientInfo` betitelte gedruckte Blätter hart deutsch („Antibiotika – Patienteninformation"), obwohl der Karteninhalt engl./türk. war — verwirrend für Patient:innen.
+- **WORK:** Helfer `patientInfoHeading(lang)` (de/en/tr) extrahiert; in Druck-`<title>`, Druck-`<h1>` und im Zettel-Druck (vorher dupliziertes Ternär) genutzt.
+- **CHECK:** EN-Druck real: `<html lang="en">`, Titel/H1 „Antibiotics – Patient information"; 219 grün.
+
 ### Cycle #34 — 2026-07-18 — `<html lang>` folgt der Sprache (a11y)
 - **THINK/CHECK:** Reales Browser-Testen zeigte: returning EN-Nutzer bootet mit engl. UI, aber `<html lang="de">` — Screenreader sprechen engl./pt. Inhalte deutsch aus.
 - **WORK:** Beim Laden `document.documentElement.setAttribute('lang', LOCALE)` (setLocale tat es schon bei Wechsel, nur der Erst-Boot fehlte).
