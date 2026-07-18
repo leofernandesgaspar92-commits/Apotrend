@@ -32,16 +32,17 @@ die Session neu startet.
 
 ## Letzter GATHER-Snapshot
 
-_Cycle #20 · 2026-07-18_
+_Cycle #26 · 2026-07-18_
 ```
-Tests:            218/218 grün  ·  Browser-Audit: 0 Querscroll / 0 JS-Fehler  ·  Smoke: 7/7 grün
-i18n de/en/pt:    576/576/576  · 0 Lücken  ✓ perfekte Parität
+Tests:            219/219 grün  ·  Browser-Audit: 0 Querscroll / 0 JS-Fehler  ·  Smoke: 7/7 grün
+i18n de/en/pt:    590/590/590  · 0 Lücken  ✓ perfekte Parität
 Hartkod. Dialoge: 0  ·  Hartkod. UI-DE: 0  ·  TODO/FIXME: 0  ·  console: 0  ·  !important: 3 (legitim)
+Backend-Fehler:   alltags-relevante Fehler mehrsprachig (Codes), Fallback = DE-message
 index.html:       ~3720 Zeilen · 267 KB   ← größtes Struktur-Signal (Monolith)
 ```
-Fortschritt: 20 Zyklen. Frontend-i18n lückenlos + dreifach bewacht (statisch/Browser/Smoke).
-Kontotyp-Rechte doppelt getestet. Bounded-Arbeit weitgehend ausgeschöpft — nächster großer
-Wertsprung liegt bei P3 (Backend-Fehler-i18n, Monolith, DB, Währung) → CEO-Freigabe nötig.
+Fortschritt: 26 Zyklen. Frontend-i18n lückenlos + dreifach bewacht; Backend-Fehler-i18n
+für alle Alltagsfälle; Kontotyp-Rechte doppelt getestet. Offene P3: Monolith, DB, Währung
+(je architektonisch bedeutsam → CEO-Freigabe).
 
 ## Priorisierter Backlog (Kandidaten für WORK)
 
