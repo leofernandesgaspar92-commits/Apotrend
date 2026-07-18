@@ -355,6 +355,18 @@ test('Unbekannte Route -> 404', async () => {
   assert.equal(r.status, 404);
 });
 
+test('Merkliste über HTTP: Beitrag merken -> erscheint in Merkliste/ids -> erneut tippen -> weg', async () => {
+  const a = await reg('bma' + PORT);
+  const p = await (await post('/api/posts', a, { body: 'Merk mich ' + PORT, visibility: 'public' })).json();
+  assert.ok(p.id);
+  assert.equal((await post(`/api/posts/${p.id}/bookmark`, a)).status, 200);
+  assert.ok(((await j('/api/bookmarks', a)).posts || []).some(x => x.id === p.id), 'in Merkliste');
+  assert.ok(((await j('/api/bookmarks/ids', a)).ids || []).includes(p.id), 'in ids');
+  // Erneutes Tippen entfernt aus der Merkliste (Toggle).
+  await post(`/api/posts/${p.id}/bookmark`, a);
+  assert.equal(((await j('/api/bookmarks', a)).posts || []).filter(x => x.id === p.id).length, 0, 'nach Toggle nicht mehr gemerkt');
+});
+
 test('Engpass-Bestätigung über HTTP: „Auch bei uns" erhöht Zähler und benachrichtigt den Melder', async () => {
   const reporter = await reg('confr' + PORT);
   const confirmer = await reg('confc' + PORT);

@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #60 — 2026-07-18 — Merkliste (Bookmarks) über HTTP getestet
+- **CHECK:** Merk-Fluss real via API: merken → erscheint in Merkliste + ids → erneutes Tippen entfernt (Toggle).
+- **WORK:** HTTP-Integrationstest für bookmark → /bookmarks + /bookmarks/ids → un-toggle.
+- **CHECK:** 225 → 226 grün.
+
 ### Cycle #59 — 2026-07-18 — Engpass-Bestätigung über HTTP getestet (rundet Frühwarnnetz ab)
 - **CHECK:** Sicherheitsrelevanter Fluss „Auch bei uns" real via API: Bestätigung erhöht Zähler + benachrichtigt den Melder (shortage_confirm).
 - **WORK:** HTTP-Integrationstest für report → confirm → confirm_count + Melder-Benachrichtigung. Damit ist das Frühwarnnetz (melden/beobachten/bestätigen) end-to-end HTTP-abgedeckt.
