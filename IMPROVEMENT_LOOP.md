@@ -30,13 +30,12 @@ die Session neu startet.
 
 ## Letzter GATHER-Snapshot
 
-_Cycle #7 · 2026-07-18_
+_Cycle #9 · 2026-07-18_
 ```
 Tests:            216/216 grün
-i18n de/en/pt:    554/554/554  · 0 Lücken  ✓ perfekte Parität
-Hartkod. Dialoge: 0  ·  Hartkod. UI-DE: 0 (neuer Wächter)  ·  TODO/FIXME: 0
-console.* (FE):   0  ·  !important (CSS): 3
-index.html:       ~3710 Zeilen · 265 KB   ← größtes Struktur-Signal (Monolith)
+i18n de/en/pt:    565/565/565  · 0 Lücken  ✓ perfekte Parität
+Hartkod. Dialoge: 0  ·  Hartkod. UI-DE: 0  ·  TODO/FIXME: 0  ·  console.* (FE): 0  ·  !important: 3
+index.html:       ~3712 Zeilen · 266 KB   ← größtes Struktur-Signal (Monolith)
 ```
 
 ## Priorisierter Backlog (Kandidaten für WORK)
@@ -53,8 +52,8 @@ prüft ihn erst (echt oder Rauschen?), setzt ihn dann um.
 - [x] ~~Profil-Kopf-Zähler (pf_posts/pf_best/pf_followers) Singular~~ → Cycle #5.
 - [x] ~~Empty-States i18n (Feed)~~ → Cycle #6. ~~GATHER-Wächter dafür~~ → Cycle #7.
 - [x] ~~News-Formular i18n~~ → Cycle #8.
-- [ ] Restliche hartkodierte DE-UI (Umlaut-Sweep): Schriftgröße-Button-Title (~Z.167),
-      Verifizierungs-Karte („Dein Antrag wird geprüft" / „Dein letzter Antrag wurde abgelehnt", ~Z.3184/3189).
+- [x] ~~Verifizierungs-Karte i18n~~ → Cycle #9.
+- [ ] Restliche hartkodierte DE-UI: Schriftgröße-Button-Title (~Z.167) + weiterer Umlaut-Sweep.
 - [ ] GATHER-Wächter erweitern: auch `<label>…</label>` und `placeholder="…"` in Template-Literalen
       (der Umlaut-Sweep fand die News-Strings, der `hardcoded_ui_de`-Wächter nicht).
 - [ ] a11y: Tastatur-Fokusreihenfolge der Sortier-/Filter-Chips (Preise/Rabatte/Engpässe).
@@ -76,6 +75,10 @@ Reaktions-/Folgen-Status, volle i18n DE/EN/PT (inkl. aria/title/Dialoge/Pre-Logi
 a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `server/README.md`.
 
 ## Cycle-Log
+
+### Cycle #9 — 2026-07-18 — Verifizierungs-Karte i18n
+- **WORK:** Verifizierungs-Karte (offen/abgelehnt/beantragen) via t() (vf_*, DE/EN/PT).
+- **CHECK:** en „Get verified", pt „Obter verificação"; 216 grün; Parität 565; UI-DE 0.
 
 ### Cycle #8 — 2026-07-18 — News-Formular i18n (Umlaut-Sweep)
 - **GATHER+:** Manueller Umlaut-Sweep außerhalb der Wörterbücher fand 3 echte hartkodierte
