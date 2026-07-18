@@ -52,6 +52,11 @@ prüft ihn erst (echt oder Rauschen?), setzt ihn dann um.
 - [x] ~~„{n} Beiträge dazu" (pg_posts) Singular~~ → Cycle #4 (generischer `nlabel`-Helper).
 - [x] ~~Profil-Kopf-Zähler (pf_posts/pf_best/pf_followers) Singular~~ → Cycle #5.
 - [x] ~~Empty-States i18n (Feed)~~ → Cycle #6. ~~GATHER-Wächter dafür~~ → Cycle #7.
+- [x] ~~News-Formular i18n~~ → Cycle #8.
+- [ ] Restliche hartkodierte DE-UI (Umlaut-Sweep): Schriftgröße-Button-Title (~Z.167),
+      Verifizierungs-Karte („Dein Antrag wird geprüft" / „Dein letzter Antrag wurde abgelehnt", ~Z.3184/3189).
+- [ ] GATHER-Wächter erweitern: auch `<label>…</label>` und `placeholder="…"` in Template-Literalen
+      (der Umlaut-Sweep fand die News-Strings, der `hardcoded_ui_de`-Wächter nicht).
 - [ ] a11y: Tastatur-Fokusreihenfolge der Sortier-/Filter-Chips (Preise/Rabatte/Engpässe).
 - [ ] CSS-Schuld: die 3 `!important` prüfen, ob sauber auflösbar.
 - [ ] Preise/Rabatte: Tastatur-Bedienbarkeit der Sortier-/Filter-Chips prüfen (Fokusreihenfolge).
@@ -71,6 +76,13 @@ Reaktions-/Folgen-Status, volle i18n DE/EN/PT (inkl. aria/title/Dialoge/Pre-Logi
 a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `server/README.md`.
 
 ## Cycle-Log
+
+### Cycle #8 — 2026-07-18 — News-Formular i18n (Umlaut-Sweep)
+- **GATHER+:** Manueller Umlaut-Sweep außerhalb der Wörterbücher fand 3 echte hartkodierte
+  DE-Bereiche (News-Formular, Schriftgröße-Title, Verifizierungs-Karte).
+- **WORK:** News-Formular vollständig übersetzt (nb_*-Schlüssel, DE/EN/PT).
+- **CHECK:** EN „Share news / Share as news" verifiziert; 216 grün; Parität 558; UI-DE-Wächter 0.
+- **REPEAT:** Restliche 2 DE-Bereiche + Wächter-Erweiterung (label/placeholder) in Backlog.
 
 ### Cycle #7 — 2026-07-18 — GATHER-Wächter für hartkodierte UI-Texte
 - **ANALYSE:** #6-Bug blieb unentdeckt → Instrument-Lücke ist selbst das wichtigste Signal.
