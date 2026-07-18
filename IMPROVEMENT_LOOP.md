@@ -80,6 +80,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #30 — 2026-07-18 — E-Mail-Platzhalter folgt der Landessprache
+- **CHECK:** Auth-Screenshot (GB) zeigte den Platzhalter „name@apotheke.at" — eine österreichische Domain für eine UK-Apotheke wirkt fremd/unprofessionell.
+- **WORK:** Neuer i18n-Schlüssel `au_email_ph` (de: name@apotheke.at, en: name@pharmacy.com, pt: nome@farmacia.pt); beide E-Mail-Felder (Login + Registrierung) nutzen ihn.
+- **CHECK:** GB→name@pharmacy.com, PT→nome@farmacia.pt real bestätigt; Parität 595/595/595; 219 grün.
+
 ### Cycle #29 — 2026-07-18 — Länderauswahl: Ländernamen brechen nicht mehr mitten im Wort (Mobil)
 - **THINK/CHECK:** Echte Screenshots (390px) zeigten „Deutschla nd" / „Moçambiq ue" — `.card { overflow-wrap:anywhere }` vererbte sich in die Länder-Buttons und zerlegte Eigennamen.
 - **WORK:** `.country-pick { overflow-wrap:normal; word-break:keep-all }` + einspaltiges Raster < 460px → volle, gut lesbare Tap-Ziele.

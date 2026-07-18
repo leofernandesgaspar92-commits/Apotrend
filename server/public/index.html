@@ -397,7 +397,7 @@ const I18N = {
     md_author:'Autor', md_removed:'bereits entfernt', md_gone:'Ziel nicht mehr vorhanden.',
     md_remove_comment:'🗑 Kommentar entfernen', md_remove_post:'🗑 Beitrag entfernen', md_ok:'✓ In Ordnung (Meldung schließen)',
     cs_title:'Wähle dein Land', cs_sub:'Danach siehst du Engpässe, Preise und das Netzwerk speziell für dein Land.', cs_change:'← Land ändern', logo_home:'Zur Startseite',
-    au_login:'Anmelden', au_email:'E-Mail', au_pw:'Passwort', au_register:'Neu registrieren', au_name:'Name',
+    au_login:'Anmelden', au_email:'E-Mail', au_email_ph:'name@apotheke.at', au_pw:'Passwort', au_register:'Neu registrieren', au_name:'Name',
     au_handle:'@Handle (öffentlicher Name im Netzwerk)', au_pw8:'Passwort (mind. 8 Zeichen)',
     au_country:'Land (bestimmt Feed-Inhalte & Sprache)', au_create:'Konto erstellen',
     at_label:'Kontotyp', at_pharmacy:'🏥 Apotheke', at_pharma:'🏭 Pharma-Unternehmen', at_authority:'🏛️ Behörde', at_private:'👤 Privatnutzer:in',
@@ -652,7 +652,7 @@ const I18N = {
     md_author:'Author', md_removed:'already removed', md_gone:'Target no longer exists.',
     md_remove_comment:'🗑 Remove comment', md_remove_post:'🗑 Remove post', md_ok:'✓ OK (close report)',
     cs_title:'Choose your country', cs_sub:'You’ll then see shortages, prices and the network specific to your country.', cs_change:'← Change country', logo_home:'To home',
-    au_login:'Log in', au_email:'Email', au_pw:'Password', au_register:'Sign up', au_name:'Name',
+    au_login:'Log in', au_email:'Email', au_email_ph:'name@pharmacy.com', au_pw:'Password', au_register:'Sign up', au_name:'Name',
     au_handle:'@handle (public name in the network)', au_pw8:'Password (min. 8 characters)',
     au_country:'Country (sets feed content & language)', au_create:'Create account',
     at_label:'Account type', at_pharmacy:'🏥 Pharmacy', at_pharma:'🏭 Pharma company', at_authority:'🏛️ Authority', at_private:'👤 Private user',
@@ -907,7 +907,7 @@ const I18N = {
     md_author:'Autor', md_removed:'já removido', md_gone:'O alvo já não existe.',
     md_remove_comment:'🗑 Remover comentário', md_remove_post:'🗑 Remover publicação', md_ok:'✓ OK (fechar denúncia)',
     cs_title:'Escolha o seu país', cs_sub:'Verá depois faltas, preços e a rede específicos do seu país.', cs_change:'← Mudar de país', logo_home:'Para o início',
-    au_login:'Entrar', au_email:'E-mail', au_pw:'Palavra-passe', au_register:'Registar', au_name:'Nome',
+    au_login:'Entrar', au_email:'E-mail', au_email_ph:'nome@farmacia.pt', au_pw:'Palavra-passe', au_register:'Registar', au_name:'Nome',
     au_handle:'@handle (nome público na rede)', au_pw8:'Palavra-passe (mín. 8 caracteres)',
     au_country:'País (define conteúdo do feed & idioma)', au_create:'Criar conta',
     at_label:'Tipo de conta', at_pharmacy:'🏥 Farmácia', at_pharma:'🏭 Empresa farmacêutica', at_authority:'🏛️ Autoridade', at_private:'👤 Utilizador privado',
@@ -1160,7 +1160,7 @@ function authScreen() {
   app.appendChild(el(`
   <div class="card">
     <h1>${esc(t('au_login'))}</h1>
-    <label for="li_email">${esc(t('au_email'))}</label><input id="li_email" type="email" placeholder="name@apotheke.at">
+    <label for="li_email">${esc(t('au_email'))}</label><input id="li_email" type="email" placeholder="${esc(t('au_email_ph'))}">
     <label for="li_pw">${esc(t('au_pw'))}</label><input id="li_pw" type="password" placeholder="${esc(t('au_pw'))}">
     <div style="margin-top:12px"><button id="li_go">${esc(t('au_login'))}</button></div>
     <div class="err" id="li_err"></div>
@@ -1169,7 +1169,7 @@ function authScreen() {
     <h1>${esc(t('au_register'))}</h1>
     <label for="rg_name">${esc(t('au_name'))}</label><input id="rg_name" placeholder="Dr. Anna Huber">
     <label for="rg_handle">${esc(t('au_handle'))}</label><input id="rg_handle" placeholder="anna_huber">
-    <label for="rg_email">${esc(t('au_email'))}</label><input id="rg_email" type="email" placeholder="name@apotheke.at">
+    <label for="rg_email">${esc(t('au_email'))}</label><input id="rg_email" type="email" placeholder="${esc(t('au_email_ph'))}">
     <label for="rg_pw">${esc(t('au_pw8'))}</label><input id="rg_pw" type="password">
     <label for="rg_country">${esc(t('au_country'))}</label><select id="rg_country"></select>
     <label for="rg_accounttype">${esc(t('at_label'))}</label><select id="rg_accounttype"></select>
