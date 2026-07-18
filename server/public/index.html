@@ -248,7 +248,7 @@ const I18N = {
     sc_abx:'🧫 Antibiotikum', sc_abx_link:'Stewardship-Infos & Quellen',
     sc_abx_note:'(keine Substitutionsempfehlung ohne Quelle)', sc_reported_by:'👥 Gemeldet von',
     sc_conf_one:'weitere Apotheke bestätigt', sc_conf_many:'weitere Apotheken bestätigt',
-    sc_posted:'Apotheker haben dazu gepostet', sc_post_about:'✍ Dazu posten',
+    sc_posts_zero:'💬 Noch keine Beiträge', sc_posts_one:'💬 1 Beitrag dazu', sc_posts_many:'💬 {n} Beiträge dazu', sc_post_about:'✍ Dazu posten',
     sc_watched:'⭐ Beobachtet', sc_watch:'☆ Beobachten',
     sc_conf_btn:'➕ Auch bei uns', sc_confd_btn:'✅ Bestätigt', sc_resolve:'✓ Wieder lieferbar',
     sc_history:'📜 Verlauf', sc_post_ph:'Dein Beitrag zu diesem Engpass (öffentlich)…', sc_post_send:'Posten',
@@ -490,7 +490,7 @@ const I18N = {
     sc_abx:'🧫 Antibiotic', sc_abx_link:'Stewardship info & sources',
     sc_abx_note:'(no substitution advice without a source)', sc_reported_by:'👥 Reported by',
     sc_conf_one:'more pharmacy confirms', sc_conf_many:'more pharmacies confirm',
-    sc_posted:'pharmacists have posted about this', sc_post_about:'✍ Post about this',
+    sc_posts_zero:'💬 No posts yet', sc_posts_one:'💬 1 post about this', sc_posts_many:'💬 {n} posts about this', sc_post_about:'✍ Post about this',
     sc_watched:'⭐ Watched', sc_watch:'☆ Watch',
     sc_conf_btn:'➕ Us too', sc_confd_btn:'✅ Confirmed', sc_resolve:'✓ Available again',
     sc_history:'📜 History', sc_post_ph:'Your post about this shortage (public)…', sc_post_send:'Post',
@@ -732,7 +732,7 @@ const I18N = {
     sc_abx:'🧫 Antibiótico', sc_abx_link:'Informação de stewardship & fontes',
     sc_abx_note:'(sem recomendação de substituição sem fonte)', sc_reported_by:'👥 Reportado por',
     sc_conf_one:'outra farmácia confirma', sc_conf_many:'outras farmácias confirmam',
-    sc_posted:'farmacêuticos publicaram sobre isto', sc_post_about:'✍ Publicar sobre isto',
+    sc_posts_zero:'💬 Ainda sem publicações', sc_posts_one:'💬 1 publicação sobre isto', sc_posts_many:'💬 {n} publicações sobre isto', sc_post_about:'✍ Publicar sobre isto',
     sc_watched:'⭐ Vigiada', sc_watch:'☆ Vigiar',
     sc_conf_btn:'➕ Nós também', sc_confd_btn:'✅ Confirmado', sc_resolve:'✓ Disponível novamente',
     sc_history:'📜 Histórico', sc_post_ph:'A sua publicação sobre esta falta (pública)…', sc_post_send:'Publicar',
@@ -932,6 +932,11 @@ function ti(key, vars) {
 // 1 -> korrekter Singular („1 Kommentar", nicht „1 Kommentare"), sonst Plural.
 function commentLabel(n) {
   return n === 0 ? t('pc_comment_cta') : n === 1 ? t('pc_comments_one') : ti('pc_comments', { n });
+}
+// Engpass-Diskussions-Button: 0 -> „Noch keine Beiträge" (statt „0 … haben gepostet"),
+// 1 -> Singular, sonst Plural. Zählt Beiträge (genauer als „Apotheker", da ggf. dieselbe Person).
+function shortagePostsLabel(n) {
+  return n === 0 ? t('sc_posts_zero') : n === 1 ? t('sc_posts_one') : ti('sc_posts_many', { n });
 }
 function applyI18n(root) {
   const scope = root || document;
@@ -1870,7 +1875,7 @@ function shortageCard(s) {
     ${s.is_antibiotic?`<div style="margin-top:6px;font-size:13px"><span style="color:var(--ok-fg);font-weight:600">${esc(t('sc_abx'))}</span> — <span class="clickable" data-amr style="color:var(--ok-fg);text-decoration:underline">${esc(t('sc_abx_link'))}</span> <span class="muted">${esc(t('sc_abx_note'))}</span></div>`:''}
     ${s.provenance==='community'&&s.reporter?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sc_reported_by'))} <b>@${esc(s.reporter.handle)}</b>${s.reporter.verified?' <span class="verified">✔</span>':''}${s.confirm_count?` · <b style="color:var(--crit-fg)">${s.confirm_count}</b> ${esc(s.confirm_count>1?t('sc_conf_many'):t('sc_conf_one'))}`:''}</div>`:''}
     <div class="reacts">
-      <button data-about>💬 ${s.post_count||0} ${esc(t('sc_posted'))}</button>
+      <button data-about>${esc(shortagePostsLabel(s.post_count||0))}</button>
       <button class="ghost" data-postbtn>${esc(t('sc_post_about'))}</button>
       <button class="ghost" data-exchange title="${esc(t('nav_exchange'))}">${esc(t('nav_exchange'))}</button>
       <button class="ghost" data-watch title="${esc(t('wl_add_aria'))}" aria-pressed="${!!s.watched}">${s.watched?esc(t('sc_watched')):esc(t('sc_watch'))}</button>
