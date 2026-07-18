@@ -72,6 +72,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #6 — 2026-07-18 — Hartkodierte Empty-States übersetzt
+- **WORK:** 3 Feed-Empty-States (home/questions/new) waren fest Deutsch → t() (fe_*-Schlüssel, DE/EN/PT + CTAs).
+- **CHECK:** Schlüssel lösen de/en/pt korrekt auf; 216 grün; Parität 554.
+- **Wichtig:** GATHER hat das NICHT erkannt (prüft nur Dialoge/Attribute) → Instrument-Lücke, Cycle #7.
+
 ### Cycle #5 — 2026-07-18 — Profil-Kopf-Zähler Singular
 - **WORK:** pf_posts/pf_followers/pf_best via nlabel + _one-Varianten (DE/EN/PT). „1 Beitrag"
   statt „1 Beiträge", „1 follower" statt „1 followers".
