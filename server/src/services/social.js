@@ -69,7 +69,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     createProfile(actorUserId, { handle, displayName, title, pharmacyOrgId, bio, specializations, avatarUrl, visibility, isEditorial, country, locale, accountType }) {
       requireUser(actorUserId);
       if (!handle || !/^[a-z0-9_]{3,30}$/i.test(handle)) throw new AppError('profile_handle_format', 'Handle: 3–30 Zeichen, nur a–z 0–9 _.');
-      if (!displayName) throw new Error('Anzeigename erforderlich.');
+      if (!displayName) throw new AppError('display_name_required', 'Anzeigename erforderlich.');
       const c = normalizeCountry(country);
       return social.createProfile({ userId: actorUserId, handle, displayName, title, pharmacyOrgId, bio, specializations, avatarUrl, visibility, isEditorial, country: c, locale: normalizeLocale(locale, c), accountType: normalizeAccountType(accountType) });
     },
@@ -84,7 +84,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       const patch = {};
       if (displayName !== undefined) {
         const dn = String(displayName).trim();
-        if (!dn) throw new Error('Anzeigename darf nicht leer sein.');
+        if (!dn) throw new AppError('display_name_required', 'Anzeigename erforderlich.');
         patch.display_name = dn;
       }
       if (title !== undefined) patch.title = String(title).trim() || null;
@@ -272,7 +272,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (!p || p.deleted_at) throw new Error('Beitrag nicht gefunden.');
       if (p.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Autor darf bearbeiten.');
       const text = String(body ?? '').trim();
-      if (!text) throw new Error('Beitrag darf nicht leer sein.');
+      if (!text) throw new AppError('post_empty', 'Beitrag darf nicht leer sein.');
       if (text.length > MAX_BODY) throw new Error(`Beitrag zu lang (max ${MAX_BODY}).`);
       return decorate(social.updatePostBody(postId, text), actorUserId);
     },
@@ -311,7 +311,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       }
       const text = String(body ?? '').trim();
       const img = cleanImage(image);
-      if (!text && !img) throw new Error('Kommentar darf nicht leer sein (Text oder Bild).');
+      if (!text && !img) throw new AppError('comment_empty', 'Kommentar darf nicht leer sein (Text oder Bild).');
       const comment = social.createComment({ postId, parentCommentId, authorUserId: actorUserId, body: text, image: img });
       notify(p.author_user_id, 'comment', actorUserId, 'post', postId); // Beitrags-Autor
       if (parentCommentId) {
@@ -338,7 +338,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (!c || c.deleted_at) throw new Error('Kommentar nicht gefunden.');
       if (c.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Autor darf bearbeiten.');
       const text = String(body ?? '').trim();
-      if (!text) throw new Error('Kommentar darf nicht leer sein.');
+      if (!text) throw new AppError('comment_empty', 'Kommentar darf nicht leer sein (Text oder Bild).');
       if (text.length > MAX_BODY) throw new Error(`Kommentar zu lang (max ${MAX_BODY}).`);
       return social.updateCommentBody(commentId, text);
     },
@@ -490,7 +490,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (!t) throw new Error('Thread nicht gefunden.');
       if (t.user_a_id !== actorUserId && t.user_b_id !== actorUserId) throw new ForbiddenError('Nicht Teil dieser Konversation.');
       const text = String(body ?? '').trim();
-      if (!text) throw new Error('Leere Nachricht.');
+      if (!text) throw new AppError('message_empty', 'Leere Nachricht.');
       const msg = social.createDmMessage({ threadId, senderUserId: actorUserId, body: text });
       const recipient = t.user_a_id === actorUserId ? t.user_b_id : t.user_a_id;
       notify(recipient, 'dm', actorUserId, 'thread', threadId);

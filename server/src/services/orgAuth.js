@@ -3,6 +3,7 @@
 // regeln — keine DB-Details, kein HTTP.
 import { hashPassword, verifyPassword } from '../domain/password.js';
 import { ROLES, ORG_TYPES, roleAllowedForOrgType, can } from '../domain/roles.js';
+import { AppError } from '../domain/errors.js';
 
 export function createOrgAuthService(repo) {
   return {
@@ -48,8 +49,8 @@ export function createOrgAuthService(repo) {
     changePassword(userId, { oldPassword, newPassword }) {
       const user = repo.getUserById(userId);
       if (!user) throw new Error('Unbekannter Nutzer.');
-      if (!verifyPassword(oldPassword ?? '', user.password_hash)) throw new Error('Aktuelles Passwort ist falsch.');
-      if (!newPassword || String(newPassword).length < 8) throw new Error('Neues Passwort: mindestens 8 Zeichen.');
+      if (!verifyPassword(oldPassword ?? '', user.password_hash)) throw new AppError('current_pw_wrong', 'Aktuelles Passwort ist falsch.');
+      if (!newPassword || String(newPassword).length < 8) throw new AppError('new_pw_short', 'Neues Passwort: mindestens 8 Zeichen.');
       repo.setUserPassword(userId, hashPassword(newPassword));
       return { ok: true };
     },

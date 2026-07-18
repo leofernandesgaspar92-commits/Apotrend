@@ -27,7 +27,7 @@ test('Profil bearbeiten: Anzeigename, Titel, Bio, Fachgebiete werden übernommen
 
 test('Profil bearbeiten: leerer Anzeigename wird abgelehnt', () => {
   const { social, a } = setup();
-  assert.throws(() => social.updateProfile(a, { displayName: '   ' }), /leer/);
+  assert.throws(() => social.updateProfile(a, { displayName: '   ' }), /Anzeigename/);
 });
 
 test('Profil bearbeiten: zu lange Bio wird abgelehnt', () => {

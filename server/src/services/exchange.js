@@ -52,7 +52,7 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       }
       if (!KINDS.includes(kind)) throw new Error('Art muss "biete" oder "suche" sein.');
       const b = String(bezeichnung ?? '').trim();
-      if (!b) throw new Error('Präparat/Wirkstoff erforderlich.');
+      if (!b) throw new AppError('exchange_name_required', 'Präparat/Wirkstoff erforderlich.');
       if (b.length > 200) throw new Error('Bezeichnung zu lang.');
       const bl = bundesland ? String(bundesland).trim() : null;
       if (bl && !BUNDESLAENDER.includes(bl)) throw new Error('Ungültiges Bundesland.');
