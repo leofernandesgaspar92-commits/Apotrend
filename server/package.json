@@ -10,6 +10,7 @@
     "start": "node src/http/server.js",
     "audit": "node tools/loop-audit.mjs",
     "audit:browser": "node tools/loop-browser-audit.mjs",
-    "smoke": "node tools/loop-smoke.mjs"
+    "smoke": "node tools/loop-smoke.mjs",
+    "verify": "node --test && node tools/loop-smoke.mjs && node tools/loop-browser-audit.mjs && node tools/loop-audit.mjs"
   }
 }

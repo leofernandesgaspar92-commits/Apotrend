@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #48 — 2026-07-18 — Ein-Kommando-CHECK: `npm run verify`
+- **THINK:** Der Loop-CHECK lief bisher als 3–4 Einzel-Kommandos — fehleranfällig, leicht was zu vergessen.
+- **WORK:** `npm run verify` kettet Tests → Smoke → Browser-Audit → Static-Audit-Snapshot (gatend, wo sinnvoll). Ende-zu-Ende-Deutsch-Leck-Scan (EN+PT, 8 Reiter) einmalig gefahren: 0 Lecks.
+- **CHECK:** `verify` grün: 219 Tests, Smoke 11/11, Browser-Audit sauber, Parität 642/642/642, alle 4 Static-Wächter 0.
+
 ### Cycle #47 — 2026-07-18 — Wächter gegen hartkodiertes Deutsch in JS-DOM-Zuweisungen
 - **THINK:** Die #46-Strings fing kein Wächter (kein Markup, kein t()). „Instrument schärfen".
 - **WORK:** Neuer Static-Audit-Detektor `hardcoded_js_de`: `.textContent/.title/.placeholder = '…ä…'` + `setAttribute('aria-label'|'title'|'placeholder'|'alt', '…ä…')` in app.js. Regex gegengeprüft.
