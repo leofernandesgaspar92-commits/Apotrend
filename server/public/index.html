@@ -348,7 +348,7 @@ const I18N = {
     search_wk:'💊 Alles zu einem Wirkstoff auf einer Seite:',
     search_sec_people:'👥 Personen', search_sec_posts:'📝 Beiträge', search_sec_shortages:'📦 Engpässe',
     search_sec_prices:'💶 Preise', search_sec_rabatte:'🏷️ Rabatt-Aktionen',
-    pf_posts:'Beiträge', pf_followers:'Follower', pf_following:'folgt', pf_best:'beste Antworten',
+    pf_posts:'Beiträge', pf_post_one:'Beitrag', pf_followers:'Follower', pf_follower_one:'Follower', pf_following:'folgt', pf_best:'beste Antworten', pf_best_one:'beste Antwort',
     pf_best_title:'Als beste Antwort markiert', pf_activity:'🗂️ Meine Aktivität', pf_edit:'✏️ Profil bearbeiten',
     pf_dm:'✉️ Nachricht', pf_unfollow:'✓ Du folgst — entfolgen', pf_follow:'+ Folgen',
     pf_no_posts:'Noch keine sichtbaren Beiträge.',
@@ -590,7 +590,7 @@ const I18N = {
     search_wk:'💊 Everything about a substance on one page:',
     search_sec_people:'👥 People', search_sec_posts:'📝 Posts', search_sec_shortages:'📦 Shortages',
     search_sec_prices:'💶 Prices', search_sec_rabatte:'🏷️ Discount deals',
-    pf_posts:'posts', pf_followers:'followers', pf_following:'following', pf_best:'best answers',
+    pf_posts:'posts', pf_post_one:'post', pf_followers:'followers', pf_follower_one:'follower', pf_following:'following', pf_best:'best answers', pf_best_one:'best answer',
     pf_best_title:'marked as best answer', pf_activity:'🗂️ My activity', pf_edit:'✏️ Edit profile',
     pf_dm:'✉️ Message', pf_unfollow:'✓ Following — unfollow', pf_follow:'+ Follow',
     pf_no_posts:'No visible posts yet.',
@@ -832,7 +832,7 @@ const I18N = {
     search_wk:'💊 Tudo sobre uma substância numa página:',
     search_sec_people:'👥 Pessoas', search_sec_posts:'📝 Publicações', search_sec_shortages:'📦 Faltas',
     search_sec_prices:'💶 Preços', search_sec_rabatte:'🏷️ Promoções',
-    pf_posts:'publicações', pf_followers:'seguidores', pf_following:'a seguir', pf_best:'melhores respostas',
+    pf_posts:'publicações', pf_post_one:'publicação', pf_followers:'seguidores', pf_follower_one:'seguidor', pf_following:'a seguir', pf_best:'melhores respostas', pf_best_one:'melhor resposta',
     pf_best_title:'marcada como melhor resposta', pf_activity:'🗂️ A minha atividade', pf_edit:'✏️ Editar perfil',
     pf_dm:'✉️ Mensagem', pf_unfollow:'✓ A seguir — deixar de seguir', pf_follow:'+ Seguir',
     pf_no_posts:'Ainda sem publicações visíveis.',
@@ -2846,10 +2846,10 @@ async function openProfile(handle) {
       ${p.bio?`<div class="post-body">${esc(p.bio)}</div>`:''}
       ${specs?`<div style="margin-top:8px">${specs}</div>`:''}
       <div class="row" style="margin-top:12px;gap:18px">
-        <span><b>${d.post_count}</b> <span class="muted">${esc(t('pf_posts'))}</span></span>
-        <span class="clickable" data-followers><b>${d.follower_count}</b> <span class="muted">${esc(t('pf_followers'))}</span></span>
+        <span><b>${d.post_count}</b> <span class="muted">${esc(nlabel(d.post_count,'pf_post_one','pf_posts'))}</span></span>
+        <span class="clickable" data-followers><b>${d.follower_count}</b> <span class="muted">${esc(nlabel(d.follower_count,'pf_follower_one','pf_followers'))}</span></span>
         <span class="clickable" data-following><b>${d.following_count}</b> <span class="muted">${esc(t('pf_following'))}</span></span>
-        ${d.best_answers?`<span title="${esc(t('pf_best_title'))}"><b>🏆 ${d.best_answers}</b> <span class="muted">${esc(t('pf_best'))}</span></span>`:''}
+        ${d.best_answers?`<span title="${esc(t('pf_best_title'))}"><b>🏆 ${d.best_answers}</b> <span class="muted">${esc(nlabel(d.best_answers,'pf_best_one','pf_best'))}</span></span>`:''}
         <span class="sp" style="flex:1"></span>
         ${d.is_self?`<button class="ghost small" data-activity>${esc(t('pf_activity'))}</button> <button class="ghost small" data-edit>${esc(t('pf_edit'))}</button>`:`<button class="ghost small" data-dm>${esc(t('pf_dm'))}</button> <button class="${d.is_following?'ghost ':''}small" data-togglefollow>${d.is_following?esc(t('pf_unfollow')):esc(t('pf_follow'))}</button>`}
       </div>
