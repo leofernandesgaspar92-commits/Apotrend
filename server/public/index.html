@@ -1009,6 +1009,10 @@ function ti(key, vars) {
   if (vars) for (const k in vars) s = s.split('{'+k+'}').join(vars[k]);
   return s;
 }
+// Geld-Anzeige mit locale-korrektem Dezimaltrennzeichen (de/pt: Komma, en: Punkt),
+// 2 Nachkommastellen, ohne Tausender-Trenner (vorhersagbar wie bisher). Das €-Symbol
+// bleibt bewusst als Präfix („€ 1,34") — Reihenfolge zu ändern wäre ein separater Schritt.
+function fmtMoney(v) { const s = Number(v).toFixed(2); return LOCALE === 'en' ? s : s.replace('.', ','); }
 // Kommentar-Button-Beschriftung: 0 -> einladende Handlungsaufforderung („Kommentieren"),
 // 1 -> korrekter Singular („1 Kommentar", nicht „1 Kommentare"), sonst Plural.
 function commentLabel(n) {
@@ -1468,7 +1472,7 @@ async function loadOverview() {
     tile('📦', d.exchange.biete, t('ov_t_offer'), 'var(--ok-fg)', 'exchange'),
     tile('🔎', d.exchange.suche, t('ov_t_seek'), 'var(--warn-fg)', 'exchange'),
   );
-  if (d.savings && d.savings.count) tiles.push(tile('💶', '€ ' + Number(d.savings.total_abs).toFixed(2), t('ov_t_savings'), 'var(--ok-fg)', 'prices'));
+  if (d.savings && d.savings.count) tiles.push(tile('💶', '€ ' + fmtMoney(d.savings.total_abs), t('ov_t_savings'), 'var(--ok-fg)', 'prices'));
   if (d.rabatte_expiring && d.rabatte_expiring.count) tiles.push(tile('⏳', d.rabatte_expiring.count, t('ov_t_expiring'), 'var(--warn-fg)', 'rabatte'));
   tiles.push(tile('🔔', d.notifications.unread, t('ov_t_notif'), 'var(--info-fg)', ''));
   const head = el(`<div class="card">
@@ -1500,7 +1504,7 @@ async function loadOverview() {
   if (d.watch_deals && d.watch_deals.length) {
     const c = el(`<div class="card"><div class="row"><b>${esc(t('wd_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>${esc(t('wd_all'))}</button></div>
       <div class="muted" style="font-size:13px;margin:2px 0 6px">${esc(t('wd_sub'))}</div>
-      ${d.watch_deals.map(w=>`<div class="comment">🏷️ <b>${esc(w.wirkstoff)}</b> — ${esc(w.supplier)} <span style="color:var(--ok-fg);font-weight:700">−${w.rabatt_pct}%</span> (€ ${Number(w.aktionspreis).toFixed(2)})${w.expiring_soon?` · <b style="color:${w.days_left<=3?'var(--crit-fg)':'var(--warn-fg)'}">${esc(w.days_left<=0?t('pg_only_today'):ti('pg_only_days',{d:w.days_left}))}</b>`:''}</div>`).join('')}</div>`);
+      ${d.watch_deals.map(w=>`<div class="comment">🏷️ <b>${esc(w.wirkstoff)}</b> — ${esc(w.supplier)} <span style="color:var(--ok-fg);font-weight:700">−${w.rabatt_pct}%</span> (€ ${fmtMoney(w.aktionspreis)})${w.expiring_soon?` · <b style="color:${w.days_left<=3?'var(--crit-fg)':'var(--warn-fg)'}">${esc(w.days_left<=0?t('pg_only_today'):ti('pg_only_days',{d:w.days_left}))}</b>`:''}</div>`).join('')}</div>`);
     c.querySelector('[data-all]').onclick = () => goTab('rabatte');
     feed.appendChild(c);
   }
@@ -2130,9 +2134,9 @@ async function loadPrices() {
       const s = d.savings;
       const head = el(`<div class="card">
         <div class="row"><b>${esc(t('pr_savings_title'))}</b></div>
-        <div style="font-size:22px;font-weight:800;color:var(--ok-fg);margin-top:4px">${esc(ti('pr_savings_amount', { x: Number(s.total_abs).toFixed(2) }))}</div>
+        <div style="font-size:22px;font-weight:800;color:var(--ok-fg);margin-top:4px">${esc(ti('pr_savings_amount', { x: fmtMoney(s.total_abs) }))}</div>
         <div class="muted" style="font-size:13px">${esc(ti(s.count>1?'pr_savings_sub_many':'pr_savings_sub_one', { n: s.count }))}</div>
-        ${s.top.length?`<div style="margin-top:8px">${s.top.map(it=>`<div class="comment" style="font-size:14px">💰 <b>${esc(it.bezeichnung)}</b>: −€ ${Number(it.saving_abs).toFixed(2)} (−${it.saving_pct}%) ${esc(t('pr_at'))} <b>${esc(it.best_supplier)}</b></div>`).join('')}</div>`:''}
+        ${s.top.length?`<div style="margin-top:8px">${s.top.map(it=>`<div class="comment" style="font-size:14px">💰 <b>${esc(it.bezeichnung)}</b>: −€ ${fmtMoney(it.saving_abs)} (−${it.saving_pct}%) ${esc(t('pr_at'))} <b>${esc(it.best_supplier)}</b></div>`).join('')}</div>`:''}
       </div>`);
       feed.appendChild(head);
     }
@@ -2166,7 +2170,7 @@ async function loadPrices() {
 //  en: Komma-Trenner + Punkt-Dezimal.
 // So bricht kein Import, egal in welchem Land die Datei geöffnet wird.
 function csvSep() { return LOCALE === 'en' ? ',' : ';'; }
-function csvNum(n) { const s = Number(n).toFixed(2); return LOCALE === 'en' ? s : s.replace('.', ','); }
+function csvNum(n) { return fmtMoney(n); }
 function csvYesNo(b) { return b ? t('csv_yes') : t('csv_no'); }
 function downloadCsv(baseName, header, rows) {
   const sep = csvSep();
@@ -2237,7 +2241,7 @@ function sparkline(series) {
   const col = dir > 0 ? '#c0392b' : (dir < 0 ? '#0b7f28' : '#9aa4ad');
   const lastX = x(n-1).toFixed(1), lastY = y(series[n-1]).toFixed(1);
   const dirWord = dir > 0 ? 'steigend' : (dir < 0 ? 'fallend' : 'gleichbleibend');
-  const label = `Preisverlauf ${dirWord}: ` + series.map(v => Number(v).toFixed(2).replace('.', ',') + ' Euro').join(', ');
+  const label = `Preisverlauf ${dirWord}: ` + series.map(v => fmtMoney(v) + ' Euro').join(', ');
   return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${label}" style="display:block;overflow:visible">
     <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     <circle cx="${lastX}" cy="${lastY}" r="2.5" fill="${col}"/>
@@ -2253,10 +2257,10 @@ function priceGroup(g) {
     <div class="post-author">${esc(g.bezeichnung)} ${g.wirkstoff?`<span class="handle clickable" data-wirkstoff="${esc(g.wirkstoff)}" title="Alles zu ${esc(g.wirkstoff)}">${esc(g.wirkstoff)}</span>`:''}</div>
     <div class="muted" style="margin:2px 0 8px">${esc(t('pg_compare'))} ${esc(t('prov_reference'))}</div>
     ${rose?`<div style="display:inline-block;background:var(--crit-bg);color:var(--crit-fg);border:1px solid var(--crit-bd);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">${esc(ti('pg_rose',{x:Number(cheapest.trend_pct).toFixed(1)}))}</div>`:''}
-    ${g.saving_abs>0?`<div style="display:inline-block;background:rgba(11,127,40,.12);color:var(--ok-fg);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">${esc(ti('pg_cheaper',{x:Number(g.saving_abs).toFixed(2),supplier:g.best_supplier}))}</div>`:''}
+    ${g.saving_abs>0?`<div style="display:inline-block;background:rgba(11,127,40,.12);color:var(--ok-fg);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">${esc(ti('pg_cheaper',{x:fmtMoney(g.saving_abs),supplier:g.best_supplier}))}</div>`:''}
     ${g.action?`<div style="background:rgba(11,127,40,.08);border:1px solid rgba(11,127,40,.35);border-radius:10px;padding:8px 10px;margin-bottom:8px">
       <div style="font-weight:700;color:var(--ok-fg);font-size:14px">${esc(t('pg_act_title'))}</div>
-      <div style="font-size:13px;margin-top:2px">${esc(g.action.supplier)}: <b>€ ${Number(g.action.aktionspreis).toFixed(2)}</b> ${esc(t('pg_instead'))} € ${Number(g.best_aep).toFixed(2)} ${esc(t('pg_aep'))} — <b>−€ ${Number(g.action.unter_aep_abs).toFixed(2)} ${esc(t('pg_per_pack'))}</b> · −${g.action.rabatt_pct}%</div>
+      <div style="font-size:13px;margin-top:2px">${esc(g.action.supplier)}: <b>€ ${fmtMoney(g.action.aktionspreis)}</b> ${esc(t('pg_instead'))} € ${fmtMoney(g.best_aep)} ${esc(t('pg_aep'))} — <b>−€ ${fmtMoney(g.action.unter_aep_abs)} ${esc(t('pg_per_pack'))}</b> · −${g.action.rabatt_pct}%</div>
       <div class="muted" style="font-size:12px;margin-top:2px">${esc(ti('pg_from',{n:g.action.min_menge}))}${g.action.expiring_soon?` · <b style="color:${g.action.days_left<=3?'var(--crit-fg)':'var(--warn-fg)'}">${esc(g.action.days_left<=0?t('pg_only_today'):ti('pg_only_days',{d:g.action.days_left}))}</b>`:` · ${esc(t('pg_valid'))} ${esc(g.action.gueltig_bis)}`} · ${esc(t('prov_reference'))}</div>
     </div>`:''}
     <div data-offers></div>
@@ -2267,8 +2271,8 @@ function priceGroup(g) {
       <div class="row">
         <span>${i===0?'⭐ ':''}<b>${esc(o.supplier)}</b>${i===0?` <span style="color:var(--ok-fg);font-size:12px;font-weight:700">${esc(t('pg_cheapest'))}</span>`:''}</span>
         <span class="sp" style="flex:1"></span>
-        <span title="${Array.isArray(o.series)&&o.series.length?o.series.map(v=>'€ '+Number(v).toFixed(2)).join(' → '):esc(t('pg_no_series'))}">${sparkline(o.series)}</span>
-        <span style="margin-left:8px"><b>€ ${Number(o.aep).toFixed(2)}</b> ${trendStr(o.trend_pct)}</span>
+        <span title="${Array.isArray(o.series)&&o.series.length?o.series.map(v=>'€ '+fmtMoney(v)).join(' → '):esc(t('pg_no_series'))}">${sparkline(o.series)}</span>
+        <span style="margin-left:8px"><b>€ ${fmtMoney(o.aep)}</b> ${trendStr(o.trend_pct)}</span>
       </div>
       <div class="row" style="margin-top:4px">
         <span class="muted">${esc(nlabel(o.post_count||0,'pg_posts_one','pg_posts'))}</span>
@@ -2482,11 +2486,11 @@ function rabattCard(r) {
     <div class="row" style="margin-top:8px;align-items:baseline">
       <span><b>${esc(r.supplier)}</b></span>
       <span class="sp" style="flex:1"></span>
-      <span class="muted" style="text-decoration:line-through">€ ${Number(r.listenpreis).toFixed(2)}</span>
-      <span style="font-size:20px;font-weight:800;color:var(--ok-fg);margin-left:8px">€ ${Number(r.aktionspreis).toFixed(2)}</span>
+      <span class="muted" style="text-decoration:line-through">€ ${fmtMoney(r.listenpreis)}</span>
+      <span style="font-size:20px;font-weight:800;color:var(--ok-fg);margin-left:8px">€ ${fmtMoney(r.aktionspreis)}</span>
     </div>
-    <div class="muted" style="margin-top:4px">${esc(ti('rb_saving',{x:Number(r.ersparnis).toFixed(2)}))}${r.min_menge?` · ${esc(ti('pg_from',{n:r.min_menge}))}`:''} · ${esc(t('pg_valid'))} <b>${esc(r.gueltig_bis)}</b></div>
-    ${r.min_menge&&r.ersparnis>0?`<div style="margin-top:4px;font-size:13px;font-weight:700;color:var(--ok-fg)">${esc(ti('rb_minorder',{n:r.min_menge,x:(Number(r.ersparnis)*Number(r.min_menge)).toFixed(2)}))}</div>`:''}
+    <div class="muted" style="margin-top:4px">${esc(ti('rb_saving',{x:fmtMoney(r.ersparnis)}))}${r.min_menge?` · ${esc(ti('pg_from',{n:r.min_menge}))}`:''} · ${esc(t('pg_valid'))} <b>${esc(r.gueltig_bis)}</b></div>
+    ${r.min_menge&&r.ersparnis>0?`<div style="margin-top:4px;font-size:13px;font-weight:700;color:var(--ok-fg)">${esc(ti('rb_minorder',{n:r.min_menge,x:fmtMoney(Number(r.ersparnis)*Number(r.min_menge))}))}</div>`:''}
     ${r.best_for_wirkstoff?`<div style="display:inline-block;margin-top:6px;background:rgba(11,127,40,.12);color:var(--ok-fg);border:1px solid rgba(11,127,40,.35);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px">${esc(ti('rb_best',{w:r.wirkstoff,alt:(r.wirkstoff_alternatives===1?t('rb_alt_one'):ti('rb_alt_many',{n:r.wirkstoff_alternatives}))}))}</div>`:''}
     ${!r.best_for_wirkstoff&&r.wirkstoff_alternatives>0?`<div class="muted" style="margin-top:6px;font-size:13px">${esc(ti('rb_cheaper_hint',{w:r.wirkstoff}))}</div>`:''}
     ${r.expiring_soon?`<div style="display:inline-block;margin-top:6px;background:${r.days_left<=3?'#c0392b':'#c77700'};color:#fff;font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px">⏳ ${esc(r.days_left<=0?t('rb_exp_today'):(r.days_left===1?t('rb_exp_one'):ti('pg_only_days',{d:r.days_left})))}</div>`:''}
@@ -2521,10 +2525,10 @@ function refChip(r) {
   const base = 'background:var(--chip-bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px;display:inline-block;margin-bottom:4px';
   if (r.kind === 'price') {
     const t = r.trend_pct>0?` ▲ +${r.trend_pct}%`:(r.trend_pct<0?` ▼ ${r.trend_pct}%`:'');
-    return `<div class="vis" style="${base}">💶 Preis: <b>${esc(r.bezeichnung)}</b> — ${esc(r.supplier)} € ${Number(r.aep).toFixed(2)}${t}</div>`;
+    return `<div class="vis" style="${base}">💶 Preis: <b>${esc(r.bezeichnung)}</b> — ${esc(r.supplier)} € ${fmtMoney(r.aep)}${t}</div>`;
   }
   if (r.kind === 'rabatt') {
-    return `<div class="vis" style="${base}">${esc(t('rc_deal'))} <b>${esc(r.bezeichnung)}</b> — ${esc(r.supplier)} € ${Number(r.aktionspreis).toFixed(2)} <span style="color:var(--ok-fg)">−${r.rabatt_pct}%</span> · ${esc(t('pg_valid'))} ${esc(r.gueltig_bis)}</div>`;
+    return `<div class="vis" style="${base}">${esc(t('rc_deal'))} <b>${esc(r.bezeichnung)}</b> — ${esc(r.supplier)} € ${fmtMoney(r.aktionspreis)} <span style="color:var(--ok-fg)">−${r.rabatt_pct}%</span> · ${esc(t('pg_valid'))} ${esc(r.gueltig_bis)}</div>`;
   }
   return `<div class="vis" style="${base}">${esc(t('rc_shortage'))} <b>${esc(r.wirkstoff)}</b> — ${esc(r.bezeichnung)}</div>`;
 }
@@ -2915,7 +2919,7 @@ async function renderSearch(q) {
       section(t('search_sec_prices'));
       d.prices.forEach(pr => feed.appendChild(el(`<div class="card"><div class="row">
         <span class="post-author">${esc(pr.bezeichnung)}</span><span class="handle">${esc(pr.wirkstoff||'')}</span>
-        <span class="sp" style="flex:1"></span><span><b>€ ${Number(pr.aep).toFixed(2)}</b> ${trendStr(pr.trend_pct)}</span></div>
+        <span class="sp" style="flex:1"></span><span><b>€ ${fmtMoney(pr.aep)}</b> ${trendStr(pr.trend_pct)}</span></div>
         <div class="muted">${esc(pr.supplier)} · ${esc(provLabel(pr.provenance))}</div></div>`)));
     }
     if (d.rabatte.length) { section(t('search_sec_rabatte')); d.rabatte.forEach((r,i) => { r.rank = i+1; feed.appendChild(rabattCard(r)); }); }

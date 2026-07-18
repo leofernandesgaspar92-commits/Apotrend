@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #43 — 2026-07-18 — Zentrale Geld-Formatierung (P3, freigegeben) [2/3]
+- **THINK:** Bildschirm-Preise zeigten überall Punkt-Dezimal (€ 1.34) — für den DACH-Hauptmarkt ist Komma korrekt. Preisnah → sorgfältig.
+- **WORK:** Helfer `fmtMoney(v)` (de/pt: Komma, en: Punkt, 2 Nachkomma, kein Tausender-Trenner); ~17 €-Anzeigestellen darauf umgestellt; `csvNum` dedupliziert (delegiert an fmtMoney). €-Symbol bleibt Präfix.
+- **CHECK:** Real: AT/PT „€ 1,34", GB „€ 1.34", 0 JS-Fehler; CSV weiterhin korrekt; Parität 635/635/635; 219 grün, Smoke 11/11.
+
 ### Cycle #42 — 2026-07-18 — CSV-Export mehrsprachig (P3, CEO-freigegeben) [1/3]
 - **THINK:** Einkauf/Großhandel exportieren CSV — die 3 Exporte waren fest deutsch (Köpfe + ja/nein + Zahlenformat). Wand für EN/PT-Profis.
 - **WORK:** Format folgt der Sprache als kohärente Einheit: de/pt = Semikolon+Komma-Dezimal (Europa-Excel), en = Komma+Punkt. 31 `csv_*`-Keys (DE/EN/PT), Helfer `csvSep/csvNum/csvYesNo`, Trennzeichen-abhängiges Cell-Escaping. Alle 3 Exporte (Preise/Rabatte/Engpässe) umgestellt.
