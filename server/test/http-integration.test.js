@@ -362,4 +362,7 @@ test('Statische Assets: gzip-Komprimierung + ETag/304-Revalidierung', async () =
   // Passendes If-None-Match -> 304 (spart erneuten Download).
   const notMod = await rawGet('/app.js', { 'if-none-match': plain.headers.etag });
   assert.equal(notMod.status, 304, 'unveränderte Datei -> 304');
+  // Auch größere API-JSON-Antworten werden gzip-komprimiert (eigener Code-Pfad: json()).
+  const apiGz = await rawGet('/api/countries', { 'accept-encoding': 'gzip' });
+  assert.equal(apiGz.headers['content-encoding'], 'gzip', 'große API-Antwort wird gzip-komprimiert');
 });

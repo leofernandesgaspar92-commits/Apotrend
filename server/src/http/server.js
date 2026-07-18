@@ -153,7 +153,20 @@ function enrichPosts(posts) {
 }
 
 // ── kleine Helfer ──
-const json = (res, code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(obj)); };
+const json = (req, res, code, obj) => {
+  const payload = Buffer.from(JSON.stringify(obj));
+  const headers = { 'Content-Type': 'application/json; charset=utf-8' };
+  // Größere JSON-Antworten (Feed, Preise) gzip-komprimieren, wenn der Client es kann —
+  // spart Bandbreite bei jeder Navigation. Kleine Antworten lohnen die CPU nicht.
+  if (payload.length > 512 && /\bgzip\b/.test(req.headers['accept-encoding'] || '')) {
+    const gz = zlib.gzipSync(payload);
+    res.writeHead(code, { ...headers, 'Content-Encoding': 'gzip', Vary: 'Accept-Encoding' });
+    res.end(gz);
+  } else {
+    res.writeHead(code, headers);
+    res.end(payload);
+  }
+};
 const readBody = (req) => new Promise((resolve) => {
   let d = ''; req.on('data', c => { d += c; if (d.length > 2e6) req.destroy(); }); // 2 MB (Bilder als data-URL)
   req.on('end', () => { try { resolve(d ? JSON.parse(d) : {}); } catch { resolve({}); } });
@@ -381,20 +394,20 @@ const server = http.createServer(async (req, res) => {
   // ── API ──
   if (pathname.startsWith('/api/')) {
     const route = routes.find(([m, rx]) => m === req.method && rx.test(pathname));
-    if (!route) return json(res, 404, { error: 'Nicht gefunden' });
+    if (!route) return json(req, res, 404, { error: 'Nicht gefunden' });
     const [, rx, authRequired, handler] = route;
     const userId = userIdFrom(req);
-    if (authRequired && !userId) return json(res, 401, { error: 'Nicht angemeldet' });
+    if (authRequired && !userId) return json(req, res, 401, { error: 'Nicht angemeldet' });
     try {
       const body = (req.method === 'POST') ? await readBody(req) : {};
       const params = (pathname.match(rx) || []).slice(1);
       const result = await handler({ userId, body, params, query: url.searchParams });
       if (req.method !== 'GET') saveSoon(); // Zustand nach jeder erfolgreichen Schreiboperation sichern (POST/DELETE)
-      return json(res, 200, result ?? { ok: true });
+      return json(req, res, 200, result ?? { ok: true });
     } catch (e) {
       const code = e instanceof ForbiddenError ? 403 : (e.status || 400);
       // e.code (falls gesetzt) erlaubt dem Frontend, die Meldung zu übersetzen.
-      return json(res, code, e.code ? { error: e.message, code: e.code } : { error: e.message });
+      return json(req, res, code, e.code ? { error: e.message, code: e.code } : { error: e.message });
     }
   }
 

@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #51 — 2026-07-18 — gzip auch für API-JSON-Antworten
+- **THINK:** Nach den statischen Assets war der zweite Payload-Treiber das API-JSON (Feed/Preise) bei jeder Navigation.
+- **WORK:** `json()`-Helfer nimmt jetzt `req`, gzip-komprimiert Antworten > 512 B (kleine lohnen die CPU nicht); 4 Aufrufstellen angepasst. Test erweitert (API-gzip).
+- **CHECK:** Feed real 3201 → 949 B (−70 %), Health (64 B) unkomprimiert; 220 grün, Smoke 11/11.
+
 ### Cycle #50 — 2026-07-18 — Test für gzip/ETag/304 (schützt den Perf-Gewinn)
 - **WORK:** HTTP-Integrationstest (roh via `node:http`, da fetch gzip transparent auspackt): Accept-Encoding: gzip → `content-encoding: gzip`, ETag+no-cache gesetzt, ohne Accept-Encoding unkomprimiert, `If-None-Match` → 304.
 - **CHECK:** 219 → 220 grün.
