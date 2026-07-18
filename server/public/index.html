@@ -308,6 +308,7 @@ const I18N = {
     nb_label:'News teilen (Kammer-Mitteilung, Gesetzesänderung, Branchennews …)', nb_ph:'Regulatorische/fachliche News, die für Kolleg:innen relevant ist…', nb_src_ph:'🔗 Quelle (Link – empfohlen bei News)', nb_share:'Als News teilen',
     vf_pending_t:'✔ Verifizierung', vf_pending_s:'Dein Antrag wird von der Redaktion geprüft. Du wirst benachrichtigt.', vf_title:'✔ Verifiziert werden', vf_rejected:'Dein letzter Antrag wurde abgelehnt. ', vf_desc:'Weise deine Apotheke nach (z.B. Konzessionsnummer, Apothekenname, Ort) — die Redaktion prüft es. Verifizierte Profile genießen mehr Vertrauen.', vf_note_ph:'z.B. Konzession 12345, Apotheke Zum Hirschen, 1010 Wien', vf_apply:'Verifizierung beantragen',
     font_scale_label:'Schriftgröße', font_sz_0:'Normal', font_sz_1:'Groß', font_sz_2:'Sehr groß', font_toggle_hint:'tippen zum Wechseln',
+    err_title:'Das hat nicht geklappt', err_generic:'Unbekannter Fehler. Bitte erneut versuchen.', err_retry:'↻ Erneut versuchen',
     react_helpful:'👍 Hilfreich', react_thanks:'🙏 Danke', react_confirmed:'✅ Bestätigt', react_interesting:'💡 Interessant',
     pc_verified:'✔ verifiziert', pc_img_alt:'Bild zum Beitrag', pc_source:'🔗 Quelle',
     pc_edited:'✏️ bearbeitet', pc_vis_public:'🌍 öffentlich', pc_vis_followers:'👥 nur Follower',
@@ -556,6 +557,7 @@ const I18N = {
     nb_label:'Share news (chamber notice, legal change, industry news …)', nb_ph:'Regulatory/professional news relevant to colleagues…', nb_src_ph:'🔗 Source (link – recommended for news)', nb_share:'Share as news',
     vf_pending_t:'✔ Verification', vf_pending_s:'Your request is being reviewed by the editorial team. You will be notified.', vf_title:'✔ Get verified', vf_rejected:'Your last request was declined. ', vf_desc:'Prove your pharmacy (e.g. licence number, pharmacy name, city) — the editorial team reviews it. Verified profiles are trusted more.', vf_note_ph:'e.g. licence 12345, Example Pharmacy, London', vf_apply:'Request verification',
     font_scale_label:'Text size', font_sz_0:'Normal', font_sz_1:'Large', font_sz_2:'Very large', font_toggle_hint:'tap to change',
+    err_title:"That didn't work", err_generic:'Unknown error. Please try again.', err_retry:'↻ Try again',
     react_helpful:'👍 Helpful', react_thanks:'🙏 Thanks', react_confirmed:'✅ Confirmed', react_interesting:'💡 Interesting',
     pc_verified:'✔ verified', pc_img_alt:'Post image', pc_source:'🔗 Source',
     pc_edited:'✏️ edited', pc_vis_public:'🌍 public', pc_vis_followers:'👥 followers only',
@@ -804,6 +806,7 @@ const I18N = {
     nb_label:'Partilhar notícias (comunicado da ordem, alteração legal, notícias do setor …)', nb_ph:'Notícias regulatórias/profissionais relevantes para colegas…', nb_src_ph:'🔗 Fonte (link – recomendado para notícias)', nb_share:'Partilhar como notícia',
     vf_pending_t:'✔ Verificação', vf_pending_s:'O seu pedido está a ser analisado pela redação. Será notificado.', vf_title:'✔ Obter verificação', vf_rejected:'O seu último pedido foi recusado. ', vf_desc:'Comprove a sua farmácia (ex. número de licença, nome da farmácia, cidade) — a redação analisa. Perfis verificados têm mais confiança.', vf_note_ph:'ex. licença 12345, Farmácia Exemplo, Lisboa', vf_apply:'Pedir verificação',
     font_scale_label:'Tamanho do texto', font_sz_0:'Normal', font_sz_1:'Grande', font_sz_2:'Muito grande', font_toggle_hint:'toque para mudar',
+    err_title:'Isso não funcionou', err_generic:'Erro desconhecido. Tente novamente.', err_retry:'↻ Tentar novamente',
     react_helpful:'👍 Útil', react_thanks:'🙏 Obrigado', react_confirmed:'✅ Confirmado', react_interesting:'💡 Interessante',
     pc_verified:'✔ verificado', pc_img_alt:'Imagem da publicação', pc_source:'🔗 Fonte',
     pc_edited:'✏️ editado', pc_vis_public:'🌍 público', pc_vis_followers:'👥 só seguidores',
@@ -1613,9 +1616,9 @@ function refreshWatchAlerts() { /* Kennzahlen werden beim nächsten Overview-Auf
 function errorState(message, onRetry) {
   const card = el(`<div class="card empty">
     <div class="empty-ic" aria-hidden="true">⚠️</div>
-    <div class="empty-t">Das hat nicht geklappt</div>
-    <div class="err empty-s" role="alert" style="margin-top:6px">${esc(message || 'Unbekannter Fehler. Bitte erneut versuchen.')}</div>
-    ${onRetry ? `<div style="margin-top:12px"><button class="small" data-retry>↻ Erneut versuchen</button></div>` : ''}
+    <div class="empty-t">${esc(t('err_title'))}</div>
+    <div class="err empty-s" role="alert" style="margin-top:6px">${esc(message || t('err_generic'))}</div>
+    ${onRetry ? `<div style="margin-top:12px"><button class="small" data-retry>${esc(t('err_retry'))}</button></div>` : ''}
   </div>`);
   if (onRetry) card.querySelector('[data-retry]').onclick = onRetry;
   return card;
