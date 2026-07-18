@@ -78,6 +78,9 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #19 — 2026-07-18 — Smoke-Test deckt Sprachumschalter ab
+- **WORK/CHECK:** Ausgeloggter Auth-Sprachwechsel DE→EN→PT im Smoke-Test (Anmelden/Log in/Entrar). 7/7 grün.
+
 ### Cycle #18 — 2026-07-18 — Frontend-Smoke-Test
 - **ANALYSE:** Frontend = größte ungetestete Fläche (0 automatisierte Tests).
 - **WORK:** `loop-smoke.mjs` — Happy-Path im Browser (Feed/Beitrag/Reaktion+Toggle/Kommentar/JS-Fehler).
