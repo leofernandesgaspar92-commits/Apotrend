@@ -7,6 +7,9 @@
   "engines": { "node": ">=22" },
   "scripts": {
     "test": "node --test",
-    "start": "node src/http/server.js"
+    "start": "node src/http/server.js",
+    "audit": "node tools/loop-audit.mjs",
+    "audit:browser": "node tools/loop-browser-audit.mjs",
+    "smoke": "node tools/loop-smoke.mjs"
   }
 }
