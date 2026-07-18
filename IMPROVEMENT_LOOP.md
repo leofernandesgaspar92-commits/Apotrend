@@ -30,15 +30,15 @@ die Session neu startet.
 
 ## Letzter GATHER-Snapshot
 
-_Cycle #2 · 2026-07-18_
+_Cycle #3 · 2026-07-18_
 ```
 Tests:            216/216 grün
-i18n de/en/pt:    540/540/540  · 0 Lücken  ✓ perfekte Parität  (+2 Schlüssel: Kommentar-Label)
+i18n de/en/pt:    542/542/542  · 0 Lücken  ✓ perfekte Parität
 Hartkod. Dialoge: 0  ✓
 TODO/FIXME:       0
 console.* (FE):   0
 !important (CSS): 3
-index.html:       3690 Zeilen · 263 KB   ← größtes Struktur-Signal (Monolith)
+index.html:       ~3695 Zeilen · 263 KB   ← größtes Struktur-Signal (Monolith)
 ```
 
 ## Priorisierter Backlog (Kandidaten für WORK)
@@ -50,7 +50,8 @@ prüft ihn erst (echt oder Rauschen?), setzt ihn dann um.
 - [x] ~~Kommentar-Zähler: Klartext-CTA + Singular-Grammatik~~ → Cycle #2 erledigt.
 - [ ] Reaktionen-Aktiv-Zustand in Kommentar-Detailansicht (Feed + Kommentare bereits getestet — vermutlich schon ok, kurz gegenprüfen).
 - [ ] Leere Zustände (empty states) je Reiter auf Klartext/Handlungsaufforderung prüfen.
-- [ ] „0 Apotheker haben dazu gepostet"-Zähler auf Engpass-Karten: Klartext-Politur wie beim Kommentar-Button.
+- [x] ~~„0 Apotheker haben dazu gepostet"-Zähler auf Engpass-Karten~~ → Cycle #3 erledigt.
+- [ ] Profil-„X Beiträge" (pg_posts/pf_posts): gleiche Singular-Prüfung wie bei Kommentaren.
 - [ ] Preise/Rabatte: Tastatur-Bedienbarkeit der Sortier-/Filter-Chips prüfen (Fokusreihenfolge).
 
 **P2 — Robustheit / Qualität**
@@ -68,6 +69,16 @@ Reaktions-/Folgen-Status, volle i18n DE/EN/PT (inkl. aria/title/Dialoge/Pre-Logi
 a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `server/README.md`.
 
 ## Cycle-Log
+
+### Cycle #3 — 2026-07-18 — Engpass-Diskussions-Zähler: Klartext + Singular
+- **GATHER:** 216/216 grün, i18n 540/540/540, Sauber-Signale bei 0.
+- **THINK/ANALYSE:** Gleiche Zähler-Klasse wie Cycle #2, diesmal Engpass-Karten:
+  „💬 {n} Apotheker haben dazu gepostet" — 0 flach, 1 falsch („haben"), zudem ungenau
+  (gezählt werden Beiträge, nicht Personen).
+- **WORK:** `shortagePostsLabel(n)` — 0 → „Noch keine Beiträge", 1 → „1 Beitrag dazu",
+  ≥2 → Plural. sc_posted → sc_posts_zero/one/many (DE/EN/PT), semantisch als Beiträge.
+- **CHECK:** Browser 0 → „Noch keine Beiträge", 1 → „1 Beitrag dazu"; 216 Tests grün; Parität 542.
+- **REPEAT:** Backlog abgehakt; Folge-Punkt (Profil-„X Beiträge") ergänzt.
 
 ### Cycle #2 — 2026-07-18 — Kommentar-Button: Klartext-CTA + Singular
 - **GATHER:** 216/216 grün, i18n 538/538/538, alle Sauber-Signale bei 0.
