@@ -117,6 +117,28 @@ test('Registrierung mit Kontotyp setzt Profil; Wechsel aktualisiert; ungültig a
   assert.equal(mine.author.account_type, 'pharma', 'Autor:innen-Payload trägt Kontotyp');
 });
 
+test('Kontotyp-Rechte am HTTP-Layer: Privat -> 403 bei Engpass-Meldung/-Bestätigung & Bestandsaustausch; Fachkonto & Lesen ok', async () => {
+  const suffix = 'kr' + PORT;
+  const privReg = await (await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'pv' + suffix, handle: 'pv' + suffix, email: 'pv' + suffix + '@a.at', password: 'geheim123', accountType: 'private' }) })).json();
+  const priv = privReg.token;
+  // Engpass melden -> 403
+  const r1 = await post('/api/shortages/report', priv, { wirkstoff: 'Ibuprofen' });
+  assert.equal(r1.status, 403, 'Privat darf keinen Engpass melden');
+  // Bestandsaustausch anlegen -> 403
+  const r2 = await post('/api/exchange', priv, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg' });
+  assert.equal(r2.status, 403, 'Privat darf keinen Austausch anlegen');
+  // Fachkonto legt einen Community-Engpass an (Kontrolle: 200), dann Privat bestätigt -> 403
+  const pro = await reg('pro' + suffix); // pharmacy
+  const repRes = await post('/api/shortages/report', pro, { wirkstoff: 'Ramipril ' + suffix });
+  assert.equal(repRes.status, 200, 'Fachkonto darf melden');
+  const rep = await repRes.json();
+  const r3 = await post('/api/shortages/' + rep.id + '/confirm', priv);
+  assert.equal(r3.status, 403, 'Privat darf nicht bestätigen');
+  // Privat darf trotzdem LESEN
+  const list = await j('/api/shortages', priv);
+  assert.ok(Array.isArray(list.shortages), 'Privat kann Engpässe lesen');
+});
+
 test('GET /api/wirkstoff/:name bündelt Engpass/Preise/Rabatte/Austausch', async () => {
   const a = await reg('wi_a' + PORT);
   const b = await reg('wi_b' + PORT);
