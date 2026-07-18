@@ -267,7 +267,7 @@ const I18N = {
     pg_act_title:'🏷️ Aktion günstiger als der beste Einkaufspreis', pg_instead:'statt',
     pg_per_pack:'pro Packung', pg_aep:'(AEP)', pg_from:'ab {n} Stück',
     pg_only_today:'nur noch heute', pg_only_days:'nur noch {d} Tage', pg_valid:'gültig bis',
-    pg_cheapest:'günstigster', pg_no_series:'keine Verlaufsdaten', pg_posts:'{n} Beiträge dazu',
+    pg_cheapest:'günstigster', pg_no_series:'keine Verlaufsdaten', pg_posts:'{n} Beiträge dazu', pg_posts_one:'1 Beitrag dazu',
     pg_post_ph:'z.B. Preis bei {supplier} gerade gestiegen…',
     rb_header:'🏷️ <b>Top-10 Rabatt-Aktionen</b> · höchster Rabatt oben · nur laufende Aktionen ·',
     rb_empty_t:'Derzeit keine laufenden Aktionen',
@@ -509,7 +509,7 @@ const I18N = {
     pg_act_title:'🏷️ Deal cheaper than the best purchase price', pg_instead:'instead of',
     pg_per_pack:'per pack', pg_aep:'(list)', pg_from:'from {n} units',
     pg_only_today:'today only', pg_only_days:'only {d} days left', pg_valid:'valid until',
-    pg_cheapest:'cheapest', pg_no_series:'no history data', pg_posts:'{n} posts about this',
+    pg_cheapest:'cheapest', pg_no_series:'no history data', pg_posts:'{n} posts about this', pg_posts_one:'1 post about this',
     pg_post_ph:'e.g. price at {supplier} just went up…',
     rb_header:'🏷️ <b>Top 10 deals</b> · highest discount on top · running offers only ·',
     rb_empty_t:'No running offers right now',
@@ -751,7 +751,7 @@ const I18N = {
     pg_act_title:'🏷️ Promoção mais barata que o melhor preço de compra', pg_instead:'em vez de',
     pg_per_pack:'por embalagem', pg_aep:'(preço)', pg_from:'a partir de {n} unidades',
     pg_only_today:'só hoje', pg_only_days:'faltam {d} dias', pg_valid:'válido até',
-    pg_cheapest:'mais barato', pg_no_series:'sem histórico', pg_posts:'{n} publicações sobre isto',
+    pg_cheapest:'mais barato', pg_no_series:'sem histórico', pg_posts:'{n} publicações sobre isto', pg_posts_one:'1 publicação sobre isto',
     pg_post_ph:'ex. o preço em {supplier} acabou de subir…',
     rb_header:'🏷️ <b>Top 10 descontos</b> · maior desconto no topo · só promoções ativas ·',
     rb_empty_t:'Sem promoções ativas de momento',
@@ -937,6 +937,11 @@ function commentLabel(n) {
 // 1 -> Singular, sonst Plural. Zählt Beiträge (genauer als „Apotheker", da ggf. dieselbe Person).
 function shortagePostsLabel(n) {
   return n === 0 ? t('sc_posts_zero') : n === 1 ? t('sc_posts_one') : ti('sc_posts_many', { n });
+}
+// Generischer Singular/Plural-Zähler: n===1 nutzt oneKey, sonst manyKey ({n} wird ersetzt).
+// Vermeidet Grammatikfehler wie „1 Beiträge" quer durch die App.
+function nlabel(n, oneKey, manyKey) {
+  return n === 1 ? ti(oneKey, { n }) : ti(manyKey, { n });
 }
 function applyI18n(root) {
   const scope = root || document;
@@ -2135,7 +2140,7 @@ function priceGroup(g) {
         <span style="margin-left:8px"><b>€ ${Number(o.aep).toFixed(2)}</b> ${trendStr(o.trend_pct)}</span>
       </div>
       <div class="row" style="margin-top:4px">
-        <span class="muted">${esc(ti('pg_posts',{n:o.post_count||0}))}</span>
+        <span class="muted">${esc(nlabel(o.post_count||0,'pg_posts_one','pg_posts'))}</span>
         <span class="sp" style="flex:1"></span>
         <button class="ghost small" data-pp>${esc(t('sc_post_about'))}</button>
       </div>
@@ -2355,7 +2360,7 @@ function rabattCard(r) {
     ${!r.best_for_wirkstoff&&r.wirkstoff_alternatives>0?`<div class="muted" style="margin-top:6px;font-size:13px">${esc(ti('rb_cheaper_hint',{w:r.wirkstoff}))}</div>`:''}
     ${r.expiring_soon?`<div style="display:inline-block;margin-top:6px;background:${r.days_left<=3?'#c0392b':'#c77700'};color:#fff;font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px">⏳ ${esc(r.days_left<=0?t('rb_exp_today'):(r.days_left===1?t('rb_exp_one'):ti('pg_only_days',{d:r.days_left})))}</div>`:''}
     <div class="row" style="margin-top:8px">
-      <span class="muted">${esc(ti('pg_posts',{n:r.post_count||0}))}</span>
+      <span class="muted">${esc(nlabel(r.post_count||0,'pg_posts_one','pg_posts'))}</span>
       <span class="sp" style="flex:1"></span>
       <button class="ghost small" data-pp>${esc(t('sc_post_about'))}</button>
     </div>
