@@ -30,16 +30,14 @@ die Session neu startet.
 
 ## Letzter GATHER-Snapshot
 
-_Cycle #5 · 2026-07-18_
+_Cycle #7 · 2026-07-18_
 ```
 Tests:            216/216 grün
-i18n de/en/pt:    546/546/546  · 0 Lücken  ✓ perfekte Parität
-Hartkod. Dialoge: 0  ·  TODO/FIXME: 0  ·  console.* (FE): 0  ·  !important (CSS): 3
-index.html:       ~3700 Zeilen · 264 KB   ← größtes Struktur-Signal (Monolith)
+i18n de/en/pt:    554/554/554  · 0 Lücken  ✓ perfekte Parität
+Hartkod. Dialoge: 0  ·  Hartkod. UI-DE: 0 (neuer Wächter)  ·  TODO/FIXME: 0
+console.* (FE):   0  ·  !important (CSS): 3
+index.html:       ~3710 Zeilen · 265 KB   ← größtes Struktur-Signal (Monolith)
 ```
-Beobachtung: 5 Zyklen „Klartext-Zähler" abgeschlossen — das Zähler-Thema ist damit
-weitgehend abgearbeitet. Nächste Zyklen sollten neue Signal-Bereiche adressieren
-(Empty-States, a11y-Fokus, CSS-Schuld) statt weiter Zähler zu suchen.
 
 ## Priorisierter Backlog (Kandidaten für WORK)
 
@@ -53,7 +51,9 @@ prüft ihn erst (echt oder Rauschen?), setzt ihn dann um.
 - [x] ~~„0 Apotheker haben dazu gepostet"-Zähler auf Engpass-Karten~~ → Cycle #3 erledigt.
 - [x] ~~„{n} Beiträge dazu" (pg_posts) Singular~~ → Cycle #4 (generischer `nlabel`-Helper).
 - [x] ~~Profil-Kopf-Zähler (pf_posts/pf_best/pf_followers) Singular~~ → Cycle #5.
-- [ ] Empty-States je Reiter: Klartext + klare Handlungsaufforderung (neuer Bereich).
+- [x] ~~Empty-States i18n (Feed)~~ → Cycle #6. ~~GATHER-Wächter dafür~~ → Cycle #7.
+- [ ] a11y: Tastatur-Fokusreihenfolge der Sortier-/Filter-Chips (Preise/Rabatte/Engpässe).
+- [ ] CSS-Schuld: die 3 `!important` prüfen, ob sauber auflösbar.
 - [ ] Preise/Rabatte: Tastatur-Bedienbarkeit der Sortier-/Filter-Chips prüfen (Fokusreihenfolge).
 
 **P2 — Robustheit / Qualität**
@@ -71,6 +71,13 @@ Reaktions-/Folgen-Status, volle i18n DE/EN/PT (inkl. aria/title/Dialoge/Pre-Logi
 a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `server/README.md`.
 
 ## Cycle-Log
+
+### Cycle #7 — 2026-07-18 — GATHER-Wächter für hartkodierte UI-Texte
+- **ANALYSE:** #6-Bug blieb unentdeckt → Instrument-Lücke ist selbst das wichtigste Signal.
+- **WORK:** Neues Audit-Signal `hardcoded_ui_de` (UI-Property mit Mehrwort-Literal statt t(),
+  Wörterbuch-Regionen I18N/ZETTEL_L ausgeblendet).
+- **CHECK:** Baseline 0 (keine Fehlalarme); Positiv-Kontrolle fängt den #6-Fall. Tests unberührt (216).
+- **Lektion:** Wenn ein Bug durchrutscht, ist die beste nächste Aktion oft, das Messgerät zu schärfen.
 
 ### Cycle #6 — 2026-07-18 — Hartkodierte Empty-States übersetzt
 - **WORK:** 3 Feed-Empty-States (home/questions/new) waren fest Deutsch → t() (fe_*-Schlüssel, DE/EN/PT + CTAs).
