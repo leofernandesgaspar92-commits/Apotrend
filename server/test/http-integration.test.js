@@ -355,6 +355,17 @@ test('Unbekannte Route -> 404', async () => {
   assert.equal(r.status, 404);
 });
 
+test('DSGVO-Datenexport über HTTP: liefert alle personenbezogenen Daten inkl. eigener Beiträge', async () => {
+  const a = await reg('exp' + PORT);
+  assert.equal((await post('/api/posts', a, { body: 'Export-Beitrag ' + PORT, visibility: 'public' })).status, 200);
+  const dump = await j('/api/me/export', a);
+  // Vollständigkeit der Export-Struktur (Auskunftsrecht Art. 15/20 DSGVO).
+  for (const k of ['profile', 'posts', 'comments', 'bookmarks_post_ids', 'direct_messages', 'exchange_entries']) {
+    assert.ok(k in dump, `Export enthält ${k}`);
+  }
+  assert.ok((dump.posts || []).some(p => (p.body || '').includes('Export-Beitrag ' + PORT)), 'eigener Beitrag im Export');
+});
+
 test('Merkliste über HTTP: Beitrag merken -> erscheint in Merkliste/ids -> erneut tippen -> weg', async () => {
   const a = await reg('bma' + PORT);
   const p = await (await post('/api/posts', a, { body: 'Merk mich ' + PORT, visibility: 'public' })).json();

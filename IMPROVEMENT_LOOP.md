@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #64 — 2026-07-18 — Profilseite verifiziert + DSGVO-Export getestet
+- **CHECK:** Profil-/Konto-Seite visuell geprüft — professionell & vollständig: Verifizierung beantragen, DSGVO-Datenexport, Passwort ändern, Konto löschen (rot/unwiderruflich). Kein Defekt.
+- **WORK:** HTTP-Test für `/api/me/export` (Auskunftsrecht Art. 15/20): Struktur vollständig (profile/posts/comments/bookmarks/DMs/exchange) + eigener Beitrag enthalten.
+- **CHECK:** 226 → 227 grün.
+
 ### Cycle #63 — 2026-07-18 — i18n exhaustiv verifiziert (auch Modals/Overlays)
 - **CHECK:** Dynamischen Deutsch-Leck-Scan (EN) auf die bisher un-getriggerten Zustände ausgeweitet: Profilseite (Bearbeiten-Formular + Konto-Einstellungen/Passwort/Löschen), Willkommens-Modal, DM-Ansicht — **0 Lecks** (Text + Platzhalter).
 - **Ergebnis:** i18n gilt jetzt als erschöpfend geprüft: 8 Reiter (EN+PT) + alle Modals/Overlays (EN) + 4 statische Wächter (0). Merknotiz für Folge-Sessions: nicht erneut prüfen, nur bei neuen dynamischen Zuständen.
