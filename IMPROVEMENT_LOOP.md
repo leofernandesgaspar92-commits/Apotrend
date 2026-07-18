@@ -16,6 +16,7 @@ die Session neu startet.
 |--------|-------------------|----------|
 | **GATHER** | Messbare Ist-Signale (statisch) | `node server/tools/loop-audit.mjs` |
 | **GATHER+** | Mobil-Querscroll + JS-Fehler (Browser, optional) | `node server/tools/loop-browser-audit.mjs` (Server muss laufen) |
+| **SMOKE** | Frontend-Happy-Path (Beitrag/Reaktion/Kommentar) | `node server/tools/loop-smoke.mjs` (Server muss laufen) |
 | **THINK** | Was sagen die Zahlen? Trend seit letztem Snapshot? Echt vs. Messrauschen? | Vergleich mit letztem Cycle-Log-Eintrag |
 | **ANALYSE** | Größte Hebelwirkung finden: welche EINE Änderung bringt am meisten? | Backlog unten priorisieren |
 | **WORK** | **Eine** präzise, verifizierte Verbesserung umsetzen | Edit → `node --test` → Browser-Check (Playwright, Hell+Dunkel, 1280+390) |
@@ -76,6 +77,11 @@ Reaktions-/Folgen-Status, volle i18n DE/EN/PT (inkl. aria/title/Dialoge/Pre-Logi
 a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `server/README.md`.
 
 ## Cycle-Log
+
+### Cycle #18 — 2026-07-18 — Frontend-Smoke-Test
+- **ANALYSE:** Frontend = größte ungetestete Fläche (0 automatisierte Tests).
+- **WORK:** `loop-smoke.mjs` — Happy-Path im Browser (Feed/Beitrag/Reaktion+Toggle/Kommentar/JS-Fehler).
+- **CHECK:** 6/6 grün. Frontend hat jetzt echte Regressions-Abdeckung.
 
 ### Cycle #17 — 2026-07-18 — Browser-Audit: Langinhalt-Härtetest
 - **GATHER+/WORK:** Pathologischer Inhalt (200-Zeichen-Token + lange URL) in den Browser-Audit
