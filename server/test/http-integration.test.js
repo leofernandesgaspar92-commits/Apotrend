@@ -117,6 +117,31 @@ test('Registrierung mit Kontotyp setzt Profil; Wechsel aktualisiert; ungültig a
   assert.equal(mine.author.account_type, 'pharma', 'Autor:innen-Payload trägt Kontotyp');
 });
 
+test('Fehler-Antworten tragen einen i18n-Code (Fundament der mehrsprachigen Backend-Fehler)', async () => {
+  const a = await reg('ecode' + PORT);
+  // leerer Beitrag -> code post_empty
+  const r1 = await post('/api/posts', a, { body: '' });
+  const b1 = await r1.json();
+  assert.equal(r1.status, 400);
+  assert.equal(b1.code, 'post_empty', 'leerer Beitrag liefert code post_empty');
+  assert.ok(b1.error, 'message als Fallback weiterhin vorhanden');
+  // Login falsch -> code login_failed, Status 401
+  const r2 = await fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email: 'nobody' + PORT + '@x.com', password: 'falsch' }) });
+  const b2 = await r2.json();
+  assert.equal(r2.status, 401);
+  assert.equal(b2.code, 'login_failed');
+  // Engpass ohne Wirkstoff -> code shortage_wirkstoff_missing
+  const r3 = await post('/api/shortages/report', a, { wirkstoff: '  ' });
+  const b3 = await r3.json();
+  assert.equal(b3.code, 'shortage_wirkstoff_missing');
+  // Unkodierter Fehler bleibt ohne code (rückwärtskompatibel): unbekannte Route ist 404 ohne code
+  // (stattdessen: doppelte Meldung liefert code shortage_duplicate)
+  await post('/api/shortages/report', a, { wirkstoff: 'Ramipril ' + PORT });
+  const r4 = await post('/api/shortages/report', a, { wirkstoff: 'Ramipril ' + PORT });
+  const b4 = await r4.json();
+  assert.equal(b4.code, 'shortage_duplicate');
+});
+
 test('Kontotyp-Rechte am HTTP-Layer: Privat -> 403 bei Engpass-Meldung/-Bestätigung & Bestandsaustausch; Fachkonto & Lesen ok', async () => {
   const suffix = 'kr' + PORT;
   const privReg = await (await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'pv' + suffix, handle: 'pv' + suffix, email: 'pv' + suffix + '@a.at', password: 'geheim123', accountType: 'private' }) })).json();
