@@ -79,11 +79,16 @@ function run() {
         const e = s >= 0 ? outside.indexOf('\n};', s) : -1;
         if (s >= 0 && e > s) outside = outside.slice(0, s) + outside.slice(e + 3);
       }
-      // Mehrwort-Literal (enthält Leerzeichen) direkt in einer UI-Eigenschaft = mit hoher
-      // Wahrscheinlichkeit hartkodierter Text (statt t()) — Sprache egal (fängt auch „Dein
-      // Feed ist noch leer" ohne Umlaut). Wenige Fehlalarme (z. B. Beispiel-Platzhalter).
-      const m = outside.match(/\b(title|text|label):\s*'[^']* [^']*'/g) || [];
-      return { count: m.length, samples: m.slice(0, 6).map((x) => x.slice(0, 52)) };
+      const hits = [];
+      // (a) UI-Eigenschaft mit Mehrwort-Literal statt t().
+      hits.push(...(outside.match(/\b(title|text|label):\s*'[^']* [^']*'/g) || []));
+      // (b) Deutscher Umlaut-Text in <label>/placeholder OHNE data-i18n — die #8-Blindstelle.
+      //     Der data-i18n-Ausschluss verhindert Fehlalarme auf legitimen Fallback-Texten.
+      hits.push(...(outside.match(/<label(?![^>]*data-i18n)[^>]*>[^<]*[äöüßÄÖÜ][^<]*<\/label>/g) || []));
+      hits.push(...(outside.match(/<(?:input|textarea)(?![^>]*data-i18n-ph)[^>]*placeholder="[^"]*[äöüßÄÖÜ][^"]*"/g) || []));
+      // ${...}-Interpolationen sind bereits übersetzt -> als Fehlalarm ausschließen.
+      const real = hits.filter((h) => !h.includes('${'));
+      return { count: real.length, samples: real.slice(0, 6).map((x) => x.replace(/\s+/g, ' ').slice(0, 52)) };
     })(),
     // i18n-Abdeckung (mehr = besser) und Drift-Check zwischen Sprachen.
     data_i18n_attrs: countMatches(html, /data-i18n(-ph|-title|-aria)?=/g),
