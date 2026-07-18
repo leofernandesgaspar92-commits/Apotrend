@@ -32,7 +32,15 @@
   /* Tastatur-Fokus deutlich sichtbar (Barrierefreiheit) */
   :focus-visible { outline:3px solid #1a73e8; outline-offset:2px; }
   header { background:var(--green); color:#fff; padding:12px 16px; display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:5; }
-  header .logo { font-weight:800; letter-spacing:.5px; font-size:1.25em; }
+  header .logo { font-weight:800; letter-spacing:.5px; font-size:1.25em; display:inline-flex; align-items:center; gap:8px; }
+  header .logo .logo-ic { display:block; flex:0 0 auto; }
+  header .logo:hover { text-decoration:none; opacity:.9; }
+  header .logo:hover .logo-txt { text-decoration:underline; }
+  /* Länder-Auswahl (erster Schritt): große, klar klickbare Karten */
+  .country-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; margin-top:14px; }
+  .country-pick { display:flex; align-items:center; gap:10px; justify-content:flex-start; text-align:left; background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:12px; padding:14px 16px; font-size:1.02em; font-weight:600; min-height:56px; }
+  .country-pick:hover { border-color:var(--green); background:transparent; }
+  .country-pick .flag { font-size:1.5em; line-height:1; }
   header .sp { flex:1; }
   header button { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.5); min-height:42px; min-width:42px; }
   /* Länder-/Sprach-Umschalter in der Kopfzeile: klar erkennbar, lesbar (Karten-
@@ -140,7 +148,7 @@
 <a href="#app" class="skiplink" id="skiplink" data-i18n="skiplink">Zum Inhalt springen</a>
 <div id="printhead"><h1 style="margin:0" data-i18n="print_head">ApoTrend — Lieferengpässe</h1><div id="printdate" style="color:#444"></div></div>
 <header>
-  <span class="logo">🟢 ApoTrend</span>
+  <span class="logo clickable" id="logoHome" role="button" tabindex="0" data-i18n-title="logo_home" data-i18n-aria="logo_home" title="Zur Startseite" aria-label="Zur Startseite"><svg class="logo-ic" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="7" fill="#fff"/><path d="M13 6.2v13.6M6.2 13h13.6" stroke="#0b7f28" stroke-width="3.4" stroke-linecap="round"/></svg><span class="logo-txt">ApoTrend</span></span>
   <span class="muted" id="whoami" style="color:#dff5ea;"></span>
   <span class="sp"></span>
   <select class="hidden" id="countrySwitch" data-i18n-title="country_title" data-i18n-aria="country_title" title="Land wechseln (stellt auch die Sprache um)" aria-label="Land wechseln"></select>
@@ -387,6 +395,7 @@ const I18N = {
     md_reported_by:'Gemeldet von @{h}', md_reason:'Grund', md_no_reason:'kein Grund angegeben',
     md_author:'Autor', md_removed:'bereits entfernt', md_gone:'Ziel nicht mehr vorhanden.',
     md_remove_comment:'🗑 Kommentar entfernen', md_remove_post:'🗑 Beitrag entfernen', md_ok:'✓ In Ordnung (Meldung schließen)',
+    cs_title:'Wähle dein Land', cs_sub:'Danach siehst du Engpässe, Preise und das Netzwerk speziell für dein Land.', cs_change:'← Land ändern', logo_home:'Zur Startseite',
     au_login:'Anmelden', au_email:'E-Mail', au_pw:'Passwort', au_register:'Neu registrieren', au_name:'Name',
     au_handle:'@Handle (öffentlicher Name im Netzwerk)', au_pw8:'Passwort (mind. 8 Zeichen)',
     au_country:'Land (bestimmt Feed-Inhalte & Sprache)', au_create:'Konto erstellen',
@@ -641,6 +650,7 @@ const I18N = {
     md_reported_by:'Reported by @{h}', md_reason:'Reason', md_no_reason:'no reason given',
     md_author:'Author', md_removed:'already removed', md_gone:'Target no longer exists.',
     md_remove_comment:'🗑 Remove comment', md_remove_post:'🗑 Remove post', md_ok:'✓ OK (close report)',
+    cs_title:'Choose your country', cs_sub:'You’ll then see shortages, prices and the network specific to your country.', cs_change:'← Change country', logo_home:'To home',
     au_login:'Log in', au_email:'Email', au_pw:'Password', au_register:'Sign up', au_name:'Name',
     au_handle:'@handle (public name in the network)', au_pw8:'Password (min. 8 characters)',
     au_country:'Country (sets feed content & language)', au_create:'Create account',
@@ -895,6 +905,7 @@ const I18N = {
     md_reported_by:'Denunciado por @{h}', md_reason:'Motivo', md_no_reason:'sem motivo indicado',
     md_author:'Autor', md_removed:'já removido', md_gone:'O alvo já não existe.',
     md_remove_comment:'🗑 Remover comentário', md_remove_post:'🗑 Remover publicação', md_ok:'✓ OK (fechar denúncia)',
+    cs_title:'Escolha o seu país', cs_sub:'Verá depois faltas, preços e a rede específicos do seu país.', cs_change:'← Mudar de país', logo_home:'Para o início',
     au_login:'Entrar', au_email:'E-mail', au_pw:'Palavra-passe', au_register:'Registar', au_name:'Nome',
     au_handle:'@handle (nome público na rede)', au_pw8:'Palavra-passe (mín. 8 caracteres)',
     au_country:'País (define conteúdo do feed & idioma)', au_create:'Criar conta',
@@ -1093,22 +1104,51 @@ let rabattExpiring = false; // nur bald ablaufende Aktionen
 let priceQuery = '';      // Textsuche im Preise-Reiter
 let myBookmarks = new Set();
 
-// ── Auth-Screens ──
+// ── Auth-Flow: ERST Land wählen, DANN anmelden, dann länderspezifische Inhalte ──
+function hideHeaderForAuth() {
+  ['btnLogout','btnNotif','btnDm','btnMod','btnHelp'].forEach(id => { const b = document.getElementById(id); if (b) b.classList.add('hidden'); });
+  const cs = document.getElementById('countrySwitch'); if (cs) cs.classList.add('hidden');
+  document.getElementById('whoami').textContent = '';
+}
+function currentAuthCountry() {
+  const c = (localStorage.getItem('apo_country') || '').toUpperCase();
+  return (COUNTRIES_CACHE || []).find(x => x.code === c) || null;
+}
+// Schritt 1: Länderauswahl. Setzt Land + Sprache (folgt dem Land) und geht zum Login.
+async function countryScreen() {
+  setDocTitle('');
+  hideHeaderForAuth();
+  app.innerHTML = '';
+  await ensureCountries();
+  const countries = COUNTRIES_CACHE || [];
+  const card = el(`<div class="card" style="text-align:center">
+    <div style="display:flex;justify-content:center;margin-bottom:8px"><svg width="54" height="54" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="7" fill="var(--green)"/><path d="M13 6.2v13.6M6.2 13h13.6" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/></svg></div>
+    <h1 style="margin:.2em 0">${esc(t('cs_title'))}</h1>
+    <div class="muted">${esc(t('cs_sub'))}</div>
+    <div class="country-grid">
+      ${countries.map(c => `<button class="country-pick" data-country="${esc(c.code)}" lang="${esc(c.locale_default)}"><span class="flag" aria-hidden="true">${esc(c.flag)}</span> ${esc(c.name)}</button>`).join('')}
+    </div>
+  </div>`);
+  app.appendChild(card);
+  app.querySelectorAll('[data-country]').forEach(btn => btn.onclick = () => {
+    const code = btn.dataset.country;
+    const c = countries.find(x => x.code === code);
+    localStorage.setItem('apo_country', code);
+    if (c && c.locale_default) { setLocale(c.locale_default); applyI18n(); applyTheme(); applyFontScale(); }
+    authScreen();
+  });
+}
+// Schritt 2: Login/Registrierung — für das in Schritt 1 gewählte Land (Sprache folgt).
 function authScreen() {
   setDocTitle('');
-  document.getElementById('btnLogout').classList.add('hidden');
-  document.getElementById('btnNotif').classList.add('hidden');
-  document.getElementById('btnDm').classList.add('hidden');
-  document.getElementById('btnMod').classList.add('hidden');
-  document.getElementById('btnHelp').classList.add('hidden');
-  document.getElementById('whoami').textContent = '';
+  hideHeaderForAuth();
   app.innerHTML = '';
-  // Sprachauswahl schon VOR dem Login: Erstbesucher:innen aus anderen Ländern sollen
-  // Anmeldung/Registrierung sofort in ihrer Sprache lesen (nicht erst nach dem Login).
-  const langs = [['de','Deutsch'],['en','English'],['pt','Português']];
+  const ac = currentAuthCountry();
+  // Gewähltes Land oben + „Land ändern" (zurück zu Schritt 1).
   app.appendChild(el(`
-  <div class="row" style="justify-content:center;gap:6px;margin-bottom:2px" role="group" aria-label="Sprache / Language / Idioma">
-    ${langs.map(([code,label])=>`<button class="sortbtn${LOCALE===code?' active':''}" data-lang="${code}" lang="${code}">${esc(label)}</button>`).join('')}
+  <div class="row" style="justify-content:center;gap:10px;margin-bottom:6px;align-items:center">
+    <span>${ac ? `<span aria-hidden="true" style="font-size:1.2em">${esc(ac.flag)}</span> <b>${esc(ac.name)}</b>` : ''}</span>
+    <button class="ghost small" id="changeCountry">${esc(t('cs_change'))}</button>
   </div>`));
   app.appendChild(el(`
   <div class="card">
@@ -1130,12 +1170,9 @@ function authScreen() {
     <div class="err" id="rg_err"></div>
   </div>`));
 
-  // Sprachumschalter (nur Client-seitig; setzt LOCALE + rendert den Auth-Screen neu).
-  app.querySelectorAll('[data-lang]').forEach(btn => btn.onclick = () => {
-    setLocale(btn.getAttribute('data-lang'));
-    applyI18n(); applyTheme(); applyFontScale(); // Header (Schrift-Label, aria/title, Schriftgröße-Tooltip) + Theme folgen der Sprache
-    authScreen();              // Login-/Registrier-Karten neu rendern
-  });
+  // „Land ändern" -> zurück zur Länderauswahl (Schritt 1).
+  const cc = document.getElementById('changeCountry');
+  if (cc) cc.onclick = () => countryScreen();
   document.getElementById('li_go').onclick = async () => {
     try {
       const d = await api('POST','/api/login',{ email:v('li_email'), password:v('li_pw') });
@@ -1148,10 +1185,11 @@ function authScreen() {
       afterAuth(d);
     } catch(e){ document.getElementById('rg_err').textContent = e.message; }
   };
-  // Länderauswahl bei der Registrierung befüllen (Feed-Inhalte + Sprache folgen dem Land).
+  // Länderauswahl bei der Registrierung: das in Schritt 1 gewählte Land ist vorausgewählt
+  // (Feed-Inhalte + Sprache folgen dem Land). Änderbar, falls doch ein anderes Land gewünscht.
   ensureCountries().then(() => {
     const sel = document.getElementById('rg_country');
-    if (sel) sel.innerHTML = countryOptionsHtml((me && me.country) || 'AT');
+    if (sel) sel.innerHTML = countryOptionsHtml((localStorage.getItem('apo_country') || (me && me.country) || 'AT'));
   });
   // Kontotyp-Auswahl befüllen (Apotheke als Vorauswahl).
   ensureAccountTypes().then(() => {
@@ -3734,8 +3772,29 @@ if (window.matchMedia) {
   if (mq.addEventListener) mq.addEventListener('change', onOsChange);
   else if (mq.addListener) mq.addListener(onOsChange);
 }
-if (localStorage.getItem('apo_token')) mainScreen().catch(authScreen);
-else authScreen();
+// Logo oben links -> zur Startseite (eine Art „Home"/Aktualisierung).
+function goHome() {
+  if (localStorage.getItem('apo_token') && me) {
+    // Eingeloggt: zurück zum Start-Reiter „Für dich" + nach oben.
+    tab = 'overview';
+    document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('active'));
+    const ov = document.querySelector('.tabs button[data-tab="overview"]');
+    if (ov) ov.classList.add('active');
+    if (typeof setTabAria === 'function') setTabAria();
+    loadTab();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    // Ausgeloggt: zurück zum Start des Flows (Länderauswahl).
+    countryScreen();
+  }
+}
+const _logo = document.getElementById('logoHome');
+if (_logo) _logo.onclick = goHome;
+
+const _hasCountry = () => !!localStorage.getItem('apo_country');
+if (localStorage.getItem('apo_token')) mainScreen().catch(() => (_hasCountry() ? authScreen() : countryScreen()));
+else if (_hasCountry()) authScreen();
+else countryScreen();
 </script>
 </body>
 </html>

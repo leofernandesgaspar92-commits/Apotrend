@@ -33,16 +33,20 @@ async function main() {
   {
     const octx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const op = await octx.newPage();
-    await op.addInitScript(() => { localStorage.removeItem('apo_token'); localStorage.setItem('apo_welcome_seen', '1'); localStorage.setItem('apo_locale', 'de'); });
+    await op.addInitScript(() => { localStorage.clear(); localStorage.setItem('apo_welcome_seen', '1'); });
     await op.goto(BASE, { waitUntil: 'networkidle' });
     await op.waitForTimeout(300);
-    const heads = async () => op.evaluate(() => [...document.querySelectorAll('h1')].map(h => h.textContent.trim()).find(t => /Anmelden|Log in|Entrar/.test(t)) || '');
-    const de = await heads();
-    await op.click('[data-lang="en"]').catch(() => {}); await op.waitForTimeout(250);
-    const en = await heads();
-    await op.click('[data-lang="pt"]').catch(() => {}); await op.waitForTimeout(250);
-    const pt = await heads();
-    step('Sprachumschalter (Auth) wechselt DE→EN→PT', de === 'Anmelden' && en === 'Log in' && pt === 'Entrar', `${de}/${en}/${pt}`);
+    // Schritt 1: Länderauswahl erscheint zuerst (kein Token, kein Land).
+    const countryCount = await op.evaluate(() => document.querySelectorAll('[data-country]').length);
+    step('Länderauswahl erscheint als erster Schritt', countryCount === 12, `${countryCount} Länder`);
+    // Land bestimmt Sprache: AT -> „Anmelden", GB -> „Log in".
+    const loginHead = async () => op.evaluate(() => [...document.querySelectorAll('h1')].map(h => h.textContent.trim()).find(t => /Anmelden|Log in|Entrar/.test(t)) || '');
+    await op.click('[data-country="AT"]').catch(() => {}); await op.waitForTimeout(300);
+    const de = await loginHead();
+    await op.click('#changeCountry').catch(() => {}); await op.waitForTimeout(250);
+    await op.click('[data-country="GB"]').catch(() => {}); await op.waitForTimeout(300);
+    const en = await loginHead();
+    step('Land bestimmt Sprache (AT→Anmelden, GB→Log in)', de === 'Anmelden' && en === 'Log in', `${de}/${en}`);
     await octx.close();
   }
 
