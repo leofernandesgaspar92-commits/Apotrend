@@ -73,12 +73,18 @@ prüft ihn erst (echt oder Rauschen?), setzt ihn dann um.
 - [ ] `index.html` (3684 Zeilen) modularisieren — großer Umbau, Risiko, Freigabe nötig.
 - [ ] Echtes relationales DB-Backend (`node:sqlite`) hinter dem `__dump/__load`-Seam.
 - [ ] Länder-Währung: braucht Datenstrategie (AT-Referenzdaten vs. echte Länderpreise).
+- [ ] Zentrale `fmtMoney(v)`-Hilfe (locale-korrektes Dezimaltrennzeichen via `_bcp47`) über ~17 €-Stellen — sicherheitsnah (Preise), daher Freigabe/sorgfältige Verifikation nötig.
 
 **Erledigt (Auszug letzte 24 h)** — Kontotyp-Modell (Anzeige + Rechte-Durchsetzung),
 Reaktions-/Folgen-Status, volle i18n DE/EN/PT (inkl. aria/title/Dialoge/Pre-Login),
 a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `server/README.md`.
 
 ## Cycle-Log
+
+### Cycle #33 — 2026-07-18 — Preis-Formatierung konsistent (erzwungenes Komma entfernt)
+- **THINK:** Der Sparkline-Tooltip erzwang als EINZIGE Stelle ein deutsches Komma (`.replace('.',',')`) — inkonsistent zu den 16 anderen €-Stellen (Punkt) und falsch für en-GB.
+- **WORK:** Ausreißer entfernt → app-weit einheitliches Format. Volle locale-Money-Hilfe (~17 Stellen) als P3 vermerkt (preisnah → CEO-Freigabe).
+- **CHECK:** 0 erzwungene-Komma-Stellen; 219 grün.
 
 ### Cycle #32 — 2026-07-18 — Druck-Kopf der Engpassliste folgt Sprache & Datumsformat
 - **THINK:** Der Druck-Header war hart deutsch („Stand: ") + Datum immer `de-AT` — englische/portugiesische Nutzer:innen druckten einen deutschen Kopf. Währung (€) bleibt bewusst unangetastet: alle Zahlen sind offengelegt österreichische Daten, eine £-Umrechnung ohne echte FX wäre irreführend.

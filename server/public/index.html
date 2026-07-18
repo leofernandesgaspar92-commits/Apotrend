@@ -2227,7 +2227,7 @@ function priceGroup(g) {
       <div class="row">
         <span>${i===0?'⭐ ':''}<b>${esc(o.supplier)}</b>${i===0?` <span style="color:var(--ok-fg);font-size:12px;font-weight:700">${esc(t('pg_cheapest'))}</span>`:''}</span>
         <span class="sp" style="flex:1"></span>
-        <span title="${Array.isArray(o.series)&&o.series.length?o.series.map(v=>'€ '+Number(v).toFixed(2).replace('.',',')).join(' → '):esc(t('pg_no_series'))}">${sparkline(o.series)}</span>
+        <span title="${Array.isArray(o.series)&&o.series.length?o.series.map(v=>'€ '+Number(v).toFixed(2)).join(' → '):esc(t('pg_no_series'))}">${sparkline(o.series)}</span>
         <span style="margin-left:8px"><b>€ ${Number(o.aep).toFixed(2)}</b> ${trendStr(o.trend_pct)}</span>
       </div>
       <div class="row" style="margin-top:4px">
