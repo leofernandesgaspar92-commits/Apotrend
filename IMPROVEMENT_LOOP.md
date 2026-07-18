@@ -30,15 +30,15 @@ die Session neu startet.
 
 ## Letzter GATHER-Snapshot
 
-_Cycle #1 · 2026-07-17_
+_Cycle #2 · 2026-07-18_
 ```
 Tests:            216/216 grün
-i18n de/en/pt:    538/538/538  · 0 Lücken  ✓ perfekte Parität
+i18n de/en/pt:    540/540/540  · 0 Lücken  ✓ perfekte Parität  (+2 Schlüssel: Kommentar-Label)
 Hartkod. Dialoge: 0  ✓
 TODO/FIXME:       0
 console.* (FE):   0
 !important (CSS): 3
-index.html:       3684 Zeilen · 263 KB   ← größtes Struktur-Signal (Monolith)
+index.html:       3690 Zeilen · 263 KB   ← größtes Struktur-Signal (Monolith)
 ```
 
 ## Priorisierter Backlog (Kandidaten für WORK)
@@ -47,9 +47,10 @@ Reihenfolge = grob nach Hebelwirkung. Der Loop nimmt sich pro Durchlauf **einen*
 prüft ihn erst (echt oder Rauschen?), setzt ihn dann um.
 
 **P1 — echter Nutzerwert, bounded**
-- [ ] Reaktionen: Aktiv-Zustand auch in der Kommentar-Detailansicht prüfen (nur Feed getestet).
+- [x] ~~Kommentar-Zähler: Klartext-CTA + Singular-Grammatik~~ → Cycle #2 erledigt.
+- [ ] Reaktionen-Aktiv-Zustand in Kommentar-Detailansicht (Feed + Kommentare bereits getestet — vermutlich schon ok, kurz gegenprüfen).
 - [ ] Leere Zustände (empty states) je Reiter auf Klartext/Handlungsaufforderung prüfen.
-- [ ] „0 Kommentare / 0 Apotheker haben dazu gepostet"-Zähler: Klartext-Politur wie bei Reaktionen.
+- [ ] „0 Apotheker haben dazu gepostet"-Zähler auf Engpass-Karten: Klartext-Politur wie beim Kommentar-Button.
 - [ ] Preise/Rabatte: Tastatur-Bedienbarkeit der Sortier-/Filter-Chips prüfen (Fokusreihenfolge).
 
 **P2 — Robustheit / Qualität**
@@ -67,6 +68,15 @@ Reaktions-/Folgen-Status, volle i18n DE/EN/PT (inkl. aria/title/Dialoge/Pre-Logi
 a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `server/README.md`.
 
 ## Cycle-Log
+
+### Cycle #2 — 2026-07-18 — Kommentar-Button: Klartext-CTA + Singular
+- **GATHER:** 216/216 grün, i18n 538/538/538, alle Sauber-Signale bei 0.
+- **THINK/ANALYSE:** Kein akuter Defekt. Größter kleiner Nutzerhebel: der Kommentar-Button
+  zeigte immer „{n} Kommentare" → bei 1 grammatisch falsch, bei 0 flache Deko-Null.
+- **WORK:** `commentLabel(n)` — 0 → „💬 Kommentieren" (Engagement-CTA), 1 → Singular, ≥2 → Plural.
+  Zwei neue Schlüssel je Sprache; Feed-Button + Post-Detail nutzen den Helper.
+- **CHECK:** Browser DE/EN/PT alle drei Zustände korrekt; 216 Tests grün; kein Regress.
+- **REPEAT:** Backlog-Punkt abgehakt; Snapshot auf 540/540/540 aktualisiert.
 
 ### Cycle #1 — 2026-07-17 — Loop-Fundament + GATHER-Instrument
 - **GATHER:** Audit-Skript `server/tools/loop-audit.mjs` gebaut (Tests, i18n-Parität,
