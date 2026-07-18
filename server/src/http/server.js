@@ -397,7 +397,9 @@ const server = http.createServer(async (req, res) => {
     if (!route) return json(req, res, 404, { error: 'Nicht gefunden' });
     const [, rx, authRequired, handler] = route;
     const userId = userIdFrom(req);
-    if (authRequired && !userId) return json(req, res, 401, { error: 'Nicht angemeldet' });
+    // Eigener Code, damit das Frontend eine ABGELAUFENE/UNGÜLTIGE Sitzung von anderen
+    // 401 (falscher Login, falsches Passwort) unterscheiden und sauber zum Login führen kann.
+    if (authRequired && !userId) return json(req, res, 401, { error: 'Nicht angemeldet', code: 'not_authenticated' });
     try {
       const body = (req.method === 'POST') ? await readBody(req) : {};
       const params = (pathname.match(rx) || []).slice(1);

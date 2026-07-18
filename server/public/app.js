@@ -891,6 +891,13 @@ const api = async (method, path, body) => {
   }
   const data = await r.json().catch(()=>({}));
   if (!r.ok) {
+    // Abgelaufene/ungültige Sitzung: Token verwerfen und sauber zum Login-/Länder-Screen —
+    // statt die Nutzer:in mit „Nicht angemeldet"-Fehlern an jeder Aktion hängen zu lassen.
+    if (data.code === 'not_authenticated' && localStorage.getItem('apo_token')) {
+      localStorage.removeItem('apo_token');
+      (_hasCountry() ? authScreen() : countryScreen());
+      throw new Error(t('e_network')); // stoppt die weitere Verarbeitung beim Aufrufer
+    }
     // Fehler-Code (falls vorhanden) übersetzen — sonst die (deutsche) Server-message.
     // So werden alle e.message-Anzeigestellen automatisch mehrsprachig.
     const translated = data.code && I18N[LOCALE] && I18N[LOCALE]['e_'+data.code];

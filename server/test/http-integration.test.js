@@ -147,6 +147,12 @@ test('Fehler-Antworten tragen einen i18n-Code (Fundament der mehrsprachigen Back
   const b2 = await r2.json();
   assert.equal(r2.status, 401);
   assert.equal(b2.code, 'login_failed');
+  // Geschützte Route ohne gültigen Token -> 401 mit code not_authenticated (vom Frontend
+  // genutzt, um abgelaufene Sitzungen von Login-Fehlern zu unterscheiden).
+  const r2b = await fetch(BASE + '/api/feed/home', { headers: H('kaputt.token.x') });
+  const b2b = await r2b.json();
+  assert.equal(r2b.status, 401);
+  assert.equal(b2b.code, 'not_authenticated', 'ungültiger Token liefert code not_authenticated');
   // Engpass ohne Wirkstoff -> code shortage_wirkstoff_missing
   const r3 = await post('/api/shortages/report', a, { wirkstoff: '  ' });
   const b3 = await r3.json();

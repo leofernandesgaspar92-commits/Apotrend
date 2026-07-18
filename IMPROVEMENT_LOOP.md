@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #54 — 2026-07-18 — Abgelaufene Sitzung führt sauber zum Login
+- **THINK:** Lief mitten in der Nutzung der Token ab, gab es an jeder Aktion „Nicht angemeldet"-Fehler — 401 ist aber nicht eindeutig (auch Login-/Passwort-Fehler sind 401).
+- **WORK:** Auth-Guard-401 bekommt eigenen `code: not_authenticated`; `api()` verwirft bei diesem Code (und vorhandenem Token) das Token und zeigt Login-/Länder-Screen (kein Reload-Loop). Login-Fehler (`login_failed`) bleiben inline.
+- **CHECK:** Ungültiger Token → Login gezeigt + Token gelöscht, 0 JS-Fehler; HTTP-Test für not_authenticated; 220 grün, Smoke 11/11, `verify` grün.
+
 ### Cycle #53 — 2026-07-18 — Freundliche, lokalisierte Netzwerk-Fehlermeldung
 - **THINK:** Bei Verbindungsverlust warf `fetch` ein technisches „Failed to fetch", das ungefiltert bei nicht-technischen Nutzer:innen landete.
 - **WORK:** `api()` fängt den fetch-Reject ab → freundliche Meldung `e_network` (DE/EN/PT); lokale `t`-Variable (Token) zu `tok` umbenannt, damit i18n-`t()` erreichbar ist.
