@@ -80,6 +80,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #31 — 2026-07-18 — Smoke-Test schützt das klickbare Logo (Home) dauerhaft
+- **THINK:** Das klickbare Logo (grüner Punkt → Startseite) ist eine Kern-Anforderung ohne automatisierte Abdeckung — eine stille Regression wäre möglich.
+- **WORK:** Smoke-Test um 2 Schritte erweitert: ausgeloggt → Logo → Länderauswahl (12); eingeloggt → anderer Reiter → Logo → Übersicht + scrollY==0.
+- **CHECK:** End-to-end im Browser real bestätigt (beide Pfade), Smoke 10/10 grün.
+
 ### Cycle #30 — 2026-07-18 — E-Mail-Platzhalter folgt der Landessprache
 - **CHECK:** Auth-Screenshot (GB) zeigte den Platzhalter „name@apotheke.at" — eine österreichische Domain für eine UK-Apotheke wirkt fremd/unprofessionell.
 - **WORK:** Neuer i18n-Schlüssel `au_email_ph` (de: name@apotheke.at, en: name@pharmacy.com, pt: nome@farmacia.pt); beide E-Mail-Felder (Login + Registrierung) nutzen ihn.

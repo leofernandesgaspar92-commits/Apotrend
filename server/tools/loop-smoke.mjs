@@ -47,6 +47,10 @@ async function main() {
     await op.click('[data-country="GB"]').catch(() => {}); await op.waitForTimeout(300);
     const en = await loginHead();
     step('Land bestimmt Sprache (AT→Anmelden, GB→Log in)', de === 'Anmelden' && en === 'Log in', `${de}/${en}`);
+    // Logo (grüner Punkt) führt ausgeloggt zurück zur Länderauswahl.
+    await op.click('#logoHome').catch(() => {}); await op.waitForTimeout(300);
+    const backToCountry = await op.evaluate(() => document.querySelectorAll('[data-country]').length);
+    step('Logo führt ausgeloggt zurück zur Länderauswahl', backToCountry === 12, `${backToCountry} Länder`);
     await octx.close();
   }
 
@@ -89,6 +93,15 @@ async function main() {
   await page.waitForTimeout(500);
   const commentBox = await page.evaluate((m) => { const c = [...document.querySelectorAll('.card')].find(c => c.textContent.includes(m)); return !!c.querySelector('[data-cinput]'); }, marker);
   step('Kommentarbereich öffnet', commentBox);
+
+  // 6) Logo (grüner Punkt) führt eingeloggt zurück zur Übersicht (Startseite) + scrollt nach oben.
+  await page.getByText('Preise', { exact: false }).first().click().catch(() => {});
+  await page.waitForTimeout(400);
+  await page.evaluate(() => window.scrollTo(0, 400));
+  await page.click('#logoHome').catch(() => {});
+  await page.waitForTimeout(500);
+  const homeOk = await page.evaluate(() => /Für dich|For you|Para si/.test(document.body.textContent) && window.scrollY === 0);
+  step('Logo führt eingeloggt zur Übersicht + scrollt nach oben', homeOk);
 
   step('Keine JS-Fehler während des Flows', jsErrors.length === 0, jsErrors.slice(0, 2).join(' | '));
 
