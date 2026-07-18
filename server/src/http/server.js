@@ -6,6 +6,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { createMemoryRepo } from '../repo/memoryRepo.js';
 import { createSocialRepo } from '../repo/socialRepo.js';
@@ -412,8 +413,24 @@ const server = http.createServer(async (req, res) => {
   };
   const type = MIME[ext] || 'application/octet-stream';
   const isText = /^text\/|application\/(json|manifest\+json|javascript)/.test(type);
-  res.writeHead(200, { 'Content-Type': type + (isText ? '; charset=utf-8' : '') });
-  fs.createReadStream(serve).pipe(res);
+  // ETag aus Größe+mtime (billig, ohne Datei zu lesen): unverändert -> 304, spart Bandbreite.
+  // Cache-Control no-cache = immer revalidieren, damit Nutzer:innen nie eine veraltete
+  // Version bekommen (die Assets sind nicht content-gehasht). Wichtig für langsame Leitungen.
+  const stat = fs.statSync(serve);
+  const etag = 'W/"' + stat.size.toString(16) + '-' + Math.round(stat.mtimeMs).toString(16) + '"';
+  const headers = { 'Content-Type': type + (isText ? '; charset=utf-8' : ''), 'Cache-Control': 'no-cache', ETag: etag };
+  if ((req.headers['if-none-match'] || '') === etag) { res.writeHead(304, headers); return res.end(); }
+  // Textassets (JS/CSS/HTML) gzip-komprimieren, wenn der Client es unterstützt — app.js
+  // ist ~250 KB und schrumpft damit deutlich, spürbar auf mobilen Apotheken-Leitungen.
+  if (isText && /\bgzip\b/.test(req.headers['accept-encoding'] || '')) {
+    headers['Content-Encoding'] = 'gzip';
+    headers.Vary = 'Accept-Encoding';
+    res.writeHead(200, headers);
+    fs.createReadStream(serve).pipe(zlib.createGzip()).pipe(res);
+  } else {
+    res.writeHead(200, headers);
+    fs.createReadStream(serve).pipe(res);
+  }
 });
 
 server.listen(PORT, () => {

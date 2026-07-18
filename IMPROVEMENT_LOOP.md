@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #49 — 2026-07-18 — Performance: gzip + ETag/304 für statische Assets
+- **THINK:** app.js (~276 KB) ging unkomprimiert & ohne Cache-Header raus — spürbar auf langsamen Apotheken-Leitungen (Zielgruppe: zeitknapp, mobil).
+- **WORK:** Statik-Handler mit `node:zlib`-gzip für Textassets (nur wenn Client es kann) + ETag (Größe+mtime) → `If-None-Match` liefert 304; `Cache-Control: no-cache` (immer revalidieren, nie veraltet). Nur Built-ins.
+- **CHECK:** app.js **276 KB → 73 KB** (−73 %); 304 real bestätigt; App bootet mit gzip, 0 JS-Fehler; `npm run verify` grün (219, Smoke 11/11, Browser-Audit).
+
 ### Cycle #48 — 2026-07-18 — Ein-Kommando-CHECK: `npm run verify`
 - **THINK:** Der Loop-CHECK lief bisher als 3–4 Einzel-Kommandos — fehleranfällig, leicht was zu vergessen.
 - **WORK:** `npm run verify` kettet Tests → Smoke → Browser-Audit → Static-Audit-Snapshot (gatend, wo sinnvoll). Ende-zu-Ende-Deutsch-Leck-Scan (EN+PT, 8 Reiter) einmalig gefahren: 0 Lecks.
