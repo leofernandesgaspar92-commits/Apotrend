@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #57 — 2026-07-18 — Folgen→„Mein Feed" über HTTP getestet (mit Isolation)
+- **CHECK:** Kern-Social-Mechanik real verifiziert: A folgt B → B postet → A sieht es im Home-Feed, ein Nicht-Follower nicht.
+- **WORK:** HTTP-Integrationstest inkl. Negativfall (Isolation).
+- **CHECK:** 222 → 223 grün; `verify` komplett grün.
+
 ### Cycle #56 — 2026-07-18 — Bestandsaustausch-Happy-Path über HTTP getestet
 - **CHECK:** B2B-Kernfluss (anlegen → offen gelistet → erledigt → verschwindet) real via API verifiziert; bisher war nur die Rechte-Verweigerung (Privat→403) HTTP-getestet, nicht der Happy-Path.
 - **WORK:** HTTP-Integrationstest für create → list(offen) → resolve → nicht mehr offen.

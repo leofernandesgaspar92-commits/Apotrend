@@ -355,6 +355,23 @@ test('Unbekannte Route -> 404', async () => {
   assert.equal(r.status, 404);
 });
 
+test('Folgen über HTTP: Beitrag der gefolgten Person erscheint im „Mein Feed", bei Nicht-Follower nicht', async () => {
+  const a = await reg('flwa' + PORT);
+  const bResp = await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'flwb' + PORT, handle: 'flwb' + PORT, email: 'flwb' + PORT + '@a.at', password: 'geheim123' }) });
+  const b = (await bResp.json()).token;
+  const bHandle = 'flwb' + PORT;
+  assert.equal((await post('/api/follow', a, { handle: bHandle })).status, 200);
+  const marker = 'HELLO' + PORT;
+  assert.equal((await post('/api/posts', b, { body: marker + ' von B', visibility: 'public' })).status, 200);
+  // Follower sieht den Beitrag im Home-Feed.
+  const home = await j('/api/feed/home', a);
+  assert.ok((home.posts || []).some(p => (p.body || '').includes(marker)), 'gefolgter Beitrag im Mein-Feed');
+  // Nicht-Follower sieht ihn dort NICHT.
+  const c = await reg('flwc' + PORT);
+  const homeC = await j('/api/feed/home', c);
+  assert.equal((homeC.posts || []).filter(p => (p.body || '').includes(marker)).length, 0, 'Nicht-Follower: nicht im Mein-Feed');
+});
+
 test('Bestandsaustausch über HTTP: anlegen -> erscheint in offener Liste -> erledigt -> verschwindet', async () => {
   const a = await reg('exh' + PORT); // AT-Apotheke darf Austausch anlegen
   const bez = 'Amoxi' + PORT;
