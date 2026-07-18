@@ -80,6 +80,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #29 — 2026-07-18 — Länderauswahl: Ländernamen brechen nicht mehr mitten im Wort (Mobil)
+- **THINK/CHECK:** Echte Screenshots (390px) zeigten „Deutschla nd" / „Moçambiq ue" — `.card { overflow-wrap:anywhere }` vererbte sich in die Länder-Buttons und zerlegte Eigennamen.
+- **WORK:** `.country-pick { overflow-wrap:normal; word-break:keep-all }` + einspaltiges Raster < 460px → volle, gut lesbare Tap-Ziele.
+- **CHECK:** 4 Screenshots (Hell/Dunkel × Desktop/Mobil) sauber; Desktop behält 3-Spalten-Raster; 219 grün, Smoke 8/8.
+
 ### Cycle #28 — 2026-07-18 — Länder-zuerst-Flow + klickbares Logo (Home) + Render
 - **WORK:** Onboarding umgestellt: erst Land wählen → Login → länderspezifische Sicht. Grüner Punkt oben links ist jetzt das klickbare ApoTrend-Logo (SVG) → Startseite. Auf Render (feed-first) deployt.
 - **CHECK:** Smoke-Test prüft Länder-zuerst (12 Länder, AT→Anmelden/GB→Log in); 219 grün.

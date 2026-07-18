@@ -38,7 +38,8 @@
   header .logo:hover .logo-txt { text-decoration:underline; }
   /* Länder-Auswahl (erster Schritt): große, klar klickbare Karten */
   .country-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; margin-top:14px; }
-  .country-pick { display:flex; align-items:center; gap:10px; justify-content:flex-start; text-align:left; background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:12px; padding:14px 16px; font-size:1.02em; font-weight:600; min-height:56px; }
+  .country-pick { display:flex; align-items:center; gap:10px; justify-content:flex-start; text-align:left; background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:12px; padding:14px 16px; font-size:1.02em; font-weight:600; min-height:56px; overflow-wrap:normal; word-break:keep-all; hyphens:none; }
+  @media (max-width:460px){ .country-grid { grid-template-columns:1fr; } }
   .country-pick:hover { border-color:var(--green); background:transparent; }
   .country-pick .flag { font-size:1.5em; line-height:1; }
   header .sp { flex:1; }
