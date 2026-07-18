@@ -30,14 +30,16 @@ die Session neu startet.
 
 ## Letzter GATHER-Snapshot
 
-_Cycle #4 · 2026-07-18_
+_Cycle #5 · 2026-07-18_
 ```
 Tests:            216/216 grün
-i18n de/en/pt:    543/543/543  · 0 Lücken  ✓ perfekte Parität
-Hartkod. Dialoge: 0  ✓
-TODO/FIXME:       0  ·  console.* (FE): 0  ·  !important (CSS): 3
+i18n de/en/pt:    546/546/546  · 0 Lücken  ✓ perfekte Parität
+Hartkod. Dialoge: 0  ·  TODO/FIXME: 0  ·  console.* (FE): 0  ·  !important (CSS): 3
 index.html:       ~3700 Zeilen · 264 KB   ← größtes Struktur-Signal (Monolith)
 ```
+Beobachtung: 5 Zyklen „Klartext-Zähler" abgeschlossen — das Zähler-Thema ist damit
+weitgehend abgearbeitet. Nächste Zyklen sollten neue Signal-Bereiche adressieren
+(Empty-States, a11y-Fokus, CSS-Schuld) statt weiter Zähler zu suchen.
 
 ## Priorisierter Backlog (Kandidaten für WORK)
 
@@ -50,7 +52,8 @@ prüft ihn erst (echt oder Rauschen?), setzt ihn dann um.
 - [ ] Leere Zustände (empty states) je Reiter auf Klartext/Handlungsaufforderung prüfen.
 - [x] ~~„0 Apotheker haben dazu gepostet"-Zähler auf Engpass-Karten~~ → Cycle #3 erledigt.
 - [x] ~~„{n} Beiträge dazu" (pg_posts) Singular~~ → Cycle #4 (generischer `nlabel`-Helper).
-- [ ] Profil-Kopf-Zähler (pf_posts „Beiträge", pf_best „beste Antworten"): mit `nlabel` auf Singular.
+- [x] ~~Profil-Kopf-Zähler (pf_posts/pf_best/pf_followers) Singular~~ → Cycle #5.
+- [ ] Empty-States je Reiter: Klartext + klare Handlungsaufforderung (neuer Bereich).
 - [ ] Preise/Rabatte: Tastatur-Bedienbarkeit der Sortier-/Filter-Chips prüfen (Fokusreihenfolge).
 
 **P2 — Robustheit / Qualität**
@@ -68,6 +71,12 @@ Reaktions-/Folgen-Status, volle i18n DE/EN/PT (inkl. aria/title/Dialoge/Pre-Logi
 a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `server/README.md`.
 
 ## Cycle-Log
+
+### Cycle #5 — 2026-07-18 — Profil-Kopf-Zähler Singular
+- **WORK:** pf_posts/pf_followers/pf_best via nlabel + _one-Varianten (DE/EN/PT). „1 Beitrag"
+  statt „1 Beiträge", „1 follower" statt „1 followers".
+- **CHECK:** Profil mit 1 Beitrag/1 Follower → „1 Beitrag  1 Follower"; 216 grün; Parität 546.
+- **REPEAT:** Zähler-Thema abgeschlossen → nächste Zyklen: Empty-States / a11y / CSS-Schuld.
 
 ### Cycle #4 — 2026-07-18 — Generischer nlabel-Helper + „Beiträge dazu"-Singular
 - **GATHER:** 216/216 grün, i18n 542/542/542.
