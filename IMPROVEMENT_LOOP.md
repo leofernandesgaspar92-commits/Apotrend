@@ -79,6 +79,9 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #25 — 2026-07-18 — Test: Fehler-Codes am HTTP-Layer
+- **WORK/CHECK:** Integrationstest prüft code-Felder (post_empty/login_failed/shortage_*) + message-Fallback. 218→219 grün.
+
 ### Cycle #24 — 2026-07-18 — Backend-Fehler-i18n: Login + Handle-vergeben
 - **WORK:** login_failed (Route) + handle_taken (Repo) via e.code migriert (DE/EN/PT).
 - **CHECK:** Browser en/pt korrekt; 218 grün; Parität 584. Insg. 8 Fehler migriert (#22–24).
