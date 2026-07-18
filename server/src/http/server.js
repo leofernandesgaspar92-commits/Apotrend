@@ -181,7 +181,7 @@ const routes = [
 
   ['POST', /^\/api\/login$/, false, async ({ body }) => {
     const r = orgAuth.login({ email: body.email, password: body.password });
-    if (!r.ok) { const e = new Error(r.error); e.status = 401; throw e; }
+    if (!r.ok) { const e = new Error(r.error); e.status = 401; e.code = 'login_failed'; throw e; }
     return { token: issueToken(r.user.id), user: r.user, profile: social.getProfile(r.user.id) };
   }],
 
