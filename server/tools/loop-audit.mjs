@@ -58,7 +58,12 @@ function i18nParity(html) {
 }
 
 function run() {
+  // Frontend ist seit der Monolith-Entflechtung dreigeteilt: Markup (index.html),
+  // Logik+i18n (app.js), Styles (app.css). Jede Prüfung liest die richtige Quelle.
   const html = rd('public/index.html');
+  const js = rd('public/app.js');
+  const css = (() => { try { return rd('public/app.css'); } catch { return ''; } })();
+  const frontend = html + '\n' + js; // für Prüfungen, die Markup UND JS-Templates umspannen
   const srcFiles = execSync("find src public -name '*.js' -o -name '*.html'", { cwd: ROOT, encoding: 'utf8' })
     .split('\n').filter(Boolean);
   const allSrc = srcFiles.map((f) => { try { return rd(f); } catch { return ''; } }).join('\n');
@@ -67,13 +72,13 @@ function run() {
     ts: new Date().toISOString(),
     tests: tests(),
     // Regressions-Wächter: hartkodierte Dialog-Strings (Ziel 0 — waren mal viele).
-    hardcoded_dialogs: countMatches(html, /(confirm|alert|prompt)\('[^']*[a-zäöü][^']*'/gi),
+    hardcoded_dialogs: countMatches(js, /(confirm|alert|prompt)\('[^']*[a-zäöü][^']*'/gi),
     // Hartkodierte deutsche UI-Strings: UI-Eigenschaften (title/text/label/placeholder),
     // die einem deutschen Umlaut-Literal statt t() zugewiesen sind — außerhalb des I18N-
     // Wörterbuchs (dort ist Deutsch legitim). Fing Cycle #6 nicht ab -> jetzt Wächter.
     hardcoded_ui_de: (() => {
       // Übersetzungs-Wörterbücher ausblenden — dort sind literale UI-Texte legitim.
-      let outside = html;
+      let outside = frontend;
       for (const anchor of ['const I18N = {', 'const ZETTEL_L = {']) {
         const s = outside.indexOf(anchor);
         const e = s >= 0 ? outside.indexOf('\n};', s) : -1;
@@ -90,26 +95,26 @@ function run() {
       const real = hits.filter((h) => !h.includes('${'));
       return { count: real.length, samples: real.slice(0, 6).map((x) => x.replace(/\s+/g, ' ').slice(0, 52)) };
     })(),
-    // Dark-Mode-Falle: hartkodierte HELLE Hex-Hintergründe in INLINE-Styles (außerhalb
-    // des <style>-Blocks). Im <style> ist das ok — dort überschreibt body.dark via
+    // Dark-Mode-Falle: hartkodierte HELLE Hex-Hintergründe in INLINE-Styles (in den
+    // JS-Template-Literalen). In app.css ist Hex ok — dort überschreibt body.dark via
     // CSS-Variablen. Inline erreicht der Dark-Mode sie NICHT -> heller Text auf hellem
     // Grund (Cycle #36). Ziel 0: solche Flächen sollen theme-aware Variablen nutzen.
     hardcoded_light_bg: (() => {
-      const styleEnd = html.indexOf('</style>');
-      const body = styleEnd >= 0 ? html.slice(styleEnd) : html;
-      // background(-color):#[d/e/f]xxxxx = helle Farbe (hoher Startwert).
-      const hits = body.match(/background(-color)?:\s*#[def][0-9a-f]{5}/gi) || [];
+      // background(-color):#[d/e/f]xxxxx = helle Farbe (hoher Startwert) in Markup + JS-Inline-Styles.
+      const hits = frontend.match(/background(-color)?:\s*#[def][0-9a-f]{5}/gi) || [];
       return { count: hits.length, samples: [...new Set(hits)].slice(0, 6) };
     })(),
     // i18n-Abdeckung (mehr = besser) und Drift-Check zwischen Sprachen.
-    data_i18n_attrs: countMatches(html, /data-i18n(-ph|-title|-aria)?=/g),
-    i18n_parity: i18nParity(html),
+    data_i18n_attrs: countMatches(frontend, /data-i18n(-ph|-title|-aria)?=/g),
+    i18n_parity: i18nParity(js),
     // Aufräum-Signale (Trend beobachten, nicht Nulldogma):
     todos: countMatches(allSrc, /\b(TODO|FIXME|XXX|HACK)\b/g),
-    frontend_console: countMatches(html, /console\.(log|warn|error|debug)\(/g),
-    css_important: countMatches(html, /!important/g),
-    // Wartbarkeit: die Single-File-SPA wächst — Größe im Blick behalten.
+    frontend_console: countMatches(js, /console\.(log|warn|error|debug)\(/g),
+    css_important: countMatches(css + js, /!important/g),
+    // Wartbarkeit nach Entflechtung: Markup, Logik und Styles getrennt im Blick behalten.
     index_html: { lines: html.split('\n').length, kb: Math.round(Buffer.byteLength(html) / 1024) },
+    app_js: { lines: js.split('\n').length, kb: Math.round(Buffer.byteLength(js) / 1024) },
+    app_css: { lines: css.split('\n').length, kb: Math.round(Buffer.byteLength(css) / 1024) },
   };
 
   if (jsonOnly) { process.stdout.write(JSON.stringify(snapshot, null, 2) + '\n'); return; }
@@ -128,7 +133,7 @@ function run() {
   console.log(`TODO/FIXME:         ${snapshot.todos}`);
   console.log(`console.* (FE):     ${snapshot.frontend_console}`);
   console.log(`!important (CSS):   ${snapshot.css_important}`);
-  console.log(`index.html:         ${snapshot.index_html.lines} Zeilen · ${snapshot.index_html.kb} KB`);
+  console.log(`Frontend-Größe:     index.html ${snapshot.index_html.lines} Z · app.js ${snapshot.app_js.lines} Z · app.css ${snapshot.app_css.lines} Z`);
 }
 
 run();

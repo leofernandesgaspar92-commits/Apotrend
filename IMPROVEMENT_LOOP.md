@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #44 — 2026-07-18 — Monolith entflochten: CSS + JS extern (P3, freigegeben) [3/3]
+- **THINK:** Die Single-File-SPA (~3860 Z) war schwer navigierbar. Ohne Build-Step: klassische externe Dateien (Globals bleiben, keine ES-Modul-Umverdrahtung, semantisch identisch).
+- **WORK:** `<style>`→`public/app.css` (132 Z), Haupt-`<script>`→`public/app.js` (3693 Z); `index.html` ist jetzt **37 Z** reines Markup + `<link>` + `<script src>`. Loop-Audit auf die 3 Quellen umgestellt (i18n/Dialoge/UI-DE/light-bg/console/!important lesen jetzt app.js/app.css/frontend).
+- **CHECK:** App bootet & funktioniert aus app.js (Übersicht, Preise „€ 1,34"), 0 JS-Fehler; 219 grün, Smoke 11/11, Browser-Audit grün, Parität 635/635/635.
+
 ### Cycle #43 — 2026-07-18 — Zentrale Geld-Formatierung (P3, freigegeben) [2/3]
 - **THINK:** Bildschirm-Preise zeigten überall Punkt-Dezimal (€ 1.34) — für den DACH-Hauptmarkt ist Komma korrekt. Preisnah → sorgfältig.
 - **WORK:** Helfer `fmtMoney(v)` (de/pt: Komma, en: Punkt, 2 Nachkomma, kein Tausender-Trenner); ~17 €-Anzeigestellen darauf umgestellt; `csvNum` dedupliziert (delegiert an fmtMoney). €-Symbol bleibt Präfix.
