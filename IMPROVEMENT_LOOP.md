@@ -77,6 +77,10 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #17 — 2026-07-18 — Browser-Audit: Langinhalt-Härtetest
+- **GATHER+/WORK:** Pathologischer Inhalt (200-Zeichen-Token + lange URL) in den Browser-Audit
+  eingebaut — deckt overflow-wrap-Regressionen ab. Verifiziert: App robust (0 Querscroll).
+
 ### Cycle #16 — 2026-07-18 — Test: is_following im Feed-Payload
 - **WORK/CHECK:** Unit-Test für author.is_following (vor/nach follow, eigener Beitrag). 217→218 grün.
 
