@@ -95,14 +95,34 @@ function run() {
       const real = hits.filter((h) => !h.includes('${'));
       return { count: real.length, samples: real.slice(0, 6).map((x) => x.replace(/\s+/g, ' ').slice(0, 52)) };
     })(),
-    // Hartkodiertes Deutsch in JS-DOM-Zuweisungen (.textContent/.title/.placeholder =
-    // '…ä…' bzw. setAttribute('aria-label'|'title'|'placeholder'|'alt', '…ä…')). Diese
-    // umgehen die UI-DE-Heuristik (kein Markup, kein t()) — Klasse aus Cycle #46. Ziel 0.
+    // Hartkodierter Text in JS-DOM-Zuweisungen (.textContent/.title/.placeholder = 'Wort…'
+    // bzw. setAttribute('aria-label'|'title'|'placeholder'|'alt', 'Wort…')). Umgeht die
+    // UI-DE-Heuristik (kein Markup, kein t()). Fängt jetzt auch umlautloses Deutsch, das
+    // Cycle #61 durchrutschte: JEDES Literal mit 4+ zusammenhängenden Buchstaben, das nicht
+    // über t() kommt (Lade-Spinner ausgenommen) — user-sichtbarer Text gehört in t().
     hardcoded_js_de: (() => {
-      const hits = [];
-      hits.push(...(js.match(/\.(textContent|title|placeholder)\s*=\s*'[^']*[äöüßÄÖÜ][^']*'/g) || []));
-      hits.push(...(js.match(/setAttribute\('(aria-label|title|placeholder|alt)',\s*'[^']*[äöüßÄÖÜ][^']*'/g) || []));
-      return { count: hits.length, samples: hits.slice(0, 6).map((x) => x.replace(/\s+/g, ' ').slice(0, 52)) };
+      const seen = new Set();
+      // Den GANZEN Ausdruck bis zum Statement-Ende betrachten (auch Ternäre wie a?'X':'Y' —
+      // genau die Form, die Cycle #61 durchrutschte). t()/ti()-Aufrufe vorher entfernen,
+      // dann jedes verbleibende Literal mit 4+ Buchstaben melden (Lade-Spinner ausgenommen).
+      const stmtRe = /(?:\.(?:textContent|title|placeholder)\s*=|setAttribute\('(?:aria-label|title|placeholder|alt)',)([^;\n]*)/g;
+      let m;
+      while ((m = stmtRe.exec(js))) {
+        // t()/ti()/getAttribute()-Aufrufe herauslösen — deren String-Argumente sind Keys/
+        // Attributnamen, kein UI-Text.
+        const expr = m[1].replace(/\b(?:ti?|getAttribute)\('[^']*'\)?/g, '');
+        let lm; const litRe = /'([^']*)'/g;
+        while ((lm = litRe.exec(expr))) {
+          const val = lm[1];
+          // Nur echter UI-Text: 4+ Buchstaben UND enthält Großbuchstabe, Leerzeichen oder
+          // Nicht-ASCII (Umlaut/Emoji). Reine lowercase-hyphen-Tokens (Keys/Attr) fallen raus.
+          if (/[A-Za-zÄÖÜäöü]{4,}/.test(val) && /[A-ZÄÖÜ]|\s|[^\x00-\x7f]/.test(val) && !/class="loading"/.test(val)) {
+            seen.add(val.replace(/\s+/g, ' ').slice(0, 40));
+          }
+        }
+      }
+      const hits = [...seen];
+      return { count: hits.length, samples: hits.slice(0, 6) };
     })(),
     // Dark-Mode-Falle: hartkodierte HELLE Hex-Hintergründe in INLINE-Styles (in den
     // JS-Template-Literalen). In app.css ist Hex ok — dort überschreibt body.dark via

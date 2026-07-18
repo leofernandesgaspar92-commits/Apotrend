@@ -3247,7 +3247,7 @@ function postCard(p) {
     try {
       const r = await api('POST',`/api/posts/${p.id}/bookmark`);
       if (r.bookmarked) myBookmarks.add(p.id); else myBookmarks.delete(p.id);
-      bm.textContent = r.bookmarked ? '🔖 gemerkt' : '🔖 Merken';
+      bm.textContent = r.bookmarked ? t('pc_saved') : t('pc_save');
     } catch(e){ alert(e.message); }
   };
   const delb = card.querySelector('[data-del]');

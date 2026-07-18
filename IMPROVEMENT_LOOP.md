@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #62 — 2026-07-18 — Wächter fängt jetzt umlautloses Deutsch (Ternäre) + 2. Bug gefunden
+- **THINK:** Der #61-Bug (umlautloses Deutsch in Ternär-Zuweisung) zeigte eine Blindstelle im JS-DE-Wächter.
+- **WORK:** Detektor betrachtet jetzt den GANZEN Ausdruck bis `;` (auch `a?'X':'Y'`), löst t()/ti()/getAttribute() heraus und meldet UI-Text-Literale (Großbuchstabe/Leerzeichen/Nicht-ASCII). Fand prompt einen 2. echten Bug: Merkliste-Toggle setzte „🔖 gemerkt"/„🔖 Merken" hart → jetzt `t('pc_saved')`/`t('pc_save')`.
+- **CHECK:** EN real „🔖 saved"; Detektor fängt alle 4 Ternär-Strings, keine `data-i18n`-Fehlalarme; 0 ✓; 226 grün, Smoke 11/11.
+
 ### Cycle #61 — 2026-07-18 — Teilen-Button auf Engpass-Listenkarten + i18n-Bug (Beobachten-Toggle)
 - **THINK:** Teilen gab es auf Posts + Wirkstoff-Detail, aber NICHT auf den Engpass-Listenkarten — man musste erst reinklicken, um einen kritischen Engpass an Kolleg:innen zu teilen.
 - **WORK:** „🔗 Teilen"-Button auf Listenkarten (Deep-Link `?wirkstoff=`, wie Detailseite). Dabei echten i18n-Bug gefunden & behoben: der Beobachten-Toggle setzte den Button-Text hart deutsch („⭐ Beobachtet") — rutschte durch beide Wächter (keine Umlaute).
