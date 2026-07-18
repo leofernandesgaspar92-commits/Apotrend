@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #36 — 2026-07-18 — Dark-Mode-Kontrast: 3 hartkodierte helle Flächen behoben
+- **CHECK:** Computed-Styles im echten Browser deckten auf: Willkommens-Tipp-Box (`#eef6f1`), ungelesene Meldungs-Zeile (`#eef6f1`) und „Rosé"-Preis-Pille (`#fdece9`) behielten im Dark-Mode helle Hintergründe → heller Text auf hellem Grund (~1,1:1, unlesbar).
+- **WORK:** Auf theme-aware Variablen umgestellt (`--ok-bg/--ok-bd`, `--crit-bg/--crit-bd`). Hell unverändert, Dunkel jetzt ~10:1.
+- **CHECK:** Tipp-Box dunkel `rgb(18,51,30)`/hell-Text real; 219 grün, Browser-Audit sauber (hell+dunkel), Smoke 10/10.
+
 ### Cycle #35 — 2026-07-18 — Patienteninfo-Druck: Titel folgt der Patientensprache
 - **THINK:** `printPatientInfo` betitelte gedruckte Blätter hart deutsch („Antibiotika – Patienteninformation"), obwohl der Karteninhalt engl./türk. war — verwirrend für Patient:innen.
 - **WORK:** Helfer `patientInfoHeading(lang)` (de/en/tr) extrahiert; in Druck-`<title>`, Druck-`<h1>` und im Zettel-Druck (vorher dupliziertes Ternär) genutzt.
