@@ -1,0 +1,131 @@
+  :root { --green:#0b7f28; --green-d:#086420; --bg:#f4f6f5; --card:#fff; --line:#e2e6e4; --text:#1a2420; --muted:#556860;
+    --chip-bg:#eef3f0;
+    --ok-bg:#e6f7ef; --ok-fg:#0b7f28; --ok-bd:#b6e6cf;
+    --warn-bg:#fff4e6; --warn-fg:#b26a00; --warn-bd:#ffd9a8;
+    --crit-bg:#fdece9; --crit-fg:#c0392b; --crit-bd:#f2c6bf;
+    --info-bg:#e6ecfb; --info-fg:#2952cc; --info-bd:#c9d6f7; }
+  body.dark { --green:#22cc5c; --green-d:#1aa749; --bg:#14181a; --card:#1e2427; --line:#33403b; --text:#e7ece9; --muted:#9fb0a8;
+    --chip-bg:#26302c;
+    --ok-bg:#12331e; --ok-fg:#46d67a; --ok-bd:#205834;
+    --warn-bg:#33280f; --warn-fg:#e2ac44; --warn-bd:#5a4620;
+    --crit-bg:#3a1c18; --crit-fg:#f0857a; --crit-bd:#5e2b25;
+    --info-bg:#1a2338; --info-fg:#8aa4f7; --info-bd:#33436f; }
+  body.dark .reacts button, body.dark .spec { background:#2a3330; }
+  body.dark input, body.dark textarea, body.dark select { background:#161b1d; }
+  body.dark .editorial { background:#1e2f5a; color:#bcd0ff; border-color:#2e4680; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); font-size:16px; }
+  /* Tastatur-Fokus deutlich sichtbar (Barrierefreiheit) */
+  :focus-visible { outline:3px solid #1a73e8; outline-offset:2px; }
+  header { background:var(--green); color:#fff; padding:12px 16px; display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:5; }
+  header .logo { font-weight:800; letter-spacing:.5px; font-size:1.25em; display:inline-flex; align-items:center; gap:8px; }
+  header .logo .logo-ic { display:block; flex:0 0 auto; }
+  header .logo:hover { text-decoration:none; opacity:.9; }
+  header .logo:hover .logo-txt { text-decoration:underline; }
+  /* Länder-Auswahl (erster Schritt): große, klar klickbare Karten */
+  .country-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; margin-top:14px; }
+  .country-pick { display:flex; align-items:center; gap:10px; justify-content:flex-start; text-align:left; background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:12px; padding:14px 16px; font-size:1.02em; font-weight:600; min-height:56px; overflow-wrap:normal; word-break:keep-all; hyphens:none; }
+  @media (max-width:460px){ .country-grid { grid-template-columns:1fr; } }
+  .country-pick:hover { border-color:var(--green); background:transparent; }
+  .country-pick .flag { font-size:1.5em; line-height:1; }
+  header .sp { flex:1; }
+  header button { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.5); min-height:42px; min-width:42px; }
+  /* Länder-/Sprach-Umschalter in der Kopfzeile: klar erkennbar, lesbar (Karten-
+     Hintergrund statt Weiß-auf-Grün), kompakt genug fürs Handy. */
+  header #countrySwitch { width:auto; max-width:240px; min-height:42px; padding:8px 10px; font-size:0.92em; font-weight:600; background:var(--card); color:var(--text); border:1px solid rgba(255,255,255,.6); border-radius:8px; cursor:pointer; }
+  /* Handy: nur die Flagge zeigen (der volle Ländername erscheint beim Aufklappen);
+     spart Platz, damit die Kopfzeile in eine Zeile passt (kein Horizontal-Scroll). */
+  @media (max-width:560px){ header #countrySwitch { max-width:52px; padding:8px 4px; font-size:1.05em; } }
+  /* Mobil: Header muss in eine Zeile passen (sonst Horizontal-Scroll, Logout
+     abgeschnitten). MUSS nach den Basisregeln stehen (gleiche Spezifität). */
+  /* Handy: 8 Kopf-Bedienelemente passen bei sehr schmalen Geräten (≤390px) nicht
+     in eine Zeile. Statt alles auf Winzig-Größe zu quetschen (schlecht bedienbar),
+     lassen wir die Zeile umbrechen – jedes Element bleibt komfortabel antippbar,
+     kein Horizontal-Scroll. Logo oben, Aktionen darunter. */
+  @media (max-width:560px){ #whoami { display:none; } header { gap:4px; padding:9px 8px; flex-wrap:wrap; } header .logo { font-size:0.96em; letter-spacing:0; } header button { min-width:0; min-height:40px; padding:8px 7px; } }
+  .wrap { max-width:640px; margin:0 auto; padding:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; overflow-wrap:anywhere; }
+  h1 { font-size:1.4em; margin:0 0 12px; }
+  label { display:block; font-size:0.9em; color:var(--muted); margin:10px 0 4px; }
+  input, textarea, select { width:100%; padding:12px; border:1px solid var(--line); border-radius:8px; font-size:1em; font-family:inherit; min-height:46px; background:var(--card); color:var(--text); }
+  textarea { resize:vertical; min-height:70px; }
+  button { background:var(--green); color:#fff; border:none; border-radius:8px; padding:12px 16px; font-size:0.95em; font-weight:600; cursor:pointer; min-height:44px; }
+  button:hover { background:var(--green-d); }
+  button.ghost { background:transparent; color:var(--green); border:1px solid var(--green); }
+  button.small { padding:7px 11px; font-size:0.85em; min-height:36px; }
+  .row > button { flex-shrink:0; white-space:nowrap; } /* Buttons in einer Zeile (Folgen, Filtern …) behalten ihre Breite; das Eingabefeld gibt nach statt den Button-Text mitten im Wort umzubrechen */
+  #sgo { white-space:nowrap; } /* „Search"/„Pesquisar" nicht umbrechen lassen */
+  button.sortbtn { background:var(--card); color:var(--text); border:1px solid var(--line); font-weight:600; }
+  button.sortbtn.active { background:var(--green); color:#fff; border-color:var(--green); }
+  .row { display:flex; gap:8px; align-items:center; }
+  /* Kopfzeilen mit Abstandshalter (Titel · Spacer · Aktion) dürfen umbrechen: ein langer
+     Button (z. B. CSV-Export) rutscht auf Mobil unter den Titel, statt ihn zu stauchen.
+     Eingabe+Button-Zeilen (ohne .sp) bleiben einzeilig — der Button gibt nicht nach. */
+  .row:has(> .sp), .row:has(> h1) { flex-wrap:wrap; }
+  /* Überschrift in einer Kopfzeile hält ihre Inhaltsbreite (flex-basis:auto statt 0),
+     damit auf Mobil der Button umbricht statt die Überschrift mitten im Wort zu zerreißen. */
+  .row > h1 { flex:1 1 auto !important; }
+  .tabs { display:flex; gap:8px; margin-bottom:12px; }
+  .tabs button { flex:1; background:var(--card); color:var(--text); border:1px solid var(--line); }
+  .tabs button.active { background:var(--green); color:#fff; border-color:var(--green); }
+  /* Mobil: 8 Tabs passen nicht in eine Zeile (Horizontal-Scroll, halbe Tabs
+     unsichtbar). Als 4-Spalten-Grid umbrechen -> alle Tabs sichtbar, kein Overflow. */
+  @media (max-width: 640px) {
+    .tabs { display:grid; grid-template-columns:repeat(4, 1fr); }
+    .tabs button { flex:none; padding-left:4px; padding-right:4px; }
+  }
+  .post-author { font-weight:700; }
+  .handle { color:var(--muted); font-weight:400; font-size:0.9em; }
+  .verified { color:var(--green); font-size:13px; }
+  .editorial { background:var(--info-bg); color:var(--info-fg); font-size:12px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid var(--info-bd); }
+  .rank { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:30px; padding:0 6px; border-radius:999px; background:var(--green); color:#fff; font-weight:800; font-size:15px; margin-right:8px; }
+  .rabatt-badge { background:var(--ok-bg); color:var(--ok-fg); font-weight:800; font-size:16px; padding:4px 12px; border-radius:999px; border:1px solid var(--ok-bd); white-space:nowrap; } /* Rabatt-Prozentwert nie mitten in der Zahl umbrechen (z. B. „−29.8%") */
+  .mention { color:var(--green); font-weight:600; }
+  .mention-ac { border:1px solid var(--line); border-radius:8px; background:var(--card); margin-top:4px; overflow:hidden; }
+  .mention-ac-item { padding:8px 10px; cursor:pointer; font-size:0.9em; }
+  .mention-ac-item:hover, .mention-ac-item.active { background:var(--bg); }
+  .hashtag { color:var(--info-fg); font-weight:600; }
+  .clickable { cursor:pointer; }
+  .clickable:hover { text-decoration:underline; }
+  .avatar { display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:50%; background:var(--green); color:#fff; font-weight:800; font-size:19px; flex:0 0 auto; }
+  .spec { display:inline-block; background:var(--chip-bg); border:1px solid var(--line); border-radius:999px; padding:3px 10px; font-size:13px; margin:2px 2px 2px 0; }
+  .post-body { margin:8px 0; white-space:pre-wrap; line-height:1.45; overflow-wrap:anywhere; }
+  .vis { font-size:12px; color:var(--muted); }
+  .reacts { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .reacts button { background:var(--chip-bg); color:var(--text); border:1px solid var(--line); padding:7px 11px; font-size:0.85em; font-weight:500; min-height:36px; }
+  .reacts button:hover { border-color:var(--green); }
+  .reacts button.reacted { background:var(--green); color:#fff; border-color:var(--green); font-weight:700; } /* eigene Reaktion sichtbar markiert (nochmal klicken = entfernen) */
+  body.dark .reacts button.reacted { background:var(--green); color:#fff; }
+  .muted { color:var(--muted); font-size:14px; }
+  .err { color:var(--crit-fg); font-size:14px; margin-top:8px; }
+  /* Einheitlicher, freundlicher Leerzustand (Icon + Titel + Text + optionale Aktion). */
+  .empty { text-align:center; padding:34px 20px; }
+  .empty-ic { font-size:42px; line-height:1; }
+  .empty-t { font-size:17px; font-weight:700; margin-top:10px; }
+  .empty-s { margin-top:6px; max-width:44ch; margin-left:auto; margin-right:auto; }
+  /* Einheitlicher, dezenter Lade-Indikator (Spinner + Text), theme-tauglich. */
+  .loading { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:14px; padding:8px 2px; }
+  .loading::before { content:''; width:18px; height:18px; border:3px solid var(--line); border-top-color:var(--green); border-radius:50%; animation:apo-spin .7s linear infinite; flex:none; }
+  @keyframes apo-spin { to { transform:rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .loading::before { animation:none; } }
+  .bell { position:relative; }
+  .badge { position:absolute; top:-6px; right:-6px; background:#e02a2a; color:#fff; border-radius:10px; font-size:11px; padding:1px 6px; }
+  /* Klartext-Beschriftung der Header-Aktionen (Zielgruppe: nicht-technisch). Auf
+     schmalen Screens Icon-only, damit die Kopfzeile nicht umbricht. */
+  .hlabel { margin-left:6px; font-size:0.84em; font-weight:600; }
+  @media (max-width: 980px) { .hlabel { display:none; } header button { min-width:42px; } }
+  .comments { border-top:1px solid var(--line); margin-top:10px; padding-top:10px; }
+  .comment { font-size:0.9em; padding:6px 0; border-bottom:1px solid var(--line); }
+  .comment:last-child { border-bottom:none; }
+  .hidden { display:none; }
+  .skiplink { position:absolute; left:-9999px; top:0; z-index:20; background:var(--green); color:#fff; padding:10px 14px; border-radius:0 0 8px 0; font-weight:700; }
+  .skiplink:focus { left:0; }
+  #printhead { display:none; }
+  @media print {
+    header, .tabs, .skiplink, button, input, textarea, select, .reacts, [data-report], [data-scsv], [data-statusbox], [data-postbox], [data-aboutbox] { display:none !important; }
+    body { background:#fff; color:#000; }
+    .card { border:1px solid #999; box-shadow:none; break-inside:avoid; margin-bottom:8px; }
+    #printhead { display:block; margin:0 0 12px; }
+    /* nur die Engpass-Info drucken: Melde-Formular, Legende & Filter ausblenden */
+    #feed > .card:has([data-report]), #feed > .card:has([data-tgl]), #feed > .card:has([data-q]) { display:none !important; }
+  }
