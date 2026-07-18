@@ -79,6 +79,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #21 — 2026-07-18 — Browser-Werkzeuge mit Server-Auto-Start
+- **ANALYSE:** Tägliche Routine = frische Session ohne Server → audit:browser/smoke liefen nicht.
+- **WORK:** `_ensure-server.mjs` — nutzt laufenden Server oder startet/beendet einen selbst.
+- **CHECK:** Server gestoppt → `npm run smoke` startet selbst, 7/7 grün, danach sauber beendet.
+
 ### Cycle #20 — 2026-07-18 — npm-Scripts für die Loop-Werkzeuge
 - **WORK/CHECK:** `npm run audit` / `audit:browser` / `smoke` in package.json. Verifiziert: 218 grün, Smoke 7/7.
 
