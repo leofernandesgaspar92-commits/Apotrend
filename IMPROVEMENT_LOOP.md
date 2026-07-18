@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #55 — 2026-07-18 — Frühwarnnetz (Kern-Wertversprechen) über HTTP getestet
+- **CHECK:** Kernfluss „Wirkstoff beobachten → Benachrichtigung bei fremder Engpass-Meldung" real via API end-to-end verifiziert (funktioniert). Service-Layer war getestet, HTTP-Layer (Routen-Verdrahtung, z. B. Pfad `/api/watchlist`) nicht.
+- **WORK:** HTTP-Integrationstest: Beobachter beobachtet → Reporter meldet → Beobachter erhält `watch_alert`, Melder nicht.
+- **CHECK:** 220 → 221 grün.
+
 ### Cycle #54 — 2026-07-18 — Abgelaufene Sitzung führt sauber zum Login
 - **THINK:** Lief mitten in der Nutzung der Token ab, gab es an jeder Aktion „Nicht angemeldet"-Fehler — 401 ist aber nicht eindeutig (auch Login-/Passwort-Fehler sind 401).
 - **WORK:** Auth-Guard-401 bekommt eigenen `code: not_authenticated`; `api()` verwirft bei diesem Code (und vorhandenem Token) das Token und zeigt Login-/Länder-Screen (kein Reload-Loop). Login-Fehler (`login_failed`) bleiben inline.

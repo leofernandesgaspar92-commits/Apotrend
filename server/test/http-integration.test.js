@@ -355,6 +355,23 @@ test('Unbekannte Route -> 404', async () => {
   assert.equal(r.status, 404);
 });
 
+test('Frühwarnnetz über HTTP: Beobachter wird bei fremder Engpass-Meldung benachrichtigt', async () => {
+  const watcher = await reg('warnw' + PORT);
+  const reporter = await reg('warnr' + PORT);
+  const wirk = 'Ramipril' + PORT; // eindeutig pro Testlauf
+  // Beobachter beobachtet den Wirkstoff.
+  const w = await post('/api/watchlist', watcher, { wirkstoff: wirk });
+  assert.equal(w.status, 200);
+  // Reporter meldet dafür einen Engpass.
+  const rep = await post('/api/shortages/report', reporter, { wirkstoff: wirk, bezeichnung: wirk + ' 5 mg', status: 'kritisch', grund: 'Test' });
+  assert.equal(rep.status, 200);
+  // Beobachter bekommt eine watch_alert-Benachrichtigung, der Melder nicht.
+  const wn = await j('/api/notifications', watcher);
+  assert.ok((wn.notifications || []).some(n => n.type === 'watch_alert'), 'Beobachter erhält watch_alert');
+  const rn = await j('/api/notifications', reporter);
+  assert.equal((rn.notifications || []).filter(n => n.type === 'watch_alert').length, 0, 'Melder erhält keine watch_alert');
+});
+
 test('Statische Assets: gzip-Komprimierung + ETag/304-Revalidierung', async () => {
   // gzip nur, wenn der Client es anbietet.
   const gz = await rawGet('/app.js', { 'accept-encoding': 'gzip' });
