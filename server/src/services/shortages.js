@@ -2,6 +2,7 @@
 // Liest Engpässe (mit Herkunfts-Flag) und verbindet sie mit den Beiträgen, die
 // sie referenzieren ("X Apotheker haben dazu gepostet").
 import { cleanSourceUrl } from '../domain/media.js';
+import { AppError } from '../domain/errors.js';
 
 const STATUS_LABEL = { kritisch: 'Kritischer Engpass', eingeschraenkt: 'Eingeschränkt lieferbar', verfuegbar: 'Wieder verfügbar' };
 const VALID_STATUS = Object.keys(STATUS_LABEL);
@@ -28,9 +29,7 @@ export function createShortagesService(shortagesRepo, social) {
   function requireProfessional(userId) {
     const prof = social.getProfile(userId);
     if (prof && prof.account_type === 'private') {
-      const e = new Error('Engpass-Meldungen sind sicherheitsrelevant und Fachkreisen (Apotheke, Pharma-Unternehmen, Behörde) vorbehalten. Als Privatnutzer:in kannst du Engpässe lesen, aber nicht melden oder bestätigen.');
-      e.status = 403;
-      throw e;
+      throw new AppError('shortage_pro_only', 'Engpass-Meldungen sind sicherheitsrelevant und Fachkreisen (Apotheke, Pharma-Unternehmen, Behörde) vorbehalten. Als Privatnutzer:in kannst du Engpässe lesen, aber nicht melden oder bestätigen.', 403);
     }
   }
   return {

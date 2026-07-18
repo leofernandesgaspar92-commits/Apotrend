@@ -310,6 +310,7 @@ const I18N = {
     font_scale_label:'Schriftgröße', font_sz_0:'Normal', font_sz_1:'Groß', font_sz_2:'Sehr groß', font_toggle_hint:'tippen zum Wechseln',
     err_title:'Das hat nicht geklappt', err_generic:'Unbekannter Fehler. Bitte erneut versuchen.', err_retry:'↻ Erneut versuchen',
     img_err_pick:'Bitte ein Bild wählen.', img_err_read:'Bild konnte nicht gelesen werden.', img_err_invalid:'Bild ungültig.',
+    e_shortage_pro_only:'Engpass-Meldungen sind sicherheitsrelevant und Fachkreisen (Apotheke, Pharma-Unternehmen, Behörde) vorbehalten. Als Privatnutzer:in kannst du Engpässe lesen, aber nicht melden oder bestätigen.', e_exchange_pro_only:'Der Bestandsaustausch (Biete/Suche) ist Apotheken und Fachkreisen vorbehalten. Als Privatnutzer:in kannst du Einträge lesen, aber keine anlegen.',
     react_helpful:'👍 Hilfreich', react_thanks:'🙏 Danke', react_confirmed:'✅ Bestätigt', react_interesting:'💡 Interessant',
     pc_verified:'✔ verifiziert', pc_img_alt:'Bild zum Beitrag', pc_source:'🔗 Quelle',
     pc_edited:'✏️ bearbeitet', pc_vis_public:'🌍 öffentlich', pc_vis_followers:'👥 nur Follower',
@@ -560,6 +561,7 @@ const I18N = {
     font_scale_label:'Text size', font_sz_0:'Normal', font_sz_1:'Large', font_sz_2:'Very large', font_toggle_hint:'tap to change',
     err_title:"That didn't work", err_generic:'Unknown error. Please try again.', err_retry:'↻ Try again',
     img_err_pick:'Please choose an image.', img_err_read:'Image could not be read.', img_err_invalid:'Invalid image.',
+    e_shortage_pro_only:'Shortage reports are safety-relevant and reserved for professionals (pharmacy, pharma company, authority). As a private user you can read shortages but not report or confirm them.', e_exchange_pro_only:'Stock exchange (offer/seek) is reserved for pharmacies and professionals. As a private user you can read entries but not create them.',
     react_helpful:'👍 Helpful', react_thanks:'🙏 Thanks', react_confirmed:'✅ Confirmed', react_interesting:'💡 Interesting',
     pc_verified:'✔ verified', pc_img_alt:'Post image', pc_source:'🔗 Source',
     pc_edited:'✏️ edited', pc_vis_public:'🌍 public', pc_vis_followers:'👥 followers only',
@@ -810,6 +812,7 @@ const I18N = {
     font_scale_label:'Tamanho do texto', font_sz_0:'Normal', font_sz_1:'Grande', font_sz_2:'Muito grande', font_toggle_hint:'toque para mudar',
     err_title:'Isso não funcionou', err_generic:'Erro desconhecido. Tente novamente.', err_retry:'↻ Tentar novamente',
     img_err_pick:'Escolha uma imagem.', img_err_read:'Não foi possível ler a imagem.', img_err_invalid:'Imagem inválida.',
+    e_shortage_pro_only:'As comunicações de falta são relevantes para a segurança e reservadas a profissionais (farmácia, empresa farmacêutica, autoridade). Como utilizador particular pode ler as faltas, mas não comunicá-las nem confirmá-las.', e_exchange_pro_only:'A troca de stock (ofertar/procurar) é reservada a farmácias e profissionais. Como utilizador particular pode ler as entradas, mas não criá-las.',
     react_helpful:'👍 Útil', react_thanks:'🙏 Obrigado', react_confirmed:'✅ Confirmado', react_interesting:'💡 Interessante',
     pc_verified:'✔ verificado', pc_img_alt:'Imagem da publicação', pc_source:'🔗 Fonte',
     pc_edited:'✏️ editado', pc_vis_public:'🌍 público', pc_vis_followers:'👥 só seguidores',
@@ -983,7 +986,14 @@ const api = async (method, path, body) => {
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await r.json().catch(()=>({}));
-  if (!r.ok) throw new Error(data.error || ('Fehler '+r.status));
+  if (!r.ok) {
+    // Fehler-Code (falls vorhanden) übersetzen — sonst die (deutsche) Server-message.
+    // So werden alle e.message-Anzeigestellen automatisch mehrsprachig.
+    const translated = data.code && I18N[LOCALE] && I18N[LOCALE]['e_'+data.code];
+    const err = new Error(translated || data.error || ('Fehler '+r.status));
+    err.code = data.code;
+    throw err;
+  }
   return data;
 };
 const el = (h) => { const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.childElementCount===1 ? t.content.firstElementChild : t.content; };

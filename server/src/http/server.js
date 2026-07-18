@@ -392,7 +392,8 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, result ?? { ok: true });
     } catch (e) {
       const code = e instanceof ForbiddenError ? 403 : (e.status || 400);
-      return json(res, code, { error: e.message });
+      // e.code (falls gesetzt) erlaubt dem Frontend, die Meldung zu übersetzen.
+      return json(res, code, e.code ? { error: e.message, code: e.code } : { error: e.message });
     }
   }
 

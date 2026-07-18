@@ -3,6 +3,7 @@
 // öffentlichen Kontaktdaten getauscht.
 import { ForbiddenError } from './orgAuth.js';
 import { cleanImage } from '../domain/media.js';
+import { AppError } from '../domain/errors.js';
 
 const KINDS = ['biete', 'suche'];
 export const BUNDESLAENDER = ['Wien', 'Niederösterreich', 'Oberösterreich', 'Steiermark', 'Tirol', 'Kärnten', 'Salzburg', 'Vorarlberg', 'Burgenland'];
@@ -47,8 +48,7 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       // Privatnutzer:innen können Einträge lesen, aber keine anlegen.
       const prof = social.getProfile(actorUserId);
       if (prof && prof.account_type === 'private') {
-        const e = new Error('Der Bestandsaustausch (Biete/Suche) ist Apotheken und Fachkreisen vorbehalten. Als Privatnutzer:in kannst du Einträge lesen, aber keine anlegen.');
-        e.status = 403; throw e;
+        throw new AppError('exchange_pro_only', 'Der Bestandsaustausch (Biete/Suche) ist Apotheken und Fachkreisen vorbehalten. Als Privatnutzer:in kannst du Einträge lesen, aber keine anlegen.', 403);
       }
       if (!KINDS.includes(kind)) throw new Error('Art muss "biete" oder "suche" sein.');
       const b = String(bezeichnung ?? '').trim();
