@@ -80,6 +80,15 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #28 — 2026-07-18 — Länder-zuerst-Flow + klickbares Logo (Home) + Render
+- **WORK:** Onboarding umgestellt: erst Land wählen → Login → länderspezifische Sicht. Grüner Punkt oben links ist jetzt das klickbare ApoTrend-Logo (SVG) → Startseite. Auf Render (feed-first) deployt.
+- **CHECK:** Smoke-Test prüft Länder-zuerst (12 Länder, AT→Anmelden/GB→Log in); 219 grün.
+
+### Cycle #27 — 2026-07-18 — Länderauswahl-Kopf mehrsprachig (VOR der Sprachwahl)
+- **THINK:** Der Länderauswahl-Screen steht VOR der Sprachwahl — ein brasilianischer Erstbesucher sähe sonst nur Deutsch.
+- **WORK:** `csOtherLangs(key)` zeigt den Titel zusätzlich in den anderen beiden Sprachen als dezenten Untertitel.
+- **CHECK:** Kopf rendert „Wähle dein Land · Choose your country · Escolha o seu país"; 219 grün, Parität 594.
+
 ### Cycle #26 — 2026-07-18 — Backend-Fehler-i18n: Batch (Anzeigename/Kommentar/Passwort/…)
 - **WORK:** 9 nutzer-erreichbare Fehler migriert (6 neue Codes, post_empty wiederverwendet), DE/EN/PT.
 - **CHECK:** en/pt korrekt; 219 grün (2 Tests wg. verfehltem AppError-Import + Meldungsänderung gefixt); Parität 590.
