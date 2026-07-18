@@ -31,6 +31,10 @@ async function main() {
   const reg = await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Audit', email: `audit_${uniq}@ex.com`, password: 'Passwort123!', handle: `audit_${uniq}`, accountType: 'pharmacy' }) });
   const token = reg && reg.token;
   if (!token) { console.error('❌ Registrierung fehlgeschlagen'); process.exit(2); }
+  // Pathologischer Inhalt: langer ununterbrochener Token + lange URL — der klassische
+  // Auslöser für Mobil-Querscroll. So prüft der Audit auch die overflow-wrap-Behandlung.
+  await api('/api/posts', { method: 'POST', headers: { authorization: `Bearer ${token}` },
+    body: JSON.stringify({ body: `AUDIT-LONG ${'X'.repeat(200)} https://example.com/${'a'.repeat(180)}`, kind: 'post', visibility: 'public' }) });
 
   const browser = await chromium.launch();
   const findings = [];
