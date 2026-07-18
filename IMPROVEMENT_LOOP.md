@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #42 — 2026-07-18 — CSV-Export mehrsprachig (P3, CEO-freigegeben) [1/3]
+- **THINK:** Einkauf/Großhandel exportieren CSV — die 3 Exporte waren fest deutsch (Köpfe + ja/nein + Zahlenformat). Wand für EN/PT-Profis.
+- **WORK:** Format folgt der Sprache als kohärente Einheit: de/pt = Semikolon+Komma-Dezimal (Europa-Excel), en = Komma+Punkt. 31 `csv_*`-Keys (DE/EN/PT), Helfer `csvSep/csvNum/csvYesNo`, Trennzeichen-abhängiges Cell-Escaping. Alle 3 Exporte (Preise/Rabatte/Engpässe) umgestellt.
+- **CHECK:** Echte Blobs erfasst — AT `Präparat;3,01;ja` / GB `Product,3.01,yes` / PT `Produto;3,01;sim`; Parität 635/635/635; 219 grün, Smoke 11/11.
+
 ### Cycle #41 — 2026-07-18 — Backend-Längen-Fehler mehrsprachig (Beitrag/Kommentar/Bio)
 - **THINK:** Textfelder haben KEIN client-seitiges maxlength → >1000 Zeichen erreichbar → Server warf deutsches `new Error` (untranslatiert für EN/PT). Lücke aus der #22–26-Klasse.
 - **WORK:** 3 Fehler auf `AppError`+Code migriert (post_too_long/comment_too_long/bio_too_long), `e_<code>`-Keys in DE/EN/PT; HTTP-Test um post_too_long-Assertion erweitert.

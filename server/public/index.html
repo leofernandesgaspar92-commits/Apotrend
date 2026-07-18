@@ -231,6 +231,14 @@ const I18N = {
     sh_q_ph:'🔎 Wirkstoff oder Präparat suchen…', sh_f_all:'Alle', sh_f_crit:'🔴 Nur kritisch',
     sh_f_abx:'🧫 Antibiotika', sh_f_watched:'⭐ Beobachtet', sh_f_comm:'👥 Community',
     sh_print_asof:'Stand: ', sh_print_filter:' · Filter: ', sh_print_query:' · Suche: ',
+    csv_yes:'ja', csv_no:'nein', csv_praeparat:'Präparat', csv_wirkstoff:'Wirkstoff', csv_lieferant:'Lieferant',
+    csv_aep:'AEP (€)', csv_trend:'Trend (%)', csv_guenstigster:'Günstigster', csv_saving_vs_max:'Ersparnis ggü. teuerstem (€)',
+    csv_rang:'Rang', csv_listenpreis:'Listenpreis (€)', csv_aktionspreis:'Aktionspreis (€)', csv_rabatt:'Rabatt (%)',
+    csv_saving_pkg:'Ersparnis/Pkg (€)', csv_minmenge:'Mindestmenge', csv_saving_atmin:'Ersparnis bei Mindestmenge (€)',
+    csv_gueltig_bis:'gültig bis', csv_best_per_wirkstoff:'beste Aktion je Wirkstoff',
+    csv_status:'Status', csv_grund:'Grund', csv_gemeldet_am:'gemeldet am', csv_wieder_bis:'voraussichtlich wieder lieferbar bis',
+    csv_antibiotikum:'Antibiotikum', csv_herkunft:'Herkunft', csv_melder:'Melder', csv_beobachtet:'beobachtet',
+    csv_prov_verified:'BASG (verifiziert)', csv_prov_reference:'Referenzdaten', csv_prov_editorial:'Redaktion', csv_prov_community:'Community-Meldung', csv_prov_simulated:'simuliert',
     sh_print:'🖨️ Drucken', sh_print_t:'Aktuelle Auswahl drucken (Team-Aushang)',
     sh_csv_t:'Aktuelle Auswahl als CSV (Excel) exportieren', sh_view_all_wk:'Alles zu {wk} ansehen', sh_sort:'Sortieren:',
     sh_sort_crit:'🔴 Kritischste zuerst', sh_sort_new:'🕘 Neueste zuerst',
@@ -488,6 +496,14 @@ const I18N = {
     sh_q_ph:'🔎 Search substance or product…', sh_f_all:'All', sh_f_crit:'🔴 Critical only',
     sh_f_abx:'🧫 Antibiotics', sh_f_watched:'⭐ Watched', sh_f_comm:'👥 Community',
     sh_print_asof:'As of: ', sh_print_filter:' · Filter: ', sh_print_query:' · Search: ',
+    csv_yes:'yes', csv_no:'no', csv_praeparat:'Product', csv_wirkstoff:'Substance', csv_lieferant:'Supplier',
+    csv_aep:'List price (€)', csv_trend:'Trend (%)', csv_guenstigster:'Cheapest', csv_saving_vs_max:'Saving vs. most expensive (€)',
+    csv_rang:'Rank', csv_listenpreis:'List price (€)', csv_aktionspreis:'Deal price (€)', csv_rabatt:'Discount (%)',
+    csv_saving_pkg:'Saving/pack (€)', csv_minmenge:'Min. quantity', csv_saving_atmin:'Saving at min. quantity (€)',
+    csv_gueltig_bis:'valid until', csv_best_per_wirkstoff:'best deal per substance',
+    csv_status:'Status', csv_grund:'Reason', csv_gemeldet_am:'reported on', csv_wieder_bis:'expected back in stock by',
+    csv_antibiotikum:'Antibiotic', csv_herkunft:'Source', csv_melder:'Reporter', csv_beobachtet:'watched',
+    csv_prov_verified:'BASG (verified)', csv_prov_reference:'Reference data', csv_prov_editorial:'Editorial', csv_prov_community:'Community report', csv_prov_simulated:'simulated',
     sh_print:'🖨️ Print', sh_print_t:'Print current selection (team notice)',
     sh_csv_t:'Export current selection as CSV (Excel)', sh_view_all_wk:'View everything about {wk}', sh_sort:'Sort:',
     sh_sort_crit:'🔴 Most critical first', sh_sort_new:'🕘 Newest first',
@@ -745,6 +761,14 @@ const I18N = {
     sh_q_ph:'🔎 Pesquisar substância ou produto…', sh_f_all:'Todas', sh_f_crit:'🔴 Só críticas',
     sh_f_abx:'🧫 Antibióticos', sh_f_watched:'⭐ Vigiadas', sh_f_comm:'👥 Comunidade',
     sh_print_asof:'Atualizado: ', sh_print_filter:' · Filtro: ', sh_print_query:' · Pesquisa: ',
+    csv_yes:'sim', csv_no:'não', csv_praeparat:'Produto', csv_wirkstoff:'Substância', csv_lieferant:'Fornecedor',
+    csv_aep:'Preço de tabela (€)', csv_trend:'Tendência (%)', csv_guenstigster:'Mais barato', csv_saving_vs_max:'Poupança vs. mais caro (€)',
+    csv_rang:'Posição', csv_listenpreis:'Preço de tabela (€)', csv_aktionspreis:'Preço promocional (€)', csv_rabatt:'Desconto (%)',
+    csv_saving_pkg:'Poupança/embalagem (€)', csv_minmenge:'Quantidade mínima', csv_saving_atmin:'Poupança na quantidade mínima (€)',
+    csv_gueltig_bis:'válido até', csv_best_per_wirkstoff:'melhor promoção por substância',
+    csv_status:'Estado', csv_grund:'Motivo', csv_gemeldet_am:'comunicado em', csv_wieder_bis:'previsão de reposição até',
+    csv_antibiotikum:'Antibiótico', csv_herkunft:'Origem', csv_melder:'Quem comunicou', csv_beobachtet:'vigiado',
+    csv_prov_verified:'BASG (verificado)', csv_prov_reference:'Dados de referência', csv_prov_editorial:'Redação', csv_prov_community:'Comunicação da comunidade', csv_prov_simulated:'simulado',
     sh_print:'🖨️ Imprimir', sh_print_t:'Imprimir a seleção atual (aviso da equipa)',
     sh_csv_t:'Exportar a seleção atual como CSV (Excel)', sh_view_all_wk:'Ver tudo sobre {wk}', sh_sort:'Ordenar:',
     sh_sort_crit:'🔴 Mais críticas primeiro', sh_sort_new:'🕘 Mais recentes primeiro',
@@ -2137,10 +2161,18 @@ async function loadPrices() {
 
 // Generischer CSV-Download im deutschen Excel-Format: Semikolon-Trenner,
 // UTF-8 mit BOM, CRLF, korrektes Quoting. `header` + `rows` sind Arrays von Zellen.
-function csvNumDe(n) { return Number(n).toFixed(2).replace('.', ','); }
+// CSV-Format folgt der Sprache, damit Excel es korrekt öffnet:
+//  de/pt (Europa-Excel): Semikolon-Trenner + Komma-Dezimal.
+//  en: Komma-Trenner + Punkt-Dezimal.
+// So bricht kein Import, egal in welchem Land die Datei geöffnet wird.
+function csvSep() { return LOCALE === 'en' ? ',' : ';'; }
+function csvNum(n) { const s = Number(n).toFixed(2); return LOCALE === 'en' ? s : s.replace('.', ','); }
+function csvYesNo(b) { return b ? t('csv_yes') : t('csv_no'); }
 function downloadCsv(baseName, header, rows) {
-  const cell = (v) => { const s = String(v ?? ''); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-  const csv = '﻿' + [header, ...rows].map(r => r.map(cell).join(';')).join('\r\n');
+  const sep = csvSep();
+  const needsQuote = new RegExp('["' + (sep === ';' ? ';' : ',') + '\\n]');
+  const cell = (v) => { const s = String(v ?? ''); return needsQuote.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const csv = '﻿' + [header, ...rows].map(r => r.map(cell).join(sep)).join('\r\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -2151,40 +2183,40 @@ function downloadCsv(baseName, header, rows) {
 function exportPricesCsv(comparisons) {
   const rows = [];
   (comparisons || []).forEach(g => g.offers.forEach((o, i) => rows.push([
-    g.bezeichnung, g.wirkstoff || '', o.supplier, csvNumDe(o.aep),
-    (o.trend_pct > 0 ? '+' : '') + String(o.trend_pct).replace('.', ','),
-    i === 0 && g.saving_abs > 0 ? 'ja' : 'nein',
-    i === 0 ? csvNumDe(g.saving_abs || 0) : '',
+    g.bezeichnung, g.wirkstoff || '', o.supplier, csvNum(o.aep),
+    (o.trend_pct > 0 ? '+' : '') + (LOCALE === 'en' ? String(o.trend_pct) : String(o.trend_pct).replace('.', ',')),
+    csvYesNo(i === 0 && g.saving_abs > 0),
+    i === 0 ? csvNum(g.saving_abs || 0) : '',
   ])));
-  downloadCsv('apotrend-preisvergleich', ['Präparat', 'Wirkstoff', 'Lieferant', 'AEP (€)', 'Trend (%)', 'Günstigster', 'Ersparnis ggü. teuerstem (€)'], rows);
+  downloadCsv('apotrend-preisvergleich', [t('csv_praeparat'), t('csv_wirkstoff'), t('csv_lieferant'), t('csv_aep'), t('csv_trend'), t('csv_guenstigster'), t('csv_saving_vs_max')], rows);
 }
 
 // Rabatt-Aktionen (aktuell gefiltert) als CSV für den Einkauf.
 function exportRabatteCsv(list) {
   const rows = (list || []).map(r => [
     r.rank ?? '', r.bezeichnung || '', r.wirkstoff || '', r.supplier || '',
-    csvNumDe(r.listenpreis || 0), csvNumDe(r.aktionspreis || 0), csvNumDe(r.rabatt_pct || 0),
-    csvNumDe(r.ersparnis || 0), r.min_menge || '',
-    r.min_menge && r.ersparnis ? csvNumDe(Number(r.ersparnis) * Number(r.min_menge)) : '',
-    r.gueltig_bis || '', r.best_for_wirkstoff ? 'ja' : 'nein',
+    csvNum(r.listenpreis || 0), csvNum(r.aktionspreis || 0), csvNum(r.rabatt_pct || 0),
+    csvNum(r.ersparnis || 0), r.min_menge || '',
+    r.min_menge && r.ersparnis ? csvNum(Number(r.ersparnis) * Number(r.min_menge)) : '',
+    r.gueltig_bis || '', csvYesNo(r.best_for_wirkstoff),
   ]);
-  downloadCsv('apotrend-rabatte', ['Rang', 'Präparat', 'Wirkstoff', 'Lieferant', 'Listenpreis (€)', 'Aktionspreis (€)', 'Rabatt (%)', 'Ersparnis/Pkg (€)', 'Mindestmenge', 'Ersparnis bei Mindestmenge (€)', 'gültig bis', 'beste Aktion je Wirkstoff'], rows);
+  downloadCsv('apotrend-rabatte', [t('csv_rang'), t('csv_praeparat'), t('csv_wirkstoff'), t('csv_lieferant'), t('csv_listenpreis'), t('csv_aktionspreis'), t('csv_rabatt'), t('csv_saving_pkg'), t('csv_minmenge'), t('csv_saving_atmin'), t('csv_gueltig_bis'), t('csv_best_per_wirkstoff')], rows);
 }
 
 // Engpass-Liste (aktuell gefiltert) als CSV — u.a. zur Dokumentation der Nichtverfügbarkeit.
 function exportShortagesCsv(list) {
   const statusText = { kritisch: t('st_krit'), eingeschraenkt: t('st_eing'), verfuegbar: t('st_verf') };
-  const provText = { verified: 'BASG (verifiziert)', reference: 'Referenzdaten', editorial: 'Redaktion', community: 'Community-Meldung', simulated: 'simuliert' };
+  const provText = { verified: t('csv_prov_verified'), reference: t('csv_prov_reference'), editorial: t('csv_prov_editorial'), community: t('csv_prov_community'), simulated: t('csv_prov_simulated') };
   const rows = (list || []).map(s => [
     s.wirkstoff, s.bezeichnung || '', statusText[s.status] || s.status || '', grundLabel(s.grund),
     s.gemeldet_am || '',
     s.status !== 'verfuegbar' ? (s.voraussichtlich_bis || '') : '',
-    s.is_antibiotic ? 'ja' : 'nein',
+    csvYesNo(s.is_antibiotic),
     provText[s.provenance] || s.provenance || '',
     s.provenance === 'community' && s.reporter ? '@' + s.reporter.handle : '',
-    s.watched ? 'ja' : 'nein',
+    csvYesNo(s.watched),
   ]);
-  downloadCsv('apotrend-engpaesse', ['Wirkstoff', 'Präparat', 'Status', 'Grund', 'gemeldet am', 'voraussichtlich wieder lieferbar bis', 'Antibiotikum', 'Herkunft', 'Melder', 'beobachtet'], rows);
+  downloadCsv('apotrend-engpaesse', [t('csv_wirkstoff'), t('csv_praeparat'), t('csv_status'), t('csv_grund'), t('csv_gemeldet_am'), t('csv_wieder_bis'), t('csv_antibiotikum'), t('csv_herkunft'), t('csv_melder'), t('csv_beobachtet')], rows);
 }
 
 function trendStr(t) { if (t>0) return `<span style="color:var(--crit-fg)">▲ +${t}%</span>`; if (t<0) return `<span style="color:var(--ok-fg)">▼ ${t}%</span>`; return '<span class="muted">±0%</span>'; }
