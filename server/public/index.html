@@ -230,6 +230,7 @@ const I18N = {
     oq_answer_sg:'Antwort', oq_answer_pl:'Antworten', tr_title:'🏷️ Aktuelle Themen:',
     sh_q_ph:'🔎 Wirkstoff oder Präparat suchen…', sh_f_all:'Alle', sh_f_crit:'🔴 Nur kritisch',
     sh_f_abx:'🧫 Antibiotika', sh_f_watched:'⭐ Beobachtet', sh_f_comm:'👥 Community',
+    sh_print_asof:'Stand: ', sh_print_filter:' · Filter: ', sh_print_query:' · Suche: ',
     sh_print:'🖨️ Drucken', sh_print_t:'Aktuelle Auswahl drucken (Team-Aushang)',
     sh_csv_t:'Aktuelle Auswahl als CSV (Excel) exportieren', sh_view_all_wk:'Alles zu {wk} ansehen', sh_sort:'Sortieren:',
     sh_sort_crit:'🔴 Kritischste zuerst', sh_sort_new:'🕘 Neueste zuerst',
@@ -485,6 +486,7 @@ const I18N = {
     oq_answer_sg:'answer', oq_answer_pl:'answers', tr_title:'🏷️ Trending topics:',
     sh_q_ph:'🔎 Search substance or product…', sh_f_all:'All', sh_f_crit:'🔴 Critical only',
     sh_f_abx:'🧫 Antibiotics', sh_f_watched:'⭐ Watched', sh_f_comm:'👥 Community',
+    sh_print_asof:'As of: ', sh_print_filter:' · Filter: ', sh_print_query:' · Search: ',
     sh_print:'🖨️ Print', sh_print_t:'Print current selection (team notice)',
     sh_csv_t:'Export current selection as CSV (Excel)', sh_view_all_wk:'View everything about {wk}', sh_sort:'Sort:',
     sh_sort_crit:'🔴 Most critical first', sh_sort_new:'🕘 Newest first',
@@ -740,6 +742,7 @@ const I18N = {
     oq_answer_sg:'resposta', oq_answer_pl:'respostas', tr_title:'🏷️ Temas atuais:',
     sh_q_ph:'🔎 Pesquisar substância ou produto…', sh_f_all:'Todas', sh_f_crit:'🔴 Só críticas',
     sh_f_abx:'🧫 Antibióticos', sh_f_watched:'⭐ Vigiadas', sh_f_comm:'👥 Comunidade',
+    sh_print_asof:'Atualizado: ', sh_print_filter:' · Filtro: ', sh_print_query:' · Pesquisa: ',
     sh_print:'🖨️ Imprimir', sh_print_t:'Imprimir a seleção atual (aviso da equipa)',
     sh_csv_t:'Exportar a seleção atual como CSV (Excel)', sh_view_all_wk:'Ver tudo sobre {wk}', sh_sort:'Ordenar:',
     sh_sort_crit:'🔴 Mais críticas primeiro', sh_sort_new:'🕘 Mais recentes primeiro',
@@ -1889,7 +1892,7 @@ function shortageFilterBar() {
   const rerender = () => { const c = renderShortlist._ctx; if (c) renderShortlist(c.listBox, c.bar, c.all); };
   bar.querySelector('[data-sprint]').onclick = () => {
     const pd = document.getElementById('printdate');
-    if (pd) pd.textContent = 'Stand: ' + new Date().toLocaleString('de-AT') + (shortageFilter?(' · Filter: '+shortageFilter):'') + (shortageQuery?(' · Suche: '+shortageQuery):'');
+    if (pd) pd.textContent = t('sh_print_asof') + new Date().toLocaleString(t('_bcp47')) + (shortageFilter?(t('sh_print_filter')+shortageFilter):'') + (shortageQuery?(t('sh_print_query')+shortageQuery):'');
     window.print();
   };
   bar.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { shortageFilter = b.dataset.f; rerender(); });
