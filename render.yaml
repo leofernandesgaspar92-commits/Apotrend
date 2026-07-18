@@ -18,6 +18,9 @@ services:
     runtime: node
     plan: free
     branch: feed-first
+    # Jeder Push auf feed-first löst automatisch ein neues Deploy aus
+    # (explizit gesetzt statt auf Render-Default zu vertrauen).
+    autoDeploy: true
     rootDir: server
     buildCommand: npm install
     startCommand: npm start
