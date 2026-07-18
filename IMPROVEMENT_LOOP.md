@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #53 — 2026-07-18 — Freundliche, lokalisierte Netzwerk-Fehlermeldung
+- **THINK:** Bei Verbindungsverlust warf `fetch` ein technisches „Failed to fetch", das ungefiltert bei nicht-technischen Nutzer:innen landete.
+- **WORK:** `api()` fängt den fetch-Reject ab → freundliche Meldung `e_network` (DE/EN/PT); lokale `t`-Variable (Token) zu `tok` umbenannt, damit i18n-`t()` erreichbar ist.
+- **CHECK:** Offline real: EN „Connection problem — please check your internet and try again."; Parität 644/644/644; 220 grün, Smoke 11/11.
+
 ### Cycle #52 — 2026-07-18 — Offline-Hinweis (Verbindungsstatus)
 - **THINK:** Bricht die Leitung weg (mobil, Apotheke), gab es nur stille Fehler. Offline-Caching wäre riskant (Sicherheit: keine veralteten Engpass-/Preisdaten) — der bewusste Netzwerk-Passthrough bleibt; stattdessen ein klarer Hinweis.
 - **WORK:** Bernstein-Balken (nicht Rot — Rot bleibt kritischem Engpass vorbehalten) oben, folgt `online`/`offline`-Events; `role=status`/`aria-live`; i18n `offline_banner` (DE/EN/PT).
