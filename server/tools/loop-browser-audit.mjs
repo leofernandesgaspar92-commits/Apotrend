@@ -53,6 +53,25 @@ async function main() {
       await page.waitForTimeout(450);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
       if (overflow) findings.push(`Querscroll: ${name} [${theme}]`);
+      // A11y (nur einmal — DOM-Struktur ist themen-unabhängig): Formularelemente ohne
+      // zugänglichen Namen (aria-label/Placeholder/title/<label>) + Bilder ohne alt.
+      // Fängt die Klasse aus Cycle #39 (unbenannte Selects, Vorschau-Bilder ohne alt).
+      if (theme === 'hell') {
+        const a11y = await page.evaluate(() => {
+          const bad = { controls: 0, imgs: 0 };
+          document.querySelectorAll('input,textarea,select').forEach((el) => {
+            if (el.type === 'hidden') return;
+            const id = el.id;
+            const named = el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.getAttribute('title')
+              || (id && document.querySelector(`label[for="${id}"]`)) || el.closest('label');
+            if (!named) bad.controls++;
+          });
+          document.querySelectorAll('img').forEach((el) => { if (el.getAttribute('alt') === null) bad.imgs++; });
+          return bad;
+        });
+        if (a11y.controls) findings.push(`A11y: ${a11y.controls} Formularelement(e) ohne Namen [${name}]`);
+        if (a11y.imgs) findings.push(`A11y: ${a11y.imgs} Bild(er) ohne alt [${name}]`);
+      }
     }
     if (errors.length) findings.push(`JS-Fehler [${theme}]: ${[...new Set(errors)].slice(0, 3).join(' | ')}`);
     await ctx.close();
@@ -62,7 +81,7 @@ async function main() {
 
   console.log('── ApoTrend Loop · GATHER (Browser) · Mobil 390 ──');
   if (findings.length === 0) {
-    console.log('✓ Kein Querscroll, keine JS-Fehler auf 8 Reitern (hell + dunkel).');
+    console.log('✓ Kein Querscroll, keine JS-Fehler, keine a11y-Lücken auf 8 Reitern (hell + dunkel).');
   } else {
     console.log(`⚠️ ${findings.length} Befund(e):`);
     findings.forEach((f) => console.log('  - ' + f));

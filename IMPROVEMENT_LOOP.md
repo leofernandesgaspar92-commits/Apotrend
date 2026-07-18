@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #40 — 2026-07-18 — Browser-Audit prüft jetzt auch A11y (Wächter gegen #39-Klasse)
+- **THINK:** Die a11y-Lücken aus #39 fing kein Wächter — „Instrument schärfen".
+- **WORK:** `loop-browser-audit.mjs` prüft pro Reiter (einmal, themenunabhängig) Formularelemente ohne zugänglichen Namen + Bilder ohne `alt`.
+- **CHECK:** Audit grün — „Kein Querscroll, keine JS-Fehler, keine a11y-Lücken auf 8 Reitern".
+
 ### Cycle #39 — 2026-07-18 — A11y: alle Formular-Selects & Bildvorschauen mit zugänglichem Namen
 - **CHECK:** Eigener a11y-Audit (Playwright) über 8 Reiter fand: Buttons/Links durchweg benannt ✓, aber Selects (`pv`, `ex_kind`, `ex_bl`, `ex_blf`, Status) ohne Namen + Bildvorschauen ohne `alt`. (Wickel-`<label>` waren False Positives — Logik korrigiert.)
 - **WORK:** `applyI18n` um `data-i18n-alt` erweitert; 3 neue Schlüssel (a11y_img_preview, co_vis_aria, ex_kind_aria); alle Selects mit `data-i18n-aria` (Reuse vorhandener Keys wo möglich), 4 Bildvorschauen mit `data-i18n-alt`, Datums-Feld zusätzlich mit aria-label.
