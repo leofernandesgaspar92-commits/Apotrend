@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #39 — 2026-07-18 — A11y: alle Formular-Selects & Bildvorschauen mit zugänglichem Namen
+- **CHECK:** Eigener a11y-Audit (Playwright) über 8 Reiter fand: Buttons/Links durchweg benannt ✓, aber Selects (`pv`, `ex_kind`, `ex_bl`, `ex_blf`, Status) ohne Namen + Bildvorschauen ohne `alt`. (Wickel-`<label>` waren False Positives — Logik korrigiert.)
+- **WORK:** `applyI18n` um `data-i18n-alt` erweitert; 3 neue Schlüssel (a11y_img_preview, co_vis_aria, ex_kind_aria); alle Selects mit `data-i18n-aria` (Reuse vorhandener Keys wo möglich), 4 Bildvorschauen mit `data-i18n-alt`, Datums-Feld zusätzlich mit aria-label.
+- **CHECK:** a11y-Audit jetzt 0 Lücken auf 8 Reitern; EN real „Post visibility"/„Image preview"; Parität 601/601/601; 219 grün, Smoke 11/11.
+
 ### Cycle #38 — 2026-07-18 — Alle Kern-Screens visuell verifiziert + `<html lang>`-Wächter
 - **CHECK:** Preise & Biete/Suche (bisher nur code-geprüft) real gescreenshottet (Desktop+Mobil): professionell, korrekte Farb-Semantik, gute Leerzustände, datenschutzbewusst — kein Defekt. Damit sind ALLE 8 Reiter + Onboarding + Willkommen + DM + Suche + Kontotyp-Sperren verifiziert.
 - **WORK:** Smoke-Test um `<html lang>`-Prüfung erweitert (GB→„en") — schützt den #34-Fix dauerhaft.

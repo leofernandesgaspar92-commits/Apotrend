@@ -310,6 +310,7 @@ const I18N = {
     co_ph:'Bei uns gerade Engpass bei Amoxicillin — wer hat noch Bestand?',
     co_src_ph:'🔗 Quelle (Link, optional – z.B. BASG/Kammer)', co_img:'📷 Bild', co_img_clear:'✕ entfernen',
     co_question:'❓ Als Fachfrage stellen (beste Antwort auswählbar)',
+    a11y_img_preview:'Bildvorschau', co_vis_aria:'Sichtbarkeit des Beitrags', ex_kind_aria:'Art des Eintrags',
     pv_public:'🌍 Öffentlich (alle Apotheker)', pv_followers:'👥 Nur meine Follower',
     co_follow_label:'Jemandem folgen (@Handle)', co_follow_btn:'Folgen',
     fe_home_t:'Dein Feed ist noch leer', fe_home_s:'Folge Kolleg:innen, dann erscheinen ihre Beiträge hier.',
@@ -566,6 +567,7 @@ const I18N = {
     co_ph:'We have a shortage of Amoxicillin right now — who still has stock?',
     co_src_ph:'🔗 Source (link, optional – e.g. regulator/chamber)', co_img:'📷 Image', co_img_clear:'✕ remove',
     co_question:'❓ Ask as a professional question (mark the best answer)',
+    a11y_img_preview:'Image preview', co_vis_aria:'Post visibility', ex_kind_aria:'Entry type',
     pv_public:'🌍 Public (all pharmacists)', pv_followers:'👥 My followers only',
     co_follow_label:'Follow someone (@handle)', co_follow_btn:'Follow',
     fe_home_t:'Your feed is still empty', fe_home_s:'Follow colleagues and their posts will show up here.',
@@ -822,6 +824,7 @@ const I18N = {
     co_ph:'Temos falta de Amoxicilina agora — quem ainda tem stock?',
     co_src_ph:'🔗 Fonte (ligação, opcional – ex. regulador/ordem)', co_img:'📷 Imagem', co_img_clear:'✕ remover',
     co_question:'❓ Colocar como pergunta técnica (permite marcar a melhor resposta)',
+    a11y_img_preview:'Pré-visualização da imagem', co_vis_aria:'Visibilidade da publicação', ex_kind_aria:'Tipo de entrada',
     pv_public:'🌍 Público (todos os farmacêuticos)', pv_followers:'👥 Só os meus seguidores',
     co_follow_label:'Seguir alguém (@handle)', co_follow_btn:'Seguir',
     fe_home_t:'O seu feed ainda está vazio', fe_home_s:'Siga colegas e as publicações deles aparecerão aqui.',
@@ -1004,6 +1007,8 @@ function applyI18n(root) {
   scope.querySelectorAll('[data-i18n-title]').forEach(n => { n.setAttribute('title', t(n.getAttribute('data-i18n-title'))); });
   // aria-label mehrsprachig: Icon-Buttons (auf Mobil ohne sichtbares Label) für Screenreader
   scope.querySelectorAll('[data-i18n-aria]').forEach(n => { n.setAttribute('aria-label', t(n.getAttribute('data-i18n-aria'))); });
+  // alt-Text mehrsprachig: Bildvorschauen brauchen einen Alt-Text (Screenreader/Bild-aus).
+  scope.querySelectorAll('[data-i18n-alt]').forEach(n => { n.setAttribute('alt', t(n.getAttribute('data-i18n-alt'))); });
 }
 const api = async (method, path, body) => {
   const t = localStorage.getItem('apo_token');
@@ -1314,12 +1319,12 @@ async function mainScreen() {
           <span class="muted" id="pimgname" style="font-size:13px"></span>
           <button class="ghost small" id="pimgclear" data-i18n="co_img_clear" style="display:none">✕ entfernen</button>
         </div>
-        <img id="pimgprev" style="display:none;max-width:100%;border-radius:8px;margin-top:6px" />
+        <img id="pimgprev" data-i18n-alt="a11y_img_preview" alt="Bildvorschau" style="display:none;max-width:100%;border-radius:8px;margin-top:6px" />
         <label style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer;font-size:14px">
           <input type="checkbox" id="pfrage" style="width:auto;min-height:0"> <span data-i18n="co_question">❓ Als Fachfrage stellen (beste Antwort auswählbar)</span>
         </label>
         <div class="row" style="margin-top:8px">
-          <select id="pv" style="max-width:220px">
+          <select id="pv" data-i18n-aria="co_vis_aria" aria-label="Sichtbarkeit des Beitrags" style="max-width:220px">
             <option value="public" data-i18n="pv_public">🌍 Öffentlich (alle Apotheker)</option>
             <option value="followers" data-i18n="pv_followers">👥 Nur meine Follower</option>
           </select>
@@ -1751,7 +1756,7 @@ async function loadNews() {
       <span class="muted" id="nimgname" style="font-size:13px"></span>
       <button class="ghost small" id="nimgclear" style="display:none">✕</button>
     </div>
-    <img id="nimgprev" style="display:none;max-width:100%;border-radius:8px;margin-top:6px" />
+    <img id="nimgprev" data-i18n-alt="a11y_img_preview" alt="Bildvorschau" style="display:none;max-width:100%;border-radius:8px;margin-top:6px" />
     <div style="margin-top:8px"><button id="ngo">${esc(t('nb_share'))}</button></div>
     <div class="err" id="nerr"></div>
   </div><div id="newslist"></div>`));
@@ -1926,14 +1931,14 @@ function reportShortageCard() {
       <label style="margin-top:6px">${esc(t('sh_rep_b'))}</label>
       <input data-b placeholder="${esc(t('sh_rep_b_ph'))}">
       <label style="margin-top:6px">${esc(t('sh_rep_status'))}</label>
-      <select data-s>
+      <select data-s data-i18n-aria="sh_rep_status" aria-label="${esc(t('sh_rep_status'))}">
         <option value="kritisch">${esc(t('sh_rep_opt_krit'))}</option>
         <option value="eingeschraenkt">${esc(t('st_eing'))}</option>
       </select>
       <label style="margin-top:6px">${esc(t('sh_rep_reason'))}</label>
       <input data-g placeholder="${esc(t('sh_rep_reason_ph'))}">
       <label style="margin-top:6px">${esc(t('sh_rep_until'))}</label>
-      <input data-vb type="date" title="${esc(t('sh_rep_until_t'))}">
+      <input data-vb type="date" data-i18n-aria="sh_rep_until_t" aria-label="${esc(t('sh_rep_until_t'))}" title="${esc(t('sh_rep_until_t'))}">
       <div style="margin-top:8px"><button class="small" data-send>${esc(t('sh_rep_send'))}</button></div>
       <div class="err" data-err></div>
     </div>
@@ -2278,21 +2283,21 @@ async function loadExchange() {
   const form = el(`<div class="card">
     <label>${esc(t('ex_form_title'))}</label>
     <div class="row" style="margin-top:6px">
-      <select id="ex_kind" style="max-width:150px"><option value="biete">${esc(t('ex_offer'))}</option><option value="suche">${esc(t('ex_seek'))}</option></select>
+      <select id="ex_kind" data-i18n-aria="ex_kind_aria" aria-label="${esc(t('ex_kind_aria'))}" style="max-width:150px"><option value="biete">${esc(t('ex_offer'))}</option><option value="suche">${esc(t('ex_seek'))}</option></select>
       <input id="ex_bez" placeholder="${esc(t('ex_bez_ph'))}" style="flex:1">
     </div>
     <div class="row" style="margin-top:6px">
       <input id="ex_menge" placeholder="${esc(t('ex_menge_ph'))}">
       <input id="ex_ort" placeholder="${esc(t('ex_ort_ph'))}">
     </div>
-    <select id="ex_bl" style="margin-top:6px"><option value="">${esc(t('ex_bl_ph'))}</option>${blOptions((me&&me.bundesland)||'')}</select>
+    <select id="ex_bl" data-i18n-aria="ex_bl_ph" aria-label="${esc(t('ex_bl_ph'))}" style="margin-top:6px"><option value="">${esc(t('ex_bl_ph'))}</option>${blOptions((me&&me.bundesland)||'')}</select>
     <input id="ex_note" placeholder="${esc(t('ex_note_ph'))}" style="margin-top:6px">
     <div class="row" style="margin-top:6px">
       <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px">${esc(t('ex_photo'))}<input type="file" id="ex_img" accept="image/*" style="display:none"></label>
       <span class="muted" id="ex_imgname" style="font-size:13px"></span>
       <button class="ghost small" id="ex_imgclear" style="display:none">✕</button>
     </div>
-    <img id="ex_imgprev" style="display:none;max-width:100%;border-radius:8px;margin-top:6px" />
+    <img id="ex_imgprev" data-i18n-alt="a11y_img_preview" alt="Bildvorschau" style="display:none;max-width:100%;border-radius:8px;margin-top:6px" />
     <div class="row" style="margin-top:8px"><button id="ex_go">${esc(t('ex_publish'))}</button><span class="err" id="ex_err" style="margin-left:10px"></span></div>
     <div class="muted" style="font-size:13px;margin-top:6px">${esc(t('ex_contact'))}</div>
   </div>`);
@@ -2322,7 +2327,7 @@ async function loadExchange() {
       <button class="${!exchangeMine&&exchangeFilter==='biete'?'':'ghost '}small" data-f="biete">${esc(t('ex_offers'))}</button>
       <button class="${!exchangeMine&&exchangeFilter==='suche'?'':'ghost '}small" data-f="suche">${esc(t('ex_seeks'))}</button>
       <button class="${exchangeMine?'':'ghost '}small" data-mine>${esc(t('ex_mine'))}</button>
-      <select id="ex_blf" class="small" style="margin-left:auto" ${exchangeMine?'disabled':''}><option value="">${esc(t('ex_all_bl'))}</option>${blOptions(exchangeBL)}</select>
+      <select id="ex_blf" data-i18n-aria="ex_all_bl" aria-label="${esc(t('ex_all_bl'))}" class="small" style="margin-left:auto" ${exchangeMine?'disabled':''}><option value="">${esc(t('ex_all_bl'))}</option>${blOptions(exchangeBL)}</select>
     </div></div>`);
   filt.querySelectorAll('[data-f]').forEach(btn => btn.onclick = () => { exchangeMine=false; exchangeFilter = btn.dataset.f; loadExchange(); });
   filt.querySelector('[data-mine]').onclick = () => { exchangeMine = !exchangeMine; loadExchange(); };
@@ -3325,7 +3330,7 @@ function postCard(p) {
     <div class="comments hidden" data-cbox>
       <div data-clist></div>
       <div class="row" style="margin-top:8px"><input data-cinput placeholder="${esc(t('pc_reply_ph'))}"><label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:7px 10px;border:1px solid var(--line);border-radius:8px" title="${esc(t('co_img'))}">📷<input type="file" data-cimg accept="image/*" style="display:none"></label><button class="small" data-csend>${esc(t('pc_send'))}</button></div>
-      <img data-cimgprev style="display:none;max-width:140px;border-radius:8px;margin-top:6px" />
+      <img data-cimgprev data-i18n-alt="a11y_img_preview" alt="Bildvorschau" style="display:none;max-width:140px;border-radius:8px;margin-top:6px" />
     </div>
   </div>`);
   card._post = p; // für Q&A (beste Antwort) im Kommentar-Thread verfügbar machen
