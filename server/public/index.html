@@ -305,7 +305,7 @@ const I18N = {
     react_helpful:'👍 Hilfreich', react_thanks:'🙏 Danke', react_confirmed:'✅ Bestätigt', react_interesting:'💡 Interessant',
     pc_verified:'✔ verifiziert', pc_img_alt:'Bild zum Beitrag', pc_source:'🔗 Quelle',
     pc_edited:'✏️ bearbeitet', pc_vis_public:'🌍 öffentlich', pc_vis_followers:'👥 nur Follower',
-    pc_comments:'💬 {n} Kommentare', pc_saved:'🔖 gemerkt', pc_save:'🔖 Merken', pc_share:'🔗 Teilen',
+    pc_comments:'💬 {n} Kommentare', pc_comments_one:'💬 1 Kommentar', pc_comment_cta:'💬 Kommentieren', pc_saved:'🔖 gemerkt', pc_save:'🔖 Merken', pc_share:'🔗 Teilen',
     pc_edit:'✏️ Bearbeiten', pc_delete:'🗑 Löschen', pc_report:'🚩 Melden',
     pc_reply_ph:'Antworten…', pc_send:'Senden', pc_copied:'✓ kopiert',
     pc_answered:'✔ Beantwortet', pc_question_open:'❓ Offene Fachfrage', pc_del_confirm:'Diesen Beitrag wirklich löschen?',
@@ -547,7 +547,7 @@ const I18N = {
     react_helpful:'👍 Helpful', react_thanks:'🙏 Thanks', react_confirmed:'✅ Confirmed', react_interesting:'💡 Interesting',
     pc_verified:'✔ verified', pc_img_alt:'Post image', pc_source:'🔗 Source',
     pc_edited:'✏️ edited', pc_vis_public:'🌍 public', pc_vis_followers:'👥 followers only',
-    pc_comments:'💬 {n} comments', pc_saved:'🔖 saved', pc_save:'🔖 Save', pc_share:'🔗 Share',
+    pc_comments:'💬 {n} comments', pc_comments_one:'💬 1 comment', pc_comment_cta:'💬 Comment', pc_saved:'🔖 saved', pc_save:'🔖 Save', pc_share:'🔗 Share',
     pc_edit:'✏️ Edit', pc_delete:'🗑 Delete', pc_report:'🚩 Report',
     pc_reply_ph:'Reply…', pc_send:'Send', pc_copied:'✓ copied',
     pc_answered:'✔ Answered', pc_question_open:'❓ Open question', pc_del_confirm:'Really delete this post?',
@@ -789,7 +789,7 @@ const I18N = {
     react_helpful:'👍 Útil', react_thanks:'🙏 Obrigado', react_confirmed:'✅ Confirmado', react_interesting:'💡 Interessante',
     pc_verified:'✔ verificado', pc_img_alt:'Imagem da publicação', pc_source:'🔗 Fonte',
     pc_edited:'✏️ editado', pc_vis_public:'🌍 público', pc_vis_followers:'👥 só seguidores',
-    pc_comments:'💬 {n} comentários', pc_saved:'🔖 guardado', pc_save:'🔖 Guardar', pc_share:'🔗 Partilhar',
+    pc_comments:'💬 {n} comentários', pc_comments_one:'💬 1 comentário', pc_comment_cta:'💬 Comentar', pc_saved:'🔖 guardado', pc_save:'🔖 Guardar', pc_share:'🔗 Partilhar',
     pc_edit:'✏️ Editar', pc_delete:'🗑 Eliminar', pc_report:'🚩 Denunciar',
     pc_reply_ph:'Responder…', pc_send:'Enviar', pc_copied:'✓ copiado',
     pc_answered:'✔ Respondida', pc_question_open:'❓ Pergunta em aberto', pc_del_confirm:'Eliminar mesmo esta publicação?',
@@ -927,6 +927,11 @@ function ti(key, vars) {
   let s = t(key);
   if (vars) for (const k in vars) s = s.split('{'+k+'}').join(vars[k]);
   return s;
+}
+// Kommentar-Button-Beschriftung: 0 -> einladende Handlungsaufforderung („Kommentieren"),
+// 1 -> korrekter Singular („1 Kommentar", nicht „1 Kommentare"), sonst Plural.
+function commentLabel(n) {
+  return n === 0 ? t('pc_comment_cta') : n === 1 ? t('pc_comments_one') : ti('pc_comments', { n });
 }
 function applyI18n(root) {
   const scope = root || document;
@@ -3199,7 +3204,7 @@ function postCard(p) {
     <div class="vis">${p.visibility==='public'?esc(t('pc_vis_public')):esc(t('pc_vis_followers'))}</div>
     <div class="reacts">
       ${REACTS.map(([k,keyLab])=>`<button data-react="${k}"${p.my_reaction===k?' class="reacted" aria-pressed="true"':' aria-pressed="false"'}>${esc(t(keyLab))}${rc[k]?` ${rc[k]}`:''}</button>`).join('')}
-      <button data-comments>${esc(ti('pc_comments',{n:p.comment_count||0}))}</button>
+      <button data-comments>${esc(commentLabel(p.comment_count||0))}</button>
       <button class="ghost small" data-bookmark title="${esc(t('pc_save'))}">${myBookmarks.has(p.id)?esc(t('pc_saved')):esc(t('pc_save'))}</button>
       <button class="ghost small" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button>
       <span class="sp" style="flex:1"></span>
@@ -3314,7 +3319,7 @@ async function loadComments(postId, card) {
     }
   });
   const cb = card.querySelector('[data-comments]');
-  if (cb) cb.textContent = ti('pc_comments',{n:d.comments.length});
+  if (cb) cb.textContent = commentLabel(d.comments.length);
 }
 
 function commentRow(postId, c, card, depth = 0) {
