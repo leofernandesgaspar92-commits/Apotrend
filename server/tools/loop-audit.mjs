@@ -68,6 +68,23 @@ function run() {
     tests: tests(),
     // Regressions-Wächter: hartkodierte Dialog-Strings (Ziel 0 — waren mal viele).
     hardcoded_dialogs: countMatches(html, /(confirm|alert|prompt)\('[^']*[a-zäöü][^']*'/gi),
+    // Hartkodierte deutsche UI-Strings: UI-Eigenschaften (title/text/label/placeholder),
+    // die einem deutschen Umlaut-Literal statt t() zugewiesen sind — außerhalb des I18N-
+    // Wörterbuchs (dort ist Deutsch legitim). Fing Cycle #6 nicht ab -> jetzt Wächter.
+    hardcoded_ui_de: (() => {
+      // Übersetzungs-Wörterbücher ausblenden — dort sind literale UI-Texte legitim.
+      let outside = html;
+      for (const anchor of ['const I18N = {', 'const ZETTEL_L = {']) {
+        const s = outside.indexOf(anchor);
+        const e = s >= 0 ? outside.indexOf('\n};', s) : -1;
+        if (s >= 0 && e > s) outside = outside.slice(0, s) + outside.slice(e + 3);
+      }
+      // Mehrwort-Literal (enthält Leerzeichen) direkt in einer UI-Eigenschaft = mit hoher
+      // Wahrscheinlichkeit hartkodierter Text (statt t()) — Sprache egal (fängt auch „Dein
+      // Feed ist noch leer" ohne Umlaut). Wenige Fehlalarme (z. B. Beispiel-Platzhalter).
+      const m = outside.match(/\b(title|text|label):\s*'[^']* [^']*'/g) || [];
+      return { count: m.length, samples: m.slice(0, 6).map((x) => x.slice(0, 52)) };
+    })(),
     // i18n-Abdeckung (mehr = besser) und Drift-Check zwischen Sprachen.
     data_i18n_attrs: countMatches(html, /data-i18n(-ph|-title|-aria)?=/g),
     i18n_parity: i18nParity(html),
@@ -88,6 +105,8 @@ function run() {
   console.log(`i18n-Attribute:     ${snapshot.data_i18n_attrs}   Schlüssel de/en/pt: ${p.de}/${p.en}/${p.pt}`);
   console.log(`i18n-Lücken:        en fehlen ${p.gaps_en}, pt fehlen ${p.gaps_pt} ${p.balanced ? '✓' : '⚠️ ' + (p.gap_samples || []).join(', ')}`);
   console.log(`Hartkod. Dialoge:   ${snapshot.hardcoded_dialogs} ${snapshot.hardcoded_dialogs === 0 ? '✓' : '⚠️'}`);
+  const hu = snapshot.hardcoded_ui_de;
+  console.log(`Hartkod. UI-DE:     ${hu.count} ${hu.count === 0 ? '✓' : '⚠️ ' + hu.samples.join(' | ')}`);
   console.log(`TODO/FIXME:         ${snapshot.todos}`);
   console.log(`console.* (FE):     ${snapshot.frontend_console}`);
   console.log(`!important (CSS):   ${snapshot.css_important}`);
