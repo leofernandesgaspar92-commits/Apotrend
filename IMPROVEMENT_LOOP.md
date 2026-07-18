@@ -30,16 +30,16 @@ die Session neu startet.
 
 ## Letzter GATHER-Snapshot
 
-_Cycle #10 · 2026-07-18_
+_Cycle #12 · 2026-07-18_
 ```
 Tests:            216/216 grün
-i18n de/en/pt:    570/570/570  · 0 Lücken  ✓ perfekte Parität
-Hartkod. Dialoge: 0  ·  Hartkod. UI-DE: 0  ·  TODO/FIXME: 0  ·  console.* (FE): 0  ·  !important: 3
-index.html:       ~3712 Zeilen · 266 KB   ← größtes Struktur-Signal (Monolith)
+i18n de/en/pt:    573/573/573  · 0 Lücken  ✓ perfekte Parität
+Hartkod. Dialoge: 0  ·  Hartkod. UI-DE: 0 (umfassend bewacht)  ·  TODO/FIXME: 0
+console.* (FE):   0  ·  !important: 3 (alle legitim: Inline-Override + Druck)
+index.html:       ~3715 Zeilen · 266 KB   ← größtes Struktur-Signal (Monolith)
 ```
-Fortschritt: 10 Zyklen. Themen erledigt: Klartext-Zähler (Singular/Plural, #2–5),
-GATHER-Instrument gehärtet (#1, #7), hartkodierte DE-UI beseitigt (#6, #8, #9, #10:
-Empty-States, News-Formular, Verifizierungs-Karte, Schriftgröße-Tooltip).
+Fortschritt: 12 Zyklen. Mehrsprachigkeit lückenlos + gegen Rückfälle bewacht.
+Nächste Zyklen: neue Bereiche (a11y-Fokus, UX-Feinschliff) — Zähler/i18n-Themen sind durch.
 
 ## Priorisierter Backlog (Kandidaten für WORK)
 
@@ -57,14 +57,12 @@ prüft ihn erst (echt oder Rauschen?), setzt ihn dann um.
 - [x] ~~News-Formular i18n~~ → Cycle #8.
 - [x] ~~Verifizierungs-Karte i18n~~ → Cycle #9.
 - [x] ~~Schriftgröße-Button-Title~~ → Cycle #10.
-- [ ] Erneuter Umlaut-Sweep: verbleibende Kandidaten (Meta-Description, „Bild ungültig"-Fehler) prüfen.
-- [x] ~~GATHER-Wächter für label/placeholder erweitern~~ → Cycle #11.
+- [x] ~~GATHER-Wächter für label/placeholder erweitern~~ → Cycle #11. ~~errorState i18n~~ → Cycle #12.
+- [ ] Meta-Description (`<meta name=description>`) ist DE — optional lokalisieren (SEO, niedrige Prio).
 - [ ] a11y: Tastatur-Fokusreihenfolge der Sortier-/Filter-Chips (Preise/Rabatte/Engpässe).
-- [ ] CSS-Schuld: die 3 `!important` prüfen, ob sauber auflösbar.
-- [ ] Preise/Rabatte: Tastatur-Bedienbarkeit der Sortier-/Filter-Chips prüfen (Fokusreihenfolge).
 
 **P2 — Robustheit / Qualität**
-- [ ] `!important` (3×) prüfen: lassen sie sich sauber ohne auflösen? (CSS-Schuld abbauen)
+- [x] ~~`!important` (3×) prüfen~~ → Cycle #12: alle legitim (Inline-Override + Druck), kein Handlungsbedarf.
 - [ ] Weitere Mobil-Audits bei neuen Views (Audit-Skript um Playwright-Overflow-Check erweitern).
 - [ ] Fehlermeldungen des Backends sind Deutsch — für echte Mehrsprachigkeit i18n-Fehlercodes.
 
@@ -78,6 +76,12 @@ Reaktions-/Folgen-Status, volle i18n DE/EN/PT (inkl. aria/title/Dialoge/Pre-Logi
 a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `server/README.md`.
 
 ## Cycle-Log
+
+### Cycle #12 — 2026-07-18 — errorState-Helper i18n
+- **GATHER:** a11y-Bereich geprüft (focus-visible + skip-link + tabindex-Helper schon vorhanden ✓);
+  3 !important alle legitim. Fund: errorState fest DE (keine Umlaute → Wächter-Lücke).
+- **WORK:** errorState via t() (err_*, DE/EN/PT).
+- **CHECK:** de/en/pt korrekt; 216 grün; Parität 573; UI-DE 0.
 
 ### Cycle #11 — 2026-07-18 — UI-DE-Wächter deckt label/placeholder ab
 - **WORK:** hardcoded_ui_de erkennt jetzt auch `<label>`/`placeholder` mit Umlaut OHNE data-i18n.
