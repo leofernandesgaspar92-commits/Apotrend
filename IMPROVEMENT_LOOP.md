@@ -30,13 +30,16 @@ die Session neu startet.
 
 ## Letzter GATHER-Snapshot
 
-_Cycle #9 · 2026-07-18_
+_Cycle #10 · 2026-07-18_
 ```
 Tests:            216/216 grün
-i18n de/en/pt:    565/565/565  · 0 Lücken  ✓ perfekte Parität
+i18n de/en/pt:    570/570/570  · 0 Lücken  ✓ perfekte Parität
 Hartkod. Dialoge: 0  ·  Hartkod. UI-DE: 0  ·  TODO/FIXME: 0  ·  console.* (FE): 0  ·  !important: 3
 index.html:       ~3712 Zeilen · 266 KB   ← größtes Struktur-Signal (Monolith)
 ```
+Fortschritt: 10 Zyklen. Themen erledigt: Klartext-Zähler (Singular/Plural, #2–5),
+GATHER-Instrument gehärtet (#1, #7), hartkodierte DE-UI beseitigt (#6, #8, #9, #10:
+Empty-States, News-Formular, Verifizierungs-Karte, Schriftgröße-Tooltip).
 
 ## Priorisierter Backlog (Kandidaten für WORK)
 
@@ -53,7 +56,8 @@ prüft ihn erst (echt oder Rauschen?), setzt ihn dann um.
 - [x] ~~Empty-States i18n (Feed)~~ → Cycle #6. ~~GATHER-Wächter dafür~~ → Cycle #7.
 - [x] ~~News-Formular i18n~~ → Cycle #8.
 - [x] ~~Verifizierungs-Karte i18n~~ → Cycle #9.
-- [ ] Restliche hartkodierte DE-UI: Schriftgröße-Button-Title (~Z.167) + weiterer Umlaut-Sweep.
+- [x] ~~Schriftgröße-Button-Title~~ → Cycle #10.
+- [ ] Erneuter Umlaut-Sweep: verbleibende Kandidaten (Meta-Description, „Bild ungültig"-Fehler) prüfen.
 - [ ] GATHER-Wächter erweitern: auch `<label>…</label>` und `placeholder="…"` in Template-Literalen
       (der Umlaut-Sweep fand die News-Strings, der `hardcoded_ui_de`-Wächter nicht).
 - [ ] a11y: Tastatur-Fokusreihenfolge der Sortier-/Filter-Chips (Preise/Rabatte/Engpässe).
@@ -75,6 +79,10 @@ Reaktions-/Folgen-Status, volle i18n DE/EN/PT (inkl. aria/title/Dialoge/Pre-Logi
 a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `server/README.md`.
 
 ## Cycle-Log
+
+### Cycle #10 — 2026-07-18 — Schriftgröße-Tooltip i18n + folgt Sprachwechsel
+- **WORK:** applyFontScale-Titel via t() (font_*); applyFontScale bei Sprachwechsel mitaufgerufen.
+- **CHECK:** Sprachumschalter live de→en→pt korrekt; 216 grün; Parität 570; UI-DE 0.
 
 ### Cycle #9 — 2026-07-18 — Verifizierungs-Karte i18n
 - **WORK:** Verifizierungs-Karte (offen/abgelehnt/beantragen) via t() (vf_*, DE/EN/PT).
