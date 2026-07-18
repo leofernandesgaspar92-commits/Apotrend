@@ -14,9 +14,9 @@ die Session neu startet.
 
 | Schritt | Was hier passiert | Werkzeug |
 |--------|-------------------|----------|
-| **GATHER** | Messbare Ist-Signale (statisch) | `node server/tools/loop-audit.mjs` |
-| **GATHER+** | Mobil-Querscroll + JS-Fehler (Browser, optional) | `node server/tools/loop-browser-audit.mjs` (Server muss laufen) |
-| **SMOKE** | Frontend-Happy-Path (Beitrag/Reaktion/Kommentar) | `node server/tools/loop-smoke.mjs` (Server muss laufen) |
+| **GATHER** | Messbare Ist-Signale (statisch) | `npm run audit` (in `server/`) |
+| **GATHER+** | Mobil-Querscroll + JS-Fehler (Browser) | `npm run audit:browser` (Server muss laufen) |
+| **SMOKE** | Frontend-Happy-Path + Sprachwechsel | `npm run smoke` (Server muss laufen) |
 | **THINK** | Was sagen die Zahlen? Trend seit letztem Snapshot? Echt vs. Messrauschen? | Vergleich mit letztem Cycle-Log-Eintrag |
 | **ANALYSE** | Größte Hebelwirkung finden: welche EINE Änderung bringt am meisten? | Backlog unten priorisieren |
 | **WORK** | **Eine** präzise, verifizierte Verbesserung umsetzen | Edit → `node --test` → Browser-Check (Playwright, Hell+Dunkel, 1280+390) |
@@ -32,15 +32,16 @@ die Session neu startet.
 
 ## Letzter GATHER-Snapshot
 
-_Cycle #15 · 2026-07-18_
+_Cycle #20 · 2026-07-18_
 ```
-Tests:            217/217 grün  ·  Browser-GATHER: 0 Querscroll / 0 JS-Fehler (8 Reiter, hell+dunkel)
+Tests:            218/218 grün  ·  Browser-Audit: 0 Querscroll / 0 JS-Fehler  ·  Smoke: 7/7 grün
 i18n de/en/pt:    576/576/576  · 0 Lücken  ✓ perfekte Parität
 Hartkod. Dialoge: 0  ·  Hartkod. UI-DE: 0  ·  TODO/FIXME: 0  ·  console: 0  ·  !important: 3 (legitim)
 index.html:       ~3720 Zeilen · 267 KB   ← größtes Struktur-Signal (Monolith)
 ```
-Fortschritt: 15 Zyklen. Frontend-i18n lückenlos + doppelt bewacht; Kontotyp-Rechte doppelt
-getestet (Service + HTTP). Offene größere Brocken sind P3 → CEO-Freigabe nötig.
+Fortschritt: 20 Zyklen. Frontend-i18n lückenlos + dreifach bewacht (statisch/Browser/Smoke).
+Kontotyp-Rechte doppelt getestet. Bounded-Arbeit weitgehend ausgeschöpft — nächster großer
+Wertsprung liegt bei P3 (Backend-Fehler-i18n, Monolith, DB, Währung) → CEO-Freigabe nötig.
 
 ## Priorisierter Backlog (Kandidaten für WORK)
 
@@ -77,6 +78,9 @@ Reaktions-/Folgen-Status, volle i18n DE/EN/PT (inkl. aria/title/Dialoge/Pre-Logi
 a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `server/README.md`.
 
 ## Cycle-Log
+
+### Cycle #20 — 2026-07-18 — npm-Scripts für die Loop-Werkzeuge
+- **WORK/CHECK:** `npm run audit` / `audit:browser` / `smoke` in package.json. Verifiziert: 218 grün, Smoke 7/7.
 
 ### Cycle #19 — 2026-07-18 — Smoke-Test deckt Sprachumschalter ab
 - **WORK/CHECK:** Ausgeloggter Auth-Sprachwechsel DE→EN→PT im Smoke-Test (Anmelden/Log in/Entrar). 7/7 grün.
