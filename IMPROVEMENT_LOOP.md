@@ -81,6 +81,10 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #63 — 2026-07-18 — i18n exhaustiv verifiziert (auch Modals/Overlays)
+- **CHECK:** Dynamischen Deutsch-Leck-Scan (EN) auf die bisher un-getriggerten Zustände ausgeweitet: Profilseite (Bearbeiten-Formular + Konto-Einstellungen/Passwort/Löschen), Willkommens-Modal, DM-Ansicht — **0 Lecks** (Text + Platzhalter).
+- **Ergebnis:** i18n gilt jetzt als erschöpfend geprüft: 8 Reiter (EN+PT) + alle Modals/Overlays (EN) + 4 statische Wächter (0). Merknotiz für Folge-Sessions: nicht erneut prüfen, nur bei neuen dynamischen Zuständen.
+
 ### Cycle #62 — 2026-07-18 — Wächter fängt jetzt umlautloses Deutsch (Ternäre) + 2. Bug gefunden
 - **THINK:** Der #61-Bug (umlautloses Deutsch in Ternär-Zuweisung) zeigte eine Blindstelle im JS-DE-Wächter.
 - **WORK:** Detektor betrachtet jetzt den GANZEN Ausdruck bis `;` (auch `a?'X':'Y'`), löst t()/ti()/getAttribute() heraus und meldet UI-Text-Literale (Großbuchstabe/Leerzeichen/Nicht-ASCII). Fand prompt einen 2. echten Bug: Merkliste-Toggle setzte „🔖 gemerkt"/„🔖 Merken" hart → jetzt `t('pc_saved')`/`t('pc_save')`.
