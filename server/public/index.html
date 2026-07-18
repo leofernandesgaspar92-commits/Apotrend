@@ -302,6 +302,9 @@ const I18N = {
     co_question:'❓ Als Fachfrage stellen (beste Antwort auswählbar)',
     pv_public:'🌍 Öffentlich (alle Apotheker)', pv_followers:'👥 Nur meine Follower',
     co_follow_label:'Jemandem folgen (@Handle)', co_follow_btn:'Folgen',
+    fe_home_t:'Dein Feed ist noch leer', fe_home_s:'Folge Kolleg:innen, dann erscheinen ihre Beiträge hier.',
+    fe_q_t:'Keine offenen Fachfragen', fe_q_s:'Gerade ist alles beantwortet. Stell selbst eine Frage — hake dazu „❓ Als Fachfrage stellen" an.', fe_q_cta:'Fachfrage stellen',
+    fe_new_t:'Noch keine Beiträge', fe_new_s:'Sei der/die Erste und teile etwas mit der Community.', fe_new_cta:'Beitrag schreiben',
     react_helpful:'👍 Hilfreich', react_thanks:'🙏 Danke', react_confirmed:'✅ Bestätigt', react_interesting:'💡 Interessant',
     pc_verified:'✔ verifiziert', pc_img_alt:'Bild zum Beitrag', pc_source:'🔗 Quelle',
     pc_edited:'✏️ bearbeitet', pc_vis_public:'🌍 öffentlich', pc_vis_followers:'👥 nur Follower',
@@ -544,6 +547,9 @@ const I18N = {
     co_question:'❓ Ask as a professional question (mark the best answer)',
     pv_public:'🌍 Public (all pharmacists)', pv_followers:'👥 My followers only',
     co_follow_label:'Follow someone (@handle)', co_follow_btn:'Follow',
+    fe_home_t:'Your feed is still empty', fe_home_s:'Follow colleagues and their posts will show up here.',
+    fe_q_t:'No open questions', fe_q_s:'Everything is answered right now. Ask your own — tick „❓ Ask as question".', fe_q_cta:'Ask a question',
+    fe_new_t:'No posts yet', fe_new_s:'Be the first and share something with the community.', fe_new_cta:'Write a post',
     react_helpful:'👍 Helpful', react_thanks:'🙏 Thanks', react_confirmed:'✅ Confirmed', react_interesting:'💡 Interesting',
     pc_verified:'✔ verified', pc_img_alt:'Post image', pc_source:'🔗 Source',
     pc_edited:'✏️ edited', pc_vis_public:'🌍 public', pc_vis_followers:'👥 followers only',
@@ -786,6 +792,9 @@ const I18N = {
     co_question:'❓ Colocar como pergunta técnica (permite marcar a melhor resposta)',
     pv_public:'🌍 Público (todos os farmacêuticos)', pv_followers:'👥 Só os meus seguidores',
     co_follow_label:'Seguir alguém (@handle)', co_follow_btn:'Seguir',
+    fe_home_t:'O seu feed ainda está vazio', fe_home_s:'Siga colegas e as publicações deles aparecerão aqui.',
+    fe_q_t:'Sem perguntas em aberto', fe_q_s:'Neste momento está tudo respondido. Faça a sua — marque „❓ Colocar como pergunta".', fe_q_cta:'Fazer uma pergunta',
+    fe_new_t:'Ainda sem publicações', fe_new_s:'Seja o primeiro e partilhe algo com a comunidade.', fe_new_cta:'Escrever publicação',
     react_helpful:'👍 Útil', react_thanks:'🙏 Obrigado', react_confirmed:'✅ Confirmado', react_interesting:'💡 Interessante',
     pc_verified:'✔ verificado', pc_img_alt:'Imagem da publicação', pc_source:'🔗 Fonte',
     pc_edited:'✏️ editado', pc_vis_public:'🌍 público', pc_vis_followers:'👥 só seguidores',
@@ -2430,12 +2439,12 @@ async function loadFeed() {
     }
     if (!d.posts.length) {
       if (tab==='home') {
-        feed.appendChild(emptyState({ icon:'📭', title:'Dein Feed ist noch leer', text:'Folge Kolleg:innen, dann erscheinen ihre Beiträge hier.' }));
+        feed.appendChild(emptyState({ icon:'📭', title:t('fe_home_t'), text:t('fe_home_s') }));
         await renderSuggestions(feed);
       } else if (publicFilter==='questions') {
-        feed.appendChild(emptyState({ icon:'❓', title:'Keine offenen Fachfragen', text:'Gerade ist alles beantwortet. Stell selbst eine Frage — hake dazu „❓ Als Fachfrage stellen" an.', cta:{ label:'Fachfrage stellen', onClick:()=>{ const t=document.getElementById('pfrage'); if(t){ t.checked=true; } const b=document.getElementById('pb'); if(b){ b.focus(); b.scrollIntoView({behavior:'smooth',block:'center'}); } } } }));
+        feed.appendChild(emptyState({ icon:'❓', title:t('fe_q_t'), text:t('fe_q_s'), cta:{ label:t('fe_q_cta'), onClick:()=>{ const t=document.getElementById('pfrage'); if(t){ t.checked=true; } const b=document.getElementById('pb'); if(b){ b.focus(); b.scrollIntoView({behavior:'smooth',block:'center'}); } } } }));
       } else {
-        feed.appendChild(emptyState({ icon:'✍️', title:'Noch keine Beiträge', text:'Sei der/die Erste und teile etwas mit der Community.', cta:{ label:'Beitrag schreiben', onClick:()=>{ const b=document.getElementById('pb'); if(b){ b.focus(); b.scrollIntoView({behavior:'smooth',block:'center'}); } } } }));
+        feed.appendChild(emptyState({ icon:'✍️', title:t('fe_new_t'), text:t('fe_new_s'), cta:{ label:t('fe_new_cta'), onClick:()=>{ const b=document.getElementById('pb'); if(b){ b.focus(); b.scrollIntoView({behavior:'smooth',block:'center'}); } } } }));
       }
       return;
     }
