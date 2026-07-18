@@ -120,6 +120,7 @@ const I18N = {
     pg_per_pack:'pro Packung', pg_aep:'(AEP)', pg_from:'ab {n} Stück',
     pg_only_today:'nur noch heute', pg_only_days:'nur noch {d} Tage', pg_valid:'gültig bis',
     pg_cheapest:'günstigster', pg_no_series:'keine Verlaufsdaten', pg_posts:'{n} Beiträge dazu', pg_posts_one:'1 Beitrag dazu',
+    spark_label:'Preisverlauf {dir}: ', spark_rising:'steigend', spark_falling:'fallend', spark_stable:'gleichbleibend', spark_eur:'Euro',
     pg_post_ph:'z.B. Preis bei {supplier} gerade gestiegen…',
     rb_header:'🏷️ <b>Top-10 Rabatt-Aktionen</b> · höchster Rabatt oben · nur laufende Aktionen ·',
     rb_empty_t:'Derzeit keine laufenden Aktionen',
@@ -385,6 +386,7 @@ const I18N = {
     pg_per_pack:'per pack', pg_aep:'(list)', pg_from:'from {n} units',
     pg_only_today:'today only', pg_only_days:'only {d} days left', pg_valid:'valid until',
     pg_cheapest:'cheapest', pg_no_series:'no history data', pg_posts:'{n} posts about this', pg_posts_one:'1 post about this',
+    spark_label:'Price trend {dir}: ', spark_rising:'rising', spark_falling:'falling', spark_stable:'stable', spark_eur:'euros',
     pg_post_ph:'e.g. price at {supplier} just went up…',
     rb_header:'🏷️ <b>Top 10 deals</b> · highest discount on top · running offers only ·',
     rb_empty_t:'No running offers right now',
@@ -650,6 +652,7 @@ const I18N = {
     pg_per_pack:'por embalagem', pg_aep:'(preço)', pg_from:'a partir de {n} unidades',
     pg_only_today:'só hoje', pg_only_days:'faltam {d} dias', pg_valid:'válido até',
     pg_cheapest:'mais barato', pg_no_series:'sem histórico', pg_posts:'{n} publicações sobre isto', pg_posts_one:'1 publicação sobre isto',
+    spark_label:'Evolução do preço {dir}: ', spark_rising:'em subida', spark_falling:'em queda', spark_stable:'estável', spark_eur:'euros',
     pg_post_ph:'ex. o preço em {supplier} acabou de subir…',
     rb_header:'🏷️ <b>Top 10 descontos</b> · maior desconto no topo · só promoções ativas ·',
     rb_empty_t:'Sem promoções ativas de momento',
@@ -2074,8 +2077,8 @@ function sparkline(series) {
   const dir = series[n-1] - series[0];
   const col = dir > 0 ? '#c0392b' : (dir < 0 ? '#0b7f28' : '#9aa4ad');
   const lastX = x(n-1).toFixed(1), lastY = y(series[n-1]).toFixed(1);
-  const dirWord = dir > 0 ? 'steigend' : (dir < 0 ? 'fallend' : 'gleichbleibend');
-  const label = `Preisverlauf ${dirWord}: ` + series.map(v => fmtMoney(v) + ' Euro').join(', ');
+  const dirWord = dir > 0 ? t('spark_rising') : (dir < 0 ? t('spark_falling') : t('spark_stable'));
+  const label = ti('spark_label', { dir: dirWord }) + series.map(v => fmtMoney(v) + ' ' + t('spark_eur')).join(', ');
   return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${label}" style="display:block;overflow:visible">
     <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     <circle cx="${lastX}" cy="${lastY}" r="2.5" fill="${col}"/>
