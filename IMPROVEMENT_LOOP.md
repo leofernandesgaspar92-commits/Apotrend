@@ -66,7 +66,7 @@ prüft ihn erst (echt oder Rauschen?), setzt ihn dann um.
 **P2 — Robustheit / Qualität**
 - [x] ~~`!important` (3×) prüfen~~ → Cycle #12: alle legitim (Inline-Override + Druck), kein Handlungsbedarf.
 - [ ] Weitere Mobil-Audits bei neuen Views (Audit-Skript um Playwright-Overflow-Check erweitern).
-- [~] Backend-Fehler i18n via Codes → **Fundament + erste 2 migriert (Cycle #22)**; weitere Fehler folgen inkrementell.
+- [x] Backend-Fehler i18n via Codes → **Fundament (#22) + alltags-relevante Fehler migriert (#23–26)**; seltene Edge-Cases (Dropdown-verhindert) bleiben DE-Fallback.
 
 **P3 — architektonisch bedeutsam → ERST CEO fragen**
 - [ ] `index.html` (3684 Zeilen) modularisieren — großer Umbau, Risiko, Freigabe nötig.
@@ -78,6 +78,11 @@ Reaktions-/Folgen-Status, volle i18n DE/EN/PT (inkl. aria/title/Dialoge/Pre-Logi
 a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `server/README.md`.
 
 ## Cycle-Log
+
+### Cycle #26 — 2026-07-18 — Backend-Fehler-i18n: Batch (Anzeigename/Kommentar/Passwort/…)
+- **WORK:** 9 nutzer-erreichbare Fehler migriert (6 neue Codes, post_empty wiederverwendet), DE/EN/PT.
+- **CHECK:** en/pt korrekt; 219 grün (2 Tests wg. verfehltem AppError-Import + Meldungsänderung gefixt); Parität 590.
+- **Ergebnis:** praktisch alle alltäglich erreichbaren Backend-Fehler sind mehrsprachig.
 
 ### Cycle #25 — 2026-07-18 — Test: Fehler-Codes am HTTP-Layer
 - **WORK/CHECK:** Integrationstest prüft code-Felder (post_empty/login_failed/shortage_*) + message-Fallback. 218→219 grün.
