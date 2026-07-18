@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #46 — 2026-07-18 — 2 hartkodierte deutsche JS-Strings i18n'd (News-Validierung, Folgen-Status)
+- **THINK:** Sweep über JS-DOM-Zuweisungen (`.textContent=`) fand 2 user-sichtbare deutsche Literale, die kein Wächter fängt: News-Leervalidierung + „✓ Folgst"-Button.
+- **WORK:** Keys `news_empty`/`sg_followed` (DE/EN/PT); lokale `t`-Variable in News-Handler zu `ta` umbenannt (globales `t()` war verdeckt).
+- **CHECK:** EN real „Text or image required."; Parität 642/642/642; 219 grün, Smoke 11/11.
+
 ### Cycle #45 — 2026-07-18 — Sparkline-Vorlese-Text (aria) mehrsprachig
 - **THINK:** Die Preis-Sparkline hatte ein hart deutsches `aria-label` („Preisverlauf steigend/fallend … Euro") — EN/PT-Screenreader hörten Deutsch. Kein Wächter fängt JS-String-Zuweisungen.
 - **WORK:** 5 Keys (spark_label/rising/falling/stable/eur) in DE/EN/PT; `sparkline()` nutzt `ti()`/`t()`.
