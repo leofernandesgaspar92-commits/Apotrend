@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #61 — 2026-07-18 — Teilen-Button auf Engpass-Listenkarten + i18n-Bug (Beobachten-Toggle)
+- **THINK:** Teilen gab es auf Posts + Wirkstoff-Detail, aber NICHT auf den Engpass-Listenkarten — man musste erst reinklicken, um einen kritischen Engpass an Kolleg:innen zu teilen.
+- **WORK:** „🔗 Teilen"-Button auf Listenkarten (Deep-Link `?wirkstoff=`, wie Detailseite). Dabei echten i18n-Bug gefunden & behoben: der Beobachten-Toggle setzte den Button-Text hart deutsch („⭐ Beobachtet") — rutschte durch beide Wächter (keine Umlaute).
+- **CHECK:** EN real: Teilen-Button vorhanden, Toggle-Label „⭐ Watched"; Parität 644/644/644; 226 grün, Smoke 11/11, Browser-Audit grün.
+
 ### Cycle #60 — 2026-07-18 — Merkliste (Bookmarks) über HTTP getestet
 - **CHECK:** Merk-Fluss real via API: merken → erscheint in Merkliste + ids → erneutes Tippen entfernt (Toggle).
 - **WORK:** HTTP-Integrationstest für bookmark → /bookmarks + /bookmarks/ids → un-toggle.

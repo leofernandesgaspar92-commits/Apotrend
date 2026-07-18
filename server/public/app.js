@@ -1862,6 +1862,7 @@ function shortageCard(s) {
       <button class="ghost" data-postbtn>${esc(t('sc_post_about'))}</button>
       <button class="ghost" data-exchange title="${esc(t('nav_exchange'))}">${esc(t('nav_exchange'))}</button>
       <button class="ghost" data-watch title="${esc(t('wl_add_aria'))}" aria-pressed="${!!s.watched}">${s.watched?esc(t('sc_watched')):esc(t('sc_watch'))}</button>
+      <button class="ghost" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button>
       ${s.provenance==='community'&&!s.is_reporter&&!(me&&me.account_type==='private')?`<button class="ghost" data-confirm>${s.i_confirmed?esc(t('sc_confd_btn')):esc(t('sc_conf_btn'))}</button>`:''}
       ${s.provenance==='community'&&s.is_reporter&&s.status!=='verfuegbar'?`<button class="ghost" data-resolve>${esc(t('sc_resolve'))}</button>`:''}
       ${(s.history||[]).length>1?`<button class="ghost" data-hist aria-expanded="false">${esc(t('sc_history'))} (${s.history.length})</button>`:''}
@@ -1956,10 +1957,17 @@ function shortageCard(s) {
     try {
       if (isWatched) { await api('DELETE','/api/watchlist/'+encodeURIComponent(s.wirkstoff)); isWatched = false; }
       else { await api('POST','/api/watchlist',{ wirkstoff:s.wirkstoff }); isWatched = true; }
-      watchBtn.textContent = isWatched ? '⭐ Beobachtet' : '☆ Beobachten';
+      watchBtn.textContent = isWatched ? t('sc_watched') : t('sc_watch');
       watchBtn.setAttribute('aria-pressed', String(isWatched));
     } catch(e){ alert(e.message); }
     watchBtn.disabled = false;
+  };
+  // Engpass direkt aus der Liste teilen (Deep-Link zum Wirkstoff) — z.B. an Kolleg:innen.
+  const shBtn = card.querySelector('[data-share]');
+  shBtn.onclick = async () => {
+    const url = location.origin + '/?wirkstoff=' + encodeURIComponent(s.wirkstoff);
+    try { await navigator.clipboard.writeText(url); shBtn.textContent = t('pc_copied'); setTimeout(()=>{ shBtn.textContent = t('pc_share'); }, 1500); }
+    catch { prompt(t('copy_link_fb'), url); }
   };
   const aboutbox = card.querySelector('[data-aboutbox]');
   card.querySelector('[data-about]').onclick = async () => {
