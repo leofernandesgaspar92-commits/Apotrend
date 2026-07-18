@@ -79,6 +79,10 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #24 — 2026-07-18 — Backend-Fehler-i18n: Login + Handle-vergeben
+- **WORK:** login_failed (Route) + handle_taken (Repo) via e.code migriert (DE/EN/PT).
+- **CHECK:** Browser en/pt korrekt; 218 grün; Parität 584. Insg. 8 Fehler migriert (#22–24).
+
 ### Cycle #23 — 2026-07-18 — Backend-Fehler-i18n: 4 häufige Validierungsfehler
 - **WORK:** profile_handle_format, post_empty, shortage_wirkstoff_missing, shortage_duplicate migriert (DE/EN/PT).
 - **CHECK:** Browser en/pt korrekt; 218 grün; Parität 582.
