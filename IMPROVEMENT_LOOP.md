@@ -79,6 +79,10 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #23 — 2026-07-18 — Backend-Fehler-i18n: 4 häufige Validierungsfehler
+- **WORK:** profile_handle_format, post_empty, shortage_wirkstoff_missing, shortage_duplicate migriert (DE/EN/PT).
+- **CHECK:** Browser en/pt korrekt; 218 grün; Parität 582.
+
 ### Cycle #22 — 2026-07-18 — Backend-Fehler-i18n: Fundament + erste 2 Fehler
 - **P3 (CEO-freigegeben).** AppError(code) + Server liefert `code` + api() übersetzt via `e_<code>`
   (Fallback = Server-message). Damit werden alle e.message-Stellen automatisch mehrsprachig.
