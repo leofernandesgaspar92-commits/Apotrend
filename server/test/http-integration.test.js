@@ -355,6 +355,26 @@ test('Unbekannte Route -> 404', async () => {
   assert.equal(r.status, 404);
 });
 
+test('Direktnachricht über HTTP: Thread starten -> senden -> Empfänger sieht unread -> nach Lesen 0', async () => {
+  const a = await reg('dma' + PORT);
+  const bResp = await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'dmb' + PORT, handle: 'dmb' + PORT, email: 'dmb' + PORT + '@a.at', password: 'geheim123' }) });
+  const b = (await bResp.json()).token;
+  const bHandle = 'dmb' + PORT;
+  const start = await (await post('/api/dm/start', a, { handle: bHandle })).json();
+  const tid = start.thread && start.thread.id;
+  assert.ok(tid, 'Thread wird angelegt');
+  assert.equal((await post(`/api/dm/${tid}`, a, { body: 'Hallo ' + PORT })).status, 200);
+  // Empfänger: eine ungelesene Nachricht.
+  const inbox = await j('/api/dm', b);
+  assert.equal(inbox.unread, 1, 'Empfänger hat 1 ungelesen');
+  assert.equal((inbox.threads || []).length, 1);
+  // Nach dem Öffnen der Konversation ist nichts mehr ungelesen.
+  const conv = await j(`/api/dm/${tid}`, b);
+  assert.equal((conv.messages || []).length, 1, 'eine Nachricht in der Konversation');
+  const inbox2 = await j('/api/dm', b);
+  assert.equal(inbox2.unread, 0, 'nach Lesen 0 ungelesen');
+});
+
 test('Folgen über HTTP: Beitrag der gefolgten Person erscheint im „Mein Feed", bei Nicht-Follower nicht', async () => {
   const a = await reg('flwa' + PORT);
   const bResp = await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'flwb' + PORT, handle: 'flwb' + PORT, email: 'flwb' + PORT + '@a.at', password: 'geheim123' }) });

@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #58 — 2026-07-18 — Direktnachricht-Flow über HTTP getestet (inkl. Lese-Tracking)
+- **CHECK:** DM real via API verifiziert: Thread starten → senden → Empfänger unread=1 → nach Öffnen unread=0. Service-Layer testete Privatsphäre (nur 2 Parteien); der HTTP-Lese-Tracking-Fluss fehlte.
+- **WORK:** HTTP-Integrationstest für start → send → inbox(unread) → read → unread 0.
+- **CHECK:** 223 → 224 grün.
+
 ### Cycle #57 — 2026-07-18 — Folgen→„Mein Feed" über HTTP getestet (mit Isolation)
 - **CHECK:** Kern-Social-Mechanik real verifiziert: A folgt B → B postet → A sieht es im Home-Feed, ein Nicht-Follower nicht.
 - **WORK:** HTTP-Integrationstest inkl. Negativfall (Isolation).
