@@ -5,6 +5,7 @@
 // Voraussetzung: laufender Server (Standard http://127.0.0.1:4000).
 // Aufruf:  node tools/loop-smoke.mjs [baseUrl]      Exit 0 = alle Schritte grün.
 import pkg from '/opt/node22/lib/node_modules/playwright/index.js';
+import { ensureServer } from './_ensure-server.mjs';
 const { chromium } = pkg;
 const BASE = process.argv[2] || 'http://127.0.0.1:4000';
 
@@ -17,8 +18,9 @@ const results = [];
 const step = (name, ok, detail = '') => { results.push({ name, ok, detail }); console.log(`${ok ? '✓' : '✗'} ${name}${detail ? ' — ' + detail : ''}`); };
 
 async function main() {
-  try { await fetch(BASE + '/api/account-types'); }
-  catch { console.error(`❌ Kein Server unter ${BASE}.`); process.exit(2); }
+  let stopServer = () => {};
+  try { stopServer = await ensureServer(BASE); }
+  catch (e) { console.error(`❌ ${e.message}`); process.exit(2); }
 
   const uniq = Date.now().toString(36);
   const reg = await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Smoke', email: `smoke_${uniq}@ex.com`, password: 'Passwort123!', handle: `smoke_${uniq}`, accountType: 'pharmacy' }) });
@@ -87,6 +89,7 @@ async function main() {
   step('Keine JS-Fehler während des Flows', jsErrors.length === 0, jsErrors.slice(0, 2).join(' | '));
 
   await browser.close();
+  stopServer();
   const failed = results.filter(r => !r.ok);
   console.log(`\n${failed.length === 0 ? '✓ Smoke-Test grün' : '✗ ' + failed.length + ' Schritt(e) rot'} (${results.length - failed.length}/${results.length})`);
   process.exit(failed.length === 0 ? 0 : 1);

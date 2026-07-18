@@ -8,6 +8,7 @@
 // Playwright ist ein Dev-Werkzeug (nicht ausgeliefert) — der „Built-ins only"-Constraint
 // gilt für den Server-Code, nicht für die Loop-Werkzeuge.
 import pkg from '/opt/node22/lib/node_modules/playwright/index.js';
+import { ensureServer } from './_ensure-server.mjs';
 const { chromium } = pkg;
 
 const BASE = process.argv[2] || 'http://127.0.0.1:4000';
@@ -23,9 +24,10 @@ async function api(path, opts = {}) {
 }
 
 async function main() {
-  // Server erreichbar?
-  try { await fetch(BASE + '/api/account-types'); }
-  catch { console.error(`❌ Kein Server unter ${BASE}. Erst starten: APOTREND_TOKEN_SECRET=x PORT=4000 node src/http/server.js`); process.exit(2); }
+  // Server sicherstellen (nutzt laufenden ODER startet einen und beendet ihn am Ende).
+  let stopServer = () => {};
+  try { stopServer = await ensureServer(BASE); }
+  catch (e) { console.error(`❌ ${e.message}`); process.exit(2); }
 
   const uniq = Date.now().toString(36);
   const reg = await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Audit', email: `audit_${uniq}@ex.com`, password: 'Passwort123!', handle: `audit_${uniq}`, accountType: 'pharmacy' }) });
@@ -56,6 +58,7 @@ async function main() {
     await ctx.close();
   }
   await browser.close();
+  stopServer();
 
   console.log('── ApoTrend Loop · GATHER (Browser) · Mobil 390 ──');
   if (findings.length === 0) {
