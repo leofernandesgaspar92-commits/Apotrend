@@ -30,15 +30,13 @@ die Session neu startet.
 
 ## Letzter GATHER-Snapshot
 
-_Cycle #3 · 2026-07-18_
+_Cycle #4 · 2026-07-18_
 ```
 Tests:            216/216 grün
-i18n de/en/pt:    542/542/542  · 0 Lücken  ✓ perfekte Parität
+i18n de/en/pt:    543/543/543  · 0 Lücken  ✓ perfekte Parität
 Hartkod. Dialoge: 0  ✓
-TODO/FIXME:       0
-console.* (FE):   0
-!important (CSS): 3
-index.html:       ~3695 Zeilen · 263 KB   ← größtes Struktur-Signal (Monolith)
+TODO/FIXME:       0  ·  console.* (FE): 0  ·  !important (CSS): 3
+index.html:       ~3700 Zeilen · 264 KB   ← größtes Struktur-Signal (Monolith)
 ```
 
 ## Priorisierter Backlog (Kandidaten für WORK)
@@ -51,7 +49,8 @@ prüft ihn erst (echt oder Rauschen?), setzt ihn dann um.
 - [ ] Reaktionen-Aktiv-Zustand in Kommentar-Detailansicht (Feed + Kommentare bereits getestet — vermutlich schon ok, kurz gegenprüfen).
 - [ ] Leere Zustände (empty states) je Reiter auf Klartext/Handlungsaufforderung prüfen.
 - [x] ~~„0 Apotheker haben dazu gepostet"-Zähler auf Engpass-Karten~~ → Cycle #3 erledigt.
-- [ ] Profil-„X Beiträge" (pg_posts/pf_posts): gleiche Singular-Prüfung wie bei Kommentaren.
+- [x] ~~„{n} Beiträge dazu" (pg_posts) Singular~~ → Cycle #4 (generischer `nlabel`-Helper).
+- [ ] Profil-Kopf-Zähler (pf_posts „Beiträge", pf_best „beste Antworten"): mit `nlabel` auf Singular.
 - [ ] Preise/Rabatte: Tastatur-Bedienbarkeit der Sortier-/Filter-Chips prüfen (Fokusreihenfolge).
 
 **P2 — Robustheit / Qualität**
@@ -69,6 +68,14 @@ Reaktions-/Folgen-Status, volle i18n DE/EN/PT (inkl. aria/title/Dialoge/Pre-Logi
 a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `server/README.md`.
 
 ## Cycle-Log
+
+### Cycle #4 — 2026-07-18 — Generischer nlabel-Helper + „Beiträge dazu"-Singular
+- **GATHER:** 216/216 grün, i18n 542/542/542.
+- **ANALYSE:** Wiederkehrendes Muster (Singular/Plural-Zähler) → statt Einzellösung ein
+  generischer Helper `nlabel(n, oneKey, manyKey)`, der künftige Zähler absichert.
+- **WORK:** „{n} Beiträge dazu" (pg_posts) bei n=1 korrigiert; beide Nutzungsstellen auf nlabel.
+- **CHECK:** DE/EN/PT „1 Beitrag / 2 Beiträge" usw.; 216 grün; Parität 543.
+- **REPEAT:** Profil-Kopf-Zähler als nächster nlabel-Kandidat notiert.
 
 ### Cycle #3 — 2026-07-18 — Engpass-Diskussions-Zähler: Klartext + Singular
 - **GATHER:** 216/216 grün, i18n 540/540/540, Sauber-Signale bei 0.
