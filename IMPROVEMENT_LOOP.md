@@ -77,6 +77,9 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #16 — 2026-07-18 — Test: is_following im Feed-Payload
+- **WORK/CHECK:** Unit-Test für author.is_following (vor/nach follow, eigener Beitrag). 217→218 grün.
+
 ### Cycle #15 — 2026-07-18 — HTTP-Layer-Tests für Kontotyp-Rechte
 - **ANALYSE:** Enforcement nur service-getestet → 403-Pfade am HTTP-Layer ungetestet.
 - **WORK:** Integrationstest: Privat→403 (report/confirm/exchange), Fachkonto→200, Lesen ok.
