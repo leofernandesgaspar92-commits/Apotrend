@@ -355,6 +355,20 @@ test('Unbekannte Route -> 404', async () => {
   assert.equal(r.status, 404);
 });
 
+test('Engpass-Bestätigung über HTTP: „Auch bei uns" erhöht Zähler und benachrichtigt den Melder', async () => {
+  const reporter = await reg('confr' + PORT);
+  const confirmer = await reg('confc' + PORT);
+  const wirk = 'Conf' + PORT;
+  const rep = await (await post('/api/shortages/report', reporter, { wirkstoff: wirk, bezeichnung: wirk + ' 5 mg', status: 'kritisch' })).json();
+  assert.ok(rep.id, 'Meldung angelegt');
+  const conf = await post(`/api/shortages/${rep.id}/confirm`, confirmer);
+  assert.equal(conf.status, 200);
+  assert.equal((await conf.json()).confirm_count, 1, 'Bestätigungszähler = 1');
+  // Der ursprüngliche Melder wird über die Bestätigung informiert.
+  const rn = await j('/api/notifications', reporter);
+  assert.ok((rn.notifications || []).some(n => n.type === 'shortage_confirm'), 'Melder erhält shortage_confirm');
+});
+
 test('Direktnachricht über HTTP: Thread starten -> senden -> Empfänger sieht unread -> nach Lesen 0', async () => {
   const a = await reg('dma' + PORT);
   const bResp = await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'dmb' + PORT, handle: 'dmb' + PORT, email: 'dmb' + PORT + '@a.at', password: 'geheim123' }) });

@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #59 — 2026-07-18 — Engpass-Bestätigung über HTTP getestet (rundet Frühwarnnetz ab)
+- **CHECK:** Sicherheitsrelevanter Fluss „Auch bei uns" real via API: Bestätigung erhöht Zähler + benachrichtigt den Melder (shortage_confirm).
+- **WORK:** HTTP-Integrationstest für report → confirm → confirm_count + Melder-Benachrichtigung. Damit ist das Frühwarnnetz (melden/beobachten/bestätigen) end-to-end HTTP-abgedeckt.
+- **CHECK:** 224 → 225 grün.
+
 ### Cycle #58 — 2026-07-18 — Direktnachricht-Flow über HTTP getestet (inkl. Lese-Tracking)
 - **CHECK:** DM real via API verifiziert: Thread starten → senden → Empfänger unread=1 → nach Öffnen unread=0. Service-Layer testete Privatsphäre (nur 2 Parteien); der HTTP-Lese-Tracking-Fluss fehlte.
 - **WORK:** HTTP-Integrationstest für start → send → inbox(unread) → read → unread 0.
