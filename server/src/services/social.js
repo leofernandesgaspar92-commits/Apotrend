@@ -90,7 +90,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (title !== undefined) patch.title = String(title).trim() || null;
       if (bio !== undefined) {
         const b = String(bio).trim();
-        if (b.length > 500) throw new Error('Bio zu lang (max 500 Zeichen).');
+        if (b.length > 500) throw new AppError('bio_too_long', 'Bio zu lang (max 500 Zeichen).');
         patch.bio = b || null;
       }
       if (specializations !== undefined) {
@@ -251,7 +251,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       const img = cleanImage(image);
       const src = cleanSourceUrl(sourceUrl);
       if (!text && !img) throw new AppError('post_empty', 'Beitrag darf nicht leer sein (Text oder Bild).');
-      if (text.length > MAX_BODY) throw new Error(`Beitrag zu lang (max ${MAX_BODY}).`);
+      if (text.length > MAX_BODY) throw new AppError('post_too_long', `Beitrag zu lang (max ${MAX_BODY}).`);
       if (!['public', 'followers'].includes(visibility)) throw new Error('Ungueltige Sichtbarkeit.');
       if (!['post', 'news', 'frage'].includes(kind)) throw new Error('Ungueltige Beitragsart.');
       if (refType && !['shortage', 'price', 'news', 'rabatt'].includes(refType)) throw new Error('Ungueltiger Referenztyp.');
@@ -273,7 +273,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (p.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Autor darf bearbeiten.');
       const text = String(body ?? '').trim();
       if (!text) throw new AppError('post_empty', 'Beitrag darf nicht leer sein.');
-      if (text.length > MAX_BODY) throw new Error(`Beitrag zu lang (max ${MAX_BODY}).`);
+      if (text.length > MAX_BODY) throw new AppError('post_too_long', `Beitrag zu lang (max ${MAX_BODY}).`);
       return decorate(social.updatePostBody(postId, text), actorUserId);
     },
     getPost(viewerUserId, postId) {
@@ -339,7 +339,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (c.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Autor darf bearbeiten.');
       const text = String(body ?? '').trim();
       if (!text) throw new AppError('comment_empty', 'Kommentar darf nicht leer sein (Text oder Bild).');
-      if (text.length > MAX_BODY) throw new Error(`Kommentar zu lang (max ${MAX_BODY}).`);
+      if (text.length > MAX_BODY) throw new AppError('comment_too_long', `Kommentar zu lang (max ${MAX_BODY}).`);
       return social.updateCommentBody(commentId, text);
     },
     deleteComment(actorUserId, commentId) {

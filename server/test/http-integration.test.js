@@ -125,6 +125,11 @@ test('Fehler-Antworten tragen einen i18n-Code (Fundament der mehrsprachigen Back
   assert.equal(r1.status, 400);
   assert.equal(b1.code, 'post_empty', 'leerer Beitrag liefert code post_empty');
   assert.ok(b1.error, 'message als Fallback weiterhin vorhanden');
+  // zu langer Beitrag -> code post_too_long (mehrsprachige Längen-Fehler)
+  const r1b = await post('/api/posts', a, { body: 'X'.repeat(1001) });
+  const b1b = await r1b.json();
+  assert.equal(r1b.status, 400);
+  assert.equal(b1b.code, 'post_too_long', 'zu langer Beitrag liefert code post_too_long');
   // Login falsch -> code login_failed, Status 401
   const r2 = await fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email: 'nobody' + PORT + '@x.com', password: 'falsch' }) });
   const b2 = await r2.json();

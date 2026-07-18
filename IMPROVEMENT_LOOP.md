@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #41 — 2026-07-18 — Backend-Längen-Fehler mehrsprachig (Beitrag/Kommentar/Bio)
+- **THINK:** Textfelder haben KEIN client-seitiges maxlength → >1000 Zeichen erreichbar → Server warf deutsches `new Error` (untranslatiert für EN/PT). Lücke aus der #22–26-Klasse.
+- **WORK:** 3 Fehler auf `AppError`+Code migriert (post_too_long/comment_too_long/bio_too_long), `e_<code>`-Keys in DE/EN/PT; HTTP-Test um post_too_long-Assertion erweitert.
+- **CHECK:** Server liefert `code: post_too_long` real; EN→„Post too long (max. 1000 characters)."; Parität 604/604/604; 219 grün.
+
 ### Cycle #40 — 2026-07-18 — Browser-Audit prüft jetzt auch A11y (Wächter gegen #39-Klasse)
 - **THINK:** Die a11y-Lücken aus #39 fing kein Wächter — „Instrument schärfen".
 - **WORK:** `loop-browser-audit.mjs` prüft pro Reiter (einmal, themenunabhängig) Formularelemente ohne zugänglichen Namen + Bilder ohne `alt`.
