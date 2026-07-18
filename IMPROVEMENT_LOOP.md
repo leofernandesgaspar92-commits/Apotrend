@@ -58,8 +58,7 @@ prüft ihn erst (echt oder Rauschen?), setzt ihn dann um.
 - [x] ~~Verifizierungs-Karte i18n~~ → Cycle #9.
 - [x] ~~Schriftgröße-Button-Title~~ → Cycle #10.
 - [ ] Erneuter Umlaut-Sweep: verbleibende Kandidaten (Meta-Description, „Bild ungültig"-Fehler) prüfen.
-- [ ] GATHER-Wächter erweitern: auch `<label>…</label>` und `placeholder="…"` in Template-Literalen
-      (der Umlaut-Sweep fand die News-Strings, der `hardcoded_ui_de`-Wächter nicht).
+- [x] ~~GATHER-Wächter für label/placeholder erweitern~~ → Cycle #11.
 - [ ] a11y: Tastatur-Fokusreihenfolge der Sortier-/Filter-Chips (Preise/Rabatte/Engpässe).
 - [ ] CSS-Schuld: die 3 `!important` prüfen, ob sauber auflösbar.
 - [ ] Preise/Rabatte: Tastatur-Bedienbarkeit der Sortier-/Filter-Chips prüfen (Fokusreihenfolge).
@@ -79,6 +78,12 @@ Reaktions-/Folgen-Status, volle i18n DE/EN/PT (inkl. aria/title/Dialoge/Pre-Logi
 a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `server/README.md`.
 
 ## Cycle-Log
+
+### Cycle #11 — 2026-07-18 — UI-DE-Wächter deckt label/placeholder ab
+- **WORK:** hardcoded_ui_de erkennt jetzt auch `<label>`/`placeholder` mit Umlaut OHNE data-i18n.
+- **CHECK:** Baseline 0; Positiv-Kontrollen bestätigen Erkennung + korrekte Fallback-Ignoranz.
+- **Lektion (Fortsetzung #7):** Instrument iterativ schärfen, wenn ein Sweep etwas findet, das
+  das Instrument nicht sah. Der Wächter ist jetzt umfassend.
 
 ### Cycle #10 — 2026-07-18 — Schriftgröße-Tooltip i18n + folgt Sprachwechsel
 - **WORK:** applyFontScale-Titel via t() (font_*); applyFontScale bei Sprachwechsel mitaufgerufen.
