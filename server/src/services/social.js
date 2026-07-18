@@ -2,6 +2,7 @@
 // Kommentar-Threads, typisierte Reaktionen, gerichtete Follows, Home-/Öffentlich-Feed.
 // Sichtbarkeit pro Post (public/followers) wird bei JEDER Leseoperation erzwungen.
 import { ForbiddenError } from './orgAuth.js';
+import { AppError } from '../domain/errors.js';
 import { cleanImage, cleanSourceUrl } from '../domain/media.js';
 import { BUNDESLAENDER } from './exchange.js';
 import { isValidCountry, normalizeCountry, normalizeLocale } from '../data/countries.js';
@@ -67,7 +68,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     // ── Profil ──
     createProfile(actorUserId, { handle, displayName, title, pharmacyOrgId, bio, specializations, avatarUrl, visibility, isEditorial, country, locale, accountType }) {
       requireUser(actorUserId);
-      if (!handle || !/^[a-z0-9_]{3,30}$/i.test(handle)) throw new Error('Handle: 3–30 Zeichen, nur a–z 0–9 _.');
+      if (!handle || !/^[a-z0-9_]{3,30}$/i.test(handle)) throw new AppError('profile_handle_format', 'Handle: 3–30 Zeichen, nur a–z 0–9 _.');
       if (!displayName) throw new Error('Anzeigename erforderlich.');
       const c = normalizeCountry(country);
       return social.createProfile({ userId: actorUserId, handle, displayName, title, pharmacyOrgId, bio, specializations, avatarUrl, visibility, isEditorial, country: c, locale: normalizeLocale(locale, c), accountType: normalizeAccountType(accountType) });
@@ -249,7 +250,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       const text = String(body ?? '').trim();
       const img = cleanImage(image);
       const src = cleanSourceUrl(sourceUrl);
-      if (!text && !img) throw new Error('Beitrag darf nicht leer sein (Text oder Bild).');
+      if (!text && !img) throw new AppError('post_empty', 'Beitrag darf nicht leer sein (Text oder Bild).');
       if (text.length > MAX_BODY) throw new Error(`Beitrag zu lang (max ${MAX_BODY}).`);
       if (!['public', 'followers'].includes(visibility)) throw new Error('Ungueltige Sichtbarkeit.');
       if (!['post', 'news', 'frage'].includes(kind)) throw new Error('Ungueltige Beitragsart.');

@@ -61,7 +61,7 @@ export function createShortagesService(shortagesRepo, social) {
     reportShortage(userId, { wirkstoff, bezeichnung, grund, status = 'kritisch', voraussichtlichBis }) {
       requireProfessional(userId);
       const w = String(wirkstoff || '').trim();
-      if (!w) throw new Error('Wirkstoff fehlt.');
+      if (!w) throw new AppError('shortage_wirkstoff_missing', 'Wirkstoff fehlt.');
       if (w.length > 120) throw new Error('Wirkstoff zu lang.');
       const bez = String(bezeichnung || '').trim() || w;
       if (bez.length > 200) throw new Error('Bezeichnung zu lang.');
@@ -82,7 +82,7 @@ export function createShortagesService(shortagesRepo, social) {
         s.provenance === 'community' &&
         s.status !== 'verfuegbar' &&
         s.wirkstoff.trim().toLowerCase() === w.toLowerCase());
-      if (dupe) throw new Error('Du hast diesen Wirkstoff bereits gemeldet.');
+      if (dupe) throw new AppError('shortage_duplicate', 'Du hast diesen Wirkstoff bereits gemeldet.');
       const today = new Date().toISOString().slice(0, 10);
       const created = shortagesRepo.upsert({
         wirkstoff: w, bezeichnung: bez, status, grund: (grund ? String(grund).trim().slice(0, 200) : null),
