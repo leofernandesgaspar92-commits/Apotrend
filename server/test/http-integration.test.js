@@ -355,6 +355,23 @@ test('Unbekannte Route -> 404', async () => {
   assert.equal(r.status, 404);
 });
 
+test('Bestandsaustausch über HTTP: anlegen -> erscheint in offener Liste -> erledigt -> verschwindet', async () => {
+  const a = await reg('exh' + PORT); // AT-Apotheke darf Austausch anlegen
+  const bez = 'Amoxi' + PORT;
+  const c = await post('/api/exchange', a, { kind: 'biete', bezeichnung: bez + ' 1000 mg', menge: '20 Pkg', ort: 'Wien', note: 'frisch' });
+  assert.equal(c.status, 200);
+  const created = await c.json();
+  assert.ok(created.id, 'Eintrag bekommt eine id');
+  // Erscheint in der offenen Liste.
+  const open = await j('/api/exchange?status=offen', a);
+  assert.ok((open.entries || []).some(e => e.id === created.id), 'Eintrag erscheint offen');
+  // Als erledigt markieren -> verschwindet aus der offenen Liste.
+  const res = await post(`/api/exchange/${created.id}/resolve`, a);
+  assert.equal(res.status, 200);
+  const open2 = await j('/api/exchange?status=offen', a);
+  assert.equal((open2.entries || []).filter(e => e.id === created.id).length, 0, 'erledigter Eintrag ist nicht mehr offen');
+});
+
 test('Frühwarnnetz über HTTP: Beobachter wird bei fremder Engpass-Meldung benachrichtigt', async () => {
   const watcher = await reg('warnw' + PORT);
   const reporter = await reg('warnr' + PORT);

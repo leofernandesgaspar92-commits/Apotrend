@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #56 — 2026-07-18 — Bestandsaustausch-Happy-Path über HTTP getestet
+- **CHECK:** B2B-Kernfluss (anlegen → offen gelistet → erledigt → verschwindet) real via API verifiziert; bisher war nur die Rechte-Verweigerung (Privat→403) HTTP-getestet, nicht der Happy-Path.
+- **WORK:** HTTP-Integrationstest für create → list(offen) → resolve → nicht mehr offen.
+- **CHECK:** 221 → 222 grün.
+
 ### Cycle #55 — 2026-07-18 — Frühwarnnetz (Kern-Wertversprechen) über HTTP getestet
 - **CHECK:** Kernfluss „Wirkstoff beobachten → Benachrichtigung bei fremder Engpass-Meldung" real via API end-to-end verifiziert (funktioniert). Service-Layer war getestet, HTTP-Layer (Routen-Verdrahtung, z. B. Pfad `/api/watchlist`) nicht.
 - **WORK:** HTTP-Integrationstest: Beobachter beobachtet → Reporter meldet → Beobachter erhält `watch_alert`, Melder nicht.
