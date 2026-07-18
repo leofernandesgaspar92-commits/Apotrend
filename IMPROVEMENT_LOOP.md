@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #47 — 2026-07-18 — Wächter gegen hartkodiertes Deutsch in JS-DOM-Zuweisungen
+- **THINK:** Die #46-Strings fing kein Wächter (kein Markup, kein t()). „Instrument schärfen".
+- **WORK:** Neuer Static-Audit-Detektor `hardcoded_js_de`: `.textContent/.title/.placeholder = '…ä…'` + `setAttribute('aria-label'|'title'|'placeholder'|'alt', '…ä…')` in app.js. Regex gegengeprüft.
+- **CHECK:** 0 ✓ (bestätigt #46 vollständig); 219 grün.
+
 ### Cycle #46 — 2026-07-18 — 2 hartkodierte deutsche JS-Strings i18n'd (News-Validierung, Folgen-Status)
 - **THINK:** Sweep über JS-DOM-Zuweisungen (`.textContent=`) fand 2 user-sichtbare deutsche Literale, die kein Wächter fängt: News-Leervalidierung + „✓ Folgst"-Button.
 - **WORK:** Keys `news_empty`/`sg_followed` (DE/EN/PT); lokale `t`-Variable in News-Handler zu `ta` umbenannt (globales `t()` war verdeckt).

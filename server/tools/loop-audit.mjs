@@ -95,6 +95,15 @@ function run() {
       const real = hits.filter((h) => !h.includes('${'));
       return { count: real.length, samples: real.slice(0, 6).map((x) => x.replace(/\s+/g, ' ').slice(0, 52)) };
     })(),
+    // Hartkodiertes Deutsch in JS-DOM-Zuweisungen (.textContent/.title/.placeholder =
+    // '…ä…' bzw. setAttribute('aria-label'|'title'|'placeholder'|'alt', '…ä…')). Diese
+    // umgehen die UI-DE-Heuristik (kein Markup, kein t()) — Klasse aus Cycle #46. Ziel 0.
+    hardcoded_js_de: (() => {
+      const hits = [];
+      hits.push(...(js.match(/\.(textContent|title|placeholder)\s*=\s*'[^']*[äöüßÄÖÜ][^']*'/g) || []));
+      hits.push(...(js.match(/setAttribute\('(aria-label|title|placeholder|alt)',\s*'[^']*[äöüßÄÖÜ][^']*'/g) || []));
+      return { count: hits.length, samples: hits.slice(0, 6).map((x) => x.replace(/\s+/g, ' ').slice(0, 52)) };
+    })(),
     // Dark-Mode-Falle: hartkodierte HELLE Hex-Hintergründe in INLINE-Styles (in den
     // JS-Template-Literalen). In app.css ist Hex ok — dort überschreibt body.dark via
     // CSS-Variablen. Inline erreicht der Dark-Mode sie NICHT -> heller Text auf hellem
@@ -130,6 +139,8 @@ function run() {
   console.log(`Hartkod. UI-DE:     ${hu.count} ${hu.count === 0 ? '✓' : '⚠️ ' + hu.samples.join(' | ')}`);
   const lb = snapshot.hardcoded_light_bg;
   console.log(`Helle Inline-BGs:   ${lb.count} ${lb.count === 0 ? '✓' : '⚠️ ' + lb.samples.join(' | ')}`);
+  const jd = snapshot.hardcoded_js_de;
+  console.log(`Hartkod. JS-DE:     ${jd.count} ${jd.count === 0 ? '✓' : '⚠️ ' + jd.samples.join(' | ')}`);
   console.log(`TODO/FIXME:         ${snapshot.todos}`);
   console.log(`console.* (FE):     ${snapshot.frontend_console}`);
   console.log(`!important (CSS):   ${snapshot.css_important}`);
