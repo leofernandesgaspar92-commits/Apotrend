@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #69 — 2026-07-18 — Persistenz-Integration mit echten Daten getestet (Daten-Verlust-Schutz)
+- **CHECK:** Voller Server-Restart-Roundtrip manuell verifiziert (Beitrag überlebt Neustart). Lücke: die Repo-`__dump`/`__load` mit echten Daten (statt generischem Snapshot) waren ungetestet.
+- **WORK:** Persistenz-Integrationstest: echte Social-Daten (Nutzer/Profil/Beitrag/Follow/Bookmark) → `__dump` → JSON → `__load` in FRISCHE Repos → alles intakt. Fängt Feld-Verluste in einzelnen Repos.
+- **CHECK:** 231 → 232 grün. (Frühere rote Läufe = Test-API-Verwechslungen, kein App-Bug.)
+
 ### Cycle #68 — 2026-07-18 — Fachfrage/beste Antwort über HTTP getestet
 - **CHECK:** Q&A-Kernmechanik real: Frage (kind=frage) → Antwort (Kommentar) → nur Fragesteller:in darf beste Antwort setzen (sonst 403), dann accepted_comment_id gesetzt. Kein Defekt.
 - **WORK:** HTTP-Test inkl. Autor-Gate (403 für Fremde).

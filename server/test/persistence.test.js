@@ -43,3 +43,41 @@ test('Persistenz: save ist atomar (keine zurückbleibende .tmp-Datei; letzter St
   assert.equal(p.load().n, 2);
   assert.equal(fs.existsSync(fp + '.tmp'), false, 'keine übrig gebliebene temp-Datei');
 });
+
+// Voller Persistenz-Pfad mit echten Daten: Repos -> __dump -> JSON (wie auf Platte)
+// -> __load in FRISCHE Repos. Deckt die Lücke, die der reine File-Layer-Test lässt
+// (dort ist der Snapshot generisch): fängt Feld-Verluste in einzelnen Repo-__dump/__load.
+test('Persistenz-Integration: echte Social-Daten überleben dump -> JSON -> load in frische Repos', async () => {
+  const { createMemoryRepo } = await import('../src/repo/memoryRepo.js');
+  const { createSocialRepo } = await import('../src/repo/socialRepo.js');
+  const { createOrgAuthService } = await import('../src/services/orgAuth.js');
+  const { createSocialService } = await import('../src/services/social.js');
+
+  const repo = createMemoryRepo();
+  const socialRepo = createSocialRepo();
+  const orgAuth = createOrgAuthService(repo);
+  const social = createSocialService(socialRepo, repo);
+  const A = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'A' }, owner: { name: 'Anna', email: 'a@a.at', password: 'geheim123' } });
+  const B = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'B' }, owner: { name: 'Bo', email: 'b@b.at', password: 'geheim123' } });
+  social.createProfile(A.user.id, { handle: 'anna', displayName: 'Anna' });
+  social.createProfile(B.user.id, { handle: 'bob', displayName: 'Bo' });
+  const post = social.createPost(A.user.id, { body: 'ROUNDTRIP-Beitrag', visibility: 'public' });
+  social.follow(B.user.id, A.user.id);
+  social.toggleBookmark(B.user.id, post.id);
+
+  // Snapshot einsammeln + durch JSON schicken (exakt wie die Datei-Persistenz).
+  const snapshot = JSON.parse(JSON.stringify({ foundation: repo.__dump(), social: socialRepo.__dump() }));
+
+  // In frische Repos laden.
+  const repo2 = createMemoryRepo();
+  const socialRepo2 = createSocialRepo();
+  repo2.__load(snapshot.foundation);
+  socialRepo2.__load(snapshot.social);
+
+  // Daten sind intakt: Nutzer, Profil, Beitrag, Follow, Bookmark.
+  assert.ok(repo2.getUserById(A.user.id), 'Nutzer A wiederhergestellt');
+  assert.equal(socialRepo2.getProfileByUserId(A.user.id).handle, 'anna', 'Profil wiederhergestellt');
+  assert.equal(socialRepo2.getPost(post.id).body, 'ROUNDTRIP-Beitrag', 'Beitrag wiederhergestellt');
+  assert.ok(socialRepo2.isFollowing(B.user.id, A.user.id), 'Follow wiederhergestellt');
+  assert.ok(socialRepo2.isBookmarked(B.user.id, post.id), 'Bookmark wiederhergestellt');
+});
