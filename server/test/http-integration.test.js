@@ -366,6 +366,24 @@ test('DSGVO-Datenexport über HTTP: liefert alle personenbezogenen Daten inkl. e
   assert.ok((dump.posts || []).some(p => (p.body || '').includes('Export-Beitrag ' + PORT)), 'eigener Beitrag im Export');
 });
 
+test('Konto-Löschung über HTTP: falsches Passwort abgelehnt, korrekt löscht Daten und entwertet Token', async () => {
+  const a = await reg('del' + PORT);
+  const marker = 'DELME' + PORT;
+  assert.equal((await post('/api/posts', a, { body: marker, visibility: 'public' })).status, 200);
+  // Falsches Passwort -> 401.
+  assert.equal((await post('/api/me/delete', a, { password: 'FALSCH' })).status, 401);
+  // Korrektes Passwort -> gelöscht.
+  assert.equal((await post('/api/me/delete', a, { password: 'geheim123' })).status, 200);
+  // Token danach: sauberes 401 not_authenticated (Nutzer existiert nicht mehr).
+  const after = await fetch(BASE + '/api/feed/home', { headers: H(a) });
+  assert.equal(after.status, 401);
+  assert.equal((await after.json()).code, 'not_authenticated');
+  // Beiträge des gelöschten Kontos sind aus dem öffentlichen Feed verschwunden (Art. 17).
+  const other = await reg('delx' + PORT);
+  const feed = await j('/api/feed/public', other);
+  assert.equal((feed.posts || []).filter(p => (p.body || '').includes(marker)).length, 0, 'Beiträge purge-t');
+});
+
 test('Merkliste über HTTP: Beitrag merken -> erscheint in Merkliste/ids -> erneut tippen -> weg', async () => {
   const a = await reg('bma' + PORT);
   const p = await (await post('/api/posts', a, { body: 'Merk mich ' + PORT, visibility: 'public' })).json();

@@ -396,7 +396,10 @@ const server = http.createServer(async (req, res) => {
     const route = routes.find(([m, rx]) => m === req.method && rx.test(pathname));
     if (!route) return json(req, res, 404, { error: 'Nicht gefunden' });
     const [, rx, authRequired, handler] = route;
-    const userId = userIdFrom(req);
+    let userId = userIdFrom(req);
+    // Token gültig signiert, aber Nutzer existiert nicht mehr (Konto gelöscht) -> wie nicht
+    // angemeldet behandeln, damit ein sauberes 401 statt eines Folgefehlers (400) kommt.
+    if (userId && !repo.getUserById(userId)) userId = null;
     // Eigener Code, damit das Frontend eine ABGELAUFENE/UNGÜLTIGE Sitzung von anderen
     // 401 (falscher Login, falsches Passwort) unterscheiden und sauber zum Login führen kann.
     if (authRequired && !userId) return json(req, res, 401, { error: 'Nicht angemeldet', code: 'not_authenticated' });

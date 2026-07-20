@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #65 — 2026-07-18 — Konto-Löschung (DSGVO Art. 17) + Auth-Bug behoben
+- **CHECK:** Löschfluss real: falsches PW→401, korrektes→200, Daten ge-purge-t. Dabei echten Bug gefunden: nach Löschung dekodierte der Token weiter zu einer userId → Auth-Guard ließ durch → 400 (Folgefehler) statt sauberem 401.
+- **WORK:** Auth-Guard prüft jetzt Nutzer-Existenz (`repo.getUserById`) — Token für gelöschte/nicht existente Nutzer → 401 `not_authenticated` (sauberer Logout-Redirect via #54). HTTP-Test für den kompletten Löschfluss inkl. Token-Entwertung + Beitrags-Purge.
+- **CHECK:** Token nach Löschung real 401 not_authenticated; 227 → 228 grün, `verify` komplett grün.
+
 ### Cycle #64 — 2026-07-18 — Profilseite verifiziert + DSGVO-Export getestet
 - **CHECK:** Profil-/Konto-Seite visuell geprüft — professionell & vollständig: Verifizierung beantragen, DSGVO-Datenexport, Passwort ändern, Konto löschen (rot/unwiderruflich). Kein Defekt.
 - **WORK:** HTTP-Test für `/api/me/export` (Auskunftsrecht Art. 15/20): Struktur vollständig (profile/posts/comments/bookmarks/DMs/exchange) + eigener Beitrag enthalten.
