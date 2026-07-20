@@ -123,6 +123,12 @@
   .offline-banner { position:fixed; top:0; left:0; right:0; z-index:60; text-align:center;
     background:var(--warn-bg); color:var(--warn-fg); border-bottom:1px solid var(--warn-bd);
     font-weight:700; font-size:15px; padding:10px 14px; }
+  /* Besuchs-Kontext: gut sichtbarer Info-Balken (blau/Info, NICHT rot/orange — die sind
+     kritischem Engpass bzw. Offline vorbehalten). Zeigt, dass man ein fremdes Land ansieht. */
+  .view-ctx { display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap;
+    background:var(--info-bg); color:var(--info-fg); border-bottom:1px solid var(--info-bd);
+    font-weight:600; font-size:14px; padding:9px 14px; }
+  .view-ctx button { flex:0 0 auto; }
   .skiplink { position:absolute; left:-9999px; top:0; z-index:20; background:var(--green); color:#fff; padding:10px 14px; border-radius:0 0 8px 0; font-weight:700; }
   .skiplink:focus { left:0; }
   #printhead { display:none; }

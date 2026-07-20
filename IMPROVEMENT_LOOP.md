@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #80 — 2026-07-18 — Roadmap Phase 1: nicht-destruktiver Länder-Switcher („Land = Sicht")
+- **THINK:** Der bisherige Switcher schrieb bei jedem Wechsel das PROFIL-Land um — die Vision will aber „Account bleibt derselbe, nur die Inhalte wechseln". Backend unterstützt das schon via `?country=` / `activeCountry()`.
+- **WORK:** Client-Zustand `ACTIVE_COUNTRY` + `viewCountry()`; Switcher setzt nur die Besuchs-Ansicht (kein Profil-Write), Sprache folgt dem besuchten Land, `?country=` an feed/public (×2) + news angehängt. Sichtbarer Info-Balken „Du besuchst {Land}" + 1-Klick-Zurück; i18n (vc_visiting/vc_back, DE/EN/PT); theme-aware CSS (Info-Blau, nicht Rot/Orange).
+- **CHECK:** Real: AT-Konto → GB besuchen zeigt GB-Beiträge in EN, ATMARK verschwindet, **Heimatland bleibt AT**, Zurück-Button stellt DE/AT wieder her; 0 JS-Fehler; 238 grün, Parität 650/650/650, Smoke 11/11, Browser-Audit sauber.
+
 ### Cycle #79 — 2026-07-18 — Roadmap Phase 1: 4 fehlende Länder ergänzt (12 → 16)
 - **THINK:** Aus der Ziel-Matrix des Architektur-Dossiers fehlten Liechtenstein (de) sowie Kanada, Australien, Südafrika (en) — „ein Land = ein Objekt".
 - **WORK:** 4 Einträge in `COUNTRIES` (Flagge, Sprache, Währung, Zeitzone, Regulator: Amt für Gesundheit / Health Canada / TGA / SAHPRA). Deutschsprachige Gruppe damit komplett (AT·DE·CH·LI). Tests selbstkonsistent gemacht (API == Register, statt hartkodierter 12) + die 4 Neuen geprüft; Smoke vergleicht gegen API-Anzahl.

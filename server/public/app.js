@@ -242,6 +242,7 @@ const I18N = {
     md_author:'Autor', md_removed:'bereits entfernt', md_gone:'Ziel nicht mehr vorhanden.',
     md_remove_comment:'🗑 Kommentar entfernen', md_remove_post:'🗑 Beitrag entfernen', md_ok:'✓ In Ordnung (Meldung schließen)',
     cs_title:'Wähle dein Land', cs_sub:'Danach siehst du Engpässe, Preise und das Netzwerk speziell für dein Land.', cs_change:'← Land ändern', logo_home:'Zur Startseite',
+    vc_visiting:'🌍 Du besuchst gerade {flag} {land} — dein Konto bleibt unverändert.', vc_back:'↩ Zurück zu {flag} {land}',
     au_login:'Anmelden', au_email:'E-Mail', au_email_ph:'name@apotheke.at', au_pw:'Passwort', au_register:'Neu registrieren', au_name:'Name',
     au_handle:'@Handle (öffentlicher Name im Netzwerk)', au_pw8:'Passwort (mind. 8 Zeichen)',
     au_country:'Land (bestimmt Feed-Inhalte & Sprache)', au_create:'Konto erstellen',
@@ -508,6 +509,7 @@ const I18N = {
     md_author:'Author', md_removed:'already removed', md_gone:'Target no longer exists.',
     md_remove_comment:'🗑 Remove comment', md_remove_post:'🗑 Remove post', md_ok:'✓ OK (close report)',
     cs_title:'Choose your country', cs_sub:'You’ll then see shortages, prices and the network specific to your country.', cs_change:'← Change country', logo_home:'To home',
+    vc_visiting:'🌍 You’re visiting {flag} {land} — your account stays unchanged.', vc_back:'↩ Back to {flag} {land}',
     au_login:'Log in', au_email:'Email', au_email_ph:'name@pharmacy.com', au_pw:'Password', au_register:'Sign up', au_name:'Name',
     au_handle:'@handle (public name in the network)', au_pw8:'Password (min. 8 characters)',
     au_country:'Country (sets feed content & language)', au_create:'Create account',
@@ -774,6 +776,7 @@ const I18N = {
     md_author:'Autor', md_removed:'já removido', md_gone:'O alvo já não existe.',
     md_remove_comment:'🗑 Remover comentário', md_remove_post:'🗑 Remover publicação', md_ok:'✓ OK (fechar denúncia)',
     cs_title:'Escolha o seu país', cs_sub:'Verá depois faltas, preços e a rede específicos do seu país.', cs_change:'← Mudar de país', logo_home:'Para o início',
+    vc_visiting:'🌍 Está a visitar {flag} {land} — a sua conta permanece inalterada.', vc_back:'↩ Voltar para {flag} {land}',
     au_login:'Entrar', au_email:'E-mail', au_email_ph:'nome@farmacia.pt', au_pw:'Palavra-passe', au_register:'Registar', au_name:'Nome',
     au_handle:'@handle (nome público na rede)', au_pw8:'Palavra-passe (mín. 8 caracteres)',
     au_country:'País (define conteúdo do feed & idioma)', au_create:'Criar conta',
@@ -987,6 +990,11 @@ const linkifyMentions = (s) => esc(s)
     (m, pre, t) => `${pre}<span class="hashtag clickable" data-hashtag="${t}">#${t}</span>`);
 const app = document.getElementById('app');
 let me = null, tab = 'overview', iAmModerator = false, publicSort = 'neu', publicFilter = 'all';
+// Aktiver Länder-Kontext („Land = Sicht"): temporäre Besuchs-Ansicht, die das HEIMATLAND
+// (me.country) NICHT verändert. null = eigenes Land. Der Switcher setzt nur diese Variable;
+// länder-gescopte Fetches hängen sie an. So bleibt der Account gleich, nur die Inhalte wechseln.
+let ACTIVE_COUNTRY = null;
+const viewCountry = () => ACTIVE_COUNTRY || (me && me.country) || 'AT';
 let shortageFilter = ''; // '', 'kritisch', 'watched', 'community'
 let shortageQuery = '';  // Textsuche nach Wirkstoff/Präparat
 let shortageSort = 'kritisch'; // 'kritisch' (kritischste zuerst) | 'neu' (neueste zuerst)
@@ -1133,19 +1141,42 @@ async function initCountrySwitcher() {
   if (!sel) return;
   await ensureCountries();
   if (!COUNTRIES_CACHE.length) return;
-  sel.innerHTML = countryOptionsHtml((me && me.country) || 'AT');
+  sel.innerHTML = countryOptionsHtml(viewCountry());
   sel.classList.remove('hidden');
-  sel.onchange = async () => {
+  // Nicht-destruktiver Länder-Wechsel: nur die BESUCHS-Ansicht wechseln, Heimatland bleibt.
+  sel.onchange = () => {
     const code = sel.value;
-    try {
-      const r = await api('POST','/api/profile', { country: code });
-      me = r.profile || me;
-      setLocale((me && me.locale) || 'de');
-      applyI18n(); applyTheme(); applyFontScale(); // Theme-Label + Schriftgröße-Tooltip folgen der neuen Sprache
-      loadTab(); // Inhalte des aktiven Reiters neu, jetzt fürs gewählte Land
-    } catch {
-      sel.value = (me && me.country) || 'AT'; // bei Fehler Auswahl zurücksetzen
-    }
+    const home = (me && me.country) || 'AT';
+    ACTIVE_COUNTRY = (code === home) ? null : code; // eigenes Land = kein „Besuch"
+    const c = (COUNTRIES_CACHE || []).find(x => x.code === viewCountry());
+    setLocale((c && c.locale_default) || (me && me.locale) || 'de'); // Sprache folgt der Ansicht
+    applyI18n(); applyTheme(); applyFontScale();
+    updateViewContext();
+    loadTab(); // Inhalte des aktiven Reiters für die gewählte Länder-Ansicht neu laden
+  };
+  updateViewContext();
+}
+// Sichtbarer Hinweis, wenn man ein FREMDES Land besucht — plus 1-Klick zurück zum eigenen.
+function updateViewContext() {
+  let bar = document.getElementById('viewCtx');
+  const home = (me && me.country) || 'AT';
+  const visiting = ACTIVE_COUNTRY && ACTIVE_COUNTRY !== home;
+  if (!visiting) { if (bar) bar.remove(); return; }
+  const c = (COUNTRIES_CACHE || []).find(x => x.code === ACTIVE_COUNTRY);
+  const hc = (COUNTRIES_CACHE || []).find(x => x.code === home);
+  if (!bar) {
+    bar = el('<div id="viewCtx" class="view-ctx" role="status" aria-live="polite"></div>');
+    const anchor = document.getElementById('app');
+    anchor.parentNode.insertBefore(bar, anchor);
+  }
+  bar.innerHTML = `<span>${esc(ti('vc_visiting', { flag: (c && c.flag) || '🌍', land: (c && c.name) || ACTIVE_COUNTRY }))}</span>
+    <button id="vcBack" class="ghost small">${esc(ti('vc_back', { flag: (hc && hc.flag) || '🏠', land: (hc && hc.name) || home }))}</button>`;
+  bar.querySelector('#vcBack').onclick = () => {
+    ACTIVE_COUNTRY = null;
+    const sel = document.getElementById('countrySwitch'); if (sel) sel.value = home;
+    const hcc = (COUNTRIES_CACHE || []).find(x => x.code === home);
+    setLocale((hcc && hcc.locale_default) || (me && me.locale) || 'de');
+    applyI18n(); applyTheme(); applyFontScale(); updateViewContext(); loadTab();
   };
 }
 
@@ -1409,7 +1440,7 @@ async function loadOverview() {
 // Kolleg:innen und sammelt "beste Antwort"-Reputation.
 async function renderOpenQuestions(feed) {
   let d;
-  try { d = await api('GET','/api/feed/public?filter=questions'); } catch { return; }
+  try { d = await api('GET','/api/feed/public?filter=questions&country=' + viewCountry()); } catch { return; }
   const open = (d.posts || []).filter(p => p.is_question && !p.answered && !(me && p.author && p.author.handle === me.handle)).slice(0, 3);
   if (!open.length) return;
   const card = el(`<div class="card"><div class="row"><b>${esc(t('oq_title'))}</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:12px">${esc(t('oq_waiting'))}</span></div><div data-oq style="margin-top:6px"></div></div>`);
@@ -1659,7 +1690,7 @@ async function loadNews() {
   const list = document.getElementById('newslist');
   list.innerHTML = '<div class="loading">…</div>';
   try {
-    const d = await api('GET','/api/news');
+    const d = await api('GET','/api/news?country=' + viewCountry());
     list.innerHTML = '';
     if (!d.posts.length) { list.innerHTML = `<div class="card muted">${esc(t('nw_empty'))}</div>`; return; }
     d.posts.forEach(p => list.appendChild(postCard(p)));
@@ -2396,7 +2427,7 @@ async function loadFeed() {
   const feed = document.getElementById('feed');
   feed.innerHTML = '<div class="loading">…</div>';
   try {
-    const url = tab==='home' ? '/api/feed/home' : ('/api/feed/public?sort=' + publicSort + '&filter=' + publicFilter);
+    const url = tab==='home' ? '/api/feed/home' : ('/api/feed/public?sort=' + publicSort + '&filter=' + publicFilter + '&country=' + viewCountry());
     const d = await api('GET', url);
     feed.innerHTML = '';
     if (tab !== 'home') {
