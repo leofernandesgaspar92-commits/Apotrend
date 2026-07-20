@@ -60,7 +60,7 @@ export function createMemoryRepo() {
       if (!email || !name || !passwordHash) throw new Error('email, name, passwordHash erforderlich.');
       const key = String(email).trim().toLowerCase();
       if (usersByEmail.has(key)) { const e = new Error('E-Mail ist bereits vergeben.'); e.code = 'email_taken'; throw e; }
-      const user = { id: uuid(), email: key, name, password_hash: passwordHash, status, twofa_secret: null, created_at: now() };
+      const user = { id: uuid(), email: key, name, password_hash: passwordHash, status, twofa_secret: null, recovery_hashes: [], created_at: now() };
       users.set(user.id, user);
       usersByEmail.set(key, user.id);
       return { ...user };
@@ -80,6 +80,14 @@ export function createMemoryRepo() {
       const u = users.get(userId);
       if (!u) return null;
       u.password_hash = passwordHash;
+      return { ...u };
+    },
+
+    // Wiederherstellungscode-Hashes setzen (Registrierung erzeugt sie, Reset verbraucht einen).
+    setRecoveryHashes(userId, hashes) {
+      const u = users.get(userId);
+      if (!u) return null;
+      u.recovery_hashes = Array.isArray(hashes) ? hashes : [];
       return { ...u };
     },
 

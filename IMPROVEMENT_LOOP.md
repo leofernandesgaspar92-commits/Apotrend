@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #88 — 2026-07-20 — Passwort-Reset per Wiederherstellungscodes (ohne E-Mail-Dienst)
+- **THINK:** „Passwort vergessen" fehlte komplett — Nutzer:innen waren bei Passwortverlust ausgesperrt. Der klassische E-Mail-Link-Weg braucht einen externen Anbieter (verletzt „nur Built-ins"). Sichere, vollständig eigenständige Alternative: Einmal-Wiederherstellungscodes (wie 2FA-Backup-Codes).
+- **WORK:** `src/domain/recoveryCodes.js` (8 Codes, verwechslungsarmes Alphabet, scrypt-Hashes, konstante-Zeit-Match). Registrierung erzeugt Codes und zeigt sie EINMAL (nur Hashes gespeichert). `POST /api/password/reset` (E-Mail+Code+neues PW, rate-limitiert, generischer Fehler gegen Enumeration, Code einmalig gültig). Eingeloggt: verbleibende Codes anzeigen + neu erzeugen (`/api/recovery-codes[/regenerate]`). Frontend: Codes-Screen nach Registrierung (Kopieren/Download/Weiter), „Passwort vergessen?"-Link → Reset-Screen, Konto-Sektion mit Rest-Anzahl + Neu-Erzeugung; i18n DE/EN/PT.
+- **CHECK:** 254 → 262 grün (+7 Domain/Service-Unit, +1 HTTP-End-to-End), Parität 686/686/686, Smoke 15/15, Guards 0. Echter Browser (1280): Registrierung → Codes-Screen (8 Codes, Screenshot), Ausloggen → „Passwort vergessen" → Reset mit Code → Login mit neuem Passwort, 0 JS-Fehler.
+
 ### Cycle #87 — 2026-07-20 — Social: Umfrage-Abstimmung benachrichtigt die Autor:in
 - **THINK:** Umfragen liefen still — die Ersteller:in erfuhr nichts von Engagement. „Facebook für Apotheker" lebt von Rückkopplung; eine Abstimm-Benachrichtigung schließt die Umfrage-Schleife.
 - **WORK:** `votePoll` benachrichtigt die Autor:in (`poll_vote`) — aber nur bei einer **neuen** Stimme (nicht bei Wechsel/Rückzug), nie sich selbst (spamfrei). Frontend: Verb `nv_poll_vote` (DE/EN/PT) + 📊-Icon; Klick springt über den bestehenden `post_id`-Pfad zum Beitrag.

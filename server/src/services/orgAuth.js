@@ -2,6 +2,7 @@
 // zentrale Mandanten-Isolation. Kennt nur das Repository-Interface + Domaenen-
 // regeln — keine DB-Details, kein HTTP.
 import { hashPassword, verifyPassword } from '../domain/password.js';
+import { generateRecoveryCodes, matchRecoveryCode } from '../domain/recoveryCodes.js';
 import { ROLES, ORG_TYPES, roleAllowedForOrgType, can } from '../domain/roles.js';
 import { AppError } from '../domain/errors.js';
 
@@ -20,7 +21,10 @@ export function createOrgAuthService(repo) {
       const membership = repo.createMembership({
         userId: user.id, organizationId: org.id, role: ROLES.ADMIN,
       });
-      return { organization: org, user: publicUser(user), membership };
+      // Einmal-Wiederherstellungscodes erzeugen: Klartext EINMAL zurückgeben, nur Hashes speichern.
+      const { codes, hashes } = generateRecoveryCodes();
+      repo.setRecoveryHashes(user.id, hashes);
+      return { organization: org, user: publicUser(user), membership, recoveryCodes: codes };
     },
 
     // Weiteren Nutzer in eine bestehende Organisation aufnehmen (Rolle geprueft).
@@ -55,6 +59,36 @@ export function createOrgAuthService(repo) {
       return { ok: true };
     },
 
+    // Passwort per Einmal-Wiederherstellungscode zurücksetzen (ohne E-Mail-Dienst).
+    // E-Mail + Code + neues Passwort. Ein falsches Paar liefert bewusst denselben
+    // generischen Fehler (reset_invalid) — verrät nicht, ob die E-Mail existiert.
+    resetPassword({ email, code, newPassword }) {
+      if (!newPassword || String(newPassword).length < 8) throw new AppError('new_pw_short', 'Neues Passwort: mindestens 8 Zeichen.');
+      const user = repo.getUserByEmail(email || '');
+      const idx = user ? matchRecoveryCode(code, user.recovery_hashes || []) : -1;
+      if (!user || idx === -1) throw new AppError('reset_invalid', 'E-Mail oder Wiederherstellungscode ist ungültig.');
+      // Genutzten Code verbrauchen (einmalig gültig), dann Passwort setzen.
+      const remaining = (user.recovery_hashes || []).filter((_, i) => i !== idx);
+      repo.setRecoveryHashes(user.id, remaining);
+      repo.setUserPassword(user.id, hashPassword(newPassword));
+      return { ok: true, remaining_codes: remaining.length };
+    },
+
+    // Anzahl noch gültiger Wiederherstellungscodes (fürs eingeloggte Konto).
+    remainingRecoveryCodes(userId) {
+      const user = repo.getUserById(userId);
+      return user ? (user.recovery_hashes || []).length : 0;
+    },
+
+    // Neue Codes erzeugen (invalidiert alle alten) — Klartext EINMAL zurückgeben.
+    regenerateRecoveryCodes(userId) {
+      const user = repo.getUserById(userId);
+      if (!user) throw new Error('Unbekannter Nutzer.');
+      const { codes, hashes } = generateRecoveryCodes();
+      repo.setRecoveryHashes(userId, hashes);
+      return { codes };
+    },
+
     // Passwort eines eingeloggten Nutzers prüfen (z.B. vor Konto-Löschung).
     verifyUserPassword(userId, password) {
       const user = repo.getUserById(userId);
@@ -84,6 +118,6 @@ export class ForbiddenError extends Error {
 }
 
 function publicUser(u) {
-  const { password_hash, twofa_secret, ...safe } = u;
+  const { password_hash, twofa_secret, recovery_hashes, ...safe } = u;
   return safe;
 }

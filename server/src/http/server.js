@@ -32,6 +32,8 @@ import { createRateLimiter } from '../domain/rateLimiter.js';
 
 // Login-Brute-Force-Schutz: max. 5 Fehlversuche je (IP+E-Mail) in 15 Minuten.
 const loginLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
+// Passwort-Reset: eng begrenzt, damit Wiederherstellungscodes nicht erraten werden.
+const resetLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, '..', '..', 'public');
@@ -194,8 +196,25 @@ const routes = [
     // Kontotyp bei der Registrierung (Apotheke/Pharma/Behörde/Privat); Fallback Apotheke.
     const accountType = normalizeAccountType(body.accountType);
     const profile = social.createProfile(reg.user.id, { handle, displayName: displayName || name, pharmacyOrgId: reg.organization.id, country, locale, accountType });
-    return { token: issueToken(reg.user.id), user: reg.user, profile };
+    // recoveryCodes einmalig mitschicken, damit das Frontend sie zum Sichern anzeigen kann.
+    return { token: issueToken(reg.user.id), user: reg.user, profile, recovery_codes: reg.recoveryCodes };
   }],
+
+  // Passwort per Wiederherstellungscode zurücksetzen (kein E-Mail-Dienst nötig). Rate-limitiert.
+  ['POST', /^\/api\/password\/reset$/, false, async ({ body, ip }) => {
+    const key = (ip || 'unknown') + '|' + String(body.email || '').trim().toLowerCase();
+    const st = resetLimiter.check(key);
+    if (st.blocked) { const e = new Error('Zu viele Versuche. Bitte später erneut.'); e.status = 429; e.code = 'too_many_attempts'; e.retryAfterS = Math.ceil(st.retryAfterMs / 1000); throw e; }
+    try {
+      const r = orgAuth.resetPassword({ email: body.email, code: body.code, newPassword: body.newPassword });
+      resetLimiter.reset(key); // Erfolg hebt die Bremse auf
+      return r;
+    } catch (e) { resetLimiter.fail(key); throw e; } // Fehlversuch zählt gegen das Limit
+  }],
+
+  // Verbleibende Wiederherstellungscodes (eingeloggt) + Neu-Erzeugung.
+  ['GET', /^\/api\/recovery-codes$/, true, async ({ userId }) => ({ remaining: orgAuth.remainingRecoveryCodes(userId) })],
+  ['POST', /^\/api\/recovery-codes\/regenerate$/, true, async ({ userId }) => orgAuth.regenerateRecoveryCodes(userId)],
 
   ['POST', /^\/api\/login$/, false, async ({ body, ip }) => {
     const key = (ip || 'unknown') + '|' + String(body.email || '').trim().toLowerCase();

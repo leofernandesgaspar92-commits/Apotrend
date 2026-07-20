@@ -714,6 +714,31 @@ test('Login-Brute-Force-Schutz: sperrt nach 5 Fehlversuchen (429), Erfolg setzt 
   assert.equal(ok2.status, 200, 'anderes Konto weiterhin einlogbar');
 });
 
+test('Passwort-Reset per Wiederherstellungscode über HTTP (kein E-Mail-Dienst)', async () => {
+  // Registrierung liefert die Codes einmalig mit.
+  const handle = 'recov' + PORT;
+  const rr = await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: handle, handle, email: handle + '@a.at', password: 'geheim123' }) });
+  const reg = await rr.json();
+  assert.ok(Array.isArray(reg.recovery_codes) && reg.recovery_codes.length === 8, '8 Codes bei Registrierung');
+  const email = handle + '@a.at';
+  const code = reg.recovery_codes[0];
+  // Reset mit gültigem Code -> neues Passwort greift
+  const reset = await post('/api/password/reset', null, { email, code, newPassword: 'neuespw123' });
+  assert.equal(reset.status, 200);
+  assert.equal((await reset.json()).remaining_codes, 7);
+  const ok = await fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email, password: 'neuespw123' }) });
+  assert.equal(ok.status, 200, 'Login mit neuem Passwort');
+  // Verbrauchter Code funktioniert nicht mehr -> reset_invalid (400)
+  const reuse = await post('/api/password/reset', null, { email, code, newPassword: 'nochwas123' });
+  assert.equal(reuse.status, 400);
+  assert.equal((await reuse.json()).code, 'reset_invalid');
+  // Eingeloggt: verbleibende Codes abfragen + neu erzeugen
+  const rem = await j('/api/recovery-codes', reg.token);
+  assert.equal(rem.remaining, 7);
+  const regen = await (await post('/api/recovery-codes/regenerate', reg.token, {})).json();
+  assert.equal(regen.codes.length, 8, 'Neu-Erzeugung liefert 8 Codes');
+});
+
 test('Statische Assets: gzip-Komprimierung + ETag/304-Revalidierung', async () => {
   // gzip nur, wenn der Client es anbietet.
   const gz = await rawGet('/app.js', { 'accept-encoding': 'gzip' });

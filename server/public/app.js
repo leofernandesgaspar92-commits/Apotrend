@@ -248,6 +248,15 @@ const I18N = {
     au_login:'Anmelden', au_email:'E-Mail', au_email_ph:'name@apotheke.at', au_pw:'Passwort', au_register:'Neu registrieren', au_name:'Name',
     au_handle:'@Handle (öffentlicher Name im Netzwerk)', au_pw8:'Passwort (mind. 8 Zeichen)',
     au_country:'Land (bestimmt Feed-Inhalte & Sprache)', au_create:'Konto erstellen',
+    au_forgot:'Passwort vergessen?',
+    rc_title:'🔑 Deine Wiederherstellungscodes', rc_intro:'Bewahre diese Codes sicher auf (z. B. ausdrucken). Mit einem Code kannst du dein Passwort zurücksetzen, falls du es vergisst — jeder Code funktioniert nur ein einziges Mal.',
+    rc_copy:'Codes kopieren', rc_copied:'Kopiert ✓', rc_download:'Als Datei speichern', rc_saved_cta:'Ich habe die Codes gespeichert — weiter',
+    rs_title:'Passwort zurücksetzen', rs_intro:'Gib deine E-Mail, einen deiner Wiederherstellungscodes und ein neues Passwort ein.',
+    rs_code:'Wiederherstellungscode', rs_newpw:'Neues Passwort (mind. 8 Zeichen)', rs_go:'Passwort zurücksetzen',
+    rs_success:'✓ Passwort geändert. Du kannst dich jetzt mit dem neuen Passwort anmelden.', rs_back:'← Zurück zur Anmeldung',
+    ac_rc_title:'Wiederherstellungscodes', ac_rc_remaining:'Noch {n} von 8 Codes gültig.', ac_rc_remaining_one:'Noch 1 von 8 Codes gültig.', ac_rc_remaining_zero:'Keine gültigen Codes mehr — bitte neue erzeugen.',
+    ac_rc_regen:'Neue Codes erzeugen', ac_rc_warn:'Achtung: dadurch werden alle bisherigen Codes ungültig.',
+    e_reset_invalid:'E-Mail oder Wiederherstellungscode ist ungültig.',
     at_label:'Kontotyp', at_pharmacy:'🏥 Apotheke', at_pharma:'🏭 Pharma-Unternehmen', at_authority:'🏛️ Behörde', at_private:'👤 Privatnutzer:in',
     wd_title:'🏷️ Aktionen zu deinen Wirkstoffen', wd_all:'Alle Rabatte', wd_sub:'Für diese von dir beobachteten Wirkstoffe läuft gerade eine Aktion:',
     wo_title:'🔄 Bezugsquellen zu deinen Wirkstoffen', wo_sub:'Für diese beobachteten Wirkstoffe bieten Apotheken gerade Bestand an:',
@@ -517,6 +526,15 @@ const I18N = {
     au_login:'Log in', au_email:'Email', au_email_ph:'name@pharmacy.com', au_pw:'Password', au_register:'Sign up', au_name:'Name',
     au_handle:'@handle (public name in the network)', au_pw8:'Password (min. 8 characters)',
     au_country:'Country (sets feed content & language)', au_create:'Create account',
+    au_forgot:'Forgot your password?',
+    rc_title:'🔑 Your recovery codes', rc_intro:'Keep these codes somewhere safe (e.g. print them). With one code you can reset your password if you forget it — each code works only once.',
+    rc_copy:'Copy codes', rc_copied:'Copied ✓', rc_download:'Save as file', rc_saved_cta:'I have saved the codes — continue',
+    rs_title:'Reset password', rs_intro:'Enter your email, one of your recovery codes and a new password.',
+    rs_code:'Recovery code', rs_newpw:'New password (min. 8 characters)', rs_go:'Reset password',
+    rs_success:'✓ Password changed. You can now log in with the new password.', rs_back:'← Back to log in',
+    ac_rc_title:'Recovery codes', ac_rc_remaining:'{n} of 8 codes still valid.', ac_rc_remaining_one:'1 of 8 codes still valid.', ac_rc_remaining_zero:'No valid codes left — please generate new ones.',
+    ac_rc_regen:'Generate new codes', ac_rc_warn:'Note: this invalidates all previous codes.',
+    e_reset_invalid:'Email or recovery code is invalid.',
     at_label:'Account type', at_pharmacy:'🏥 Pharmacy', at_pharma:'🏭 Pharma company', at_authority:'🏛️ Authority', at_private:'👤 Private user',
     wd_title:'🏷️ Deals for your substances', wd_all:'All deals', wd_sub:'A deal is currently running for these substances you watch:',
     wo_title:'🔄 Sources for your substances', wo_sub:'Pharmacies are currently offering stock for these substances you watch:',
@@ -786,6 +804,15 @@ const I18N = {
     au_login:'Entrar', au_email:'E-mail', au_email_ph:'nome@farmacia.pt', au_pw:'Palavra-passe', au_register:'Registar', au_name:'Nome',
     au_handle:'@handle (nome público na rede)', au_pw8:'Palavra-passe (mín. 8 caracteres)',
     au_country:'País (define conteúdo do feed & idioma)', au_create:'Criar conta',
+    au_forgot:'Esqueceu-se da palavra-passe?',
+    rc_title:'🔑 Os seus códigos de recuperação', rc_intro:'Guarde estes códigos em local seguro (por ex. imprima-os). Com um código pode redefinir a sua palavra-passe se a esquecer — cada código funciona apenas uma vez.',
+    rc_copy:'Copiar códigos', rc_copied:'Copiado ✓', rc_download:'Guardar como ficheiro', rc_saved_cta:'Guardei os códigos — continuar',
+    rs_title:'Redefinir palavra-passe', rs_intro:'Introduza o seu e-mail, um dos seus códigos de recuperação e uma nova palavra-passe.',
+    rs_code:'Código de recuperação', rs_newpw:'Nova palavra-passe (mín. 8 caracteres)', rs_go:'Redefinir palavra-passe',
+    rs_success:'✓ Palavra-passe alterada. Já pode entrar com a nova palavra-passe.', rs_back:'← Voltar ao início de sessão',
+    ac_rc_title:'Códigos de recuperação', ac_rc_remaining:'{n} de 8 códigos ainda válidos.', ac_rc_remaining_one:'1 de 8 códigos ainda válido.', ac_rc_remaining_zero:'Sem códigos válidos — gere novos, por favor.',
+    ac_rc_regen:'Gerar novos códigos', ac_rc_warn:'Atenção: isto invalida todos os códigos anteriores.',
+    e_reset_invalid:'E-mail ou código de recuperação inválido.',
     at_label:'Tipo de conta', at_pharmacy:'🏥 Farmácia', at_pharma:'🏭 Empresa farmacêutica', at_authority:'🏛️ Autoridade', at_private:'👤 Utilizador privado',
     wd_title:'🏷️ Promoções para as suas substâncias', wd_all:'Todos os descontos', wd_sub:'Há uma promoção a decorrer para estas substâncias que vigia:',
     wo_title:'🔄 Fontes para as suas substâncias', wo_sub:'Há farmácias a oferecer stock para estas substâncias que vigia:',
@@ -1067,6 +1094,7 @@ function authScreen() {
     <label for="li_email">${esc(t('au_email'))}</label><input id="li_email" type="email" placeholder="${esc(t('au_email_ph'))}">
     <label for="li_pw">${esc(t('au_pw'))}</label><input id="li_pw" type="password" placeholder="${esc(t('au_pw'))}">
     <div style="margin-top:12px"><button id="li_go">${esc(t('au_login'))}</button></div>
+    <div style="margin-top:8px"><button class="linklike small" id="li_forgot">${esc(t('au_forgot'))}</button></div>
     <div class="err" id="li_err"></div>
   </div>
   <div class="card">
@@ -1093,9 +1121,13 @@ function authScreen() {
   document.getElementById('rg_go').onclick = async () => {
     try {
       const d = await api('POST','/api/register',{ name:v('rg_name'), handle:v('rg_handle'), email:v('rg_email'), password:v('rg_pw'), country:v('rg_country'), accountType:v('rg_accounttype') });
-      afterAuth(d);
+      // Wiederherstellungscodes einmalig zeigen (zum Sichern), dann in die App.
+      if (Array.isArray(d.recovery_codes) && d.recovery_codes.length) recoveryCodesScreen(d.recovery_codes, () => afterAuth(d));
+      else afterAuth(d);
     } catch(e){ document.getElementById('rg_err').textContent = e.message; }
   };
+  const forgot = document.getElementById('li_forgot');
+  if (forgot) forgot.onclick = () => resetScreen();
   // Länderauswahl bei der Registrierung: das in Schritt 1 gewählte Land ist vorausgewählt
   // (Feed-Inhalte + Sprache folgen dem Land). Änderbar, falls doch ein anderes Land gewünscht.
   ensureCountries().then(() => {
@@ -1114,6 +1146,67 @@ function afterAuth(d) {
   localStorage.setItem('apo_token', d.token);
   me = d.profile || d.user;
   mainScreen();
+}
+
+// Wiederherstellungscodes einmalig anzeigen (nach Registrierung oder Neu-Erzeugung).
+// onDone wird beim „Weiter" aufgerufen. codesOnly=true nur anzeigen (kein App-Wechsel).
+function recoveryCodesScreen(codes, onDone) {
+  setDocTitle(t('rc_title'));
+  hideHeaderForAuth();
+  app.innerHTML = '';
+  const list = codes.map(c => `<li><code>${esc(c)}</code></li>`).join('');
+  const card = el(`<div class="card" style="max-width:520px;margin:0 auto">
+    <h1>${esc(t('rc_title'))}</h1>
+    <div class="muted" style="margin-top:4px">${esc(t('rc_intro'))}</div>
+    <ol class="recovery-codes" style="margin-top:12px">${list}</ol>
+    <div class="row" style="margin-top:12px;gap:8px">
+      <button class="ghost small" id="rc_copy">${esc(t('rc_copy'))}</button>
+      <button class="ghost small" id="rc_dl">${esc(t('rc_download'))}</button>
+      <span id="rc_msg" class="muted" style="margin-left:4px"></span>
+    </div>
+    <div style="margin-top:16px"><button id="rc_done">${esc(t('rc_saved_cta'))}</button></div>
+  </div>`);
+  app.appendChild(card);
+  const text = codes.join('\n');
+  card.querySelector('#rc_copy').onclick = async () => {
+    try { await navigator.clipboard.writeText(text); card.querySelector('#rc_msg').textContent = t('rc_copied'); }
+    catch { /* Clipboard nicht verfügbar — Download bleibt als Fallback */ }
+  };
+  card.querySelector('#rc_dl').onclick = () => {
+    const blob = new Blob([text + '\n'], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url; link.download = 'apotrend-wiederherstellungscodes.txt'; link.click();
+    URL.revokeObjectURL(url);
+  };
+  card.querySelector('#rc_done').onclick = () => { if (typeof onDone === 'function') onDone(); };
+}
+
+// „Passwort vergessen" — Reset per Wiederherstellungscode (kein E-Mail-Dienst nötig).
+function resetScreen() {
+  setDocTitle(t('rs_title'));
+  hideHeaderForAuth();
+  app.innerHTML = '';
+  const card = el(`<div class="card" style="max-width:520px;margin:0 auto">
+    <h1>${esc(t('rs_title'))}</h1>
+    <div class="muted" style="margin-top:4px">${esc(t('rs_intro'))}</div>
+    <label for="rs_email" style="margin-top:10px">${esc(t('au_email'))}</label><input id="rs_email" type="email" placeholder="${esc(t('au_email_ph'))}">
+    <label for="rs_code">${esc(t('rs_code'))}</label><input id="rs_code" placeholder="AB2CD-EF3GH" autocomplete="off">
+    <label for="rs_pw">${esc(t('rs_newpw'))}</label><input id="rs_pw" type="password">
+    <div class="row" style="margin-top:12px;gap:8px"><button id="rs_go">${esc(t('rs_go'))}</button>
+      <button class="linklike small" id="rs_back">${esc(t('rs_back'))}</button></div>
+    <div id="rs_msg" style="margin-top:8px"></div>
+  </div>`);
+  app.appendChild(card);
+  card.querySelector('#rs_back').onclick = () => authScreen();
+  card.querySelector('#rs_go').onclick = async () => {
+    const msg = card.querySelector('#rs_msg');
+    try {
+      await api('POST', '/api/password/reset', { email: v('rs_email'), code: v('rs_code'), newPassword: document.getElementById('rs_pw').value });
+      msg.style.color = 'var(--green)'; msg.textContent = t('rs_success');
+      card.querySelector('#rs_go').disabled = true;
+    } catch (e) { msg.style.color = 'var(--crit-fg)'; msg.textContent = e.message; }
+  };
 }
 
 // ── Länder-/Sprach-Umschalter (Kopfzeile) ──
@@ -2954,10 +3047,28 @@ async function openProfile(handle) {
           <div class="row" style="margin-top:8px"><button class="small" id="pw_go">${esc(t('ac_pw_title'))}</button><span id="pw_msg" style="margin-left:8px"></span></div>
         </div>
         <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
+          <b style="font-size:0.95em">${esc(t('ac_rc_title'))}</b>
+          <div class="muted" style="margin-top:4px" id="rc_remaining">—</div>
+          <div class="row" style="margin-top:8px"><button class="ghost small" id="rc_regen">${esc(t('ac_rc_regen'))}</button><span class="muted" style="margin-left:8px;font-size:0.85em">${esc(t('ac_rc_warn'))}</span></div>
+        </div>
+        <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
           <b style="font-size:0.95em;color:var(--crit-fg)">${esc(t('ac_del_title'))}</b>
           <div class="muted" style="margin-top:4px">${esc(t('ac_del_d'))}</div>
           <div class="row" style="margin-top:8px"><button class="ghost small" id="acc_del" style="color:var(--crit-fg);border-color:var(--crit-fg)">${esc(t('ac_del_btn'))}</button></div>
         </div></div>`);
+      // Verbleibende Wiederherstellungscodes anzeigen + Neu-Erzeugung (invalidiert alte).
+      (async () => {
+        try {
+          const rc = await api('GET','/api/recovery-codes');
+          const n = rc.remaining;
+          const el2 = dcard.querySelector('#rc_remaining');
+          if (el2) el2.textContent = n === 0 ? t('ac_rc_remaining_zero') : (n === 1 ? t('ac_rc_remaining_one') : ti('ac_rc_remaining', { n }));
+        } catch { /* still lassen */ }
+      })();
+      dcard.querySelector('#rc_regen').onclick = async () => {
+        try { const r = await api('POST','/api/recovery-codes/regenerate'); if (r && r.codes) recoveryCodesScreen(r.codes, () => openProfile(me.handle)); }
+        catch(e){ alert(e.message); }
+      };
       dcard.querySelector('#acc_del').onclick = async () => {
         if (!confirm(t('ac_del_confirm'))) return;
         const pwd = prompt(t('ac_del_pw'));
