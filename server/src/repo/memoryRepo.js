@@ -18,6 +18,7 @@ export function createMemoryRepo() {
   const users = new Map();
   const usersByEmail = new Map(); // lower(email) -> userId
   const memberships = new Map();
+  const identities = new Map(); // `${provider}:${providerUserId}` -> userId (Social-Login-Verknüpfung)
   // collab-Modul
   const channels = new Map();
   const channelMembers = new Map(); // channelId -> Set(userId)
@@ -91,11 +92,30 @@ export function createMemoryRepo() {
       return { ...u };
     },
 
+    // Social-Login: externe Identität (provider + provider-User-ID) mit einem Konto verknüpfen.
+    linkIdentity(provider, providerUserId, userId) {
+      const key = `${provider}:${providerUserId}`;
+      identities.set(key, userId);
+      return { provider, provider_user_id: providerUserId, user_id: userId };
+    },
+    findUserIdByIdentity(provider, providerUserId) {
+      return identities.get(`${provider}:${providerUserId}`) || null;
+    },
+    listIdentities(userId) {
+      const out = [];
+      for (const [key, uid] of identities) if (uid === userId) { const i = key.indexOf(':'); out.push({ provider: key.slice(0, i), provider_user_id: key.slice(i + 1) }); }
+      return out;
+    },
+    unlinkIdentity(provider, providerUserId) {
+      return identities.delete(`${provider}:${providerUserId}`);
+    },
+
     // DSGVO: Nutzer + E-Mail-Zuordnung + Mitgliedschaften entfernen.
     deleteUser(userId) {
       const u = users.get(userId);
       if (u) { usersByEmail.delete(u.email); users.delete(userId); }
       for (const [id, m] of memberships) if (m.user_id === userId) memberships.delete(id);
+      for (const [k, uid] of identities) if (uid === userId) identities.delete(k);
     },
 
     createMembership({ userId, organizationId, role }) {
@@ -234,7 +254,7 @@ export function createMemoryRepo() {
     __dump() {
       return {
         organizations: [...organizations], users: [...users], usersByEmail: [...usersByEmail],
-        memberships: [...memberships], channels: [...channels],
+        memberships: [...memberships], identities: [...identities], channels: [...channels],
         channelMembers: [...channelMembers].map(([k, s]) => [k, [...s]]),
         messages: [...messages], notes: [...notes], tasks: [...tasks],
         connections: [...connections], feedPosts: [...feedPosts], postResponses: [...postResponses],
@@ -245,7 +265,7 @@ export function createMemoryRepo() {
       if (!d) return;
       const fill = (map, rows) => { map.clear(); for (const [k, v] of rows || []) map.set(k, v); };
       fill(organizations, d.organizations); fill(users, d.users); fill(usersByEmail, d.usersByEmail);
-      fill(memberships, d.memberships); fill(channels, d.channels);
+      fill(memberships, d.memberships); fill(identities, d.identities); fill(channels, d.channels);
       channelMembers.clear(); for (const [k, arr] of d.channelMembers || []) channelMembers.set(k, new Set(arr));
       fill(messages, d.messages); fill(notes, d.notes); fill(tasks, d.tasks);
       fill(connections, d.connections); fill(feedPosts, d.feedPosts); fill(postResponses, d.postResponses);

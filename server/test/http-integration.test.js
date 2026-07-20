@@ -739,6 +739,24 @@ test('Passwort-Reset per Wiederherstellungscode über HTTP (kein E-Mail-Dienst)'
   assert.equal(regen.codes.length, 8, 'Neu-Erzeugung liefert 8 Codes');
 });
 
+test('Social-Login: Provider-Liste leer ohne Zugangsdaten; OAuth-Endpoint meldet klar', async () => {
+  const prov = await j('/api/auth/providers', null);
+  assert.deepEqual(prov.providers, [], 'ohne ENV-Zugangsdaten keine Provider');
+  // OAuth-Login gegen einen nicht konfigurierten Provider -> 400 oauth_not_configured
+  const r = await post('/api/auth/oauth/google', null, { code: 'x', redirectUri: 'https://app/cb' });
+  assert.equal(r.status, 400);
+  assert.equal((await r.json()).code, 'oauth_not_configured');
+});
+
+test('Sicherheit: /api/me liefert nie den Passwort-Hash oder Wiederherstellungs-Hashes', async () => {
+  const handle = 'nohash' + PORT;
+  const reg = await (await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: handle, handle, email: handle + '@a.at', password: 'geheim123' }) })).json();
+  const me = await j('/api/me', reg.token);
+  assert.equal(me.user.password_hash, undefined, 'kein Passwort-Hash in /api/me');
+  assert.equal(me.user.recovery_hashes, undefined, 'keine Wiederherstellungs-Hashes in /api/me');
+  assert.equal(me.user.twofa_secret, undefined, 'kein 2FA-Geheimnis in /api/me');
+});
+
 test('Statische Assets: gzip-Komprimierung + ETag/304-Revalidierung', async () => {
   // gzip nur, wenn der Client es anbietet.
   const gz = await rawGet('/app.js', { 'accept-encoding': 'gzip' });

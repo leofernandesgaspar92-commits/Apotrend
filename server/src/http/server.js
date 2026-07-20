@@ -23,6 +23,7 @@ import { createRabatteService } from '../services/rabatte.js';
 import { createExchangeService } from '../services/exchange.js';
 import { createSearchService } from '../services/search.js';
 import { createOverviewService } from '../services/overview.js';
+import { createOAuthService, buildProvidersFromEnv } from '../services/oauth.js';
 import { createAmrService } from '../services/amr.js';
 import { createPatientInfoService } from '../services/patientInfo.js';
 import { listCountries, normalizeCountry, normalizeLocale } from '../data/countries.js';
@@ -67,6 +68,8 @@ const search = createSearchService({ social, shortagesRepo, pricesRepo, rabatteR
 const amr = createAmrService();
 const overview = createOverviewService({ shortages, exchange, social, rabatte, prices, amr });
 const patientInfo = createPatientInfoService();
+// Social-Login: Provider nur aktiv, wenn Zugangsdaten als Umgebungsvariablen vorliegen.
+const oauth = createOAuthService({ repo, social, providers: buildProvidersFromEnv() });
 
 if (restoring) {
   repo.__load(snapshot.foundation);
@@ -178,6 +181,9 @@ const readBody = (req) => new Promise((resolve) => {
   req.on('end', () => { try { resolve(d ? JSON.parse(d) : {}); } catch { resolve({}); } });
 });
 const userIdFrom = (req) => verifyToken((req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
+// Nutzerobjekt vor der Auslieferung von Geheimnissen befreien (Passwort-Hash,
+// 2FA-Geheimnis, Wiederherstellungs-Hashes gehören nie in eine API-Antwort).
+const safeUser = (u) => { if (!u) return u; const { password_hash, twofa_secret, recovery_hashes, ...rest } = u; return rest; };
 
 // Route-Tabelle: [method, regex, authRequired, handler(ctx)]
 const routes = [
@@ -216,6 +222,25 @@ const routes = [
   ['GET', /^\/api\/recovery-codes$/, true, async ({ userId }) => ({ remaining: orgAuth.remainingRecoveryCodes(userId) })],
   ['POST', /^\/api\/recovery-codes\/regenerate$/, true, async ({ userId }) => orgAuth.regenerateRecoveryCodes(userId)],
 
+  // ── Social-Login (OAuth) — inaktiv, solange keine Provider konfiguriert sind. ──
+  // Optionaler ?redirect_uri= liefert je Provider die fertige Authorize-URL fürs Frontend.
+  ['GET', /^\/api\/auth\/providers$/, false, async ({ query }) => {
+    const redirectUri = query.get('redirect_uri') || '';
+    const providers = oauth.configuredProviders().map(name => {
+      let authorize_url = null;
+      // state = Providername: erlaubt dem Frontend, die Rückleitung dem Provider zuzuordnen.
+      if (redirectUri) { try { authorize_url = oauth.authorizeUrl(name, redirectUri, name); } catch { /* Provider ohne Authorize-URL */ } }
+      return { provider: name, authorize_url };
+    });
+    return { providers };
+  }],
+  ['POST', /^\/api\/auth\/oauth\/([a-z0-9_]+)$/, false, async ({ params, body }) => {
+    const { userId } = await oauth.loginOrRegister(params[0], body.code, body.redirectUri, { country: normalizeCountry(body.country), locale: body.locale });
+    return { token: issueToken(userId), user: safeUser(repo.getUserById(userId)), profile: social.getProfile(userId) };
+  }],
+  ['GET', /^\/api\/auth\/identities$/, true, async ({ userId }) => ({ identities: oauth.linkedIdentities(userId) })],
+  ['POST', /^\/api\/auth\/identities\/([a-z0-9_]+)\/unlink$/, true, async ({ userId, params }) => oauth.unlink(userId, params[0])],
+
   ['POST', /^\/api\/login$/, false, async ({ body, ip }) => {
     const key = (ip || 'unknown') + '|' + String(body.email || '').trim().toLowerCase();
     const st = loginLimiter.check(key);
@@ -230,7 +255,7 @@ const routes = [
     return { token: issueToken(r.user.id), user: r.user, profile: social.getProfile(r.user.id) };
   }],
 
-  ['GET', /^\/api\/me$/, true, async ({ userId }) => ({ user: repo.getUserById(userId), profile: social.getProfile(userId), is_moderator: social.isModerator(userId) })],
+  ['GET', /^\/api\/me$/, true, async ({ userId }) => ({ user: safeUser(repo.getUserById(userId)), profile: social.getProfile(userId), is_moderator: social.isModerator(userId) })],
   ['GET', /^\/api\/overview$/, true, async ({ userId }) => overview.forUser(userId)],
   // Meine Aktivität an einem Ort: eigene Fragen, Engpass-Meldungen, Austausch-Einträge.
   ['GET', /^\/api\/me\/activity$/, true, async ({ userId }) => {

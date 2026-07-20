@@ -249,6 +249,7 @@ const I18N = {
     au_handle:'@Handle (öffentlicher Name im Netzwerk)', au_pw8:'Passwort (mind. 8 Zeichen)',
     au_country:'Land (bestimmt Feed-Inhalte & Sprache)', au_create:'Konto erstellen',
     au_forgot:'Passwort vergessen?',
+    au_or:'oder', au_oauth_with:'Anmelden mit {p}',
     rc_title:'🔑 Deine Wiederherstellungscodes', rc_intro:'Bewahre diese Codes sicher auf (z. B. ausdrucken). Mit einem Code kannst du dein Passwort zurücksetzen, falls du es vergisst — jeder Code funktioniert nur ein einziges Mal.',
     rc_copy:'Codes kopieren', rc_copied:'Kopiert ✓', rc_download:'Als Datei speichern', rc_saved_cta:'Ich habe die Codes gespeichert — weiter',
     rs_title:'Passwort zurücksetzen', rs_intro:'Gib deine E-Mail, einen deiner Wiederherstellungscodes und ein neues Passwort ein.',
@@ -527,6 +528,7 @@ const I18N = {
     au_handle:'@handle (public name in the network)', au_pw8:'Password (min. 8 characters)',
     au_country:'Country (sets feed content & language)', au_create:'Create account',
     au_forgot:'Forgot your password?',
+    au_or:'or', au_oauth_with:'Sign in with {p}',
     rc_title:'🔑 Your recovery codes', rc_intro:'Keep these codes somewhere safe (e.g. print them). With one code you can reset your password if you forget it — each code works only once.',
     rc_copy:'Copy codes', rc_copied:'Copied ✓', rc_download:'Save as file', rc_saved_cta:'I have saved the codes — continue',
     rs_title:'Reset password', rs_intro:'Enter your email, one of your recovery codes and a new password.',
@@ -805,6 +807,7 @@ const I18N = {
     au_handle:'@handle (nome público na rede)', au_pw8:'Palavra-passe (mín. 8 caracteres)',
     au_country:'País (define conteúdo do feed & idioma)', au_create:'Criar conta',
     au_forgot:'Esqueceu-se da palavra-passe?',
+    au_or:'ou', au_oauth_with:'Entrar com {p}',
     rc_title:'🔑 Os seus códigos de recuperação', rc_intro:'Guarde estes códigos em local seguro (por ex. imprima-os). Com um código pode redefinir a sua palavra-passe se a esquecer — cada código funciona apenas uma vez.',
     rc_copy:'Copiar códigos', rc_copied:'Copiado ✓', rc_download:'Guardar como ficheiro', rc_saved_cta:'Guardei os códigos — continuar',
     rs_title:'Redefinir palavra-passe', rs_intro:'Introduza o seu e-mail, um dos seus códigos de recuperação e uma nova palavra-passe.',
@@ -1095,6 +1098,7 @@ function authScreen() {
     <label for="li_pw">${esc(t('au_pw'))}</label><input id="li_pw" type="password" placeholder="${esc(t('au_pw'))}">
     <div style="margin-top:12px"><button id="li_go">${esc(t('au_login'))}</button></div>
     <div style="margin-top:8px"><button class="linklike small" id="li_forgot">${esc(t('au_forgot'))}</button></div>
+    <div id="oauthBtns"></div>
     <div class="err" id="li_err"></div>
   </div>
   <div class="card">
@@ -1128,6 +1132,9 @@ function authScreen() {
   };
   const forgot = document.getElementById('li_forgot');
   if (forgot) forgot.onclick = () => resetScreen();
+  // Social-Login-Buttons nur zeigen, wenn ein Anbieter serverseitig konfiguriert ist
+  // (sonst bleibt der Bereich leer — kein toter „Anmelden mit …"-Button).
+  renderOAuthButtons();
   // Länderauswahl bei der Registrierung: das in Schritt 1 gewählte Land ist vorausgewählt
   // (Feed-Inhalte + Sprache folgen dem Land). Änderbar, falls doch ein anderes Land gewünscht.
   ensureCountries().then(() => {
@@ -1207,6 +1214,47 @@ function resetScreen() {
       card.querySelector('#rs_go').disabled = true;
     } catch (e) { msg.style.color = 'var(--crit-fg)'; msg.textContent = e.message; }
   };
+}
+
+// Einheitliches Redirect-Ziel für OAuth (der Provider wird über `state` transportiert).
+const oauthRedirectUri = () => location.origin + location.pathname;
+const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+// „Anmelden mit …"-Buttons — nur, wenn der Server einen Provider konfiguriert hat.
+async function renderOAuthButtons() {
+  const host = document.getElementById('oauthBtns');
+  if (!host) return;
+  try {
+    const d = await api('GET', '/api/auth/providers?redirect_uri=' + encodeURIComponent(oauthRedirectUri()));
+    const provs = ((d && d.providers) || []).filter(p => p.authorize_url);
+    if (!provs.length) return; // kein Provider aktiv -> nichts anzeigen
+    host.innerHTML = `<div class="muted" style="text-align:center;margin:10px 0 6px">${esc(t('au_or'))}</div>`;
+    provs.forEach(p => {
+      const btn = el(`<button class="ghost" style="width:100%;margin-top:8px">${esc(ti('au_oauth_with', { p: capitalize(p.provider) }))}</button>`);
+      btn.onclick = () => { location.href = p.authorize_url; };
+      host.appendChild(btn);
+    });
+  } catch { /* Providerliste nicht abrufbar -> stillschweigend ohne Social-Login */ }
+}
+
+// OAuth-Rückleitung verarbeiten: ?code=…&state=<provider> -> Konto anmelden/anlegen.
+async function handleOAuthCallback() {
+  const params = new URLSearchParams(location.search);
+  const provider = params.get('state');
+  const code = params.get('code');
+  if (!provider || !code) return false;
+  try {
+    const d = await api('POST', '/api/auth/oauth/' + encodeURIComponent(provider), {
+      code, redirectUri: oauthRedirectUri(),
+      country: localStorage.getItem('apo_country') || undefined, locale: LOCALE,
+    });
+    history.replaceState({}, '', location.pathname); // Query-Parameter entfernen
+    afterAuth(d);
+    return true;
+  } catch {
+    history.replaceState({}, '', location.pathname);
+    return false; // fällt auf den normalen Anmelde-Flow zurück
+  }
 }
 
 // ── Länder-/Sprach-Umschalter (Kopfzeile) ──
@@ -3922,6 +3970,10 @@ const _logo = document.getElementById('logoHome');
 if (_logo) _logo.onclick = goHome;
 
 const _hasCountry = () => !!localStorage.getItem('apo_country');
-if (localStorage.getItem('apo_token')) mainScreen().catch(() => (_hasCountry() ? authScreen() : countryScreen()));
-else if (_hasCountry()) authScreen();
-else countryScreen();
+(async () => {
+  // Zuerst eine mögliche OAuth-Rückleitung abfangen (Social-Login), sonst normaler Start.
+  if (await handleOAuthCallback()) return;
+  if (localStorage.getItem('apo_token')) mainScreen().catch(() => (_hasCountry() ? authScreen() : countryScreen()));
+  else if (_hasCountry()) authScreen();
+  else countryScreen();
+})();
