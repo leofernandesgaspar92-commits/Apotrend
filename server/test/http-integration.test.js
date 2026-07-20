@@ -153,6 +153,13 @@ test('Fehler-Antworten tragen einen i18n-Code (Fundament der mehrsprachigen Back
   const b2b = await r2b.json();
   assert.equal(r2b.status, 401);
   assert.equal(b2b.code, 'not_authenticated', 'ungültiger Token liefert code not_authenticated');
+  // Doppelte Registrierung: gleiche E-Mail -> code email_taken (mehrsprachig übersetzbar)
+  const dupEmail = 'dupe' + PORT + '@a.at';
+  await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'de1', handle: 'de1' + PORT, email: dupEmail, password: 'geheim123' }) });
+  const r2c = await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'de2', handle: 'de2' + PORT, email: dupEmail, password: 'geheim123' }) });
+  const b2c = await r2c.json();
+  assert.equal(r2c.status, 400);
+  assert.equal(b2c.code, 'email_taken', 'doppelte E-Mail liefert code email_taken');
   // Engpass ohne Wirkstoff -> code shortage_wirkstoff_missing
   const r3 = await post('/api/shortages/report', a, { wirkstoff: '  ' });
   const b3 = await r3.json();

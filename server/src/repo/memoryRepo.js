@@ -59,7 +59,7 @@ export function createMemoryRepo() {
     createUser({ email, name, passwordHash, status = 'active' }) {
       if (!email || !name || !passwordHash) throw new Error('email, name, passwordHash erforderlich.');
       const key = String(email).trim().toLowerCase();
-      if (usersByEmail.has(key)) throw new Error('E-Mail ist bereits vergeben.');
+      if (usersByEmail.has(key)) { const e = new Error('E-Mail ist bereits vergeben.'); e.code = 'email_taken'; throw e; }
       const user = { id: uuid(), email: key, name, password_hash: passwordHash, status, twofa_secret: null, created_at: now() };
       users.set(user.id, user);
       usersByEmail.set(key, user.id);

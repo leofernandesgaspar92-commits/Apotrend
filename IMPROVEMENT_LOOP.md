@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #75 — 2026-07-18 — Doppelte-E-Mail-Fehler mehrsprachig (email_taken)
+- **THINK:** Doppelte Registrierung: Handle-Fehler hatte `handle_taken` (übersetzbar), der E-Mail-Fehler aber keinen Code → EN/PT sahen Deutsch bei einem häufigen Registrierungsfehler.
+- **WORK:** memoryRepo setzt jetzt `e.code = 'email_taken'`; `e_email_taken`-Keys (DE/EN/PT). HTTP-Test um email_taken-Assertion ergänzt.
+- **CHECK:** code email_taken real; Parität 645/645/645; 237 grün.
+
 ### Cycle #74 — 2026-07-18 — DM-Privatsphäre über HTTP getestet
 - **CHECK (Sicherheit):** Dritte:r kann einen fremden A↔B-Thread weder lesen (403, kein Nachrichten-Leak) noch beschreiben (403). Privatsphäre sensibler Direktnachrichten korrekt.
 - **WORK:** HTTP-Test für DM-Isolation gegen Dritte.
