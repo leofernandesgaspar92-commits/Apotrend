@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #74 — 2026-07-18 — DM-Privatsphäre über HTTP getestet
+- **CHECK (Sicherheit):** Dritte:r kann einen fremden A↔B-Thread weder lesen (403, kein Nachrichten-Leak) noch beschreiben (403). Privatsphäre sensibler Direktnachrichten korrekt.
+- **WORK:** HTTP-Test für DM-Isolation gegen Dritte.
+- **CHECK:** 236 → 237 grün.
+
 ### Cycle #73 — 2026-07-18 — Sichtbarkeit/Privatsphäre über HTTP getestet
 - **CHECK:** Selbst-Folgen → 400 abgelehnt. „Nur Follower"-Beitrag: Follower sieht ihn, Nicht-Follower weder im Home- noch im öffentlichen Feed (Privatsphäre-Isolation korrekt).
 - **WORK:** HTTP-Test für Selbst-Follow-Ablehnung + followers-only-Sichtbarkeit (positiv + zwei negative).

@@ -529,6 +529,21 @@ test('Engpass-Bestätigung über HTTP: „Auch bei uns" erhöht Zähler und bena
   assert.ok((rn.notifications || []).some(n => n.type === 'shortage_confirm'), 'Melder erhält shortage_confirm');
 });
 
+test('DM-Privatsphäre über HTTP: Dritte können einen fremden Thread weder lesen noch beschreiben', async () => {
+  const a = await reg('dpa' + PORT);
+  const bResp = await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'dpb' + PORT, handle: 'dpb' + PORT, email: 'dpb' + PORT + '@a.at', password: 'geheim123' }) });
+  const b = (await bResp.json()).token;
+  const c = await reg('dpc' + PORT); // Dritte:r
+  const start = await (await post('/api/dm/start', a, { handle: 'dpb' + PORT })).json();
+  const tid = start.thread.id;
+  assert.equal((await post(`/api/dm/${tid}`, a, { body: 'geheim ' + PORT })).status, 200);
+  // Dritte:r darf den Thread nicht lesen (403, kein Leak).
+  const read = await fetch(BASE + `/api/dm/${tid}`, { headers: H(c) });
+  assert.equal(read.status, 403, 'Dritte:r kann Thread nicht lesen');
+  // Dritte:r darf nicht in den Thread schreiben.
+  assert.equal((await post(`/api/dm/${tid}`, c, { body: 'eindringen' })).status, 403);
+});
+
 test('Direktnachricht über HTTP: Thread starten -> senden -> Empfänger sieht unread -> nach Lesen 0', async () => {
   const a = await reg('dma' + PORT);
   const bResp = await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'dmb' + PORT, handle: 'dmb' + PORT, email: 'dmb' + PORT + '@a.at', password: 'geheim123' }) });
