@@ -7,6 +7,7 @@ export const COUNTRIES = {
   AT: { code: 'AT', name: 'Österreich',       flag: '🇦🇹', locale_default: 'de', locales: ['de'],             currency: 'EUR', timezone: 'Europe/Vienna',     regulator: 'BASG' },
   DE: { code: 'DE', name: 'Deutschland',      flag: '🇩🇪', locale_default: 'de', locales: ['de'],             currency: 'EUR', timezone: 'Europe/Berlin',     regulator: 'BfArM' },
   CH: { code: 'CH', name: 'Schweiz',          flag: '🇨🇭', locale_default: 'de', locales: ['de', 'en'],       currency: 'CHF', timezone: 'Europe/Zurich',     regulator: 'Swissmedic' },
+  LI: { code: 'LI', name: 'Liechtenstein',    flag: '🇱🇮', locale_default: 'de', locales: ['de'],             currency: 'CHF', timezone: 'Europe/Vaduz',      regulator: 'Amt für Gesundheit' },
   PT: { code: 'PT', name: 'Portugal',         flag: '🇵🇹', locale_default: 'pt', locales: ['pt'],             currency: 'EUR', timezone: 'Europe/Lisbon',     regulator: 'INFARMED' },
   BR: { code: 'BR', name: 'Brasil',           flag: '🇧🇷', locale_default: 'pt', locales: ['pt'],             currency: 'BRL', timezone: 'America/Sao_Paulo', regulator: 'ANVISA' },
   AO: { code: 'AO', name: 'Angola',           flag: '🇦🇴', locale_default: 'pt', locales: ['pt'],             currency: 'AOA', timezone: 'Africa/Luanda',     regulator: 'ARMED' },
@@ -16,6 +17,9 @@ export const COUNTRIES = {
   NG: { code: 'NG', name: 'Nigeria',          flag: '🇳🇬', locale_default: 'en', locales: ['en'],             currency: 'NGN', timezone: 'Africa/Lagos',      regulator: 'NAFDAC' },
   KE: { code: 'KE', name: 'Kenya',            flag: '🇰🇪', locale_default: 'en', locales: ['en'],             currency: 'KES', timezone: 'Africa/Nairobi',    regulator: 'PPB' },
   GH: { code: 'GH', name: 'Ghana',            flag: '🇬🇭', locale_default: 'en', locales: ['en'],             currency: 'GHS', timezone: 'Africa/Accra',      regulator: 'FDA Ghana' },
+  CA: { code: 'CA', name: 'Canada',           flag: '🇨🇦', locale_default: 'en', locales: ['en'],             currency: 'CAD', timezone: 'America/Toronto',   regulator: 'Health Canada' },
+  AU: { code: 'AU', name: 'Australia',        flag: '🇦🇺', locale_default: 'en', locales: ['en'],             currency: 'AUD', timezone: 'Australia/Sydney',  regulator: 'TGA' },
+  ZA: { code: 'ZA', name: 'South Africa',     flag: '🇿🇦', locale_default: 'en', locales: ['en'],             currency: 'ZAR', timezone: 'Africa/Johannesburg', regulator: 'SAHPRA' },
 };
 
 export const DEFAULT_COUNTRY = 'AT';

@@ -65,13 +65,22 @@ test('Newsfeed ist länder-gescopt: AT-Nutzer sieht AT-News, ?country=DE die DE-
   assert.ok(!atPub.posts.some(p => p.body.includes('Hallo aus Deutschland ' + PORT)), 'nicht im AT-Feed');
 });
 
-test('GET /api/countries: 12 Länder mit Locale/Währung/Zeitzone', async () => {
+test('GET /api/countries: Register deckt alle Sprachgruppen ab (Locale/Währung/Zeitzone/Regulator)', async () => {
+  const { listCountries } = await import('../src/data/countries.js');
   const d = await (await fetch(BASE + '/api/countries')).json();
-  assert.equal(d.countries.length, 12, '12 Länder im MVP-Register');
+  // Selbstkonsistent statt hartkodierte Zahl -> neue Länder brechen den Test nicht.
+  assert.equal(d.countries.length, listCountries().length, 'API spiegelt das Register');
+  assert.ok(d.countries.length >= 16, 'mindestens die drei Sprachgruppen vollständig');
   const at = d.countries.find(c => c.code === 'AT');
   assert.equal(at.currency, 'EUR'); assert.equal(at.locale_default, 'de'); assert.equal(at.regulator, 'BASG');
   const br = d.countries.find(c => c.code === 'BR');
   assert.equal(br.currency, 'BRL'); assert.equal(br.locale_default, 'pt');
+  // Die vier neuen Länder aus der Ziel-Matrix sind da.
+  for (const [code, cur, loc] of [['LI', 'CHF', 'de'], ['CA', 'CAD', 'en'], ['AU', 'AUD', 'en'], ['ZA', 'ZAR', 'en']]) {
+    const c = d.countries.find(x => x.code === code);
+    assert.ok(c, `${code} im Register`);
+    assert.equal(c.currency, cur); assert.equal(c.locale_default, loc);
+  }
 });
 
 test('Registrierung mit Land/Sprache setzt Profil; Länder-Switch aktualisiert; ungültig abgelehnt', async () => {

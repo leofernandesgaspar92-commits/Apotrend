@@ -37,8 +37,10 @@ async function main() {
     await op.goto(BASE, { waitUntil: 'networkidle' });
     await op.waitForTimeout(300);
     // Schritt 1: Länderauswahl erscheint zuerst (kein Token, kein Land).
+    // Erwartete Anzahl kommt aus dem Register (API) — neue Länder brechen den Smoke-Test nicht.
+    const expectedCountries = ((await api('/api/countries')) || {}).countries?.length || 0;
     const countryCount = await op.evaluate(() => document.querySelectorAll('[data-country]').length);
-    step('Länderauswahl erscheint als erster Schritt', countryCount === 12, `${countryCount} Länder`);
+    step('Länderauswahl erscheint als erster Schritt', countryCount === expectedCountries && countryCount >= 16, `${countryCount}/${expectedCountries} Länder`);
     // Land bestimmt Sprache: AT -> „Anmelden", GB -> „Log in".
     const loginHead = async () => op.evaluate(() => [...document.querySelectorAll('h1')].map(h => h.textContent.trim()).find(t => /Anmelden|Log in|Entrar/.test(t)) || '');
     await op.click('[data-country="AT"]').catch(() => {}); await op.waitForTimeout(300);
@@ -53,7 +55,7 @@ async function main() {
     // Logo (grüner Punkt) führt ausgeloggt zurück zur Länderauswahl.
     await op.click('#logoHome').catch(() => {}); await op.waitForTimeout(300);
     const backToCountry = await op.evaluate(() => document.querySelectorAll('[data-country]').length);
-    step('Logo führt ausgeloggt zurück zur Länderauswahl', backToCountry === 12, `${backToCountry} Länder`);
+    step('Logo führt ausgeloggt zurück zur Länderauswahl', backToCountry === expectedCountries, `${backToCountry} Länder`);
     await octx.close();
   }
 

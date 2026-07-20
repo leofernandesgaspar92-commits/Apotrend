@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #79 — 2026-07-18 — Roadmap Phase 1: 4 fehlende Länder ergänzt (12 → 16)
+- **THINK:** Aus der Ziel-Matrix des Architektur-Dossiers fehlten Liechtenstein (de) sowie Kanada, Australien, Südafrika (en) — „ein Land = ein Objekt".
+- **WORK:** 4 Einträge in `COUNTRIES` (Flagge, Sprache, Währung, Zeitzone, Regulator: Amt für Gesundheit / Health Canada / TGA / SAHPRA). Deutschsprachige Gruppe damit komplett (AT·DE·CH·LI). Tests selbstkonsistent gemacht (API == Register, statt hartkodierter 12) + die 4 Neuen geprüft; Smoke vergleicht gegen API-Anzahl.
+- **CHECK:** Landing rendert 16 Länder sauber (Reihenfolge korrekt, kein Overflow); 238 grün, Smoke „16/16", Browser-Audit sauber.
+
 ### Cycle #78 — 2026-07-18 — Login-Sicherheit: keine E-Mail-Enumeration (verifiziert + getestet)
 - **CHECK (Sicherheit):** Login liefert für unbekannte E-Mail und falsches Passwort die IDENTISCHE Antwort (401, „E-Mail oder Passwort falsch.", login_failed) — Angreifer können gültige E-Mails nicht erkennen. Korrekt implementiert.
 - **WORK:** HTTP-Test sichert diese subtile Eigenschaft gegen Regression (falls jemand „Nutzer nicht gefunden" ergänzt).
