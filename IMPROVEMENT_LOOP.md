@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #83 — 2026-07-20 — Umfragen dauerhaft testgesichert (9 Regressionstests)
+- **THINK:** Cycle #82 lieferte die Umfragen, war aber nur manuell (Browser/API) verifiziert — ohne permanenten Guard bricht das Feature still bei künftigen Änderungen. Muster aus #67–#81: neues Feature → dauerhafter Test.
+- **WORK:** `test/poll.test.js` (Service-Ebene wie `social.test.js`): Optionen-Normalisierung + 6er-Kappung, Validierung (Frage/≥2 Optionen), Abstimmen/Zähler, Stimme-ändern hält Summe stabil, Stimme-zurückziehen, `poll_not_a_poll`/`poll_bad_option`, Feed-Enrichment (counts/total/my_vote, poll:null bei Nicht-Umfragen), Persistenz-Roundtrip, purgeUser entfernt eigene Stimmen.
+- **CHECK:** 238 → 247 grün (+9), Parität 663/663/663, Smoke 13/13, Browser-Audit sauber, alle Guards 0.
+
 ### Cycle #82 — 2026-07-20 — Roadmap Phase 2: Umfragen („Facebook für Apotheker")
 - **THINK:** Der Feed konnte Beiträge und Fachfragen, aber keine schnelle Meinungsabfrage — für zeitknappe Apotheker:innen ist „kurz abstimmen" (Welcher Wirkstoff ist bei euch knapp?) niedrigschwelliger als ein Kommentar. Erstes echtes Social-Feature aus dem Architektur-Dossier.
 - **WORK:** Voller Stack — Repo (`pollVotes`-Map, `setPollVote`/`pollTally`, Persistenz-Roundtrip + purgeUser), Service (`createPost` validiert Umfragen: Frage nötig, ≥2 Optionen; `votePoll` mit Stimme-ändern/-zurückziehen; Enrichment liefert `counts/total/my_vote`), Route `POST /api/polls/:id/vote`, Frontend-Composer (📊-Umfrage-Toggle mit dynamischen Optionsfeldern 2–6, gegenseitig exklusiv zur Fachfrage) + `pollHtml`-Ergebnisbalken, i18n (co_poll*/pl_*, 4 Fehlercodes; DE/EN/PT), theme-aware CSS.
