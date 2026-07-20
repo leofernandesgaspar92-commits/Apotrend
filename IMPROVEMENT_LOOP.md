@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #85 — 2026-07-20 — Smoke-Test schützt den Umfrage-Composer (Frontend-Guard)
+- **THINK:** #83/#84 sichern das Backend; die Composer-UI (📊-Toggle, dynamische Optionsfelder, Abstimm-Klick im Feed) war nur einmal manuell im Browser geprüft. Muster #81: Smoke schützt Headline-Features gegen stille Frontend-Regression.
+- **WORK:** 2 Smoke-Schritte in `loop-smoke.mjs`: Umfrage über den echten Composer anlegen (Toggle zeigt Box, 3. Option per „+"-Button, Posten) → Umfrage mit 3 `.poll-opt` erscheint im Feed; Klick auf eine Option → `aria-pressed="true"` (eigene Stimme markiert).
+- **CHECK:** Smoke 13 → 15/15 grün, 248 Tests grün, Browser-Audit sauber, alle Guards 0.
+
 ### Cycle #84 — 2026-07-20 — Umfrage-Route über HTTP getestet (Wiring/Auth/Fehlercodes)
 - **THINK:** #83 sicherte die Service-Ebene, aber die HTTP-Route `POST /api/polls/:id/vote`, die Feed-Anreicherung über den echten Server und die Auth-Pflicht waren ungetestet — genau das Muster aus #67–#78 („X über HTTP getestet").
 - **WORK:** Test in `http-integration.test.js`: Umfrage per POST /api/posts anlegen, über die dedizierte Vote-Route abstimmen (Tally 200), Anreicherung im `/api/feed/public` (my_vote aus Betrachtersicht), Stimme zurückziehen, Fehlercodes `poll_not_a_poll`/`poll_bad_option`/`poll_options_missing` (400), Abstimmen ohne Token → 401.

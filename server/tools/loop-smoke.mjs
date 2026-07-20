@@ -91,6 +91,37 @@ async function main() {
   const untoggled = await page.evaluate((m) => { const c = [...document.querySelectorAll('.card')].find(c => c.textContent.includes(m)); return !c.querySelector('[data-react]').classList.contains('reacted'); }, marker);
   step('Reaktion umschaltbar (entfernen)', untoggled);
 
+  // 4b) Umfrage über den Composer erstellen + abstimmen (Roadmap Phase 2, „Facebook für Apotheker").
+  const pollMarker = `POLL-${uniq}`;
+  await page.check('#ppoll').catch(() => {});
+  await page.waitForTimeout(200);
+  const composerOk = await page.evaluate(() => {
+    const box = document.getElementById('pollBox');
+    return !!box && box.style.display !== 'none' && document.querySelectorAll('input.poll-opt-in').length >= 2;
+  });
+  await page.fill('#pb', `${pollMarker} Welcher Wirkstoff fehlt?`);
+  const optIns = await page.$$('input.poll-opt-in');
+  if (optIns[0]) await optIns[0].fill('Amoxicillin');
+  if (optIns[1]) await optIns[1].fill('Cefuroxim');
+  await page.click('#pollAdd').catch(() => {});
+  await page.waitForTimeout(150);
+  const optIns2 = await page.$$('input.poll-opt-in');
+  if (optIns2[2]) await optIns2[2].fill('Ibuprofen');
+  await page.getByText('Posten', { exact: true }).first().click().catch(() => {});
+  await page.waitForTimeout(900);
+  const pollShown = await page.evaluate((m) => {
+    const c = [...document.querySelectorAll('.card')].find(c => c.textContent.includes(m));
+    return !!(c && c.querySelector('.poll') && c.querySelectorAll('.poll-opt').length === 3);
+  }, pollMarker);
+  step('Umfrage über den Composer erstellt (3 Optionen)', composerOk && pollShown);
+  await page.evaluate((m) => { const c = [...document.querySelectorAll('.card')].find(c => c.textContent.includes(m)); c.querySelectorAll('.poll-opt')[1].click(); }, pollMarker);
+  await page.waitForTimeout(600);
+  const pollVoted = await page.evaluate((m) => {
+    const c = [...document.querySelectorAll('.card')].find(c => c.textContent.includes(m));
+    return !!(c && c.querySelector('.poll-opt[aria-pressed="true"]'));
+  }, pollMarker);
+  step('Umfrage-Abstimmung markiert die eigene Stimme', pollVoted);
+
   // 5) Sprachwechsel wirkt (Header-Label „Schrift" -> „Text size") — auf dem Auth-Screen abgesichert,
   //    hier prüfen wir eingeloggt: Reiter-Beschriftung wechselt via Länder-/Sprachlogik nicht direkt,
   //    daher testen wir den generischen t()-Pfad über den Kommentar-Button-Text.
