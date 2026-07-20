@@ -355,6 +355,19 @@ test('Unbekannte Route -> 404', async () => {
   assert.equal(r.status, 404);
 });
 
+test('Kommentar-Antwort über HTTP: Antwort trägt parent_comment_id (Threading)', async () => {
+  const a = await reg('cra' + PORT);
+  const bResp = await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'crb' + PORT, handle: 'crb' + PORT, email: 'crb' + PORT + '@a.at', password: 'geheim123' }) });
+  const b = (await bResp.json()).token;
+  const p = await (await post('/api/posts', a, { body: 'Diskussion ' + PORT, visibility: 'public' })).json();
+  const top = await (await post(`/api/posts/${p.id}/comments`, a, { body: 'Top-Kommentar' })).json();
+  const reply = await (await post(`/api/posts/${p.id}/comments`, b, { body: 'Antwort darauf', parentCommentId: top.id })).json();
+  assert.equal(reply.parent_comment_id, top.id, 'Antwort verweist auf Eltern-Kommentar');
+  const list = await j(`/api/posts/${p.id}/comments`, a);
+  const found = (list.comments || []).find(c => c.body === 'Antwort darauf');
+  assert.ok(found && found.parent_comment_id === top.id, 'Antwort erscheint threaded in der Liste');
+});
+
 test('Fachfrage über HTTP: nur der/die Fragesteller:in darf die beste Antwort wählen', async () => {
   const asker = await reg('qa' + PORT);
   const answerer = await reg('qb' + PORT);

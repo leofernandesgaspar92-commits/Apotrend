@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #70 — 2026-07-18 — Kommentar-Antworten (Threading) über HTTP getestet
+- **CHECK:** Antwort auf Kommentar (parentCommentId) real: Antwort trägt korrekt parent_comment_id, erscheint threaded in der Liste.
+- **WORK:** HTTP-Test für Threading.
+- **CHECK:** 232 → 233 grün.
+
 ### Cycle #69 — 2026-07-18 — Persistenz-Integration mit echten Daten getestet (Daten-Verlust-Schutz)
 - **CHECK:** Voller Server-Restart-Roundtrip manuell verifiziert (Beitrag überlebt Neustart). Lücke: die Repo-`__dump`/`__load` mit echten Daten (statt generischem Snapshot) waren ungetestet.
 - **WORK:** Persistenz-Integrationstest: echte Social-Daten (Nutzer/Profil/Beitrag/Follow/Bookmark) → `__dump` → JSON → `__load` in FRISCHE Repos → alles intakt. Fängt Feld-Verluste in einzelnen Repos.
