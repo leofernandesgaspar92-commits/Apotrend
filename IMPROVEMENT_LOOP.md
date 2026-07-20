@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #66 — 2026-07-18 — Moderations-Flow über HTTP getestet
+- **CHECK:** Sicherheitsrelevanter Fluss real: melden → Queue (nur Mods, sonst 403) → Redaktion löst mit Entfernen auf → Beitrag verschwindet aus dem Feed + aus der offenen Queue. Kein Defekt.
+- **WORK:** HTTP-Test nutzt das Seed-Redaktionskonto (Test-Setup) als Moderator; deckt Melden, Mod-Gating, Auflösen+Entfernen ab.
+- **CHECK:** 228 → 229 grün.
+
 ### Cycle #65 — 2026-07-18 — Konto-Löschung (DSGVO Art. 17) + Auth-Bug behoben
 - **CHECK:** Löschfluss real: falsches PW→401, korrektes→200, Daten ge-purge-t. Dabei echten Bug gefunden: nach Löschung dekodierte der Token weiter zu einer userId → Auth-Guard ließ durch → 400 (Folgefehler) statt sauberem 401.
 - **WORK:** Auth-Guard prüft jetzt Nutzer-Existenz (`repo.getUserById`) — Token für gelöschte/nicht existente Nutzer → 401 `not_authenticated` (sauberer Logout-Redirect via #54). HTTP-Test für den kompletten Löschfluss inkl. Token-Entwertung + Beitrags-Purge.

@@ -355,6 +355,27 @@ test('Unbekannte Route -> 404', async () => {
   assert.equal(r.status, 404);
 });
 
+test('Moderation über HTTP: melden -> Queue nur für Mods -> auflösen+entfernen -> Beitrag weg', async () => {
+  const author = await reg('moda' + PORT);
+  const reporter = await reg('modb' + PORT);
+  const marker = 'BADPOST' + PORT;
+  const p = await (await post('/api/posts', author, { body: marker, visibility: 'public' })).json();
+  assert.equal((await post(`/api/posts/${p.id}/report`, reporter, { reason: 'Spam' })).status, 200);
+  // Nicht-Mod darf die Moderations-Queue nicht sehen.
+  assert.equal((await fetch(BASE + '/api/reports', { headers: H(reporter) })).status, 403);
+  // Redaktion/Mod (Seed-Konto aus dem Test-Setup) meldet sich an und sieht die Meldung.
+  const login = await (await fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email: 'red@apotrend.test', password: 'redredred123' }) })).json();
+  const mod = login.token;
+  assert.ok(mod, 'Mod-Login liefert Token');
+  const queue = await j('/api/reports', mod);
+  const item = (queue.reports || []).find(r => r.target_id === p.id);
+  assert.ok(item, 'Meldung erscheint in der Queue');
+  // Auflösen mit Entfernen -> Beitrag verschwindet aus dem öffentlichen Feed.
+  assert.equal((await post(`/api/reports/${item.id}/resolve`, mod, { remove: true })).status, 200);
+  const feed = await j('/api/feed/public', author);
+  assert.equal((feed.posts || []).filter(x => (x.body || '').includes(marker)).length, 0, 'entfernter Beitrag ist weg');
+});
+
 test('DSGVO-Datenexport über HTTP: liefert alle personenbezogenen Daten inkl. eigener Beiträge', async () => {
   const a = await reg('exp' + PORT);
   assert.equal((await post('/api/posts', a, { body: 'Export-Beitrag ' + PORT, visibility: 'public' })).status, 200);
