@@ -355,6 +355,24 @@ test('Unbekannte Route -> 404', async () => {
   assert.equal(r.status, 404);
 });
 
+test('Sichtbarkeit über HTTP: Selbst-Folgen abgelehnt; „nur Follower"-Beitrag bleibt für Fremde verborgen', async () => {
+  const a = await reg('fva' + PORT);
+  const fResp = await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'fvf' + PORT, handle: 'fvf' + PORT, email: 'fvf' + PORT + '@a.at', password: 'geheim123' }) });
+  const follower = (await fResp.json()).token;
+  const nResp = await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'fvn' + PORT, handle: 'fvn' + PORT, email: 'fvn' + PORT + '@a.at', password: 'geheim123' }) });
+  const nonFollower = (await nResp.json()).token;
+  // Selbst-Folgen ist nicht möglich.
+  assert.equal((await post('/api/follow', a, { handle: 'fva' + PORT })).status, 400);
+  // Follower folgt A; A postet „nur Follower".
+  assert.equal((await post('/api/follow', follower, { handle: 'fva' + PORT })).status, 200);
+  const marker = 'FOLONLY' + PORT;
+  assert.equal((await post('/api/posts', a, { body: marker, visibility: 'followers' })).status, 200);
+  // Follower sieht ihn, Nicht-Follower weder im Home- noch im öffentlichen Feed.
+  assert.ok(((await j('/api/feed/home', follower)).posts || []).some(p => (p.body || '').includes(marker)), 'Follower sieht Beitrag');
+  assert.equal(((await j('/api/feed/home', nonFollower)).posts || []).filter(p => (p.body || '').includes(marker)).length, 0, 'Nicht-Follower: nicht im Home');
+  assert.equal(((await j('/api/feed/public', nonFollower)).posts || []).filter(p => (p.body || '').includes(marker)).length, 0, 'Nicht-Follower: nicht im öffentlichen Feed');
+});
+
 test('Autorisierung über HTTP: fremde:r darf Beitrag/Kommentar nicht bearbeiten/löschen, eigene:r schon', async () => {
   const owner = await reg('owna' + PORT);
   const otherResp = await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'ownb' + PORT, handle: 'ownb' + PORT, email: 'ownb' + PORT + '@a.at', password: 'geheim123' }) });

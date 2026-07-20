@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #73 — 2026-07-18 — Sichtbarkeit/Privatsphäre über HTTP getestet
+- **CHECK:** Selbst-Folgen → 400 abgelehnt. „Nur Follower"-Beitrag: Follower sieht ihn, Nicht-Follower weder im Home- noch im öffentlichen Feed (Privatsphäre-Isolation korrekt).
+- **WORK:** HTTP-Test für Selbst-Follow-Ablehnung + followers-only-Sichtbarkeit (positiv + zwei negative).
+- **CHECK:** 235 → 236 grün.
+
 ### Cycle #72 — 2026-07-18 — Autorisierung (fremde vs. eigene Inhalte) über HTTP getestet
 - **CHECK (Sicherheit):** Fremde:r kann Beitrag/Kommentar NICHT bearbeiten/löschen (alle 4 Aktionen → 403), Inhalt bleibt unangetastet; Eigentümer:in darf beides. Kein Loch.
 - **WORK:** HTTP-Test für Cross-User-Autorisierung (Negativ + Positiv).
