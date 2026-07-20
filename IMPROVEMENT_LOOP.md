@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #78 — 2026-07-18 — Login-Sicherheit: keine E-Mail-Enumeration (verifiziert + getestet)
+- **CHECK (Sicherheit):** Login liefert für unbekannte E-Mail und falsches Passwort die IDENTISCHE Antwort (401, „E-Mail oder Passwort falsch.", login_failed) — Angreifer können gültige E-Mails nicht erkennen. Korrekt implementiert.
+- **WORK:** HTTP-Test sichert diese subtile Eigenschaft gegen Regression (falls jemand „Nutzer nicht gefunden" ergänzt).
+- **CHECK:** 237 → 238 grün.
+
 ### Cycle #77 — 2026-07-18 — Bild-Fehler mehrsprachig (image_invalid/image_too_large) — Backend-i18n komplett
 - **THINK:** Letzte code-losen deutschen Fehler auf erreichbaren Pfaden (Bild-Upload beim Posten/Austausch): `media.js` warf Format-/Größen-Fehler ohne Code.
 - **WORK:** `e.code = 'image_invalid'`/`'image_too_large'`; Keys in DE/EN/PT. Damit sind alle erreichbaren Backend-Fehler (Service + Repo + Domain) mehrsprachig.

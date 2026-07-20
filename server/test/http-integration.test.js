@@ -541,6 +541,18 @@ test('Engpass-Bestätigung über HTTP: „Auch bei uns" erhöht Zähler und bena
   assert.ok((rn.notifications || []).some(n => n.type === 'shortage_confirm'), 'Melder erhält shortage_confirm');
 });
 
+test('Login-Sicherheit über HTTP: keine E-Mail-Enumeration (gleiche Antwort für unbekannte E-Mail und falsches Passwort)', async () => {
+  const email = 'enum' + PORT + '@a.at';
+  await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'enum', handle: 'enum' + PORT, email, password: 'geheim123' }) });
+  const wrongPw = await (await fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email, password: 'FALSCH' }) })).json();
+  const unknownResp = await fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email: 'niemand' + PORT + '@a.at', password: 'FALSCH' }) });
+  const unknown = await unknownResp.json();
+  // Identische Antwort -> Angreifer kann gültige E-Mails nicht erkennen.
+  assert.equal(unknownResp.status, 401);
+  assert.equal(wrongPw.error, unknown.error, 'gleiche Fehlermeldung');
+  assert.equal(wrongPw.code, unknown.code, 'gleicher Code (login_failed)');
+});
+
 test('DM-Privatsphäre über HTTP: Dritte können einen fremden Thread weder lesen noch beschreiben', async () => {
   const a = await reg('dpa' + PORT);
   const bResp = await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'dpb' + PORT, handle: 'dpb' + PORT, email: 'dpb' + PORT + '@a.at', password: 'geheim123' }) });
