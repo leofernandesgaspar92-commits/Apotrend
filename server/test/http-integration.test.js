@@ -648,6 +648,48 @@ test('Frühwarnnetz über HTTP: Beobachter wird bei fremder Engpass-Meldung bena
   assert.equal((rn.notifications || []).filter(n => n.type === 'watch_alert').length, 0, 'Melder erhält keine watch_alert');
 });
 
+test('Umfragen über HTTP: erstellen, abstimmen, im Feed, Fehlercodes', async () => {
+  const author = await reg('pollA' + PORT);
+  const voter = await reg('pollB' + PORT);
+  // Umfrage anlegen
+  const cr = await post('/api/posts', author, { kind: 'poll', body: 'Welcher Wirkstoff ist knapp?', pollOptions: ['Amoxicillin', 'Cefuroxim', 'Ibuprofen'] });
+  const created = await cr.json();
+  assert.equal(cr.status, 200);
+  assert.equal(created.kind, 'poll');
+  assert.equal(created.poll_options.length, 3);
+  const pid = created.id;
+  // Abstimmen über die dedizierte Route
+  const vr = await post(`/api/polls/${pid}/vote`, voter, { optionId: 'o2' });
+  const voted = await vr.json();
+  assert.equal(vr.status, 200);
+  assert.equal(voted.ok, true);
+  assert.equal(voted.poll.total, 1);
+  assert.equal(voted.poll.counts.o2, 1);
+  // Im öffentlichen Feed reichert der Server die Umfrage an (aus Betrachtersicht)
+  const feed = await j('/api/feed/public', voter);
+  const seen = feed.posts.find(p => p.id === pid);
+  assert.ok(seen && seen.poll, 'Umfrage samt poll-Payload im Feed');
+  assert.equal(seen.poll.total, 1);
+  assert.equal(seen.poll.my_vote, 'o2', 'eigene Stimme des Betrachters');
+  // Stimme zurückziehen
+  const undo = await (await post(`/api/polls/${pid}/vote`, voter, { optionId: null })).json();
+  assert.equal(undo.poll.total, 0);
+  // Fehlercodes: Abstimmen auf Nicht-Umfrage / unbekannte Option
+  const normal = await (await post('/api/posts', author, { body: 'Kein Poll' })).json();
+  const e1 = await post(`/api/polls/${normal.id}/vote`, voter, { optionId: 'o1' });
+  assert.equal(e1.status, 400);
+  assert.equal((await e1.json()).code, 'poll_not_a_poll');
+  const e2 = await post(`/api/polls/${pid}/vote`, voter, { optionId: 'o99' });
+  assert.equal((await e2.json()).code, 'poll_bad_option');
+  // Anlegen mit nur einer Option -> poll_options_missing
+  const e3 = await post('/api/posts', author, { kind: 'poll', body: 'Frage?', pollOptions: ['Nur eine'] });
+  assert.equal(e3.status, 400);
+  assert.equal((await e3.json()).code, 'poll_options_missing');
+  // Abstimmen erfordert Auth
+  const noAuth = await fetch(BASE + `/api/polls/${pid}/vote`, { method: 'POST', headers: H(), body: JSON.stringify({ optionId: 'o1' }) });
+  assert.equal(noAuth.status, 401, 'ohne Token 401');
+});
+
 test('Statische Assets: gzip-Komprimierung + ETag/304-Revalidierung', async () => {
   // gzip nur, wenn der Client es anbietet.
   const gz = await rawGet('/app.js', { 'accept-encoding': 'gzip' });

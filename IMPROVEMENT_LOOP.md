@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #84 — 2026-07-20 — Umfrage-Route über HTTP getestet (Wiring/Auth/Fehlercodes)
+- **THINK:** #83 sicherte die Service-Ebene, aber die HTTP-Route `POST /api/polls/:id/vote`, die Feed-Anreicherung über den echten Server und die Auth-Pflicht waren ungetestet — genau das Muster aus #67–#78 („X über HTTP getestet").
+- **WORK:** Test in `http-integration.test.js`: Umfrage per POST /api/posts anlegen, über die dedizierte Vote-Route abstimmen (Tally 200), Anreicherung im `/api/feed/public` (my_vote aus Betrachtersicht), Stimme zurückziehen, Fehlercodes `poll_not_a_poll`/`poll_bad_option`/`poll_options_missing` (400), Abstimmen ohne Token → 401.
+- **CHECK:** 247 → 248 grün (+1 HTTP-Test), Smoke 13/13, Browser-Audit sauber, alle Guards 0.
+
 ### Cycle #83 — 2026-07-20 — Umfragen dauerhaft testgesichert (9 Regressionstests)
 - **THINK:** Cycle #82 lieferte die Umfragen, war aber nur manuell (Browser/API) verifiziert — ohne permanenten Guard bricht das Feature still bei künftigen Änderungen. Muster aus #67–#81: neues Feature → dauerhafter Test.
 - **WORK:** `test/poll.test.js` (Service-Ebene wie `social.test.js`): Optionen-Normalisierung + 6er-Kappung, Validierung (Frage/≥2 Optionen), Abstimmen/Zähler, Stimme-ändern hält Summe stabil, Stimme-zurückziehen, `poll_not_a_poll`/`poll_bad_option`, Feed-Enrichment (counts/total/my_vote, poll:null bei Nicht-Umfragen), Persistenz-Roundtrip, purgeUser entfernt eigene Stimmen.
