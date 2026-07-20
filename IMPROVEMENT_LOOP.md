@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #67 — 2026-07-18 — Verifizierungs-Flow über HTTP getestet
+- **CHECK:** Fluss real: beantragen → Queue (nur Mods, sonst 403) → Redaktion genehmigt → Profil verifiziert. Kein Defekt (Antrag ist per user_id referenziert, nicht per eigener id — API-Eigenheit, kein Bug).
+- **WORK:** HTTP-Test für request → mod-gated queue → resolve(approve) → profile.verified.
+- **CHECK:** 229 → 230 grün.
+
 ### Cycle #66 — 2026-07-18 — Moderations-Flow über HTTP getestet
 - **CHECK:** Sicherheitsrelevanter Fluss real: melden → Queue (nur Mods, sonst 403) → Redaktion löst mit Entfernen auf → Beitrag verschwindet aus dem Feed + aus der offenen Queue. Kein Defekt.
 - **WORK:** HTTP-Test nutzt das Seed-Redaktionskonto (Test-Setup) als Moderator; deckt Melden, Mod-Gating, Auflösen+Entfernen ab.

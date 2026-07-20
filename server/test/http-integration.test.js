@@ -355,6 +355,23 @@ test('Unbekannte Route -> 404', async () => {
   assert.equal(r.status, 404);
 });
 
+test('Verifizierung über HTTP: beantragen -> Queue nur für Mods -> Redaktion genehmigt -> Profil verifiziert', async () => {
+  const user = await reg('vera' + PORT);
+  const handle = 'vera' + PORT;
+  assert.equal((await post('/api/verify/request', user, { note: 'Konzession ' + PORT })).status, 200);
+  // Nicht-Mod darf die Verifizierungs-Queue nicht sehen.
+  assert.equal((await fetch(BASE + '/api/verify/requests', { headers: H(user) })).status, 403);
+  // Redaktion sieht den Antrag und genehmigt ihn (Antrag ist per user_id referenziert).
+  const login = await (await fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email: 'red@apotrend.test', password: 'redredred123' }) })).json();
+  const queue = await j('/api/verify/requests', login.token);
+  const item = (queue.requests || []).find(r => r.handle === handle);
+  assert.ok(item, 'Antrag erscheint in der Queue');
+  assert.equal((await post(`/api/verify/${item.user_id}/resolve`, login.token, { approve: true })).status, 200);
+  // Profil ist danach verifiziert.
+  const prof = await j(`/api/profiles/${handle}`, user);
+  assert.ok(prof.verified || (prof.profile && prof.profile.verified), 'Profil verifiziert');
+});
+
 test('Moderation über HTTP: melden -> Queue nur für Mods -> auflösen+entfernen -> Beitrag weg', async () => {
   const author = await reg('moda' + PORT);
   const reporter = await reg('modb' + PORT);
