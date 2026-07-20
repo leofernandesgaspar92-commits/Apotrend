@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #68 — 2026-07-18 — Fachfrage/beste Antwort über HTTP getestet
+- **CHECK:** Q&A-Kernmechanik real: Frage (kind=frage) → Antwort (Kommentar) → nur Fragesteller:in darf beste Antwort setzen (sonst 403), dann accepted_comment_id gesetzt. Kein Defekt.
+- **WORK:** HTTP-Test inkl. Autor-Gate (403 für Fremde).
+- **CHECK:** 230 → 231 grün.
+
 ### Cycle #67 — 2026-07-18 — Verifizierungs-Flow über HTTP getestet
 - **CHECK:** Fluss real: beantragen → Queue (nur Mods, sonst 403) → Redaktion genehmigt → Profil verifiziert. Kein Defekt (Antrag ist per user_id referenziert, nicht per eigener id — API-Eigenheit, kein Bug).
 - **WORK:** HTTP-Test für request → mod-gated queue → resolve(approve) → profile.verified.

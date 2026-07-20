@@ -355,6 +355,20 @@ test('Unbekannte Route -> 404', async () => {
   assert.equal(r.status, 404);
 });
 
+test('Fachfrage über HTTP: nur der/die Fragesteller:in darf die beste Antwort wählen', async () => {
+  const asker = await reg('qa' + PORT);
+  const answerer = await reg('qb' + PORT);
+  const q = await (await post('/api/posts', asker, { body: 'Alternative zu X? ' + PORT, kind: 'frage', visibility: 'public' })).json();
+  assert.equal(q.kind, 'frage');
+  const c = await (await post(`/api/posts/${q.id}/comments`, answerer, { body: 'Nimm Y' })).json();
+  // Nicht-Fragesteller darf keine beste Antwort setzen.
+  assert.equal((await post(`/api/posts/${q.id}/accept`, answerer, { commentId: c.id })).status, 403);
+  // Fragesteller:in darf -> accepted_comment_id wird gesetzt.
+  const ok = await post(`/api/posts/${q.id}/accept`, asker, { commentId: c.id });
+  assert.equal(ok.status, 200);
+  assert.equal((await ok.json()).accepted_comment_id, c.id, 'beste Antwort markiert');
+});
+
 test('Verifizierung über HTTP: beantragen -> Queue nur für Mods -> Redaktion genehmigt -> Profil verifiziert', async () => {
   const user = await reg('vera' + PORT);
   const handle = 'vera' + PORT;
