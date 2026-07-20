@@ -355,6 +355,25 @@ test('Unbekannte Route -> 404', async () => {
   assert.equal(r.status, 404);
 });
 
+test('Autorisierung über HTTP: fremde:r darf Beitrag/Kommentar nicht bearbeiten/löschen, eigene:r schon', async () => {
+  const owner = await reg('owna' + PORT);
+  const otherResp = await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'ownb' + PORT, handle: 'ownb' + PORT, email: 'ownb' + PORT + '@a.at', password: 'geheim123' }) });
+  const other = (await otherResp.json()).token;
+  const p = await (await post('/api/posts', owner, { body: 'Gehört mir ' + PORT, visibility: 'public' })).json();
+  const c = await (await post(`/api/posts/${p.id}/comments`, owner, { body: 'Mein Kommentar' })).json();
+  // Fremde:r -> 403 auf alle vier Aktionen.
+  assert.equal((await post(`/api/posts/${p.id}/edit`, other, { body: 'gehackt' })).status, 403);
+  assert.equal((await post(`/api/posts/${p.id}/delete`, other)).status, 403);
+  assert.equal((await post(`/api/comments/${c.id}/edit`, other, { body: 'gehackt' })).status, 403);
+  assert.equal((await post(`/api/comments/${c.id}/delete`, other)).status, 403);
+  // Beitrag unverändert.
+  const g = await j(`/api/posts/${p.id}`, owner);
+  assert.equal((g.post || g).body, 'Gehört mir ' + PORT, 'Beitrag unangetastet');
+  // Eigentümer:in darf bearbeiten und löschen.
+  assert.equal((await post(`/api/posts/${p.id}/edit`, owner, { body: 'Aktualisiert ' + PORT })).status, 200);
+  assert.equal((await post(`/api/posts/${p.id}/delete`, owner)).status, 200);
+});
+
 test('Reaktion über HTTP: setzen -> my_reaction + Zähler, erneut -> aus (Toggle)', async () => {
   const a = await reg('rxa' + PORT);
   const bResp = await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'rxb' + PORT, handle: 'rxb' + PORT, email: 'rxb' + PORT + '@a.at', password: 'geheim123' }) });

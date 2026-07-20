@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #72 — 2026-07-18 — Autorisierung (fremde vs. eigene Inhalte) über HTTP getestet
+- **CHECK (Sicherheit):** Fremde:r kann Beitrag/Kommentar NICHT bearbeiten/löschen (alle 4 Aktionen → 403), Inhalt bleibt unangetastet; Eigentümer:in darf beides. Kein Loch.
+- **WORK:** HTTP-Test für Cross-User-Autorisierung (Negativ + Positiv).
+- **CHECK:** 234 → 235 grün.
+
 ### Cycle #71 — 2026-07-18 — Reaktionen (Toggle + Zähler) über HTTP getestet
 - **CHECK:** Reaktion real: setzen → my_reaction='hilfreich' + reaction_counts.hilfreich=1; erneut → my_reaction=null + Zähler=0. Kein Defekt.
 - **WORK:** HTTP-Test für Reaktions-Toggle mit Zähler-Prüfung via GET /api/posts/:id.
