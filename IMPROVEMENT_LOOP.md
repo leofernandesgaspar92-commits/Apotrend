@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #82 — 2026-07-20 — Roadmap Phase 2: Umfragen („Facebook für Apotheker")
+- **THINK:** Der Feed konnte Beiträge und Fachfragen, aber keine schnelle Meinungsabfrage — für zeitknappe Apotheker:innen ist „kurz abstimmen" (Welcher Wirkstoff ist bei euch knapp?) niedrigschwelliger als ein Kommentar. Erstes echtes Social-Feature aus dem Architektur-Dossier.
+- **WORK:** Voller Stack — Repo (`pollVotes`-Map, `setPollVote`/`pollTally`, Persistenz-Roundtrip + purgeUser), Service (`createPost` validiert Umfragen: Frage nötig, ≥2 Optionen; `votePoll` mit Stimme-ändern/-zurückziehen; Enrichment liefert `counts/total/my_vote`), Route `POST /api/polls/:id/vote`, Frontend-Composer (📊-Umfrage-Toggle mit dynamischen Optionsfeldern 2–6, gegenseitig exklusiv zur Fachfrage) + `pollHtml`-Ergebnisbalken, i18n (co_poll*/pl_*, 4 Fehlercodes; DE/EN/PT), theme-aware CSS.
+- **CHECK:** Real im Browser (1280): Umfrage per UI erstellt (3 Optionen), abgestimmt → `aria-pressed`, 100 %-Balken, „✓ deine Stimme", „1 Stimme"; Ergebnis-Karte in Hell **und** Dunkel geprüft (hoher Kontrast, Klartext). 238 grün, Parität 663/663/663, Smoke 13/13, Browser-Audit sauber, alle statischen Guards 0.
+
 ### Cycle #81 — 2026-07-18 — Smoke-Test schützt den nicht-destruktiven Switcher
 - **WORK:** 2 Smoke-Schritte: fremdes Land besuchen → Besuchs-Kontext erscheint (Switcher=GB, Heimat bleibt); „Zurück" beendet den Besuch.
 - **CHECK:** Smoke 11 → 13/13 grün. Das Headline-Feature „Land = Sicht" ist damit gegen stille Regression gesichert.

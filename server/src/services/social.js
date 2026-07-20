@@ -61,6 +61,11 @@ export function createSocialService(social, foundationRepo, options = {}) {
       my_reaction: mine ? mine.type : null,
       is_question: post.kind === 'frage',
       answered: !!post.accepted_comment_id,
+      // Umfrage: Optionen mit Auszählung + eigene Stimme für die UI.
+      poll: (post.kind === 'poll' && Array.isArray(post.poll_options)) ? (() => {
+        const tally = social.pollTally(post.id, viewerUserId);
+        return { options: post.poll_options, counts: tally.counts, total: tally.total, my_vote: tally.my };
+      })() : null,
     };
   }
 
@@ -245,21 +250,40 @@ export function createSocialService(social, foundationRepo, options = {}) {
     },
 
     // ── Posts ──
-    createPost(actorUserId, { body, visibility = 'public', refType = null, refId = null, kind = 'post', image = null, sourceUrl = null }) {
+    createPost(actorUserId, { body, visibility = 'public', refType = null, refId = null, kind = 'post', image = null, sourceUrl = null, pollOptions = null }) {
       requireUser(actorUserId);
       const text = String(body ?? '').trim();
       const img = cleanImage(image);
       const src = cleanSourceUrl(sourceUrl);
-      if (!text && !img) throw new AppError('post_empty', 'Beitrag darf nicht leer sein (Text oder Bild).');
-      if (text.length > MAX_BODY) throw new AppError('post_too_long', `Beitrag zu lang (max ${MAX_BODY}).`);
       if (!['public', 'followers'].includes(visibility)) throw new Error('Ungueltige Sichtbarkeit.');
-      if (!['post', 'news', 'frage'].includes(kind)) throw new Error('Ungueltige Beitragsart.');
+      if (!['post', 'news', 'frage', 'poll'].includes(kind)) throw new Error('Ungueltige Beitragsart.');
+      // Umfrage: braucht 2–6 nicht-leere Optionen; die Frage steht im Text.
+      let poll = null;
+      if (kind === 'poll') {
+        const opts = (Array.isArray(pollOptions) ? pollOptions : []).map(o => String(o ?? '').trim()).filter(Boolean).slice(0, 6);
+        if (!text) throw new AppError('poll_question_missing', 'Umfrage: bitte eine Frage eingeben.');
+        if (opts.length < 2) throw new AppError('poll_options_missing', 'Umfrage: mindestens zwei Antwortmöglichkeiten.');
+        poll = opts.map((tx, i) => ({ id: 'o' + (i + 1), text: tx.slice(0, 80) }));
+      } else if (!text && !img) {
+        throw new AppError('post_empty', 'Beitrag darf nicht leer sein (Text oder Bild).');
+      }
+      if (text.length > MAX_BODY) throw new AppError('post_too_long', `Beitrag zu lang (max ${MAX_BODY}).`);
       if (refType && !['shortage', 'price', 'news', 'rabatt'].includes(refType)) throw new Error('Ungueltiger Referenztyp.');
       // Beitrag erbt das Land des Autors (Sichtbarkeits-Scope je Land).
       const country = normalizeCountry(social.getProfileByUserId(actorUserId)?.country);
-      const post = social.createPost({ authorUserId: actorUserId, body: text, visibility, refType, refId, kind, image: img, sourceUrl: src, country });
+      const post = social.createPost({ authorUserId: actorUserId, body: text, visibility, refType, refId, kind, image: img, sourceUrl: src, country, pollOptions: poll });
       notifyMentions(text, actorUserId, 'post', post.id);
       return post;
+    },
+    // Umfrage-Stimme abgeben/ändern/zurückziehen (optionId=null zieht zurück).
+    votePoll(actorUserId, postId, optionId) {
+      requireUser(actorUserId);
+      const p = social.getPost(postId);
+      if (!p || p.deleted_at) throw new Error('Beitrag nicht gefunden.');
+      if (p.kind !== 'poll' || !Array.isArray(p.poll_options)) throw new AppError('poll_not_a_poll', 'Dieser Beitrag ist keine Umfrage.');
+      if (optionId != null && !p.poll_options.some(o => o.id === optionId)) throw new AppError('poll_bad_option', 'Unbekannte Antwortmöglichkeit.');
+      social.setPollVote(postId, actorUserId, optionId);
+      return { ok: true, poll: social.pollTally(postId, actorUserId) };
     },
     deletePost(actorUserId, postId) {
       const p = social.getPost(postId);

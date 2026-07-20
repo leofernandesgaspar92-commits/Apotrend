@@ -8,6 +8,7 @@ export function createSocialRepo() {
   const profiles = new Map();       // userId -> profile
   const profilesByHandle = new Map(); // lower(handle) -> userId
   const posts = new Map();
+  const pollVotes = new Map();      // key `${postId}|${userId}` -> optionId (eine Stimme/Nutzer, änderbar)
   const comments = new Map();
   const reactions = new Map();      // key `${userId}|${type}|${id}` -> reaction
   const follows = new Map();        // `${follower}|${followee}` -> row
@@ -88,6 +89,7 @@ export function createSocialRepo() {
         visibility: p.visibility ?? 'public', ref_type: p.refType ?? null, ref_id: p.refId ?? null,
         image: p.image ?? null, source_url: p.sourceUrl ?? null,
         country: p.country ?? 'AT',
+        poll_options: p.pollOptions ?? null, // [{id, text}] bei kind='poll', sonst null
         accepted_comment_id: null,
         created_at: now(), edited_at: null, deleted_at: null,
       };
@@ -95,6 +97,22 @@ export function createSocialRepo() {
       return { ...post };
     },
     getPost(id) { const p = posts.get(id); return p ? { ...p } : null; },
+    // Umfrage: eine Stimme je Nutzer, änderbar. optionId=null hebt die Stimme auf.
+    setPollVote(postId, userId, optionId) {
+      const k = `${postId}|${userId}`;
+      if (optionId == null) pollVotes.delete(k); else pollVotes.set(k, optionId);
+    },
+    // Auszählung: {counts:{optId:n}, total, my:optId|null} aus Sicht von viewerUserId.
+    pollTally(postId, viewerUserId) {
+      const counts = {}; let total = 0; let my = null;
+      const prefix = `${postId}|`;
+      for (const [k, optId] of pollVotes) {
+        if (!k.startsWith(prefix)) continue;
+        counts[optId] = (counts[optId] || 0) + 1; total++;
+        if (k === `${postId}|${viewerUserId}`) my = optId;
+      }
+      return { counts, total, my };
+    },
     updatePostBody(id, body) { const p = posts.get(id); if (!p) return null; p.body = body; p.edited_at = now(); return { ...p }; },
     // Beste Antwort einer Frage setzen/aufheben (commentId oder null).
     setAcceptedAnswer(id, commentId) { const p = posts.get(id); if (!p) return null; p.accepted_comment_id = commentId; return { ...p }; },
@@ -223,6 +241,7 @@ export function createSocialRepo() {
       for (const [id, p] of posts) if (p.author_user_id === userId) posts.delete(id);
       for (const [id, c] of comments) if (c.author_user_id === userId) comments.delete(id);
       for (const [k, r] of reactions) if (r.user_id === userId) reactions.delete(k);
+      for (const k of pollVotes.keys()) if (k.endsWith('|' + userId)) pollVotes.delete(k);
       for (const [k, f] of follows) if (f.follower_user_id === userId || f.followee_user_id === userId) follows.delete(k);
       for (const [id, n] of notifications) if (n.user_id === userId || n.actor_user_id === userId) notifications.delete(id);
       for (const [id, t] of dmThreads) if (t.user_a_id === userId || t.user_b_id === userId) {
@@ -238,7 +257,7 @@ export function createSocialRepo() {
     __dump() {
       return {
         profiles: [...profiles], profilesByHandle: [...profilesByHandle], posts: [...posts],
-        comments: [...comments], reactions: [...reactions], follows: [...follows],
+        comments: [...comments], reactions: [...reactions], pollVotes: [...pollVotes], follows: [...follows],
         notifications: [...notifications], dmThreads: [...dmThreads], dmMessages: [...dmMessages], reports: [...reports],
         verifications: [...verifications], bookmarks: [...bookmarks],
       };
@@ -247,7 +266,7 @@ export function createSocialRepo() {
       if (!d) return;
       const fill = (map, rows) => { map.clear(); for (const [k, v] of rows || []) map.set(k, v); };
       fill(profiles, d.profiles); fill(profilesByHandle, d.profilesByHandle); fill(posts, d.posts);
-      fill(comments, d.comments); fill(reactions, d.reactions); fill(follows, d.follows);
+      fill(comments, d.comments); fill(reactions, d.reactions); fill(pollVotes, d.pollVotes); fill(follows, d.follows);
       fill(notifications, d.notifications); fill(dmThreads, d.dmThreads); fill(dmMessages, d.dmMessages); fill(reports, d.reports);
       fill(verifications, d.verifications); fill(bookmarks, d.bookmarks);
     },

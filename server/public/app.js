@@ -153,6 +153,8 @@ const I18N = {
     co_ph:'Bei uns gerade Engpass bei Amoxicillin — wer hat noch Bestand?',
     co_src_ph:'🔗 Quelle (Link, optional – z.B. BASG/Kammer)', co_img:'📷 Bild', co_img_clear:'✕ entfernen',
     co_question:'❓ Als Fachfrage stellen (beste Antwort auswählbar)',
+    co_poll:'📊 Umfrage', co_poll_q_ph:'Deine Frage…', co_poll_opt:'Antwortmöglichkeit', co_poll_add:'+ Option hinzufügen',
+    pl_total:'{n} Stimmen', pl_total_one:'1 Stimme', pl_total_zero:'Noch keine Stimmen', pl_you:'✓ deine Stimme', pl_tap:'Tippe auf eine Option zum Abstimmen',
     a11y_img_preview:'Bildvorschau', co_vis_aria:'Sichtbarkeit des Beitrags', ex_kind_aria:'Art des Eintrags',
     pv_public:'🌍 Öffentlich (alle Apotheker)', pv_followers:'👥 Nur meine Follower',
     co_follow_label:'Jemandem folgen (@Handle)', co_follow_btn:'Folgen',
@@ -167,7 +169,7 @@ const I18N = {
     e_shortage_pro_only:'Engpass-Meldungen sind sicherheitsrelevant und Fachkreisen (Apotheke, Pharma-Unternehmen, Behörde) vorbehalten. Als Privatnutzer:in kannst du Engpässe lesen, aber nicht melden oder bestätigen.', e_exchange_pro_only:'Der Bestandsaustausch (Biete/Suche) ist Apotheken und Fachkreisen vorbehalten. Als Privatnutzer:in kannst du Einträge lesen, aber keine anlegen.',
     e_profile_handle_format:'Handle: 3–30 Zeichen, nur a–z 0–9 _.', e_post_empty:'Beitrag darf nicht leer sein (Text oder Bild).', e_shortage_wirkstoff_missing:'Wirkstoff fehlt.', e_shortage_duplicate:'Du hast diesen Wirkstoff bereits gemeldet.',
     e_login_failed:'E-Mail oder Passwort falsch.', e_handle_taken:'Handle ist bereits vergeben.', e_email_taken:'Diese E-Mail ist bereits registriert.', e_pw_too_short:'Passwort: mindestens 8 Zeichen.', e_image_invalid:'Ungültiges Bildformat (PNG, JPEG, WebP oder GIF).', e_image_too_large:'Bild zu groß — bitte ein kleineres wählen.', e_network:'Verbindungsproblem — bitte Internetverbindung prüfen und erneut versuchen.',
-    e_display_name_required:'Anzeigename erforderlich.', e_comment_empty:'Kommentar darf nicht leer sein (Text oder Bild).', e_post_too_long:'Beitrag zu lang (max. 1000 Zeichen).', e_comment_too_long:'Kommentar zu lang (max. 1000 Zeichen).', e_bio_too_long:'Bio zu lang (max. 500 Zeichen).', e_message_empty:'Leere Nachricht.', e_exchange_name_required:'Präparat/Wirkstoff erforderlich.', e_current_pw_wrong:'Aktuelles Passwort ist falsch.', e_new_pw_short:'Neues Passwort: mindestens 8 Zeichen.',
+    e_display_name_required:'Anzeigename erforderlich.', e_comment_empty:'Kommentar darf nicht leer sein (Text oder Bild).', e_post_too_long:'Beitrag zu lang (max. 1000 Zeichen).', e_comment_too_long:'Kommentar zu lang (max. 1000 Zeichen).', e_bio_too_long:'Bio zu lang (max. 500 Zeichen).', e_message_empty:'Leere Nachricht.', e_exchange_name_required:'Präparat/Wirkstoff erforderlich.', e_current_pw_wrong:'Aktuelles Passwort ist falsch.', e_new_pw_short:'Neues Passwort: mindestens 8 Zeichen.', e_poll_question_missing:'Umfrage: bitte eine Frage eingeben.', e_poll_options_missing:'Umfrage: mindestens zwei Antwortmöglichkeiten.', e_poll_not_a_poll:'Dieser Beitrag ist keine Umfrage.', e_poll_bad_option:'Unbekannte Antwortmöglichkeit.',
     react_helpful:'👍 Hilfreich', react_thanks:'🙏 Danke', react_confirmed:'✅ Bestätigt', react_interesting:'💡 Interessant',
     pc_verified:'✔ verifiziert', pc_img_alt:'Bild zum Beitrag', pc_source:'🔗 Quelle',
     pc_edited:'✏️ bearbeitet', pc_vis_public:'🌍 öffentlich', pc_vis_followers:'👥 nur Follower',
@@ -420,6 +422,8 @@ const I18N = {
     co_ph:'We have a shortage of Amoxicillin right now — who still has stock?',
     co_src_ph:'🔗 Source (link, optional – e.g. regulator/chamber)', co_img:'📷 Image', co_img_clear:'✕ remove',
     co_question:'❓ Ask as a professional question (mark the best answer)',
+    co_poll:'📊 Poll', co_poll_q_ph:'Your question…', co_poll_opt:'Answer option', co_poll_add:'+ Add option',
+    pl_total:'{n} votes', pl_total_one:'1 vote', pl_total_zero:'No votes yet', pl_you:'✓ your vote', pl_tap:'Tap an option to vote',
     a11y_img_preview:'Image preview', co_vis_aria:'Post visibility', ex_kind_aria:'Entry type',
     pv_public:'🌍 Public (all pharmacists)', pv_followers:'👥 My followers only',
     co_follow_label:'Follow someone (@handle)', co_follow_btn:'Follow',
@@ -434,7 +438,7 @@ const I18N = {
     e_shortage_pro_only:'Shortage reports are safety-relevant and reserved for professionals (pharmacy, pharma company, authority). As a private user you can read shortages but not report or confirm them.', e_exchange_pro_only:'Stock exchange (offer/seek) is reserved for pharmacies and professionals. As a private user you can read entries but not create them.',
     e_profile_handle_format:'Handle: 3–30 characters, only a–z 0–9 _.', e_post_empty:'A post cannot be empty (text or image).', e_shortage_wirkstoff_missing:'Substance is missing.', e_shortage_duplicate:'You have already reported this substance.',
     e_login_failed:'Email or password incorrect.', e_handle_taken:'Handle is already taken.', e_email_taken:'This email is already registered.', e_pw_too_short:'Password: at least 8 characters.', e_image_invalid:'Invalid image format (PNG, JPEG, WebP or GIF).', e_image_too_large:'Image too large — please choose a smaller one.', e_network:'Connection problem — please check your internet and try again.',
-    e_display_name_required:'Display name is required.', e_comment_empty:'A comment cannot be empty (text or image).', e_post_too_long:'Post too long (max. 1000 characters).', e_comment_too_long:'Comment too long (max. 1000 characters).', e_bio_too_long:'Bio too long (max. 500 characters).', e_message_empty:'Empty message.', e_exchange_name_required:'Product/substance is required.', e_current_pw_wrong:'Current password is incorrect.', e_new_pw_short:'New password: at least 8 characters.',
+    e_display_name_required:'Display name is required.', e_comment_empty:'A comment cannot be empty (text or image).', e_post_too_long:'Post too long (max. 1000 characters).', e_comment_too_long:'Comment too long (max. 1000 characters).', e_bio_too_long:'Bio too long (max. 500 characters).', e_message_empty:'Empty message.', e_exchange_name_required:'Product/substance is required.', e_current_pw_wrong:'Current password is incorrect.', e_new_pw_short:'New password: at least 8 characters.', e_poll_question_missing:'Poll: please enter a question.', e_poll_options_missing:'Poll: at least two answer options.', e_poll_not_a_poll:'This post is not a poll.', e_poll_bad_option:'Unknown answer option.',
     react_helpful:'👍 Helpful', react_thanks:'🙏 Thanks', react_confirmed:'✅ Confirmed', react_interesting:'💡 Interesting',
     pc_verified:'✔ verified', pc_img_alt:'Post image', pc_source:'🔗 Source',
     pc_edited:'✏️ edited', pc_vis_public:'🌍 public', pc_vis_followers:'👥 followers only',
@@ -687,6 +691,8 @@ const I18N = {
     co_ph:'Temos falta de Amoxicilina agora — quem ainda tem stock?',
     co_src_ph:'🔗 Fonte (ligação, opcional – ex. regulador/ordem)', co_img:'📷 Imagem', co_img_clear:'✕ remover',
     co_question:'❓ Colocar como pergunta técnica (permite marcar a melhor resposta)',
+    co_poll:'📊 Sondagem', co_poll_q_ph:'A sua pergunta…', co_poll_opt:'Opção de resposta', co_poll_add:'+ Adicionar opção',
+    pl_total:'{n} votos', pl_total_one:'1 voto', pl_total_zero:'Ainda sem votos', pl_you:'✓ o seu voto', pl_tap:'Toque numa opção para votar',
     a11y_img_preview:'Pré-visualização da imagem', co_vis_aria:'Visibilidade da publicação', ex_kind_aria:'Tipo de entrada',
     pv_public:'🌍 Público (todos os farmacêuticos)', pv_followers:'👥 Só os meus seguidores',
     co_follow_label:'Seguir alguém (@handle)', co_follow_btn:'Seguir',
@@ -701,7 +707,7 @@ const I18N = {
     e_shortage_pro_only:'As comunicações de falta são relevantes para a segurança e reservadas a profissionais (farmácia, empresa farmacêutica, autoridade). Como utilizador particular pode ler as faltas, mas não comunicá-las nem confirmá-las.', e_exchange_pro_only:'A troca de stock (ofertar/procurar) é reservada a farmácias e profissionais. Como utilizador particular pode ler as entradas, mas não criá-las.',
     e_profile_handle_format:'Identificador: 3–30 caracteres, apenas a–z 0–9 _.', e_post_empty:'A publicação não pode estar vazia (texto ou imagem).', e_shortage_wirkstoff_missing:'Falta a substância.', e_shortage_duplicate:'Já comunicou esta substância.',
     e_login_failed:'E-mail ou palavra-passe incorretos.', e_handle_taken:'O identificador já está em uso.', e_email_taken:'Este e-mail já está registado.', e_pw_too_short:'Palavra-passe: pelo menos 8 caracteres.', e_image_invalid:'Formato de imagem inválido (PNG, JPEG, WebP ou GIF).', e_image_too_large:'Imagem demasiado grande — escolha uma menor.', e_network:'Problema de ligação — verifique a sua internet e tente novamente.',
-    e_display_name_required:'O nome a apresentar é obrigatório.', e_comment_empty:'Um comentário não pode estar vazio (texto ou imagem).', e_post_too_long:'Publicação demasiado longa (máx. 1000 caracteres).', e_comment_too_long:'Comentário demasiado longo (máx. 1000 caracteres).', e_bio_too_long:'Bio demasiado longa (máx. 500 caracteres).', e_message_empty:'Mensagem vazia.', e_exchange_name_required:'Produto/substância é obrigatório.', e_current_pw_wrong:'A palavra-passe atual está incorreta.', e_new_pw_short:'Nova palavra-passe: pelo menos 8 caracteres.',
+    e_display_name_required:'O nome a apresentar é obrigatório.', e_comment_empty:'Um comentário não pode estar vazio (texto ou imagem).', e_post_too_long:'Publicação demasiado longa (máx. 1000 caracteres).', e_comment_too_long:'Comentário demasiado longo (máx. 1000 caracteres).', e_bio_too_long:'Bio demasiado longa (máx. 500 caracteres).', e_message_empty:'Mensagem vazia.', e_exchange_name_required:'Produto/substância é obrigatório.', e_current_pw_wrong:'A palavra-passe atual está incorreta.', e_new_pw_short:'Nova palavra-passe: pelo menos 8 caracteres.', e_poll_question_missing:'Sondagem: introduza uma pergunta.', e_poll_options_missing:'Sondagem: pelo menos duas opções de resposta.', e_poll_not_a_poll:'Esta publicação não é uma sondagem.', e_poll_bad_option:'Opção de resposta desconhecida.',
     react_helpful:'👍 Útil', react_thanks:'🙏 Obrigado', react_confirmed:'✅ Confirmado', react_interesting:'💡 Interessante',
     pc_verified:'✔ verificado', pc_img_alt:'Imagem da publicação', pc_source:'🔗 Fonte',
     pc_edited:'✏️ editado', pc_vis_public:'🌍 público', pc_vis_followers:'👥 só seguidores',
@@ -1233,6 +1239,10 @@ async function mainScreen() {
         <label style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer;font-size:14px">
           <input type="checkbox" id="pfrage" style="width:auto;min-height:0"> <span data-i18n="co_question">❓ Als Fachfrage stellen (beste Antwort auswählbar)</span>
         </label>
+        <label style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer;font-size:14px">
+          <input type="checkbox" id="ppoll" style="width:auto;min-height:0"> <span data-i18n="co_poll">📊 Umfrage</span>
+        </label>
+        <div id="pollBox" style="display:none;margin-top:8px"></div>
         <div class="row" style="margin-top:8px">
           <select id="pv" data-i18n-aria="co_vis_aria" aria-label="Sichtbarkeit des Beitrags" style="max-width:220px">
             <option value="public" data-i18n="pv_public">🌍 Öffentlich (alle Apotheker)</option>
@@ -1263,11 +1273,35 @@ async function mainScreen() {
   };
   pimgclear.onclick = clearImg;
   attachMentionAutocomplete(document.getElementById('pb'));
+
+  // Poll composer: toggle reveals dynamic answer-option inputs (2..6)
+  const ppoll = document.getElementById('ppoll'), pfrage = document.getElementById('pfrage'), pollBox = document.getElementById('pollBox');
+  const MAX_POLL_OPTS = 6;
+  function pollOptInputs() { return Array.from(pollBox.querySelectorAll('input.poll-opt-in')); }
+  function setPollVals(vals) {
+    while (vals.length < 2) vals.push('');
+    const rows = vals.map((val, i) =>
+      `<input class="poll-opt-in" placeholder="${esc(t('co_poll_opt'))} ${i+1}" value="${esc(val)}" style="margin-top:6px" maxlength="80">`
+    ).join('');
+    const canAdd = vals.length < MAX_POLL_OPTS;
+    pollBox.innerHTML = rows + (canAdd ? `<button class="ghost small" id="pollAdd" data-i18n="co_poll_add" style="margin-top:6px">+ Option hinzufügen</button>` : '');
+    if (canAdd) document.getElementById('pollAdd').onclick = () => { const cur = pollOptInputs().map(i=>i.value); cur.push(''); setPollVals(cur); };
+    applyI18n(pollBox);
+  }
+  ppoll.onchange = () => {
+    if (ppoll.checked) { pfrage.checked = false; pollBox.style.display = 'block'; if (!pollOptInputs().length) setPollVals([]); document.getElementById('pb').placeholder = t('co_poll_q_ph'); }
+    else { pollBox.style.display = 'none'; document.getElementById('pb').placeholder = t('co_ph'); }
+  };
+  pfrage.onchange = () => { if (pfrage.checked && ppoll.checked) { ppoll.checked = false; pollBox.style.display='none'; document.getElementById('pb').placeholder = t('co_ph'); } };
+
   document.getElementById('pgo').onclick = async () => {
     try {
-      const isFrage = document.getElementById('pfrage').checked;
-      await api('POST','/api/posts',{ body:v('pb'), visibility:document.getElementById('pv').value, image:composeImage, sourceUrl:v('psrc'), kind: isFrage ? 'frage' : 'post' });
-      document.getElementById('pb').value=''; document.getElementById('psrc').value=''; document.getElementById('pfrage').checked=false; clearImg(); loadFeed();
+      const isFrage = pfrage.checked, isPoll = ppoll.checked;
+      const payload = { body:v('pb'), visibility:document.getElementById('pv').value, image:composeImage, sourceUrl:v('psrc'), kind: isPoll ? 'poll' : (isFrage ? 'frage' : 'post') };
+      if (isPoll) payload.pollOptions = pollOptInputs().map(i => i.value.trim()).filter(Boolean);
+      await api('POST','/api/posts', payload);
+      document.getElementById('pb').value=''; document.getElementById('psrc').value=''; pfrage.checked=false;
+      ppoll.checked=false; pollBox.style.display='none'; pollBox.innerHTML=''; document.getElementById('pb').placeholder=t('co_ph'); clearImg(); loadFeed();
     } catch(e){ document.getElementById('perr').textContent = e.message; }
   };
   document.getElementById('fgo').onclick = async () => {
@@ -3222,6 +3256,23 @@ function qBadgeHtml(answered) {
   return `<span style="display:inline-block;background:${answered?'rgba(11,127,40,.12)':'rgba(41,82,204,.12)'};color:${answered?'var(--ok-fg)':'var(--info-fg)'};font-weight:700;font-size:13px;padding:2px 10px;border-radius:999px">${esc(answered?t('pc_answered'):t('pc_question_open'))}</span>`;
 }
 
+// Umfrage-Block: Optionen als antippbare Balken mit Ergebnis-Anteil, eigene Stimme markiert.
+function pollHtml(p) {
+  const poll = p.poll; if (!poll || !Array.isArray(poll.options)) return '';
+  const total = poll.total || 0;
+  const rows = poll.options.map(o => {
+    const n = (poll.counts || {})[o.id] || 0;
+    const pct = total ? Math.round((n / total) * 100) : 0;
+    const mine = poll.my_vote === o.id;
+    return `<button class="poll-opt${mine ? ' mine' : ''}" data-pollvote="${esc(o.id)}" aria-pressed="${mine}">
+      <span class="poll-bar" style="width:${pct}%"></span>
+      <span class="poll-lbl">${esc(o.text)}${mine ? ` <span class="poll-you">${esc(t('pl_you'))}</span>` : ''}</span>
+      <span class="poll-pct">${total ? pct + '%' : ''}</span>
+    </button>`;
+  }).join('');
+  const totalLbl = total === 0 ? t('pl_total_zero') : (total === 1 ? t('pl_total_one') : ti('pl_total', { n: total }));
+  return `<div class="poll" data-poll>${rows}<div class="poll-total muted">${esc(totalLbl)}${total ? '' : ' · ' + esc(t('pl_tap'))}</div></div>`;
+}
 function postCard(p) {
   const a = p.author || {};
   const rc = p.reaction_counts || {};
@@ -3239,6 +3290,7 @@ function postCard(p) {
     <div class="muted" style="font-size:13px" title="${esc(p.created_at)}">🕒 ${relTime(p.created_at)}</div>
     ${p.is_question?`<div style="margin-top:4px" data-qbadge>${qBadgeHtml(p.answered)}</div>`:''}
     <div class="post-body" data-body>${linkifyMentions(p.body)}</div>
+    ${p.poll ? pollHtml(p) : ''}
     ${p.image && /^data:image\//.test(p.image) ? `<img src="${p.image}" alt="${esc(t('pc_img_alt'))}" style="max-width:100%;border-radius:10px;margin-top:8px;display:block" />` : ''}
     ${p.source_url ? `<div style="margin-top:6px"><a href="${esc(p.source_url)}" target="_blank" rel="noopener noreferrer" class="mention">${esc(t('pc_source'))}</a></div>` : ''}
     <div class="vis" data-edited ${p.edited_at?'':'style="display:none"'}>${esc(t('pc_edited'))}</div>
@@ -3262,6 +3314,12 @@ function postCard(p) {
   card._post = p; // für Q&A (beste Antwort) im Kommentar-Thread verfügbar machen
   card.querySelectorAll('[data-react]').forEach(btn => btn.onclick = async () => {
     try { await api('POST',`/api/posts/${p.id}/react`,{ type:btn.dataset.react }); loadFeed(); } catch(e){ alert(e.message); }
+  });
+  // Umfrage: Option antippen stimmt ab / ändert; erneut auf die eigene Option = zurückziehen.
+  card.querySelectorAll('[data-pollvote]').forEach(btn => btn.onclick = async () => {
+    const opt = btn.dataset.pollvote;
+    const retract = p.poll && p.poll.my_vote === opt;
+    try { await api('POST',`/api/polls/${p.id}/vote`,{ optionId: retract ? null : opt }); loadFeed(); } catch(e){ alert(e.message); }
   });
   const fb = card.querySelector('[data-follow]');
   if (fb) fb.onclick = async () => { const on = fb.dataset.on === '1'; try { await api('POST', on?'/api/unfollow':'/api/follow', { handle:fb.dataset.follow }); loadFeed(); } catch(e){ alert(e.message);} };
