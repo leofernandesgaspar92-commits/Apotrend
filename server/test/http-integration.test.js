@@ -355,6 +355,23 @@ test('Unbekannte Route -> 404', async () => {
   assert.equal(r.status, 404);
 });
 
+test('Reaktion über HTTP: setzen -> my_reaction + Zähler, erneut -> aus (Toggle)', async () => {
+  const a = await reg('rxa' + PORT);
+  const bResp = await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'rxb' + PORT, handle: 'rxb' + PORT, email: 'rxb' + PORT + '@a.at', password: 'geheim123' }) });
+  const b = (await bResp.json()).token;
+  const p = await (await post('/api/posts', a, { body: 'React ' + PORT, visibility: 'public' })).json();
+  const state = async () => { const g = await j(`/api/posts/${p.id}`, b); const q = g.post || g; return { my: q.my_reaction, c: (q.reaction_counts || {}).hilfreich }; };
+  assert.equal((await post(`/api/posts/${p.id}/react`, b, { type: 'hilfreich' })).status, 200);
+  let s = await state();
+  assert.equal(s.my, 'hilfreich', 'my_reaction gesetzt');
+  assert.equal(s.c, 1, 'Zähler 1');
+  // Erneut dieselbe Reaktion -> aus.
+  await post(`/api/posts/${p.id}/react`, b, { type: 'hilfreich' });
+  s = await state();
+  assert.equal(s.my, null, 'my_reaction zurückgesetzt');
+  assert.equal(s.c, 0, 'Zähler 0');
+});
+
 test('Kommentar-Antwort über HTTP: Antwort trägt parent_comment_id (Threading)', async () => {
   const a = await reg('cra' + PORT);
   const bResp = await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'crb' + PORT, handle: 'crb' + PORT, email: 'crb' + PORT + '@a.at', password: 'geheim123' }) });

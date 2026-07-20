@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #71 — 2026-07-18 — Reaktionen (Toggle + Zähler) über HTTP getestet
+- **CHECK:** Reaktion real: setzen → my_reaction='hilfreich' + reaction_counts.hilfreich=1; erneut → my_reaction=null + Zähler=0. Kein Defekt.
+- **WORK:** HTTP-Test für Reaktions-Toggle mit Zähler-Prüfung via GET /api/posts/:id.
+- **CHECK:** 233 → 234 grün. (Damit sind auch die letzten Kern-Interaktionen — Reaktion/Kommentar-Threading — HTTP-abgedeckt.)
+
 ### Cycle #70 — 2026-07-18 — Kommentar-Antworten (Threading) über HTTP getestet
 - **CHECK:** Antwort auf Kommentar (parentCommentId) real: Antwort trägt korrekt parent_comment_id, erscheint threaded in der Liste.
 - **WORK:** HTTP-Test für Threading.
