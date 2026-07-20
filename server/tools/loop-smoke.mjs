@@ -108,6 +108,20 @@ async function main() {
   const homeOk = await page.evaluate(() => /Für dich|For you|Para si/.test(document.body.textContent) && window.scrollY === 0);
   step('Logo führt eingeloggt zur Übersicht + scrollt nach oben', homeOk);
 
+  // 7) Nicht-destruktiver Länder-Switcher („Land = Sicht"): ein fremdes Land besuchen zeigt
+  //    den Besuchs-Kontext, das Heimatland bleibt; „Zurück" beendet den Besuch.
+  await page.selectOption('#countrySwitch', 'GB').catch(() => {});
+  await page.waitForTimeout(700);
+  const visiting = await page.evaluate(() => {
+    const b = document.getElementById('viewCtx');
+    return { shown: !!b, hint: b ? b.textContent : '', sel: (document.getElementById('countrySwitch') || {}).value };
+  });
+  step('Länder-Switcher öffnet Besuchs-Ansicht (Heimat bleibt)', visiting.shown && visiting.sel === 'GB', visiting.hint.slice(0, 40));
+  await page.click('#vcBack').catch(() => {});
+  await page.waitForTimeout(500);
+  const backHome = await page.evaluate(() => !document.getElementById('viewCtx'));
+  step('„Zurück zu meinem Land" beendet den Besuch', backHome);
+
   step('Keine JS-Fehler während des Flows', jsErrors.length === 0, jsErrors.slice(0, 2).join(' | '));
 
   await browser.close();

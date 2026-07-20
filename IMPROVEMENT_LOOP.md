@@ -81,6 +81,10 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #81 — 2026-07-18 — Smoke-Test schützt den nicht-destruktiven Switcher
+- **WORK:** 2 Smoke-Schritte: fremdes Land besuchen → Besuchs-Kontext erscheint (Switcher=GB, Heimat bleibt); „Zurück" beendet den Besuch.
+- **CHECK:** Smoke 11 → 13/13 grün. Das Headline-Feature „Land = Sicht" ist damit gegen stille Regression gesichert.
+
 ### Cycle #80 — 2026-07-18 — Roadmap Phase 1: nicht-destruktiver Länder-Switcher („Land = Sicht")
 - **THINK:** Der bisherige Switcher schrieb bei jedem Wechsel das PROFIL-Land um — die Vision will aber „Account bleibt derselbe, nur die Inhalte wechseln". Backend unterstützt das schon via `?country=` / `activeCountry()`.
 - **WORK:** Client-Zustand `ACTIVE_COUNTRY` + `viewCountry()`; Switcher setzt nur die Besuchs-Ansicht (kein Profil-Write), Sprache folgt dem besuchten Land, `?country=` an feed/public (×2) + news angehängt. Sichtbarer Info-Balken „Du besuchst {Land}" + 1-Klick-Zurück; i18n (vc_visiting/vc_back, DE/EN/PT); theme-aware CSS (Info-Blau, nicht Rot/Orange).
