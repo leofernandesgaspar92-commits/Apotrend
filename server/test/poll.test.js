@@ -116,6 +116,26 @@ test('Persistenz: Umfrage-Stimmen überstehen dump/load', () => {
   assert.equal(tally.my, 'o3');
 });
 
+test('Abstimmen benachrichtigt die Umfrage-Autor:in — nur bei neuer Stimme, nie sich selbst', () => {
+  const { social, a, b } = setup();
+  const p = makePoll(social, a);
+  // B stimmt erstmalig ab -> A bekommt eine poll_vote-Benachrichtigung
+  social.votePoll(b, p.id, 'o1');
+  let na = social.notifications(a).filter(n => n.type === 'poll_vote');
+  assert.equal(na.length, 1, 'eine neue Stimme = eine Benachrichtigung');
+  assert.equal(na[0].post_id ?? na[0].ref_id, p.id);
+  // B wechselt die Stimme -> KEINE zweite Benachrichtigung (spamfrei)
+  social.votePoll(b, p.id, 'o2');
+  assert.equal(social.notifications(a).filter(n => n.type === 'poll_vote').length, 1, 'Wechsel benachrichtigt nicht erneut');
+  // B zieht zurück und stimmt neu ab -> zählt wieder als neue Stimme
+  social.votePoll(b, p.id, null);
+  social.votePoll(b, p.id, 'o3');
+  assert.equal(social.notifications(a).filter(n => n.type === 'poll_vote').length, 2, 'nach Rückzug wieder benachrichtigt');
+  // A stimmt bei der eigenen Umfrage ab -> keine Selbst-Benachrichtigung
+  social.votePoll(a, p.id, 'o1');
+  assert.equal(social.notifications(a).filter(n => n.type === 'poll_vote').length, 2, 'keine Selbst-Benachrichtigung');
+});
+
 test('Konto-Löschung entfernt die eigenen Umfrage-Stimmen', () => {
   const { social, socialRepo, a, b } = setup();
   const p = makePoll(social, a);

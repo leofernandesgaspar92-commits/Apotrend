@@ -282,7 +282,10 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (!p || p.deleted_at) throw new Error('Beitrag nicht gefunden.');
       if (p.kind !== 'poll' || !Array.isArray(p.poll_options)) throw new AppError('poll_not_a_poll', 'Dieser Beitrag ist keine Umfrage.');
       if (optionId != null && !p.poll_options.some(o => o.id === optionId)) throw new AppError('poll_bad_option', 'Unbekannte Antwortmöglichkeit.');
+      const hadVote = social.pollTally(postId, actorUserId).my != null; // eigene Stimme vorher?
       social.setPollVote(postId, actorUserId, optionId);
+      // Autor:in nur bei einer NEUEN Stimme benachrichtigen (nicht bei Wechsel/Rückzug) — hält es spamfrei.
+      if (optionId != null && !hadVote) notify(p.author_user_id, 'poll_vote', actorUserId, 'post', postId);
       return { ok: true, poll: social.pollTally(postId, actorUserId) };
     },
     deletePost(actorUserId, postId) {

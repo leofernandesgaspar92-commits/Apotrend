@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #87 — 2026-07-20 — Social: Umfrage-Abstimmung benachrichtigt die Autor:in
+- **THINK:** Umfragen liefen still — die Ersteller:in erfuhr nichts von Engagement. „Facebook für Apotheker" lebt von Rückkopplung; eine Abstimm-Benachrichtigung schließt die Umfrage-Schleife.
+- **WORK:** `votePoll` benachrichtigt die Autor:in (`poll_vote`) — aber nur bei einer **neuen** Stimme (nicht bei Wechsel/Rückzug), nie sich selbst (spamfrei). Frontend: Verb `nv_poll_vote` (DE/EN/PT) + 📊-Icon; Klick springt über den bestehenden `post_id`-Pfad zum Beitrag.
+- **CHECK:** 253 → 254 grün (+1 Service-Test: neue Stimme → 1 Benachrichtigung, Wechsel → keine zweite, Rückzug+neu → wieder eine, Selbst-Stimme → keine), Parität 665/665/665, Smoke 15/15, Guards 0.
+
 ### Cycle #86 — 2026-07-20 — Login-Brute-Force-Schutz (Rate-Limiting, in-memory)
 - **THINK:** Der Login hatte keinerlei Bremse gegen automatisiertes Passwort-Raten — die einzige echte Sicherheitslücke im Auth-Fluss. Lösbar ohne externen Dienst (Constraint: nur Built-ins).
 - **WORK:** `src/domain/rateLimiter.js` (gleitendes Zeitfenster, `check`/`fail`/`reset`); Login sperrt nach 5 Fehlversuchen je (IP+E-Mail) für 15 min → 429 `too_many_attempts` (+`retry_after_s` fürs Frontend), erfolgreicher Login setzt zurück. Client-IP aus `x-forwarded-for` (Render-Proxy). i18n `e_too_many_attempts` (DE/EN/PT).

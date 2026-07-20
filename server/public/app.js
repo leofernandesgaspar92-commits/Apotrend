@@ -189,7 +189,7 @@ const I18N = {
     notif_readall:'Alle als gelesen markieren', notif_empty:'Noch keine Benachrichtigungen.',
     notif_someone:'Jemand', post_doc:'Beitrag', post_title:'Beitrag', post_back:'← zurück zum Feed',
     nv_follow:'folgt dir jetzt', nv_comment:'hat kommentiert', nv_reaction:'hat reagiert auf deinen Beitrag',
-    nv_mention:'hat dich erwähnt', nv_dm:'hat dir geschrieben', nv_exchange_offer:'bietet jetzt an, was du suchst:',
+    nv_mention:'hat dich erwähnt', nv_dm:'hat dir geschrieben', nv_poll_vote:'hat bei deiner Umfrage abgestimmt', nv_exchange_offer:'bietet jetzt an, was du suchst:',
     nv_exchange_want:'sucht, was du anbietest:', nv_verified:'Dein Profil wurde verifiziert ✔',
     nv_watch_alert:'Neuer Status bei deinem beobachteten Wirkstoff:', nv_shortage_confirm:'bestätigt deinen gemeldeten Engpass:',
     nv_answer_accepted:'hat deine Antwort als beste markiert ✔', nv_watch_offer:'Neuer Bestand zu deinem beobachteten Wirkstoff:',
@@ -458,7 +458,7 @@ const I18N = {
     notif_readall:'Mark all as read', notif_empty:'No notifications yet.',
     notif_someone:'Someone', post_doc:'Post', post_title:'Post', post_back:'← back to feed',
     nv_follow:'now follows you', nv_comment:'commented', nv_reaction:'reacted to your post',
-    nv_mention:'mentioned you', nv_dm:'messaged you', nv_exchange_offer:'now offers what you seek:',
+    nv_mention:'mentioned you', nv_dm:'messaged you', nv_poll_vote:'voted in your poll', nv_exchange_offer:'now offers what you seek:',
     nv_exchange_want:'seeks what you offer:', nv_verified:'Your profile was verified ✔',
     nv_watch_alert:'New status for a substance you watch:', nv_shortage_confirm:'confirms the shortage you reported:',
     nv_answer_accepted:'marked your answer as best ✔', nv_watch_offer:'New stock for a substance you watch:',
@@ -727,7 +727,7 @@ const I18N = {
     notif_readall:'Marcar todas como lidas', notif_empty:'Ainda sem notificações.',
     notif_someone:'Alguém', post_doc:'Publicação', post_title:'Publicação', post_back:'← voltar ao feed',
     nv_follow:'começou a segui-lo', nv_comment:'comentou', nv_reaction:'reagiu à sua publicação',
-    nv_mention:'mencionou-o', nv_dm:'enviou-lhe mensagem', nv_exchange_offer:'oferece agora o que procura:',
+    nv_mention:'mencionou-o', nv_dm:'enviou-lhe mensagem', nv_poll_vote:'votou na sua sondagem', nv_exchange_offer:'oferece agora o que procura:',
     nv_exchange_want:'procura o que oferece:', nv_verified:'O seu perfil foi verificado ✔',
     nv_watch_alert:'Novo estado numa substância que vigia:', nv_shortage_confirm:'confirma a falta que reportou:',
     nv_answer_accepted:'marcou a sua resposta como a melhor ✔', nv_watch_offer:'Novo stock numa substância que vigia:',
@@ -3524,7 +3524,7 @@ async function showNotifications() {
   setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦' };
   app.innerHTML = '';
   const head = el(`<div class="card"><div class="row"><h1 style="flex:1">${esc(t('notif_title'))}</h1>
     <button class="ghost small" id="back">${esc(t('gen_back'))}</button></div>
