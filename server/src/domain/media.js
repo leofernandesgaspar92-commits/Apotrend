@@ -8,8 +8,8 @@ export const MAX_IMAGE = 900_000; // ~ base64-Länge (Client verkleinert vorab)
 export function cleanImage(image) {
   if (image == null || image === '') return null;
   const s = String(image);
-  if (!/^data:image\/(png|jpe?g|webp|gif);base64,[a-z0-9+/=\s]+$/i.test(s)) throw new Error('Ungueltiges Bildformat.');
-  if (s.length > MAX_IMAGE) throw new Error('Bild zu groß (bitte kleineres wählen).');
+  if (!/^data:image\/(png|jpe?g|webp|gif);base64,[a-z0-9+/=\s]+$/i.test(s)) { const e = new Error('Ungueltiges Bildformat.'); e.code = 'image_invalid'; throw e; }
+  if (s.length > MAX_IMAGE) { const e = new Error('Bild zu groß (bitte kleineres wählen).'); e.code = 'image_too_large'; throw e; }
   return s;
 }
 

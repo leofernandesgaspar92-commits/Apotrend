@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #77 — 2026-07-18 — Bild-Fehler mehrsprachig (image_invalid/image_too_large) — Backend-i18n komplett
+- **THINK:** Letzte code-losen deutschen Fehler auf erreichbaren Pfaden (Bild-Upload beim Posten/Austausch): `media.js` warf Format-/Größen-Fehler ohne Code.
+- **WORK:** `e.code = 'image_invalid'`/`'image_too_large'`; Keys in DE/EN/PT. Damit sind alle erreichbaren Backend-Fehler (Service + Repo + Domain) mehrsprachig.
+- **CHECK:** code image_invalid real (lehnt auch Nicht-Bild-data-URI ab); Parität 648/648/648; 237 grün.
+
 ### Cycle #76 — 2026-07-18 — Registrierungs-Passwortfehler mehrsprachig (pw_too_short)
 - **THINK:** `hashPassword` (bei Registrierung) warf den „mind. 8 Zeichen"-Fehler ohne Code (nur changePassword hatte new_pw_short) → EN/PT sahen Deutsch bei zu kurzem Passwort. Passwort-Policy selbst ist konsistent (Registrierung & Änderung fordern 8).
 - **WORK:** `e.code = 'pw_too_short'` in password.js; `e_pw_too_short`-Keys (DE/EN/PT); HTTP-Test-Assertion.
