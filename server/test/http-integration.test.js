@@ -160,6 +160,11 @@ test('Fehler-Antworten tragen einen i18n-Code (Fundament der mehrsprachigen Back
   const b2c = await r2c.json();
   assert.equal(r2c.status, 400);
   assert.equal(b2c.code, 'email_taken', 'doppelte E-Mail liefert code email_taken');
+  // Registrierung mit zu kurzem Passwort -> code pw_too_short (mehrsprachig)
+  const r2d = await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'sp', handle: 'sp' + PORT, email: 'sp' + PORT + '@a.at', password: '12' }) });
+  const b2d = await r2d.json();
+  assert.equal(r2d.status, 400);
+  assert.equal(b2d.code, 'pw_too_short', 'zu kurzes Passwort liefert code pw_too_short');
   // Engpass ohne Wirkstoff -> code shortage_wirkstoff_missing
   const r3 = await post('/api/shortages/report', a, { wirkstoff: '  ' });
   const b3 = await r3.json();

@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #76 — 2026-07-18 — Registrierungs-Passwortfehler mehrsprachig (pw_too_short)
+- **THINK:** `hashPassword` (bei Registrierung) warf den „mind. 8 Zeichen"-Fehler ohne Code (nur changePassword hatte new_pw_short) → EN/PT sahen Deutsch bei zu kurzem Passwort. Passwort-Policy selbst ist konsistent (Registrierung & Änderung fordern 8).
+- **WORK:** `e.code = 'pw_too_short'` in password.js; `e_pw_too_short`-Keys (DE/EN/PT); HTTP-Test-Assertion.
+- **CHECK:** code pw_too_short real; Parität 646/646/646; 237 grün.
+
 ### Cycle #75 — 2026-07-18 — Doppelte-E-Mail-Fehler mehrsprachig (email_taken)
 - **THINK:** Doppelte Registrierung: Handle-Fehler hatte `handle_taken` (übersetzbar), der E-Mail-Fehler aber keinen Code → EN/PT sahen Deutsch bei einem häufigen Registrierungsfehler.
 - **WORK:** memoryRepo setzt jetzt `e.code = 'email_taken'`; `e_email_taken`-Keys (DE/EN/PT). HTTP-Test um email_taken-Assertion ergänzt.

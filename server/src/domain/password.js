@@ -7,7 +7,7 @@ const SALTLEN = 16;
 
 export function hashPassword(plain) {
   if (typeof plain !== 'string' || plain.length < 8) {
-    throw new Error('Passwort muss mindestens 8 Zeichen haben.');
+    const e = new Error('Passwort muss mindestens 8 Zeichen haben.'); e.code = 'pw_too_short'; throw e;
   }
   const salt = crypto.randomBytes(SALTLEN);
   const dk = crypto.scryptSync(plain, salt, KEYLEN);
