@@ -690,6 +690,30 @@ test('Umfragen über HTTP: erstellen, abstimmen, im Feed, Fehlercodes', async ()
   assert.equal(noAuth.status, 401, 'ohne Token 401');
 });
 
+test('Login-Brute-Force-Schutz: sperrt nach 5 Fehlversuchen (429), Erfolg setzt zurück', async () => {
+  const handle = 'brute' + PORT;
+  await reg(handle); // legt Konto mit Passwort geheim123 an
+  const email = handle + '@a.at';
+  const tryLogin = (pw) => fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email, password: pw }) });
+  // 5 Fehlversuche -> jeweils 401 login_failed
+  for (let i = 0; i < 5; i++) {
+    const r = await tryLogin('falsch' + i);
+    assert.equal(r.status, 401, `Versuch ${i + 1} -> 401`);
+    assert.equal((await r.json()).code, 'login_failed');
+  }
+  // 6. Versuch -> 429 too_many_attempts, auch mit RICHTIGEM Passwort gesperrt
+  const blocked = await tryLogin('geheim123');
+  assert.equal(blocked.status, 429, 'nach 5 Fehlversuchen gesperrt');
+  const bb = await blocked.json();
+  assert.equal(bb.code, 'too_many_attempts');
+  assert.ok(bb.retry_after_s > 0, 'Wartezeit fürs Frontend');
+  // Ein anderes Konto (andere E-Mail) ist NICHT betroffen — kein globaler Ausfall.
+  const other = 'brute2' + PORT;
+  await reg(other);
+  const ok2 = await fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email: other + '@a.at', password: 'geheim123' }) });
+  assert.equal(ok2.status, 200, 'anderes Konto weiterhin einlogbar');
+});
+
 test('Statische Assets: gzip-Komprimierung + ETag/304-Revalidierung', async () => {
   // gzip nur, wenn der Client es anbietet.
   const gz = await rawGet('/app.js', { 'accept-encoding': 'gzip' });

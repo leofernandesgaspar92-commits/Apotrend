@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #86 — 2026-07-20 — Login-Brute-Force-Schutz (Rate-Limiting, in-memory)
+- **THINK:** Der Login hatte keinerlei Bremse gegen automatisiertes Passwort-Raten — die einzige echte Sicherheitslücke im Auth-Fluss. Lösbar ohne externen Dienst (Constraint: nur Built-ins).
+- **WORK:** `src/domain/rateLimiter.js` (gleitendes Zeitfenster, `check`/`fail`/`reset`); Login sperrt nach 5 Fehlversuchen je (IP+E-Mail) für 15 min → 429 `too_many_attempts` (+`retry_after_s` fürs Frontend), erfolgreicher Login setzt zurück. Client-IP aus `x-forwarded-for` (Render-Proxy). i18n `e_too_many_attempts` (DE/EN/PT).
+- **CHECK:** 248 → 253 grün (+4 Limiter-Unit, +1 HTTP-Lockout), Parität 664/664/664, Smoke 15/15, Guards 0. HTTP-Test belegt: 5×401 → 429 (auch mit richtigem Passwort gesperrt), anderes Konto unbetroffen.
+
 ### Cycle #85 — 2026-07-20 — Smoke-Test schützt den Umfrage-Composer (Frontend-Guard)
 - **THINK:** #83/#84 sichern das Backend; die Composer-UI (📊-Toggle, dynamische Optionsfelder, Abstimm-Klick im Feed) war nur einmal manuell im Browser geprüft. Muster #81: Smoke schützt Headline-Features gegen stille Frontend-Regression.
 - **WORK:** 2 Smoke-Schritte in `loop-smoke.mjs`: Umfrage über den echten Composer anlegen (Toggle zeigt Box, 3. Option per „+"-Button, Posten) → Umfrage mit 3 `.poll-opt` erscheint im Feed; Klick auf eine Option → `aria-pressed="true"` (eigene Stimme markiert).

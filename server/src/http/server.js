@@ -28,6 +28,10 @@ import { createPatientInfoService } from '../services/patientInfo.js';
 import { listCountries, normalizeCountry, normalizeLocale } from '../data/countries.js';
 import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
 import { issueToken, verifyToken } from './token.js';
+import { createRateLimiter } from '../domain/rateLimiter.js';
+
+// Login-Brute-Force-Schutz: max. 5 Fehlversuche je (IP+E-Mail) in 15 Minuten.
+const loginLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, '..', '..', 'public');
@@ -193,9 +197,17 @@ const routes = [
     return { token: issueToken(reg.user.id), user: reg.user, profile };
   }],
 
-  ['POST', /^\/api\/login$/, false, async ({ body }) => {
+  ['POST', /^\/api\/login$/, false, async ({ body, ip }) => {
+    const key = (ip || 'unknown') + '|' + String(body.email || '').trim().toLowerCase();
+    const st = loginLimiter.check(key);
+    if (st.blocked) {
+      const e = new Error('Zu viele Fehlversuche. Bitte später erneut versuchen.');
+      e.status = 429; e.code = 'too_many_attempts'; e.retryAfterS = Math.ceil(st.retryAfterMs / 1000);
+      throw e;
+    }
     const r = orgAuth.login({ email: body.email, password: body.password });
-    if (!r.ok) { const e = new Error(r.error); e.status = 401; e.code = 'login_failed'; throw e; }
+    if (!r.ok) { loginLimiter.fail(key); const e = new Error(r.error); e.status = 401; e.code = 'login_failed'; throw e; }
+    loginLimiter.reset(key); // erfolgreiche Anmeldung setzt den Zähler zurück
     return { token: issueToken(r.user.id), user: r.user, profile: social.getProfile(r.user.id) };
   }],
 
@@ -407,13 +419,17 @@ const server = http.createServer(async (req, res) => {
     try {
       const body = (req.method === 'POST') ? await readBody(req) : {};
       const params = (pathname.match(rx) || []).slice(1);
-      const result = await handler({ userId, body, params, query: url.searchParams });
+      // Client-IP (hinter dem Render-Proxy steht die echte IP in x-forwarded-for).
+      const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
+      const result = await handler({ userId, body, params, query: url.searchParams, ip });
       if (req.method !== 'GET') saveSoon(); // Zustand nach jeder erfolgreichen Schreiboperation sichern (POST/DELETE)
       return json(req, res, 200, result ?? { ok: true });
     } catch (e) {
       const code = e instanceof ForbiddenError ? 403 : (e.status || 400);
       // e.code (falls gesetzt) erlaubt dem Frontend, die Meldung zu übersetzen.
-      return json(req, res, code, e.code ? { error: e.message, code: e.code } : { error: e.message });
+      const payload = e.code ? { error: e.message, code: e.code } : { error: e.message };
+      if (e.retryAfterS != null) payload.retry_after_s = e.retryAfterS; // 429: Wartezeit fürs Frontend
+      return json(req, res, code, payload);
     }
   }
 
