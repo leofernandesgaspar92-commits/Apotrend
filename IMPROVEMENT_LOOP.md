@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #94 — 2026-07-20 — Barrierefreiheit: anklickbare Elemente per Tastatur bedienbar
+- **THINK:** 34 `.clickable`-Elemente (Autor-Namen, Wirkstoffe, Repost-Einbettung …) sind Spans/Divs mit `onclick` — für Tastatur-/Screenreader-Nutzer:innen unerreichbar (kein Fokus, kein Enter/Space). Für eine Fachplattform mit Sorgfaltsanspruch eine echte Lücke; die Browser-Audit-a11y-Prüfung erfasste sie bisher nicht.
+- **WORK:** Ein zentraler Mechanismus (MutationObserver + delegierter keydown) versorgt alle aktuellen UND künftig gerenderten `.clickable`-Nicht-Buttons mit `tabindex=0`+`role=button` und löst bei Enter/Leertaste den Klick aus — ohne 34 Einzelstellen anzufassen. Browser-Audit um die Prüfung „anklickbar, aber nicht tastaturbedienbar" erweitert (guard mit Zähnen: ohne den Fix schlägt sie an).
+- **CHECK:** Echter Browser: `.clickable[data-openprofile]` trägt `tabindex=0`/`role=button`, Fokus + Enter öffnet das Profil, 0 JS-Fehler. 282 Tests grün, Browser-Audit (inkl. neuer Prüfung) sauber, Smoke 16/16, Guards 0.
+
 ### Cycle #93 — 2026-07-20 — Eigene Entscheidung hinterfragt: Umfrage-Optionen entfernbar
 - **THINK:** In #82 hatte der Umfrage-Composer nur „+ Option hinzufügen", aber kein Entfernen — wer versehentlich eine Option zu viel anlegt, bleibt mit einem leeren Feld hängen. Für zeitknappe Nutzer:innen schlechte Bedienung; eine selbst getroffene Entscheidung zum Nachbessern.
 - **WORK:** Je Optionsfeld ein ✕-Button (nur wenn > 2 Optionen — das Minimum bleibt geschützt), Klick entfernt genau diese Zeile und erhält die übrigen Eingaben; `aria-label`/`title` `co_poll_del` (DE/EN/PT).

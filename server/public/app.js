@@ -4001,6 +4001,33 @@ function goHome() {
 const _logo = document.getElementById('logoHome');
 if (_logo) _logo.onclick = goHome;
 
+// Barrierefreiheit: als .clickable markierte Nicht-Button-Elemente (Spans/Divs mit onclick)
+// per Tastatur bedienbar machen. Ein zentraler Mechanismus versorgt alle aktuellen UND
+// künftig gerenderten .clickable-Elemente mit tabindex+role; Enter/Leertaste lösen den Klick aus.
+(function enableClickableKeyboard() {
+  const NATIVE = new Set(['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA']);
+  const enhance = (elx) => {
+    if (NATIVE.has(elx.tagName)) return;
+    if (!elx.hasAttribute('tabindex')) elx.setAttribute('tabindex', '0');
+    if (!elx.hasAttribute('role')) elx.setAttribute('role', 'button');
+  };
+  const scan = (node) => {
+    if (!node || node.nodeType !== 1) return;
+    if (node.matches && node.matches('.clickable')) enhance(node);
+    if (node.querySelectorAll) node.querySelectorAll('.clickable').forEach(enhance);
+  };
+  new MutationObserver(muts => { for (const m of muts) for (const n of m.addedNodes) scan(n); })
+    .observe(document.body, { childList: true, subtree: true });
+  scan(document.body);
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+    const elx = e.target;
+    if (!elx || !elx.classList || !elx.classList.contains('clickable') || NATIVE.has(elx.tagName)) return;
+    e.preventDefault(); // Leertaste soll nicht scrollen
+    elx.click();
+  });
+})();
+
 const _hasCountry = () => !!localStorage.getItem('apo_country');
 (async () => {
   // Zuerst eine mögliche OAuth-Rückleitung abfangen (Social-Login), sonst normaler Start.

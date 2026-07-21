@@ -67,10 +67,19 @@ async function main() {
             if (!named) bad.controls++;
           });
           document.querySelectorAll('img').forEach((el) => { if (el.getAttribute('alt') === null) bad.imgs++; });
+          // Anklickbare Nicht-Button-Elemente (.clickable) müssen per Tastatur bedienbar sein
+          // (tabindex + role), sonst sind sie für Tastatur-/Screenreader-Nutzer:innen unerreichbar.
+          bad.clickables = 0;
+          const NATIVE = new Set(['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA']);
+          document.querySelectorAll('.clickable').forEach((el) => {
+            if (NATIVE.has(el.tagName)) return;
+            if (!el.hasAttribute('tabindex') || el.getAttribute('role') === null) bad.clickables++;
+          });
           return bad;
         });
         if (a11y.controls) findings.push(`A11y: ${a11y.controls} Formularelement(e) ohne Namen [${name}]`);
         if (a11y.imgs) findings.push(`A11y: ${a11y.imgs} Bild(er) ohne alt [${name}]`);
+        if (a11y.clickables) findings.push(`A11y: ${a11y.clickables} anklickbare(s) Element(e) nicht tastaturbedienbar [${name}]`);
       }
     }
     if (errors.length) findings.push(`JS-Fehler [${theme}]: ${[...new Set(errors)].slice(0, 3).join(' | ')}`);
