@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #99 — 2026-07-20 — Weicher Zeichenzähler an den Composern (kein „zu lang"-Fehler nach dem Absenden)
+- **THINK:** Beitrag/News haben 1000-Zeichen-Limit, aber Feedback kam erst als Server-Fehler NACH „Posten". Für längere Fragen/News frustrierend — man merkt zu spät, dass gekürzt werden muss.
+- **WORK:** Wiederverwendbarer `attachCharCounter(input, max)`: erscheint dezent erst ab 80 % (nicht ablenkend), zeigt „noch {n} Zeichen", wird bei Überschreitung rot „{n} Zeichen zu viel" (`aria-live` für Screenreader). An Beitrags- (`#pb`) und News-Composer (`#nb`) gehängt; Server erzwingt die Grenze weiterhin. i18n `cc_remaining`/`cc_over` (DE/EN/PT).
+- **CHECK:** Echter Browser: kurz → kein Zähler; 850 Z. → „noch 150 Zeichen"; 1005 Z. → „5 Zeichen zu viel" (rot); 0 JS-Fehler. 282 Tests grün, Parität 698/698/698, Smoke 16/16, Guards 0.
+
 ### Cycle #98 — 2026-07-20 — a11y-Sicherheitsnetz verstärkt: JEDES onclick-Element muss tastaturbedienbar sein
 - **THINK:** In #96/#97 waren interaktive `<div>`+`onclick` OHNE `.clickable` das Problem — der `.clickable`-Guard erfasste sie nicht. Statt sie einzeln zu finden: systematisch prüfen. Ein Probe-Durchlauf über alle 8 Reiter + Detail zeigte **0** solche Elemente (aktuelle Screens sind sauber) — also fehlt nur der dauerhafte Guard.
 - **WORK:** Browser-Audit erweitert: `el.onclick`-Handler sind zur Laufzeit lesbar → jedes Nicht-Button-Element mit onclick, das `tabindex`+`role` fehlt, wird gemeldet (umfassender als der `.clickable`-Guard, fängt auch nicht-`.clickable` Interaktionen).
