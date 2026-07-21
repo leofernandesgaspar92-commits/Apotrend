@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #95 — 2026-07-20 — a11y-Folgefehler behoben: keine verschachtelten Klick-Elemente in der Repost-Einbettung
+- **THINK:** Die Tastatur-Bedienbarkeit aus #94 machte jedes `.clickable` zu `role=button`. Die Repost-Einbettung ist selbst `.clickable`, enthielt aber über `linkifyMentions` @-Mentions/#Hashtags als eigene `.clickable`-Spans → nach #94 „Button im Button" (ungültiges ARIA). Ehrliche Selbstkontrolle der letzten Änderung.
+- **WORK:** Die Einbettung rendert den Vorschau-Text jetzt als reinen Text (`esc`, kein `linkifyMentions`) — die ganze Karte bleibt EIN anklickbares/tastaturbedienbares Element ohne verschachtelte Interaktionen. Das Original behält seine klickbaren Mention-Links. Browser-Audit um die Prüfung „verschachtelte Klick-Elemente (`.clickable .clickable`)" erweitert.
+- **CHECK:** Echter Browser: Repost eines Beitrags mit @Mention + #Hashtag → Einbettung hat 0 verschachtelte Klick-Elemente, bleibt `role=button`/`tabindex=0`, Original behält Mention-Links; 0 JS-Fehler. 282 Tests grün, Audit sauber, Smoke 16/16, Guards 0.
+
 ### Cycle #94 — 2026-07-20 — Barrierefreiheit: anklickbare Elemente per Tastatur bedienbar
 - **THINK:** 34 `.clickable`-Elemente (Autor-Namen, Wirkstoffe, Repost-Einbettung …) sind Spans/Divs mit `onclick` — für Tastatur-/Screenreader-Nutzer:innen unerreichbar (kein Fokus, kein Enter/Space). Für eine Fachplattform mit Sorgfaltsanspruch eine echte Lücke; die Browser-Audit-a11y-Prüfung erfasste sie bisher nicht.
 - **WORK:** Ein zentraler Mechanismus (MutationObserver + delegierter keydown) versorgt alle aktuellen UND künftig gerenderten `.clickable`-Nicht-Buttons mit `tabindex=0`+`role=button` und löst bei Enter/Leertaste den Klick aus — ohne 34 Einzelstellen anzufassen. Browser-Audit um die Prüfung „anklickbar, aber nicht tastaturbedienbar" erweitert (guard mit Zähnen: ohne den Fix schlägt sie an).

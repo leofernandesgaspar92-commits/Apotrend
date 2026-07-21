@@ -3447,9 +3447,12 @@ function repostEmbedHtml(o) {
   const a = o.author || {};
   const img = o.image && /^data:image\//.test(o.image) ? `<img src="${o.image}" alt="${esc(t('pc_img_alt'))}" style="max-width:100%;border-radius:8px;margin-top:6px;display:block" />` : '';
   const pollHint = o.poll ? `<div class="muted" style="font-size:13px;margin-top:4px">${esc(t('rp_poll_hint'))}</div>` : '';
+  // Vorschau-Text als reiner Text (kein linkifyMentions): die ganze Einbettung ist EIN
+  // anklickbares/tastaturbedienbares Element — verschachtelte Klick-Elemente (Mentions/
+  // Hashtags als eigene Buttons) darin wären ungültiges ARIA (Button im Button).
   return `<div class="repost-embed clickable" data-openpost="${esc(o.id)}">
     <div class="row"><span class="post-author">${esc(a.display_name || t('ex_unknown'))}</span><span class="handle">@${esc(a.handle || '?')}</span>${a.verified ? `<span class="verified">${esc(t('pc_verified'))}</span>` : ''}</div>
-    <div class="post-body">${linkifyMentions(o.body)}</div>${img}${pollHint}
+    <div class="post-body">${esc(o.body)}</div>${img}${pollHint}
   </div>`;
 }
 function postCard(p) {
