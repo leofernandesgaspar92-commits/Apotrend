@@ -739,6 +739,31 @@ test('Passwort-Reset per Wiederherstellungscode über HTTP (kein E-Mail-Dienst)'
   assert.equal(regen.codes.length, 8, 'Neu-Erzeugung liefert 8 Codes');
 });
 
+test('Repost über HTTP: teilen, Original eingebettet im Feed, Original-Autor benachrichtigt', async () => {
+  const author = await reg('rpA' + PORT);
+  const sharer = await reg('rpB' + PORT);
+  const orig = await (await post('/api/posts', author, { body: 'HTTP-REPOST-ORIG', visibility: 'public' })).json();
+  // Teilen
+  const rp = await post(`/api/posts/${orig.id}/repost`, sharer, {});
+  assert.equal(rp.status, 200);
+  const rpBody = await rp.json();
+  assert.equal(rpBody.kind, 'repost');
+  assert.equal(rpBody.repost_of, orig.id);
+  // Im öffentlichen Feed trägt der Repost das eingebettete Original
+  const feed = await j('/api/feed/public', sharer);
+  const seen = feed.posts.find(p => p.id === rpBody.id);
+  assert.ok(seen && seen.repost_of_post, 'Original eingebettet');
+  assert.equal(seen.repost_of_post.body, 'HTTP-REPOST-ORIG');
+  // Original-Autor erhält eine repost-Benachrichtigung
+  const n = await j('/api/notifications', author);
+  assert.ok((n.notifications || []).some(x => x.type === 'repost'), 'repost-Benachrichtigung');
+  // Repost eines gelöschten Originals -> 400 post_not_found
+  await post(`/api/posts/${orig.id}/delete`, author, {});
+  const gone = await post(`/api/posts/${orig.id}/repost`, sharer, {});
+  assert.equal(gone.status, 400);
+  assert.equal((await gone.json()).code, 'post_not_found');
+});
+
 test('Social-Login: Provider-Liste leer ohne Zugangsdaten; OAuth-Endpoint meldet klar', async () => {
   const prov = await j('/api/auth/providers', null);
   assert.deepEqual(prov.providers, [], 'ohne ENV-Zugangsdaten keine Provider');

@@ -122,6 +122,16 @@ async function main() {
   }, pollMarker);
   step('Umfrage-Abstimmung markiert die eigene Stimme', pollVoted);
 
+  // 4c) Repost: einen fremden Beitrag (z. B. Redaktions-Beitrag) im eigenen Feed teilen.
+  const embedsBefore = await page.evaluate(() => document.querySelectorAll('.repost-embed').length);
+  const didRepost = await page.evaluate(() => {
+    const btn = document.querySelector('[data-repost]'); // erster fremder Beitrag
+    if (btn) { btn.click(); return true; } return false;
+  });
+  await page.waitForTimeout(900);
+  const embedsAfter = await page.evaluate(() => document.querySelectorAll('.repost-embed').length);
+  step('Beitrag im Feed teilen (Repost bettet Original ein)', didRepost && embedsAfter > embedsBefore);
+
   // 5) Sprachwechsel wirkt (Header-Label „Schrift" -> „Text size") — auf dem Auth-Screen abgesichert,
   //    hier prüfen wir eingeloggt: Reiter-Beschriftung wechselt via Länder-/Sprachlogik nicht direkt,
   //    daher testen wir den generischen t()-Pfad über den Kommentar-Button-Text.

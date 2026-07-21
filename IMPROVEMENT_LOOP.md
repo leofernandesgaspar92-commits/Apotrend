@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #91 — 2026-07-20 — Repost testgesichert (HTTP-Route + Smoke-Composer)
+- **THINK:** #90 lieferte Repost mit Service-Tests; nach dem bewährten Muster (Polls #83→#84→#85) fehlten noch der HTTP-Wiring-Test und der Frontend-Smoke-Guard.
+- **WORK:** HTTP-Test (`http-integration`): teilen → 200/`kind:repost`/`repost_of`, Original im `/api/feed/public` eingebettet, Original-Autor bekommt `repost`-Benachrichtigung, Repost eines gelöschten Originals → 400 `post_not_found`. Smoke-Schritt: fremden Beitrag über `[data-repost]` teilen → `.repost-embed` erscheint.
+- **CHECK:** 280 → 281 grün (+1 HTTP), Smoke 15 → 16/16, Browser-Audit sauber, Guards 0.
+
 ### Cycle #90 — 2026-07-20 — Social: Beiträge im Feed teilen (Repost)
 - **THINK:** Der „Teilen"-Button kopierte nur einen Link — echtes „Facebook für Apotheker" braucht das Weiterreichen an die eigenen Follower (z. B. eine Engpass-Warnung verstärken). Klassisches Repost-Feature, voll in-constraint.
 - **WORK:** `repost_of`-Feld am Post; Service `repost(actor, postId)` (Sichtbarkeit geprüft, Repost-eines-Reposts auf Original geflacht, benachrichtigt Original-Autor:in, nie sich selbst); Enrichment `repost_of_post` bettet das dekorierte Original ein (oder `{deleted:true}`). Route `POST /api/posts/:id/repost`. Frontend: Ein-Klick „🔁 Teilen im Feed"-Button (nur bei fremden Beiträgen), Repost-Karte mit „hat einen Beitrag geteilt" + eingebettetem, anklickbarem Original; i18n DE/EN/PT, 🔁-Benachrichtigungs-Icon, theme-aware CSS.
