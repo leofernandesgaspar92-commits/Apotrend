@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #103 — 2026-07-20 — Eigene Regression behoben: Tastatur-Aktivierung löste .clickable DOPPELT aus
+- **THINK:** Beim Weitersuchen nach dem DM-Bug entdeckt: es gab bereits VOR #94 ein vollständiges Tastatur-System (`makeClickableAccessible` + debounced Observer + keydown-Handler mit `data-kbd`, das sogar Container mit verschachtelten Buttons korrekt überspringt). Mein #94 fügte ein ZWEITES, redundantes System hinzu → auf einem fokussierten `.clickable` feuerten beide keydown-Handler `click()` → **Doppel-Aktivierung** (harmlos bei Navigation, aber falsch bei Umschaltern).
+- **WORK:** Das redundante #94-IIFE (eigener MutationObserver + keydown-Handler) entfernt; das bestehende, bessere System übernimmt weiterhin alles. #96/#97 (`.clickable` an Kacheln/Liste) bleiben wertvoll und funktionieren jetzt korrekt (einfach). Smoke-Guard ergänzt.
+- **CHECK:** Probe vor Fix: 1× Enter → 2 Klicks; nach Fix: genau 1. Smoke-Schritt „Enter auf .clickable löst genau einmal aus" (18 → 19/19). Browser-Audit (alle 4 a11y-Prüfungen) weiterhin sauber — das bestehende System erfüllt sie. 282 Tests grün, Guards 0.
+
 ### Cycle #102 — 2026-07-20 — Echter Bug behoben: Direktnachricht wurde bei Enter DOPPELT gesendet
 - **THINK:** Beim Durchsehen des DM-Codes fielen ZWEI keydown-Handler auf `#dmbody` auf (`onkeydown` + `addEventListener`), beide riefen `send()`. Reproduziert: eine per Enter gesendete Nachricht kam **zweimal** an (das zweite `send()` liest das Feld, bevor das erste `await` es leert).
 - **WORK:** Redundanten zweiten Handler entfernt (nur `onkeydown` mit Shift-Enter-Ausnahme bleibt). Zusätzlich `send()` gehärtet: Text erst erfassen, Feld sofort leeren (ein paralleler Aufruf liest leer → bricht ab), bei Fehler Text wiederherstellen. Smoke-Guard ergänzt.

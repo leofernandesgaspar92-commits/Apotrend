@@ -91,6 +91,20 @@ async function main() {
   const untoggled = await page.evaluate((m) => { const c = [...document.querySelectorAll('.card')].find(c => c.textContent.includes(m)); return !c.querySelector('[data-react]').classList.contains('reacted'); }, marker);
   step('Reaktion umschaltbar (entfernen)', untoggled);
 
+  // 4a2) Tastatur-Aktivierung: ein .clickable-Element muss bei EINMAL Enter GENAU EINMAL
+  //      auslösen (Regression: zwei überlappende keydown-Mechanismen lösten doppelt aus).
+  await page.waitForTimeout(200); // makeClickableAccessible (debounced) versorgt .clickable
+  const kbdClicks = await page.evaluate(async () => {
+    const elx = document.querySelector('.clickable[data-openprofile]');
+    if (!elx) return -1;
+    let n = 0; elx.onclick = () => { n++; }; // Navigation durch Zähler ersetzen
+    elx.focus();
+    elx.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await new Promise(r => setTimeout(r, 60));
+    return n;
+  });
+  step('Tastatur: Enter auf .clickable löst genau einmal aus', kbdClicks === 1, `${kbdClicks} Klick(s)`);
+
   // 4b) Umfrage über den Composer erstellen + abstimmen (Roadmap Phase 2, „Facebook für Apotheker").
   const pollMarker = `POLL-${uniq}`;
   await page.check('#ppoll').catch(() => {});
