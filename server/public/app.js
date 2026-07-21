@@ -153,7 +153,7 @@ const I18N = {
     co_ph:'Bei uns gerade Engpass bei Amoxicillin — wer hat noch Bestand?',
     co_src_ph:'🔗 Quelle (Link, optional – z.B. BASG/Kammer)', co_img:'📷 Bild', co_img_clear:'✕ entfernen',
     co_question:'❓ Als Fachfrage stellen (beste Antwort auswählbar)',
-    co_poll:'📊 Umfrage', co_poll_q_ph:'Deine Frage…', co_poll_opt:'Antwortmöglichkeit', co_poll_add:'+ Option hinzufügen', co_poll_del:'Option entfernen', cc_remaining:'noch {n} Zeichen', cc_over:'{n} Zeichen zu viel',
+    co_poll:'📊 Umfrage', co_poll_q_ph:'Deine Frage…', co_poll_opt:'Antwortmöglichkeit', co_poll_add:'+ Option hinzufügen', co_poll_del:'Option entfernen', cc_remaining:'noch {n} Zeichen', cc_over:'{n} Zeichen zu viel', dr_restored:'✎ Entwurf wiederhergestellt', dr_discard:'verwerfen',
     pl_total:'{n} Stimmen', pl_total_one:'1 Stimme', pl_total_zero:'Noch keine Stimmen', pl_you:'✓ deine Stimme', pl_tap:'Tippe auf eine Option zum Abstimmen',
     a11y_img_preview:'Bildvorschau', co_vis_aria:'Sichtbarkeit des Beitrags', ex_kind_aria:'Art des Eintrags',
     pv_public:'🌍 Öffentlich (alle Apotheker)', pv_followers:'👥 Nur meine Follower',
@@ -433,7 +433,7 @@ const I18N = {
     co_ph:'We have a shortage of Amoxicillin right now — who still has stock?',
     co_src_ph:'🔗 Source (link, optional – e.g. regulator/chamber)', co_img:'📷 Image', co_img_clear:'✕ remove',
     co_question:'❓ Ask as a professional question (mark the best answer)',
-    co_poll:'📊 Poll', co_poll_q_ph:'Your question…', co_poll_opt:'Answer option', co_poll_add:'+ Add option', co_poll_del:'Remove option', cc_remaining:'{n} characters left', cc_over:'{n} characters too many',
+    co_poll:'📊 Poll', co_poll_q_ph:'Your question…', co_poll_opt:'Answer option', co_poll_add:'+ Add option', co_poll_del:'Remove option', cc_remaining:'{n} characters left', cc_over:'{n} characters too many', dr_restored:'✎ Draft restored', dr_discard:'discard',
     pl_total:'{n} votes', pl_total_one:'1 vote', pl_total_zero:'No votes yet', pl_you:'✓ your vote', pl_tap:'Tap an option to vote',
     a11y_img_preview:'Image preview', co_vis_aria:'Post visibility', ex_kind_aria:'Entry type',
     pv_public:'🌍 Public (all pharmacists)', pv_followers:'👥 My followers only',
@@ -713,7 +713,7 @@ const I18N = {
     co_ph:'Temos falta de Amoxicilina agora — quem ainda tem stock?',
     co_src_ph:'🔗 Fonte (ligação, opcional – ex. regulador/ordem)', co_img:'📷 Imagem', co_img_clear:'✕ remover',
     co_question:'❓ Colocar como pergunta técnica (permite marcar a melhor resposta)',
-    co_poll:'📊 Sondagem', co_poll_q_ph:'A sua pergunta…', co_poll_opt:'Opção de resposta', co_poll_add:'+ Adicionar opção', co_poll_del:'Remover opção', cc_remaining:'faltam {n} caracteres', cc_over:'{n} caracteres a mais',
+    co_poll:'📊 Sondagem', co_poll_q_ph:'A sua pergunta…', co_poll_opt:'Opção de resposta', co_poll_add:'+ Adicionar opção', co_poll_del:'Remover opção', cc_remaining:'faltam {n} caracteres', cc_over:'{n} caracteres a mais', dr_restored:'✎ Rascunho restaurado', dr_discard:'descartar',
     pl_total:'{n} votos', pl_total_one:'1 voto', pl_total_zero:'Ainda sem votos', pl_you:'✓ o seu voto', pl_tap:'Toque numa opção para votar',
     a11y_img_preview:'Pré-visualização da imagem', co_vis_aria:'Visibilidade da publicação', ex_kind_aria:'Tipo de entrada',
     pv_public:'🌍 Público (todos os farmacêuticos)', pv_followers:'👥 Só os meus seguidores',
@@ -1436,6 +1436,25 @@ async function mainScreen() {
   attachMentionAutocomplete(document.getElementById('pb'));
   attachCharCounter(document.getElementById('pb'), 1000);
 
+  // Entwurf-Schutz: halbfertige Beiträge überstehen ein Neuladen/Weg-Navigieren
+  // (zielgruppengerecht: zeitknapp, wird oft unterbrochen). Nur der Text (#pb),
+  // pro Konto in localStorage. Wird beim erfolgreichen Posten/Verwerfen gelöscht.
+  const pbEl = document.getElementById('pb');
+  const DRAFT_KEY = 'apo_draft_pb_' + ((me && me.handle) || '');
+  const clearDraft = () => { localStorage.removeItem(DRAFT_KEY); const h = document.getElementById('pbDraftHint'); if (h) h.remove(); };
+  const saved = localStorage.getItem(DRAFT_KEY);
+  if (saved && !pbEl.value) {
+    pbEl.value = saved;
+    const hint = el(`<div id="pbDraftHint" class="muted" style="font-size:12px;margin-bottom:4px">${esc(t('dr_restored'))} · <button class="linklike small" id="pbDraftDiscard">${esc(t('dr_discard'))}</button></div>`);
+    pbEl.insertAdjacentElement('beforebegin', hint);
+    hint.querySelector('#pbDraftDiscard').onclick = () => { pbEl.value = ''; clearDraft(); pbEl.dispatchEvent(new Event('input')); };
+  }
+  pbEl.addEventListener('input', () => {
+    if (pbEl.value.trim()) localStorage.setItem(DRAFT_KEY, pbEl.value);
+    else localStorage.removeItem(DRAFT_KEY);
+    const h = document.getElementById('pbDraftHint'); if (h) h.remove(); // eigenes Tippen ersetzt den Hinweis
+  });
+
   // Poll composer: toggle reveals dynamic answer-option inputs (2..6)
   const ppoll = document.getElementById('ppoll'), pfrage = document.getElementById('pfrage'), pollBox = document.getElementById('pollBox');
   const MAX_POLL_OPTS = 6;
@@ -1468,6 +1487,7 @@ async function mainScreen() {
       if (isPoll) payload.pollOptions = pollOptInputs().map(i => i.value.trim()).filter(Boolean);
       await api('POST','/api/posts', payload);
       document.getElementById('pb').value=''; document.getElementById('psrc').value=''; pfrage.checked=false;
+      clearDraft(); // erfolgreich gepostet -> Entwurf verwerfen
       ppoll.checked=false; pollBox.style.display='none'; pollBox.innerHTML=''; document.getElementById('pb').placeholder=t('co_ph'); clearImg(); loadFeed();
     } catch(e){ document.getElementById('perr').textContent = e.message; }
   };

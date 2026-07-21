@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #100 — 2026-07-20 — Entwurf-Schutz: halbfertige Beiträge überstehen Neuladen/Weg-Navigieren
+- **THINK:** Zielgruppe ist zeitknapp und wird oft unterbrochen. Wer einen längeren Beitrag/eine Fachfrage tippt und versehentlich neu lädt oder weg-navigiert, verliert alles — echter Datenverlust-Frust ohne jeden Schutz.
+- **WORK:** Der Beitrags-Composer (`#pb`) sichert seinen Text pro Konto in `localStorage`. Beim Öffnen wird ein vorhandener Entwurf wiederhergestellt und dezent angezeigt („✎ Entwurf wiederhergestellt · verwerfen"); eigenes Tippen ersetzt den Hinweis, „verwerfen" leert ihn, erfolgreiches Posten löscht ihn. i18n `dr_restored`/`dr_discard` (DE/EN/PT).
+- **CHECK:** Echter Browser: Text tippen → Reload → Entwurf + Hinweis wieder da; „verwerfen" → leer, Hinweis weg, localStorage leer; nach Posten+Reload → leer; 0 JS-Fehler. 282 Tests grün, Parität 700/700/700, Smoke 16/16, Guards 0.
+
 ### Cycle #99 — 2026-07-20 — Weicher Zeichenzähler an den Composern (kein „zu lang"-Fehler nach dem Absenden)
 - **THINK:** Beitrag/News haben 1000-Zeichen-Limit, aber Feedback kam erst als Server-Fehler NACH „Posten". Für längere Fragen/News frustrierend — man merkt zu spät, dass gekürzt werden muss.
 - **WORK:** Wiederverwendbarer `attachCharCounter(input, max)`: erscheint dezent erst ab 80 % (nicht ablenkend), zeigt „noch {n} Zeichen", wird bei Überschreitung rot „{n} Zeichen zu viel" (`aria-live` für Screenreader). An Beitrags- (`#pb`) und News-Composer (`#nb`) gehängt; Server erzwingt die Grenze weiterhin. i18n `cc_remaining`/`cc_over` (DE/EN/PT).
