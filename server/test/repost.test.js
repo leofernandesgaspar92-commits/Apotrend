@@ -20,21 +20,44 @@ function setup() {
 test('Repost: erstellt kind=repost, bettet Original im Feed ein', () => {
   const { social, a, b } = setup();
   const orig = social.createPost(a, { body: 'Engpass bei Amoxicillin', visibility: 'public' });
-  const rp = social.repost(b, orig.id);
+  const res = social.repost(b, orig.id);
+  assert.equal(res.reposted, true);
+  const rp = res.post;
   assert.equal(rp.kind, 'repost');
   assert.equal(rp.repost_of, orig.id);
   const seen = social.publicFeed(b).find(p => p.id === rp.id);
   assert.ok(seen.repost_of_post, 'Original eingebettet');
   assert.equal(seen.repost_of_post.body, 'Engpass bei Amoxicillin');
   assert.equal(seen.repost_of_post.author.handle, 'anna');
+  // Original trägt Repost-Zähler + reposted_by_me aus B-Sicht
+  const origSeen = social.publicFeed(b).find(p => p.id === orig.id);
+  assert.equal(origSeen.repost_count, 1);
+  assert.equal(origSeen.reposted_by_me, true);
 });
 
 test('Repost eines Reposts wird auf das Original geflacht', () => {
   const { social, a, b, c } = setup();
   const orig = social.createPost(a, { body: 'Original', visibility: 'public' });
-  const rp1 = social.repost(b, orig.id);
-  const rp2 = social.repost(c, rp1.id); // C teilt Bens Repost
+  const rp1 = social.repost(b, orig.id).post;
+  const rp2 = social.repost(c, rp1.id).post; // C teilt Bens Repost
   assert.equal(rp2.repost_of, orig.id, 'zeigt aufs Original, nicht auf den Repost');
+});
+
+test('Repost ist ein Umschalter: zweiter Aufruf nimmt das Teilen zurück (kein Doppel)', () => {
+  const { social, a, b } = setup();
+  const orig = social.createPost(a, { body: 'Original', visibility: 'public' });
+  const on = social.repost(b, orig.id);
+  assert.equal(on.reposted, true);
+  const off = social.repost(b, orig.id); // erneut -> zurücknehmen
+  assert.equal(off.reposted, false);
+  assert.equal(off.post, null);
+  // Zähler zurück auf 0, kein Repost mehr im Feed
+  const origSeen = social.publicFeed(b).find(p => p.id === orig.id);
+  assert.equal(origSeen.repost_count, 0);
+  assert.equal(origSeen.reposted_by_me, false);
+  assert.equal(social.publicFeed(b).filter(p => p.kind === 'repost').length, 0);
+  // erneut teilen geht wieder
+  assert.equal(social.repost(b, orig.id).reposted, true);
 });
 
 test('Repost benachrichtigt die Original-Autor:in (nicht sich selbst)', () => {
@@ -65,7 +88,7 @@ test('Repost eines gelöschten Beitrags -> post_not_found', () => {
 test('Wird das Original nach dem Repost gelöscht, zeigt der Feed „gelöscht"', () => {
   const { social, a, b } = setup();
   const orig = social.createPost(a, { body: 'temporär', visibility: 'public' });
-  const rp = social.repost(b, orig.id);
+  const rp = social.repost(b, orig.id).post;
   social.deletePost(a, orig.id);
   const seen = social.publicFeed(b).find(p => p.id === rp.id);
   assert.deepEqual(seen.repost_of_post, { deleted: true });

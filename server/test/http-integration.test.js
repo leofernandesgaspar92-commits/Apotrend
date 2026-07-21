@@ -747,13 +747,18 @@ test('Repost über HTTP: teilen, Original eingebettet im Feed, Original-Autor be
   const rp = await post(`/api/posts/${orig.id}/repost`, sharer, {});
   assert.equal(rp.status, 200);
   const rpBody = await rp.json();
-  assert.equal(rpBody.kind, 'repost');
-  assert.equal(rpBody.repost_of, orig.id);
+  assert.equal(rpBody.reposted, true);
+  assert.equal(rpBody.post.kind, 'repost');
+  assert.equal(rpBody.post.repost_of, orig.id);
   // Im öffentlichen Feed trägt der Repost das eingebettete Original
   const feed = await j('/api/feed/public', sharer);
-  const seen = feed.posts.find(p => p.id === rpBody.id);
+  const seen = feed.posts.find(p => p.id === rpBody.post.id);
   assert.ok(seen && seen.repost_of_post, 'Original eingebettet');
   assert.equal(seen.repost_of_post.body, 'HTTP-REPOST-ORIG');
+  // Erneuter Aufruf nimmt das Teilen zurück (Umschalter)
+  const off = await (await post(`/api/posts/${orig.id}/repost`, sharer, {})).json();
+  assert.equal(off.reposted, false);
+  await post(`/api/posts/${orig.id}/repost`, sharer, {}); // wieder teilen für die folgenden Prüfungen
   // Original-Autor erhält eine repost-Benachrichtigung
   const n = await j('/api/notifications', author);
   assert.ok((n.notifications || []).some(x => x.type === 'repost'), 'repost-Benachrichtigung');

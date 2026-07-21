@@ -174,7 +174,7 @@ const I18N = {
     pc_verified:'✔ verifiziert', pc_img_alt:'Bild zum Beitrag', pc_source:'🔗 Quelle',
     pc_edited:'✏️ bearbeitet', pc_vis_public:'🌍 öffentlich', pc_vis_followers:'👥 nur Follower',
     pc_comments:'💬 {n} Kommentare', pc_comments_one:'💬 1 Kommentar', pc_comment_cta:'💬 Kommentieren', pc_saved:'🔖 gemerkt', pc_save:'🔖 Merken', pc_share:'🔗 Teilen',
-    pc_repost:'🔁 Teilen im Feed', pc_reposted:'🔁 Geteilt ✓', rp_shared:'hat einen Beitrag geteilt', rp_deleted:'Der Originalbeitrag wurde gelöscht.', rp_poll_hint:'📊 Umfrage — zum Abstimmen öffnen', nv_repost:'hat deinen Beitrag geteilt',
+    pc_repost:'🔁 Teilen im Feed', pc_reposted:'🔁 Geteilt ✓', pc_reposted_on:'🔁 Geteilt', rp_shared:'hat einen Beitrag geteilt', rp_deleted:'Der Originalbeitrag wurde gelöscht.', rp_poll_hint:'📊 Umfrage — zum Abstimmen öffnen', nv_repost:'hat deinen Beitrag geteilt',
     pc_edit:'✏️ Bearbeiten', pc_delete:'🗑 Löschen', pc_report:'🚩 Melden',
     pc_reply_ph:'Antworten…', pc_send:'Senden', pc_copied:'✓ kopiert',
     pc_answered:'✔ Beantwortet', pc_question_open:'❓ Offene Fachfrage', pc_del_confirm:'Diesen Beitrag wirklich löschen?',
@@ -454,7 +454,7 @@ const I18N = {
     pc_verified:'✔ verified', pc_img_alt:'Post image', pc_source:'🔗 Source',
     pc_edited:'✏️ edited', pc_vis_public:'🌍 public', pc_vis_followers:'👥 followers only',
     pc_comments:'💬 {n} comments', pc_comments_one:'💬 1 comment', pc_comment_cta:'💬 Comment', pc_saved:'🔖 saved', pc_save:'🔖 Save', pc_share:'🔗 Share',
-    pc_repost:'🔁 Share to feed', pc_reposted:'🔁 Shared ✓', rp_shared:'shared a post', rp_deleted:'The original post was deleted.', rp_poll_hint:'📊 Poll — open to vote', nv_repost:'shared your post',
+    pc_repost:'🔁 Share to feed', pc_reposted:'🔁 Shared ✓', pc_reposted_on:'🔁 Shared', rp_shared:'shared a post', rp_deleted:'The original post was deleted.', rp_poll_hint:'📊 Poll — open to vote', nv_repost:'shared your post',
     pc_edit:'✏️ Edit', pc_delete:'🗑 Delete', pc_report:'🚩 Report',
     pc_reply_ph:'Reply…', pc_send:'Send', pc_copied:'✓ copied',
     pc_answered:'✔ Answered', pc_question_open:'❓ Open question', pc_del_confirm:'Really delete this post?',
@@ -734,7 +734,7 @@ const I18N = {
     pc_verified:'✔ verificado', pc_img_alt:'Imagem da publicação', pc_source:'🔗 Fonte',
     pc_edited:'✏️ editado', pc_vis_public:'🌍 público', pc_vis_followers:'👥 só seguidores',
     pc_comments:'💬 {n} comentários', pc_comments_one:'💬 1 comentário', pc_comment_cta:'💬 Comentar', pc_saved:'🔖 guardado', pc_save:'🔖 Guardar', pc_share:'🔗 Partilhar',
-    pc_repost:'🔁 Partilhar no feed', pc_reposted:'🔁 Partilhado ✓', rp_shared:'partilhou uma publicação', rp_deleted:'A publicação original foi eliminada.', rp_poll_hint:'📊 Sondagem — abrir para votar', nv_repost:'partilhou a sua publicação',
+    pc_repost:'🔁 Partilhar no feed', pc_reposted:'🔁 Partilhado ✓', pc_reposted_on:'🔁 Partilhado', rp_shared:'partilhou uma publicação', rp_deleted:'A publicação original foi eliminada.', rp_poll_hint:'📊 Sondagem — abrir para votar', nv_repost:'partilhou a sua publicação',
     pc_edit:'✏️ Editar', pc_delete:'🗑 Eliminar', pc_report:'🚩 Denunciar',
     pc_reply_ph:'Responder…', pc_send:'Enviar', pc_copied:'✓ copiado',
     pc_answered:'✔ Respondida', pc_question_open:'❓ Pergunta em aberto', pc_del_confirm:'Eliminar mesmo esta publicação?',
@@ -3477,7 +3477,7 @@ function postCard(p) {
       <button data-comments>${esc(commentLabel(p.comment_count||0))}</button>
       <button class="ghost small" data-bookmark title="${esc(t('pc_save'))}">${myBookmarks.has(p.id)?esc(t('pc_saved')):esc(t('pc_save'))}</button>
       <button class="ghost small" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button>
-      ${mine?'':`<button class="ghost small" data-repost title="${esc(t('pc_repost'))}">${esc(t('pc_repost'))}</button>`}
+      ${mine?'':`<button class="ghost small${p.reposted_by_me?' reacted':''}" data-repost aria-pressed="${!!p.reposted_by_me}" title="${esc(t('pc_repost'))}">${esc(p.reposted_by_me?t('pc_reposted_on'):t('pc_repost'))}${p.repost_count?` ${p.repost_count}`:''}</button>`}
       <span class="sp" style="flex:1"></span>
       ${mine ? `<button class="ghost small" data-edit title="${esc(t('pc_edit'))}">${esc(t('pc_edit'))}</button><button class="ghost small" data-del title="${esc(t('pc_delete'))}">${esc(t('pc_delete'))}</button>`
              : `<button class="ghost small" data-report title="${esc(t('pc_report'))}">${esc(t('pc_report'))}</button>`}
@@ -3508,11 +3508,11 @@ function postCard(p) {
     try { await navigator.clipboard.writeText(url); sh.textContent = t('pc_copied'); setTimeout(()=>{ sh.textContent=t('pc_share'); }, 1500); }
     catch { prompt(t('copy_link_fb'), url); }
   };
-  // Repost (Ein-Klick im Feed teilen): Original wird eingebettet in den eigenen Feed geteilt.
+  // Repost-Umschalter (Ein-Klick im Feed teilen / zurücknehmen).
   const rp = card.querySelector('[data-repost]');
   if (rp) rp.onclick = async () => {
     rp.disabled = true;
-    try { await api('POST', `/api/posts/${p.id}/repost`, {}); rp.textContent = t('pc_reposted'); setTimeout(loadFeed, 700); }
+    try { await api('POST', `/api/posts/${p.id}/repost`, {}); loadFeed(); }
     catch(e){ rp.disabled = false; alert(e.message); }
   };
   // Klick auf das eingebettete Original öffnet den Originalbeitrag.

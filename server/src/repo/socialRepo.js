@@ -143,6 +143,9 @@ export function createSocialRepo() {
     countComments(postId) { return [...comments.values()].filter(c => c.post_id === postId && !c.deleted_at).length; },
     listCommentsByAuthor(userId) { return [...comments.values()].filter(c => c.author_user_id === userId && !c.deleted_at).map(c => ({ ...c })); },
     listPostsByAuthor(userId) { return [...posts.values()].filter(p => p.author_user_id === userId && !p.deleted_at).map(p => ({ ...p })); },
+    // Repost-Zähler eines Originals + der (aktive) Repost einer bestimmten Person.
+    countReposts(targetId) { return [...posts.values()].filter(p => p.kind === 'repost' && p.repost_of === targetId && !p.deleted_at).length; },
+    findUserRepost(userId, targetId) { const p = [...posts.values()].find(p => p.kind === 'repost' && p.repost_of === targetId && p.author_user_id === userId && !p.deleted_at); return p ? { ...p } : null; },
 
     // ── Reaktionen (upsert: eine je Nutzer+Ziel) ──
     setReaction({ userId, targetType, targetId, type }) {

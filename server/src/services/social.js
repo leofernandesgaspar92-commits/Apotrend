@@ -72,6 +72,9 @@ export function createSocialService(social, foundationRepo, options = {}) {
         if (!orig || orig.deleted_at) return { deleted: true };
         return decorate(orig, viewerUserId);
       })() : null,
+      // Repost-Traktion des zugrundeliegenden Originals (bei Reposts das Original, sonst der Post selbst).
+      repost_count: social.countReposts(post.kind === 'repost' && post.repost_of ? post.repost_of : post.id),
+      reposted_by_me: viewerUserId ? !!social.findUserRepost(viewerUserId, post.kind === 'repost' && post.repost_of ? post.repost_of : post.id) : false,
     };
   }
 
@@ -291,6 +294,9 @@ export function createSocialService(social, foundationRepo, options = {}) {
       const targetId = orig.kind === 'repost' && orig.repost_of ? orig.repost_of : orig.id;
       const target = social.getPost(targetId);
       if (!target || target.deleted_at) throw new AppError('post_not_found', 'Beitrag nicht gefunden.');
+      // Umschalter: bereits geteilt -> Repost zurücknehmen (un-share).
+      const existing = social.findUserRepost(actorUserId, targetId);
+      if (existing) { social.softDeletePost(existing.id); return { reposted: false, post: null }; }
       const text = String(comment ?? '').trim();
       if (text.length > MAX_BODY) throw new AppError('post_too_long', `Beitrag zu lang (max ${MAX_BODY}).`);
       if (!['public', 'followers'].includes(visibility)) throw new Error('Ungueltige Sichtbarkeit.');
@@ -299,7 +305,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       // Original-Autor:in benachrichtigen (nie sich selbst).
       notify(target.author_user_id, 'repost', actorUserId, 'post', targetId);
       if (text) notifyMentions(text, actorUserId, 'post', post.id);
-      return post;
+      return { reposted: true, post };
     },
     // Umfrage-Stimme abgeben/ändern/zurückziehen (optionId=null zieht zurück).
     votePoll(actorUserId, postId, optionId) {

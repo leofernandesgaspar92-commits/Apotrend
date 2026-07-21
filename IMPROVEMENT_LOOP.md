@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #92 — 2026-07-20 — Repost: Umschalter (kein Doppel-Teilen) + sichtbarer Zähler
+- **THINK:** #90 erlaubte, denselben Beitrag mehrfach zu teilen (Spam) und zeigte keine Traktion. Beides schwächt das Feature.
+- **WORK:** Repo `countReposts`/`findUserRepost`; `repost()` ist jetzt ein Umschalter (erneut = Teilen zurücknehmen, kein Doppel). `decorate` liefert `repost_count` + `reposted_by_me` (auf das Original bezogen, auch bei Repost-Karten). Frontend: Button spiegelt den Zustand (aktiv „🔁 Geteilt" + Zähler, `aria-pressed`), Ein-Klick schaltet um. Rückgabe vereinheitlicht `{reposted, post}`.
+- **CHECK:** 281 → 282 grün (+1 Umschalt-Test; HTTP-Test um Toggle erweitert), Parität 695/695/695, Smoke 16/16, Guards 0.
+
 ### Cycle #91 — 2026-07-20 — Repost testgesichert (HTTP-Route + Smoke-Composer)
 - **THINK:** #90 lieferte Repost mit Service-Tests; nach dem bewährten Muster (Polls #83→#84→#85) fehlten noch der HTTP-Wiring-Test und der Frontend-Smoke-Guard.
 - **WORK:** HTTP-Test (`http-integration`): teilen → 200/`kind:repost`/`repost_of`, Original im `/api/feed/public` eingebettet, Original-Autor bekommt `repost`-Benachrichtigung, Repost eines gelöschten Originals → 400 `post_not_found`. Smoke-Schritt: fremden Beitrag über `[data-repost]` teilen → `.repost-embed` erscheint.
