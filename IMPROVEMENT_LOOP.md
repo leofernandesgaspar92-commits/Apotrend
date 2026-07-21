@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #93 — 2026-07-20 — Eigene Entscheidung hinterfragt: Umfrage-Optionen entfernbar
+- **THINK:** In #82 hatte der Umfrage-Composer nur „+ Option hinzufügen", aber kein Entfernen — wer versehentlich eine Option zu viel anlegt, bleibt mit einem leeren Feld hängen. Für zeitknappe Nutzer:innen schlechte Bedienung; eine selbst getroffene Entscheidung zum Nachbessern.
+- **WORK:** Je Optionsfeld ein ✕-Button (nur wenn > 2 Optionen — das Minimum bleibt geschützt), Klick entfernt genau diese Zeile und erhält die übrigen Eingaben; `aria-label`/`title` `co_poll_del` (DE/EN/PT).
+- **CHECK:** Echter Browser (1280): bei 2 Optionen kein ✕ (Minimum), nach 2× Hinzufügen 4 Felder mit ✕, „Opt2" entfernt → 3 Felder mit „Opt1/Opt3/Opt4" (Werte erhalten), 0 JS-Fehler. 282 Tests grün, Parität 696/696/696, Smoke 16/16, Guards 0.
+
 ### Cycle #92 — 2026-07-20 — Repost: Umschalter (kein Doppel-Teilen) + sichtbarer Zähler
 - **THINK:** #90 erlaubte, denselben Beitrag mehrfach zu teilen (Spam) und zeigte keine Traktion. Beides schwächt das Feature.
 - **WORK:** Repo `countReposts`/`findUserRepost`; `repost()` ist jetzt ein Umschalter (erneut = Teilen zurücknehmen, kein Doppel). `decorate` liefert `repost_count` + `reposted_by_me` (auf das Original bezogen, auch bei Repost-Karten). Frontend: Button spiegelt den Zustand (aktiv „🔁 Geteilt" + Zähler, `aria-pressed`), Ein-Klick schaltet um. Rückgabe vereinheitlicht `{reposted, post}`.

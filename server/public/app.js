@@ -153,7 +153,7 @@ const I18N = {
     co_ph:'Bei uns gerade Engpass bei Amoxicillin — wer hat noch Bestand?',
     co_src_ph:'🔗 Quelle (Link, optional – z.B. BASG/Kammer)', co_img:'📷 Bild', co_img_clear:'✕ entfernen',
     co_question:'❓ Als Fachfrage stellen (beste Antwort auswählbar)',
-    co_poll:'📊 Umfrage', co_poll_q_ph:'Deine Frage…', co_poll_opt:'Antwortmöglichkeit', co_poll_add:'+ Option hinzufügen',
+    co_poll:'📊 Umfrage', co_poll_q_ph:'Deine Frage…', co_poll_opt:'Antwortmöglichkeit', co_poll_add:'+ Option hinzufügen', co_poll_del:'Option entfernen',
     pl_total:'{n} Stimmen', pl_total_one:'1 Stimme', pl_total_zero:'Noch keine Stimmen', pl_you:'✓ deine Stimme', pl_tap:'Tippe auf eine Option zum Abstimmen',
     a11y_img_preview:'Bildvorschau', co_vis_aria:'Sichtbarkeit des Beitrags', ex_kind_aria:'Art des Eintrags',
     pv_public:'🌍 Öffentlich (alle Apotheker)', pv_followers:'👥 Nur meine Follower',
@@ -433,7 +433,7 @@ const I18N = {
     co_ph:'We have a shortage of Amoxicillin right now — who still has stock?',
     co_src_ph:'🔗 Source (link, optional – e.g. regulator/chamber)', co_img:'📷 Image', co_img_clear:'✕ remove',
     co_question:'❓ Ask as a professional question (mark the best answer)',
-    co_poll:'📊 Poll', co_poll_q_ph:'Your question…', co_poll_opt:'Answer option', co_poll_add:'+ Add option',
+    co_poll:'📊 Poll', co_poll_q_ph:'Your question…', co_poll_opt:'Answer option', co_poll_add:'+ Add option', co_poll_del:'Remove option',
     pl_total:'{n} votes', pl_total_one:'1 vote', pl_total_zero:'No votes yet', pl_you:'✓ your vote', pl_tap:'Tap an option to vote',
     a11y_img_preview:'Image preview', co_vis_aria:'Post visibility', ex_kind_aria:'Entry type',
     pv_public:'🌍 Public (all pharmacists)', pv_followers:'👥 My followers only',
@@ -713,7 +713,7 @@ const I18N = {
     co_ph:'Temos falta de Amoxicilina agora — quem ainda tem stock?',
     co_src_ph:'🔗 Fonte (ligação, opcional – ex. regulador/ordem)', co_img:'📷 Imagem', co_img_clear:'✕ remover',
     co_question:'❓ Colocar como pergunta técnica (permite marcar a melhor resposta)',
-    co_poll:'📊 Sondagem', co_poll_q_ph:'A sua pergunta…', co_poll_opt:'Opção de resposta', co_poll_add:'+ Adicionar opção',
+    co_poll:'📊 Sondagem', co_poll_q_ph:'A sua pergunta…', co_poll_opt:'Opção de resposta', co_poll_add:'+ Adicionar opção', co_poll_del:'Remover opção',
     pl_total:'{n} votos', pl_total_one:'1 voto', pl_total_zero:'Ainda sem votos', pl_you:'✓ o seu voto', pl_tap:'Toque numa opção para votar',
     a11y_img_preview:'Pré-visualização da imagem', co_vis_aria:'Visibilidade da publicação', ex_kind_aria:'Tipo de entrada',
     pv_public:'🌍 Público (todos os farmacêuticos)', pv_followers:'👥 Só os meus seguidores',
@@ -1424,12 +1424,17 @@ async function mainScreen() {
   function pollOptInputs() { return Array.from(pollBox.querySelectorAll('input.poll-opt-in')); }
   function setPollVals(vals) {
     while (vals.length < 2) vals.push('');
+    const canRemove = vals.length > 2; // Minimum 2 Optionen bleiben erhalten
     const rows = vals.map((val, i) =>
-      `<input class="poll-opt-in" placeholder="${esc(t('co_poll_opt'))} ${i+1}" value="${esc(val)}" style="margin-top:6px" maxlength="80">`
+      `<div class="row poll-opt-row" style="margin-top:6px;gap:6px">
+        <input class="poll-opt-in" placeholder="${esc(t('co_poll_opt'))} ${i+1}" value="${esc(val)}" maxlength="80" style="flex:1">
+        ${canRemove ? `<button class="ghost small poll-opt-del" data-i="${i}" aria-label="${esc(t('co_poll_del'))}" title="${esc(t('co_poll_del'))}">✕</button>` : ''}
+      </div>`
     ).join('');
     const canAdd = vals.length < MAX_POLL_OPTS;
     pollBox.innerHTML = rows + (canAdd ? `<button class="ghost small" id="pollAdd" data-i18n="co_poll_add" style="margin-top:6px">+ Option hinzufügen</button>` : '');
     if (canAdd) document.getElementById('pollAdd').onclick = () => { const cur = pollOptInputs().map(i=>i.value); cur.push(''); setPollVals(cur); };
+    pollBox.querySelectorAll('.poll-opt-del').forEach(b => b.onclick = () => { const cur = pollOptInputs().map(i=>i.value); cur.splice(Number(b.dataset.i), 1); setPollVals(cur); });
     applyI18n(pollBox);
   }
   ppoll.onchange = () => {
