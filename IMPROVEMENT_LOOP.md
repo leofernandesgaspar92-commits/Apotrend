@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #98 — 2026-07-20 — a11y-Sicherheitsnetz verstärkt: JEDES onclick-Element muss tastaturbedienbar sein
+- **THINK:** In #96/#97 waren interaktive `<div>`+`onclick` OHNE `.clickable` das Problem — der `.clickable`-Guard erfasste sie nicht. Statt sie einzeln zu finden: systematisch prüfen. Ein Probe-Durchlauf über alle 8 Reiter + Detail zeigte **0** solche Elemente (aktuelle Screens sind sauber) — also fehlt nur der dauerhafte Guard.
+- **WORK:** Browser-Audit erweitert: `el.onclick`-Handler sind zur Laufzeit lesbar → jedes Nicht-Button-Element mit onclick, das `tabindex`+`role` fehlt, wird gemeldet (umfassender als der `.clickable`-Guard, fängt auch nicht-`.clickable` Interaktionen).
+- **CHECK:** Probe bestätigt 0 Verstöße auf allen Reitern; Guard hat Zähne (ein `<div onclick>` ohne Tastaturzugang schlägt an, da der #94-Mechanismus nur `.clickable` versorgt). 282 Tests grün, Browser-Audit (mit neuer 4. a11y-Prüfung) sauber, Smoke 16/16, Guards 0.
+
 ### Cycle #97 — 2026-07-20 — „Kritische Engpässe"-Liste auf der Startseite ist klick-/tastaturbedienbar
 - **THINK:** Screenshot-Rundgang (Preise/Rabatte/Biete/News/Detail alle sauber): Auf „Für dich" listet die Karte „🔴 Kritische Engpässe" die Top-3-Wirkstoffe — aber als reiner Text. Eine zeitknappe Apotheker:in sieht „Amoxicillin kritisch" und will tippen, um Details/Angebote zu sehen; nichts passierte (nur „Alle ansehen" führte weiter).
 - **WORK:** Jeder Listeneintrag ist jetzt `.clickable` (tabindex+role via zentralem a11y-Mechanismus) mit grünem „›"-Chevron und öffnet per Klick/Enter direkt das Wirkstoff-Detail (`openWirkstoff`).

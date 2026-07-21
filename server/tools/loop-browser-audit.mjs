@@ -77,12 +77,21 @@ async function main() {
           });
           // Verschachtelte Klick-Elemente (Button im Button) sind ungültiges ARIA.
           bad.nested = document.querySelectorAll('.clickable .clickable').length;
+          // Umfassender: JEDES Nicht-Button-Element mit onclick-Handler muss tastaturbedienbar
+          // sein (tabindex+role) — fängt auch interaktive Elemente, die nicht .clickable sind.
+          bad.onclickKbd = 0;
+          const NATIVE2 = new Set(['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA', 'LABEL']);
+          document.querySelectorAll('*').forEach((el) => {
+            if (typeof el.onclick !== 'function' || NATIVE2.has(el.tagName)) return;
+            if (!el.hasAttribute('tabindex') || el.getAttribute('role') === null) bad.onclickKbd++;
+          });
           return bad;
         });
         if (a11y.controls) findings.push(`A11y: ${a11y.controls} Formularelement(e) ohne Namen [${name}]`);
         if (a11y.imgs) findings.push(`A11y: ${a11y.imgs} Bild(er) ohne alt [${name}]`);
         if (a11y.clickables) findings.push(`A11y: ${a11y.clickables} anklickbare(s) Element(e) nicht tastaturbedienbar [${name}]`);
         if (a11y.nested) findings.push(`A11y: ${a11y.nested} verschachtelte(s) Klick-Element(e) (Button im Button) [${name}]`);
+        if (a11y.onclickKbd) findings.push(`A11y: ${a11y.onclickKbd} onclick-Element(e) ohne Tastaturzugang [${name}]`);
       }
     }
     if (errors.length) findings.push(`JS-Fehler [${theme}]: ${[...new Set(errors)].slice(0, 3).join(' | ')}`);
