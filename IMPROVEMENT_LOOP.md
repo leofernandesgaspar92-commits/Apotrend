@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #96 — 2026-07-20 — Übersichts-Kacheln: klar als Buttons erkennbar + tastaturbedienbar (Screenshot-Review)
+- **THINK:** Screenshot-Rundgang (Hell/Dunkel × Desktop/Mobil): die Kennzahl-Kacheln auf „Für dich" (z. B. „3 kritische Engpässe") sind Navigations-Shortcuts, sahen aber passiv aus (schwache Affordanz). Schwerwiegender: `<div>`+`onclick` OHNE `.clickable` → mein #94-Tastaturmechanismus erreichte sie NICHT; die wichtigsten Sprungziele der Startseite waren nicht tastaturbedienbar (und rutschten am Audit vorbei).
+- **WORK:** Kacheln als `.ovtile clickable` (tabindex+role via zentralem a11y-Mechanismus, Enter/Space löst aus), sichtbare Affordanz: grüner „›"-Chevron je Kachel + Hover/Fokus-Rahmen wird grün (ohne Link-Unterstreichung). Kachel-Optik von Inline-Styles in die `.ovtile`-Klasse überführt.
+- **CHECK:** Screenshots (Hell/Dunkel, Desktop/Mobil): Chevron sichtbar, Karten-Optik erhalten. Browser-Audit (prüft `.clickable` auf Tastaturbedienbarkeit) bestätigt jetzt auch die Kacheln. 282 Tests grün, Smoke 16/16, Guards 0.
+
 ### Cycle #95 — 2026-07-20 — a11y-Folgefehler behoben: keine verschachtelten Klick-Elemente in der Repost-Einbettung
 - **THINK:** Die Tastatur-Bedienbarkeit aus #94 machte jedes `.clickable` zu `role=button`. Die Repost-Einbettung ist selbst `.clickable`, enthielt aber über `linkifyMentions` @-Mentions/#Hashtags als eigene `.clickable`-Spans → nach #94 „Button im Button" (ungültiges ARIA). Ehrliche Selbstkontrolle der letzten Änderung.
 - **WORK:** Die Einbettung rendert den Vorschau-Text jetzt als reinen Text (`esc`, kein `linkifyMentions`) — die ganze Karte bleibt EIN anklickbares/tastaturbedienbares Element ohne verschachtelte Interaktionen. Das Original behält seine klickbaren Mention-Links. Browser-Audit um die Prüfung „verschachtelte Klick-Elemente (`.clickable .clickable`)" erweitert.

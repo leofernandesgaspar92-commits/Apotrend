@@ -1526,9 +1526,11 @@ async function loadOverview() {
   const hello = me ? (me.display_name || '@'+me.handle) : '';
   const firstName = hello ? (hello.split(/\s+/).find(w => !/\.$/.test(w)) || hello) : '';
   // Kennzahlen-Kacheln
-  const tile = (icon, num, label, col, go, filter) => `<div class="ovtile" data-go="${go||''}" data-filter="${filter||''}" style="flex:1;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;${go?'cursor:pointer':''}">
+  // Kacheln sind Navigations-Buttons (alle klickbar): .clickable macht sie zusätzlich
+  // tastaturbedienbar (tabindex+role via zentralem a11y-Mechanismus) und zeigt Hover-Affordanz.
+  const tile = (icon, num, label, col, go, filter) => `<div class="ovtile clickable" data-go="${go||''}" data-filter="${filter||''}" style="flex:1;min-width:120px;padding:12px">
     <div style="font-size:26px;font-weight:800;color:${col}">${icon} <span style="white-space:nowrap">${num}</span></div>
-    <div class="muted" style="font-size:13px;margin-top:2px">${esc(label)}</div></div>`;
+    <div class="muted" style="font-size:13px;margin-top:2px">${esc(label)} <span class="ovtile-go" aria-hidden="true">›</span></div></div>`;
   const tiles = [
     tile('🔴', d.shortages.kritisch, t('ov_t_crit'), 'var(--crit-fg)', 'shortages'),
   ];
