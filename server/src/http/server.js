@@ -354,6 +354,7 @@ const routes = [
   ['POST', /^\/api\/posts\/([^/]+)\/delete$/, true, async ({ userId, params }) => social.deletePost(userId, params[0])],
   ['POST', /^\/api\/posts\/([^/]+)\/report$/, true, async ({ userId, params, body }) => social.report(userId, 'post', params[0], body.reason)],
   ['POST', /^\/api\/posts\/([^/]+)\/bookmark$/, true, async ({ userId, params }) => social.toggleBookmark(userId, params[0])],
+  ['POST', /^\/api\/posts\/([^/]+)\/repost$/, true, async ({ userId, params, body }) => social.repost(userId, params[0], { comment: body.comment, visibility: body.visibility })],
   ['POST', /^\/api\/posts\/([^/]+)\/accept$/, true, async ({ userId, params, body }) => social.acceptAnswer(userId, params[0], body.commentId)],
   ['POST', /^\/api\/polls\/([^/]+)\/vote$/, true, async ({ userId, params, body }) => social.votePoll(userId, params[0], body.optionId ?? null)],
   ['GET', /^\/api\/bookmarks$/, true, async ({ userId }) => ({ posts: enrichPosts(social.listBookmarks(userId)) })],

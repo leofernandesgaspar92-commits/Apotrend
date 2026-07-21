@@ -66,6 +66,12 @@ export function createSocialService(social, foundationRepo, options = {}) {
         const tally = social.pollTally(post.id, viewerUserId);
         return { options: post.poll_options, counts: tally.counts, total: tally.total, my_vote: tally.my };
       })() : null,
+      // Repost: das eingebettete Original mitdekorieren (oder als gelöscht markieren).
+      repost_of_post: post.kind === 'repost' && post.repost_of ? (() => {
+        const orig = social.getPost(post.repost_of);
+        if (!orig || orig.deleted_at) return { deleted: true };
+        return decorate(orig, viewerUserId);
+      })() : null,
     };
   }
 
@@ -273,6 +279,26 @@ export function createSocialService(social, foundationRepo, options = {}) {
       const country = normalizeCountry(social.getProfileByUserId(actorUserId)?.country);
       const post = social.createPost({ authorUserId: actorUserId, body: text, visibility, refType, refId, kind, image: img, sourceUrl: src, country, pollOptions: poll });
       notifyMentions(text, actorUserId, 'post', post.id);
+      return post;
+    },
+    // Beitrag im eigenen Feed teilen (Repost). Optionaler Kommentar. Reposts werden
+    // auf das Original „geflacht" (kein Repost-eines-Reposts), damit die Kette flach bleibt.
+    repost(actorUserId, postId, { comment = '', visibility = 'public' } = {}) {
+      requireUser(actorUserId);
+      const orig = social.getPost(postId);
+      if (!orig || orig.deleted_at) throw new AppError('post_not_found', 'Beitrag nicht gefunden.');
+      if (!visibleTo(orig, actorUserId)) throw new AppError('post_not_found', 'Beitrag nicht gefunden.');
+      const targetId = orig.kind === 'repost' && orig.repost_of ? orig.repost_of : orig.id;
+      const target = social.getPost(targetId);
+      if (!target || target.deleted_at) throw new AppError('post_not_found', 'Beitrag nicht gefunden.');
+      const text = String(comment ?? '').trim();
+      if (text.length > MAX_BODY) throw new AppError('post_too_long', `Beitrag zu lang (max ${MAX_BODY}).`);
+      if (!['public', 'followers'].includes(visibility)) throw new Error('Ungueltige Sichtbarkeit.');
+      const country = normalizeCountry(social.getProfileByUserId(actorUserId)?.country);
+      const post = social.createPost({ authorUserId: actorUserId, body: text, visibility, kind: 'repost', country, repostOf: targetId });
+      // Original-Autor:in benachrichtigen (nie sich selbst).
+      notify(target.author_user_id, 'repost', actorUserId, 'post', targetId);
+      if (text) notifyMentions(text, actorUserId, 'post', post.id);
       return post;
     },
     // Umfrage-Stimme abgeben/ändern/zurückziehen (optionId=null zieht zurück).

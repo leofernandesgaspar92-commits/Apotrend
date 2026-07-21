@@ -174,6 +174,7 @@ const I18N = {
     pc_verified:'✔ verifiziert', pc_img_alt:'Bild zum Beitrag', pc_source:'🔗 Quelle',
     pc_edited:'✏️ bearbeitet', pc_vis_public:'🌍 öffentlich', pc_vis_followers:'👥 nur Follower',
     pc_comments:'💬 {n} Kommentare', pc_comments_one:'💬 1 Kommentar', pc_comment_cta:'💬 Kommentieren', pc_saved:'🔖 gemerkt', pc_save:'🔖 Merken', pc_share:'🔗 Teilen',
+    pc_repost:'🔁 Teilen im Feed', pc_reposted:'🔁 Geteilt ✓', rp_shared:'hat einen Beitrag geteilt', rp_deleted:'Der Originalbeitrag wurde gelöscht.', rp_poll_hint:'📊 Umfrage — zum Abstimmen öffnen', nv_repost:'hat deinen Beitrag geteilt',
     pc_edit:'✏️ Bearbeiten', pc_delete:'🗑 Löschen', pc_report:'🚩 Melden',
     pc_reply_ph:'Antworten…', pc_send:'Senden', pc_copied:'✓ kopiert',
     pc_answered:'✔ Beantwortet', pc_question_open:'❓ Offene Fachfrage', pc_del_confirm:'Diesen Beitrag wirklich löschen?',
@@ -453,6 +454,7 @@ const I18N = {
     pc_verified:'✔ verified', pc_img_alt:'Post image', pc_source:'🔗 Source',
     pc_edited:'✏️ edited', pc_vis_public:'🌍 public', pc_vis_followers:'👥 followers only',
     pc_comments:'💬 {n} comments', pc_comments_one:'💬 1 comment', pc_comment_cta:'💬 Comment', pc_saved:'🔖 saved', pc_save:'🔖 Save', pc_share:'🔗 Share',
+    pc_repost:'🔁 Share to feed', pc_reposted:'🔁 Shared ✓', rp_shared:'shared a post', rp_deleted:'The original post was deleted.', rp_poll_hint:'📊 Poll — open to vote', nv_repost:'shared your post',
     pc_edit:'✏️ Edit', pc_delete:'🗑 Delete', pc_report:'🚩 Report',
     pc_reply_ph:'Reply…', pc_send:'Send', pc_copied:'✓ copied',
     pc_answered:'✔ Answered', pc_question_open:'❓ Open question', pc_del_confirm:'Really delete this post?',
@@ -732,6 +734,7 @@ const I18N = {
     pc_verified:'✔ verificado', pc_img_alt:'Imagem da publicação', pc_source:'🔗 Fonte',
     pc_edited:'✏️ editado', pc_vis_public:'🌍 público', pc_vis_followers:'👥 só seguidores',
     pc_comments:'💬 {n} comentários', pc_comments_one:'💬 1 comentário', pc_comment_cta:'💬 Comentar', pc_saved:'🔖 guardado', pc_save:'🔖 Guardar', pc_share:'🔗 Partilhar',
+    pc_repost:'🔁 Partilhar no feed', pc_reposted:'🔁 Partilhado ✓', rp_shared:'partilhou uma publicação', rp_deleted:'A publicação original foi eliminada.', rp_poll_hint:'📊 Sondagem — abrir para votar', nv_repost:'partilhou a sua publicação',
     pc_edit:'✏️ Editar', pc_delete:'🗑 Eliminar', pc_report:'🚩 Denunciar',
     pc_reply_ph:'Responder…', pc_send:'Enviar', pc_copied:'✓ copiado',
     pc_answered:'✔ Respondida', pc_question_open:'❓ Pergunta em aberto', pc_del_confirm:'Eliminar mesmo esta publicação?',
@@ -3432,6 +3435,18 @@ function pollHtml(p) {
   const totalLbl = total === 0 ? t('pl_total_zero') : (total === 1 ? t('pl_total_one') : ti('pl_total', { n: total }));
   return `<div class="poll" data-poll>${rows}<div class="poll-total muted">${esc(totalLbl)}${total ? '' : ' · ' + esc(t('pl_tap'))}</div></div>`;
 }
+// Eingebettetes Original eines Reposts: kompakt, anklickbar (öffnet das Original).
+function repostEmbedHtml(o) {
+  if (!o) return '';
+  if (o.deleted) return `<div class="repost-embed muted">${esc(t('rp_deleted'))}</div>`;
+  const a = o.author || {};
+  const img = o.image && /^data:image\//.test(o.image) ? `<img src="${o.image}" alt="${esc(t('pc_img_alt'))}" style="max-width:100%;border-radius:8px;margin-top:6px;display:block" />` : '';
+  const pollHint = o.poll ? `<div class="muted" style="font-size:13px;margin-top:4px">${esc(t('rp_poll_hint'))}</div>` : '';
+  return `<div class="repost-embed clickable" data-openpost="${esc(o.id)}">
+    <div class="row"><span class="post-author">${esc(a.display_name || t('ex_unknown'))}</span><span class="handle">@${esc(a.handle || '?')}</span>${a.verified ? `<span class="verified">${esc(t('pc_verified'))}</span>` : ''}</div>
+    <div class="post-body">${linkifyMentions(o.body)}</div>${img}${pollHint}
+  </div>`;
+}
 function postCard(p) {
   const a = p.author || {};
   const rc = p.reaction_counts || {};
@@ -3448,8 +3463,10 @@ function postCard(p) {
     </div>
     <div class="muted" style="font-size:13px" title="${esc(p.created_at)}">🕒 ${relTime(p.created_at)}</div>
     ${p.is_question?`<div style="margin-top:4px" data-qbadge>${qBadgeHtml(p.answered)}</div>`:''}
-    <div class="post-body" data-body>${linkifyMentions(p.body)}</div>
+    ${p.repost_of_post?`<div class="vis" style="margin-top:2px">🔁 ${esc(t('rp_shared'))}</div>`:''}
+    ${(p.body||'').trim()||!p.repost_of_post?`<div class="post-body" data-body>${linkifyMentions(p.body)}</div>`:'<div class="post-body" data-body hidden></div>'}
     ${p.poll ? pollHtml(p) : ''}
+    ${p.repost_of_post ? repostEmbedHtml(p.repost_of_post) : ''}
     ${p.image && /^data:image\//.test(p.image) ? `<img src="${p.image}" alt="${esc(t('pc_img_alt'))}" style="max-width:100%;border-radius:10px;margin-top:8px;display:block" />` : ''}
     ${p.source_url ? `<div style="margin-top:6px"><a href="${esc(p.source_url)}" target="_blank" rel="noopener noreferrer" class="mention">${esc(t('pc_source'))}</a></div>` : ''}
     <div class="vis" data-edited ${p.edited_at?'':'style="display:none"'}>${esc(t('pc_edited'))}</div>
@@ -3460,6 +3477,7 @@ function postCard(p) {
       <button data-comments>${esc(commentLabel(p.comment_count||0))}</button>
       <button class="ghost small" data-bookmark title="${esc(t('pc_save'))}">${myBookmarks.has(p.id)?esc(t('pc_saved')):esc(t('pc_save'))}</button>
       <button class="ghost small" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button>
+      ${mine?'':`<button class="ghost small" data-repost title="${esc(t('pc_repost'))}">${esc(t('pc_repost'))}</button>`}
       <span class="sp" style="flex:1"></span>
       ${mine ? `<button class="ghost small" data-edit title="${esc(t('pc_edit'))}">${esc(t('pc_edit'))}</button><button class="ghost small" data-del title="${esc(t('pc_delete'))}">${esc(t('pc_delete'))}</button>`
              : `<button class="ghost small" data-report title="${esc(t('pc_report'))}">${esc(t('pc_report'))}</button>`}
@@ -3490,6 +3508,15 @@ function postCard(p) {
     try { await navigator.clipboard.writeText(url); sh.textContent = t('pc_copied'); setTimeout(()=>{ sh.textContent=t('pc_share'); }, 1500); }
     catch { prompt(t('copy_link_fb'), url); }
   };
+  // Repost (Ein-Klick im Feed teilen): Original wird eingebettet in den eigenen Feed geteilt.
+  const rp = card.querySelector('[data-repost]');
+  if (rp) rp.onclick = async () => {
+    rp.disabled = true;
+    try { await api('POST', `/api/posts/${p.id}/repost`, {}); rp.textContent = t('pc_reposted'); setTimeout(loadFeed, 700); }
+    catch(e){ rp.disabled = false; alert(e.message); }
+  };
+  // Klick auf das eingebettete Original öffnet den Originalbeitrag.
+  card.querySelectorAll('[data-openpost]').forEach(elp => elp.onclick = () => openPost(elp.dataset.openpost));
   const bm = card.querySelector('[data-bookmark]');
   if (bm) bm.onclick = async () => {
     try {
@@ -3683,7 +3710,7 @@ async function showNotifications() {
   setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦' };
   app.innerHTML = '';
   const head = el(`<div class="card"><div class="row"><h1 style="flex:1">${esc(t('notif_title'))}</h1>
     <button class="ghost small" id="back">${esc(t('gen_back'))}</button></div>

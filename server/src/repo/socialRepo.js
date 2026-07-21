@@ -89,6 +89,7 @@ export function createSocialRepo() {
         visibility: p.visibility ?? 'public', ref_type: p.refType ?? null, ref_id: p.refId ?? null,
         image: p.image ?? null, source_url: p.sourceUrl ?? null,
         country: p.country ?? 'AT',
+        repost_of: p.repostOf ?? null, // Original-Post-ID bei kind='repost', sonst null
         poll_options: p.pollOptions ?? null, // [{id, text}] bei kind='poll', sonst null
         accepted_comment_id: null,
         created_at: now(), edited_at: null, deleted_at: null,
