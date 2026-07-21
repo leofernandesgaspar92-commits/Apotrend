@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #97 — 2026-07-20 — „Kritische Engpässe"-Liste auf der Startseite ist klick-/tastaturbedienbar
+- **THINK:** Screenshot-Rundgang (Preise/Rabatte/Biete/News/Detail alle sauber): Auf „Für dich" listet die Karte „🔴 Kritische Engpässe" die Top-3-Wirkstoffe — aber als reiner Text. Eine zeitknappe Apotheker:in sieht „Amoxicillin kritisch" und will tippen, um Details/Angebote zu sehen; nichts passierte (nur „Alle ansehen" führte weiter).
+- **WORK:** Jeder Listeneintrag ist jetzt `.clickable` (tabindex+role via zentralem a11y-Mechanismus) mit grünem „›"-Chevron und öffnet per Klick/Enter direkt das Wirkstoff-Detail (`openWirkstoff`).
+- **CHECK:** Echter Browser: Eintrag „Amoxicillin" trägt `tabindex=0`/`role=button`, Fokus + Enter öffnet das Detail (zeigt „Amoxicillin"/Engpass-Status), 0 JS-Fehler. 282 Tests grün, Browser-Audit sauber, Smoke 16/16, Guards 0.
+
 ### Cycle #96 — 2026-07-20 — Übersichts-Kacheln: klar als Buttons erkennbar + tastaturbedienbar (Screenshot-Review)
 - **THINK:** Screenshot-Rundgang (Hell/Dunkel × Desktop/Mobil): die Kennzahl-Kacheln auf „Für dich" (z. B. „3 kritische Engpässe") sind Navigations-Shortcuts, sahen aber passiv aus (schwache Affordanz). Schwerwiegender: `<div>`+`onclick` OHNE `.clickable` → mein #94-Tastaturmechanismus erreichte sie NICHT; die wichtigsten Sprungziele der Startseite waren nicht tastaturbedienbar (und rutschten am Audit vorbei).
 - **WORK:** Kacheln als `.ovtile clickable` (tabindex+role via zentralem a11y-Mechanismus, Enter/Space löst aus), sichtbare Affordanz: grüner „›"-Chevron je Kachel + Hover/Fokus-Rahmen wird grün (ohne Link-Unterstreichung). Kachel-Optik von Inline-Styles in die `.ovtile`-Klasse überführt.

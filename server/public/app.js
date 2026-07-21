@@ -1592,8 +1592,9 @@ async function loadOverview() {
   // Kritische Engpässe (Top 3)
   if (d.shortages.top.length) {
     const c = el(`<div class="card"><div class="row"><b>${esc(t('sp_crit_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>${esc(t('sp_view_all'))}</button></div>
-      ${d.shortages.top.map(s=>`<div class="comment"><b>${esc(s.wirkstoff)}</b> <span class="muted">${esc(s.bezeichnung)}</span></div>`).join('')}</div>`);
+      ${d.shortages.top.map(s=>`<div class="comment clickable" data-wk="${esc(s.wirkstoff)}"><b>${esc(s.wirkstoff)}</b> <span class="muted">${esc(s.bezeichnung)}</span> <span class="ovtile-go" aria-hidden="true">›</span></div>`).join('')}</div>`);
     c.querySelector('[data-all]').onclick = () => goTab('shortages');
+    c.querySelectorAll('[data-wk]').forEach(row => row.onclick = () => openWirkstoff(row.dataset.wk));
     feed.appendChild(c);
   }
   // Neueste Austausch-Einträge
