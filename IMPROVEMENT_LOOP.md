@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #102 — 2026-07-20 — Echter Bug behoben: Direktnachricht wurde bei Enter DOPPELT gesendet
+- **THINK:** Beim Durchsehen des DM-Codes fielen ZWEI keydown-Handler auf `#dmbody` auf (`onkeydown` + `addEventListener`), beide riefen `send()`. Reproduziert: eine per Enter gesendete Nachricht kam **zweimal** an (das zweite `send()` liest das Feld, bevor das erste `await` es leert).
+- **WORK:** Redundanten zweiten Handler entfernt (nur `onkeydown` mit Shift-Enter-Ausnahme bleibt). Zusätzlich `send()` gehärtet: Text erst erfassen, Feld sofort leeren (ein paralleler Aufruf liest leer → bricht ab), bei Fehler Text wiederherstellen. Smoke-Guard ergänzt.
+- **CHECK:** Repro vor dem Fix: 2 Nachrichten; nach dem Fix: genau 1. Smoke-Schritt 8 „Enter sendet genau eine Nachricht" (Empfänger+Thread per API, Senden im Browser) → 17 → 18/18 grün. 282 Tests grün, Guards 0.
+
 ### Cycle #101 — 2026-07-20 — Übergreifende Suche im Smoke-Test abgesichert
 - **THINK:** Screenshot-Review bestätigte: die modulübergreifende Suche (Personen/Beiträge/Engpässe/Preise/Rabatte/Austausch, mit Wirkstoff-Schnellchips) funktioniert einwandfrei — hatte aber KEINEN Frontend-Guard. Eine der wertvollsten Funktionen der App war ungeschützt gegen stille Regression.
 - **WORK:** Smoke-Schritt: „Amoxicillin" suchen → Ergebnis-Kopf erscheint, ≥2 Trefferkarten, Wirkstoff-Schnellchip vorhanden; danach „zurück" in den Feed (Folgeschritte laufen weiter).

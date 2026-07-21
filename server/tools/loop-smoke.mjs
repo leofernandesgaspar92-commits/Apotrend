@@ -180,6 +180,23 @@ async function main() {
   const backHome = await page.evaluate(() => !document.getElementById('viewCtx'));
   step('„Zurück zu meinem Land" beendet den Besuch', backHome);
 
+  // 8) Direktnachricht: Enter sendet GENAU EINE Nachricht (Regression — früher doppelt
+  //    durch zwei keydown-Handler). Empfänger + Thread per API, Senden im echten Browser.
+  const rcp = await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'SmokeB', email: `smokeb_${uniq}@ex.com`, password: 'Passwort123!', handle: `smokeb_${uniq}`, accountType: 'pharmacy' }) });
+  const startRes = await api('/api/dm/start', { method: 'POST', headers: { authorization: 'Bearer ' + token }, body: JSON.stringify({ handle: rcp.profile.handle }) });
+  const threadId = startRes && (startRes.thread_id || startRes.id || (startRes.thread && startRes.thread.id));
+  let dmOk = false;
+  if (threadId) {
+    await page.evaluate((id) => window.openDmThread && window.openDmThread(id), threadId);
+    await page.waitForTimeout(500);
+    await page.fill('#dmbody', 'SMOKE-DM').catch(() => {});
+    await page.locator('#dmbody').press('Enter').catch(() => {});
+    await page.waitForTimeout(800);
+    const conv = await api('/api/dm/' + encodeURIComponent(threadId), { headers: { authorization: 'Bearer ' + token } });
+    dmOk = (conv.messages || []).filter(m => m.body === 'SMOKE-DM').length === 1;
+  }
+  step('Direktnachricht: Enter sendet genau eine Nachricht (kein Duplikat)', dmOk);
+
   step('Keine JS-Fehler während des Flows', jsErrors.length === 0, jsErrors.slice(0, 2).join(' | '));
 
   await browser.close();

@@ -3951,17 +3951,19 @@ async function openDmThread(threadId) {
   render(d.messages);
   const send = async () => {
     const inp = document.getElementById('dmbody');
-    if (!inp.value.trim()) return;
+    const text = inp.value.trim();
+    if (!text) return;
+    inp.value = ''; // sofort leeren: ein paralleler Aufruf liest leer und bricht ab (Doppelversand-Schutz)
     try {
-      await api('POST','/api/dm/'+encodeURIComponent(threadId),{ body: inp.value });
-      inp.value='';
+      await api('POST','/api/dm/'+encodeURIComponent(threadId),{ body: text });
       const fresh = await api('GET','/api/dm/'+encodeURIComponent(threadId));
       render(fresh.messages);
-    } catch(e){ alert(e.message); }
+    } catch(e){ inp.value = text; alert(e.message); } // bei Fehler Text wiederherstellen
   };
   document.getElementById('dmsend').onclick = send;
+  // Enter sendet (Shift+Enter nicht). Nur EIN Handler — ein zweiter (addEventListener)
+  // löste send() doppelt aus und verschickte jede Nachricht zweimal.
   document.getElementById('dmbody').onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } };
-  document.getElementById('dmbody').addEventListener('keydown', e => { if (e.key==='Enter') send(); });
   refreshDmCount();
 }
 
