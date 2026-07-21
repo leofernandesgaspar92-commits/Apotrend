@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #101 — 2026-07-20 — Übergreifende Suche im Smoke-Test abgesichert
+- **THINK:** Screenshot-Review bestätigte: die modulübergreifende Suche (Personen/Beiträge/Engpässe/Preise/Rabatte/Austausch, mit Wirkstoff-Schnellchips) funktioniert einwandfrei — hatte aber KEINEN Frontend-Guard. Eine der wertvollsten Funktionen der App war ungeschützt gegen stille Regression.
+- **WORK:** Smoke-Schritt: „Amoxicillin" suchen → Ergebnis-Kopf erscheint, ≥2 Trefferkarten, Wirkstoff-Schnellchip vorhanden; danach „zurück" in den Feed (Folgeschritte laufen weiter).
+- **CHECK:** Smoke 16 → 17/17 grün (Such-Schritt + unveränderte Folgeschritte), 282 Tests grün, Browser-Audit sauber, Guards 0.
+
 ### Cycle #100 — 2026-07-20 — Entwurf-Schutz: halbfertige Beiträge überstehen Neuladen/Weg-Navigieren
 - **THINK:** Zielgruppe ist zeitknapp und wird oft unterbrochen. Wer einen längeren Beitrag/eine Fachfrage tippt und versehentlich neu lädt oder weg-navigiert, verliert alles — echter Datenverlust-Frust ohne jeden Schutz.
 - **WORK:** Der Beitrags-Composer (`#pb`) sichert seinen Text pro Konto in `localStorage`. Beim Öffnen wird ein vorhandener Entwurf wiederhergestellt und dezent angezeigt („✎ Entwurf wiederhergestellt · verwerfen"); eigenes Tippen ersetzt den Hinweis, „verwerfen" leert ihn, erfolgreiches Posten löscht ihn. i18n `dr_restored`/`dr_discard` (DE/EN/PT).

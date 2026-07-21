@@ -132,6 +132,23 @@ async function main() {
   const embedsAfter = await page.evaluate(() => document.querySelectorAll('.repost-embed').length);
   step('Beitrag im Feed teilen (Repost bettet Original ein)', didRepost && embedsAfter > embedsBefore);
 
+  // 4d) Übergreifende Suche: ein Wirkstoff liefert gebündelte Treffer (Beiträge/Engpässe/Preise …).
+  await page.fill('#sq', 'Amoxicillin');
+  await page.click('#sgo');
+  await page.waitForTimeout(700);
+  const searchOk = await page.evaluate(() => {
+    const feed = document.getElementById('feed');
+    if (!feed) return false;
+    const hasHeader = /Suchergebnisse|Search results|Resultados/.test(feed.textContent);
+    const hasResults = feed.querySelectorAll('.card').length >= 2; // Kopf + mind. 1 Treffer
+    const hasWkChip = !!feed.querySelector('[data-wchips] button');
+    return hasHeader && hasResults && hasWkChip;
+  });
+  step('Übergreifende Suche liefert gebündelte Treffer', searchOk);
+  // Zurück in den Feed für die folgenden Schritte
+  await page.evaluate(() => { const b = document.querySelector('#feed [data-back]'); if (b) b.click(); });
+  await page.waitForTimeout(400);
+
   // 5) Sprachwechsel wirkt (Header-Label „Schrift" -> „Text size") — auf dem Auth-Screen abgesichert,
   //    hier prüfen wir eingeloggt: Reiter-Beschriftung wechselt via Länder-/Sprachlogik nicht direkt,
   //    daher testen wir den generischen t()-Pfad über den Kommentar-Button-Text.
