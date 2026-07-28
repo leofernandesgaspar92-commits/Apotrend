@@ -811,6 +811,37 @@ test('Zahlungen/Premium: Produkte sichtbar, Methoden ohne Anbieter leer, Freisch
   assert.equal((await wh.json()).code, 'provider_unknown');
 });
 
+test('Direkt-Krypto über HTTP: Adressen anzeigen, Zahlung starten + Tx melden, Moderation bestätigt', async () => {
+  const cust = await reg('crypto' + PORT);
+  // Anzeige: BTC/ETH-Adressen (öffentliche Empfangsadressen), EUR-Betrag
+  const opt = await j('/api/payments/crypto?product=premium_monthly', null);
+  assert.equal(opt.amount_eur, 9.99);
+  const btc = opt.coins.find(c => c.coin === 'bitcoin');
+  assert.ok(btc && btc.address.startsWith('bc1q'), 'BTC-Adresse');
+  assert.ok(opt.coins.some(c => c.coin === 'ethereum'));
+  assert.ok(btc.uri.startsWith('bitcoin:bc1q'), 'Wallet-URI');
+  assert.equal(opt.coins.some(c => c.coin === 'solana'), false, 'SOL erst nach Klärung');
+  // Zahlung starten + Tx-ID melden
+  const start = await (await post('/api/payments/crypto/start', cust, { productId: 'premium_monthly', coin: 'bitcoin' })).json();
+  assert.ok(start.payment_id && start.address.startsWith('bc1q'));
+  const claim = await post(`/api/payments/crypto/${start.payment_id}/claim`, cust, { txRef: 'txhash1234567890' });
+  assert.equal(claim.status, 200);
+  // Kunde ist NICHT Moderator -> darf nicht bestätigen; Premium noch nicht frei
+  const forbid = await post(`/api/payments/${start.payment_id}/confirm`, cust, {});
+  assert.equal(forbid.status, 400);
+  assert.equal((await forbid.json()).code, 'forbidden');
+  assert.equal((await j('/api/me/premium', cust)).premium, false);
+  // Admin (Redaktion) meldet sich an, sieht die offene Zahlung, bestätigt -> Premium frei
+  const adminLogin = await (await fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email: 'red@apotrend.test', password: 'redredred123' }) })).json();
+  const admin = adminLogin.token;
+  const pending = await j('/api/payments/pending', admin);
+  assert.ok(pending.payments.some(p => p.id === start.payment_id));
+  const conf = await post(`/api/payments/${start.payment_id}/confirm`, admin, {});
+  assert.equal(conf.status, 200);
+  assert.equal((await conf.json()).granted, true);
+  assert.equal((await j('/api/me/premium', cust)).premium, true, 'Premium nach Bestätigung frei');
+});
+
 test('Statische Assets: gzip-Komprimierung + ETag/304-Revalidierung', async () => {
   // gzip nur, wenn der Client es anbietet.
   const gz = await rawGet('/app.js', { 'accept-encoding': 'gzip' });

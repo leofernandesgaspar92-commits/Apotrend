@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { createMemoryRepo } from '../src/repo/memoryRepo.js';
 import { createPaymentsService, buildPaymentProvidersFromEnv, createStripeAdapter, createCoinbaseAdapter } from '../src/services/payments.js';
+import { cryptoWallets, walletUri } from '../src/data/cryptoWallets.js';
+import { createCryptoRates } from '../src/services/cryptoRates.js';
 
 function fakeProvider() {
   return {
@@ -107,6 +109,73 @@ test('Stripe-Adapter: Checkout (fetch gemockt) + korrekt signierter Webhook = pa
   assert.deepEqual(evt, { type: 'paid', ref: 'cs_123' });
   // falsche Signatur wirft
   assert.throws(() => a.verifyWebhook(payload, { 'stripe-signature': `t=${t},v1=deadbeef` }), e => e.code === 'webhook_bad_signature');
+});
+
+test('cryptoWallets: BTC/ETH vorbelegt, SOL erst mit ENV; walletUri baigt korrekte Schemata', () => {
+  const w = cryptoWallets({});
+  assert.equal(w.bitcoin.address, 'bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46');
+  assert.ok(w.ethereum.address.startsWith('0x5f5099'));
+  assert.equal(w.solana, undefined, 'SOL absichtlich nicht vorbelegt (zwei Adressen genannt)');
+  assert.equal(cryptoWallets({ APOTREND_WALLET_SOL: 'SOLADDR' }).solana.address, 'SOLADDR');
+  assert.equal(walletUri(w.bitcoin, 0.0003), 'bitcoin:bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46?amount=0.0003');
+  assert.match(walletUri(w.ethereum, 0.01), /^ethereum:0x5f5099.*@1\?value=\d+$/);
+  assert.equal(walletUri(w.ethereum, null), 'ethereum:' + w.ethereum.address);
+});
+
+test('cryptoRates: cached, fetch injizierbar, Fallback bei Fehler', async () => {
+  let calls = 0; let clock = 0;
+  const fetchOk = async () => { calls++; return { json: async () => ({ bitcoin: { eur: 50000 }, ethereum: { eur: 3000 } }) }; };
+  const rates = createCryptoRates({ fetchImpl: fetchOk, ttlMs: 1000, now: () => clock });
+  assert.deepEqual(await rates.ratesEur(['bitcoin', 'ethereum']), { bitcoin: 50000, ethereum: 3000 });
+  await rates.ratesEur(['bitcoin', 'ethereum']); // innerhalb TTL -> Cache, kein zweiter Fetch
+  assert.equal(calls, 1);
+  clock = 2000; // TTL abgelaufen
+  await rates.ratesEur(['bitcoin', 'ethereum']);
+  assert.equal(calls, 2);
+  // Fehler -> letzter Stand bleibt
+  const rates2 = createCryptoRates({ fetchImpl: async () => { throw new Error('net'); } });
+  assert.deepEqual(await rates2.ratesEur(['bitcoin']), {});
+});
+
+test('cryptoOptions: liefert Adresse + Betrag (bei Kurs) + Wallet-URI', async () => {
+  const repo = createMemoryRepo();
+  const rates = { ratesEur: async () => ({ bitcoin: 50000, ethereum: 2000 }) };
+  const svc = createPaymentsService({ repo, wallets: () => cryptoWallets({}), rates });
+  const opt = await svc.cryptoOptions('premium_monthly'); // 9,99 €
+  const btc = opt.coins.find(c => c.coin === 'bitcoin');
+  assert.equal(btc.address, 'bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46');
+  assert.equal(btc.amount_eur, 9.99);
+  assert.ok(Math.abs(btc.amount_crypto - 9.99 / 50000) < 1e-9);
+  assert.ok(btc.uri.startsWith('bitcoin:bc1q'));
+  await assert.rejects(() => svc.cryptoOptions('gibtsnicht'), e => e.code === 'product_unknown');
+});
+
+test('Direkt-Krypto: start → claim(Tx) → Moderation bestätigt → Premium frei', async () => {
+  const repo = createMemoryRepo();
+  const cust = repo.createUser({ email: 'c@c.at', name: 'C', passwordHash: 'x' });
+  const mod = repo.createUser({ email: 'm@m.at', name: 'M', passwordHash: 'x' });
+  const svc = createPaymentsService({ repo, wallets: () => cryptoWallets({}), isModerator: (id) => id === mod.id });
+  const start = svc.startCryptoPayment(cust.id, 'premium_monthly', 'bitcoin');
+  assert.equal(start.address, 'bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46');
+  assert.equal(repo.getPayment(start.payment_id).status, 'pending');
+  // unbekannter Coin
+  assert.throws(() => svc.startCryptoPayment(cust.id, 'premium_monthly', 'dogecoin'), e => e.code === 'coin_unavailable');
+  // Tx-ID einreichen
+  assert.throws(() => svc.claimCryptoPayment(cust.id, start.payment_id, 'x'), e => e.code === 'tx_ref_missing');
+  svc.claimCryptoPayment(cust.id, start.payment_id, 'abcdef123456txhash');
+  assert.equal(repo.getPayment(start.payment_id).status, 'pending_review');
+  assert.equal(svc.listPendingReview(mod.id).length, 1);
+  // fremder Nutzer kann nicht claimen
+  assert.throws(() => svc.claimCryptoPayment(cust.id + 'x', start.payment_id, 'abcdef123456'), e => e.code === 'payment_not_found');
+  // Nicht-Moderator darf nicht bestätigen
+  await assert.rejects(() => svc.confirmPayment(cust.id, start.payment_id), e => e.code === 'forbidden');
+  // Moderation bestätigt -> Premium frei, idempotent
+  assert.equal(svc.hasFeature(cust.id, 'premium'), false);
+  const r = await svc.confirmPayment(mod.id, start.payment_id);
+  assert.deepEqual(r, { ok: true, granted: true });
+  assert.equal(svc.hasFeature(cust.id, 'premium'), true);
+  assert.equal(repo.getPayment(start.payment_id).status, 'paid');
+  assert.deepEqual(await svc.confirmPayment(mod.id, start.payment_id), { ok: true, already: true });
 });
 
 test('Coinbase-Adapter: Charge (fetch gemockt) + korrekt signierter Webhook = paid', async () => {

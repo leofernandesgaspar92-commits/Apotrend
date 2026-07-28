@@ -86,6 +86,29 @@ rohen Bodys), Event `charge:confirmed`.
   `4242 4242 4242 4242`.
 - **Coinbase:** Charge im Dashboard anlegen und den Webhook mit einer Testzahlung auslösen.
 
+## 6a. Direkt-in-Wallet Krypto (aktiv, ohne Prozessor)
+
+Zusätzlich zum Prozessor-Weg gibt es den **einfachen Direkt-Weg**: Kund:innen zahlen direkt
+an die **eigenen** öffentlichen Empfangsadressen des Betreibers.
+
+- **Adressen:** `src/data/cryptoWallets.js` (BTC + ETH vorbelegt, per `APOTREND_WALLET_BTC/ETH`
+  überschreibbar). **Solana** ist bewusst leer — es wurden zwei verschiedene SOL-Adressen
+  genannt; erst nach Klärung über `APOTREND_WALLET_SOL` setzen (falsche Adresse = Geldverlust).
+- **Kurse:** `src/services/cryptoRates.js` holt EUR→Coin von CoinGecko (öffentlich, lesend,
+  5-min-Cache, `fetch` injizierbar). Fällt der Abruf aus, wird nur der **€-Betrag** gezeigt —
+  die Zahlung (Adresse + „In Wallet-App öffnen") funktioniert **immer**.
+- **UI:** Konto → „⭐ Premium freischalten" → je Coin: Betrag, Adresse (kopieren) und
+  **„📲 In Wallet-App öffnen"** (`bitcoin:` / `ethereum:` / `solana:`-URI → Wallet öffnet sich
+  vorausgefüllt). So einfach wie möglich: klicken → senden.
+- **Freischaltung (ehrlich, kein Fake-Auto):** Statische Adressen erlauben **keine**
+  zuverlässige automatische Zuordnung „welche:r Kund:in hat gezahlt". Ablauf:
+  `POST /api/payments/crypto/start` → Kund:in nennt die **Transaktions-ID**
+  (`…/crypto/:id/claim`) → Status `pending_review` → **Moderation/Betreiber bestätigt manuell**
+  (`GET /api/payments/pending`, `POST /api/payments/:id/confirm`) nach Blick in die Wallet →
+  Feature frei. Damit gibt es einen sauberen Datensatz und eine bewusste Freigabe.
+- **Wichtig:** Auch der Direkt-Weg entbindet nicht von **Steuer/Buchführung** (Krypto-Eingänge
+  sind zu erfassen) und ggf. gewerbe-/aufsichtsrechtlichen Pflichten.
+
 ## 7. Bewusst NICHT gebaut (und warum)
 
 - **Rohe Wallet-Adressen im Code / eigene „1-Bestätigung"-Chain-Prüfung:** unsicher (Reorgs,

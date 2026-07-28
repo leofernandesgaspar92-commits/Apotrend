@@ -25,6 +25,8 @@ import { createSearchService } from '../services/search.js';
 import { createOverviewService } from '../services/overview.js';
 import { createOAuthService, buildProvidersFromEnv } from '../services/oauth.js';
 import { createPaymentsService, buildPaymentProvidersFromEnv } from '../services/payments.js';
+import { createCryptoRates } from '../services/cryptoRates.js';
+import { cryptoWallets } from '../data/cryptoWallets.js';
 import { listProducts, getProduct } from '../data/products.js';
 import { createAmrService } from '../services/amr.js';
 import { createPatientInfoService } from '../services/patientInfo.js';
@@ -75,9 +77,13 @@ const oauth = createOAuthService({ repo, social, providers: buildProvidersFromEn
 // Zahlungen: Anbieter (Stripe/Coinbase) nur aktiv, wenn eigene, verifizierte Schlüssel
 // als ENV-Variablen vorliegen. onPaid = Haken für die Bestätigungs-Mail (Mailversand
 // braucht einen eigenen Anbieter; hier bewusst nur ein Log statt eines Fake-Versands).
+const cryptoRates = createCryptoRates();
 const payments = createPaymentsService({
   repo,
   providers: buildPaymentProvidersFromEnv(),
+  wallets: cryptoWallets, // Direkt-in-Wallet: eigene, öffentliche Empfangsadressen (ENV-überschreibbar)
+  rates: cryptoRates,
+  isModerator: (userId) => social.isModerator(userId),
   onPaid: ({ payment, product }) => { console.log(`✅ Zahlung ${payment.id} bezahlt → Feature „${product.feature}" für User ${payment.user_id} freigeschaltet.`); },
 });
 
@@ -238,6 +244,13 @@ const routes = [
   ['POST', /^\/api\/payments\/checkout$/, true, async ({ userId, body }) =>
     payments.createCheckout(userId, { productId: body.productId, method: body.method, successUrl: body.successUrl, cancelUrl: body.cancelUrl })],
   ['GET', /^\/api\/me\/premium$/, true, async ({ userId }) => ({ premium: payments.hasFeature(userId, 'premium'), features: payments.myEntitlements(userId) })],
+  // Direkt-in-Wallet Krypto: Anzeige (Adresse + „in Wallet öffnen"-URI + Live-Betrag),
+  // Start (pending), Tx-ID einreichen (pending_review), Moderation bestätigt manuell.
+  ['GET', /^\/api\/payments\/crypto$/, false, async ({ query }) => payments.cryptoOptions(query.get('product') || 'premium_monthly')],
+  ['POST', /^\/api\/payments\/crypto\/start$/, true, async ({ userId, body }) => payments.startCryptoPayment(userId, body.productId, body.coin)],
+  ['POST', /^\/api\/payments\/crypto\/([^/]+)\/claim$/, true, async ({ userId, params, body }) => payments.claimCryptoPayment(userId, params[0], body.txRef)],
+  ['GET', /^\/api\/payments\/pending$/, true, async ({ userId }) => ({ payments: payments.listPendingReview(userId) })],
+  ['POST', /^\/api\/payments\/([^/]+)\/confirm$/, true, async ({ userId, params }) => payments.confirmPayment(userId, params[0])],
   // Der Webhook (POST /api/payments/webhook/:provider) braucht den ROHEN Body für die
   // Signaturprüfung und wird deshalb VOR dem JSON-Router gesondert behandelt (siehe unten).
 

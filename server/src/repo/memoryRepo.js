@@ -135,6 +135,7 @@ export function createMemoryRepo() {
     setPaymentRef(id, ref) { const p = payments.get(id); if (!p) return null; p.provider_ref = ref; paymentsByRef.set(`${p.provider}:${ref}`, id); return { ...p }; },
     setPaymentStatus(id, status) { const p = payments.get(id); if (!p) return null; p.status = status; if (status === 'paid' && !p.paid_at) p.paid_at = now(); return { ...p }; },
     listPaymentsByUser(userId) { return [...payments.values()].filter(p => p.user_id === userId).map(p => ({ ...p })); },
+    listAllPayments() { return [...payments.values()].map(p => ({ ...p })); },
 
     unlinkIdentity(provider, providerUserId) {
       return identities.delete(`${provider}:${providerUserId}`);

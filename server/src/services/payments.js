@@ -9,11 +9,64 @@
 //  • Freischaltung erfolgt ausschließlich über signierte Webhooks (kein „Client sagt bezahlt").
 import crypto from 'node:crypto';
 import { getProduct } from '../data/products.js';
+import { walletUri } from '../data/cryptoWallets.js';
 import { AppError } from '../domain/errors.js';
 
-export function createPaymentsService({ repo, providers = {}, onPaid = null }) {
+export function createPaymentsService({ repo, providers = {}, onPaid = null, wallets = () => ({}), rates = null, isModerator = () => false }) {
   const pick = (method) => Object.values(providers).find(p => (p.methods || []).includes(method)) || null;
   return {
+    // ── Direkt-in-Wallet Krypto (deine eigenen Adressen). BEWUSST OHNE automatische
+    //    Chain-Verifizierung: statische Adressen erlauben keine zuverlässige Zuordnung
+    //    „welche:r Kund:in hat gezahlt". Ablauf: anzeigen → Kund:in nennt Tx-ID → du
+    //    bestätigst manuell (confirmPayment). Ehrlich statt Fake-Auto-Freischaltung. ──
+    async cryptoOptions(productId) {
+      const product = getProduct(productId);
+      if (!product) throw new AppError('product_unknown', 'Unbekanntes Produkt.');
+      const ws = wallets();
+      const eur = product.amount_cents / 100;
+      const rateMap = rates ? await rates.ratesEur(Object.values(ws).map(w => w.coin)) : {};
+      const coins = Object.values(ws).map(w => {
+        const rate = rateMap[w.coin]; // EUR pro 1 Coin
+        const amount = rate ? Number((eur / rate).toFixed(8)) : null;
+        return { coin: w.coin, symbol: w.symbol, address: w.address, network: w.network, amount_eur: eur, amount_crypto: amount, uri: walletUri(w, amount) };
+      });
+      return { product: product.id, product_name: product.name, amount_eur: eur, coins };
+    },
+    // Kund:in wählt einen Coin -> pending-Datensatz (zur späteren manuellen Zuordnung).
+    startCryptoPayment(userId, productId, coin) {
+      const product = getProduct(productId);
+      if (!product) throw new AppError('product_unknown', 'Unbekanntes Produkt.');
+      const w = wallets()[coin];
+      if (!w) throw new AppError('coin_unavailable', 'Kryptowährung nicht verfügbar.');
+      const payment = repo.createPayment({ userId, productId, amountCents: product.amount_cents, currency: product.currency, method: 'crypto_direct', provider: 'direct', status: 'pending' });
+      return { payment_id: payment.id, coin: w.coin, address: w.address, network: w.network };
+    },
+    // Kund:in reicht die Transaktions-ID ein -> „pending_review" (du prüfst in deiner Wallet).
+    claimCryptoPayment(userId, paymentId, txRef) {
+      const p = repo.getPayment(paymentId);
+      if (!p || p.user_id !== userId) throw new AppError('payment_not_found', 'Zahlung nicht gefunden.');
+      const ref = String(txRef || '').trim();
+      if (ref.length < 6) throw new AppError('tx_ref_missing', 'Bitte die Transaktions-ID angeben.');
+      repo.setPaymentRef(paymentId, ref);
+      repo.setPaymentStatus(paymentId, 'pending_review');
+      return { ok: true };
+    },
+    // Betreiber/Moderation bestätigt manuell (nach Blick in die Wallet) -> Feature frei.
+    async confirmPayment(moderatorUserId, paymentId) {
+      if (!isModerator(moderatorUserId)) throw new AppError('forbidden', 'Nur Moderation.');
+      const p = repo.getPayment(paymentId);
+      if (!p) throw new AppError('payment_not_found', 'Zahlung nicht gefunden.');
+      if (p.status === 'paid') return { ok: true, already: true };
+      repo.setPaymentStatus(paymentId, 'paid');
+      const product = getProduct(p.product_id);
+      if (product) { repo.grantEntitlement(p.user_id, product.feature); if (onPaid) { try { await onPaid({ payment: p, product }); } catch { /* Mail darf nicht blockieren */ } } }
+      return { ok: true, granted: !!product };
+    },
+    listPendingReview(moderatorUserId) {
+      if (!isModerator(moderatorUserId)) throw new AppError('forbidden', 'Nur Moderation.');
+      return repo.listAllPayments().filter(p => p.status === 'pending_review');
+    },
+
     // Verfügbare Methoden (leer, solange kein Anbieter konfiguriert ist).
     configuredMethods() {
       const out = [];

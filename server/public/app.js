@@ -258,6 +258,15 @@ const I18N = {
     rs_success:'✓ Passwort geändert. Du kannst dich jetzt mit dem neuen Passwort anmelden.', rs_back:'← Zurück zur Anmeldung',
     ac_rc_title:'Wiederherstellungscodes', ac_rc_remaining:'Noch {n} von 8 Codes gültig.', ac_rc_remaining_one:'Noch 1 von 8 Codes gültig.', ac_rc_remaining_zero:'Keine gültigen Codes mehr — bitte neue erzeugen.',
     ac_rc_regen:'Neue Codes erzeugen', ac_rc_warn:'Achtung: dadurch werden alle bisherigen Codes ungültig.',
+    ac_premium:'⭐ Premium freischalten',
+    pr_title:'⭐ ApoTrend Premium', pr_intro:'Schalte Premium frei — einfach direkt per Krypto an uns zahlen.', pr_have:'Du hast Premium ✓',
+    pr_pay_crypto:'Mit Krypto zahlen', pr_network:'Netzwerk: {net}', pr_amount:'≈ {n} {sym}', pr_amount_na:'Betrag beim Kurs-Abruf – bitte {eur} € senden',
+    pr_open_wallet:'📲 In Wallet-App öffnen', pr_copy_addr:'📋 Adresse kopieren', pr_copied:'Kopiert ✓',
+    pr_paid_q:'Schon gezahlt? Transaktions-ID eingeben:', pr_tx_ph:'Transaktions-ID / Hash', pr_report:'Zahlung melden',
+    pr_reported:'✓ Danke! Premium wird nach Prüfung der Zahlung freigeschaltet.',
+    pr_fiat_soon:'Karte/PayPal folgt, sobald der Zahlungsanbieter aktiviert ist.', pr_none:'Zurzeit ist keine Krypto-Zahlung konfiguriert.',
+    pr_note:'ℹ️ Krypto-Zahlungen werden nach Eingang manuell geprüft und freigeschaltet.',
+    e_coin_unavailable:'Kryptowährung nicht verfügbar.', e_tx_ref_missing:'Bitte die Transaktions-ID angeben.', e_payment_not_found:'Zahlung nicht gefunden.', e_product_unknown:'Unbekanntes Produkt.',
     e_reset_invalid:'E-Mail oder Wiederherstellungscode ist ungültig.',
     at_label:'Kontotyp', at_pharmacy:'🏥 Apotheke', at_pharma:'🏭 Pharma-Unternehmen', at_authority:'🏛️ Behörde', at_private:'👤 Privatnutzer:in',
     wd_title:'🏷️ Aktionen zu deinen Wirkstoffen', wd_all:'Alle Rabatte', wd_sub:'Für diese von dir beobachteten Wirkstoffe läuft gerade eine Aktion:',
@@ -538,6 +547,15 @@ const I18N = {
     rs_success:'✓ Password changed. You can now log in with the new password.', rs_back:'← Back to log in',
     ac_rc_title:'Recovery codes', ac_rc_remaining:'{n} of 8 codes still valid.', ac_rc_remaining_one:'1 of 8 codes still valid.', ac_rc_remaining_zero:'No valid codes left — please generate new ones.',
     ac_rc_regen:'Generate new codes', ac_rc_warn:'Note: this invalidates all previous codes.',
+    ac_premium:'⭐ Unlock Premium',
+    pr_title:'⭐ ApoTrend Premium', pr_intro:'Unlock Premium — simply pay us directly with crypto.', pr_have:'You have Premium ✓',
+    pr_pay_crypto:'Pay with crypto', pr_network:'Network: {net}', pr_amount:'≈ {n} {sym}', pr_amount_na:'Amount at fetch time – please send {eur} €',
+    pr_open_wallet:'📲 Open in wallet app', pr_copy_addr:'📋 Copy address', pr_copied:'Copied ✓',
+    pr_paid_q:'Already paid? Enter the transaction ID:', pr_tx_ph:'Transaction ID / hash', pr_report:'Report payment',
+    pr_reported:'✓ Thank you! Premium is unlocked after the payment is verified.',
+    pr_fiat_soon:'Card/PayPal coming once the payment provider is active.', pr_none:'No crypto payment is configured yet.',
+    pr_note:'ℹ️ Crypto payments are verified manually after receipt and then unlocked.',
+    e_coin_unavailable:'Cryptocurrency not available.', e_tx_ref_missing:'Please enter the transaction ID.', e_payment_not_found:'Payment not found.', e_product_unknown:'Unknown product.',
     e_reset_invalid:'Email or recovery code is invalid.',
     at_label:'Account type', at_pharmacy:'🏥 Pharmacy', at_pharma:'🏭 Pharma company', at_authority:'🏛️ Authority', at_private:'👤 Private user',
     wd_title:'🏷️ Deals for your substances', wd_all:'All deals', wd_sub:'A deal is currently running for these substances you watch:',
@@ -818,6 +836,15 @@ const I18N = {
     rs_success:'✓ Palavra-passe alterada. Já pode entrar com a nova palavra-passe.', rs_back:'← Voltar ao início de sessão',
     ac_rc_title:'Códigos de recuperação', ac_rc_remaining:'{n} de 8 códigos ainda válidos.', ac_rc_remaining_one:'1 de 8 códigos ainda válido.', ac_rc_remaining_zero:'Sem códigos válidos — gere novos, por favor.',
     ac_rc_regen:'Gerar novos códigos', ac_rc_warn:'Atenção: isto invalida todos os códigos anteriores.',
+    ac_premium:'⭐ Desbloquear Premium',
+    pr_title:'⭐ ApoTrend Premium', pr_intro:'Desbloqueie o Premium — pague-nos diretamente com cripto.', pr_have:'Tem Premium ✓',
+    pr_pay_crypto:'Pagar com cripto', pr_network:'Rede: {net}', pr_amount:'≈ {n} {sym}', pr_amount_na:'Valor ao obter a cotação – envie {eur} €',
+    pr_open_wallet:'📲 Abrir na carteira', pr_copy_addr:'📋 Copiar endereço', pr_copied:'Copiado ✓',
+    pr_paid_q:'Já pagou? Introduza o ID da transação:', pr_tx_ph:'ID / hash da transação', pr_report:'Comunicar pagamento',
+    pr_reported:'✓ Obrigado! O Premium é ativado após a verificação do pagamento.',
+    pr_fiat_soon:'Cartão/PayPal em breve, assim que o fornecedor estiver ativo.', pr_none:'Ainda não há pagamento com cripto configurado.',
+    pr_note:'ℹ️ Os pagamentos em cripto são verificados manualmente após a receção e depois ativados.',
+    e_coin_unavailable:'Criptomoeda não disponível.', e_tx_ref_missing:'Introduza o ID da transação.', e_payment_not_found:'Pagamento não encontrado.', e_product_unknown:'Produto desconhecido.',
     e_reset_invalid:'E-mail ou código de recuperação inválido.',
     at_label:'Tipo de conta', at_pharmacy:'🏥 Farmácia', at_pharma:'🏭 Empresa farmacêutica', at_authority:'🏛️ Autoridade', at_private:'👤 Utilizador privado',
     wd_title:'🏷️ Promoções para as suas substâncias', wd_all:'Todos os descontos', wd_sub:'Há uma promoção a decorrer para estas substâncias que vigia:',
@@ -2717,6 +2744,59 @@ async function renderSuggestions(feed) {
   } catch {}
 }
 
+// ⭐ Premium: einfacher Direkt-Weg per Krypto (Coin → Adresse + „in Wallet öffnen" + Betrag).
+// Karte/PayPal erscheinen nur, wenn ein Zahlungsanbieter konfiguriert ist. Freischaltung
+// erfolgt nach manueller Prüfung der gemeldeten Transaktion (ehrlich, kein Fake-Auto).
+async function openPremium() {
+  setDocTitle(t('pr_title'));
+  app.innerHTML = '';
+  const back = el(`<div class="row" style="margin-bottom:8px"><button class="ghost small" id="prBack">${esc(t('gen_back'))}</button></div>`);
+  app.appendChild(back);
+  back.querySelector('#prBack').onclick = () => mainScreen();
+  const card = el(`<div class="card"><h1 style="margin:0 0 2px">${esc(t('pr_title'))}</h1>
+    <div class="muted" style="margin-bottom:6px">${esc(t('pr_intro'))}</div>
+    <div id="prBody"><div class="loading">…</div></div></div>`);
+  app.appendChild(card);
+  const body = card.querySelector('#prBody');
+  try {
+    const mine = await api('GET', '/api/me/premium').catch(() => ({ premium: false }));
+    if (mine.premium) { body.innerHTML = `<div class="ok-box" style="padding:10px 12px">${esc(t('pr_have'))}</div>`; return; }
+    const opt = await api('GET', '/api/payments/crypto?product=premium_monthly');
+    body.innerHTML = '';
+    body.appendChild(el(`<div style="font-weight:800;font-size:1.15em;margin-bottom:8px">${esc(opt.product_name)} — <span style="color:var(--green)">${fmtMoney(opt.amount_eur)} €</span></div>`));
+    if (!opt.coins.length) { body.appendChild(el(`<div class="muted">${esc(t('pr_none'))}</div>`)); }
+    opt.coins.forEach(c => {
+      const amountLbl = c.amount_crypto != null ? ti('pr_amount', { n: c.amount_crypto, sym: c.symbol }) : ti('pr_amount_na', { eur: fmtMoney(c.amount_eur) });
+      const cc = el(`<div class="crypto-pay">
+        <div class="row"><b>${esc(c.symbol)}</b> <span class="muted" style="font-size:13px">${esc(ti('pr_network', { net: c.network }))}</span><span class="sp" style="flex:1"></span><span style="font-weight:700">${esc(amountLbl)}</span></div>
+        <div class="crypto-addr"><code>${esc(c.address)}</code></div>
+        <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap">
+          <a class="btn-link" href="${esc(c.uri)}">${esc(t('pr_open_wallet'))}</a>
+          <button class="ghost small" data-copy="${esc(c.address)}">${esc(t('pr_copy_addr'))}</button>
+        </div>
+        <div style="margin-top:10px"><div class="muted" style="font-size:13px;margin-bottom:4px">${esc(t('pr_paid_q'))}</div>
+          <div class="row" style="gap:8px;flex-wrap:wrap"><input class="tx-in" placeholder="${esc(t('pr_tx_ph'))}" style="flex:1;min-width:180px"><button class="small" data-report="${esc(c.coin)}">${esc(t('pr_report'))}</button></div>
+          <div class="tx-msg" style="margin-top:6px"></div>
+        </div>
+      </div>`);
+      cc.querySelector('[data-copy]').onclick = async (e) => { try { await navigator.clipboard.writeText(c.address); e.target.textContent = t('pr_copied'); } catch { /* Clipboard n/a */ } };
+      cc.querySelector('[data-report]').onclick = async () => {
+        const inp = cc.querySelector('.tx-in'); const msg = cc.querySelector('.tx-msg');
+        try {
+          const s = await api('POST', '/api/payments/crypto/start', { productId: 'premium_monthly', coin: c.coin });
+          await api('POST', `/api/payments/crypto/${encodeURIComponent(s.payment_id)}/claim`, { txRef: inp.value });
+          msg.style.color = 'var(--green)'; msg.textContent = t('pr_reported'); inp.value = '';
+        } catch (e) { msg.style.color = 'var(--crit-fg)'; msg.textContent = e.message; }
+      };
+      body.appendChild(cc);
+    });
+    body.appendChild(el(`<div class="muted" style="font-size:13px;margin-top:10px">${esc(t('pr_note'))}</div>`));
+    // Karte/PayPal: nur anzeigen, wenn ein Anbieter aktiv ist; sonst Hinweis.
+    const methods = await api('GET', '/api/payments/methods').catch(() => ({ methods: [] }));
+    if (!methods.methods.length) body.appendChild(el(`<div class="muted" style="font-size:13px;margin-top:6px">${esc(t('pr_fiat_soon'))}</div>`));
+  } catch (e) { body.innerHTML = ''; body.appendChild(errorState(e.message, openPremium)); }
+}
+
 async function openBookmarks() {
   setDocTitle(t('bm_doc'));
   const feed = document.getElementById('feed');
@@ -3135,6 +3215,9 @@ async function openProfile(handle) {
       renderVerifyCard(vcard);
     }
     if (d.is_self) {
+      const pcard = el(`<div class="card"><div class="row"><b style="flex:1">${esc(t('pr_title'))}</b><button class="small" id="go_premium">${esc(t('ac_premium'))}</button></div></div>`);
+      pcard.querySelector('#go_premium').onclick = openPremium;
+      feed.appendChild(pcard);
       const dcard = el(`<div class="card"><b>${esc(t('ac_title'))}</b>
         <div class="muted" style="margin-top:4px">${esc(t('ac_export_d'))}</div>
         <div style="margin-top:8px"><button class="ghost small" id="dl_export">${esc(t('ac_export_btn'))}</button></div>
