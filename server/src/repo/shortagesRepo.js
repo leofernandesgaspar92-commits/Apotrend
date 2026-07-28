@@ -18,6 +18,7 @@ export function createShortagesRepo({ seed = true } = {}) {
   const shortages = new Map();
   // Beobachtungsliste je Nutzer: userId -> Map<wirkstoffLower, Anzeigename>
   const watch = new Map();
+  const watchNotes = new Map(); // userId -> Map(normKey -> Notiz) — Premium: private Notizen je Wirkstoff
   const uuid = () => crypto.randomUUID();
   const now = () => new Date().toISOString();
   const norm = (w) => String(w || '').trim().toLowerCase();
@@ -92,6 +93,18 @@ export function createShortagesRepo({ seed = true } = {}) {
       const m = watch.get(userId);
       return m ? [...m.values()] : [];
     },
+    // Private Notiz je beobachtetem Wirkstoff (Premium). Leerer Text löscht die Notiz.
+    setWatchNote(userId, wirkstoff, note) {
+      const key = norm(wirkstoff); if (!key) return;
+      const text = String(note ?? '').trim().slice(0, 280);
+      if (!watchNotes.has(userId)) watchNotes.set(userId, new Map());
+      const m = watchNotes.get(userId);
+      if (text) m.set(key, text); else { m.delete(key); if (m.size === 0) watchNotes.delete(userId); }
+    },
+    getWatchNote(userId, wirkstoff) {
+      const m = watchNotes.get(userId);
+      return (m && m.get(norm(wirkstoff))) || '';
+    },
     // Alle Nutzer, die diesen Wirkstoff beobachten (für Statusänderungs-Alerts).
     usersWatching(wirkstoff) {
       const key = norm(wirkstoff);
@@ -114,6 +127,7 @@ export function createShortagesRepo({ seed = true } = {}) {
     },
     purgeUser(userId) {
       watch.delete(userId);
+      watchNotes.delete(userId);
       // Melder-Identität anonymisieren, Bestätigungen des Nutzers entfernen (DSGVO).
       for (const s of shortages.values()) {
         if (s.reporter_user_id === userId) s.reporter_user_id = null;
@@ -121,7 +135,7 @@ export function createShortagesRepo({ seed = true } = {}) {
       }
     },
 
-    __dump() { return { shortages: [...shortages], watch: [...watch].map(([u, m]) => [u, [...m]]) }; },
+    __dump() { return { shortages: [...shortages], watch: [...watch].map(([u, m]) => [u, [...m]]), watchNotes: [...watchNotes].map(([u, m]) => [u, [...m]]) }; },
     __load(data) {
       if (!data) return;
       // Rückwärtskompatibel: alter Snapshot war ein reines Engpass-Array.
@@ -130,6 +144,10 @@ export function createShortagesRepo({ seed = true } = {}) {
       watch.clear();
       if (!Array.isArray(data) && data.watch) {
         for (const [u, entries] of data.watch) watch.set(u, new Map(entries));
+      }
+      watchNotes.clear();
+      if (!Array.isArray(data) && data.watchNotes) {
+        for (const [u, entries] of data.watchNotes) watchNotes.set(u, new Map(entries));
       }
     },
   };

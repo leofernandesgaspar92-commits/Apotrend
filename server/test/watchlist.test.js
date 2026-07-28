@@ -97,3 +97,32 @@ test('Watchlist: purgeUser entfernt Beobachtungen (DSGVO)', () => {
   shortagesRepo.purgeUser(uid);
   assert.equal(shortagesRepo.listWatch(uid).length, 0);
 });
+
+test('Premium-Notizen: nur mit Premium, nur für beobachtete Wirkstoffe, erscheinen in myWatchlist', () => {
+  const repo = createMemoryRepo();
+  const orgAuth = createOrgAuthService(repo);
+  const social = createSocialService(createSocialRepo(), repo);
+  const shortagesRepo = createShortagesRepo({ seed: true });
+  const premiumUsers = new Set();
+  const shortages = createShortagesService(shortagesRepo, social, { hasPremium: (u) => premiumUsers.has(u) });
+  const A = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'A' }, owner: { name: 'Anna', email: 'a@a.at', password: 'geheim123' } });
+  social.createProfile(A.user.id, { handle: 'anna', displayName: 'Anna' });
+  const uid = A.user.id;
+  shortages.watch(uid, 'Amoxicillin');
+  // ohne Premium -> premium_required
+  assert.throws(() => shortages.setWatchNote(uid, 'Amoxicillin', 'Lieferant Kwizda'), e => e.code === 'premium_required');
+  premiumUsers.add(uid);
+  // Notiz nur für beobachtete Wirkstoffe
+  assert.throws(() => shortages.setWatchNote(uid, 'Ibuprofen', 'x'), e => e.code === 'not_watched');
+  // setzen -> erscheint in myWatchlist
+  shortages.setWatchNote(uid, 'Amoxicillin', 'Lieferant Kwizda, Meldebestand 20');
+  const item = shortages.myWatchlist(uid).find(i => i.wirkstoff === 'Amoxicillin');
+  assert.equal(item.note, 'Lieferant Kwizda, Meldebestand 20');
+  // leeren -> Notiz weg; Persistenz-Roundtrip
+  shortages.setWatchNote(uid, 'Amoxicillin', '  ');
+  assert.equal(shortages.myWatchlist(uid).find(i => i.wirkstoff === 'Amoxicillin').note, '');
+  shortages.setWatchNote(uid, 'Amoxicillin', 'wieder da');
+  const fresh = createShortagesRepo({ seed: false });
+  fresh.__load(shortagesRepo.__dump());
+  assert.equal(fresh.getWatchNote(uid, 'Amoxicillin'), 'wieder da');
+});

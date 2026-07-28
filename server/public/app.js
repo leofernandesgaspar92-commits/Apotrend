@@ -51,7 +51,7 @@ const I18N = {
     wl_ph:'z.B. Amoxicillin', wl_add:'+ Beobachten', wl_add_aria:'Wirkstoff beobachten',
     wl_quick:'Schnell beobachten (aktuell kritisch):', wl_all:'⭐ Alle {n} kritischen beobachten',
     wl_empty:'Noch keine Wirkstoffe. Füge unten die hinzu, die du regelmäßig führst.',
-    wl_view:'Ansehen', wl_remove:'Nicht mehr beobachten',
+    wl_view:'Ansehen', wl_remove:'Nicht mehr beobachten', wl_note_add:'✎ Notiz hinzufügen', wl_note_edit:'✎ Notiz bearbeiten', wl_note_ph:'Notiz (z. B. Lieferant, Meldebestand)…', wl_note_save:'Speichern', e_premium_required:'Notizen sind eine Premium-Funktion.', e_not_watched:'Wirkstoff nicht in der Beobachtungsliste.',
     wl_csv_title:'Beobachtungsliste mit Status als CSV (Excel) — z.B. für den Handverkaufstisch',
     st_krit:'Kritischer Engpass', st_eing:'Eingeschränkt lieferbar', st_verf:'Wieder verfügbar',
     st_none:'Aktuell keine Meldung',
@@ -340,7 +340,7 @@ const I18N = {
     wl_ph:'e.g. Amoxicillin', wl_add:'+ Watch', wl_add_aria:'Watch a substance',
     wl_quick:'Quick-watch (currently critical):', wl_all:'⭐ Watch all {n} critical',
     wl_empty:'No substances yet. Add the ones you stock regularly below.',
-    wl_view:'View', wl_remove:'Stop watching',
+    wl_view:'View', wl_remove:'Stop watching', wl_note_add:'✎ Add note', wl_note_edit:'✎ Edit note', wl_note_ph:'Note (e.g. supplier, reorder level)…', wl_note_save:'Save', e_premium_required:'Notes are a Premium feature.', e_not_watched:'Substance not in your watchlist.',
     wl_csv_title:'Watchlist with status as CSV (Excel) — e.g. for the counter',
     st_krit:'Critical shortage', st_eing:'Limited availability', st_verf:'Available again',
     st_none:'No current report',
@@ -629,7 +629,7 @@ const I18N = {
     wl_ph:'ex. Amoxicilina', wl_add:'+ Vigiar', wl_add_aria:'Vigiar substância',
     wl_quick:'Vigiar rápido (críticos agora):', wl_all:'⭐ Vigiar os {n} críticos',
     wl_empty:'Ainda sem substâncias. Adicione abaixo as que tem habitualmente.',
-    wl_view:'Ver', wl_remove:'Deixar de vigiar',
+    wl_view:'Ver', wl_remove:'Deixar de vigiar', wl_note_add:'✎ Adicionar nota', wl_note_edit:'✎ Editar nota', wl_note_ph:'Nota (ex. fornecedor, stock mínimo)…', wl_note_save:'Guardar', e_premium_required:'As notas são uma funcionalidade Premium.', e_not_watched:'Substância não está na sua lista.',
     wl_csv_title:'Lista de vigilância com estado em CSV (Excel) — ex. para o balcão',
     st_krit:'Falta crítica', st_eing:'Disponibilidade limitada', st_verf:'Disponível novamente',
     st_none:'Sem informação atual',
@@ -1630,7 +1630,7 @@ async function loadOverview() {
   }
 
   // Meine beobachteten Wirkstoffe (mit Schnell-Vorschlägen aus kritischen Engpässen)
-  renderWatchlistCard(feed, (d.watchlist && d.watchlist.items) || [], d.shortages.top || []);
+  renderWatchlistCard(feed, (d.watchlist && d.watchlist.items) || [], d.shortages.top || [], !!d.premium);
 
   // Aktionen zu beobachteten Wirkstoffen (Beobachtungsliste ↔ Rabatte)
   if (d.watch_deals && d.watch_deals.length) {
@@ -1750,7 +1750,7 @@ function watchStatusMeta(status) {
   return { label: t('st_none'), color: 'var(--muted)', bg: 'var(--bg)', icon: '⚪' };
 }
 
-async function renderWatchlistCard(feed, items, suggestions = []) {
+async function renderWatchlistCard(feed, items, suggestions = [], premium = false) {
   const alerts = items.filter(i => i.status === 'kritisch' || i.status === 'eingeschraenkt').length;
   const card = el(`<div class="card">
     <div class="row"><b>${esc(t('wl_title'))}</b>
@@ -1815,21 +1815,55 @@ async function renderWatchlistCard(feed, items, suggestions = []) {
     if (!list.length) { box.appendChild(el(`<div class="muted" style="font-size:14px">${esc(t('wl_empty'))}</div>`)); drawSuggestions(list); return; }
     list.forEach(it => {
       const m = watchStatusMeta(it.status);
-      const row = el(`<div class="comment" style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:18px">${m.icon}</span>
-        <div style="flex:1;min-width:0">
-          <div><b>${esc(it.wirkstoff)}</b></div>
-          <div style="display:inline-block;font-size:12px;font-weight:700;color:${m.color};background:${m.bg};padding:2px 8px;border-radius:999px;margin-top:2px">${m.label}</div>
-          ${it.bezeichnung?`<div class="muted" style="font-size:12px;margin-top:2px">${esc(it.bezeichnung)}</div>`:''}
+      const row = el(`<div class="comment">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:18px">${m.icon}</span>
+          <div style="flex:1;min-width:0">
+            <div><b>${esc(it.wirkstoff)}</b></div>
+            <div style="display:inline-block;font-size:12px;font-weight:700;color:${m.color};background:${m.bg};padding:2px 8px;border-radius:999px;margin-top:2px">${m.label}</div>
+            ${it.bezeichnung?`<div class="muted" style="font-size:12px;margin-top:2px">${esc(it.bezeichnung)}</div>`:''}
+          </div>
+          ${it.shortage_id?`<button class="ghost small" data-open>${esc(t('wl_view'))}</button>`:''}
+          <button class="ghost small" data-rm title="${esc(t('wl_remove'))}" aria-label="${esc(t('wl_remove'))}">✕</button>
         </div>
-        ${it.shortage_id?`<button class="ghost small" data-open>${esc(t('wl_view'))}</button>`:''}
-        <button class="ghost small" data-rm title="${esc(t('wl_remove'))}" aria-label="${esc(t('wl_remove'))}">✕</button>
+        ${premium?`<div class="wl-note" data-note-wrap style="margin-top:6px"></div>`:''}
       </div>`);
       if (it.shortage_id) row.querySelector('[data-open]').onclick = () => openWirkstoff(it.wirkstoff);
       row.querySelector('[data-rm]').onclick = async () => {
         try { const r = await api('DELETE','/api/watchlist/'+encodeURIComponent(it.wirkstoff)); draw(r.items); refreshWatchAlerts(r.items); }
         catch(e){ err.textContent = e.message; }
       };
+      // Premium: private Notiz je Wirkstoff (anzeigen + inline bearbeiten).
+      if (premium) {
+        const nw = row.querySelector('[data-note-wrap]');
+        const renderNote = () => {
+          nw.innerHTML = '';
+          if (it.note) {
+            const view = el(`<div class="row" style="gap:6px;align-items:flex-start"><span style="flex:1;font-size:13px">📝 ${esc(it.note)}</span><button class="linklike small" data-edit>${esc(t('wl_note_edit'))}</button></div>`);
+            view.querySelector('[data-edit]').onclick = () => editNote();
+            nw.appendChild(view);
+          } else {
+            const addb = el(`<button class="linklike small" data-add>${esc(t('wl_note_add'))}</button>`);
+            addb.onclick = () => editNote();
+            nw.appendChild(addb);
+          }
+        };
+        const editNote = () => {
+          nw.innerHTML = '';
+          const ed = el(`<div class="row" style="gap:6px"><input class="wl-note-in" value="${esc(it.note||'')}" placeholder="${esc(t('wl_note_ph'))}" maxlength="280" style="flex:1"><button class="small" data-save>${esc(t('wl_note_save'))}</button></div>`);
+          nw.appendChild(ed);
+          const inp = ed.querySelector('.wl-note-in'); inp.focus();
+          const save = async () => {
+            try { const r = await api('POST', `/api/watchlist/${encodeURIComponent(it.wirkstoff)}/note`, { note: inp.value });
+              const fresh = (r.items || []).find(x => x.wirkstoff.toLowerCase() === it.wirkstoff.toLowerCase());
+              it.note = fresh ? fresh.note : inp.value.trim(); renderNote();
+            } catch(e){ err.textContent = e.message; }
+          };
+          ed.querySelector('[data-save]').onclick = save;
+          inp.onkeydown = (e) => { if (e.key === 'Enter') save(); };
+        };
+        renderNote();
+      }
       box.appendChild(row);
     });
     drawSuggestions(list);

@@ -59,7 +59,7 @@ const social = createSocialService(socialRepo, repo, {
 });
 // Marktdaten nur beim Frischstart seeden; beim Wiederherstellen kommen sie aus dem Snapshot.
 const shortagesRepo = createShortagesRepo({ seed: !restoring });
-const shortages = createShortagesService(shortagesRepo, social);
+const shortages = createShortagesService(shortagesRepo, social, { hasPremium: (userId) => payments.hasFeature(userId, 'premium') });
 const pricesRepo = createPricesRepo({ seed: !restoring });
 const rabatteRepo = createRabatteRepo({ seed: !restoring });
 // Rabatte in den Preisvergleich einblenden: eine laufende Aktion kann günstiger
@@ -288,7 +288,7 @@ const routes = [
   }],
 
   ['GET', /^\/api\/me$/, true, async ({ userId }) => ({ user: safeUser(repo.getUserById(userId)), profile: social.getProfile(userId), is_moderator: social.isModerator(userId) })],
-  ['GET', /^\/api\/overview$/, true, async ({ userId }) => overview.forUser(userId)],
+  ['GET', /^\/api\/overview$/, true, async ({ userId }) => ({ ...overview.forUser(userId), premium: payments.hasFeature(userId, 'premium') })],
   // Meine Aktivität an einem Ort: eigene Fragen, Engpass-Meldungen, Austausch-Einträge.
   ['GET', /^\/api\/me\/activity$/, true, async ({ userId }) => {
     const page = social.profilePage(userId, userId);
@@ -443,6 +443,7 @@ const routes = [
   ['GET', /^\/api\/watchlist$/, true, async ({ userId }) => ({ items: shortages.myWatchlist(userId) })],
   ['POST', /^\/api\/watchlist$/, true, async ({ userId, body }) => ({ items: shortages.watch(userId, body.wirkstoff) })],
   ['DELETE', /^\/api\/watchlist\/([^/]+)$/, true, async ({ userId, params }) => ({ items: shortages.unwatch(userId, decodeURIComponent(params[0])) })],
+  ['POST', /^\/api\/watchlist\/([^/]+)\/note$/, true, async ({ userId, params, body }) => ({ items: shortages.setWatchNote(userId, decodeURIComponent(params[0]), body.note) })],
 
   // ── Preise (Priorität 3) ──
   ['GET', /^\/api\/prices$/, true, async ({ userId }) => ({ comparisons: prices.comparisons(userId), savings: prices.savingsSummary() })],

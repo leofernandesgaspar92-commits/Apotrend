@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #108 — 2026-07-20 — Premium-Feature: private Notizen an beobachteten Wirkstoffen
+- **THINK:** „Worth the money"-Feature, ethisch & additiv: Gratis-Nutzer:innen verlieren nichts, Premium bekommt echten Alltagsnutzen — private Notizen je beobachtetem Wirkstoff (Lieferant, Meldebestand …). Keine Paywall auf sicherheitskritische Engpass-Infos.
+- **WORK:** shortagesRepo: `watchNotes` (userId→Wirkstoff→Notiz) + `setWatchNote`/`getWatchNote`, Persistenz + DSGVO-Purge; `myWatchlist` liefert `note`. Service: `setWatchNote` premium-gated (injiziertes `hasPremium` = `payments.hasFeature('premium')`), nur für beobachtete Wirkstoffe. Route `POST /api/watchlist/:w/note`; Overview liefert `premium`. Frontend: für Premium je Merklisten-Eintrag Notiz anzeigen + inline bearbeiten (📝), i18n DE/EN/PT.
+- **CHECK:** 298 → 299 grün (+1: gate/not_watched/setzen/leeren/Persistenz), Smoke 19/19, Parität 726/726/726, Guards 0. **End-to-end im Browser:** Krypto-Zahlung → Admin bestätigt → Premium frei → Notiz-UI erscheint → Notiz gespeichert + übersteht Reload, 0 JS-Fehler.
+
 ### Cycle #107 — 2026-07-20 — Erster Premium-Vorteil: sichtbares „⭐ Premium"-Abzeichen
 - **THINK:** Owner will Features, „die das Geld wert sind". Erster ehrlicher, ethischer Vorteil: sichtbarer Premium-Status — OHNE sicherheitskritische Engpass-Infos hinter eine Paywall zu stellen (das bleibt auf einer Gesundheitsplattform frei). Nutzt das bestehende Entitlement aus dem Zahlungs-System.
 - **WORK:** `decorate` liefert `author.premium` (aus `foundationRepo.hasEntitlement`), `profilePage` liefert `profile.premium`. Frontend: goldenes „⭐ Premium"-Abzeichen an der Autor:innen-Zeile im Feed **und** im Profilkopf; theme-aware CSS (hell/dunkel), i18n `pc_premium` (DE/EN/PT).

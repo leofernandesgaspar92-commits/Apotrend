@@ -7,7 +7,9 @@ import { AppError } from '../domain/errors.js';
 const STATUS_LABEL = { kritisch: 'Kritischer Engpass', eingeschraenkt: 'Eingeschränkt lieferbar', verfuegbar: 'Wieder verfügbar' };
 const VALID_STATUS = Object.keys(STATUS_LABEL);
 
-export function createShortagesService(shortagesRepo, social) {
+export function createShortagesService(shortagesRepo, social, options = {}) {
+  // Premium-Gate (injiziert): Notizen an beobachteten Wirkstoffen sind ein Premium-Vorteil.
+  const hasPremium = options.hasPremium || (() => false);
   // Engpass-Zeile für die Anzeige anreichern: Melder-Profil + Bestätigungen.
   function decorate(s, viewerUserId) {
     const confirmations = s.confirmations || [];
@@ -169,6 +171,13 @@ export function createShortagesService(shortagesRepo, social) {
       shortagesRepo.removeWatch(userId, wirkstoff);
       return this.myWatchlist(userId);
     },
+    // Premium: private Notiz an einem beobachteten Wirkstoff setzen/ändern/löschen.
+    setWatchNote(userId, wirkstoff, note) {
+      if (!hasPremium(userId)) { const e = new Error('Notizen sind eine Premium-Funktion.'); e.code = 'premium_required'; e.status = 403; throw e; }
+      if (!shortagesRepo.isWatched(userId, wirkstoff)) { const e = new Error('Wirkstoff nicht in der Beobachtungsliste.'); e.code = 'not_watched'; e.status = 400; throw e; }
+      shortagesRepo.setWatchNote(userId, wirkstoff, note);
+      return this.myWatchlist(userId);
+    },
 
     // Beobachtete Wirkstoffe mit aktuellem Engpass-Status (rot = kritisch).
     // Kein passender Engpass-Eintrag => Status 'unauffaellig' (derzeit keine Meldung).
@@ -188,6 +197,7 @@ export function createShortagesService(shortagesRepo, social) {
           shortage_id: s ? s.id : null,
           quelle: s ? s.quelle : null,
           provenance: s ? s.provenance : null,
+          note: shortagesRepo.getWatchNote(userId, w), // Premium: private Notiz (leer für Gratis)
         };
       }).sort((a, b) => {
         const rank = { kritisch: 3, eingeschraenkt: 2, verfuegbar: 1, unauffaellig: 0 };
