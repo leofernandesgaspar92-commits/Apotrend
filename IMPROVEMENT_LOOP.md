@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #112 — 2026-07-20 — Premium: Notiz auch auf der Wirkstoff-Detailseite (autonomer Loop, 1. Durchlauf)
+- **THINK:** Erster Durchlauf des autonomen Selbstverbesserungs-Loops. Die private Notiz (#108) war nur in der Merklisten-Karte editierbar — konsequent auch dort, wo Nutzer:innen einen Wirkstoff wirklich ansehen: auf der Detailseite (`openWirkstoff`).
+- **WORK:** `/api/wirkstoff/:name` liefert jetzt `premium` + `note`. Detailseite: für Premium eine Notiz-Karte, die erscheint, sobald der Wirkstoff beobachtet wird (das Notiz-Setzen setzt Beobachtung voraus); anzeigen + inline bearbeiten (📝), Toggle mit dem Beobachten-Button synchron. i18n `wk_note_title` DE/EN/PT.
+- **CHECK:** 299 grün, Smoke 19/19, Parität 742/742/742, Guards 0. **Browser:** vor Beobachten versteckt → nach Beobachten Notiz-UI → gespeichert (UI + serverseitig), 0 JS-Fehler.
+
 ### Cycle #111 — 2026-07-20 — Aus der Suche direkt beobachten (universell, ein Klick)
 - **THINK:** Universeller Nutzen für alle (nicht nur Premium): Suche und Beobachtungsliste verzahnen. Wer einen Wirkstoff sucht, soll ihn mit einem Klick beobachten können — ohne Umweg über die Detailseite. Treibt die Watchlist-Nutzung (und damit den Premium-Mehrwert) an.
 - **WORK:** In den Wirkstoff-Chips der Suchtreffer je Treffer ein Toggle-Button „+ Beobachten" / „✓ Beobachtet". Lädt die aktuelle Beobachtungsliste zum Markieren; Klick beobachtet bzw. entfernt (optimistisch, mit grüner Aktiv-Kennzeichnung `.watched-on`). i18n DE/EN/PT.

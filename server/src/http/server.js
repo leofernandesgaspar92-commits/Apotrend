@@ -321,6 +321,8 @@ const routes = [
       wirkstoff: name,
       amr: amr.forWirkstoff(name),
       watched: shortagesRepo.isWatched(userId, name),
+      premium: payments.hasFeature(userId, 'premium'),
+      note: shortagesRepo.getWatchNote(userId, name),
       shortages: shortages.listWithCounts(userId).filter(s => eq(s.wirkstoff)),
       prices: prices.comparisons(userId).filter(g => eq(g.wirkstoff)),
       rabatte: rabatte.top10(userId).filter(r => eq(r.wirkstoff)),

@@ -283,7 +283,7 @@ const I18N = {
     ma_q_title:'❓ Meine Fachfragen', ma_total:'gesamt', ma_no_q:'Noch keine Fragen gestellt.',
     ma_r_title:'👥 Meine Engpass-Meldungen', ma_no_r:'Noch keine Engpässe gemeldet.', ma_confirmed:'{n} bestätigt',
     ma_e_title:'🔄 Meine Austausch-Einträge', ma_no_e:'Noch keine Biete/Suche-Einträge.',
-    wk_sub:'Alles zu diesem Wirkstoff auf einen Blick.',
+    wk_sub:'Alles zu diesem Wirkstoff auf einen Blick.', wk_note_title:'Deine private Notiz zu diesem Wirkstoff',
     wk_amr_title:'🧫 Antibiotika-Stewardship', wk_amr_tag:'Information, keine Therapieempfehlung',
     wk_amr_forum:'💬 Fachdiskussion', wk_amr_pinfo:'🧫 Patienten-Infokarten',
     wk_short_title:'📦 Engpass-Status', wk_send_community:'Als Community-Meldung senden',
@@ -574,7 +574,7 @@ const I18N = {
     ma_q_title:'❓ My questions', ma_total:'total', ma_no_q:'No questions asked yet.',
     ma_r_title:'👥 My shortage reports', ma_no_r:'No shortages reported yet.', ma_confirmed:'{n} confirmed',
     ma_e_title:'🔄 My exchange entries', ma_no_e:'No offer/seek entries yet.',
-    wk_sub:'Everything about this substance at a glance.',
+    wk_sub:'Everything about this substance at a glance.', wk_note_title:'Your private note on this substance',
     wk_amr_title:'🧫 Antibiotic stewardship', wk_amr_tag:'Information, not treatment advice',
     wk_amr_forum:'💬 Expert discussion', wk_amr_pinfo:'🧫 Patient info cards',
     wk_short_title:'📦 Shortage status', wk_send_community:'Send as community report',
@@ -865,7 +865,7 @@ const I18N = {
     ma_q_title:'❓ As minhas perguntas', ma_total:'no total', ma_no_q:'Ainda sem perguntas.',
     ma_r_title:'👥 Os meus avisos de falta', ma_no_r:'Ainda sem faltas reportadas.', ma_confirmed:'{n} confirmaram',
     ma_e_title:'🔄 As minhas entradas de troca', ma_no_e:'Ainda sem entradas de oferta/procura.',
-    wk_sub:'Tudo sobre esta substância num relance.',
+    wk_sub:'Tudo sobre esta substância num relance.', wk_note_title:'A sua nota privada sobre esta substância',
     wk_amr_title:'🧫 Stewardship de antibióticos', wk_amr_tag:'Informação, não é recomendação terapêutica',
     wk_amr_forum:'💬 Discussão técnica', wk_amr_pinfo:'🧫 Cartões informativos para doentes',
     wk_short_title:'📦 Estado de falta', wk_send_community:'Enviar como aviso da comunidade',
@@ -3524,10 +3524,47 @@ async function openWirkstoff(name) {
       wb.textContent = watched ? t('sc_watched') : t('sc_watch');
       wb.setAttribute('aria-pressed', String(watched));
       wb.classList.toggle('ghost', !watched);
+      if (noteCard) renderDetailNote();
     } catch(e){ alert(e.message); }
     wb.disabled = false;
   };
   feed.appendChild(head);
+
+  // Premium: private Notiz zu diesem Wirkstoff — direkt auf der Detailseite (nur wenn beobachtet).
+  let noteCard = null;
+  function renderDetailNote() {
+    if (!d.premium) return;
+    if (!noteCard) { noteCard = el(`<div class="card" data-note-card></div>`); head.after(noteCard); }
+    noteCard.style.display = watched ? '' : 'none';
+    if (!watched) return;
+    noteCard.innerHTML = '';
+    const label = el(`<div class="muted" style="font-size:13px;margin-bottom:6px">📝 ${esc(t('wk_note_title'))}</div>`);
+    const wrap = el(`<div></div>`);
+    noteCard.appendChild(label); noteCard.appendChild(wrap);
+    const view = () => {
+      wrap.innerHTML = '';
+      if (d.note) {
+        const v = el(`<div class="row" style="gap:6px;align-items:flex-start"><span style="flex:1">${esc(d.note)}</span><button class="linklike small" data-edit>${esc(t('wl_note_edit'))}</button></div>`);
+        v.querySelector('[data-edit]').onclick = edit; wrap.appendChild(v);
+      } else {
+        const a = el(`<button class="linklike small" data-add>${esc(t('wl_note_add'))}</button>`);
+        a.onclick = edit; wrap.appendChild(a);
+      }
+    };
+    const edit = () => {
+      wrap.innerHTML = '';
+      const ed = el(`<div class="row" style="gap:6px"><input class="wl-note-in" value="${esc(d.note||'')}" placeholder="${esc(t('wl_note_ph'))}" maxlength="280" style="flex:1"><button class="small" data-save>${esc(t('wl_note_save'))}</button></div>`);
+      wrap.appendChild(ed); const inp = ed.querySelector('.wl-note-in'); inp.focus();
+      const save = async () => {
+        try { await api('POST', `/api/watchlist/${encodeURIComponent(d.wirkstoff)}/note`, { note: inp.value }); d.note = inp.value.trim(); view(); }
+        catch(e){ alert(e.message); }
+      };
+      ed.querySelector('[data-save]').onclick = save;
+      inp.onkeydown = (e) => { if (e.key === 'Enter') save(); };
+    };
+    view();
+  }
+  renderDetailNote();
 
   // Antibiotic-Stewardship-Wissensecke (nur bei Antibiotika). REIN INFORMATIV,
   // quellenbelegt, ausdrücklich keine patientenindividuelle Therapieempfehlung.
