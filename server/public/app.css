@@ -114,6 +114,8 @@
   /* Premium-Abzeichen: sichtbarer Vorteil für zahlende Mitglieder (gold, gut lesbar). */
   .premium-badge { font-size:12px; font-weight:700; color:#8a6d00; background:#fff3c4; border:1px solid #f0d98a; border-radius:6px; padding:1px 7px; white-space:nowrap; }
   body.dark .premium-badge { color:#ffd95e; background:#3a3200; border-color:#5c4f00; }
+  /* „Beobachtet"-Zustand am Such-Chip: klar als aktiv erkennbar (grün). */
+  .watched-on { color:var(--green); border-color:var(--green); font-weight:700; }
   /* Weicher Zeichenzähler an Textfeldern: dezent, wird bei Überschreitung rot. */
   .char-counter { font-size:12px; text-align:right; margin-top:2px; min-height:14px; }
   .char-counter.over { color:var(--crit-fg); font-weight:700; }

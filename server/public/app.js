@@ -216,7 +216,7 @@ const I18N = {
     search_doc:'Suche', search_results_for:'Suchergebnisse für „{q}"', search_hits:'{n} Treffer',
     search_back:'← zurück', search_none_t:'Keine Treffer',
     search_none_s:'Für „{q}" wurde nichts gefunden. Andere Schreibweise oder ein kürzeres Stichwort probieren.',
-    search_wk:'💊 Alles zu einem Wirkstoff auf einer Seite:',
+    search_wk:'💊 Alles zu einem Wirkstoff auf einer Seite:', search_watch:'+ Beobachten', search_watched:'✓ Beobachtet', search_watch_title:'Diesen Wirkstoff beobachten / nicht mehr beobachten',
     search_sec_people:'👥 Personen', search_sec_posts:'📝 Beiträge', search_sec_shortages:'📦 Engpässe',
     search_sec_prices:'💶 Preise', search_sec_rabatte:'🏷️ Rabatt-Aktionen',
     pf_posts:'Beiträge', pf_post_one:'Beitrag', pf_followers:'Follower', pf_follower_one:'Follower', pf_following:'folgt', pf_best:'beste Antworten', pf_best_one:'beste Antwort',
@@ -507,7 +507,7 @@ const I18N = {
     search_doc:'Search', search_results_for:'Search results for “{q}”', search_hits:'{n} hits',
     search_back:'← back', search_none_t:'No results',
     search_none_s:'Nothing found for “{q}”. Try a different spelling or a shorter keyword.',
-    search_wk:'💊 Everything about a substance on one page:',
+    search_wk:'💊 Everything about a substance on one page:', search_watch:'+ Watch', search_watched:'✓ Watching', search_watch_title:'Watch / unwatch this substance',
     search_sec_people:'👥 People', search_sec_posts:'📝 Posts', search_sec_shortages:'📦 Shortages',
     search_sec_prices:'💶 Prices', search_sec_rabatte:'🏷️ Discount deals',
     pf_posts:'posts', pf_post_one:'post', pf_followers:'followers', pf_follower_one:'follower', pf_following:'following', pf_best:'best answers', pf_best_one:'best answer',
@@ -798,7 +798,7 @@ const I18N = {
     search_doc:'Pesquisa', search_results_for:'Resultados para “{q}”', search_hits:'{n} resultados',
     search_back:'← voltar', search_none_t:'Sem resultados',
     search_none_s:'Nada encontrado para “{q}”. Tente outra grafia ou uma palavra mais curta.',
-    search_wk:'💊 Tudo sobre uma substância numa página:',
+    search_wk:'💊 Tudo sobre uma substância numa página:', search_watch:'+ Vigiar', search_watched:'✓ A vigiar', search_watch_title:'Vigiar / deixar de vigiar esta substância',
     search_sec_people:'👥 Pessoas', search_sec_posts:'📝 Publicações', search_sec_shortages:'📦 Faltas',
     search_sec_prices:'💶 Preços', search_sec_rabatte:'🏷️ Promoções',
     pf_posts:'publicações', pf_post_one:'publicação', pf_followers:'seguidores', pf_follower_one:'seguidor', pf_following:'a seguir', pf_best:'melhores respostas', pf_best_one:'melhor resposta',
@@ -3165,12 +3165,29 @@ async function renderSearch(q) {
     const wset = new Map();
     [...d.shortages, ...d.prices, ...d.rabatte].forEach(x => { if (x.wirkstoff) wset.set(x.wirkstoff.toLowerCase(), x.wirkstoff); });
     if (wset.size) {
-      const wc = el(`<div class="card"><div class="muted" style="font-size:13px;margin-bottom:6px">${esc(t('search_wk'))}</div><div class="row" data-wchips style="flex-wrap:wrap;gap:6px"></div></div>`);
+      // Aktuelle Beobachtungsliste laden, um schon beobachtete Wirkstoffe zu markieren.
+      let watched = new Set();
+      try { const wl = await api('GET','/api/watchlist'); watched = new Set((wl.items||[]).map(i => i.wirkstoff.toLowerCase())); } catch { /* ohne Markierung weiter */ }
+      const wc = el(`<div class="card"><div class="muted" style="font-size:13px;margin-bottom:6px">${esc(t('search_wk'))}</div><div class="row" data-wchips style="flex-wrap:wrap;gap:10px"></div></div>`);
       const box = wc.querySelector('[data-wchips]');
       [...wset.values()].slice(0, 8).forEach(w => {
+        const group = el(`<span class="row" style="gap:2px;align-items:stretch"></span>`);
         const chip = el(`<button class="small sortbtn">💊 ${esc(w)}</button>`);
         chip.onclick = () => openWirkstoff(w);
-        box.appendChild(chip);
+        const watchBtn = el(`<button class="small ghost" title="${esc(t('search_watch_title'))}"></button>`);
+        const paint = () => { const on = watched.has(w.toLowerCase()); watchBtn.textContent = on ? t('search_watched') : t('search_watch'); watchBtn.classList.toggle('watched-on', on); };
+        watchBtn.onclick = async () => {
+          watchBtn.disabled = true;
+          try {
+            if (watched.has(w.toLowerCase())) { await api('DELETE','/api/watchlist/'+encodeURIComponent(w)); watched.delete(w.toLowerCase()); }
+            else { await api('POST','/api/watchlist',{ wirkstoff: w }); watched.add(w.toLowerCase()); }
+            paint();
+          } catch(e){ /* still: Button-Titel bleibt */ }
+          watchBtn.disabled = false;
+        };
+        paint();
+        group.appendChild(chip); group.appendChild(watchBtn);
+        box.appendChild(group);
       });
       feed.appendChild(wc);
     }

@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #111 — 2026-07-20 — Aus der Suche direkt beobachten (universell, ein Klick)
+- **THINK:** Universeller Nutzen für alle (nicht nur Premium): Suche und Beobachtungsliste verzahnen. Wer einen Wirkstoff sucht, soll ihn mit einem Klick beobachten können — ohne Umweg über die Detailseite. Treibt die Watchlist-Nutzung (und damit den Premium-Mehrwert) an.
+- **WORK:** In den Wirkstoff-Chips der Suchtreffer je Treffer ein Toggle-Button „+ Beobachten" / „✓ Beobachtet". Lädt die aktuelle Beobachtungsliste zum Markieren; Klick beobachtet bzw. entfernt (optimistisch, mit grüner Aktiv-Kennzeichnung `.watched-on`). i18n DE/EN/PT.
+- **CHECK:** 299 grün, Smoke 19/19, Parität 741/741/741, Guards 0. **Browser-Toggle:** „+ Beobachten" → „✓ Beobachtet" (grün) → landet in der Watchlist → 2. Klick entfernt wieder, 0 JS-Fehler.
+
 ### Cycle #110 — 2026-07-20 — Premium: Notizen auch im CSV/Excel-Export
 - **THINK:** Die Wirkstoff-Notizen (#108) fließen in den Druck-Aushang (#109) — konsequenterweise auch in den CSV/Excel-Export, damit Premium die Annotationen auch in der Tabelle nutzen kann. Additiv, kein Nachteil für Gratis.
 - **WORK:** CSV-Export der Merkliste erhält für Premium eine zusätzliche Spalte „Notiz" (Header + Wert); Gratis-Export unverändert (3 Spalten).
