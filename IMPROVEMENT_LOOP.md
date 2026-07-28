@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #106 — 2026-07-20 — Beide Solana-Wallets (Seeker + Phantom) + voller App-Durchlauf verifiziert
+- **THINK:** Owner bestätigt: BEIDE SOL-Adressen gehören ihm (Seeker „leokennedy.skr" + Phantom, beide nur SOL). Beide einbauen; Kund:in wählt die Wallet. Danach die ganze App auf ein reibungsloses Kund:innen-Erlebnis prüfen.
+- **WORK:** `cryptoWallets` von Map auf **Liste** umgestellt (mehrere Wallets je Coin, stabile `id` + `label`); zwei SOL-Wallets vorbelegt (ENV: `APOTREND_WALLET_SOL_SEEKER`/`_PHANTOM`). Service/Route/Frontend auf `walletId` umgestellt; Zahlungsdatensatz trägt jetzt `coin`/`wallet_id`/`address` für die Zuordnung. Premium-UI zeigt je Wallet Label (z. B. „SOL · Seeker · leokennedy.skr").
+- **CHECK:** 297 Tests grün (Payment-Tests auf Liste + 2× SOL angepasst), Smoke 19/19, Browser-Audit sauber, Parität 722/722/722, Guards 0. **Voller Kund:innen-Durchlauf** (hell+dunkel): alle 8 Reiter, Premium mit **4 Wallets** (BTC/ETH/2× SOL) inkl. echter Seeker- & Phantom-Adressen als Wallet-URIs, „Zahlung melden" bestätigt, **0 JS-Fehler**.
+
 ### Cycle #105 — 2026-07-20 — Direkt-in-Wallet Krypto-Zahlung (einfach, an die eigenen Adressen)
 - **THINK:** Owner will den einfachen Direkt-Weg: Kund:innen klicken einen Coin und senden Krypto **direkt** an seine eigenen Wallets (per Screenshots als seine belegt — Empfangsadressen sind öffentlich). Zwei ehrliche Grenzen gehalten: (1) Solana-Adresse doppeldeutig (EMSJTk…pamWFM vs. Egbc…n1DW) → nicht geraten, SOL bleibt bis Klärung leer; (2) statische Adressen erlauben keine zuverlässige Auto-Zuordnung → **kein** Fake-Auto-Verifizierer, sondern Tx-ID-Meldung + manuelle Freigabe.
 - **WORK:** `cryptoWallets.js` (BTC+ETH vorbelegt, ENV-überschreibbar; `walletUri` → `bitcoin:`/`ethereum:`/`solana:`), `cryptoRates.js` (EUR→Coin via CoinGecko, gecacht, `fetch` injizierbar, Fallback = nur €-Betrag). Service: `cryptoOptions`/`startCryptoPayment`/`claimCryptoPayment`/`confirmPayment`(Moderation)/`listPendingReview`. Routen `/api/payments/crypto[...]`. Frontend: „⭐ Premium"-Screen (Konto) mit Coin-Karten: Betrag, Adresse (kopieren), **„📲 In Wallet-App öffnen"**, Tx-ID melden; theme-aware, a11y-clean.

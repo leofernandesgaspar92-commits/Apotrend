@@ -123,6 +123,7 @@ export function createMemoryRepo() {
       const rec = {
         id: uuid(), user_id: p.userId, product_id: p.productId, amount_cents: p.amountCents,
         currency: p.currency || 'EUR', method: p.method || null, provider: p.provider,
+        coin: p.coin || null, wallet_id: p.walletId || null, address: p.address || null,
         provider_ref: p.providerRef || null, status: p.status || 'pending',
         created_at: now(), paid_at: null,
       };

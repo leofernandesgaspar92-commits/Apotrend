@@ -22,24 +22,24 @@ export function createPaymentsService({ repo, providers = {}, onPaid = null, wal
     async cryptoOptions(productId) {
       const product = getProduct(productId);
       if (!product) throw new AppError('product_unknown', 'Unbekanntes Produkt.');
-      const ws = wallets();
+      const ws = wallets(); // Liste (mehrere Wallets je Coin möglich)
       const eur = product.amount_cents / 100;
-      const rateMap = rates ? await rates.ratesEur(Object.values(ws).map(w => w.coin)) : {};
-      const coins = Object.values(ws).map(w => {
+      const rateMap = rates ? await rates.ratesEur([...new Set(ws.map(w => w.coin))]) : {};
+      const coins = ws.map(w => {
         const rate = rateMap[w.coin]; // EUR pro 1 Coin
         const amount = rate ? Number((eur / rate).toFixed(8)) : null;
-        return { coin: w.coin, symbol: w.symbol, address: w.address, network: w.network, amount_eur: eur, amount_crypto: amount, uri: walletUri(w, amount) };
+        return { id: w.id, coin: w.coin, symbol: w.symbol, label: w.label, address: w.address, network: w.network, amount_eur: eur, amount_crypto: amount, uri: walletUri(w, amount) };
       });
       return { product: product.id, product_name: product.name, amount_eur: eur, coins };
     },
-    // Kund:in wählt einen Coin -> pending-Datensatz (zur späteren manuellen Zuordnung).
-    startCryptoPayment(userId, productId, coin) {
+    // Kund:in wählt eine konkrete Wallet -> pending-Datensatz (zur späteren manuellen Zuordnung).
+    startCryptoPayment(userId, productId, walletId) {
       const product = getProduct(productId);
       if (!product) throw new AppError('product_unknown', 'Unbekanntes Produkt.');
-      const w = wallets()[coin];
-      if (!w) throw new AppError('coin_unavailable', 'Kryptowährung nicht verfügbar.');
-      const payment = repo.createPayment({ userId, productId, amountCents: product.amount_cents, currency: product.currency, method: 'crypto_direct', provider: 'direct', status: 'pending' });
-      return { payment_id: payment.id, coin: w.coin, address: w.address, network: w.network };
+      const w = wallets().find(x => x.id === walletId);
+      if (!w) throw new AppError('coin_unavailable', 'Wallet nicht verfügbar.');
+      const payment = repo.createPayment({ userId, productId, amountCents: product.amount_cents, currency: product.currency, method: 'crypto_direct', provider: 'direct', coin: w.coin, walletId: w.id, address: w.address, status: 'pending' });
+      return { payment_id: payment.id, coin: w.coin, address: w.address, network: w.network, label: w.label };
     },
     // Kund:in reicht die Transaktions-ID ein -> „pending_review" (du prüfst in deiner Wallet).
     claimCryptoPayment(userId, paymentId, txRef) {

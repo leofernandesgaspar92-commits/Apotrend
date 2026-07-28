@@ -2767,15 +2767,16 @@ async function openPremium() {
     if (!opt.coins.length) { body.appendChild(el(`<div class="muted">${esc(t('pr_none'))}</div>`)); }
     opt.coins.forEach(c => {
       const amountLbl = c.amount_crypto != null ? ti('pr_amount', { n: c.amount_crypto, sym: c.symbol }) : ti('pr_amount_na', { eur: fmtMoney(c.amount_eur) });
+      const title = esc(c.symbol) + (c.label ? ` <span class="muted" style="font-weight:400;font-size:13px">· ${esc(c.label)}</span>` : '');
       const cc = el(`<div class="crypto-pay">
-        <div class="row"><b>${esc(c.symbol)}</b> <span class="muted" style="font-size:13px">${esc(ti('pr_network', { net: c.network }))}</span><span class="sp" style="flex:1"></span><span style="font-weight:700">${esc(amountLbl)}</span></div>
+        <div class="row"><b>${title}</b> <span class="muted" style="font-size:13px">${esc(ti('pr_network', { net: c.network }))}</span><span class="sp" style="flex:1"></span><span style="font-weight:700">${esc(amountLbl)}</span></div>
         <div class="crypto-addr"><code>${esc(c.address)}</code></div>
         <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap">
           <a class="btn-link" href="${esc(c.uri)}">${esc(t('pr_open_wallet'))}</a>
           <button class="ghost small" data-copy="${esc(c.address)}">${esc(t('pr_copy_addr'))}</button>
         </div>
         <div style="margin-top:10px"><div class="muted" style="font-size:13px;margin-bottom:4px">${esc(t('pr_paid_q'))}</div>
-          <div class="row" style="gap:8px;flex-wrap:wrap"><input class="tx-in" placeholder="${esc(t('pr_tx_ph'))}" style="flex:1;min-width:180px"><button class="small" data-report="${esc(c.coin)}">${esc(t('pr_report'))}</button></div>
+          <div class="row" style="gap:8px;flex-wrap:wrap"><input class="tx-in" placeholder="${esc(t('pr_tx_ph'))}" style="flex:1;min-width:180px"><button class="small" data-report="${esc(c.id)}">${esc(t('pr_report'))}</button></div>
           <div class="tx-msg" style="margin-top:6px"></div>
         </div>
       </div>`);
@@ -2783,7 +2784,7 @@ async function openPremium() {
       cc.querySelector('[data-report]').onclick = async () => {
         const inp = cc.querySelector('.tx-in'); const msg = cc.querySelector('.tx-msg');
         try {
-          const s = await api('POST', '/api/payments/crypto/start', { productId: 'premium_monthly', coin: c.coin });
+          const s = await api('POST', '/api/payments/crypto/start', { productId: 'premium_monthly', walletId: c.id });
           await api('POST', `/api/payments/crypto/${encodeURIComponent(s.payment_id)}/claim`, { txRef: inp.value });
           msg.style.color = 'var(--green)'; msg.textContent = t('pr_reported'); inp.value = '';
         } catch (e) { msg.style.color = 'var(--crit-fg)'; msg.textContent = e.message; }

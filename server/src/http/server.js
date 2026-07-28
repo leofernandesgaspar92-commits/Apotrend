@@ -247,7 +247,7 @@ const routes = [
   // Direkt-in-Wallet Krypto: Anzeige (Adresse + „in Wallet öffnen"-URI + Live-Betrag),
   // Start (pending), Tx-ID einreichen (pending_review), Moderation bestätigt manuell.
   ['GET', /^\/api\/payments\/crypto$/, false, async ({ query }) => payments.cryptoOptions(query.get('product') || 'premium_monthly')],
-  ['POST', /^\/api\/payments\/crypto\/start$/, true, async ({ userId, body }) => payments.startCryptoPayment(userId, body.productId, body.coin)],
+  ['POST', /^\/api\/payments\/crypto\/start$/, true, async ({ userId, body }) => payments.startCryptoPayment(userId, body.productId, body.walletId ?? body.coin)],
   ['POST', /^\/api\/payments\/crypto\/([^/]+)\/claim$/, true, async ({ userId, params, body }) => payments.claimCryptoPayment(userId, params[0], body.txRef)],
   ['GET', /^\/api\/payments\/pending$/, true, async ({ userId }) => ({ payments: payments.listPendingReview(userId) })],
   ['POST', /^\/api\/payments\/([^/]+)\/confirm$/, true, async ({ userId, params }) => payments.confirmPayment(userId, params[0])],

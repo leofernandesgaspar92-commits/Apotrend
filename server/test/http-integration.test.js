@@ -816,13 +816,13 @@ test('Direkt-Krypto über HTTP: Adressen anzeigen, Zahlung starten + Tx melden, 
   // Anzeige: BTC/ETH-Adressen (öffentliche Empfangsadressen), EUR-Betrag
   const opt = await j('/api/payments/crypto?product=premium_monthly', null);
   assert.equal(opt.amount_eur, 9.99);
-  const btc = opt.coins.find(c => c.coin === 'bitcoin');
+  const btc = opt.coins.find(c => c.id === 'btc');
   assert.ok(btc && btc.address.startsWith('bc1q'), 'BTC-Adresse');
-  assert.ok(opt.coins.some(c => c.coin === 'ethereum'));
+  assert.ok(opt.coins.some(c => c.id === 'eth'));
   assert.ok(btc.uri.startsWith('bitcoin:bc1q'), 'Wallet-URI');
-  assert.equal(opt.coins.some(c => c.coin === 'solana'), false, 'SOL erst nach Klärung');
+  assert.equal(opt.coins.filter(c => c.coin === 'solana').length, 2, 'zwei SOL-Wallets (Seeker + Phantom)');
   // Zahlung starten + Tx-ID melden
-  const start = await (await post('/api/payments/crypto/start', cust, { productId: 'premium_monthly', coin: 'bitcoin' })).json();
+  const start = await (await post('/api/payments/crypto/start', cust, { productId: 'premium_monthly', coin: 'btc' })).json();
   assert.ok(start.payment_id && start.address.startsWith('bc1q'));
   const claim = await post(`/api/payments/crypto/${start.payment_id}/claim`, cust, { txRef: 'txhash1234567890' });
   assert.equal(claim.status, 200);

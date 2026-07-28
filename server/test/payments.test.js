@@ -111,15 +111,21 @@ test('Stripe-Adapter: Checkout (fetch gemockt) + korrekt signierter Webhook = pa
   assert.throws(() => a.verifyWebhook(payload, { 'stripe-signature': `t=${t},v1=deadbeef` }), e => e.code === 'webhook_bad_signature');
 });
 
-test('cryptoWallets: BTC/ETH vorbelegt, SOL erst mit ENV; walletUri baigt korrekte Schemata', () => {
-  const w = cryptoWallets({});
-  assert.equal(w.bitcoin.address, 'bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46');
-  assert.ok(w.ethereum.address.startsWith('0x5f5099'));
-  assert.equal(w.solana, undefined, 'SOL absichtlich nicht vorbelegt (zwei Adressen genannt)');
-  assert.equal(cryptoWallets({ APOTREND_WALLET_SOL: 'SOLADDR' }).solana.address, 'SOLADDR');
-  assert.equal(walletUri(w.bitcoin, 0.0003), 'bitcoin:bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46?amount=0.0003');
-  assert.match(walletUri(w.ethereum, 0.01), /^ethereum:0x5f5099.*@1\?value=\d+$/);
-  assert.equal(walletUri(w.ethereum, null), 'ethereum:' + w.ethereum.address);
+test('cryptoWallets: BTC + ETH + zwei SOL-Wallets (Seeker/Phantom); walletUri baut korrekte Schemata', () => {
+  const list = cryptoWallets({});
+  const byId = Object.fromEntries(list.map(w => [w.id, w]));
+  assert.equal(byId.btc.address, 'bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46');
+  assert.ok(byId.eth.address.startsWith('0x5f5099'));
+  // beide Solana-Wallets vorbelegt (beide gehören dem Betreiber)
+  assert.equal(byId.sol_seeker.address, 'Egbc7cfzHLj5dkgnR4E7Xk3MfDNrA5imqKJ1FV1n1DW');
+  assert.equal(byId.sol_phantom.address, 'EMSJTkRGnnExNwaCkte9PDCN4Tm3BNSZKdXqcEpamWFM');
+  assert.match(byId.sol_seeker.label, /Seeker/);
+  assert.equal(byId.sol_phantom.coin, 'solana');
+  // ENV überschreibt
+  assert.equal(cryptoWallets({ APOTREND_WALLET_SOL_PHANTOM: 'NEU' }).find(w => w.id === 'sol_phantom').address, 'NEU');
+  assert.equal(walletUri(byId.btc, 0.0003), 'bitcoin:bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46?amount=0.0003');
+  assert.match(walletUri(byId.eth, 0.01), /^ethereum:0x5f5099.*@1\?value=\d+$/);
+  assert.equal(walletUri(byId.sol_phantom, 1.5), 'solana:EMSJTkRGnnExNwaCkte9PDCN4Tm3BNSZKdXqcEpamWFM?amount=1.5');
 });
 
 test('cryptoRates: cached, fetch injizierbar, Fallback bei Fehler', async () => {
@@ -137,16 +143,17 @@ test('cryptoRates: cached, fetch injizierbar, Fallback bei Fehler', async () => 
   assert.deepEqual(await rates2.ratesEur(['bitcoin']), {});
 });
 
-test('cryptoOptions: liefert Adresse + Betrag (bei Kurs) + Wallet-URI', async () => {
+test('cryptoOptions: alle Wallets (inkl. 2× SOL) mit Adresse + Betrag + Wallet-URI', async () => {
   const repo = createMemoryRepo();
-  const rates = { ratesEur: async () => ({ bitcoin: 50000, ethereum: 2000 }) };
+  const rates = { ratesEur: async () => ({ bitcoin: 50000, ethereum: 2000, solana: 100 }) };
   const svc = createPaymentsService({ repo, wallets: () => cryptoWallets({}), rates });
   const opt = await svc.cryptoOptions('premium_monthly'); // 9,99 €
-  const btc = opt.coins.find(c => c.coin === 'bitcoin');
-  assert.equal(btc.address, 'bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46');
+  assert.equal(opt.coins.length, 4, 'BTC + ETH + 2× SOL');
+  const btc = opt.coins.find(c => c.id === 'btc');
   assert.equal(btc.amount_eur, 9.99);
   assert.ok(Math.abs(btc.amount_crypto - 9.99 / 50000) < 1e-9);
   assert.ok(btc.uri.startsWith('bitcoin:bc1q'));
+  assert.equal(opt.coins.filter(c => c.coin === 'solana').length, 2);
   await assert.rejects(() => svc.cryptoOptions('gibtsnicht'), e => e.code === 'product_unknown');
 });
 
@@ -155,10 +162,12 @@ test('Direkt-Krypto: start → claim(Tx) → Moderation bestätigt → Premium f
   const cust = repo.createUser({ email: 'c@c.at', name: 'C', passwordHash: 'x' });
   const mod = repo.createUser({ email: 'm@m.at', name: 'M', passwordHash: 'x' });
   const svc = createPaymentsService({ repo, wallets: () => cryptoWallets({}), isModerator: (id) => id === mod.id });
-  const start = svc.startCryptoPayment(cust.id, 'premium_monthly', 'bitcoin');
-  assert.equal(start.address, 'bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46');
+  const start = svc.startCryptoPayment(cust.id, 'premium_monthly', 'sol_phantom');
+  assert.equal(start.address, 'EMSJTkRGnnExNwaCkte9PDCN4Tm3BNSZKdXqcEpamWFM');
+  assert.equal(start.coin, 'solana');
   assert.equal(repo.getPayment(start.payment_id).status, 'pending');
-  // unbekannter Coin
+  assert.equal(repo.getPayment(start.payment_id).wallet_id, 'sol_phantom', 'Wallet am Datensatz für die Zuordnung');
+  // unbekannte Wallet
   assert.throws(() => svc.startCryptoPayment(cust.id, 'premium_monthly', 'dogecoin'), e => e.code === 'coin_unavailable');
   // Tx-ID einreichen
   assert.throws(() => svc.claimCryptoPayment(cust.id, start.payment_id, 'x'), e => e.code === 'tx_ref_missing');
