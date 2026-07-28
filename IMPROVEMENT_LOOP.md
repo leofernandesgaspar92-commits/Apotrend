@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #110 — 2026-07-20 — Premium: Notizen auch im CSV/Excel-Export
+- **THINK:** Die Wirkstoff-Notizen (#108) fließen in den Druck-Aushang (#109) — konsequenterweise auch in den CSV/Excel-Export, damit Premium die Annotationen auch in der Tabelle nutzen kann. Additiv, kein Nachteil für Gratis.
+- **WORK:** CSV-Export der Merkliste erhält für Premium eine zusätzliche Spalte „Notiz" (Header + Wert); Gratis-Export unverändert (3 Spalten).
+- **CHECK:** 299 grün, Smoke 19/19, Guards 0. **Browser (Download-Capture):** Premium-CSV = `…;Präparat;Notiz` inkl. Notizwert; Gratis-CSV ohne Notiz-Spalte.
+
 ### Cycle #109 — 2026-07-20 — Premium: Beobachtungsliste als druckbarer Team-Aushang (mit Notizen)
 - **THINK:** Additiver Premium-Nutzen, der auf #108 aufbaut: die Merkliste als sauberer, druckbarer **Aushang** (Status + Notizen) zum Aushängen am Handverkaufstisch — nützlich gerade für nicht-technische, zeitknappe Teams.
 - **WORK:** `printWatchlist(items)` öffnet einen formatierten Druck-Aushang (Titel, Datum locale-korrekt, Tabelle Wirkstoff/Präparat · Status farbig · Notiz, Fußzeile mit Gewähr-Hinweis). Button „🖨️ Aushang" nur für Premium in der Merklisten-Karte; Sichtbarkeit folgt der Liste. i18n DE/EN/PT inkl. Singular/Plural („1 Wirkstoff").

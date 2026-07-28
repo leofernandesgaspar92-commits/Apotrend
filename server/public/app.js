@@ -1781,8 +1781,15 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
   const csvBtn = card.querySelector('[data-wl-csv]');
   if (csvBtn) csvBtn.onclick = () => {
     const cur = renderWatchlistCard._items || items;
-    const rows = cur.map(it => [it.wirkstoff, watchStatusMeta(it.status).label, it.bezeichnung || '']);
-    downloadCsv('apotrend-merkliste', ['Wirkstoff', 'Aktueller Status', 'Präparat'], rows);
+    // Premium: private Notizen als zusätzliche Spalte mit exportieren.
+    const header = ['Wirkstoff', 'Aktueller Status', 'Präparat'];
+    if (premium) header.push('Notiz');
+    const rows = cur.map(it => {
+      const r = [it.wirkstoff, watchStatusMeta(it.status).label, it.bezeichnung || ''];
+      if (premium) r.push(it.note || '');
+      return r;
+    });
+    downloadCsv('apotrend-merkliste', header, rows);
   };
   // Premium: druckbarer Team-Aushang (mit Status + Notizen) zum Aushängen am HV-Tisch.
   const printBtn = card.querySelector('[data-wl-print]');
