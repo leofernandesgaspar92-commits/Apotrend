@@ -787,6 +787,30 @@ test('Sicherheit: /api/me liefert nie den Passwort-Hash oder Wiederherstellungs-
   assert.equal(me.user.twofa_secret, undefined, 'kein 2FA-Geheimnis in /api/me');
 });
 
+test('Zahlungen/Premium: Produkte sichtbar, Methoden ohne Anbieter leer, Freischaltung geschützt', async () => {
+  const a = await reg('pay' + PORT);
+  // Produktkatalog ist öffentlich sichtbar (EUR-Preise)
+  const prods = await j('/api/payments/products', null);
+  assert.ok(prods.products.some(p => p.id === 'premium_monthly' && p.amount_cents === 999));
+  // ohne konfigurierten Anbieter: keine Methoden
+  const methods = await j('/api/payments/methods', null);
+  assert.deepEqual(methods.methods, []);
+  // Checkout erfordert Login
+  const noAuth = await fetch(BASE + '/api/payments/checkout', { method: 'POST', headers: H(), body: JSON.stringify({ productId: 'premium_monthly', method: 'card' }) });
+  assert.equal(noAuth.status, 401);
+  // eingeloggt, aber kein Anbieter -> method_unavailable (400)
+  const co = await post('/api/payments/checkout', a, { productId: 'premium_monthly', method: 'card' });
+  assert.equal(co.status, 400);
+  assert.equal((await co.json()).code, 'method_unavailable');
+  // Premium-Status ist zunächst false (Freischaltung nur über signierten Webhook)
+  const me = await j('/api/me/premium', a);
+  assert.equal(me.premium, false);
+  // Webhook zu unbekanntem/inaktivem Anbieter -> 400 provider_unknown (Roh-Body-Pfad läuft)
+  const wh = await fetch(BASE + '/api/payments/webhook/stripe', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+  assert.equal(wh.status, 400);
+  assert.equal((await wh.json()).code, 'provider_unknown');
+});
+
 test('Statische Assets: gzip-Komprimierung + ETag/304-Revalidierung', async () => {
   // gzip nur, wenn der Client es anbietet.
   const gz = await rawGet('/app.js', { 'accept-encoding': 'gzip' });

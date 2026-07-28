@@ -19,6 +19,9 @@ export function createMemoryRepo() {
   const usersByEmail = new Map(); // lower(email) -> userId
   const memberships = new Map();
   const identities = new Map(); // `${provider}:${providerUserId}` -> userId (Social-Login-Verknüpfung)
+  const entitlements = new Map(); // userId -> Set(feature) — freigeschaltete Premium-Funktionen
+  const payments = new Map();     // paymentId -> Zahlungsdatensatz (Audit-Spur, KEINE Karten-/Wallet-Daten)
+  const paymentsByRef = new Map();// `${provider}:${providerRef}` -> paymentId (Webhook-Idempotenz)
   // collab-Modul
   const channels = new Map();
   const channelMembers = new Map(); // channelId -> Set(userId)
@@ -106,6 +109,33 @@ export function createMemoryRepo() {
       for (const [key, uid] of identities) if (uid === userId) { const i = key.indexOf(':'); out.push({ provider: key.slice(0, i), provider_user_id: key.slice(i + 1) }); }
       return out;
     },
+    // ── Entitlements (freigeschaltete Premium-Funktionen) ──
+    grantEntitlement(userId, feature) {
+      let set = entitlements.get(userId); if (!set) { set = new Set(); entitlements.set(userId, set); }
+      set.add(feature); return true;
+    },
+    hasEntitlement(userId, feature) { const set = entitlements.get(userId); return !!(set && set.has(feature)); },
+    listEntitlements(userId) { const set = entitlements.get(userId); return set ? [...set] : []; },
+
+    // ── Zahlungen (Audit-Spur). Es werden NIE Karten- oder Wallet-Rohdaten gespeichert,
+    //    nur Metadaten + die Referenz des lizenzierten Zahlungsanbieters. ──
+    createPayment(p) {
+      const rec = {
+        id: uuid(), user_id: p.userId, product_id: p.productId, amount_cents: p.amountCents,
+        currency: p.currency || 'EUR', method: p.method || null, provider: p.provider,
+        provider_ref: p.providerRef || null, status: p.status || 'pending',
+        created_at: now(), paid_at: null,
+      };
+      payments.set(rec.id, rec);
+      if (rec.provider_ref) paymentsByRef.set(`${rec.provider}:${rec.provider_ref}`, rec.id);
+      return { ...rec };
+    },
+    getPayment(id) { const p = payments.get(id); return p ? { ...p } : null; },
+    getPaymentByRef(provider, ref) { const id = paymentsByRef.get(`${provider}:${ref}`); return id ? { ...payments.get(id) } : null; },
+    setPaymentRef(id, ref) { const p = payments.get(id); if (!p) return null; p.provider_ref = ref; paymentsByRef.set(`${p.provider}:${ref}`, id); return { ...p }; },
+    setPaymentStatus(id, status) { const p = payments.get(id); if (!p) return null; p.status = status; if (status === 'paid' && !p.paid_at) p.paid_at = now(); return { ...p }; },
+    listPaymentsByUser(userId) { return [...payments.values()].filter(p => p.user_id === userId).map(p => ({ ...p })); },
+
     unlinkIdentity(provider, providerUserId) {
       return identities.delete(`${provider}:${providerUserId}`);
     },
@@ -116,6 +146,8 @@ export function createMemoryRepo() {
       if (u) { usersByEmail.delete(u.email); users.delete(userId); }
       for (const [id, m] of memberships) if (m.user_id === userId) memberships.delete(id);
       for (const [k, uid] of identities) if (uid === userId) identities.delete(k);
+      entitlements.delete(userId);
+      for (const [id, p] of payments) if (p.user_id === userId) { payments.delete(id); if (p.provider_ref) paymentsByRef.delete(`${p.provider}:${p.provider_ref}`); }
     },
 
     createMembership({ userId, organizationId, role }) {
@@ -254,7 +286,10 @@ export function createMemoryRepo() {
     __dump() {
       return {
         organizations: [...organizations], users: [...users], usersByEmail: [...usersByEmail],
-        memberships: [...memberships], identities: [...identities], channels: [...channels],
+        memberships: [...memberships], identities: [...identities],
+        entitlements: [...entitlements].map(([k, s]) => [k, [...s]]),
+        payments: [...payments], paymentsByRef: [...paymentsByRef],
+        channels: [...channels],
         channelMembers: [...channelMembers].map(([k, s]) => [k, [...s]]),
         messages: [...messages], notes: [...notes], tasks: [...tasks],
         connections: [...connections], feedPosts: [...feedPosts], postResponses: [...postResponses],
@@ -265,7 +300,10 @@ export function createMemoryRepo() {
       if (!d) return;
       const fill = (map, rows) => { map.clear(); for (const [k, v] of rows || []) map.set(k, v); };
       fill(organizations, d.organizations); fill(users, d.users); fill(usersByEmail, d.usersByEmail);
-      fill(memberships, d.memberships); fill(identities, d.identities); fill(channels, d.channels);
+      fill(memberships, d.memberships); fill(identities, d.identities);
+      entitlements.clear(); for (const [k, arr] of d.entitlements || []) entitlements.set(k, new Set(arr));
+      fill(payments, d.payments); fill(paymentsByRef, d.paymentsByRef);
+      fill(channels, d.channels);
       channelMembers.clear(); for (const [k, arr] of d.channelMembers || []) channelMembers.set(k, new Set(arr));
       fill(messages, d.messages); fill(notes, d.notes); fill(tasks, d.tasks);
       fill(connections, d.connections); fill(feedPosts, d.feedPosts); fill(postResponses, d.postResponses);

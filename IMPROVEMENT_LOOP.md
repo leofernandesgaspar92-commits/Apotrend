@@ -81,6 +81,12 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #104 — 2026-07-20 — Zahlungs-/Premium-Fundament (sicher, gehostet, env-gated) + Doku
+- **THINK:** Owner-Wunsch: Premium-Freischaltung per Karte/PayPal/Wallet **und** Krypto. Rohe Wallets aus einem WhatsApp-Chat einzubetten + „1-Bestätigung"-Chain-Prüfung wären unsicher/Betrugsvektor → abgelehnt. Sicherer Weg (wie Social-Login): nur über LIZENZIERTE, gehostete Anbieter, deren eigener KYC die Sicherheitshürde ist; env-gated, inaktiv ohne eigene Schlüssel.
+- **WORK:** `products.js` (EUR-Preise in Cent); Repo: Entitlements + Zahlungs-Audit (KEINE Karten-/Wallet-Rohdaten) + Persistenz + DSGVO-Purge; `payments.js` provider-agnostisch mit Stripe- (Karte/PayPal) & Coinbase-Commerce-Adapter (Krypto), Netz über `fetch`, Webhook-Signaturen via Node-`crypto` (HMAC-SHA256, konstante Zeit); Freischaltung **nur** über signierten Webhook, idempotent. Routen `/api/payments/{products,methods,checkout}`, `/api/me/premium`, plus Roh-Body-Webhook `/api/payments/webhook/:provider` (vor dem JSON-Router). `docs/PAYMENTS.md` (Übersicht, Setup, Endpunkte, Compliance, Krypto/Wallet-Realität = BTCPay für Direkt-in-Wallet, Test).
+- **BEWUSST NICHT:** rohe Wallets im Code, eigene Chain-Prüfung, eigene Kursabfrage, Fake-Mailversand. Krypto-Prozessor rechnet EUR live um.
+- **CHECK:** 282 → 292 grün (+9 Service/Adapter-Unit inkl. echter HMAC-Signaturen & Idempotenz, +1 HTTP inkl. Roh-Body-Webhook-Pfad), Smoke 19/19, Guards 0. Inaktiv ohne eigene, verifizierte Anbieter-Schlüssel.
+
 ### Cycle #103 — 2026-07-20 — Eigene Regression behoben: Tastatur-Aktivierung löste .clickable DOPPELT aus
 - **THINK:** Beim Weitersuchen nach dem DM-Bug entdeckt: es gab bereits VOR #94 ein vollständiges Tastatur-System (`makeClickableAccessible` + debounced Observer + keydown-Handler mit `data-kbd`, das sogar Container mit verschachtelten Buttons korrekt überspringt). Mein #94 fügte ein ZWEITES, redundantes System hinzu → auf einem fokussierten `.clickable` feuerten beide keydown-Handler `click()` → **Doppel-Aktivierung** (harmlos bei Navigation, aber falsch bei Umschaltern).
 - **WORK:** Das redundante #94-IIFE (eigener MutationObserver + keydown-Handler) entfernt; das bestehende, bessere System übernimmt weiterhin alles. #96/#97 (`.clickable` an Kacheln/Liste) bleiben wertvoll und funktionieren jetzt korrekt (einfach). Smoke-Guard ergänzt.

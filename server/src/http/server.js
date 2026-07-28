@@ -24,6 +24,8 @@ import { createExchangeService } from '../services/exchange.js';
 import { createSearchService } from '../services/search.js';
 import { createOverviewService } from '../services/overview.js';
 import { createOAuthService, buildProvidersFromEnv } from '../services/oauth.js';
+import { createPaymentsService, buildPaymentProvidersFromEnv } from '../services/payments.js';
+import { listProducts, getProduct } from '../data/products.js';
 import { createAmrService } from '../services/amr.js';
 import { createPatientInfoService } from '../services/patientInfo.js';
 import { listCountries, normalizeCountry, normalizeLocale } from '../data/countries.js';
@@ -70,6 +72,14 @@ const overview = createOverviewService({ shortages, exchange, social, rabatte, p
 const patientInfo = createPatientInfoService();
 // Social-Login: Provider nur aktiv, wenn Zugangsdaten als Umgebungsvariablen vorliegen.
 const oauth = createOAuthService({ repo, social, providers: buildProvidersFromEnv() });
+// Zahlungen: Anbieter (Stripe/Coinbase) nur aktiv, wenn eigene, verifizierte Schlüssel
+// als ENV-Variablen vorliegen. onPaid = Haken für die Bestätigungs-Mail (Mailversand
+// braucht einen eigenen Anbieter; hier bewusst nur ein Log statt eines Fake-Versands).
+const payments = createPaymentsService({
+  repo,
+  providers: buildPaymentProvidersFromEnv(),
+  onPaid: ({ payment, product }) => { console.log(`✅ Zahlung ${payment.id} bezahlt → Feature „${product.feature}" für User ${payment.user_id} freigeschaltet.`); },
+});
 
 if (restoring) {
   repo.__load(snapshot.foundation);
@@ -221,6 +231,15 @@ const routes = [
   // Verbleibende Wiederherstellungscodes (eingeloggt) + Neu-Erzeugung.
   ['GET', /^\/api\/recovery-codes$/, true, async ({ userId }) => ({ remaining: orgAuth.remainingRecoveryCodes(userId) })],
   ['POST', /^\/api\/recovery-codes\/regenerate$/, true, async ({ userId }) => orgAuth.regenerateRecoveryCodes(userId)],
+
+  // ── Zahlungen / Premium — inaktiv, solange kein Anbieter konfiguriert ist. ──
+  ['GET', /^\/api\/payments\/products$/, false, async () => ({ products: listProducts() })],
+  ['GET', /^\/api\/payments\/methods$/, false, async () => ({ methods: payments.configuredMethods() })],
+  ['POST', /^\/api\/payments\/checkout$/, true, async ({ userId, body }) =>
+    payments.createCheckout(userId, { productId: body.productId, method: body.method, successUrl: body.successUrl, cancelUrl: body.cancelUrl })],
+  ['GET', /^\/api\/me\/premium$/, true, async ({ userId }) => ({ premium: payments.hasFeature(userId, 'premium'), features: payments.myEntitlements(userId) })],
+  // Der Webhook (POST /api/payments/webhook/:provider) braucht den ROHEN Body für die
+  // Signaturprüfung und wird deshalb VOR dem JSON-Router gesondert behandelt (siehe unten).
 
   // ── Social-Login (OAuth) — inaktiv, solange keine Provider konfiguriert sind. ──
   // Optionaler ?redirect_uri= liefert je Provider die fertige Authorize-URL fürs Frontend.
@@ -448,6 +467,24 @@ const routes = [
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const pathname = url.pathname;
+
+  // ── Zahlungs-Webhook (ROHER Body für die Signaturprüfung) — VOR dem JSON-Router. ──
+  const wh = req.method === 'POST' && pathname.match(/^\/api\/payments\/webhook\/([a-z0-9_]+)$/);
+  if (wh) {
+    let raw = '';
+    req.on('data', c => { raw += c; if (raw.length > 1e6) req.destroy(); });
+    req.on('end', async () => {
+      try {
+        const lowerHeaders = Object.fromEntries(Object.entries(req.headers).map(([k, v]) => [k.toLowerCase(), Array.isArray(v) ? v[0] : v]));
+        const result = await payments.handleWebhook(wh[1], raw, lowerHeaders);
+        saveSoon();
+        return json(req, res, 200, result ?? { ok: true });
+      } catch (e) {
+        return json(req, res, e.status || 400, e.code ? { error: e.message, code: e.code } : { error: e.message });
+      }
+    });
+    return;
+  }
 
   // ── API ──
   if (pathname.startsWith('/api/')) {
