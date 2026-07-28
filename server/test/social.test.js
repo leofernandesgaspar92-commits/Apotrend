@@ -23,6 +23,20 @@ function setup() {
   return { social, a, b, c };
 }
 
+test('Feed-Autor:innen-Payload trägt premium (Abzeichen für zahlende Mitglieder)', () => {
+  const repo = createMemoryRepo();
+  const orgAuth = createOrgAuthService(repo);
+  const social = createSocialService(createSocialRepo(), repo);
+  const A = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'Apo A' }, owner: { name: 'Anna', email: 'anna@a.at', password: 'geheim123' } });
+  const a = A.user.id;
+  social.createProfile(a, { handle: 'anna', displayName: 'Anna' });
+  const post = social.createPost(a, { body: 'Hallo', visibility: 'public' });
+  assert.equal(social.publicFeed(a).find(p => p.id === post.id).author.premium, false, 'ohne Entitlement kein Premium');
+  repo.grantEntitlement(a, 'premium');
+  assert.equal(social.publicFeed(a).find(p => p.id === post.id).author.premium, true, 'mit Entitlement Premium-Abzeichen');
+  assert.equal(social.profilePage(a, 'anna').profile.premium, true, 'auch im Profil');
+});
+
 test('Feed-Autor:innen-Payload trägt is_following (für den Folgen-Status-Button im Feed)', () => {
   const { social, a, b } = setup();
   const post = social.createPost(b, { body: 'Bens Beitrag', visibility: 'public' });

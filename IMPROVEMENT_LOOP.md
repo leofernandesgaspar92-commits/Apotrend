@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #107 — 2026-07-20 — Erster Premium-Vorteil: sichtbares „⭐ Premium"-Abzeichen
+- **THINK:** Owner will Features, „die das Geld wert sind". Erster ehrlicher, ethischer Vorteil: sichtbarer Premium-Status — OHNE sicherheitskritische Engpass-Infos hinter eine Paywall zu stellen (das bleibt auf einer Gesundheitsplattform frei). Nutzt das bestehende Entitlement aus dem Zahlungs-System.
+- **WORK:** `decorate` liefert `author.premium` (aus `foundationRepo.hasEntitlement`), `profilePage` liefert `profile.premium`. Frontend: goldenes „⭐ Premium"-Abzeichen an der Autor:innen-Zeile im Feed **und** im Profilkopf; theme-aware CSS (hell/dunkel), i18n `pc_premium` (DE/EN/PT).
+- **CHECK:** 297 → 298 grün (+1: Premium-Flag ohne/mit Entitlement + im Profil), Parität 723/723/723, Smoke 19/19, Browser-Audit sauber, Guards 0.
+
 ### Cycle #106 — 2026-07-20 — Beide Solana-Wallets (Seeker + Phantom) + voller App-Durchlauf verifiziert
 - **THINK:** Owner bestätigt: BEIDE SOL-Adressen gehören ihm (Seeker „leokennedy.skr" + Phantom, beide nur SOL). Beide einbauen; Kund:in wählt die Wallet. Danach die ganze App auf ein reibungsloses Kund:innen-Erlebnis prüfen.
 - **WORK:** `cryptoWallets` von Map auf **Liste** umgestellt (mehrere Wallets je Coin, stabile `id` + `label`); zwei SOL-Wallets vorbelegt (ENV: `APOTREND_WALLET_SOL_SEEKER`/`_PHANTOM`). Service/Route/Frontend auf `walletId` umgestellt; Zahlungsdatensatz trägt jetzt `coin`/`wallet_id`/`address` für die Zuordnung. Premium-UI zeigt je Wallet Label (z. B. „SOL · Seeker · leokennedy.skr").

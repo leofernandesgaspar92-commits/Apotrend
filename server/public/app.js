@@ -171,7 +171,7 @@ const I18N = {
     e_login_failed:'E-Mail oder Passwort falsch.', e_too_many_attempts:'Zu viele Fehlversuche. Bitte in einigen Minuten erneut versuchen.', e_handle_taken:'Handle ist bereits vergeben.', e_email_taken:'Diese E-Mail ist bereits registriert.', e_pw_too_short:'Passwort: mindestens 8 Zeichen.', e_image_invalid:'Ungültiges Bildformat (PNG, JPEG, WebP oder GIF).', e_image_too_large:'Bild zu groß — bitte ein kleineres wählen.', e_network:'Verbindungsproblem — bitte Internetverbindung prüfen und erneut versuchen.',
     e_display_name_required:'Anzeigename erforderlich.', e_comment_empty:'Kommentar darf nicht leer sein (Text oder Bild).', e_post_too_long:'Beitrag zu lang (max. 1000 Zeichen).', e_comment_too_long:'Kommentar zu lang (max. 1000 Zeichen).', e_bio_too_long:'Bio zu lang (max. 500 Zeichen).', e_message_empty:'Leere Nachricht.', e_exchange_name_required:'Präparat/Wirkstoff erforderlich.', e_current_pw_wrong:'Aktuelles Passwort ist falsch.', e_new_pw_short:'Neues Passwort: mindestens 8 Zeichen.', e_poll_question_missing:'Umfrage: bitte eine Frage eingeben.', e_poll_options_missing:'Umfrage: mindestens zwei Antwortmöglichkeiten.', e_poll_not_a_poll:'Dieser Beitrag ist keine Umfrage.', e_poll_bad_option:'Unbekannte Antwortmöglichkeit.',
     react_helpful:'👍 Hilfreich', react_thanks:'🙏 Danke', react_confirmed:'✅ Bestätigt', react_interesting:'💡 Interessant',
-    pc_verified:'✔ verifiziert', pc_img_alt:'Bild zum Beitrag', pc_source:'🔗 Quelle',
+    pc_verified:'✔ verifiziert', pc_premium:'⭐ Premium', pc_img_alt:'Bild zum Beitrag', pc_source:'🔗 Quelle',
     pc_edited:'✏️ bearbeitet', pc_vis_public:'🌍 öffentlich', pc_vis_followers:'👥 nur Follower',
     pc_comments:'💬 {n} Kommentare', pc_comments_one:'💬 1 Kommentar', pc_comment_cta:'💬 Kommentieren', pc_saved:'🔖 gemerkt', pc_save:'🔖 Merken', pc_share:'🔗 Teilen',
     pc_repost:'🔁 Teilen im Feed', pc_reposted:'🔁 Geteilt ✓', pc_reposted_on:'🔁 Geteilt', rp_shared:'hat einen Beitrag geteilt', rp_deleted:'Der Originalbeitrag wurde gelöscht.', rp_poll_hint:'📊 Umfrage — zum Abstimmen öffnen', nv_repost:'hat deinen Beitrag geteilt',
@@ -460,7 +460,7 @@ const I18N = {
     e_login_failed:'Email or password incorrect.', e_too_many_attempts:'Too many failed attempts. Please try again in a few minutes.', e_handle_taken:'Handle is already taken.', e_email_taken:'This email is already registered.', e_pw_too_short:'Password: at least 8 characters.', e_image_invalid:'Invalid image format (PNG, JPEG, WebP or GIF).', e_image_too_large:'Image too large — please choose a smaller one.', e_network:'Connection problem — please check your internet and try again.',
     e_display_name_required:'Display name is required.', e_comment_empty:'A comment cannot be empty (text or image).', e_post_too_long:'Post too long (max. 1000 characters).', e_comment_too_long:'Comment too long (max. 1000 characters).', e_bio_too_long:'Bio too long (max. 500 characters).', e_message_empty:'Empty message.', e_exchange_name_required:'Product/substance is required.', e_current_pw_wrong:'Current password is incorrect.', e_new_pw_short:'New password: at least 8 characters.', e_poll_question_missing:'Poll: please enter a question.', e_poll_options_missing:'Poll: at least two answer options.', e_poll_not_a_poll:'This post is not a poll.', e_poll_bad_option:'Unknown answer option.',
     react_helpful:'👍 Helpful', react_thanks:'🙏 Thanks', react_confirmed:'✅ Confirmed', react_interesting:'💡 Interesting',
-    pc_verified:'✔ verified', pc_img_alt:'Post image', pc_source:'🔗 Source',
+    pc_verified:'✔ verified', pc_premium:'⭐ Premium', pc_img_alt:'Post image', pc_source:'🔗 Source',
     pc_edited:'✏️ edited', pc_vis_public:'🌍 public', pc_vis_followers:'👥 followers only',
     pc_comments:'💬 {n} comments', pc_comments_one:'💬 1 comment', pc_comment_cta:'💬 Comment', pc_saved:'🔖 saved', pc_save:'🔖 Save', pc_share:'🔗 Share',
     pc_repost:'🔁 Share to feed', pc_reposted:'🔁 Shared ✓', pc_reposted_on:'🔁 Shared', rp_shared:'shared a post', rp_deleted:'The original post was deleted.', rp_poll_hint:'📊 Poll — open to vote', nv_repost:'shared your post',
@@ -749,7 +749,7 @@ const I18N = {
     e_login_failed:'E-mail ou palavra-passe incorretos.', e_too_many_attempts:'Demasiadas tentativas falhadas. Tente novamente dentro de alguns minutos.', e_handle_taken:'O identificador já está em uso.', e_email_taken:'Este e-mail já está registado.', e_pw_too_short:'Palavra-passe: pelo menos 8 caracteres.', e_image_invalid:'Formato de imagem inválido (PNG, JPEG, WebP ou GIF).', e_image_too_large:'Imagem demasiado grande — escolha uma menor.', e_network:'Problema de ligação — verifique a sua internet e tente novamente.',
     e_display_name_required:'O nome a apresentar é obrigatório.', e_comment_empty:'Um comentário não pode estar vazio (texto ou imagem).', e_post_too_long:'Publicação demasiado longa (máx. 1000 caracteres).', e_comment_too_long:'Comentário demasiado longo (máx. 1000 caracteres).', e_bio_too_long:'Bio demasiado longa (máx. 500 caracteres).', e_message_empty:'Mensagem vazia.', e_exchange_name_required:'Produto/substância é obrigatório.', e_current_pw_wrong:'A palavra-passe atual está incorreta.', e_new_pw_short:'Nova palavra-passe: pelo menos 8 caracteres.', e_poll_question_missing:'Sondagem: introduza uma pergunta.', e_poll_options_missing:'Sondagem: pelo menos duas opções de resposta.', e_poll_not_a_poll:'Esta publicação não é uma sondagem.', e_poll_bad_option:'Opção de resposta desconhecida.',
     react_helpful:'👍 Útil', react_thanks:'🙏 Obrigado', react_confirmed:'✅ Confirmado', react_interesting:'💡 Interessante',
-    pc_verified:'✔ verificado', pc_img_alt:'Imagem da publicação', pc_source:'🔗 Fonte',
+    pc_verified:'✔ verificado', pc_premium:'⭐ Premium', pc_img_alt:'Imagem da publicação', pc_source:'🔗 Fonte',
     pc_edited:'✏️ editado', pc_vis_public:'🌍 público', pc_vis_followers:'👥 só seguidores',
     pc_comments:'💬 {n} comentários', pc_comments_one:'💬 1 comentário', pc_comment_cta:'💬 Comentar', pc_saved:'🔖 guardado', pc_save:'🔖 Guardar', pc_share:'🔗 Partilhar',
     pc_repost:'🔁 Partilhar no feed', pc_reposted:'🔁 Partilhado ✓', pc_reposted_on:'🔁 Partilhado', rp_shared:'partilhou uma publicação', rp_deleted:'A publicação original foi eliminada.', rp_poll_hint:'📊 Sondagem — abrir para votar', nv_repost:'partilhou a sua publicação',
@@ -3174,6 +3174,7 @@ async function openProfile(handle) {
             <span class="post-author" style="font-size:19px">${esc(p.display_name||t('ex_unknown'))}</span>
             ${p.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}
             ${p.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
+            ${p.premium?`<span class="premium-badge" title="${esc(t('pc_premium'))}">${esc(t('pc_premium'))}</span>`:''}
             ${p.account_type?`<span class="spec" style="margin-left:2px">${esc(acctLabel(p.account_type))}</span>`:''}
           </div>
           <div class="handle">@${esc(p.handle)}</div>
@@ -3591,6 +3592,7 @@ function postCard(p) {
       <span class="handle clickable" data-openprofile="${esc(a.handle||'')}">@${esc(a.handle||'?')}</span>
       ${a.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}
       ${a.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
+      ${a.premium?`<span class="premium-badge" title="${esc(t('pc_premium'))}">${esc(t('pc_premium'))}</span>`:''}
       ${a.account_type&&a.account_type!=='pharmacy'?`<span class="spec" style="margin-left:2px">${esc(acctLabel(a.account_type))}</span>`:''}
       <span class="sp" style="flex:1"></span>
       ${mine?'':`<button class="${a.is_following?'ghost ':''}small" data-follow="${esc(a.handle)}" data-on="${a.is_following?'1':'0'}">${a.is_following?esc(t('fl_following_btn')):esc(t('co_follow_btn'))}</button>`}

@@ -55,7 +55,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     const mine = viewerUserId ? reacts.find(r => r.user_id === viewerUserId) : null;
     return {
       ...post,
-      author: prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified, is_editorial: prof.is_editorial, account_type: prof.account_type, is_following: !!(viewerUserId && prof.user_id !== viewerUserId && social.isFollowing(viewerUserId, prof.user_id)) } : null,
+      author: prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified, is_editorial: prof.is_editorial, account_type: prof.account_type, premium: foundationRepo.hasEntitlement(prof.user_id, 'premium'), is_following: !!(viewerUserId && prof.user_id !== viewerUserId && social.isFollowing(viewerUserId, prof.user_id)) } : null,
       comment_count: social.countComments(post.id),
       reaction_counts: counts,
       my_reaction: mine ? mine.type : null,
@@ -154,7 +154,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
         if (c && !c.deleted_at && c.author_user_id === prof.user_id) best_answers++;
       }
       return {
-        profile: prof,
+        profile: { ...prof, premium: foundationRepo.hasEntitlement(prof.user_id, 'premium') },
         posts,
         follower_count: social.listFollowers(prof.user_id).length,
         following_count: social.listFollowing(prof.user_id).length,
