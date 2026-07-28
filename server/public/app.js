@@ -53,6 +53,8 @@ const I18N = {
     wl_empty:'Noch keine Wirkstoffe. Füge unten die hinzu, die du regelmäßig führst.',
     wl_view:'Ansehen', wl_remove:'Nicht mehr beobachten', wl_note_add:'✎ Notiz hinzufügen', wl_note_edit:'✎ Notiz bearbeiten', wl_note_ph:'Notiz (z. B. Lieferant, Meldebestand)…', wl_note_save:'Speichern', e_premium_required:'Notizen sind eine Premium-Funktion.', e_not_watched:'Wirkstoff nicht in der Beobachtungsliste.',
     wl_csv_title:'Beobachtungsliste mit Status als CSV (Excel) — z.B. für den Handverkaufstisch',
+    wl_print:'Aushang', wl_print_title:'Beobachtungsliste — Engpass-Status', wl_print_asof:'Stand: {date}', wl_print_count:'{n} Wirkstoffe', wl_print_count_sg:'1 Wirkstoff',
+    wl_print_col_sub:'Wirkstoff / Präparat', wl_print_col_status:'Aktueller Status', wl_print_col_note:'Notiz', wl_print_foot:'Erstellt mit Apotrend · Angaben ohne Gewähr, im Zweifel Quelle prüfen.',
     st_krit:'Kritischer Engpass', st_eing:'Eingeschränkt lieferbar', st_verf:'Wieder verfügbar',
     st_none:'Aktuell keine Meldung',
     st_krit_short:'🔴 Kritisch', st_eing_short:'🟠 Eingeschränkt', st_verf_short:'🟢 Verfügbar',
@@ -342,6 +344,8 @@ const I18N = {
     wl_empty:'No substances yet. Add the ones you stock regularly below.',
     wl_view:'View', wl_remove:'Stop watching', wl_note_add:'✎ Add note', wl_note_edit:'✎ Edit note', wl_note_ph:'Note (e.g. supplier, reorder level)…', wl_note_save:'Save', e_premium_required:'Notes are a Premium feature.', e_not_watched:'Substance not in your watchlist.',
     wl_csv_title:'Watchlist with status as CSV (Excel) — e.g. for the counter',
+    wl_print:'Notice', wl_print_title:'Watchlist — shortage status', wl_print_asof:'As of: {date}', wl_print_count:'{n} substances', wl_print_count_sg:'1 substance',
+    wl_print_col_sub:'Substance / product', wl_print_col_status:'Current status', wl_print_col_note:'Note', wl_print_foot:'Created with Apotrend · No guarantee, check the source if in doubt.',
     st_krit:'Critical shortage', st_eing:'Limited availability', st_verf:'Available again',
     st_none:'No current report',
     st_krit_short:'🔴 Critical', st_eing_short:'🟠 Limited', st_verf_short:'🟢 Available',
@@ -631,6 +635,8 @@ const I18N = {
     wl_empty:'Ainda sem substâncias. Adicione abaixo as que tem habitualmente.',
     wl_view:'Ver', wl_remove:'Deixar de vigiar', wl_note_add:'✎ Adicionar nota', wl_note_edit:'✎ Editar nota', wl_note_ph:'Nota (ex. fornecedor, stock mínimo)…', wl_note_save:'Guardar', e_premium_required:'As notas são uma funcionalidade Premium.', e_not_watched:'Substância não está na sua lista.',
     wl_csv_title:'Lista de vigilância com estado em CSV (Excel) — ex. para o balcão',
+    wl_print:'Cartaz', wl_print_title:'Lista de vigilância — estado de rutura', wl_print_asof:'Em: {date}', wl_print_count:'{n} substâncias', wl_print_count_sg:'1 substância',
+    wl_print_col_sub:'Substância / produto', wl_print_col_status:'Estado atual', wl_print_col_note:'Nota', wl_print_foot:'Criado com Apotrend · Sem garantia, verifique a fonte em caso de dúvida.',
     st_krit:'Falta crítica', st_eing:'Disponibilidade limitada', st_verf:'Disponível novamente',
     st_none:'Sem informação atual',
     st_krit_short:'🔴 Crítica', st_eing_short:'🟠 Limitada', st_verf_short:'🟢 Disponível',
@@ -1757,6 +1763,7 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
       <span class="sp" style="flex:1"></span>
       ${alerts?`<span class="badge" style="background:#c0392b">${alerts} ${esc(alerts>1?t('wl_alerts_pl'):t('wl_alerts_sg'))}</span>`:''}
       ${items.length?`<button class="ghost small" data-wl-csv title="${esc(t('wl_csv_title'))}" style="margin-left:8px">⬇️ CSV</button>`:''}
+      ${premium?`<button class="ghost small" data-wl-print title="${esc(t('wl_print_title'))}" style="margin-left:6px">🖨️ ${esc(t('wl_print'))}</button>`:''}
     </div>
     <div class="muted" style="font-size:13px;margin:2px 0 8px">${esc(t('wl_sub'))}</div>
     <div data-wl></div>
@@ -1777,6 +1784,9 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
     const rows = cur.map(it => [it.wirkstoff, watchStatusMeta(it.status).label, it.bezeichnung || '']);
     downloadCsv('apotrend-merkliste', ['Wirkstoff', 'Aktueller Status', 'Präparat'], rows);
   };
+  // Premium: druckbarer Team-Aushang (mit Status + Notizen) zum Aushängen am HV-Tisch.
+  const printBtn = card.querySelector('[data-wl-print]');
+  if (printBtn) printBtn.onclick = () => printWatchlist(renderWatchlistCard._items || items);
   // Schnell-Vorschläge aus aktuell kritischen Engpässen (nur noch nicht beobachtete).
   function drawSuggestions(list) {
     const have = new Set(list.map(i => i.wirkstoff.trim().toLowerCase()));
@@ -1811,6 +1821,7 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
   function draw(list) {
     renderWatchlistCard._items = list;         // Merker für den CSV-Export
     if (csvBtn) csvBtn.style.display = list.length ? '' : 'none';
+    if (printBtn) printBtn.style.display = list.length ? '' : 'none';
     box.innerHTML = '';
     if (!list.length) { box.appendChild(el(`<div class="muted" style="font-size:14px">${esc(t('wl_empty'))}</div>`)); drawSuggestions(list); return; }
     list.forEach(it => {
@@ -1879,6 +1890,34 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
   card.querySelector('[data-wl-add]').onclick = add;
   input.onkeydown = (e) => { if (e.key === 'Enter') add(); };
   feed.appendChild(card);
+}
+
+// Premium: Beobachtungsliste als sauberer, druckbarer Team-Aushang (Status + Notizen).
+function printWatchlist(items) {
+  const list = items || [];
+  const w = window.open('', '_blank');
+  if (!w) { alert(t('pi_popup')); return; }
+  const dateStr = new Date().toLocaleDateString(LOCALE === 'de' ? 'de-AT' : LOCALE === 'pt' ? 'pt-PT' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+  const rows = list.map(it => {
+    const m = watchStatusMeta(it.status);
+    return `<tr>
+      <td class="wk">${esc(it.wirkstoff)}${it.bezeichnung ? `<div class="pr">${esc(it.bezeichnung)}</div>` : ''}</td>
+      <td><span class="st" style="color:${m.color};background:${m.bg}">${esc(m.icon)} ${esc(m.label)}</span></td>
+      <td class="nt">${it.note ? esc(it.note) : '<span class="empty">—</span>'}</td>
+    </tr>`;
+  }).join('');
+  w.document.write(`<!doctype html><html lang="${esc(LOCALE)}"><head><meta charset="utf-8"><title>${esc(t('wl_print_title'))}</title>
+    <style>body{font-family:system-ui,-apple-system,sans-serif;max-width:800px;margin:24px auto;padding:0 16px;color:#111}
+    h1{font-size:22px;margin:0 0 2px} .meta{color:#555;font-size:13px;margin-bottom:16px}
+    table{width:100%;border-collapse:collapse} th{text-align:left;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
+    td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:12px;margin-top:2px}
+    .st{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap} .nt{font-size:13px} .empty{color:#999}
+    .src{font-size:12px;color:#555;margin-top:18px}</style></head>
+    <body><h1>💊 ${esc(t('wl_print_title'))}</h1><div class="meta">${esc(ti('wl_print_asof', { date: dateStr }))} · ${esc(list.length === 1 ? t('wl_print_count_sg') : ti('wl_print_count', { n: list.length }))}</div>
+    <table><thead><tr><th>${esc(t('wl_print_col_sub'))}</th><th>${esc(t('wl_print_col_status'))}</th><th>${esc(t('wl_print_col_note'))}</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="src">${esc(t('wl_print_foot'))}</div>
+    <script>window.onload=function(){window.print();}<\/script></body></html>`);
+  w.document.close();
 }
 
 // Aktualisiert die kritische Kennzahl-Kachel nach Änderung der Beobachtungsliste.

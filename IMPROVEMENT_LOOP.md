@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #109 — 2026-07-20 — Premium: Beobachtungsliste als druckbarer Team-Aushang (mit Notizen)
+- **THINK:** Additiver Premium-Nutzen, der auf #108 aufbaut: die Merkliste als sauberer, druckbarer **Aushang** (Status + Notizen) zum Aushängen am Handverkaufstisch — nützlich gerade für nicht-technische, zeitknappe Teams.
+- **WORK:** `printWatchlist(items)` öffnet einen formatierten Druck-Aushang (Titel, Datum locale-korrekt, Tabelle Wirkstoff/Präparat · Status farbig · Notiz, Fußzeile mit Gewähr-Hinweis). Button „🖨️ Aushang" nur für Premium in der Merklisten-Karte; Sichtbarkeit folgt der Liste. i18n DE/EN/PT inkl. Singular/Plural („1 Wirkstoff").
+- **CHECK:** 299 grün, Parität 738/738/738, Smoke 19/19, Guards 0. **Browser-Ende-zu-Ende:** Premium-Kunde → Button sichtbar → Klick öffnet Druckfenster mit Wirkstoff + Notiz + Titel + Datum, 0 JS-Fehler.
+
 ### Cycle #108 — 2026-07-20 — Premium-Feature: private Notizen an beobachteten Wirkstoffen
 - **THINK:** „Worth the money"-Feature, ethisch & additiv: Gratis-Nutzer:innen verlieren nichts, Premium bekommt echten Alltagsnutzen — private Notizen je beobachtetem Wirkstoff (Lieferant, Meldebestand …). Keine Paywall auf sicherheitskritische Engpass-Infos.
 - **WORK:** shortagesRepo: `watchNotes` (userId→Wirkstoff→Notiz) + `setWatchNote`/`getWatchNote`, Persistenz + DSGVO-Purge; `myWatchlist` liefert `note`. Service: `setWatchNote` premium-gated (injiziertes `hasPremium` = `payments.hasFeature('premium')`), nur für beobachtete Wirkstoffe. Route `POST /api/watchlist/:w/note`; Overview liefert `premium`. Frontend: für Premium je Merklisten-Eintrag Notiz anzeigen + inline bearbeiten (📝), i18n DE/EN/PT.
