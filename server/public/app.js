@@ -1631,9 +1631,11 @@ async function loadOverview() {
   // Zuletzt angesehene Wirkstoffe (nur lokal) — schneller Wiedereinstieg.
   const recent = getRecentWirkstoff();
   if (recent.length) {
-    const rc = el(`<div class="card"><div class="muted" style="font-size:13px;margin-bottom:6px">${esc(t('ov_recent'))}</div><div class="row" data-recent style="flex-wrap:wrap;gap:6px"></div></div>`);
+    const rc = el(`<div class="card"><div class="muted" style="font-size:13px;margin-bottom:6px">${esc(t('ov_recent'))}</div><div class="row" data-recent style="flex-wrap:wrap;gap:10px"></div></div>`);
     const box = rc.querySelector('[data-recent]');
-    recent.forEach(w => { const chip = el(`<button class="small sortbtn">💊 ${esc(w)}</button>`); chip.onclick = () => openWirkstoff(w); box.appendChild(chip); });
+    // Ein-Klick-Beobachten direkt aus den zuletzt angesehenen Wirkstoffen (Konsistenz mit der Suche).
+    const watched = new Set(((d.watchlist && d.watchlist.items) || []).map(i => i.wirkstoff.toLowerCase()));
+    recent.forEach(w => box.appendChild(substanceWatchChip(w, watched)));
     feed.appendChild(rc);
   }
 
@@ -1756,6 +1758,30 @@ function watchStatusMeta(status) {
   if (status === 'eingeschraenkt')  return { label: t('st_eing'), color: 'var(--warn-fg)', bg: 'rgba(178,106,0,.12)', icon: '🟠' };
   if (status === 'verfuegbar')      return { label: t('st_verf'), color: 'var(--ok-fg)', bg: 'rgba(11,127,40,.12)', icon: '🟢' };
   return { label: t('st_none'), color: 'var(--muted)', bg: 'var(--bg)', icon: '⚪' };
+}
+
+// Wiederverwendbarer Wirkstoff-Chip mit Ein-Klick-Beobachten-Umschalter (wie in der Suche):
+// 💊 Wirkstoff (öffnet Detail) + „+ Beobachten"/„✓ Beobachtet". `watched` ist ein Set
+// kleingeschriebener Namen; wird optimistisch mitgepflegt.
+function substanceWatchChip(w, watched) {
+  const group = el(`<span class="row" style="gap:2px;align-items:stretch"></span>`);
+  const chip = el(`<button class="small sortbtn">💊 ${esc(w)}</button>`);
+  chip.onclick = () => openWirkstoff(w);
+  const btn = el(`<button class="small ghost" title="${esc(t('search_watch_title'))}"></button>`);
+  const key = w.toLowerCase();
+  const paint = () => { const on = watched.has(key); btn.textContent = on ? t('search_watched') : t('search_watch'); btn.classList.toggle('watched-on', on); };
+  btn.onclick = async () => {
+    btn.disabled = true;
+    try {
+      if (watched.has(key)) { await api('DELETE','/api/watchlist/'+encodeURIComponent(w)); watched.delete(key); }
+      else { await api('POST','/api/watchlist',{ wirkstoff: w }); watched.add(key); }
+      paint();
+    } catch(e) { /* Titel/Zustand bleibt */ }
+    btn.disabled = false;
+  };
+  paint();
+  group.appendChild(chip); group.appendChild(btn);
+  return group;
 }
 
 async function renderWatchlistCard(feed, items, suggestions = [], premium = false) {

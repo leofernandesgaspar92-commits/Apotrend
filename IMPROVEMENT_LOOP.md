@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #128 — 2026-07-20 — Ein-Klick-Beobachten auch aus „zuletzt angesehen" (Konsistenz)
+- **THINK:** Konsistenz-Lücke: In der Suche kann man Wirkstoffe mit einem Klick beobachten (#111), bei den „zuletzt angesehen"-Chips auf der Übersicht nicht. Sichtbarer, universeller Nutzen; Wiederverwendung statt Duplikat.
+- **WORK:** Wiederverwendbaren Helper `substanceWatchChip(w, watched)` extrahiert (💊 Wirkstoff öffnet Detail + „+ Beobachten"/„✓ Beobachtet", optimistisch, grüne Aktiv-Kennzeichnung). Recents nutzen ihn jetzt; beobachtete Wirkstoffe aus `d.watchlist.items` vormarkiert. Keine neuen i18n-Schlüssel (bestehende `search_watch*`).
+- **CHECK:** 320 grün, Smoke 19/19, Guards 0. **Browser:** Recents-Chip „+ Beobachten" → „✓ Beobachtet" (grün) → landet in der Merkliste, 0 JS-Fehler.
+
 ### Cycle #127 — 2026-07-20 — Live-Daten-Anschluss komplett: Rabatte (3. Datentyp) — Kern-Trio auto-connect
 - **THINK:** Die Auto-Connect-Datenschicht abrunden: nach Engpässen (#118) und Preisen (#126) jetzt **Rabatte** — dann ziehen alle drei Kern-Datentypen automatisch echte Daten, sobald angeschlossen.
 - **WORK:** `liveData.js` um `validateRabattePayload`/`refreshRabatte`/`isRabatteLive`/`liveRabatteSources` erweitert; `startLiveRefresh` nimmt jetzt auch `rabatteRepo`. `rabatteRepo.replaceFeed`. Env `APOTREND_LIVE_RABATTE_<CC>`; `/api/data-status` liefert `rabatte.live`; Server-Start refresht alle drei Typen. `rabatt_pct`/`ersparnis` werden serverseitig berechnet. Doku `LIVE_DATA.md` erweitert.
