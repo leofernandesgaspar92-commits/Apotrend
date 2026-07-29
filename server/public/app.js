@@ -127,7 +127,7 @@ const I18N = {
     rb_header:'🏷️ <b>Top-10 Rabatt-Aktionen</b> · höchster Rabatt oben · nur laufende Aktionen ·',
     rb_empty_t:'Derzeit keine laufenden Aktionen',
     rb_empty_s:'Aktuell sind keine Rabatt-Aktionen hinterlegt. Schau später wieder vorbei.',
-    rb_expiring:'⏳ Bald ablaufend', rb_csv_t:'Aktuelle Auswahl als CSV (Excel) für den Einkauf',
+    rb_expiring:'⏳ Bald ablaufend', rb_watched_only:'⭐ Nur beobachtete', rb_csv_t:'Aktuelle Auswahl als CSV (Excel) für den Einkauf',
     rb_none:'Keine Aktion für diese Auswahl.', rb_saving:'Ersparnis € {x} je Packung',
     rb_minorder:'💰 Bei Mindestabnahme ({n} Stück): € {x} gespart',
     rb_best:'⭐ Beste Aktion für {w} ({alt})', rb_alt_one:'1 weitere läuft', rb_alt_many:'{n} weitere laufen',
@@ -418,7 +418,7 @@ const I18N = {
     rb_header:'🏷️ <b>Top 10 deals</b> · highest discount on top · running offers only ·',
     rb_empty_t:'No running offers right now',
     rb_empty_s:'There are currently no discount offers on file. Check back later.',
-    rb_expiring:'⏳ Expiring soon', rb_csv_t:'Export current selection as CSV (Excel) for purchasing',
+    rb_expiring:'⏳ Expiring soon', rb_watched_only:'⭐ Watched only', rb_csv_t:'Export current selection as CSV (Excel) for purchasing',
     rb_none:'No offer for this selection.', rb_saving:'Saving € {x} per pack',
     rb_minorder:'💰 At minimum order ({n} units): € {x} saved',
     rb_best:'⭐ Best deal for {w} ({alt})', rb_alt_one:'1 more running', rb_alt_many:'{n} more running',
@@ -709,7 +709,7 @@ const I18N = {
     rb_header:'🏷️ <b>Top 10 descontos</b> · maior desconto no topo · só promoções ativas ·',
     rb_empty_t:'Sem promoções ativas de momento',
     rb_empty_s:'Não há promoções de desconto registadas. Volte mais tarde.',
-    rb_expiring:'⏳ A expirar em breve', rb_csv_t:'Exportar a seleção atual como CSV (Excel) para compras',
+    rb_expiring:'⏳ A expirar em breve', rb_watched_only:'⭐ Só vigiadas', rb_csv_t:'Exportar a seleção atual como CSV (Excel) para compras',
     rb_none:'Nenhuma promoção para esta seleção.', rb_saving:'Poupança € {x} por embalagem',
     rb_minorder:'💰 Na compra mínima ({n} unidades): € {x} poupados',
     rb_best:'⭐ Melhor promoção para {w} ({alt})', rb_alt_one:'mais 1 ativa', rb_alt_many:'mais {n} ativas',
@@ -1089,6 +1089,7 @@ let shortageQuery = '';  // Textsuche nach Wirkstoff/Präparat
 let shortageSort = 'kritisch'; // 'kritisch' (kritischste zuerst) | 'neu' (neueste zuerst)
 let rabattQuery = '';     // Textsuche im Rabatt-Reiter
 let rabattExpiring = false; // nur bald ablaufende Aktionen
+let rabattWatchedOnly = false; // nur Aktionen zu beobachteten Wirkstoffen
 let priceQuery = '';      // Textsuche im Preise-Reiter
 let myBookmarks = new Set();
 
@@ -2823,6 +2824,10 @@ async function loadRabatte() {
   feed.innerHTML = '<div class="loading">…</div>';
   try {
     const d = await api('GET','/api/rabatte');
+    // Beobachtungsliste laden, um „nur beobachtete" zu ermöglichen (Fehler = kein Filter).
+    let watched = new Set();
+    try { const wl = await api('GET','/api/watchlist'); watched = new Set((wl.items||[]).map(i => (i.wirkstoff||'').toLowerCase())); } catch { /* ohne Filter weiter */ }
+    if (!watched.size) rabattWatchedOnly = false; // ohne beobachtete Wirkstoffe keinen leeren Filter erzwingen
     feed.innerHTML = '';
     { const n = countryDataNotice(); if (n) feed.appendChild(n); }
     feed.appendChild(provenanceLegend());
@@ -2833,6 +2838,7 @@ async function loadRabatte() {
       <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center">
         <button class="small sortbtn${rabattExpiring?'':' active'}" data-exp="0" aria-pressed="${!rabattExpiring}">${esc(t('sh_f_all'))}</button>
         <button class="small sortbtn${rabattExpiring?' active':''}" data-exp="1" aria-pressed="${rabattExpiring}">${esc(t('rb_expiring'))}</button>
+        ${watched.size?`<button class="small sortbtn${rabattWatchedOnly?' active':''}" data-watchedonly aria-pressed="${rabattWatchedOnly}">${esc(t('rb_watched_only'))}</button>`:''}
         <span class="sp" style="flex:1"></span>
         <button class="ghost small" data-rcsv title="${esc(t('rb_csv_t'))}">⬇️ CSV</button>
       </div></div>`);
@@ -2845,8 +2851,10 @@ async function loadRabatte() {
       const q = rabattQuery.trim().toLowerCase();
       const list = d.rabatte.filter(r =>
         (!rabattExpiring || r.expiring_soon) &&
+        (!rabattWatchedOnly || watched.has((r.wirkstoff||'').toLowerCase())) &&
         (!q || (r.bezeichnung||'').toLowerCase().includes(q) || (r.wirkstoff||'').toLowerCase().includes(q) || (r.supplier||'').toLowerCase().includes(q)));
       bar.querySelectorAll('[data-exp]').forEach(b => { const on = (b.dataset.exp==='1')===rabattExpiring; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
+      { const wb = bar.querySelector('[data-watchedonly]'); if (wb) { wb.classList.toggle('active', rabattWatchedOnly); wb.setAttribute('aria-pressed', String(rabattWatchedOnly)); } }
       shown = list;
       const csvBtn = bar.querySelector('[data-rcsv]'); if (csvBtn) csvBtn.textContent = `⬇️ CSV (${list.length})`;
       listBox.innerHTML = '';
@@ -2854,6 +2862,7 @@ async function loadRabatte() {
       else list.forEach(r => listBox.appendChild(rabattCard(r)));
     };
     bar.querySelectorAll('[data-exp]').forEach(b => b.onclick = () => { rabattExpiring = b.dataset.exp==='1'; draw(); });
+    { const wb = bar.querySelector('[data-watchedonly]'); if (wb) wb.onclick = () => { rabattWatchedOnly = !rabattWatchedOnly; draw(); }; }
     const qi = bar.querySelector('[data-q]');
     let deb; qi.oninput = () => { clearTimeout(deb); deb = setTimeout(() => { rabattQuery = qi.value; draw(); }, 250); };
     draw();

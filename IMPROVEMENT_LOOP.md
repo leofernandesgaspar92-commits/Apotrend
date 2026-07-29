@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #129 — 2026-07-20 — Rabatte-Reiter: Filter „⭐ Nur beobachtete" (Einkaufs-Nutzen)
+- **THINK:** Für den Einkauf/Großhandel: aus vielen laufenden Aktionen schnell die zu den selbst beobachteten Wirkstoffen sehen. Verbindet Merkliste ↔ Rabatte, konkreter Zeitgewinn.
+- **WORK:** `loadRabatte` lädt zusätzlich die Beobachtungsliste; neuer Filter-Button „⭐ Nur beobachtete" (nur sichtbar, wenn überhaupt Wirkstoffe beobachtet werden), filtert Aktionen auf `watched.has(wirkstoff)`; Zustandssync + CSV-Export respektiert die Auswahl. i18n `rb_watched_only` DE/EN/PT.
+- **CHECK:** 320 grün, Smoke 19/19, Parität 773/773/773, Guards 0. **Browser:** 10 Aktionen → nach Filter 2 (beide Ibuprofen = beobachtet), 0 JS-Fehler.
+
 ### Cycle #128 — 2026-07-20 — Ein-Klick-Beobachten auch aus „zuletzt angesehen" (Konsistenz)
 - **THINK:** Konsistenz-Lücke: In der Suche kann man Wirkstoffe mit einem Klick beobachten (#111), bei den „zuletzt angesehen"-Chips auf der Übersicht nicht. Sichtbarer, universeller Nutzen; Wiederverwendung statt Duplikat.
 - **WORK:** Wiederverwendbaren Helper `substanceWatchChip(w, watched)` extrahiert (💊 Wirkstoff öffnet Detail + „+ Beobachten"/„✓ Beobachtet", optimistisch, grüne Aktiv-Kennzeichnung). Recents nutzen ihn jetzt; beobachtete Wirkstoffe aus `d.watchlist.items` vormarkiert. Keine neuen i18n-Schlüssel (bestehende `search_watch*`).
