@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #134 — 2026-07-20 — Engpass-Meldung: Duplikat-Hinweis (Datenqualität)
+- **THINK:** Themenwechsel: Meldet jemand einen Wirkstoff, für den bereits eine offene Meldung existiert, entstehen doppelte Einträge. Beim Tippen dezent darauf hinweisen und zum Ansehen/Bestätigen führen — bessere Datenqualität, ohne zu blockieren (Backend erlaubt weiter, andere sollen bestätigen).
+- **WORK:** `reportShortageCard(existing)` bekommt die aktuelle Engpassliste; beim Tippen im Wirkstoff-Feld (debounced) prüft es offene Meldungen (Status ≠ verfügbar) und zeigt „Für „{w}" gibt es bereits eine offene Meldung — Ansehen & bestätigen" → öffnet die Detailseite (mit Bestätigen-Button). i18n `sh_rep_exists`/`sh_rep_exists_view` DE/EN/PT.
+- **CHECK:** 320 grün, Smoke 19/19, Parität 777/777/777, Guards 0 (auch „Helle Inline-BGs 0" dank CSS-Var-Fallback). **Browser:** Hinweis bei „Amoxicillin" (Seed), keiner bei neuem Namen, Klick → Detailseite, 0 JS-Fehler.
+
 ### Cycle #133 — 2026-07-20 — Suche: „Letzte Suchen" als Schnell-Chips
 - **THINK:** Themenwechsel: Suchen wiederholen sich oft (dieselben Wirkstoffe/Lieferanten/Personen). Lokale „Letzte Suchen" als Ein-Klick-Chips sparen Tipparbeit — konkreter Komfort, keine Server-Änderung, kein Datenschutz-Thema (nur lokal).
 - **WORK:** `getRecentSearches`/`recordRecentSearch` (localStorage, max 6, dedupe). `renderSearch` merkt jede Suche und zeigt oben eine „🕘 Letzte Suchen"-Chip-Reihe (ohne die aktuelle Suche); Klick wiederholt die Suche. i18n `search_recent` DE/EN/PT.

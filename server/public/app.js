@@ -81,7 +81,7 @@ const I18N = {
     sh_empty:'Keine Engpässe für diese Auswahl. Filter zurücksetzen oder Suchbegriff ändern.',
     sh_rep_title:'➕ Engpass melden', sh_rep_open:'Formular öffnen', sh_rep_close:'Schließen',
     sh_rep_private:'ℹ️ Als Privatnutzer:in kannst du Engpässe lesen, aber nicht selbst melden oder bestätigen. Engpass-Meldungen sind sicherheitsrelevant und Fachkreisen (Apotheke, Pharma-Unternehmen, Behörde) vorbehalten.',
-    sh_rep_desc:'Merkst du selbst einen Lieferengpass? Melde ihn — Kolleg:innen, die den Wirkstoff beobachten, werden sofort informiert. (Kennzeichnung: 👥 Community-Meldung, nicht offiziell verifiziert.)',
+    sh_rep_desc:'Merkst du selbst einen Lieferengpass? Melde ihn — Kolleg:innen, die den Wirkstoff beobachten, werden sofort informiert. (Kennzeichnung: 👥 Community-Meldung, nicht offiziell verifiziert.)', sh_rep_exists:'Für „{w}" gibt es bereits eine offene Meldung.', sh_rep_exists_view:'Ansehen & bestätigen',
     sh_rep_w:'Wirkstoff *', sh_rep_w_ph:'z.B. Pantoprazol', sh_rep_b:'Präparat / Bezeichnung',
     sh_rep_b_ph:'z.B. Pantoprazol 40 mg Tabletten', sh_rep_status:'Status',
     sh_rep_opt_krit:'Kritischer Engpass (gar nicht lieferbar)', sh_rep_reason:'Grund (optional)',
@@ -372,7 +372,7 @@ const I18N = {
     sh_empty:'No shortages for this selection. Reset the filter or change the search term.',
     sh_rep_title:'➕ Report a shortage', sh_rep_open:'Open form', sh_rep_close:'Close',
     sh_rep_private:'ℹ️ As a private user you can read shortages but not report or confirm them. Shortage reports are safety-relevant and reserved for professionals (pharmacy, pharma company, authority).',
-    sh_rep_desc:'Noticing a supply shortage yourself? Report it — colleagues watching the substance are notified right away. (Labelled: 👥 community report, not officially verified.)',
+    sh_rep_desc:'Noticing a supply shortage yourself? Report it — colleagues watching the substance are notified right away. (Labelled: 👥 community report, not officially verified.)', sh_rep_exists:'There is already an open report for “{w}”.', sh_rep_exists_view:'View & confirm',
     sh_rep_w:'Substance *', sh_rep_w_ph:'e.g. Pantoprazole', sh_rep_b:'Product / name',
     sh_rep_b_ph:'e.g. Pantoprazole 40 mg tablets', sh_rep_status:'Status',
     sh_rep_opt_krit:'Critical shortage (unavailable)', sh_rep_reason:'Reason (optional)',
@@ -663,7 +663,7 @@ const I18N = {
     sh_empty:'Sem faltas para esta seleção. Reponha o filtro ou altere o termo de pesquisa.',
     sh_rep_title:'➕ Reportar uma falta', sh_rep_open:'Abrir formulário', sh_rep_close:'Fechar',
     sh_rep_private:'ℹ️ Como utilizador particular pode ler as faltas, mas não comunicá-las nem confirmá-las. As comunicações de falta são relevantes para a segurança e reservadas a profissionais (farmácia, empresa farmacêutica, autoridade).',
-    sh_rep_desc:'Notou uma falta de fornecimento? Reporte-a — os colegas que vigiam a substância são notificados de imediato. (Identificado: 👥 aviso da comunidade, não verificado oficialmente.)',
+    sh_rep_desc:'Notou uma falta de fornecimento? Reporte-a — os colegas que vigiam a substância são notificados de imediato. (Identificado: 👥 aviso da comunidade, não verificado oficialmente.)', sh_rep_exists:'Já existe um aviso aberto para „{w}".', sh_rep_exists_view:'Ver & confirmar',
     sh_rep_w:'Substância *', sh_rep_w_ph:'ex. Pantoprazol', sh_rep_b:'Produto / designação',
     sh_rep_b_ph:'ex. Pantoprazol 40 mg comprimidos', sh_rep_status:'Estado',
     sh_rep_opt_krit:'Falta crítica (indisponível)', sh_rep_reason:'Motivo (opcional)',
@@ -2219,7 +2219,7 @@ async function loadShortages() {
     feed.innerHTML = '';
     { const n = countryDataNotice(); if (n) feed.appendChild(n); }
     feed.appendChild(provenanceLegend());
-    feed.appendChild(reportShortageCard());
+    feed.appendChild(reportShortageCard(d.shortages));
     const bar = shortageFilterBar();
     feed.appendChild(bar);
     const listBox = el('<div data-shortlist></div>');
@@ -2290,7 +2290,7 @@ function shortageFilterBar() {
 }
 
 // "Engpass melden": eine Apotheke meldet einen selbst beobachteten Engpass (Community).
-function reportShortageCard() {
+function reportShortageCard(existing = []) {
   // Privatnutzer:innen: Engpass-Meldung ist Fachkreisen vorbehalten (sicherheitsrelevant).
   // Statt des Formulars ein klarer Hinweis (das Backend erzwingt es zusätzlich).
   if (me && me.account_type === 'private') {
@@ -2306,6 +2306,7 @@ function reportShortageCard() {
     <div class="hidden" data-form style="margin-top:10px">
       <label>${esc(t('sh_rep_w'))}</label>
       <input data-w placeholder="${esc(t('sh_rep_w_ph'))}">
+      <div data-exists style="margin-top:6px"></div>
       <label style="margin-top:6px">${esc(t('sh_rep_b'))}</label>
       <input data-b placeholder="${esc(t('sh_rep_b_ph'))}">
       <label style="margin-top:6px">${esc(t('sh_rep_status'))}</label>
@@ -2324,6 +2325,26 @@ function reportShortageCard() {
   const form = card.querySelector('[data-form]');
   const toggle = card.querySelector('[data-toggle]');
   toggle.onclick = () => { const open = form.classList.toggle('hidden'); toggle.textContent = open ? t('sh_rep_open') : t('sh_rep_close'); };
+  // Datenqualität: gibt es schon eine offene Meldung zum getippten Wirkstoff, zum Ansehen/
+  // Bestätigen führen statt ein Duplikat anzulegen (nur Hinweis, blockiert nichts).
+  const openByWirkstoff = new Map();
+  (existing || []).forEach(s => { if (s.status && s.status !== 'verfuegbar' && s.wirkstoff) openByWirkstoff.set(s.wirkstoff.trim().toLowerCase(), s.wirkstoff.trim()); });
+  const existsBox = card.querySelector('[data-exists]');
+  const winput = card.querySelector('[data-w]');
+  let deb;
+  winput.oninput = () => {
+    clearTimeout(deb);
+    deb = setTimeout(() => {
+      const w = winput.value.trim().toLowerCase();
+      const hit = openByWirkstoff.get(w);
+      existsBox.innerHTML = '';
+      if (hit) {
+        const hint = el(`<div class="muted" style="font-size:13px;background:var(--info-bg,#eef);border:1px solid var(--info-bd,#cce);border-radius:8px;padding:6px 10px">${esc(ti('sh_rep_exists', { w: hit }))} <button class="linklike small" data-view>${esc(t('sh_rep_exists_view'))}</button></div>`);
+        hint.querySelector('[data-view]').onclick = () => openWirkstoff(hit);
+        existsBox.appendChild(hint);
+      }
+    }, 300);
+  };
   card.querySelector('[data-send]').onclick = async () => {
     const err = card.querySelector('[data-err]'); err.textContent = '';
     const wirkstoff = card.querySelector('[data-w]').value.trim();
