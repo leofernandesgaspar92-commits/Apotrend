@@ -35,7 +35,7 @@ const I18N = {
     nav_exchange:'🔄 Biete/Suche', nav_news:'📰 News',
     search_ph:'🔎 Suchen: Wirkstoff, Kolleg:in (@handle), Beitrag, Engpass, Preis…',
     hdr_help:'Hilfe', hdr_mod:'Moderation', hdr_dm:'Nachrichten', hdr_notif:'Meldungen',
-    hdr_logout:'Abmelden', country_title:'Land wechseln (stellt auch die Sprache um)',
+    hdr_logout:'Abmelden', hdr_myprofile:'Mein Profil', country_title:'Land wechseln (stellt auch die Sprache um)',
     search_go:'Suchen', theme_dark:'Dunkel', theme_light:'Hell', font_label:'Schrift', aria_theme:'Hell/Dunkel umschalten',
     theme_to_dark:'Zu dunklem Modus wechseln', theme_to_light:'Zu hellem Modus wechseln',
     data_notice_title:'ℹ️ Hinweis zu den Daten für {land}',
@@ -329,7 +329,7 @@ const I18N = {
     nav_exchange:'🔄 Offer/Seek', nav_news:'📰 News',
     search_ph:'🔎 Search: substance, colleague (@handle), post, shortage, price…',
     hdr_help:'Help', hdr_mod:'Moderation', hdr_dm:'Messages', hdr_notif:'Alerts',
-    hdr_logout:'Log out', country_title:'Change country (also switches the language)',
+    hdr_logout:'Log out', hdr_myprofile:'My profile', country_title:'Change country (also switches the language)',
     search_go:'Search', theme_dark:'Dark', theme_light:'Light', font_label:'Text size', aria_theme:'Toggle light/dark',
     theme_to_dark:'Switch to dark mode', theme_to_light:'Switch to light mode',
     data_notice_title:'ℹ️ About the data for {land}',
@@ -623,7 +623,7 @@ const I18N = {
     nav_exchange:'🔄 Oferta/Procura', nav_news:'📰 Notícias',
     search_ph:'🔎 Pesquisar: substância, colega (@handle), publicação, falta, preço…',
     hdr_help:'Ajuda', hdr_mod:'Moderação', hdr_dm:'Mensagens', hdr_notif:'Alertas',
-    hdr_logout:'Sair', country_title:'Mudar de país (muda também o idioma)',
+    hdr_logout:'Sair', hdr_myprofile:'Meu perfil', country_title:'Mudar de país (muda também o idioma)',
     search_go:'Pesquisar', theme_dark:'Escuro', theme_light:'Claro', font_label:'Tamanho', aria_theme:'Alternar claro/escuro',
     theme_to_dark:'Mudar para modo escuro', theme_to_light:'Mudar para modo claro',
     data_notice_title:'ℹ️ Sobre os dados de {land}',
@@ -995,6 +995,19 @@ const el = (h) => { const t=document.createElement('template'); t.innerHTML=h.tr
 const esc = (s) => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 // Website-Link lesbar kürzen: ohne Protokoll und ohne trailing slash (z.B. „apotrend.at").
 const prettyUrl = (u) => String(u||'').replace(/^https?:\/\//i,'').replace(/\/$/,'');
+// Kopfzeile: eigenes Profil als anklickbare Mini-Kachel (Foto + Handle) rendern.
+function renderWhoami() {
+  const w = document.getElementById('whoami');
+  if (!w) return;
+  if (!me) { w.innerHTML = ''; w.classList.remove('clickable'); w.removeAttribute('role'); w.removeAttribute('tabindex'); w.onclick = null; w.onkeydown = null; return; }
+  w.innerHTML = avatarHtml(me, 26, false) + '<span>@' + esc(me.handle) + '</span>';
+  w.classList.add('clickable');
+  w.setAttribute('role', 'button'); w.setAttribute('tabindex', '0');
+  w.setAttribute('title', t('hdr_myprofile')); w.setAttribute('aria-label', t('hdr_myprofile'));
+  const go = () => openProfile(me.handle);
+  w.onclick = go;
+  w.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
+}
 // Relative Zeit in Klartext (Owner-Vorgabe: keine kryptischen Kürzel).
 // Bild lokal verkleinern (max. Kante ~1200px, JPEG) -> kleine data-URL, spart Speicher/Upload.
 function fileToDataUrl(file, maxDim = 1200, quality = 0.82) {
@@ -1110,6 +1123,7 @@ function hideHeaderForAuth() {
   ['btnLogout','btnNotif','btnDm','btnMod','btnHelp'].forEach(id => { const b = document.getElementById(id); if (b) b.classList.add('hidden'); });
   const cs = document.getElementById('countrySwitch'); if (cs) cs.classList.add('hidden');
   document.getElementById('whoami').textContent = '';
+  document.getElementById('whoami').classList.remove('clickable');
 }
 function currentAuthCountry() {
   const c = (localStorage.getItem('apo_country') || '').toUpperCase();
@@ -1400,7 +1414,7 @@ async function mainScreen() {
   iAmModerator = !!meData.is_moderator;
   // Sprache folgt dem Land des Profils (Owner-Vorgabe: länderbasierte Plattform).
   setLocale(me && me.locale ? me.locale : 'de');
-  document.getElementById('whoami').textContent = me ? '@'+me.handle : '';
+  renderWhoami();
   document.getElementById('btnLogout').classList.remove('hidden');
   document.getElementById('btnNotif').classList.remove('hidden');
   document.getElementById('btnDm').classList.remove('hidden');
@@ -3644,7 +3658,7 @@ function editProfileForm(p) {
       if (cover !== undefined) payload.coverUrl = cover;
       await api('POST','/api/profile', payload);
       const meData = await api('GET','/api/me'); me = meData.profile;
-      document.getElementById('whoami').textContent = me ? '@'+me.handle : '';
+      renderWhoami();
       openProfile(p.handle);
     } catch(e){ document.getElementById('ep_err').textContent = e.message; }
   };
@@ -4139,16 +4153,18 @@ function repostEmbedHtml(o) {
   // anklickbares/tastaturbedienbares Element — verschachtelte Klick-Elemente (Mentions/
   // Hashtags als eigene Buttons) darin wären ungültiges ARIA (Button im Button).
   return `<div class="repost-embed clickable" data-openpost="${esc(o.id)}">
-    <div class="row"><span class="post-author">${esc(a.display_name || t('ex_unknown'))}</span><span class="handle">@${esc(a.handle || '?')}</span>${a.verified ? `<span class="verified">${esc(t('pc_verified'))}</span>` : ''}</div>
+    <div class="row" style="align-items:center">${avatarHtml(a, 28, false)}<span class="post-author">${esc(a.display_name || t('ex_unknown'))}</span><span class="handle">@${esc(a.handle || '?')}</span>${a.verified ? `<span class="verified">${esc(t('pc_verified'))}</span>` : ''}</div>
     <div class="post-body">${esc(o.body)}</div>${img}${pollHint}
   </div>`;
 }
 // Kleines Autor-Avatar (Bild wenn vorhanden, sonst Initialen) für Feed-Karten.
-function avatarHtml(a, size = 36) {
+// link=false: rein dekorativ (z.B. verschachtelt in einem bereits klickbaren Element).
+function avatarHtml(a, size = 36, link = true) {
   const ini = (a.display_name||'?').split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();
   const st = `width:${size}px;height:${size}px;font-size:${Math.round(size*0.38)}px;margin-right:9px`;
-  if (a.avatar_url) return `<img class="avatar clickable" data-openprofile="${esc(a.handle||'')}" alt="" style="object-fit:cover;${st}" src="${esc(a.avatar_url)}">`;
-  return `<span class="avatar clickable" data-openprofile="${esc(a.handle||'')}" style="${st}">${esc(ini)}</span>`;
+  const attr = link ? ` class="avatar clickable" data-openprofile="${esc(a.handle||'')}"` : ' class="avatar"';
+  if (a.avatar_url) return `<img${attr} alt="" style="object-fit:cover;${st}" src="${esc(a.avatar_url)}">`;
+  return `<span${attr} style="${st}">${esc(ini)}</span>`;
 }
 function postCard(p) {
   const a = p.author || {};
@@ -4323,7 +4339,8 @@ function commentRow(postId, c, card, depth = 0) {
   const iAmAsker = me && post.author && post.author.handle === me.handle;
   const accentStyle = isAccepted ? 'border-left:3px solid #0b7f28;background:rgba(11,127,40,.06);' : (indent?'border-left:2px solid var(--line);':'');
   const row = el(`<div class="comment" style="${indent?`margin-left:${indent}px;`:''}${accentStyle}">
-    <div class="row" style="align-items:baseline">
+    <div class="row" style="align-items:center">
+      ${avatarHtml(au, 30)}
       <b class="clickable" data-openprofile="${esc(au.handle||'')}">${esc(au.display_name||t('ex_unknown'))}</b>
       <span class="handle clickable" data-openprofile="${esc(au.handle||'')}">@${esc(au.handle||'?')}</span>
       ${au.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}

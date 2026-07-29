@@ -395,7 +395,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
         const counts = {};
         for (const t of REACTION_TYPES) counts[t] = reacts.filter(r => r.type === t).length;
         const mine = viewerUserId ? reacts.find(r => r.user_id === viewerUserId) : null;
-        return { ...c, author: prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified, is_editorial: prof.is_editorial, account_type: prof.account_type } : null, reaction_counts: counts, my_reaction: mine ? mine.type : null };
+        return { ...c, author: prof ? { handle: prof.handle, display_name: prof.display_name, avatar_url: prof.avatar_url || null, verified: prof.verified, is_editorial: prof.is_editorial, account_type: prof.account_type } : null, reaction_counts: counts, my_reaction: mine ? mine.type : null };
       });
     },
     editComment(actorUserId, commentId, body) {
