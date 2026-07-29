@@ -41,6 +41,7 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
           wirkstoff: x.wirkstoff,
           bezeichnung: x.deal.bezeichnung, supplier: x.deal.supplier,
           rabatt_pct: x.deal.rabatt_pct, aktionspreis: x.deal.aktionspreis,
+          ersparnis: x.deal.ersparnis, min_menge: x.deal.min_menge,
           gueltig_bis: x.deal.gueltig_bis, days_left: x.deal.days_left, expiring_soon: x.deal.expiring_soon,
         }));
 

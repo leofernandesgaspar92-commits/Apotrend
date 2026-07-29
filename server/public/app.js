@@ -271,7 +271,7 @@ const I18N = {
     e_coin_unavailable:'Kryptowährung nicht verfügbar.', e_tx_ref_missing:'Bitte die Transaktions-ID angeben.', e_payment_not_found:'Zahlung nicht gefunden.', e_product_unknown:'Unbekanntes Produkt.',
     e_reset_invalid:'E-Mail oder Wiederherstellungscode ist ungültig.',
     at_label:'Kontotyp', at_pharmacy:'🏥 Apotheke', at_pharma:'🏭 Pharma-Unternehmen', at_authority:'🏛️ Behörde', at_private:'👤 Privatnutzer:in',
-    wd_title:'🏷️ Aktionen zu deinen Wirkstoffen', wd_all:'Alle Rabatte', wd_sub:'Für diese von dir beobachteten Wirkstoffe läuft gerade eine Aktion:',
+    wd_title:'🏷️ Aktionen zu deinen Wirkstoffen', wd_all:'Alle Rabatte', wd_sub:'Für diese von dir beobachteten Wirkstoffe läuft gerade eine Aktion:', wd_saving:'spare € {x}/Pkg',
     wo_title:'🔄 Bezugsquellen zu deinen Wirkstoffen', wo_sub:'Für diese beobachteten Wirkstoffe bieten Apotheken gerade Bestand an:',
     wo_offers_sg:'Angebot', wo_offers_pl:'Angebote', wo_in_exchange:'im Bestandsaustausch',
     bm_doc:'Merkliste', bm_title:'🔖 Meine Merkliste', bm_empty_t:'Noch nichts gemerkt',
@@ -562,7 +562,7 @@ const I18N = {
     e_coin_unavailable:'Cryptocurrency not available.', e_tx_ref_missing:'Please enter the transaction ID.', e_payment_not_found:'Payment not found.', e_product_unknown:'Unknown product.',
     e_reset_invalid:'Email or recovery code is invalid.',
     at_label:'Account type', at_pharmacy:'🏥 Pharmacy', at_pharma:'🏭 Pharma company', at_authority:'🏛️ Authority', at_private:'👤 Private user',
-    wd_title:'🏷️ Deals for your substances', wd_all:'All deals', wd_sub:'A deal is currently running for these substances you watch:',
+    wd_title:'🏷️ Deals for your substances', wd_all:'All deals', wd_sub:'A deal is currently running for these substances you watch:', wd_saving:'save € {x}/pack',
     wo_title:'🔄 Sources for your substances', wo_sub:'Pharmacies are currently offering stock for these substances you watch:',
     wo_offers_sg:'offer', wo_offers_pl:'offers', wo_in_exchange:'in the stock exchange',
     bm_doc:'Bookmarks', bm_title:'🔖 My bookmarks', bm_empty_t:'Nothing saved yet',
@@ -853,7 +853,7 @@ const I18N = {
     e_coin_unavailable:'Criptomoeda não disponível.', e_tx_ref_missing:'Introduza o ID da transação.', e_payment_not_found:'Pagamento não encontrado.', e_product_unknown:'Produto desconhecido.',
     e_reset_invalid:'E-mail ou código de recuperação inválido.',
     at_label:'Tipo de conta', at_pharmacy:'🏥 Farmácia', at_pharma:'🏭 Empresa farmacêutica', at_authority:'🏛️ Autoridade', at_private:'👤 Utilizador privado',
-    wd_title:'🏷️ Promoções para as suas substâncias', wd_all:'Todos os descontos', wd_sub:'Há uma promoção a decorrer para estas substâncias que vigia:',
+    wd_title:'🏷️ Promoções para as suas substâncias', wd_all:'Todos os descontos', wd_sub:'Há uma promoção a decorrer para estas substâncias que vigia:', wd_saving:'poupa € {x}/emb.',
     wo_title:'🔄 Fontes para as suas substâncias', wo_sub:'Há farmácias a oferecer stock para estas substâncias que vigia:',
     wo_offers_sg:'oferta', wo_offers_pl:'ofertas', wo_in_exchange:'na troca de stock',
     bm_doc:'Marcadores', bm_title:'🔖 Os meus marcadores', bm_empty_t:'Ainda nada guardado',
@@ -1654,7 +1654,7 @@ async function loadOverview() {
   if (d.watch_deals && d.watch_deals.length) {
     const c = el(`<div class="card"><div class="row"><b>${esc(t('wd_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>${esc(t('wd_all'))}</button></div>
       <div class="muted" style="font-size:13px;margin:2px 0 6px">${esc(t('wd_sub'))}</div>
-      ${d.watch_deals.map(w=>`<div class="comment">🏷️ <b>${esc(w.wirkstoff)}</b> — ${esc(w.supplier)} <span style="color:var(--ok-fg);font-weight:700">−${w.rabatt_pct}%</span> (€ ${fmtMoney(w.aktionspreis)})${w.expiring_soon?` · <b style="color:${w.days_left<=3?'var(--crit-fg)':'var(--warn-fg)'}">${esc(w.days_left<=0?t('pg_only_today'):ti('pg_only_days',{d:w.days_left}))}</b>`:''}</div>`).join('')}</div>`);
+      ${d.watch_deals.map(w=>`<div class="comment">🏷️ <b>${esc(w.wirkstoff)}</b> — ${esc(w.supplier)} <span style="color:var(--ok-fg);font-weight:700">−${w.rabatt_pct}%</span> (€ ${fmtMoney(w.aktionspreis)})${w.ersparnis>0?` · <span style="color:var(--ok-fg);font-weight:700">${esc(ti('wd_saving',{x:fmtMoney(w.ersparnis)}))}</span>`:''}${w.expiring_soon?` · <b style="color:${w.days_left<=3?'var(--crit-fg)':'var(--warn-fg)'}">${esc(w.days_left<=0?t('pg_only_today'):ti('pg_only_days',{d:w.days_left}))}</b>`:''}</div>`).join('')}</div>`);
     c.querySelector('[data-all]').onclick = () => goTab('rabatte');
     feed.appendChild(c);
   }

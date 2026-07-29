@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #140 — 2026-07-20 — Übersicht: konkrete €-Ersparnis bei Aktionen zu beobachteten Wirkstoffen
+- **THINK:** Für die zahlende Zielgruppe (Einkauf) ist die konkrete Ersparnis in € greifbarer als nur „−X %". Die Aktionen-Karte auf der Übersicht zeigte Rabatt-% und Aktionspreis, aber nicht die €-Ersparnis pro Packung.
+- **WORK:** Overview-Service liefert `ersparnis` (+`min_menge`) je watch_deal; Frontend zeigt zusätzlich „spare € {x}/Pkg" (grün) in der „Aktionen zu deinen Wirkstoffen"-Karte. i18n `wd_saving` DE/EN/PT.
+- **CHECK:** 320 grün, Smoke 19/19, Parität 789/789/789, Guards 0. **Browser:** beobachtetes Ibuprofen → Karte zeigt „spare € 0,70/Pkg", API liefert `ersparnis`, 0 JS-Fehler.
+
 ### Cycle #139 — 2026-07-20 — Benachrichtigungen: Filter „⭐ Engpässe & Beschaffung" / „💬 Sozial"
 - **THINK:** An vollen Tagen mischen sich kritische Frühwarnungen mit sozialen Meldungen (Likes/Follows). Ein Filter, um sich aufs Beschaffungs-Relevante zu konzentrieren, spart Zeit. Rein Anzeige-seitig (kein Backend, keine Zähler-Desync).
 - **WORK:** `showNotifications` in `drawNotifs()` refaktoriert; Filter-Chips „Alle / ⭐ Engpässe & Beschaffung / 💬 Sozial" erscheinen nur, wenn es sich lohnt (≥5 Meldungen und beide Kategorien vertreten). Beschaffungs-Kategorie = `watch_alert, shortage_confirm, watch_offer, exchange_offer, exchange_want`. i18n `nf_*` DE/EN/PT.
