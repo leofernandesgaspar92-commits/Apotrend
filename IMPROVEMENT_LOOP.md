@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #132 — 2026-07-20 — Willkommens-Dialog barrierefrei (role/aria/Escape/Fokus)
+- **THINK:** Themenwechsel: der Onboarding-Overlay (einziges Modal der App) hatte keine Dialog-Semantik — für Tastatur-/Screenreader-Nutzer:innen eine echte Lücke (wichtig auf einer Fachplattform).
+- **WORK:** Inneres Panel bekommt `role="dialog"` + `aria-modal="true"` + `aria-labelledby` (Titel-`id`); **Escape** schließt (Listener sauber wieder entfernt); Fokus wandert beim Öffnen auf den „Los geht's"-Button. Verhalten (Backdrop-Klick schließt, `apo_welcome_seen`) unverändert.
+- **CHECK:** 320 grün, Smoke 19/19, Browser-a11y-Audit sauber. **Browser-e2e:** neuer Nutzer sieht Dialog (role/aria/Titel korrekt), Close-Button fokussiert, Escape schließt, bleibt nach Reload zu, 0 JS-Fehler.
+
 ### Cycle #131 — 2026-07-20 — Preise-Reiter: Filter „⭐ Nur beobachtete" + i18n-Fix (Tooltip)
 - **THINK:** „Fokus auf meine Wirkstoffe" über die Reiter konsistent machen (Engpässe: Beobachten-Button, Rabatte #129, jetzt Preise). Zusätzlich echter i18n-Bug gefunden: Wirkstoff-Tooltip im Preisvergleich war hartkodiert deutsch.
 - **WORK:** `loadPrices` lädt die Beobachtungsliste; Filter-Button „⭐ Nur beobachtete" (nur bei ≥1 beobachtetem Wirkstoff), filtert Preisgruppen auf `watched.has(wirkstoff)`, Zustandssync. Tooltip `title="Alles zu {w}"` → i18n `pg_all_about` DE/EN/PT (bestehender `rb_watched_only` wiederverwendet).

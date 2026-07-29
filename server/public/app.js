@@ -1561,8 +1561,8 @@ function showWelcome(reopened) {
     ['✉️', 'wc_s7_t', 'wc_s7_d'], ['🔎', 'wc_s8_t', 'wc_s8_d'],
   ];
   const ov = el(`<div id="welcomeOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px">
-    <div class="card" style="max-width:520px;width:100%;max-height:90vh;overflow-y:auto">
-      <div class="row"><h1 style="flex:1;margin:0">${esc(t('wc_title'))}</h1></div>
+    <div class="card" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle" style="max-width:520px;width:100%;max-height:90vh;overflow-y:auto">
+      <div class="row"><h1 id="welcomeTitle" style="flex:1;margin:0">${esc(t('wc_title'))}</h1></div>
       <p class="muted" style="margin:6px 0 14px">${esc(t('wc_sub'))}</p>
       ${steps.map(([ic,tk,dk])=>`<div style="display:flex;gap:12px;margin:12px 0">
         <div style="font-size:24px;flex:0 0 auto">${ic}</div>
@@ -1576,9 +1576,12 @@ function showWelcome(reopened) {
     </div>
   </div>`);
   document.body.appendChild(ov);
-  const close = () => { localStorage.setItem('apo_welcome_seen','1'); ov.remove(); };
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  const close = () => { localStorage.setItem('apo_welcome_seen','1'); document.removeEventListener('keydown', onKey); ov.remove(); };
   ov.querySelector('#welcomeClose').onclick = close;
   ov.onclick = (e) => { if (e.target === ov) close(); };
+  document.addEventListener('keydown', onKey);       // Escape schließt (Barrierefreiheit)
+  ov.querySelector('#welcomeClose').focus();          // Fokus in den Dialog setzen
 }
 
 function goTab(name) {
