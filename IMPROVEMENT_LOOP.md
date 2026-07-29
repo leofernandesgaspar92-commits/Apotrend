@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #142 — 2026-07-20 — Bestandsaustausch: Frische-Hinweis für alte eigene Einträge (Datenqualität)
+- **THINK:** Marktplatz-Qualität: alte, offene Biete/Suche-Einträge veralten und verzerren den Netzwerk-Überblick. Eigene, lange offene Einträge dezent zum Aufräumen anregen — hält Angebot/Nachfrage aktuell, ohne zu drängen.
+- **WORK:** In `exchangeCard` bei eigenem, offenem Eintrag ab **21 Tagen** Alter ein Hinweis „⏳ Dieser Eintrag ist {d} Tage alt — noch aktuell?" + „Als erledigt markieren" (löst `resolve` aus). Alter aus `created_at`. i18n `ex_stale`/`ex_stale_done` DE/EN/PT.
+- **CHECK:** 320 grün, Smoke 19/19, Parität 799/799/799, Guards 0. **Browser (Date.now +30 T simuliert):** Banner erscheint, Klick markiert erledigt; bei echter Zeit (frisch) kein Banner; 0 JS-Fehler.
+
 ### Cycle #141 — 2026-07-20 — Bestandsaustausch: CSV-Export (Export-Abdeckung komplett)
 - **THINK:** Der einzige Daten-Reiter ohne Export war Biete/Suche. Ein CSV der aktuellen Auswahl gibt Einkauf/Logistik einen Netzwerk-Überblick zu Angebot/Nachfrage. Nur öffentliche Angaben (Anbieter-Handle) — Kontakt bleibt über DM.
 - **WORK:** `exportExchangeCsv(entries)` (Art · Präparat · Menge · Ort/Region · Anbieter · Handle · Erstellt · passende Treffer); Export-Karte mit „⬇️ CSV" im Biete/Suche-Reiter, exportiert die gerade gefilterte Auswahl. i18n `ex_csv_*` DE/EN/PT.

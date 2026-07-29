@@ -150,7 +150,7 @@ const I18N = {
     ex_badge_biete:'📦 Biete', ex_badge_suche:'🔎 Suche', ex_done_badge:'✓ erledigt', ex_qty:'Menge:', ex_match_offers:'🔗 {n} passende Angebote', ex_match_offers_1:'🔗 1 passendes Angebot', ex_match_seeks:'🔗 {n} passende Gesuche', ex_match_seeks_1:'🔗 1 passendes Gesuch', ex_flash_offers:'{n} passende Angebote gefunden — hier deine Treffer.', ex_flash_offers_1:'1 passendes Angebot gefunden — hier dein Treffer.', ex_flash_seeks:'{n} passende Gesuche gefunden — hier deine Treffer.', ex_flash_seeks_1:'1 passendes Gesuch gefunden — hier dein Treffer.',
     ex_photo_alt:'Foto zum Eintrag', ex_by:'von', ex_unknown:'Unbekannt',
     ex_contact_btn:'✉️ Kontaktieren', ex_dm_draft:'Hallo! Zu deinem Eintrag „{kind}: {item}" — ist das noch aktuell?', ex_reopen:'↻ Wieder öffnen', ex_done_btn:'✓ Erledigt',
-    ex_del_confirm:'Eintrag löschen?',
+    ex_del_confirm:'Eintrag löschen?', ex_stale:'Dieser Eintrag ist {d} Tage alt — noch aktuell?', ex_stale_done:'Als erledigt markieren',
     co_label:"Was gibt's Neues? (kurzer Fachbeitrag)",
     co_ph:'Bei uns gerade Engpass bei Amoxicillin — wer hat noch Bestand?',
     co_src_ph:'🔗 Quelle (Link, optional – z.B. BASG/Kammer)', co_img:'📷 Bild', co_img_clear:'✕ entfernen',
@@ -441,7 +441,7 @@ const I18N = {
     ex_badge_biete:'📦 Offer', ex_badge_suche:'🔎 Request', ex_done_badge:'✓ done', ex_qty:'Quantity:', ex_match_offers:'🔗 {n} matching offers', ex_match_offers_1:'🔗 1 matching offer', ex_match_seeks:'🔗 {n} matching requests', ex_match_seeks_1:'🔗 1 matching request', ex_flash_offers:'{n} matching offers found — here are your hits.', ex_flash_offers_1:'1 matching offer found — here is your hit.', ex_flash_seeks:'{n} matching requests found — here are your hits.', ex_flash_seeks_1:'1 matching request found — here is your hit.',
     ex_photo_alt:'Entry photo', ex_by:'by', ex_unknown:'Unknown',
     ex_contact_btn:'✉️ Contact', ex_dm_draft:'Hi! About your listing “{kind}: {item}” — is it still available?', ex_reopen:'↻ Reopen', ex_done_btn:'✓ Done',
-    ex_del_confirm:'Delete entry?',
+    ex_del_confirm:'Delete entry?', ex_stale:'This entry is {d} days old — still current?', ex_stale_done:'Mark as done',
     co_label:"What's new? (short professional post)",
     co_ph:'We have a shortage of Amoxicillin right now — who still has stock?',
     co_src_ph:'🔗 Source (link, optional – e.g. regulator/chamber)', co_img:'📷 Image', co_img_clear:'✕ remove',
@@ -732,7 +732,7 @@ const I18N = {
     ex_badge_biete:'📦 Oferta', ex_badge_suche:'🔎 Procura', ex_done_badge:'✓ concluído', ex_qty:'Quantidade:', ex_match_offers:'🔗 {n} ofertas correspondentes', ex_match_offers_1:'🔗 1 oferta correspondente', ex_match_seeks:'🔗 {n} procuras correspondentes', ex_match_seeks_1:'🔗 1 procura correspondente', ex_flash_offers:'{n} ofertas correspondentes encontradas — aqui estão.', ex_flash_offers_1:'1 oferta correspondente encontrada — aqui está.', ex_flash_seeks:'{n} procuras correspondentes encontradas — aqui estão.', ex_flash_seeks_1:'1 procura correspondente encontrada — aqui está.',
     ex_photo_alt:'Foto da entrada', ex_by:'de', ex_unknown:'Desconhecido',
     ex_contact_btn:'✉️ Contactar', ex_dm_draft:'Olá! Sobre a sua entrada „{kind}: {item}" — ainda está disponível?', ex_reopen:'↻ Reabrir', ex_done_btn:'✓ Concluído',
-    ex_del_confirm:'Eliminar entrada?',
+    ex_del_confirm:'Eliminar entrada?', ex_stale:'Esta entrada tem {d} dias — ainda atual?', ex_stale_done:'Marcar como concluída',
     co_label:'O que há de novo? (publicação técnica curta)',
     co_ph:'Temos falta de Amoxicilina agora — quem ainda tem stock?',
     co_src_ph:'🔗 Fonte (ligação, opcional – ex. regulador/ordem)', co_img:'📷 Imagem', co_img_clear:'✕ remover',
@@ -2887,6 +2887,10 @@ function exchangeCard(e) {
                         : `<span style="background:var(--warn-bg);color:var(--warn-fg);border:1px solid var(--warn-bd);border-radius:999px;padding:2px 10px;font-weight:700;font-size:13px">${esc(t('ex_badge_suche'))}</span>`;
   const erledigt = e.status === 'erledigt';
   const doneBadge = erledigt ? ` <span style="background:var(--line);color:var(--muted);border-radius:999px;padding:2px 8px;font-size:12px;font-weight:600">${esc(t('ex_done_badge'))}</span>` : '';
+  // Frische-Hinweis: eigener, offener Eintrag, der schon lange steht — zum Aufräumen anregen
+  // (hält Angebot/Nachfrage im Netzwerk aktuell). Schwelle: 21 Tage.
+  const ageDays = e.created_at ? Math.floor((Date.now() - Date.parse(e.created_at)) / 86400000) : 0;
+  const stale = mine && !erledigt && ageDays >= 21;
   // Matchmaking-Signal: passende offene Gegen-Einträge (Biete zeigt Gesuche, Suche zeigt Angebote).
   const mc = (!erledigt && e.match_count >= 1) ? e.match_count : 0;
   const matchLabel = mc ? (isBiete
@@ -2903,6 +2907,7 @@ function exchangeCard(e) {
     ${mc?`<div style="margin-top:6px"><button class="linklike small" data-match style="color:var(--green);font-weight:700">${esc(matchLabel)}</button></div>`:''}
     ${e.note?`<div class="post-body" style="margin:6px 0">${esc(e.note)}</div>`:''}
     ${e.image && /^data:image\//.test(e.image) ? `<img src="${e.image}" alt="${esc(t('ex_photo_alt'))}" style="max-width:100%;border-radius:10px;margin-top:6px;display:block" />` : ''}
+    ${stale?`<div style="font-size:13px;margin-top:6px;background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-fg);border-radius:8px;padding:6px 10px">⏳ ${esc(ti('ex_stale',{d:ageDays}))} <button class="linklike small" data-freshdone>${esc(t('ex_stale_done'))}</button></div>`:''}
     <div class="row" style="margin-top:8px;align-items:baseline">
       <span class="handle clickable" data-openprofile="${esc(au.handle||'')}">${esc(t('ex_by'))} ${esc(au.display_name||t('ex_unknown'))} @${esc(au.handle||'?')}</span>
       <span class="sp" style="flex:1"></span>
@@ -2930,6 +2935,8 @@ function exchangeCard(e) {
   };
   const done = card.querySelector('[data-done]');
   if (done) done.onclick = async () => { try { await api('POST',`/api/exchange/${e.id}/resolve`); loadExchange(); } catch(err){ alert(err.message); } };
+  const freshDone = card.querySelector('[data-freshdone]');
+  if (freshDone) freshDone.onclick = async () => { try { await api('POST',`/api/exchange/${e.id}/resolve`); loadExchange(); } catch(err){ alert(err.message); } };
   const reopen = card.querySelector('[data-reopen]');
   if (reopen) reopen.onclick = async () => { try { await api('POST',`/api/exchange/${e.id}/reopen`); loadExchange(); } catch(err){ alert(err.message); } };
   const del = card.querySelector('[data-del]');
