@@ -122,6 +122,13 @@
   .data-pill.ref  { color:#8a6d00; background:#fff3c4; border-color:#f0d98a; }
   body.dark .data-pill.live { color:#7ee2a3; background:#0f3320; border-color:#1f5c39; }
   body.dark .data-pill.ref  { color:#ffd95e; background:#3a3200; border-color:#5c4f00; }
+  /* „Nach oben"-Button: erscheint beim Scrollen auf langen Listen (v.a. mobil). */
+  .backtotop { position:fixed; right:16px; bottom:16px; z-index:40; width:44px; height:44px; border-radius:50%;
+    border:none; background:var(--green); color:#fff; font-size:20px; line-height:44px; text-align:center; cursor:pointer;
+    box-shadow:0 2px 8px rgba(0,0,0,.25); opacity:0; transform:translateY(8px); transition:opacity .18s, transform .18s; pointer-events:none; }
+  .backtotop.show { opacity:1; transform:none; pointer-events:auto; }
+  .backtotop:hover { background:var(--green-d); }
+  @media print { .backtotop { display:none; } }
   /* Weicher Zeichenzähler an Textfeldern: dezent, wird bei Überschreitung rot. */
   .char-counter { font-size:12px; text-align:right; margin-top:2px; min-height:14px; }
   .char-counter.over { color:var(--crit-fg); font-weight:700; }

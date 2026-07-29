@@ -157,7 +157,7 @@ const I18N = {
     co_question:'❓ Als Fachfrage stellen (beste Antwort auswählbar)',
     co_poll:'📊 Umfrage', co_poll_q_ph:'Deine Frage…', co_poll_opt:'Antwortmöglichkeit', co_poll_add:'+ Option hinzufügen', co_poll_del:'Option entfernen', cc_remaining:'noch {n} Zeichen', cc_over:'{n} Zeichen zu viel', dr_restored:'✎ Entwurf wiederhergestellt', dr_discard:'verwerfen',
     pl_total:'{n} Stimmen', pl_total_one:'1 Stimme', pl_total_zero:'Noch keine Stimmen', pl_you:'✓ deine Stimme', pl_tap:'Tippe auf eine Option zum Abstimmen',
-    a11y_img_preview:'Bildvorschau', co_vis_aria:'Sichtbarkeit des Beitrags', ex_kind_aria:'Art des Eintrags',
+    a11y_img_preview:'Bildvorschau', backtotop_aria:'Nach oben scrollen', co_vis_aria:'Sichtbarkeit des Beitrags', ex_kind_aria:'Art des Eintrags',
     pv_public:'🌍 Öffentlich (alle Apotheker)', pv_followers:'👥 Nur meine Follower',
     co_follow_label:'Jemandem folgen (@Handle)', co_follow_btn:'Folgen',
     fe_home_t:'Dein Feed ist noch leer', fe_home_s:'Folge Kolleg:innen, dann erscheinen ihre Beiträge hier.',
@@ -448,7 +448,7 @@ const I18N = {
     co_question:'❓ Ask as a professional question (mark the best answer)',
     co_poll:'📊 Poll', co_poll_q_ph:'Your question…', co_poll_opt:'Answer option', co_poll_add:'+ Add option', co_poll_del:'Remove option', cc_remaining:'{n} characters left', cc_over:'{n} characters too many', dr_restored:'✎ Draft restored', dr_discard:'discard',
     pl_total:'{n} votes', pl_total_one:'1 vote', pl_total_zero:'No votes yet', pl_you:'✓ your vote', pl_tap:'Tap an option to vote',
-    a11y_img_preview:'Image preview', co_vis_aria:'Post visibility', ex_kind_aria:'Entry type',
+    a11y_img_preview:'Image preview', backtotop_aria:'Scroll to top', co_vis_aria:'Post visibility', ex_kind_aria:'Entry type',
     pv_public:'🌍 Public (all pharmacists)', pv_followers:'👥 My followers only',
     co_follow_label:'Follow someone (@handle)', co_follow_btn:'Follow',
     fe_home_t:'Your feed is still empty', fe_home_s:'Follow colleagues and their posts will show up here.',
@@ -739,7 +739,7 @@ const I18N = {
     co_question:'❓ Colocar como pergunta técnica (permite marcar a melhor resposta)',
     co_poll:'📊 Sondagem', co_poll_q_ph:'A sua pergunta…', co_poll_opt:'Opção de resposta', co_poll_add:'+ Adicionar opção', co_poll_del:'Remover opção', cc_remaining:'faltam {n} caracteres', cc_over:'{n} caracteres a mais', dr_restored:'✎ Rascunho restaurado', dr_discard:'descartar',
     pl_total:'{n} votos', pl_total_one:'1 voto', pl_total_zero:'Ainda sem votos', pl_you:'✓ o seu voto', pl_tap:'Toque numa opção para votar',
-    a11y_img_preview:'Pré-visualização da imagem', co_vis_aria:'Visibilidade da publicação', ex_kind_aria:'Tipo de entrada',
+    a11y_img_preview:'Pré-visualização da imagem', backtotop_aria:'Voltar ao topo', co_vis_aria:'Visibilidade da publicação', ex_kind_aria:'Tipo de entrada',
     pv_public:'🌍 Público (todos os farmacêuticos)', pv_followers:'👥 Só os meus seguidores',
     co_follow_label:'Seguir alguém (@handle)', co_follow_btn:'Seguir',
     fe_home_t:'O seu feed ainda está vazio', fe_home_s:'Siga colegas e as publicações deles aparecerão aqui.',
@@ -4581,6 +4581,23 @@ async function openDmThread(threadId, prefill) {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 }
+
+// „Nach oben"-Button für lange Listen (v.a. mobil): erscheint ab ~600px Scroll.
+(function setupBackToTop() {
+  const btn = document.createElement('button');
+  btn.className = 'backtotop';
+  btn.type = 'button';
+  btn.textContent = '↑';
+  btn.setAttribute('data-i18n-aria', 'backtotop_aria');
+  btn.setAttribute('aria-label', t('backtotop_aria'));
+  btn.setAttribute('title', t('backtotop_aria'));
+  btn.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.body.appendChild(btn);
+  let ticking = false;
+  const update = () => { btn.classList.toggle('show', window.scrollY > 600); ticking = false; };
+  window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+  update();
+})();
 
 // Offline-Hinweis: zeitknappe Nutzer:innen sollen sofort verstehen, warum nichts lädt,
 // statt stiller Fehler. Bernstein-Balken oben, folgt dem Verbindungsstatus.

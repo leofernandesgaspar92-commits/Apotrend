@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #144 — 2026-07-20 — „Nach oben"-Button für lange Listen (mobil, universell)
+- **THINK:** Themenwechsel (universelle UX): lange Feeds/Engpass-Listen sind auf dem Handy mühsam zurückzuscrollen. Ein Standard-„nach oben"-Button hilft der zeitknappen, mobilen Zielgruppe — auf allen Seiten.
+- **WORK:** Global einmal erzeugter runder Button (unten rechts), erscheint sanft ab ~600 px Scroll (`requestAnimationFrame`-gedrosselter passiver Scroll-Listener), scrollt smooth nach oben. `aria-label`/`title` über `data-i18n-aria` (Locale-Wechsel), `@media print` ausgeblendet, theme-aware. i18n `backtotop_aria` DE/EN/PT.
+- **CHECK:** 320 grün, Smoke 19/19, Parität 806/806/806, a11y-Audit sauber, Guards 0. **Browser:** oben versteckt → nach Scroll sichtbar (aria „Nach oben scrollen") → Klick scrollt hoch, 0 JS-Fehler.
+
 ### Cycle #143 — 2026-07-20 — Wirkstoff-Dossier drucken (Ein-Seiten-Kaufentscheidung)
 - **THINK:** Die Wirkstoff-Detailseite ist der Ort der Kaufentscheidung. Ein druckbares Ein-Seiten-Dossier (Engpass-Status, günstigster Preis, beste Aktion, Bezugsquellen, eigene Notiz) bringt alles Relevante in eine Besprechung — echter Nutzen für den Einkauf.
 - **WORK:** `printWirkstoff(d)` baut aus den bereits geladenen Detaildaten einen sauberen Report mit Sektionen (nur gefüllte werden gezeigt): Engpass-Status (farbig, mit Quelle) bzw. „keine Meldung", günstigster Preis über alle Angebote, beste laufende Aktion, offene Biete-Bezugsquellen, private Notiz. „🖨️"-Button im Detailkopf. i18n `wk_print_*` DE/EN/PT (Sektionstitel teils aus bestehenden Schlüsseln).
