@@ -26,6 +26,7 @@ import { createOverviewService } from '../services/overview.js';
 import { createOAuthService, buildProvidersFromEnv } from '../services/oauth.js';
 import { createPaymentsService, buildPaymentProvidersFromEnv } from '../services/payments.js';
 import { createCryptoRates } from '../services/cryptoRates.js';
+import { createFxRates } from '../services/fxRates.js';
 import { cryptoWallets } from '../data/cryptoWallets.js';
 import { listProducts, getProduct } from '../data/products.js';
 import { createAmrService } from '../services/amr.js';
@@ -79,6 +80,7 @@ const oauth = createOAuthService({ repo, social, providers: buildProvidersFromEn
 // als ENV-Variablen vorliegen. onPaid = Haken für die Bestätigungs-Mail (Mailversand
 // braucht einen eigenen Anbieter; hier bewusst nur ein Log statt eines Fake-Versands).
 const cryptoRates = createCryptoRates();
+const fxRates = createFxRates();
 const payments = createPaymentsService({
   repo,
   providers: buildPaymentProvidersFromEnv(),
@@ -376,6 +378,11 @@ const routes = [
   ['GET', /^\/api\/data-status$/, true, async ({ userId, query }) => {
     const c = activeCountry(userId, query);
     return { country: c, shortages: { live: isLive(c), source_configured: isLive(c) } };
+  }],
+  // Live-Wechselkurse (EUR-Basis) für den Umrechner. null-rates -> Frontend zeigt „nicht verfügbar".
+  ['GET', /^\/api\/fx-rates$/, true, async () => {
+    const d = await fxRates.rates();
+    return d ? { base: d.base, rates: d.rates, updated_at: d.updated_at } : { base: 'EUR', rates: null, updated_at: null };
   }],
   // Kontotyp-Register (öffentlich): für die Kontotyp-Auswahl bei der Registrierung.
   ['GET', /^\/api\/account-types$/, false, async () => ({ account_types: listAccountTypes() })],

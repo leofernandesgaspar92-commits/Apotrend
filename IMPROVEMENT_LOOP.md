@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #120 — 2026-07-20 — Währungsumrechner mit echten Live-Kursen (Import-/Einkaufs-Nutzen)
+- **THINK:** Aus der Länder-Matrix: Import-Märkte (NG/BR/AO …) brauchen Umrechnung Landeswährung ↔ EUR/USD. Echte Kurse (nichts erfunden), wiederverwendet das bewährte Rates-Muster (public API, Cache, Fallback).
+- **WORK:** `services/fxRates.js` (open.er-api.com, EUR-Basis, 1 h Cache, injizierbarer Fetch, `convert` über EUR-Kreuzrate, Fallback letzter Stand/null). Endpoint `GET /api/fx-rates`. Übersicht: Umrechner-Karte (Betrag · Von → In · Swap), Währungen aus dem Länder-Register mit vorhandenem Kurs, Standard = Landeswährung → EUR; bei fehlenden Kursen ehrlicher Hinweis statt Zahlen. i18n DE/EN/PT.
+- **CHECK:** 308 → 312 grün (+4: Parsing/Cache, convert-Mathe, Fehler-Fallback, ungültige API → null), Smoke 19/19, Parität 769/769/769, Guards 0. **Browser (Kurse gestubbt):** 110 USD → 100,00 EUR, Swap, NG-Standard NGN→EUR, 0 JS-Fehler. (FX-API in der Sandbox geblockt → in Prod live, sonst ehrlicher Fallback.)
+
 ### Cycle #119 — 2026-07-20 — Daten-Herkunft sichtbar: „🟢 Live-Daten" vs „🟡 Referenzdaten (im Aufbau)"
 - **THINK:** #118 sichtbar & vertrauensbildend abschließen: Nutzer:innen sollen auf einen Blick sehen, ob echte Live-Daten angeschlossen sind oder (noch) kuratierte Referenzdaten laufen. Quellen-/Transparenzpflicht (CLAUDE.md).
 - **WORK:** Übersicht-Route liefert `data_live` (aus `isLive(aktives Land)`); Behörden-Karte zeigt eine Status-Pille (grün live / gelb Referenz) mit erklärendem Titel; theme-aware CSS, i18n DE/EN/PT.
