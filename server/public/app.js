@@ -232,7 +232,10 @@ const I18N = {
     ep_website:'Website (optional)', ep_website_ph:'https://ihre-apotheke.at',
     pfc_title_head:'Profilstärke', pfc_missing:'Noch {n} Angabe(n) für ein vollständiges Profil:', pfc_cta:'Profil vervollständigen',
     pfc_complete:'✓ Ihr Profil ist vollständig — top!',
-    pfc_photo:'Profilbild', pfc_cover:'Titelbild', pfc_title:'Titel/Funktion', pfc_bio:'Über mich', pfc_specs:'Fachgebiete', pfc_website:'Website', pfc_region:'Region',
+    pfc_photo:'Profilbild', pfc_cover:'Titelbild', pfc_title:'Titel/Funktion', pfc_bio:'Über mich', pfc_specs:'Fachgebiete', pfc_website:'Website', pfc_region:'Region', pfc_experience:'Werdegang',
+    pf_experience:'Werdegang',
+    ep_exp:'Werdegang / Berufserfahrung', ep_exp_hint:'Frühere und aktuelle Stationen — z. B. Apotheke, Klinik, Großhandel.', ep_exp_add:'+ Station hinzufügen', ep_exp_del:'Station entfernen',
+    ep_exp_role_ph:'Rolle (z. B. Filialleiterin)', ep_exp_org_ph:'Organisation (z. B. Bahnhof-Apotheke)', ep_exp_from_ph:'von (z. B. 2018)', ep_exp_to_ph:'bis (z. B. heute)', ep_exp_desc_ph:'Kurzbeschreibung (optional)',
     ac_title:'🔒 Datenschutz & Konto', ac_export_d:'Lade alle deine Daten (Profil, Beiträge, Kommentare, Nachrichten, Merkliste, Austausch) als Datei herunter (DSGVO).',
     ac_export_btn:'⬇️ Meine Daten exportieren', ac_pw_title:'Passwort ändern', ac_pw_old:'Aktuelles Passwort',
     ac_pw_new:'Neues Passwort (mind. 8 Zeichen)', ac_pw_ok:'✓ Passwort geändert',
@@ -529,7 +532,10 @@ const I18N = {
     ep_website:'Website (optional)', ep_website_ph:'https://your-pharmacy.com',
     pfc_title_head:'Profile strength', pfc_missing:'{n} more item(s) for a complete profile:', pfc_cta:'Complete profile',
     pfc_complete:'✓ Your profile is complete — great!',
-    pfc_photo:'Profile picture', pfc_cover:'Cover image', pfc_title:'Title/role', pfc_bio:'About me', pfc_specs:'Specializations', pfc_website:'Website', pfc_region:'Region',
+    pfc_photo:'Profile picture', pfc_cover:'Cover image', pfc_title:'Title/role', pfc_bio:'About me', pfc_specs:'Specializations', pfc_website:'Website', pfc_region:'Region', pfc_experience:'Experience',
+    pf_experience:'Experience',
+    ep_exp:'Experience', ep_exp_hint:'Past and current roles — e.g. pharmacy, hospital, wholesale.', ep_exp_add:'+ Add position', ep_exp_del:'Remove position',
+    ep_exp_role_ph:'Role (e.g. branch manager)', ep_exp_org_ph:'Organization (e.g. Central Pharmacy)', ep_exp_from_ph:'from (e.g. 2018)', ep_exp_to_ph:'to (e.g. present)', ep_exp_desc_ph:'Short description (optional)',
     ac_title:'🔒 Privacy & account', ac_export_d:'Download all your data (profile, posts, comments, messages, watchlist, exchange) as a file (GDPR).',
     ac_export_btn:'⬇️ Export my data', ac_pw_title:'Change password', ac_pw_old:'Current password',
     ac_pw_new:'New password (min. 8 characters)', ac_pw_ok:'✓ Password changed',
@@ -826,7 +832,10 @@ const I18N = {
     ep_website:'Site (opcional)', ep_website_ph:'https://sua-farmacia.pt',
     pfc_title_head:'Força do perfil', pfc_missing:'Mais {n} item(ns) para um perfil completo:', pfc_cta:'Completar perfil',
     pfc_complete:'✓ O seu perfil está completo — ótimo!',
-    pfc_photo:'Foto de perfil', pfc_cover:'Imagem de capa', pfc_title:'Título/função', pfc_bio:'Sobre mim', pfc_specs:'Áreas', pfc_website:'Site', pfc_region:'Região',
+    pfc_photo:'Foto de perfil', pfc_cover:'Imagem de capa', pfc_title:'Título/função', pfc_bio:'Sobre mim', pfc_specs:'Áreas', pfc_website:'Site', pfc_region:'Região', pfc_experience:'Percurso',
+    pf_experience:'Percurso profissional',
+    ep_exp:'Percurso / experiência', ep_exp_hint:'Funções anteriores e atuais — ex. farmácia, hospital, distribuidor.', ep_exp_add:'+ Adicionar posição', ep_exp_del:'Remover posição',
+    ep_exp_role_ph:'Função (ex. diretora de filial)', ep_exp_org_ph:'Organização (ex. Farmácia Central)', ep_exp_from_ph:'de (ex. 2018)', ep_exp_to_ph:'até (ex. atual)', ep_exp_desc_ph:'Breve descrição (opcional)',
     ac_title:'🔒 Privacidade & conta', ac_export_d:'Descarregue todos os seus dados (perfil, publicações, comentários, mensagens, lista de vigilância, troca) como ficheiro (RGPD).',
     ac_export_btn:'⬇️ Exportar os meus dados', ac_pw_title:'Alterar palavra-passe', ac_pw_old:'Palavra-passe atual',
     ac_pw_new:'Nova palavra-passe (mín. 8 caracteres)', ac_pw_ok:'✓ Palavra-passe alterada',
@@ -1013,6 +1022,7 @@ function profileCompleteness(p) {
     { key: 'title', label: t('pfc_title'), done: !!(p.title && p.title.trim()) },
     { key: 'bio', label: t('pfc_bio'), done: !!(p.bio && p.bio.trim()) },
     { key: 'specs', label: t('pfc_specs'), done: !!(p.specializations && p.specializations.length) },
+    { key: 'experience', label: t('pfc_experience'), done: !!(p.experience && p.experience.length) },
     { key: 'website', label: t('pfc_website'), done: !!p.website },
     { key: 'region', label: t('pfc_region'), done: !!p.bundesland },
   ];
@@ -3644,9 +3654,33 @@ function editProfileForm(p) {
     <select id="ep_bl"><option value="">${esc(t('ep_none'))}</option>${BUNDESLAENDER.map(x=>`<option value="${x}"${x===(p.bundesland||'')?' selected':''}>${x}</option>`).join('')}</select>
     <div class="muted" style="font-size:12px;margin-top:2px">${esc(t('ep_region_hint'))}</div>
     <label for="ep_web">${esc(t('ep_website'))}</label><input id="ep_web" type="url" value="${esc(p.website||'')}" placeholder="${esc(t('ep_website_ph'))}">
+    <label style="margin-top:10px">${esc(t('ep_exp'))}</label>
+    <div class="muted" style="font-size:12px;margin-bottom:6px">${esc(t('ep_exp_hint'))}</div>
+    <div id="ep_exp_list"></div>
+    <button type="button" class="ghost small" id="ep_exp_add" style="margin-top:2px">${esc(t('ep_exp_add'))}</button>
     <div class="row" style="margin-top:12px"><button id="ep_save">${esc(t('cm_save'))}</button><span class="err" id="ep_err" style="margin-left:10px"></span></div>
   </div>`);
   feed.appendChild(form);
+  // Werdegang: wiederholbare Stationen (Rolle Pflicht, Rest optional).
+  const expList = document.getElementById('ep_exp_list');
+  function addExpRow(e = {}) {
+    const row = el(`<div class="exp-edit">
+      <div class="row" style="gap:6px">
+        <input data-x="role" style="flex:2" placeholder="${esc(t('ep_exp_role_ph'))}" value="${esc(e.role||'')}">
+        <input data-x="org" style="flex:2" placeholder="${esc(t('ep_exp_org_ph'))}" value="${esc(e.org||'')}">
+        <button type="button" class="ghost small" data-x="del" title="${esc(t('ep_exp_del'))}" aria-label="${esc(t('ep_exp_del'))}">🗑</button>
+      </div>
+      <div class="row" style="gap:6px;margin-top:4px">
+        <input data-x="from" style="flex:1" placeholder="${esc(t('ep_exp_from_ph'))}" value="${esc(e.from||'')}">
+        <input data-x="to" style="flex:1" placeholder="${esc(t('ep_exp_to_ph'))}" value="${esc(e.to||'')}">
+      </div>
+      <input data-x="description" style="margin-top:4px" placeholder="${esc(t('ep_exp_desc_ph'))}" value="${esc(e.description||'')}">
+    </div>`);
+    row.querySelector('[data-x="del"]').onclick = () => row.remove();
+    expList.appendChild(row);
+  }
+  (p.experience || []).forEach(addExpRow);
+  document.getElementById('ep_exp_add').onclick = () => addExpRow();
   const avImg = document.getElementById('ep_av_img'), avIni = document.getElementById('ep_av_ini'), avClear = document.getElementById('ep_avclear');
   document.getElementById('ep_avfile').onchange = async (ev) => {
     const f = ev.target.files[0]; if (!f) return;
@@ -3675,8 +3709,12 @@ function editProfileForm(p) {
   };
   document.getElementById('ep_save').onclick = async () => {
     try {
+      const experience = [...expList.querySelectorAll('.exp-edit')].map(row => {
+        const get = x => (row.querySelector(`[data-x="${x}"]`).value || '').trim();
+        return { role: get('role'), org: get('org'), from: get('from'), to: get('to'), description: get('description') };
+      }).filter(e => e.role);
       const payload = {
-        displayName: v('ep_name'), title: v('ep_title'), bio: v('ep_bio'), specializations: v('ep_specs'), bundesland: v('ep_bl'), website: v('ep_web'),
+        displayName: v('ep_name'), title: v('ep_title'), bio: v('ep_bio'), specializations: v('ep_specs'), bundesland: v('ep_bl'), website: v('ep_web'), experience,
       };
       if (avatar !== undefined) payload.avatarUrl = avatar;
       if (cover !== undefined) payload.coverUrl = cover;
@@ -3701,6 +3739,19 @@ async function openProfile(handle) {
     const p = d.profile;
     const initials = (p.display_name||'?').split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();
     const specs = (p.specializations||[]).map(s=>`<span class="spec">${esc(s)}</span>`).join(' ');
+    // Werdegang/Berufserfahrung als eigene Sektion (nur wenn vorhanden).
+    const expHtml = (p.experience && p.experience.length) ? `
+      <div class="exp-section">
+        <div class="exp-head">💼 ${esc(t('pf_experience'))}</div>
+        ${p.experience.map(e => {
+          const when = [e.from, e.to].filter(Boolean).join(' – ');
+          return `<div class="exp-item">
+            <div class="exp-role">${esc(e.role)}${e.org?` <span class="muted">· ${esc(e.org)}</span>`:''}</div>
+            ${when?`<div class="muted" style="font-size:13px">${esc(when)}</div>`:''}
+            ${e.description?`<div style="font-size:14px;margin-top:2px">${esc(e.description)}</div>`:''}
+          </div>`;
+        }).join('')}
+      </div>` : '';
     feed.innerHTML = '';
     const head = el(`<div class="card">
       <div class="row"><button class="ghost small" data-back>${esc(t('post_back'))}</button><span class="sp" style="flex:1"></span><button class="ghost small" data-shareprofile title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button></div>
@@ -3723,6 +3774,7 @@ async function openProfile(handle) {
       </div>
       ${p.bio?`<div class="post-body">${esc(p.bio)}</div>`:''}
       ${specs?`<div style="margin-top:8px">${specs}</div>`:''}
+      ${expHtml}
       <div class="row" style="margin-top:12px;gap:18px">
         <span><b>${d.post_count}</b> <span class="muted">${esc(nlabel(d.post_count,'pf_post_one','pf_posts'))}</span></span>
         <span class="clickable" data-followers><b>${d.follower_count}</b> <span class="muted">${esc(nlabel(d.follower_count,'pf_follower_one','pf_followers'))}</span></span>

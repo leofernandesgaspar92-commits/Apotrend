@@ -141,6 +141,11 @@
   .pfc-bar { height:10px; border-radius:999px; background:var(--line); overflow:hidden; margin-top:6px; }
   .pfc-bar > span { display:block; height:100%; background:var(--green); border-radius:999px; transition:width .3s ease; }
   .pfc-done { margin-top:14px; padding:10px 12px; border-radius:12px; background:rgba(11,127,40,.10); color:var(--ok-fg); font-weight:700; }
+  .exp-section { margin-top:12px; border-top:1px solid var(--line); padding-top:10px; }
+  .exp-head { font-weight:800; margin-bottom:6px; }
+  .exp-item { padding:6px 0 6px 12px; border-left:3px solid var(--green); margin-bottom:6px; }
+  .exp-role { font-weight:700; }
+  .exp-edit { border:1px solid var(--line); border-radius:10px; padding:8px; margin-bottom:8px; background:var(--chip-bg); }
   .spec { display:inline-block; background:var(--chip-bg); border:1px solid var(--line); border-radius:999px; padding:3px 10px; font-size:13px; margin:2px 2px 2px 0; }
   .post-body { margin:8px 0; white-space:pre-wrap; line-height:1.45; overflow-wrap:anywhere; }
   .vis { font-size:12px; color:var(--muted); }

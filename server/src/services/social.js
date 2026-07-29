@@ -91,7 +91,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       return social.getProfileByHandle(handleOrUserId) || social.getProfileByUserId(handleOrUserId);
     },
     // Eigenes Profil bearbeiten (Handle bleibt als Identität unveränderlich).
-    updateProfile(actorUserId, { displayName, title, bio, specializations, avatarUrl, coverUrl, website, visibility, bundesland, country, locale, accountType }) {
+    updateProfile(actorUserId, { displayName, title, bio, specializations, experience, avatarUrl, coverUrl, website, visibility, bundesland, country, locale, accountType }) {
       requireUser(actorUserId);
       const current = social.getProfileByUserId(actorUserId);
       if (!current) throw new Error('Profil nicht gefunden.');
@@ -117,6 +117,18 @@ export function createSocialService(social, foundationRepo, options = {}) {
         const list = (Array.isArray(specializations) ? specializations : String(specializations).split(','))
           .map(s => String(s).trim()).filter(Boolean).slice(0, 12);
         patch.specializations = list;
+      }
+      // Werdegang/Berufserfahrung (wie bei LinkedIn): Liste von Stationen. Rolle ist
+      // Pflicht, Rest optional; leere Stationen werden verworfen, max. 20.
+      if (experience !== undefined) {
+        const arr = Array.isArray(experience) ? experience : [];
+        patch.experience = arr.map(e => ({
+          role: String(e && e.role || '').trim().slice(0, 120),
+          org: String(e && e.org || '').trim().slice(0, 120),
+          from: String(e && e.from || '').trim().slice(0, 10),
+          to: String(e && e.to || '').trim().slice(0, 10),
+          description: String(e && e.description || '').trim().slice(0, 300),
+        })).filter(e => e.role).slice(0, 20);
       }
       if (visibility !== undefined) {
         if (!['network', 'public'].includes(visibility)) throw new Error('Ungueltige Profil-Sichtbarkeit.');

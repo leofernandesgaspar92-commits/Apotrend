@@ -75,6 +75,28 @@ test('Profil bearbeiten: Titelbild + Website werden gesetzt, geleert und validie
   assert.throws(() => social.updateProfile(a, { website: 'javascript:alert(1)' }), /http/);
 });
 
+test('Profil bearbeiten: Werdegang wird gesetzt, leere Stationen verworfen, Rolle Pflicht, gekappt', () => {
+  const { social, a } = setup();
+  const p = social.updateProfile(a, { experience: [
+    { role: 'Filialleiterin', org: 'Bahnhof-Apotheke', from: '2018', to: 'heute', description: 'Leitung Team' },
+    { role: '', org: 'Ignoriert' }, // ohne Rolle -> verworfen
+    { role: '  Pharmareferent  ', org: '  Pharma AG  ' }, // getrimmt
+  ] });
+  assert.equal(p.experience.length, 2);
+  assert.equal(p.experience[0].role, 'Filialleiterin');
+  assert.equal(p.experience[0].org, 'Bahnhof-Apotheke');
+  assert.equal(p.experience[1].role, 'Pharmareferent');
+  assert.equal(p.experience[1].org, 'Pharma AG');
+  // Überlange Beschreibung wird gekappt (<=300).
+  const long = social.updateProfile(a, { experience: [{ role: 'X', description: 'y'.repeat(400) }] });
+  assert.equal(long.experience[0].description.length, 300);
+  // Mehr als 20 Stationen werden gekappt.
+  const many = social.updateProfile(a, { experience: Array.from({ length: 25 }, (_, i) => ({ role: 'R' + i })) });
+  assert.equal(many.experience.length, 20);
+  // Werdegang übersteht dump/load.
+  assert.deepEqual(social.getProfile('anna').experience, many.experience);
+});
+
 test('Profil bearbeiten: gültiges Bundesland wird gesetzt, ungültiges abgelehnt', () => {
   const { social, a } = setup();
   const p = social.updateProfile(a, { bundesland: 'Wien' });
