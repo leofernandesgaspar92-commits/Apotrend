@@ -39,7 +39,7 @@ const I18N = {
     search_go:'Suchen', theme_dark:'Dunkel', theme_light:'Hell', font_label:'Schrift', aria_theme:'Hell/Dunkel umschalten',
     theme_to_dark:'Zu dunklem Modus wechseln', theme_to_light:'Zu hellem Modus wechseln',
     data_notice_title:'ℹ️ Hinweis zu den Daten für {land}',
-    data_notice_body:'Die Live-Regulierungsdaten (Engpässe, Preise, Rabatte) decken derzeit 🇦🇹 Österreich ab. Für {land} bauen wir sie schrittweise mit den lokalen Behörden aus. Der soziale Feed und die News sind bereits länderspezifisch — die unten gezeigten Zahlen stammen aus Österreich.', reg_title:'Offizielle Arzneimittelbehörde: {reg}', reg_sub:'Verbindliche Quelle für {land} — Engpässe, Rückrufe, Zulassungen.', reg_open:'🔗 {reg} öffnen', reg_no_link:'Offizielle Website folgt.', ds_live:'Live-Daten', ds_live_title:'Echte Behördendaten sind angeschlossen und aktuell.', ds_ref:'Referenzdaten (im Aufbau)', ds_ref_title:'Kuratierte Referenzdaten — echte Live-Daten folgen, sobald die Quelle angeschlossen ist.', cc_title:'Währungsumrechner', cc_amount:'Betrag', cc_from:'Von Währung', cc_to:'In Währung', cc_swap:'Währungen tauschen', cc_updated:'Kurse: {date}', cc_unavailable:'Wechselkurse gerade nicht verfügbar.',
+    data_notice_body:'Die Live-Regulierungsdaten (Engpässe, Preise, Rabatte) decken derzeit 🇦🇹 Österreich ab. Für {land} bauen wir sie schrittweise mit den lokalen Behörden aus. Der soziale Feed und die News sind bereits länderspezifisch — die unten gezeigten Zahlen stammen aus Österreich.', reg_title:'Offizielle Arzneimittelbehörde: {reg}', reg_sub:'Verbindliche Quelle für {land} — Engpässe, Rückrufe, Zulassungen.', reg_open:'🔗 {reg} öffnen', reg_no_link:'Offizielle Website folgt.', ds_live:'Live-Daten', ds_live_title:'Echte Behördendaten sind angeschlossen und aktuell.', ds_ref:'Referenzdaten (im Aufbau)', ds_ref_title:'Kuratierte Referenzdaten — echte Live-Daten folgen, sobald die Quelle angeschlossen ist.', cc_title:'Währungsumrechner', cc_amount:'Betrag', cc_from:'Von Währung', cc_to:'In Währung', cc_swap:'Währungen tauschen', cc_updated:'Kurse: {date}', cc_unavailable:'Wechselkurse gerade nicht verfügbar.', cc_hint:'Landeswährung ↔ EUR/USD umrechnen',
     ov_hello:'Für dich', ov_sub:'Das Wichtigste auf einen Blick.',
     ov_t_crit:'kritische Engpässe', ov_t_abx:'Antibiotika-Engpässe',
     ov_t_offer:'Angebote im Austausch', ov_t_seek:'Gesuche im Austausch',
@@ -330,7 +330,7 @@ const I18N = {
     search_go:'Search', theme_dark:'Dark', theme_light:'Light', font_label:'Text size', aria_theme:'Toggle light/dark',
     theme_to_dark:'Switch to dark mode', theme_to_light:'Switch to light mode',
     data_notice_title:'ℹ️ About the data for {land}',
-    data_notice_body:'The live regulatory data (shortages, prices, deals) currently covers 🇦🇹 Austria. For {land} we are building it out step by step with the local authorities. The social feed and news are already country-specific — the figures shown below are from Austria.', reg_title:'Official medicines regulator: {reg}', reg_sub:'Authoritative source for {land} — shortages, recalls, approvals.', reg_open:'🔗 Open {reg}', reg_no_link:'Official website coming soon.', ds_live:'Live data', ds_live_title:'Real regulator data is connected and current.', ds_ref:'Reference data (in progress)', ds_ref_title:'Curated reference data — live data follows once the source is connected.', cc_title:'Currency converter', cc_amount:'Amount', cc_from:'From currency', cc_to:'To currency', cc_swap:'Swap currencies', cc_updated:'Rates: {date}', cc_unavailable:'Exchange rates unavailable right now.',
+    data_notice_body:'The live regulatory data (shortages, prices, deals) currently covers 🇦🇹 Austria. For {land} we are building it out step by step with the local authorities. The social feed and news are already country-specific — the figures shown below are from Austria.', reg_title:'Official medicines regulator: {reg}', reg_sub:'Authoritative source for {land} — shortages, recalls, approvals.', reg_open:'🔗 Open {reg}', reg_no_link:'Official website coming soon.', ds_live:'Live data', ds_live_title:'Real regulator data is connected and current.', ds_ref:'Reference data (in progress)', ds_ref_title:'Curated reference data — live data follows once the source is connected.', cc_title:'Currency converter', cc_amount:'Amount', cc_from:'From currency', cc_to:'To currency', cc_swap:'Swap currencies', cc_updated:'Rates: {date}', cc_unavailable:'Exchange rates unavailable right now.', cc_hint:'Convert local currency ↔ EUR/USD',
     ov_hello:'For you', ov_sub:'The essentials at a glance.',
     ov_t_crit:'critical shortages', ov_t_abx:'antibiotic shortages',
     ov_t_offer:'offers in exchange', ov_t_seek:'requests in exchange',
@@ -621,7 +621,7 @@ const I18N = {
     search_go:'Pesquisar', theme_dark:'Escuro', theme_light:'Claro', font_label:'Tamanho', aria_theme:'Alternar claro/escuro',
     theme_to_dark:'Mudar para modo escuro', theme_to_light:'Mudar para modo claro',
     data_notice_title:'ℹ️ Sobre os dados de {land}',
-    data_notice_body:'Os dados regulatórios em tempo real (faltas, preços, descontos) cobrem atualmente a 🇦🇹 Áustria. Para {land} estamos a construí-los passo a passo com as autoridades locais. O feed social e as notícias já são específicos por país — os números abaixo são da Áustria.', reg_title:'Autoridade do medicamento: {reg}', reg_sub:'Fonte oficial para {land} — faltas, recolhas, autorizações.', reg_open:'🔗 Abrir {reg}', reg_no_link:'Website oficial em breve.', ds_live:'Dados em direto', ds_live_title:'Dados oficiais reais estão ligados e atualizados.', ds_ref:'Dados de referência (em construção)', ds_ref_title:'Dados de referência curados — os dados em direto seguem assim que a fonte for ligada.', cc_title:'Conversor de moeda', cc_amount:'Montante', cc_from:'De moeda', cc_to:'Para moeda', cc_swap:'Trocar moedas', cc_updated:'Câmbios: {date}', cc_unavailable:'Taxas de câmbio indisponíveis de momento.',
+    data_notice_body:'Os dados regulatórios em tempo real (faltas, preços, descontos) cobrem atualmente a 🇦🇹 Áustria. Para {land} estamos a construí-los passo a passo com as autoridades locais. O feed social e as notícias já são específicos por país — os números abaixo são da Áustria.', reg_title:'Autoridade do medicamento: {reg}', reg_sub:'Fonte oficial para {land} — faltas, recolhas, autorizações.', reg_open:'🔗 Abrir {reg}', reg_no_link:'Website oficial em breve.', ds_live:'Dados em direto', ds_live_title:'Dados oficiais reais estão ligados e atualizados.', ds_ref:'Dados de referência (em construção)', ds_ref_title:'Dados de referência curados — os dados em direto seguem assim que a fonte for ligada.', cc_title:'Conversor de moeda', cc_amount:'Montante', cc_from:'De moeda', cc_to:'Para moeda', cc_swap:'Trocar moedas', cc_updated:'Câmbios: {date}', cc_unavailable:'Taxas de câmbio indisponíveis de momento.', cc_hint:'Converter moeda local ↔ EUR/USD',
     ov_hello:'Para si', ov_sub:'O essencial num relance.',
     ov_t_crit:'faltas críticas', ov_t_abx:'faltas de antibióticos',
     ov_t_offer:'ofertas na troca', ov_t_seek:'procuras na troca',
@@ -2094,10 +2094,30 @@ function countryRegulatorCard(live = false) {
 // Währungsumrechner mit ECHTEN Live-Kursen (EUR-Basis, Quelle open.er-api.com). Nützlich für
 // Import/Einkauf über Grenzen (NGN/BRL/AOA ↔ EUR/USD). Rendert asynchron; bei fehlenden Kursen
 // ehrlicher Hinweis statt erfundener Zahlen. Rechnet A->B clientseitig über die EUR-Kreuzrate.
-async function renderCurrencyConverter(feed) {
-  const card = el(`<div class="card"><div class="row" style="align-items:center;gap:8px"><span style="font-size:18px">🔁</span><b>${esc(t('cc_title'))}</b></div><div data-cc style="margin-top:8px" class="muted">…</div></div>`);
+function renderCurrencyConverter(feed) {
+  // Einklappbar + „lazy": entlastet die Übersicht (weniger Scrollen, CLAUDE.md) und ruft die
+  // Live-Kurse erst beim Öffnen ab. Standardmäßig zu.
+  const card = el(`<div class="card">
+    <button class="ghost small" data-cc-toggle aria-expanded="false" style="width:100%;text-align:left;display:flex;align-items:center;gap:8px">
+      <span style="font-size:18px">🔁</span><b>${esc(t('cc_title'))}</b>
+      <span class="muted" style="font-weight:400;font-size:13px">— ${esc(t('cc_hint'))}</span>
+      <span class="sp" style="flex:1"></span><span data-cc-chev aria-hidden="true">▸</span>
+    </button>
+    <div data-cc class="hidden" style="margin-top:8px"></div>
+  </div>`);
   feed.appendChild(card);
-  const box = card.querySelector('[data-cc]');
+  const box = card.querySelector('[data-cc]'), toggle = card.querySelector('[data-cc-toggle]'), chev = card.querySelector('[data-cc-chev]');
+  let built = false;
+  toggle.onclick = () => {
+    const open = box.classList.toggle('hidden') === false;
+    toggle.setAttribute('aria-expanded', String(open));
+    chev.textContent = open ? '▾' : '▸';
+    if (open && !built) { built = true; buildCurrencyConverter(box); }
+  };
+}
+
+async function buildCurrencyConverter(box) {
+  box.textContent = '…'; box.classList.add('muted');
   let data;
   try { data = await api('GET', '/api/fx-rates'); } catch { data = null; }
   if (!data || !data.rates) { box.textContent = t('cc_unavailable'); return; }

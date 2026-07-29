@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #123 — 2026-07-20 — Übersicht entlasten: Umrechner einklappbar + lazy (weniger Scrollen)
+- **THINK:** Selbstkorrektur: die letzten Zyklen haben die Übersicht voller gemacht — gegen CLAUDE.md „weniger Scrollen / auf einen Screen". Der Umrechner ist Nischen-Werkzeug (Import) → einklappen, standardmäßig zu; Kurse erst beim Öffnen laden (spart einen oft langsamen/geblockten FX-Abruf pro Laden).
+- **WORK:** `renderCurrencyConverter` in eine einklappbare Karte + `buildCurrencyConverter` (lazy) aufgeteilt; Toggle mit `aria-expanded` + Chevron, Untertitel-Hinweis auch im geschlossenen Zustand. i18n `cc_hint` DE/EN/PT.
+- **CHECK:** 317 grün, Smoke 19/19, Parität 770/770/770, Guards 0. **Browser:** standardmäßig zu, **0 FX-Abrufe vor Öffnen**, nach Klick gebaut + rechnet (110 USD→100,00 EUR), 0 JS-Fehler.
+
 ### Cycle #122 — 2026-07-20 — Offline-fähig für schwaches Netz (Service Worker, sicher)
 - **THINK:** Universeller Nutzen + Matrix-Ziel (Low-Connectivity-Märkte): App soll bei schwacher/unterbrochener Verbindung noch laden. Bisheriger SW war bewusst no-cache (kein Offline). Jetzt Offline-Hülle — OHNE Update-Staus und OHNE je Sicherheits-/Engpassdaten zu cachen.
 - **WORK:** `sw.js` auf **Network-First mit Cache-Fallback** umgestellt: App-Hülle (`/`, index, app.js/css, Icons, Manifest) beim Install vorgecacht (best-effort), versionierter Cache (`v2`, alte werden gelöscht). Online immer frisch + Cache aktualisiert; offline aus dem Cache (Navigation → Hülle). **`/api/*` wird NIE gecacht** (keine veralteten Daten), nur GET, nur eigene Herkunft.
