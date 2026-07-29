@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #145 — 2026-07-20 — Code-Qualität: Druck-Reports auf gemeinsame Helfer (DRY)
+- **THINK:** Über die Zyklen sind 5 window.open-Druck-Reports (Merkliste, Preise, Rabatte, Wirkstoff-Dossier, Patienteninfo) entstanden, die Fenster-Guard, Datum-/Geld-Formatierung und das HTML-Gerüst duplizierten. Konsolidieren senkt künftige Fehlerfläche — ohne Verhalten zu ändern.
+- **WORK:** Helfer extrahiert: `openPrintDoc(title, css, body, lang=LOCALE)` (Popup-Guard + `<head>`/`<body>` + Auto-Print), `printDate()`, `printMoney(v)`. Alle 5 Reports darauf umgestellt; jede CSS bleibt **byte-identisch** (keine visuelle Änderung), Patienteninfo behält ihre eigene Sprache via `lang`-Parameter.
+- **CHECK:** 320 grün, Smoke 19/19, Guards 0. **Browser (Regressionstest aller Reports):** Merkliste/Preise/Rabatte/Dossier erzeugen valide Dokumente mit korrekten Titeln, 0 JS-Fehler. ~60 Zeilen Duplikat entfernt.
+
 ### Cycle #144 — 2026-07-20 — „Nach oben"-Button für lange Listen (mobil, universell)
 - **THINK:** Themenwechsel (universelle UX): lange Feeds/Engpass-Listen sind auf dem Handy mühsam zurückzuscrollen. Ein Standard-„nach oben"-Button hilft der zeitknappen, mobilen Zielgruppe — auf allen Seiten.
 - **WORK:** Global einmal erzeugter runder Button (unten rechts), erscheint sanft ab ~600 px Scroll (`requestAnimationFrame`-gedrosselter passiver Scroll-Listener), scrollt smooth nach oben. `aria-label`/`title` über `data-i18n-aria` (Locale-Wechsel), `@media print` ausgeblendet, theme-aware. i18n `backtotop_aria` DE/EN/PT.

@@ -1946,11 +1946,22 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
 }
 
 // Premium: Beobachtungsliste als sauberer, druckbarer Team-Aushang (Status + Notizen).
+// ── Gemeinsame Druck-Helfer (von allen window.open-Druck-Reports genutzt) ──
+// Locale-korrektes Datum bzw. Geldbetrag für Druck-Reports.
+function printDate() { return new Date().toLocaleDateString(LOCALE === 'de' ? 'de-AT' : LOCALE === 'pt' ? 'pt-PT' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric' }); }
+function printMoney(v) { return LOCALE === 'en' ? Number(v).toFixed(2) : Number(v).toFixed(2).replace('.', ','); }
+// Öffnet ein Druck-Dokument mit gemeinsamem Rahmen (Popup-Guard, <head>/<body>, Auto-Print).
+// `css` bleibt pro Report unverändert -> keine visuelle Änderung. Gibt false bei Popup-Blocker.
+function openPrintDoc(title, css, bodyHtml, lang = LOCALE) {
+  const win = window.open('', '_blank');
+  if (!win) { alert(t('pi_popup')); return false; }
+  win.document.write(`<!doctype html><html lang="${esc(lang)}"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${css}</style></head><body>${bodyHtml}<script>window.onload=function(){window.print();}<\/script></body></html>`);
+  win.document.close();
+  return true;
+}
+
 function printWatchlist(items) {
   const list = items || [];
-  const w = window.open('', '_blank');
-  if (!w) { alert(t('pi_popup')); return; }
-  const dateStr = new Date().toLocaleDateString(LOCALE === 'de' ? 'de-AT' : LOCALE === 'pt' ? 'pt-PT' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
   const rows = list.map(it => {
     const m = watchStatusMeta(it.status);
     return `<tr>
@@ -1959,18 +1970,16 @@ function printWatchlist(items) {
       <td class="nt">${it.note ? esc(it.note) : '<span class="empty">—</span>'}</td>
     </tr>`;
   }).join('');
-  w.document.write(`<!doctype html><html lang="${esc(LOCALE)}"><head><meta charset="utf-8"><title>${esc(t('wl_print_title'))}</title>
-    <style>body{font-family:system-ui,-apple-system,sans-serif;max-width:800px;margin:24px auto;padding:0 16px;color:#111}
+  const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:800px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:22px;margin:0 0 2px} .meta{color:#555;font-size:13px;margin-bottom:16px}
     table{width:100%;border-collapse:collapse} th{text-align:left;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
     td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:12px;margin-top:2px}
     .st{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap} .nt{font-size:13px} .empty{color:#999}
-    .src{font-size:12px;color:#555;margin-top:18px}</style></head>
-    <body><h1>💊 ${esc(t('wl_print_title'))}</h1><div class="meta">${esc(ti('wl_print_asof', { date: dateStr }))} · ${esc(list.length === 1 ? t('wl_print_count_sg') : ti('wl_print_count', { n: list.length }))}</div>
+    .src{font-size:12px;color:#555;margin-top:18px}`;
+  const body = `<h1>💊 ${esc(t('wl_print_title'))}</h1><div class="meta">${esc(ti('wl_print_asof', { date: printDate() }))} · ${esc(list.length === 1 ? t('wl_print_count_sg') : ti('wl_print_count', { n: list.length }))}</div>
     <table><thead><tr><th>${esc(t('wl_print_col_sub'))}</th><th>${esc(t('wl_print_col_status'))}</th><th>${esc(t('wl_print_col_note'))}</th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="src">${esc(t('wl_print_foot'))}</div>
-    <script>window.onload=function(){window.print();}<\/script></body></html>`);
-  w.document.close();
+    <div class="src">${esc(t('wl_print_foot'))}</div>`;
+  openPrintDoc(t('wl_print_title'), css, body);
 }
 
 // Aktualisiert die kritische Kennzahl-Kachel nach Änderung der Beobachtungsliste.
@@ -2580,10 +2589,7 @@ function downloadCsv(baseName, header, rows) {
 // Wirkstoff-Dossier: alles Kaufentscheidungs-Relevante zu einem Wirkstoff auf einer Seite
 // (Engpass-Status, günstigster Preis, beste Aktion, Bezugsquellen, eigene Notiz) — zum Drucken.
 function printWirkstoff(d) {
-  const w = window.open('', '_blank');
-  if (!w) { alert(t('pi_popup')); return; }
-  const dateStr = new Date().toLocaleDateString(LOCALE === 'de' ? 'de-AT' : LOCALE === 'pt' ? 'pt-PT' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
-  const money = (v) => (LOCALE === 'en' ? Number(v).toFixed(2) : Number(v).toFixed(2).replace('.', ','));
+  const money = printMoney;
   const section = (title, inner) => inner ? `<h2>${esc(title)}</h2>${inner}` : '';
   const shortHtml = (d.shortages && d.shortages.length)
     ? '<ul>' + d.shortages.map(s => { const [lbl, col] = statusShort(s.status); return `<li><b style="color:${col}">${esc(lbl)}</b> — ${esc(s.bezeichnung || d.wirkstoff)}${s.quelle ? ` <span class="muted">(${esc(s.quelle)})</span>` : ''}</li>`; }).join('') + '</ul>'
@@ -2596,30 +2602,25 @@ function printWirkstoff(d) {
   const biete = (d.exchange && d.exchange.biete) || [];
   const sourcesHtml = biete.length ? '<ul>' + biete.map(e => `<li><b>${esc((e.author && e.author.display_name) || t('ex_unknown'))}</b>${e.author && e.author.handle ? ` @${esc(e.author.handle)}` : ''}${e.menge ? ` — ${esc(e.menge)}` : ''}${e.ort || e.bundesland ? ` · 📍 ${esc([e.ort, e.bundesland].filter(Boolean).join(', '))}` : ''}</li>`).join('') + '</ul>' : '';
   const noteHtml = d.note ? `<p>📝 ${esc(d.note)}</p>` : '';
-  w.document.write(`<!doctype html><html lang="${esc(LOCALE)}"><head><meta charset="utf-8"><title>${esc(d.wirkstoff)} — ${esc(t('wk_print_title'))}</title>
-    <style>body{font-family:system-ui,-apple-system,sans-serif;max-width:760px;margin:24px auto;padding:0 16px;color:#111}
+  const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:760px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:24px;margin:0 0 2px} h2{font-size:15px;margin:18px 0 4px;border-bottom:1px solid #cbd5cf;padding-bottom:3px}
     .meta{color:#555;font-size:13px} ul{margin:4px 0;padding-left:20px} li{margin:3px 0;font-size:14px} p{font-size:14px;margin:4px 0}
-    .muted{color:#777} .src{font-size:12px;color:#555;margin-top:20px}</style></head>
-    <body><h1>💊 ${esc(d.wirkstoff)}</h1><div class="meta">${esc(t('wk_print_title'))} · ${esc(ti('wl_print_asof', { date: dateStr }))}</div>
+    .muted{color:#777} .src{font-size:12px;color:#555;margin-top:20px}`;
+  const body = `<h1>💊 ${esc(d.wirkstoff)}</h1><div class="meta">${esc(t('wk_print_title'))} · ${esc(ti('wl_print_asof', { date: printDate() }))}</div>
     ${section(t('wk_short_title'), shortHtml)}
     ${section(t('wk_print_cheapest'), priceHtml)}
     ${section(t('wk_print_deal'), dealHtml)}
     ${section(t('wk_print_sources'), sourcesHtml)}
     ${section(t('wk_note_title'), noteHtml)}
-    <div class="src">${esc(t('wl_print_foot'))}</div>
-    <script>window.onload=function(){window.print();}<\/script></body></html>`);
-  w.document.close();
+    <div class="src">${esc(t('wl_print_foot'))}</div>`;
+  openPrintDoc(`${d.wirkstoff} — ${t('wk_print_title')}`, css, body);
 }
 
 // Preisvergleich als sauberer, druckbarer Report für den Einkauf (Aushang/Besprechung).
 // Je Präparat: günstigster Lieferant + AEP, Ersparnis vs. teuerstem, ggf. beste Aktion.
 function printPrices(comparisons) {
   const list = comparisons || [];
-  const w = window.open('', '_blank');
-  if (!w) { alert(t('pi_popup')); return; }
-  const dateStr = new Date().toLocaleDateString(LOCALE === 'de' ? 'de-AT' : LOCALE === 'pt' ? 'pt-PT' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
-  const money = (v) => (LOCALE === 'en' ? Number(v).toFixed(2) : Number(v).toFixed(2).replace('.', ','));
+  const money = printMoney;
   const rows = list.map(g => {
     const cheapest = (g.offers && g.offers[0]) || null;
     const action = g.action ? `${esc(g.action.supplier)}: € ${money(g.action.aktionspreis)} (−${g.action.rabatt_pct}%)` : '<span class="empty">—</span>';
@@ -2632,17 +2633,15 @@ function printPrices(comparisons) {
       <td>${action}</td>
     </tr>`;
   }).join('');
-  w.document.write(`<!doctype html><html lang="${esc(LOCALE)}"><head><meta charset="utf-8"><title>${esc(t('pr_print_title'))}</title>
-    <style>body{font-family:system-ui,-apple-system,sans-serif;max-width:900px;margin:24px auto;padding:0 16px;color:#111}
+  const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:900px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:22px;margin:0 0 2px} .meta{color:#555;font-size:13px;margin-bottom:16px}
     table{width:100%;border-collapse:collapse} th{text-align:left;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
     td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:12px;margin-top:2px}
-    .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap} .empty{color:#999} .src{font-size:12px;color:#555;margin-top:18px}</style></head>
-    <body><h1>💶 ${esc(t('pr_print_title'))}</h1><div class="meta">${esc(ti('wl_print_asof', { date: dateStr }))} · ${esc(list.length === 1 ? '1' : list.length)} ${esc(t('pr_print_count'))}</div>
+    .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap} .empty{color:#999} .src{font-size:12px;color:#555;margin-top:18px}`;
+  const body = `<h1>💶 ${esc(t('pr_print_title'))}</h1><div class="meta">${esc(ti('wl_print_asof', { date: printDate() }))} · ${esc(list.length === 1 ? '1' : list.length)} ${esc(t('pr_print_count'))}</div>
     <table><thead><tr><th>${esc(t('csv_praeparat'))}</th><th>${esc(t('pr_print_cheapest'))}</th><th class="num">${esc(t('csv_aep'))}</th><th class="num">${esc(t('pr_print_saving'))}</th><th>${esc(t('pr_print_deal'))}</th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="src">${esc(t('wl_print_foot'))}</div>
-    <script>window.onload=function(){window.print();}<\/script></body></html>`);
-  w.document.close();
+    <div class="src">${esc(t('wl_print_foot'))}</div>`;
+  openPrintDoc(t('pr_print_title'), css, body);
 }
 
 function exportPricesCsv(comparisons) {
@@ -2660,10 +2659,7 @@ function exportPricesCsv(comparisons) {
 // Laufende Rabatt-Aktionen als sauberer, druckbarer Report für den Einkauf.
 function printRabatte(list) {
   const rows0 = list || [];
-  const w = window.open('', '_blank');
-  if (!w) { alert(t('pi_popup')); return; }
-  const dateStr = new Date().toLocaleDateString(LOCALE === 'de' ? 'de-AT' : LOCALE === 'pt' ? 'pt-PT' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
-  const money = (v) => (LOCALE === 'en' ? Number(v).toFixed(2) : Number(v).toFixed(2).replace('.', ','));
+  const money = printMoney;
   const rows = rows0.map(r => `<tr>
       <td class="wk">${esc(r.bezeichnung)}${r.wirkstoff ? `<div class="pr">${esc(r.wirkstoff)}</div>` : ''}</td>
       <td>${esc(r.supplier || '')}</td>
@@ -2673,17 +2669,15 @@ function printRabatte(list) {
       <td class="num">${r.min_menge || '—'}</td>
       <td>${esc(r.gueltig_bis || '—')}${r.expiring_soon ? ' ⏳' : ''}</td>
     </tr>`).join('');
-  w.document.write(`<!doctype html><html lang="${esc(LOCALE)}"><head><meta charset="utf-8"><title>${esc(t('rb_print_title'))}</title>
-    <style>body{font-family:system-ui,-apple-system,sans-serif;max-width:960px;margin:24px auto;padding:0 16px;color:#111}
+  const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:960px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:22px;margin:0 0 2px} .meta{color:#555;font-size:13px;margin-bottom:16px}
     table{width:100%;border-collapse:collapse} th{text-align:left;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
     td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:12px;margin-top:2px}
-    .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap} .src{font-size:12px;color:#555;margin-top:18px}</style></head>
-    <body><h1>🏷️ ${esc(t('rb_print_title'))}</h1><div class="meta">${esc(ti('wl_print_asof', { date: dateStr }))} · ${rows0.length} ${esc(t('pr_print_count'))}</div>
+    .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap} .src{font-size:12px;color:#555;margin-top:18px}`;
+  const body = `<h1>🏷️ ${esc(t('rb_print_title'))}</h1><div class="meta">${esc(ti('wl_print_asof', { date: printDate() }))} · ${rows0.length} ${esc(t('pr_print_count'))}</div>
     <table><thead><tr><th>${esc(t('csv_praeparat'))}</th><th>${esc(t('csv_lieferant'))}</th><th class="num">${esc(t('csv_aktionspreis'))}</th><th class="num">${esc(t('csv_rabatt'))}</th><th class="num">${esc(t('pr_print_saving'))}</th><th class="num">${esc(t('csv_minmenge'))}</th><th>${esc(t('csv_gueltig_bis'))}</th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="src">${esc(t('wl_print_foot'))}</div>
-    <script>window.onload=function(){window.print();}<\/script></body></html>`);
-  w.document.close();
+    <div class="src">${esc(t('wl_print_foot'))}</div>`;
+  openPrintDoc(t('rb_print_title'), css, body);
 }
 
 // Bestandsaustausch (Biete/Suche) — aktuelle Auswahl als CSV. Nur öffentliche Angaben
@@ -3300,17 +3294,13 @@ function patientInfoHeading(lang) {
     : 'Antibiotika – Patienteninformation';
 }
 function printPatientInfo(d) {
-  const w = window.open('', '_blank');
-  if (!w) { alert(t('pi_popup')); return; }
   const cards = d.cards.map(c => `<div class="c"><h2>${esc(c.icon)} ${esc(c.title)}</h2><p>${esc(c.body)}</p></div>`).join('');
-  w.document.write(`<!doctype html><html lang="${esc(d.lang)}"><head><meta charset="utf-8"><title>${esc(patientInfoHeading(d.lang))}</title>
-    <style>body{font-family:system-ui,-apple-system,sans-serif;max-width:720px;margin:24px auto;padding:0 16px;color:#111}
+  const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:720px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:20px} .c{border:1px solid #cbd5cf;border-radius:8px;padding:12px 14px;margin:10px 0;break-inside:avoid}
-    h2{font-size:16px;margin:0 0 4px} p{margin:0;font-size:14px;line-height:1.5} .src{font-size:12px;color:#555;margin-top:16px}</style></head>
-    <body><h1>🧫 ${esc(patientInfoHeading(d.lang))}</h1>${cards}
-    <div class="src">Quelle: ${esc(d.source.label)} · ${esc(d.source.url)}<br>${esc(d.disclaimer)}</div>
-    <script>window.onload=function(){window.print();}<\/script></body></html>`);
-  w.document.close();
+    h2{font-size:16px;margin:0 0 4px} p{margin:0;font-size:14px;line-height:1.5} .src{font-size:12px;color:#555;margin-top:16px}`;
+  const body = `<h1>🧫 ${esc(patientInfoHeading(d.lang))}</h1>${cards}
+    <div class="src">Quelle: ${esc(d.source.label)} · ${esc(d.source.url)}<br>${esc(d.disclaimer)}</div>`;
+  openPrintDoc(patientInfoHeading(d.lang), css, body, d.lang);
 }
 async function openPatientInfo() {
   const feed = document.getElementById('feed');
