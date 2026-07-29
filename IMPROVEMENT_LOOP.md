@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #131 — 2026-07-20 — Preise-Reiter: Filter „⭐ Nur beobachtete" + i18n-Fix (Tooltip)
+- **THINK:** „Fokus auf meine Wirkstoffe" über die Reiter konsistent machen (Engpässe: Beobachten-Button, Rabatte #129, jetzt Preise). Zusätzlich echter i18n-Bug gefunden: Wirkstoff-Tooltip im Preisvergleich war hartkodiert deutsch.
+- **WORK:** `loadPrices` lädt die Beobachtungsliste; Filter-Button „⭐ Nur beobachtete" (nur bei ≥1 beobachtetem Wirkstoff), filtert Preisgruppen auf `watched.has(wirkstoff)`, Zustandssync. Tooltip `title="Alles zu {w}"` → i18n `pg_all_about` DE/EN/PT (bestehender `rb_watched_only` wiederverwendet).
+- **CHECK:** 320 grün, Smoke 19/19, Parität 774/774/774, Guards 0. **Browser:** 4 Preisgruppen → nach Filter 1 (Metformin = beobachtet), 0 JS-Fehler.
+
 ### Cycle #130 — 2026-07-20 — Frühwarnung führt direkt zum betroffenen Wirkstoff
 - **THINK:** Ein `watch_alert` (beobachteter Wirkstoff wurde kritisch/geändert) sprang bisher nur auf den ganzen Engpass-Reiter. Direkt auf die Detailseite des betroffenen Wirkstoffs zu springen (mit Status, Bezugsquellen, Aktionen, Diskussion) spart Sucherei — genau im Alarmfall.
 - **WORK:** Klick-Routing für `watch_alert` öffnet `openWirkstoff(<Wirkstoff>)`. Der Wirkstoff wird aus dem Meldungs-Label geparst (Format durchgängig „<Wirkstoff> · <Status> …" an allen drei Alarm-Stellen); Fallback auf den Engpass-Reiter, wenn kein Name ableitbar.
