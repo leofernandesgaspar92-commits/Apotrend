@@ -216,7 +216,7 @@ const I18N = {
     search_doc:'Suche', search_results_for:'Suchergebnisse für „{q}"', search_hits:'{n} Treffer',
     search_back:'← zurück', search_none_t:'Keine Treffer',
     search_none_s:'Für „{q}" wurde nichts gefunden. Andere Schreibweise oder ein kürzeres Stichwort probieren.',
-    search_wk:'💊 Alles zu einem Wirkstoff auf einer Seite:', search_watch:'+ Beobachten', search_watched:'✓ Beobachtet', search_watch_title:'Diesen Wirkstoff beobachten / nicht mehr beobachten',
+    search_wk:'💊 Alles zu einem Wirkstoff auf einer Seite:', search_recent:'🕘 Letzte Suchen:', search_watch:'+ Beobachten', search_watched:'✓ Beobachtet', search_watch_title:'Diesen Wirkstoff beobachten / nicht mehr beobachten',
     search_sec_people:'👥 Personen', search_sec_posts:'📝 Beiträge', search_sec_shortages:'📦 Engpässe',
     search_sec_prices:'💶 Preise', search_sec_rabatte:'🏷️ Rabatt-Aktionen',
     pf_posts:'Beiträge', pf_post_one:'Beitrag', pf_followers:'Follower', pf_follower_one:'Follower', pf_following:'folgt', pf_best:'beste Antworten', pf_best_one:'beste Antwort',
@@ -507,7 +507,7 @@ const I18N = {
     search_doc:'Search', search_results_for:'Search results for “{q}”', search_hits:'{n} hits',
     search_back:'← back', search_none_t:'No results',
     search_none_s:'Nothing found for “{q}”. Try a different spelling or a shorter keyword.',
-    search_wk:'💊 Everything about a substance on one page:', search_watch:'+ Watch', search_watched:'✓ Watching', search_watch_title:'Watch / unwatch this substance',
+    search_wk:'💊 Everything about a substance on one page:', search_recent:'🕘 Recent searches:', search_watch:'+ Watch', search_watched:'✓ Watching', search_watch_title:'Watch / unwatch this substance',
     search_sec_people:'👥 People', search_sec_posts:'📝 Posts', search_sec_shortages:'📦 Shortages',
     search_sec_prices:'💶 Prices', search_sec_rabatte:'🏷️ Discount deals',
     pf_posts:'posts', pf_post_one:'post', pf_followers:'followers', pf_follower_one:'follower', pf_following:'following', pf_best:'best answers', pf_best_one:'best answer',
@@ -798,7 +798,7 @@ const I18N = {
     search_doc:'Pesquisa', search_results_for:'Resultados para “{q}”', search_hits:'{n} resultados',
     search_back:'← voltar', search_none_t:'Sem resultados',
     search_none_s:'Nada encontrado para “{q}”. Tente outra grafia ou uma palavra mais curta.',
-    search_wk:'💊 Tudo sobre uma substância numa página:', search_watch:'+ Vigiar', search_watched:'✓ A vigiar', search_watch_title:'Vigiar / deixar de vigiar esta substância',
+    search_wk:'💊 Tudo sobre uma substância numa página:', search_recent:'🕘 Pesquisas recentes:', search_watch:'+ Vigiar', search_watched:'✓ A vigiar', search_watch_title:'Vigiar / deixar de vigiar esta substância',
     search_sec_people:'👥 Pessoas', search_sec_posts:'📝 Publicações', search_sec_shortages:'📦 Faltas',
     search_sec_prices:'💶 Preços', search_sec_rabatte:'🏷️ Promoções',
     pf_posts:'publicações', pf_post_one:'publicação', pf_followers:'seguidores', pf_follower_one:'seguidor', pf_following:'a seguir', pf_best:'melhores respostas', pf_best_one:'melhor resposta',
@@ -3336,6 +3336,7 @@ function openBegleitzettel() {
 
 async function renderSearch(q) {
   setDocTitle(t('search_doc') + ': ' + q);
+  recordRecentSearch(q); // jede Suche lokal merken (für „Letzte Suchen")
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">…</div>';
@@ -3345,6 +3346,14 @@ async function renderSearch(q) {
     const head = el(`<div class="card"><div class="row"><b>${esc(ti('search_results_for',{q:d.query}))}</b><span class="sp" style="flex:1"></span><span class="muted">${esc(ti('search_hits',{n:d.total}))}</span><button class="ghost small" data-back style="margin-left:10px">${esc(t('search_back'))}</button></div></div>`);
     head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
     feed.appendChild(head);
+    // Letzte Suchen (nur lokal) als Schnell-Chips — häufige Suchen mit einem Klick wiederholen.
+    const others = getRecentSearches().filter(x => x.toLowerCase() !== (d.query||'').toLowerCase());
+    if (others.length) {
+      const rs = el(`<div class="card"><div class="muted" style="font-size:13px;margin-bottom:6px">${esc(t('search_recent'))}</div><div class="row" data-recentq style="flex-wrap:wrap;gap:6px"></div></div>`);
+      const rb = rs.querySelector('[data-recentq]');
+      others.slice(0, 6).forEach(qq => { const c = el(`<button class="small sortbtn">🔎 ${esc(qq)}</button>`); c.onclick = () => renderSearch(qq); rb.appendChild(c); });
+      feed.appendChild(rs);
+    }
     if (!d.total) { feed.appendChild(emptyState({ icon:'🔍', title:t('search_none_t'), text:ti('search_none_s',{q:d.query}) })); return; }
     // Direkter Weg zur Wirkstoff-Detailseite: aus den Treffern gefundene Wirkstoffe.
     const wset = new Map();
@@ -3663,6 +3672,18 @@ async function openMyActivity() {
   if (!d.exchange.length) ecard.appendChild(el(`<div class="muted" style="font-size:14px;margin-top:6px">${esc(t('ma_no_e'))}</div>`));
   else d.exchange.forEach(e => ecard.appendChild(exchangeCard(e)));
   feed.appendChild(ecard);
+}
+
+// Zuletzt genutzte Suchbegriffe (nur lokal) — schnelles Wiederholen häufiger Suchen.
+function getRecentSearches() {
+  try { return JSON.parse(localStorage.getItem('apo_recent_searches') || '[]'); } catch { return []; }
+}
+function recordRecentSearch(q) {
+  q = String(q || '').trim();
+  if (!q) return;
+  const list = getRecentSearches().filter(x => x.toLowerCase() !== q.toLowerCase());
+  list.unshift(q);
+  try { localStorage.setItem('apo_recent_searches', JSON.stringify(list.slice(0, 6))); } catch { /* Speicher n/a */ }
 }
 
 // Zuletzt angesehene Wirkstoffe (nur lokal im Gerät gespeichert).

@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #133 — 2026-07-20 — Suche: „Letzte Suchen" als Schnell-Chips
+- **THINK:** Themenwechsel: Suchen wiederholen sich oft (dieselben Wirkstoffe/Lieferanten/Personen). Lokale „Letzte Suchen" als Ein-Klick-Chips sparen Tipparbeit — konkreter Komfort, keine Server-Änderung, kein Datenschutz-Thema (nur lokal).
+- **WORK:** `getRecentSearches`/`recordRecentSearch` (localStorage, max 6, dedupe). `renderSearch` merkt jede Suche und zeigt oben eine „🕘 Letzte Suchen"-Chip-Reihe (ohne die aktuelle Suche); Klick wiederholt die Suche. i18n `search_recent` DE/EN/PT.
+- **CHECK:** 320 grün, Smoke 19/19, Parität 775/775/775, Guards 0. **Browser:** nach zwei Suchen erscheint die frühere als Chip (aktuelle ausgeschlossen), Klick wechselt die Suche, 0 JS-Fehler.
+
 ### Cycle #132 — 2026-07-20 — Willkommens-Dialog barrierefrei (role/aria/Escape/Fokus)
 - **THINK:** Themenwechsel: der Onboarding-Overlay (einziges Modal der App) hatte keine Dialog-Semantik — für Tastatur-/Screenreader-Nutzer:innen eine echte Lücke (wichtig auf einer Fachplattform).
 - **WORK:** Inneres Panel bekommt `role="dialog"` + `aria-modal="true"` + `aria-labelledby` (Titel-`id`); **Escape** schließt (Listener sauber wieder entfernt); Fokus wandert beim Öffnen auf den „Los geht's"-Button. Verhalten (Backdrop-Klick schließt, `apo_welcome_seen`) unverändert.
