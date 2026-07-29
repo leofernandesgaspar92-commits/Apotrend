@@ -3929,10 +3929,13 @@ function pollHtml(p) {
     const n = (poll.counts || {})[o.id] || 0;
     const pct = total ? Math.round((n / total) * 100) : 0;
     const mine = poll.my_vote === o.id;
+    // Rohe Stimmenzahl neben dem Prozentwert: 40% von 5 ≠ 40% von 200 — wichtig für die
+    // Einordnung bei kleinen Fach-Umfragen (Klartext/Transparenz, CLAUDE.md).
+    const cntTitle = n === 1 ? t('pl_total_one') : ti('pl_total', { n });
     return `<button class="poll-opt${mine ? ' mine' : ''}" data-pollvote="${esc(o.id)}" aria-pressed="${mine}">
       <span class="poll-bar" style="width:${pct}%"></span>
       <span class="poll-lbl">${esc(o.text)}${mine ? ` <span class="poll-you">${esc(t('pl_you'))}</span>` : ''}</span>
-      <span class="poll-pct">${total ? pct + '%' : ''}</span>
+      <span class="poll-pct" title="${esc(cntTitle)}">${total ? n + ' · ' + pct + '%' : ''}</span>
     </button>`;
   }).join('');
   const totalLbl = total === 0 ? t('pl_total_zero') : (total === 1 ? t('pl_total_one') : ti('pl_total', { n: total }));

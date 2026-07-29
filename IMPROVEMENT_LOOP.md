@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #136 — 2026-07-20 — Umfragen: Stimmenzahl neben Prozent (Datenklarheit)
+- **THINK:** Themenwechsel (Feed/Umfragen): Umfrage-Optionen zeigten nur %. 40 % von 5 Stimmen ≠ 40 % von 200 — bei kleinen Fach-Umfragen irreführend. Rohzahl dazu = ehrliche Einordnung (Klartext/Transparenz, CLAUDE.md).
+- **WORK:** `pollHtml` zeigt je Option „n · pct%" (statt nur „pct%"), plus Tooltip mit „n Stimmen" (bestehende `pl_total`/`pl_total_one` wiederverwendet). Keine neuen i18n-Schlüssel; `poll-pct` mit tabular-nums fasst die Zahl sauber.
+- **CHECK:** 320 grün, Smoke 19/19, Guards 0. **Browser:** Umfrage nach Stimme zeigt „1 · 100%" / „0 · 0%", 0 JS-Fehler.
+
 ### Cycle #135 — 2026-07-20 — Profil teilen + Deep-Link (`?profile=`)
 - **THINK:** Themenwechsel (professionelles Netzwerk): Beiträge (`?post=`) und Wirkstoffe (`?wirkstoff=`) waren teil-/deeplinkbar, Profile nicht — man konnte ein Kolleg:innen-Profil nicht verlinken.
 - **WORK:** Deep-Link `/?profile=<Handle>` → `openProfile`. „🔗 Teilen"-Button im Profilkopf kopiert den Link (Clipboard, Fallback `prompt`), gleiche Mechanik wie Wirkstoff-/Beitrag-Teilen. Bestehende i18n (`pc_share`/`pc_copied`/`copy_link_fb`) wiederverwendet — keine neuen Schlüssel.
