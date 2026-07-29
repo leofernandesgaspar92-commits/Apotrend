@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #124 — 2026-07-20 — Bestandsaustausch: Kontakt-DM mit Kontext-Entwurf
+- **THINK:** Beim „Kontaktieren" aus einem Biete/Suche-Eintrag öffnete sich ein leerer DM — der/die Empfänger:in wusste nicht, worum es geht. Ein vorbelegter, editierbarer Entwurf mit Eintrags-Kontext macht die Kontaktaufnahme sofort verständlich (Klartext, Zeitersparnis).
+- **WORK:** `openDmThread(threadId, prefill)` belegt das Eingabefeld nur vor, wenn der Verlauf noch leer ist (kein Überschreiben laufender Gespräche). Exchange-„Kontaktieren" übergibt einen Entwurf „Hallo! Zu deinem Eintrag „📦 Biete: {Präparat}" — ist das noch aktuell?". i18n `ex_dm_draft` DE/EN/PT.
+- **CHECK:** 317 grün, Smoke 19/19, Parität 771/771/771, Guards 0. **Browser:** Kontakt aus Biete-Eintrag → DM mit vorbelegtem Entwurf inkl. Präparat + „Biete", editierbar, 0 JS-Fehler.
+
 ### Cycle #123 — 2026-07-20 — Übersicht entlasten: Umrechner einklappbar + lazy (weniger Scrollen)
 - **THINK:** Selbstkorrektur: die letzten Zyklen haben die Übersicht voller gemacht — gegen CLAUDE.md „weniger Scrollen / auf einen Screen". Der Umrechner ist Nischen-Werkzeug (Import) → einklappen, standardmäßig zu; Kurse erst beim Öffnen laden (spart einen oft langsamen/geblockten FX-Abruf pro Laden).
 - **WORK:** `renderCurrencyConverter` in eine einklappbare Karte + `buildCurrencyConverter` (lazy) aufgeteilt; Toggle mit `aria-expanded` + Chevron, Untertitel-Hinweis auch im geschlossenen Zustand. i18n `cc_hint` DE/EN/PT.

@@ -149,7 +149,7 @@ const I18N = {
     ex_empty_t:'Noch keine offenen Einträge', ex_empty_s:'Biete Überbestand an oder suche dringend Benötigtes — sei der/die Erste.',
     ex_badge_biete:'📦 Biete', ex_badge_suche:'🔎 Suche', ex_done_badge:'✓ erledigt', ex_qty:'Menge:', ex_match_offers:'🔗 {n} passende Angebote', ex_match_offers_1:'🔗 1 passendes Angebot', ex_match_seeks:'🔗 {n} passende Gesuche', ex_match_seeks_1:'🔗 1 passendes Gesuch', ex_flash_offers:'{n} passende Angebote gefunden — hier deine Treffer.', ex_flash_offers_1:'1 passendes Angebot gefunden — hier dein Treffer.', ex_flash_seeks:'{n} passende Gesuche gefunden — hier deine Treffer.', ex_flash_seeks_1:'1 passendes Gesuch gefunden — hier dein Treffer.',
     ex_photo_alt:'Foto zum Eintrag', ex_by:'von', ex_unknown:'Unbekannt',
-    ex_contact_btn:'✉️ Kontaktieren', ex_reopen:'↻ Wieder öffnen', ex_done_btn:'✓ Erledigt',
+    ex_contact_btn:'✉️ Kontaktieren', ex_dm_draft:'Hallo! Zu deinem Eintrag „{kind}: {item}" — ist das noch aktuell?', ex_reopen:'↻ Wieder öffnen', ex_done_btn:'✓ Erledigt',
     ex_del_confirm:'Eintrag löschen?',
     co_label:"Was gibt's Neues? (kurzer Fachbeitrag)",
     co_ph:'Bei uns gerade Engpass bei Amoxicillin — wer hat noch Bestand?',
@@ -440,7 +440,7 @@ const I18N = {
     ex_empty_t:'No open entries yet', ex_empty_s:'Offer surplus or seek urgently needed items — be the first.',
     ex_badge_biete:'📦 Offer', ex_badge_suche:'🔎 Request', ex_done_badge:'✓ done', ex_qty:'Quantity:', ex_match_offers:'🔗 {n} matching offers', ex_match_offers_1:'🔗 1 matching offer', ex_match_seeks:'🔗 {n} matching requests', ex_match_seeks_1:'🔗 1 matching request', ex_flash_offers:'{n} matching offers found — here are your hits.', ex_flash_offers_1:'1 matching offer found — here is your hit.', ex_flash_seeks:'{n} matching requests found — here are your hits.', ex_flash_seeks_1:'1 matching request found — here is your hit.',
     ex_photo_alt:'Entry photo', ex_by:'by', ex_unknown:'Unknown',
-    ex_contact_btn:'✉️ Contact', ex_reopen:'↻ Reopen', ex_done_btn:'✓ Done',
+    ex_contact_btn:'✉️ Contact', ex_dm_draft:'Hi! About your listing “{kind}: {item}” — is it still available?', ex_reopen:'↻ Reopen', ex_done_btn:'✓ Done',
     ex_del_confirm:'Delete entry?',
     co_label:"What's new? (short professional post)",
     co_ph:'We have a shortage of Amoxicillin right now — who still has stock?',
@@ -731,7 +731,7 @@ const I18N = {
     ex_empty_t:'Ainda sem entradas abertas', ex_empty_s:'Ofereça excedente ou procure algo urgente — seja o primeiro.',
     ex_badge_biete:'📦 Oferta', ex_badge_suche:'🔎 Procura', ex_done_badge:'✓ concluído', ex_qty:'Quantidade:', ex_match_offers:'🔗 {n} ofertas correspondentes', ex_match_offers_1:'🔗 1 oferta correspondente', ex_match_seeks:'🔗 {n} procuras correspondentes', ex_match_seeks_1:'🔗 1 procura correspondente', ex_flash_offers:'{n} ofertas correspondentes encontradas — aqui estão.', ex_flash_offers_1:'1 oferta correspondente encontrada — aqui está.', ex_flash_seeks:'{n} procuras correspondentes encontradas — aqui estão.', ex_flash_seeks_1:'1 procura correspondente encontrada — aqui está.',
     ex_photo_alt:'Foto da entrada', ex_by:'de', ex_unknown:'Desconhecido',
-    ex_contact_btn:'✉️ Contactar', ex_reopen:'↻ Reabrir', ex_done_btn:'✓ Concluído',
+    ex_contact_btn:'✉️ Contactar', ex_dm_draft:'Olá! Sobre a sua entrada „{kind}: {item}" — ainda está disponível?', ex_reopen:'↻ Reabrir', ex_done_btn:'✓ Concluído',
     ex_del_confirm:'Eliminar entrada?',
     co_label:'O que há de novo? (publicação técnica curta)',
     co_ph:'Temos falta de Amoxicilina agora — quem ainda tem stock?',
@@ -2766,7 +2766,13 @@ function exchangeCard(e) {
   };
   const contact = card.querySelector('[data-contact]');
   if (contact) contact.onclick = async () => {
-    try { const r = await api('POST','/api/dm/start',{ handle: au.handle }); openDmThread(r.thread.id); } catch(err){ alert(err.message); }
+    try {
+      const r = await api('POST','/api/dm/start',{ handle: au.handle });
+      // Kontext des Eintrags als editierbaren Entwurf mitgeben (Biete/Suche + Präparat).
+      const kindLbl = isBiete ? t('ex_badge_biete') : t('ex_badge_suche');
+      const draft = ti('ex_dm_draft', { kind: kindLbl, item: e.bezeichnung });
+      openDmThread(r.thread.id, draft);
+    } catch(err){ alert(err.message); }
   };
   const done = card.querySelector('[data-done]');
   if (done) done.onclick = async () => { try { await api('POST',`/api/exchange/${e.id}/resolve`); loadExchange(); } catch(err){ alert(err.message); } };
@@ -4264,7 +4270,7 @@ async function showDmInbox() {
   refreshDmCount();
 }
 
-async function openDmThread(threadId) {
+async function openDmThread(threadId, prefill) {
   const d = await api('GET','/api/dm/'+encodeURIComponent(threadId));
   const o = d.other || {};
   app.innerHTML = '';
@@ -4293,6 +4299,9 @@ async function openDmThread(threadId) {
     msgs.scrollTop = msgs.scrollHeight;
   };
   render(d.messages);
+  // Kontext-Entwurf (z. B. aus einem Biete/Suche-Eintrag) nur vorbelegen, wenn der Verlauf
+  // noch leer ist — der/die Empfänger:in weiß dann sofort, worum es geht. Bleibt editierbar.
+  if (prefill && !d.messages.length) { const inp = document.getElementById('dmbody'); inp.value = prefill; inp.focus(); }
   const send = async () => {
     const inp = document.getElementById('dmbody');
     const text = inp.value.trim();
