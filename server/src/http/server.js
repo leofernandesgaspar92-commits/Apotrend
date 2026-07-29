@@ -33,7 +33,7 @@ import { createAmrService } from '../services/amr.js';
 import { createPatientInfoService } from '../services/patientInfo.js';
 import { listCountries, normalizeCountry, normalizeLocale } from '../data/countries.js';
 import { countryConfig } from '../data/countryFeatures.js';
-import { isLive, liveSources, startLiveRefresh } from '../services/liveData.js';
+import { isLive, isPriceLive, liveSources, livePriceSources, startLiveRefresh } from '../services/liveData.js';
 import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
 import { issueToken, verifyToken } from './token.js';
 import { createRateLimiter } from '../domain/rateLimiter.js';
@@ -378,7 +378,7 @@ const routes = [
   // Live-Daten-Status je Land: ist eine echte Quelle „angeschlossen"? (Bis dahin Referenzdaten.)
   ['GET', /^\/api\/data-status$/, true, async ({ userId, query }) => {
     const c = activeCountry(userId, query);
-    return { country: c, shortages: { live: isLive(c), source_configured: isLive(c) } };
+    return { country: c, shortages: { live: isLive(c), source_configured: isLive(c) }, prices: { live: isPriceLive(c), source_configured: isPriceLive(c) } };
   }],
   // Landesspezifische Feature-Konfiguration (Framework „active_features"). Nur echte
   // Funktionen sind enabled=true; geplante Module (Echtheitsprüfung, Rückrufe …) enabled=false.
@@ -597,11 +597,8 @@ server.listen(PORT, () => {
   // Live-Daten automatisch holen, SOBALD eine Quelle angeschlossen ist (APOTREND_LIVE_SHORTAGES_<CC>).
   // Bis dahin passiert nichts — die App läuft auf Referenzdaten. In Tests deaktiviert.
   if (process.env.NODE_ENV !== 'test') {
-    const configured = Object.keys(liveSources()).length;
-    if (configured) {
-      startLiveRefresh({ shortagesRepo });
-      console.log(`ApoTrend: Live-Datenquellen angeschlossen für ${Object.keys(liveSources()).join(', ')} — Auto-Refresh aktiv.`);
-    }
+    const handle = startLiveRefresh({ shortagesRepo, pricesRepo });
+    if (handle) console.log(`ApoTrend: Live-Datenquellen angeschlossen (${handle.tasks.join(', ')}) — Auto-Refresh aktiv.`);
   }
 });
 

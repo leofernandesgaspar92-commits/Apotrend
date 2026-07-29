@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #126 — 2026-07-20 — Live-Daten-Anschluss auf Preise ausgeweitet (2. Datentyp)
+- **THINK:** Owner-Vision „sobald angeschlossen, holt sich alles automatisch echte Daten" weiter tragen: die bewährte Anschlussstelle (#118, Engpässe) auf **Preise** übertragen — gleiche Env-Gating-/Validierungs-/Fallback-Logik, ruht bis angeschlossen.
+- **WORK:** `liveData.js` um `validatePricePayload`/`refreshPrices`/`isPriceLive`/`livePriceSources` erweitert; `startLiveRefresh` generalisiert (Engpässe + Preise als Tasks). `pricesRepo.replaceFeed` (Feed komplett ersetzen). Env `APOTREND_LIVE_PRICES_<CC>`; `/api/data-status` liefert jetzt auch `prices.live`; Server-Start startet Auto-Refresh für beide Typen. Doku `LIVE_DATA.md` erweitert (Preis-Vertrag).
+- **CHECK:** 317 → 319 grün (+2: Preis-Validierung inkl. aep>0/Pflichtfelder, refreshPrices Übernahme+Fehler-Fallback+isPriceLive), Smoke 19/19, Guards 0. Anschließen = ENV-Variable, kein Code-Deploy.
+
 ### Cycle #125 — 2026-07-20 — News-Reiter: Beitrags-Composer einklappbar (News zuerst)
 - **THINK:** Im News-Reiter stand der Schreib-Composer immer offen ganz oben und drückte die eigentlichen News nach unten — die meisten wollen News LESEN. Content-first, weniger Scrollen (CLAUDE.md).
 - **WORK:** Composer in eine einklappbare Karte (standardmäßig zu) mit Toggle „✏️ Eigene News teilen" (aria-expanded + Chevron, Fokus aufs Textfeld beim Öffnen); Feld-IDs unverändert, Post-/Bild-/Quelle-Logik unangetastet. i18n `news_compose` DE/EN/PT.

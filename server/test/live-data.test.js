@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createShortagesRepo } from '../src/repo/shortagesRepo.js';
-import { validateShortagePayload, refreshShortages, isLive, liveSources, startLiveRefresh } from '../src/services/liveData.js';
+import { createPricesRepo } from '../src/repo/pricesRepo.js';
+import { validateShortagePayload, refreshShortages, isLive, liveSources, startLiveRefresh, validatePricePayload, refreshPrices, isPriceLive, livePriceSources } from '../src/services/liveData.js';
 
 test('validateShortagePayload: akzeptiert gültige Zeilen, sammelt Fehler, lehnt Schrott ab', () => {
   assert.equal(validateShortagePayload(null).ok, false);
@@ -72,6 +73,49 @@ test('refreshShortages: ohne konfigurierte Quelle wird übersprungen (nicht ange
   const r = await refreshShortages('AT', { fetchJson: async () => ({ shortages: [] }), shortagesRepo: repo, env: {} });
   assert.equal(r.ok, false);
   assert.equal(r.skipped, true);
+});
+
+test('validatePricePayload: prüft bezeichnung/supplier/aep; sammelt Fehler', () => {
+  assert.equal(validatePricePayload({}).ok, false, 'ohne prices-Array ungültig');
+  const good = validatePricePayload({ prices: [
+    { bezeichnung: 'Amoxicillin 1000 mg', wirkstoff: 'Amoxicillin', supplier: 'Kwizda', aep: 3.01, prev_aep: 3.05, series: [3.1, 3.0] },
+  ] });
+  assert.equal(good.ok, true);
+  assert.equal(good.rows[0].currency, 'EUR', 'Währung default EUR');
+  assert.equal(good.rows[0].aep, 3.01);
+  const bad = validatePricePayload({ prices: [
+    { bezeichnung: 'X', supplier: 'Y', aep: -1 },      // aep <= 0
+    { bezeichnung: 'X', aep: 5 },                       // supplier fehlt
+    { supplier: 'Y', aep: 5 },                          // bezeichnung fehlt
+  ] });
+  assert.equal(bad.ok, false);
+  assert.equal(bad.errors.length, 3);
+  assert.equal(bad.rows.length, 0);
+});
+
+test('refreshPrices: übernimmt gültige Preise (verified), ersetzt Seed; Fehler lassen Bestand', async () => {
+  const repo = createPricesRepo({ seed: true });
+  const before = repo.listFlat().length;
+  const env = { APOTREND_LIVE_PRICES_AT: 'https://live/prices.json' };
+  const payload = { source: 'Großhandel-X', prices: [
+    { bezeichnung: 'Amoxicillin 1000 mg', supplier: 'Kwizda', aep: 2.99, prev_aep: 3.05 },
+    { bezeichnung: 'Amoxicillin 1000 mg', supplier: 'Herba', aep: 3.40 },
+  ] };
+  const r = await refreshPrices('AT', { fetchJson: async () => payload, pricesRepo: repo, env });
+  assert.equal(r.ok, true);
+  assert.equal(r.count, 2);
+  const flat = repo.listFlat();
+  assert.equal(flat.length, 2, 'Seed ersetzt');
+  assert.equal(flat[0].provenance, 'verified');
+  assert.equal(flat[0].quelle, 'Großhandel-X');
+  // ungültig -> Bestand unverändert
+  const bad = await refreshPrices('AT', { fetchJson: async () => ({ prices: [{ bezeichnung: 'A', supplier: 'B', aep: 0 }] }), pricesRepo: repo, env });
+  assert.equal(bad.ok, false);
+  assert.equal(repo.listFlat().length, 2, 'ungültige Daten ändern nichts');
+  // isPriceLive / livePriceSources
+  assert.equal(isPriceLive('AT', env), true);
+  assert.equal(isPriceLive('AT', {}), false);
+  assert.deepEqual(Object.keys(livePriceSources(env)), ['AT']);
 });
 
 test('startLiveRefresh: ruht ohne Quelle; startet + ingestiert, sobald angeschlossen', async () => {

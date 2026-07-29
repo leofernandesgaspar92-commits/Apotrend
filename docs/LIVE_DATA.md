@@ -75,9 +75,30 @@ bleiben — bewusst streng, weil Engpassdaten sicherheitsrelevant sind.
 
 `live: true`, sobald die Quelle angeschlossen ist.
 
-## 4. Erweiterung
+## 4. Preise (zweiter Datentyp, gleiche Logik)
+
+Analog zu Engpässen: Umgebungsvariable `APOTREND_LIVE_PRICES_<CC>` setzen.
+JSON-Vertrag:
+
+```json
+{
+  "country": "AT",
+  "source": "Großhandel-X",
+  "prices": [
+    { "bezeichnung": "Amoxicillin 1000 mg", "wirkstoff": "Amoxicillin",
+      "supplier": "Kwizda", "aep": 3.01, "prev_aep": 3.05, "currency": "EUR",
+      "series": [3.10, 3.08, 3.05, 3.01] }
+  ]
+}
+```
+
+Pflichtfelder je Zeile: `bezeichnung`, `supplier`, `aep` (> 0). Ungültiger
+Payload → gesamter Abruf verworfen, alte Preise bleiben. Status unter
+`GET /api/data-status` → `prices.live`.
+
+## 5. Weitere Erweiterung
 
 Die Schnittstelle ist bewusst pro Datentyp aufgebaut. Weitere Feeds
-(Preise, Rabatte, Rückrufe) folgen demselben Muster:
+(Rabatte, Rückrufe) folgen demselben Muster:
 `APOTREND_LIVE_<TYP>_<CC>` + Vertrag + `refresh…` in
 `server/src/services/liveData.js`.

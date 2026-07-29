@@ -83,6 +83,60 @@ export async function refreshShortages(country, { fetchJson, shortagesRepo, env 
   return { ok: true, country: cc, count, source, fetched_at: (payload && payload.fetched_at) || null };
 }
 
+// ── Preise (zweiter Datentyp, gleiche Anschluss-Logik wie Engpässe) ──
+// Vertrag: { country, source, fetched_at, prices: [ { bezeichnung, wirkstoff?, supplier,
+//            aep (Zahl > 0), prev_aep?, currency?, series?[Zahlen] } ] }
+const priceEnvKey = (country) => `APOTREND_LIVE_PRICES_${String(country || '').toUpperCase()}`;
+
+export function isPriceLive(country, env = process.env) { return !!env[priceEnvKey(country)]; }
+export function livePriceSources(env = process.env) {
+  const out = {};
+  for (const code of Object.keys(COUNTRIES)) { const url = env[priceEnvKey(code)]; if (url) out[code] = { url }; }
+  return out;
+}
+
+export function validatePricePayload(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return { ok: false, errors: ['Payload fehlt oder ist kein Objekt'], rows: [] };
+  }
+  if (!Array.isArray(payload.prices)) {
+    return { ok: false, errors: ['Feld "prices" muss ein Array sein'], rows: [] };
+  }
+  const errors = [];
+  const rows = [];
+  payload.prices.forEach((r, i) => {
+    if (!r || typeof r !== 'object') { errors.push(`#${i}: kein Objekt`); return; }
+    if (typeof r.bezeichnung !== 'string' || !r.bezeichnung.trim()) { errors.push(`#${i}: "bezeichnung" fehlt`); return; }
+    if (typeof r.supplier !== 'string' || !r.supplier.trim()) { errors.push(`#${i}: "supplier" fehlt`); return; }
+    const aep = Number(r.aep);
+    if (!(aep > 0)) { errors.push(`#${i}: "aep" ungültig (${r.aep})`); return; }
+    rows.push({
+      bezeichnung: r.bezeichnung.trim(),
+      wirkstoff: r.wirkstoff != null ? String(r.wirkstoff) : null,
+      supplier: r.supplier.trim(),
+      aep,
+      prev_aep: r.prev_aep != null && isFinite(Number(r.prev_aep)) ? Number(r.prev_aep) : null,
+      currency: typeof r.currency === 'string' && r.currency ? r.currency : 'EUR',
+      series: Array.isArray(r.series) ? r.series.filter((x) => typeof x === 'number' && isFinite(x)) : [],
+    });
+  });
+  return { ok: errors.length === 0, errors, rows };
+}
+
+export async function refreshPrices(country, { fetchJson, pricesRepo, env = process.env } = {}) {
+  const cc = String(country || '').toUpperCase();
+  const url = env[priceEnvKey(cc)];
+  if (!url) return { ok: false, skipped: true, country: cc, reason: 'keine Quelle konfiguriert' };
+  let payload;
+  try { payload = await fetchJson(url); }
+  catch (e) { return { ok: false, country: cc, error: 'Abruf fehlgeschlagen: ' + (e && e.message) }; }
+  const v = validatePricePayload(payload);
+  if (!v.ok) return { ok: false, country: cc, error: 'ungültige Daten — Bestand unverändert', errors: v.errors };
+  const source = (payload && typeof payload.source === 'string' && payload.source) || 'Live';
+  const count = pricesRepo.replaceFeed(v.rows, { provenance: 'verified', quelle: source });
+  return { ok: true, country: cc, count, source, fetched_at: (payload && payload.fetched_at) || null };
+}
+
 // Standard-Fetcher (JSON über global fetch). In Tests wird stattdessen ein Stub injiziert.
 export async function fetchJsonDefault(url) {
   const res = await fetch(url, { headers: { accept: 'application/json' } });
@@ -92,21 +146,22 @@ export async function fetchJsonDefault(url) {
 
 // Auto-Refresh: startet NUR, wenn mindestens eine Quelle konfiguriert ist. Läuft sonst nicht
 // (bis die Website „angeschlossen" wird). Fehler werden geloggt, brechen aber nie den Server.
-export function startLiveRefresh({ shortagesRepo, env = process.env, intervalMs = 15 * 60 * 1000, fetchJson = fetchJsonDefault, log = console } = {}) {
-  const sources = liveSources(env);
-  const codes = Object.keys(sources);
-  if (!codes.length) return null; // nichts angeschlossen -> nichts tun
+export function startLiveRefresh({ shortagesRepo, pricesRepo, env = process.env, intervalMs = 15 * 60 * 1000, fetchJson = fetchJsonDefault, log = console } = {}) {
+  const tasks = [];
+  if (shortagesRepo) for (const cc of Object.keys(liveSources(env))) tasks.push({ cc, kind: 'shortages', run: () => refreshShortages(cc, { fetchJson, shortagesRepo, env }) });
+  if (pricesRepo) for (const cc of Object.keys(livePriceSources(env))) tasks.push({ cc, kind: 'prices', run: () => refreshPrices(cc, { fetchJson, pricesRepo, env }) });
+  if (!tasks.length) return null; // nichts angeschlossen -> nichts tun
   const runAll = async () => {
-    for (const cc of codes) {
+    for (const t of tasks) {
       try {
-        const r = await refreshShortages(cc, { fetchJson, shortagesRepo, env });
-        if (r.ok) log.log?.(`ApoTrend Live: ${cc} aktualisiert (${r.count} Einträge, Quelle ${r.source})`);
-        else log.warn?.(`ApoTrend Live: ${cc} nicht aktualisiert — ${r.error || r.reason}`);
-      } catch (e) { log.warn?.(`ApoTrend Live: ${cc} Ausnahme — ${e && e.message}`); }
+        const r = await t.run();
+        if (r.ok) log.log?.(`ApoTrend Live: ${t.cc}/${t.kind} aktualisiert (${r.count} Einträge, Quelle ${r.source})`);
+        else log.warn?.(`ApoTrend Live: ${t.cc}/${t.kind} nicht aktualisiert — ${r.error || r.reason}`);
+      } catch (e) { log.warn?.(`ApoTrend Live: ${t.cc}/${t.kind} Ausnahme — ${e && e.message}`); }
     }
   };
   runAll(); // sofort einmal beim Start
   const timer = setInterval(runAll, intervalMs);
   if (timer.unref) timer.unref(); // blockiert den Prozess-Exit nicht
-  return { stop: () => clearInterval(timer), countries: codes };
+  return { stop: () => clearInterval(timer), countries: [...new Set(tasks.map((t) => t.cc))], tasks: tasks.map((t) => `${t.cc}/${t.kind}`) };
 }

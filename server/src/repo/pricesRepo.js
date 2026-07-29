@@ -39,6 +39,14 @@ export function createPricesRepo({ seed = true } = {}) {
 
   return {
     upsert,
+    // Live-/Referenz-Feed komplett ersetzen (Preise haben keine Community-Meldungen —
+    // alle Einträge stammen aus dem Feed). Gibt die Anzahl übernommener Einträge zurück.
+    replaceFeed(rows, { provenance = 'verified', quelle = null } = {}) {
+      prices.clear();
+      let n = 0;
+      for (const r of (rows || [])) { upsert({ ...r, provenance, quelle }); n++; }
+      return n;
+    },
     get(id) { const p = prices.get(id); return p ? { ...p } : null; },
     // Nach Präparat gruppiert, je Gruppe guenstigster Lieferant zuerst.
     listComparisons() {
