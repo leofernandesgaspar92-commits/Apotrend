@@ -228,6 +228,8 @@ const I18N = {
     ep_specs_l:'Fachgebiete (mit Komma trennen)', ep_specs_ph:'Onkologie, Diabetes, Impfen',
     ep_region:'Region (optional)', ep_none:'— keine Angabe —', ep_region_hint:'Wird bei neuen Biete/Suche-Einträgen vorausgewählt.',
     ep_photo:'Profilbild', ep_photo_pick:'📷 Bild wählen', ep_photo_remove:'Entfernen', ep_photo_hint:'Quadratisch wirkt am besten. Wird automatisch verkleinert.',
+    ep_cover:'Titelbild', ep_cover_pick:'🖼️ Titelbild wählen', ep_cover_hint:'Breites Banner oben im Profil (wie bei LinkedIn/Facebook).',
+    ep_website:'Website (optional)', ep_website_ph:'https://ihre-apotheke.at',
     ac_title:'🔒 Datenschutz & Konto', ac_export_d:'Lade alle deine Daten (Profil, Beiträge, Kommentare, Nachrichten, Merkliste, Austausch) als Datei herunter (DSGVO).',
     ac_export_btn:'⬇️ Meine Daten exportieren', ac_pw_title:'Passwort ändern', ac_pw_old:'Aktuelles Passwort',
     ac_pw_new:'Neues Passwort (mind. 8 Zeichen)', ac_pw_ok:'✓ Passwort geändert',
@@ -520,6 +522,8 @@ const I18N = {
     ep_specs_l:'Specialties (comma-separated)', ep_specs_ph:'Oncology, diabetes, vaccination',
     ep_region:'Region (optional)', ep_none:'— not specified —', ep_region_hint:'Pre-selected for new offer/seek entries.',
     ep_photo:'Profile picture', ep_photo_pick:'📷 Choose image', ep_photo_remove:'Remove', ep_photo_hint:'Square works best. Automatically resized.',
+    ep_cover:'Cover image', ep_cover_pick:'🖼️ Choose cover', ep_cover_hint:'Wide banner at the top of your profile (like LinkedIn/Facebook).',
+    ep_website:'Website (optional)', ep_website_ph:'https://your-pharmacy.com',
     ac_title:'🔒 Privacy & account', ac_export_d:'Download all your data (profile, posts, comments, messages, watchlist, exchange) as a file (GDPR).',
     ac_export_btn:'⬇️ Export my data', ac_pw_title:'Change password', ac_pw_old:'Current password',
     ac_pw_new:'New password (min. 8 characters)', ac_pw_ok:'✓ Password changed',
@@ -812,6 +816,8 @@ const I18N = {
     ep_specs_l:'Áreas (separadas por vírgula)', ep_specs_ph:'Oncologia, diabetes, vacinação',
     ep_region:'Região (opcional)', ep_none:'— não especificado —', ep_region_hint:'Pré-selecionado em novas entradas de oferta/procura.',
     ep_photo:'Foto de perfil', ep_photo_pick:'📷 Escolher imagem', ep_photo_remove:'Remover', ep_photo_hint:'Quadrada fica melhor. Redimensionada automaticamente.',
+    ep_cover:'Imagem de capa', ep_cover_pick:'🖼️ Escolher capa', ep_cover_hint:'Banner largo no topo do perfil (como no LinkedIn/Facebook).',
+    ep_website:'Site (opcional)', ep_website_ph:'https://sua-farmacia.pt',
     ac_title:'🔒 Privacidade & conta', ac_export_d:'Descarregue todos os seus dados (perfil, publicações, comentários, mensagens, lista de vigilância, troca) como ficheiro (RGPD).',
     ac_export_btn:'⬇️ Exportar os meus dados', ac_pw_title:'Alterar palavra-passe', ac_pw_old:'Palavra-passe atual',
     ac_pw_new:'Nova palavra-passe (mín. 8 caracteres)', ac_pw_ok:'✓ Palavra-passe alterada',
@@ -987,6 +993,8 @@ const api = async (method, path, body) => {
 };
 const el = (h) => { const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.childElementCount===1 ? t.content.firstElementChild : t.content; };
 const esc = (s) => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// Website-Link lesbar kürzen: ohne Protokoll und ohne trailing slash (z.B. „apotrend.at").
+const prettyUrl = (u) => String(u||'').replace(/^https?:\/\//i,'').replace(/\/$/,'');
 // Relative Zeit in Klartext (Owner-Vorgabe: keine kryptischen Kürzel).
 // Bild lokal verkleinern (max. Kante ~1200px, JPEG) -> kleine data-URL, spart Speicher/Upload.
 function fileToDataUrl(file, maxDim = 1200, quality = 0.82) {
@@ -3571,10 +3579,17 @@ function editProfileForm(p) {
   feed.innerHTML = '';
   const specs = (p.specializations || []).join(', ');
   const initials = (p.display_name||'?').split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();
-  // Aktueller Zustand des Profilbilds: undefined = unverändert, '' = entfernt, data-URL = neu.
-  let avatar = undefined;
+  // Aktueller Zustand von Profil-/Titelbild: undefined = unverändert, '' = entfernt, data-URL = neu.
+  let avatar = undefined, cover = undefined;
   const form = el(`<div class="card">
     <div class="row"><h1 style="flex:1">${esc(t('pf_edit'))}</h1><button class="ghost small" data-cancel>${esc(t('cm_cancel'))}</button></div>
+    <label>${esc(t('ep_cover'))}</label>
+    <div class="profile-cover" id="ep_cov_prev" style="${p.cover_url?`background-image:url('${esc(p.cover_url)}')`:''}"></div>
+    <div class="row" style="align-items:center;gap:12px;margin:6px 0 4px">
+      <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px">${esc(t('ep_cover_pick'))}<input type="file" id="ep_covfile" accept="image/*" style="display:none"></label>
+      <button type="button" class="ghost small" id="ep_covclear"${p.cover_url?'':' style="display:none"'}>${esc(t('ep_photo_remove'))}</button>
+    </div>
+    <div class="muted" style="font-size:12px;margin-bottom:8px">${esc(t('ep_cover_hint'))}</div>
     <label>${esc(t('ep_photo'))}</label>
     <div class="row" style="align-items:center;gap:12px;margin-bottom:4px">
       <span class="avatar" id="ep_av_ini"${p.avatar_url?' style="display:none"':''}>${esc(initials)}</span>
@@ -3590,6 +3605,7 @@ function editProfileForm(p) {
     <label>${esc(t('ep_region'))}</label>
     <select id="ep_bl"><option value="">${esc(t('ep_none'))}</option>${BUNDESLAENDER.map(x=>`<option value="${x}"${x===(p.bundesland||'')?' selected':''}>${x}</option>`).join('')}</select>
     <div class="muted" style="font-size:12px;margin-top:2px">${esc(t('ep_region_hint'))}</div>
+    <label for="ep_web">${esc(t('ep_website'))}</label><input id="ep_web" type="url" value="${esc(p.website||'')}" placeholder="${esc(t('ep_website_ph'))}">
     <div class="row" style="margin-top:12px"><button id="ep_save">${esc(t('cm_save'))}</button><span class="err" id="ep_err" style="margin-left:10px"></span></div>
   </div>`);
   feed.appendChild(form);
@@ -3606,12 +3622,26 @@ function editProfileForm(p) {
     avatar = ''; avImg.style.display='none'; avImg.src=''; avIni.style.display='inline-flex'; avClear.style.display='none';
     document.getElementById('ep_avfile').value='';
   };
+  const covPrev = document.getElementById('ep_cov_prev'), covClear = document.getElementById('ep_covclear');
+  document.getElementById('ep_covfile').onchange = async (ev) => {
+    const f = ev.target.files[0]; if (!f) return;
+    try {
+      cover = await fileToDataUrl(f, 1200);
+      covPrev.style.backgroundImage = `url('${cover}')`; covClear.style.display='inline-block';
+      document.getElementById('ep_err').textContent='';
+    } catch(e){ document.getElementById('ep_err').textContent = e.message; }
+  };
+  covClear.onclick = () => {
+    cover = ''; covPrev.style.backgroundImage=''; covClear.style.display='none';
+    document.getElementById('ep_covfile').value='';
+  };
   document.getElementById('ep_save').onclick = async () => {
     try {
       const payload = {
-        displayName: v('ep_name'), title: v('ep_title'), bio: v('ep_bio'), specializations: v('ep_specs'), bundesland: v('ep_bl'),
+        displayName: v('ep_name'), title: v('ep_title'), bio: v('ep_bio'), specializations: v('ep_specs'), bundesland: v('ep_bl'), website: v('ep_web'),
       };
       if (avatar !== undefined) payload.avatarUrl = avatar;
+      if (cover !== undefined) payload.coverUrl = cover;
       await api('POST','/api/profile', payload);
       const meData = await api('GET','/api/me'); me = meData.profile;
       document.getElementById('whoami').textContent = me ? '@'+me.handle : '';
@@ -3636,6 +3666,7 @@ async function openProfile(handle) {
     feed.innerHTML = '';
     const head = el(`<div class="card">
       <div class="row"><button class="ghost small" data-back>${esc(t('post_back'))}</button><span class="sp" style="flex:1"></span><button class="ghost small" data-shareprofile title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button></div>
+      ${p.cover_url?`<div class="profile-cover" style="margin-top:10px;background-image:url('${esc(p.cover_url)}')"></div>`:''}
       <div class="row" style="margin-top:10px;align-items:center">
         ${p.avatar_url?`<img class="avatar" style="object-fit:cover" alt="${esc(p.display_name||'')}" src="${esc(p.avatar_url)}">`:`<span class="avatar">${esc(initials)}</span>`}
         <div style="margin-left:12px">
@@ -3649,6 +3680,7 @@ async function openProfile(handle) {
           <div class="handle">@${esc(p.handle)}</div>
           ${p.title?`<div class="muted">${esc(p.title)}</div>`:''}
           ${p.bundesland?`<div class="muted" style="font-size:13px">📍 ${esc(p.bundesland)}</div>`:''}
+          ${p.website?`<div style="font-size:13px;margin-top:2px">🔗 <a href="${esc(p.website)}" target="_blank" rel="noopener noreferrer nofollow" class="mention">${esc(prettyUrl(p.website))}</a></div>`:''}
         </div>
       </div>
       ${p.bio?`<div class="post-body">${esc(p.bio)}</div>`:''}

@@ -91,13 +91,17 @@ export function createSocialService(social, foundationRepo, options = {}) {
       return social.getProfileByHandle(handleOrUserId) || social.getProfileByUserId(handleOrUserId);
     },
     // Eigenes Profil bearbeiten (Handle bleibt als Identität unveränderlich).
-    updateProfile(actorUserId, { displayName, title, bio, specializations, avatarUrl, visibility, bundesland, country, locale, accountType }) {
+    updateProfile(actorUserId, { displayName, title, bio, specializations, avatarUrl, coverUrl, website, visibility, bundesland, country, locale, accountType }) {
       requireUser(actorUserId);
       const current = social.getProfileByUserId(actorUserId);
       if (!current) throw new Error('Profil nicht gefunden.');
       const patch = {};
       // Profilbild: leerer String entfernt es (null), data:image-URL wird validiert.
       if (avatarUrl !== undefined) patch.avatar_url = avatarUrl ? cleanImage(avatarUrl) : null;
+      // Titelbild (Banner) wie bei LinkedIn/Facebook: gleiche geprüfte Bild-Pipeline.
+      if (coverUrl !== undefined) patch.cover_url = coverUrl ? cleanImage(coverUrl) : null;
+      // Website/Kontakt-Link (nur http(s), keine Skript-URLs).
+      if (website !== undefined) patch.website = website ? cleanSourceUrl(website) : null;
       if (displayName !== undefined) {
         const dn = String(displayName).trim();
         if (!dn) throw new AppError('display_name_required', 'Anzeigename erforderlich.');

@@ -59,6 +59,22 @@ test('Profil bearbeiten: Profilbild wird gesetzt, geleert (null) und ungültiges
   assert.throws(() => social.updateProfile(a, { avatarUrl: 'https://evil.example/x.png' }), /Bildformat/);
 });
 
+test('Profil bearbeiten: Titelbild + Website werden gesetzt, geleert und validiert', () => {
+  const { social, a } = setup();
+  const png = 'data:image/png;base64,iVBORw0KGgo=';
+  const p = social.updateProfile(a, { coverUrl: png, website: 'https://apotrend.at' });
+  assert.equal(p.cover_url, png);
+  assert.equal(p.website, 'https://apotrend.at');
+  // Leeren entfernt beide.
+  const cleared = social.updateProfile(a, { coverUrl: '', website: '' });
+  assert.equal(cleared.cover_url, null);
+  assert.equal(cleared.website, null);
+  // Ungültiges Titelbild-Format wird abgelehnt.
+  assert.throws(() => social.updateProfile(a, { coverUrl: 'https://evil.example/x.png' }), /Bildformat/);
+  // Nicht-http(s)-Website wird abgelehnt.
+  assert.throws(() => social.updateProfile(a, { website: 'javascript:alert(1)' }), /http/);
+});
+
 test('Profil bearbeiten: gültiges Bundesland wird gesetzt, ungültiges abgelehnt', () => {
   const { social, a } = setup();
   const p = social.updateProfile(a, { bundesland: 'Wien' });
