@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #122 — 2026-07-20 — Offline-fähig für schwaches Netz (Service Worker, sicher)
+- **THINK:** Universeller Nutzen + Matrix-Ziel (Low-Connectivity-Märkte): App soll bei schwacher/unterbrochener Verbindung noch laden. Bisheriger SW war bewusst no-cache (kein Offline). Jetzt Offline-Hülle — OHNE Update-Staus und OHNE je Sicherheits-/Engpassdaten zu cachen.
+- **WORK:** `sw.js` auf **Network-First mit Cache-Fallback** umgestellt: App-Hülle (`/`, index, app.js/css, Icons, Manifest) beim Install vorgecacht (best-effort), versionierter Cache (`v2`, alte werden gelöscht). Online immer frisch + Cache aktualisiert; offline aus dem Cache (Navigation → Hülle). **`/api/*` wird NIE gecacht** (keine veralteten Daten), nur GET, nur eigene Herkunft.
+- **CHECK:** 317 grün, Smoke 19/19, Audit sauber. **Browser:** online Header da + SW steuert Seite; **offline neu geladen → Hülle aus Cache**, API scheitert korrekt (nicht gecacht), 0 JS-Fehler.
+
 ### Cycle #121 — 2026-07-20 — Länder-Feature-Konfiguration (Framework-Schema `active_features`)
 - **THINK:** Owner-Spec verlangt ausdrücklich das `active_features`-JSON „für das Backend". Umgesetzt — aber EHRLICH: `enabled=true` nur für real existierende Funktionen; sicherheits-/datenabhängige Module (Echtheitsprüfung, Rückrufe) `enabled=false`+`planned` (schalten erst mit echter Quelle frei). Keine Scheinfunktionen.
 - **WORK:** `data/countryFeatures.js` → `countryConfig(code)` liefert `{ country, language, currency, regulator, active_features[] }`. Kernfunktionen aktiv; `regulator_source` aktiv nur mit verifizierter URL (sonst geplant); gruppenspezifische Roadmap-Module je Sprachgruppe (DACH/Lusophonie/Anglophonie); `recall_tracking` überall geplant. Endpoint `GET /api/country-config`. Doku `docs/COUNTRY_CONFIG.md`.
