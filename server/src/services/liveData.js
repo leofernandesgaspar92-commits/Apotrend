@@ -137,6 +137,63 @@ export async function refreshPrices(country, { fetchJson, pricesRepo, env = proc
   return { ok: true, country: cc, count, source, fetched_at: (payload && payload.fetched_at) || null };
 }
 
+// ── Rabatte/Aktionen (dritter Datentyp, gleiche Anschluss-Logik) ──
+// Vertrag: { country, source, prices?…, rabatte: [ { bezeichnung, wirkstoff?, supplier,
+//            listenpreis (>0), aktionspreis (>0), min_menge?, gueltig_bis (YYYY-MM-DD),
+//            currency? } ] }
+const rabatteEnvKey = (country) => `APOTREND_LIVE_RABATTE_${String(country || '').toUpperCase()}`;
+
+export function isRabatteLive(country, env = process.env) { return !!env[rabatteEnvKey(country)]; }
+export function liveRabatteSources(env = process.env) {
+  const out = {};
+  for (const code of Object.keys(COUNTRIES)) { const url = env[rabatteEnvKey(code)]; if (url) out[code] = { url }; }
+  return out;
+}
+
+export function validateRabattePayload(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return { ok: false, errors: ['Payload fehlt oder ist kein Objekt'], rows: [] };
+  }
+  if (!Array.isArray(payload.rabatte)) {
+    return { ok: false, errors: ['Feld "rabatte" muss ein Array sein'], rows: [] };
+  }
+  const errors = [];
+  const rows = [];
+  payload.rabatte.forEach((r, i) => {
+    if (!r || typeof r !== 'object') { errors.push(`#${i}: kein Objekt`); return; }
+    if (typeof r.bezeichnung !== 'string' || !r.bezeichnung.trim()) { errors.push(`#${i}: "bezeichnung" fehlt`); return; }
+    if (typeof r.supplier !== 'string' || !r.supplier.trim()) { errors.push(`#${i}: "supplier" fehlt`); return; }
+    const listenpreis = Number(r.listenpreis), aktionspreis = Number(r.aktionspreis);
+    if (!(listenpreis > 0)) { errors.push(`#${i}: "listenpreis" ungültig`); return; }
+    if (!(aktionspreis > 0)) { errors.push(`#${i}: "aktionspreis" ungültig`); return; }
+    if (typeof r.gueltig_bis !== 'string' || !r.gueltig_bis.trim()) { errors.push(`#${i}: "gueltig_bis" fehlt`); return; }
+    rows.push({
+      bezeichnung: r.bezeichnung.trim(),
+      wirkstoff: r.wirkstoff != null ? String(r.wirkstoff) : null,
+      supplier: r.supplier.trim(),
+      listenpreis, aktionspreis,
+      min_menge: r.min_menge != null && isFinite(Number(r.min_menge)) ? Number(r.min_menge) : null,
+      gueltig_bis: r.gueltig_bis.trim(),
+      currency: typeof r.currency === 'string' && r.currency ? r.currency : 'EUR',
+    });
+  });
+  return { ok: errors.length === 0, errors, rows };
+}
+
+export async function refreshRabatte(country, { fetchJson, rabatteRepo, env = process.env } = {}) {
+  const cc = String(country || '').toUpperCase();
+  const url = env[rabatteEnvKey(cc)];
+  if (!url) return { ok: false, skipped: true, country: cc, reason: 'keine Quelle konfiguriert' };
+  let payload;
+  try { payload = await fetchJson(url); }
+  catch (e) { return { ok: false, country: cc, error: 'Abruf fehlgeschlagen: ' + (e && e.message) }; }
+  const v = validateRabattePayload(payload);
+  if (!v.ok) return { ok: false, country: cc, error: 'ungültige Daten — Bestand unverändert', errors: v.errors };
+  const source = (payload && typeof payload.source === 'string' && payload.source) || 'Live';
+  const count = rabatteRepo.replaceFeed(v.rows, { provenance: 'verified', quelle: source });
+  return { ok: true, country: cc, count, source, fetched_at: (payload && payload.fetched_at) || null };
+}
+
 // Standard-Fetcher (JSON über global fetch). In Tests wird stattdessen ein Stub injiziert.
 export async function fetchJsonDefault(url) {
   const res = await fetch(url, { headers: { accept: 'application/json' } });
@@ -146,10 +203,11 @@ export async function fetchJsonDefault(url) {
 
 // Auto-Refresh: startet NUR, wenn mindestens eine Quelle konfiguriert ist. Läuft sonst nicht
 // (bis die Website „angeschlossen" wird). Fehler werden geloggt, brechen aber nie den Server.
-export function startLiveRefresh({ shortagesRepo, pricesRepo, env = process.env, intervalMs = 15 * 60 * 1000, fetchJson = fetchJsonDefault, log = console } = {}) {
+export function startLiveRefresh({ shortagesRepo, pricesRepo, rabatteRepo, env = process.env, intervalMs = 15 * 60 * 1000, fetchJson = fetchJsonDefault, log = console } = {}) {
   const tasks = [];
   if (shortagesRepo) for (const cc of Object.keys(liveSources(env))) tasks.push({ cc, kind: 'shortages', run: () => refreshShortages(cc, { fetchJson, shortagesRepo, env }) });
   if (pricesRepo) for (const cc of Object.keys(livePriceSources(env))) tasks.push({ cc, kind: 'prices', run: () => refreshPrices(cc, { fetchJson, pricesRepo, env }) });
+  if (rabatteRepo) for (const cc of Object.keys(liveRabatteSources(env))) tasks.push({ cc, kind: 'rabatte', run: () => refreshRabatte(cc, { fetchJson, rabatteRepo, env }) });
   if (!tasks.length) return null; // nichts angeschlossen -> nichts tun
   const runAll = async () => {
     for (const t of tasks) {

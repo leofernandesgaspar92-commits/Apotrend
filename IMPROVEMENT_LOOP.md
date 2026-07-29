@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #127 — 2026-07-20 — Live-Daten-Anschluss komplett: Rabatte (3. Datentyp) — Kern-Trio auto-connect
+- **THINK:** Die Auto-Connect-Datenschicht abrunden: nach Engpässen (#118) und Preisen (#126) jetzt **Rabatte** — dann ziehen alle drei Kern-Datentypen automatisch echte Daten, sobald angeschlossen.
+- **WORK:** `liveData.js` um `validateRabattePayload`/`refreshRabatte`/`isRabatteLive`/`liveRabatteSources` erweitert; `startLiveRefresh` nimmt jetzt auch `rabatteRepo`. `rabatteRepo.replaceFeed`. Env `APOTREND_LIVE_RABATTE_<CC>`; `/api/data-status` liefert `rabatte.live`; Server-Start refresht alle drei Typen. `rabatt_pct`/`ersparnis` werden serverseitig berechnet. Doku `LIVE_DATA.md` erweitert.
+- **CHECK:** 319 → 320 grün (+1: Pflichtfelder inkl. gueltig_bis/Preise>0, Übernahme+verified+Rabatt-Berechnung, Fehler-Fallback, isRabatteLive), Smoke 19/19, Guards 0. Anschließen = ENV-Variable, kein Code-Deploy.
+
 ### Cycle #126 — 2026-07-20 — Live-Daten-Anschluss auf Preise ausgeweitet (2. Datentyp)
 - **THINK:** Owner-Vision „sobald angeschlossen, holt sich alles automatisch echte Daten" weiter tragen: die bewährte Anschlussstelle (#118, Engpässe) auf **Preise** übertragen — gleiche Env-Gating-/Validierungs-/Fallback-Logik, ruht bis angeschlossen.
 - **WORK:** `liveData.js` um `validatePricePayload`/`refreshPrices`/`isPriceLive`/`livePriceSources` erweitert; `startLiveRefresh` generalisiert (Engpässe + Preise als Tasks). `pricesRepo.replaceFeed` (Feed komplett ersetzen). Env `APOTREND_LIVE_PRICES_<CC>`; `/api/data-status` liefert jetzt auch `prices.live`; Server-Start startet Auto-Refresh für beide Typen. Doku `LIVE_DATA.md` erweitert (Preis-Vertrag).

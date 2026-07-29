@@ -53,6 +53,13 @@ export function createRabatteRepo({ seed = true, today = null } = {}) {
 
   return {
     upsert,
+    // Live-/Referenz-Feed komplett ersetzen (Aktionen stammen vollständig aus dem Feed).
+    replaceFeed(rows, { provenance = 'verified', quelle = null } = {}) {
+      rabatte.clear();
+      let n = 0;
+      for (const r of (rows || [])) { upsert({ ...r, provenance, quelle }); n++; }
+      return n;
+    },
     get(id) { const r = rabatte.get(id); return r ? { ...r } : null; },
     // Verbleibende Tage bis Aktionsende (relativ zum Vergleichsdatum), Kalendertage.
     daysLeft(gueltig_bis) {

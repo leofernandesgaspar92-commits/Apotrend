@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createShortagesRepo } from '../src/repo/shortagesRepo.js';
 import { createPricesRepo } from '../src/repo/pricesRepo.js';
-import { validateShortagePayload, refreshShortages, isLive, liveSources, startLiveRefresh, validatePricePayload, refreshPrices, isPriceLive, livePriceSources } from '../src/services/liveData.js';
+import { createRabatteRepo } from '../src/repo/rabatteRepo.js';
+import { validateShortagePayload, refreshShortages, isLive, liveSources, startLiveRefresh, validatePricePayload, refreshPrices, isPriceLive, livePriceSources, validateRabattePayload, refreshRabatte, isRabatteLive } from '../src/services/liveData.js';
 
 test('validateShortagePayload: akzeptiert gültige Zeilen, sammelt Fehler, lehnt Schrott ab', () => {
   assert.equal(validateShortagePayload(null).ok, false);
@@ -116,6 +117,36 @@ test('refreshPrices: übernimmt gültige Preise (verified), ersetzt Seed; Fehler
   assert.equal(isPriceLive('AT', env), true);
   assert.equal(isPriceLive('AT', {}), false);
   assert.deepEqual(Object.keys(livePriceSources(env)), ['AT']);
+});
+
+test('validateRabattePayload + refreshRabatte: Pflichtfelder, Übernahme (verified), Fehler-Fallback', async () => {
+  assert.equal(validateRabattePayload({}).ok, false);
+  const bad = validateRabattePayload({ rabatte: [
+    { bezeichnung: 'A', supplier: 'S', listenpreis: 5, aktionspreis: 4 }, // gueltig_bis fehlt
+    { bezeichnung: 'B', supplier: 'S', listenpreis: 0, aktionspreis: 4, gueltig_bis: '2026-09-30' }, // listenpreis 0
+  ] });
+  assert.equal(bad.ok, false);
+  assert.equal(bad.errors.length, 2);
+  const repo = createRabatteRepo({ seed: true, today: '2026-07-07' });
+  const before = repo.listFlat().length;
+  const env = { APOTREND_LIVE_RABATTE_AT: 'https://live/deals.json' };
+  const payload = { source: 'Aktions-Feed', rabatte: [
+    { bezeichnung: 'Ibuprofen 400 mg', wirkstoff: 'Ibuprofen', supplier: 'Kwizda', listenpreis: 2.35, aktionspreis: 1.60, min_menge: 30, gueltig_bis: '2026-12-31' },
+  ] };
+  const r = await refreshRabatte('AT', { fetchJson: async () => payload, rabatteRepo: repo, env });
+  assert.equal(r.ok, true);
+  assert.equal(r.count, 1);
+  const flat = repo.listFlat();
+  assert.equal(flat.length, 1, 'Seed ersetzt');
+  assert.equal(flat[0].provenance, 'verified');
+  assert.equal(flat[0].quelle, 'Aktions-Feed');
+  assert.equal(flat[0].rabatt_pct > 0, true, 'Rabatt berechnet');
+  // ungültig -> Bestand bleibt
+  const invalid = await refreshRabatte('AT', { fetchJson: async () => ({ rabatte: [{ bezeichnung: 'A', supplier: 'S', listenpreis: 1, aktionspreis: 1 }] }), rabatteRepo: repo, env });
+  assert.equal(invalid.ok, false);
+  assert.equal(repo.listFlat().length, 1);
+  assert.equal(isRabatteLive('AT', env), true);
+  assert.equal(isRabatteLive('AT', {}), false);
 });
 
 test('startLiveRefresh: ruht ohne Quelle; startet + ingestiert, sobald angeschlossen', async () => {

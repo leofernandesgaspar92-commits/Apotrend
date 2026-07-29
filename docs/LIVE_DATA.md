@@ -96,9 +96,30 @@ Pflichtfelder je Zeile: `bezeichnung`, `supplier`, `aep` (> 0). Ungültiger
 Payload → gesamter Abruf verworfen, alte Preise bleiben. Status unter
 `GET /api/data-status` → `prices.live`.
 
-## 5. Weitere Erweiterung
+## 5. Rabatte/Aktionen (dritter Datentyp)
+
+Umgebungsvariable `APOTREND_LIVE_RABATTE_<CC>`. JSON-Vertrag:
+
+```json
+{
+  "country": "AT",
+  "source": "Aktions-Feed",
+  "rabatte": [
+    { "bezeichnung": "Ibuprofen 400 mg", "wirkstoff": "Ibuprofen",
+      "supplier": "Kwizda", "listenpreis": 2.35, "aktionspreis": 1.60,
+      "min_menge": 30, "gueltig_bis": "2026-12-31", "currency": "EUR" }
+  ]
+}
+```
+
+Pflichtfelder je Zeile: `bezeichnung`, `supplier`, `listenpreis` (> 0),
+`aktionspreis` (> 0), `gueltig_bis` (`YYYY-MM-DD`). `rabatt_pct` und
+`ersparnis` werden serverseitig berechnet. Status unter
+`GET /api/data-status` → `rabatte.live`.
+
+## 6. Weitere Erweiterung
 
 Die Schnittstelle ist bewusst pro Datentyp aufgebaut. Weitere Feeds
-(Rabatte, Rückrufe) folgen demselben Muster:
+(z. B. Rückrufe) folgen demselben Muster:
 `APOTREND_LIVE_<TYP>_<CC>` + Vertrag + `refresh…` in
 `server/src/services/liveData.js`.
