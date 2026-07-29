@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #137 — 2026-07-20 — Preisvergleich als druckbarer Einkaufs-Report
+- **THINK:** Einkaufs-Nutzen: der Preisvergleich hatte CSV, aber keinen lesbaren Ausdruck für Besprechung/Aushang. Ein formatierter Report (günstigster Lieferant, Ersparnis, beste Aktion je Präparat) hilft nicht-technischen Einkäufer:innen direkt.
+- **WORK:** `printPrices(comparisons)` öffnet einen sauberen Druck-Report (Titel, Datum locale-korrekt, Tabelle Präparat/Wirkstoff · günstigster Lieferant · AEP · Ersparnis · beste Aktion, Fußzeile mit Gewähr-Hinweis). „🖨️ Drucken"-Button neben CSV; beide respektieren jetzt die aktuelle Filter-/Suchauswahl (`shownPrices`). i18n DE/EN/PT.
+- **CHECK:** 320 grün, Smoke 19/19, Parität 783/783/783, Guards 0. **Browser:** Klick öffnet Druckfenster mit Titel, allen Spalten und Präparaten (4), 0 JS-Fehler.
+
 ### Cycle #136 — 2026-07-20 — Umfragen: Stimmenzahl neben Prozent (Datenklarheit)
 - **THINK:** Themenwechsel (Feed/Umfragen): Umfrage-Optionen zeigten nur %. 40 % von 5 Stimmen ≠ 40 % von 200 — bei kleinen Fach-Umfragen irreführend. Rohzahl dazu = ehrliche Einordnung (Klartext/Transparenz, CLAUDE.md).
 - **WORK:** `pollHtml` zeigt je Option „n · pct%" (statt nur „pct%"), plus Tooltip mit „n Stimmen" (bestehende `pl_total`/`pl_total_one` wiederverwendet). Keine neuen i18n-Schlüssel; `poll-pct` mit tabular-nums fasst die Zahl sauber.

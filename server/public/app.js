@@ -112,7 +112,7 @@ const I18N = {
     pr_savings_title:'💶 Sparpotenzial beim Einkauf', pr_savings_amount:'bis zu € {x} pro Packung',
     pr_savings_sub_one:'wenn du bei {n} Präparat den günstigsten Großhändler wählst.',
     pr_savings_sub_many:'wenn du bei {n} Präparaten jeweils den günstigsten Großhändler wählst.',
-    pr_at:'bei', pr_csv_title:'📊 Für den Einkauf', pr_csv_btn:'⬇️ Preisvergleich als CSV (Excel)',
+    pr_at:'bei', pr_csv_title:'📊 Für den Einkauf', pr_csv_btn:'⬇️ Preisvergleich als CSV (Excel)', pr_print_btn:'Drucken', pr_print_title:'Preisvergleich für den Einkauf', pr_print_count:'Präparate', pr_print_cheapest:'Günstigster Lieferant', pr_print_saving:'Ersparnis', pr_print_deal:'Beste Aktion',
     pr_csv_sub:'Alle Präparate & Lieferanten mit AEP, Trend und günstigstem Anbieter — zum Weiterverarbeiten in Excel.',
     pr_q_ph:'🔎 Präparat, Wirkstoff oder Lieferant suchen…', pr_empty:'Kein Präparat für diese Suche.',
     pg_compare:'Preisvergleich (AEP) · günstigster oben ·', pg_all_about:'Alles zu {w}',
@@ -403,7 +403,7 @@ const I18N = {
     pr_savings_title:'💶 Savings on purchasing', pr_savings_amount:'up to € {x} per pack',
     pr_savings_sub_one:'if you pick the cheapest wholesaler for {n} product.',
     pr_savings_sub_many:'if you pick the cheapest wholesaler for each of {n} products.',
-    pr_at:'at', pr_csv_title:'📊 For purchasing', pr_csv_btn:'⬇️ Price comparison as CSV (Excel)',
+    pr_at:'at', pr_csv_title:'📊 For purchasing', pr_csv_btn:'⬇️ Price comparison as CSV (Excel)', pr_print_btn:'Print', pr_print_title:'Price comparison for purchasing', pr_print_count:'products', pr_print_cheapest:'Cheapest supplier', pr_print_saving:'Saving', pr_print_deal:'Best deal',
     pr_csv_sub:'All products & suppliers with list price, trend and cheapest supplier — to process further in Excel.',
     pr_q_ph:'🔎 Search product, substance or supplier…', pr_empty:'No product for this search.',
     pg_compare:'Price comparison (list) · cheapest on top ·', pg_all_about:'Everything about {w}',
@@ -694,7 +694,7 @@ const I18N = {
     pr_savings_title:'💶 Poupança nas compras', pr_savings_amount:'até € {x} por embalagem',
     pr_savings_sub_one:'se escolher o distribuidor mais barato para {n} produto.',
     pr_savings_sub_many:'se escolher o distribuidor mais barato para cada um dos {n} produtos.',
-    pr_at:'em', pr_csv_title:'📊 Para as compras', pr_csv_btn:'⬇️ Comparação de preços em CSV (Excel)',
+    pr_at:'em', pr_csv_title:'📊 Para as compras', pr_csv_btn:'⬇️ Comparação de preços em CSV (Excel)', pr_print_btn:'Imprimir', pr_print_title:'Comparação de preços para compras', pr_print_count:'produtos', pr_print_cheapest:'Fornecedor mais barato', pr_print_saving:'Poupança', pr_print_deal:'Melhor promoção',
     pr_csv_sub:'Todos os produtos e fornecedores com preço, tendência e fornecedor mais barato — para processar no Excel.',
     pr_q_ph:'🔎 Pesquisar produto, substância ou fornecedor…', pr_empty:'Nenhum produto para esta pesquisa.',
     pg_compare:'Comparação de preços · mais barato no topo ·', pg_all_about:'Tudo sobre {w}',
@@ -2523,8 +2523,10 @@ async function loadPrices() {
       feed.appendChild(head);
     }
     // CSV-Export für Einkauf/Großhandel (Excel-tauglich)
-    const exp = el(`<div class="card"><div class="row"><b>${esc(t('pr_csv_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-csv>${esc(t('pr_csv_btn'))}</button></div><div class="muted" style="font-size:13px;margin-top:2px">${esc(t('pr_csv_sub'))}</div></div>`);
-    exp.querySelector('[data-csv]').onclick = () => exportPricesCsv(d.comparisons);
+    let shownPrices = d.comparisons; // aktuell gefilterte Auswahl für Export/Druck
+    const exp = el(`<div class="card"><div class="row" style="flex-wrap:wrap;gap:6px"><b>${esc(t('pr_csv_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-print>🖨️ ${esc(t('pr_print_btn'))}</button><button class="ghost small" data-csv>${esc(t('pr_csv_btn'))}</button></div><div class="muted" style="font-size:13px;margin-top:2px">${esc(t('pr_csv_sub'))}</div></div>`);
+    exp.querySelector('[data-csv]').onclick = () => exportPricesCsv(shownPrices);
+    exp.querySelector('[data-print]').onclick = () => printPrices(shownPrices);
     feed.appendChild(exp);
     // Beobachtungsliste laden für den „nur beobachtete"-Filter (Fehler = kein Filter).
     let pWatched = new Set();
@@ -2542,6 +2544,7 @@ async function loadPrices() {
         (!q || (g.bezeichnung||'').toLowerCase().includes(q) || (g.wirkstoff||'').toLowerCase().includes(q)
            || (g.offers||[]).some(o => (o.supplier||'').toLowerCase().includes(q))));
       const wb = bar.querySelector('[data-pwatched]'); if (wb) { wb.classList.toggle('active', priceWatchedOnly); wb.setAttribute('aria-pressed', String(priceWatchedOnly)); }
+      shownPrices = list;
       listBox.innerHTML = '';
       if (!list.length) listBox.appendChild(el(`<div class="card muted">${esc(t('pr_empty'))}</div>`));
       else list.forEach(g => listBox.appendChild(priceGroup(g)));
@@ -2572,6 +2575,39 @@ function downloadCsv(baseName, header, rows) {
   const a = document.createElement('a');
   a.href = url; a.download = baseName + '-' + new Date().toISOString().slice(0, 10) + '.csv';
   a.click(); URL.revokeObjectURL(url);
+}
+
+// Preisvergleich als sauberer, druckbarer Report für den Einkauf (Aushang/Besprechung).
+// Je Präparat: günstigster Lieferant + AEP, Ersparnis vs. teuerstem, ggf. beste Aktion.
+function printPrices(comparisons) {
+  const list = comparisons || [];
+  const w = window.open('', '_blank');
+  if (!w) { alert(t('pi_popup')); return; }
+  const dateStr = new Date().toLocaleDateString(LOCALE === 'de' ? 'de-AT' : LOCALE === 'pt' ? 'pt-PT' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+  const money = (v) => (LOCALE === 'en' ? Number(v).toFixed(2) : Number(v).toFixed(2).replace('.', ','));
+  const rows = list.map(g => {
+    const cheapest = (g.offers && g.offers[0]) || null;
+    const action = g.action ? `${esc(g.action.supplier)}: € ${money(g.action.aktionspreis)} (−${g.action.rabatt_pct}%)` : '<span class="empty">—</span>';
+    const saving = g.saving_abs > 0 ? `€ ${money(g.saving_abs)}` : '<span class="empty">—</span>';
+    return `<tr>
+      <td class="wk">${esc(g.bezeichnung)}${g.wirkstoff ? `<div class="pr">${esc(g.wirkstoff)}</div>` : ''}</td>
+      <td>${cheapest ? esc(cheapest.supplier) : '—'}</td>
+      <td class="num">${cheapest ? '€ ' + money(cheapest.aep) : '—'}</td>
+      <td class="num">${saving}</td>
+      <td>${action}</td>
+    </tr>`;
+  }).join('');
+  w.document.write(`<!doctype html><html lang="${esc(LOCALE)}"><head><meta charset="utf-8"><title>${esc(t('pr_print_title'))}</title>
+    <style>body{font-family:system-ui,-apple-system,sans-serif;max-width:900px;margin:24px auto;padding:0 16px;color:#111}
+    h1{font-size:22px;margin:0 0 2px} .meta{color:#555;font-size:13px;margin-bottom:16px}
+    table{width:100%;border-collapse:collapse} th{text-align:left;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
+    td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:12px;margin-top:2px}
+    .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap} .empty{color:#999} .src{font-size:12px;color:#555;margin-top:18px}</style></head>
+    <body><h1>💶 ${esc(t('pr_print_title'))}</h1><div class="meta">${esc(ti('wl_print_asof', { date: dateStr }))} · ${esc(list.length === 1 ? '1' : list.length)} ${esc(t('pr_print_count'))}</div>
+    <table><thead><tr><th>${esc(t('csv_praeparat'))}</th><th>${esc(t('pr_print_cheapest'))}</th><th class="num">${esc(t('csv_aep'))}</th><th class="num">${esc(t('pr_print_saving'))}</th><th>${esc(t('pr_print_deal'))}</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="src">${esc(t('wl_print_foot'))}</div>
+    <script>window.onload=function(){window.print();}<\/script></body></html>`);
+  w.document.close();
 }
 
 function exportPricesCsv(comparisons) {
