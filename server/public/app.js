@@ -147,7 +147,7 @@ const I18N = {
     ex_new:'Eintrag anlegen', ex_search_empty_t:'Nichts zu „{q}"',
     ex_search_empty_s:'Keine offenen Biete-/Suche-Einträge für diesen Begriff. Filter zurücksetzen oder anderen Begriff probieren.',
     ex_empty_t:'Noch keine offenen Einträge', ex_empty_s:'Biete Überbestand an oder suche dringend Benötigtes — sei der/die Erste.',
-    ex_badge_biete:'📦 Biete', ex_badge_suche:'🔎 Suche', ex_done_badge:'✓ erledigt', ex_qty:'Menge:', ex_match_offers:'🔗 {n} passende Angebote', ex_match_offers_1:'🔗 1 passendes Angebot', ex_match_seeks:'🔗 {n} passende Gesuche', ex_match_seeks_1:'🔗 1 passendes Gesuch', ex_flash_offers:'{n} passende Angebote gefunden — hier deine Treffer.', ex_flash_offers_1:'1 passendes Angebot gefunden — hier dein Treffer.', ex_flash_seeks:'{n} passende Gesuche gefunden — hier deine Treffer.', ex_flash_seeks_1:'1 passendes Gesuch gefunden — hier dein Treffer.',
+    ex_badge_biete:'📦 Biete', ex_badge_suche:'🔎 Suche', ex_done_badge:'✓ erledigt', ex_qty:'Menge:', ex_match_offers:'🔗 {n} passende Angebote', ex_match_offers_1:'🔗 1 passendes Angebot', ex_match_seeks:'🔗 {n} passende Gesuche', ex_match_seeks_1:'🔗 1 passendes Gesuch', ex_flash_offers:'{n} passende Angebote gefunden — hier deine Treffer.', ex_flash_offers_1:'1 passendes Angebot gefunden — hier dein Treffer.', ex_flash_seeks:'{n} passende Gesuche gefunden — hier deine Treffer.', ex_flash_seeks_1:'1 passendes Gesuch gefunden — hier dein Treffer.', ex_flash_none_biete:'Angebot veröffentlicht. Noch kein passendes Gesuch — du wirst benachrichtigt, sobald jemand danach sucht.', ex_flash_none_suche:'Gesuch veröffentlicht. Noch kein passendes Angebot — du wirst benachrichtigt, sobald jemand es anbietet.',
     ex_photo_alt:'Foto zum Eintrag', ex_by:'von', ex_unknown:'Unbekannt',
     ex_contact_btn:'✉️ Kontaktieren', ex_dm_draft:'Hallo! Zu deinem Eintrag „{kind}: {item}" — ist das noch aktuell?', ex_reopen:'↻ Wieder öffnen', ex_done_btn:'✓ Erledigt',
     ex_del_confirm:'Eintrag löschen?', ex_stale:'Dieser Eintrag ist {d} Tage alt — noch aktuell?', ex_stale_done:'Als erledigt markieren',
@@ -438,7 +438,7 @@ const I18N = {
     ex_new:'Create entry', ex_search_empty_t:'Nothing for “{q}”',
     ex_search_empty_s:'No open offer/request entries for this term. Reset the filter or try another term.',
     ex_empty_t:'No open entries yet', ex_empty_s:'Offer surplus or seek urgently needed items — be the first.',
-    ex_badge_biete:'📦 Offer', ex_badge_suche:'🔎 Request', ex_done_badge:'✓ done', ex_qty:'Quantity:', ex_match_offers:'🔗 {n} matching offers', ex_match_offers_1:'🔗 1 matching offer', ex_match_seeks:'🔗 {n} matching requests', ex_match_seeks_1:'🔗 1 matching request', ex_flash_offers:'{n} matching offers found — here are your hits.', ex_flash_offers_1:'1 matching offer found — here is your hit.', ex_flash_seeks:'{n} matching requests found — here are your hits.', ex_flash_seeks_1:'1 matching request found — here is your hit.',
+    ex_badge_biete:'📦 Offer', ex_badge_suche:'🔎 Request', ex_done_badge:'✓ done', ex_qty:'Quantity:', ex_match_offers:'🔗 {n} matching offers', ex_match_offers_1:'🔗 1 matching offer', ex_match_seeks:'🔗 {n} matching requests', ex_match_seeks_1:'🔗 1 matching request', ex_flash_offers:'{n} matching offers found — here are your hits.', ex_flash_offers_1:'1 matching offer found — here is your hit.', ex_flash_seeks:'{n} matching requests found — here are your hits.', ex_flash_seeks_1:'1 matching request found — here is your hit.', ex_flash_none_biete:'Offer published. No matching request yet — you will be notified as soon as someone seeks it.', ex_flash_none_suche:'Request published. No matching offer yet — you will be notified as soon as someone offers it.',
     ex_photo_alt:'Entry photo', ex_by:'by', ex_unknown:'Unknown',
     ex_contact_btn:'✉️ Contact', ex_dm_draft:'Hi! About your listing “{kind}: {item}” — is it still available?', ex_reopen:'↻ Reopen', ex_done_btn:'✓ Done',
     ex_del_confirm:'Delete entry?', ex_stale:'This entry is {d} days old — still current?', ex_stale_done:'Mark as done',
@@ -729,7 +729,7 @@ const I18N = {
     ex_new:'Criar entrada', ex_search_empty_t:'Nada para “{q}”',
     ex_search_empty_s:'Sem entradas de oferta/procura abertas para este termo. Reponha o filtro ou tente outro termo.',
     ex_empty_t:'Ainda sem entradas abertas', ex_empty_s:'Ofereça excedente ou procure algo urgente — seja o primeiro.',
-    ex_badge_biete:'📦 Oferta', ex_badge_suche:'🔎 Procura', ex_done_badge:'✓ concluído', ex_qty:'Quantidade:', ex_match_offers:'🔗 {n} ofertas correspondentes', ex_match_offers_1:'🔗 1 oferta correspondente', ex_match_seeks:'🔗 {n} procuras correspondentes', ex_match_seeks_1:'🔗 1 procura correspondente', ex_flash_offers:'{n} ofertas correspondentes encontradas — aqui estão.', ex_flash_offers_1:'1 oferta correspondente encontrada — aqui está.', ex_flash_seeks:'{n} procuras correspondentes encontradas — aqui estão.', ex_flash_seeks_1:'1 procura correspondente encontrada — aqui está.',
+    ex_badge_biete:'📦 Oferta', ex_badge_suche:'🔎 Procura', ex_done_badge:'✓ concluído', ex_qty:'Quantidade:', ex_match_offers:'🔗 {n} ofertas correspondentes', ex_match_offers_1:'🔗 1 oferta correspondente', ex_match_seeks:'🔗 {n} procuras correspondentes', ex_match_seeks_1:'🔗 1 procura correspondente', ex_flash_offers:'{n} ofertas correspondentes encontradas — aqui estão.', ex_flash_offers_1:'1 oferta correspondente encontrada — aqui está.', ex_flash_seeks:'{n} procuras correspondentes encontradas — aqui estão.', ex_flash_seeks_1:'1 procura correspondente encontrada — aqui está.', ex_flash_none_biete:'Oferta publicada. Ainda sem procura correspondente — será notificado assim que alguém procurar.', ex_flash_none_suche:'Procura publicada. Ainda sem oferta correspondente — será notificado assim que alguém oferecer.',
     ex_photo_alt:'Foto da entrada', ex_by:'de', ex_unknown:'Desconhecido',
     ex_contact_btn:'✉️ Contactar', ex_dm_draft:'Olá! Sobre a sua entrada „{kind}: {item}" — ainda está disponível?', ex_reopen:'↻ Reabrir', ex_done_btn:'✓ Concluído',
     ex_del_confirm:'Eliminar entrada?', ex_stale:'Esta entrada tem {d} dias — ainda atual?', ex_stale_done:'Marcar como concluída',
@@ -2854,6 +2854,9 @@ async function loadExchange() {
         const key = (String(created.bezeichnung).toLowerCase().match(/[a-zäöüß0-9]{4,}/g) || [])[0] || created.bezeichnung;
         exchangeMine = false; exchangeFilter = created.kind === 'biete' ? 'suche' : 'biete'; exchangeQuery = key;
         exchangeFlash = { count: created.match_count, kind: created.kind };
+      } else if (created) {
+        // Noch kein Treffer: beruhigen + auf das Frühwarnnetz hinweisen (man wird benachrichtigt).
+        exchangeFlash = { count: 0, kind: created.kind };
       }
       loadExchange();
     } catch(e){ document.getElementById('ex_err').textContent = e.message; }
@@ -2877,13 +2880,19 @@ async function loadExchange() {
   const qclear = filt.querySelector('#ex_qclear');
   if (qclear) qclear.onclick = () => { exchangeQuery=''; loadExchange(); };
   feed.appendChild(filt);
-  // Einmal-Hinweis direkt nach dem Anlegen: passende Gegenstücke gefunden (Moment der Absicht).
+  // Einmal-Hinweis direkt nach dem Anlegen: Treffer gefunden (Moment der Absicht) oder — falls
+  // noch keiner — beruhigen und aufs Frühwarnnetz hinweisen (man wird automatisch benachrichtigt).
   if (exchangeFlash) {
     const { count, kind } = exchangeFlash; exchangeFlash = null;
-    const msg = kind === 'biete'
-      ? (count === 1 ? t('ex_flash_seeks_1') : ti('ex_flash_seeks', { n: count }))
-      : (count === 1 ? t('ex_flash_offers_1') : ti('ex_flash_offers', { n: count }));
-    feed.appendChild(el(`<div class="card ok-box" style="padding:10px 14px;font-weight:600">✅ ${esc(msg)}</div>`));
+    if (count === 0) {
+      const msg = kind === 'biete' ? t('ex_flash_none_biete') : t('ex_flash_none_suche');
+      feed.appendChild(el(`<div class="card" style="padding:10px 14px;background:var(--info-bg);border-color:var(--info-bd);color:var(--info-fg)">📣 ${esc(msg)}</div>`));
+    } else {
+      const msg = kind === 'biete'
+        ? (count === 1 ? t('ex_flash_seeks_1') : ti('ex_flash_seeks', { n: count }))
+        : (count === 1 ? t('ex_flash_offers_1') : ti('ex_flash_offers', { n: count }));
+      feed.appendChild(el(`<div class="card ok-box" style="padding:10px 14px;font-weight:600">✅ ${esc(msg)}</div>`));
+    }
   }
   try {
     let d;

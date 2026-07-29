@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #146 — 2026-07-20 — Bestandsaustausch: Beruhigung bei „noch kein Treffer" (Erwartungs-Management)
+- **THINK:** Gegenstück zu #116: Bei einem Treffer gibt es den Erfolgs-Banner, aber bei KEINEM Treffer passierte sichtbar nichts — Nutzer:in unsicher, ob es geklappt hat. Ein Hinweis „veröffentlicht, noch kein Treffer — du wirst benachrichtigt" beruhigt und hebt das Frühwarnnetz hervor.
+- **WORK:** Anlege-Handler setzt bei `match_count === 0` ebenfalls einen Flash (`count: 0`). Rendering zeigt dann einen Info-Banner „📣 Angebot/Gesuch veröffentlicht. Noch kein passendes … — du wirst benachrichtigt, sobald jemand …". i18n `ex_flash_none_biete/_suche` DE/EN/PT.
+- **CHECK:** 320 grün, Smoke 19/19, Parität 808/808/808, Guards 0. **Browser:** Suche nach seltenem Wirkstoff (kein Biete) → Info-Banner erscheint, 0 JS-Fehler.
+
 ### Cycle #145 — 2026-07-20 — Code-Qualität: Druck-Reports auf gemeinsame Helfer (DRY)
 - **THINK:** Über die Zyklen sind 5 window.open-Druck-Reports (Merkliste, Preise, Rabatte, Wirkstoff-Dossier, Patienteninfo) entstanden, die Fenster-Guard, Datum-/Geld-Formatierung und das HTML-Gerüst duplizierten. Konsolidieren senkt künftige Fehlerfläche — ohne Verhalten zu ändern.
 - **WORK:** Helfer extrahiert: `openPrintDoc(title, css, body, lang=LOCALE)` (Popup-Guard + `<head>`/`<body>` + Auto-Print), `printDate()`, `printMoney(v)`. Alle 5 Reports darauf umgestellt; jede CSS bleibt **byte-identisch** (keine visuelle Änderung), Patienteninfo behält ihre eigene Sprache via `lang`-Parameter.
