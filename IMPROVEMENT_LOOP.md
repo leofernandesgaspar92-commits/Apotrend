@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #143 — 2026-07-20 — Wirkstoff-Dossier drucken (Ein-Seiten-Kaufentscheidung)
+- **THINK:** Die Wirkstoff-Detailseite ist der Ort der Kaufentscheidung. Ein druckbares Ein-Seiten-Dossier (Engpass-Status, günstigster Preis, beste Aktion, Bezugsquellen, eigene Notiz) bringt alles Relevante in eine Besprechung — echter Nutzen für den Einkauf.
+- **WORK:** `printWirkstoff(d)` baut aus den bereits geladenen Detaildaten einen sauberen Report mit Sektionen (nur gefüllte werden gezeigt): Engpass-Status (farbig, mit Quelle) bzw. „keine Meldung", günstigster Preis über alle Angebote, beste laufende Aktion, offene Biete-Bezugsquellen, private Notiz. „🖨️"-Button im Detailkopf. i18n `wk_print_*` DE/EN/PT (Sektionstitel teils aus bestehenden Schlüsseln).
+- **CHECK:** 320 grün, Smoke 19/19, Parität 805/805/805, Guards 0. **Browser:** Amoxicillin-Detail → Druck zeigt Titel, „🔴 Kritisch", günstigster Preis und die Bezugsquelle (Graz), 0 JS-Fehler.
+
 ### Cycle #142 — 2026-07-20 — Bestandsaustausch: Frische-Hinweis für alte eigene Einträge (Datenqualität)
 - **THINK:** Marktplatz-Qualität: alte, offene Biete/Suche-Einträge veralten und verzerren den Netzwerk-Überblick. Eigene, lange offene Einträge dezent zum Aufräumen anregen — hält Angebot/Nachfrage aktuell, ohne zu drängen.
 - **WORK:** In `exchangeCard` bei eigenem, offenem Eintrag ab **21 Tagen** Alter ein Hinweis „⏳ Dieser Eintrag ist {d} Tage alt — noch aktuell?" + „Als erledigt markieren" (löst `resolve` aus). Alter aus `created_at`. i18n `ex_stale`/`ex_stale_done` DE/EN/PT.

@@ -283,7 +283,7 @@ const I18N = {
     ma_q_title:'❓ Meine Fachfragen', ma_total:'gesamt', ma_no_q:'Noch keine Fragen gestellt.',
     ma_r_title:'👥 Meine Engpass-Meldungen', ma_no_r:'Noch keine Engpässe gemeldet.', ma_confirmed:'{n} bestätigt',
     ma_e_title:'🔄 Meine Austausch-Einträge', ma_no_e:'Noch keine Biete/Suche-Einträge.',
-    wk_sub:'Alles zu diesem Wirkstoff auf einen Blick.', wk_note_title:'Deine private Notiz zu diesem Wirkstoff', wk_also_1:'👀 Auch von 1 Kolleg:in beobachtet', wk_also_n:'👀 Auch von {n} Kolleg:innen beobachtet',
+    wk_sub:'Alles zu diesem Wirkstoff auf einen Blick.', wk_note_title:'Deine private Notiz zu diesem Wirkstoff', wk_also_1:'👀 Auch von 1 Kolleg:in beobachtet', wk_also_n:'👀 Auch von {n} Kolleg:innen beobachtet', wk_print_t:'Ein-Seiten-Dossier drucken', wk_print_title:'Wirkstoff-Dossier', wk_print_no_shortage:'Keine aktuelle Engpass-Meldung.', wk_print_cheapest:'Günstigster Preis', wk_print_deal:'Beste Aktion', wk_print_sources:'Bezugsquellen (Biete)',
     wk_amr_title:'🧫 Antibiotika-Stewardship', wk_amr_tag:'Information, keine Therapieempfehlung',
     wk_amr_forum:'💬 Fachdiskussion', wk_amr_pinfo:'🧫 Patienten-Infokarten',
     wk_short_title:'📦 Engpass-Status', wk_send_community:'Als Community-Meldung senden',
@@ -574,7 +574,7 @@ const I18N = {
     ma_q_title:'❓ My questions', ma_total:'total', ma_no_q:'No questions asked yet.',
     ma_r_title:'👥 My shortage reports', ma_no_r:'No shortages reported yet.', ma_confirmed:'{n} confirmed',
     ma_e_title:'🔄 My exchange entries', ma_no_e:'No offer/seek entries yet.',
-    wk_sub:'Everything about this substance at a glance.', wk_note_title:'Your private note on this substance', wk_also_1:'👀 Also watched by 1 colleague', wk_also_n:'👀 Also watched by {n} colleagues',
+    wk_sub:'Everything about this substance at a glance.', wk_note_title:'Your private note on this substance', wk_also_1:'👀 Also watched by 1 colleague', wk_also_n:'👀 Also watched by {n} colleagues', wk_print_t:'Print one-page dossier', wk_print_title:'Substance dossier', wk_print_no_shortage:'No current shortage report.', wk_print_cheapest:'Cheapest price', wk_print_deal:'Best deal', wk_print_sources:'Sources (offers)',
     wk_amr_title:'🧫 Antibiotic stewardship', wk_amr_tag:'Information, not treatment advice',
     wk_amr_forum:'💬 Expert discussion', wk_amr_pinfo:'🧫 Patient info cards',
     wk_short_title:'📦 Shortage status', wk_send_community:'Send as community report',
@@ -865,7 +865,7 @@ const I18N = {
     ma_q_title:'❓ As minhas perguntas', ma_total:'no total', ma_no_q:'Ainda sem perguntas.',
     ma_r_title:'👥 Os meus avisos de falta', ma_no_r:'Ainda sem faltas reportadas.', ma_confirmed:'{n} confirmaram',
     ma_e_title:'🔄 As minhas entradas de troca', ma_no_e:'Ainda sem entradas de oferta/procura.',
-    wk_sub:'Tudo sobre esta substância num relance.', wk_note_title:'A sua nota privada sobre esta substância', wk_also_1:'👀 Também vigiada por 1 colega', wk_also_n:'👀 Também vigiada por {n} colegas',
+    wk_sub:'Tudo sobre esta substância num relance.', wk_note_title:'A sua nota privada sobre esta substância', wk_also_1:'👀 Também vigiada por 1 colega', wk_also_n:'👀 Também vigiada por {n} colegas', wk_print_t:'Imprimir dossiê de uma página', wk_print_title:'Dossiê da substância', wk_print_no_shortage:'Sem aviso de falta atual.', wk_print_cheapest:'Preço mais barato', wk_print_deal:'Melhor promoção', wk_print_sources:'Fontes (ofertas)',
     wk_amr_title:'🧫 Stewardship de antibióticos', wk_amr_tag:'Informação, não é recomendação terapêutica',
     wk_amr_forum:'💬 Discussão técnica', wk_amr_pinfo:'🧫 Cartões informativos para doentes',
     wk_short_title:'📦 Estado de falta', wk_send_community:'Enviar como aviso da comunidade',
@@ -2577,6 +2577,41 @@ function downloadCsv(baseName, header, rows) {
   a.click(); URL.revokeObjectURL(url);
 }
 
+// Wirkstoff-Dossier: alles Kaufentscheidungs-Relevante zu einem Wirkstoff auf einer Seite
+// (Engpass-Status, günstigster Preis, beste Aktion, Bezugsquellen, eigene Notiz) — zum Drucken.
+function printWirkstoff(d) {
+  const w = window.open('', '_blank');
+  if (!w) { alert(t('pi_popup')); return; }
+  const dateStr = new Date().toLocaleDateString(LOCALE === 'de' ? 'de-AT' : LOCALE === 'pt' ? 'pt-PT' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+  const money = (v) => (LOCALE === 'en' ? Number(v).toFixed(2) : Number(v).toFixed(2).replace('.', ','));
+  const section = (title, inner) => inner ? `<h2>${esc(title)}</h2>${inner}` : '';
+  const shortHtml = (d.shortages && d.shortages.length)
+    ? '<ul>' + d.shortages.map(s => { const [lbl, col] = statusShort(s.status); return `<li><b style="color:${col}">${esc(lbl)}</b> — ${esc(s.bezeichnung || d.wirkstoff)}${s.quelle ? ` <span class="muted">(${esc(s.quelle)})</span>` : ''}</li>`; }).join('') + '</ul>'
+    : `<p class="muted">${esc(t('wk_print_no_shortage'))}</p>`;
+  let cheapest = null;
+  (d.prices || []).forEach(g => (g.offers || []).forEach(o => { if (!cheapest || o.aep < cheapest.aep) cheapest = o; }));
+  const priceHtml = cheapest ? `<p>${esc(cheapest.supplier)}: <b>€ ${money(cheapest.aep)}</b> ${esc(t('pg_aep'))}</p>` : '';
+  const bestDeal = (d.rabatte || []).slice().sort((a, b) => (b.rabatt_pct || 0) - (a.rabatt_pct || 0))[0] || null;
+  const dealHtml = bestDeal ? `<p>${esc(bestDeal.supplier)}: <b>€ ${money(bestDeal.aktionspreis)}</b> (−${bestDeal.rabatt_pct}%)${bestDeal.gueltig_bis ? ` · ${esc(t('pg_valid'))} ${esc(bestDeal.gueltig_bis)}` : ''}</p>` : '';
+  const biete = (d.exchange && d.exchange.biete) || [];
+  const sourcesHtml = biete.length ? '<ul>' + biete.map(e => `<li><b>${esc((e.author && e.author.display_name) || t('ex_unknown'))}</b>${e.author && e.author.handle ? ` @${esc(e.author.handle)}` : ''}${e.menge ? ` — ${esc(e.menge)}` : ''}${e.ort || e.bundesland ? ` · 📍 ${esc([e.ort, e.bundesland].filter(Boolean).join(', '))}` : ''}</li>`).join('') + '</ul>' : '';
+  const noteHtml = d.note ? `<p>📝 ${esc(d.note)}</p>` : '';
+  w.document.write(`<!doctype html><html lang="${esc(LOCALE)}"><head><meta charset="utf-8"><title>${esc(d.wirkstoff)} — ${esc(t('wk_print_title'))}</title>
+    <style>body{font-family:system-ui,-apple-system,sans-serif;max-width:760px;margin:24px auto;padding:0 16px;color:#111}
+    h1{font-size:24px;margin:0 0 2px} h2{font-size:15px;margin:18px 0 4px;border-bottom:1px solid #cbd5cf;padding-bottom:3px}
+    .meta{color:#555;font-size:13px} ul{margin:4px 0;padding-left:20px} li{margin:3px 0;font-size:14px} p{font-size:14px;margin:4px 0}
+    .muted{color:#777} .src{font-size:12px;color:#555;margin-top:20px}</style></head>
+    <body><h1>💊 ${esc(d.wirkstoff)}</h1><div class="meta">${esc(t('wk_print_title'))} · ${esc(ti('wl_print_asof', { date: dateStr }))}</div>
+    ${section(t('wk_short_title'), shortHtml)}
+    ${section(t('wk_print_cheapest'), priceHtml)}
+    ${section(t('wk_print_deal'), dealHtml)}
+    ${section(t('wk_print_sources'), sourcesHtml)}
+    ${section(t('wk_note_title'), noteHtml)}
+    <div class="src">${esc(t('wl_print_foot'))}</div>
+    <script>window.onload=function(){window.print();}<\/script></body></html>`);
+  w.document.close();
+}
+
 // Preisvergleich als sauberer, druckbarer Report für den Einkauf (Aushang/Besprechung).
 // Je Präparat: günstigster Lieferant + AEP, Ersparnis vs. teuerstem, ggf. beste Aktion.
 function printPrices(comparisons) {
@@ -3834,7 +3869,8 @@ async function openWirkstoff(name) {
     <h1 style="margin:8px 0 2px">💊 ${esc(d.wirkstoff)}</h1>
     <div class="muted">${esc(t('wk_sub'))}</div>
     ${d.also_watching >= 1 ? `<div class="muted" style="font-size:13px;margin-top:4px">${esc(d.also_watching === 1 ? t('wk_also_1') : ti('wk_also_n', { n: d.also_watching }))}</div>` : ''}
-    <div class="row" style="margin-top:10px;gap:8px"><button class="${d.watched?'':'ghost '}small" data-watch aria-pressed="${!!d.watched}">${d.watched?esc(t('sc_watched')):esc(t('sc_watch'))}</button><button class="ghost small" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button></div></div>`);
+    <div class="row" style="margin-top:10px;gap:8px"><button class="${d.watched?'':'ghost '}small" data-watch aria-pressed="${!!d.watched}">${d.watched?esc(t('sc_watched')):esc(t('sc_watch'))}</button><button class="ghost small" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button><button class="ghost small" data-wkprint title="${esc(t('wk_print_t'))}">🖨️ ${esc(t('pr_print_btn'))}</button></div></div>`);
+  head.querySelector('[data-wkprint]').onclick = () => printWirkstoff(d);
   head.querySelector('[data-back]').onclick = () => goTab('overview');
   const shb = head.querySelector('[data-share]');
   shb.onclick = async () => {
