@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #121 — 2026-07-20 — Länder-Feature-Konfiguration (Framework-Schema `active_features`)
+- **THINK:** Owner-Spec verlangt ausdrücklich das `active_features`-JSON „für das Backend". Umgesetzt — aber EHRLICH: `enabled=true` nur für real existierende Funktionen; sicherheits-/datenabhängige Module (Echtheitsprüfung, Rückrufe) `enabled=false`+`planned` (schalten erst mit echter Quelle frei). Keine Scheinfunktionen.
+- **WORK:** `data/countryFeatures.js` → `countryConfig(code)` liefert `{ country, language, currency, regulator, active_features[] }`. Kernfunktionen aktiv; `regulator_source` aktiv nur mit verifizierter URL (sonst geplant); gruppenspezifische Roadmap-Module je Sprachgruppe (DACH/Lusophonie/Anglophonie); `recall_tracking` überall geplant. Endpoint `GET /api/country-config`. Doku `docs/COUNTRY_CONFIG.md`.
+- **CHECK:** 312 → 317 grün (+5: Schema/Kernfunktionen, regulator_source URL-abhängig, geplante Module ehrlich false, Fallback unbekannter Code, HTTP-Endpoint), Smoke 19/19, Guards 0.
+
 ### Cycle #120 — 2026-07-20 — Währungsumrechner mit echten Live-Kursen (Import-/Einkaufs-Nutzen)
 - **THINK:** Aus der Länder-Matrix: Import-Märkte (NG/BR/AO …) brauchen Umrechnung Landeswährung ↔ EUR/USD. Echte Kurse (nichts erfunden), wiederverwendet das bewährte Rates-Muster (public API, Cache, Fallback).
 - **WORK:** `services/fxRates.js` (open.er-api.com, EUR-Basis, 1 h Cache, injizierbarer Fetch, `convert` über EUR-Kreuzrate, Fallback letzter Stand/null). Endpoint `GET /api/fx-rates`. Übersicht: Umrechner-Karte (Betrag · Von → In · Swap), Währungen aus dem Länder-Register mit vorhandenem Kurs, Standard = Landeswährung → EUR; bei fehlenden Kursen ehrlicher Hinweis statt Zahlen. i18n DE/EN/PT.

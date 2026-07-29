@@ -93,6 +93,18 @@ test('GET /api/countries: Register deckt alle Sprachgruppen ab (Locale/Währung/
   for (const c of d.countries) if (c.regulator_url) assert.match(c.regulator_url, /^https:\/\/[^\s]+$/, `${c.code} https-URL`);
 });
 
+test('GET /api/country-config: liefert das Feature-Schema für das aktive Land', async () => {
+  const a = await reg('cc_a' + PORT);
+  const d = await j('/api/country-config?country=NG', a);
+  assert.equal(d.country, 'NG');
+  assert.equal(d.language, 'en');
+  assert.ok(Array.isArray(d.active_features));
+  const reguSrc = d.active_features.find(f => f.feature_id === 'regulator_source');
+  assert.equal(reguSrc.enabled, true);
+  assert.equal(reguSrc.url, 'https://www.nafdac.gov.ng');
+  assert.ok(d.active_features.some(f => f.feature_id === 'recall_tracking' && f.enabled === false));
+});
+
 test('GET /api/data-status: meldet, ob eine Live-Quelle angeschlossen ist (Standard: nein)', async () => {
   const a = await reg('ds_a' + PORT);
   const d = await j('/api/data-status', a);

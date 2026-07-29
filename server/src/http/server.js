@@ -32,6 +32,7 @@ import { listProducts, getProduct } from '../data/products.js';
 import { createAmrService } from '../services/amr.js';
 import { createPatientInfoService } from '../services/patientInfo.js';
 import { listCountries, normalizeCountry, normalizeLocale } from '../data/countries.js';
+import { countryConfig } from '../data/countryFeatures.js';
 import { isLive, liveSources, startLiveRefresh } from '../services/liveData.js';
 import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
 import { issueToken, verifyToken } from './token.js';
@@ -379,6 +380,9 @@ const routes = [
     const c = activeCountry(userId, query);
     return { country: c, shortages: { live: isLive(c), source_configured: isLive(c) } };
   }],
+  // Landesspezifische Feature-Konfiguration (Framework „active_features"). Nur echte
+  // Funktionen sind enabled=true; geplante Module (Echtheitsprüfung, Rückrufe …) enabled=false.
+  ['GET', /^\/api\/country-config$/, true, async ({ userId, query }) => countryConfig(activeCountry(userId, query))],
   // Live-Wechselkurse (EUR-Basis) für den Umrechner. null-rates -> Frontend zeigt „nicht verfügbar".
   ['GET', /^\/api\/fx-rates$/, true, async () => {
     const d = await fxRates.rates();
