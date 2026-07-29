@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #147 — 2026-07-20 — Tastatur-Kürzel „/" fokussiert die Suche
+- **THINK:** Kleiner Alltags-Komfort für tägliche Nutzer:innen (Standard-Pattern à la GitHub): „/" springt zur Suche. Unsichtbar/unschädlich für alle anderen; greift nie, während man tippt.
+- **WORK:** Globaler `keydown`-Listener: „/" (ohne Ctrl/Meta/Alt) fokussiert `#sq` und markiert den Text — außer der Fokus liegt bereits in `input`/`textarea`/`select`/contenteditable (dann normales Zeichen).
+- **CHECK:** 320 grün, Smoke 19/19, Guards 0. **Browser:** „/" außerhalb eines Feldes fokussiert die Suche (ohne „/" einzufügen); „/" innerhalb des Feldes wird normal getippt; 0 JS-Fehler.
+
 ### Cycle #146 — 2026-07-20 — Bestandsaustausch: Beruhigung bei „noch kein Treffer" (Erwartungs-Management)
 - **THINK:** Gegenstück zu #116: Bei einem Treffer gibt es den Erfolgs-Banner, aber bei KEINEM Treffer passierte sichtbar nichts — Nutzer:in unsicher, ob es geklappt hat. Ein Hinweis „veröffentlicht, noch kein Treffer — du wirst benachrichtigt" beruhigt und hebt das Frühwarnnetz hervor.
 - **WORK:** Anlege-Handler setzt bei `match_count === 0` ebenfalls einen Flash (`count: 0`). Rendering zeigt dann einen Info-Banner „📣 Angebot/Gesuch veröffentlicht. Noch kein passendes … — du wirst benachrichtigt, sobald jemand …". i18n `ex_flash_none_biete/_suche` DE/EN/PT.

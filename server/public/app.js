@@ -4598,6 +4598,16 @@ if ('serviceWorker' in navigator) {
   update();
 })();
 
+// Tastatur-Komfort: „/" fokussiert die Suche (nicht, wenn man ohnehin gerade tippt).
+document.addEventListener('keydown', (e) => {
+  if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+  const ae = document.activeElement;
+  const tag = ae && ae.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (ae && ae.isContentEditable)) return;
+  const sq = document.getElementById('sq');
+  if (sq) { e.preventDefault(); sq.focus(); if (sq.select) sq.select(); }
+});
+
 // Offline-Hinweis: zeitknappe Nutzer:innen sollen sofort verstehen, warum nichts lädt,
 // statt stiller Fehler. Bernstein-Balken oben, folgt dem Verbindungsstatus.
 function updateOfflineBanner() {
