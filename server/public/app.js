@@ -283,7 +283,7 @@ const I18N = {
     ma_q_title:'❓ Meine Fachfragen', ma_total:'gesamt', ma_no_q:'Noch keine Fragen gestellt.',
     ma_r_title:'👥 Meine Engpass-Meldungen', ma_no_r:'Noch keine Engpässe gemeldet.', ma_confirmed:'{n} bestätigt',
     ma_e_title:'🔄 Meine Austausch-Einträge', ma_no_e:'Noch keine Biete/Suche-Einträge.',
-    wk_sub:'Alles zu diesem Wirkstoff auf einen Blick.', wk_note_title:'Deine private Notiz zu diesem Wirkstoff',
+    wk_sub:'Alles zu diesem Wirkstoff auf einen Blick.', wk_note_title:'Deine private Notiz zu diesem Wirkstoff', wk_also_1:'👀 Auch von 1 Kolleg:in beobachtet', wk_also_n:'👀 Auch von {n} Kolleg:innen beobachtet',
     wk_amr_title:'🧫 Antibiotika-Stewardship', wk_amr_tag:'Information, keine Therapieempfehlung',
     wk_amr_forum:'💬 Fachdiskussion', wk_amr_pinfo:'🧫 Patienten-Infokarten',
     wk_short_title:'📦 Engpass-Status', wk_send_community:'Als Community-Meldung senden',
@@ -574,7 +574,7 @@ const I18N = {
     ma_q_title:'❓ My questions', ma_total:'total', ma_no_q:'No questions asked yet.',
     ma_r_title:'👥 My shortage reports', ma_no_r:'No shortages reported yet.', ma_confirmed:'{n} confirmed',
     ma_e_title:'🔄 My exchange entries', ma_no_e:'No offer/seek entries yet.',
-    wk_sub:'Everything about this substance at a glance.', wk_note_title:'Your private note on this substance',
+    wk_sub:'Everything about this substance at a glance.', wk_note_title:'Your private note on this substance', wk_also_1:'👀 Also watched by 1 colleague', wk_also_n:'👀 Also watched by {n} colleagues',
     wk_amr_title:'🧫 Antibiotic stewardship', wk_amr_tag:'Information, not treatment advice',
     wk_amr_forum:'💬 Expert discussion', wk_amr_pinfo:'🧫 Patient info cards',
     wk_short_title:'📦 Shortage status', wk_send_community:'Send as community report',
@@ -865,7 +865,7 @@ const I18N = {
     ma_q_title:'❓ As minhas perguntas', ma_total:'no total', ma_no_q:'Ainda sem perguntas.',
     ma_r_title:'👥 Os meus avisos de falta', ma_no_r:'Ainda sem faltas reportadas.', ma_confirmed:'{n} confirmaram',
     ma_e_title:'🔄 As minhas entradas de troca', ma_no_e:'Ainda sem entradas de oferta/procura.',
-    wk_sub:'Tudo sobre esta substância num relance.', wk_note_title:'A sua nota privada sobre esta substância',
+    wk_sub:'Tudo sobre esta substância num relance.', wk_note_title:'A sua nota privada sobre esta substância', wk_also_1:'👀 Também vigiada por 1 colega', wk_also_n:'👀 Também vigiada por {n} colegas',
     wk_amr_title:'🧫 Stewardship de antibióticos', wk_amr_tag:'Informação, não é recomendação terapêutica',
     wk_amr_forum:'💬 Discussão técnica', wk_amr_pinfo:'🧫 Cartões informativos para doentes',
     wk_short_title:'📦 Estado de falta', wk_send_community:'Enviar como aviso da comunidade',
@@ -3516,6 +3516,7 @@ async function openWirkstoff(name) {
   const head = el(`<div class="card"><div><button class="ghost small" data-back>${esc(t('search_back'))}</button></div>
     <h1 style="margin:8px 0 2px">💊 ${esc(d.wirkstoff)}</h1>
     <div class="muted">${esc(t('wk_sub'))}</div>
+    ${d.also_watching >= 1 ? `<div class="muted" style="font-size:13px;margin-top:4px">${esc(d.also_watching === 1 ? t('wk_also_1') : ti('wk_also_n', { n: d.also_watching }))}</div>` : ''}
     <div class="row" style="margin-top:10px;gap:8px"><button class="${d.watched?'':'ghost '}small" data-watch aria-pressed="${!!d.watched}">${d.watched?esc(t('sc_watched')):esc(t('sc_watch'))}</button><button class="ghost small" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button></div></div>`);
   head.querySelector('[data-back]').onclick = () => goTab('overview');
   const shb = head.querySelector('[data-share]');

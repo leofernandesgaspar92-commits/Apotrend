@@ -323,6 +323,7 @@ const routes = [
       watched: shortagesRepo.isWatched(userId, name),
       premium: payments.hasFeature(userId, 'premium'),
       note: shortagesRepo.getWatchNote(userId, name),
+      also_watching: shortagesRepo.usersWatching(name).filter(id => id !== userId).length,
       shortages: shortages.listWithCounts(userId).filter(s => eq(s.wirkstoff)),
       prices: prices.comparisons(userId).filter(g => eq(g.wirkstoff)),
       rabatte: rabatte.top10(userId).filter(r => eq(r.wirkstoff)),

@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #114 — 2026-07-20 — Community-Signal: „Auch von N Kolleg:innen beobachtet" (echte Daten)
+- **THINK:** Universeller Nutzen aus vorhandenen, ECHTEN Daten (`usersWatching`): auf der Wirkstoff-Detailseite zeigen, wie viele andere denselben Wirkstoff beobachten. Relevanz-/Nachfrage-Signal, das zum Melden/Beobachten ermutigt. Datenschutz-sicher (nur Zahl, keine Identitäten), erscheint nur wenn ≥1.
+- **WORK:** `/api/wirkstoff/:name` liefert `also_watching` = Anzahl beobachtender Nutzer:innen OHNE sich selbst. Detailseite: dezente Zeile „👀 Auch von N Kolleg:innen beobachtet" (Singular/Plural), nur bei ≥1. i18n DE/EN/PT.
+- **CHECK:** 299 → 300 grün (+1 HTTP-Test: Selbst-Ausschluss, 0/2/1-Szenario), Smoke 19/19, Parität 746/746/746, Guards 0.
+
 ### Cycle #113 — 2026-07-20 — Premium-Entdeckung: dezenter Hinweis für Gratis-Nutzer:innen (Conversion)
 - **THINK:** Gap im Geschäftsmodell: Gratis-Nutzer:innen konnten die Premium-Zusatzfunktionen (Notizen, Aushang) gar nicht entdecken → keine Conversion, das ganze Bezahl-System liefe ins Leere. Ehrlicher, dezenter Hinweis an der Stelle, wo der Mehrwert entsteht (Merkliste). Kein Sperren von Kern-Funktionen.
 - **WORK:** In der Merklisten-Karte für Gratis-Nutzer:innen eine einzeilige, unaufdringliche Zeile „📝 Private Notizen & druckbarer Team-Aushang gibt es mit Premium" + „⭐ Freischalten" → öffnet den Premium-Screen. Für Premium ausgeblendet. i18n DE/EN/PT.

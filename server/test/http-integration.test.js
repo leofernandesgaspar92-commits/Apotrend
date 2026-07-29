@@ -225,6 +225,21 @@ test('GET /api/wirkstoff/:name bündelt Engpass/Preise/Rabatte/Austausch', async
   assert.ok(d2.posts.some(p => /Amoxicillin/i.test(p.body)), 'erwähnender Beitrag in Diskussion');
 });
 
+test('GET /api/wirkstoff/:name: also_watching zählt beobachtende Kolleg:innen ohne sich selbst', async () => {
+  const a = await reg('aw_a' + PORT);
+  const b = await reg('aw_b' + PORT);
+  const c = await reg('aw_c' + PORT);
+  const wirk = 'Pantoprazol';
+  // c schaut das Detail an, bevor jemand beobachtet -> 0
+  assert.equal((await j('/api/wirkstoff/' + wirk, c)).also_watching, 0);
+  await post('/api/watchlist', a, { wirkstoff: wirk });
+  await post('/api/watchlist', b, { wirkstoff: wirk });
+  // c sieht 2 (a + b), sich selbst nicht mitgezählt
+  assert.equal((await j('/api/wirkstoff/' + wirk, c)).also_watching, 2);
+  // a beobachtet selbst -> für a zählen nur die anderen (b) = 1
+  assert.equal((await j('/api/wirkstoff/' + wirk, a)).also_watching, 1);
+});
+
 test('GET /api/shortages: Antibiotika-Engpässe sind als is_antibiotic markiert (für AMR-Hinweis)', async () => {
   const a = await reg('sab_a' + PORT);
   const d = await j('/api/shortages', a);
