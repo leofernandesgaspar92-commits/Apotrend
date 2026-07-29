@@ -48,7 +48,7 @@ const I18N = {
     ov_recent:'🕘 Zuletzt angesehen:',
     wl_title:'⭐ Meine beobachteten Wirkstoffe', wl_alerts_sg:'Meldung', wl_alerts_pl:'Meldungen',
     wl_sub:'Wirkstoffe im Blick behalten — der aktuelle Engpass-Status steht immer hier ganz oben.',
-    wl_ph:'z.B. Amoxicillin', wl_add:'+ Beobachten', wl_add_aria:'Wirkstoff beobachten',
+    wl_ph:'z.B. Amoxicillin', wl_add:'+ Beobachten', wl_add_aria:'Wirkstoff beobachten', wl_premium_hint:'📝 Private Notizen & druckbarer Team-Aushang gibt es mit Premium.', wl_premium_cta:'⭐ Freischalten',
     wl_quick:'Schnell beobachten (aktuell kritisch):', wl_all:'⭐ Alle {n} kritischen beobachten',
     wl_empty:'Noch keine Wirkstoffe. Füge unten die hinzu, die du regelmäßig führst.',
     wl_view:'Ansehen', wl_remove:'Nicht mehr beobachten', wl_note_add:'✎ Notiz hinzufügen', wl_note_edit:'✎ Notiz bearbeiten', wl_note_ph:'Notiz (z. B. Lieferant, Meldebestand)…', wl_note_save:'Speichern', e_premium_required:'Notizen sind eine Premium-Funktion.', e_not_watched:'Wirkstoff nicht in der Beobachtungsliste.',
@@ -339,7 +339,7 @@ const I18N = {
     ov_recent:'🕘 Recently viewed:',
     wl_title:'⭐ My watched substances', wl_alerts_sg:'alert', wl_alerts_pl:'alerts',
     wl_sub:'Keep substances on your radar — the current shortage status always stays right at the top.',
-    wl_ph:'e.g. Amoxicillin', wl_add:'+ Watch', wl_add_aria:'Watch a substance',
+    wl_ph:'e.g. Amoxicillin', wl_add:'+ Watch', wl_add_aria:'Watch a substance', wl_premium_hint:'📝 Private notes & a printable team notice come with Premium.', wl_premium_cta:'⭐ Unlock',
     wl_quick:'Quick-watch (currently critical):', wl_all:'⭐ Watch all {n} critical',
     wl_empty:'No substances yet. Add the ones you stock regularly below.',
     wl_view:'View', wl_remove:'Stop watching', wl_note_add:'✎ Add note', wl_note_edit:'✎ Edit note', wl_note_ph:'Note (e.g. supplier, reorder level)…', wl_note_save:'Save', e_premium_required:'Notes are a Premium feature.', e_not_watched:'Substance not in your watchlist.',
@@ -630,7 +630,7 @@ const I18N = {
     ov_recent:'🕘 Vistos recentemente:',
     wl_title:'⭐ As minhas substâncias vigiadas', wl_alerts_sg:'alerta', wl_alerts_pl:'alertas',
     wl_sub:'Mantenha as substâncias debaixo de olho — o estado atual de falta fica sempre no topo.',
-    wl_ph:'ex. Amoxicilina', wl_add:'+ Vigiar', wl_add_aria:'Vigiar substância',
+    wl_ph:'ex. Amoxicilina', wl_add:'+ Vigiar', wl_add_aria:'Vigiar substância', wl_premium_hint:'📝 Notas privadas & cartaz imprimível vêm com o Premium.', wl_premium_cta:'⭐ Desbloquear',
     wl_quick:'Vigiar rápido (críticos agora):', wl_all:'⭐ Vigiar os {n} críticos',
     wl_empty:'Ainda sem substâncias. Adicione abaixo as que tem habitualmente.',
     wl_view:'Ver', wl_remove:'Deixar de vigiar', wl_note_add:'✎ Adicionar nota', wl_note_edit:'✎ Editar nota', wl_note_ph:'Nota (ex. fornecedor, stock mínimo)…', wl_note_save:'Guardar', e_premium_required:'As notas são uma funcionalidade Premium.', e_not_watched:'Substância não está na sua lista.',
@@ -1896,6 +1896,16 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
   }
   card.querySelector('[data-wl-add]').onclick = add;
   input.onkeydown = (e) => { if (e.key === 'Enter') add(); };
+  // Für Gratis-Nutzer:innen ein dezenter, ehrlicher Hinweis auf den Premium-Zusatznutzen
+  // dieser Liste (private Notizen + druckbarer Aushang). Kein Sperren von Kern-Funktionen.
+  if (!premium) {
+    const hint = el(`<div class="row" style="margin-top:8px;gap:8px;align-items:center;font-size:13px">
+      <span class="muted" style="flex:1">${esc(t('wl_premium_hint'))}</span>
+      <button class="linklike small" data-upsell>${esc(t('wl_premium_cta'))}</button>
+    </div>`);
+    hint.querySelector('[data-upsell]').onclick = () => { if (typeof openPremium === 'function') openPremium(); };
+    card.appendChild(hint);
+  }
   feed.appendChild(card);
 }
 

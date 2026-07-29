@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #113 — 2026-07-20 — Premium-Entdeckung: dezenter Hinweis für Gratis-Nutzer:innen (Conversion)
+- **THINK:** Gap im Geschäftsmodell: Gratis-Nutzer:innen konnten die Premium-Zusatzfunktionen (Notizen, Aushang) gar nicht entdecken → keine Conversion, das ganze Bezahl-System liefe ins Leere. Ehrlicher, dezenter Hinweis an der Stelle, wo der Mehrwert entsteht (Merkliste). Kein Sperren von Kern-Funktionen.
+- **WORK:** In der Merklisten-Karte für Gratis-Nutzer:innen eine einzeilige, unaufdringliche Zeile „📝 Private Notizen & druckbarer Team-Aushang gibt es mit Premium" + „⭐ Freischalten" → öffnet den Premium-Screen. Für Premium ausgeblendet. i18n DE/EN/PT.
+- **CHECK:** 299 grün, Smoke 19/19, Parität 744/744/744, Guards 0. **Browser:** Gratis sieht Hinweis + Klick öffnet Premium; Premium sieht ihn nicht; 0 JS-Fehler.
+
 ### Cycle #112 — 2026-07-20 — Premium: Notiz auch auf der Wirkstoff-Detailseite (autonomer Loop, 1. Durchlauf)
 - **THINK:** Erster Durchlauf des autonomen Selbstverbesserungs-Loops. Die private Notiz (#108) war nur in der Merklisten-Karte editierbar — konsequent auch dort, wo Nutzer:innen einen Wirkstoff wirklich ansehen: auf der Detailseite (`openWirkstoff`).
 - **WORK:** `/api/wirkstoff/:name` liefert jetzt `premium` + `note`. Detailseite: für Premium eine Notiz-Karte, die erscheint, sobald der Wirkstoff beobachtet wird (das Notiz-Setzen setzt Beobachtung voraus); anzeigen + inline bearbeiten (📝), Toggle mit dem Beobachten-Button synchron. i18n `wk_note_title` DE/EN/PT.
