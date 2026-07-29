@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #116 — 2026-07-20 — Bestandsaustausch: Treffer im Moment der Absicht (nach dem Anlegen)
+- **THINK:** Direkte Fortsetzung von #115: Der wertvollste Moment ist genau nach dem Anlegen eines Eintrags — wer gerade eine „Suche" postet, will sofort sehen, wer das anbietet. Das schließt den Matchmaking-Kreis am Punkt der höchsten Absicht.
+- **WORK:** Der Anlege-Handler liest `match_count` der Antwort; bei ≥1 wird automatisch auf die passenden Gegenstücke gefiltert (gegenteilige Art + erstes Wirkstoff-Wort) und ein einmaliger Erfolgs-Banner gezeigt („✅ N passende Angebote/Gesuche gefunden — hier deine Treffer."). i18n DE/EN/PT (Singular/Plural).
+- **CHECK:** 301 grün, Smoke 19/19, Parität 754/754/754, Guards 0. **Browser:** Suche anlegen mit vorhandenem Biete → Banner „1 passendes Angebot gefunden" + Liste auf den Treffer gefiltert, 0 JS-Fehler.
+
 ### Cycle #115 — 2026-07-20 — Bestandsaustausch: sichtbares Matchmaking („N passende Angebote/Gesuche")
 - **THINK:** Kernnutzen des Biete/Suche-Tauschs sichtbar machen: bisher wurden Treffer nur als Benachrichtigung gepusht (`notifyMatches`). Am Eintrag selbst zeigen, dass es passende Gegenstücke gibt → schnellerer Kontakt bei Engpässen. Echte Daten, wiederverwendet die vorhandene Wort-Matching-Logik.
 - **WORK:** `decorate` liefert `match_count` = Anzahl passender offener Gegen-Einträge je Autor:in (Selbst-Ausschluss, nur offene). Exchange-Karte: grüner Klick-Chip „🔗 N passende Gesuche/Angebote" (Singular/Plural), Klick filtert auf die gegenteilige Art + erstes Wirkstoff-Wort. i18n DE/EN/PT.

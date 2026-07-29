@@ -147,7 +147,7 @@ const I18N = {
     ex_new:'Eintrag anlegen', ex_search_empty_t:'Nichts zu „{q}"',
     ex_search_empty_s:'Keine offenen Biete-/Suche-Einträge für diesen Begriff. Filter zurücksetzen oder anderen Begriff probieren.',
     ex_empty_t:'Noch keine offenen Einträge', ex_empty_s:'Biete Überbestand an oder suche dringend Benötigtes — sei der/die Erste.',
-    ex_badge_biete:'📦 Biete', ex_badge_suche:'🔎 Suche', ex_done_badge:'✓ erledigt', ex_qty:'Menge:', ex_match_offers:'🔗 {n} passende Angebote', ex_match_offers_1:'🔗 1 passendes Angebot', ex_match_seeks:'🔗 {n} passende Gesuche', ex_match_seeks_1:'🔗 1 passendes Gesuch',
+    ex_badge_biete:'📦 Biete', ex_badge_suche:'🔎 Suche', ex_done_badge:'✓ erledigt', ex_qty:'Menge:', ex_match_offers:'🔗 {n} passende Angebote', ex_match_offers_1:'🔗 1 passendes Angebot', ex_match_seeks:'🔗 {n} passende Gesuche', ex_match_seeks_1:'🔗 1 passendes Gesuch', ex_flash_offers:'{n} passende Angebote gefunden — hier deine Treffer.', ex_flash_offers_1:'1 passendes Angebot gefunden — hier dein Treffer.', ex_flash_seeks:'{n} passende Gesuche gefunden — hier deine Treffer.', ex_flash_seeks_1:'1 passendes Gesuch gefunden — hier dein Treffer.',
     ex_photo_alt:'Foto zum Eintrag', ex_by:'von', ex_unknown:'Unbekannt',
     ex_contact_btn:'✉️ Kontaktieren', ex_reopen:'↻ Wieder öffnen', ex_done_btn:'✓ Erledigt',
     ex_del_confirm:'Eintrag löschen?',
@@ -438,7 +438,7 @@ const I18N = {
     ex_new:'Create entry', ex_search_empty_t:'Nothing for “{q}”',
     ex_search_empty_s:'No open offer/request entries for this term. Reset the filter or try another term.',
     ex_empty_t:'No open entries yet', ex_empty_s:'Offer surplus or seek urgently needed items — be the first.',
-    ex_badge_biete:'📦 Offer', ex_badge_suche:'🔎 Request', ex_done_badge:'✓ done', ex_qty:'Quantity:', ex_match_offers:'🔗 {n} matching offers', ex_match_offers_1:'🔗 1 matching offer', ex_match_seeks:'🔗 {n} matching requests', ex_match_seeks_1:'🔗 1 matching request',
+    ex_badge_biete:'📦 Offer', ex_badge_suche:'🔎 Request', ex_done_badge:'✓ done', ex_qty:'Quantity:', ex_match_offers:'🔗 {n} matching offers', ex_match_offers_1:'🔗 1 matching offer', ex_match_seeks:'🔗 {n} matching requests', ex_match_seeks_1:'🔗 1 matching request', ex_flash_offers:'{n} matching offers found — here are your hits.', ex_flash_offers_1:'1 matching offer found — here is your hit.', ex_flash_seeks:'{n} matching requests found — here are your hits.', ex_flash_seeks_1:'1 matching request found — here is your hit.',
     ex_photo_alt:'Entry photo', ex_by:'by', ex_unknown:'Unknown',
     ex_contact_btn:'✉️ Contact', ex_reopen:'↻ Reopen', ex_done_btn:'✓ Done',
     ex_del_confirm:'Delete entry?',
@@ -729,7 +729,7 @@ const I18N = {
     ex_new:'Criar entrada', ex_search_empty_t:'Nada para “{q}”',
     ex_search_empty_s:'Sem entradas de oferta/procura abertas para este termo. Reponha o filtro ou tente outro termo.',
     ex_empty_t:'Ainda sem entradas abertas', ex_empty_s:'Ofereça excedente ou procure algo urgente — seja o primeiro.',
-    ex_badge_biete:'📦 Oferta', ex_badge_suche:'🔎 Procura', ex_done_badge:'✓ concluído', ex_qty:'Quantidade:', ex_match_offers:'🔗 {n} ofertas correspondentes', ex_match_offers_1:'🔗 1 oferta correspondente', ex_match_seeks:'🔗 {n} procuras correspondentes', ex_match_seeks_1:'🔗 1 procura correspondente',
+    ex_badge_biete:'📦 Oferta', ex_badge_suche:'🔎 Procura', ex_done_badge:'✓ concluído', ex_qty:'Quantidade:', ex_match_offers:'🔗 {n} ofertas correspondentes', ex_match_offers_1:'🔗 1 oferta correspondente', ex_match_seeks:'🔗 {n} procuras correspondentes', ex_match_seeks_1:'🔗 1 procura correspondente', ex_flash_offers:'{n} ofertas correspondentes encontradas — aqui estão.', ex_flash_offers_1:'1 oferta correspondente encontrada — aqui está.', ex_flash_seeks:'{n} procuras correspondentes encontradas — aqui estão.', ex_flash_seeks_1:'1 procura correspondente encontrada — aqui está.',
     ex_photo_alt:'Foto da entrada', ex_by:'de', ex_unknown:'Desconhecido',
     ex_contact_btn:'✉️ Contactar', ex_reopen:'↻ Reabrir', ex_done_btn:'✓ Concluído',
     ex_del_confirm:'Eliminar entrada?',
@@ -2538,6 +2538,7 @@ let exchangeQuery = '';   // Text-Filter (z.B. aus einem Engpass heraus vorbeleg
 let exchangeBL = '';      // Bundesland-Filter
 let exchangeMine = false;  // nur eigene Einträge (inkl. erledigte)
 let exchangeBLInit = false; // Standard-Vorbelegung auf eigenes Bundesland nur einmal
+let exchangeFlash = null;  // Einmal-Hinweis nach dem Anlegen: { count, kind } — passende Gegenstücke gefunden
 async function loadExchange() {
   const feed = document.getElementById('feed');
   // Standard: eigenes Bundesland vorbelegen (opt-out über „Alle Bundesländer").
@@ -2582,7 +2583,13 @@ async function loadExchange() {
   exImgclear.onclick = clearEx;
   document.getElementById('ex_go').onclick = async () => {
     try {
-      await api('POST','/api/exchange',{ kind:v('ex_kind'), bezeichnung:v('ex_bez'), menge:v('ex_menge'), ort:v('ex_ort'), bundesland:v('ex_bl'), note:v('ex_note'), image:exImage });
+      const created = await api('POST','/api/exchange',{ kind:v('ex_kind'), bezeichnung:v('ex_bez'), menge:v('ex_menge'), ort:v('ex_ort'), bundesland:v('ex_bl'), note:v('ex_note'), image:exImage });
+      // Genau im Moment der Absicht: wenn es passende Gegenstücke gibt, direkt dorthin filtern + Hinweis.
+      if (created && created.match_count >= 1) {
+        const key = (String(created.bezeichnung).toLowerCase().match(/[a-zäöüß0-9]{4,}/g) || [])[0] || created.bezeichnung;
+        exchangeMine = false; exchangeFilter = created.kind === 'biete' ? 'suche' : 'biete'; exchangeQuery = key;
+        exchangeFlash = { count: created.match_count, kind: created.kind };
+      }
       loadExchange();
     } catch(e){ document.getElementById('ex_err').textContent = e.message; }
   };
@@ -2605,6 +2612,14 @@ async function loadExchange() {
   const qclear = filt.querySelector('#ex_qclear');
   if (qclear) qclear.onclick = () => { exchangeQuery=''; loadExchange(); };
   feed.appendChild(filt);
+  // Einmal-Hinweis direkt nach dem Anlegen: passende Gegenstücke gefunden (Moment der Absicht).
+  if (exchangeFlash) {
+    const { count, kind } = exchangeFlash; exchangeFlash = null;
+    const msg = kind === 'biete'
+      ? (count === 1 ? t('ex_flash_seeks_1') : ti('ex_flash_seeks', { n: count }))
+      : (count === 1 ? t('ex_flash_offers_1') : ti('ex_flash_offers', { n: count }));
+    feed.appendChild(el(`<div class="card ok-box" style="padding:10px 14px;font-weight:600">✅ ${esc(msg)}</div>`));
+  }
   try {
     let d;
     if (exchangeMine) {
