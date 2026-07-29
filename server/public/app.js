@@ -163,7 +163,7 @@ const I18N = {
     fe_home_t:'Dein Feed ist noch leer', fe_home_s:'Folge Kolleg:innen, dann erscheinen ihre Beiträge hier.',
     fe_q_t:'Keine offenen Fachfragen', fe_q_s:'Gerade ist alles beantwortet. Stell selbst eine Frage — hake dazu „❓ Als Fachfrage stellen" an.', fe_q_cta:'Fachfrage stellen',
     fe_new_t:'Noch keine Beiträge', fe_new_s:'Sei der/die Erste und teile etwas mit der Community.', fe_new_cta:'Beitrag schreiben',
-    nb_label:'News teilen (Kammer-Mitteilung, Gesetzesänderung, Branchennews …)', nb_ph:'Regulatorische/fachliche News, die für Kolleg:innen relevant ist…', nb_src_ph:'🔗 Quelle (Link – empfohlen bei News)', nb_share:'Als News teilen', news_empty:'Text oder Bild nötig.', sg_followed:'✓ Folgst',
+    nb_label:'News teilen (Kammer-Mitteilung, Gesetzesänderung, Branchennews …)', news_compose:'✏️ Eigene News teilen', nb_ph:'Regulatorische/fachliche News, die für Kolleg:innen relevant ist…', nb_src_ph:'🔗 Quelle (Link – empfohlen bei News)', nb_share:'Als News teilen', news_empty:'Text oder Bild nötig.', sg_followed:'✓ Folgst',
     vf_pending_t:'✔ Verifizierung', vf_pending_s:'Dein Antrag wird von der Redaktion geprüft. Du wirst benachrichtigt.', vf_title:'✔ Verifiziert werden', vf_rejected:'Dein letzter Antrag wurde abgelehnt. ', vf_desc:'Weise deine Apotheke nach (z.B. Konzessionsnummer, Apothekenname, Ort) — die Redaktion prüft es. Verifizierte Profile genießen mehr Vertrauen.', vf_note_ph:'z.B. Konzession 12345, Apotheke Zum Hirschen, 1010 Wien', vf_apply:'Verifizierung beantragen',
     font_scale_label:'Schriftgröße', font_sz_0:'Normal', font_sz_1:'Groß', font_sz_2:'Sehr groß', font_toggle_hint:'tippen zum Wechseln',
     err_title:'Das hat nicht geklappt', err_generic:'Unbekannter Fehler. Bitte erneut versuchen.', err_retry:'↻ Erneut versuchen',
@@ -454,7 +454,7 @@ const I18N = {
     fe_home_t:'Your feed is still empty', fe_home_s:'Follow colleagues and their posts will show up here.',
     fe_q_t:'No open questions', fe_q_s:'Everything is answered right now. Ask your own — tick „❓ Ask as question".', fe_q_cta:'Ask a question',
     fe_new_t:'No posts yet', fe_new_s:'Be the first and share something with the community.', fe_new_cta:'Write a post',
-    nb_label:'Share news (chamber notice, legal change, industry news …)', nb_ph:'Regulatory/professional news relevant to colleagues…', nb_src_ph:'🔗 Source (link – recommended for news)', nb_share:'Share as news', news_empty:'Text or image required.', sg_followed:'✓ Following',
+    nb_label:'Share news (chamber notice, legal change, industry news …)', news_compose:'✏️ Share your own news', nb_ph:'Regulatory/professional news relevant to colleagues…', nb_src_ph:'🔗 Source (link – recommended for news)', nb_share:'Share as news', news_empty:'Text or image required.', sg_followed:'✓ Following',
     vf_pending_t:'✔ Verification', vf_pending_s:'Your request is being reviewed by the editorial team. You will be notified.', vf_title:'✔ Get verified', vf_rejected:'Your last request was declined. ', vf_desc:'Prove your pharmacy (e.g. licence number, pharmacy name, city) — the editorial team reviews it. Verified profiles are trusted more.', vf_note_ph:'e.g. licence 12345, Example Pharmacy, London', vf_apply:'Request verification',
     font_scale_label:'Text size', font_sz_0:'Normal', font_sz_1:'Large', font_sz_2:'Very large', font_toggle_hint:'tap to change',
     err_title:"That didn't work", err_generic:'Unknown error. Please try again.', err_retry:'↻ Try again',
@@ -745,7 +745,7 @@ const I18N = {
     fe_home_t:'O seu feed ainda está vazio', fe_home_s:'Siga colegas e as publicações deles aparecerão aqui.',
     fe_q_t:'Sem perguntas em aberto', fe_q_s:'Neste momento está tudo respondido. Faça a sua — marque „❓ Colocar como pergunta".', fe_q_cta:'Fazer uma pergunta',
     fe_new_t:'Ainda sem publicações', fe_new_s:'Seja o primeiro e partilhe algo com a comunidade.', fe_new_cta:'Escrever publicação',
-    nb_label:'Partilhar notícias (comunicado da ordem, alteração legal, notícias do setor …)', nb_ph:'Notícias regulatórias/profissionais relevantes para colegas…', nb_src_ph:'🔗 Fonte (link – recomendado para notícias)', nb_share:'Partilhar como notícia', news_empty:'Texto ou imagem obrigatório.', sg_followed:'✓ A seguir',
+    nb_label:'Partilhar notícias (comunicado da ordem, alteração legal, notícias do setor …)', news_compose:'✏️ Partilhar as suas notícias', nb_ph:'Notícias regulatórias/profissionais relevantes para colegas…', nb_src_ph:'🔗 Fonte (link – recomendado para notícias)', nb_share:'Partilhar como notícia', news_empty:'Texto ou imagem obrigatório.', sg_followed:'✓ A seguir',
     vf_pending_t:'✔ Verificação', vf_pending_s:'O seu pedido está a ser analisado pela redação. Será notificado.', vf_title:'✔ Obter verificação', vf_rejected:'O seu último pedido foi recusado. ', vf_desc:'Comprove a sua farmácia (ex. número de licença, nome da farmácia, cidade) — a redação analisa. Perfis verificados têm mais confiança.', vf_note_ph:'ex. licença 12345, Farmácia Exemplo, Lisboa', vf_apply:'Pedir verificação',
     font_scale_label:'Tamanho do texto', font_sz_0:'Normal', font_sz_1:'Grande', font_sz_2:'Muito grande', font_toggle_hint:'toque para mudar',
     err_title:'Isso não funcionou', err_generic:'Erro desconhecido. Tente novamente.', err_retry:'↻ Tentar novamente',
@@ -2000,19 +2000,28 @@ function loadTab() {
 async function loadNews() {
   const feed = document.getElementById('feed');
   feed.innerHTML = '';
+  // Composer einklappbar (standardmäßig zu): so stehen die News zuerst (content-first,
+  // weniger Scrollen). Wer News teilen will, klappt ihn mit einem Klick auf.
   feed.appendChild(el(`<div class="card">
-    <label>${esc(t('nb_label'))}</label>
-    <textarea id="nb" placeholder="${esc(t('nb_ph'))}"></textarea>
-    <input id="nsrc" placeholder="${esc(t('nb_src_ph'))}" style="margin-top:6px">
-    <div class="row" style="margin-top:6px">
-      <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px">${esc(t('co_img'))}<input type="file" id="nimg" accept="image/*" style="display:none"></label>
-      <span class="muted" id="nimgname" style="font-size:13px"></span>
-      <button class="ghost small" id="nimgclear" style="display:none">✕</button>
+    <button class="ghost small" data-ntoggle aria-expanded="false" style="width:100%;text-align:left;display:flex;align-items:center;gap:8px">
+      <b>${esc(t('news_compose'))}</b><span class="sp" style="flex:1"></span><span data-nchev aria-hidden="true">▸</span>
+    </button>
+    <div data-ncompose class="hidden" style="margin-top:8px">
+      <label>${esc(t('nb_label'))}</label>
+      <textarea id="nb" placeholder="${esc(t('nb_ph'))}"></textarea>
+      <input id="nsrc" placeholder="${esc(t('nb_src_ph'))}" style="margin-top:6px">
+      <div class="row" style="margin-top:6px">
+        <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px">${esc(t('co_img'))}<input type="file" id="nimg" accept="image/*" style="display:none"></label>
+        <span class="muted" id="nimgname" style="font-size:13px"></span>
+        <button class="ghost small" id="nimgclear" style="display:none">✕</button>
+      </div>
+      <img id="nimgprev" data-i18n-alt="a11y_img_preview" alt="Bildvorschau" style="display:none;max-width:100%;border-radius:8px;margin-top:6px" />
+      <div style="margin-top:8px"><button id="ngo">${esc(t('nb_share'))}</button></div>
+      <div class="err" id="nerr"></div>
     </div>
-    <img id="nimgprev" data-i18n-alt="a11y_img_preview" alt="Bildvorschau" style="display:none;max-width:100%;border-radius:8px;margin-top:6px" />
-    <div style="margin-top:8px"><button id="ngo">${esc(t('nb_share'))}</button></div>
-    <div class="err" id="nerr"></div>
   </div><div id="newslist"></div>`));
+  { const tgl = document.querySelector('[data-ntoggle]'), cmp = document.querySelector('[data-ncompose]'), chev = document.querySelector('[data-nchev]');
+    tgl.onclick = () => { const open = cmp.classList.toggle('hidden') === false; tgl.setAttribute('aria-expanded', String(open)); chev.textContent = open ? '▾' : '▸'; if (open) document.getElementById('nb').focus(); }; }
   let newsImage = null;
   const nimg = document.getElementById('nimg'), nimgprev = document.getElementById('nimgprev');
   const nimgname = document.getElementById('nimgname'), nimgclear = document.getElementById('nimgclear');

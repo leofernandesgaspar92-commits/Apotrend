@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #125 — 2026-07-20 — News-Reiter: Beitrags-Composer einklappbar (News zuerst)
+- **THINK:** Im News-Reiter stand der Schreib-Composer immer offen ganz oben und drückte die eigentlichen News nach unten — die meisten wollen News LESEN. Content-first, weniger Scrollen (CLAUDE.md).
+- **WORK:** Composer in eine einklappbare Karte (standardmäßig zu) mit Toggle „✏️ Eigene News teilen" (aria-expanded + Chevron, Fokus aufs Textfeld beim Öffnen); Feld-IDs unverändert, Post-/Bild-/Quelle-Logik unangetastet. i18n `news_compose` DE/EN/PT.
+- **CHECK:** 317 grün, Smoke 19/19, Parität 772/772/772, Guards 0. **Browser:** Composer standardmäßig zu (News zuerst) → Klick öffnet → News posten funktioniert, 0 JS-Fehler.
+
 ### Cycle #124 — 2026-07-20 — Bestandsaustausch: Kontakt-DM mit Kontext-Entwurf
 - **THINK:** Beim „Kontaktieren" aus einem Biete/Suche-Eintrag öffnete sich ein leerer DM — der/die Empfänger:in wusste nicht, worum es geht. Ein vorbelegter, editierbarer Entwurf mit Eintrags-Kontext macht die Kontaktaufnahme sofort verständlich (Klartext, Zeitersparnis).
 - **WORK:** `openDmThread(threadId, prefill)` belegt das Eingabefeld nur vor, wenn der Verlauf noch leer ist (kein Überschreiben laufender Gespräche). Exchange-„Kontaktieren" übergibt einen Entwurf „Hallo! Zu deinem Eintrag „📦 Biete: {Präparat}" — ist das noch aktuell?". i18n `ex_dm_draft` DE/EN/PT.
