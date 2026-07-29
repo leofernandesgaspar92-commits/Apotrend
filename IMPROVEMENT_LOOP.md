@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #118 — 2026-07-20 — Live-Daten-Anschlussstelle: Auto-Refresh, sobald ein Server angeschlossen wird
+- **THINK:** Owner-Vorgabe: echte Daten kommen, sobald die Website an einen Server angeschlossen ist; bis dahin bauen. Also die „Anschluss-Stelle" bauen — ein klarer Vertrag + Ingestion, per ENV scharf geschaltet, die sich dann automatisch aktualisiert. Bis dahin unveränderte Referenzdaten.
+- **WORK:** Neues Modul `services/liveData.js`: definierter JSON-Vertrag, `validateShortagePayload` (streng), `refreshShortages` (Abruf→Validierung→Übernahme, fehlersicher: bei Fehler bleibt der Bestand), `startLiveRefresh` (ruht ohne Quelle, sofort+alle 15 min sobald `APOTREND_LIVE_SHORTAGES_<CC>` gesetzt; `unref`). Repo: `replaceFeed` ersetzt Seed/Live, **erhält Community-Meldungen**. Endpoint `GET /api/data-status`. Server-Start startet Auto-Refresh nur bei konfigurierter Quelle (in Tests aus). Doku `docs/LIVE_DATA.md` (Vertrag + ENV + Verhalten).
+- **CHECK:** 301 → 308 grün (+7: Validierung, Ingestion mit Community-Schutz, Fehler-/Abruf-Sicherheit, Skip ohne Quelle, startLiveRefresh dormant→ingest, /api/data-status), Smoke 19/19, Guards 0. Anschließen = eine ENV-Variable setzen, **kein Code-Deploy**.
+
 ### Cycle #117 — 2026-07-20 — Länder-Framework Schritt 1: offizielle Regulierungs-Quelle je Land (echte Links)
 - **THINK:** Auftakt zum landesspezifischen Feature-Framework (Owner-Vorgabe: NAFDAC/BfArM/ANVISA … pro Land). WICHTIG: sicherheitskritische Alerts/Recalls/„Fake-Drug-Checks" NICHT erfinden (CLAUDE.md-Quellenpflicht). Ehrlicher, sofort nützlicher erster Baustein: die OFFIZIELLE Behörde je Land als belegte Quelle verlinken.
 - **WORK:** Länder-Register (`countries.js`) um `regulator_url` erweitert — echte, verifizierte offizielle URLs (BASG, BfArM, Swissmedic, INFARMED, ANVISA, MHRA, FDA, **NAFDAC**, PPB, FDA Ghana, Health Canada, TGA, SAHPRA); wo Domain nicht sicher belegt (AO/MZ/LI) bewusst `null` (kein falscher Link). Neue Karte „🏛️ Offizielle Arzneimittelbehörde: {reg}" auf der Übersicht, folgt der Länder-Ansicht; öffnet die echte Behörden-Website. i18n DE/EN/PT.

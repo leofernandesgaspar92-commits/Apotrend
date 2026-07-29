@@ -31,6 +31,7 @@ import { listProducts, getProduct } from '../data/products.js';
 import { createAmrService } from '../services/amr.js';
 import { createPatientInfoService } from '../services/patientInfo.js';
 import { listCountries, normalizeCountry, normalizeLocale } from '../data/countries.js';
+import { isLive, liveSources, startLiveRefresh } from '../services/liveData.js';
 import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
 import { issueToken, verifyToken } from './token.js';
 import { createRateLimiter } from '../domain/rateLimiter.js';
@@ -371,6 +372,11 @@ const routes = [
   ['GET', /^\/api\/patient-info$/, true, async ({ query }) => patientInfo.cards(query.get('lang') || 'de')],
   // Länder-Register (öffentlich): für Länderauswahl bei Registrierung + Umschalter.
   ['GET', /^\/api\/countries$/, false, async () => ({ countries: listCountries() })],
+  // Live-Daten-Status je Land: ist eine echte Quelle „angeschlossen"? (Bis dahin Referenzdaten.)
+  ['GET', /^\/api\/data-status$/, true, async ({ userId, query }) => {
+    const c = activeCountry(userId, query);
+    return { country: c, shortages: { live: isLive(c), source_configured: isLive(c) } };
+  }],
   // Kontotyp-Register (öffentlich): für die Kontotyp-Auswahl bei der Registrierung.
   ['GET', /^\/api\/account-types$/, false, async () => ({ account_types: listAccountTypes() })],
   ['GET', /^\/api\/posts\/([^/]+)$/, true, async ({ userId, params }) => {
@@ -576,6 +582,15 @@ server.listen(PORT, () => {
     console.log(`ApoTrend: Persistenz aktiv -> ${persistence.filePath}`);
   } else if (process.env.NODE_ENV !== 'test') {
     console.warn('⚠️  ApoTrend: KEINE Persistenz aktiv (APOTREND_DATA_FILE nicht gesetzt) — alle Daten gehen bei einem Neustart verloren. Für den Produktivbetrieb APOTREND_DATA_FILE auf einen dauerhaften Pfad setzen.');
+  }
+  // Live-Daten automatisch holen, SOBALD eine Quelle angeschlossen ist (APOTREND_LIVE_SHORTAGES_<CC>).
+  // Bis dahin passiert nichts — die App läuft auf Referenzdaten. In Tests deaktiviert.
+  if (process.env.NODE_ENV !== 'test') {
+    const configured = Object.keys(liveSources()).length;
+    if (configured) {
+      startLiveRefresh({ shortagesRepo });
+      console.log(`ApoTrend: Live-Datenquellen angeschlossen für ${Object.keys(liveSources()).join(', ')} — Auto-Refresh aktiv.`);
+    }
   }
 });
 

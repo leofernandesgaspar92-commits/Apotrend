@@ -44,6 +44,15 @@ export function createShortagesRepo({ seed = true } = {}) {
 
   return {
     upsert,
+    // Live-/Referenz-Feed ersetzen: entfernt alle NICHT von Nutzer:innen gemeldeten Einträge
+    // (Seed/Live) und setzt die übergebenen Zeilen neu. Community-Meldungen (reporter_user_id
+    // gesetzt) bleiben unangetastet. Gibt die Anzahl der übernommenen Einträge zurück.
+    replaceFeed(rows, { provenance = 'verified', quelle = null } = {}) {
+      for (const [id, s] of shortages) if (!s.reporter_user_id) shortages.delete(id);
+      let n = 0;
+      for (const r of (rows || [])) { upsert({ ...r, provenance, quelle }); n++; }
+      return n;
+    },
     // Status (+ Quelle/Herkunft) eines bestehenden Engpasses ändern, andere Felder erhalten.
     setStatus(id, { status, quelle, provenance, gemeldet_am }) {
       const s = shortages.get(id);

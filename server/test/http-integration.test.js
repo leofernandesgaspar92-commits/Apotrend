@@ -93,6 +93,14 @@ test('GET /api/countries: Register deckt alle Sprachgruppen ab (Locale/Währung/
   for (const c of d.countries) if (c.regulator_url) assert.match(c.regulator_url, /^https:\/\/[^\s]+$/, `${c.code} https-URL`);
 });
 
+test('GET /api/data-status: meldet, ob eine Live-Quelle angeschlossen ist (Standard: nein)', async () => {
+  const a = await reg('ds_a' + PORT);
+  const d = await j('/api/data-status', a);
+  assert.equal(typeof d.country, 'string');
+  assert.equal(d.shortages.live, false, 'ohne konfigurierte Quelle nicht live (Referenzdaten)');
+  assert.equal(d.shortages.source_configured, false);
+});
+
 test('Registrierung mit Land/Sprache setzt Profil; Länder-Switch aktualisiert; ungültig abgelehnt', async () => {
   // Registrierung mit Brasilien -> country=BR, locale=pt
   const rb = await (await fetch(BASE + '/api/register', { method: 'POST', headers: H(), body: JSON.stringify({ name: 'br' + PORT, handle: 'br' + PORT, email: 'br' + PORT + '@a.at', password: 'geheim123', country: 'BR' }) })).json();
