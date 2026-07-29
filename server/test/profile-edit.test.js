@@ -43,6 +43,22 @@ test('Profil bearbeiten: leere Felder löschen Titel/Bio (null)', () => {
   assert.equal(p.bio, null);
 });
 
+test('Profil bearbeiten: Profilbild wird gesetzt, geleert (null) und ungültiges Format abgelehnt', () => {
+  const { social, a } = setup();
+  const png = 'data:image/png;base64,iVBORw0KGgo=';
+  const p = social.updateProfile(a, { avatarUrl: png });
+  assert.equal(p.avatar_url, png);
+  // Feed-Autor trägt das Avatar mit (für Karten-Anzeige).
+  const post = social.createPost(a, { body: 'Hallo', visibility: 'public' });
+  const dec = social.profilePage(a, 'anna').posts.find(x => x.id === post.id);
+  assert.equal(dec.author.avatar_url, png);
+  // Leerer String entfernt das Bild.
+  const cleared = social.updateProfile(a, { avatarUrl: '' });
+  assert.equal(cleared.avatar_url, null);
+  // Fremd-URL / Nicht-Bild wird abgelehnt.
+  assert.throws(() => social.updateProfile(a, { avatarUrl: 'https://evil.example/x.png' }), /Bildformat/);
+});
+
 test('Profil bearbeiten: gültiges Bundesland wird gesetzt, ungültiges abgelehnt', () => {
   const { social, a } = setup();
   const p = social.updateProfile(a, { bundesland: 'Wien' });

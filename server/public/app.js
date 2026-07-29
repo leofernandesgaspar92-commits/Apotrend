@@ -227,6 +227,7 @@ const I18N = {
     ep_about:'Über mich (optional, max. 500 Zeichen)', ep_about_ph:'Kurz zu dir und deinem Schwerpunkt…',
     ep_specs_l:'Fachgebiete (mit Komma trennen)', ep_specs_ph:'Onkologie, Diabetes, Impfen',
     ep_region:'Region (optional)', ep_none:'— keine Angabe —', ep_region_hint:'Wird bei neuen Biete/Suche-Einträgen vorausgewählt.',
+    ep_photo:'Profilbild', ep_photo_pick:'📷 Bild wählen', ep_photo_remove:'Entfernen', ep_photo_hint:'Quadratisch wirkt am besten. Wird automatisch verkleinert.',
     ac_title:'🔒 Datenschutz & Konto', ac_export_d:'Lade alle deine Daten (Profil, Beiträge, Kommentare, Nachrichten, Merkliste, Austausch) als Datei herunter (DSGVO).',
     ac_export_btn:'⬇️ Meine Daten exportieren', ac_pw_title:'Passwort ändern', ac_pw_old:'Aktuelles Passwort',
     ac_pw_new:'Neues Passwort (mind. 8 Zeichen)', ac_pw_ok:'✓ Passwort geändert',
@@ -518,6 +519,7 @@ const I18N = {
     ep_about:'About me (optional, max. 500 characters)', ep_about_ph:'A little about you and your focus…',
     ep_specs_l:'Specialties (comma-separated)', ep_specs_ph:'Oncology, diabetes, vaccination',
     ep_region:'Region (optional)', ep_none:'— not specified —', ep_region_hint:'Pre-selected for new offer/seek entries.',
+    ep_photo:'Profile picture', ep_photo_pick:'📷 Choose image', ep_photo_remove:'Remove', ep_photo_hint:'Square works best. Automatically resized.',
     ac_title:'🔒 Privacy & account', ac_export_d:'Download all your data (profile, posts, comments, messages, watchlist, exchange) as a file (GDPR).',
     ac_export_btn:'⬇️ Export my data', ac_pw_title:'Change password', ac_pw_old:'Current password',
     ac_pw_new:'New password (min. 8 characters)', ac_pw_ok:'✓ Password changed',
@@ -809,6 +811,7 @@ const I18N = {
     ep_about:'Sobre mim (opcional, máx. 500 caracteres)', ep_about_ph:'Um pouco sobre si e a sua área…',
     ep_specs_l:'Áreas (separadas por vírgula)', ep_specs_ph:'Oncologia, diabetes, vacinação',
     ep_region:'Região (opcional)', ep_none:'— não especificado —', ep_region_hint:'Pré-selecionado em novas entradas de oferta/procura.',
+    ep_photo:'Foto de perfil', ep_photo_pick:'📷 Escolher imagem', ep_photo_remove:'Remover', ep_photo_hint:'Quadrada fica melhor. Redimensionada automaticamente.',
     ac_title:'🔒 Privacidade & conta', ac_export_d:'Descarregue todos os seus dados (perfil, publicações, comentários, mensagens, lista de vigilância, troca) como ficheiro (RGPD).',
     ac_export_btn:'⬇️ Exportar os meus dados', ac_pw_title:'Alterar palavra-passe', ac_pw_old:'Palavra-passe atual',
     ac_pw_new:'Nova palavra-passe (mín. 8 caracteres)', ac_pw_ok:'✓ Palavra-passe alterada',
@@ -3567,8 +3570,19 @@ function editProfileForm(p) {
   const feed = document.getElementById('feed');
   feed.innerHTML = '';
   const specs = (p.specializations || []).join(', ');
+  const initials = (p.display_name||'?').split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();
+  // Aktueller Zustand des Profilbilds: undefined = unverändert, '' = entfernt, data-URL = neu.
+  let avatar = undefined;
   const form = el(`<div class="card">
     <div class="row"><h1 style="flex:1">${esc(t('pf_edit'))}</h1><button class="ghost small" data-cancel>${esc(t('cm_cancel'))}</button></div>
+    <label>${esc(t('ep_photo'))}</label>
+    <div class="row" style="align-items:center;gap:12px;margin-bottom:4px">
+      <span class="avatar" id="ep_av_ini"${p.avatar_url?' style="display:none"':''}>${esc(initials)}</span>
+      <img id="ep_av_img" alt="" class="avatar" style="object-fit:cover;${p.avatar_url?'':'display:none'}" src="${esc(p.avatar_url||'')}">
+      <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px">${esc(t('ep_photo_pick'))}<input type="file" id="ep_avfile" accept="image/*" style="display:none"></label>
+      <button type="button" class="ghost small" id="ep_avclear"${p.avatar_url?'':' style="display:none"'}>${esc(t('ep_photo_remove'))}</button>
+    </div>
+    <div class="muted" style="font-size:12px;margin-bottom:8px">${esc(t('ep_photo_hint'))}</div>
     <label for="ep_name">${esc(t('ep_name'))}</label><input id="ep_name" value="${esc(p.display_name||'')}">
     <label for="ep_title">${esc(t('ep_func'))}</label><input id="ep_title" value="${esc(p.title||'')}" placeholder="${esc(t('ep_func_ph'))}">
     <label for="ep_bio">${esc(t('ep_about'))}</label><textarea id="ep_bio" placeholder="${esc(t('ep_about_ph'))}">${esc(p.bio||'')}</textarea>
@@ -3579,11 +3593,26 @@ function editProfileForm(p) {
     <div class="row" style="margin-top:12px"><button id="ep_save">${esc(t('cm_save'))}</button><span class="err" id="ep_err" style="margin-left:10px"></span></div>
   </div>`);
   feed.appendChild(form);
+  const avImg = document.getElementById('ep_av_img'), avIni = document.getElementById('ep_av_ini'), avClear = document.getElementById('ep_avclear');
+  document.getElementById('ep_avfile').onchange = async (ev) => {
+    const f = ev.target.files[0]; if (!f) return;
+    try {
+      avatar = await fileToDataUrl(f, 400);
+      avImg.src = avatar; avImg.style.display='block'; avIni.style.display='none'; avClear.style.display='inline-block';
+      document.getElementById('ep_err').textContent='';
+    } catch(e){ document.getElementById('ep_err').textContent = e.message; }
+  };
+  avClear.onclick = () => {
+    avatar = ''; avImg.style.display='none'; avImg.src=''; avIni.style.display='inline-flex'; avClear.style.display='none';
+    document.getElementById('ep_avfile').value='';
+  };
   document.getElementById('ep_save').onclick = async () => {
     try {
-      await api('POST','/api/profile',{
+      const payload = {
         displayName: v('ep_name'), title: v('ep_title'), bio: v('ep_bio'), specializations: v('ep_specs'), bundesland: v('ep_bl'),
-      });
+      };
+      if (avatar !== undefined) payload.avatarUrl = avatar;
+      await api('POST','/api/profile', payload);
       const meData = await api('GET','/api/me'); me = meData.profile;
       document.getElementById('whoami').textContent = me ? '@'+me.handle : '';
       openProfile(p.handle);
@@ -3608,7 +3637,7 @@ async function openProfile(handle) {
     const head = el(`<div class="card">
       <div class="row"><button class="ghost small" data-back>${esc(t('post_back'))}</button><span class="sp" style="flex:1"></span><button class="ghost small" data-shareprofile title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button></div>
       <div class="row" style="margin-top:10px;align-items:center">
-        <span class="avatar">${esc(initials)}</span>
+        ${p.avatar_url?`<img class="avatar" style="object-fit:cover" alt="${esc(p.display_name||'')}" src="${esc(p.avatar_url)}">`:`<span class="avatar">${esc(initials)}</span>`}
         <div style="margin-left:12px">
           <div class="row" style="align-items:center">
             <span class="post-author" style="font-size:19px">${esc(p.display_name||t('ex_unknown'))}</span>
@@ -4082,12 +4111,20 @@ function repostEmbedHtml(o) {
     <div class="post-body">${esc(o.body)}</div>${img}${pollHint}
   </div>`;
 }
+// Kleines Autor-Avatar (Bild wenn vorhanden, sonst Initialen) für Feed-Karten.
+function avatarHtml(a, size = 36) {
+  const ini = (a.display_name||'?').split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();
+  const st = `width:${size}px;height:${size}px;font-size:${Math.round(size*0.38)}px;margin-right:9px`;
+  if (a.avatar_url) return `<img class="avatar clickable" data-openprofile="${esc(a.handle||'')}" alt="" style="object-fit:cover;${st}" src="${esc(a.avatar_url)}">`;
+  return `<span class="avatar clickable" data-openprofile="${esc(a.handle||'')}" style="${st}">${esc(ini)}</span>`;
+}
 function postCard(p) {
   const a = p.author || {};
   const rc = p.reaction_counts || {};
   const mine = me && a.handle === me.handle;
   const card = el(`<div class="card">
     <div class="row">
+      ${avatarHtml(a)}
       <span class="post-author clickable" data-openprofile="${esc(a.handle||'')}">${esc(a.display_name||t('ex_unknown'))}</span>
       <span class="handle clickable" data-openprofile="${esc(a.handle||'')}">@${esc(a.handle||'?')}</span>
       ${a.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}

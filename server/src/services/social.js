@@ -55,7 +55,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     const mine = viewerUserId ? reacts.find(r => r.user_id === viewerUserId) : null;
     return {
       ...post,
-      author: prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified, is_editorial: prof.is_editorial, account_type: prof.account_type, premium: foundationRepo.hasEntitlement(prof.user_id, 'premium'), is_following: !!(viewerUserId && prof.user_id !== viewerUserId && social.isFollowing(viewerUserId, prof.user_id)) } : null,
+      author: prof ? { handle: prof.handle, display_name: prof.display_name, avatar_url: prof.avatar_url || null, verified: prof.verified, is_editorial: prof.is_editorial, account_type: prof.account_type, premium: foundationRepo.hasEntitlement(prof.user_id, 'premium'), is_following: !!(viewerUserId && prof.user_id !== viewerUserId && social.isFollowing(viewerUserId, prof.user_id)) } : null,
       comment_count: social.countComments(post.id),
       reaction_counts: counts,
       my_reaction: mine ? mine.type : null,
@@ -91,11 +91,13 @@ export function createSocialService(social, foundationRepo, options = {}) {
       return social.getProfileByHandle(handleOrUserId) || social.getProfileByUserId(handleOrUserId);
     },
     // Eigenes Profil bearbeiten (Handle bleibt als Identität unveränderlich).
-    updateProfile(actorUserId, { displayName, title, bio, specializations, visibility, bundesland, country, locale, accountType }) {
+    updateProfile(actorUserId, { displayName, title, bio, specializations, avatarUrl, visibility, bundesland, country, locale, accountType }) {
       requireUser(actorUserId);
       const current = social.getProfileByUserId(actorUserId);
       if (!current) throw new Error('Profil nicht gefunden.');
       const patch = {};
+      // Profilbild: leerer String entfernt es (null), data:image-URL wird validiert.
+      if (avatarUrl !== undefined) patch.avatar_url = avatarUrl ? cleanImage(avatarUrl) : null;
       if (displayName !== undefined) {
         const dn = String(displayName).trim();
         if (!dn) throw new AppError('display_name_required', 'Anzeigename erforderlich.');
