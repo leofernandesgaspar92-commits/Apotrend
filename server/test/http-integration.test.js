@@ -81,6 +81,16 @@ test('GET /api/countries: Register deckt alle Sprachgruppen ab (Locale/Währung/
     assert.ok(c, `${code} im Register`);
     assert.equal(c.currency, cur); assert.equal(c.locale_default, loc);
   }
+  // regulator_url: belegte offizielle Quellen sind echte https-URLs; unsichere bleiben null (kein falscher Link).
+  for (const [code, url] of [['DE', 'https://www.bfarm.de'], ['NG', 'https://www.nafdac.gov.ng'], ['US', 'https://www.fda.gov']]) {
+    const c = d.countries.find(x => x.code === code);
+    assert.equal(c.regulator_url, url, `${code} verlinkt die offizielle Behörde`);
+  }
+  for (const code of ['AO', 'MZ', 'LI']) {
+    assert.equal(d.countries.find(x => x.code === code).regulator_url, null, `${code} ohne unbelegten Link`);
+  }
+  // Jeder gesetzte Link ist eine gültige https-URL.
+  for (const c of d.countries) if (c.regulator_url) assert.match(c.regulator_url, /^https:\/\/[^\s]+$/, `${c.code} https-URL`);
 });
 
 test('Registrierung mit Land/Sprache setzt Profil; Länder-Switch aktualisiert; ungültig abgelehnt', async () => {

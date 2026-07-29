@@ -39,7 +39,7 @@ const I18N = {
     search_go:'Suchen', theme_dark:'Dunkel', theme_light:'Hell', font_label:'Schrift', aria_theme:'Hell/Dunkel umschalten',
     theme_to_dark:'Zu dunklem Modus wechseln', theme_to_light:'Zu hellem Modus wechseln',
     data_notice_title:'ℹ️ Hinweis zu den Daten für {land}',
-    data_notice_body:'Die Live-Regulierungsdaten (Engpässe, Preise, Rabatte) decken derzeit 🇦🇹 Österreich ab. Für {land} bauen wir sie schrittweise mit den lokalen Behörden aus. Der soziale Feed und die News sind bereits länderspezifisch — die unten gezeigten Zahlen stammen aus Österreich.',
+    data_notice_body:'Die Live-Regulierungsdaten (Engpässe, Preise, Rabatte) decken derzeit 🇦🇹 Österreich ab. Für {land} bauen wir sie schrittweise mit den lokalen Behörden aus. Der soziale Feed und die News sind bereits länderspezifisch — die unten gezeigten Zahlen stammen aus Österreich.', reg_title:'Offizielle Arzneimittelbehörde: {reg}', reg_sub:'Verbindliche Quelle für {land} — Engpässe, Rückrufe, Zulassungen.', reg_open:'🔗 {reg} öffnen', reg_no_link:'Offizielle Website folgt.',
     ov_hello:'Für dich', ov_sub:'Das Wichtigste auf einen Blick.',
     ov_t_crit:'kritische Engpässe', ov_t_abx:'Antibiotika-Engpässe',
     ov_t_offer:'Angebote im Austausch', ov_t_seek:'Gesuche im Austausch',
@@ -330,7 +330,7 @@ const I18N = {
     search_go:'Search', theme_dark:'Dark', theme_light:'Light', font_label:'Text size', aria_theme:'Toggle light/dark',
     theme_to_dark:'Switch to dark mode', theme_to_light:'Switch to light mode',
     data_notice_title:'ℹ️ About the data for {land}',
-    data_notice_body:'The live regulatory data (shortages, prices, deals) currently covers 🇦🇹 Austria. For {land} we are building it out step by step with the local authorities. The social feed and news are already country-specific — the figures shown below are from Austria.',
+    data_notice_body:'The live regulatory data (shortages, prices, deals) currently covers 🇦🇹 Austria. For {land} we are building it out step by step with the local authorities. The social feed and news are already country-specific — the figures shown below are from Austria.', reg_title:'Official medicines regulator: {reg}', reg_sub:'Authoritative source for {land} — shortages, recalls, approvals.', reg_open:'🔗 Open {reg}', reg_no_link:'Official website coming soon.',
     ov_hello:'For you', ov_sub:'The essentials at a glance.',
     ov_t_crit:'critical shortages', ov_t_abx:'antibiotic shortages',
     ov_t_offer:'offers in exchange', ov_t_seek:'requests in exchange',
@@ -621,7 +621,7 @@ const I18N = {
     search_go:'Pesquisar', theme_dark:'Escuro', theme_light:'Claro', font_label:'Tamanho', aria_theme:'Alternar claro/escuro',
     theme_to_dark:'Mudar para modo escuro', theme_to_light:'Mudar para modo claro',
     data_notice_title:'ℹ️ Sobre os dados de {land}',
-    data_notice_body:'Os dados regulatórios em tempo real (faltas, preços, descontos) cobrem atualmente a 🇦🇹 Áustria. Para {land} estamos a construí-los passo a passo com as autoridades locais. O feed social e as notícias já são específicos por país — os números abaixo são da Áustria.',
+    data_notice_body:'Os dados regulatórios em tempo real (faltas, preços, descontos) cobrem atualmente a 🇦🇹 Áustria. Para {land} estamos a construí-los passo a passo com as autoridades locais. O feed social e as notícias já são específicos por país — os números abaixo são da Áustria.', reg_title:'Autoridade do medicamento: {reg}', reg_sub:'Fonte oficial para {land} — faltas, recolhas, autorizações.', reg_open:'🔗 Abrir {reg}', reg_no_link:'Website oficial em breve.',
     ov_hello:'Para si', ov_sub:'O essencial num relance.',
     ov_t_crit:'faltas críticas', ov_t_abx:'faltas de antibióticos',
     ov_t_offer:'ofertas na troca', ov_t_seek:'procuras na troca',
@@ -1594,6 +1594,7 @@ async function loadOverview() {
   catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   feed.innerHTML = '';
   { const n = countryDataNotice(); if (n) feed.appendChild(n); }
+  { const r = countryRegulatorCard(); if (r) feed.appendChild(r); }
   const hello = me ? (me.display_name || '@'+me.handle) : '';
   const firstName = hello ? (hello.split(/\s+/).find(w => !/\.$/.test(w)) || hello) : '';
   // Kennzahlen-Kacheln
@@ -2064,6 +2065,24 @@ function countryDataNotice() {
     <b>${esc(ti('data_notice_title', { land }))}</b>
     <div style="margin-top:6px;font-size:14px;line-height:1.5">${esc(ti('data_notice_body', { land }))}</div>
   </div>`);
+}
+
+// Offizielle Arzneimittelbehörde des aktiven Landes als belegte Quelle (echter Link).
+// Ohne verifizierten Link kein Link — nur den Behördennamen nennen (Quellenpflicht, CLAUDE.md).
+function countryRegulatorCard() {
+  const c = (COUNTRIES_CACHE || []).find(x => x.code === viewCountry());
+  if (!c || !c.regulator) return null;
+  const link = c.regulator_url
+    ? `<a href="${esc(c.regulator_url)}" target="_blank" rel="noopener noreferrer" class="btn-link small">${esc(ti('reg_open', { reg: c.regulator }))}</a>`
+    : `<span class="muted" style="font-size:13px">${esc(t('reg_no_link'))}</span>`;
+  return el(`<div class="card"><div class="row" style="align-items:center;gap:10px;flex-wrap:wrap">
+    <span style="font-size:20px">🏛️</span>
+    <div style="flex:1;min-width:180px">
+      <div style="font-weight:700">${esc(ti('reg_title', { reg: c.regulator }))}</div>
+      <div class="muted" style="font-size:13px">${esc(ti('reg_sub', { land: c.flag + ' ' + c.name }))}</div>
+    </div>
+    ${link}
+  </div></div>`);
 }
 
 // Aufklappbare Legende zur Datenherkunft — schafft Vertrauen bei nicht-technischen

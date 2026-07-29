@@ -81,6 +81,12 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #117 — 2026-07-20 — Länder-Framework Schritt 1: offizielle Regulierungs-Quelle je Land (echte Links)
+- **THINK:** Auftakt zum landesspezifischen Feature-Framework (Owner-Vorgabe: NAFDAC/BfArM/ANVISA … pro Land). WICHTIG: sicherheitskritische Alerts/Recalls/„Fake-Drug-Checks" NICHT erfinden (CLAUDE.md-Quellenpflicht). Ehrlicher, sofort nützlicher erster Baustein: die OFFIZIELLE Behörde je Land als belegte Quelle verlinken.
+- **WORK:** Länder-Register (`countries.js`) um `regulator_url` erweitert — echte, verifizierte offizielle URLs (BASG, BfArM, Swissmedic, INFARMED, ANVISA, MHRA, FDA, **NAFDAC**, PPB, FDA Ghana, Health Canada, TGA, SAHPRA); wo Domain nicht sicher belegt (AO/MZ/LI) bewusst `null` (kein falscher Link). Neue Karte „🏛️ Offizielle Arzneimittelbehörde: {reg}" auf der Übersicht, folgt der Länder-Ansicht; öffnet die echte Behörden-Website. i18n DE/EN/PT.
+- **CHECK:** 301 grün (HTTP-Test erweitert: echte https-URLs für DE/NG/US, null für AO/MZ/LI, jede gesetzte URL valide), Smoke 19/19, Parität 758/758/758, Guards 0. **Browser:** Nigeria → NAFDAC-Karte mit `nafdac.gov.ng`; Österreich → BASG mit `basg.gv.at`, 0 JS-Fehler.
+- **NEXT:** Währungs-Umrechner (echte Kurse), landesspezifische Feature-Flags/Config-Endpoint, Quell-Links in News/Engpass-Karten je Land — schrittweise, immer mit belegten Quellen.
+
 ### Cycle #116 — 2026-07-20 — Bestandsaustausch: Treffer im Moment der Absicht (nach dem Anlegen)
 - **THINK:** Direkte Fortsetzung von #115: Der wertvollste Moment ist genau nach dem Anlegen eines Eintrags — wer gerade eine „Suche" postet, will sofort sehen, wer das anbietet. Das schließt den Matchmaking-Kreis am Punkt der höchsten Absicht.
 - **WORK:** Der Anlege-Handler liest `match_count` der Antwort; bei ≥1 wird automatisch auf die passenden Gegenstücke gefiltert (gegenteilige Art + erstes Wirkstoff-Wort) und ein einmaliger Erfolgs-Banner gezeigt („✅ N passende Angebote/Gesuche gefunden — hier deine Treffer."). i18n DE/EN/PT (Singular/Plural).
