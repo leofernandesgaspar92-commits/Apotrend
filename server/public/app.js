@@ -4182,7 +4182,8 @@ async function showNotifications() {
           document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
           const tb=document.querySelector('.tabs button[data-tab="exchange"]'); if(tb) tb.classList.add('active'); loadTab(); });
       }
-      else if (n.type === 'watch_alert' || n.type === 'shortage_confirm') { mainScreen().then(()=>goTab('shortages')); }
+      else if (n.type === 'watch_alert') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
+      else if (n.type === 'shortage_confirm') { mainScreen().then(()=>goTab('shortages')); }
       else if (n.post_id) { mainScreen().then(()=>openPost(n.post_id)); }
       else if (n.actor) { mainScreen().then(()=>openProfile(n.actor.handle)); }
     };

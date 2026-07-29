@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #130 — 2026-07-20 — Frühwarnung führt direkt zum betroffenen Wirkstoff
+- **THINK:** Ein `watch_alert` (beobachteter Wirkstoff wurde kritisch/geändert) sprang bisher nur auf den ganzen Engpass-Reiter. Direkt auf die Detailseite des betroffenen Wirkstoffs zu springen (mit Status, Bezugsquellen, Aktionen, Diskussion) spart Sucherei — genau im Alarmfall.
+- **WORK:** Klick-Routing für `watch_alert` öffnet `openWirkstoff(<Wirkstoff>)`. Der Wirkstoff wird aus dem Meldungs-Label geparst (Format durchgängig „<Wirkstoff> · <Status> …" an allen drei Alarm-Stellen); Fallback auf den Engpass-Reiter, wenn kein Name ableitbar.
+- **CHECK:** 320 grün, Smoke 19/19, Guards 0. **Browser-Ende-zu-Ende:** Apotheke A beobachtet Wirkstoff → Apotheke B meldet Engpass → A erhält Frühwarnung → Klick landet auf der Detailseite des Wirkstoffs, 0 JS-Fehler.
+
 ### Cycle #129 — 2026-07-20 — Rabatte-Reiter: Filter „⭐ Nur beobachtete" (Einkaufs-Nutzen)
 - **THINK:** Für den Einkauf/Großhandel: aus vielen laufenden Aktionen schnell die zu den selbst beobachteten Wirkstoffen sehen. Verbindet Merkliste ↔ Rabatte, konkreter Zeitgewinn.
 - **WORK:** `loadRabatte` lädt zusätzlich die Beobachtungsliste; neuer Filter-Button „⭐ Nur beobachtete" (nur sichtbar, wenn überhaupt Wirkstoffe beobachtet werden), filtert Aktionen auf `watched.has(wirkstoff)`; Zustandssync + CSV-Export respektiert die Auswahl. i18n `rb_watched_only` DE/EN/PT.
