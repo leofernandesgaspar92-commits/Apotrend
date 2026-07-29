@@ -127,7 +127,7 @@ const I18N = {
     rb_header:'🏷️ <b>Top-10 Rabatt-Aktionen</b> · höchster Rabatt oben · nur laufende Aktionen ·',
     rb_empty_t:'Derzeit keine laufenden Aktionen',
     rb_empty_s:'Aktuell sind keine Rabatt-Aktionen hinterlegt. Schau später wieder vorbei.',
-    rb_expiring:'⏳ Bald ablaufend', rb_watched_only:'⭐ Nur beobachtete', rb_csv_t:'Aktuelle Auswahl als CSV (Excel) für den Einkauf',
+    rb_expiring:'⏳ Bald ablaufend', rb_watched_only:'⭐ Nur beobachtete', rb_csv_t:'Aktuelle Auswahl als CSV (Excel) für den Einkauf', rb_print_t:'Aktuelle Auswahl als Aushang drucken', rb_print_title:'Laufende Rabatt-Aktionen',
     rb_none:'Keine Aktion für diese Auswahl.', rb_saving:'Ersparnis € {x} je Packung',
     rb_minorder:'💰 Bei Mindestabnahme ({n} Stück): € {x} gespart',
     rb_best:'⭐ Beste Aktion für {w} ({alt})', rb_alt_one:'1 weitere läuft', rb_alt_many:'{n} weitere laufen',
@@ -418,7 +418,7 @@ const I18N = {
     rb_header:'🏷️ <b>Top 10 deals</b> · highest discount on top · running offers only ·',
     rb_empty_t:'No running offers right now',
     rb_empty_s:'There are currently no discount offers on file. Check back later.',
-    rb_expiring:'⏳ Expiring soon', rb_watched_only:'⭐ Watched only', rb_csv_t:'Export current selection as CSV (Excel) for purchasing',
+    rb_expiring:'⏳ Expiring soon', rb_watched_only:'⭐ Watched only', rb_csv_t:'Export current selection as CSV (Excel) for purchasing', rb_print_t:'Print current selection as a notice', rb_print_title:'Current discount deals',
     rb_none:'No offer for this selection.', rb_saving:'Saving € {x} per pack',
     rb_minorder:'💰 At minimum order ({n} units): € {x} saved',
     rb_best:'⭐ Best deal for {w} ({alt})', rb_alt_one:'1 more running', rb_alt_many:'{n} more running',
@@ -709,7 +709,7 @@ const I18N = {
     rb_header:'🏷️ <b>Top 10 descontos</b> · maior desconto no topo · só promoções ativas ·',
     rb_empty_t:'Sem promoções ativas de momento',
     rb_empty_s:'Não há promoções de desconto registadas. Volte mais tarde.',
-    rb_expiring:'⏳ A expirar em breve', rb_watched_only:'⭐ Só vigiadas', rb_csv_t:'Exportar a seleção atual como CSV (Excel) para compras',
+    rb_expiring:'⏳ A expirar em breve', rb_watched_only:'⭐ Só vigiadas', rb_csv_t:'Exportar a seleção atual como CSV (Excel) para compras', rb_print_t:'Imprimir a seleção atual como cartaz', rb_print_title:'Promoções em curso',
     rb_none:'Nenhuma promoção para esta seleção.', rb_saving:'Poupança € {x} por embalagem',
     rb_minorder:'💰 Na compra mínima ({n} unidades): € {x} poupados',
     rb_best:'⭐ Melhor promoção para {w} ({alt})', rb_alt_one:'mais 1 ativa', rb_alt_many:'mais {n} ativas',
@@ -2622,6 +2622,35 @@ function exportPricesCsv(comparisons) {
 }
 
 // Rabatt-Aktionen (aktuell gefiltert) als CSV für den Einkauf.
+// Laufende Rabatt-Aktionen als sauberer, druckbarer Report für den Einkauf.
+function printRabatte(list) {
+  const rows0 = list || [];
+  const w = window.open('', '_blank');
+  if (!w) { alert(t('pi_popup')); return; }
+  const dateStr = new Date().toLocaleDateString(LOCALE === 'de' ? 'de-AT' : LOCALE === 'pt' ? 'pt-PT' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+  const money = (v) => (LOCALE === 'en' ? Number(v).toFixed(2) : Number(v).toFixed(2).replace('.', ','));
+  const rows = rows0.map(r => `<tr>
+      <td class="wk">${esc(r.bezeichnung)}${r.wirkstoff ? `<div class="pr">${esc(r.wirkstoff)}</div>` : ''}</td>
+      <td>${esc(r.supplier || '')}</td>
+      <td class="num">€ ${money(r.aktionspreis || 0)}</td>
+      <td class="num">−${r.rabatt_pct || 0}%</td>
+      <td class="num">${r.ersparnis > 0 ? '€ ' + money(r.ersparnis) : '—'}</td>
+      <td class="num">${r.min_menge || '—'}</td>
+      <td>${esc(r.gueltig_bis || '—')}${r.expiring_soon ? ' ⏳' : ''}</td>
+    </tr>`).join('');
+  w.document.write(`<!doctype html><html lang="${esc(LOCALE)}"><head><meta charset="utf-8"><title>${esc(t('rb_print_title'))}</title>
+    <style>body{font-family:system-ui,-apple-system,sans-serif;max-width:960px;margin:24px auto;padding:0 16px;color:#111}
+    h1{font-size:22px;margin:0 0 2px} .meta{color:#555;font-size:13px;margin-bottom:16px}
+    table{width:100%;border-collapse:collapse} th{text-align:left;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
+    td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:12px;margin-top:2px}
+    .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap} .src{font-size:12px;color:#555;margin-top:18px}</style></head>
+    <body><h1>🏷️ ${esc(t('rb_print_title'))}</h1><div class="meta">${esc(ti('wl_print_asof', { date: dateStr }))} · ${rows0.length} ${esc(t('pr_print_count'))}</div>
+    <table><thead><tr><th>${esc(t('csv_praeparat'))}</th><th>${esc(t('csv_lieferant'))}</th><th class="num">${esc(t('csv_aktionspreis'))}</th><th class="num">${esc(t('csv_rabatt'))}</th><th class="num">${esc(t('pr_print_saving'))}</th><th class="num">${esc(t('csv_minmenge'))}</th><th>${esc(t('csv_gueltig_bis'))}</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="src">${esc(t('wl_print_foot'))}</div>
+    <script>window.onload=function(){window.print();}<\/script></body></html>`);
+  w.document.close();
+}
+
 function exportRabatteCsv(list) {
   const rows = (list || []).map(r => [
     r.rank ?? '', r.bezeichnung || '', r.wirkstoff || '', r.supplier || '',
@@ -2912,6 +2941,7 @@ async function loadRabatte() {
         <button class="small sortbtn${rabattExpiring?' active':''}" data-exp="1" aria-pressed="${rabattExpiring}">${esc(t('rb_expiring'))}</button>
         ${watched.size?`<button class="small sortbtn${rabattWatchedOnly?' active':''}" data-watchedonly aria-pressed="${rabattWatchedOnly}">${esc(t('rb_watched_only'))}</button>`:''}
         <span class="sp" style="flex:1"></span>
+        <button class="ghost small" data-rprint title="${esc(t('rb_print_t'))}">🖨️ ${esc(t('pr_print_btn'))}</button>
         <button class="ghost small" data-rcsv title="${esc(t('rb_csv_t'))}">⬇️ CSV</button>
       </div></div>`);
     feed.appendChild(bar);
@@ -2919,6 +2949,7 @@ async function loadRabatte() {
     feed.appendChild(listBox);
     let shown = [];
     bar.querySelector('[data-rcsv]').onclick = () => exportRabatteCsv(shown);
+    bar.querySelector('[data-rprint]').onclick = () => printRabatte(shown);
     const draw = () => {
       const q = rabattQuery.trim().toLowerCase();
       const list = d.rabatte.filter(r =>

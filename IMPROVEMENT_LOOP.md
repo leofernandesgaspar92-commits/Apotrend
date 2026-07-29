@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #138 — 2026-07-20 — Rabatte als druckbarer Aushang (Export-Symmetrie komplett)
+- **THINK:** Konsistenz + Einkaufs-Nutzen: Rabatte hatten CSV, aber keinen Druck-Report — wie jetzt Preise (#137) und Merkliste (#109). Ein „laufende Aktionen"-Aushang hilft dem Einkauf am Bestelltisch.
+- **WORK:** `printRabatte(list)` öffnet einen formatierten Report (Präparat/Wirkstoff · Lieferant · Aktionspreis · Rabatt% · Ersparnis · Mindestmenge · gültig bis, ⏳ bei baldigem Ablauf). „🖨️ Drucken"-Button neben CSV im Rabatte-Reiter; beide respektieren die aktuelle Filter-/Suchauswahl. i18n `rb_print_t`/`rb_print_title` DE/EN/PT (übrige Spalten aus bestehenden `csv_*`/`pr_print_*`).
+- **CHECK:** 320 grün, Smoke 19/19, Parität 785/785/785, Guards 0. **Browser:** Druckfenster mit Titel, Spalten und 10 Aktionen, 0 JS-Fehler.
+
 ### Cycle #137 — 2026-07-20 — Preisvergleich als druckbarer Einkaufs-Report
 - **THINK:** Einkaufs-Nutzen: der Preisvergleich hatte CSV, aber keinen lesbaren Ausdruck für Besprechung/Aushang. Ein formatierter Report (günstigster Lieferant, Ersparnis, beste Aktion je Präparat) hilft nicht-technischen Einkäufer:innen direkt.
 - **WORK:** `printPrices(comparisons)` öffnet einen sauberen Druck-Report (Titel, Datum locale-korrekt, Tabelle Präparat/Wirkstoff · günstigster Lieferant · AEP · Ersparnis · beste Aktion, Fußzeile mit Gewähr-Hinweis). „🖨️ Drucken"-Button neben CSV; beide respektieren jetzt die aktuelle Filter-/Suchauswahl (`shownPrices`). i18n DE/EN/PT.
