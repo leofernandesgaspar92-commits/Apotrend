@@ -91,7 +91,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       return social.getProfileByHandle(handleOrUserId) || social.getProfileByUserId(handleOrUserId);
     },
     // Eigenes Profil bearbeiten (Handle bleibt als Identität unveränderlich).
-    updateProfile(actorUserId, { displayName, title, bio, specializations, experience, avatarUrl, coverUrl, website, visibility, bundesland, country, locale, accountType }) {
+    updateProfile(actorUserId, { displayName, title, bio, specializations, experience, avatarUrl, coverUrl, website, publicEmail, phone, visibility, bundesland, country, locale, accountType }) {
       requireUser(actorUserId);
       const current = social.getProfileByUserId(actorUserId);
       if (!current) throw new Error('Profil nicht gefunden.');
@@ -102,6 +102,17 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (coverUrl !== undefined) patch.cover_url = coverUrl ? cleanImage(coverUrl) : null;
       // Website/Kontakt-Link (nur http(s), keine Skript-URLs).
       if (website !== undefined) patch.website = website ? cleanSourceUrl(website) : null;
+      // Öffentliche Kontaktdaten (freiwillig, für alle sichtbar): Geschäfts-E-Mail + Telefon.
+      if (publicEmail !== undefined) {
+        const e = String(publicEmail).trim();
+        if (e && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) || e.length > 120)) throw new AppError('public_email_invalid', 'Bitte eine gültige E-Mail-Adresse angeben.');
+        patch.public_email = e || null;
+      }
+      if (phone !== undefined) {
+        const raw = String(phone).trim();
+        if (raw && !/^[0-9+()\/\s.\-]{4,40}$/.test(raw)) throw new AppError('phone_invalid', 'Telefonnummer enthält ungültige Zeichen.');
+        patch.phone = raw || null;
+      }
       if (displayName !== undefined) {
         const dn = String(displayName).trim();
         if (!dn) throw new AppError('display_name_required', 'Anzeigename erforderlich.');

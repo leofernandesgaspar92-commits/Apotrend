@@ -97,6 +97,18 @@ test('Profil bearbeiten: Werdegang wird gesetzt, leere Stationen verworfen, Roll
   assert.deepEqual(social.getProfile('anna').experience, many.experience);
 });
 
+test('Profil bearbeiten: öffentliche Kontaktdaten setzen/leeren/validieren', () => {
+  const { social, a } = setup();
+  const p = social.updateProfile(a, { publicEmail: 'kontakt@apo.at', phone: '+43 1 234567' });
+  assert.equal(p.public_email, 'kontakt@apo.at');
+  assert.equal(p.phone, '+43 1 234567');
+  const cleared = social.updateProfile(a, { publicEmail: '', phone: '' });
+  assert.equal(cleared.public_email, null);
+  assert.equal(cleared.phone, null);
+  assert.throws(() => social.updateProfile(a, { publicEmail: 'keine-mail' }), /E-Mail/);
+  assert.throws(() => social.updateProfile(a, { phone: 'abc<script>' }), /Telefon/);
+});
+
 test('Profil bearbeiten: gültiges Bundesland wird gesetzt, ungültiges abgelehnt', () => {
   const { social, a } = setup();
   const p = social.updateProfile(a, { bundesland: 'Wien' });

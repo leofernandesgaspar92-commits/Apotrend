@@ -230,6 +230,7 @@ const I18N = {
     ep_photo:'Profilbild', ep_photo_pick:'📷 Bild wählen', ep_photo_remove:'Entfernen', ep_photo_hint:'Quadratisch wirkt am besten. Wird automatisch verkleinert.',
     ep_cover:'Titelbild', ep_cover_pick:'🖼️ Titelbild wählen', ep_cover_hint:'Breites Banner oben im Profil (wie bei LinkedIn/Facebook).',
     ep_website:'Website (optional)', ep_website_ph:'https://ihre-apotheke.at',
+    ep_pubmail:'Geschäfts-E-Mail (optional, öffentlich)', ep_pubmail_ph:'kontakt@ihre-apotheke.at', ep_phone:'Telefon (optional, öffentlich)', ep_phone_ph:'+43 1 234567', ep_contact_hint:'Diese Kontaktdaten sind für alle sichtbar — nur ausfüllen, wenn erreichbar gewünscht.',
     pfc_title_head:'Profilstärke', pfc_missing:'Noch {n} Angabe(n) für ein vollständiges Profil:', pfc_cta:'Profil vervollständigen',
     pfc_complete:'✓ Ihr Profil ist vollständig — top!',
     pfc_photo:'Profilbild', pfc_cover:'Titelbild', pfc_title:'Titel/Funktion', pfc_bio:'Über mich', pfc_specs:'Fachgebiete', pfc_website:'Website', pfc_region:'Region', pfc_experience:'Werdegang',
@@ -530,6 +531,7 @@ const I18N = {
     ep_photo:'Profile picture', ep_photo_pick:'📷 Choose image', ep_photo_remove:'Remove', ep_photo_hint:'Square works best. Automatically resized.',
     ep_cover:'Cover image', ep_cover_pick:'🖼️ Choose cover', ep_cover_hint:'Wide banner at the top of your profile (like LinkedIn/Facebook).',
     ep_website:'Website (optional)', ep_website_ph:'https://your-pharmacy.com',
+    ep_pubmail:'Business email (optional, public)', ep_pubmail_ph:'contact@your-pharmacy.com', ep_phone:'Phone (optional, public)', ep_phone_ph:'+44 20 1234567', ep_contact_hint:'This contact info is visible to everyone — only fill it in if you want to be reachable.',
     pfc_title_head:'Profile strength', pfc_missing:'{n} more item(s) for a complete profile:', pfc_cta:'Complete profile',
     pfc_complete:'✓ Your profile is complete — great!',
     pfc_photo:'Profile picture', pfc_cover:'Cover image', pfc_title:'Title/role', pfc_bio:'About me', pfc_specs:'Specializations', pfc_website:'Website', pfc_region:'Region', pfc_experience:'Experience',
@@ -830,6 +832,7 @@ const I18N = {
     ep_photo:'Foto de perfil', ep_photo_pick:'📷 Escolher imagem', ep_photo_remove:'Remover', ep_photo_hint:'Quadrada fica melhor. Redimensionada automaticamente.',
     ep_cover:'Imagem de capa', ep_cover_pick:'🖼️ Escolher capa', ep_cover_hint:'Banner largo no topo do perfil (como no LinkedIn/Facebook).',
     ep_website:'Site (opcional)', ep_website_ph:'https://sua-farmacia.pt',
+    ep_pubmail:'E-mail comercial (opcional, público)', ep_pubmail_ph:'contato@sua-farmacia.pt', ep_phone:'Telefone (opcional, público)', ep_phone_ph:'+351 21 1234567', ep_contact_hint:'Estes contactos são visíveis para todos — preencha apenas se quiser ser contactável.',
     pfc_title_head:'Força do perfil', pfc_missing:'Mais {n} item(ns) para um perfil completo:', pfc_cta:'Completar perfil',
     pfc_complete:'✓ O seu perfil está completo — ótimo!',
     pfc_photo:'Foto de perfil', pfc_cover:'Imagem de capa', pfc_title:'Título/função', pfc_bio:'Sobre mim', pfc_specs:'Áreas', pfc_website:'Site', pfc_region:'Região', pfc_experience:'Percurso',
@@ -3654,6 +3657,9 @@ function editProfileForm(p) {
     <select id="ep_bl"><option value="">${esc(t('ep_none'))}</option>${BUNDESLAENDER.map(x=>`<option value="${x}"${x===(p.bundesland||'')?' selected':''}>${x}</option>`).join('')}</select>
     <div class="muted" style="font-size:12px;margin-top:2px">${esc(t('ep_region_hint'))}</div>
     <label for="ep_web">${esc(t('ep_website'))}</label><input id="ep_web" type="url" value="${esc(p.website||'')}" placeholder="${esc(t('ep_website_ph'))}">
+    <label for="ep_pmail">${esc(t('ep_pubmail'))}</label><input id="ep_pmail" type="email" value="${esc(p.public_email||'')}" placeholder="${esc(t('ep_pubmail_ph'))}">
+    <label for="ep_phone">${esc(t('ep_phone'))}</label><input id="ep_phone" type="tel" value="${esc(p.phone||'')}" placeholder="${esc(t('ep_phone_ph'))}">
+    <div class="muted" style="font-size:12px;margin-top:2px">${esc(t('ep_contact_hint'))}</div>
     <label style="margin-top:10px">${esc(t('ep_exp'))}</label>
     <div class="muted" style="font-size:12px;margin-bottom:6px">${esc(t('ep_exp_hint'))}</div>
     <div id="ep_exp_list"></div>
@@ -3714,7 +3720,7 @@ function editProfileForm(p) {
         return { role: get('role'), org: get('org'), from: get('from'), to: get('to'), description: get('description') };
       }).filter(e => e.role);
       const payload = {
-        displayName: v('ep_name'), title: v('ep_title'), bio: v('ep_bio'), specializations: v('ep_specs'), bundesland: v('ep_bl'), website: v('ep_web'), experience,
+        displayName: v('ep_name'), title: v('ep_title'), bio: v('ep_bio'), specializations: v('ep_specs'), bundesland: v('ep_bl'), website: v('ep_web'), publicEmail: v('ep_pmail'), phone: v('ep_phone'), experience,
       };
       if (avatar !== undefined) payload.avatarUrl = avatar;
       if (cover !== undefined) payload.coverUrl = cover;
@@ -3770,6 +3776,8 @@ async function openProfile(handle) {
           ${p.title?`<div class="muted">${esc(p.title)}</div>`:''}
           ${p.bundesland?`<div class="muted" style="font-size:13px">📍 ${esc(p.bundesland)}</div>`:''}
           ${p.website?`<div style="font-size:13px;margin-top:2px">🔗 <a href="${esc(p.website)}" target="_blank" rel="noopener noreferrer nofollow" class="mention">${esc(prettyUrl(p.website))}</a></div>`:''}
+          ${p.public_email?`<div style="font-size:13px;margin-top:2px">📧 <a href="mailto:${encodeURIComponent(p.public_email)}" class="mention">${esc(p.public_email)}</a></div>`:''}
+          ${p.phone?`<div style="font-size:13px;margin-top:2px">📞 <a href="tel:${encodeURIComponent(p.phone.replace(/[^0-9+]/g,''))}" class="mention">${esc(p.phone)}</a></div>`:''}
         </div>
       </div>
       ${p.bio?`<div class="post-body">${esc(p.bio)}</div>`:''}

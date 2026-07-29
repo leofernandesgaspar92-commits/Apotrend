@@ -35,6 +35,7 @@ export function createSocialRepo() {
         title: p.title ?? null, pharmacy_org_id: p.pharmacyOrgId ?? null,
         bio: p.bio ?? null, specializations: p.specializations ?? [], experience: p.experience ?? [],
         avatar_url: p.avatarUrl ?? null, cover_url: p.coverUrl ?? null, website: p.website ?? null,
+        public_email: p.publicEmail ?? null, phone: p.phone ?? null,
         verified: !!p.verified, is_editorial: !!p.isEditorial,
         bundesland: p.bundesland ?? null,
         country: p.country ?? 'AT', locale: p.locale ?? 'de',
@@ -54,7 +55,7 @@ export function createSocialRepo() {
     updateProfile(userId, patch) {
       const p = profiles.get(userId);
       if (!p) return null;
-      for (const k of ['display_name', 'title', 'bio', 'specializations', 'experience', 'avatar_url', 'cover_url', 'website', 'visibility', 'bundesland', 'country', 'locale', 'account_type']) {
+      for (const k of ['display_name', 'title', 'bio', 'specializations', 'experience', 'avatar_url', 'cover_url', 'website', 'public_email', 'phone', 'visibility', 'bundesland', 'country', 'locale', 'account_type']) {
         if (k in patch) p[k] = patch[k];
       }
       return { ...p };
