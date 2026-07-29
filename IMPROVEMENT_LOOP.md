@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #141 — 2026-07-20 — Bestandsaustausch: CSV-Export (Export-Abdeckung komplett)
+- **THINK:** Der einzige Daten-Reiter ohne Export war Biete/Suche. Ein CSV der aktuellen Auswahl gibt Einkauf/Logistik einen Netzwerk-Überblick zu Angebot/Nachfrage. Nur öffentliche Angaben (Anbieter-Handle) — Kontakt bleibt über DM.
+- **WORK:** `exportExchangeCsv(entries)` (Art · Präparat · Menge · Ort/Region · Anbieter · Handle · Erstellt · passende Treffer); Export-Karte mit „⬇️ CSV" im Biete/Suche-Reiter, exportiert die gerade gefilterte Auswahl. i18n `ex_csv_*` DE/EN/PT.
+- **CHECK:** 320 grün, Smoke 19/19, Parität 797/797/797, Guards 0. **Browser (Download-Capture):** Header + Datenzeile korrekt (📦 Biete; Amoxicillin …; @handle; Datum), 0 JS-Fehler. Damit haben alle Daten-Reiter Export.
+
 ### Cycle #140 — 2026-07-20 — Übersicht: konkrete €-Ersparnis bei Aktionen zu beobachteten Wirkstoffen
 - **THINK:** Für die zahlende Zielgruppe (Einkauf) ist die konkrete Ersparnis in € greifbarer als nur „−X %". Die Aktionen-Karte auf der Übersicht zeigte Rabatt-% und Aktionspreis, aber nicht die €-Ersparnis pro Packung.
 - **WORK:** Overview-Service liefert `ersparnis` (+`min_menge`) je watch_deal; Frontend zeigt zusätzlich „spare € {x}/Pkg" (grün) in der „Aktionen zu deinen Wirkstoffen"-Karte. i18n `wd_saving` DE/EN/PT.
