@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #135 — 2026-07-20 — Profil teilen + Deep-Link (`?profile=`)
+- **THINK:** Themenwechsel (professionelles Netzwerk): Beiträge (`?post=`) und Wirkstoffe (`?wirkstoff=`) waren teil-/deeplinkbar, Profile nicht — man konnte ein Kolleg:innen-Profil nicht verlinken.
+- **WORK:** Deep-Link `/?profile=<Handle>` → `openProfile`. „🔗 Teilen"-Button im Profilkopf kopiert den Link (Clipboard, Fallback `prompt`), gleiche Mechanik wie Wirkstoff-/Beitrag-Teilen. Bestehende i18n (`pc_share`/`pc_copied`/`copy_link_fb`) wiederverwendet — keine neuen Schlüssel.
+- **CHECK:** 320 grün, Smoke 19/19, Guards 0. **Browser:** Teilen-Button liefert `…/?profile=<Handle>`; Aufruf des Deep-Links öffnet das Profil (Name sichtbar), 0 JS-Fehler.
+
 ### Cycle #134 — 2026-07-20 — Engpass-Meldung: Duplikat-Hinweis (Datenqualität)
 - **THINK:** Themenwechsel: Meldet jemand einen Wirkstoff, für den bereits eine offene Meldung existiert, entstehen doppelte Einträge. Beim Tippen dezent darauf hinweisen und zum Ansehen/Bestätigen führen — bessere Datenqualität, ohne zu blockieren (Backend erlaubt weiter, andere sollen bestätigen).
 - **WORK:** `reportShortageCard(existing)` bekommt die aktuelle Engpassliste; beim Tippen im Wirkstoff-Feld (debounced) prüft es offene Meldungen (Status ≠ verfügbar) und zeigt „Für „{w}" gibt es bereits eine offene Meldung — Ansehen & bestätigen" → öffnet die Detailseite (mit Bestätigen-Button). i18n `sh_rep_exists`/`sh_rep_exists_view` DE/EN/PT.

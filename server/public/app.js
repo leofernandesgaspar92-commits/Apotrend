@@ -1541,14 +1541,17 @@ async function mainScreen() {
   applyTheme();         // Theme-Label (Hell/Dunkel) in aktueller Sprache
   initCountrySwitcher(); // Länder-/Sprach-Umschalter in der Kopfzeile aktivieren
   loadTab();
-  // Deep-Links: /?post=ID öffnet einen Beitrag, /?wirkstoff=Name die Wirkstoff-Seite.
+  // Deep-Links: /?post=ID öffnet einen Beitrag, /?wirkstoff=Name die Wirkstoff-Seite,
+  // /?profile=Handle ein Profil.
   const params = new URLSearchParams(location.search);
   const sharedPost = params.get('post');
   const sharedWirkstoff = params.get('wirkstoff');
+  const sharedProfile = params.get('profile');
   const deepTab = params.get('tab');
   const validTabs = ['overview','public','home','shortages','prices','rabatte','exchange','news'];
   if (sharedPost) { history.replaceState(null, '', location.pathname); openPost(sharedPost); }
   else if (sharedWirkstoff) { history.replaceState(null, '', location.pathname); openWirkstoff(sharedWirkstoff); }
+  else if (sharedProfile) { history.replaceState(null, '', location.pathname); openProfile(sharedProfile); }
   else if (deepTab && validTabs.includes(deepTab)) { history.replaceState(null, '', location.pathname); goTab(deepTab); }
   else if (!localStorage.getItem('apo_welcome_seen')) showWelcome(false);
 }
@@ -3478,7 +3481,7 @@ async function openProfile(handle) {
     const specs = (p.specializations||[]).map(s=>`<span class="spec">${esc(s)}</span>`).join(' ');
     feed.innerHTML = '';
     const head = el(`<div class="card">
-      <div><button class="ghost small" data-back>${esc(t('post_back'))}</button></div>
+      <div class="row"><button class="ghost small" data-back>${esc(t('post_back'))}</button><span class="sp" style="flex:1"></span><button class="ghost small" data-shareprofile title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button></div>
       <div class="row" style="margin-top:10px;align-items:center">
         <span class="avatar">${esc(initials)}</span>
         <div style="margin-left:12px">
@@ -3506,6 +3509,12 @@ async function openProfile(handle) {
       </div>
     </div>`);
     head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
+    const spb = head.querySelector('[data-shareprofile]');
+    if (spb) spb.onclick = async () => {
+      const url = location.origin + '/?profile=' + encodeURIComponent(p.handle);
+      try { await navigator.clipboard.writeText(url); spb.textContent = t('pc_copied'); setTimeout(()=>{ spb.textContent = t('pc_share'); }, 1500); }
+      catch { prompt(t('copy_link_fb'), url); }
+    };
     const eb = head.querySelector('[data-edit]');
     if (eb) eb.onclick = () => editProfileForm(p);
     const ab = head.querySelector('[data-activity]');
