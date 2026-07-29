@@ -33,6 +33,7 @@ const I18N = {
     nav_overview:'✨ Für dich', nav_public:'🌍 Öffentlich', nav_home:'🏠 Mein Feed',
     nav_shortages:'📦 Engpässe', nav_prices:'💶 Preise', nav_rabatte:'🏷️ Top-Rabatte',
     nav_exchange:'🔄 Biete/Suche', nav_news:'📰 News',
+    nr_title:'News-Livestream', nr_updated:'Aktualisiert {time}', nr_new:'NEU', nr_all:'Alle News anzeigen',
     search_ph:'🔎 Suchen: Wirkstoff, Kolleg:in (@handle), Beitrag, Engpass, Preis…',
     hdr_help:'Hilfe', hdr_mod:'Moderation', hdr_dm:'Nachrichten', hdr_notif:'Meldungen',
     hdr_logout:'Abmelden', hdr_myprofile:'Mein Profil', country_title:'Land wechseln (stellt auch die Sprache um)',
@@ -237,6 +238,8 @@ const I18N = {
     pf_experience:'Werdegang',
     ep_exp:'Werdegang / Berufserfahrung', ep_exp_hint:'Frühere und aktuelle Stationen — z. B. Apotheke, Klinik, Großhandel.', ep_exp_add:'+ Station hinzufügen', ep_exp_del:'Station entfernen',
     ep_exp_role_ph:'Rolle (z. B. Filialleiterin)', ep_exp_org_ph:'Organisation (z. B. Bahnhof-Apotheke)', ep_exp_from_ph:'von (z. B. 2018)', ep_exp_to_ph:'bis (z. B. heute)', ep_exp_desc_ph:'Kurzbeschreibung (optional)',
+    pf_education:'Aus- & Weiterbildung', ep_edu:'Aus- & Weiterbildung', ep_edu_hint:'Studium, Ausbildung, Fortbildungen — z. B. Pharmaziestudium, Fachapotheker.', ep_edu_add:'+ Ausbildung hinzufügen', ep_edu_del:'Ausbildung entfernen',
+    ep_edu_degree_ph:'Abschluss (z. B. Mag. pharm.)', ep_edu_school_ph:'Einrichtung (z. B. Universität Wien)', ep_edu_year_ph:'Jahr (z. B. 2015)',
     ac_title:'🔒 Datenschutz & Konto', ac_export_d:'Lade alle deine Daten (Profil, Beiträge, Kommentare, Nachrichten, Merkliste, Austausch) als Datei herunter (DSGVO).',
     ac_export_btn:'⬇️ Meine Daten exportieren', ac_pw_title:'Passwort ändern', ac_pw_old:'Aktuelles Passwort',
     ac_pw_new:'Neues Passwort (mind. 8 Zeichen)', ac_pw_ok:'✓ Passwort geändert',
@@ -334,6 +337,7 @@ const I18N = {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
     nav_shortages:'📦 Shortages', nav_prices:'💶 Prices', nav_rabatte:'🏷️ Top deals',
     nav_exchange:'🔄 Offer/Seek', nav_news:'📰 News',
+    nr_title:'News live stream', nr_updated:'Updated {time}', nr_new:'NEW', nr_all:'Show all news',
     search_ph:'🔎 Search: substance, colleague (@handle), post, shortage, price…',
     hdr_help:'Help', hdr_mod:'Moderation', hdr_dm:'Messages', hdr_notif:'Alerts',
     hdr_logout:'Log out', hdr_myprofile:'My profile', country_title:'Change country (also switches the language)',
@@ -538,6 +542,8 @@ const I18N = {
     pf_experience:'Experience',
     ep_exp:'Experience', ep_exp_hint:'Past and current roles — e.g. pharmacy, hospital, wholesale.', ep_exp_add:'+ Add position', ep_exp_del:'Remove position',
     ep_exp_role_ph:'Role (e.g. branch manager)', ep_exp_org_ph:'Organization (e.g. Central Pharmacy)', ep_exp_from_ph:'from (e.g. 2018)', ep_exp_to_ph:'to (e.g. present)', ep_exp_desc_ph:'Short description (optional)',
+    pf_education:'Education', ep_edu:'Education', ep_edu_hint:'Studies, training, continuing education — e.g. pharmacy degree, specialist pharmacist.', ep_edu_add:'+ Add education', ep_edu_del:'Remove education',
+    ep_edu_degree_ph:'Degree (e.g. MPharm)', ep_edu_school_ph:'Institution (e.g. University of Vienna)', ep_edu_year_ph:'Year (e.g. 2015)',
     ac_title:'🔒 Privacy & account', ac_export_d:'Download all your data (profile, posts, comments, messages, watchlist, exchange) as a file (GDPR).',
     ac_export_btn:'⬇️ Export my data', ac_pw_title:'Change password', ac_pw_old:'Current password',
     ac_pw_new:'New password (min. 8 characters)', ac_pw_ok:'✓ Password changed',
@@ -635,6 +641,7 @@ const I18N = {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
     nav_shortages:'📦 Faltas', nav_prices:'💶 Preços', nav_rabatte:'🏷️ Descontos',
     nav_exchange:'🔄 Oferta/Procura', nav_news:'📰 Notícias',
+    nr_title:'Notícias ao vivo', nr_updated:'Atualizado {time}', nr_new:'NOVO', nr_all:'Ver todas as notícias',
     search_ph:'🔎 Pesquisar: substância, colega (@handle), publicação, falta, preço…',
     hdr_help:'Ajuda', hdr_mod:'Moderação', hdr_dm:'Mensagens', hdr_notif:'Alertas',
     hdr_logout:'Sair', hdr_myprofile:'Meu perfil', country_title:'Mudar de país (muda também o idioma)',
@@ -839,6 +846,8 @@ const I18N = {
     pf_experience:'Percurso profissional',
     ep_exp:'Percurso / experiência', ep_exp_hint:'Funções anteriores e atuais — ex. farmácia, hospital, distribuidor.', ep_exp_add:'+ Adicionar posição', ep_exp_del:'Remover posição',
     ep_exp_role_ph:'Função (ex. diretora de filial)', ep_exp_org_ph:'Organização (ex. Farmácia Central)', ep_exp_from_ph:'de (ex. 2018)', ep_exp_to_ph:'até (ex. atual)', ep_exp_desc_ph:'Breve descrição (opcional)',
+    pf_education:'Formação', ep_edu:'Formação e cursos', ep_edu_hint:'Estudos, formação, cursos — ex. licenciatura em Farmácia, especialista.', ep_edu_add:'+ Adicionar formação', ep_edu_del:'Remover formação',
+    ep_edu_degree_ph:'Grau (ex. Mestrado em Farmácia)', ep_edu_school_ph:'Instituição (ex. Universidade de Lisboa)', ep_edu_year_ph:'Ano (ex. 2015)',
     ac_title:'🔒 Privacidade & conta', ac_export_d:'Descarregue todos os seus dados (perfil, publicações, comentários, mensagens, lista de vigilância, troca) como ficheiro (RGPD).',
     ac_export_btn:'⬇️ Exportar os meus dados', ac_pw_title:'Alterar palavra-passe', ac_pw_old:'Palavra-passe atual',
     ac_pw_new:'Nova palavra-passe (mín. 8 caracteres)', ac_pw_ok:'✓ Palavra-passe alterada',
@@ -1161,6 +1170,7 @@ function hideHeaderForAuth() {
   const cs = document.getElementById('countrySwitch'); if (cs) cs.classList.add('hidden');
   document.getElementById('whoami').textContent = '';
   document.getElementById('whoami').classList.remove('clickable');
+  stopNewsRail();
 }
 function currentAuthCountry() {
   const c = (localStorage.getItem('apo_country') || '').toUpperCase();
@@ -1417,6 +1427,7 @@ async function initCountrySwitcher() {
     applyI18n(); applyTheme(); applyFontScale();
     updateViewContext();
     loadTab(); // Inhalte des aktiven Reiters für die gewählte Länder-Ansicht neu laden
+    if (newsRailTimer) { newsRailSeen = null; refreshNewsRail(); } // Livestream folgt der Länder-Ansicht
   };
   updateViewContext();
 }
@@ -1441,7 +1452,17 @@ function updateViewContext() {
     const hcc = (COUNTRIES_CACHE || []).find(x => x.code === home);
     setLocale((hcc && hcc.locale_default) || (me && me.locale) || 'de');
     applyI18n(); applyTheme(); applyFontScale(); updateViewContext(); loadTab();
+    if (newsRailTimer) { newsRailSeen = null; refreshNewsRail(); }
   };
+}
+
+// Reiter programmatisch wechseln (z.B. aus dem News-Livestream heraus).
+function switchTab(name) {
+  const b = app.querySelector('.tabs button[data-tab="' + name + '"]');
+  if (!b) return;
+  app.querySelectorAll('.tabs button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); setTabAria(); tab = name; loadTab();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ── Haupt-Screen (Feed) ──
@@ -1602,6 +1623,7 @@ async function mainScreen() {
   applyI18n();          // Navigation/Suche in aktueller Sprache beschriften
   applyTheme();         // Theme-Label (Hell/Dunkel) in aktueller Sprache
   initCountrySwitcher(); // Länder-/Sprach-Umschalter in der Kopfzeile aktivieren
+  startNewsRail();      // News-Livestream links starten (nur auf breiten Bildschirmen sichtbar)
   loadTab();
   // Deep-Links: /?post=ID öffnet einen Beitrag, /?wirkstoff=Name die Wirkstoff-Seite,
   // /?profile=Handle ein Profil.
@@ -2100,6 +2122,52 @@ function loadTab() {
   if (tab === 'exchange') return loadExchange();
   if (tab === 'news') return loadNews();
   loadFeed();
+}
+
+// ── News-Livestream (linke Seitenleiste, nur auf breiten Bildschirmen) ──
+let newsRailTimer = null;      // Polling-Intervall
+let newsRailSeen = null;       // bekannte News-IDs (für „neu"-Markierung)
+async function refreshNewsRail() {
+  const rail = document.getElementById('newsRail');
+  if (!rail || !rail.classList.contains('on')) return;
+  let posts = [];
+  try { const d = await api('GET', '/api/news?country=' + viewCountry()); posts = (d && d.posts) || []; }
+  catch { return; } // still: bestehende Liste stehen lassen
+  const top = posts.slice(0, 8);
+  const firstLoad = newsRailSeen === null;
+  const seen = newsRailSeen || new Set();
+  const items = top.map(p => {
+    const isNew = !firstLoad && !seen.has(p.id);
+    const author = (p.author && (p.author.display_name || p.author.handle)) || t('prov_editorial');
+    const body = (p.body || '').trim() || (p.image ? t('pc_img_alt') : '');
+    return `<button class="nr-item${isNew ? ' nr-new' : ''}" data-openpost="${esc(p.id)}">
+      <div class="nr-title">${esc(body.slice(0, 140))}</div>
+      <div class="nr-meta">${isNew ? `<span class="nr-newtag">● ${esc(t('nr_new'))}</span> · ` : ''}${esc(author)} · ${relTime(p.created_at)}</div>
+    </button>`;
+  }).join('');
+  newsRailSeen = new Set(top.map(p => p.id));
+  rail.innerHTML = `
+    <div class="nr-head"><span class="nr-live" aria-hidden="true"></span>${esc(t('nr_title'))}</div>
+    <div class="nr-updated">${esc(ti('nr_updated', { time: new Date().toLocaleTimeString(LOCALE) }))}</div>
+    ${items || `<div class="muted" style="font-size:13px">${esc(t('nw_empty'))}</div>`}
+    <button class="ghost small nr-all" data-nr-all>${esc(t('nr_all'))}</button>`;
+  rail.querySelectorAll('[data-openpost]').forEach(b => b.onclick = () => openPost(b.dataset.openpost));
+  const allBtn = rail.querySelector('[data-nr-all]');
+  if (allBtn) allBtn.onclick = () => switchTab('news');
+}
+function startNewsRail() {
+  const rail = document.getElementById('newsRail');
+  if (!rail) return;
+  rail.classList.add('on');
+  newsRailSeen = null;
+  refreshNewsRail();
+  clearInterval(newsRailTimer);
+  newsRailTimer = setInterval(refreshNewsRail, 30000); // „live": alle 30 Sekunden aktualisieren
+}
+function stopNewsRail() {
+  clearInterval(newsRailTimer); newsRailTimer = null; newsRailSeen = null;
+  const rail = document.getElementById('newsRail');
+  if (rail) { rail.classList.remove('on'); rail.innerHTML = ''; }
 }
 
 async function loadNews() {
@@ -3664,6 +3732,10 @@ function editProfileForm(p) {
     <div class="muted" style="font-size:12px;margin-bottom:6px">${esc(t('ep_exp_hint'))}</div>
     <div id="ep_exp_list"></div>
     <button type="button" class="ghost small" id="ep_exp_add" style="margin-top:2px">${esc(t('ep_exp_add'))}</button>
+    <label style="margin-top:10px">${esc(t('ep_edu'))}</label>
+    <div class="muted" style="font-size:12px;margin-bottom:6px">${esc(t('ep_edu_hint'))}</div>
+    <div id="ep_edu_list"></div>
+    <button type="button" class="ghost small" id="ep_edu_add" style="margin-top:2px">${esc(t('ep_edu_add'))}</button>
     <div class="row" style="margin-top:12px"><button id="ep_save">${esc(t('cm_save'))}</button><span class="err" id="ep_err" style="margin-left:10px"></span></div>
   </div>`);
   feed.appendChild(form);
@@ -3687,6 +3759,24 @@ function editProfileForm(p) {
   }
   (p.experience || []).forEach(addExpRow);
   document.getElementById('ep_exp_add').onclick = () => addExpRow();
+  // Aus- & Weiterbildung: wiederholbare Einträge (Abschluss Pflicht).
+  const eduList = document.getElementById('ep_edu_list');
+  function addEduRow(e = {}) {
+    const row = el(`<div class="exp-edit">
+      <div class="row" style="gap:6px">
+        <input data-x="degree" style="flex:2" placeholder="${esc(t('ep_edu_degree_ph'))}" value="${esc(e.degree||'')}">
+        <button type="button" class="ghost small" data-x="del" title="${esc(t('ep_edu_del'))}" aria-label="${esc(t('ep_edu_del'))}">🗑</button>
+      </div>
+      <div class="row" style="gap:6px;margin-top:4px">
+        <input data-x="school" style="flex:2" placeholder="${esc(t('ep_edu_school_ph'))}" value="${esc(e.school||'')}">
+        <input data-x="year" style="flex:1" placeholder="${esc(t('ep_edu_year_ph'))}" value="${esc(e.year||'')}">
+      </div>
+    </div>`);
+    row.querySelector('[data-x="del"]').onclick = () => row.remove();
+    eduList.appendChild(row);
+  }
+  (p.education || []).forEach(addEduRow);
+  document.getElementById('ep_edu_add').onclick = () => addEduRow();
   const avImg = document.getElementById('ep_av_img'), avIni = document.getElementById('ep_av_ini'), avClear = document.getElementById('ep_avclear');
   document.getElementById('ep_avfile').onchange = async (ev) => {
     const f = ev.target.files[0]; if (!f) return;
@@ -3719,8 +3809,12 @@ function editProfileForm(p) {
         const get = x => (row.querySelector(`[data-x="${x}"]`).value || '').trim();
         return { role: get('role'), org: get('org'), from: get('from'), to: get('to'), description: get('description') };
       }).filter(e => e.role);
+      const education = [...eduList.querySelectorAll('.exp-edit')].map(row => {
+        const get = x => (row.querySelector(`[data-x="${x}"]`).value || '').trim();
+        return { degree: get('degree'), school: get('school'), year: get('year') };
+      }).filter(e => e.degree);
       const payload = {
-        displayName: v('ep_name'), title: v('ep_title'), bio: v('ep_bio'), specializations: v('ep_specs'), bundesland: v('ep_bl'), website: v('ep_web'), publicEmail: v('ep_pmail'), phone: v('ep_phone'), experience,
+        displayName: v('ep_name'), title: v('ep_title'), bio: v('ep_bio'), specializations: v('ep_specs'), bundesland: v('ep_bl'), website: v('ep_web'), publicEmail: v('ep_pmail'), phone: v('ep_phone'), experience, education,
       };
       if (avatar !== undefined) payload.avatarUrl = avatar;
       if (cover !== undefined) payload.coverUrl = cover;
@@ -3758,6 +3852,14 @@ async function openProfile(handle) {
           </div>`;
         }).join('')}
       </div>` : '';
+    const eduHtml = (p.education && p.education.length) ? `
+      <div class="exp-section">
+        <div class="exp-head">🎓 ${esc(t('pf_education'))}</div>
+        ${p.education.map(e => `<div class="exp-item">
+            <div class="exp-role">${esc(e.degree)}${e.school?` <span class="muted">· ${esc(e.school)}</span>`:''}</div>
+            ${e.year?`<div class="muted" style="font-size:13px">${esc(e.year)}</div>`:''}
+          </div>`).join('')}
+      </div>` : '';
     feed.innerHTML = '';
     const head = el(`<div class="card">
       <div class="row"><button class="ghost small" data-back>${esc(t('post_back'))}</button><span class="sp" style="flex:1"></span><button class="ghost small" data-shareprofile title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button></div>
@@ -3783,6 +3885,7 @@ async function openProfile(handle) {
       ${p.bio?`<div class="post-body">${esc(p.bio)}</div>`:''}
       ${specs?`<div style="margin-top:8px">${specs}</div>`:''}
       ${expHtml}
+      ${eduHtml}
       <div class="row" style="margin-top:12px;gap:18px">
         <span><b>${d.post_count}</b> <span class="muted">${esc(nlabel(d.post_count,'pf_post_one','pf_posts'))}</span></span>
         <span class="clickable" data-followers><b>${d.follower_count}</b> <span class="muted">${esc(nlabel(d.follower_count,'pf_follower_one','pf_followers'))}</span></span>

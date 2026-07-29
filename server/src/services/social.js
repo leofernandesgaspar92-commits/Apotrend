@@ -91,7 +91,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       return social.getProfileByHandle(handleOrUserId) || social.getProfileByUserId(handleOrUserId);
     },
     // Eigenes Profil bearbeiten (Handle bleibt als Identität unveränderlich).
-    updateProfile(actorUserId, { displayName, title, bio, specializations, experience, avatarUrl, coverUrl, website, publicEmail, phone, visibility, bundesland, country, locale, accountType }) {
+    updateProfile(actorUserId, { displayName, title, bio, specializations, experience, education, avatarUrl, coverUrl, website, publicEmail, phone, visibility, bundesland, country, locale, accountType }) {
       requireUser(actorUserId);
       const current = social.getProfileByUserId(actorUserId);
       if (!current) throw new Error('Profil nicht gefunden.');
@@ -140,6 +140,15 @@ export function createSocialService(social, foundationRepo, options = {}) {
           to: String(e && e.to || '').trim().slice(0, 10),
           description: String(e && e.description || '').trim().slice(0, 300),
         })).filter(e => e.role).slice(0, 20);
+      }
+      // Aus- & Weiterbildung: Abschluss ist Pflicht, Institution/Jahr optional. Max. 20.
+      if (education !== undefined) {
+        const arr = Array.isArray(education) ? education : [];
+        patch.education = arr.map(e => ({
+          degree: String(e && e.degree || '').trim().slice(0, 120),
+          school: String(e && e.school || '').trim().slice(0, 120),
+          year: String(e && e.year || '').trim().slice(0, 10),
+        })).filter(e => e.degree).slice(0, 20);
       }
       if (visibility !== undefined) {
         if (!['network', 'public'].includes(visibility)) throw new Error('Ungueltige Profil-Sichtbarkeit.');

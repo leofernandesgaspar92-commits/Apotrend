@@ -97,6 +97,22 @@ test('Profil bearbeiten: Werdegang wird gesetzt, leere Stationen verworfen, Roll
   assert.deepEqual(social.getProfile('anna').experience, many.experience);
 });
 
+test('Profil bearbeiten: Aus- & Weiterbildung setzen, ohne Abschluss verwerfen, kappen, dump/load', () => {
+  const { social, a } = setup();
+  const p = social.updateProfile(a, { education: [
+    { degree: 'Mag. pharm.', school: 'Universität Wien', year: '2015' },
+    { degree: '', school: 'Ignoriert' },
+    { degree: '  Fachapothekerin  ', school: '  ÖAK  ', year: '  2019  ' },
+  ] });
+  assert.equal(p.education.length, 2);
+  assert.equal(p.education[0].degree, 'Mag. pharm.');
+  assert.equal(p.education[1].degree, 'Fachapothekerin');
+  assert.equal(p.education[1].school, 'ÖAK');
+  const many = social.updateProfile(a, { education: Array.from({ length: 25 }, (_, i) => ({ degree: 'D' + i })) });
+  assert.equal(many.education.length, 20);
+  assert.deepEqual(social.getProfile('anna').education, many.education);
+});
+
 test('Profil bearbeiten: öffentliche Kontaktdaten setzen/leeren/validieren', () => {
   const { social, a } = setup();
   const p = social.updateProfile(a, { publicEmail: 'kontakt@apo.at', phone: '+43 1 234567' });
