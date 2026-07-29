@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #119 — 2026-07-20 — Daten-Herkunft sichtbar: „🟢 Live-Daten" vs „🟡 Referenzdaten (im Aufbau)"
+- **THINK:** #118 sichtbar & vertrauensbildend abschließen: Nutzer:innen sollen auf einen Blick sehen, ob echte Live-Daten angeschlossen sind oder (noch) kuratierte Referenzdaten laufen. Quellen-/Transparenzpflicht (CLAUDE.md).
+- **WORK:** Übersicht-Route liefert `data_live` (aus `isLive(aktives Land)`); Behörden-Karte zeigt eine Status-Pille (grün live / gelb Referenz) mit erklärendem Titel; theme-aware CSS, i18n DE/EN/PT.
+- **CHECK:** 308 grün, Smoke 19/19, Parität 762/762/762, Guards 0. **Echter Netzwerk-Pfad e2e** (ohne injizierten Fetch): lokaler Feed-Server → `refreshShortages`/`fetchJsonDefault` → Abruf+Validierung+Übernahme (Seed ersetzt, provenance=verified, Quelle BASG). **Browser:** NG-Nutzer sieht „🟡 Reference data (in progress)", 0 JS-Fehler.
+
 ### Cycle #118 — 2026-07-20 — Live-Daten-Anschlussstelle: Auto-Refresh, sobald ein Server angeschlossen wird
 - **THINK:** Owner-Vorgabe: echte Daten kommen, sobald die Website an einen Server angeschlossen ist; bis dahin bauen. Also die „Anschluss-Stelle" bauen — ein klarer Vertrag + Ingestion, per ENV scharf geschaltet, die sich dann automatisch aktualisiert. Bis dahin unveränderte Referenzdaten.
 - **WORK:** Neues Modul `services/liveData.js`: definierter JSON-Vertrag, `validateShortagePayload` (streng), `refreshShortages` (Abruf→Validierung→Übernahme, fehlersicher: bei Fehler bleibt der Bestand), `startLiveRefresh` (ruht ohne Quelle, sofort+alle 15 min sobald `APOTREND_LIVE_SHORTAGES_<CC>` gesetzt; `unref`). Repo: `replaceFeed` ersetzt Seed/Live, **erhält Community-Meldungen**. Endpoint `GET /api/data-status`. Server-Start startet Auto-Refresh nur bei konfigurierter Quelle (in Tests aus). Doku `docs/LIVE_DATA.md` (Vertrag + ENV + Verhalten).

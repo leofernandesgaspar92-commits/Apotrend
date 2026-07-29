@@ -116,6 +116,12 @@
   body.dark .premium-badge { color:#ffd95e; background:#3a3200; border-color:#5c4f00; }
   /* „Beobachtet"-Zustand am Such-Chip: klar als aktiv erkennbar (grün). */
   .watched-on { color:var(--green); border-color:var(--green); font-weight:700; }
+  /* Daten-Herkunfts-Pille: grün = live, gelb = Referenz/Aufbau. Gut lesbar in hell/dunkel. */
+  .data-pill { font-size:12px; font-weight:700; border-radius:999px; padding:2px 9px; white-space:nowrap; border:1px solid transparent; }
+  .data-pill.live { color:#0b6b2e; background:#dff3e6; border-color:#a9dcbd; }
+  .data-pill.ref  { color:#8a6d00; background:#fff3c4; border-color:#f0d98a; }
+  body.dark .data-pill.live { color:#7ee2a3; background:#0f3320; border-color:#1f5c39; }
+  body.dark .data-pill.ref  { color:#ffd95e; background:#3a3200; border-color:#5c4f00; }
   /* Weicher Zeichenzähler an Textfeldern: dezent, wird bei Überschreitung rot. */
   .char-counter { font-size:12px; text-align:right; margin-top:2px; min-height:14px; }
   .char-counter.over { color:var(--crit-fg); font-weight:700; }

@@ -289,7 +289,7 @@ const routes = [
   }],
 
   ['GET', /^\/api\/me$/, true, async ({ userId }) => ({ user: safeUser(repo.getUserById(userId)), profile: social.getProfile(userId), is_moderator: social.isModerator(userId) })],
-  ['GET', /^\/api\/overview$/, true, async ({ userId }) => ({ ...overview.forUser(userId), premium: payments.hasFeature(userId, 'premium') })],
+  ['GET', /^\/api\/overview$/, true, async ({ userId, query }) => ({ ...overview.forUser(userId), premium: payments.hasFeature(userId, 'premium'), data_live: isLive(activeCountry(userId, query)) })],
   // Meine Aktivität an einem Ort: eigene Fragen, Engpass-Meldungen, Austausch-Einträge.
   ['GET', /^\/api\/me\/activity$/, true, async ({ userId }) => {
     const page = social.profilePage(userId, userId);
