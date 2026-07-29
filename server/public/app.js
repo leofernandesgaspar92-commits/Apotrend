@@ -230,6 +230,9 @@ const I18N = {
     ep_photo:'Profilbild', ep_photo_pick:'📷 Bild wählen', ep_photo_remove:'Entfernen', ep_photo_hint:'Quadratisch wirkt am besten. Wird automatisch verkleinert.',
     ep_cover:'Titelbild', ep_cover_pick:'🖼️ Titelbild wählen', ep_cover_hint:'Breites Banner oben im Profil (wie bei LinkedIn/Facebook).',
     ep_website:'Website (optional)', ep_website_ph:'https://ihre-apotheke.at',
+    pfc_title_head:'Profilstärke', pfc_missing:'Noch {n} Angabe(n) für ein vollständiges Profil:', pfc_cta:'Profil vervollständigen',
+    pfc_complete:'✓ Ihr Profil ist vollständig — top!',
+    pfc_photo:'Profilbild', pfc_cover:'Titelbild', pfc_title:'Titel/Funktion', pfc_bio:'Über mich', pfc_specs:'Fachgebiete', pfc_website:'Website', pfc_region:'Region',
     ac_title:'🔒 Datenschutz & Konto', ac_export_d:'Lade alle deine Daten (Profil, Beiträge, Kommentare, Nachrichten, Merkliste, Austausch) als Datei herunter (DSGVO).',
     ac_export_btn:'⬇️ Meine Daten exportieren', ac_pw_title:'Passwort ändern', ac_pw_old:'Aktuelles Passwort',
     ac_pw_new:'Neues Passwort (mind. 8 Zeichen)', ac_pw_ok:'✓ Passwort geändert',
@@ -524,6 +527,9 @@ const I18N = {
     ep_photo:'Profile picture', ep_photo_pick:'📷 Choose image', ep_photo_remove:'Remove', ep_photo_hint:'Square works best. Automatically resized.',
     ep_cover:'Cover image', ep_cover_pick:'🖼️ Choose cover', ep_cover_hint:'Wide banner at the top of your profile (like LinkedIn/Facebook).',
     ep_website:'Website (optional)', ep_website_ph:'https://your-pharmacy.com',
+    pfc_title_head:'Profile strength', pfc_missing:'{n} more item(s) for a complete profile:', pfc_cta:'Complete profile',
+    pfc_complete:'✓ Your profile is complete — great!',
+    pfc_photo:'Profile picture', pfc_cover:'Cover image', pfc_title:'Title/role', pfc_bio:'About me', pfc_specs:'Specializations', pfc_website:'Website', pfc_region:'Region',
     ac_title:'🔒 Privacy & account', ac_export_d:'Download all your data (profile, posts, comments, messages, watchlist, exchange) as a file (GDPR).',
     ac_export_btn:'⬇️ Export my data', ac_pw_title:'Change password', ac_pw_old:'Current password',
     ac_pw_new:'New password (min. 8 characters)', ac_pw_ok:'✓ Password changed',
@@ -818,6 +824,9 @@ const I18N = {
     ep_photo:'Foto de perfil', ep_photo_pick:'📷 Escolher imagem', ep_photo_remove:'Remover', ep_photo_hint:'Quadrada fica melhor. Redimensionada automaticamente.',
     ep_cover:'Imagem de capa', ep_cover_pick:'🖼️ Escolher capa', ep_cover_hint:'Banner largo no topo do perfil (como no LinkedIn/Facebook).',
     ep_website:'Site (opcional)', ep_website_ph:'https://sua-farmacia.pt',
+    pfc_title_head:'Força do perfil', pfc_missing:'Mais {n} item(ns) para um perfil completo:', pfc_cta:'Completar perfil',
+    pfc_complete:'✓ O seu perfil está completo — ótimo!',
+    pfc_photo:'Foto de perfil', pfc_cover:'Imagem de capa', pfc_title:'Título/função', pfc_bio:'Sobre mim', pfc_specs:'Áreas', pfc_website:'Site', pfc_region:'Região',
     ac_title:'🔒 Privacidade & conta', ac_export_d:'Descarregue todos os seus dados (perfil, publicações, comentários, mensagens, lista de vigilância, troca) como ficheiro (RGPD).',
     ac_export_btn:'⬇️ Exportar os meus dados', ac_pw_title:'Alterar palavra-passe', ac_pw_old:'Palavra-passe atual',
     ac_pw_new:'Nova palavra-passe (mín. 8 caracteres)', ac_pw_ok:'✓ Palavra-passe alterada',
@@ -995,6 +1004,21 @@ const el = (h) => { const t=document.createElement('template'); t.innerHTML=h.tr
 const esc = (s) => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 // Website-Link lesbar kürzen: ohne Protokoll und ohne trailing slash (z.B. „apotrend.at").
 const prettyUrl = (u) => String(u||'').replace(/^https?:\/\//i,'').replace(/\/$/,'');
+// Profilstärke (wie bei LinkedIn): welche Bausteine sind ausgefüllt? Nur zur eigenen
+// Motivation gedacht — zeigt Prozent + was noch fehlt.
+function profileCompleteness(p) {
+  const items = [
+    { key: 'photo', label: t('pfc_photo'), done: !!p.avatar_url },
+    { key: 'cover', label: t('pfc_cover'), done: !!p.cover_url },
+    { key: 'title', label: t('pfc_title'), done: !!(p.title && p.title.trim()) },
+    { key: 'bio', label: t('pfc_bio'), done: !!(p.bio && p.bio.trim()) },
+    { key: 'specs', label: t('pfc_specs'), done: !!(p.specializations && p.specializations.length) },
+    { key: 'website', label: t('pfc_website'), done: !!p.website },
+    { key: 'region', label: t('pfc_region'), done: !!p.bundesland },
+  ];
+  const done = items.filter(i => i.done).length;
+  return { pct: Math.round((done / items.length) * 100), done, total: items.length, items };
+}
 // Kopfzeile: eigenes Profil als anklickbare Mini-Kachel (Foto + Handle) rendern.
 function renderWhoami() {
   const w = document.getElementById('whoami');
@@ -3707,6 +3731,20 @@ async function openProfile(handle) {
         <span class="sp" style="flex:1"></span>
         ${d.is_self?`<button class="ghost small" data-activity>${esc(t('pf_activity'))}</button> <button class="ghost small" data-edit>${esc(t('pf_edit'))}</button>`:`<button class="ghost small" data-dm>${esc(t('pf_dm'))}</button> <button class="${d.is_following?'ghost ':''}small" data-togglefollow>${d.is_following?esc(t('pf_unfollow')):esc(t('pf_follow'))}</button>`}
       </div>
+      ${d.is_self ? (() => {
+        const c = profileCompleteness(p);
+        if (c.pct >= 100) return `<div class="pfc-done">${esc(t('pfc_complete'))}</div>`;
+        const missing = c.items.filter(i => !i.done);
+        return `<div class="pfc">
+          <div class="row" style="align-items:center;gap:8px">
+            <b>${esc(t('pfc_title_head'))}</b><span class="sp" style="flex:1"></span><b>${c.pct}%</b>
+          </div>
+          <div class="pfc-bar"><span style="width:${c.pct}%"></span></div>
+          <div class="muted" style="font-size:13px;margin:4px 0 6px">${esc(ti('pfc_missing', { n: missing.length }))}</div>
+          <div>${missing.map(i => `<span class="spec">➕ ${esc(i.label)}</span>`).join(' ')}</div>
+          <div class="row" style="margin-top:8px"><button class="small" data-edit>${esc(t('pfc_cta'))}</button></div>
+        </div>`;
+      })() : ''}
     </div>`);
     head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
     const spb = head.querySelector('[data-shareprofile]');
@@ -3715,8 +3753,7 @@ async function openProfile(handle) {
       try { await navigator.clipboard.writeText(url); spb.textContent = t('pc_copied'); setTimeout(()=>{ spb.textContent = t('pc_share'); }, 1500); }
       catch { prompt(t('copy_link_fb'), url); }
     };
-    const eb = head.querySelector('[data-edit]');
-    if (eb) eb.onclick = () => editProfileForm(p);
+    head.querySelectorAll('[data-edit]').forEach(eb => { eb.onclick = () => editProfileForm(p); });
     const ab = head.querySelector('[data-activity]');
     if (ab) ab.onclick = openMyActivity;
     head.querySelector('[data-followers]').onclick = () => openFollowList(p.handle, 'followers');
