@@ -19,6 +19,23 @@ function setup() {
   return { exchange, a: A.user.id, b: B.user.id };
 }
 
+test('match_count: passende offene Gegen-Einträge je Autor:in, sich selbst nicht mitzählen', () => {
+  const { exchange, a, b } = setup();
+  // A bietet Amoxicillin, noch kein Gesuch -> 0 Matches
+  const offer = exchange.create(a, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg Filmtabletten' });
+  assert.equal(exchange.mine(a).find(e => e.id === offer.id).match_count, 0);
+  // B sucht Amoxicillin -> A sieht 1 passendes Gesuch, B sieht 1 passendes Angebot
+  exchange.create(b, { kind: 'suche', bezeichnung: 'Amoxicillin dringend gesucht' });
+  assert.equal(exchange.mine(a).find(e => e.id === offer.id).match_count, 1);
+  assert.equal(exchange.list(b, { kind: 'suche' })[0].match_count, 1);
+  // Eigenes zweites Gesuch von A zählt für A NICHT (nur fremde Autor:innen)
+  exchange.create(a, { kind: 'suche', bezeichnung: 'Amoxicillin auch hier' });
+  assert.equal(exchange.mine(a).find(e => e.id === offer.id).match_count, 1, 'weiterhin nur B');
+  // Nicht-übereinstimmender Wirkstoff -> 0
+  const other = exchange.create(a, { kind: 'biete', bezeichnung: 'Pantoprazol 40 mg' });
+  assert.equal(exchange.mine(a).find(e => e.id === other.id).match_count, 0);
+});
+
 test('Biete-Eintrag anlegen: mit Autor-Profil, Status offen', () => {
   const { exchange, a } = setup();
   const e = exchange.create(a, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg', menge: '20 Packungen', ort: '1010 Wien' });

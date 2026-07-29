@@ -33,11 +33,29 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
     }
   }
 
+  // Anzahl passender offener Gegen-Einträge (nach Autor:in eindeutig) — für ein sichtbares
+  // Matchmaking-Signal am Eintrag: „N passende Angebote/Gesuche". Nur für offene Einträge.
+  function countMatches(entry) {
+    if (entry.status !== 'offen') return 0;
+    const opposite = entry.kind === 'biete' ? 'suche' : 'biete';
+    const mine = words(entry.bezeichnung);
+    if (!mine.size) return 0;
+    const authors = new Set();
+    for (const other of exchangeRepo.list()) {
+      if (other.status !== 'offen' || other.kind !== opposite || other.id === entry.id) continue;
+      if (other.author_user_id === entry.author_user_id) continue;
+      if (!shareWord(mine, words(other.bezeichnung))) continue;
+      authors.add(other.author_user_id);
+    }
+    return authors.size;
+  }
+
   function decorate(e) {
     const prof = social.getProfile ? social.getProfile(e.author_user_id) : null;
     return {
       ...e,
       author: prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified } : null,
+      match_count: countMatches(e),
     };
   }
 

@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #115 — 2026-07-20 — Bestandsaustausch: sichtbares Matchmaking („N passende Angebote/Gesuche")
+- **THINK:** Kernnutzen des Biete/Suche-Tauschs sichtbar machen: bisher wurden Treffer nur als Benachrichtigung gepusht (`notifyMatches`). Am Eintrag selbst zeigen, dass es passende Gegenstücke gibt → schnellerer Kontakt bei Engpässen. Echte Daten, wiederverwendet die vorhandene Wort-Matching-Logik.
+- **WORK:** `decorate` liefert `match_count` = Anzahl passender offener Gegen-Einträge je Autor:in (Selbst-Ausschluss, nur offene). Exchange-Karte: grüner Klick-Chip „🔗 N passende Gesuche/Angebote" (Singular/Plural), Klick filtert auf die gegenteilige Art + erstes Wirkstoff-Wort. i18n DE/EN/PT.
+- **CHECK:** 300 → 301 grün (+1 Service-Test: 0/1/Selbst-Ausschluss/kein-Match), Smoke 19/19, Parität 750/750/750, Guards 0. **Browser:** Biete-Eintrag zeigt „1 passendes Gesuch" → Klick filtert korrekt auf das Gesuch, 0 JS-Fehler.
+
 ### Cycle #114 — 2026-07-20 — Community-Signal: „Auch von N Kolleg:innen beobachtet" (echte Daten)
 - **THINK:** Universeller Nutzen aus vorhandenen, ECHTEN Daten (`usersWatching`): auf der Wirkstoff-Detailseite zeigen, wie viele andere denselben Wirkstoff beobachten. Relevanz-/Nachfrage-Signal, das zum Melden/Beobachten ermutigt. Datenschutz-sicher (nur Zahl, keine Identitäten), erscheint nur wenn ≥1.
 - **WORK:** `/api/wirkstoff/:name` liefert `also_watching` = Anzahl beobachtender Nutzer:innen OHNE sich selbst. Detailseite: dezente Zeile „👀 Auch von N Kolleg:innen beobachtet" (Singular/Plural), nur bei ≥1. i18n DE/EN/PT.

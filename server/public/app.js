@@ -147,7 +147,7 @@ const I18N = {
     ex_new:'Eintrag anlegen', ex_search_empty_t:'Nichts zu „{q}"',
     ex_search_empty_s:'Keine offenen Biete-/Suche-Einträge für diesen Begriff. Filter zurücksetzen oder anderen Begriff probieren.',
     ex_empty_t:'Noch keine offenen Einträge', ex_empty_s:'Biete Überbestand an oder suche dringend Benötigtes — sei der/die Erste.',
-    ex_badge_biete:'📦 Biete', ex_badge_suche:'🔎 Suche', ex_done_badge:'✓ erledigt', ex_qty:'Menge:',
+    ex_badge_biete:'📦 Biete', ex_badge_suche:'🔎 Suche', ex_done_badge:'✓ erledigt', ex_qty:'Menge:', ex_match_offers:'🔗 {n} passende Angebote', ex_match_offers_1:'🔗 1 passendes Angebot', ex_match_seeks:'🔗 {n} passende Gesuche', ex_match_seeks_1:'🔗 1 passendes Gesuch',
     ex_photo_alt:'Foto zum Eintrag', ex_by:'von', ex_unknown:'Unbekannt',
     ex_contact_btn:'✉️ Kontaktieren', ex_reopen:'↻ Wieder öffnen', ex_done_btn:'✓ Erledigt',
     ex_del_confirm:'Eintrag löschen?',
@@ -438,7 +438,7 @@ const I18N = {
     ex_new:'Create entry', ex_search_empty_t:'Nothing for “{q}”',
     ex_search_empty_s:'No open offer/request entries for this term. Reset the filter or try another term.',
     ex_empty_t:'No open entries yet', ex_empty_s:'Offer surplus or seek urgently needed items — be the first.',
-    ex_badge_biete:'📦 Offer', ex_badge_suche:'🔎 Request', ex_done_badge:'✓ done', ex_qty:'Quantity:',
+    ex_badge_biete:'📦 Offer', ex_badge_suche:'🔎 Request', ex_done_badge:'✓ done', ex_qty:'Quantity:', ex_match_offers:'🔗 {n} matching offers', ex_match_offers_1:'🔗 1 matching offer', ex_match_seeks:'🔗 {n} matching requests', ex_match_seeks_1:'🔗 1 matching request',
     ex_photo_alt:'Entry photo', ex_by:'by', ex_unknown:'Unknown',
     ex_contact_btn:'✉️ Contact', ex_reopen:'↻ Reopen', ex_done_btn:'✓ Done',
     ex_del_confirm:'Delete entry?',
@@ -729,7 +729,7 @@ const I18N = {
     ex_new:'Criar entrada', ex_search_empty_t:'Nada para “{q}”',
     ex_search_empty_s:'Sem entradas de oferta/procura abertas para este termo. Reponha o filtro ou tente outro termo.',
     ex_empty_t:'Ainda sem entradas abertas', ex_empty_s:'Ofereça excedente ou procure algo urgente — seja o primeiro.',
-    ex_badge_biete:'📦 Oferta', ex_badge_suche:'🔎 Procura', ex_done_badge:'✓ concluído', ex_qty:'Quantidade:',
+    ex_badge_biete:'📦 Oferta', ex_badge_suche:'🔎 Procura', ex_done_badge:'✓ concluído', ex_qty:'Quantidade:', ex_match_offers:'🔗 {n} ofertas correspondentes', ex_match_offers_1:'🔗 1 oferta correspondente', ex_match_seeks:'🔗 {n} procuras correspondentes', ex_match_seeks_1:'🔗 1 procura correspondente',
     ex_photo_alt:'Foto da entrada', ex_by:'de', ex_unknown:'Desconhecido',
     ex_contact_btn:'✉️ Contactar', ex_reopen:'↻ Reabrir', ex_done_btn:'✓ Concluído',
     ex_del_confirm:'Eliminar entrada?',
@@ -2632,6 +2632,11 @@ function exchangeCard(e) {
                         : `<span style="background:var(--warn-bg);color:var(--warn-fg);border:1px solid var(--warn-bd);border-radius:999px;padding:2px 10px;font-weight:700;font-size:13px">${esc(t('ex_badge_suche'))}</span>`;
   const erledigt = e.status === 'erledigt';
   const doneBadge = erledigt ? ` <span style="background:var(--line);color:var(--muted);border-radius:999px;padding:2px 8px;font-size:12px;font-weight:600">${esc(t('ex_done_badge'))}</span>` : '';
+  // Matchmaking-Signal: passende offene Gegen-Einträge (Biete zeigt Gesuche, Suche zeigt Angebote).
+  const mc = (!erledigt && e.match_count >= 1) ? e.match_count : 0;
+  const matchLabel = mc ? (isBiete
+    ? (mc === 1 ? t('ex_match_seeks_1') : ti('ex_match_seeks', { n: mc }))
+    : (mc === 1 ? t('ex_match_offers_1') : ti('ex_match_offers', { n: mc }))) : '';
   const card = el(`<div class="card"${erledigt?' style="opacity:.75"':''}>
     <div class="row" style="align-items:baseline">
       ${badge}${doneBadge}
@@ -2640,6 +2645,7 @@ function exchangeCard(e) {
       <span class="muted" style="font-size:12px">${relTime(e.created_at)}</span>
     </div>
     <div class="muted" style="margin-top:4px">${e.menge?esc(t('ex_qty'))+' '+esc(e.menge):''}${e.menge&&(e.ort||e.bundesland)?' · ':''}${e.ort||e.bundesland?'📍 '+esc([e.ort,e.bundesland].filter(Boolean).join(', ')):''}</div>
+    ${mc?`<div style="margin-top:6px"><button class="linklike small" data-match style="color:var(--green);font-weight:700">${esc(matchLabel)}</button></div>`:''}
     ${e.note?`<div class="post-body" style="margin:6px 0">${esc(e.note)}</div>`:''}
     ${e.image && /^data:image\//.test(e.image) ? `<img src="${e.image}" alt="${esc(t('ex_photo_alt'))}" style="max-width:100%;border-radius:10px;margin-top:6px;display:block" />` : ''}
     <div class="row" style="margin-top:8px;align-items:baseline">
@@ -2651,6 +2657,12 @@ function exchangeCard(e) {
     </div>
   </div>`);
   card.querySelectorAll('[data-openprofile]').forEach(el => { if (el.dataset.openprofile) el.onclick = () => openProfile(el.dataset.openprofile); });
+  const matchBtn = card.querySelector('[data-match]');
+  if (matchBtn) matchBtn.onclick = () => {
+    // Zeigt die passenden Gegen-Einträge: gegenteilige Art + erstes bedeutungstragendes Wort als Filter.
+    const key = (String(e.bezeichnung).toLowerCase().match(/[a-zäöüß0-9]{4,}/g) || [])[0] || e.bezeichnung;
+    exchangeMine = false; exchangeFilter = isBiete ? 'suche' : 'biete'; exchangeQuery = key; loadExchange();
+  };
   const contact = card.querySelector('[data-contact]');
   if (contact) contact.onclick = async () => {
     try { const r = await api('POST','/api/dm/start',{ handle: au.handle }); openDmThread(r.thread.id); } catch(err){ alert(err.message); }
