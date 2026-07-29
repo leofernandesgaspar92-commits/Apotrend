@@ -81,6 +81,11 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ## Cycle-Log
 
+### Cycle #139 — 2026-07-20 — Benachrichtigungen: Filter „⭐ Engpässe & Beschaffung" / „💬 Sozial"
+- **THINK:** An vollen Tagen mischen sich kritische Frühwarnungen mit sozialen Meldungen (Likes/Follows). Ein Filter, um sich aufs Beschaffungs-Relevante zu konzentrieren, spart Zeit. Rein Anzeige-seitig (kein Backend, keine Zähler-Desync).
+- **WORK:** `showNotifications` in `drawNotifs()` refaktoriert; Filter-Chips „Alle / ⭐ Engpässe & Beschaffung / 💬 Sozial" erscheinen nur, wenn es sich lohnt (≥5 Meldungen und beide Kategorien vertreten). Beschaffungs-Kategorie = `watch_alert, shortage_confirm, watch_offer, exchange_offer, exchange_want`. i18n `nf_*` DE/EN/PT.
+- **CHECK:** 320 grün, Smoke 19/19, Parität 788/788/788, Guards 0. **Browser (5 gemischte Meldungen):** Filter sichtbar → „Engpässe" zeigt 1, „Sozial" zeigt 4, 0 JS-Fehler.
+
 ### Cycle #138 — 2026-07-20 — Rabatte als druckbarer Aushang (Export-Symmetrie komplett)
 - **THINK:** Konsistenz + Einkaufs-Nutzen: Rabatte hatten CSV, aber keinen Druck-Report — wie jetzt Preise (#137) und Merkliste (#109). Ein „laufende Aktionen"-Aushang hilft dem Einkauf am Bestelltisch.
 - **WORK:** `printRabatte(list)` öffnet einen formatierten Report (Präparat/Wirkstoff · Lieferant · Aktionspreis · Rabatt% · Ersparnis · Mindestmenge · gültig bis, ⏳ bei baldigem Ablauf). „🖨️ Drucken"-Button neben CSV im Rabatte-Reiter; beide respektieren die aktuelle Filter-/Suchauswahl. i18n `rb_print_t`/`rb_print_title` DE/EN/PT (übrige Spalten aus bestehenden `csv_*`/`pr_print_*`).

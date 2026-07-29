@@ -189,7 +189,7 @@ const I18N = {
     cm_reply_to:'Antwort an @{handle}…', cm_reply_send:'Antworten', cm_cancel:'Abbrechen',
     cm_del_confirm:'Kommentar löschen?', cm_save:'Speichern',
     gen_back:'Zurück', notif_title:'🔔 Benachrichtigungen', notif_doc:'Benachrichtigungen',
-    notif_readall:'Alle als gelesen markieren', notif_empty:'Noch keine Benachrichtigungen.',
+    notif_readall:'Alle als gelesen markieren', nf_all:'Alle', nf_procurement:'⭐ Engpässe & Beschaffung', nf_social:'💬 Sozial', notif_empty:'Noch keine Benachrichtigungen.',
     notif_someone:'Jemand', post_doc:'Beitrag', post_title:'Beitrag', post_back:'← zurück zum Feed',
     nv_follow:'folgt dir jetzt', nv_comment:'hat kommentiert', nv_reaction:'hat reagiert auf deinen Beitrag',
     nv_mention:'hat dich erwähnt', nv_dm:'hat dir geschrieben', nv_poll_vote:'hat bei deiner Umfrage abgestimmt', nv_exchange_offer:'bietet jetzt an, was du suchst:',
@@ -480,7 +480,7 @@ const I18N = {
     cm_reply_to:'Reply to @{handle}…', cm_reply_send:'Reply', cm_cancel:'Cancel',
     cm_del_confirm:'Delete comment?', cm_save:'Save',
     gen_back:'Back', notif_title:'🔔 Notifications', notif_doc:'Notifications',
-    notif_readall:'Mark all as read', notif_empty:'No notifications yet.',
+    notif_readall:'Mark all as read', nf_all:'All', nf_procurement:'⭐ Shortages & sourcing', nf_social:'💬 Social', notif_empty:'No notifications yet.',
     notif_someone:'Someone', post_doc:'Post', post_title:'Post', post_back:'← back to feed',
     nv_follow:'now follows you', nv_comment:'commented', nv_reaction:'reacted to your post',
     nv_mention:'mentioned you', nv_dm:'messaged you', nv_poll_vote:'voted in your poll', nv_exchange_offer:'now offers what you seek:',
@@ -771,7 +771,7 @@ const I18N = {
     cm_reply_to:'Responder a @{handle}…', cm_reply_send:'Responder', cm_cancel:'Cancelar',
     cm_del_confirm:'Eliminar comentário?', cm_save:'Guardar',
     gen_back:'Voltar', notif_title:'🔔 Notificações', notif_doc:'Notificações',
-    notif_readall:'Marcar todas como lidas', notif_empty:'Ainda sem notificações.',
+    notif_readall:'Marcar todas como lidas', nf_all:'Todas', nf_procurement:'⭐ Faltas & compras', nf_social:'💬 Social', notif_empty:'Ainda sem notificações.',
     notif_someone:'Alguém', post_doc:'Publicação', post_title:'Publicação', post_back:'← voltar ao feed',
     nv_follow:'começou a segui-lo', nv_comment:'comentou', nv_reaction:'reagiu à sua publicação',
     nv_mention:'mencionou-o', nv_dm:'enviou-lhe mensagem', nv_poll_vote:'votou na sua sondagem', nv_exchange_offer:'oferece agora o que procura:',
@@ -4283,20 +4283,36 @@ async function refreshNotifCount() {
     else badge.classList.add('hidden');
   } catch {}
 }
+// Engpass-/Beschaffungs-relevante Benachrichtigungstypen (für den Meldungs-Filter).
+const NOTIF_PROCUREMENT = new Set(['watch_alert','shortage_confirm','watch_offer','exchange_offer','exchange_want']);
+let notifFilter = 'all'; // 'all' | 'procurement' | 'social'
 async function showNotifications() {
   setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
   const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦' };
   app.innerHTML = '';
+  const procCount = d.notifications.filter(n => NOTIF_PROCUREMENT.has(n.type)).length;
+  const showFilter = d.notifications.length >= 5 && procCount > 0 && procCount < d.notifications.length;
   const head = el(`<div class="card"><div class="row"><h1 style="flex:1">${esc(t('notif_title'))}</h1>
     <button class="ghost small" id="back">${esc(t('gen_back'))}</button></div>
+    ${showFilter?`<div class="reacts" data-nfilter style="margin-top:8px">
+      <button class="small sortbtn" data-nf="all">${esc(t('nf_all'))}</button>
+      <button class="small sortbtn" data-nf="procurement">${esc(t('nf_procurement'))}</button>
+      <button class="small sortbtn" data-nf="social">${esc(t('nf_social'))}</button>
+    </div>`:''}
     <div id="notiflist" style="margin-top:8px"></div>
     <div style="margin-top:12px"><button class="small" id="readall">${esc(t('notif_readall'))}</button></div></div>`);
   app.appendChild(head);
   const list = head.querySelector('#notiflist');
-  if (!d.notifications.length) list.innerHTML = `<div class="muted">${esc(t('notif_empty'))}</div>`;
-  d.notifications.forEach(n => {
+  if (!showFilter) notifFilter = 'all';
+  const matchesFilter = (n) => notifFilter === 'all' || (notifFilter === 'procurement' ? NOTIF_PROCUREMENT.has(n.type) : !NOTIF_PROCUREMENT.has(n.type));
+  const drawNotifs = () => {
+  list.innerHTML = '';
+  const shown = d.notifications.filter(matchesFilter);
+  if (showFilter) head.querySelectorAll('[data-nf]').forEach(b => { const on = b.dataset.nf === notifFilter; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
+  if (!shown.length) { list.innerHTML = `<div class="muted">${esc(t('notif_empty'))}</div>`; return; }
+  shown.forEach(n => {
     const who = n.actor ? n.actor.display_name : t('notif_someone');
     const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer';
     const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:var(--ok-bg)'}">
@@ -4322,6 +4338,9 @@ async function showNotifications() {
     };
     list.appendChild(row);
   });
+  };
+  drawNotifs();
+  if (showFilter) head.querySelectorAll('[data-nf]').forEach(b => b.onclick = () => { notifFilter = b.dataset.nf; drawNotifs(); });
   head.querySelector('#back').onclick = mainScreen;
   head.querySelector('#readall').onclick = async () => { await api('POST','/api/notifications/read-all'); refreshNotifCount(); showNotifications(); };
   refreshNotifCount();
