@@ -181,6 +181,10 @@
   .nr-newtag { color:var(--ok-fg); font-weight:800; font-size:11px; letter-spacing:.03em; }
   .nr-time { margin-left:auto; color:var(--muted); font-weight:600; }
   .nr-body { font-size:14px; line-height:1.45; overflow-wrap:anywhere; }
+  /* Inline-News (Handy): leichtere Karten, blendet aus, sobald die Seitenleiste erscheint. */
+  .news-inline .nr-card { box-shadow:none; background:var(--chip-bg); }
+  .news-inline .nr-card:last-child { margin-bottom:0; }
+  @media (min-width:1320px){ .news-inline { display:none; } }
   .spec { display:inline-block; background:var(--chip-bg); border:1px solid var(--line); border-radius:999px; padding:3px 10px; font-size:13px; margin:2px 2px 2px 0; }
   .post-body { margin:8px 0; white-space:pre-wrap; line-height:1.45; overflow-wrap:anywhere; }
   .vis { font-size:12px; color:var(--muted); }

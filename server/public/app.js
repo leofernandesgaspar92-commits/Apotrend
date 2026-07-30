@@ -1721,6 +1721,7 @@ async function loadOverview() {
   feed.innerHTML = '';
   { const n = countryDataNotice(); if (n) feed.appendChild(n); }
   { const r = countryRegulatorCard(!!d.data_live); if (r) feed.appendChild(r); }
+  renderNewsInline(feed);   // News-Karten fürs Handy (nur wenn die Seitenleiste fehlt)
   renderCurrencyConverter(feed);
   const hello = me ? (me.display_name || '@'+me.handle) : '';
   const firstName = hello ? (hello.split(/\s+/).find(w => !/\.$/.test(w)) || hello) : '';
@@ -2193,6 +2194,31 @@ function loadTab() {
 // ── News-Livestream (linke Seitenleiste, nur auf breiten Bildschirmen) ──
 let newsRailTimer = null;      // Polling-Intervall
 let newsRailSeen = null;       // bekannte News-IDs (für „neu"-Markierung)
+// News-Karten inline in „Für dich" — nur auf schmalen Screens (Handy), wo die feste
+// Seitenleiste nicht sichtbar ist. Gleiche 𝕏-Karten-Optik wie der Livestream rechts.
+async function renderNewsInline(feed) {
+  if (window.matchMedia('(min-width:1320px)').matches) return; // breit: Seitenleiste zeigt News
+  let d;
+  try { d = await api('GET', '/api/news?country=' + viewCountry()); } catch { return; }
+  const top = ((d && d.posts) || []).slice(0, 3);
+  if (!top.length) return;
+  const card = el(`<div class="card news-inline">
+    <div class="row" style="align-items:center;gap:8px;margin-bottom:8px"><span class="nr-live" aria-hidden="true"></span><b style="flex:1">${esc(t('nr_title'))}</b><button class="ghost small" data-all>${esc(t('nav_news'))}</button></div>
+    <div data-nl></div></div>`);
+  const box = card.querySelector('[data-nl]');
+  top.forEach(p => {
+    const handle = (p.author && p.author.handle) ? '@' + p.author.handle : ((p.author && p.author.display_name) || t('prov_editorial'));
+    const body = (p.body || '').trim() || (p.image ? t('pc_img_alt') : '');
+    const b = el(`<button class="nr-card" data-openpost="${esc(p.id)}">
+      <div class="nr-src"><span class="nr-x" aria-hidden="true">𝕏</span><span class="nr-handle">${esc(handle)}</span><span class="nr-time">${relTime(p.created_at)}</span></div>
+      <div class="nr-body">${esc(body.slice(0, 220))}</div></button>`);
+    b.onclick = () => openPost(p.id);
+    box.appendChild(b);
+  });
+  card.querySelector('[data-all]').onclick = () => switchTab('news');
+  feed.appendChild(card);
+}
+
 async function refreshNewsRail() {
   const rail = document.getElementById('newsRail');
   if (!rail || !rail.classList.contains('on')) return;
