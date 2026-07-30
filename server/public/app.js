@@ -2204,22 +2204,19 @@ async function refreshNewsRail() {
   const seen = newsRailSeen || new Set();
   const items = top.map(p => {
     const isNew = !firstLoad && !seen.has(p.id);
-    const author = (p.author && (p.author.display_name || p.author.handle)) || t('prov_editorial');
+    // Euronews-Stil: „𝕏 @handle"-Kopf pro Karte. Fallback: Anzeigename bzw. Redaktion.
+    const handle = (p.author && p.author.handle) ? '@' + p.author.handle : ((p.author && p.author.display_name) || t('prov_editorial'));
     const body = (p.body || '').trim() || (p.image ? t('pc_img_alt') : '');
-    return `<button class="nr-item${isNew ? ' nr-new' : ''}" data-openpost="${esc(p.id)}">
-      <div class="nr-title">${esc(body.slice(0, 140))}</div>
-      <div class="nr-meta">${isNew ? `<span class="nr-newtag">● ${esc(t('nr_new'))}</span> · ` : ''}${esc(author)} · ${relTime(p.created_at)}</div>
+    return `<button class="nr-card${isNew ? ' nr-new' : ''}" data-openpost="${esc(p.id)}">
+      <div class="nr-src"><span class="nr-x" aria-hidden="true">𝕏</span><span class="nr-handle">${esc(handle)}</span>${isNew ? `<span class="nr-newtag">${esc(t('nr_new'))}</span>` : ''}<span class="nr-time">${relTime(p.created_at)}</span></div>
+      <div class="nr-body">${esc(body.slice(0, 220))}</div>
     </button>`;
   }).join('');
   newsRailSeen = new Set(top.map(p => p.id));
   rail.innerHTML = `
-    <div class="nr-head"><span class="nr-live" aria-hidden="true"></span>${esc(t('nr_title'))}</div>
-    <div class="nr-updated">${esc(ti('nr_updated', { time: new Date().toLocaleTimeString(LOCALE) }))}</div>
-    ${items || `<div class="muted" style="font-size:13px">${esc(t('nw_empty'))}</div>`}
-    <button class="ghost small nr-all" data-nr-all>${esc(t('nr_all'))}</button>`;
+    <div class="nr-head"><span class="nr-live" aria-hidden="true"></span>${esc(t('nr_title'))}<span class="nr-clock">${esc(new Date().toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' }))}</span></div>
+    ${items || `<div class="muted" style="font-size:13px;padding:8px 4px">${esc(t('nw_empty'))}</div>`}`;
   rail.querySelectorAll('[data-openpost]').forEach(b => b.onclick = () => openPost(b.dataset.openpost));
-  const allBtn = rail.querySelector('[data-nr-all]');
-  if (allBtn) allBtn.onclick = () => switchTab('news');
 }
 function startNewsRail() {
   const rail = document.getElementById('newsRail');

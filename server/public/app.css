@@ -165,20 +165,22 @@
   .ot-check { display:inline-flex; align-items:center; gap:6px; margin:2px 12px 2px 0; font-size:14px; cursor:pointer; }
   .ot-check input { width:auto; min-height:0; }
   /* News-Livestream links (nur auf breiten Bildschirmen, im freien linken Rand neben der zentrierten Spalte). */
-  .news-rail { display:none; position:fixed; left:16px; top:64px; width:300px; max-height:calc(100vh - 84px); overflow-y:auto; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 14px; box-shadow:0 2px 12px rgba(0,0,0,.08); z-index:20; }
+  /* News-Livestream rechts, im Euronews-Stil (gestapelte 𝕏-Karten). Nur breite Screens. */
+  .news-rail { display:none; position:fixed; right:16px; top:64px; width:320px; max-height:calc(100vh - 84px); overflow-y:auto; z-index:20; }
   @media (min-width:1320px){ .news-rail.on { display:block; } }
-  .nr-head { display:flex; align-items:center; gap:7px; font-weight:800; margin-bottom:8px; }
+  .nr-head { display:flex; align-items:center; gap:8px; font-weight:800; margin-bottom:10px; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:9px 13px; box-shadow:0 2px 10px rgba(0,0,0,.06); }
+  .nr-clock { margin-left:auto; font-variant-numeric:tabular-nums; color:var(--muted); font-weight:700; }
   .nr-live { width:9px; height:9px; border-radius:50%; background:#c0392b; flex:0 0 auto; animation:nr-pulse 1.7s ease-in-out infinite; }
   @keyframes nr-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.35;transform:scale(.8)} }
-  .nr-updated { font-size:12px; color:var(--muted); margin-bottom:6px; }
-  .nr-item { display:block; width:100%; text-align:left; border:0; border-bottom:1px solid var(--line); background:none; color:var(--text); padding:9px 6px; cursor:pointer; border-radius:8px; }
-  .nr-item:last-child { border-bottom:0; }
-  .nr-item:hover { background:var(--chip-bg); }
-  .nr-item.nr-new { background:rgba(11,127,40,.10); }
-  .nr-title { font-size:14px; font-weight:600; line-height:1.3; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
-  .nr-meta { font-size:12px; color:var(--muted); margin-top:3px; }
-  .nr-newtag { color:var(--ok-fg); font-weight:700; }
-  .nr-all { display:block; width:100%; margin-top:8px; }
+  .nr-card { display:block; width:100%; text-align:left; border:1px solid var(--line); background:var(--card); color:var(--text); padding:12px 14px; margin-bottom:10px; border-radius:14px; cursor:pointer; box-shadow:0 2px 10px rgba(0,0,0,.06); }
+  .nr-card:hover { border-color:var(--green); }
+  .nr-card.nr-new { border-color:var(--ok-bd); background:var(--ok-bg); }
+  .nr-src { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700; margin-bottom:6px; }
+  .nr-x { font-weight:900; }
+  .nr-handle { color:#1d9bf0; }
+  .nr-newtag { color:var(--ok-fg); font-weight:800; font-size:11px; letter-spacing:.03em; }
+  .nr-time { margin-left:auto; color:var(--muted); font-weight:600; }
+  .nr-body { font-size:14px; line-height:1.45; overflow-wrap:anywhere; }
   .spec { display:inline-block; background:var(--chip-bg); border:1px solid var(--line); border-radius:999px; padding:3px 10px; font-size:13px; margin:2px 2px 2px 0; }
   .post-body { margin:8px 0; white-space:pre-wrap; line-height:1.45; overflow-wrap:anywhere; }
   .vis { font-size:12px; color:var(--muted); }
