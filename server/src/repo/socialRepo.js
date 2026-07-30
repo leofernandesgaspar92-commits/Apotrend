@@ -20,6 +20,7 @@ export function createSocialRepo() {
   const bookmarks = new Map();      // `${userId}|${postId}` -> row
   const endorsements = new Map();   // `${endorser}|${target}|${skill}` -> row (Fachgebiet-Bestätigung)
   const profileViews = new Map();   // `${viewer}|${target}` -> row (letzter Profil-Besuch, dedupliziert)
+  const recommendations = new Map(); // id -> row (fachliche Empfehlung author -> target)
 
   const uuid = () => crypto.randomUUID();
   const now = () => new Date().toISOString();
@@ -206,6 +207,22 @@ export function createSocialRepo() {
         .sort((a, b) => b.viewed_at.localeCompare(a.viewed_at)).map(v => ({ ...v }));
     },
 
+    // ── Empfehlungen (fachliche Kurz-Empfehlung author -> target) ──
+    createRecommendation({ authorUserId, targetUserId, body }) {
+      const row = { id: uuid(), author_user_id: authorUserId, target_user_id: targetUserId, body, created_at: now() };
+      recommendations.set(row.id, row);
+      return { ...row };
+    },
+    getRecommendation(id) { const r = recommendations.get(id); return r ? { ...r } : null; },
+    deleteRecommendation(id) { recommendations.delete(id); },
+    listRecommendationsForTarget(targetUserId) {
+      return [...recommendations.values()].filter(r => r.target_user_id === targetUserId)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at)).map(r => ({ ...r }));
+    },
+    findRecommendation(authorUserId, targetUserId) {
+      return [...recommendations.values()].find(r => r.author_user_id === authorUserId && r.target_user_id === targetUserId) || null;
+    },
+
     // ── Benachrichtigungen ──
     createNotification(n) {
       const row = { id: uuid(), user_id: n.userId, type: n.type, actor_user_id: n.actorUserId ?? null, ref_type: n.refType ?? null, ref_id: n.refId ?? null, label: n.label ?? null, read: false, created_at: now() };
@@ -280,6 +297,7 @@ export function createSocialRepo() {
       for (const [k, bm] of bookmarks) if (bm.user_id === userId) bookmarks.delete(k);
       for (const [k, e] of endorsements) if (e.endorser_user_id === userId || e.target_user_id === userId) endorsements.delete(k);
       for (const [k, v] of profileViews) if (v.viewer_user_id === userId || v.target_user_id === userId) profileViews.delete(k);
+      for (const [id, r] of recommendations) if (r.author_user_id === userId || r.target_user_id === userId) recommendations.delete(id);
       for (const [id, r] of reports) if (r.reporter_user_id === userId) reports.delete(id);
       verifications.delete(userId);
     },
@@ -290,7 +308,7 @@ export function createSocialRepo() {
         profiles: [...profiles], profilesByHandle: [...profilesByHandle], posts: [...posts],
         comments: [...comments], reactions: [...reactions], pollVotes: [...pollVotes], follows: [...follows],
         notifications: [...notifications], dmThreads: [...dmThreads], dmMessages: [...dmMessages], reports: [...reports],
-        verifications: [...verifications], bookmarks: [...bookmarks], endorsements: [...endorsements], profileViews: [...profileViews],
+        verifications: [...verifications], bookmarks: [...bookmarks], endorsements: [...endorsements], profileViews: [...profileViews], recommendations: [...recommendations],
       };
     },
     __load(d) {
@@ -299,7 +317,7 @@ export function createSocialRepo() {
       fill(profiles, d.profiles); fill(profilesByHandle, d.profilesByHandle); fill(posts, d.posts);
       fill(comments, d.comments); fill(reactions, d.reactions); fill(pollVotes, d.pollVotes); fill(follows, d.follows);
       fill(notifications, d.notifications); fill(dmThreads, d.dmThreads); fill(dmMessages, d.dmMessages); fill(reports, d.reports);
-      fill(verifications, d.verifications); fill(bookmarks, d.bookmarks); fill(endorsements, d.endorsements); fill(profileViews, d.profileViews);
+      fill(verifications, d.verifications); fill(bookmarks, d.bookmarks); fill(endorsements, d.endorsements); fill(profileViews, d.profileViews); fill(recommendations, d.recommendations);
     },
   };
 }

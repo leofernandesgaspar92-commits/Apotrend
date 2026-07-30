@@ -212,6 +212,15 @@ export function createSocialService(social, foundationRepo, options = {}) {
           return vp ? { handle: vp.handle, display_name: vp.display_name, avatar_url: vp.avatar_url || null, title: vp.title || null, viewed_at: r.viewed_at } : null;
         }).filter(Boolean);
       }
+      // Empfehlungen (öffentlicher Social Proof) mit Autor:innen-Info; entfernbar durch Autor:in oder Empfohlene:n.
+      const recommendations = social.listRecommendationsForTarget(prof.user_id).map(r => {
+        const ap = social.getProfileByUserId(r.author_user_id);
+        return {
+          id: r.id, body: r.body, created_at: r.created_at,
+          author: ap ? { handle: ap.handle, display_name: ap.display_name, avatar_url: ap.avatar_url || null, title: ap.title || null } : null,
+          can_remove: r.author_user_id === viewerUserId || isSelf,
+        };
+      });
       // Fachgebiet-Bestätigungen: Zähler je Fachgebiet + ob der/die Betrachter:in bestätigt hat.
       const endRows = social.listEndorsementsForTarget(prof.user_id);
       const endorsements = {};
@@ -227,6 +236,9 @@ export function createSocialService(social, foundationRepo, options = {}) {
         post_count: posts.length,
         best_answers,
         endorsements,
+        recommendations,
+        can_recommend: !isSelf,
+        my_recommendation: isSelf ? null : (social.findRecommendation(viewerUserId, prof.user_id)?.body || null),
         viewers, viewer_count,
         is_following: social.isFollowing(viewerUserId, prof.user_id),
         is_self: isSelf,
@@ -249,6 +261,35 @@ export function createSocialService(social, foundationRepo, options = {}) {
       }
       const count = social.listEndorsementsForTarget(prof.user_id).filter(e => e.skill === s).length;
       return { skill: s, count, mine };
+    },
+    // Empfehlung schreiben (ein:e Autor:in je Zielprofil — erneutes Schreiben aktualisiert).
+    writeRecommendation(actorUserId, targetHandleOrId, body) {
+      requireUser(actorUserId);
+      const prof = social.getProfileByHandle(targetHandleOrId) || social.getProfileByUserId(targetHandleOrId);
+      if (!prof) throw new AppError('profile_not_found', 'Profil nicht gefunden.');
+      if (prof.user_id === actorUserId) throw new AppError('recommend_self', 'Man kann sich nicht selbst empfehlen.');
+      const text = String(body ?? '').trim();
+      if (!text) throw new AppError('recommend_empty', 'Empfehlung darf nicht leer sein.');
+      if (text.length > 600) throw new AppError('recommend_too_long', 'Empfehlung zu lang (max. 600 Zeichen).');
+      const existing = social.findRecommendation(actorUserId, prof.user_id);
+      let row;
+      if (existing) {
+        social.deleteRecommendation(existing.id);
+        row = social.createRecommendation({ authorUserId: actorUserId, targetUserId: prof.user_id, body: text });
+      } else {
+        row = social.createRecommendation({ authorUserId: actorUserId, targetUserId: prof.user_id, body: text });
+        social.createNotification({ userId: prof.user_id, type: 'recommendation', actorUserId, refType: 'profile', refId: prof.handle });
+      }
+      return row;
+    },
+    // Empfehlung entfernen: erlaubt der/dem Autor:in ODER der/dem Empfohlenen (Kontrolle).
+    removeRecommendation(actorUserId, recId) {
+      requireUser(actorUserId);
+      const r = social.getRecommendation(recId);
+      if (!r) throw new AppError('recommend_not_found', 'Empfehlung nicht gefunden.');
+      if (r.author_user_id !== actorUserId && r.target_user_id !== actorUserId) throw new ForbiddenError('Nicht berechtigt.');
+      social.deleteRecommendation(recId);
+      return { ok: true };
     },
     // Folge-Vorschläge: Profile, denen der Betrachter noch nicht folgt (aktivste zuerst).
     suggestFollows(viewerUserId, limit = 5) {

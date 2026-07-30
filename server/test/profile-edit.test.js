@@ -125,6 +125,52 @@ test('Profil bearbeiten: „Offen für" nimmt nur bekannte Schlüssel, deduplizi
   assert.deepEqual(social.getProfile('anna').open_to, set.open_to);
 });
 
+test('Empfehlungen: schreiben, aktualisieren, anzeigen, entfernen (Autor/Empfohlene), nicht selbst, dump/load', () => {
+  const repo = createMemoryRepo();
+  const orgAuth = createOrgAuthService(repo);
+  const srepo = createSocialRepo();
+  const social = createSocialService(srepo, repo);
+  const A = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'A' }, owner: { name: 'Anna', email: 'a@a.at', password: 'geheim123' } });
+  social.createProfile(A.user.id, { handle: 'anna', displayName: 'Anna' });
+  const B = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'B' }, owner: { name: 'Ben', email: 'b@b.at', password: 'geheim123' } });
+  social.createProfile(B.user.id, { handle: 'ben', displayName: 'Ben' });
+
+  // Ben empfiehlt Anna
+  social.writeRecommendation(B.user.id, 'anna', 'Top-fachliche Zusammenarbeit bei Engpässen.');
+  assert.ok(social.notifications(A.user.id).some(n => n.type === 'recommendation'));
+  let page = social.profilePage(A.user.id, 'anna');
+  assert.equal(page.recommendations.length, 1);
+  assert.equal(page.recommendations[0].body, 'Top-fachliche Zusammenarbeit bei Engpässen.');
+  assert.equal(page.recommendations[0].author.handle, 'ben');
+  assert.equal(page.recommendations[0].can_remove, true); // Anna (Empfohlene) darf entfernen
+
+  // Erneutes Schreiben aktualisiert (keine zweite Empfehlung)
+  social.writeRecommendation(B.user.id, 'anna', 'Aktualisierter Text.');
+  page = social.profilePage(B.user.id, 'anna');
+  assert.equal(page.recommendations.length, 1);
+  assert.equal(page.recommendations[0].body, 'Aktualisierter Text.');
+  assert.equal(page.can_recommend, true);
+  assert.equal(page.my_recommendation, 'Aktualisierter Text.');
+
+  // Sich selbst / leer / zu lang abgelehnt
+  assert.throws(() => social.writeRecommendation(A.user.id, 'anna', 'x'), /selbst/);
+  assert.throws(() => social.writeRecommendation(B.user.id, 'anna', '   '), /leer/);
+  assert.throws(() => social.writeRecommendation(B.user.id, 'anna', 'x'.repeat(601)), /zu lang/);
+
+  // Fremde:r darf nicht entfernen
+  const C = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'C' }, owner: { name: 'Cara', email: 'c@c.at', password: 'geheim123' } });
+  social.createProfile(C.user.id, { handle: 'cara', displayName: 'Cara' });
+  const recId = social.profilePage(A.user.id, 'anna').recommendations[0].id;
+  assert.throws(() => social.removeRecommendation(C.user.id, recId));
+  // dump/load
+  const srepo2 = createSocialRepo(); srepo2.__load(srepo.__dump());
+  const social2 = createSocialService(srepo2, repo);
+  assert.equal(social2.profilePage(A.user.id, 'anna').recommendations.length, 1);
+  // Empfohlene entfernt
+  social.removeRecommendation(A.user.id, recId);
+  assert.equal(social.profilePage(A.user.id, 'anna').recommendations.length, 0);
+});
+
 test('Profil-Besuche: Fremdbesuch wird protokolliert, nur Eigentümer sieht Besucher, dedupliziert, dump/load', () => {
   const repo = createMemoryRepo();
   const orgAuth = createOrgAuthService(repo);
