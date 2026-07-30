@@ -1771,8 +1771,20 @@ async function loadOverview() {
   // Aktionen zu beobachteten Wirkstoffen (Beobachtungsliste ↔ Rabatte)
   if (d.watch_deals && d.watch_deals.length) {
     const c = el(`<div class="card"><div class="row"><b>${esc(t('wd_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>${esc(t('wd_all'))}</button></div>
-      <div class="muted" style="font-size:13px;margin:2px 0 6px">${esc(t('wd_sub'))}</div>
-      ${d.watch_deals.map(w=>`<div class="comment">🏷️ <b>${esc(w.wirkstoff)}</b> — ${esc(w.supplier)} <span style="color:var(--ok-fg);font-weight:700">−${w.rabatt_pct}%</span> (€ ${fmtMoney(w.aktionspreis)})${w.ersparnis>0?` · <span style="color:var(--ok-fg);font-weight:700">${esc(ti('wd_saving',{x:fmtMoney(w.ersparnis)}))}</span>`:''}${w.expiring_soon?` · <b style="color:${w.days_left<=3?'var(--crit-fg)':'var(--warn-fg)'}">${esc(w.days_left<=0?t('pg_only_today'):ti('pg_only_days',{d:w.days_left}))}</b>`:''}</div>`).join('')}</div>`);
+      <div class="muted" style="font-size:13px;margin:2px 0 6px">${esc(t('wd_sub'))}</div><div data-wd></div></div>`);
+    const box = c.querySelector('[data-wd]');
+    d.watch_deals.forEach(w => {
+      const row = el(`<div class="comment"><div class="row" style="align-items:baseline">
+        <span style="flex:1">🏷️ <b>${esc(w.wirkstoff)}</b> — ${esc(w.supplier)} <span style="color:var(--ok-fg);font-weight:700">−${w.rabatt_pct}%</span> (€ ${fmtMoney(w.aktionspreis)})${w.ersparnis>0?` · <span style="color:var(--ok-fg);font-weight:700">${esc(ti('wd_saving',{x:fmtMoney(w.ersparnis)}))}</span>`:''}${w.expiring_soon?` · <b style="color:${w.days_left<=3?'var(--crit-fg)':'var(--warn-fg)'}">${esc(w.days_left<=0?t('pg_only_today'):ti('pg_only_days',{d:w.days_left}))}</b>`:''}</span>
+        <button class="ghost small" data-addcart title="${esc(t('cart_add'))}" aria-label="${esc(t('cart_add'))}" style="margin-left:6px">🛒</button>
+      </div></div>`);
+      row.querySelector('[data-addcart]').onclick = (ev) => cartAdd({
+        bezeichnung: w.bezeichnung || w.wirkstoff, wirkstoff: w.wirkstoff, supplier: w.supplier,
+        aktionspreis: w.aktionspreis, rabattPct: w.rabatt_pct, gueltigBis: w.gueltig_bis,
+        menge: w.min_menge || 1, sourceKind: 'rabatt',
+      }, ev.target);
+      box.appendChild(row);
+    });
     c.querySelector('[data-all]').onclick = () => goTab('rabatte');
     feed.appendChild(c);
   }
