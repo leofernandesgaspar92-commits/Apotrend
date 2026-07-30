@@ -7,7 +7,29 @@ import { AppError } from '../domain/errors.js';
 const STATUS_LABEL = { kritisch: 'Kritischer Engpass', eingeschraenkt: 'Eingeschränkt lieferbar', verfuegbar: 'Wieder verfügbar' };
 const VALID_STATUS = Object.keys(STATUS_LABEL);
 
+// Tage zwischen zwei ISO-Kalendertagen (YYYY-MM-DD), b − a. Null bei ungültigen Daten.
+function daysBetween(a, b) {
+  const da = Date.parse(String(a) + 'T00:00:00Z'), db = Date.parse(String(b) + 'T00:00:00Z');
+  if (Number.isNaN(da) || Number.isNaN(db)) return null;
+  return Math.round((db - da) / 86400000);
+}
+
+// Alters-/Fristsignal eines Engpasses (rein aus Datumsfeldern abgeleitet, keine
+// Sicherheitsaussage): Tage seit Meldung und Tage bis zum voraussichtlichen Termin
+// (negativ = Termin überschritten). „verfuegbar" hat keinen offenen Termin mehr.
+export function shortageAging(gemeldetAm, voraussichtlichBis, status, today) {
+  const dr = gemeldetAm ? daysBetween(gemeldetAm, today) : null;
+  const days_until = (voraussichtlichBis && status !== 'verfuegbar') ? daysBetween(today, voraussichtlichBis) : null;
+  return {
+    days_reported: dr != null && dr >= 0 ? dr : null,
+    days_until,
+    overdue: days_until != null && days_until < 0,
+  };
+}
+
 export function createShortagesService(shortagesRepo, social, options = {}) {
+  // Heutiger Kalendertag (injizierbar für Tests) — Grundlage der Alters-/Fristsignale.
+  const today = () => (options.today ? options.today() : new Date().toISOString().slice(0, 10));
   // Premium-Gate (injiziert): Notizen an beobachteten Wirkstoffen sind ein Premium-Vorteil.
   const hasPremium = options.hasPremium || (() => false);
   // Engpass-Zeile für die Anzeige anreichern: Melder-Profil + Bestätigungen.
@@ -23,6 +45,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       is_reporter: !!viewerUserId && s.reporter_user_id === viewerUserId,
       post_count: social.postsAbout(viewerUserId, 'shortage', s.id).length,
       watched: shortagesRepo.isWatched(viewerUserId, s.wirkstoff),
+      ...shortageAging(s.gemeldet_am, s.voraussichtlich_bis, s.status, today()),
     };
   }
   // Sicherheitsrelevante Engpass-Aktionen (melden/bestätigen) sind Fachkreisen vorbehalten.

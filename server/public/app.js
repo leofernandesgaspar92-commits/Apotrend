@@ -101,6 +101,7 @@ const I18N = {
     pl_c:'👥 <b>Community-Meldung</b> — von Kolleg:innen gemeldet, <b>nicht offiziell verifiziert</b>. Zur Orientierung, im Zweifel selbst prüfen.',
     pl_note:'Grundsatz: Sicherheitsrelevante Aussagen (Engpass, Rückruf, Substitution) werden nur mit Quelle geführt. Bei Community-Meldungen ist die Quelle die meldende Apotheke.',
     sc_reported:'gemeldet', sc_until:'🗓️ Voraussichtlich wieder lieferbar bis',
+    sc_age_one:'seit 1 Tag im Engpass', sc_age_many:'seit {n} Tagen im Engpass', sc_in_days_one:'noch 1 Tag', sc_in_days_many:'noch {n} Tage', sc_due_today:'Termin heute', sc_overdue_one:'Termin 1 Tag überschritten', sc_overdue_many:'Termin {n} Tage überschritten',
     sc_abx:'🧫 Antibiotikum', sc_abx_link:'Stewardship-Infos & Quellen',
     sc_abx_note:'(keine Substitutionsempfehlung ohne Quelle)', sc_reported_by:'👥 Gemeldet von',
     sc_conf_one:'weitere Apotheke bestätigt', sc_conf_many:'weitere Apotheken bestätigt',
@@ -418,6 +419,7 @@ const I18N = {
     pl_c:'👥 <b>Community report</b> — reported by colleagues, <b>not officially verified</b>. For orientation; when in doubt, check yourself.',
     pl_note:'Principle: safety-relevant statements (shortage, recall, substitution) are only shown with a source. For community reports, the source is the reporting pharmacy.',
     sc_reported:'reported', sc_until:'🗓️ Expected back in stock by',
+    sc_age_one:'short for 1 day', sc_age_many:'short for {n} days', sc_in_days_one:'1 day left', sc_in_days_many:'{n} days left', sc_due_today:'due today', sc_overdue_one:'1 day overdue', sc_overdue_many:'{n} days overdue',
     sc_abx:'🧫 Antibiotic', sc_abx_link:'Stewardship info & sources',
     sc_abx_note:'(no substitution advice without a source)', sc_reported_by:'👥 Reported by',
     sc_conf_one:'more pharmacy confirms', sc_conf_many:'more pharmacies confirm',
@@ -735,6 +737,7 @@ const I18N = {
     pl_c:'👥 <b>Aviso da comunidade</b> — reportado por colegas, <b>não verificado oficialmente</b>. Para orientação; na dúvida, confirme.',
     pl_note:'Princípio: afirmações relevantes para a segurança (falta, recolha, substituição) só são apresentadas com fonte. Nos avisos da comunidade, a fonte é a farmácia que reporta.',
     sc_reported:'reportado', sc_until:'🗓️ Previsão de reposição até',
+    sc_age_one:'em falta há 1 dia', sc_age_many:'em falta há {n} dias', sc_in_days_one:'falta 1 dia', sc_in_days_many:'faltam {n} dias', sc_due_today:'prazo hoje', sc_overdue_one:'prazo ultrapassado há 1 dia', sc_overdue_many:'prazo ultrapassado há {n} dias',
     sc_abx:'🧫 Antibiótico', sc_abx_link:'Informação de stewardship & fontes',
     sc_abx_note:'(sem recomendação de substituição sem fonte)', sc_reported_by:'👥 Reportado por',
     sc_conf_one:'outra farmácia confirma', sc_conf_many:'outras farmácias confirmam',
@@ -2650,6 +2653,20 @@ function reportShortageCard(existing = []) {
   return card;
 }
 
+// Countdown-Chip zum voraussichtlichen Termin: überfällig (rot), heute (gelb),
+// sonst „noch X Tage" (bei ≤7 Tagen gelb hervorgehoben, sonst dezent). Rein aus
+// den Datumsfeldern abgeleitet — keine Sicherheitsaussage.
+function shortageCountdown(s) {
+  if (s.status === 'verfuegbar' || s.days_until == null) return '';
+  const chip = (label, bg, fg, bd) => ` <span style="display:inline-block;background:${bg};color:${fg};border:1px solid ${bd};font-weight:700;font-size:12px;padding:1px 8px;border-radius:999px;margin-left:6px">${esc(label)}</span>`;
+  if (s.overdue) return chip(`⚠️ ${nlabel(-s.days_until, 'sc_overdue_one', 'sc_overdue_many')}`, 'var(--crit-bg)', 'var(--crit-fg)', 'var(--crit-bd)');
+  if (s.days_until === 0) return chip(`⏳ ${t('sc_due_today')}`, 'var(--warn-bg)', 'var(--warn-fg)', 'var(--warn-bd)');
+  const label = `⏳ ${nlabel(s.days_until, 'sc_in_days_one', 'sc_in_days_many')}`;
+  return s.days_until <= 7
+    ? chip(label, 'var(--warn-bg)', 'var(--warn-fg)', 'var(--warn-bd)')
+    : chip(label, 'var(--chip-bg)', 'var(--muted)', 'var(--line)');
+}
+
 function shortageCard(s) {
   const [slabel, scol] = statusShort(s.status);
   const card = el(`<div class="card">
@@ -2660,8 +2677,8 @@ function shortageCard(s) {
       <span class="vis" title="${esc(t('pl_open'))}">${esc(provLabel(s.provenance))}</span>
     </div>
     <div class="post-body">${esc(s.bezeichnung)}</div>
-    <div class="muted">${s.grund?esc(grundLabel(s.grund))+' · ':''}${esc(t('sc_reported'))} ${esc(s.gemeldet_am||'—')}</div>
-    ${s.voraussichtlich_bis&&s.status!=='verfuegbar'?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sc_until'))} <b>${esc(fmtDateDe(s.voraussichtlich_bis))}</b></div>`:''}
+    <div class="muted">${s.grund?esc(grundLabel(s.grund))+' · ':''}${esc(t('sc_reported'))} ${esc(s.gemeldet_am||'—')}${s.days_reported>0&&s.status!=='verfuegbar'?` · ${esc(nlabel(s.days_reported,'sc_age_one','sc_age_many'))}`:''}</div>
+    ${s.voraussichtlich_bis&&s.status!=='verfuegbar'?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sc_until'))} <b>${esc(fmtDateDe(s.voraussichtlich_bis))}</b>${shortageCountdown(s)}</div>`:''}
     ${s.is_antibiotic?`<div style="margin-top:6px;font-size:13px"><span style="color:var(--ok-fg);font-weight:600">${esc(t('sc_abx'))}</span> — <span class="clickable" data-amr style="color:var(--ok-fg);text-decoration:underline">${esc(t('sc_abx_link'))}</span> <span class="muted">${esc(t('sc_abx_note'))}</span></div>`:''}
     ${s.provenance==='community'&&s.reporter?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sc_reported_by'))} <b>@${esc(s.reporter.handle)}</b>${s.reporter.verified?' <span class="verified">✔</span>':''}${s.confirm_count?` · <b style="color:var(--crit-fg)">${s.confirm_count}</b> ${esc(s.confirm_count>1?t('sc_conf_many'):t('sc_conf_one'))}`:''}</div>`:''}
     <div class="reacts">
