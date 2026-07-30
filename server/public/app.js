@@ -1190,7 +1190,7 @@ let myBookmarks = new Set();
 
 // ── Auth-Flow: ERST Land wählen, DANN anmelden, dann länderspezifische Inhalte ──
 function hideHeaderForAuth() {
-  ['btnLogout','btnNotif','btnDm','btnMod','btnHelp'].forEach(id => { const b = document.getElementById(id); if (b) b.classList.add('hidden'); });
+  ['btnLogout','btnNotif','btnDm','btnCart','btnMod','btnHelp'].forEach(id => { const b = document.getElementById(id); if (b) b.classList.add('hidden'); });
   const cs = document.getElementById('countrySwitch'); if (cs) cs.classList.add('hidden');
   document.getElementById('whoami').textContent = '';
   document.getElementById('whoami').classList.remove('clickable');
@@ -1512,8 +1512,12 @@ async function mainScreen() {
   document.getElementById('btnLogout').onclick = () => { localStorage.removeItem('apo_token'); location.reload(); };
   document.getElementById('btnNotif').onclick = showNotifications;
   document.getElementById('btnDm').onclick = showDmInbox;
+  const btnCart = document.getElementById('btnCart');
+  btnCart.classList.remove('hidden');
+  btnCart.onclick = openCart;
   refreshNotifCount();
   refreshDmCount();
+  refreshCartCount();
   try { myBookmarks = new Set((await api('GET','/api/bookmarks/ids')).ids); } catch { myBookmarks = new Set(); }
 
   app.innerHTML = '';
@@ -3273,6 +3277,7 @@ async function cartAdd(payload, btn) {
   try {
     await api('POST', '/api/cart', payload);
     if (btn) { btn.textContent = '✓ ' + t('cart_added'); btn.disabled = true; }
+    refreshCartCount();
   } catch(e){ alert(e.message); }
 }
 
@@ -3284,6 +3289,7 @@ async function openCart() {
   feed.innerHTML = '<div class="loading">…</div>';
   let d;
   try { d = await api('GET','/api/cart'); } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
+  refreshCartCount();
   feed.innerHTML = '';
   const head = el(`<div class="card">
     <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span>
@@ -5034,6 +5040,17 @@ async function refreshDmCount() {
     const d = await api('GET','/api/dm');
     const badge = document.getElementById('dmBadge');
     if (d.unread > 0) { badge.textContent = d.unread; badge.classList.remove('hidden'); }
+    else badge.classList.add('hidden');
+  } catch {}
+}
+
+// Einkaufslisten-Zähler in der Kopfzeile aktualisieren (jederzeit erreichbar).
+async function refreshCartCount() {
+  try {
+    const d = await api('GET','/api/cart');
+    const badge = document.getElementById('cartBadge');
+    if (!badge) return;
+    if (d.count > 0) { badge.textContent = d.count; badge.classList.remove('hidden'); }
     else badge.classList.add('hidden');
   } catch {}
 }
