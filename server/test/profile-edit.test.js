@@ -125,6 +125,34 @@ test('Profil bearbeiten: „Offen für" nimmt nur bekannte Schlüssel, deduplizi
   assert.deepEqual(social.getProfile('anna').open_to, set.open_to);
 });
 
+test('Profil-Besuche: Fremdbesuch wird protokolliert, nur Eigentümer sieht Besucher, dedupliziert, dump/load', () => {
+  const repo = createMemoryRepo();
+  const orgAuth = createOrgAuthService(repo);
+  const srepo = createSocialRepo();
+  const social = createSocialService(srepo, repo);
+  const A = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'A' }, owner: { name: 'Anna', email: 'a@a.at', password: 'geheim123' } });
+  social.createProfile(A.user.id, { handle: 'anna', displayName: 'Anna' });
+  const B = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'B' }, owner: { name: 'Ben', email: 'b@b.at', password: 'geheim123' } });
+  social.createProfile(B.user.id, { handle: 'ben', displayName: 'Ben' });
+
+  // Ben besucht Annas Profil zweimal -> ein Besucher (dedupliziert)
+  social.profilePage(B.user.id, 'anna');
+  social.profilePage(B.user.id, 'anna');
+  // Fremde Sicht (Ben) enthält KEINE Besucherliste
+  const benView = social.profilePage(B.user.id, 'anna');
+  assert.equal(benView.viewers, null);
+  // Anna sieht ihre Besucher (nur Ben, dedupliziert)
+  const annaView = social.profilePage(A.user.id, 'anna');
+  assert.equal(annaView.viewer_count, 1);
+  assert.deepEqual(annaView.viewers.map(v => v.handle), ['ben']);
+  // Eigener Besuch zählt nicht
+  assert.equal(social.profilePage(A.user.id, 'anna').viewer_count, 1);
+  // dump/load: Besuche überstehen Round-Trip
+  const srepo2 = createSocialRepo(); srepo2.__load(srepo.__dump());
+  const social2 = createSocialService(srepo2, repo);
+  assert.equal(social2.profilePage(A.user.id, 'anna').viewer_count, 1);
+});
+
 test('Fachgebiet-Bestätigung: umschalten, Zähler, nicht selbst, nur echte Fachgebiete, Benachrichtigung, dump/load', () => {
   const repo = createMemoryRepo();
   const orgAuth = createOrgAuthService(repo);

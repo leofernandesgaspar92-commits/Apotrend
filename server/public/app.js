@@ -234,6 +234,7 @@ const I18N = {
     ep_pubmail:'Geschäfts-E-Mail (optional, öffentlich)', ep_pubmail_ph:'kontakt@ihre-apotheke.at', ep_phone:'Telefon (optional, öffentlich)', ep_phone_ph:'+43 1 234567', ep_contact_hint:'Diese Kontaktdaten sind für alle sichtbar — nur ausfüllen, wenn erreichbar gewünscht.',
     pfc_title_head:'Profilstärke', pfc_missing:'Noch {n} Angabe(n) für ein vollständiges Profil:', pfc_cta:'Profil vervollständigen',
     pfc_complete:'✓ Ihr Profil ist vollständig — top!',
+    pv_title:'Wer hat mein Profil angesehen', pv_hint:'Nur Sie sehen diese Liste.', pv_none:'Noch keine Profilbesuche.',
     pfc_photo:'Profilbild', pfc_cover:'Titelbild', pfc_title:'Titel/Funktion', pfc_bio:'Über mich', pfc_specs:'Fachgebiete', pfc_website:'Website', pfc_region:'Region', pfc_experience:'Werdegang',
     pf_experience:'Werdegang',
     ep_exp:'Werdegang / Berufserfahrung', ep_exp_hint:'Frühere und aktuelle Stationen — z. B. Apotheke, Klinik, Großhandel.', ep_exp_add:'+ Station hinzufügen', ep_exp_del:'Station entfernen',
@@ -541,6 +542,7 @@ const I18N = {
     ep_pubmail:'Business email (optional, public)', ep_pubmail_ph:'contact@your-pharmacy.com', ep_phone:'Phone (optional, public)', ep_phone_ph:'+44 20 1234567', ep_contact_hint:'This contact info is visible to everyone — only fill it in if you want to be reachable.',
     pfc_title_head:'Profile strength', pfc_missing:'{n} more item(s) for a complete profile:', pfc_cta:'Complete profile',
     pfc_complete:'✓ Your profile is complete — great!',
+    pv_title:'Who viewed my profile', pv_hint:'Only you can see this list.', pv_none:'No profile visits yet.',
     pfc_photo:'Profile picture', pfc_cover:'Cover image', pfc_title:'Title/role', pfc_bio:'About me', pfc_specs:'Specializations', pfc_website:'Website', pfc_region:'Region', pfc_experience:'Experience',
     pf_experience:'Experience',
     ep_exp:'Experience', ep_exp_hint:'Past and current roles — e.g. pharmacy, hospital, wholesale.', ep_exp_add:'+ Add position', ep_exp_del:'Remove position',
@@ -848,6 +850,7 @@ const I18N = {
     ep_pubmail:'E-mail comercial (opcional, público)', ep_pubmail_ph:'contato@sua-farmacia.pt', ep_phone:'Telefone (opcional, público)', ep_phone_ph:'+351 21 1234567', ep_contact_hint:'Estes contactos são visíveis para todos — preencha apenas se quiser ser contactável.',
     pfc_title_head:'Força do perfil', pfc_missing:'Mais {n} item(ns) para um perfil completo:', pfc_cta:'Completar perfil',
     pfc_complete:'✓ O seu perfil está completo — ótimo!',
+    pv_title:'Quem viu o meu perfil', pv_hint:'Só você vê esta lista.', pv_none:'Ainda não há visitas ao perfil.',
     pfc_photo:'Foto de perfil', pfc_cover:'Imagem de capa', pfc_title:'Título/função', pfc_bio:'Sobre mim', pfc_specs:'Áreas', pfc_website:'Site', pfc_region:'Região', pfc_experience:'Percurso',
     pf_experience:'Percurso profissional',
     ep_exp:'Percurso / experiência', ep_exp_hint:'Funções anteriores e atuais — ex. farmácia, hospital, distribuidor.', ep_exp_add:'+ Adicionar posição', ep_exp_del:'Remover posição',
@@ -3930,6 +3933,14 @@ async function openProfile(handle) {
           <div class="row" style="margin-top:8px"><button class="small" data-edit>${esc(t('pfc_cta'))}</button></div>
         </div>`;
       })() : ''}
+      ${d.is_self ? `<div class="pv">
+        <div class="row" style="align-items:center;gap:8px"><b>👀 ${esc(t('pv_title'))}</b><span class="sp" style="flex:1"></span><b>${d.viewer_count}</b></div>
+        ${d.viewer_count ? `<div class="muted" style="font-size:12px;margin:2px 0 6px">${esc(t('pv_hint'))}</div>
+          <div class="pv-list">${d.viewers.map(v => `<button class="pv-item" data-openprofile="${esc(v.handle)}" title="@${esc(v.handle)}">
+            ${avatarHtml(v, 30, false)}<span class="pv-name">${esc(v.display_name||('@'+v.handle))}</span><span class="muted" style="font-size:12px">· ${relTime(v.viewed_at)}</span>
+          </button>`).join('')}</div>`
+        : `<div class="muted" style="font-size:13px">${esc(t('pv_none'))}</div>`}
+      </div>` : ''}
     </div>`);
     head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
     const spb = head.querySelector('[data-shareprofile]');
@@ -3944,6 +3955,7 @@ async function openProfile(handle) {
     head.querySelector('[data-followers]').onclick = () => openFollowList(p.handle, 'followers');
     head.querySelector('[data-following]').onclick = () => openFollowList(p.handle, 'following');
     head.querySelectorAll('[data-opento]').forEach(b => b.onclick = () => openDiscoverOpenTo(b.dataset.opento));
+    head.querySelectorAll('.pv-item[data-openprofile]').forEach(b => b.onclick = () => openProfile(b.dataset.openprofile));
     head.querySelectorAll('[data-endorse]').forEach(b => b.onclick = async () => {
       const skill = b.dataset.endorse;
       try {

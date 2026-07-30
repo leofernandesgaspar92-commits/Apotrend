@@ -199,6 +199,19 @@ export function createSocialService(social, foundationRepo, options = {}) {
         const c = social.getComment(p.accepted_comment_id);
         if (c && !c.deleted_at && c.author_user_id === prof.user_id) best_answers++;
       }
+      const isSelf = viewerUserId === prof.user_id;
+      // Profil-Besuch protokollieren (nicht bei sich selbst) — für „Wer hat mein Profil angesehen".
+      if (!isSelf) social.recordProfileView(viewerUserId, prof.user_id);
+      // Besucher:innen nur der/dem Profil-Eigentümer:in zeigen (Datenschutz): jüngste zuerst.
+      let viewers = null, viewer_count = 0;
+      if (isSelf) {
+        const rows = social.listProfileViewers(prof.user_id);
+        viewer_count = rows.length;
+        viewers = rows.slice(0, 20).map(r => {
+          const vp = social.getProfileByUserId(r.viewer_user_id);
+          return vp ? { handle: vp.handle, display_name: vp.display_name, avatar_url: vp.avatar_url || null, title: vp.title || null, viewed_at: r.viewed_at } : null;
+        }).filter(Boolean);
+      }
       // Fachgebiet-Bestätigungen: Zähler je Fachgebiet + ob der/die Betrachter:in bestätigt hat.
       const endRows = social.listEndorsementsForTarget(prof.user_id);
       const endorsements = {};
@@ -214,8 +227,9 @@ export function createSocialService(social, foundationRepo, options = {}) {
         post_count: posts.length,
         best_answers,
         endorsements,
+        viewers, viewer_count,
         is_following: social.isFollowing(viewerUserId, prof.user_id),
-        is_self: viewerUserId === prof.user_id,
+        is_self: isSelf,
       };
     },
     // Fachgebiet bestätigen (Endorsement) — Umschalten; benachrichtigt bei neuer Bestätigung.
