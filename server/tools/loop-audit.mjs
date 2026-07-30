@@ -14,6 +14,9 @@ import path from 'node:path';
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const jsonOnly = process.argv.includes('--json');
+// In `npm run verify` läuft `node --test` bereits als Gate VOR diesem Audit (&&-Kette),
+// grün ist dort also garantiert. --skip-tests vermeidet den doppelten (teuren) Testlauf.
+const skipTests = process.argv.includes('--skip-tests');
 
 function countMatches(text, re) { return (text.match(re) || []).length; }
 
@@ -70,7 +73,7 @@ function run() {
 
   const snapshot = {
     ts: new Date().toISOString(),
-    tests: tests(),
+    tests: skipTests ? { skipped: true } : tests(),
     // Regressions-Wächter: hartkodierte Dialog-Strings (Ziel 0 — waren mal viele).
     hardcoded_dialogs: countMatches(js, /(confirm|alert|prompt)\('[^']*[a-zäöü][^']*'/gi),
     // Hartkodierte deutsche UI-Strings: UI-Eigenschaften (title/text/label/placeholder),
@@ -151,7 +154,9 @@ function run() {
   const t = snapshot.tests;
   const p = snapshot.i18n_parity;
   console.log('── ApoTrend Loop · GATHER-Snapshot ──', snapshot.ts);
-  console.log(`Tests:              ${t.pass}/${t.count} grün${t.fail ? `  ⚠️ ${t.fail} rot` : ''}`);
+  console.log(t.skipped
+    ? 'Tests:              im Gate geprüft ✓ (node --test lief in der verify-Kette davor)'
+    : `Tests:              ${t.pass}/${t.count} grün${t.fail ? `  ⚠️ ${t.fail} rot` : ''}`);
   console.log(`i18n-Attribute:     ${snapshot.data_i18n_attrs}   Schlüssel de/en/pt: ${p.de}/${p.en}/${p.pt}`);
   console.log(`i18n-Lücken:        en fehlen ${p.gaps_en}, pt fehlen ${p.gaps_pt} ${p.balanced ? '✓' : '⚠️ ' + (p.gap_samples || []).join(', ')}`);
   console.log(`Hartkod. Dialoge:   ${snapshot.hardcoded_dialogs} ${snapshot.hardcoded_dialogs === 0 ? '✓' : '⚠️'}`);
