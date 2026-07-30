@@ -129,7 +129,7 @@ const I18N = {
     rb_header:'🏷️ <b>Top-10 Rabatt-Aktionen</b> · höchster Rabatt oben · nur laufende Aktionen ·',
     rb_empty_t:'Derzeit keine laufenden Aktionen',
     rb_empty_s:'Aktuell sind keine Rabatt-Aktionen hinterlegt. Schau später wieder vorbei.',
-    rb_expiring:'⏳ Bald ablaufend', rb_watched_only:'⭐ Nur beobachtete', rb_csv_t:'Aktuelle Auswahl als CSV (Excel) für den Einkauf', rb_print_t:'Aktuelle Auswahl als Aushang drucken', rb_print_title:'Laufende Rabatt-Aktionen',
+    rb_expiring:'⏳ Bald ablaufend', rb_watched_only:'⭐ Nur beobachtete', rb_sort_aria:'Sortierung der Aktionen', rb_sort_pct:'Höchster Rabatt %', rb_sort_saving:'Größte Ersparnis €', rb_csv_t:'Aktuelle Auswahl als CSV (Excel) für den Einkauf', rb_print_t:'Aktuelle Auswahl als Aushang drucken', rb_print_title:'Laufende Rabatt-Aktionen',
     cart_title:'Einkaufsliste', cart_add:'Einkaufsliste', cart_added:'hinzugefügt', cart_summary:'{n} Stück · Summe € {sum}', cart_clear:'Liste leeren', cart_clear_confirm:'Ganze Einkaufsliste leeren?', cart_remove:'Position entfernen',
     cart_empty_t:'Einkaufsliste ist leer', cart_empty_s:'Fügen Sie bei Rabatten „🛒 Einkaufsliste" hinzu — dann hier als CSV/Ausdruck für den Großhandel exportieren.',
     cart_col_menge:'Menge', cart_col_sum:'Summe', cart_col_note:'Notiz', cart_print_title:'Einkaufsliste / Bestellung', cart_print_foot:'Preise sind Momentaufnahmen (Aktions-/Referenzpreis) — im Zweifel beim Großhandel prüfen.',
@@ -446,7 +446,7 @@ const I18N = {
     rb_header:'🏷️ <b>Top 10 deals</b> · highest discount on top · running offers only ·',
     rb_empty_t:'No running offers right now',
     rb_empty_s:'There are currently no discount offers on file. Check back later.',
-    rb_expiring:'⏳ Expiring soon', rb_watched_only:'⭐ Watched only', rb_csv_t:'Export current selection as CSV (Excel) for purchasing', rb_print_t:'Print current selection as a notice', rb_print_title:'Current discount deals',
+    rb_expiring:'⏳ Expiring soon', rb_watched_only:'⭐ Watched only', rb_sort_aria:'Sort deals', rb_sort_pct:'Highest discount %', rb_sort_saving:'Biggest savings €', rb_csv_t:'Export current selection as CSV (Excel) for purchasing', rb_print_t:'Print current selection as a notice', rb_print_title:'Current discount deals',
     cart_title:'Shopping list', cart_add:'Shopping list', cart_added:'added', cart_summary:'{n} units · total € {sum}', cart_clear:'Clear list', cart_clear_confirm:'Clear the whole shopping list?', cart_remove:'Remove item',
     cart_empty_t:'Shopping list is empty', cart_empty_s:'Add items via “🛒 Shopping list” on discounts — then export here as CSV/print for your wholesaler.',
     cart_col_menge:'Qty', cart_col_sum:'Total', cart_col_note:'Note', cart_print_title:'Shopping list / order', cart_print_foot:'Prices are snapshots (deal/reference price) — verify with your wholesaler if in doubt.',
@@ -763,7 +763,7 @@ const I18N = {
     rb_header:'🏷️ <b>Top 10 descontos</b> · maior desconto no topo · só promoções ativas ·',
     rb_empty_t:'Sem promoções ativas de momento',
     rb_empty_s:'Não há promoções de desconto registadas. Volte mais tarde.',
-    rb_expiring:'⏳ A expirar em breve', rb_watched_only:'⭐ Só vigiadas', rb_csv_t:'Exportar a seleção atual como CSV (Excel) para compras', rb_print_t:'Imprimir a seleção atual como cartaz', rb_print_title:'Promoções em curso',
+    rb_expiring:'⏳ A expirar em breve', rb_watched_only:'⭐ Só vigiadas', rb_sort_aria:'Ordenar promoções', rb_sort_pct:'Maior desconto %', rb_sort_saving:'Maior poupança €', rb_csv_t:'Exportar a seleção atual como CSV (Excel) para compras', rb_print_t:'Imprimir a seleção atual como cartaz', rb_print_title:'Promoções em curso',
     cart_title:'Lista de compras', cart_add:'Lista de compras', cart_added:'adicionado', cart_summary:'{n} unidades · total € {sum}', cart_clear:'Limpar lista', cart_clear_confirm:'Limpar toda a lista de compras?', cart_remove:'Remover item',
     cart_empty_t:'Lista de compras vazia', cart_empty_s:'Adicione itens em “🛒 Lista de compras” nas promoções — depois exporte aqui em CSV/impressão para o distribuidor.',
     cart_col_menge:'Qtd', cart_col_sum:'Total', cart_col_note:'Nota', cart_print_title:'Lista de compras / encomenda', cart_print_foot:'Os preços são momentâneos (promoção/referência) — confirme com o distribuidor em caso de dúvida.',
@@ -1199,6 +1199,7 @@ let shortageSort = 'kritisch'; // 'kritisch' (kritischste zuerst) | 'neu' (neues
 let rabattQuery = '';     // Textsuche im Rabatt-Reiter
 let rabattExpiring = false; // nur bald ablaufende Aktionen
 let rabattWatchedOnly = false; // nur Aktionen zu beobachteten Wirkstoffen
+let rabattSort = 'pct'; // 'pct' = höchster Rabatt %, 'saving' = größte Ersparnis € (pro Mindestbestellung)
 let priceQuery = '';      // Textsuche im Preise-Reiter
 let priceWatchedOnly = false; // nur Preise zu beobachteten Wirkstoffen
 let myBookmarks = new Set();
@@ -3305,6 +3306,7 @@ async function loadRabatte() {
         <button class="small sortbtn${rabattExpiring?'':' active'}" data-exp="0" aria-pressed="${!rabattExpiring}">${esc(t('sh_f_all'))}</button>
         <button class="small sortbtn${rabattExpiring?' active':''}" data-exp="1" aria-pressed="${rabattExpiring}">${esc(t('rb_expiring'))}</button>
         ${watched.size?`<button class="small sortbtn${rabattWatchedOnly?' active':''}" data-watchedonly aria-pressed="${rabattWatchedOnly}">${esc(t('rb_watched_only'))}</button>`:''}
+        <select class="small" data-sort data-i18n-aria="rb_sort_aria" aria-label="${esc(t('rb_sort_aria'))}"><option value="pct"${rabattSort==='pct'?' selected':''}>${esc(t('rb_sort_pct'))}</option><option value="saving"${rabattSort==='saving'?' selected':''}>${esc(t('rb_sort_saving'))}</option></select>
         <span class="sp" style="flex:1"></span>
         <button class="ghost small" data-cart>🛒 ${esc(t('cart_title'))}${cartN?` (${cartN})`:''}</button>
         <button class="ghost small" data-rprint title="${esc(t('rb_print_t'))}">🖨️ ${esc(t('pr_print_btn'))}</button>
@@ -3317,12 +3319,18 @@ async function loadRabatte() {
     let shown = [];
     bar.querySelector('[data-rcsv]').onclick = () => exportRabatteCsv(shown);
     bar.querySelector('[data-rprint]').onclick = () => printRabatte(shown);
+    // Absolute Ersparnis je Aktion für die Mindestbestellung (pro Packung × Mindestmenge).
+    const savingTotal = r => Number(r.ersparnis||0) * Math.max(Number(r.min_menge)||1, 1);
     const draw = () => {
       const q = rabattQuery.trim().toLowerCase();
       const list = d.rabatte.filter(r =>
         (!rabattExpiring || r.expiring_soon) &&
         (!rabattWatchedOnly || watched.has((r.wirkstoff||'').toLowerCase())) &&
         (!q || (r.bezeichnung||'').toLowerCase().includes(q) || (r.wirkstoff||'').toLowerCase().includes(q) || (r.supplier||'').toLowerCase().includes(q)));
+      // Sortierung: höchster Rabatt % (Server-Standard) oder größte absolute Ersparnis €.
+      if (rabattSort === 'saving') list.sort((a,b) => savingTotal(b) - savingTotal(a) || (b.rabatt_pct - a.rabatt_pct));
+      // Rang für die aktuell gezeigte, sortierte Liste neu vergeben (#1..N bleibt sinnvoll).
+      list.forEach((r,i) => { r.rank = i+1; });
       bar.querySelectorAll('[data-exp]').forEach(b => { const on = (b.dataset.exp==='1')===rabattExpiring; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
       { const wb = bar.querySelector('[data-watchedonly]'); if (wb) { wb.classList.toggle('active', rabattWatchedOnly); wb.setAttribute('aria-pressed', String(rabattWatchedOnly)); } }
       shown = list;
@@ -3333,6 +3341,7 @@ async function loadRabatte() {
     };
     bar.querySelectorAll('[data-exp]').forEach(b => b.onclick = () => { rabattExpiring = b.dataset.exp==='1'; draw(); });
     { const wb = bar.querySelector('[data-watchedonly]'); if (wb) wb.onclick = () => { rabattWatchedOnly = !rabattWatchedOnly; draw(); }; }
+    bar.querySelector('[data-sort]').onchange = (ev) => { rabattSort = ev.target.value; draw(); };
     const qi = bar.querySelector('[data-q]');
     let deb; qi.oninput = () => { clearTimeout(deb); deb = setTimeout(() => { rabattQuery = qi.value; draw(); }, 250); };
     draw();
