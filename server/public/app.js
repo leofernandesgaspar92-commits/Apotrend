@@ -132,6 +132,7 @@ const I18N = {
     cart_title:'Einkaufsliste', cart_add:'Einkaufsliste', cart_added:'hinzugefügt', cart_summary:'{n} Stück · Summe € {sum}', cart_clear:'Liste leeren', cart_clear_confirm:'Ganze Einkaufsliste leeren?', cart_remove:'Position entfernen',
     cart_empty_t:'Einkaufsliste ist leer', cart_empty_s:'Fügen Sie bei Rabatten „🛒 Einkaufsliste" hinzu — dann hier als CSV/Ausdruck für den Großhandel exportieren.',
     cart_col_menge:'Menge', cart_col_sum:'Summe', cart_col_note:'Notiz', cart_print_title:'Einkaufsliste / Bestellung', cart_print_foot:'Preise sind Momentaufnahmen (Aktions-/Referenzpreis) — im Zweifel beim Großhandel prüfen.',
+    cart_manual_add:'+ Hinzufügen', cart_manual_ph:'Eigene Position (z. B. Ibuprofen 400)', cart_note_ph:'Notiz (z. B. „bis Freitag", „für Rezeptur")',
     rb_none:'Keine Aktion für diese Auswahl.', rb_saving:'Ersparnis € {x} je Packung',
     rb_minorder:'💰 Bei Mindestabnahme ({n} Stück): € {x} gespart',
     rb_best:'⭐ Beste Aktion für {w} ({alt})', rb_alt_one:'1 weitere läuft', rb_alt_many:'{n} weitere laufen',
@@ -444,6 +445,7 @@ const I18N = {
     cart_title:'Shopping list', cart_add:'Shopping list', cart_added:'added', cart_summary:'{n} units · total € {sum}', cart_clear:'Clear list', cart_clear_confirm:'Clear the whole shopping list?', cart_remove:'Remove item',
     cart_empty_t:'Shopping list is empty', cart_empty_s:'Add items via “🛒 Shopping list” on discounts — then export here as CSV/print for your wholesaler.',
     cart_col_menge:'Qty', cart_col_sum:'Total', cart_col_note:'Note', cart_print_title:'Shopping list / order', cart_print_foot:'Prices are snapshots (deal/reference price) — verify with your wholesaler if in doubt.',
+    cart_manual_add:'+ Add', cart_manual_ph:'Own item (e.g. Ibuprofen 400)', cart_note_ph:'Note (e.g. “by Friday”, “for compounding”)',
     rb_none:'No offer for this selection.', rb_saving:'Saving € {x} per pack',
     rb_minorder:'💰 At minimum order ({n} units): € {x} saved',
     rb_best:'⭐ Best deal for {w} ({alt})', rb_alt_one:'1 more running', rb_alt_many:'{n} more running',
@@ -756,6 +758,7 @@ const I18N = {
     cart_title:'Lista de compras', cart_add:'Lista de compras', cart_added:'adicionado', cart_summary:'{n} unidades · total € {sum}', cart_clear:'Limpar lista', cart_clear_confirm:'Limpar toda a lista de compras?', cart_remove:'Remover item',
     cart_empty_t:'Lista de compras vazia', cart_empty_s:'Adicione itens em “🛒 Lista de compras” nas promoções — depois exporte aqui em CSV/impressão para o distribuidor.',
     cart_col_menge:'Qtd', cart_col_sum:'Total', cart_col_note:'Nota', cart_print_title:'Lista de compras / encomenda', cart_print_foot:'Os preços são momentâneos (promoção/referência) — confirme com o distribuidor em caso de dúvida.',
+    cart_manual_add:'+ Adicionar', cart_manual_ph:'Item próprio (ex. Ibuprofeno 400)', cart_note_ph:'Nota (ex. “até sexta”, “para manipulação”)',
     rb_none:'Nenhuma promoção para esta seleção.', rb_saving:'Poupança € {x} por embalagem',
     rb_minorder:'💰 Na compra mínima ({n} unidades): € {x} poupados',
     rb_best:'⭐ Melhor promoção para {w} ({alt})', rb_alt_one:'mais 1 ativa', rb_alt_many:'mais {n} ativas',
@@ -3297,10 +3300,24 @@ async function openCart() {
     </div>
     <h1 style="margin:8px 0 0">🛒 ${esc(t('cart_title'))}</h1>
     <div class="muted">${esc(ti('cart_summary',{ n:d.total_positions, sum:fmtMoney(d.total_price) }))}</div>
+    <div class="row" style="margin-top:10px;gap:6px">
+      <input data-madd placeholder="${esc(t('cart_manual_ph'))}" style="flex:1" aria-label="${esc(t('cart_manual_add'))}">
+      <input type="number" min="1" value="1" data-mqty style="width:78px" aria-label="${esc(t('cart_col_menge'))}">
+      <button class="small" data-maddbtn>${esc(t('cart_manual_add'))}</button>
+    </div>
     ${d.items.length?`<div class="row" style="margin-top:8px"><button class="ghost small" data-cclear>${esc(t('cart_clear'))}</button></div>`:''}
   </div>`);
   head.querySelector('[data-back]').onclick = () => loadTab();
   feed.appendChild(head);
+  const madd = head.querySelector('[data-madd]');
+  const addManual = async () => {
+    const bez = madd.value.trim(); if (!bez) { madd.focus(); return; }
+    let m = Math.round(Number(head.querySelector('[data-mqty]').value)); if (!(m>=1)) m=1;
+    try { await api('POST','/api/cart',{ bezeichnung: bez, menge: m, sourceKind: 'manual' }); openCart(); }
+    catch(e){ alert(e.message); }
+  };
+  head.querySelector('[data-maddbtn]').onclick = addManual;
+  madd.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addManual(); } };
   if (!d.items.length) { feed.appendChild(emptyState({ icon:'🛒', title:t('cart_empty_t'), text:t('cart_empty_s') })); return; }
   head.querySelector('[data-ccsv]').onclick = () => {
     const rows = d.items.map(i => [i.bezeichnung, i.wirkstoff||'', i.supplier||'', i.menge, i.aktionspreis!=null?fmtMoney(i.aktionspreis):'', i.aktionspreis!=null?fmtMoney(i.aktionspreis*i.menge):'', i.gueltig_bis||'', i.note||'']);
@@ -3322,7 +3339,8 @@ async function openCart() {
       ${i.aktionspreis!=null?`<span class="muted" data-linesum>= € ${fmtMoney(i.aktionspreis*i.menge)}</span>`:''}
       <span class="sp" style="flex:1"></span>
       <button class="ghost small" data-crem title="${esc(t('cart_remove'))}" aria-label="${esc(t('cart_remove'))}">🗑</button>
-    </div></div>`);
+    </div>
+    <input data-note value="${esc(i.note||'')}" placeholder="${esc(t('cart_note_ph'))}" maxlength="200" style="margin-top:6px" aria-label="${esc(t('cart_col_note'))}"></div>`);
     const qty = card.querySelector('[data-qty]');
     qty.onchange = async () => {
       let m = Math.round(Number(qty.value)); if (!(m>=1)) m=1; qty.value=m;
@@ -3330,6 +3348,8 @@ async function openCart() {
         const ls = card.querySelector('[data-linesum]'); if (ls && i.aktionspreis!=null) ls.textContent = '= € '+fmtMoney(i.aktionspreis*i.menge);
       } catch(e){ alert(e.message); }
     };
+    const note = card.querySelector('[data-note]');
+    note.onchange = async () => { try { await api('POST',`/api/cart/${i.id}`,{ note: note.value }); i.note = note.value.trim(); } catch(e){ alert(e.message); } };
     card.querySelector('[data-crem]').onclick = async () => { try { await api('POST',`/api/cart/${i.id}/remove`); openCart(); } catch(e){ alert(e.message); } };
     feed.appendChild(card);
   });

@@ -47,6 +47,16 @@ test('Einkaufsliste: leere Bezeichnung abgelehnt, Standardmenge 1', () => {
   assert.equal(it.source_kind, 'manual');
 });
 
+test('Einkaufsliste: Notiz setzen und wieder leeren', () => {
+  const { social, a } = setup();
+  const it = social.addToCart(a, { bezeichnung: 'Amoxi', note: 'bis Freitag' });
+  assert.equal(it.note, 'bis Freitag');
+  const up = social.updateCartItem(a, it.id, { note: '  für Rezeptur  ' });
+  assert.equal(up.note, 'für Rezeptur'); // getrimmt
+  const cleared = social.updateCartItem(a, it.id, { note: '' });
+  assert.equal(cleared.note, null);
+});
+
 test('Einkaufsliste: strikt pro Nutzer:in getrennt; fremde Position nicht änderbar/löschbar', () => {
   const { social, a, b } = setup();
   const it = social.addToCart(a, { bezeichnung: 'Metformin' });
