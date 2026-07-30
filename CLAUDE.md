@@ -13,6 +13,15 @@ zusätzlich `coach/CLAUDE.md` lesen.
 
 - Entwicklung/Push auf der jeweils zugewiesenen Feature-Branch; PR gegen `main`.
 
+- **⚠️ Live-Deploy läuft über Branch `feed-first`** (siehe `render.yaml`: `branch: feed-first`).
+  Render deployt NUR diesen Branch — Änderungen auf einer Feature-Branch sind NICHT live,
+  solange sie nicht auch auf `feed-first` liegen. **Regel: Jede fertige, mit `npm run verify`
+  grüne Änderung MUSS zusätzlich auf `feed-first` landen** (i. d. R. sauberer Fast-Forward:
+  `git push origin HEAD:feed-first`), sonst sieht der Owner nichts. Nach dem Push ggf. in
+  Render „Manual Deploy → Deploy latest commit", falls Auto-Deploy nicht greift.
+  Diese Regel existiert, weil genau diese Diskrepanz (Feature-Branch ≠ Deploy-Branch) einmal
+  dazu führte, dass ~20 fertige Features nie live gingen. Nie wieder.
+
 ## Zielgruppe & UX-Prinzipien (vom Owner festgelegt)
 
 Die Plattform nutzen **Apotheker:innen, Ärzt:innen, Einkauf, Großhandel und Logistiker** —
