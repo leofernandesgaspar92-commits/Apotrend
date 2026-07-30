@@ -80,3 +80,37 @@ test('watch_offers: leer ohne passende Angebote', () => {
   shortages.watch(a, 'Amoxicillin');
   assert.deepEqual(overview.forUser(a).watch_offers, []);
 });
+
+test('Rabatt-Alarm: einmalige Benachrichtigung ab Schwelle, kein Duplikat; Validierung', () => {
+  const repo = createMemoryRepo();
+  const orgAuth = createOrgAuthService(repo);
+  const social = createSocialService(createSocialRepo(), repo);
+  const shortages = createShortagesService(createShortagesRepo(), social);
+  const rabatte = createRabatteService(createRabatteRepo({ today: '2026-07-07' }), social);
+  const exchange = createExchangeService(createExchangeRepo(), social, repo);
+  const prices = createPricesService(createPricesRepo(), social);
+  const overview = createOverviewService({ shortages, exchange, social, rabatte, prices, amr: createAmrService() });
+  const A = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'A' }, owner: { name: 'Anna', email: 'a@a.at', password: 'geheim123' } });
+  social.createProfile(A.user.id, { handle: 'anna', displayName: 'Anna' });
+  const a = A.user.id;
+
+  const deal = rabatte.top10(a).find(r => r.wirkstoff);
+  assert.ok(deal, 'Seed hat mindestens einen Rabatt mit Wirkstoff');
+  // Ohne Alarm: keine Benachrichtigung, auch wenn beobachtet
+  shortages.watch(a, deal.wirkstoff);
+  overview.forUser(a);
+  assert.equal(social.notifications(a).filter(n => n.type === 'price_alert').length, 0);
+  // Validierung: nicht beobachtet -> Fehler; Bereich 1..99
+  assert.throws(() => shortages.setWatchAlert(a, 'GarNichtBeobachtet', 20), /Beobachtungsliste/);
+  assert.throws(() => shortages.setWatchAlert(a, deal.wirkstoff, 0), /1.*99|Schwelle/);
+  assert.throws(() => shortages.setWatchAlert(a, deal.wirkstoff, 150), /1.*99|Schwelle/);
+  // Alarm ab 1 % -> triggert einmalig
+  shortages.setWatchAlert(a, deal.wirkstoff, 1);
+  overview.forUser(a);
+  const n1 = social.notifications(a).filter(n => n.type === 'price_alert');
+  assert.equal(n1.length, 1);
+  assert.ok(n1[0].label.includes(deal.wirkstoff));
+  // Erneuter Aufruf -> kein Duplikat (Dedup)
+  overview.forUser(a);
+  assert.equal(social.notifications(a).filter(n => n.type === 'price_alert').length, 1);
+});

@@ -19,6 +19,8 @@ export function createShortagesRepo({ seed = true } = {}) {
   // Beobachtungsliste je Nutzer: userId -> Map<wirkstoffLower, Anzeigename>
   const watch = new Map();
   const watchNotes = new Map(); // userId -> Map(normKey -> Notiz) — Premium: private Notizen je Wirkstoff
+  const watchAlerts = new Map(); // userId -> Map(normKey -> pct) — Rabatt-Alarm-Schwelle je Wirkstoff
+  const alertedDeals = new Map(); // userId -> Set(dealKey) — schon benachrichtigte Aktionen (Dedup)
   const uuid = () => crypto.randomUUID();
   const now = () => new Date().toISOString();
   const norm = (w) => String(w || '').trim().toLowerCase();
@@ -114,6 +116,17 @@ export function createShortagesRepo({ seed = true } = {}) {
       const m = watchNotes.get(userId);
       return (m && m.get(norm(wirkstoff))) || '';
     },
+    // Rabatt-Alarm-Schwelle je beobachtetem Wirkstoff (Prozent). 0/null löscht sie.
+    setWatchAlert(userId, wirkstoff, pct) {
+      const key = norm(wirkstoff); if (!key) return;
+      if (!watchAlerts.has(userId)) watchAlerts.set(userId, new Map());
+      const m = watchAlerts.get(userId);
+      if (pct && pct > 0) m.set(key, pct); else { m.delete(key); if (m.size === 0) watchAlerts.delete(userId); }
+    },
+    getWatchAlert(userId, wirkstoff) { const m = watchAlerts.get(userId); return (m && m.get(norm(wirkstoff))) || null; },
+    // Dedup: eine konkrete Aktion (dealKey) nur einmal je Nutzer:in melden.
+    wasDealAlerted(userId, dealKey) { const s = alertedDeals.get(userId); return !!(s && s.has(dealKey)); },
+    markDealAlerted(userId, dealKey) { if (!alertedDeals.has(userId)) alertedDeals.set(userId, new Set()); alertedDeals.get(userId).add(dealKey); },
     // Alle Nutzer, die diesen Wirkstoff beobachten (für Statusänderungs-Alerts).
     usersWatching(wirkstoff) {
       const key = norm(wirkstoff);
@@ -137,6 +150,8 @@ export function createShortagesRepo({ seed = true } = {}) {
     purgeUser(userId) {
       watch.delete(userId);
       watchNotes.delete(userId);
+      watchAlerts.delete(userId);
+      alertedDeals.delete(userId);
       // Melder-Identität anonymisieren, Bestätigungen des Nutzers entfernen (DSGVO).
       for (const s of shortages.values()) {
         if (s.reporter_user_id === userId) s.reporter_user_id = null;
@@ -144,7 +159,7 @@ export function createShortagesRepo({ seed = true } = {}) {
       }
     },
 
-    __dump() { return { shortages: [...shortages], watch: [...watch].map(([u, m]) => [u, [...m]]), watchNotes: [...watchNotes].map(([u, m]) => [u, [...m]]) }; },
+    __dump() { return { shortages: [...shortages], watch: [...watch].map(([u, m]) => [u, [...m]]), watchNotes: [...watchNotes].map(([u, m]) => [u, [...m]]), watchAlerts: [...watchAlerts].map(([u, m]) => [u, [...m]]), alertedDeals: [...alertedDeals].map(([u, s]) => [u, [...s]]) }; },
     __load(data) {
       if (!data) return;
       // Rückwärtskompatibel: alter Snapshot war ein reines Engpass-Array.
@@ -157,6 +172,14 @@ export function createShortagesRepo({ seed = true } = {}) {
       watchNotes.clear();
       if (!Array.isArray(data) && data.watchNotes) {
         for (const [u, entries] of data.watchNotes) watchNotes.set(u, new Map(entries));
+      }
+      watchAlerts.clear();
+      if (!Array.isArray(data) && data.watchAlerts) {
+        for (const [u, entries] of data.watchAlerts) watchAlerts.set(u, new Map(entries));
+      }
+      alertedDeals.clear();
+      if (!Array.isArray(data) && data.alertedDeals) {
+        for (const [u, keys] of data.alertedDeals) alertedDeals.set(u, new Set(keys));
       }
     },
   };

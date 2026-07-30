@@ -197,7 +197,7 @@ const I18N = {
     gen_back:'Zurück', notif_title:'🔔 Benachrichtigungen', notif_doc:'Benachrichtigungen',
     notif_readall:'Alle als gelesen markieren', nf_all:'Alle', nf_procurement:'⭐ Engpässe & Beschaffung', nf_social:'💬 Sozial', notif_empty:'Noch keine Benachrichtigungen.',
     notif_someone:'Jemand', post_doc:'Beitrag', post_title:'Beitrag', post_back:'← zurück zum Feed',
-    nv_follow:'folgt dir jetzt', nv_comment:'hat kommentiert', nv_reaction:'hat reagiert auf deinen Beitrag', nv_endorsement:'hat dein Fachgebiet bestätigt', en_hint:'Fachgebiet bestätigen', nv_recommendation:'hat dich empfohlen',
+    nv_follow:'folgt dir jetzt', nv_comment:'hat kommentiert', nv_reaction:'hat reagiert auf deinen Beitrag', nv_endorsement:'hat dein Fachgebiet bestätigt', en_hint:'Fachgebiet bestätigen', nv_recommendation:'hat dich empfohlen', nv_price_alert:'Rabatt-Alarm:',
     rec_title:'Empfehlungen', rec_write:'✍️ Empfehlung schreiben', rec_edit:'✍️ Empfehlung bearbeiten', rec_ph:'Wie war die fachliche Zusammenarbeit mit dieser Person? (max. 600 Zeichen)', rec_save:'Empfehlung veröffentlichen', rec_none:'Noch keine Empfehlungen.', rec_remove:'Empfehlung entfernen', rec_remove_confirm:'Diese Empfehlung wirklich entfernen?',
     nv_mention:'hat dich erwähnt', nv_dm:'hat dir geschrieben', nv_poll_vote:'hat bei deiner Umfrage abgestimmt', nv_exchange_offer:'bietet jetzt an, was du suchst:',
     nv_exchange_want:'sucht, was du anbietest:', nv_verified:'Dein Profil wurde verifiziert ✔',
@@ -306,6 +306,7 @@ const I18N = {
     ma_q_title:'❓ Meine Fachfragen', ma_total:'gesamt', ma_no_q:'Noch keine Fragen gestellt.',
     ma_r_title:'👥 Meine Engpass-Meldungen', ma_no_r:'Noch keine Engpässe gemeldet.', ma_confirmed:'{n} bestätigt',
     ma_e_title:'🔄 Meine Austausch-Einträge', ma_no_e:'Noch keine Biete/Suche-Einträge.',
+    wk_alert_label:'Rabatt-Alarm ab', wk_alert_ph:'z.B. 20', wk_alert_hint:'Wir benachrichtigen dich, sobald es für diesen Wirkstoff eine Aktion mit mindestens diesem Rabatt gibt. Leer lassen = Alarm aus.', wk_alert_saved:'✓ Alarm ab {n}% aktiv', wk_alert_off:'Alarm aus',
     wk_sub:'Alles zu diesem Wirkstoff auf einen Blick.', wk_note_title:'Deine private Notiz zu diesem Wirkstoff', wk_also_1:'👀 Auch von 1 Kolleg:in beobachtet', wk_also_n:'👀 Auch von {n} Kolleg:innen beobachtet', wk_print_t:'Ein-Seiten-Dossier drucken', wk_print_title:'Wirkstoff-Dossier', wk_print_no_shortage:'Keine aktuelle Engpass-Meldung.', wk_print_cheapest:'Günstigster Preis', wk_print_deal:'Beste Aktion', wk_print_sources:'Bezugsquellen (Biete)',
     wk_amr_title:'🧫 Antibiotika-Stewardship', wk_amr_tag:'Information, keine Therapieempfehlung',
     wk_amr_forum:'💬 Fachdiskussion', wk_amr_pinfo:'🧫 Patienten-Infokarten',
@@ -511,7 +512,7 @@ const I18N = {
     gen_back:'Back', notif_title:'🔔 Notifications', notif_doc:'Notifications',
     notif_readall:'Mark all as read', nf_all:'All', nf_procurement:'⭐ Shortages & sourcing', nf_social:'💬 Social', notif_empty:'No notifications yet.',
     notif_someone:'Someone', post_doc:'Post', post_title:'Post', post_back:'← back to feed',
-    nv_follow:'now follows you', nv_comment:'commented', nv_reaction:'reacted to your post', nv_endorsement:'endorsed your skill', en_hint:'Endorse this skill', nv_recommendation:'recommended you',
+    nv_follow:'now follows you', nv_comment:'commented', nv_reaction:'reacted to your post', nv_endorsement:'endorsed your skill', en_hint:'Endorse this skill', nv_recommendation:'recommended you', nv_price_alert:'Discount alert:',
     rec_title:'Recommendations', rec_write:'✍️ Write a recommendation', rec_edit:'✍️ Edit recommendation', rec_ph:'How was working with this person professionally? (max. 600 characters)', rec_save:'Publish recommendation', rec_none:'No recommendations yet.', rec_remove:'Remove recommendation', rec_remove_confirm:'Really remove this recommendation?',
     nv_mention:'mentioned you', nv_dm:'messaged you', nv_poll_vote:'voted in your poll', nv_exchange_offer:'now offers what you seek:',
     nv_exchange_want:'seeks what you offer:', nv_verified:'Your profile was verified ✔',
@@ -620,6 +621,7 @@ const I18N = {
     ma_q_title:'❓ My questions', ma_total:'total', ma_no_q:'No questions asked yet.',
     ma_r_title:'👥 My shortage reports', ma_no_r:'No shortages reported yet.', ma_confirmed:'{n} confirmed',
     ma_e_title:'🔄 My exchange entries', ma_no_e:'No offer/seek entries yet.',
+    wk_alert_label:'Discount alert from', wk_alert_ph:'e.g. 20', wk_alert_hint:'We notify you as soon as there is a deal for this substance with at least this discount. Leave empty to turn off.', wk_alert_saved:'✓ Alert active from {n}%', wk_alert_off:'Alert off',
     wk_sub:'Everything about this substance at a glance.', wk_note_title:'Your private note on this substance', wk_also_1:'👀 Also watched by 1 colleague', wk_also_n:'👀 Also watched by {n} colleagues', wk_print_t:'Print one-page dossier', wk_print_title:'Substance dossier', wk_print_no_shortage:'No current shortage report.', wk_print_cheapest:'Cheapest price', wk_print_deal:'Best deal', wk_print_sources:'Sources (offers)',
     wk_amr_title:'🧫 Antibiotic stewardship', wk_amr_tag:'Information, not treatment advice',
     wk_amr_forum:'💬 Expert discussion', wk_amr_pinfo:'🧫 Patient info cards',
@@ -825,7 +827,7 @@ const I18N = {
     gen_back:'Voltar', notif_title:'🔔 Notificações', notif_doc:'Notificações',
     notif_readall:'Marcar todas como lidas', nf_all:'Todas', nf_procurement:'⭐ Faltas & compras', nf_social:'💬 Social', notif_empty:'Ainda sem notificações.',
     notif_someone:'Alguém', post_doc:'Publicação', post_title:'Publicação', post_back:'← voltar ao feed',
-    nv_follow:'começou a segui-lo', nv_comment:'comentou', nv_reaction:'reagiu à sua publicação', nv_endorsement:'confirmou a sua área', en_hint:'Confirmar esta área', nv_recommendation:'recomendou-o',
+    nv_follow:'começou a segui-lo', nv_comment:'comentou', nv_reaction:'reagiu à sua publicação', nv_endorsement:'confirmou a sua área', en_hint:'Confirmar esta área', nv_recommendation:'recomendou-o', nv_price_alert:'Alerta de desconto:',
     rec_title:'Recomendações', rec_write:'✍️ Escrever recomendação', rec_edit:'✍️ Editar recomendação', rec_ph:'Como foi a colaboração profissional com esta pessoa? (máx. 600 caracteres)', rec_save:'Publicar recomendação', rec_none:'Ainda sem recomendações.', rec_remove:'Remover recomendação', rec_remove_confirm:'Remover mesmo esta recomendação?',
     nv_mention:'mencionou-o', nv_dm:'enviou-lhe mensagem', nv_poll_vote:'votou na sua sondagem', nv_exchange_offer:'oferece agora o que procura:',
     nv_exchange_want:'procura o que oferece:', nv_verified:'O seu perfil foi verificado ✔',
@@ -934,6 +936,7 @@ const I18N = {
     ma_q_title:'❓ As minhas perguntas', ma_total:'no total', ma_no_q:'Ainda sem perguntas.',
     ma_r_title:'👥 Os meus avisos de falta', ma_no_r:'Ainda sem faltas reportadas.', ma_confirmed:'{n} confirmaram',
     ma_e_title:'🔄 As minhas entradas de troca', ma_no_e:'Ainda sem entradas de oferta/procura.',
+    wk_alert_label:'Alerta de desconto a partir de', wk_alert_ph:'ex. 20', wk_alert_hint:'Avisamos assim que houver uma promoção para esta substância com pelo menos este desconto. Deixe vazio para desligar.', wk_alert_saved:'✓ Alerta ativo a partir de {n}%', wk_alert_off:'Alerta desligado',
     wk_sub:'Tudo sobre esta substância num relance.', wk_note_title:'A sua nota privada sobre esta substância', wk_also_1:'👀 Também vigiada por 1 colega', wk_also_n:'👀 Também vigiada por {n} colegas', wk_print_t:'Imprimir dossiê de uma página', wk_print_title:'Dossiê da substância', wk_print_no_shortage:'Sem aviso de falta atual.', wk_print_cheapest:'Preço mais barato', wk_print_deal:'Melhor promoção', wk_print_sources:'Fontes (ofertas)',
     wk_amr_title:'🧫 Stewardship de antibióticos', wk_amr_tag:'Informação, não é recomendação terapêutica',
     wk_amr_forum:'💬 Discussão técnica', wk_amr_pinfo:'🧫 Cartões informativos para doentes',
@@ -4519,6 +4522,25 @@ async function openWirkstoff(name) {
   };
   feed.appendChild(head);
 
+  // Rabatt-Alarm für diesen Wirkstoff (nur wenn beobachtet): ab X % Rabatt benachrichtigen.
+  if (d.watched) {
+    const al = el(`<div class="card"><div class="row" style="align-items:center;gap:8px;flex-wrap:wrap">
+        <span aria-hidden="true">🔔</span><label style="margin:0">${esc(t('wk_alert_label'))}</label>
+        <input type="number" min="1" max="99" value="${d.alert_pct||''}" data-alertpct placeholder="${esc(t('wk_alert_ph'))}" style="width:88px" aria-label="${esc(t('wk_alert_label'))}"><span>%</span>
+        <button class="small" data-alertsave>${esc(t('cm_save'))}</button>
+        <span class="muted" data-alertmsg style="font-size:13px"></span>
+      </div><div class="muted" style="font-size:12px;margin-top:4px">${esc(t('wk_alert_hint'))}</div></div>`);
+    al.querySelector('[data-alertsave]').onclick = async () => {
+      const v = al.querySelector('[data-alertpct]').value;
+      const msg = al.querySelector('[data-alertmsg]');
+      try { const r = await api('POST', `/api/watchlist/${encodeURIComponent(d.wirkstoff)}/alert`, { pct: v === '' ? null : Number(v) });
+        const cur = (r.items.find(i => i.wirkstoff.trim().toLowerCase() === d.wirkstoff.trim().toLowerCase()) || {}).alert_pct;
+        msg.textContent = cur ? ti('wk_alert_saved', { n: cur }) : t('wk_alert_off');
+      } catch(e){ msg.textContent = e.message; }
+    };
+    feed.appendChild(al);
+  }
+
   // Premium: private Notiz zu diesem Wirkstoff — direkt auf der Detailseite (nur wenn beobachtet).
   let noteCard = null;
   function renderDetailNote() {
@@ -4986,7 +5008,7 @@ async function showNotifications() {
   setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔' };
   app.innerHTML = '';
   const procCount = d.notifications.filter(n => NOTIF_PROCUREMENT.has(n.type)).length;
   const showFilter = d.notifications.length >= 5 && procCount > 0 && procCount < d.notifications.length;
@@ -5010,7 +5032,7 @@ async function showNotifications() {
   if (!shown.length) { list.innerHTML = `<div class="muted">${esc(t('notif_empty'))}</div>`; return; }
   shown.forEach(n => {
     const who = n.actor ? n.actor.display_name : t('notif_someone');
-    const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer';
+    const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert';
     const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:var(--ok-bg)'}">
       <div class="row" style="align-items:baseline">
         <span>${icons[n.type]||'🔔'}</span>
@@ -5028,6 +5050,7 @@ async function showNotifications() {
           const tb=document.querySelector('.tabs button[data-tab="exchange"]'); if(tb) tb.classList.add('active'); loadTab(); });
       }
       else if (n.type === 'watch_alert') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
+      else if (n.type === 'price_alert') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('rabatte')); }
       else if (n.type === 'shortage_confirm') { mainScreen().then(()=>goTab('shortages')); }
       else if (n.type === 'endorsement' || n.type === 'recommendation') { mainScreen().then(()=> me && openProfile(me.handle)); }
       else if (n.post_id) { mainScreen().then(()=>openPost(n.post_id)); }

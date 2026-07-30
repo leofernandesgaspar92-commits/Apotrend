@@ -178,6 +178,17 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       shortagesRepo.setWatchNote(userId, wirkstoff, note);
       return this.myWatchlist(userId);
     },
+    // Rabatt-Alarm: „benachrichtige mich ab X % Rabatt" für einen beobachteten Wirkstoff.
+    // pct leer/0 schaltet den Alarm ab. 1..99.
+    setWatchAlert(userId, wirkstoff, pct) {
+      if (!shortagesRepo.isWatched(userId, wirkstoff)) throw new AppError('not_watched', 'Wirkstoff nicht in der Beobachtungsliste.');
+      let p = (pct == null || pct === '') ? null : Math.round(Number(pct));
+      if (p != null && (isNaN(p) || p < 1 || p > 99)) throw new AppError('alert_pct_range', 'Alarm-Schwelle: 1–99 %.');
+      shortagesRepo.setWatchAlert(userId, wirkstoff, p);
+      return this.myWatchlist(userId);
+    },
+    wasAlerted(userId, dealKey) { return shortagesRepo.wasDealAlerted(userId, dealKey); },
+    markAlerted(userId, dealKey) { shortagesRepo.markDealAlerted(userId, dealKey); },
 
     // Beobachtete Wirkstoffe mit aktuellem Engpass-Status (rot = kritisch).
     // Kein passender Engpass-Eintrag => Status 'unauffaellig' (derzeit keine Meldung).
@@ -198,6 +209,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
           quelle: s ? s.quelle : null,
           provenance: s ? s.provenance : null,
           note: shortagesRepo.getWatchNote(userId, w), // Premium: private Notiz (leer für Gratis)
+          alert_pct: shortagesRepo.getWatchAlert(userId, w), // Rabatt-Alarm-Schwelle (null = aus)
         };
       }).sort((a, b) => {
         const rank = { kritisch: 3, eingeschraenkt: 2, verfuegbar: 1, unauffaellig: 0 };

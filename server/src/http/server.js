@@ -325,6 +325,7 @@ const routes = [
       wirkstoff: name,
       amr: amr.forWirkstoff(name),
       watched: shortagesRepo.isWatched(userId, name),
+      alert_pct: shortagesRepo.getWatchAlert(userId, name),
       premium: payments.hasFeature(userId, 'premium'),
       note: shortagesRepo.getWatchNote(userId, name),
       also_watching: shortagesRepo.usersWatching(name).filter(id => id !== userId).length,
@@ -475,6 +476,7 @@ const routes = [
   ['POST', /^\/api\/watchlist$/, true, async ({ userId, body }) => ({ items: shortages.watch(userId, body.wirkstoff) })],
   ['DELETE', /^\/api\/watchlist\/([^/]+)$/, true, async ({ userId, params }) => ({ items: shortages.unwatch(userId, decodeURIComponent(params[0])) })],
   ['POST', /^\/api\/watchlist\/([^/]+)\/note$/, true, async ({ userId, params, body }) => ({ items: shortages.setWatchNote(userId, decodeURIComponent(params[0]), body.note) })],
+  ['POST', /^\/api\/watchlist\/([^/]+)\/alert$/, true, async ({ userId, params, body }) => ({ items: shortages.setWatchAlert(userId, decodeURIComponent(params[0]), body.pct) })],
 
   // ── Preise (Priorität 3) ──
   ['GET', /^\/api\/prices$/, true, async ({ userId }) => ({ comparisons: prices.comparisons(userId), savings: prices.savingsSummary() })],

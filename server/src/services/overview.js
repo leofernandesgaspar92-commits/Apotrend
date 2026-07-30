@@ -35,15 +35,28 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
         if (!cur || r.rabatt_pct > cur.rabatt_pct) dealByWirkstoff.set(k, r);
       }
       const watchDeals = watchlist
-        .map(w => ({ wirkstoff: w.wirkstoff, deal: dealByWirkstoff.get(w.wirkstoff.trim().toLowerCase()) || null }))
+        .map(w => ({ wirkstoff: w.wirkstoff, alert_pct: w.alert_pct || null, deal: dealByWirkstoff.get(w.wirkstoff.trim().toLowerCase()) || null }))
         .filter(x => x.deal)
         .map(x => ({
-          wirkstoff: x.wirkstoff,
+          wirkstoff: x.wirkstoff, alert_pct: x.alert_pct,
           bezeichnung: x.deal.bezeichnung, supplier: x.deal.supplier,
           rabatt_pct: x.deal.rabatt_pct, aktionspreis: x.deal.aktionspreis,
           ersparnis: x.deal.ersparnis, min_menge: x.deal.min_menge,
           gueltig_bis: x.deal.gueltig_bis, days_left: x.deal.days_left, expiring_soon: x.deal.expiring_soon,
         }));
+
+      // Rabatt-Alarm: wenn die aktuelle beste Aktion die gesetzte Schwelle erreicht und diese
+      // konkrete Aktion noch nicht gemeldet wurde -> einmalig benachrichtigen (Dedup). Läuft
+      // bei jedem Übersichts-Aufruf; sobald Live-Daten angeschlossen sind, greift es automatisch.
+      if (social.pushNotification && shortages.wasAlerted) {
+        for (const wd of watchDeals) {
+          if (!wd.alert_pct || wd.rabatt_pct < wd.alert_pct) continue;
+          const dealKey = `${wd.wirkstoff.trim().toLowerCase()}|${wd.gueltig_bis}|${wd.rabatt_pct}`;
+          if (shortages.wasAlerted(userId, dealKey)) continue;
+          shortages.markAlerted(userId, dealKey);
+          social.pushNotification({ userId, type: 'price_alert', refType: 'wirkstoff', refId: wd.wirkstoff, label: `${wd.wirkstoff} · −${wd.rabatt_pct}%` });
+        }
+      }
 
       return {
         shortages: { kritisch: kritisch.length, total: sh.length, antibiotika, top: kritisch.slice(0, 3) },
