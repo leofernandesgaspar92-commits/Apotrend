@@ -129,6 +129,9 @@ const I18N = {
     rb_empty_t:'Derzeit keine laufenden Aktionen',
     rb_empty_s:'Aktuell sind keine Rabatt-Aktionen hinterlegt. Schau später wieder vorbei.',
     rb_expiring:'⏳ Bald ablaufend', rb_watched_only:'⭐ Nur beobachtete', rb_csv_t:'Aktuelle Auswahl als CSV (Excel) für den Einkauf', rb_print_t:'Aktuelle Auswahl als Aushang drucken', rb_print_title:'Laufende Rabatt-Aktionen',
+    cart_title:'Einkaufsliste', cart_add:'Einkaufsliste', cart_added:'hinzugefügt', cart_summary:'{n} Stück · Summe € {sum}', cart_clear:'Liste leeren', cart_clear_confirm:'Ganze Einkaufsliste leeren?', cart_remove:'Position entfernen',
+    cart_empty_t:'Einkaufsliste ist leer', cart_empty_s:'Fügen Sie bei Rabatten „🛒 Einkaufsliste" hinzu — dann hier als CSV/Ausdruck für den Großhandel exportieren.',
+    cart_col_menge:'Menge', cart_col_sum:'Summe', cart_col_note:'Notiz', cart_print_title:'Einkaufsliste / Bestellung', cart_print_foot:'Preise sind Momentaufnahmen (Aktions-/Referenzpreis) — im Zweifel beim Großhandel prüfen.',
     rb_none:'Keine Aktion für diese Auswahl.', rb_saving:'Ersparnis € {x} je Packung',
     rb_minorder:'💰 Bei Mindestabnahme ({n} Stück): € {x} gespart',
     rb_best:'⭐ Beste Aktion für {w} ({alt})', rb_alt_one:'1 weitere läuft', rb_alt_many:'{n} weitere laufen',
@@ -438,6 +441,9 @@ const I18N = {
     rb_empty_t:'No running offers right now',
     rb_empty_s:'There are currently no discount offers on file. Check back later.',
     rb_expiring:'⏳ Expiring soon', rb_watched_only:'⭐ Watched only', rb_csv_t:'Export current selection as CSV (Excel) for purchasing', rb_print_t:'Print current selection as a notice', rb_print_title:'Current discount deals',
+    cart_title:'Shopping list', cart_add:'Shopping list', cart_added:'added', cart_summary:'{n} units · total € {sum}', cart_clear:'Clear list', cart_clear_confirm:'Clear the whole shopping list?', cart_remove:'Remove item',
+    cart_empty_t:'Shopping list is empty', cart_empty_s:'Add items via “🛒 Shopping list” on discounts — then export here as CSV/print for your wholesaler.',
+    cart_col_menge:'Qty', cart_col_sum:'Total', cart_col_note:'Note', cart_print_title:'Shopping list / order', cart_print_foot:'Prices are snapshots (deal/reference price) — verify with your wholesaler if in doubt.',
     rb_none:'No offer for this selection.', rb_saving:'Saving € {x} per pack',
     rb_minorder:'💰 At minimum order ({n} units): € {x} saved',
     rb_best:'⭐ Best deal for {w} ({alt})', rb_alt_one:'1 more running', rb_alt_many:'{n} more running',
@@ -747,6 +753,9 @@ const I18N = {
     rb_empty_t:'Sem promoções ativas de momento',
     rb_empty_s:'Não há promoções de desconto registadas. Volte mais tarde.',
     rb_expiring:'⏳ A expirar em breve', rb_watched_only:'⭐ Só vigiadas', rb_csv_t:'Exportar a seleção atual como CSV (Excel) para compras', rb_print_t:'Imprimir a seleção atual como cartaz', rb_print_title:'Promoções em curso',
+    cart_title:'Lista de compras', cart_add:'Lista de compras', cart_added:'adicionado', cart_summary:'{n} unidades · total € {sum}', cart_clear:'Limpar lista', cart_clear_confirm:'Limpar toda a lista de compras?', cart_remove:'Remover item',
+    cart_empty_t:'Lista de compras vazia', cart_empty_s:'Adicione itens em “🛒 Lista de compras” nas promoções — depois exporte aqui em CSV/impressão para o distribuidor.',
+    cart_col_menge:'Qtd', cart_col_sum:'Total', cart_col_note:'Nota', cart_print_title:'Lista de compras / encomenda', cart_print_foot:'Os preços são momentâneos (promoção/referência) — confirme com o distribuidor em caso de dúvida.',
     rb_none:'Nenhuma promoção para esta seleção.', rb_saving:'Poupança € {x} por embalagem',
     rb_minorder:'💰 Na compra mínima ({n} unidades): € {x} poupados',
     rb_best:'⭐ Melhor promoção para {w} ({alt})', rb_alt_one:'mais 1 ativa', rb_alt_many:'mais {n} ativas',
@@ -3155,6 +3164,7 @@ async function loadRabatte() {
   feed.innerHTML = '<div class="loading">…</div>';
   try {
     const d = await api('GET','/api/rabatte');
+    let cartN = 0; try { cartN = (await api('GET','/api/cart')).count; } catch { /* ohne Zähler weiter */ }
     // Beobachtungsliste laden, um „nur beobachtete" zu ermöglichen (Fehler = kein Filter).
     let watched = new Set();
     try { const wl = await api('GET','/api/watchlist'); watched = new Set((wl.items||[]).map(i => (i.wirkstoff||'').toLowerCase())); } catch { /* ohne Filter weiter */ }
@@ -3171,10 +3181,12 @@ async function loadRabatte() {
         <button class="small sortbtn${rabattExpiring?' active':''}" data-exp="1" aria-pressed="${rabattExpiring}">${esc(t('rb_expiring'))}</button>
         ${watched.size?`<button class="small sortbtn${rabattWatchedOnly?' active':''}" data-watchedonly aria-pressed="${rabattWatchedOnly}">${esc(t('rb_watched_only'))}</button>`:''}
         <span class="sp" style="flex:1"></span>
+        <button class="ghost small" data-cart>🛒 ${esc(t('cart_title'))}${cartN?` (${cartN})`:''}</button>
         <button class="ghost small" data-rprint title="${esc(t('rb_print_t'))}">🖨️ ${esc(t('pr_print_btn'))}</button>
         <button class="ghost small" data-rcsv title="${esc(t('rb_csv_t'))}">⬇️ CSV</button>
       </div></div>`);
     feed.appendChild(bar);
+    bar.querySelector('[data-cart]').onclick = openCart;
     const listBox = el('<div data-rlist></div>');
     feed.appendChild(listBox);
     let shown = [];
@@ -3225,6 +3237,7 @@ function rabattCard(r) {
     <div class="row" style="margin-top:8px">
       <span class="muted">${esc(nlabel(r.post_count||0,'pg_posts_one','pg_posts'))}</span>
       <span class="sp" style="flex:1"></span>
+      <button class="ghost small" data-addcart>🛒 ${esc(t('cart_add'))}</button>
       <button class="ghost small" data-pp>${esc(t('sc_post_about'))}</button>
     </div>
     <div class="hidden" data-ppbox style="margin-top:6px">
@@ -3242,7 +3255,82 @@ function rabattCard(r) {
   };
   const rw = card.querySelector('[data-wirkstoff]');
   if (rw) rw.onclick = () => openWirkstoff(rw.dataset.wirkstoff);
+  card.querySelector('[data-addcart]').onclick = (ev) => cartAdd({
+    bezeichnung: r.bezeichnung, wirkstoff: r.wirkstoff, supplier: r.supplier,
+    aktionspreis: r.aktionspreis, rabattPct: r.rabatt_pct, gueltigBis: r.gueltig_bis,
+    menge: r.min_menge || 1, sourceKind: 'rabatt',
+  }, ev.target);
   return card;
+}
+
+// Artikel zur Einkaufsliste hinzufügen (mit optischer Bestätigung am Button).
+async function cartAdd(payload, btn) {
+  try {
+    await api('POST', '/api/cart', payload);
+    if (btn) { btn.textContent = '✓ ' + t('cart_added'); btn.disabled = true; }
+  } catch(e){ alert(e.message); }
+}
+
+// Einkaufsliste (Bestell-Merkzettel): Positionen mit Menge, Entfernen, CSV/Ausdruck.
+async function openCart() {
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
+  setDocTitle(t('cart_title'));
+  feed.innerHTML = '<div class="loading">…</div>';
+  let d;
+  try { d = await api('GET','/api/cart'); } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
+  feed.innerHTML = '';
+  const head = el(`<div class="card">
+    <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span>
+      ${d.items.length?`<button class="ghost small" data-ccsv>⬇️ CSV</button><button class="ghost small" data-cprint>🖨️ ${esc(t('pr_print_btn'))}</button>`:''}
+    </div>
+    <h1 style="margin:8px 0 0">🛒 ${esc(t('cart_title'))}</h1>
+    <div class="muted">${esc(ti('cart_summary',{ n:d.total_positions, sum:fmtMoney(d.total_price) }))}</div>
+    ${d.items.length?`<div class="row" style="margin-top:8px"><button class="ghost small" data-cclear>${esc(t('cart_clear'))}</button></div>`:''}
+  </div>`);
+  head.querySelector('[data-back]').onclick = () => loadTab();
+  feed.appendChild(head);
+  if (!d.items.length) { feed.appendChild(emptyState({ icon:'🛒', title:t('cart_empty_t'), text:t('cart_empty_s') })); return; }
+  head.querySelector('[data-ccsv]').onclick = () => {
+    const rows = d.items.map(i => [i.bezeichnung, i.wirkstoff||'', i.supplier||'', i.menge, i.aktionspreis!=null?fmtMoney(i.aktionspreis):'', i.aktionspreis!=null?fmtMoney(i.aktionspreis*i.menge):'', i.gueltig_bis||'', i.note||'']);
+    downloadCsv('apotrend-einkaufsliste', [t('csv_praeparat'), t('csv_wirkstoff'), t('csv_lieferant'), t('cart_col_menge'), t('csv_aktionspreis'), t('cart_col_sum'), t('csv_gueltig_bis'), t('cart_col_note')], rows);
+  };
+  head.querySelector('[data-cprint]').onclick = () => printCart(d);
+  head.querySelector('[data-cclear]').onclick = async () => { if (!confirm(t('cart_clear_confirm'))) return; try { await api('POST','/api/cart/clear'); openCart(); } catch(e){ alert(e.message); } };
+  d.items.forEach(i => {
+    const card = el(`<div class="card"><div class="row" style="align-items:baseline">
+      <span class="post-author">${esc(i.bezeichnung)}</span>
+      ${i.wirkstoff?`<span class="handle">${esc(i.wirkstoff)}</span>`:''}
+      <span class="sp" style="flex:1"></span>
+      ${i.aktionspreis!=null?`<span style="font-weight:800;color:var(--ok-fg)">€ ${fmtMoney(i.aktionspreis)}</span>`:''}
+    </div>
+    ${i.supplier?`<div class="muted" style="font-size:13px">${esc(i.supplier)}${i.rabatt_pct?` · −${i.rabatt_pct}%`:''}${i.gueltig_bis?` · ${esc(t('pg_valid'))} ${esc(i.gueltig_bis)}`:''}</div>`:''}
+    <div class="row" style="margin-top:8px;align-items:center;gap:8px">
+      <label style="margin:0">${esc(t('cart_col_menge'))}</label>
+      <input type="number" min="1" value="${i.menge}" data-qty style="width:90px" aria-label="${esc(t('cart_col_menge'))}">
+      ${i.aktionspreis!=null?`<span class="muted" data-linesum>= € ${fmtMoney(i.aktionspreis*i.menge)}</span>`:''}
+      <span class="sp" style="flex:1"></span>
+      <button class="ghost small" data-crem title="${esc(t('cart_remove'))}" aria-label="${esc(t('cart_remove'))}">🗑</button>
+    </div></div>`);
+    const qty = card.querySelector('[data-qty]');
+    qty.onchange = async () => {
+      let m = Math.round(Number(qty.value)); if (!(m>=1)) m=1; qty.value=m;
+      try { const r = await api('POST',`/api/cart/${i.id}`,{ menge:m }); i.menge=r.item.menge;
+        const ls = card.querySelector('[data-linesum]'); if (ls && i.aktionspreis!=null) ls.textContent = '= € '+fmtMoney(i.aktionspreis*i.menge);
+      } catch(e){ alert(e.message); }
+    };
+    card.querySelector('[data-crem]').onclick = async () => { try { await api('POST',`/api/cart/${i.id}/remove`); openCart(); } catch(e){ alert(e.message); } };
+    feed.appendChild(card);
+  });
+}
+
+function printCart(d) {
+  const css = `table{border-collapse:collapse;width:100%} th,td{border:1px solid #bbb;padding:6px 8px;text-align:left;font-size:13px} th{background:#eee} .r{text-align:right}`;
+  const rows = d.items.map(i => `<tr><td>${esc(i.bezeichnung)}</td><td>${esc(i.wirkstoff||'')}</td><td>${esc(i.supplier||'')}</td><td class="r">${i.menge}</td><td class="r">${i.aktionspreis!=null?'€ '+printMoney(i.aktionspreis):'—'}</td><td class="r">${i.aktionspreis!=null?'€ '+printMoney(i.aktionspreis*i.menge):'—'}</td><td>${esc(i.gueltig_bis||'')}</td></tr>`).join('');
+  const body = `<div style="color:#444;margin-bottom:8px">${esc(printDate())} · ${esc(ti('cart_summary',{ n:d.total_positions, sum:printMoney(d.total_price) }))}</div>
+    <table><thead><tr><th>${esc(t('csv_praeparat'))}</th><th>${esc(t('csv_wirkstoff'))}</th><th>${esc(t('csv_lieferant'))}</th><th>${esc(t('cart_col_menge'))}</th><th>${esc(t('csv_aktionspreis'))}</th><th>${esc(t('cart_col_sum'))}</th><th>${esc(t('csv_gueltig_bis'))}</th></tr></thead><tbody>${rows}</tbody></table>
+    <div style="margin-top:10px;color:#666;font-size:12px">${esc(t('cart_print_foot'))}</div>`;
+  openPrintDoc(t('cart_print_title'), css, body);
 }
 
 // Reaktionen: [Schlüssel, i18n-Key]. Label wird beim Rendern übersetzt (Emoji bleibt zuerst).

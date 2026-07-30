@@ -817,6 +817,57 @@ export function createSocialService(social, foundationRepo, options = {}) {
         .map(p => decorate(p, userId));
     },
 
+    // ── Einkaufsliste (Bestell-Merkzettel): Artikel-Snapshots je Nutzer:in sammeln,
+    // später als CSV/Ausdruck an den Großhandel geben. Preise sind Momentaufnahmen. ──
+    addToCart(userId, item = {}) {
+      requireUser(userId);
+      const bez = String(item.bezeichnung ?? '').trim();
+      if (!bez) throw new AppError('cart_name_required', 'Bezeichnung erforderlich.');
+      const num = (v) => (v === null || v === undefined || v === '' || isNaN(Number(v))) ? null : Number(v);
+      let menge = Math.round(num(item.menge) || 1);
+      if (!(menge >= 1)) menge = 1;
+      if (menge > 100000) menge = 100000;
+      return social.addCartItem({
+        user_id: userId,
+        bezeichnung: bez.slice(0, 160),
+        wirkstoff: item.wirkstoff ? String(item.wirkstoff).trim().slice(0, 160) : null,
+        supplier: item.supplier ? String(item.supplier).trim().slice(0, 160) : null,
+        aktionspreis: num(item.aktionspreis),
+        rabatt_pct: num(item.rabattPct),
+        gueltig_bis: item.gueltigBis ? String(item.gueltigBis).trim().slice(0, 40) : null,
+        source_kind: ['rabatt', 'price', 'shortage', 'exchange', 'manual'].includes(item.sourceKind) ? item.sourceKind : 'manual',
+        menge,
+        note: item.note ? String(item.note).trim().slice(0, 200) : null,
+      });
+    },
+    cart(userId) {
+      requireUser(userId);
+      const items = social.listCartItems(userId);
+      const total = items.reduce((s, i) => s + (Number(i.aktionspreis) || 0) * (Number(i.menge) || 0), 0);
+      return { items, count: items.length, total_positions: items.reduce((s, i) => s + (Number(i.menge) || 0), 0), total_price: Math.round(total * 100) / 100 };
+    },
+    updateCartItem(userId, id, patch = {}) {
+      requireUser(userId);
+      const it = social.getCartItem(id);
+      if (!it || it.user_id !== userId) throw new AppError('cart_item_not_found', 'Position nicht gefunden.');
+      const clean = {};
+      if (patch.menge !== undefined) {
+        let m = Math.round(Number(patch.menge));
+        if (!(m >= 1)) m = 1; if (m > 100000) m = 100000;
+        clean.menge = m;
+      }
+      if (patch.note !== undefined) clean.note = patch.note ? String(patch.note).trim().slice(0, 200) : null;
+      return social.updateCartItem(id, clean);
+    },
+    removeCartItem(userId, id) {
+      requireUser(userId);
+      const it = social.getCartItem(id);
+      if (!it || it.user_id !== userId) throw new AppError('cart_item_not_found', 'Position nicht gefunden.');
+      social.removeCartItem(id);
+      return { ok: true };
+    },
+    clearCart(userId) { requireUser(userId); social.clearCart(userId); return { ok: true }; },
+
     // ── DSGVO: Datenexport (Recht auf Datenübertragbarkeit) ──
     exportData(userId) {
       requireUser(userId);

@@ -21,6 +21,7 @@ export function createSocialRepo() {
   const endorsements = new Map();   // `${endorser}|${target}|${skill}` -> row (Fachgebiet-Bestätigung)
   const profileViews = new Map();   // `${viewer}|${target}` -> row (letzter Profil-Besuch, dedupliziert)
   const recommendations = new Map(); // id -> row (fachliche Empfehlung author -> target)
+  const cartItems = new Map();       // id -> row (Einkaufsliste/Bestell-Merkzettel je Nutzer:in)
 
   const uuid = () => crypto.randomUUID();
   const now = () => new Date().toISOString();
@@ -223,6 +224,21 @@ export function createSocialRepo() {
       return [...recommendations.values()].find(r => r.author_user_id === authorUserId && r.target_user_id === targetUserId) || null;
     },
 
+    // ── Einkaufsliste (Bestell-Merkzettel je Nutzer:in) ──
+    addCartItem(row) {
+      const r = { id: uuid(), created_at: now(), ...row };
+      cartItems.set(r.id, r);
+      return { ...r };
+    },
+    getCartItem(id) { const r = cartItems.get(id); return r ? { ...r } : null; },
+    listCartItems(userId) {
+      return [...cartItems.values()].filter(r => r.user_id === userId)
+        .sort((a, b) => a.created_at.localeCompare(b.created_at)).map(r => ({ ...r }));
+    },
+    updateCartItem(id, patch) { const r = cartItems.get(id); if (!r) return null; Object.assign(r, patch); return { ...r }; },
+    removeCartItem(id) { cartItems.delete(id); },
+    clearCart(userId) { for (const [id, r] of cartItems) if (r.user_id === userId) cartItems.delete(id); },
+
     // ── Benachrichtigungen ──
     createNotification(n) {
       const row = { id: uuid(), user_id: n.userId, type: n.type, actor_user_id: n.actorUserId ?? null, ref_type: n.refType ?? null, ref_id: n.refId ?? null, label: n.label ?? null, read: false, created_at: now() };
@@ -298,6 +314,7 @@ export function createSocialRepo() {
       for (const [k, e] of endorsements) if (e.endorser_user_id === userId || e.target_user_id === userId) endorsements.delete(k);
       for (const [k, v] of profileViews) if (v.viewer_user_id === userId || v.target_user_id === userId) profileViews.delete(k);
       for (const [id, r] of recommendations) if (r.author_user_id === userId || r.target_user_id === userId) recommendations.delete(id);
+      for (const [id, r] of cartItems) if (r.user_id === userId) cartItems.delete(id);
       for (const [id, r] of reports) if (r.reporter_user_id === userId) reports.delete(id);
       verifications.delete(userId);
     },
@@ -308,7 +325,7 @@ export function createSocialRepo() {
         profiles: [...profiles], profilesByHandle: [...profilesByHandle], posts: [...posts],
         comments: [...comments], reactions: [...reactions], pollVotes: [...pollVotes], follows: [...follows],
         notifications: [...notifications], dmThreads: [...dmThreads], dmMessages: [...dmMessages], reports: [...reports],
-        verifications: [...verifications], bookmarks: [...bookmarks], endorsements: [...endorsements], profileViews: [...profileViews], recommendations: [...recommendations],
+        verifications: [...verifications], bookmarks: [...bookmarks], endorsements: [...endorsements], profileViews: [...profileViews], recommendations: [...recommendations], cartItems: [...cartItems],
       };
     },
     __load(d) {
@@ -317,7 +334,7 @@ export function createSocialRepo() {
       fill(profiles, d.profiles); fill(profilesByHandle, d.profilesByHandle); fill(posts, d.posts);
       fill(comments, d.comments); fill(reactions, d.reactions); fill(pollVotes, d.pollVotes); fill(follows, d.follows);
       fill(notifications, d.notifications); fill(dmThreads, d.dmThreads); fill(dmMessages, d.dmMessages); fill(reports, d.reports);
-      fill(verifications, d.verifications); fill(bookmarks, d.bookmarks); fill(endorsements, d.endorsements); fill(profileViews, d.profileViews); fill(recommendations, d.recommendations);
+      fill(verifications, d.verifications); fill(bookmarks, d.bookmarks); fill(endorsements, d.endorsements); fill(profileViews, d.profileViews); fill(recommendations, d.recommendations); fill(cartItems, d.cartItems);
     },
   };
 }
