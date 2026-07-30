@@ -133,6 +133,7 @@ const I18N = {
     cart_empty_t:'Einkaufsliste ist leer', cart_empty_s:'Fügen Sie bei Rabatten „🛒 Einkaufsliste" hinzu — dann hier als CSV/Ausdruck für den Großhandel exportieren.',
     cart_col_menge:'Menge', cart_col_sum:'Summe', cart_col_note:'Notiz', cart_print_title:'Einkaufsliste / Bestellung', cart_print_foot:'Preise sind Momentaufnahmen (Aktions-/Referenzpreis) — im Zweifel beim Großhandel prüfen.',
     cart_manual_add:'+ Hinzufügen', cart_manual_ph:'Eigene Position (z. B. Ibuprofen 400)', cart_note_ph:'Notiz (z. B. „bis Freitag", „für Rezeptur")',
+    cart_supplier_none:'Ohne Lieferant / eigene Positionen', cart_subtotal:'Zwischensumme',
     rb_none:'Keine Aktion für diese Auswahl.', rb_saving:'Ersparnis € {x} je Packung',
     rb_minorder:'💰 Bei Mindestabnahme ({n} Stück): € {x} gespart',
     rb_best:'⭐ Beste Aktion für {w} ({alt})', rb_alt_one:'1 weitere läuft', rb_alt_many:'{n} weitere laufen',
@@ -446,6 +447,7 @@ const I18N = {
     cart_empty_t:'Shopping list is empty', cart_empty_s:'Add items via “🛒 Shopping list” on discounts — then export here as CSV/print for your wholesaler.',
     cart_col_menge:'Qty', cart_col_sum:'Total', cart_col_note:'Note', cart_print_title:'Shopping list / order', cart_print_foot:'Prices are snapshots (deal/reference price) — verify with your wholesaler if in doubt.',
     cart_manual_add:'+ Add', cart_manual_ph:'Own item (e.g. Ibuprofen 400)', cart_note_ph:'Note (e.g. “by Friday”, “for compounding”)',
+    cart_supplier_none:'No supplier / own items', cart_subtotal:'Subtotal',
     rb_none:'No offer for this selection.', rb_saving:'Saving € {x} per pack',
     rb_minorder:'💰 At minimum order ({n} units): € {x} saved',
     rb_best:'⭐ Best deal for {w} ({alt})', rb_alt_one:'1 more running', rb_alt_many:'{n} more running',
@@ -759,6 +761,7 @@ const I18N = {
     cart_empty_t:'Lista de compras vazia', cart_empty_s:'Adicione itens em “🛒 Lista de compras” nas promoções — depois exporte aqui em CSV/impressão para o distribuidor.',
     cart_col_menge:'Qtd', cart_col_sum:'Total', cart_col_note:'Nota', cart_print_title:'Lista de compras / encomenda', cart_print_foot:'Os preços são momentâneos (promoção/referência) — confirme com o distribuidor em caso de dúvida.',
     cart_manual_add:'+ Adicionar', cart_manual_ph:'Item próprio (ex. Ibuprofeno 400)', cart_note_ph:'Nota (ex. “até sexta”, “para manipulação”)',
+    cart_supplier_none:'Sem fornecedor / itens próprios', cart_subtotal:'Subtotal',
     rb_none:'Nenhuma promoção para esta seleção.', rb_saving:'Poupança € {x} por embalagem',
     rb_minorder:'💰 Na compra mínima ({n} unidades): € {x} poupados',
     rb_best:'⭐ Melhor promoção para {w} ({alt})', rb_alt_one:'mais 1 ativa', rb_alt_many:'mais {n} ativas',
@@ -3360,7 +3363,16 @@ async function openCart() {
   };
   head.querySelector('[data-cprint]').onclick = () => printCart(d);
   head.querySelector('[data-cclear]').onclick = async () => { if (!confirm(t('cart_clear_confirm'))) return; try { await api('POST','/api/cart/clear'); openCart(); } catch(e){ alert(e.message); } };
-  d.items.forEach(i => {
+  // Nach Lieferant sortieren (gleiche Bestellung zusammen); ohne Lieferant zuletzt.
+  const bySupplier = [...d.items].sort((a, b) => {
+    const sa = (a.supplier || '').trim(), sb = (b.supplier || '').trim();
+    if (!sa && sb) return 1; if (sa && !sb) return -1;
+    return sa.toLowerCase().localeCompare(sb.toLowerCase());
+  });
+  let lastSupplier = null;
+  bySupplier.forEach(i => {
+    const sup = (i.supplier || '').trim();
+    if (sup !== lastSupplier) { lastSupplier = sup; feed.appendChild(el(`<div class="cart-sup">🏢 ${esc(sup || t('cart_supplier_none'))}</div>`)); }
     const card = el(`<div class="card"><div class="row" style="align-items:baseline">
       <span class="post-author">${esc(i.bezeichnung)}</span>
       ${i.wirkstoff?`<span class="handle">${esc(i.wirkstoff)}</span>`:''}
@@ -3391,11 +3403,31 @@ async function openCart() {
 }
 
 function printCart(d) {
-  const css = `table{border-collapse:collapse;width:100%} th,td{border:1px solid #bbb;padding:6px 8px;text-align:left;font-size:13px} th{background:#eee} .r{text-align:right}`;
-  const rows = d.items.map(i => `<tr><td>${esc(i.bezeichnung)}</td><td>${esc(i.wirkstoff||'')}</td><td>${esc(i.supplier||'')}</td><td class="r">${i.menge}</td><td class="r">${i.aktionspreis!=null?'€ '+printMoney(i.aktionspreis):'—'}</td><td class="r">${i.aktionspreis!=null?'€ '+printMoney(i.aktionspreis*i.menge):'—'}</td><td>${esc(i.gueltig_bis||'')}</td></tr>`).join('');
+  const css = `table{border-collapse:collapse;width:100%;margin-bottom:14px} th,td{border:1px solid #bbb;padding:6px 8px;text-align:left;font-size:13px} th{background:#eee} .r{text-align:right} h3{margin:14px 0 6px;font-size:15px} tfoot td{font-weight:700;background:#eee}`;
+  // Bestellungen gehen je Großhandel raus -> nach Lieferant gruppieren, je Gruppe eine Zwischensumme.
+  const groups = new Map();
+  for (const i of d.items) {
+    const key = (i.supplier || '').trim() || ' '; // ohne Lieferant zuletzt
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(i);
+  }
+  const ordered = [...groups.keys()].sort((a, b) => {
+    if (a === ' ' && b !== ' ') return 1; if (b === ' ' && a !== ' ') return -1;
+    return a.localeCompare(b);
+  });
+  const section = (key) => {
+    const items = groups.get(key);
+    const label = key === ' ' ? t('cart_supplier_none') : key;
+    const sub = items.reduce((s, i) => s + (Number(i.aktionspreis) || 0) * (Number(i.menge) || 0), 0);
+    const rows = items.map(i => `<tr><td>${esc(i.bezeichnung)}</td><td>${esc(i.wirkstoff||'')}</td><td class="r">${i.menge}</td><td class="r">${i.aktionspreis!=null?'€ '+printMoney(i.aktionspreis):'—'}</td><td class="r">${i.aktionspreis!=null?'€ '+printMoney(i.aktionspreis*i.menge):'—'}</td><td>${esc(i.gueltig_bis||'')}</td>${i.note?`<td>${esc(i.note)}</td>`:'<td></td>'}</tr>`).join('');
+    return `<h3>🏢 ${esc(label)}</h3>
+      <table><thead><tr><th>${esc(t('csv_praeparat'))}</th><th>${esc(t('csv_wirkstoff'))}</th><th>${esc(t('cart_col_menge'))}</th><th>${esc(t('csv_aktionspreis'))}</th><th>${esc(t('cart_col_sum'))}</th><th>${esc(t('csv_gueltig_bis'))}</th><th>${esc(t('cart_col_note'))}</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><td colspan="4" class="r">${esc(t('cart_subtotal'))}</td><td class="r">€ ${printMoney(Math.round(sub*100)/100)}</td><td></td><td></td></tr></tfoot></table>`;
+  };
   const body = `<div style="color:#444;margin-bottom:8px">${esc(printDate())} · ${esc(ti('cart_summary',{ n:d.total_positions, sum:printMoney(d.total_price) }))}</div>
-    <table><thead><tr><th>${esc(t('csv_praeparat'))}</th><th>${esc(t('csv_wirkstoff'))}</th><th>${esc(t('csv_lieferant'))}</th><th>${esc(t('cart_col_menge'))}</th><th>${esc(t('csv_aktionspreis'))}</th><th>${esc(t('cart_col_sum'))}</th><th>${esc(t('csv_gueltig_bis'))}</th></tr></thead><tbody>${rows}</tbody></table>
-    <div style="margin-top:10px;color:#666;font-size:12px">${esc(t('cart_print_foot'))}</div>`;
+    ${ordered.map(section).join('')}
+    <div style="margin-top:6px;color:#666;font-size:12px">${esc(t('cart_print_foot'))}</div>`;
   openPrintDoc(t('cart_print_title'), css, body);
 }
 
