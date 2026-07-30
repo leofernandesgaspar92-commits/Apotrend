@@ -105,7 +105,7 @@ const I18N = {
     sc_abx_note:'(keine Substitutionsempfehlung ohne Quelle)', sc_reported_by:'👥 Gemeldet von',
     sc_conf_one:'weitere Apotheke bestätigt', sc_conf_many:'weitere Apotheken bestätigt',
     sc_posts_zero:'💬 Noch keine Beiträge', sc_posts_one:'💬 1 Beitrag dazu', sc_posts_many:'💬 {n} Beiträge dazu', sc_post_about:'✍ Dazu posten',
-    sc_watched:'⭐ Beobachtet', sc_watch:'☆ Beobachten',
+    sc_watched:'⭐ Beobachtet', sc_watch:'☆ Beobachten', sc_sources:'📦 Bezugsquellen', sc_sources_t:'Wer hat diesen Wirkstoff aktuell im Angebot? (Biete-Einträge)',
     sc_conf_btn:'➕ Auch bei uns', sc_confd_btn:'✅ Bestätigt', sc_resolve:'✓ Wieder lieferbar',
     sc_history:'📜 Verlauf', sc_post_ph:'Dein Beitrag zu diesem Engpass (öffentlich)…', sc_post_send:'Posten',
     sc_mod_status:'📝 Status ändern (Redaktion)', sc_mod_new:'Neuer Status',
@@ -421,7 +421,7 @@ const I18N = {
     sc_abx_note:'(no substitution advice without a source)', sc_reported_by:'👥 Reported by',
     sc_conf_one:'more pharmacy confirms', sc_conf_many:'more pharmacies confirm',
     sc_posts_zero:'💬 No posts yet', sc_posts_one:'💬 1 post about this', sc_posts_many:'💬 {n} posts about this', sc_post_about:'✍ Post about this',
-    sc_watched:'⭐ Watched', sc_watch:'☆ Watch',
+    sc_watched:'⭐ Watched', sc_watch:'☆ Watch', sc_sources:'📦 Sources', sc_sources_t:'Who currently offers this substance? (offer entries)',
     sc_conf_btn:'➕ Us too', sc_confd_btn:'✅ Confirmed', sc_resolve:'✓ Available again',
     sc_history:'📜 History', sc_post_ph:'Your post about this shortage (public)…', sc_post_send:'Post',
     sc_mod_status:'📝 Change status (editorial)', sc_mod_new:'New status',
@@ -737,7 +737,7 @@ const I18N = {
     sc_abx_note:'(sem recomendação de substituição sem fonte)', sc_reported_by:'👥 Reportado por',
     sc_conf_one:'outra farmácia confirma', sc_conf_many:'outras farmácias confirmam',
     sc_posts_zero:'💬 Ainda sem publicações', sc_posts_one:'💬 1 publicação sobre isto', sc_posts_many:'💬 {n} publicações sobre isto', sc_post_about:'✍ Publicar sobre isto',
-    sc_watched:'⭐ Vigiada', sc_watch:'☆ Vigiar',
+    sc_watched:'⭐ Vigiada', sc_watch:'☆ Vigiar', sc_sources:'📦 Fontes', sc_sources_t:'Quem oferece atualmente esta substância? (entradas de oferta)',
     sc_conf_btn:'➕ Nós também', sc_confd_btn:'✅ Confirmado', sc_resolve:'✓ Disponível novamente',
     sc_history:'📜 Histórico', sc_post_ph:'A sua publicação sobre esta falta (pública)…', sc_post_send:'Publicar',
     sc_mod_status:'📝 Alterar estado (redação)', sc_mod_new:'Novo estado',
@@ -2649,7 +2649,7 @@ function shortageCard(s) {
     <div class="reacts">
       <button data-about>${esc(shortagePostsLabel(s.post_count||0))}</button>
       <button class="ghost" data-postbtn>${esc(t('sc_post_about'))}</button>
-      <button class="ghost" data-exchange title="${esc(t('nav_exchange'))}">${esc(t('nav_exchange'))}</button>
+      <button class="ghost" data-exchange title="${esc(t('sc_sources_t'))}">${esc(t('sc_sources'))}</button>
       <button class="ghost" data-watch title="${esc(t('wl_add_aria'))}" aria-pressed="${!!s.watched}">${s.watched?esc(t('sc_watched')):esc(t('sc_watch'))}</button>
       <button class="ghost" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button>
       ${s.provenance==='community'&&!s.is_reporter&&!(me&&me.account_type==='private')?`<button class="ghost" data-confirm>${s.i_confirmed?esc(t('sc_confd_btn')):esc(t('sc_conf_btn'))}</button>`:''}
@@ -2679,7 +2679,8 @@ function shortageCard(s) {
   const postbox = card.querySelector('[data-postbox]');
   card.querySelector('[data-postbtn]').onclick = () => postbox.classList.toggle('hidden');
   card.querySelector('[data-exchange]').onclick = () => {
-    exchangeQuery = s.wirkstoff; exchangeFilter = '';
+    // Bei einem Engpass zählen Bezugsquellen: direkt die „Biete"-Angebote zum Wirkstoff zeigen.
+    exchangeQuery = s.wirkstoff; exchangeFilter = 'biete'; exchangeBL = ''; exchangeMine = false;
     tab = 'exchange';
     document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
     document.querySelector('.tabs button[data-tab="exchange"]').classList.add('active');
