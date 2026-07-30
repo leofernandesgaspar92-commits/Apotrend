@@ -2951,6 +2951,7 @@ function priceGroup(g) {
       <div class="row" style="margin-top:4px">
         <span class="muted">${esc(nlabel(o.post_count||0,'pg_posts_one','pg_posts'))}</span>
         <span class="sp" style="flex:1"></span>
+        <button class="ghost small" data-addcart>🛒 ${esc(t('cart_add'))}</button>
         <button class="ghost small" data-pp>${esc(t('sc_post_about'))}</button>
       </div>
       <div class="hidden" data-ppbox style="margin-top:6px">
@@ -2958,6 +2959,10 @@ function priceGroup(g) {
         <div style="margin-top:4px"><button class="small" data-ppsend>${esc(t('sc_post_send'))}</button></div>
       </div>
     </div>`);
+    row.querySelector('[data-addcart]').onclick = (ev) => cartAdd({
+      bezeichnung: g.bezeichnung, wirkstoff: g.wirkstoff, supplier: o.supplier,
+      aktionspreis: o.aep, menge: 1, sourceKind: 'price',
+    }, ev.target);
     const ppbox = row.querySelector('[data-ppbox]');
     row.querySelector('[data-pp]').onclick = () => ppbox.classList.toggle('hidden');
     row.querySelector('[data-ppsend]').onclick = async () => {
