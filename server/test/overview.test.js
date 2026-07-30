@@ -81,6 +81,38 @@ test('watch_offers: leer ohne passende Angebote', () => {
   assert.deepEqual(overview.forUser(a).watch_offers, []);
 });
 
+test('my_seeks: eigenes offenes Gesuch mit passendem Angebot einer anderen Apotheke', () => {
+  const repo = createMemoryRepo();
+  const orgAuth = createOrgAuthService(repo);
+  const social = createSocialService(createSocialRepo(), repo);
+  const shortages = createShortagesService(createShortagesRepo(), social);
+  const rabatte = createRabatteService(createRabatteRepo({ today: '2026-07-07' }), social);
+  const exchange = createExchangeService(createExchangeRepo(), social, repo);
+  const prices = createPricesService(createPricesRepo(), social);
+  const overview = createOverviewService({ shortages, exchange, social, rabatte, prices, amr: createAmrService() });
+  const A = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'A' }, owner: { name: 'Anna', email: 'a@a.at', password: 'geheim123' } });
+  social.createProfile(A.user.id, { handle: 'anna', displayName: 'Anna' });
+  const B = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'B' }, owner: { name: 'Bea', email: 'b@b.at', password: 'geheim123' } });
+  social.createProfile(B.user.id, { handle: 'bea', displayName: 'Bea' });
+  const a = A.user.id, b = B.user.id;
+
+  // Ohne Angebot: Gesuch zählt, aber ohne Treffer.
+  exchange.create(a, { kind: 'suche', bezeichnung: 'Salbutamol Dosieraerosol' });
+  let o = overview.forUser(a);
+  assert.equal(o.my_seeks.open, 1);
+  assert.equal(o.my_seeks.with_matches, 0);
+  assert.equal(o.my_seeks.items.length, 0);
+
+  // Andere Apotheke bietet passenden Bestand -> Treffer taucht auf.
+  exchange.create(b, { kind: 'biete', bezeichnung: 'Salbutamol Spray 100 mcg' });
+  o = overview.forUser(a);
+  assert.equal(o.my_seeks.with_matches, 1);
+  assert.equal(o.my_seeks.items[0].bezeichnung, 'Salbutamol Dosieraerosol');
+  assert.equal(o.my_seeks.items[0].match_count, 1);
+  // Für die andere Apotheke (kein eigenes Gesuch) leer.
+  assert.equal(overview.forUser(b).my_seeks.with_matches, 0);
+});
+
 test('Rabatt-Alarm: einmalige Benachrichtigung ab Schwelle, kein Duplikat; Validierung', () => {
   const repo = createMemoryRepo();
   const orgAuth = createOrgAuthService(repo);

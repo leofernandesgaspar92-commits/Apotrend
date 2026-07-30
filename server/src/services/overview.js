@@ -45,6 +45,15 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
           gueltig_bis: x.deal.gueltig_bis, days_left: x.deal.days_left, expiring_soon: x.deal.expiring_soon,
         }));
 
+      // Eigene offene Gesuche mit passenden Angeboten: schließt die Nachfrageseite —
+      // wer per „Ich suche das" Bedarf meldet, sieht hier, wo inzwischen „Biete"-Angebote
+      // existieren, und springt direkt zu den Treffern. match_count = eindeutige Anbieter.
+      const mySeeks = exchange.mine(userId, { status: 'offen' }).filter(e => e.kind === 'suche');
+      const seeksWithMatches = mySeeks
+        .filter(e => (e.match_count || 0) > 0)
+        .map(e => ({ id: e.id, bezeichnung: e.bezeichnung, match_count: e.match_count }))
+        .sort((a, b) => b.match_count - a.match_count);
+
       // Rabatt-Alarm: wenn die aktuelle beste Aktion die gesetzte Schwelle erreicht und diese
       // konkrete Aktion noch nicht gemeldet wurde -> einmalig benachrichtigen (Dedup). Läuft
       // bei jedem Übersichts-Aufruf; sobald Live-Daten angeschlossen sind, greift es automatisch.
@@ -63,6 +72,7 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
         watchlist: { total: watchlist.length, items: watchlist, alerts: watchlist.filter(w => w.status === 'kritisch' || w.status === 'eingeschraenkt').length },
         watch_deals: watchDeals,
         watch_offers: watchOffers,
+        my_seeks: { open: mySeeks.length, with_matches: seeksWithMatches.length, items: seeksWithMatches.slice(0, 3) },
         exchange: {
           biete: ex.filter(e => e.kind === 'biete').length,
           suche: ex.filter(e => e.kind === 'suche').length,

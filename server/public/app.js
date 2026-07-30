@@ -298,6 +298,7 @@ const I18N = {
     wd_title:'🏷️ Aktionen zu deinen Wirkstoffen', wd_all:'Alle Rabatte', wd_add_all:'Alle in Liste', wd_added_all:'{n} hinzugefügt', wd_sub:'Für diese von dir beobachteten Wirkstoffe läuft gerade eine Aktion:', wd_saving:'spare € {x}/Pkg',
     wo_title:'🔄 Bezugsquellen zu deinen Wirkstoffen', wo_sub:'Für diese beobachteten Wirkstoffe bieten Apotheken gerade Bestand an:',
     wo_offers_sg:'Angebot', wo_offers_pl:'Angebote', wo_in_exchange:'im Bestandsaustausch',
+    ms_title:'🔎 Deine Gesuche mit Treffern', ms_sub:'Zu diesen offenen Gesuchen bieten Apotheken jetzt Bestand an:', ms_matches_sg:'passendes Angebot', ms_matches_pl:'passende Angebote',
     bm_doc:'Merkliste', bm_title:'🔖 Meine Merkliste', bm_empty_t:'Noch nichts gemerkt',
     bm_empty_s:'Tippe bei einem Beitrag auf „🔖 Merken", dann findest du ihn hier jederzeit wieder.',
     ht_posts:'{n} Beiträge', ht_empty_t:'Noch keine Beiträge zu diesem Thema', ht_empty_s:'Sei der/die Erste und schreibe etwas mit #{tag}.',
@@ -614,6 +615,7 @@ const I18N = {
     wd_title:'🏷️ Deals for your substances', wd_all:'All deals', wd_add_all:'All to list', wd_added_all:'{n} added', wd_sub:'A deal is currently running for these substances you watch:', wd_saving:'save € {x}/pack',
     wo_title:'🔄 Sources for your substances', wo_sub:'Pharmacies are currently offering stock for these substances you watch:',
     wo_offers_sg:'offer', wo_offers_pl:'offers', wo_in_exchange:'in the stock exchange',
+    ms_title:'🔎 Your wants with matches', ms_sub:'Pharmacies are now offering stock for these open wants of yours:', ms_matches_sg:'matching offer', ms_matches_pl:'matching offers',
     bm_doc:'Bookmarks', bm_title:'🔖 My bookmarks', bm_empty_t:'Nothing saved yet',
     bm_empty_s:'Tap “🔖 Save” on a post to find it here anytime.',
     ht_posts:'{n} posts', ht_empty_t:'No posts on this topic yet', ht_empty_s:'Be the first and post something with #{tag}.',
@@ -930,6 +932,7 @@ const I18N = {
     wd_title:'🏷️ Promoções para as suas substâncias', wd_all:'Todos os descontos', wd_add_all:'Tudo na lista', wd_added_all:'{n} adicionados', wd_sub:'Há uma promoção a decorrer para estas substâncias que vigia:', wd_saving:'poupa € {x}/emb.',
     wo_title:'🔄 Fontes para as suas substâncias', wo_sub:'Há farmácias a oferecer stock para estas substâncias que vigia:',
     wo_offers_sg:'oferta', wo_offers_pl:'ofertas', wo_in_exchange:'na troca de stock',
+    ms_title:'🔎 Os seus pedidos com correspondências', ms_sub:'Há farmácias a oferecer stock para estes pedidos abertos seus:', ms_matches_sg:'oferta correspondente', ms_matches_pl:'ofertas correspondentes',
     bm_doc:'Marcadores', bm_title:'🔖 Os meus marcadores', bm_empty_t:'Ainda nada guardado',
     bm_empty_s:'Toque em “🔖 Guardar” numa publicação para a encontrar aqui a qualquer momento.',
     ht_posts:'{n} publicações', ht_empty_t:'Ainda sem publicações sobre este tema', ht_empty_s:'Seja o primeiro e publique algo com #{tag}.',
@@ -1819,6 +1822,20 @@ async function loadOverview() {
     c.querySelector('[data-all]').onclick = () => goTab('exchange');
     c.querySelectorAll('[data-w]').forEach(row => row.onclick = () => {
       exchangeQuery = row.dataset.w; exchangeFilter = 'biete'; exchangeBL = ''; exchangeMine = false;
+      goTab('exchange');
+    });
+    feed.appendChild(c);
+  }
+
+  // Deine offenen Gesuche mit passenden Angeboten: schließt die „Ich suche das"-Schleife —
+  // sobald zu einem Gesuch Angebote da sind, direkt zu den Treffern springen.
+  if (d.my_seeks && d.my_seeks.with_matches > 0) {
+    const c = el(`<div class="card"><div class="row"><b>${esc(t('ms_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>${esc(t('sp_exch_go'))}</button></div>
+      <div class="muted" style="font-size:13px;margin:2px 0 6px">${esc(t('ms_sub'))}</div>
+      ${d.my_seeks.items.map(s=>`<div class="comment clickable" data-b="${esc(s.bezeichnung)}">🔎 <b>${esc(s.bezeichnung)}</b> — <span style="color:var(--ok-fg);font-weight:700">${s.match_count} ${esc(s.match_count>1?t('ms_matches_pl'):t('ms_matches_sg'))}</span> <span class="ovtile-go" aria-hidden="true">›</span></div>`).join('')}</div>`);
+    c.querySelector('[data-all]').onclick = () => { exchangeMine=true; goTab('exchange'); };
+    c.querySelectorAll('[data-b]').forEach(row => row.onclick = () => {
+      exchangeQuery = row.dataset.b; exchangeFilter = 'biete'; exchangeBL = ''; exchangeMine = false;
       goTab('exchange');
     });
     feed.appendChild(c);
