@@ -233,6 +233,23 @@ test('Fachgebiet-Bestätigung: umschalten, Zähler, nicht selbst, nur echte Fach
   assert.equal(social2.profilePage(B.user.id, 'anna').endorsements['Onkologie'].count, 1);
 });
 
+test('„Offen für"-Übersicht: zählt Kolleg:innen je Kategorie, ohne sich selbst', () => {
+  const repo = createMemoryRepo();
+  const orgAuth = createOrgAuthService(repo);
+  const social = createSocialService(createSocialRepo(), repo);
+  const A = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'A' }, owner: { name: 'Anna', email: 'a@a.at', password: 'geheim123' } });
+  social.createProfile(A.user.id, { handle: 'anna', displayName: 'Anna' });
+  social.updateProfile(A.user.id, { openTo: ['kooperation', 'jobs'] });
+  const B = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'B' }, owner: { name: 'Ben', email: 'b@b.at', password: 'geheim123' } });
+  social.createProfile(B.user.id, { handle: 'ben', displayName: 'Ben' });
+  social.updateProfile(B.user.id, { openTo: ['kooperation'] });
+  // Aus Annas Sicht: nur Ben zählt (nicht sie selbst)
+  const c = social.openToCounts(A.user.id).counts;
+  assert.equal(c.kooperation, 1);
+  assert.equal(c.jobs, 0);
+  assert.equal(c.einkauf, 0);
+});
+
 test('„Offen für"-Entdecken: findet passende Kolleg:innen, nicht sich selbst, unbekannte Kategorie abgelehnt', () => {
   const repo = createMemoryRepo();
   const orgAuth = createOrgAuthService(repo);

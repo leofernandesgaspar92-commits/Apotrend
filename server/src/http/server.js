@@ -342,6 +342,7 @@ const routes = [
   }],
   ['GET', /^\/api\/suggestions\/follow$/, true, async ({ userId }) => ({ suggestions: social.suggestFollows(userId) })],
   ['GET', /^\/api\/colleagues\/nearby$/, true, async ({ userId }) => social.colleaguesInBundesland(userId)],
+  ['GET', /^\/api\/discover\/open-to$/, true, async ({ userId }) => social.openToCounts(userId)],
   ['GET', /^\/api\/discover\/open-to\/([^/]+)$/, true, async ({ userId, params }) => social.discoverByOpenTo(userId, decodeURIComponent(params[0]))],
   ['GET', /^\/api\/handles$/, true, async ({ query }) => ({ handles: social.searchHandles(query.get('q') || '') })],
   ['GET', /^\/api\/me\/export$/, true, async ({ userId }) => ({ ...social.exportData(userId), exchange_entries: exchange.mine(userId) })],

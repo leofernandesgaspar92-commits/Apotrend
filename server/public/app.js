@@ -244,7 +244,7 @@ const I18N = {
     ep_edu_degree_ph:'Abschluss (z. B. Mag. pharm.)', ep_edu_school_ph:'Einrichtung (z. B. Universität Wien)', ep_edu_year_ph:'Jahr (z. B. 2015)',
     pf_opento:'Offen für', ep_opento:'Offen für (Vernetzung & Geschäft)', ep_opento_hint:'Zeigt Kolleg:innen, wofür Sie ansprechbar sind.',
     ot_kooperation:'Fachkooperationen', ot_einkauf:'Einkaufsgemeinschaft', ot_vertretung:'Vertretung / Dienst-Tausch', ot_austausch:'Bestandsaustausch', ot_mentoring:'Fachaustausch & Mentoring', ot_jobs:'Jobs & Bewerbungen',
-    ot_discover_hint:'Zeigen, wer auch dafür offen ist', ot_discover_title:'Offen für: {cat}', ot_discover_count:'{n} Kolleg:innen im selben Land', ot_discover_none_t:'Noch niemand', ot_discover_none_s:'Aktuell ist niemand sonst für diese Kategorie offen. Schauen Sie später wieder vorbei.',
+    ot_hub_title:'Offen für — Kolleg:innen entdecken', ot_discover_hint:'Zeigen, wer auch dafür offen ist', ot_discover_title:'Offen für: {cat}', ot_discover_count:'{n} Kolleg:innen im selben Land', ot_discover_none_t:'Noch niemand', ot_discover_none_s:'Aktuell ist niemand sonst für diese Kategorie offen. Schauen Sie später wieder vorbei.',
     ac_title:'🔒 Datenschutz & Konto', ac_export_d:'Lade alle deine Daten (Profil, Beiträge, Kommentare, Nachrichten, Merkliste, Austausch) als Datei herunter (DSGVO).',
     ac_export_btn:'⬇️ Meine Daten exportieren', ac_pw_title:'Passwort ändern', ac_pw_old:'Aktuelles Passwort',
     ac_pw_new:'Neues Passwort (mind. 8 Zeichen)', ac_pw_ok:'✓ Passwort geändert',
@@ -553,7 +553,7 @@ const I18N = {
     ep_edu_degree_ph:'Degree (e.g. MPharm)', ep_edu_school_ph:'Institution (e.g. University of Vienna)', ep_edu_year_ph:'Year (e.g. 2015)',
     pf_opento:'Open to', ep_opento:'Open to (networking & business)', ep_opento_hint:'Shows colleagues what you are open to.',
     ot_kooperation:'Professional partnerships', ot_einkauf:'Buying group', ot_vertretung:'Cover / shift swaps', ot_austausch:'Stock exchange', ot_mentoring:'Peer exchange & mentoring', ot_jobs:'Jobs & applications',
-    ot_discover_hint:'Show who else is open to this', ot_discover_title:'Open to: {cat}', ot_discover_count:'{n} colleagues in the same country', ot_discover_none_t:'Nobody yet', ot_discover_none_s:'No one else is open to this category right now. Check back later.',
+    ot_hub_title:'Open to — discover colleagues', ot_discover_hint:'Show who else is open to this', ot_discover_title:'Open to: {cat}', ot_discover_count:'{n} colleagues in the same country', ot_discover_none_t:'Nobody yet', ot_discover_none_s:'No one else is open to this category right now. Check back later.',
     ac_title:'🔒 Privacy & account', ac_export_d:'Download all your data (profile, posts, comments, messages, watchlist, exchange) as a file (GDPR).',
     ac_export_btn:'⬇️ Export my data', ac_pw_title:'Change password', ac_pw_old:'Current password',
     ac_pw_new:'New password (min. 8 characters)', ac_pw_ok:'✓ Password changed',
@@ -862,7 +862,7 @@ const I18N = {
     ep_edu_degree_ph:'Grau (ex. Mestrado em Farmácia)', ep_edu_school_ph:'Instituição (ex. Universidade de Lisboa)', ep_edu_year_ph:'Ano (ex. 2015)',
     pf_opento:'Aberto a', ep_opento:'Aberto a (networking e negócio)', ep_opento_hint:'Mostra aos colegas para que está disponível.',
     ot_kooperation:'Parcerias profissionais', ot_einkauf:'Central de compras', ot_vertretung:'Substituição / troca de turnos', ot_austausch:'Troca de stock', ot_mentoring:'Intercâmbio e mentoria', ot_jobs:'Empregos e candidaturas',
-    ot_discover_hint:'Ver quem também está disponível', ot_discover_title:'Aberto a: {cat}', ot_discover_count:'{n} colegas no mesmo país', ot_discover_none_t:'Ainda ninguém', ot_discover_none_s:'De momento mais ninguém está disponível para esta categoria. Volte mais tarde.',
+    ot_hub_title:'Aberto a — descobrir colegas', ot_discover_hint:'Ver quem também está disponível', ot_discover_title:'Aberto a: {cat}', ot_discover_count:'{n} colegas no mesmo país', ot_discover_none_t:'Ainda ninguém', ot_discover_none_s:'De momento mais ninguém está disponível para esta categoria. Volte mais tarde.',
     ac_title:'🔒 Privacidade & conta', ac_export_d:'Descarregue todos os seus dados (perfil, publicações, comentários, mensagens, lista de vigilância, troca) como ficheiro (RGPD).',
     ac_export_btn:'⬇️ Exportar os meus dados', ac_pw_title:'Alterar palavra-passe', ac_pw_old:'Palavra-passe atual',
     ac_pw_new:'Nova palavra-passe (mín. 8 caracteres)', ac_pw_ok:'✓ Palavra-passe alterada',
@@ -1803,8 +1803,28 @@ async function loadOverview() {
   renderOpenQuestions(feed);
   // Apotheken im selben Bundesland (nicht-blockierend nachgeladen)
   renderNearbyColleagues(feed);
+  // „Offen für"-Kategorien zum Entdecken (nicht-blockierend)
+  renderOpenToDiscover(feed);
   // Aktuelle Themen (Trending-Hashtags, nicht-blockierend)
   renderTrendingHashtags(feed);
+}
+
+// Entdecken-Einstieg: „Offen für"-Kategorien mit Anzahl, öffnet die passende Liste.
+async function renderOpenToDiscover(feed) {
+  let d;
+  try { d = await api('GET','/api/discover/open-to'); } catch { return; }
+  const counts = (d && d.counts) || {};
+  const active = OPEN_TO.filter(k => (counts[k] || 0) > 0);
+  if (!active.length) return;
+  const card = el(`<div class="card"><div class="muted" style="font-size:13px;margin-bottom:6px">🧭 ${esc(t('ot_hub_title'))}</div>
+    <div class="row" data-oth style="flex-wrap:wrap;gap:6px"></div></div>`);
+  const box = card.querySelector('[data-oth]');
+  active.forEach(k => {
+    const chip = el(`<button class="small sortbtn">${esc(openToLabel(k))} <span class="muted">${counts[k]}</span></button>`);
+    chip.onclick = () => openDiscoverOpenTo(k);
+    box.appendChild(chip);
+  });
+  feed.appendChild(card);
 }
 
 // Unbeantwortete Fachfragen anderer sichtbar machen — wer antwortet, hilft

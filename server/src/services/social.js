@@ -340,6 +340,20 @@ export function createSocialService(social, foundationRepo, options = {}) {
         .slice(0, limit);
       return { key, people };
     },
+    // „Offen für"-Übersicht: wie viele Kolleg:innen (im Land des Betrachters, ohne
+    // sich selbst) je Kategorie offen sind — für den Entdecken-Einstieg.
+    openToCounts(viewerUserId) {
+      requireUser(viewerUserId);
+      const meProf = social.getProfileByUserId(viewerUserId);
+      const country = meProf && meProf.country;
+      const counts = Object.fromEntries(OPEN_TO_KEYS.map(k => [k, 0]));
+      for (const p of social.listProfiles()) {
+        if (p.user_id === viewerUserId) continue;
+        if (country && p.country !== country) continue;
+        for (const k of (p.open_to || [])) if (k in counts) counts[k]++;
+      }
+      return { counts };
+    },
     // Handle-Vorschläge für @-Autovervollständigung (Präfix zuerst, dann enthält).
     searchHandles(q, limit = 6) {
       const s = String(q ?? '').trim().toLowerCase();
