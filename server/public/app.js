@@ -134,7 +134,7 @@ const I18N = {
     cart_empty_t:'Einkaufsliste ist leer', cart_empty_s:'Fügen Sie bei Rabatten „🛒 Einkaufsliste" hinzu — dann hier als CSV/Ausdruck für den Großhandel exportieren.',
     cart_col_menge:'Menge', cart_col_sum:'Summe', cart_col_note:'Notiz', cart_print_title:'Einkaufsliste / Bestellung', cart_print_foot:'Preise sind Momentaufnahmen (Aktions-/Referenzpreis) — im Zweifel beim Großhandel prüfen.',
     cart_manual_add:'+ Hinzufügen', cart_manual_ph:'Eigene Position (z. B. Ibuprofen 400)', cart_note_ph:'Notiz (z. B. „bis Freitag", „für Rezeptur")',
-    cart_supplier_none:'Ohne Lieferant / eigene Positionen', cart_subtotal:'Zwischensumme',
+    cart_supplier_none:'Ohne Lieferant / eigene Positionen', cart_subtotal:'Zwischensumme', cart_sub_line:'Zwischensumme · {n} Pos. · € {sum}',
     rb_none:'Keine Aktion für diese Auswahl.', rb_saving:'Ersparnis € {x} je Packung',
     rb_minorder:'💰 Bei Mindestabnahme ({n} Stück): € {x} gespart',
     rb_best:'⭐ Beste Aktion für {w} ({alt})', rb_alt_one:'1 weitere läuft', rb_alt_many:'{n} weitere laufen',
@@ -451,7 +451,7 @@ const I18N = {
     cart_empty_t:'Shopping list is empty', cart_empty_s:'Add items via “🛒 Shopping list” on discounts — then export here as CSV/print for your wholesaler.',
     cart_col_menge:'Qty', cart_col_sum:'Total', cart_col_note:'Note', cart_print_title:'Shopping list / order', cart_print_foot:'Prices are snapshots (deal/reference price) — verify with your wholesaler if in doubt.',
     cart_manual_add:'+ Add', cart_manual_ph:'Own item (e.g. Ibuprofen 400)', cart_note_ph:'Note (e.g. “by Friday”, “for compounding”)',
-    cart_supplier_none:'No supplier / own items', cart_subtotal:'Subtotal',
+    cart_supplier_none:'No supplier / own items', cart_subtotal:'Subtotal', cart_sub_line:'Subtotal · {n} items · € {sum}',
     rb_none:'No offer for this selection.', rb_saving:'Saving € {x} per pack',
     rb_minorder:'💰 At minimum order ({n} units): € {x} saved',
     rb_best:'⭐ Best deal for {w} ({alt})', rb_alt_one:'1 more running', rb_alt_many:'{n} more running',
@@ -768,7 +768,7 @@ const I18N = {
     cart_empty_t:'Lista de compras vazia', cart_empty_s:'Adicione itens em “🛒 Lista de compras” nas promoções — depois exporte aqui em CSV/impressão para o distribuidor.',
     cart_col_menge:'Qtd', cart_col_sum:'Total', cart_col_note:'Nota', cart_print_title:'Lista de compras / encomenda', cart_print_foot:'Os preços são momentâneos (promoção/referência) — confirme com o distribuidor em caso de dúvida.',
     cart_manual_add:'+ Adicionar', cart_manual_ph:'Item próprio (ex. Ibuprofeno 400)', cart_note_ph:'Nota (ex. “até sexta”, “para manipulação”)',
-    cart_supplier_none:'Sem fornecedor / itens próprios', cart_subtotal:'Subtotal',
+    cart_supplier_none:'Sem fornecedor / itens próprios', cart_subtotal:'Subtotal', cart_sub_line:'Subtotal · {n} itens · € {sum}',
     rb_none:'Nenhuma promoção para esta seleção.', rb_saving:'Poupança € {x} por embalagem',
     rb_minorder:'💰 Na compra mínima ({n} unidades): € {x} poupados',
     rb_best:'⭐ Melhor promoção para {w} ({alt})', rb_alt_one:'mais 1 ativa', rb_alt_many:'mais {n} ativas',
@@ -3421,7 +3421,7 @@ async function openCart() {
       ${d.items.length?`<button class="ghost small" data-ccsv>⬇️ CSV</button><button class="ghost small" data-cprint>🖨️ ${esc(t('pr_print_btn'))}</button>`:''}
     </div>
     <h1 style="margin:8px 0 0">🛒 ${esc(t('cart_title'))}</h1>
-    <div class="muted">${esc(ti('cart_summary',{ n:d.total_positions, sum:fmtMoney(d.total_price) }))}</div>
+    <div class="muted" data-grandtotal>${esc(ti('cart_summary',{ n:d.total_positions, sum:fmtMoney(d.total_price) }))}</div>
     <div class="row" style="margin-top:10px;gap:6px">
       <input data-madd placeholder="${esc(t('cart_manual_ph'))}" style="flex:1" aria-label="${esc(t('cart_manual_add'))}">
       <input type="number" min="1" value="1" data-mqty style="width:78px" aria-label="${esc(t('cart_col_menge'))}">
@@ -3453,8 +3453,29 @@ async function openCart() {
     if (!sa && sb) return 1; if (sa && !sb) return -1;
     return sa.toLowerCase().localeCompare(sb.toLowerCase());
   });
+  // Zwischensummen je Lieferant (Bestellungen gehen je Großhandel raus) — live gehalten,
+  // damit Mengenänderungen sofort in Gruppen- und Gesamtsumme durchschlagen.
+  const subEls = new Map(); // Lieferant-Key -> Subtotal-Element
+  const grand = head.querySelector('[data-grandtotal]');
+  const recomputeTotals = () => {
+    const byKey = new Map(); // key -> { sum, count }
+    let total = 0, pieces = 0;
+    for (const it of d.items) {
+      const key = (it.supplier || '').trim();
+      const cur = byKey.get(key) || { sum: 0, count: 0 };
+      if (it.aktionspreis != null) { cur.sum += it.aktionspreis * it.menge; total += it.aktionspreis * it.menge; }
+      cur.count += 1;
+      pieces += Number(it.menge) || 0;
+      byKey.set(key, cur);
+    }
+    for (const [key, elp] of subEls) {
+      const g = byKey.get(key) || { sum: 0, count: 0 };
+      elp.textContent = ti('cart_sub_line', { n: g.count, sum: fmtMoney(Math.round(g.sum * 100) / 100) });
+    }
+    if (grand) grand.textContent = ti('cart_summary', { n: pieces, sum: fmtMoney(Math.round(total * 100) / 100) });
+  };
   let lastSupplier = null;
-  bySupplier.forEach(i => {
+  bySupplier.forEach((i, idx) => {
     const sup = (i.supplier || '').trim();
     if (sup !== lastSupplier) { lastSupplier = sup; feed.appendChild(el(`<div class="cart-sup">🏢 ${esc(sup || t('cart_supplier_none'))}</div>`)); }
     const card = el(`<div class="card"><div class="row" style="align-items:baseline">
@@ -3477,13 +3498,24 @@ async function openCart() {
       let m = Math.round(Number(qty.value)); if (!(m>=1)) m=1; qty.value=m;
       try { const r = await api('POST',`/api/cart/${i.id}`,{ menge:m }); i.menge=r.item.menge;
         const ls = card.querySelector('[data-linesum]'); if (ls && i.aktionspreis!=null) ls.textContent = '= € '+fmtMoney(i.aktionspreis*i.menge);
+        recomputeTotals(); // Gruppen- und Gesamtsumme sofort mitziehen
       } catch(e){ alert(e.message); }
     };
     const note = card.querySelector('[data-note]');
     note.onchange = async () => { try { await api('POST',`/api/cart/${i.id}`,{ note: note.value }); i.note = note.value.trim(); } catch(e){ alert(e.message); } };
     card.querySelector('[data-crem]').onclick = async () => { try { await api('POST',`/api/cart/${i.id}/remove`); openCart(); } catch(e){ alert(e.message); } };
     feed.appendChild(card);
+    // Am Ende jeder Lieferantengruppe die Zwischensumme ausgeben (nur wenn mehr als eine
+    // Gruppe existiert — bei nur einem Lieferant genügt die Gesamtsumme oben).
+    const next = bySupplier[idx + 1];
+    const nextSup = next ? (next.supplier || '').trim() : ' end';
+    if (nextSup !== sup && !(idx === bySupplier.length - 1 && subEls.size === 0)) {
+      const subEl = el(`<div class="cart-subline"></div>`);
+      subEls.set(sup, subEl);
+      feed.appendChild(subEl);
+    }
   });
+  recomputeTotals();
 }
 
 function printCart(d) {
