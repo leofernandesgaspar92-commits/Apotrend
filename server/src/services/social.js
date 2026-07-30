@@ -199,6 +199,13 @@ export function createSocialService(social, foundationRepo, options = {}) {
         const c = social.getComment(p.accepted_comment_id);
         if (c && !c.deleted_at && c.author_user_id === prof.user_id) best_answers++;
       }
+      // Fachgebiet-Bestätigungen: Zähler je Fachgebiet + ob der/die Betrachter:in bestätigt hat.
+      const endRows = social.listEndorsementsForTarget(prof.user_id);
+      const endorsements = {};
+      for (const s of (prof.specializations || [])) {
+        const forS = endRows.filter(e => e.skill === s);
+        endorsements[s] = { count: forS.length, mine: forS.some(e => e.endorser_user_id === viewerUserId) };
+      }
       return {
         profile: { ...prof, premium: foundationRepo.hasEntitlement(prof.user_id, 'premium') },
         posts,
@@ -206,9 +213,28 @@ export function createSocialService(social, foundationRepo, options = {}) {
         following_count: social.listFollowing(prof.user_id).length,
         post_count: posts.length,
         best_answers,
+        endorsements,
         is_following: social.isFollowing(viewerUserId, prof.user_id),
         is_self: viewerUserId === prof.user_id,
       };
+    },
+    // Fachgebiet bestätigen (Endorsement) — Umschalten; benachrichtigt bei neuer Bestätigung.
+    endorseSkill(actorUserId, targetHandleOrId, skill) {
+      requireUser(actorUserId);
+      const prof = social.getProfileByHandle(targetHandleOrId) || social.getProfileByUserId(targetHandleOrId);
+      if (!prof) throw new AppError('profile_not_found', 'Profil nicht gefunden.');
+      if (prof.user_id === actorUserId) throw new AppError('endorse_self', 'Eigene Fachgebiete kann man nicht bestätigen.');
+      const s = String(skill || '').trim();
+      if (!s || !(prof.specializations || []).includes(s)) throw new AppError('endorse_skill_unknown', 'Dieses Fachgebiet gibt es im Profil nicht.');
+      let mine;
+      if (social.hasEndorsed(actorUserId, prof.user_id, s)) {
+        social.removeEndorsement(actorUserId, prof.user_id, s); mine = false;
+      } else {
+        social.addEndorsement({ endorserUserId: actorUserId, targetUserId: prof.user_id, skill: s }); mine = true;
+        social.createNotification({ userId: prof.user_id, type: 'endorsement', actorUserId, refType: 'skill', refId: s, label: s });
+      }
+      const count = social.listEndorsementsForTarget(prof.user_id).filter(e => e.skill === s).length;
+      return { skill: s, count, mine };
     },
     // Folge-Vorschläge: Profile, denen der Betrachter noch nicht folgt (aktivste zuerst).
     suggestFollows(viewerUserId, limit = 5) {

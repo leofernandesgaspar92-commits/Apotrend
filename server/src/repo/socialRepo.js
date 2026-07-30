@@ -18,6 +18,7 @@ export function createSocialRepo() {
   const reports = new Map();
   const verifications = new Map(); // userId -> Verifizierungsantrag
   const bookmarks = new Map();      // `${userId}|${postId}` -> row
+  const endorsements = new Map();   // `${endorser}|${target}|${skill}` -> row (Fachgebiet-Bestätigung)
 
   const uuid = () => crypto.randomUUID();
   const now = () => new Date().toISOString();
@@ -183,6 +184,17 @@ export function createSocialRepo() {
     listFollowing(userId) { return [...follows.values()].filter(f => f.follower_user_id === userId).map(f => f.followee_user_id); },
     listFollowers(userId) { return [...follows.values()].filter(f => f.followee_user_id === userId).map(f => f.follower_user_id); },
 
+    // ── Fachgebiet-Bestätigungen (Endorsements) ──
+    endKey(endorserId, targetId, skill) { return `${endorserId}|${targetId}|${skill}`; },
+    addEndorsement({ endorserUserId, targetUserId, skill }) {
+      const key = `${endorserUserId}|${targetUserId}|${skill}`;
+      if (!endorsements.has(key)) endorsements.set(key, { endorser_user_id: endorserUserId, target_user_id: targetUserId, skill, created_at: now() });
+      return { ...endorsements.get(key) };
+    },
+    removeEndorsement(endorserUserId, targetUserId, skill) { endorsements.delete(`${endorserUserId}|${targetUserId}|${skill}`); },
+    hasEndorsed(endorserUserId, targetUserId, skill) { return endorsements.has(`${endorserUserId}|${targetUserId}|${skill}`); },
+    listEndorsementsForTarget(targetUserId) { return [...endorsements.values()].filter(e => e.target_user_id === targetUserId).map(e => ({ ...e })); },
+
     // ── Benachrichtigungen ──
     createNotification(n) {
       const row = { id: uuid(), user_id: n.userId, type: n.type, actor_user_id: n.actorUserId ?? null, ref_type: n.refType ?? null, ref_id: n.refId ?? null, label: n.label ?? null, read: false, created_at: now() };
@@ -255,6 +267,7 @@ export function createSocialRepo() {
         for (const [mid, m] of dmMessages) if (m.thread_id === id) dmMessages.delete(mid);
       }
       for (const [k, bm] of bookmarks) if (bm.user_id === userId) bookmarks.delete(k);
+      for (const [k, e] of endorsements) if (e.endorser_user_id === userId || e.target_user_id === userId) endorsements.delete(k);
       for (const [id, r] of reports) if (r.reporter_user_id === userId) reports.delete(id);
       verifications.delete(userId);
     },
@@ -265,7 +278,7 @@ export function createSocialRepo() {
         profiles: [...profiles], profilesByHandle: [...profilesByHandle], posts: [...posts],
         comments: [...comments], reactions: [...reactions], pollVotes: [...pollVotes], follows: [...follows],
         notifications: [...notifications], dmThreads: [...dmThreads], dmMessages: [...dmMessages], reports: [...reports],
-        verifications: [...verifications], bookmarks: [...bookmarks],
+        verifications: [...verifications], bookmarks: [...bookmarks], endorsements: [...endorsements],
       };
     },
     __load(d) {
@@ -274,7 +287,7 @@ export function createSocialRepo() {
       fill(profiles, d.profiles); fill(profilesByHandle, d.profilesByHandle); fill(posts, d.posts);
       fill(comments, d.comments); fill(reactions, d.reactions); fill(pollVotes, d.pollVotes); fill(follows, d.follows);
       fill(notifications, d.notifications); fill(dmThreads, d.dmThreads); fill(dmMessages, d.dmMessages); fill(reports, d.reports);
-      fill(verifications, d.verifications); fill(bookmarks, d.bookmarks);
+      fill(verifications, d.verifications); fill(bookmarks, d.bookmarks); fill(endorsements, d.endorsements);
     },
   };
 }

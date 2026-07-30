@@ -125,6 +125,40 @@ test('Profil bearbeiten: „Offen für" nimmt nur bekannte Schlüssel, deduplizi
   assert.deepEqual(social.getProfile('anna').open_to, set.open_to);
 });
 
+test('Fachgebiet-Bestätigung: umschalten, Zähler, nicht selbst, nur echte Fachgebiete, Benachrichtigung, dump/load', () => {
+  const repo = createMemoryRepo();
+  const orgAuth = createOrgAuthService(repo);
+  const srepo = createSocialRepo();
+  const social = createSocialService(srepo, repo);
+  const A = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'A' }, owner: { name: 'Anna', email: 'a@a.at', password: 'geheim123' } });
+  social.createProfile(A.user.id, { handle: 'anna', displayName: 'Anna' });
+  social.updateProfile(A.user.id, { specializations: 'Onkologie, Impfen' });
+  const B = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'B' }, owner: { name: 'Ben', email: 'b@b.at', password: 'geheim123' } });
+  social.createProfile(B.user.id, { handle: 'ben', displayName: 'Ben' });
+
+  // Ben bestätigt Annas „Onkologie"
+  const r1 = social.endorseSkill(B.user.id, 'anna', 'Onkologie');
+  assert.deepEqual(r1, { skill: 'Onkologie', count: 1, mine: true });
+  // Benachrichtigung an Anna
+  assert.ok(social.notifications(A.user.id).some(n => n.type === 'endorsement' && n.label === 'Onkologie'));
+  // Profilseite zeigt Zähler + mine (aus Bens Sicht)
+  const page = social.profilePage(B.user.id, 'anna');
+  assert.equal(page.endorsements['Onkologie'].count, 1);
+  assert.equal(page.endorsements['Onkologie'].mine, true);
+  assert.equal(page.endorsements['Impfen'].count, 0);
+  // Umschalten (zurücknehmen)
+  const r2 = social.endorseSkill(B.user.id, 'anna', 'Onkologie');
+  assert.deepEqual(r2, { skill: 'Onkologie', count: 0, mine: false });
+  // Eigenes Fachgebiet nicht bestätigbar; unbekanntes Fachgebiet abgelehnt
+  social.endorseSkill(B.user.id, 'anna', 'Onkologie'); // wieder an, für dump/load
+  assert.throws(() => social.endorseSkill(A.user.id, 'anna', 'Onkologie'), /bestätigen/);
+  assert.throws(() => social.endorseSkill(B.user.id, 'anna', 'Kardiologie'), /Fachgebiet/);
+  // dump/load: Bestätigung übersteht Round-Trip
+  const srepo2 = createSocialRepo(); srepo2.__load(srepo.__dump());
+  const social2 = createSocialService(srepo2, repo);
+  assert.equal(social2.profilePage(B.user.id, 'anna').endorsements['Onkologie'].count, 1);
+});
+
 test('„Offen für"-Entdecken: findet passende Kolleg:innen, nicht sich selbst, unbekannte Kategorie abgelehnt', () => {
   const repo = createMemoryRepo();
   const orgAuth = createOrgAuthService(repo);

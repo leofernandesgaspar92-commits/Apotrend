@@ -192,7 +192,7 @@ const I18N = {
     gen_back:'Zurück', notif_title:'🔔 Benachrichtigungen', notif_doc:'Benachrichtigungen',
     notif_readall:'Alle als gelesen markieren', nf_all:'Alle', nf_procurement:'⭐ Engpässe & Beschaffung', nf_social:'💬 Sozial', notif_empty:'Noch keine Benachrichtigungen.',
     notif_someone:'Jemand', post_doc:'Beitrag', post_title:'Beitrag', post_back:'← zurück zum Feed',
-    nv_follow:'folgt dir jetzt', nv_comment:'hat kommentiert', nv_reaction:'hat reagiert auf deinen Beitrag',
+    nv_follow:'folgt dir jetzt', nv_comment:'hat kommentiert', nv_reaction:'hat reagiert auf deinen Beitrag', nv_endorsement:'hat dein Fachgebiet bestätigt', en_hint:'Fachgebiet bestätigen',
     nv_mention:'hat dich erwähnt', nv_dm:'hat dir geschrieben', nv_poll_vote:'hat bei deiner Umfrage abgestimmt', nv_exchange_offer:'bietet jetzt an, was du suchst:',
     nv_exchange_want:'sucht, was du anbietest:', nv_verified:'Dein Profil wurde verifiziert ✔',
     nv_watch_alert:'Neuer Status bei deinem beobachteten Wirkstoff:', nv_shortage_confirm:'bestätigt deinen gemeldeten Engpass:',
@@ -499,7 +499,7 @@ const I18N = {
     gen_back:'Back', notif_title:'🔔 Notifications', notif_doc:'Notifications',
     notif_readall:'Mark all as read', nf_all:'All', nf_procurement:'⭐ Shortages & sourcing', nf_social:'💬 Social', notif_empty:'No notifications yet.',
     notif_someone:'Someone', post_doc:'Post', post_title:'Post', post_back:'← back to feed',
-    nv_follow:'now follows you', nv_comment:'commented', nv_reaction:'reacted to your post',
+    nv_follow:'now follows you', nv_comment:'commented', nv_reaction:'reacted to your post', nv_endorsement:'endorsed your skill', en_hint:'Endorse this skill',
     nv_mention:'mentioned you', nv_dm:'messaged you', nv_poll_vote:'voted in your poll', nv_exchange_offer:'now offers what you seek:',
     nv_exchange_want:'seeks what you offer:', nv_verified:'Your profile was verified ✔',
     nv_watch_alert:'New status for a substance you watch:', nv_shortage_confirm:'confirms the shortage you reported:',
@@ -806,7 +806,7 @@ const I18N = {
     gen_back:'Voltar', notif_title:'🔔 Notificações', notif_doc:'Notificações',
     notif_readall:'Marcar todas como lidas', nf_all:'Todas', nf_procurement:'⭐ Faltas & compras', nf_social:'💬 Social', notif_empty:'Ainda sem notificações.',
     notif_someone:'Alguém', post_doc:'Publicação', post_title:'Publicação', post_back:'← voltar ao feed',
-    nv_follow:'começou a segui-lo', nv_comment:'comentou', nv_reaction:'reagiu à sua publicação',
+    nv_follow:'começou a segui-lo', nv_comment:'comentou', nv_reaction:'reagiu à sua publicação', nv_endorsement:'confirmou a sua área', en_hint:'Confirmar esta área',
     nv_mention:'mencionou-o', nv_dm:'enviou-lhe mensagem', nv_poll_vote:'votou na sua sondagem', nv_exchange_offer:'oferece agora o que procura:',
     nv_exchange_want:'procura o que oferece:', nv_verified:'O seu perfil foi verificado ✔',
     nv_watch_alert:'Novo estado numa substância que vigia:', nv_shortage_confirm:'confirma a falta que reportou:',
@@ -3854,7 +3854,12 @@ async function openProfile(handle) {
     const d = await api('GET',`/api/profiles/${encodeURIComponent(handle)}/page`);
     const p = d.profile;
     const initials = (p.display_name||'?').split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();
-    const specs = (p.specializations||[]).map(s=>`<span class="spec">${esc(s)}</span>`).join(' ');
+    const specs = (p.specializations||[]).map(s=>{
+      const e = (d.endorsements && d.endorsements[s]) || { count:0, mine:false };
+      const cnt = e.count ? ` <b>${e.count}</b>` : '';
+      if (d.is_self) return `<span class="spec">${esc(s)}${cnt}</span>`;
+      return `<button class="spec spec-endorse${e.mine?' spec-endorsed':''}" data-endorse="${esc(s)}" title="${esc(t('en_hint'))}">${e.mine?'✓ ':'+ '}${esc(s)}${cnt}</button>`;
+    }).join(' ');
     // Werdegang/Berufserfahrung als eigene Sektion (nur wenn vorhanden).
     const expHtml = (p.experience && p.experience.length) ? `
       <div class="exp-section">
@@ -3939,6 +3944,14 @@ async function openProfile(handle) {
     head.querySelector('[data-followers]').onclick = () => openFollowList(p.handle, 'followers');
     head.querySelector('[data-following]').onclick = () => openFollowList(p.handle, 'following');
     head.querySelectorAll('[data-opento]').forEach(b => b.onclick = () => openDiscoverOpenTo(b.dataset.opento));
+    head.querySelectorAll('[data-endorse]').forEach(b => b.onclick = async () => {
+      const skill = b.dataset.endorse;
+      try {
+        const r = await api('POST', `/api/profiles/${encodeURIComponent(p.handle)}/endorse`, { skill });
+        b.classList.toggle('spec-endorsed', r.mine);
+        b.innerHTML = `${r.mine?'✓ ':'+ '}${esc(skill)}${r.count?` <b>${r.count}</b>`:''}`;
+      } catch(e){ alert(e.message); }
+    });
     const tf = head.querySelector('[data-togglefollow]');
     if (tf) tf.onclick = async () => {
       try { await api('POST', d.is_following?'/api/unfollow':'/api/follow', { handle:p.handle }); openProfile(handle); }
@@ -4697,7 +4710,7 @@ async function showNotifications() {
   setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏' };
   app.innerHTML = '';
   const procCount = d.notifications.filter(n => NOTIF_PROCUREMENT.has(n.type)).length;
   const showFilter = d.notifications.length >= 5 && procCount > 0 && procCount < d.notifications.length;
@@ -4740,6 +4753,7 @@ async function showNotifications() {
       }
       else if (n.type === 'watch_alert') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
       else if (n.type === 'shortage_confirm') { mainScreen().then(()=>goTab('shortages')); }
+      else if (n.type === 'endorsement') { mainScreen().then(()=> me && openProfile(me.handle)); }
       else if (n.post_id) { mainScreen().then(()=>openPost(n.post_id)); }
       else if (n.actor) { mainScreen().then(()=>openProfile(n.actor.handle)); }
     };

@@ -419,6 +419,7 @@ const routes = [
     return { ...d, posts: enrichPosts(d.posts) };
   }],
   ['GET', /^\/api\/profiles\/([^/]+)$/, true, async ({ params }) => ({ profile: social.getProfile(params[0]) })],
+  ['POST', /^\/api\/profiles\/([^/]+)\/endorse$/, true, async ({ userId, params, body }) => social.endorseSkill(userId, params[0], body.skill)],
   ['POST', /^\/api\/profile$/, true, async ({ userId, body }) => ({ profile: social.updateProfile(userId, body) })],
   ['POST', /^\/api\/follow$/, true, async ({ userId, body }) => {
     const target = social.getProfile(body.handle);
