@@ -33,7 +33,7 @@ export function createSocialRepo() {
       const prof = {
         user_id: p.userId, handle: key, display_name: p.displayName,
         title: p.title ?? null, pharmacy_org_id: p.pharmacyOrgId ?? null,
-        bio: p.bio ?? null, specializations: p.specializations ?? [], experience: p.experience ?? [], education: p.education ?? [],
+        bio: p.bio ?? null, specializations: p.specializations ?? [], experience: p.experience ?? [], education: p.education ?? [], open_to: p.openTo ?? [],
         avatar_url: p.avatarUrl ?? null, cover_url: p.coverUrl ?? null, website: p.website ?? null,
         public_email: p.publicEmail ?? null, phone: p.phone ?? null,
         verified: !!p.verified, is_editorial: !!p.isEditorial,
@@ -55,7 +55,7 @@ export function createSocialRepo() {
     updateProfile(userId, patch) {
       const p = profiles.get(userId);
       if (!p) return null;
-      for (const k of ['display_name', 'title', 'bio', 'specializations', 'experience', 'education', 'avatar_url', 'cover_url', 'website', 'public_email', 'phone', 'visibility', 'bundesland', 'country', 'locale', 'account_type']) {
+      for (const k of ['display_name', 'title', 'bio', 'specializations', 'experience', 'education', 'open_to', 'avatar_url', 'cover_url', 'website', 'public_email', 'phone', 'visibility', 'bundesland', 'country', 'locale', 'account_type']) {
         if (k in patch) p[k] = patch[k];
       }
       return { ...p };

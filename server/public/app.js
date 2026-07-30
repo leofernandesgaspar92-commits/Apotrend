@@ -240,6 +240,8 @@ const I18N = {
     ep_exp_role_ph:'Rolle (z. B. Filialleiterin)', ep_exp_org_ph:'Organisation (z. B. Bahnhof-Apotheke)', ep_exp_from_ph:'von (z. B. 2018)', ep_exp_to_ph:'bis (z. B. heute)', ep_exp_desc_ph:'Kurzbeschreibung (optional)',
     pf_education:'Aus- & Weiterbildung', ep_edu:'Aus- & Weiterbildung', ep_edu_hint:'Studium, Ausbildung, Fortbildungen — z. B. Pharmaziestudium, Fachapotheker.', ep_edu_add:'+ Ausbildung hinzufügen', ep_edu_del:'Ausbildung entfernen',
     ep_edu_degree_ph:'Abschluss (z. B. Mag. pharm.)', ep_edu_school_ph:'Einrichtung (z. B. Universität Wien)', ep_edu_year_ph:'Jahr (z. B. 2015)',
+    pf_opento:'Offen für', ep_opento:'Offen für (Vernetzung & Geschäft)', ep_opento_hint:'Zeigt Kolleg:innen, wofür Sie ansprechbar sind.',
+    ot_kooperation:'Fachkooperationen', ot_einkauf:'Einkaufsgemeinschaft', ot_vertretung:'Vertretung / Dienst-Tausch', ot_austausch:'Bestandsaustausch', ot_mentoring:'Fachaustausch & Mentoring', ot_jobs:'Jobs & Bewerbungen',
     ac_title:'🔒 Datenschutz & Konto', ac_export_d:'Lade alle deine Daten (Profil, Beiträge, Kommentare, Nachrichten, Merkliste, Austausch) als Datei herunter (DSGVO).',
     ac_export_btn:'⬇️ Meine Daten exportieren', ac_pw_title:'Passwort ändern', ac_pw_old:'Aktuelles Passwort',
     ac_pw_new:'Neues Passwort (mind. 8 Zeichen)', ac_pw_ok:'✓ Passwort geändert',
@@ -544,6 +546,8 @@ const I18N = {
     ep_exp_role_ph:'Role (e.g. branch manager)', ep_exp_org_ph:'Organization (e.g. Central Pharmacy)', ep_exp_from_ph:'from (e.g. 2018)', ep_exp_to_ph:'to (e.g. present)', ep_exp_desc_ph:'Short description (optional)',
     pf_education:'Education', ep_edu:'Education', ep_edu_hint:'Studies, training, continuing education — e.g. pharmacy degree, specialist pharmacist.', ep_edu_add:'+ Add education', ep_edu_del:'Remove education',
     ep_edu_degree_ph:'Degree (e.g. MPharm)', ep_edu_school_ph:'Institution (e.g. University of Vienna)', ep_edu_year_ph:'Year (e.g. 2015)',
+    pf_opento:'Open to', ep_opento:'Open to (networking & business)', ep_opento_hint:'Shows colleagues what you are open to.',
+    ot_kooperation:'Professional partnerships', ot_einkauf:'Buying group', ot_vertretung:'Cover / shift swaps', ot_austausch:'Stock exchange', ot_mentoring:'Peer exchange & mentoring', ot_jobs:'Jobs & applications',
     ac_title:'🔒 Privacy & account', ac_export_d:'Download all your data (profile, posts, comments, messages, watchlist, exchange) as a file (GDPR).',
     ac_export_btn:'⬇️ Export my data', ac_pw_title:'Change password', ac_pw_old:'Current password',
     ac_pw_new:'New password (min. 8 characters)', ac_pw_ok:'✓ Password changed',
@@ -848,6 +852,8 @@ const I18N = {
     ep_exp_role_ph:'Função (ex. diretora de filial)', ep_exp_org_ph:'Organização (ex. Farmácia Central)', ep_exp_from_ph:'de (ex. 2018)', ep_exp_to_ph:'até (ex. atual)', ep_exp_desc_ph:'Breve descrição (opcional)',
     pf_education:'Formação', ep_edu:'Formação e cursos', ep_edu_hint:'Estudos, formação, cursos — ex. licenciatura em Farmácia, especialista.', ep_edu_add:'+ Adicionar formação', ep_edu_del:'Remover formação',
     ep_edu_degree_ph:'Grau (ex. Mestrado em Farmácia)', ep_edu_school_ph:'Instituição (ex. Universidade de Lisboa)', ep_edu_year_ph:'Ano (ex. 2015)',
+    pf_opento:'Aberto a', ep_opento:'Aberto a (networking e negócio)', ep_opento_hint:'Mostra aos colegas para que está disponível.',
+    ot_kooperation:'Parcerias profissionais', ot_einkauf:'Central de compras', ot_vertretung:'Substituição / troca de turnos', ot_austausch:'Troca de stock', ot_mentoring:'Intercâmbio e mentoria', ot_jobs:'Empregos e candidaturas',
     ac_title:'🔒 Privacidade & conta', ac_export_d:'Descarregue todos os seus dados (perfil, publicações, comentários, mensagens, lista de vigilância, troca) como ficheiro (RGPD).',
     ac_export_btn:'⬇️ Exportar os meus dados', ac_pw_title:'Alterar palavra-passe', ac_pw_old:'Palavra-passe atual',
     ac_pw_new:'Nova palavra-passe (mín. 8 caracteres)', ac_pw_ok:'✓ Palavra-passe alterada',
@@ -1400,6 +1406,9 @@ function countryOptionsHtml(selected) {
 // Kontotyp: übersetztes Label je Schlüssel (Register-Reihenfolge aus /api/account-types).
 const ACCT_I18N = { pharmacy:'at_pharmacy', pharma:'at_pharma', authority:'at_authority', private:'at_private' };
 function acctLabel(key) { return ACCT_I18N[key] ? t(ACCT_I18N[key]) : (key || ''); }
+// „Offen für"-Optionen (Schlüssel = Backend OPEN_TO_KEYS); Label übersetzt.
+const OPEN_TO = ['kooperation', 'einkauf', 'vertretung', 'austausch', 'mentoring', 'jobs'];
+function openToLabel(key) { return t('ot_' + key); }
 let ACCOUNT_TYPES_CACHE = null;
 async function ensureAccountTypes() {
   if (!ACCOUNT_TYPES_CACHE) { try { ACCOUNT_TYPES_CACHE = (await api('GET','/api/account-types')).account_types; } catch { ACCOUNT_TYPES_CACHE = []; } }
@@ -3721,6 +3730,9 @@ function editProfileForm(p) {
     <label for="ep_title">${esc(t('ep_func'))}</label><input id="ep_title" value="${esc(p.title||'')}" placeholder="${esc(t('ep_func_ph'))}">
     <label for="ep_bio">${esc(t('ep_about'))}</label><textarea id="ep_bio" placeholder="${esc(t('ep_about_ph'))}">${esc(p.bio||'')}</textarea>
     <label for="ep_specs">${esc(t('ep_specs_l'))}</label><input id="ep_specs" value="${esc(specs)}" placeholder="${esc(t('ep_specs_ph'))}">
+    <label style="margin-top:8px">${esc(t('ep_opento'))}</label>
+    <div class="muted" style="font-size:12px;margin-bottom:4px">${esc(t('ep_opento_hint'))}</div>
+    <div id="ep_opento">${OPEN_TO.map(k=>`<label class="ot-check"><input type="checkbox" value="${k}"${(p.open_to||[]).includes(k)?' checked':''}> ${esc(openToLabel(k))}</label>`).join('')}</div>
     <label>${esc(t('ep_region'))}</label>
     <select id="ep_bl"><option value="">${esc(t('ep_none'))}</option>${BUNDESLAENDER.map(x=>`<option value="${x}"${x===(p.bundesland||'')?' selected':''}>${x}</option>`).join('')}</select>
     <div class="muted" style="font-size:12px;margin-top:2px">${esc(t('ep_region_hint'))}</div>
@@ -3813,8 +3825,9 @@ function editProfileForm(p) {
         const get = x => (row.querySelector(`[data-x="${x}"]`).value || '').trim();
         return { degree: get('degree'), school: get('school'), year: get('year') };
       }).filter(e => e.degree);
+      const openTo = [...document.querySelectorAll('#ep_opento input:checked')].map(c => c.value);
       const payload = {
-        displayName: v('ep_name'), title: v('ep_title'), bio: v('ep_bio'), specializations: v('ep_specs'), bundesland: v('ep_bl'), website: v('ep_web'), publicEmail: v('ep_pmail'), phone: v('ep_phone'), experience, education,
+        displayName: v('ep_name'), title: v('ep_title'), bio: v('ep_bio'), specializations: v('ep_specs'), bundesland: v('ep_bl'), website: v('ep_web'), publicEmail: v('ep_pmail'), phone: v('ep_phone'), experience, education, openTo,
       };
       if (avatar !== undefined) payload.avatarUrl = avatar;
       if (cover !== undefined) payload.coverUrl = cover;
@@ -3883,6 +3896,7 @@ async function openProfile(handle) {
         </div>
       </div>
       ${p.bio?`<div class="post-body">${esc(p.bio)}</div>`:''}
+      ${(p.open_to&&p.open_to.length)?`<div class="opento-row">🤝 <b>${esc(t('pf_opento'))}:</b> ${p.open_to.filter(k=>OPEN_TO.includes(k)).map(k=>`<span class="opento-badge">${esc(openToLabel(k))}</span>`).join(' ')}</div>`:''}
       ${specs?`<div style="margin-top:8px">${specs}</div>`:''}
       ${expHtml}
       ${eduHtml}

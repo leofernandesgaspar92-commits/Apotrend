@@ -113,6 +113,18 @@ test('Profil bearbeiten: Aus- & Weiterbildung setzen, ohne Abschluss verwerfen, 
   assert.deepEqual(social.getProfile('anna').education, many.education);
 });
 
+test('Profil bearbeiten: „Offen für" nimmt nur bekannte Schlüssel, dedupliziert', () => {
+  const { social, a } = setup();
+  const p = social.updateProfile(a, { openTo: ['kooperation', 'jobs', 'kooperation', 'unbekannt', 'einkauf'] });
+  assert.deepEqual(p.open_to, ['kooperation', 'jobs', 'einkauf']); // dedupe + Reihenfolge, Müll raus
+  // Leeren
+  const cleared = social.updateProfile(a, { openTo: [] });
+  assert.deepEqual(cleared.open_to, []);
+  // dump/load
+  const set = social.updateProfile(a, { openTo: ['mentoring'] });
+  assert.deepEqual(social.getProfile('anna').open_to, set.open_to);
+});
+
 test('Profil bearbeiten: öffentliche Kontaktdaten setzen/leeren/validieren', () => {
   const { social, a } = setup();
   const p = social.updateProfile(a, { publicEmail: 'kontakt@apo.at', phone: '+43 1 234567' });

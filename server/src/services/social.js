@@ -10,6 +10,9 @@ import { isValidAccountType, normalizeAccountType } from '../data/accountTypes.j
 
 const REACTION_TYPES = ['hilfreich', 'danke', 'bestaetigt', 'interessant'];
 const MAX_BODY = 1000;
+// „Offen für" — wofür ein Profil offen ist (Vernetzungs-/Geschäftssignale). Feste
+// Schlüssel; die Beschriftung/Übersetzung liegt im Frontend.
+export const OPEN_TO_KEYS = ['kooperation', 'einkauf', 'vertretung', 'austausch', 'mentoring', 'jobs'];
 
 export function createSocialService(social, foundationRepo, options = {}) {
   // Wer darf moderieren (Reports bearbeiten, fremde Inhalte entfernen)? Bewusst
@@ -91,7 +94,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       return social.getProfileByHandle(handleOrUserId) || social.getProfileByUserId(handleOrUserId);
     },
     // Eigenes Profil bearbeiten (Handle bleibt als Identität unveränderlich).
-    updateProfile(actorUserId, { displayName, title, bio, specializations, experience, education, avatarUrl, coverUrl, website, publicEmail, phone, visibility, bundesland, country, locale, accountType }) {
+    updateProfile(actorUserId, { displayName, title, bio, specializations, experience, education, openTo, avatarUrl, coverUrl, website, publicEmail, phone, visibility, bundesland, country, locale, accountType }) {
       requireUser(actorUserId);
       const current = social.getProfileByUserId(actorUserId);
       if (!current) throw new Error('Profil nicht gefunden.');
@@ -149,6 +152,11 @@ export function createSocialService(social, foundationRepo, options = {}) {
           school: String(e && e.school || '').trim().slice(0, 120),
           year: String(e && e.year || '').trim().slice(0, 10),
         })).filter(e => e.degree).slice(0, 20);
+      }
+      // „Offen für": nur bekannte Schlüssel, dedupliziert.
+      if (openTo !== undefined) {
+        const arr = Array.isArray(openTo) ? openTo : [];
+        patch.open_to = [...new Set(arr.map(x => String(x)).filter(x => OPEN_TO_KEYS.includes(x)))];
       }
       if (visibility !== undefined) {
         if (!['network', 'public'].includes(visibility)) throw new Error('Ungueltige Profil-Sichtbarkeit.');
