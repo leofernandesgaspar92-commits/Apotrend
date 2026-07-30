@@ -239,6 +239,26 @@ export function createSocialService(social, foundationRepo, options = {}) {
         .slice(0, limit);
       return { bundesland: bl, people };
     },
+    // „Offen für"-Entdecken: Kolleg:innen, die für dasselbe offen sind (nicht man selbst).
+    // Gefolgte zuerst als Trennung egal; sortiert nach Reichweite. Nach Land des Betrachters.
+    discoverByOpenTo(viewerUserId, key, limit = 30) {
+      requireUser(viewerUserId);
+      if (!OPEN_TO_KEYS.includes(String(key))) throw new AppError('open_to_unknown', 'Unbekannte „Offen für"-Kategorie.');
+      const meProf = social.getProfileByUserId(viewerUserId);
+      const country = meProf && meProf.country;
+      const following = new Set(social.listFollowing(viewerUserId));
+      const people = social.listProfiles()
+        .filter(p => p.user_id !== viewerUserId && Array.isArray(p.open_to) && p.open_to.includes(key) && (!country || p.country === country))
+        .map(p => ({
+          handle: p.handle, display_name: p.display_name, avatar_url: p.avatar_url || null,
+          verified: p.verified, is_editorial: p.is_editorial, account_type: p.account_type,
+          title: p.title, bundesland: p.bundesland, open_to: p.open_to || [],
+          is_following: following.has(p.user_id), follower_count: social.listFollowers(p.user_id).length,
+        }))
+        .sort((a, b) => b.follower_count - a.follower_count)
+        .slice(0, limit);
+      return { key, people };
+    },
     // Handle-Vorschläge für @-Autovervollständigung (Präfix zuerst, dann enthält).
     searchHandles(q, limit = 6) {
       const s = String(q ?? '').trim().toLowerCase();

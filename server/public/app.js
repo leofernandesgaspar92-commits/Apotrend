@@ -242,6 +242,7 @@ const I18N = {
     ep_edu_degree_ph:'Abschluss (z. B. Mag. pharm.)', ep_edu_school_ph:'Einrichtung (z. B. Universität Wien)', ep_edu_year_ph:'Jahr (z. B. 2015)',
     pf_opento:'Offen für', ep_opento:'Offen für (Vernetzung & Geschäft)', ep_opento_hint:'Zeigt Kolleg:innen, wofür Sie ansprechbar sind.',
     ot_kooperation:'Fachkooperationen', ot_einkauf:'Einkaufsgemeinschaft', ot_vertretung:'Vertretung / Dienst-Tausch', ot_austausch:'Bestandsaustausch', ot_mentoring:'Fachaustausch & Mentoring', ot_jobs:'Jobs & Bewerbungen',
+    ot_discover_hint:'Zeigen, wer auch dafür offen ist', ot_discover_title:'Offen für: {cat}', ot_discover_count:'{n} Kolleg:innen im selben Land', ot_discover_none_t:'Noch niemand', ot_discover_none_s:'Aktuell ist niemand sonst für diese Kategorie offen. Schauen Sie später wieder vorbei.',
     ac_title:'🔒 Datenschutz & Konto', ac_export_d:'Lade alle deine Daten (Profil, Beiträge, Kommentare, Nachrichten, Merkliste, Austausch) als Datei herunter (DSGVO).',
     ac_export_btn:'⬇️ Meine Daten exportieren', ac_pw_title:'Passwort ändern', ac_pw_old:'Aktuelles Passwort',
     ac_pw_new:'Neues Passwort (mind. 8 Zeichen)', ac_pw_ok:'✓ Passwort geändert',
@@ -548,6 +549,7 @@ const I18N = {
     ep_edu_degree_ph:'Degree (e.g. MPharm)', ep_edu_school_ph:'Institution (e.g. University of Vienna)', ep_edu_year_ph:'Year (e.g. 2015)',
     pf_opento:'Open to', ep_opento:'Open to (networking & business)', ep_opento_hint:'Shows colleagues what you are open to.',
     ot_kooperation:'Professional partnerships', ot_einkauf:'Buying group', ot_vertretung:'Cover / shift swaps', ot_austausch:'Stock exchange', ot_mentoring:'Peer exchange & mentoring', ot_jobs:'Jobs & applications',
+    ot_discover_hint:'Show who else is open to this', ot_discover_title:'Open to: {cat}', ot_discover_count:'{n} colleagues in the same country', ot_discover_none_t:'Nobody yet', ot_discover_none_s:'No one else is open to this category right now. Check back later.',
     ac_title:'🔒 Privacy & account', ac_export_d:'Download all your data (profile, posts, comments, messages, watchlist, exchange) as a file (GDPR).',
     ac_export_btn:'⬇️ Export my data', ac_pw_title:'Change password', ac_pw_old:'Current password',
     ac_pw_new:'New password (min. 8 characters)', ac_pw_ok:'✓ Password changed',
@@ -854,6 +856,7 @@ const I18N = {
     ep_edu_degree_ph:'Grau (ex. Mestrado em Farmácia)', ep_edu_school_ph:'Instituição (ex. Universidade de Lisboa)', ep_edu_year_ph:'Ano (ex. 2015)',
     pf_opento:'Aberto a', ep_opento:'Aberto a (networking e negócio)', ep_opento_hint:'Mostra aos colegas para que está disponível.',
     ot_kooperation:'Parcerias profissionais', ot_einkauf:'Central de compras', ot_vertretung:'Substituição / troca de turnos', ot_austausch:'Troca de stock', ot_mentoring:'Intercâmbio e mentoria', ot_jobs:'Empregos e candidaturas',
+    ot_discover_hint:'Ver quem também está disponível', ot_discover_title:'Aberto a: {cat}', ot_discover_count:'{n} colegas no mesmo país', ot_discover_none_t:'Ainda ninguém', ot_discover_none_s:'De momento mais ninguém está disponível para esta categoria. Volte mais tarde.',
     ac_title:'🔒 Privacidade & conta', ac_export_d:'Descarregue todos os seus dados (perfil, publicações, comentários, mensagens, lista de vigilância, troca) como ficheiro (RGPD).',
     ac_export_btn:'⬇️ Exportar os meus dados', ac_pw_title:'Alterar palavra-passe', ac_pw_old:'Palavra-passe atual',
     ac_pw_new:'Nova palavra-passe (mín. 8 caracteres)', ac_pw_ok:'✓ Palavra-passe alterada',
@@ -3896,7 +3899,7 @@ async function openProfile(handle) {
         </div>
       </div>
       ${p.bio?`<div class="post-body">${esc(p.bio)}</div>`:''}
-      ${(p.open_to&&p.open_to.length)?`<div class="opento-row">🤝 <b>${esc(t('pf_opento'))}:</b> ${p.open_to.filter(k=>OPEN_TO.includes(k)).map(k=>`<span class="opento-badge">${esc(openToLabel(k))}</span>`).join(' ')}</div>`:''}
+      ${(p.open_to&&p.open_to.length)?`<div class="opento-row">🤝 <b>${esc(t('pf_opento'))}:</b> ${p.open_to.filter(k=>OPEN_TO.includes(k)).map(k=>`<button class="opento-badge clickable" data-opento="${esc(k)}" title="${esc(t('ot_discover_hint'))}">${esc(openToLabel(k))}</button>`).join(' ')}</div>`:''}
       ${specs?`<div style="margin-top:8px">${specs}</div>`:''}
       ${expHtml}
       ${eduHtml}
@@ -3935,6 +3938,7 @@ async function openProfile(handle) {
     if (ab) ab.onclick = openMyActivity;
     head.querySelector('[data-followers]').onclick = () => openFollowList(p.handle, 'followers');
     head.querySelector('[data-following]').onclick = () => openFollowList(p.handle, 'following');
+    head.querySelectorAll('[data-opento]').forEach(b => b.onclick = () => openDiscoverOpenTo(b.dataset.opento));
     const tf = head.querySelector('[data-togglefollow]');
     if (tf) tf.onclick = async () => {
       try { await api('POST', d.is_following?'/api/unfollow':'/api/follow', { handle:p.handle }); openProfile(handle); }
@@ -4043,6 +4047,50 @@ async function openFollowList(handle, which) {
       <span class="sp" style="flex:1"></span>
       ${p.is_self?'':`<button class="${p.is_following?'ghost ':''}small" data-follow="${esc(p.handle)}" data-on="${p.is_following?'1':'0'}">${p.is_following?esc(t('fl_following_btn')):esc(t('pf_follow'))}</button>`}
     </div>${p.title?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(p.title)}</div>`:''}${specs?`<div style="margin-top:6px">${specs}</div>`:''}</div>`);
+    card.querySelectorAll('[data-openprofile]').forEach(el => el.onclick = () => openProfile(el.dataset.openprofile));
+    const fb = card.querySelector('[data-follow]');
+    if (fb) fb.onclick = async () => {
+      const on = fb.dataset.on === '1';
+      try { await api('POST', on?'/api/unfollow':'/api/follow', { handle: fb.dataset.follow });
+        fb.dataset.on = on?'0':'1'; fb.textContent = on?t('pf_follow'):t('fl_following_btn'); fb.classList.toggle('ghost', !on);
+      } catch(e){ alert(e.message); }
+    };
+    feed.appendChild(card);
+  });
+}
+
+// „Offen für"-Entdecken: Kolleg:innen, die für dieselbe Kategorie offen sind.
+async function openDiscoverOpenTo(key) {
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
+  setDocTitle(openToLabel(key));
+  feed.innerHTML = '<div class="loading">…</div>';
+  let d;
+  try { d = await api('GET', `/api/discover/open-to/${encodeURIComponent(key)}`); }
+  catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
+  feed.innerHTML = '';
+  const head = el(`<div class="card"><div><button class="ghost small" data-back>${esc(t('fl_back'))}</button></div>
+    <h1 style="margin:8px 0 0">🤝 ${esc(ti('ot_discover_title', { cat: openToLabel(key) }))}</h1>
+    <div class="muted">${esc(ti('ot_discover_count', { n: d.people.length }))}</div></div>`);
+  head.querySelector('[data-back]').onclick = () => loadTab();
+  feed.appendChild(head);
+  if (!d.people.length) { feed.appendChild(emptyState({ icon:'🤝', title:t('ot_discover_none_t'), text:t('ot_discover_none_s') })); return; }
+  d.people.forEach(p => {
+    const badges = (p.open_to||[]).filter(k=>OPEN_TO.includes(k)).map(k=>`<span class="opento-badge${k===key?' opento-badge-hi':''}">${esc(openToLabel(k))}</span>`).join(' ');
+    const card = el(`<div class="card"><div class="row" style="align-items:center">
+      ${avatarHtml(p, 40)}
+      <div style="flex:1;min-width:0">
+        <div class="row" style="align-items:center">
+          <span class="post-author clickable" data-openprofile="${esc(p.handle)}">${esc(p.display_name||t('ex_unknown'))}</span>
+          ${p.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}${p.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
+          ${p.account_type&&p.account_type!=='pharmacy'?`<span class="spec" style="margin-left:2px">${esc(acctLabel(p.account_type))}</span>`:''}
+        </div>
+        <div class="handle clickable" data-openprofile="${esc(p.handle)}">@${esc(p.handle)}</div>
+        ${p.title?`<div class="muted" style="font-size:13px">${esc(p.title)}</div>`:''}
+        ${p.bundesland?`<div class="muted" style="font-size:13px">📍 ${esc(p.bundesland)}</div>`:''}
+      </div>
+      <button class="${p.is_following?'ghost ':''}small" data-follow="${esc(p.handle)}" data-on="${p.is_following?'1':'0'}">${p.is_following?esc(t('fl_following_btn')):esc(t('pf_follow'))}</button>
+    </div><div style="margin-top:6px">${badges}</div></div>`);
     card.querySelectorAll('[data-openprofile]').forEach(el => el.onclick = () => openProfile(el.dataset.openprofile));
     const fb = card.querySelector('[data-follow]');
     if (fb) fb.onclick = async () => {
