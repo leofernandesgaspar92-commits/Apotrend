@@ -42,6 +42,7 @@ const I18N = {
     data_notice_title:'ℹ️ Hinweis zu den Daten für {land}',
     data_notice_body:'Die Live-Regulierungsdaten (Engpässe, Preise, Rabatte) decken derzeit 🇦🇹 Österreich ab. Für {land} bauen wir sie schrittweise mit den lokalen Behörden aus. Der soziale Feed und die News sind bereits länderspezifisch — die unten gezeigten Zahlen stammen aus Österreich.', reg_title:'Offizielle Arzneimittelbehörde: {reg}', reg_sub:'Verbindliche Quelle für {land} — Engpässe, Rückrufe, Zulassungen.', reg_open:'🔗 {reg} öffnen', reg_no_link:'Offizielle Website folgt.', ds_live:'Live-Daten', ds_live_title:'Echte Behördendaten sind angeschlossen und aktuell.', ds_ref:'Referenzdaten (im Aufbau)', ds_ref_title:'Kuratierte Referenzdaten — echte Live-Daten folgen, sobald die Quelle angeschlossen ist.', cc_title:'Währungsumrechner', cc_amount:'Betrag', cc_from:'Von Währung', cc_to:'In Währung', cc_swap:'Währungen tauschen', cc_updated:'Kurse: {date}', cc_unavailable:'Wechselkurse gerade nicht verfügbar.', cc_hint:'Landeswährung ↔ EUR/USD umrechnen',
     ov_hello:'Für dich', ov_sub:'Das Wichtigste auf einen Blick.',
+    ov_profile_nudge:'Dein Profil ist erst zu {pct}% fertig', ov_profile_nudge_sub:'Mit Foto und Infos finden dich Kolleg:innen leichter — und du wirkst vertrauenswürdiger im Handel.',
     ov_t_crit:'kritische Engpässe', ov_t_abx:'Antibiotika-Engpässe',
     ov_t_offer:'Angebote im Austausch', ov_t_seek:'Gesuche im Austausch',
     ov_t_savings:'Sparpotenzial je Packung', ov_t_expiring:'Aktionen laufen bald ab',
@@ -357,6 +358,7 @@ const I18N = {
     data_notice_title:'ℹ️ About the data for {land}',
     data_notice_body:'The live regulatory data (shortages, prices, deals) currently covers 🇦🇹 Austria. For {land} we are building it out step by step with the local authorities. The social feed and news are already country-specific — the figures shown below are from Austria.', reg_title:'Official medicines regulator: {reg}', reg_sub:'Authoritative source for {land} — shortages, recalls, approvals.', reg_open:'🔗 Open {reg}', reg_no_link:'Official website coming soon.', ds_live:'Live data', ds_live_title:'Real regulator data is connected and current.', ds_ref:'Reference data (in progress)', ds_ref_title:'Curated reference data — live data follows once the source is connected.', cc_title:'Currency converter', cc_amount:'Amount', cc_from:'From currency', cc_to:'To currency', cc_swap:'Swap currencies', cc_updated:'Rates: {date}', cc_unavailable:'Exchange rates unavailable right now.', cc_hint:'Convert local currency ↔ EUR/USD',
     ov_hello:'For you', ov_sub:'The essentials at a glance.',
+    ov_profile_nudge:'Your profile is only {pct}% complete', ov_profile_nudge_sub:'With a photo and details, colleagues find you more easily — and you look more trustworthy for trading.',
     ov_t_crit:'critical shortages', ov_t_abx:'antibiotic shortages',
     ov_t_offer:'offers in exchange', ov_t_seek:'requests in exchange',
     ov_t_savings:'savings per pack', ov_t_expiring:'deals expiring soon',
@@ -672,6 +674,7 @@ const I18N = {
     data_notice_title:'ℹ️ Sobre os dados de {land}',
     data_notice_body:'Os dados regulatórios em tempo real (faltas, preços, descontos) cobrem atualmente a 🇦🇹 Áustria. Para {land} estamos a construí-los passo a passo com as autoridades locais. O feed social e as notícias já são específicos por país — os números abaixo são da Áustria.', reg_title:'Autoridade do medicamento: {reg}', reg_sub:'Fonte oficial para {land} — faltas, recolhas, autorizações.', reg_open:'🔗 Abrir {reg}', reg_no_link:'Website oficial em breve.', ds_live:'Dados em direto', ds_live_title:'Dados oficiais reais estão ligados e atualizados.', ds_ref:'Dados de referência (em construção)', ds_ref_title:'Dados de referência curados — os dados em direto seguem assim que a fonte for ligada.', cc_title:'Conversor de moeda', cc_amount:'Montante', cc_from:'De moeda', cc_to:'Para moeda', cc_swap:'Trocar moedas', cc_updated:'Câmbios: {date}', cc_unavailable:'Taxas de câmbio indisponíveis de momento.', cc_hint:'Converter moeda local ↔ EUR/USD',
     ov_hello:'Para si', ov_sub:'O essencial num relance.',
+    ov_profile_nudge:'O seu perfil está apenas {pct}% completo', ov_profile_nudge_sub:'Com foto e dados, os colegas encontram-no mais facilmente — e ganha confiança nas trocas.',
     ov_t_crit:'faltas críticas', ov_t_abx:'faltas de antibióticos',
     ov_t_offer:'ofertas na troca', ov_t_seek:'procuras na troca',
     ov_t_savings:'poupança por embalagem', ov_t_expiring:'promoções a expirar em breve',
@@ -1728,6 +1731,7 @@ async function loadOverview() {
   { const n = countryDataNotice(); if (n) feed.appendChild(n); }
   { const r = countryRegulatorCard(!!d.data_live); if (r) feed.appendChild(r); }
   renderNewsInline(feed);   // News-Karten fürs Handy (nur wenn die Seitenleiste fehlt)
+  renderProfileNudge(feed); // Hinweis, das eigene Profil zu vervollständigen (nur wenn unfertig)
   renderCurrencyConverter(feed);
   const hello = me ? (me.display_name || '@'+me.handle) : '';
   const firstName = hello ? (hello.split(/\s+/).find(w => !/\.$/.test(w)) || hello) : '';
@@ -2200,6 +2204,23 @@ function loadTab() {
 // ── News-Livestream (linke Seitenleiste, nur auf breiten Bildschirmen) ──
 let newsRailTimer = null;      // Polling-Intervall
 let newsRailSeen = null;       // bekannte News-IDs (für „neu"-Markierung)
+// Sanfter Hinweis auf der Startseite, das eigene Profil zu vervollständigen — nur wenn
+// es noch nicht 100 % ist. Hilft Neuen, ihr Profil überhaupt zu finden/auszufüllen.
+function renderProfileNudge(feed) {
+  if (!me || !me.handle) return;
+  const c = profileCompleteness(me);
+  if (c.pct >= 100) return;
+  const missing = c.items.filter(i => !i.done).slice(0, 4).map(i => i.label).join(' · ');
+  const card = el(`<div class="card" style="border-left:4px solid var(--green)">
+    <div class="row" style="align-items:center;gap:8px"><b style="flex:1">🙋 ${esc(ti('ov_profile_nudge', { pct: c.pct }))}</b><b>${c.pct}%</b></div>
+    <div class="pfc-bar" style="margin-top:6px"><span style="width:${c.pct}%"></span></div>
+    <div class="muted" style="font-size:13px;margin:6px 0">${esc(t('ov_profile_nudge_sub'))}${missing ? ' — ' + esc(missing) : ''}</div>
+    <div class="row"><button class="small" data-editprofile>${esc(t('pfc_cta'))}</button></div>
+  </div>`);
+  card.querySelector('[data-editprofile]').onclick = () => openProfile(me.handle);
+  feed.appendChild(card);
+}
+
 // News-Karten inline in „Für dich" — nur auf schmalen Screens (Handy), wo die feste
 // Seitenleiste nicht sichtbar ist. Gleiche 𝕏-Karten-Optik wie der Livestream rechts.
 async function renderNewsInline(feed) {
