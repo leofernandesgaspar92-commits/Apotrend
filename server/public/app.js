@@ -3111,9 +3111,17 @@ function priceGroup(g) {
       <div style="font-weight:700;color:var(--ok-fg);font-size:14px">${esc(t('pg_act_title'))}</div>
       <div style="font-size:13px;margin-top:2px">${esc(g.action.supplier)}: <b>€ ${fmtMoney(g.action.aktionspreis)}</b> ${esc(t('pg_instead'))} € ${fmtMoney(g.best_aep)} ${esc(t('pg_aep'))} — <b>−€ ${fmtMoney(g.action.unter_aep_abs)} ${esc(t('pg_per_pack'))}</b> · −${g.action.rabatt_pct}%</div>
       <div class="muted" style="font-size:12px;margin-top:2px">${esc(ti('pg_from',{n:g.action.min_menge}))}${g.action.expiring_soon?` · <b style="color:${g.action.days_left<=3?'var(--crit-fg)':'var(--warn-fg)'}">${esc(g.action.days_left<=0?t('pg_only_today'):ti('pg_only_days',{d:g.action.days_left}))}</b>`:` · ${esc(t('pg_valid'))} ${esc(g.action.gueltig_bis)}`} · ${esc(t('prov_reference'))}</div>
+      <div style="margin-top:6px"><button class="ghost small" data-actcart>🛒 ${esc(t('cart_add'))}</button></div>
     </div>`:''}
     <div data-offers></div>
   </div>`);
+  // Beste laufende Aktion direkt zum Aktionspreis (+ Mindestmenge) in die Einkaufsliste.
+  const actCart = card.querySelector('[data-actcart]');
+  if (actCart) actCart.onclick = (ev) => cartAdd({
+    bezeichnung: g.bezeichnung, wirkstoff: g.wirkstoff, supplier: g.action.supplier,
+    aktionspreis: g.action.aktionspreis, rabattPct: g.action.rabatt_pct, gueltigBis: g.action.gueltig_bis,
+    menge: g.action.min_menge || 1, sourceKind: 'rabatt',
+  }, ev.target);
   const box = card.querySelector('[data-offers]');
   g.offers.forEach((o, i) => {
     const row = el(`<div class="comment"${i===0&&g.saving_abs>0?' style="background:rgba(11,127,40,.06);border-radius:8px"':''}>
