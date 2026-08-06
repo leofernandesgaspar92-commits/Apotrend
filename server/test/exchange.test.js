@@ -36,6 +36,21 @@ test('match_count: passende offene Gegen-Einträge je Autor:in, sich selbst nich
   assert.equal(exchange.mine(a).find(e => e.id === other.id).match_count, 0);
 });
 
+test('Matching ignoriert Darreichungsform- und Zahl-Wörter (keine Fehltreffer)', () => {
+  const { exchange, a, b } = setup();
+  // Gemeinsam nur das Formwort „Tabletten" -> KEIN Match
+  const aspirin = exchange.create(a, { kind: 'biete', bezeichnung: 'Aspirin Tabletten' });
+  exchange.create(b, { kind: 'suche', bezeichnung: 'Metformin Tabletten' });
+  assert.equal(exchange.mine(a).find(e => e.id === aspirin.id).match_count, 0, 'nur Formwort teilen -> kein Treffer');
+  // Gemeinsam nur die Zahl „1000" -> KEIN Match
+  const amoxi = exchange.create(a, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg' });
+  exchange.create(b, { kind: 'suche', bezeichnung: 'Metformin 1000 mg' });
+  assert.equal(exchange.mine(a).find(e => e.id === amoxi.id).match_count, 0, 'nur Zahl teilen -> kein Treffer');
+  // Echter Substanz-Match trotz unterschiedlicher Form/Dosis -> Treffer
+  exchange.create(b, { kind: 'suche', bezeichnung: 'Amoxicillin 500 mg Filmtabletten' });
+  assert.equal(exchange.mine(a).find(e => e.id === amoxi.id).match_count, 1, 'gleiche Substanz -> Treffer');
+});
+
 test('Biete-Eintrag anlegen: mit Autor-Profil, Status offen', () => {
   const { exchange, a } = setup();
   const e = exchange.create(a, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg', menge: '20 Packungen', ort: '1010 Wien' });

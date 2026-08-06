@@ -8,13 +8,28 @@ import { AppError } from '../domain/errors.js';
 const KINDS = ['biete', 'suche'];
 export const BUNDESLAENDER = ['Wien', 'Niederösterreich', 'Oberösterreich', 'Steiermark', 'Tirol', 'Kärnten', 'Salzburg', 'Vorarlberg', 'Burgenland'];
 
+// Darreichungsform-/Füll-/Einheitenwörter, die keine Substanz kennzeichnen — beim
+// Matching Biete<->Suche ignoriert, damit gemeinsame Formwörter keine Fehltreffer erzeugen.
+const FORM_STOPWORDS = new Set([
+  'tablette', 'tabletten', 'filmtablette', 'filmtabletten', 'brausetablette', 'brausetabletten',
+  'kapsel', 'kapseln', 'hartkapseln', 'weichkapseln', 'dragee', 'dragees', 'retard', 'retardtabletten',
+  'saft', 'sirup', 'tropfen', 'creme', 'salbe', 'lösung', 'loesung', 'losung', 'spray', 'granulat', 'pulver',
+  'ampulle', 'ampullen', 'injektion', 'injektionslösung', 'zäpfchen', 'zaepfchen', 'suppositorien', 'pflaster',
+  'packung', 'packungen', 'stück', 'stueck', 'flasche', 'flaschen', 'beutel', 'gramm', 'milligramm',
+  'milliliter', 'liter', 'dosis', 'dosierung', 'stärke', 'staerke',
+]);
+
 export function createExchangeService(exchangeRepo, social, foundationRepo, shortagesRepo = null) {
   function requireUser(userId) {
     if (!foundationRepo.getUserById(userId)) throw new Error('Unbekannter Nutzer.');
   }
-  // Bedeutungstragende Wörter (>=4 Zeichen) für das Matching Biete<->Suche.
+  // Bedeutungstragende Wörter (>=4 Zeichen) für das Matching Biete<->Suche. Reine
+  // Darreichungsform-/Füllwörter und bloße Zahlen (Dosierung/Menge) fallen raus, damit
+  // z.B. „Aspirin Tabletten" nicht auf „Metformin Tabletten" und „Amoxicillin 1000 mg"
+  // nicht auf „Metformin 1000 mg" matcht (sonst Fehl-Benachrichtigungen).
   function words(text) {
-    return new Set(String(text).toLowerCase().match(/[a-zäöüß0-9]{4,}/g) || []);
+    const raw = String(text).toLowerCase().match(/[a-zäöüß0-9]{4,}/g) || [];
+    return new Set(raw.filter(w => !/^\d+$/.test(w) && !FORM_STOPWORDS.has(w)));
   }
   function shareWord(a, b) { for (const w of a) if (b.has(w)) return true; return false; }
   // Nach dem Anlegen: passende Gegen-Einträge finden und deren Autor:innen benachrichtigen.
