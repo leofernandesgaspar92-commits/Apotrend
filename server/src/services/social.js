@@ -827,7 +827,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       let menge = Math.round(num(item.menge) || 1);
       if (!(menge >= 1)) menge = 1;
       if (menge > 100000) menge = 100000;
-      return social.addCartItem({
+      const row = {
         user_id: userId,
         bezeichnung: bez.slice(0, 160),
         wirkstoff: item.wirkstoff ? String(item.wirkstoff).trim().slice(0, 160) : null,
@@ -838,7 +838,25 @@ export function createSocialService(social, foundationRepo, options = {}) {
         source_kind: ['rabatt', 'price', 'shortage', 'exchange', 'manual'].includes(item.sourceKind) ? item.sourceKind : 'manual',
         menge,
         note: item.note ? String(item.note).trim().slice(0, 200) : null,
-      });
+      };
+      // Duplikate zusammenführen: dasselbe Angebot (Präparat + Wirkstoff + Lieferant +
+      // Aktionspreis + Herkunft) erhöht die Menge einer vorhandenen Position statt eine
+      // zweite Zeile anzulegen — sonst füllt Doppelklick die Liste mit Dubletten.
+      const keyOf = (r) => [
+        String(r.bezeichnung || '').trim().toLowerCase(),
+        String(r.wirkstoff || '').trim().toLowerCase(),
+        String(r.supplier || '').trim().toLowerCase(),
+        r.aktionspreis == null ? '' : Number(r.aktionspreis),
+        r.source_kind || 'manual',
+      ].join('|');
+      const key = keyOf(row);
+      const existing = social.listCartItems(userId).find((r) => keyOf(r) === key);
+      if (existing) {
+        let m = Math.round((Number(existing.menge) || 0) + menge);
+        if (m > 100000) m = 100000;
+        return social.updateCartItem(existing.id, { menge: m });
+      }
+      return social.addCartItem(row);
     },
     cart(userId) {
       requireUser(userId);

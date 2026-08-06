@@ -39,6 +39,28 @@ test('Einkaufsliste: hinzufügen, Summe, Menge ändern, entfernen, leeren', () =
   assert.equal(social.cart(a).count, 0);
 });
 
+test('Einkaufsliste: identisches Angebot doppelt hinzufügen führt Menge zusammen (keine Dublette)', () => {
+  const { social, a } = setup();
+  const base = { bezeichnung: 'Amoxi 1000', wirkstoff: 'Amoxicillin', supplier: 'Kwizda', aktionspreis: 4.5, sourceKind: 'rabatt' };
+  social.addToCart(a, { ...base, menge: 2 });
+  social.addToCart(a, { ...base, menge: 3 }); // dieselbe Position -> Menge 5
+  let c = social.cart(a);
+  assert.equal(c.count, 1, 'nur eine Position');
+  assert.equal(c.items[0].menge, 5, 'Mengen summiert');
+  // Anderer Lieferant -> eigene Position
+  social.addToCart(a, { ...base, supplier: 'Herba', menge: 1 });
+  c = social.cart(a);
+  assert.equal(c.count, 2, 'anderer Lieferant = neue Position');
+  // Anderer Aktionspreis (andere Aktion) -> eigene Position
+  social.addToCart(a, { ...base, aktionspreis: 4.9, menge: 1 });
+  assert.equal(social.cart(a).count, 3);
+  // Manuelle Position mit gleichem Namen mehrfach -> zusammenführen
+  social.addToCart(a, { bezeichnung: 'Handschuhe', menge: 1, sourceKind: 'manual' });
+  social.addToCart(a, { bezeichnung: 'Handschuhe', menge: 4, sourceKind: 'manual' });
+  const glove = social.cart(a).items.find(i => i.bezeichnung === 'Handschuhe');
+  assert.equal(glove.menge, 5);
+});
+
 test('Einkaufsliste: leere Bezeichnung abgelehnt, Standardmenge 1', () => {
   const { social, a } = setup();
   assert.throws(() => social.addToCart(a, { bezeichnung: '   ' }), /Bezeichnung/);
