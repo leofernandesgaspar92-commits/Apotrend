@@ -4803,6 +4803,8 @@ async function openWirkstoff(name) {
       <select data-s><option value="kritisch">${esc(t('st_krit'))}</option><option value="eingeschraenkt">${esc(t('st_eing'))}</option></select>
       <label style="font-size:13px;margin-top:6px">${esc(t('sh_rep_reason'))}</label>
       <input data-g placeholder="${esc(t('sh_rep_reason_ph'))}">
+      <label style="font-size:13px;margin-top:6px">${esc(t('sh_rep_until'))}</label>
+      <input data-vb type="date" data-i18n-aria="sh_rep_until_t" aria-label="${esc(t('sh_rep_until_t'))}" title="${esc(t('sh_rep_until_t'))}">
       <div style="margin-top:8px"><button class="small" data-send>${esc(t('wk_send_community'))}</button></div>
       <div class="muted" style="font-size:12px;margin-top:4px">${esc(t('wk_community_note'))}</div>
       <div class="err" data-err></div>
@@ -4818,7 +4820,7 @@ async function openWirkstoff(name) {
   scard.querySelector('[data-send]').onclick = async () => {
     const err = scard.querySelector('[data-err]'); err.textContent = '';
     try {
-      await api('POST','/api/shortages/report',{ wirkstoff: d.wirkstoff, bezeichnung: scard.querySelector('[data-b]').value.trim(), status: scard.querySelector('[data-s]').value, grund: scard.querySelector('[data-g]').value.trim() });
+      await api('POST','/api/shortages/report',{ wirkstoff: d.wirkstoff, bezeichnung: scard.querySelector('[data-b]').value.trim(), status: scard.querySelector('[data-s]').value, grund: scard.querySelector('[data-g]').value.trim(), voraussichtlichBis: scard.querySelector('[data-vb]').value || undefined });
       openWirkstoff(d.wirkstoff);
     } catch(e){ err.textContent = e.message; }
   };
