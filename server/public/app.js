@@ -315,7 +315,7 @@ const I18N = {
     wk_amr_forum:'💬 Fachdiskussion', wk_amr_pinfo:'🧫 Patienten-Infokarten',
     wk_short_title:'📦 Engpass-Status', wk_send_community:'Als Community-Meldung senden',
     wk_community_note:'👥 Kennzeichnung als Community-Meldung (nicht offiziell verifiziert).', wk_no_short:'Aktuell keine Engpass-Meldung.',
-    wk_offers_t:'🔄 Wer bietet an', wk_offers_e:'Niemand bietet diesen Wirkstoff gerade an.',
+    wk_offers_t:'🔄 Wer bietet an', wk_offers_e:'Niemand bietet diesen Wirkstoff gerade an.', wk_offer_cta:'➕ Angebot einstellen',
     wk_seeks_t:'🔎 Wer sucht', wk_seeks_e:'Keine offenen Gesuche.',
     wk_prices_t:'💶 Preisvergleich', wk_prices_e:'Keine Preisdaten zu diesem Wirkstoff.',
     wk_deals_t:'🏷️ Laufende Aktionen', wk_deals_e:'Keine laufende Aktion.',
@@ -633,7 +633,7 @@ const I18N = {
     wk_amr_forum:'💬 Expert discussion', wk_amr_pinfo:'🧫 Patient info cards',
     wk_short_title:'📦 Shortage status', wk_send_community:'Send as community report',
     wk_community_note:'👥 Labelled as a community report (not officially verified).', wk_no_short:'No shortage report right now.',
-    wk_offers_t:'🔄 Who offers', wk_offers_e:'Nobody is offering this substance right now.',
+    wk_offers_t:'🔄 Who offers', wk_offers_e:'Nobody is offering this substance right now.', wk_offer_cta:'➕ Post an offer',
     wk_seeks_t:'🔎 Who seeks', wk_seeks_e:'No open requests.',
     wk_prices_t:'💶 Price comparison', wk_prices_e:'No price data for this substance.',
     wk_deals_t:'🏷️ Running deals', wk_deals_e:'No running deal.',
@@ -951,7 +951,7 @@ const I18N = {
     wk_amr_forum:'💬 Discussão técnica', wk_amr_pinfo:'🧫 Cartões informativos para doentes',
     wk_short_title:'📦 Estado de falta', wk_send_community:'Enviar como aviso da comunidade',
     wk_community_note:'👥 Identificado como aviso da comunidade (não verificado oficialmente).', wk_no_short:'Sem aviso de falta de momento.',
-    wk_offers_t:'🔄 Quem oferece', wk_offers_e:'Ninguém está a oferecer esta substância de momento.',
+    wk_offers_t:'🔄 Quem oferece', wk_offers_e:'Ninguém está a oferecer esta substância de momento.', wk_offer_cta:'➕ Publicar oferta',
     wk_seeks_t:'🔎 Quem procura', wk_seeks_e:'Sem procuras abertas.',
     wk_prices_t:'💶 Comparação de preços', wk_prices_e:'Sem dados de preço para esta substância.',
     wk_deals_t:'🏷️ Promoções ativas', wk_deals_e:'Sem promoção ativa.',
@@ -4775,12 +4775,21 @@ async function openWirkstoff(name) {
     feed.appendChild(panel);
   }
 
-  const section = (title, count, emptyMsg, render) => {
-    const c = el(`<div class="card"><div class="row"><b>${title}</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:13px">${count}</span></div><div data-body style="margin-top:6px"></div></div>`);
+  const section = (title, count, emptyMsg, render, action = null) => {
+    const c = el(`<div class="card"><div class="row"><b>${title}</b><span class="sp" style="flex:1"></span>${action?`<button class="ghost small" data-secact>${esc(action.label)}</button>`:''}<span class="muted" style="font-size:13px">${count}</span></div><div data-body style="margin-top:6px"></div></div>`);
+    if (action) c.querySelector('[data-secact]').onclick = action.onClick;
     const body = c.querySelector('[data-body]');
     if (!count) body.appendChild(el(`<div class="muted" style="font-size:14px">${emptyMsg}</div>`));
     else render(body);
     feed.appendChild(c);
+  };
+  // Aus dem Wirkstoff-Hub heraus direkt ein Angebot/Gesuch anlegen (Formular in
+  // Biete/Suche vorbelegt). Nur für Fachkreise — das Backend erzwingt es zusätzlich.
+  const canExchange = me && me.account_type !== 'private';
+  const startExchange = (kind) => {
+    exchangePrefill = { kind, bezeichnung: d.wirkstoff };
+    exchangeQuery = ''; exchangeFilter = ''; exchangeBL = ''; exchangeMine = false;
+    goTab('exchange');
   };
 
   // Engpass-Status (+ direkt für diesen Wirkstoff melden)
@@ -4814,10 +4823,12 @@ async function openWirkstoff(name) {
     } catch(e){ err.textContent = e.message; }
   };
   feed.appendChild(scard);
-  // Bezugsquellen (biete)
-  section(t('wk_offers_t'), d.exchange.biete.length, t('wk_offers_e'), body => d.exchange.biete.forEach(e => body.appendChild(exchangeCard(e))));
-  // Gesuche (suche)
-  section(t('wk_seeks_t'), d.exchange.suche.length, t('wk_seeks_e'), body => d.exchange.suche.forEach(e => body.appendChild(exchangeCard(e))));
+  // Bezugsquellen (biete) — mit Schnell-Aktion „Angebot einstellen"
+  section(t('wk_offers_t'), d.exchange.biete.length, t('wk_offers_e'), body => d.exchange.biete.forEach(e => body.appendChild(exchangeCard(e))),
+    canExchange ? { label: t('wk_offer_cta'), onClick: () => startExchange('biete') } : null);
+  // Gesuche (suche) — mit Schnell-Aktion „Ich suche das"
+  section(t('wk_seeks_t'), d.exchange.suche.length, t('wk_seeks_e'), body => d.exchange.suche.forEach(e => body.appendChild(exchangeCard(e))),
+    canExchange ? { label: t('sc_seek'), onClick: () => startExchange('suche') } : null);
   // Preise
   section(t('wk_prices_t'), d.prices.length, t('wk_prices_e'), body => d.prices.forEach(g => body.appendChild(priceGroup(g))));
   // Rabatte
