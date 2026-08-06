@@ -53,7 +53,7 @@ const I18N = {
     wl_ph:'z.B. Amoxicillin', wl_add:'+ Beobachten', wl_add_aria:'Wirkstoff beobachten', wl_premium_hint:'📝 Private Notizen & druckbarer Team-Aushang gibt es mit Premium.', wl_premium_cta:'⭐ Freischalten',
     wl_quick:'Schnell beobachten (aktuell kritisch):', wl_all:'⭐ Alle {n} kritischen beobachten',
     wl_empty:'Noch keine Wirkstoffe. Füge unten die hinzu, die du regelmäßig führst.',
-    wl_view:'Ansehen', wl_remove:'Nicht mehr beobachten', wl_note_add:'✎ Notiz hinzufügen', wl_note_edit:'✎ Notiz bearbeiten', wl_note_ph:'Notiz (z. B. Lieferant, Meldebestand)…', wl_note_save:'Speichern', e_premium_required:'Notizen sind eine Premium-Funktion.', e_not_watched:'Wirkstoff nicht in der Beobachtungsliste.',
+    wl_view:'Ansehen', wl_remove:'Nicht mehr beobachten', wl_note_add:'✎ Notiz hinzufügen', wl_note_edit:'✎ Notiz bearbeiten', wl_note_ph:'Notiz (z. B. Lieferant, Meldebestand)…', wl_note_save:'Speichern', wl_alert_set:'🔔 Rabatt-Alarm setzen', wl_alert_on:'🔔 Alarm ab {n}%', wl_alert_edit:'ändern', wl_alert_off_btn:'Aus', e_premium_required:'Notizen sind eine Premium-Funktion.', e_not_watched:'Wirkstoff nicht in der Beobachtungsliste.',
     wl_csv_title:'Beobachtungsliste mit Status als CSV (Excel) — z.B. für den Handverkaufstisch',
     wl_print:'Aushang', wl_print_title:'Beobachtungsliste — Engpass-Status', wl_print_asof:'Stand: {date}', wl_print_count:'{n} Wirkstoffe', wl_print_count_sg:'1 Wirkstoff',
     wl_print_col_sub:'Wirkstoff / Präparat', wl_print_col_status:'Aktueller Status', wl_print_col_note:'Notiz', wl_print_foot:'Erstellt mit Apotrend · Angaben ohne Gewähr, im Zweifel Quelle prüfen.',
@@ -371,7 +371,7 @@ const I18N = {
     wl_ph:'e.g. Amoxicillin', wl_add:'+ Watch', wl_add_aria:'Watch a substance', wl_premium_hint:'📝 Private notes & a printable team notice come with Premium.', wl_premium_cta:'⭐ Unlock',
     wl_quick:'Quick-watch (currently critical):', wl_all:'⭐ Watch all {n} critical',
     wl_empty:'No substances yet. Add the ones you stock regularly below.',
-    wl_view:'View', wl_remove:'Stop watching', wl_note_add:'✎ Add note', wl_note_edit:'✎ Edit note', wl_note_ph:'Note (e.g. supplier, reorder level)…', wl_note_save:'Save', e_premium_required:'Notes are a Premium feature.', e_not_watched:'Substance not in your watchlist.',
+    wl_view:'View', wl_remove:'Stop watching', wl_note_add:'✎ Add note', wl_note_edit:'✎ Edit note', wl_note_ph:'Note (e.g. supplier, reorder level)…', wl_note_save:'Save', wl_alert_set:'🔔 Set discount alert', wl_alert_on:'🔔 Alert from {n}%', wl_alert_edit:'change', wl_alert_off_btn:'Off', e_premium_required:'Notes are a Premium feature.', e_not_watched:'Substance not in your watchlist.',
     wl_csv_title:'Watchlist with status as CSV (Excel) — e.g. for the counter',
     wl_print:'Notice', wl_print_title:'Watchlist — shortage status', wl_print_asof:'As of: {date}', wl_print_count:'{n} substances', wl_print_count_sg:'1 substance',
     wl_print_col_sub:'Substance / product', wl_print_col_status:'Current status', wl_print_col_note:'Note', wl_print_foot:'Created with Apotrend · No guarantee, check the source if in doubt.',
@@ -689,7 +689,7 @@ const I18N = {
     wl_ph:'ex. Amoxicilina', wl_add:'+ Vigiar', wl_add_aria:'Vigiar substância', wl_premium_hint:'📝 Notas privadas & cartaz imprimível vêm com o Premium.', wl_premium_cta:'⭐ Desbloquear',
     wl_quick:'Vigiar rápido (críticos agora):', wl_all:'⭐ Vigiar os {n} críticos',
     wl_empty:'Ainda sem substâncias. Adicione abaixo as que tem habitualmente.',
-    wl_view:'Ver', wl_remove:'Deixar de vigiar', wl_note_add:'✎ Adicionar nota', wl_note_edit:'✎ Editar nota', wl_note_ph:'Nota (ex. fornecedor, stock mínimo)…', wl_note_save:'Guardar', e_premium_required:'As notas são uma funcionalidade Premium.', e_not_watched:'Substância não está na sua lista.',
+    wl_view:'Ver', wl_remove:'Deixar de vigiar', wl_note_add:'✎ Adicionar nota', wl_note_edit:'✎ Editar nota', wl_note_ph:'Nota (ex. fornecedor, stock mínimo)…', wl_note_save:'Guardar', wl_alert_set:'🔔 Definir alerta de desconto', wl_alert_on:'🔔 Alerta a partir de {n}%', wl_alert_edit:'alterar', wl_alert_off_btn:'Desligar', e_premium_required:'As notas são uma funcionalidade Premium.', e_not_watched:'Substância não está na sua lista.',
     wl_csv_title:'Lista de vigilância com estado em CSV (Excel) — ex. para o balcão',
     wl_print:'Cartaz', wl_print_title:'Lista de vigilância — estado de rutura', wl_print_asof:'Em: {date}', wl_print_count:'{n} substâncias', wl_print_count_sg:'1 substância',
     wl_print_col_sub:'Substância / produto', wl_print_col_status:'Estado atual', wl_print_col_note:'Nota', wl_print_foot:'Criado com Apotrend · Sem garantia, verifique a fonte em caso de dúvida.',
@@ -2074,9 +2074,44 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
           ${it.shortage_id?`<button class="ghost small" data-open>${esc(t('wl_view'))}</button>`:''}
           <button class="ghost small" data-rm title="${esc(t('wl_remove'))}" aria-label="${esc(t('wl_remove'))}">✕</button>
         </div>
+        <div data-alert-wrap style="margin-top:6px"></div>
         ${premium?`<div class="wl-note" data-note-wrap style="margin-top:6px"></div>`:''}
       </div>`);
       if (it.shortage_id) row.querySelector('[data-open]').onclick = () => openWirkstoff(it.wirkstoff);
+      // Rabatt-Alarm direkt an der Beobachtungsliste setzen/ändern (nicht nur auf der
+      // Wirkstoff-Detailseite) — benachrichtigt, sobald es eine Aktion ab X % gibt.
+      {
+        const aw = row.querySelector('[data-alert-wrap]');
+        const renderAlert = () => {
+          aw.innerHTML = '';
+          if (it.alert_pct) {
+            const view = el(`<div class="row" style="gap:6px;align-items:center"><span style="display:inline-block;font-size:12px;font-weight:700;color:var(--ok-fg);background:var(--ok-bg);border:1px solid var(--ok-bd);padding:2px 8px;border-radius:999px">${esc(ti('wl_alert_on',{n:it.alert_pct}))}</span><button class="linklike small" data-aedit>${esc(t('wl_alert_edit'))}</button></div>`);
+            view.querySelector('[data-aedit]').onclick = editAlert;
+            aw.appendChild(view);
+          } else {
+            const b = el(`<button class="linklike small" data-aset>${esc(t('wl_alert_set'))}</button>`);
+            b.onclick = editAlert;
+            aw.appendChild(b);
+          }
+        };
+        const editAlert = () => {
+          aw.innerHTML = '';
+          const ed = el(`<div class="row" style="gap:6px;align-items:center"><span aria-hidden="true">🔔</span><input type="number" min="1" max="99" class="wl-alert-in" value="${it.alert_pct||''}" placeholder="${esc(t('wk_alert_ph'))}" style="width:80px" aria-label="${esc(t('wk_alert_label'))}"><span>%</span><button class="small" data-asave>${esc(t('wl_note_save'))}</button>${it.alert_pct?`<button class="linklike small" data-aoff>${esc(t('wl_alert_off_btn'))}</button>`:''}</div>`);
+          aw.appendChild(ed);
+          const inp = ed.querySelector('.wl-alert-in'); inp.focus();
+          const save = async (clear) => {
+            const val = clear ? null : (inp.value === '' ? null : Number(inp.value));
+            try { const r = await api('POST', `/api/watchlist/${encodeURIComponent(it.wirkstoff)}/alert`, { pct: val });
+              const fresh = (r.items || []).find(x => x.wirkstoff.toLowerCase() === it.wirkstoff.toLowerCase());
+              it.alert_pct = fresh ? fresh.alert_pct : val; renderAlert();
+            } catch(e){ err.textContent = e.message; }
+          };
+          ed.querySelector('[data-asave]').onclick = () => save(false);
+          const off = ed.querySelector('[data-aoff]'); if (off) off.onclick = () => save(true);
+          inp.onkeydown = (e) => { if (e.key === 'Enter') save(false); };
+        };
+        renderAlert();
+      }
       row.querySelector('[data-rm]').onclick = async () => {
         try { const r = await api('DELETE','/api/watchlist/'+encodeURIComponent(it.wirkstoff)); draw(r.items); refreshWatchAlerts(r.items); }
         catch(e){ err.textContent = e.message; }
