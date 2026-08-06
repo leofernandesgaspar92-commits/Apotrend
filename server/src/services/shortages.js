@@ -222,8 +222,10 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
         const k = s.wirkstoff.trim().toLowerCase();
         if (!byWirkstoff.has(k)) byWirkstoff.set(k, s); // erster Treffer = kritischster
       }
+      const t0 = today();
       return shortagesRepo.listWatch(userId).map(w => {
         const s = byWirkstoff.get(w.trim().toLowerCase());
+        const aging = s ? shortageAging(s.gemeldet_am, s.voraussichtlich_bis, s.status, t0) : { days_reported: null, days_until: null, overdue: false };
         return {
           wirkstoff: w,
           status: s ? s.status : 'unauffaellig',
@@ -231,6 +233,9 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
           shortage_id: s ? s.id : null,
           quelle: s ? s.quelle : null,
           provenance: s ? s.provenance : null,
+          voraussichtlich_bis: s ? (s.voraussichtlich_bis || null) : null,
+          days_until: aging.days_until,       // Tage bis voraussichtlichem Termin (negativ = überfällig)
+          overdue: aging.overdue,             // voraussichtlicher Termin überschritten
           note: shortagesRepo.getWatchNote(userId, w), // Premium: private Notiz (leer für Gratis)
           alert_pct: shortagesRepo.getWatchAlert(userId, w), // Rabatt-Alarm-Schwelle (null = aus)
         };

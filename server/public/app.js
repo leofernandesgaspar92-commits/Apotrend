@@ -2068,7 +2068,7 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
           <span style="font-size:18px">${m.icon}</span>
           <div style="flex:1;min-width:0">
             <div><b>${esc(it.wirkstoff)}</b></div>
-            <div style="display:inline-block;font-size:12px;font-weight:700;color:${m.color};background:${m.bg};padding:2px 8px;border-radius:999px;margin-top:2px">${m.label}</div>
+            <div style="display:inline-block;font-size:12px;font-weight:700;color:${m.color};background:${m.bg};padding:2px 8px;border-radius:999px;margin-top:2px">${m.label}</div>${shortageCountdown(it)}
             ${it.bezeichnung?`<div class="muted" style="font-size:12px;margin-top:2px">${esc(it.bezeichnung)}</div>`:''}
           </div>
           ${it.shortage_id?`<button class="ghost small" data-open>${esc(t('wl_view'))}</button>`:''}

@@ -35,6 +35,28 @@ test('shortageAging: fehlende/ungültige Daten ergeben null (kein Absturz)', () 
   assert.equal(shortageAging('2026-08-05', null, 'kritisch', '2026-07-30').days_reported, null);
 });
 
+test('myWatchlist: überfälliger Termin landet als overdue am beobachteten Wirkstoff', () => {
+  const repo = createMemoryRepo();
+  const orgAuth = createOrgAuthService(repo);
+  const social = createSocialService(createSocialRepo(), repo);
+  const shortagesRepo = createShortagesRepo({ seed: false });
+  const shortages = createShortagesService(shortagesRepo, social, { today: () => '2026-07-30' });
+  const A = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'A' }, owner: { name: 'Anna', email: 'a@a.at', password: 'geheim123' } });
+  social.createProfile(A.user.id, { handle: 'anna', displayName: 'Anna' });
+  const a = A.user.id;
+  // Engpass mit überschrittenem Termin + Beobachtung
+  shortagesRepo.upsert({ wirkstoff: 'Ramipril', bezeichnung: 'Ramipril 5 mg', status: 'kritisch', provenance: 'community', gemeldet_am: '2026-06-01', voraussichtlich_bis: '2026-07-20' });
+  shortages.watch(a, 'Ramipril');
+  shortages.watch(a, 'Gibtsnicht'); // ohne Engpass -> keine Frist
+  const wl = shortages.myWatchlist(a);
+  const r = wl.find(x => x.wirkstoff === 'Ramipril');
+  assert.equal(r.days_until, -10);
+  assert.equal(r.overdue, true);
+  const none = wl.find(x => x.wirkstoff === 'Gibtsnicht');
+  assert.equal(none.days_until, null);
+  assert.equal(none.overdue, false);
+});
+
 test('decorate: Alters-/Fristfelder landen an der Engpass-Zeile (today injizierbar)', () => {
   const repo = createMemoryRepo();
   const orgAuth = createOrgAuthService(repo);
