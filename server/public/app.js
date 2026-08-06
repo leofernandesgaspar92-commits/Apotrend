@@ -79,7 +79,7 @@ const I18N = {
     csv_prov_verified:'BASG (verifiziert)', csv_prov_reference:'Referenzdaten', csv_prov_editorial:'Redaktion', csv_prov_community:'Community-Meldung', csv_prov_simulated:'simuliert',
     sh_print:'🖨️ Drucken', sh_print_t:'Aktuelle Auswahl drucken (Team-Aushang)',
     sh_csv_t:'Aktuelle Auswahl als CSV (Excel) exportieren', sh_view_all_wk:'Alles zu {wk} ansehen', sh_sort:'Sortieren:',
-    sh_sort_crit:'🔴 Kritischste zuerst', sh_sort_new:'🕘 Neueste zuerst',
+    sh_sort_crit:'🔴 Kritischste zuerst', sh_sort_new:'🕘 Neueste zuerst', sh_sort_active:'👥 Am meisten bestätigt',
     sh_empty:'Keine Engpässe für diese Auswahl. Filter zurücksetzen oder Suchbegriff ändern.',
     sh_rep_title:'➕ Engpass melden', sh_rep_open:'Formular öffnen', sh_rep_close:'Schließen',
     sh_rep_private:'ℹ️ Als Privatnutzer:in kannst du Engpässe lesen, aber nicht selbst melden oder bestätigen. Engpass-Meldungen sind sicherheitsrelevant und Fachkreisen (Apotheke, Pharma-Unternehmen, Behörde) vorbehalten.',
@@ -397,7 +397,7 @@ const I18N = {
     csv_prov_verified:'BASG (verified)', csv_prov_reference:'Reference data', csv_prov_editorial:'Editorial', csv_prov_community:'Community report', csv_prov_simulated:'simulated',
     sh_print:'🖨️ Print', sh_print_t:'Print current selection (team notice)',
     sh_csv_t:'Export current selection as CSV (Excel)', sh_view_all_wk:'View everything about {wk}', sh_sort:'Sort:',
-    sh_sort_crit:'🔴 Most critical first', sh_sort_new:'🕘 Newest first',
+    sh_sort_crit:'🔴 Most critical first', sh_sort_new:'🕘 Newest first', sh_sort_active:'👥 Most confirmed',
     sh_empty:'No shortages for this selection. Reset the filter or change the search term.',
     sh_rep_title:'➕ Report a shortage', sh_rep_open:'Open form', sh_rep_close:'Close',
     sh_rep_private:'ℹ️ As a private user you can read shortages but not report or confirm them. Shortage reports are safety-relevant and reserved for professionals (pharmacy, pharma company, authority).',
@@ -715,7 +715,7 @@ const I18N = {
     csv_prov_verified:'BASG (verificado)', csv_prov_reference:'Dados de referência', csv_prov_editorial:'Redação', csv_prov_community:'Comunicação da comunidade', csv_prov_simulated:'simulado',
     sh_print:'🖨️ Imprimir', sh_print_t:'Imprimir a seleção atual (aviso da equipa)',
     sh_csv_t:'Exportar a seleção atual como CSV (Excel)', sh_view_all_wk:'Ver tudo sobre {wk}', sh_sort:'Ordenar:',
-    sh_sort_crit:'🔴 Mais críticas primeiro', sh_sort_new:'🕘 Mais recentes primeiro',
+    sh_sort_crit:'🔴 Mais críticas primeiro', sh_sort_new:'🕘 Mais recentes primeiro', sh_sort_active:'👥 Mais confirmadas',
     sh_empty:'Sem faltas para esta seleção. Reponha o filtro ou altere o termo de pesquisa.',
     sh_rep_title:'➕ Reportar uma falta', sh_rep_open:'Abrir formulário', sh_rep_close:'Fechar',
     sh_rep_private:'ℹ️ Como utilizador particular pode ler as faltas, mas não comunicá-las nem confirmá-las. As comunicações de falta são relevantes para a segurança e reservadas a profissionais (farmácia, empresa farmacêutica, autoridade).',
@@ -2571,8 +2571,11 @@ function renderShortlist(listBox, bar, all) {
   // Sortierung: kritischste zuerst (Status → Bestätigungen → Datum) oder neueste zuerst.
   const when = s => s.gemeldet_am || (s.created_at ? s.created_at.slice(0,10) : '');
   const rank = { kritisch: 3, eingeschraenkt: 2, verfuegbar: 1 };
+  // Aktivität = wie breit die Community den Engpass bestätigt/bespricht (Bestätigungen + Beiträge).
+  const activity = s => (s.confirm_count||0) + (s.post_count||0);
   list.sort((a, b) => {
     if (shortageSort === 'neu') return String(when(b)).localeCompare(String(when(a))) || (b.confirm_count||0) - (a.confirm_count||0);
+    if (shortageSort === 'aktiv') return activity(b) - activity(a) || (rank[b.status]||0) - (rank[a.status]||0) || String(when(b)).localeCompare(String(when(a)));
     return (rank[b.status]||0) - (rank[a.status]||0) || (b.confirm_count||0) - (a.confirm_count||0) || String(when(b)).localeCompare(String(when(a)));
   });
   listBox.innerHTML = '';
@@ -2598,7 +2601,7 @@ function shortageFilterBar() {
     </div>
     <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center">
       <span class="muted" style="font-size:13px">${esc(t('sh_sort'))}</span>
-      ${[['kritisch',t('sh_sort_crit')],['neu',t('sh_sort_new')]].map(([v,l])=>`<button class="small sortbtn${shortageSort===v?' active':''}" data-sort="${v}" aria-pressed="${shortageSort===v}">${esc(l)}</button>`).join('')}
+      ${[['kritisch',t('sh_sort_crit')],['neu',t('sh_sort_new')],['aktiv',t('sh_sort_active')]].map(([v,l])=>`<button class="small sortbtn${shortageSort===v?' active':''}" data-sort="${v}" aria-pressed="${shortageSort===v}">${esc(l)}</button>`).join('')}
     </div>
   </div>`);
   const rerender = () => { const c = renderShortlist._ctx; if (c) renderShortlist(c.listBox, c.bar, c.all); };
