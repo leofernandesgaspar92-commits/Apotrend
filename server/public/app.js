@@ -100,6 +100,13 @@ const I18N = {
     pl_e:'📰 <b>Redaktion</b> — von der ApoTrend-Redaktion gepflegt, immer mit Quelle.',
     pl_c:'👥 <b>Community-Meldung</b> — von Kolleg:innen gemeldet, <b>nicht offiziell verifiziert</b>. Zur Orientierung, im Zweifel selbst prüfen.',
     pl_note:'Grundsatz: Sicherheitsrelevante Aussagen (Engpass, Rückruf, Substitution) werden nur mit Quelle geführt. Bei Community-Meldungen ist die Quelle die meldende Apotheke.',
+    legal_notice_title:'Rechtlicher Hinweis', legal_blocked_title:'In {country} nicht verfügbar', legal_your_country:'deinem Land',
+    legal_disclaimer:'Automatisierte, konservative Compliance-Einschätzung — keine Rechtsberatung. Rechtslage im Zweifel selbst prüfen.',
+    legal_deals_blocked:'In {country} sind Rabatt-Aktionen für Arzneimittel aus arzneimittel-/heilmittelwerberechtlichen Gründen nicht verfügbar.',
+    legal_deals_restricted:'In {country} gelten rechtliche Grenzen für Arzneimittel-Rabatte (keine Rabatte auf verschreibungspflichtige Mittel, nur für Fachkreise). Angaben sind Referenzwerte.',
+    legal_price_restricted:'In {country} unterliegt der Preisvergleich dem Wettbewerbsrecht (Referenzpreise, nur für Fachkreise) — keine abgestimmte Preisgestaltung.',
+    legal_exchange_blocked:'In {country} ist der Bestandsaustausch aus großhandels-/lizenzrechtlichen Gründen nicht verfügbar.',
+    legal_exchange_restricted:'In {country} unterliegt der Bestandsaustausch großhandels-/lizenzrechtlichen Vorgaben (Kontakt nur zwischen berechtigten Fachbetrieben).',
     sc_reported:'gemeldet', sc_until:'🗓️ Voraussichtlich wieder lieferbar bis',
     sc_age_one:'seit 1 Tag im Engpass', sc_age_many:'seit {n} Tagen im Engpass', sc_in_days_one:'noch 1 Tag', sc_in_days_many:'noch {n} Tage', sc_due_today:'Termin heute', sc_overdue_one:'Termin 1 Tag überschritten', sc_overdue_many:'Termin {n} Tage überschritten',
     sc_abx:'🧫 Antibiotikum', sc_abx_link:'Stewardship-Infos & Quellen',
@@ -418,6 +425,13 @@ const I18N = {
     pl_e:'📰 <b>Editorial</b> — maintained by the ApoTrend editors, always with a source.',
     pl_c:'👥 <b>Community report</b> — reported by colleagues, <b>not officially verified</b>. For orientation; when in doubt, check yourself.',
     pl_note:'Principle: safety-relevant statements (shortage, recall, substitution) are only shown with a source. For community reports, the source is the reporting pharmacy.',
+    legal_notice_title:'Legal notice', legal_blocked_title:'Not available in {country}', legal_your_country:'your country',
+    legal_disclaimer:'Automated, conservative compliance screen — not legal advice. Verify the legal position yourself if in doubt.',
+    legal_deals_blocked:'In {country}, medicine discount promotions are not available for medicines-advertising/pricing-law reasons.',
+    legal_deals_restricted:'In {country} there are legal limits on medicine discounts (no discounts on prescription medicines, professionals only). Figures are reference values.',
+    legal_price_restricted:'In {country} price comparison is subject to competition law (reference prices, professionals only) — no coordinated pricing.',
+    legal_exchange_blocked:'In {country}, the stock exchange is not available for wholesale/licensing-law reasons.',
+    legal_exchange_restricted:'In {country} the stock exchange is subject to wholesale/licensing rules (contact only between licensed professional businesses).',
     sc_reported:'reported', sc_until:'🗓️ Expected back in stock by',
     sc_age_one:'short for 1 day', sc_age_many:'short for {n} days', sc_in_days_one:'1 day left', sc_in_days_many:'{n} days left', sc_due_today:'due today', sc_overdue_one:'1 day overdue', sc_overdue_many:'{n} days overdue',
     sc_abx:'🧫 Antibiotic', sc_abx_link:'Stewardship info & sources',
@@ -736,6 +750,13 @@ const I18N = {
     pl_e:'📰 <b>Redação</b> — mantido pela redação da ApoTrend, sempre com fonte.',
     pl_c:'👥 <b>Aviso da comunidade</b> — reportado por colegas, <b>não verificado oficialmente</b>. Para orientação; na dúvida, confirme.',
     pl_note:'Princípio: afirmações relevantes para a segurança (falta, recolha, substituição) só são apresentadas com fonte. Nos avisos da comunidade, a fonte é a farmácia que reporta.',
+    legal_notice_title:'Aviso legal', legal_blocked_title:'Não disponível em {country}', legal_your_country:'o seu país',
+    legal_disclaimer:'Avaliação de conformidade automatizada e conservadora — não é aconselhamento jurídico. Em caso de dúvida, verifique a situação legal.',
+    legal_deals_blocked:'Em {country}, as promoções de desconto de medicamentos não estão disponíveis por motivos de direito da publicidade/preços de medicamentos.',
+    legal_deals_restricted:'Em {country} há limites legais aos descontos de medicamentos (sem descontos em medicamentos sujeitos a receita, apenas para profissionais). Os valores são de referência.',
+    legal_price_restricted:'Em {country} a comparação de preços está sujeita ao direito da concorrência (preços de referência, apenas profissionais) — sem preços coordenados.',
+    legal_exchange_blocked:'Em {country}, a troca de stock não está disponível por motivos de licenciamento/distribuição grossista.',
+    legal_exchange_restricted:'Em {country} a troca de stock está sujeita a regras de distribuição grossista/licenciamento (contacto apenas entre empresas profissionais licenciadas).',
     sc_reported:'reportado', sc_until:'🗓️ Previsão de reposição até',
     sc_age_one:'em falta há 1 dia', sc_age_many:'em falta há {n} dias', sc_in_days_one:'falta 1 dia', sc_in_days_many:'faltam {n} dias', sc_due_today:'prazo hoje', sc_overdue_one:'prazo ultrapassado há 1 dia', sc_overdue_many:'prazo ultrapassado há {n} dias',
     sc_abx:'🧫 Antibiótico', sc_abx_link:'Informação de stewardship & fontes',
@@ -1191,6 +1212,27 @@ const linkifyMentions = (s) => esc(s)
     (m, pre, t) => `${pre}<span class="hashtag clickable" data-hashtag="${t}">#${t}</span>`);
 const app = document.getElementById('app');
 let me = null, tab = 'overview', iAmModerator = false, publicSort = 'neu', publicFilter = 'all';
+// Rechtsstatus der Module im aktiven Land (aus /api/country-config): feature_id → 'blocked'|'restricted'.
+// Steuert Reiter-Sichtbarkeit + rechtliche Hinweise. Standard leer = alles erlaubt.
+let COUNTRY_FEAT = {};
+let COUNTRY_NAME = '';
+const FEATURE_TAB = { deals: 'rabatte', stock_exchange: 'exchange', price_compare: 'prices' };
+const TAB_FEATURE = { rabatte: 'deals', exchange: 'stock_exchange', prices: 'price_compare' };
+function featBlocked(featureId) { return COUNTRY_FEAT[featureId] === 'blocked'; }
+function featReason(featureId) { return (COUNTRY_FEAT[featureId + '__reason']) || null; }
+// Rechtlicher Hinweis (Karte) für ein Modul; null wenn erlaubt. status='blocked' → Sperr-Karte.
+function legalNotice(featureId) {
+  const status = COUNTRY_FEAT[featureId];
+  if (status !== 'restricted' && status !== 'blocked') return null;
+  const reason = featReason(featureId);
+  const msg = reason ? ti('legal_' + reason, { country: COUNTRY_NAME || t('legal_your_country') }) : '';
+  const blocked = status === 'blocked';
+  return el(`<div class="card" style="border-left:4px solid ${blocked ? 'var(--crit-fg)' : 'var(--warn-fg)'};background:${blocked ? 'var(--crit-bg)' : 'var(--warn-bg)'}">
+    <div class="row"><b>⚖️ ${esc(blocked ? ti('legal_blocked_title', { country: COUNTRY_NAME }) : t('legal_notice_title'))}</b></div>
+    <div style="font-size:14px;margin-top:4px">${esc(msg)}</div>
+    <div class="muted" style="font-size:12px;margin-top:6px">${esc(t('legal_disclaimer'))}</div>
+  </div>`);
+}
 // Aktiver Länder-Kontext („Land = Sicht"): temporäre Besuchs-Ansicht, die das HEIMATLAND
 // (me.country) NICHT verändert. null = eigenes Land. Der Switcher setzt nur diese Variable;
 // länder-gescopte Fetches hängen sie an. So bleibt der Account gleich, nur die Inhalte wechseln.
@@ -1671,6 +1713,7 @@ async function mainScreen() {
     app.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
     b.classList.add('active'); tab = b.dataset.tab; loadTab();
   });
+  await applyCountryGating(); // rechtlich gesperrte Reiter fürs Heimatland ausblenden
   applyI18n();          // Navigation/Suche in aktueller Sprache beschriften
   applyTheme();         // Theme-Label (Hell/Dunkel) in aktueller Sprache
   initCountrySwitcher(); // Länder-/Sprach-Umschalter in der Kopfzeile aktivieren
@@ -2253,6 +2296,24 @@ function setDocTitle(section) { document.title = section ? `${section} · ${BASE
 // Browsertab-Titel je Reiter (übersetzt, ohne Emoji): Schlüssel, zur Laufzeit via t().
 const TAB_TITLES = { overview:'dt_overview', public:'dt_public', home:'dt_home', shortages:'dt_shortages', prices:'dt_prices', rabatte:'dt_rabatte', exchange:'dt_exchange', news:'dt_news' };
 
+// Rechtlich gesperrte Reiter fürs Heimatland ausblenden (aus /api/country-config).
+async function applyCountryGating() {
+  try {
+    const cfg = await api('GET', '/api/country-config');
+    COUNTRY_FEAT = {}; COUNTRY_NAME = cfg.country_name || '';
+    (cfg.active_features || []).forEach(f => {
+      if (f.status === 'blocked' || f.status === 'restricted') {
+        COUNTRY_FEAT[f.feature_id] = f.status;
+        if (f.legal_reason) COUNTRY_FEAT[f.feature_id + '__reason'] = f.legal_reason;
+      }
+    });
+  } catch { COUNTRY_FEAT = {}; }
+  Object.entries(FEATURE_TAB).forEach(([feat, tabName]) => {
+    const b = app.querySelector('.tabs button[data-tab="' + tabName + '"]');
+    if (b) b.style.display = featBlocked(feat) ? 'none' : '';
+  });
+}
+
 function loadTab() {
   // Compose- und Folgen-Boxen gehören zum sozialen Feed — nur dort zeigen, damit
   // die Daten-Reiter (Engpässe/Preise/Rabatte/…) nicht hinter Formularen liegen.
@@ -2260,6 +2321,14 @@ function loadTab() {
   if (sc) sc.style.display = (tab === 'public' || tab === 'home') ? '' : 'none';
   setDocTitle(TAB_TITLES[tab] ? t(TAB_TITLES[tab]) : '');
   setTabAria();
+  // Rechts-Gate: gesperrter Reiter (z.B. Deep-Link) zeigt statt Inhalt einen Sperr-Hinweis.
+  const gatedFeature = TAB_FEATURE[tab];
+  if (gatedFeature && featBlocked(gatedFeature)) {
+    const feed = document.getElementById('feed');
+    feed.innerHTML = '';
+    const n = legalNotice(gatedFeature); if (n) feed.appendChild(n);
+    return;
+  }
   if (tab === 'overview') return loadOverview();
   if (tab === 'shortages') return loadShortages();
   if (tab === 'prices') return loadPrices();
@@ -2723,8 +2792,8 @@ function shortageCard(s) {
     <div class="reacts">
       <button data-about>${esc(shortagePostsLabel(s.post_count||0))}</button>
       <button class="ghost" data-postbtn>${esc(t('sc_post_about'))}</button>
-      <button class="ghost" data-exchange title="${esc(t('sc_sources_t'))}">${esc(t('sc_sources'))}</button>
-      ${(me&&me.account_type!=='private')?`<button class="ghost" data-seek title="${esc(t('sc_seek_t'))}">${esc(t('sc_seek'))}</button>`:''}
+      ${!featBlocked('stock_exchange')?`<button class="ghost" data-exchange title="${esc(t('sc_sources_t'))}">${esc(t('sc_sources'))}</button>`:''}
+      ${(me&&me.account_type!=='private'&&!featBlocked('stock_exchange'))?`<button class="ghost" data-seek title="${esc(t('sc_seek_t'))}">${esc(t('sc_seek'))}</button>`:''}
       <button class="ghost" data-watch title="${esc(t('wl_add_aria'))}" aria-pressed="${!!s.watched}">${s.watched?esc(t('sc_watched')):esc(t('sc_watch'))}</button>
       <button class="ghost" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button>
       ${s.provenance==='community'&&!s.is_reporter&&!(me&&me.account_type==='private')?`<button class="ghost" data-confirm>${s.i_confirmed?esc(t('sc_confd_btn')):esc(t('sc_conf_btn'))}</button>`:''}
@@ -2753,7 +2822,8 @@ function shortageCard(s) {
   </div>`);
   const postbox = card.querySelector('[data-postbox]');
   card.querySelector('[data-postbtn]').onclick = () => postbox.classList.toggle('hidden');
-  card.querySelector('[data-exchange]').onclick = () => {
+  const exBtn = card.querySelector('[data-exchange]');
+  if (exBtn) exBtn.onclick = () => {
     // Bei einem Engpass zählen Bezugsquellen: direkt die „Biete"-Angebote zum Wirkstoff zeigen.
     exchangeQuery = s.wirkstoff; exchangeFilter = 'biete'; exchangeBL = ''; exchangeMine = false;
     tab = 'exchange';
@@ -2864,6 +2934,7 @@ async function loadPrices() {
     const d = await api('GET','/api/prices');
     feed.innerHTML = '';
     { const n = countryDataNotice(); if (n) feed.appendChild(n); }
+    { const ln = legalNotice('price_compare'); if (ln) feed.appendChild(ln); }
     feed.appendChild(provenanceLegend());
     if (d.savings && d.savings.count) {
       const s = d.savings;
@@ -3175,6 +3246,7 @@ async function loadExchange() {
   // Standard: eigenes Bundesland vorbelegen (opt-out über „Alle Bundesländer").
   if (!exchangeBLInit) { exchangeBLInit = true; if (me && me.bundesland && !exchangeBL) exchangeBL = me.bundesland; }
   feed.innerHTML = '';
+  { const ln = legalNotice('stock_exchange'); if (ln) feed.appendChild(ln); }
   // Formular zum Anlegen — für Privatnutzer:innen gesperrt (professioneller B2B-Vorgang);
   // das Backend erzwingt es zusätzlich. Lesen/Filtern der Einträge bleibt möglich.
   if (me && me.account_type === 'private') {
@@ -3369,6 +3441,7 @@ async function loadRabatte() {
     if (!watched.size) rabattWatchedOnly = false; // ohne beobachtete Wirkstoffe keinen leeren Filter erzwingen
     feed.innerHTML = '';
     { const n = countryDataNotice(); if (n) feed.appendChild(n); }
+    { const ln = legalNotice('deals'); if (ln) feed.appendChild(ln); }
     feed.appendChild(provenanceLegend());
     feed.appendChild(el(`<div class="card muted" style="margin-bottom:10px">${t('rb_header')} ${esc(t('prov_reference'))}</div>`));
     if (!d.rabatte.length) { feed.appendChild(emptyState({ icon:'🏷️', title:t('rb_empty_t'), text:t('rb_empty_s') })); return; }
@@ -4793,7 +4866,7 @@ async function openWirkstoff(name) {
   };
   // Aus dem Wirkstoff-Hub heraus direkt ein Angebot/Gesuch anlegen (Formular in
   // Biete/Suche vorbelegt). Nur für Fachkreise — das Backend erzwingt es zusätzlich.
-  const canExchange = me && me.account_type !== 'private';
+  const canExchange = me && me.account_type !== 'private' && !featBlocked('stock_exchange');
   const startExchange = (kind) => {
     exchangePrefill = { kind, bezeichnung: d.wirkstoff };
     exchangeQuery = ''; exchangeFilter = ''; exchangeBL = ''; exchangeMine = false;

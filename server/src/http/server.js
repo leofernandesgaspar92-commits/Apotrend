@@ -32,7 +32,7 @@ import { listProducts, getProduct } from '../data/products.js';
 import { createAmrService } from '../services/amr.js';
 import { createPatientInfoService } from '../services/patientInfo.js';
 import { listCountries, normalizeCountry, normalizeLocale } from '../data/countries.js';
-import { countryConfig } from '../data/countryFeatures.js';
+import { countryConfig, featureStatus, isFeatureBlocked } from '../data/countryFeatures.js';
 import { isLive, isPriceLive, isRabatteLive, liveSources, livePriceSources, liveRabatteSources, startLiveRefresh } from '../services/liveData.js';
 import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
 import { issueToken, verifyToken } from './token.js';
@@ -160,6 +160,24 @@ function activeCountry(userId, query) {
   if (q) return normalizeCountry(q);
   const prof = userId ? social.getProfile(userId) : null;
   return normalizeCountry(prof && prof.country);
+}
+
+// Heimatland des Nutzers (Profil). Die Rechts-Zulässigkeit einer Funktion hängt an der
+// EIGENEN Jurisdiktion — nicht am gerade „besuchten" Land. Deshalb ignoriert das Gate den
+// ?country=-Query-Parameter (sonst ließe sich die Sperre durch Länder-Wechsel umgehen).
+function userCountry(userId) {
+  const prof = userId ? social.getProfile(userId) : null;
+  return normalizeCountry(prof && prof.country);
+}
+// Rechts-Gate: ist die Funktion im Heimatland des Nutzers hart gesperrt, mit HTTP 451
+// ("Unavailable For Legal Reasons") abweisen. So kommen selbst bei direktem API-Aufruf
+// keine Daten einer in diesem Land unzulässigen Funktion durch (UI blendet sie ohnehin aus).
+function ensureFeatureAllowed(featureId, userId) {
+  if (isFeatureBlocked(userCountry(userId), featureId)) {
+    const e = new Error('Diese Funktion ist in deinem Land aus rechtlichen Gründen nicht verfügbar.');
+    e.status = 451; e.code = 'feature_blocked_legal';
+    throw e;
+  }
 }
 
 // Feed-Beiträge, die ein Marktobjekt (Engpass/Preis) referenzieren, anreichern.
@@ -292,7 +310,14 @@ const routes = [
   }],
 
   ['GET', /^\/api\/me$/, true, async ({ userId }) => ({ user: safeUser(repo.getUserById(userId)), profile: social.getProfile(userId), is_moderator: social.isModerator(userId) })],
-  ['GET', /^\/api\/overview$/, true, async ({ userId, query }) => ({ ...overview.forUser(userId), premium: payments.hasFeature(userId, 'premium'), data_live: isLive(activeCountry(userId, query)) })],
+  ['GET', /^\/api\/overview$/, true, async ({ userId, query }) => {
+    const home = userCountry(userId);
+    const ov = overview.forUser(userId);
+    // Rechts-Gate (Heimatland): gesperrte Module aus der Übersicht nehmen.
+    if (isFeatureBlocked(home, 'deals')) { ov.top_rabatt = null; ov.rabatte_expiring = { count: 0, soonest: null }; ov.watch_deals = []; }
+    if (isFeatureBlocked(home, 'stock_exchange')) { ov.exchange = { biete: 0, suche: 0, recent: [] }; ov.my_seeks = { open: 0, with_matches: 0, items: [] }; ov.watch_offers = []; }
+    return { ...ov, premium: payments.hasFeature(userId, 'premium'), data_live: isLive(activeCountry(userId, query)) };
+  }],
   // Meine Aktivität an einem Ort: eigene Fragen, Engpass-Meldungen, Austausch-Einträge.
   ['GET', /^\/api\/me\/activity$/, true, async ({ userId }) => {
     const page = social.profilePage(userId, userId);
@@ -320,7 +345,11 @@ const routes = [
     const name = decodeURIComponent(params[0]).trim();
     const low = name.toLowerCase();
     const eq = (v) => String(v || '').trim().toLowerCase() === low;
-    const ex = exchange.list(userId, { q: name });
+    const home = userCountry(userId);
+    // Rechts-Gate (Heimatland): gesperrte Module (Rabatte/Austausch) im Hub leer lassen.
+    const dealsBlocked = isFeatureBlocked(home, 'deals');
+    const exBlocked = isFeatureBlocked(home, 'stock_exchange');
+    const ex = exBlocked ? [] : exchange.list(userId, { q: name });
     return {
       wirkstoff: name,
       amr: amr.forWirkstoff(name),
@@ -331,7 +360,7 @@ const routes = [
       also_watching: shortagesRepo.usersWatching(name).filter(id => id !== userId).length,
       shortages: shortages.listWithCounts(userId).filter(s => eq(s.wirkstoff)),
       prices: prices.comparisons(userId).filter(g => eq(g.wirkstoff)),
-      rabatte: rabatte.top10(userId).filter(r => eq(r.wirkstoff)),
+      rabatte: dealsBlocked ? [] : rabatte.top10(userId).filter(r => eq(r.wirkstoff)),
       exchange: { biete: ex.filter(e => e.kind === 'biete'), suche: ex.filter(e => e.kind === 'suche') },
       posts: enrichPosts(social.searchPosts(userId, name).slice(0, 10)),
     };
@@ -487,27 +516,32 @@ const routes = [
   }],
   ['POST', /^\/api\/prices\/([^/]+)\/post$/, true, async ({ userId, params, body }) => prices.postAbout(userId, params[0], { body: body.body, visibility: body.visibility })],
 
-  // ── Top-10-Rabatte (Priorität 5) ──
-  ['GET', /^\/api\/rabatte$/, true, async ({ userId }) => ({ rabatte: rabatte.top10(userId) })],
-  ['GET', /^\/api\/rabatte\/([^/]+)$/, true, async ({ userId, params }) => {
+  // ── Top-10-Rabatte (Priorität 5) — in Ländern mit Rx-Rabatt-/Werbeverbot gesperrt ──
+  ['GET', /^\/api\/rabatte$/, true, async ({ userId, query }) => { ensureFeatureAllowed('deals', userId, query); return { rabatte: rabatte.top10(userId) }; }],
+  ['GET', /^\/api\/rabatte\/([^/]+)$/, true, async ({ userId, params, query }) => {
+    ensureFeatureAllowed('deals', userId, query);
     const d = rabatte.withActivity(userId, params[0]);
     if (!d) { const e = new Error('Rabatt-Aktion nicht gefunden'); e.status = 404; throw e; }
     return d;
   }],
-  ['POST', /^\/api\/rabatte\/([^/]+)\/post$/, true, async ({ userId, params, body }) => rabatte.postAbout(userId, params[0], { body: body.body, visibility: body.visibility })],
+  ['POST', /^\/api\/rabatte\/([^/]+)\/post$/, true, async ({ userId, params, body, query }) => { ensureFeatureAllowed('deals', userId, query); return rabatte.postAbout(userId, params[0], { body: body.body, visibility: body.visibility }); }],
 
-  // ── Bestandsaustausch (Biete/Suche) ──
-  ['GET', /^\/api\/exchange$/, true, async ({ userId, query }) => ({ entries: exchange.list(userId, { kind: query.get('kind') || null, status: query.get('status') || 'offen', q: query.get('q') || null, bundesland: query.get('bundesland') || null }) })],
-  ['POST', /^\/api\/exchange$/, true, async ({ userId, body }) => exchange.create(userId, { kind: body.kind, bezeichnung: body.bezeichnung, menge: body.menge, ort: body.ort, bundesland: body.bundesland, note: body.note, image: body.image })],
-  ['GET', /^\/api\/exchange\/mine$/, true, async ({ userId, query }) => ({ entries: exchange.mine(userId, { status: query.get('status') || null }) })],
-  ['POST', /^\/api\/exchange\/([^/]+)\/resolve$/, true, async ({ userId, params }) => exchange.markResolved(userId, params[0])],
-  ['POST', /^\/api\/exchange\/([^/]+)\/reopen$/, true, async ({ userId, params }) => exchange.reopen(userId, params[0])],
-  ['POST', /^\/api\/exchange\/([^/]+)\/delete$/, true, async ({ userId, params }) => exchange.remove(userId, params[0])],
+  // ── Bestandsaustausch (Biete/Suche) — in Ländern ohne zulässige P2P-Abgabe gesperrt ──
+  ['GET', /^\/api\/exchange$/, true, async ({ userId, query }) => { ensureFeatureAllowed('stock_exchange', userId, query); return { entries: exchange.list(userId, { kind: query.get('kind') || null, status: query.get('status') || 'offen', q: query.get('q') || null, bundesland: query.get('bundesland') || null }) }; }],
+  ['POST', /^\/api\/exchange$/, true, async ({ userId, body, query }) => { ensureFeatureAllowed('stock_exchange', userId, query); return exchange.create(userId, { kind: body.kind, bezeichnung: body.bezeichnung, menge: body.menge, ort: body.ort, bundesland: body.bundesland, note: body.note, image: body.image }); }],
+  ['GET', /^\/api\/exchange\/mine$/, true, async ({ userId, query }) => { ensureFeatureAllowed('stock_exchange', userId, query); return { entries: exchange.mine(userId, { status: query.get('status') || null }) }; }],
+  ['POST', /^\/api\/exchange\/([^/]+)\/resolve$/, true, async ({ userId, params, query }) => { ensureFeatureAllowed('stock_exchange', userId, query); return exchange.markResolved(userId, params[0]); }],
+  ['POST', /^\/api\/exchange\/([^/]+)\/reopen$/, true, async ({ userId, params, query }) => { ensureFeatureAllowed('stock_exchange', userId, query); return exchange.reopen(userId, params[0]); }],
+  ['POST', /^\/api\/exchange\/([^/]+)\/delete$/, true, async ({ userId, params, query }) => { ensureFeatureAllowed('stock_exchange', userId, query); return exchange.remove(userId, params[0]); }],
 
-  // ── Übergreifende Suche (Priorität 7) ──
+  // ── Übergreifende Suche (Priorität 7) ── gesperrte Module aus den Treffern nehmen.
   ['GET', /^\/api\/search$/, true, async ({ userId, query }) => {
     const r = search.search(userId, query.get('q') || '');
-    return { ...r, posts: enrichPosts(r.posts) };
+    const home = userCountry(userId);
+    const rabatteHits = isFeatureBlocked(home, 'deals') ? [] : r.rabatte;
+    const exchangeHits = isFeatureBlocked(home, 'stock_exchange') ? [] : r.exchange;
+    const total = r.total - (r.rabatte.length - rabatteHits.length) - (r.exchange.length - exchangeHits.length);
+    return { ...r, rabatte: rabatteHits, exchange: exchangeHits, total, posts: enrichPosts(r.posts) };
   }],
 ];
 

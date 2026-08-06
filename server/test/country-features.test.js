@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { countryConfig } from '../src/data/countryFeatures.js';
+import { countryConfig, featureStatus, isFeatureBlocked } from '../src/data/countryFeatures.js';
 
 const byId = (cfg, id) => cfg.active_features.find(f => f.feature_id === id);
 
@@ -44,4 +44,35 @@ test('countryConfig: unbekannter Code fällt auf Standardland zurück (kein Abst
   const cfg = countryConfig('ZZ');
   assert.equal(cfg.country, 'AT');
   assert.ok(cfg.active_features.length > 0);
+});
+
+test('featureStatus/isFeatureBlocked: rechtliche Länder-Sperren aus der Matrix', () => {
+  // Hart blockiert laut LEGAL_COUNTRY_MATRIX.md
+  assert.equal(featureStatus('DE', 'deals'), 'blocked');
+  assert.equal(featureStatus('PT', 'deals'), 'blocked');
+  assert.equal(featureStatus('US', 'stock_exchange'), 'blocked');
+  assert.equal(featureStatus('AO', 'stock_exchange'), 'blocked');
+  assert.equal(featureStatus('MZ', 'stock_exchange'), 'blocked');
+  assert.equal(isFeatureBlocked('DE', 'deals'), true);
+  // Eingeschränkt, nicht gesperrt
+  assert.equal(featureStatus('AT', 'deals'), 'restricted');
+  assert.equal(isFeatureBlocked('AT', 'deals'), false);
+  assert.equal(featureStatus('DE', 'stock_exchange'), 'restricted');
+  // Unkritische Kernfunktion überall erlaubt
+  assert.equal(featureStatus('DE', 'shortage_radar'), 'allowed');
+  assert.equal(featureStatus('US', 'deals'), 'restricted');
+});
+
+test('countryConfig: gesperrte Funktion ist enabled=false mit status+legal_reason', () => {
+  const de = byId(countryConfig('DE'), 'deals');
+  assert.equal(de.status, 'blocked');
+  assert.equal(de.enabled, false);
+  assert.equal(de.legal_reason, 'deals_blocked');
+  // Restricted bleibt nutzbar (enabled=true), trägt aber Status + Grund.
+  const at = byId(countryConfig('AT'), 'deals');
+  assert.equal(at.status, 'restricted');
+  assert.equal(at.enabled, true);
+  assert.equal(at.legal_reason, 'deals_restricted');
+  // country_name für die Meldung vorhanden.
+  assert.equal(countryConfig('DE').country_name, 'Deutschland');
 });
