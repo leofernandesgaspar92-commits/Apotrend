@@ -156,7 +156,7 @@ const I18N = {
     ex_note_ph:'Hinweis (optional)', ex_photo:'📷 Foto (z.B. Charge/Ablauf)',
     ex_publish:'Eintrag veröffentlichen', ex_private:'ℹ️ Der Bestandsaustausch (Biete/Suche) ist Apotheken und Fachkreisen vorbehalten. Als Privatnutzer:in kannst du Einträge lesen, aber keine anlegen.',
     ex_contact:'Kontakt läuft über Direktnachricht — keine öffentlichen Kontaktdaten.',
-    ex_q_ph:'Nach Präparat filtern…', ex_filter_btn:'Filtern', ex_csv_sub:'{n} Einträge in dieser Auswahl', ex_csv_art:'Art', ex_csv_menge:'Menge', ex_csv_ort:'Ort/Region', ex_csv_anbieter:'Anbieter', ex_csv_handle:'Handle', ex_csv_erstellt:'Erstellt', ex_csv_treffer:'Passende Treffer',
+    ex_q_ph:'Nach Präparat filtern…', ex_filter_btn:'Filtern', ex_csv_sub:'{n} Einträge in dieser Auswahl', ex_csv_art:'Art', ex_csv_menge:'Menge', ex_csv_ort:'Ort/Region', ex_csv_anbieter:'Anbieter', ex_csv_handle:'Handle', ex_csv_erstellt:'Erstellt', ex_csv_treffer:'Passende Treffer', ex_print_title:'Bestandsaustausch (Biete/Suche)',
     ex_offers:'📦 Angebote', ex_seeks:'🔎 Gesuche', ex_mine:'🗂️ Meine', ex_all_bl:'📍 Alle Regionen',
     ex_mine_empty_t:'Noch keine eigenen Einträge', ex_mine_empty_s:'Du hast bisher nichts angeboten oder gesucht.',
     ex_new:'Eintrag anlegen', ex_search_empty_t:'Nichts zu „{q}"',
@@ -481,7 +481,7 @@ const I18N = {
     ex_note_ph:'Note (optional)', ex_photo:'📷 Photo (e.g. batch/expiry)',
     ex_publish:'Publish entry', ex_private:'ℹ️ Stock exchange (offer/seek) is reserved for pharmacies and professionals. As a private user you can read entries but not create them.',
     ex_contact:'Contact is via direct message — no public contact details.',
-    ex_q_ph:'Filter by product…', ex_filter_btn:'Filter', ex_csv_sub:'{n} entries in this selection', ex_csv_art:'Type', ex_csv_menge:'Quantity', ex_csv_ort:'Location/region', ex_csv_anbieter:'Provider', ex_csv_handle:'Handle', ex_csv_erstellt:'Created', ex_csv_treffer:'Matching hits',
+    ex_q_ph:'Filter by product…', ex_filter_btn:'Filter', ex_csv_sub:'{n} entries in this selection', ex_csv_art:'Type', ex_csv_menge:'Quantity', ex_csv_ort:'Location/region', ex_csv_anbieter:'Provider', ex_csv_handle:'Handle', ex_csv_erstellt:'Created', ex_csv_treffer:'Matching hits', ex_print_title:'Stock exchange (offer/seek)',
     ex_offers:'📦 Offers', ex_seeks:'🔎 Requests', ex_mine:'🗂️ Mine', ex_all_bl:'📍 All regions',
     ex_mine_empty_t:'No entries of your own yet', ex_mine_empty_s:'You have not offered or sought anything so far.',
     ex_new:'Create entry', ex_search_empty_t:'Nothing for “{q}”',
@@ -806,7 +806,7 @@ const I18N = {
     ex_note_ph:'Observação (opcional)', ex_photo:'📷 Foto (ex. lote/validade)',
     ex_publish:'Publicar entrada', ex_private:'ℹ️ A troca de stock (ofertar/procurar) é reservada a farmácias e profissionais. Como utilizador particular pode ler as entradas, mas não criá-las.',
     ex_contact:'O contacto é por mensagem direta — sem dados de contacto públicos.',
-    ex_q_ph:'Filtrar por produto…', ex_filter_btn:'Filtrar', ex_csv_sub:'{n} entradas nesta seleção', ex_csv_art:'Tipo', ex_csv_menge:'Quantidade', ex_csv_ort:'Local/região', ex_csv_anbieter:'Fornecedor', ex_csv_handle:'Handle', ex_csv_erstellt:'Criado', ex_csv_treffer:'Correspondências',
+    ex_q_ph:'Filtrar por produto…', ex_filter_btn:'Filtrar', ex_csv_sub:'{n} entradas nesta seleção', ex_csv_art:'Tipo', ex_csv_menge:'Quantidade', ex_csv_ort:'Local/região', ex_csv_anbieter:'Fornecedor', ex_csv_handle:'Handle', ex_csv_erstellt:'Criado', ex_csv_treffer:'Correspondências', ex_print_title:'Troca de stock (oferta/procura)',
     ex_offers:'📦 Ofertas', ex_seeks:'🔎 Procuras', ex_mine:'🗂️ Minhas', ex_all_bl:'📍 Todas as regiões',
     ex_mine_empty_t:'Ainda sem entradas próprias', ex_mine_empty_s:'Até agora não ofereceu nem procurou nada.',
     ex_new:'Criar entrada', ex_search_empty_t:'Nada para “{q}”',
@@ -3116,6 +3116,29 @@ function exportExchangeCsv(entries) {
   downloadCsv('apotrend-austausch', [t('ex_csv_art'), t('csv_praeparat'), t('ex_csv_menge'), t('ex_csv_ort'), t('ex_csv_anbieter'), t('ex_csv_handle'), t('ex_csv_erstellt'), t('ex_csv_treffer')], rows);
 }
 
+// Bestandsaustausch als Aushang/Druck (aktuelle Auswahl) — für den Backoffice-Ausdruck.
+// Nur öffentliche Angaben; Kontakt läuft weiter über Direktnachricht.
+function printExchange(entries) {
+  const rows0 = entries || [];
+  const rows = rows0.map(e => `<tr>
+      <td>${esc(e.kind === 'biete' ? t('ex_badge_biete') : t('ex_badge_suche'))}</td>
+      <td class="wk">${esc(e.bezeichnung || '')}</td>
+      <td>${esc(e.menge || '—')}</td>
+      <td>${esc([e.ort, e.bundesland].filter(Boolean).join(', ') || '—')}</td>
+      <td>${esc((e.author && e.author.display_name) || '')}${e.author && e.author.handle ? `<div class="pr">@${esc(e.author.handle)}</div>` : ''}</td>
+      <td class="num">${e.match_count || 0}</td>
+    </tr>`).join('');
+  const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:960px;margin:24px auto;padding:0 16px;color:#111}
+    h1{font-size:22px;margin:0 0 2px} .meta{color:#555;font-size:13px;margin-bottom:16px}
+    table{width:100%;border-collapse:collapse} th{text-align:left;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
+    td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:12px;margin-top:2px}
+    .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap} .src{font-size:12px;color:#555;margin-top:18px}`;
+  const body = `<h1>🔄 ${esc(t('ex_print_title'))}</h1><div class="meta">${esc(ti('wl_print_asof', { date: printDate() }))} · ${rows0.length} ${esc(t('pr_print_count'))}</div>
+    <table><thead><tr><th>${esc(t('ex_csv_art'))}</th><th>${esc(t('csv_praeparat'))}</th><th>${esc(t('ex_csv_menge'))}</th><th>${esc(t('ex_csv_ort'))}</th><th>${esc(t('ex_csv_anbieter'))}</th><th class="num">${esc(t('ex_csv_treffer'))}</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="src">${esc(t('ex_contact'))}</div>`;
+  openPrintDoc(t('ex_print_title'), css, body);
+}
+
 function exportRabatteCsv(list) {
   const rows = (list || []).map(r => [
     r.rank ?? '', r.bezeichnung || '', r.wirkstoff || '', r.supplier || '',
@@ -3357,8 +3380,9 @@ async function loadExchange() {
         : emptyState({ icon:'🔄', title:t('ex_empty_t'), text:t('ex_empty_s'), cta:{ label:t('ex_new'), onClick:()=>{ const b=document.getElementById('ex_bez'); if(b){ b.focus(); b.scrollIntoView({behavior:'smooth',block:'center'}); } } } })); return; }
     }
     // CSV-Export der aktuellen Auswahl — Netzwerk-Überblick zu Angebot/Nachfrage für den Einkauf.
-    const expCard = el(`<div class="card" style="padding:8px 12px"><div class="row"><span class="muted" style="font-size:13px;flex:1">${esc(ti('ex_csv_sub',{n:d.entries.length}))}</span><button class="ghost small" data-excsv>⬇️ CSV</button></div></div>`);
+    const expCard = el(`<div class="card" style="padding:8px 12px"><div class="row"><span class="muted" style="font-size:13px;flex:1">${esc(ti('ex_csv_sub',{n:d.entries.length}))}</span><button class="ghost small" data-exprint>🖨️ ${esc(t('pr_print_btn'))}</button><button class="ghost small" data-excsv>⬇️ CSV</button></div></div>`);
     expCard.querySelector('[data-excsv]').onclick = () => exportExchangeCsv(d.entries);
+    expCard.querySelector('[data-exprint]').onclick = () => printExchange(d.entries);
     feed.appendChild(expCard);
     d.entries.forEach(e => feed.appendChild(exchangeCard(e)));
   } catch(e){ feed.appendChild(errorState(e.message, loadTab)); }
