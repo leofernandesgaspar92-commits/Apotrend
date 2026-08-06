@@ -117,7 +117,7 @@ const I18N = {
     pr_savings_sub_many:'wenn du bei {n} Präparaten jeweils den günstigsten Großhändler wählst.',
     pr_at:'bei', pr_csv_title:'📊 Für den Einkauf', pr_csv_btn:'⬇️ Preisvergleich als CSV (Excel)', pr_print_btn:'Drucken', pr_print_title:'Preisvergleich für den Einkauf', pr_print_count:'Präparate', pr_print_cheapest:'Günstigster Lieferant', pr_print_saving:'Ersparnis', pr_print_deal:'Beste Aktion',
     pr_csv_sub:'Alle Präparate & Lieferanten mit AEP, Trend und günstigstem Anbieter — zum Weiterverarbeiten in Excel.',
-    pr_q_ph:'🔎 Präparat, Wirkstoff oder Lieferant suchen…', pr_empty:'Kein Präparat für diese Suche.',
+    pr_q_ph:'🔎 Präparat, Wirkstoff oder Lieferant suchen…', pr_empty:'Kein Präparat für diese Suche.', pr_sort_aria:'Sortierung des Preisvergleichs', pr_sort_best:'Beste Auswahl', pr_sort_saving:'Größte Ersparnis €', pr_sort_az:'A–Z',
     pg_compare:'Preisvergleich (AEP) · günstigster oben ·', pg_all_about:'Alles zu {w}',
     pg_rose:'⚠️ Günstigster Anbieter zuletzt teurer (+{x}%) — Preis beobachten',
     pg_cheaper:'💰 −€ {x} pro Packung günstiger bei {supplier}',
@@ -435,7 +435,7 @@ const I18N = {
     pr_savings_sub_many:'if you pick the cheapest wholesaler for each of {n} products.',
     pr_at:'at', pr_csv_title:'📊 For purchasing', pr_csv_btn:'⬇️ Price comparison as CSV (Excel)', pr_print_btn:'Print', pr_print_title:'Price comparison for purchasing', pr_print_count:'products', pr_print_cheapest:'Cheapest supplier', pr_print_saving:'Saving', pr_print_deal:'Best deal',
     pr_csv_sub:'All products & suppliers with list price, trend and cheapest supplier — to process further in Excel.',
-    pr_q_ph:'🔎 Search product, substance or supplier…', pr_empty:'No product for this search.',
+    pr_q_ph:'🔎 Search product, substance or supplier…', pr_empty:'No product for this search.', pr_sort_aria:'Sort price comparison', pr_sort_best:'Best selection', pr_sort_saving:'Biggest savings €', pr_sort_az:'A–Z',
     pg_compare:'Price comparison (list) · cheapest on top ·', pg_all_about:'Everything about {w}',
     pg_rose:'⚠️ Cheapest supplier recently more expensive (+{x}%) — watch the price',
     pg_cheaper:'💰 −€ {x} per pack cheaper at {supplier}',
@@ -753,7 +753,7 @@ const I18N = {
     pr_savings_sub_many:'se escolher o distribuidor mais barato para cada um dos {n} produtos.',
     pr_at:'em', pr_csv_title:'📊 Para as compras', pr_csv_btn:'⬇️ Comparação de preços em CSV (Excel)', pr_print_btn:'Imprimir', pr_print_title:'Comparação de preços para compras', pr_print_count:'produtos', pr_print_cheapest:'Fornecedor mais barato', pr_print_saving:'Poupança', pr_print_deal:'Melhor promoção',
     pr_csv_sub:'Todos os produtos e fornecedores com preço, tendência e fornecedor mais barato — para processar no Excel.',
-    pr_q_ph:'🔎 Pesquisar produto, substância ou fornecedor…', pr_empty:'Nenhum produto para esta pesquisa.',
+    pr_q_ph:'🔎 Pesquisar produto, substância ou fornecedor…', pr_empty:'Nenhum produto para esta pesquisa.', pr_sort_aria:'Ordenar comparação de preços', pr_sort_best:'Melhor seleção', pr_sort_saving:'Maior poupança €', pr_sort_az:'A–Z',
     pg_compare:'Comparação de preços · mais barato no topo ·', pg_all_about:'Tudo sobre {w}',
     pg_rose:'⚠️ Fornecedor mais barato ficou mais caro (+{x}%) — vigie o preço',
     pg_cheaper:'💰 −€ {x} por embalagem mais barato em {supplier}',
@@ -1205,6 +1205,7 @@ let rabattWatchedOnly = false; // nur Aktionen zu beobachteten Wirkstoffen
 let rabattSort = 'pct'; // 'pct' = höchster Rabatt %, 'saving' = größte Ersparnis € (pro Mindestbestellung)
 let priceQuery = '';      // Textsuche im Preise-Reiter
 let priceWatchedOnly = false; // nur Preise zu beobachteten Wirkstoffen
+let priceSort = 'best'; // 'best' = Server-Reihenfolge, 'saving' = größte Ersparnis €, 'az' = A–Z
 let myBookmarks = new Set();
 
 // ── Auth-Flow: ERST Land wählen, DANN anmelden, dann länderspezifische Inhalte ──
@@ -2847,7 +2848,11 @@ async function loadPrices() {
     try { const wl = await api('GET','/api/watchlist'); pWatched = new Set((wl.items||[]).map(i => (i.wirkstoff||'').toLowerCase())); } catch { /* ohne Filter */ }
     if (!pWatched.size) priceWatchedOnly = false;
     const bar = el(`<div class="card"><div class="row" style="gap:6px"><input data-pq placeholder="${esc(t('pr_q_ph'))}" value="${esc(priceQuery)}" style="flex:1"></div>
-      ${pWatched.size?`<div class="row" style="margin-top:8px"><button class="small sortbtn${priceWatchedOnly?' active':''}" data-pwatched aria-pressed="${priceWatchedOnly}">${esc(t('rb_watched_only'))}</button></div>`:''}</div>`);
+      <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center">
+        ${pWatched.size?`<button class="small sortbtn${priceWatchedOnly?' active':''}" data-pwatched aria-pressed="${priceWatchedOnly}">${esc(t('rb_watched_only'))}</button>`:''}
+        <span class="sp" style="flex:1"></span>
+        <select class="small" data-psort data-i18n-aria="pr_sort_aria" aria-label="${esc(t('pr_sort_aria'))}"><option value="best"${priceSort==='best'?' selected':''}>${esc(t('pr_sort_best'))}</option><option value="saving"${priceSort==='saving'?' selected':''}>${esc(t('pr_sort_saving'))}</option><option value="az"${priceSort==='az'?' selected':''}>${esc(t('pr_sort_az'))}</option></select>
+      </div></div>`);
     feed.appendChild(bar);
     const listBox = el('<div data-plist></div>');
     feed.appendChild(listBox);
@@ -2857,6 +2862,9 @@ async function loadPrices() {
         (!priceWatchedOnly || pWatched.has((g.wirkstoff||'').toLowerCase())) &&
         (!q || (g.bezeichnung||'').toLowerCase().includes(q) || (g.wirkstoff||'').toLowerCase().includes(q)
            || (g.offers||[]).some(o => (o.supplier||'').toLowerCase().includes(q))));
+      // Sortierung: Server-Standard, größte Ersparnis € (Lieferantenwechsel lohnt am meisten) oder A–Z.
+      if (priceSort === 'saving') list.sort((a,b) => (Number(b.saving_abs)||0) - (Number(a.saving_abs)||0) || String(a.bezeichnung||'').localeCompare(String(b.bezeichnung||'')));
+      else if (priceSort === 'az') list.sort((a,b) => String(a.bezeichnung||'').localeCompare(String(b.bezeichnung||'')));
       const wb = bar.querySelector('[data-pwatched]'); if (wb) { wb.classList.toggle('active', priceWatchedOnly); wb.setAttribute('aria-pressed', String(priceWatchedOnly)); }
       shownPrices = list;
       listBox.innerHTML = '';
@@ -2864,6 +2872,7 @@ async function loadPrices() {
       else list.forEach(g => listBox.appendChild(priceGroup(g)));
     };
     { const wb = bar.querySelector('[data-pwatched]'); if (wb) wb.onclick = () => { priceWatchedOnly = !priceWatchedOnly; draw(); }; }
+    bar.querySelector('[data-psort]').onchange = (ev) => { priceSort = ev.target.value; draw(); };
     const pq = bar.querySelector('[data-pq]');
     let deb; pq.oninput = () => { clearTimeout(deb); deb = setTimeout(() => { priceQuery = pq.value; draw(); }, 250); };
     draw();
