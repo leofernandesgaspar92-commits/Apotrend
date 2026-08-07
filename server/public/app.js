@@ -241,6 +241,8 @@ const I18N = {
     pf_posts:'Beiträge', pf_post_one:'Beitrag', pf_followers:'Follower', pf_follower_one:'Follower', pf_following:'folgt', pf_best:'beste Antworten', pf_best_one:'beste Antwort',
     pf_best_title:'Als beste Antwort markiert', pf_activity:'🗂️ Meine Aktivität', pf_edit:'✏️ Profil bearbeiten',
     pf_dm:'✉️ Nachricht', pf_unfollow:'✓ Du folgst — entfolgen', pf_follow:'+ Folgen', pf_mute:'🔇 Stummschalten', pf_unmute:'🔊 Stumm aufheben', pf_muted_title:'Stummgeschaltete ({n})',
+    vc_book:'📹 Videosprechstunde buchen', vc_book_sub:'Termin bei {name} anfragen', vc_my:'📹 Meine Videosprechstunden', vc_my_sub_premium:'Du bietest als Premium-Apotheke Videosprechstunden an und kannst Anfragen bestätigen.', vc_my_sub_free:'Deine angefragten und gebuchten Videosprechstunden.', vc_date:'Datum', vc_time:'Uhrzeit', vc_reason:'Anliegen (optional)', vc_reason_ph:'z.B. Medikationsberatung', vc_request:'Termin anfragen', vc_requested:'Terminanfrage gesendet.', vc_privacy:'Der Videoanruf läuft über einen sicheren Jitsi-Meet-Raum, der erst bei Bestätigung entsteht.', vc_empty_t:'Noch keine Termine', vc_empty_s:'Buche eine Videosprechstunde bei einer Premium-Apotheke — oder erhalte als Premium hier Anfragen.', vc_st_pending:'Angefragt', vc_st_confirmed:'Bestätigt', vc_st_declined:'Abgelehnt', vc_st_cancelled:'Storniert', vc_with_customer:'Mit Kund:in', vc_with_pharmacy:'Mit Apotheke', vc_join:'Call starten', vc_accept:'✓ Bestätigen', vc_decline:'Ablehnen', vc_cancel:'Stornieren', vc_cancel_confirm:'Diesen Termin stornieren?',
+    nv_appt_request:'möchte eine Videosprechstunde', nv_appt_confirmed:'hat deine Videosprechstunde bestätigt', nv_appt_declined:'hat deine Terminanfrage abgelehnt', nv_appt_cancelled:'hat eine Videosprechstunde storniert',
     pf_no_posts:'Noch keine sichtbaren Beiträge.',
     ep_name:'Anzeigename', ep_func:'Titel / Funktion (optional)', ep_func_ph:'z.B. Fachapothekerin, Einkauf',
     ep_about:'Über mich (optional, max. 500 Zeichen)', ep_about_ph:'Kurz zu dir und deinem Schwerpunkt…',
@@ -569,6 +571,8 @@ const I18N = {
     pf_posts:'posts', pf_post_one:'post', pf_followers:'followers', pf_follower_one:'follower', pf_following:'following', pf_best:'best answers', pf_best_one:'best answer',
     pf_best_title:'marked as best answer', pf_activity:'🗂️ My activity', pf_edit:'✏️ Edit profile',
     pf_dm:'✉️ Message', pf_unfollow:'✓ Following — unfollow', pf_follow:'+ Follow', pf_mute:'🔇 Mute', pf_unmute:'🔊 Unmute', pf_muted_title:'Muted ({n})',
+    vc_book:'📹 Book video consultation', vc_book_sub:'Request an appointment with {name}', vc_my:'📹 My video consultations', vc_my_sub_premium:'As a Premium pharmacy you offer video consultations and can confirm requests.', vc_my_sub_free:'Your requested and booked video consultations.', vc_date:'Date', vc_time:'Time', vc_reason:'Reason (optional)', vc_reason_ph:'e.g. medication review', vc_request:'Request appointment', vc_requested:'Appointment request sent.', vc_privacy:'The video call runs in a secure Jitsi Meet room created only upon confirmation.', vc_empty_t:'No appointments yet', vc_empty_s:'Book a video consultation with a Premium pharmacy — or, as Premium, receive requests here.', vc_st_pending:'Requested', vc_st_confirmed:'Confirmed', vc_st_declined:'Declined', vc_st_cancelled:'Cancelled', vc_with_customer:'With customer', vc_with_pharmacy:'With pharmacy', vc_join:'Join call', vc_accept:'✓ Confirm', vc_decline:'Decline', vc_cancel:'Cancel', vc_cancel_confirm:'Cancel this appointment?',
+    nv_appt_request:'wants a video consultation', nv_appt_confirmed:'confirmed your video consultation', nv_appt_declined:'declined your appointment request', nv_appt_cancelled:'cancelled a video consultation',
     pf_no_posts:'No visible posts yet.',
     ep_name:'Display name', ep_func:'Title / role (optional)', ep_func_ph:'e.g. specialist pharmacist, purchasing',
     ep_about:'About me (optional, max. 500 characters)', ep_about_ph:'A little about you and your focus…',
@@ -897,6 +901,8 @@ const I18N = {
     pf_posts:'publicações', pf_post_one:'publicação', pf_followers:'seguidores', pf_follower_one:'seguidor', pf_following:'a seguir', pf_best:'melhores respostas', pf_best_one:'melhor resposta',
     pf_best_title:'marcada como melhor resposta', pf_activity:'🗂️ A minha atividade', pf_edit:'✏️ Editar perfil',
     pf_dm:'✉️ Mensagem', pf_unfollow:'✓ A seguir — deixar de seguir', pf_follow:'+ Seguir', pf_mute:'🔇 Silenciar', pf_unmute:'🔊 Reativar som', pf_muted_title:'Silenciados ({n})',
+    vc_book:'📹 Marcar teleconsulta', vc_book_sub:'Pedir uma marcação com {name}', vc_my:'📹 As minhas teleconsultas', vc_my_sub_premium:'Como farmácia Premium, oferece teleconsultas e pode confirmar pedidos.', vc_my_sub_free:'As suas teleconsultas pedidas e marcadas.', vc_date:'Data', vc_time:'Hora', vc_reason:'Motivo (opcional)', vc_reason_ph:'ex. revisão da medicação', vc_request:'Pedir marcação', vc_requested:'Pedido de marcação enviado.', vc_privacy:'A chamada de vídeo decorre numa sala Jitsi Meet segura criada apenas após confirmação.', vc_empty_t:'Ainda sem marcações', vc_empty_s:'Marque uma teleconsulta numa farmácia Premium — ou, como Premium, receba pedidos aqui.', vc_st_pending:'Pedido', vc_st_confirmed:'Confirmado', vc_st_declined:'Recusado', vc_st_cancelled:'Cancelado', vc_with_customer:'Com cliente', vc_with_pharmacy:'Com farmácia', vc_join:'Entrar na chamada', vc_accept:'✓ Confirmar', vc_decline:'Recusar', vc_cancel:'Cancelar', vc_cancel_confirm:'Cancelar esta marcação?',
+    nv_appt_request:'quer uma teleconsulta', nv_appt_confirmed:'confirmou a sua teleconsulta', nv_appt_declined:'recusou o seu pedido de marcação', nv_appt_cancelled:'cancelou uma teleconsulta',
     pf_no_posts:'Ainda sem publicações visíveis.',
     ep_name:'Nome a apresentar', ep_func:'Título / função (opcional)', ep_func_ph:'ex. farmacêutica especialista, compras',
     ep_about:'Sobre mim (opcional, máx. 500 caracteres)', ep_about_ph:'Um pouco sobre si e a sua área…',
@@ -3875,6 +3881,78 @@ function printCart(d) {
 }
 
 // Bestell-Historie: abgeschlossene Einkaufslisten ansehen, erneut bestellen oder löschen.
+// Premium: Videosprechstunde bei einer Apotheke anfragen (Terminbuchung).
+function openBookVideocall(providerHandle, providerName) {
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
+  setDocTitle(t('vc_book'));
+  feed.innerHTML = '';
+  const today = new Date().toISOString().slice(0,10);
+  const card = el(`<div class="card">
+    <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button></div>
+    <h1 style="margin:8px 0 2px">📹 ${esc(t('vc_book'))}</h1>
+    <div class="muted" style="margin-bottom:10px">${esc(ti('vc_book_sub',{name: providerName||('@'+providerHandle)}))}</div>
+    <label>${esc(t('vc_date'))}</label>
+    <input type="date" data-vdate min="${today}" value="${today}">
+    <label style="margin-top:6px">${esc(t('vc_time'))}</label>
+    <input type="time" data-vtime value="10:00">
+    <label style="margin-top:6px">${esc(t('vc_reason'))}</label>
+    <input data-vreason placeholder="${esc(t('vc_reason_ph'))}" maxlength="300">
+    <div class="row" style="margin-top:10px"><button data-vsend>${esc(t('vc_request'))}</button><span class="err" data-verr style="margin-left:10px"></span></div>
+    <div class="muted" style="font-size:12px;margin-top:8px">${esc(t('vc_privacy'))}</div>
+  </div>`);
+  card.querySelector('[data-back]').onclick = () => openProfile(providerHandle);
+  card.querySelector('[data-vsend]').onclick = async () => {
+    const err = card.querySelector('[data-verr]'); err.textContent = '';
+    try {
+      await api('POST','/api/appointments', { providerHandle, datum: v('vdate'), uhrzeit: v('vtime'), grund: card.querySelector('[data-vreason]').value.trim() });
+      openAppointments(t('vc_requested'));
+    } catch(e){ err.textContent = e.message; }
+  };
+  feed.appendChild(card);
+}
+
+// Premium: eigene Videosprechstunden verwalten (als Anbieter bestätigen/ablehnen, Call starten).
+async function openAppointments(flash) {
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
+  setDocTitle(t('vc_my'));
+  feed.innerHTML = '<div class="loading">…</div>';
+  let d;
+  try { d = await api('GET','/api/appointments'); } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
+  feed.innerHTML = '';
+  const head = el(`<div class="card"><div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span></div>
+    <h1 style="margin:8px 0 2px">📹 ${esc(t('vc_my'))}</h1>
+    <div class="muted">${esc(d.premium?t('vc_my_sub_premium'):t('vc_my_sub_free'))}</div></div>`);
+  head.querySelector('[data-back]').onclick = () => me && openProfile(me.handle);
+  feed.appendChild(head);
+  if (flash) feed.appendChild(el(`<div class="card ok-box" style="padding:10px 14px;font-weight:600">✅ ${esc(flash)}</div>`));
+  if (!d.appointments.length) { feed.appendChild(emptyState({ icon:'📹', title:t('vc_empty_t'), text:t('vc_empty_s') })); return; }
+  const statusMeta = { angefragt:['var(--warn-fg)','var(--warn-bg)',t('vc_st_pending')], bestaetigt:['var(--ok-fg)','var(--ok-bg)',t('vc_st_confirmed')], abgelehnt:['var(--crit-fg)','var(--crit-bg)',t('vc_st_declined')], storniert:['var(--muted)','var(--chip-bg)',t('vc_st_cancelled')] };
+  for (const a of d.appointments) {
+    const other = a.i_am_provider ? a.requester : a.provider;
+    const [col,bg,lab] = statusMeta[a.status] || ['var(--muted)','var(--chip-bg)',a.status];
+    const card = el(`<div class="card">
+      <div class="row" style="align-items:baseline">
+        <b>${esc(fmtDateDe(a.datum))} · ${esc(a.uhrzeit)}</b>
+        <span class="sp" style="flex:1"></span>
+        <span style="display:inline-block;font-size:12px;font-weight:700;color:${col};background:${bg};padding:2px 8px;border-radius:999px">${esc(lab)}</span>
+      </div>
+      <div class="muted" style="font-size:13px;margin-top:2px">${esc(a.i_am_provider?t('vc_with_customer'):t('vc_with_pharmacy'))}: <b class="clickable" data-openprofile="${esc(other?other.handle:'')}">${esc(other?(other.display_name||('@'+other.handle)):'—')}</b></div>
+      ${a.grund?`<div class="post-body" style="margin-top:6px">${esc(a.grund)}</div>`:''}
+      <div class="reacts" style="margin-top:8px">
+        ${a.status==='bestaetigt'&&a.room_url?`<a class="small" style="text-decoration:none" href="${esc(a.room_url)}" target="_blank" rel="noopener noreferrer">📹 ${esc(t('vc_join'))}</a>`:''}
+        ${a.i_am_provider&&a.status==='angefragt'?`<button class="small" data-accept>${esc(t('vc_accept'))}</button><button class="ghost small" data-decline>${esc(t('vc_decline'))}</button>`:''}
+        ${(a.status==='angefragt'||a.status==='bestaetigt')?`<button class="ghost small" data-cancel>${esc(t('vc_cancel'))}</button>`:''}
+      </div></div>`);
+    card.querySelectorAll('[data-openprofile]').forEach(el2 => { if (el2.dataset.openprofile) el2.onclick = () => openProfile(el2.dataset.openprofile); });
+    const acc = card.querySelector('[data-accept]'); if (acc) acc.onclick = async () => { try { await api('POST',`/api/appointments/${a.id}/respond`,{ accept:true }); openAppointments(); } catch(e){ alert(e.message); } };
+    const dec = card.querySelector('[data-decline]'); if (dec) dec.onclick = async () => { try { await api('POST',`/api/appointments/${a.id}/respond`,{ accept:false }); openAppointments(); } catch(e){ alert(e.message); } };
+    const can = card.querySelector('[data-cancel]'); if (can) can.onclick = async () => { if (!confirm(t('vc_cancel_confirm'))) return; try { await api('POST',`/api/appointments/${a.id}/cancel`); openAppointments(); } catch(e){ alert(e.message); } };
+    feed.appendChild(card);
+  }
+}
+
 async function openOrders(flash) {
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
@@ -4612,7 +4690,7 @@ async function openProfile(handle) {
         <span class="clickable" data-following><b>${d.following_count}</b> <span class="muted">${esc(t('pf_following'))}</span></span>
         ${d.best_answers?`<span title="${esc(t('pf_best_title'))}"><b>🏆 ${d.best_answers}</b> <span class="muted">${esc(nlabel(d.best_answers,'pf_best_one','pf_best'))}</span></span>`:''}
         <span class="sp" style="flex:1"></span>
-        ${d.is_self?`<button class="ghost small" data-activity>${esc(t('pf_activity'))}</button> <button class="ghost small" data-edit>${esc(t('pf_edit'))}</button>`:`<button class="ghost small" data-dm>${esc(t('pf_dm'))}</button> <button class="${d.is_following?'ghost ':''}small" data-togglefollow>${d.is_following?esc(t('pf_unfollow')):esc(t('pf_follow'))}</button> <button class="ghost small" data-togglemute>${d.is_muted?esc(t('pf_unmute')):esc(t('pf_mute'))}</button>`}
+        ${d.is_self?`<button class="ghost small" data-activity>${esc(t('pf_activity'))}</button> <button class="ghost small" data-appts>${esc(t('vc_my'))}</button> <button class="ghost small" data-edit>${esc(t('pf_edit'))}</button>`:`<button class="ghost small" data-dm>${esc(t('pf_dm'))}</button> <button class="${d.is_following?'ghost ':''}small" data-togglefollow>${d.is_following?esc(t('pf_unfollow')):esc(t('pf_follow'))}</button>${d.profile&&d.profile.premium?` <button class="small" data-bookvc>${esc(t('vc_book'))}</button>`:''} <button class="ghost small" data-togglemute>${d.is_muted?esc(t('pf_unmute')):esc(t('pf_mute'))}</button>`}
       </div>
       ${d.is_self ? (() => {
         const c = profileCompleteness(p);
@@ -4674,6 +4752,10 @@ async function openProfile(handle) {
       try { await api('POST', d.is_muted?'/api/unmute':'/api/mute', { handle:p.handle }); openProfile(handle); }
       catch(e){ alert(e.message); }
     };
+    const apptsBtn = head.querySelector('[data-appts]');
+    if (apptsBtn) apptsBtn.onclick = openAppointments;
+    const bookBtn = head.querySelector('[data-bookvc]');
+    if (bookBtn) bookBtn.onclick = () => openBookVideocall(p.handle, p.display_name);
     feed.appendChild(head);
     // Eigenes Profil: Stummgeschaltete verwalten (aufklappbar, mit „aufheben").
     if (d.is_self && d.muted_count > 0) {
@@ -5534,7 +5616,7 @@ async function showNotifications() {
   setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️' };
   app.innerHTML = '';
   const procCount = d.notifications.filter(n => NOTIF_PROCUREMENT.has(n.type)).length;
   const showFilter = d.notifications.length >= 5 && procCount > 0 && procCount < d.notifications.length;
@@ -5578,6 +5660,7 @@ async function showNotifications() {
       else if (n.type === 'watch_alert') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
       else if (n.type === 'price_alert') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('rabatte')); }
       else if (n.type === 'shortage_confirm') { mainScreen().then(()=>goTab('shortages')); }
+      else if (n.type === 'appt_request' || n.type === 'appt_confirmed' || n.type === 'appt_declined' || n.type === 'appt_cancelled') { mainScreen().then(()=>openAppointments()); }
       else if (n.type === 'endorsement' || n.type === 'recommendation') { mainScreen().then(()=> me && openProfile(me.handle)); }
       else if (n.post_id) { mainScreen().then(()=>openPost(n.post_id)); }
       else if (n.actor) { mainScreen().then(()=>openProfile(n.actor.handle)); }

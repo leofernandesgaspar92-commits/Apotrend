@@ -463,6 +463,11 @@ const routes = [
   ['GET', /^\/api\/orders$/, true, async ({ userId }) => ({ orders: social.listOrders(userId) })],
   ['POST', /^\/api\/orders\/([^/]+)\/reorder$/, true, async ({ userId, params }) => social.reorder(userId, params[0])],
   ['POST', /^\/api\/orders\/([^/]+)\/delete$/, true, async ({ userId, params }) => social.deleteOrder(userId, params[0])],
+  // ── Premium: Videosprechstunde (Terminbuchung) ──
+  ['GET', /^\/api\/appointments$/, true, async ({ userId }) => ({ appointments: social.listVideoAppointments(userId), premium: payments.hasFeature(userId, 'premium') })],
+  ['POST', /^\/api\/appointments$/, true, async ({ userId, body }) => ({ appointment: social.requestVideoAppointment(userId, body.providerHandle, { datum: body.datum, uhrzeit: body.uhrzeit, grund: body.grund }) })],
+  ['POST', /^\/api\/appointments\/([^/]+)\/respond$/, true, async ({ userId, params, body }) => ({ appointment: social.respondVideoAppointment(userId, params[0], !!body.accept) })],
+  ['POST', /^\/api\/appointments\/([^/]+)\/cancel$/, true, async ({ userId, params }) => ({ appointment: social.cancelVideoAppointment(userId, params[0]) })],
 
   ['GET', /^\/api\/profiles\/([^/]+)\/page$/, true, async ({ userId, params }) => {
     const d = social.profilePage(userId, params[0]);

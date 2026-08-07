@@ -974,6 +974,72 @@ export function createSocialService(social, foundationRepo, options = {}) {
       return { ok: true };
     },
 
+    // ── Premium: Videosprechstunde (Terminbuchung) ──────────────────────────────
+    // Nur Premium-Apotheken können Beratungen ANBIETEN (buchbar sein). Jede:r
+    // registrierte Nutzer:in kann bei einer Premium-Apotheke einen Termin ANFRAGEN.
+    // Der Video-Raum entsteht bei Bestätigung als öffentlicher Jitsi-Meet-Link
+    // (keine eigene Medien-Infrastruktur nötig, läuft im Browser).
+    isPremium(userId) { return foundationRepo.hasEntitlement(userId, 'premium'); },
+    decorateAppt(a, viewerUserId) {
+      const prov = social.getProfileByUserId(a.provider_user_id);
+      const req = social.getProfileByUserId(a.requester_user_id);
+      const short = (p) => p ? { handle: p.handle, display_name: p.display_name, verified: !!p.verified } : null;
+      return {
+        ...a,
+        provider: short(prov), requester: short(req),
+        i_am_provider: viewerUserId === a.provider_user_id,
+        i_am_requester: viewerUserId === a.requester_user_id,
+      };
+    },
+    requestVideoAppointment(requesterUserId, providerHandleOrId, { datum, uhrzeit, grund } = {}) {
+      requireUser(requesterUserId);
+      const prov = social.getProfileByHandle(providerHandleOrId) || social.getProfileByUserId(providerHandleOrId);
+      if (!prov) throw new AppError('profile_not_found', 'Apotheke nicht gefunden.', 404);
+      if (prov.user_id === requesterUserId) throw new AppError('appt_self', 'Termin mit sich selbst nicht möglich.', 400);
+      if (!foundationRepo.hasEntitlement(prov.user_id, 'premium')) {
+        throw new AppError('appt_provider_not_premium', 'Videosprechstunden bieten nur Premium-Apotheken an.', 403);
+      }
+      const d = String(datum || '').trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || Number.isNaN(Date.parse(d + 'T00:00:00Z'))) throw new AppError('appt_bad_date', 'Ungültiges Datum.', 400);
+      const u = String(uhrzeit || '').trim();
+      if (!/^\d{2}:\d{2}$/.test(u)) throw new AppError('appt_bad_time', 'Ungültige Uhrzeit (HH:MM).', 400);
+      const appt = social.addAppointment({
+        provider_user_id: prov.user_id, requester_user_id: requesterUserId,
+        datum: d, uhrzeit: u, grund: grund ? String(grund).trim().slice(0, 300) : null,
+        status: 'angefragt', room_url: null,
+      });
+      notify(prov.user_id, 'appt_request', requesterUserId, 'appointment', appt.id);
+      return this.decorateAppt(appt, requesterUserId);
+    },
+    respondVideoAppointment(providerUserId, apptId, accept) {
+      requireUser(providerUserId);
+      const a = social.getAppointment(apptId);
+      if (!a) throw new AppError('appt_not_found', 'Termin nicht gefunden.', 404);
+      if (a.provider_user_id !== providerUserId) throw new ForbiddenError('Nur die anbietende Apotheke darf antworten.');
+      if (a.status !== 'angefragt') throw new AppError('appt_not_pending', 'Termin ist nicht mehr offen.', 400);
+      const patch = accept
+        ? { status: 'bestaetigt', room_url: `https://meet.jit.si/apotrend-${a.id}` }
+        : { status: 'abgelehnt' };
+      const updated = social.updateAppointment(apptId, patch);
+      notify(a.requester_user_id, accept ? 'appt_confirmed' : 'appt_declined', providerUserId, 'appointment', apptId);
+      return this.decorateAppt(updated, providerUserId);
+    },
+    cancelVideoAppointment(userId, apptId) {
+      requireUser(userId);
+      const a = social.getAppointment(apptId);
+      if (!a) throw new AppError('appt_not_found', 'Termin nicht gefunden.', 404);
+      if (a.provider_user_id !== userId && a.requester_user_id !== userId) throw new ForbiddenError('Kein Teil dieses Termins.');
+      if (a.status === 'abgelehnt' || a.status === 'storniert') return this.decorateAppt(a, userId);
+      const updated = social.updateAppointment(apptId, { status: 'storniert' });
+      const other = userId === a.provider_user_id ? a.requester_user_id : a.provider_user_id;
+      notify(other, 'appt_cancelled', userId, 'appointment', apptId);
+      return this.decorateAppt(updated, userId);
+    },
+    listVideoAppointments(userId) {
+      requireUser(userId);
+      return social.listAppointments(userId).map(a => this.decorateAppt(a, userId));
+    },
+
     // ── DSGVO: Datenexport (Recht auf Datenübertragbarkeit) ──
     exportData(userId) {
       requireUser(userId);
