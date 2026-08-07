@@ -45,7 +45,7 @@ const I18N = {
     ov_profile_nudge:'Dein Profil ist erst zu {pct}% fertig', ov_profile_nudge_sub:'Mit Foto und Infos finden dich Kolleg:innen leichter — und du wirkst vertrauenswürdiger im Handel.',
     ov_t_crit:'kritische Engpässe', ov_t_abx:'Antibiotika-Engpässe',
     ov_t_offer:'Angebote im Austausch', ov_t_seek:'Gesuche im Austausch',
-    ov_t_savings:'Sparpotenzial je Packung', ov_t_expiring:'Aktionen laufen bald ab',
+    ov_t_savings:'Sparpotenzial je Packung', ov_t_expiring:'Aktionen laufen bald ab', ov_t_overdue:'Liefertermin überfällig',
     ov_t_notif:'neue Benachrichtigungen', ov_bookmarks:'🔖 Meine Merkliste öffnen',
     ov_recent:'🕘 Zuletzt angesehen:',
     wl_title:'⭐ Meine beobachteten Wirkstoffe', wl_alerts_sg:'Meldung', wl_alerts_pl:'Meldungen',
@@ -371,7 +371,7 @@ const I18N = {
     ov_profile_nudge:'Your profile is only {pct}% complete', ov_profile_nudge_sub:'With a photo and details, colleagues find you more easily — and you look more trustworthy for trading.',
     ov_t_crit:'critical shortages', ov_t_abx:'antibiotic shortages',
     ov_t_offer:'offers in exchange', ov_t_seek:'requests in exchange',
-    ov_t_savings:'savings per pack', ov_t_expiring:'deals expiring soon',
+    ov_t_savings:'savings per pack', ov_t_expiring:'deals expiring soon', ov_t_overdue:'delivery date overdue',
     ov_t_notif:'new notifications', ov_bookmarks:'🔖 Open my bookmarks',
     ov_recent:'🕘 Recently viewed:',
     wl_title:'⭐ My watched substances', wl_alerts_sg:'alert', wl_alerts_pl:'alerts',
@@ -697,7 +697,7 @@ const I18N = {
     ov_profile_nudge:'O seu perfil está apenas {pct}% completo', ov_profile_nudge_sub:'Com foto e dados, os colegas encontram-no mais facilmente — e ganha confiança nas trocas.',
     ov_t_crit:'faltas críticas', ov_t_abx:'faltas de antibióticos',
     ov_t_offer:'ofertas na troca', ov_t_seek:'procuras na troca',
-    ov_t_savings:'poupança por embalagem', ov_t_expiring:'promoções a expirar em breve',
+    ov_t_savings:'poupança por embalagem', ov_t_expiring:'promoções a expirar em breve', ov_t_overdue:'prazo de entrega ultrapassado',
     ov_t_notif:'novas notificações', ov_bookmarks:'🔖 Abrir os meus marcadores',
     ov_recent:'🕘 Vistos recentemente:',
     wl_title:'⭐ As minhas substâncias vigiadas', wl_alerts_sg:'alerta', wl_alerts_pl:'alertas',
@@ -1803,6 +1803,9 @@ async function loadOverview() {
     tile('📦', d.exchange.biete, t('ov_t_offer'), 'var(--ok-fg)', 'exchange'),
     tile('🔎', d.exchange.suche, t('ov_t_seek'), 'var(--warn-fg)', 'exchange'),
   );
+  // Beobachtete Wirkstoffe mit überschrittenem Liefertermin — starkes „nachfassen"-Signal.
+  const overdueWatched = ((d.watchlist && d.watchlist.items) || []).filter(w => w.overdue).length;
+  if (overdueWatched) tiles.push(tile('⚠️', overdueWatched, t('ov_t_overdue'), 'var(--crit-fg)', 'shortages', 'watched'));
   if (d.savings && d.savings.count) tiles.push(tile('💶', '€ ' + fmtMoney(d.savings.total_abs), t('ov_t_savings'), 'var(--ok-fg)', 'prices'));
   if (d.rabatte_expiring && d.rabatte_expiring.count) tiles.push(tile('⏳', d.rabatte_expiring.count, t('ov_t_expiring'), 'var(--warn-fg)', 'rabatte'));
   tiles.push(tile('🔔', d.notifications.unread, t('ov_t_notif'), 'var(--info-fg)', ''));
