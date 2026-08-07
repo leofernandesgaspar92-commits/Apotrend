@@ -3711,7 +3711,7 @@ async function openCart() {
     </div>`:''}
   </div>`);
   head.querySelector('[data-back]').onclick = () => loadTab();
-  head.querySelector('[data-corders]').onclick = openOrders;
+  head.querySelector('[data-corders]').onclick = () => openOrders();
   feed.appendChild(head);
   const madd = head.querySelector('[data-madd]');
   const addManual = async () => {
@@ -3766,8 +3766,10 @@ async function openCart() {
       const key = (it.supplier || '').trim();
       const cur = byKey.get(key) || { sum: 0, count: 0 };
       if (it.aktionspreis != null) { cur.sum += it.aktionspreis * it.menge; total += it.aktionspreis * it.menge; }
-      const lp = Number(it.listenpreis), ap = Number(it.aktionspreis);
-      if (lp > 0 && ap >= 0 && lp > ap) savings += (lp - ap) * (Number(it.menge) || 0);
+      if (it.listenpreis != null && it.aktionspreis != null) {
+        const lp = Number(it.listenpreis), ap = Number(it.aktionspreis);
+        if (lp > ap) savings += (lp - ap) * (Number(it.menge) || 0);
+      }
       cur.count += 1;
       pieces += Number(it.menge) || 0;
       byKey.set(key, cur);
@@ -3829,7 +3831,7 @@ async function openCart() {
 
 // Einkaufsliste/Bestellung als CSV (Excel-tauglich) — geteilt von Liste und Bestell-Historie.
 function exportCartCsv(items) {
-  const lineSaving = (i) => (Number(i.listenpreis) > Number(i.aktionspreis)) ? (Number(i.listenpreis)-Number(i.aktionspreis))*Number(i.menge) : 0;
+  const lineSaving = (i) => (i.listenpreis!=null && i.aktionspreis!=null && Number(i.listenpreis) > Number(i.aktionspreis)) ? (Number(i.listenpreis)-Number(i.aktionspreis))*Number(i.menge) : 0;
   const rows = (items||[]).map(i => [i.bezeichnung, i.wirkstoff||'', i.supplier||'', i.menge, i.listenpreis!=null?fmtMoney(i.listenpreis):'', i.aktionspreis!=null?fmtMoney(i.aktionspreis):'', i.aktionspreis!=null?fmtMoney(i.aktionspreis*i.menge):'', lineSaving(i)>0?fmtMoney(lineSaving(i)):'', i.gueltig_bis||'', i.note||'']);
   downloadCsv('apotrend-einkaufsliste', [t('csv_praeparat'), t('csv_wirkstoff'), t('csv_lieferant'), t('cart_col_menge'), t('csv_listenpreis'), t('csv_aktionspreis'), t('cart_col_sum'), t('pr_print_saving'), t('csv_gueltig_bis'), t('cart_col_note')], rows);
 }

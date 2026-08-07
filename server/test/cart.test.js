@@ -87,6 +87,9 @@ test('Einkaufsliste: Gesamtersparnis aus Listen- vs. Aktionspreis', () => {
   // Listenpreis <= Aktionspreis darf keine negative Ersparnis erzeugen
   social.addToCart(a, { bezeichnung: 'Pantop', supplier: 'GH', aktionspreis: 9, listenpreis: 8, menge: 1, sourceKind: 'rabatt' });
   assert.equal(social.cart(a).total_savings, 12);
+  // Listenpreis ohne Aktionspreis darf KEINE erfundene Ersparnis erzeugen (null != 0)
+  social.addToCart(a, { bezeichnung: 'OhnePreis', supplier: 'GH', listenpreis: 10, menge: 5, sourceKind: 'manual' });
+  assert.equal(social.cart(a).total_savings, 12);
 });
 
 test('Einkaufsliste: Merge trägt fehlenden Listenpreis nach (Ersparnis aktiv)', () => {

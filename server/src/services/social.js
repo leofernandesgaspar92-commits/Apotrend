@@ -869,8 +869,9 @@ export function createSocialService(social, foundationRepo, options = {}) {
       const total = items.reduce((s, i) => s + (Number(i.aktionspreis) || 0) * (Number(i.menge) || 0), 0);
       // Gesamtersparnis: nur wo ein Listenpreis über dem Aktionspreis vorliegt (Rabatt-Positionen).
       const savings = items.reduce((s, i) => {
+        if (i.listenpreis == null || i.aktionspreis == null) return s; // ohne beide Preise keine Ersparnis
         const lp = Number(i.listenpreis), ap = Number(i.aktionspreis), m = Number(i.menge) || 0;
-        return (lp > 0 && ap >= 0 && lp > ap) ? s + (lp - ap) * m : s;
+        return lp > ap ? s + (lp - ap) * m : s;
       }, 0);
       return { items, count: items.length, total_positions: items.reduce((s, i) => s + (Number(i.menge) || 0), 0), total_price: Math.round(total * 100) / 100, total_savings: Math.round(savings * 100) / 100 };
     },
