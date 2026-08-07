@@ -502,7 +502,27 @@ const routes = [
   // ── Lieferengpässe (Priorität 2) ──
   // is_antibiotic: markiert Antibiotika-Engpässe, damit das Frontend auf die
   // quellenbelegte AMR-Wissensecke verweisen kann (keine Substitutionsempfehlung).
-  ['GET', /^\/api\/shortages$/, true, async ({ userId }) => ({ shortages: shortages.listWithCounts(userId).map(s => ({ ...s, is_antibiotic: amr.isAntibiotic(s.wirkstoff) })) })],
+  ['GET', /^\/api\/shortages$/, true, async ({ userId }) => {
+    // Verfügbare Alternativen (gleicher Wirkstoff, anderes Präparat im Preisvergleich) —
+    // faktische Angabe (keine Substitutionsempfehlung). In price_compare-gesperrten Ländern: 0.
+    const priceBlocked = isFeatureBlocked(userCountry(userId), 'price_compare');
+    const byWk = new Map(); // wirkstoff (lower) -> Set von Präparat-Bezeichnungen
+    if (!priceBlocked) {
+      for (const g of prices.comparisons(userId)) {
+        const wk = String(g.wirkstoff || '').trim().toLowerCase();
+        if (!wk) continue;
+        if (!byWk.has(wk)) byWk.set(wk, new Set());
+        byWk.get(wk).add(String(g.bezeichnung || '').trim().toLowerCase());
+      }
+    }
+    const altCount = (s) => {
+      const set = byWk.get(String(s.wirkstoff || '').trim().toLowerCase());
+      if (!set) return 0;
+      const self = String(s.bezeichnung || '').trim().toLowerCase();
+      return [...set].filter(b => b && b !== self).length;
+    };
+    return { shortages: shortages.listWithCounts(userId).map(s => ({ ...s, is_antibiotic: amr.isAntibiotic(s.wirkstoff), price_alternatives: altCount(s) })) };
+  }],
   ['GET', /^\/api\/shortages\/([^/]+)$/, true, async ({ userId, params }) => {
     const d = shortages.withActivity(userId, params[0]);
     if (!d) { const e = new Error('Engpass nicht gefunden'); e.status = 404; throw e; }

@@ -111,7 +111,7 @@ const I18N = {
     sc_reported:'gemeldet', sc_until:'🗓️ Voraussichtlich wieder lieferbar bis',
     sc_age_one:'seit 1 Tag im Engpass', sc_age_many:'seit {n} Tagen im Engpass', sc_in_days_one:'noch 1 Tag', sc_in_days_many:'noch {n} Tage', sc_due_today:'Termin heute', sc_overdue_one:'Termin 1 Tag überschritten', sc_overdue_many:'Termin {n} Tage überschritten',
     sc_abx:'🧫 Antibiotikum', sc_abx_link:'Stewardship-Infos & Quellen',
-    sc_abx_note:'(keine Substitutionsempfehlung ohne Quelle)', sc_reported_by:'👥 Gemeldet von',
+    sc_abx_note:'(keine Substitutionsempfehlung ohne Quelle)', sc_alts:'🔀 {n} Präparat(e) mit diesem Wirkstoff im Preisvergleich', sc_alts_note:'(gleicher Wirkstoff, keine Substitutionsempfehlung)', sc_reported_by:'👥 Gemeldet von',
     sc_conf_one:'weitere Apotheke bestätigt', sc_conf_many:'weitere Apotheken bestätigt',
     sc_posts_zero:'💬 Noch keine Beiträge', sc_posts_one:'💬 1 Beitrag dazu', sc_posts_many:'💬 {n} Beiträge dazu', sc_post_about:'✍ Dazu posten',
     sc_watched:'⭐ Beobachtet', sc_watch:'☆ Beobachten', sc_sources:'📦 Bezugsquellen', sc_sources_t:'Wer hat diesen Wirkstoff aktuell im Angebot? (Biete-Einträge)', sc_seek:'🔎 Ich suche das', sc_seek_t:'Bedarf melden: Gesuch zu diesem Wirkstoff anlegen (Anbieter werden benachrichtigt)',
@@ -439,7 +439,7 @@ const I18N = {
     sc_reported:'reported', sc_until:'🗓️ Expected back in stock by',
     sc_age_one:'short for 1 day', sc_age_many:'short for {n} days', sc_in_days_one:'1 day left', sc_in_days_many:'{n} days left', sc_due_today:'due today', sc_overdue_one:'1 day overdue', sc_overdue_many:'{n} days overdue',
     sc_abx:'🧫 Antibiotic', sc_abx_link:'Stewardship info & sources',
-    sc_abx_note:'(no substitution advice without a source)', sc_reported_by:'👥 Reported by',
+    sc_abx_note:'(no substitution advice without a source)', sc_alts:'🔀 {n} product(s) with this substance in the price comparison', sc_alts_note:'(same substance, not a substitution recommendation)', sc_reported_by:'👥 Reported by',
     sc_conf_one:'more pharmacy confirms', sc_conf_many:'more pharmacies confirm',
     sc_posts_zero:'💬 No posts yet', sc_posts_one:'💬 1 post about this', sc_posts_many:'💬 {n} posts about this', sc_post_about:'✍ Post about this',
     sc_watched:'⭐ Watched', sc_watch:'☆ Watch', sc_sources:'📦 Sources', sc_sources_t:'Who currently offers this substance? (offer entries)', sc_seek:'🔎 I need this', sc_seek_t:'Signal demand: post a want for this substance (offerers get notified)',
@@ -767,7 +767,7 @@ const I18N = {
     sc_reported:'reportado', sc_until:'🗓️ Previsão de reposição até',
     sc_age_one:'em falta há 1 dia', sc_age_many:'em falta há {n} dias', sc_in_days_one:'falta 1 dia', sc_in_days_many:'faltam {n} dias', sc_due_today:'prazo hoje', sc_overdue_one:'prazo ultrapassado há 1 dia', sc_overdue_many:'prazo ultrapassado há {n} dias',
     sc_abx:'🧫 Antibiótico', sc_abx_link:'Informação de stewardship & fontes',
-    sc_abx_note:'(sem recomendação de substituição sem fonte)', sc_reported_by:'👥 Reportado por',
+    sc_abx_note:'(sem recomendação de substituição sem fonte)', sc_alts:'🔀 {n} produto(s) com esta substância na comparação de preços', sc_alts_note:'(mesma substância, não é recomendação de substituição)', sc_reported_by:'👥 Reportado por',
     sc_conf_one:'outra farmácia confirma', sc_conf_many:'outras farmácias confirmam',
     sc_posts_zero:'💬 Ainda sem publicações', sc_posts_one:'💬 1 publicação sobre isto', sc_posts_many:'💬 {n} publicações sobre isto', sc_post_about:'✍ Publicar sobre isto',
     sc_watched:'⭐ Vigiada', sc_watch:'☆ Vigiar', sc_sources:'📦 Fontes', sc_sources_t:'Quem oferece atualmente esta substância? (entradas de oferta)', sc_seek:'🔎 Preciso disto', sc_seek_t:'Sinalizar procura: criar um pedido para esta substância (os ofertantes são notificados)',
@@ -2816,6 +2816,7 @@ function shortageCard(s) {
     <div class="muted">${s.grund?esc(grundLabel(s.grund))+' · ':''}${esc(t('sc_reported'))} ${esc(s.gemeldet_am||'—')}${s.days_reported>0&&s.status!=='verfuegbar'?` · ${esc(nlabel(s.days_reported,'sc_age_one','sc_age_many'))}`:''}</div>
     ${s.voraussichtlich_bis&&s.status!=='verfuegbar'?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sc_until'))} <b>${esc(fmtDateDe(s.voraussichtlich_bis))}</b>${shortageCountdown(s)}</div>`:''}
     ${s.is_antibiotic?`<div style="margin-top:6px;font-size:13px"><span style="color:var(--ok-fg);font-weight:600">${esc(t('sc_abx'))}</span> — <span class="clickable" data-amr style="color:var(--ok-fg);text-decoration:underline">${esc(t('sc_abx_link'))}</span> <span class="muted">${esc(t('sc_abx_note'))}</span></div>`:''}
+    ${s.price_alternatives>0&&s.status!=='verfuegbar'?`<div style="margin-top:6px"><button class="linklike small" data-alts style="color:var(--ok-fg);font-weight:700">${esc(ti('sc_alts',{n:s.price_alternatives}))}</button> <span class="muted" style="font-size:12px">${esc(t('sc_alts_note'))}</span></div>`:''}
     ${s.provenance==='community'&&s.reporter?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sc_reported_by'))} <b>@${esc(s.reporter.handle)}</b>${s.reporter.verified?' <span class="verified">✔</span>':''}${s.confirm_count?` · <b style="color:var(--crit-fg)">${s.confirm_count}</b> ${esc(s.confirm_count>1?t('sc_conf_many'):t('sc_conf_one'))}`:''}</div>`:''}
     <div class="reacts">
       <button data-about>${esc(shortagePostsLabel(s.post_count||0))}</button>
@@ -2885,6 +2886,8 @@ function shortageCard(s) {
   if (wname) wname.onclick = () => openWirkstoff(wname.dataset.wirkstoff);
   const amrLink = card.querySelector('[data-amr]');
   if (amrLink) amrLink.onclick = () => openWirkstoff(s.wirkstoff);
+  const altsLink = card.querySelector('[data-alts]');
+  if (altsLink) altsLink.onclick = () => openWirkstoff(s.wirkstoff); // Hub zeigt Preise/Verfügbarkeit
   // Statusverlauf: jede Änderung mit Datum, Status und Quelle (neueste zuerst).
   const histBtn = card.querySelector('[data-hist]');
   if (histBtn) histBtn.onclick = () => {
