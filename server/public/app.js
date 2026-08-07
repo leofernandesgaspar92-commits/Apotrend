@@ -3564,7 +3564,7 @@ async function loadRabatte() {
       const csvBtn = bar.querySelector('[data-rcsv]'); if (csvBtn) csvBtn.textContent = `⬇️ CSV (${list.length})`;
       listBox.innerHTML = '';
       if (!list.length) listBox.appendChild(el(`<div class="card muted">${esc(t('rb_none'))}</div>`));
-      else list.forEach(r => listBox.appendChild(rabattCard(r)));
+      else list.forEach(r => listBox.appendChild(rabattCard(r, watched)));
     };
     bar.querySelectorAll('[data-exp]').forEach(b => b.onclick = () => { rabattExpiring = b.dataset.exp==='1'; draw(); });
     { const wb = bar.querySelector('[data-watchedonly]'); if (wb) wb.onclick = () => { rabattWatchedOnly = !rabattWatchedOnly; draw(); }; }
@@ -3575,12 +3575,15 @@ async function loadRabatte() {
   } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
 
-function rabattCard(r) {
+function rabattCard(r, watchedSet) {
+  const wKey = r.wirkstoff ? r.wirkstoff.toLowerCase() : '';
+  const showStar = watchedSet && r.wirkstoff;
   const card = el(`<div class="card">
     <div class="row">
       <span class="rank">#${r.rank}</span>
       <span class="post-author">${esc(r.bezeichnung)}</span>
       ${r.wirkstoff?`<span class="handle clickable" data-wirkstoff="${esc(r.wirkstoff)}" title="Alles zu ${esc(r.wirkstoff)}">${esc(r.wirkstoff)}</span>`:''}
+      ${showStar?`<button class="ghost small" data-wwatch aria-pressed="${watchedSet.has(wKey)}" title="${esc(watchedSet.has(wKey)?t('sc_watched'):t('sc_watch'))}" style="padding:2px 8px;min-height:0">${watchedSet.has(wKey)?'⭐':'☆'}</button>`:''}
       <span class="sp" style="flex:1"></span>
       <span class="rabatt-badge">−${r.rabatt_pct}%</span>
     </div>
@@ -3616,6 +3619,19 @@ function rabattCard(r) {
   };
   const rw = card.querySelector('[data-wirkstoff]');
   if (rw) rw.onclick = () => openWirkstoff(rw.dataset.wirkstoff);
+  // Ein-Klick „beobachten" direkt am Rabatt: Wirkstoff auf die Merkliste (für Rabatt-Alarm).
+  const wwatch = card.querySelector('[data-wwatch]');
+  if (wwatch) wwatch.onclick = async () => {
+    wwatch.disabled = true;
+    try {
+      if (watchedSet.has(wKey)) { await api('DELETE','/api/watchlist/'+encodeURIComponent(r.wirkstoff)); watchedSet.delete(wKey); }
+      else { await api('POST','/api/watchlist',{ wirkstoff: r.wirkstoff }); watchedSet.add(wKey); }
+      const now = watchedSet.has(wKey);
+      wwatch.textContent = now ? '⭐' : '☆'; wwatch.setAttribute('aria-pressed', String(now));
+      wwatch.title = now ? t('sc_watched') : t('sc_watch');
+    } catch(e){ alert(e.message); }
+    wwatch.disabled = false;
+  };
   card.querySelector('[data-addcart]').onclick = (ev) => cartAdd({
     bezeichnung: r.bezeichnung, wirkstoff: r.wirkstoff, supplier: r.supplier,
     aktionspreis: r.aktionspreis, rabattPct: r.rabatt_pct, gueltigBis: r.gueltig_bis,
