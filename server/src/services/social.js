@@ -896,6 +896,50 @@ export function createSocialService(social, foundationRepo, options = {}) {
     },
     clearCart(userId) { requireUser(userId); social.clearCart(userId); return { ok: true }; },
 
+    // ── Bestell-Historie: Einkaufsliste als „bestellt" abschließen (Snapshot) und leeren ──
+    checkoutCart(userId, { reference } = {}) {
+      requireUser(userId);
+      const summary = this.cart(userId);
+      if (!summary.items.length) throw new AppError('cart_empty', 'Einkaufsliste ist leer.');
+      // Positionen als eigenständigen Snapshot ablegen (ohne Cart-IDs/User-ID).
+      const items = summary.items.map(i => ({
+        bezeichnung: i.bezeichnung, wirkstoff: i.wirkstoff || null, supplier: i.supplier || null,
+        aktionspreis: i.aktionspreis ?? null, listenpreis: i.listenpreis ?? null,
+        rabatt_pct: i.rabatt_pct ?? null, gueltig_bis: i.gueltig_bis || null,
+        source_kind: i.source_kind || 'manual', menge: i.menge, note: i.note || null,
+      }));
+      const order = social.addOrder({
+        user_id: userId,
+        reference: reference ? String(reference).trim().slice(0, 120) : null,
+        items, positions: items.length,
+        total_pieces: summary.total_positions, total_price: summary.total_price, total_savings: summary.total_savings,
+      });
+      social.clearCart(userId);
+      return order;
+    },
+    listOrders(userId) { requireUser(userId); return social.listOrders(userId); },
+    // Eine vergangene Bestellung erneut in die (aktuelle) Einkaufsliste übernehmen.
+    reorder(userId, orderId) {
+      requireUser(userId);
+      const order = social.getOrder(orderId);
+      if (!order || order.user_id !== userId) throw new AppError('order_not_found', 'Bestellung nicht gefunden.');
+      for (const i of order.items || []) {
+        this.addToCart(userId, {
+          bezeichnung: i.bezeichnung, wirkstoff: i.wirkstoff, supplier: i.supplier,
+          aktionspreis: i.aktionspreis, listenpreis: i.listenpreis, rabattPct: i.rabatt_pct,
+          gueltigBis: i.gueltig_bis, sourceKind: i.source_kind, menge: i.menge, note: i.note,
+        });
+      }
+      return this.cart(userId);
+    },
+    deleteOrder(userId, orderId) {
+      requireUser(userId);
+      const order = social.getOrder(orderId);
+      if (!order || order.user_id !== userId) throw new AppError('order_not_found', 'Bestellung nicht gefunden.');
+      social.removeOrder(orderId);
+      return { ok: true };
+    },
+
     // ── DSGVO: Datenexport (Recht auf Datenübertragbarkeit) ──
     exportData(userId) {
       requireUser(userId);

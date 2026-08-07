@@ -139,7 +139,9 @@ const I18N = {
     rb_empty_t:'Derzeit keine laufenden Aktionen',
     rb_empty_s:'Aktuell sind keine Rabatt-Aktionen hinterlegt. Schau später wieder vorbei.',
     rb_expiring:'⏳ Bald ablaufend', rb_watched_only:'⭐ Nur beobachtete', rb_sort_aria:'Sortierung der Aktionen', rb_sort_pct:'Höchster Rabatt %', rb_sort_saving:'Größte Ersparnis €', rb_csv_t:'Aktuelle Auswahl als CSV (Excel) für den Einkauf', rb_print_t:'Aktuelle Auswahl als Aushang drucken', rb_print_title:'Laufende Rabatt-Aktionen',
-    cart_title:'Einkaufsliste', cart_add:'Einkaufsliste', cart_added:'hinzugefügt', cart_summary:'{n} Stück · Summe € {sum}', cart_savings:'💰 Ersparnis ggü. Listenpreis: € {sum}', cart_clear:'Liste leeren', cart_clear_confirm:'Ganze Einkaufsliste leeren?', cart_remove:'Position entfernen',
+    cart_title:'Einkaufsliste', cart_add:'Einkaufsliste', cart_added:'hinzugefügt', cart_summary:'{n} Stück · Summe € {sum}', cart_savings:'💰 Ersparnis ggü. Listenpreis: € {sum}', cart_clear:'Liste leeren',
+    cart_orders:'📋 Bestell-Historie', cart_checkout:'✓ Als bestellt markieren', cart_checkout_ref_ph:'Referenz (optional, z.B. KW32)', cart_checkout_done:'Als Bestellung gespeichert.',
+    ord_title:'📋 Bestell-Historie', ord_empty_t:'Noch keine Bestellungen', ord_empty_s:'Schließe eine Einkaufsliste mit „Als bestellt markieren" ab — sie erscheint dann hier.', ord_positions:'{n} Positionen', ord_reorder:'🔁 Erneut bestellen', ord_delete:'🗑 Löschen', ord_delete_confirm:'Diese Bestellung aus der Historie löschen?', cart_clear_confirm:'Ganze Einkaufsliste leeren?', cart_remove:'Position entfernen',
     cart_empty_t:'Einkaufsliste ist leer', cart_empty_s:'Fügen Sie bei Rabatten „🛒 Einkaufsliste" hinzu — dann hier als CSV/Ausdruck für den Großhandel exportieren.',
     cart_col_menge:'Menge', cart_col_sum:'Summe', cart_col_note:'Notiz', cart_print_title:'Einkaufsliste / Bestellung', cart_print_foot:'Preise sind Momentaufnahmen (Aktions-/Referenzpreis) — im Zweifel beim Großhandel prüfen.',
     cart_manual_add:'+ Hinzufügen', cart_manual_ph:'Eigene Position (z. B. Ibuprofen 400)', cart_note_ph:'Notiz (z. B. „bis Freitag", „für Rezeptur")',
@@ -465,7 +467,9 @@ const I18N = {
     rb_empty_t:'No running offers right now',
     rb_empty_s:'There are currently no discount offers on file. Check back later.',
     rb_expiring:'⏳ Expiring soon', rb_watched_only:'⭐ Watched only', rb_sort_aria:'Sort deals', rb_sort_pct:'Highest discount %', rb_sort_saving:'Biggest savings €', rb_csv_t:'Export current selection as CSV (Excel) for purchasing', rb_print_t:'Print current selection as a notice', rb_print_title:'Current discount deals',
-    cart_title:'Shopping list', cart_add:'Shopping list', cart_added:'added', cart_summary:'{n} units · total € {sum}', cart_savings:'💰 Savings vs list price: € {sum}', cart_clear:'Clear list', cart_clear_confirm:'Clear the whole shopping list?', cart_remove:'Remove item',
+    cart_title:'Shopping list', cart_add:'Shopping list', cart_added:'added', cart_summary:'{n} units · total € {sum}', cart_savings:'💰 Savings vs list price: € {sum}', cart_clear:'Clear list',
+    cart_orders:'📋 Order history', cart_checkout:'✓ Mark as ordered', cart_checkout_ref_ph:'Reference (optional, e.g. wk32)', cart_checkout_done:'Saved as an order.',
+    ord_title:'📋 Order history', ord_empty_t:'No orders yet', ord_empty_s:'Finish a shopping list with “Mark as ordered” — it will show up here.', ord_positions:'{n} items', ord_reorder:'🔁 Reorder', ord_delete:'🗑 Delete', ord_delete_confirm:'Delete this order from the history?', cart_clear_confirm:'Clear the whole shopping list?', cart_remove:'Remove item',
     cart_empty_t:'Shopping list is empty', cart_empty_s:'Add items via “🛒 Shopping list” on discounts — then export here as CSV/print for your wholesaler.',
     cart_col_menge:'Qty', cart_col_sum:'Total', cart_col_note:'Note', cart_print_title:'Shopping list / order', cart_print_foot:'Prices are snapshots (deal/reference price) — verify with your wholesaler if in doubt.',
     cart_manual_add:'+ Add', cart_manual_ph:'Own item (e.g. Ibuprofen 400)', cart_note_ph:'Note (e.g. “by Friday”, “for compounding”)',
@@ -791,7 +795,9 @@ const I18N = {
     rb_empty_t:'Sem promoções ativas de momento',
     rb_empty_s:'Não há promoções de desconto registadas. Volte mais tarde.',
     rb_expiring:'⏳ A expirar em breve', rb_watched_only:'⭐ Só vigiadas', rb_sort_aria:'Ordenar promoções', rb_sort_pct:'Maior desconto %', rb_sort_saving:'Maior poupança €', rb_csv_t:'Exportar a seleção atual como CSV (Excel) para compras', rb_print_t:'Imprimir a seleção atual como cartaz', rb_print_title:'Promoções em curso',
-    cart_title:'Lista de compras', cart_add:'Lista de compras', cart_added:'adicionado', cart_summary:'{n} unidades · total € {sum}', cart_savings:'💰 Poupança vs preço de tabela: € {sum}', cart_clear:'Limpar lista', cart_clear_confirm:'Limpar toda a lista de compras?', cart_remove:'Remover item',
+    cart_title:'Lista de compras', cart_add:'Lista de compras', cart_added:'adicionado', cart_summary:'{n} unidades · total € {sum}', cart_savings:'💰 Poupança vs preço de tabela: € {sum}', cart_clear:'Limpar lista',
+    cart_orders:'📋 Histórico de pedidos', cart_checkout:'✓ Marcar como encomendado', cart_checkout_ref_ph:'Referência (opcional, ex. sem32)', cart_checkout_done:'Guardado como pedido.',
+    ord_title:'📋 Histórico de pedidos', ord_empty_t:'Ainda sem pedidos', ord_empty_s:'Conclua uma lista de compras com „Marcar como encomendado" — aparecerá aqui.', ord_positions:'{n} posições', ord_reorder:'🔁 Encomendar de novo', ord_delete:'🗑 Eliminar', ord_delete_confirm:'Eliminar este pedido do histórico?', cart_clear_confirm:'Limpar toda a lista de compras?', cart_remove:'Remover item',
     cart_empty_t:'Lista de compras vazia', cart_empty_s:'Adicione itens em “🛒 Lista de compras” nas promoções — depois exporte aqui em CSV/impressão para o distribuidor.',
     cart_col_menge:'Qtd', cart_col_sum:'Total', cart_col_note:'Nota', cart_print_title:'Lista de compras / encomenda', cart_print_foot:'Os preços são momentâneos (promoção/referência) — confirme com o distribuidor em caso de dúvida.',
     cart_manual_add:'+ Adicionar', cart_manual_ph:'Item próprio (ex. Ibuprofeno 400)', cart_note_ph:'Nota (ex. “até sexta”, “para manipulação”)',
@@ -3687,6 +3693,7 @@ async function openCart() {
   feed.innerHTML = '';
   const head = el(`<div class="card">
     <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span>
+      <button class="ghost small" data-corders>${esc(t('cart_orders'))}</button>
       ${d.items.length?`<button class="ghost small" data-ccsv>⬇️ CSV</button><button class="ghost small" data-cprint>🖨️ ${esc(t('pr_print_btn'))}</button>`:''}
     </div>
     <h1 style="margin:8px 0 0">🛒 ${esc(t('cart_title'))}</h1>
@@ -3697,9 +3704,14 @@ async function openCart() {
       <input type="number" min="1" value="1" data-mqty style="width:78px" aria-label="${esc(t('cart_col_menge'))}">
       <button class="small" data-maddbtn>${esc(t('cart_manual_add'))}</button>
     </div>
-    ${d.items.length?`<div class="row" style="margin-top:8px"><button class="ghost small" data-cclear>${esc(t('cart_clear'))}</button></div>`:''}
+    ${d.items.length?`<div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap">
+      <input data-cref placeholder="${esc(t('cart_checkout_ref_ph'))}" style="flex:1;min-width:140px" aria-label="${esc(t('cart_checkout_ref_ph'))}">
+      <button class="small" data-ccheckout>${esc(t('cart_checkout'))}</button>
+      <button class="ghost small" data-cclear>${esc(t('cart_clear'))}</button>
+    </div>`:''}
   </div>`);
   head.querySelector('[data-back]').onclick = () => loadTab();
+  head.querySelector('[data-corders]').onclick = openOrders;
   feed.appendChild(head);
   const madd = head.querySelector('[data-madd]');
   const addManual = async () => {
@@ -3718,6 +3730,12 @@ async function openCart() {
   };
   head.querySelector('[data-cprint]').onclick = () => printCart(d);
   head.querySelector('[data-cclear]').onclick = async () => { if (!confirm(t('cart_clear_confirm'))) return; try { await api('POST','/api/cart/clear'); openCart(); } catch(e){ alert(e.message); } };
+  // Als bestellt markieren: Liste als Bestellung sichern (Snapshot) und leeren.
+  head.querySelector('[data-ccheckout]').onclick = async () => {
+    const reference = head.querySelector('[data-cref]').value.trim();
+    try { await api('POST','/api/cart/checkout', { reference }); openOrders(t('cart_checkout_done')); }
+    catch(e){ alert(e.message); }
+  };
   // Nach Lieferant sortieren (gleiche Bestellung zusammen); ohne Lieferant zuletzt.
   const bySupplier = [...d.items].sort((a, b) => {
     const sa = (a.supplier || '').trim(), sb = (b.supplier || '').trim();
@@ -3825,6 +3843,43 @@ function printCart(d) {
     ${ordered.map(section).join('')}
     <div style="margin-top:6px;color:#666;font-size:12px">${esc(t('cart_print_foot'))}</div>`;
   openPrintDoc(t('cart_print_title'), css, body);
+}
+
+// Bestell-Historie: abgeschlossene Einkaufslisten ansehen, erneut bestellen oder löschen.
+async function openOrders(flash) {
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
+  setDocTitle(t('ord_title'));
+  feed.innerHTML = '<div class="loading">…</div>';
+  let d;
+  try { d = await api('GET','/api/orders'); } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, openCart))); return; }
+  feed.innerHTML = '';
+  const head = el(`<div class="card"><div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span></div>
+    <h1 style="margin:8px 0 0">${esc(t('ord_title'))}</h1></div>`);
+  head.querySelector('[data-back]').onclick = openCart;
+  feed.appendChild(head);
+  if (flash) feed.appendChild(el(`<div class="card ok-box" style="padding:10px 14px;font-weight:600">✅ ${esc(flash)}</div>`));
+  if (!d.orders.length) { feed.appendChild(emptyState({ icon:'📋', title:t('ord_empty_t'), text:t('ord_empty_s') })); return; }
+  for (const o of d.orders) {
+    // Lieferanten-Kurzliste (eindeutig) für den Überblick.
+    const suppliers = [...new Set((o.items||[]).map(i => (i.supplier||'').trim()).filter(Boolean))];
+    const card = el(`<div class="card">
+      <div class="row" style="align-items:baseline">
+        <b>${o.reference?esc(o.reference):esc(relTime(o.created_at))}</b>
+        <span class="sp" style="flex:1"></span>
+        <span style="font-weight:800">€ ${fmtMoney(o.total_price)}</span>
+      </div>
+      ${o.reference?`<div class="muted" style="font-size:12px">${esc(relTime(o.created_at))}</div>`:''}
+      <div class="muted" style="font-size:13px;margin-top:4px">${esc(ti('ord_positions',{n:o.positions}))} · ${o.total_pieces} ${esc(t('cart_col_menge'))}${o.total_savings>0?` · <span style="color:var(--ok-fg);font-weight:700">${esc(ti('cart_savings',{sum:fmtMoney(o.total_savings)}))}</span>`:''}</div>
+      ${suppliers.length?`<div class="muted" style="font-size:13px;margin-top:2px">🏢 ${esc(suppliers.join(' · '))}</div>`:''}
+      <div class="reacts" style="margin-top:8px">
+        <button class="small" data-reorder>${esc(t('ord_reorder'))}</button>
+        <button class="ghost small" data-odel>${esc(t('ord_delete'))}</button>
+      </div></div>`);
+    card.querySelector('[data-reorder]').onclick = async () => { try { await api('POST',`/api/orders/${o.id}/reorder`); openCart(); } catch(e){ alert(e.message); } };
+    card.querySelector('[data-odel]').onclick = async () => { if (!confirm(t('ord_delete_confirm'))) return; try { await api('POST',`/api/orders/${o.id}/delete`); openOrders(); } catch(e){ alert(e.message); } };
+    feed.appendChild(card);
+  }
 }
 
 // Reaktionen: [Schlüssel, i18n-Key]. Label wird beim Rendern übersetzt (Emoji bleibt zuerst).

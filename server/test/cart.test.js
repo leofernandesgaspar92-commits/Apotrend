@@ -39,6 +39,42 @@ test('Einkaufsliste: hinzufügen, Summe, Menge ändern, entfernen, leeren', () =
   assert.equal(social.cart(a).count, 0);
 });
 
+test('Bestell-Historie: checkout schnappschottet + leert, reorder füllt neu, delete entfernt', () => {
+  const { social, a } = setup();
+  social.addToCart(a, { bezeichnung: 'Amoxi', supplier: 'Kwizda', aktionspreis: 7, listenpreis: 10, menge: 3, sourceKind: 'rabatt' });
+  social.addToCart(a, { bezeichnung: 'Ibu', supplier: 'Herba', aktionspreis: 5, menge: 2, sourceKind: 'price' });
+  // Abschließen -> Order angelegt, Liste geleert
+  const order = social.checkoutCart(a, { reference: 'KW32' });
+  assert.equal(order.reference, 'KW32');
+  assert.equal(order.positions, 2);
+  assert.equal(order.total_pieces, 5);
+  assert.equal(order.total_price, 7 * 3 + 5 * 2); // 31
+  assert.equal(order.total_savings, (10 - 7) * 3); // 9
+  assert.equal(social.cart(a).count, 0, 'Liste geleert');
+  assert.throws(() => social.checkoutCart(a), /leer|empty/i);
+  // Historie
+  const orders = social.listOrders(a);
+  assert.equal(orders.length, 1);
+  assert.equal(orders[0].items.length, 2);
+  // Erneut bestellen -> Positionen zurück in die Liste
+  social.reorder(a, order.id);
+  const c = social.cart(a);
+  assert.equal(c.count, 2);
+  assert.equal(c.total_price, 31);
+  // Löschen
+  social.deleteOrder(a, order.id);
+  assert.equal(social.listOrders(a).length, 0);
+});
+
+test('Bestell-Historie: fremde Order nicht abrufbar/änderbar', () => {
+  const { social, a, b } = setup();
+  social.addToCart(a, { bezeichnung: 'X', aktionspreis: 1, menge: 1, sourceKind: 'manual' });
+  const order = social.checkoutCart(a);
+  assert.throws(() => social.reorder(b, order.id), /nicht gefunden|not_found/i);
+  assert.throws(() => social.deleteOrder(b, order.id), /nicht gefunden|not_found/i);
+  assert.equal(social.listOrders(b).length, 0);
+});
+
 test('Einkaufsliste: Gesamtersparnis aus Listen- vs. Aktionspreis', () => {
   const { social, a } = setup();
   // Rabatt-Position mit Listenpreis 10, Aktionspreis 7, Menge 4 -> Ersparnis 12

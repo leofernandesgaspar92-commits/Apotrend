@@ -456,8 +456,13 @@ const routes = [
   ['GET', /^\/api\/cart$/, true, async ({ userId }) => social.cart(userId)],
   ['POST', /^\/api\/cart$/, true, async ({ userId, body }) => ({ item: social.addToCart(userId, body) })],
   ['POST', /^\/api\/cart\/clear$/, true, async ({ userId }) => social.clearCart(userId)],
+  ['POST', /^\/api\/cart\/checkout$/, true, async ({ userId, body }) => ({ order: social.checkoutCart(userId, { reference: body && body.reference }) })],
   ['POST', /^\/api\/cart\/([^/]+)\/remove$/, true, async ({ userId, params }) => social.removeCartItem(userId, params[0])],
   ['POST', /^\/api\/cart\/([^/]+)$/, true, async ({ userId, params, body }) => ({ item: social.updateCartItem(userId, params[0], body) })],
+  // ── Bestell-Historie (abgeschlossene Einkaufslisten) ──
+  ['GET', /^\/api\/orders$/, true, async ({ userId }) => ({ orders: social.listOrders(userId) })],
+  ['POST', /^\/api\/orders\/([^/]+)\/reorder$/, true, async ({ userId, params }) => social.reorder(userId, params[0])],
+  ['POST', /^\/api\/orders\/([^/]+)\/delete$/, true, async ({ userId, params }) => social.deleteOrder(userId, params[0])],
 
   ['GET', /^\/api\/profiles\/([^/]+)\/page$/, true, async ({ userId, params }) => {
     const d = social.profilePage(userId, params[0]);
