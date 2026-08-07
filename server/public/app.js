@@ -3710,8 +3710,9 @@ async function openCart() {
   madd.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addManual(); } };
   if (!d.items.length) { feed.appendChild(emptyState({ icon:'🛒', title:t('cart_empty_t'), text:t('cart_empty_s') })); return; }
   head.querySelector('[data-ccsv]').onclick = () => {
-    const rows = d.items.map(i => [i.bezeichnung, i.wirkstoff||'', i.supplier||'', i.menge, i.aktionspreis!=null?fmtMoney(i.aktionspreis):'', i.aktionspreis!=null?fmtMoney(i.aktionspreis*i.menge):'', i.gueltig_bis||'', i.note||'']);
-    downloadCsv('apotrend-einkaufsliste', [t('csv_praeparat'), t('csv_wirkstoff'), t('csv_lieferant'), t('cart_col_menge'), t('csv_aktionspreis'), t('cart_col_sum'), t('csv_gueltig_bis'), t('cart_col_note')], rows);
+    const lineSaving = (i) => (Number(i.listenpreis) > Number(i.aktionspreis)) ? (Number(i.listenpreis)-Number(i.aktionspreis))*Number(i.menge) : 0;
+    const rows = d.items.map(i => [i.bezeichnung, i.wirkstoff||'', i.supplier||'', i.menge, i.listenpreis!=null?fmtMoney(i.listenpreis):'', i.aktionspreis!=null?fmtMoney(i.aktionspreis):'', i.aktionspreis!=null?fmtMoney(i.aktionspreis*i.menge):'', lineSaving(i)>0?fmtMoney(lineSaving(i)):'', i.gueltig_bis||'', i.note||'']);
+    downloadCsv('apotrend-einkaufsliste', [t('csv_praeparat'), t('csv_wirkstoff'), t('csv_lieferant'), t('cart_col_menge'), t('csv_listenpreis'), t('csv_aktionspreis'), t('cart_col_sum'), t('pr_print_saving'), t('csv_gueltig_bis'), t('cart_col_note')], rows);
   };
   head.querySelector('[data-cprint]').onclick = () => printCart(d);
   head.querySelector('[data-cclear]').onclick = async () => { if (!confirm(t('cart_clear_confirm'))) return; try { await api('POST','/api/cart/clear'); openCart(); } catch(e){ alert(e.message); } };
@@ -3817,7 +3818,8 @@ function printCart(d) {
       <tbody>${rows}</tbody>
       <tfoot><tr><td colspan="4" class="r">${esc(t('cart_subtotal'))}</td><td class="r">€ ${printMoney(Math.round(sub*100)/100)}</td><td></td><td></td></tr></tfoot></table>`;
   };
-  const body = `<div style="color:#444;margin-bottom:8px">${esc(printDate())} · ${esc(ti('cart_summary',{ n:d.total_positions, sum:printMoney(d.total_price) }))}</div>
+  const savings = Number(d.total_savings) || 0;
+  const body = `<div style="color:#444;margin-bottom:8px">${esc(printDate())} · ${esc(ti('cart_summary',{ n:d.total_positions, sum:printMoney(d.total_price) }))}${savings>0?` · <b style="color:#0b7f28">${esc(ti('cart_savings',{ sum:printMoney(savings) }))}</b>`:''}</div>
     ${ordered.map(section).join('')}
     <div style="margin-top:6px;color:#666;font-size:12px">${esc(t('cart_print_foot'))}</div>`;
   openPrintDoc(t('cart_print_title'), css, body);
