@@ -3019,7 +3019,7 @@ async function loadPrices() {
       shownPrices = list;
       listBox.innerHTML = '';
       if (!list.length) listBox.appendChild(el(`<div class="card muted">${esc(t('pr_empty'))}</div>`));
-      else list.forEach(g => listBox.appendChild(priceGroup(g, pWatched)));
+      else list.forEach(g => listBox.appendChild(priceGroup(g, pWatched, () => { if (priceWatchedOnly) draw(); })));
     };
     { const wb = bar.querySelector('[data-pwatched]'); if (wb) wb.onclick = () => { priceWatchedOnly = !priceWatchedOnly; draw(); }; }
     bar.querySelector('[data-psort]').onchange = (ev) => { priceSort = ev.target.value; draw(); };
@@ -3232,7 +3232,7 @@ function sparkline(series) {
   </svg>`;
 }
 
-function priceGroup(g, watchedSet) {
+function priceGroup(g, watchedSet, onWatchChange) {
   // Trend-Warnung: günstigster Anbieter (erste Zeile, nach AEP sortiert) zuletzt
   // spürbar teurer (>= +5%). Nur Hinweis zum Beobachten, keine Kaufberatung.
   const cheapest = (g.offers && g.offers[0]) || null;
@@ -3310,6 +3310,7 @@ function priceGroup(g, watchedSet) {
       const now = watchedSet.has(wKey);
       wwatch.textContent = now ? '⭐' : '☆'; wwatch.setAttribute('aria-pressed', String(now));
       wwatch.title = now ? t('sc_watched') : t('sc_watch');
+      if (onWatchChange) onWatchChange(); // aktiven „nur beobachtete"-Filter mitziehen
     } catch(e){ alert(e.message); }
     wwatch.disabled = false;
   };
@@ -3588,7 +3589,7 @@ async function loadRabatte() {
       const csvBtn = bar.querySelector('[data-rcsv]'); if (csvBtn) csvBtn.textContent = `⬇️ CSV (${list.length})`;
       listBox.innerHTML = '';
       if (!list.length) listBox.appendChild(el(`<div class="card muted">${esc(t('rb_none'))}</div>`));
-      else list.forEach(r => listBox.appendChild(rabattCard(r, watched)));
+      else list.forEach(r => listBox.appendChild(rabattCard(r, watched, () => { if (rabattWatchedOnly) draw(); })));
     };
     bar.querySelectorAll('[data-exp]').forEach(b => b.onclick = () => { rabattExpiring = b.dataset.exp==='1'; draw(); });
     { const wb = bar.querySelector('[data-watchedonly]'); if (wb) wb.onclick = () => { rabattWatchedOnly = !rabattWatchedOnly; draw(); }; }
@@ -3599,7 +3600,7 @@ async function loadRabatte() {
   } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
 
-function rabattCard(r, watchedSet) {
+function rabattCard(r, watchedSet, onWatchChange) {
   const wKey = r.wirkstoff ? r.wirkstoff.toLowerCase() : '';
   const showStar = watchedSet && r.wirkstoff;
   const card = el(`<div class="card">
@@ -3653,6 +3654,7 @@ function rabattCard(r, watchedSet) {
       const now = watchedSet.has(wKey);
       wwatch.textContent = now ? '⭐' : '☆'; wwatch.setAttribute('aria-pressed', String(now));
       wwatch.title = now ? t('sc_watched') : t('sc_watch');
+      if (onWatchChange) onWatchChange(); // aktiven „nur beobachtete"-Filter mitziehen
     } catch(e){ alert(e.message); }
     wwatch.disabled = false;
   };
