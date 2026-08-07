@@ -39,6 +39,20 @@ test('Einkaufsliste: hinzufügen, Summe, Menge ändern, entfernen, leeren', () =
   assert.equal(social.cart(a).count, 0);
 });
 
+test('Einkaufsliste: Gesamtersparnis aus Listen- vs. Aktionspreis', () => {
+  const { social, a } = setup();
+  // Rabatt-Position mit Listenpreis 10, Aktionspreis 7, Menge 4 -> Ersparnis 12
+  social.addToCart(a, { bezeichnung: 'Amoxi', supplier: 'Kwizda', aktionspreis: 7, listenpreis: 10, menge: 4, sourceKind: 'rabatt' });
+  // Position ohne Listenpreis zählt nicht zur Ersparnis
+  social.addToCart(a, { bezeichnung: 'Ibu', supplier: 'Herba', aktionspreis: 5, menge: 2, sourceKind: 'price' });
+  const c = social.cart(a);
+  assert.equal(c.total_savings, 12);
+  assert.equal(c.total_price, 7 * 4 + 5 * 2); // 38
+  // Listenpreis <= Aktionspreis darf keine negative Ersparnis erzeugen
+  social.addToCart(a, { bezeichnung: 'Pantop', supplier: 'GH', aktionspreis: 9, listenpreis: 8, menge: 1, sourceKind: 'rabatt' });
+  assert.equal(social.cart(a).total_savings, 12);
+});
+
 test('Einkaufsliste: identisches Angebot doppelt hinzufügen führt Menge zusammen (keine Dublette)', () => {
   const { social, a } = setup();
   const base = { bezeichnung: 'Amoxi 1000', wirkstoff: 'Amoxicillin', supplier: 'Kwizda', aktionspreis: 4.5, sourceKind: 'rabatt' };

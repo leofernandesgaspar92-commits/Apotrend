@@ -139,7 +139,7 @@ const I18N = {
     rb_empty_t:'Derzeit keine laufenden Aktionen',
     rb_empty_s:'Aktuell sind keine Rabatt-Aktionen hinterlegt. Schau später wieder vorbei.',
     rb_expiring:'⏳ Bald ablaufend', rb_watched_only:'⭐ Nur beobachtete', rb_sort_aria:'Sortierung der Aktionen', rb_sort_pct:'Höchster Rabatt %', rb_sort_saving:'Größte Ersparnis €', rb_csv_t:'Aktuelle Auswahl als CSV (Excel) für den Einkauf', rb_print_t:'Aktuelle Auswahl als Aushang drucken', rb_print_title:'Laufende Rabatt-Aktionen',
-    cart_title:'Einkaufsliste', cart_add:'Einkaufsliste', cart_added:'hinzugefügt', cart_summary:'{n} Stück · Summe € {sum}', cart_clear:'Liste leeren', cart_clear_confirm:'Ganze Einkaufsliste leeren?', cart_remove:'Position entfernen',
+    cart_title:'Einkaufsliste', cart_add:'Einkaufsliste', cart_added:'hinzugefügt', cart_summary:'{n} Stück · Summe € {sum}', cart_savings:'💰 Ersparnis ggü. Listenpreis: € {sum}', cart_clear:'Liste leeren', cart_clear_confirm:'Ganze Einkaufsliste leeren?', cart_remove:'Position entfernen',
     cart_empty_t:'Einkaufsliste ist leer', cart_empty_s:'Fügen Sie bei Rabatten „🛒 Einkaufsliste" hinzu — dann hier als CSV/Ausdruck für den Großhandel exportieren.',
     cart_col_menge:'Menge', cart_col_sum:'Summe', cart_col_note:'Notiz', cart_print_title:'Einkaufsliste / Bestellung', cart_print_foot:'Preise sind Momentaufnahmen (Aktions-/Referenzpreis) — im Zweifel beim Großhandel prüfen.',
     cart_manual_add:'+ Hinzufügen', cart_manual_ph:'Eigene Position (z. B. Ibuprofen 400)', cart_note_ph:'Notiz (z. B. „bis Freitag", „für Rezeptur")',
@@ -465,7 +465,7 @@ const I18N = {
     rb_empty_t:'No running offers right now',
     rb_empty_s:'There are currently no discount offers on file. Check back later.',
     rb_expiring:'⏳ Expiring soon', rb_watched_only:'⭐ Watched only', rb_sort_aria:'Sort deals', rb_sort_pct:'Highest discount %', rb_sort_saving:'Biggest savings €', rb_csv_t:'Export current selection as CSV (Excel) for purchasing', rb_print_t:'Print current selection as a notice', rb_print_title:'Current discount deals',
-    cart_title:'Shopping list', cart_add:'Shopping list', cart_added:'added', cart_summary:'{n} units · total € {sum}', cart_clear:'Clear list', cart_clear_confirm:'Clear the whole shopping list?', cart_remove:'Remove item',
+    cart_title:'Shopping list', cart_add:'Shopping list', cart_added:'added', cart_summary:'{n} units · total € {sum}', cart_savings:'💰 Savings vs list price: € {sum}', cart_clear:'Clear list', cart_clear_confirm:'Clear the whole shopping list?', cart_remove:'Remove item',
     cart_empty_t:'Shopping list is empty', cart_empty_s:'Add items via “🛒 Shopping list” on discounts — then export here as CSV/print for your wholesaler.',
     cart_col_menge:'Qty', cart_col_sum:'Total', cart_col_note:'Note', cart_print_title:'Shopping list / order', cart_print_foot:'Prices are snapshots (deal/reference price) — verify with your wholesaler if in doubt.',
     cart_manual_add:'+ Add', cart_manual_ph:'Own item (e.g. Ibuprofen 400)', cart_note_ph:'Note (e.g. “by Friday”, “for compounding”)',
@@ -791,7 +791,7 @@ const I18N = {
     rb_empty_t:'Sem promoções ativas de momento',
     rb_empty_s:'Não há promoções de desconto registadas. Volte mais tarde.',
     rb_expiring:'⏳ A expirar em breve', rb_watched_only:'⭐ Só vigiadas', rb_sort_aria:'Ordenar promoções', rb_sort_pct:'Maior desconto %', rb_sort_saving:'Maior poupança €', rb_csv_t:'Exportar a seleção atual como CSV (Excel) para compras', rb_print_t:'Imprimir a seleção atual como cartaz', rb_print_title:'Promoções em curso',
-    cart_title:'Lista de compras', cart_add:'Lista de compras', cart_added:'adicionado', cart_summary:'{n} unidades · total € {sum}', cart_clear:'Limpar lista', cart_clear_confirm:'Limpar toda a lista de compras?', cart_remove:'Remover item',
+    cart_title:'Lista de compras', cart_add:'Lista de compras', cart_added:'adicionado', cart_summary:'{n} unidades · total € {sum}', cart_savings:'💰 Poupança vs preço de tabela: € {sum}', cart_clear:'Limpar lista', cart_clear_confirm:'Limpar toda a lista de compras?', cart_remove:'Remover item',
     cart_empty_t:'Lista de compras vazia', cart_empty_s:'Adicione itens em “🛒 Lista de compras” nas promoções — depois exporte aqui em CSV/impressão para o distribuidor.',
     cart_col_menge:'Qtd', cart_col_sum:'Total', cart_col_note:'Nota', cart_print_title:'Lista de compras / encomenda', cart_print_foot:'Os preços são momentâneos (promoção/referência) — confirme com o distribuidor em caso de dúvida.',
     cart_manual_add:'+ Adicionar', cart_manual_ph:'Item próprio (ex. Ibuprofeno 400)', cart_note_ph:'Nota (ex. “até sexta”, “para manipulação”)',
@@ -1846,7 +1846,7 @@ async function loadOverview() {
       addAll.disabled = true;
       let n = 0;
       for (const w of d.watch_deals) {
-        try { await api('POST','/api/cart', { bezeichnung: w.bezeichnung || w.wirkstoff, wirkstoff: w.wirkstoff, supplier: w.supplier, aktionspreis: w.aktionspreis, rabattPct: w.rabatt_pct, gueltigBis: w.gueltig_bis, menge: w.min_menge || 1, sourceKind: 'rabatt' }); n++; } catch { /* weiter */ }
+        try { await api('POST','/api/cart', { bezeichnung: w.bezeichnung || w.wirkstoff, wirkstoff: w.wirkstoff, supplier: w.supplier, aktionspreis: w.aktionspreis, listenpreis: (w.aktionspreis!=null && w.ersparnis!=null) ? Number(w.aktionspreis)+Number(w.ersparnis) : undefined, rabattPct: w.rabatt_pct, gueltigBis: w.gueltig_bis, menge: w.min_menge || 1, sourceKind: 'rabatt' }); n++; } catch { /* weiter */ }
       }
       addAll.textContent = '✓ ' + ti('wd_added_all', { n });
       refreshCartCount();
@@ -1859,7 +1859,7 @@ async function loadOverview() {
       </div></div>`);
       row.querySelector('[data-addcart]').onclick = (ev) => cartAdd({
         bezeichnung: w.bezeichnung || w.wirkstoff, wirkstoff: w.wirkstoff, supplier: w.supplier,
-        aktionspreis: w.aktionspreis, rabattPct: w.rabatt_pct, gueltigBis: w.gueltig_bis,
+        aktionspreis: w.aktionspreis, listenpreis: (w.aktionspreis!=null && w.ersparnis!=null) ? Number(w.aktionspreis)+Number(w.ersparnis) : undefined, rabattPct: w.rabatt_pct, gueltigBis: w.gueltig_bis,
         menge: w.min_menge || 1, sourceKind: 'rabatt',
       }, ev.target);
       box.appendChild(row);
@@ -3254,11 +3254,16 @@ function priceGroup(g, watchedSet) {
   </div>`);
   // Beste laufende Aktion direkt zum Aktionspreis (+ Mindestmenge) in die Einkaufsliste.
   const actCart = card.querySelector('[data-actcart]');
-  if (actCart) actCart.onclick = (ev) => cartAdd({
-    bezeichnung: g.bezeichnung, wirkstoff: g.wirkstoff, supplier: g.action.supplier,
-    aktionspreis: g.action.aktionspreis, rabattPct: g.action.rabatt_pct, gueltigBis: g.action.gueltig_bis,
-    menge: g.action.min_menge || 1, sourceKind: 'rabatt',
-  }, ev.target);
+  if (actCart) actCart.onclick = (ev) => {
+    // Listenpreis aus Aktionspreis + Rabatt % ableiten (für die Ersparnis-Anzeige der Einkaufsliste).
+    const ap = Number(g.action.aktionspreis), pct = Number(g.action.rabatt_pct);
+    const lp = (ap > 0 && pct > 0 && pct < 100) ? Math.round((ap / (1 - pct / 100)) * 100) / 100 : undefined;
+    cartAdd({
+      bezeichnung: g.bezeichnung, wirkstoff: g.wirkstoff, supplier: g.action.supplier,
+      aktionspreis: g.action.aktionspreis, listenpreis: lp, rabattPct: g.action.rabatt_pct, gueltigBis: g.action.gueltig_bis,
+      menge: g.action.min_menge || 1, sourceKind: 'rabatt',
+    }, ev.target);
+  };
   const box = card.querySelector('[data-offers]');
   g.offers.forEach((o, i) => {
     const row = el(`<div class="comment"${i===0&&g.saving_abs>0?' style="background:rgba(11,127,40,.06);border-radius:8px"':''}>
@@ -3653,7 +3658,7 @@ function rabattCard(r, watchedSet) {
   };
   card.querySelector('[data-addcart]').onclick = (ev) => cartAdd({
     bezeichnung: r.bezeichnung, wirkstoff: r.wirkstoff, supplier: r.supplier,
-    aktionspreis: r.aktionspreis, rabattPct: r.rabatt_pct, gueltigBis: r.gueltig_bis,
+    aktionspreis: r.aktionspreis, listenpreis: r.listenpreis, rabattPct: r.rabatt_pct, gueltigBis: r.gueltig_bis,
     menge: r.min_menge || 1, sourceKind: 'rabatt',
   }, ev.target);
   return card;
@@ -3684,6 +3689,7 @@ async function openCart() {
     </div>
     <h1 style="margin:8px 0 0">🛒 ${esc(t('cart_title'))}</h1>
     <div class="muted" data-grandtotal>${esc(ti('cart_summary',{ n:d.total_positions, sum:fmtMoney(d.total_price) }))}</div>
+    <div data-savings style="font-weight:800;color:var(--ok-fg);font-size:14px;margin-top:2px${d.total_savings>0?'':';display:none'}">${d.total_savings>0?esc(ti('cart_savings',{ sum:fmtMoney(d.total_savings) })):''}</div>
     <div class="row" style="margin-top:10px;gap:6px">
       <input data-madd placeholder="${esc(t('cart_manual_ph'))}" style="flex:1" aria-label="${esc(t('cart_manual_add'))}">
       <input type="number" min="1" value="1" data-mqty style="width:78px" aria-label="${esc(t('cart_col_menge'))}">
@@ -3719,13 +3725,16 @@ async function openCart() {
   // damit Mengenänderungen sofort in Gruppen- und Gesamtsumme durchschlagen.
   const subEls = new Map(); // Lieferant-Key -> Subtotal-Element
   const grand = head.querySelector('[data-grandtotal]');
+  const savingsEl = head.querySelector('[data-savings]');
   const recomputeTotals = () => {
     const byKey = new Map(); // key -> { sum, count }
-    let total = 0, pieces = 0;
+    let total = 0, pieces = 0, savings = 0;
     for (const it of d.items) {
       const key = (it.supplier || '').trim();
       const cur = byKey.get(key) || { sum: 0, count: 0 };
       if (it.aktionspreis != null) { cur.sum += it.aktionspreis * it.menge; total += it.aktionspreis * it.menge; }
+      const lp = Number(it.listenpreis), ap = Number(it.aktionspreis);
+      if (lp > 0 && ap >= 0 && lp > ap) savings += (lp - ap) * (Number(it.menge) || 0);
       cur.count += 1;
       pieces += Number(it.menge) || 0;
       byKey.set(key, cur);
@@ -3735,6 +3744,11 @@ async function openCart() {
       elp.textContent = ti('cart_sub_line', { n: g.count, sum: fmtMoney(Math.round(g.sum * 100) / 100) });
     }
     if (grand) grand.textContent = ti('cart_summary', { n: pieces, sum: fmtMoney(Math.round(total * 100) / 100) });
+    if (savingsEl) {
+      const sv = Math.round(savings * 100) / 100;
+      savingsEl.style.display = sv > 0 ? '' : 'none';
+      savingsEl.textContent = sv > 0 ? ti('cart_savings', { sum: fmtMoney(sv) }) : '';
+    }
   };
   let lastSupplier = null;
   bySupplier.forEach((i, idx) => {

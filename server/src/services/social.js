@@ -833,6 +833,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
         wirkstoff: item.wirkstoff ? String(item.wirkstoff).trim().slice(0, 160) : null,
         supplier: item.supplier ? String(item.supplier).trim().slice(0, 160) : null,
         aktionspreis: num(item.aktionspreis),
+        listenpreis: num(item.listenpreis), // für die Ersparnis-Anzeige (Listen- vs. Aktionspreis)
         rabatt_pct: num(item.rabattPct),
         gueltig_bis: item.gueltigBis ? String(item.gueltigBis).trim().slice(0, 40) : null,
         source_kind: ['rabatt', 'price', 'shortage', 'exchange', 'manual'].includes(item.sourceKind) ? item.sourceKind : 'manual',
@@ -862,7 +863,12 @@ export function createSocialService(social, foundationRepo, options = {}) {
       requireUser(userId);
       const items = social.listCartItems(userId);
       const total = items.reduce((s, i) => s + (Number(i.aktionspreis) || 0) * (Number(i.menge) || 0), 0);
-      return { items, count: items.length, total_positions: items.reduce((s, i) => s + (Number(i.menge) || 0), 0), total_price: Math.round(total * 100) / 100 };
+      // Gesamtersparnis: nur wo ein Listenpreis über dem Aktionspreis vorliegt (Rabatt-Positionen).
+      const savings = items.reduce((s, i) => {
+        const lp = Number(i.listenpreis), ap = Number(i.aktionspreis), m = Number(i.menge) || 0;
+        return (lp > 0 && ap >= 0 && lp > ap) ? s + (lp - ap) * m : s;
+      }, 0);
+      return { items, count: items.length, total_positions: items.reduce((s, i) => s + (Number(i.menge) || 0), 0), total_price: Math.round(total * 100) / 100, total_savings: Math.round(savings * 100) / 100 };
     },
     updateCartItem(userId, id, patch = {}) {
       requireUser(userId);
