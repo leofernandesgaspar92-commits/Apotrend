@@ -51,6 +51,27 @@ test('Matching ignoriert Darreichungsform- und Zahl-Wörter (keine Fehltreffer)'
   assert.equal(exchange.mine(a).find(e => e.id === amoxi.id).match_count, 1, 'gleiche Substanz -> Treffer');
 });
 
+test('Eintrag bearbeiten: nur Ersteller; Felder aktualisiert; neue Bezeichnung löst Matching aus', () => {
+  const { exchange, a, b } = setup();
+  const e = exchange.create(a, { kind: 'biete', bezeichnung: 'Amoxi 1000', menge: '10', ort: 'Wien' });
+  // Fremde dürfen nicht bearbeiten
+  assert.throws(() => exchange.update(b, e.id, { menge: '99' }), /Ersteller/);
+  // Ersteller aktualisiert Menge/Ort/Notiz
+  const u = exchange.update(a, e.id, { menge: '25', ort: 'Graz', note: 'nur Originalware' });
+  assert.equal(u.menge, '25');
+  assert.equal(u.ort, 'Graz');
+  assert.equal(u.note, 'nur Originalware');
+  assert.equal(u.bezeichnung, 'Amoxi 1000', 'Bezeichnung unverändert');
+  // Leere Bezeichnung abgelehnt
+  assert.throws(() => exchange.update(a, e.id, { bezeichnung: '  ' }), /erforderlich|required/i);
+  // Bezeichnung auf einen Wirkstoff ändern, zu dem B ein Gesuch hat -> Matching benachrichtigt B
+  exchange.create(b, { kind: 'suche', bezeichnung: 'Pantoprazol dringend' });
+  const before = exchange.mine(a).find(x => x.id === e.id).match_count;
+  const u2 = exchange.update(a, e.id, { bezeichnung: 'Pantoprazol 40 mg' });
+  assert.equal(u2.bezeichnung, 'Pantoprazol 40 mg');
+  assert.ok(u2.match_count >= 1 && u2.match_count > before, 'neue Bezeichnung findet Gegenstück');
+});
+
 test('Biete-Eintrag anlegen: mit Autor-Profil, Status offen', () => {
   const { exchange, a } = setup();
   const e = exchange.create(a, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg', menge: '20 Packungen', ort: '1010 Wien' });

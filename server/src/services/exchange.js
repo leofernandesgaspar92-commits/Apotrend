@@ -145,5 +145,31 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       exchangeRepo.remove(id);
       return { ok: true };
     },
+    // Eigenen Eintrag bearbeiten (Ersteller): Präparat/Menge/Ort/Bundesland/Notiz. Die Art
+    // (biete/suche) bleibt fest. Ändert sich die Bezeichnung, wird das Matching neu ausgelöst.
+    update(actorUserId, id, { bezeichnung, menge, ort, bundesland, note } = {}) {
+      const e = exchangeRepo.get(id);
+      if (!e) throw new AppError('exchange_not_found', 'Eintrag nicht gefunden.', 404);
+      if (e.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Ersteller darf bearbeiten.');
+      const patch = {};
+      if (bezeichnung !== undefined) {
+        const b = String(bezeichnung ?? '').trim();
+        if (!b) throw new AppError('exchange_name_required', 'Präparat/Wirkstoff erforderlich.');
+        if (b.length > 200) throw new Error('Bezeichnung zu lang.');
+        patch.bezeichnung = b;
+      }
+      if (menge !== undefined) patch.menge = (menge ?? '').toString().trim() || null;
+      if (ort !== undefined) patch.ort = (ort ?? '').toString().trim() || null;
+      if (bundesland !== undefined) {
+        const bl = bundesland ? String(bundesland).trim() : null;
+        if (bl && !BUNDESLAENDER.includes(bl)) throw new Error('Ungültiges Bundesland.');
+        patch.bundesland = bl;
+      }
+      if (note !== undefined) patch.note = (note ?? '').toString().trim() || null;
+      const updated = exchangeRepo.update(id, patch);
+      // Bei geänderter Bezeichnung (und noch offenem Eintrag) erneut passende Gegenstücke suchen.
+      if (patch.bezeichnung !== undefined && updated.status === 'offen') notifyMatches(updated);
+      return decorate(updated);
+    },
   };
 }
