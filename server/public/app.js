@@ -140,7 +140,7 @@ const I18N = {
     rb_empty_s:'Aktuell sind keine Rabatt-Aktionen hinterlegt. Schau später wieder vorbei.',
     rb_expiring:'⏳ Bald ablaufend', rb_watched_only:'⭐ Nur beobachtete', rb_sort_aria:'Sortierung der Aktionen', rb_sort_pct:'Höchster Rabatt %', rb_sort_saving:'Größte Ersparnis €', rb_csv_t:'Aktuelle Auswahl als CSV (Excel) für den Einkauf', rb_print_t:'Aktuelle Auswahl als Aushang drucken', rb_print_title:'Laufende Rabatt-Aktionen',
     cart_title:'Einkaufsliste', cart_add:'Einkaufsliste', cart_added:'hinzugefügt', cart_summary:'{n} Stück · Summe € {sum}', cart_savings:'💰 Ersparnis ggü. Listenpreis: € {sum}', cart_clear:'Liste leeren',
-    cart_orders:'📋 Bestell-Historie', cart_checkout:'✓ Als bestellt markieren', cart_checkout_ref_ph:'Referenz (optional, z.B. KW32)', cart_checkout_done:'Als Bestellung gespeichert.',
+    cart_orders:'📋 Bestell-Historie', cart_last_order:'🔁 Letzte Bestellung: {ref}', cart_checkout:'✓ Als bestellt markieren', cart_checkout_ref_ph:'Referenz (optional, z.B. KW32)', cart_checkout_done:'Als Bestellung gespeichert.',
     ord_title:'📋 Bestell-Historie', ord_empty_t:'Noch keine Bestellungen', ord_empty_s:'Schließe eine Einkaufsliste mit „Als bestellt markieren" ab — sie erscheint dann hier.', ord_positions:'{n} Positionen', ord_reorder:'🔁 Erneut bestellen', ord_delete:'🗑 Löschen', ord_delete_confirm:'Diese Bestellung aus der Historie löschen?', cart_clear_confirm:'Ganze Einkaufsliste leeren?', cart_remove:'Position entfernen',
     cart_empty_t:'Einkaufsliste ist leer', cart_empty_s:'Fügen Sie bei Rabatten „🛒 Einkaufsliste" hinzu — dann hier als CSV/Ausdruck für den Großhandel exportieren.',
     cart_col_menge:'Menge', cart_col_sum:'Summe', cart_col_note:'Notiz', cart_print_title:'Einkaufsliste / Bestellung', cart_print_foot:'Preise sind Momentaufnahmen (Aktions-/Referenzpreis) — im Zweifel beim Großhandel prüfen.',
@@ -468,7 +468,7 @@ const I18N = {
     rb_empty_s:'There are currently no discount offers on file. Check back later.',
     rb_expiring:'⏳ Expiring soon', rb_watched_only:'⭐ Watched only', rb_sort_aria:'Sort deals', rb_sort_pct:'Highest discount %', rb_sort_saving:'Biggest savings €', rb_csv_t:'Export current selection as CSV (Excel) for purchasing', rb_print_t:'Print current selection as a notice', rb_print_title:'Current discount deals',
     cart_title:'Shopping list', cart_add:'Shopping list', cart_added:'added', cart_summary:'{n} units · total € {sum}', cart_savings:'💰 Savings vs list price: € {sum}', cart_clear:'Clear list',
-    cart_orders:'📋 Order history', cart_checkout:'✓ Mark as ordered', cart_checkout_ref_ph:'Reference (optional, e.g. wk32)', cart_checkout_done:'Saved as an order.',
+    cart_orders:'📋 Order history', cart_last_order:'🔁 Last order: {ref}', cart_checkout:'✓ Mark as ordered', cart_checkout_ref_ph:'Reference (optional, e.g. wk32)', cart_checkout_done:'Saved as an order.',
     ord_title:'📋 Order history', ord_empty_t:'No orders yet', ord_empty_s:'Finish a shopping list with “Mark as ordered” — it will show up here.', ord_positions:'{n} items', ord_reorder:'🔁 Reorder', ord_delete:'🗑 Delete', ord_delete_confirm:'Delete this order from the history?', cart_clear_confirm:'Clear the whole shopping list?', cart_remove:'Remove item',
     cart_empty_t:'Shopping list is empty', cart_empty_s:'Add items via “🛒 Shopping list” on discounts — then export here as CSV/print for your wholesaler.',
     cart_col_menge:'Qty', cart_col_sum:'Total', cart_col_note:'Note', cart_print_title:'Shopping list / order', cart_print_foot:'Prices are snapshots (deal/reference price) — verify with your wholesaler if in doubt.',
@@ -796,7 +796,7 @@ const I18N = {
     rb_empty_s:'Não há promoções de desconto registadas. Volte mais tarde.',
     rb_expiring:'⏳ A expirar em breve', rb_watched_only:'⭐ Só vigiadas', rb_sort_aria:'Ordenar promoções', rb_sort_pct:'Maior desconto %', rb_sort_saving:'Maior poupança €', rb_csv_t:'Exportar a seleção atual como CSV (Excel) para compras', rb_print_t:'Imprimir a seleção atual como cartaz', rb_print_title:'Promoções em curso',
     cart_title:'Lista de compras', cart_add:'Lista de compras', cart_added:'adicionado', cart_summary:'{n} unidades · total € {sum}', cart_savings:'💰 Poupança vs preço de tabela: € {sum}', cart_clear:'Limpar lista',
-    cart_orders:'📋 Histórico de pedidos', cart_checkout:'✓ Marcar como encomendado', cart_checkout_ref_ph:'Referência (opcional, ex. sem32)', cart_checkout_done:'Guardado como pedido.',
+    cart_orders:'📋 Histórico de pedidos', cart_last_order:'🔁 Último pedido: {ref}', cart_checkout:'✓ Marcar como encomendado', cart_checkout_ref_ph:'Referência (opcional, ex. sem32)', cart_checkout_done:'Guardado como pedido.',
     ord_title:'📋 Histórico de pedidos', ord_empty_t:'Ainda sem pedidos', ord_empty_s:'Conclua uma lista de compras com „Marcar como encomendado" — aparecerá aqui.', ord_positions:'{n} posições', ord_reorder:'🔁 Encomendar de novo', ord_delete:'🗑 Eliminar', ord_delete_confirm:'Eliminar este pedido do histórico?', cart_clear_confirm:'Limpar toda a lista de compras?', cart_remove:'Remover item',
     cart_empty_t:'Lista de compras vazia', cart_empty_s:'Adicione itens em “🛒 Lista de compras” nas promoções — depois exporte aqui em CSV/impressão para o distribuidor.',
     cart_col_menge:'Qtd', cart_col_sum:'Total', cart_col_note:'Nota', cart_print_title:'Lista de compras / encomenda', cart_print_foot:'Os preços são momentâneos (promoção/referência) — confirme com o distribuidor em caso de dúvida.',
@@ -3722,7 +3722,23 @@ async function openCart() {
   };
   head.querySelector('[data-maddbtn]').onclick = addManual;
   madd.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addManual(); } };
-  if (!d.items.length) { feed.appendChild(emptyState({ icon:'🛒', title:t('cart_empty_t'), text:t('cart_empty_s') })); return; }
+  if (!d.items.length) {
+    feed.appendChild(emptyState({ icon:'🛒', title:t('cart_empty_t'), text:t('cart_empty_s') }));
+    // Leere Liste + vorhandene Historie: letzte Bestellung mit 1-Klick erneut bestellen.
+    try {
+      const oh = await api('GET','/api/orders');
+      const last = (oh.orders||[])[0];
+      if (last) {
+        const label = last.reference ? last.reference : relTime(last.created_at);
+        const c = el(`<div class="card"><div class="row" style="align-items:baseline;flex-wrap:wrap;gap:8px">
+          <span>${esc(ti('cart_last_order',{ ref: label }))}</span><span class="muted" style="font-size:13px">${esc(ti('ord_positions',{n:last.positions}))} · € ${fmtMoney(last.total_price)}</span>
+          <span class="sp" style="flex:1"></span><button class="small" data-relast>${esc(t('ord_reorder'))}</button></div></div>`);
+        c.querySelector('[data-relast]').onclick = async () => { try { await api('POST',`/api/orders/${last.id}/reorder`); openCart(); } catch(e){ alert(e.message); } };
+        feed.appendChild(c);
+      }
+    } catch { /* ohne Historie weiter */ }
+    return;
+  }
   head.querySelector('[data-ccsv]').onclick = () => exportCartCsv(d.items);
   head.querySelector('[data-cprint]').onclick = () => printCart(d);
   head.querySelector('[data-cclear]').onclick = async () => { if (!confirm(t('cart_clear_confirm'))) return; try { await api('POST','/api/cart/clear'); openCart(); } catch(e){ alert(e.message); } };
