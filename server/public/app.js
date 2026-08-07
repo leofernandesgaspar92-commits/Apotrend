@@ -240,7 +240,7 @@ const I18N = {
     search_sec_prices:'💶 Preise', search_sec_rabatte:'🏷️ Rabatt-Aktionen',
     pf_posts:'Beiträge', pf_post_one:'Beitrag', pf_followers:'Follower', pf_follower_one:'Follower', pf_following:'folgt', pf_best:'beste Antworten', pf_best_one:'beste Antwort',
     pf_best_title:'Als beste Antwort markiert', pf_activity:'🗂️ Meine Aktivität', pf_edit:'✏️ Profil bearbeiten',
-    pf_dm:'✉️ Nachricht', pf_unfollow:'✓ Du folgst — entfolgen', pf_follow:'+ Folgen',
+    pf_dm:'✉️ Nachricht', pf_unfollow:'✓ Du folgst — entfolgen', pf_follow:'+ Folgen', pf_mute:'🔇 Stummschalten', pf_unmute:'🔊 Stumm aufheben', pf_muted_title:'Stummgeschaltete ({n})',
     pf_no_posts:'Noch keine sichtbaren Beiträge.',
     ep_name:'Anzeigename', ep_func:'Titel / Funktion (optional)', ep_func_ph:'z.B. Fachapothekerin, Einkauf',
     ep_about:'Über mich (optional, max. 500 Zeichen)', ep_about_ph:'Kurz zu dir und deinem Schwerpunkt…',
@@ -568,7 +568,7 @@ const I18N = {
     search_sec_prices:'💶 Prices', search_sec_rabatte:'🏷️ Discount deals',
     pf_posts:'posts', pf_post_one:'post', pf_followers:'followers', pf_follower_one:'follower', pf_following:'following', pf_best:'best answers', pf_best_one:'best answer',
     pf_best_title:'marked as best answer', pf_activity:'🗂️ My activity', pf_edit:'✏️ Edit profile',
-    pf_dm:'✉️ Message', pf_unfollow:'✓ Following — unfollow', pf_follow:'+ Follow',
+    pf_dm:'✉️ Message', pf_unfollow:'✓ Following — unfollow', pf_follow:'+ Follow', pf_mute:'🔇 Mute', pf_unmute:'🔊 Unmute', pf_muted_title:'Muted ({n})',
     pf_no_posts:'No visible posts yet.',
     ep_name:'Display name', ep_func:'Title / role (optional)', ep_func_ph:'e.g. specialist pharmacist, purchasing',
     ep_about:'About me (optional, max. 500 characters)', ep_about_ph:'A little about you and your focus…',
@@ -896,7 +896,7 @@ const I18N = {
     search_sec_prices:'💶 Preços', search_sec_rabatte:'🏷️ Promoções',
     pf_posts:'publicações', pf_post_one:'publicação', pf_followers:'seguidores', pf_follower_one:'seguidor', pf_following:'a seguir', pf_best:'melhores respostas', pf_best_one:'melhor resposta',
     pf_best_title:'marcada como melhor resposta', pf_activity:'🗂️ A minha atividade', pf_edit:'✏️ Editar perfil',
-    pf_dm:'✉️ Mensagem', pf_unfollow:'✓ A seguir — deixar de seguir', pf_follow:'+ Seguir',
+    pf_dm:'✉️ Mensagem', pf_unfollow:'✓ A seguir — deixar de seguir', pf_follow:'+ Seguir', pf_mute:'🔇 Silenciar', pf_unmute:'🔊 Reativar som', pf_muted_title:'Silenciados ({n})',
     pf_no_posts:'Ainda sem publicações visíveis.',
     ep_name:'Nome a apresentar', ep_func:'Título / função (opcional)', ep_func_ph:'ex. farmacêutica especialista, compras',
     ep_about:'Sobre mim (opcional, máx. 500 caracteres)', ep_about_ph:'Um pouco sobre si e a sua área…',
@@ -4612,7 +4612,7 @@ async function openProfile(handle) {
         <span class="clickable" data-following><b>${d.following_count}</b> <span class="muted">${esc(t('pf_following'))}</span></span>
         ${d.best_answers?`<span title="${esc(t('pf_best_title'))}"><b>🏆 ${d.best_answers}</b> <span class="muted">${esc(nlabel(d.best_answers,'pf_best_one','pf_best'))}</span></span>`:''}
         <span class="sp" style="flex:1"></span>
-        ${d.is_self?`<button class="ghost small" data-activity>${esc(t('pf_activity'))}</button> <button class="ghost small" data-edit>${esc(t('pf_edit'))}</button>`:`<button class="ghost small" data-dm>${esc(t('pf_dm'))}</button> <button class="${d.is_following?'ghost ':''}small" data-togglefollow>${d.is_following?esc(t('pf_unfollow')):esc(t('pf_follow'))}</button>`}
+        ${d.is_self?`<button class="ghost small" data-activity>${esc(t('pf_activity'))}</button> <button class="ghost small" data-edit>${esc(t('pf_edit'))}</button>`:`<button class="ghost small" data-dm>${esc(t('pf_dm'))}</button> <button class="${d.is_following?'ghost ':''}small" data-togglefollow>${d.is_following?esc(t('pf_unfollow')):esc(t('pf_follow'))}</button> <button class="ghost small" data-togglemute>${d.is_muted?esc(t('pf_unmute')):esc(t('pf_mute'))}</button>`}
       </div>
       ${d.is_self ? (() => {
         const c = profileCompleteness(p);
@@ -4669,7 +4669,37 @@ async function openProfile(handle) {
       try { const r = await api('POST','/api/dm/start',{ handle:p.handle }); openDmThread(r.thread.id); }
       catch(e){ alert(e.message); }
     };
+    const tm = head.querySelector('[data-togglemute]');
+    if (tm) tm.onclick = async () => {
+      try { await api('POST', d.is_muted?'/api/unmute':'/api/mute', { handle:p.handle }); openProfile(handle); }
+      catch(e){ alert(e.message); }
+    };
     feed.appendChild(head);
+    // Eigenes Profil: Stummgeschaltete verwalten (aufklappbar, mit „aufheben").
+    if (d.is_self && d.muted_count > 0) {
+      const mc = el(`<div class="card"><button class="linklike small" data-mtoggle aria-expanded="false">🔇 ${esc(ti('pf_muted_title',{n:d.muted_count}))} ▸</button><div class="hidden" data-mbox style="margin-top:6px"></div></div>`);
+      const mbox = mc.querySelector('[data-mbox]'); const mtog = mc.querySelector('[data-mtoggle]');
+      let loaded = false;
+      mtog.onclick = async () => {
+        const open = mbox.classList.toggle('hidden') === false;
+        mtog.setAttribute('aria-expanded', String(open));
+        mtog.textContent = `🔇 ${ti('pf_muted_title',{n:d.muted_count})} ${open?'▾':'▸'}`;
+        if (open && !loaded) {
+          loaded = true;
+          try {
+            const r = await api('GET','/api/muted');
+            mbox.innerHTML = '';
+            (r.muted||[]).forEach(m => {
+              const row = el(`<div class="comment"><div class="row" style="align-items:baseline"><b class="clickable" data-openprofile="${esc(m.handle)}">${esc(m.display_name||('@'+m.handle))}</b> <span class="handle clickable" data-openprofile="${esc(m.handle)}">@${esc(m.handle)}</span><span class="sp" style="flex:1"></span><button class="ghost small" data-unmute="${esc(m.handle)}">${esc(t('pf_unmute'))}</button></div></div>`);
+              row.querySelectorAll('[data-openprofile]').forEach(el2 => el2.onclick = () => openProfile(el2.dataset.openprofile));
+              row.querySelector('[data-unmute]').onclick = async (ev) => { ev.target.disabled = true; try { await api('POST','/api/unmute',{ handle: m.handle }); row.remove(); } catch(e){ alert(e.message); ev.target.disabled = false; } };
+              mbox.appendChild(row);
+            });
+          } catch(e){ mbox.textContent = e.message; }
+        }
+      };
+      feed.appendChild(mc);
+    }
     if (d.is_self && !p.verified) {
       const vcard = el('<div class="card"></div>');
       feed.appendChild(vcard);

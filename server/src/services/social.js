@@ -242,6 +242,8 @@ export function createSocialService(social, foundationRepo, options = {}) {
         viewers, viewer_count,
         is_following: social.isFollowing(viewerUserId, prof.user_id),
         is_self: isSelf,
+        is_muted: !isSelf && social.isMuted(viewerUserId, prof.user_id),
+        muted_count: isSelf ? social.listMuted(viewerUserId).length : undefined,
       };
     },
     // Fachgebiet bestätigen (Endorsement) — Umschalten; benachrichtigt bei neuer Bestätigung.
@@ -413,8 +415,9 @@ export function createSocialService(social, foundationRepo, options = {}) {
       requireUser(viewerUserId);
       const s = String(q ?? '').trim().toLowerCase();
       if (!s) return [];
+      const muted = new Set(social.listMuted(viewerUserId));
       return social.listAllPosts()
-        .filter(p => visibleTo(p, viewerUserId) && String(p.body).toLowerCase().includes(s))
+        .filter(p => !muted.has(p.author_user_id) && visibleTo(p, viewerUserId) && String(p.body).toLowerCase().includes(s))
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
         .map(p => decorate(p, viewerUserId));
     },
@@ -609,6 +612,30 @@ export function createSocialService(social, foundationRepo, options = {}) {
     unfollow(actorUserId, followeeUserId) { social.unfollow(actorUserId, followeeUserId); },
     following(userId) { return social.listFollowing(userId); },
     followers(userId) { return social.listFollowers(userId); },
+
+    // ── Stummschalten: Beiträge einer Person aus den eigenen Feeds ausblenden ──
+    mute(actorUserId, targetHandleOrId) {
+      requireUser(actorUserId);
+      const prof = social.getProfileByHandle(targetHandleOrId) || social.getProfileByUserId(targetHandleOrId);
+      if (!prof) throw new AppError('profile_not_found', 'Profil nicht gefunden.', 404);
+      if (prof.user_id === actorUserId) throw new AppError('mute_self', 'Selbst-Stummschalten nicht möglich.', 400);
+      social.mute(actorUserId, prof.user_id);
+      return { muted: true, handle: prof.handle };
+    },
+    unmute(actorUserId, targetHandleOrId) {
+      requireUser(actorUserId);
+      const prof = social.getProfileByHandle(targetHandleOrId) || social.getProfileByUserId(targetHandleOrId);
+      if (!prof) throw new AppError('profile_not_found', 'Profil nicht gefunden.', 404);
+      social.unmute(actorUserId, prof.user_id);
+      return { muted: false, handle: prof.handle };
+    },
+    isMuted(actorUserId, targetUserId) { return social.isMuted(actorUserId, targetUserId); },
+    // Stummgeschaltete als Profil-Kurzform (für die Verwaltung).
+    listMuted(actorUserId) {
+      requireUser(actorUserId);
+      return social.listMuted(actorUserId).map(id => social.getProfileByUserId(id)).filter(Boolean)
+        .map(p => ({ handle: p.handle, display_name: p.display_name, verified: p.verified, title: p.title }));
+    },
     // Follower- bzw. Folge-Liste eines Profils als Profil-Kurzform (für die UI).
     // which: 'followers' (wer folgt) | 'following' (wem gefolgt wird).
     followList(viewerUserId, handleOrUserId, which) {
@@ -630,8 +657,9 @@ export function createSocialService(social, foundationRepo, options = {}) {
       requireUser(viewerUserId);
       const authors = new Set(social.listFollowing(viewerUserId));
       authors.add(viewerUserId);
+      const muted = new Set(social.listMuted(viewerUserId));
       return social.listAllPosts()
-        .filter(p => authors.has(p.author_user_id) && visibleTo(p, viewerUserId))
+        .filter(p => authors.has(p.author_user_id) && !muted.has(p.author_user_id) && visibleTo(p, viewerUserId))
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
         .map(p => decorate(p, viewerUserId));
     },
@@ -640,8 +668,9 @@ export function createSocialService(social, foundationRepo, options = {}) {
     newsFeed(viewerUserId, { country = null } = {}) {
       requireUser(viewerUserId);
       const c = country ? normalizeCountry(country) : null;
+      const muted = new Set(social.listMuted(viewerUserId));
       return social.listAllPosts()
-        .filter(p => p.kind === 'news' && visibleTo(p, viewerUserId) && (!c || (p.country || 'AT') === c))
+        .filter(p => p.kind === 'news' && !muted.has(p.author_user_id) && visibleTo(p, viewerUserId) && (!c || (p.country || 'AT') === c))
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
         .map(p => decorate(p, viewerUserId));
     },
@@ -662,7 +691,8 @@ export function createSocialService(social, foundationRepo, options = {}) {
     publicFeed(viewerUserId, { sort = 'neu', filter = 'all', country = null } = {}) {
       requireUser(viewerUserId);
       const c = country ? normalizeCountry(country) : null;
-      let posts = social.listAllPosts().filter(p => p.visibility === 'public' && (!c || (p.country || 'AT') === c)).map(p => decorate(p, viewerUserId));
+      const muted = new Set(social.listMuted(viewerUserId));
+      let posts = social.listAllPosts().filter(p => p.visibility === 'public' && !muted.has(p.author_user_id) && (!c || (p.country || 'AT') === c)).map(p => decorate(p, viewerUserId));
       if (filter === 'questions') posts = posts.filter(p => p.is_question);
       const total = (p) => Object.values(p.reaction_counts || {}).reduce((s, n) => s + n, 0);
       const byRecency = (a, b) => b.created_at.localeCompare(a.created_at);

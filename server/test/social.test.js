@@ -147,3 +147,31 @@ test('Löschen: nur Autor, danach aus Feeds verschwunden', () => {
   assert.equal(social.publicFeed(a).some(p => p.id === post.id), false);
   assert.equal(social.getPost(a, post.id), null);
 });
+
+test('Stummschalten: Beiträge einer Person verschwinden aus den Feeds; unmute stellt sie wieder her', () => {
+  const { social, a, b, c } = setup();
+  const pb = social.createPost(b, { body: 'Beitrag von Ben', visibility: 'public' });
+  social.createPost(c, { body: 'Beitrag von Cem', visibility: 'public' });
+  social.follow(a, b); social.follow(a, c);
+  // Vor dem Stummschalten sichtbar
+  assert.ok(social.publicFeed(a).some(p => p.id === pb.id));
+  assert.ok(social.homeFeed(a).some(p => p.id === pb.id));
+  assert.ok(social.searchPosts(a, 'Ben').some(p => p.id === pb.id));
+  // Ben stummschalten (per Handle)
+  const r = social.mute(a, 'ben');
+  assert.equal(r.muted, true);
+  assert.equal(social.isMuted(a, b), true);
+  assert.ok(!social.publicFeed(a).some(p => p.id === pb.id), 'Bens Beitrag aus öffentlichem Feed weg');
+  assert.ok(!social.homeFeed(a).some(p => p.id === pb.id), 'aus Home-Feed weg');
+  assert.ok(!social.searchPosts(a, 'Ben').some(p => p.id === pb.id), 'aus der Suche weg');
+  // Nur für a; b selbst sieht seinen Beitrag weiterhin
+  assert.ok(social.publicFeed(b).some(p => p.id === pb.id));
+  // Liste + aufheben
+  assert.equal(social.listMuted(a).length, 1);
+  assert.equal(social.listMuted(a)[0].handle, 'ben');
+  social.unmute(a, 'ben');
+  assert.equal(social.isMuted(a, b), false);
+  assert.ok(social.publicFeed(a).some(p => p.id === pb.id), 'nach unmute wieder sichtbar');
+  // Selbst-Stummschalten abgelehnt
+  assert.throws(() => social.mute(a, 'anna'), /Selbst|mute_self/);
+});

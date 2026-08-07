@@ -484,6 +484,10 @@ const routes = [
     if (target) social.unfollow(userId, target.user_id);
     return { ok: true };
   }],
+  // Stummschalten (Beiträge einer Person aus den eigenen Feeds ausblenden)
+  ['POST', /^\/api\/mute$/, true, async ({ userId, body }) => social.mute(userId, body.handle)],
+  ['POST', /^\/api\/unmute$/, true, async ({ userId, body }) => social.unmute(userId, body.handle)],
+  ['GET', /^\/api\/muted$/, true, async ({ userId }) => ({ muted: social.listMuted(userId) })],
 
   ['GET', /^\/api\/notifications$/, true, async ({ userId }) => ({ notifications: social.notifications(userId), unread: social.unreadCount(userId) })],
   ['POST', /^\/api\/notifications\/read-all$/, true, async ({ userId }) => { social.markAllNotificationsRead(userId); return { ok: true }; }],

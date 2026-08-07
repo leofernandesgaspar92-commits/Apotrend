@@ -12,6 +12,7 @@ export function createSocialRepo() {
   const comments = new Map();
   const reactions = new Map();      // key `${userId}|${type}|${id}` -> reaction
   const follows = new Map();        // `${follower}|${followee}` -> row
+  const mutes = new Map();          // `${muter}|${muted}` -> row (Beiträge stummgeschaltet)
   const notifications = new Map();
   const dmThreads = new Map();
   const dmMessages = new Map();
@@ -187,6 +188,11 @@ export function createSocialRepo() {
     isFollowing(followerId, followeeId) { return follows.has(fkey(followerId, followeeId)); },
     listFollowing(userId) { return [...follows.values()].filter(f => f.follower_user_id === userId).map(f => f.followee_user_id); },
     listFollowers(userId) { return [...follows.values()].filter(f => f.followee_user_id === userId).map(f => f.follower_user_id); },
+    // Stummschalten: Beiträge einer Person aus den eigenen Feeds ausblenden.
+    mute(muterId, mutedId) { mutes.set(fkey(muterId, mutedId), { muter_user_id: muterId, muted_user_id: mutedId, created_at: now() }); },
+    unmute(muterId, mutedId) { mutes.delete(fkey(muterId, mutedId)); },
+    isMuted(muterId, mutedId) { return mutes.has(fkey(muterId, mutedId)); },
+    listMuted(muterId) { return [...mutes.values()].filter(m => m.muter_user_id === muterId).map(m => m.muted_user_id); },
 
     // ── Fachgebiet-Bestätigungen (Endorsements) ──
     endKey(endorserId, targetId, skill) { return `${endorserId}|${targetId}|${skill}`; },
@@ -320,6 +326,7 @@ export function createSocialRepo() {
       for (const [k, r] of reactions) if (r.user_id === userId) reactions.delete(k);
       for (const k of pollVotes.keys()) if (k.endsWith('|' + userId)) pollVotes.delete(k);
       for (const [k, f] of follows) if (f.follower_user_id === userId || f.followee_user_id === userId) follows.delete(k);
+      for (const [k, m] of mutes) if (m.muter_user_id === userId || m.muted_user_id === userId) mutes.delete(k);
       for (const [id, n] of notifications) if (n.user_id === userId || n.actor_user_id === userId) notifications.delete(id);
       for (const [id, t] of dmThreads) if (t.user_a_id === userId || t.user_b_id === userId) {
         dmThreads.delete(id);
@@ -339,7 +346,7 @@ export function createSocialRepo() {
     __dump() {
       return {
         profiles: [...profiles], profilesByHandle: [...profilesByHandle], posts: [...posts],
-        comments: [...comments], reactions: [...reactions], pollVotes: [...pollVotes], follows: [...follows],
+        comments: [...comments], reactions: [...reactions], pollVotes: [...pollVotes], follows: [...follows], mutes: [...mutes],
         notifications: [...notifications], dmThreads: [...dmThreads], dmMessages: [...dmMessages], reports: [...reports],
         verifications: [...verifications], bookmarks: [...bookmarks], endorsements: [...endorsements], profileViews: [...profileViews], recommendations: [...recommendations], cartItems: [...cartItems], orders: [...orders],
       };
@@ -348,7 +355,7 @@ export function createSocialRepo() {
       if (!d) return;
       const fill = (map, rows) => { map.clear(); for (const [k, v] of rows || []) map.set(k, v); };
       fill(profiles, d.profiles); fill(profilesByHandle, d.profilesByHandle); fill(posts, d.posts);
-      fill(comments, d.comments); fill(reactions, d.reactions); fill(pollVotes, d.pollVotes); fill(follows, d.follows);
+      fill(comments, d.comments); fill(reactions, d.reactions); fill(pollVotes, d.pollVotes); fill(follows, d.follows); fill(mutes, d.mutes);
       fill(notifications, d.notifications); fill(dmThreads, d.dmThreads); fill(dmMessages, d.dmMessages); fill(reports, d.reports);
       fill(verifications, d.verifications); fill(bookmarks, d.bookmarks); fill(endorsements, d.endorsements); fill(profileViews, d.profileViews); fill(recommendations, d.recommendations); fill(cartItems, d.cartItems); fill(orders, d.orders);
     },
