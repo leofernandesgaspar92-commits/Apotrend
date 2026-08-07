@@ -382,8 +382,9 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (!t) return [];
       const esc = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const re = new RegExp('(^|[^\\w#])#' + esc + '(?![\\wäöüß])', 'i');
+      const muted = new Set(social.listMuted(viewerUserId));
       return social.listAllPosts()
-        .filter(p => visibleTo(p, viewerUserId) && re.test(p.body))
+        .filter(p => !muted.has(p.author_user_id) && visibleTo(p, viewerUserId) && re.test(p.body))
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
         .map(p => decorate(p, viewerUserId));
     },
@@ -392,8 +393,9 @@ export function createSocialService(social, foundationRepo, options = {}) {
       requireUser(viewerUserId);
       const counts = new Map();     // tagLower -> count
       const display = new Map();    // tagLower -> Original-Schreibweise (erste)
+      const muted = new Set(social.listMuted(viewerUserId));
       const posts = social.listAllPosts()
-        .filter(p => visibleTo(p, viewerUserId))
+        .filter(p => !muted.has(p.author_user_id) && visibleTo(p, viewerUserId))
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
         .slice(0, lookback);
       for (const p of posts) {

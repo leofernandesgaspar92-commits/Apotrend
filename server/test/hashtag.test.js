@@ -44,3 +44,14 @@ test('Leeres Tag liefert nichts', () => {
   const { social, a } = setup();
   assert.equal(social.postsByHashtag(a, '   ').length, 0);
 });
+
+test('Hashtag-Feed blendet Beiträge stummgeschalteter Personen aus', () => {
+  const { social, a, b } = setup();
+  const pb = social.createPost(b, { body: 'Engpass bei #Metformin (Ben)' });
+  assert.ok(social.postsByHashtag(a, 'Metformin').some(p => p.id === pb.id));
+  social.mute(a, 'ben');
+  assert.ok(!social.postsByHashtag(a, 'Metformin').some(p => p.id === pb.id), 'nach Mute nicht mehr im Hashtag-Feed');
+  // Trending zählt den Beitrag für a auch nicht mehr
+  const trend = social.trendingHashtags(a) || [];
+  assert.ok(!trend.some(x => (x.tag||x.hashtag||'').toLowerCase() === 'metformin'), 'Metformin nicht im Trending für a');
+});

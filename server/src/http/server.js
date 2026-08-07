@@ -512,7 +512,9 @@ const routes = [
     const priceBlocked = isFeatureBlocked(userCountry(userId), 'price_compare');
     const byWk = new Map(); // wirkstoff (lower) -> Set von Präparat-Bezeichnungen
     if (!priceBlocked) {
-      for (const g of prices.comparisons(userId)) {
+      // Leichtgewichtig aus dem Repo (nur Wirkstoff/Bezeichnung) — ohne die teure
+      // Ersparnis-/Aktions-/Feed-Aufbereitung von prices.comparisons().
+      for (const g of pricesRepo.listComparisons()) {
         const wk = String(g.wirkstoff || '').trim().toLowerCase();
         if (!wk) continue;
         if (!byWk.has(wk)) byWk.set(wk, new Set());
