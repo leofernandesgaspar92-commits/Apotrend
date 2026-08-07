@@ -220,6 +220,23 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       shortagesRepo.addWatch(userId, w);
       return this.myWatchlist(userId);
     },
+    // Mehrere Wirkstoffe auf einmal beobachten (Liste oder mit , ; Zeilenumbruch getrennt).
+    // Onboarding-Beschleuniger: eigene Merkliste einmal einfügen statt einzeln tippen.
+    watchMany(userId, input) {
+      const raw = Array.isArray(input) ? input : String(input || '').split(/[,;\n]+/);
+      const seen = new Set();
+      const names = [];
+      for (const item of raw) {
+        const w = String(item || '').trim();
+        if (!w || w.length > 120) continue;
+        const k = w.toLowerCase();
+        if (seen.has(k)) continue;
+        seen.add(k); names.push(w);
+      }
+      if (!names.length) throw new AppError('watch_none', 'Kein gültiger Wirkstoff angegeben.');
+      for (const w of names) shortagesRepo.addWatch(userId, w);
+      return this.myWatchlist(userId);
+    },
     unwatch(userId, wirkstoff) {
       shortagesRepo.removeWatch(userId, wirkstoff);
       return this.myWatchlist(userId);

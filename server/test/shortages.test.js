@@ -19,6 +19,19 @@ function setup() {
   return { social, shortages, a: A.user.id, b: B.user.id };
 }
 
+test('watchMany: mehrere Wirkstoffe auf einmal, getrennt + dedupliziert', () => {
+  const { shortages, a } = setup();
+  const items = shortages.watchMany(a, 'Amoxicillin, Ibuprofen; Metformin\nAmoxicillin');
+  const names = items.map(i => i.wirkstoff.toLowerCase());
+  assert.ok(names.includes('amoxicillin') && names.includes('ibuprofen') && names.includes('metformin'));
+  assert.equal(names.filter(n => n === 'amoxicillin').length, 1, 'kein Duplikat');
+  // Array-Eingabe funktioniert ebenso; leere/zu lange Einträge werden ignoriert
+  const items2 = shortages.watchMany(a, ['Ramipril', '  ', 'x'.repeat(200)]);
+  assert.ok(items2.some(i => i.wirkstoff === 'Ramipril'));
+  // Nichts Gültiges -> Fehler
+  assert.throws(() => shortages.watchMany(a, ' , ; '), /gültig|watch_none|Wirkstoff/);
+});
+
 test('Engpass-Liste: Referenzdaten mit Herkunfts-Flag, kritisch zuerst', () => {
   const { shortages } = setup();
   const list = shortages.list();

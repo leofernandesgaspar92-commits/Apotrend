@@ -513,6 +513,7 @@ const routes = [
   // ── Beobachtungsliste (Wirkstoffe im Blick behalten) ──
   ['GET', /^\/api\/watchlist$/, true, async ({ userId }) => ({ items: shortages.myWatchlist(userId) })],
   ['POST', /^\/api\/watchlist$/, true, async ({ userId, body }) => ({ items: shortages.watch(userId, body.wirkstoff) })],
+  ['POST', /^\/api\/watchlist\/bulk$/, true, async ({ userId, body }) => ({ items: shortages.watchMany(userId, body.wirkstoffe) })],
   ['DELETE', /^\/api\/watchlist\/([^/]+)$/, true, async ({ userId, params }) => ({ items: shortages.unwatch(userId, decodeURIComponent(params[0])) })],
   ['POST', /^\/api\/watchlist\/([^/]+)\/note$/, true, async ({ userId, params, body }) => ({ items: shortages.setWatchNote(userId, decodeURIComponent(params[0]), body.note) })],
   ['POST', /^\/api\/watchlist\/([^/]+)\/alert$/, true, async ({ userId, params, body }) => ({ items: shortages.setWatchAlert(userId, decodeURIComponent(params[0]), body.pct) })],
