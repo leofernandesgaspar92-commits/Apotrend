@@ -3723,11 +3723,7 @@ async function openCart() {
   head.querySelector('[data-maddbtn]').onclick = addManual;
   madd.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addManual(); } };
   if (!d.items.length) { feed.appendChild(emptyState({ icon:'🛒', title:t('cart_empty_t'), text:t('cart_empty_s') })); return; }
-  head.querySelector('[data-ccsv]').onclick = () => {
-    const lineSaving = (i) => (Number(i.listenpreis) > Number(i.aktionspreis)) ? (Number(i.listenpreis)-Number(i.aktionspreis))*Number(i.menge) : 0;
-    const rows = d.items.map(i => [i.bezeichnung, i.wirkstoff||'', i.supplier||'', i.menge, i.listenpreis!=null?fmtMoney(i.listenpreis):'', i.aktionspreis!=null?fmtMoney(i.aktionspreis):'', i.aktionspreis!=null?fmtMoney(i.aktionspreis*i.menge):'', lineSaving(i)>0?fmtMoney(lineSaving(i)):'', i.gueltig_bis||'', i.note||'']);
-    downloadCsv('apotrend-einkaufsliste', [t('csv_praeparat'), t('csv_wirkstoff'), t('csv_lieferant'), t('cart_col_menge'), t('csv_listenpreis'), t('csv_aktionspreis'), t('cart_col_sum'), t('pr_print_saving'), t('csv_gueltig_bis'), t('cart_col_note')], rows);
-  };
+  head.querySelector('[data-ccsv]').onclick = () => exportCartCsv(d.items);
   head.querySelector('[data-cprint]').onclick = () => printCart(d);
   head.querySelector('[data-cclear]').onclick = async () => { if (!confirm(t('cart_clear_confirm'))) return; try { await api('POST','/api/cart/clear'); openCart(); } catch(e){ alert(e.message); } };
   // Als bestellt markieren: Liste als Bestellung sichern (Snapshot) und leeren.
@@ -3815,6 +3811,13 @@ async function openCart() {
   recomputeTotals();
 }
 
+// Einkaufsliste/Bestellung als CSV (Excel-tauglich) — geteilt von Liste und Bestell-Historie.
+function exportCartCsv(items) {
+  const lineSaving = (i) => (Number(i.listenpreis) > Number(i.aktionspreis)) ? (Number(i.listenpreis)-Number(i.aktionspreis))*Number(i.menge) : 0;
+  const rows = (items||[]).map(i => [i.bezeichnung, i.wirkstoff||'', i.supplier||'', i.menge, i.listenpreis!=null?fmtMoney(i.listenpreis):'', i.aktionspreis!=null?fmtMoney(i.aktionspreis):'', i.aktionspreis!=null?fmtMoney(i.aktionspreis*i.menge):'', lineSaving(i)>0?fmtMoney(lineSaving(i)):'', i.gueltig_bis||'', i.note||'']);
+  downloadCsv('apotrend-einkaufsliste', [t('csv_praeparat'), t('csv_wirkstoff'), t('csv_lieferant'), t('cart_col_menge'), t('csv_listenpreis'), t('csv_aktionspreis'), t('cart_col_sum'), t('pr_print_saving'), t('csv_gueltig_bis'), t('cart_col_note')], rows);
+}
+
 function printCart(d) {
   const css = `table{border-collapse:collapse;width:100%;margin-bottom:14px} th,td{border:1px solid #bbb;padding:6px 8px;text-align:left;font-size:13px} th{background:#eee} .r{text-align:right} h3{margin:14px 0 6px;font-size:15px} tfoot td{font-weight:700;background:#eee}`;
   // Bestellungen gehen je Großhandel raus -> nach Lieferant gruppieren, je Gruppe eine Zwischensumme.
@@ -3874,8 +3877,14 @@ async function openOrders(flash) {
       ${suppliers.length?`<div class="muted" style="font-size:13px;margin-top:2px">🏢 ${esc(suppliers.join(' · '))}</div>`:''}
       <div class="reacts" style="margin-top:8px">
         <button class="small" data-reorder>${esc(t('ord_reorder'))}</button>
+        <button class="ghost small" data-oprint>🖨️ ${esc(t('pr_print_btn'))}</button>
+        <button class="ghost small" data-ocsv>⬇️ CSV</button>
         <button class="ghost small" data-odel>${esc(t('ord_delete'))}</button>
       </div></div>`);
+    // Bestellung als Dokument (Druck/CSV) — dieselbe Aufbereitung wie die Einkaufsliste.
+    const orderDoc = { items: o.items, total_positions: o.total_pieces, total_price: o.total_price, total_savings: o.total_savings };
+    card.querySelector('[data-oprint]').onclick = () => printCart(orderDoc);
+    card.querySelector('[data-ocsv]').onclick = () => exportCartCsv(o.items);
     card.querySelector('[data-reorder]').onclick = async () => { try { await api('POST',`/api/orders/${o.id}/reorder`); openCart(); } catch(e){ alert(e.message); } };
     card.querySelector('[data-odel]').onclick = async () => { if (!confirm(t('ord_delete_confirm'))) return; try { await api('POST',`/api/orders/${o.id}/delete`); openOrders(); } catch(e){ alert(e.message); } };
     feed.appendChild(card);
