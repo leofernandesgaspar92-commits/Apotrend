@@ -31,6 +31,26 @@ test('reportShortage: legt Community-Meldung mit Herkunft community + Melder an'
   assert.equal(r.confirm_count, 0);
 });
 
+test('updateExpectedDate: Melder:in verschiebt Termin; Fremde dürfen nicht; Watcher werden informiert', () => {
+  const { shortages, social, shortagesRepo, a, b, c } = setup();
+  const r = shortages.reportShortage(a, { wirkstoff: 'Ramipril', bezeichnung: 'Ramipril 5 mg', voraussichtlichBis: '2026-09-01' });
+  shortages.watch(c, 'Ramipril'); // Beobachter:in
+  const before = social.notifications(c).length;
+  // Fremde Apotheke darf den Termin nicht ändern
+  assert.throws(() => shortages.updateExpectedDate(b, r.id, '2026-10-01'), /meldende Apotheke/);
+  // Melder:in verschiebt den Termin
+  const upd = shortages.updateExpectedDate(a, r.id, '2026-10-15');
+  assert.equal(upd.voraussichtlich_bis, '2026-10-15');
+  assert.equal(shortagesRepo.get(r.id).voraussichtlich_bis, '2026-10-15');
+  // Beobachter:in wurde benachrichtigt
+  assert.ok(social.notifications(c).length > before, 'Watcher informiert');
+  // Ungültiges Datum abgelehnt
+  assert.throws(() => shortages.updateExpectedDate(a, r.id, '15.10.2026'), /Datum/);
+  // Leerer Wert entfernt den Termin
+  const cleared = shortages.updateExpectedDate(a, r.id, '');
+  assert.equal(cleared.voraussichtlich_bis, null);
+});
+
 test('reportShortage: leerer Wirkstoff abgelehnt', () => {
   const { shortages, a } = setup();
   assert.throws(() => shortages.reportShortage(a, { wirkstoff: '  ' }), /Wirkstoff/);

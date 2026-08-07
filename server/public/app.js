@@ -115,7 +115,7 @@ const I18N = {
     sc_conf_one:'weitere Apotheke bestätigt', sc_conf_many:'weitere Apotheken bestätigt',
     sc_posts_zero:'💬 Noch keine Beiträge', sc_posts_one:'💬 1 Beitrag dazu', sc_posts_many:'💬 {n} Beiträge dazu', sc_post_about:'✍ Dazu posten',
     sc_watched:'⭐ Beobachtet', sc_watch:'☆ Beobachten', sc_sources:'📦 Bezugsquellen', sc_sources_t:'Wer hat diesen Wirkstoff aktuell im Angebot? (Biete-Einträge)', sc_seek:'🔎 Ich suche das', sc_seek_t:'Bedarf melden: Gesuch zu diesem Wirkstoff anlegen (Anbieter werden benachrichtigt)',
-    sc_conf_btn:'➕ Auch bei uns', sc_confd_btn:'✅ Bestätigt', sc_resolve:'✓ Wieder lieferbar',
+    sc_conf_btn:'➕ Auch bei uns', sc_confd_btn:'✅ Bestätigt', sc_resolve:'✓ Wieder lieferbar', sc_setdate:'🗓️ Termin ändern', sc_date_clear:'Termin offen',
     sc_history:'📜 Verlauf', sc_post_ph:'Dein Beitrag zu diesem Engpass (öffentlich)…', sc_post_send:'Posten',
     sc_mod_status:'📝 Status ändern (Redaktion)', sc_mod_new:'Neuer Status',
     sc_mod_src:'Quelle (Pflicht, http[s]-Link – z.B. BASG)',
@@ -441,7 +441,7 @@ const I18N = {
     sc_conf_one:'more pharmacy confirms', sc_conf_many:'more pharmacies confirm',
     sc_posts_zero:'💬 No posts yet', sc_posts_one:'💬 1 post about this', sc_posts_many:'💬 {n} posts about this', sc_post_about:'✍ Post about this',
     sc_watched:'⭐ Watched', sc_watch:'☆ Watch', sc_sources:'📦 Sources', sc_sources_t:'Who currently offers this substance? (offer entries)', sc_seek:'🔎 I need this', sc_seek_t:'Signal demand: post a want for this substance (offerers get notified)',
-    sc_conf_btn:'➕ Us too', sc_confd_btn:'✅ Confirmed', sc_resolve:'✓ Available again',
+    sc_conf_btn:'➕ Us too', sc_confd_btn:'✅ Confirmed', sc_resolve:'✓ Available again', sc_setdate:'🗓️ Change date', sc_date_clear:'No date',
     sc_history:'📜 History', sc_post_ph:'Your post about this shortage (public)…', sc_post_send:'Post',
     sc_mod_status:'📝 Change status (editorial)', sc_mod_new:'New status',
     sc_mod_src:'Source (required, http[s] link – e.g. BASG)',
@@ -767,7 +767,7 @@ const I18N = {
     sc_conf_one:'outra farmácia confirma', sc_conf_many:'outras farmácias confirmam',
     sc_posts_zero:'💬 Ainda sem publicações', sc_posts_one:'💬 1 publicação sobre isto', sc_posts_many:'💬 {n} publicações sobre isto', sc_post_about:'✍ Publicar sobre isto',
     sc_watched:'⭐ Vigiada', sc_watch:'☆ Vigiar', sc_sources:'📦 Fontes', sc_sources_t:'Quem oferece atualmente esta substância? (entradas de oferta)', sc_seek:'🔎 Preciso disto', sc_seek_t:'Sinalizar procura: criar um pedido para esta substância (os ofertantes são notificados)',
-    sc_conf_btn:'➕ Nós também', sc_confd_btn:'✅ Confirmado', sc_resolve:'✓ Disponível novamente',
+    sc_conf_btn:'➕ Nós também', sc_confd_btn:'✅ Confirmado', sc_resolve:'✓ Disponível novamente', sc_setdate:'🗓️ Alterar prazo', sc_date_clear:'Sem prazo',
     sc_history:'📜 Histórico', sc_post_ph:'A sua publicação sobre esta falta (pública)…', sc_post_send:'Publicar',
     sc_mod_status:'📝 Alterar estado (redação)', sc_mod_new:'Novo estado',
     sc_mod_src:'Fonte (obrigatória, ligação http[s] – ex. BASG)',
@@ -2801,7 +2801,12 @@ function shortageCard(s) {
       <button class="ghost" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button>
       ${s.provenance==='community'&&!s.is_reporter&&!(me&&me.account_type==='private')?`<button class="ghost" data-confirm>${s.i_confirmed?esc(t('sc_confd_btn')):esc(t('sc_conf_btn'))}</button>`:''}
       ${s.provenance==='community'&&s.is_reporter&&s.status!=='verfuegbar'?`<button class="ghost" data-resolve>${esc(t('sc_resolve'))}</button>`:''}
+      ${s.provenance==='community'&&s.is_reporter&&s.status!=='verfuegbar'?`<button class="ghost" data-datebtn>${esc(t('sc_setdate'))}</button>`:''}
       ${(s.history||[]).length>1?`<button class="ghost" data-hist aria-expanded="false">${esc(t('sc_history'))} (${s.history.length})</button>`:''}
+    </div>
+    <div class="comments hidden" data-datebox>
+      <label style="font-size:13px">${esc(t('sh_rep_until'))}</label>
+      <div class="row" style="gap:6px;margin-top:4px"><input data-dinput type="date" value="${esc(s.voraussichtlich_bis||'')}" style="flex:1" aria-label="${esc(t('sh_rep_until_t'))}"><button class="small" data-dsave>${esc(t('cm_save'))}</button>${s.voraussichtlich_bis?`<button class="ghost small" data-dclear>${esc(t('sc_date_clear'))}</button>`:''}</div>
     </div>
     <div class="comments hidden" data-histbox></div>
     <div class="comments hidden" data-postbox>
@@ -2899,6 +2904,20 @@ function shortageCard(s) {
     try { await api('POST',`/api/shortages/${s.id}/resolve`); loadShortages(); }
     catch(e){ alert(e.message); resolveBtn.disabled = false; }
   };
+  // Voraussichtlichen Termin ändern (Melder:in) — hält den Countdown für Beobachter:innen aktuell.
+  const dateBtn = card.querySelector('[data-datebtn]');
+  if (dateBtn) {
+    const datebox = card.querySelector('[data-datebox]');
+    dateBtn.onclick = () => datebox.classList.toggle('hidden');
+    const saveDate = async (clear) => {
+      const val = clear ? '' : (card.querySelector('[data-dinput]').value || '');
+      try { await api('POST',`/api/shortages/${s.id}/expected`, { voraussichtlichBis: val }); loadShortages(); }
+      catch(e){ alert(e.message); }
+    };
+    card.querySelector('[data-dsave]').onclick = () => saveDate(false);
+    const dclear = card.querySelector('[data-dclear]');
+    if (dclear) dclear.onclick = () => saveDate(true);
+  }
   const watchBtn = card.querySelector('[data-watch]');
   let isWatched = !!s.watched;
   watchBtn.onclick = async () => {

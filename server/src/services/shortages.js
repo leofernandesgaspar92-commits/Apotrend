@@ -156,6 +156,36 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       return decorate(updated, userId);
     },
 
+    // Melder:in (oder Moderation) aktualisiert den voraussichtlichen Wiederverfügbarkeits-
+    // Termin der eigenen Community-Meldung (z. B. wenn der Großhandel den Termin verschiebt).
+    // Leerer Wert entfernt den Termin. Beobachter:innen + Bestätiger:innen werden informiert.
+    updateExpectedDate(userId, id, voraussichtlichBis) {
+      const s = shortagesRepo.get(id);
+      if (!s) { const e = new Error('Engpass nicht gefunden.'); e.status = 404; throw e; }
+      if (s.provenance !== 'community') throw new AppError('shortage_not_community', 'Nur Community-Meldungen können so geändert werden.', 400);
+      if (s.reporter_user_id !== userId && !social.isModerator(userId)) {
+        const e = new Error('Nur die meldende Apotheke kann den Termin ändern.');
+        e.status = 403; throw e;
+      }
+      let vb = null;
+      const raw = String(voraussichtlichBis || '').trim();
+      if (raw) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(raw) || Number.isNaN(Date.parse(raw + 'T00:00:00Z'))) {
+          throw new AppError('shortage_bad_date', 'Ungültiges Datum (voraussichtlich bis).', 400);
+        }
+        vb = raw;
+      }
+      if ((s.voraussichtlich_bis || null) === vb) return decorate(s, userId); // keine Änderung
+      const updated = shortagesRepo.setExpectedDate(id, vb);
+      const targets = new Set([...shortagesRepo.usersWatching(s.wirkstoff), ...(s.confirmations || [])]);
+      targets.delete(userId);
+      const label = vb ? `${s.wirkstoff} · Termin ${vb}` : `${s.wirkstoff} · Termin offen`;
+      for (const uid of targets) {
+        social.pushNotification({ userId: uid, type: 'watch_alert', actorUserId: userId, refType: 'shortage', refId: id, label });
+      }
+      return decorate(updated, userId);
+    },
+
     // ── Engpass-Status ändern (nur Redaktion/Moderation) + Watcher benachrichtigen ──
     // Sicherheitsrelevante Aussage => Quelle (http[s]-Link) ist Pflicht (CLAUDE.md).
     updateStatus(actorUserId, id, { status, sourceUrl }) {

@@ -71,6 +71,13 @@ export function createShortagesRepo({ seed = true } = {}) {
       }
       return { ...s };
     },
+    // Voraussichtlichen Wiederverfügbarkeits-Termin setzen/entfernen (null = unbekannt).
+    setExpectedDate(id, voraussichtlich_bis) {
+      const s = shortages.get(id);
+      if (!s) return null;
+      s.voraussichtlich_bis = voraussichtlich_bis ?? null;
+      return { ...s };
+    },
     get(id) { const s = shortages.get(id); return s ? { ...s, confirmations: [...(s.confirmations || [])], history: (s.history || []).map(h => ({ ...h })) } : null; },
     list() {
       const rank = { kritisch: 2, eingeschraenkt: 1, verfuegbar: 0 };
