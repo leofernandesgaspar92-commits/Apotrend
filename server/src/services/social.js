@@ -547,7 +547,8 @@ export function createSocialService(social, foundationRepo, options = {}) {
     listComments(viewerUserId, postId) {
       const p = social.getPost(postId);
       if (!p || !visibleTo(p, viewerUserId)) throw new ForbiddenError('Beitrag nicht sichtbar.');
-      return social.listComments(postId).map(c => {
+      const muted = new Set(social.listMuted(viewerUserId));
+      return social.listComments(postId).filter(c => !muted.has(c.author_user_id)).map(c => {
         const prof = social.getProfileByUserId(c.author_user_id);
         const reacts = social.listReactions('comment', c.id);
         const counts = {};

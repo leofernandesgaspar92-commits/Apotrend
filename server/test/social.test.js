@@ -175,3 +175,16 @@ test('Stummschalten: Beiträge einer Person verschwinden aus den Feeds; unmute s
   // Selbst-Stummschalten abgelehnt
   assert.throws(() => social.mute(a, 'anna'), /Selbst|mute_self/);
 });
+
+test('Stummschalten: Kommentare der stummgeschalteten Person sind unter Beiträgen ausgeblendet', () => {
+  const { social, a, b, c } = setup();
+  const post = social.createPost(a, { body: 'Beitrag von Anna', visibility: 'public' });
+  social.comment(b, post.id, { body: 'Kommentar von Ben' });
+  // Vor dem Stummschalten sichtbar
+  assert.ok(social.listComments(a, post.id).some(c => c.author && c.author.handle === 'ben'));
+  social.mute(a, 'ben');
+  // Nach dem Stummschalten für a ausgeblendet …
+  assert.ok(!social.listComments(a, post.id).some(c => c.author && c.author.handle === 'ben'));
+  // … aber für andere (c) weiterhin sichtbar
+  assert.ok(social.listComments(c, post.id).some(c2 => c2.author && c2.author.handle === 'ben'));
+});
