@@ -3019,7 +3019,7 @@ async function loadPrices() {
       shownPrices = list;
       listBox.innerHTML = '';
       if (!list.length) listBox.appendChild(el(`<div class="card muted">${esc(t('pr_empty'))}</div>`));
-      else list.forEach(g => listBox.appendChild(priceGroup(g)));
+      else list.forEach(g => listBox.appendChild(priceGroup(g, pWatched)));
     };
     { const wb = bar.querySelector('[data-pwatched]'); if (wb) wb.onclick = () => { priceWatchedOnly = !priceWatchedOnly; draw(); }; }
     bar.querySelector('[data-psort]').onchange = (ev) => { priceSort = ev.target.value; draw(); };
@@ -3232,13 +3232,15 @@ function sparkline(series) {
   </svg>`;
 }
 
-function priceGroup(g) {
+function priceGroup(g, watchedSet) {
   // Trend-Warnung: günstigster Anbieter (erste Zeile, nach AEP sortiert) zuletzt
   // spürbar teurer (>= +5%). Nur Hinweis zum Beobachten, keine Kaufberatung.
   const cheapest = (g.offers && g.offers[0]) || null;
   const rose = cheapest && Number(cheapest.trend_pct) >= 5;
+  const wKey = g.wirkstoff ? g.wirkstoff.toLowerCase() : '';
+  const showStar = watchedSet && g.wirkstoff;
   const card = el(`<div class="card">
-    <div class="post-author">${esc(g.bezeichnung)} ${g.wirkstoff?`<span class="handle clickable" data-wirkstoff="${esc(g.wirkstoff)}" title="${esc(ti('pg_all_about',{w:g.wirkstoff}))}">${esc(g.wirkstoff)}</span>`:''}</div>
+    <div class="post-author">${esc(g.bezeichnung)} ${g.wirkstoff?`<span class="handle clickable" data-wirkstoff="${esc(g.wirkstoff)}" title="${esc(ti('pg_all_about',{w:g.wirkstoff}))}">${esc(g.wirkstoff)}</span>`:''}${showStar?`<button class="ghost small" data-wwatch aria-pressed="${watchedSet.has(wKey)}" title="${esc(watchedSet.has(wKey)?t('sc_watched'):t('sc_watch'))}" style="padding:2px 8px;min-height:0;margin-left:4px">${watchedSet.has(wKey)?'⭐':'☆'}</button>`:''}</div>
     <div class="muted" style="margin:2px 0 8px">${esc(t('pg_compare'))} ${esc(t('prov_reference'))}</div>
     ${rose?`<div style="display:inline-block;background:var(--crit-bg);color:var(--crit-fg);border:1px solid var(--crit-bd);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">${esc(ti('pg_rose',{x:Number(cheapest.trend_pct).toFixed(1)}))}</div>`:''}
     ${g.saving_abs>0?`<div style="display:inline-block;background:rgba(11,127,40,.12);color:var(--ok-fg);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">${esc(ti('pg_cheaper',{x:fmtMoney(g.saving_abs),supplier:g.best_supplier}))}</div>`:''}
@@ -3293,6 +3295,19 @@ function priceGroup(g) {
   });
   const pw = card.querySelector('[data-wirkstoff]');
   if (pw) pw.onclick = () => openWirkstoff(pw.dataset.wirkstoff);
+  // Ein-Klick „beobachten" direkt am Preisvergleich (für Rabatt-/Preis-Alarm).
+  const wwatch = card.querySelector('[data-wwatch]');
+  if (wwatch) wwatch.onclick = async () => {
+    wwatch.disabled = true;
+    try {
+      if (watchedSet.has(wKey)) { await api('DELETE','/api/watchlist/'+encodeURIComponent(g.wirkstoff)); watchedSet.delete(wKey); }
+      else { await api('POST','/api/watchlist',{ wirkstoff: g.wirkstoff }); watchedSet.add(wKey); }
+      const now = watchedSet.has(wKey);
+      wwatch.textContent = now ? '⭐' : '☆'; wwatch.setAttribute('aria-pressed', String(now));
+      wwatch.title = now ? t('sc_watched') : t('sc_watch');
+    } catch(e){ alert(e.message); }
+    wwatch.disabled = false;
+  };
   return card;
 }
 
