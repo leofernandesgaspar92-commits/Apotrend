@@ -180,18 +180,24 @@ function ensureFeatureAllowed(featureId, userId) {
   }
 }
 
-// Feed-Beiträge, die ein Marktobjekt (Engpass/Preis) referenzieren, anreichern.
-function enrichPosts(posts) {
+// Feed-Beiträge, die ein Marktobjekt (Engpass/Preis/Rabatt) referenzieren, anreichern.
+// Rechts-Gate (Heimatland): in Ländern mit gesperrten Modulen wird die betroffene
+// Preis-/Rabatt-Vorschau NICHT angehängt — sonst würden Rabatt-/Preisdaten über
+// referenzierende Beiträge in Feed/Suche an der Sperre vorbei sichtbar.
+function enrichPosts(posts, userId) {
+  const home = userCountry(userId);
+  const dealsBlocked = isFeatureBlocked(home, 'deals');
+  const priceBlocked = isFeatureBlocked(home, 'price_compare');
   return posts.map(p => {
     if (p.ref_type === 'shortage' && p.ref_id) {
       const s = shortagesRepo.get(p.ref_id);
       if (s) return { ...p, ref_summary: { kind: 'shortage', wirkstoff: s.wirkstoff, bezeichnung: s.bezeichnung, status: s.status } };
     }
-    if (p.ref_type === 'price' && p.ref_id) {
+    if (p.ref_type === 'price' && p.ref_id && !priceBlocked) {
       const pr = pricesRepo.get(p.ref_id);
       if (pr) return { ...p, ref_summary: { kind: 'price', bezeichnung: pr.bezeichnung, supplier: pr.supplier, aep: pr.aep, currency: pr.currency, trend_pct: pr.trend_pct } };
     }
-    if (p.ref_type === 'rabatt' && p.ref_id) {
+    if (p.ref_type === 'rabatt' && p.ref_id && !dealsBlocked) {
       const r = rabatteRepo.get(p.ref_id);
       if (r) return { ...p, ref_summary: { kind: 'rabatt', bezeichnung: r.bezeichnung, supplier: r.supplier, aktionspreis: r.aktionspreis, listenpreis: r.listenpreis, currency: r.currency, rabatt_pct: r.rabatt_pct, gueltig_bis: r.gueltig_bis } };
     }
@@ -312,10 +318,12 @@ const routes = [
   ['GET', /^\/api\/me$/, true, async ({ userId }) => ({ user: safeUser(repo.getUserById(userId)), profile: social.getProfile(userId), is_moderator: social.isModerator(userId) })],
   ['GET', /^\/api\/overview$/, true, async ({ userId, query }) => {
     const home = userCountry(userId);
-    const ov = overview.forUser(userId);
+    const dealsBlocked = isFeatureBlocked(home, 'deals');
+    const ov = overview.forUser(userId, { dealsBlocked });
     // Rechts-Gate (Heimatland): gesperrte Module aus der Übersicht nehmen.
-    if (isFeatureBlocked(home, 'deals')) { ov.top_rabatt = null; ov.rabatte_expiring = { count: 0, soonest: null }; ov.watch_deals = []; }
+    if (dealsBlocked) { ov.top_rabatt = null; ov.rabatte_expiring = { count: 0, soonest: null }; ov.watch_deals = []; }
     if (isFeatureBlocked(home, 'stock_exchange')) { ov.exchange = { biete: 0, suche: 0, recent: [] }; ov.my_seeks = { open: 0, with_matches: 0, items: [] }; ov.watch_offers = []; }
+    if (isFeatureBlocked(home, 'price_compare')) { ov.savings = null; }
     return { ...ov, premium: payments.hasFeature(userId, 'premium'), data_live: isLive(activeCountry(userId, query)) };
   }],
   // Meine Aktivität an einem Ort: eigene Fragen, Engpass-Meldungen, Austausch-Einträge.
@@ -346,9 +354,10 @@ const routes = [
     const low = name.toLowerCase();
     const eq = (v) => String(v || '').trim().toLowerCase() === low;
     const home = userCountry(userId);
-    // Rechts-Gate (Heimatland): gesperrte Module (Rabatte/Austausch) im Hub leer lassen.
+    // Rechts-Gate (Heimatland): gesperrte Module (Rabatte/Austausch/Preise) im Hub leer lassen.
     const dealsBlocked = isFeatureBlocked(home, 'deals');
     const exBlocked = isFeatureBlocked(home, 'stock_exchange');
+    const priceBlocked = isFeatureBlocked(home, 'price_compare');
     const ex = exBlocked ? [] : exchange.list(userId, { q: name });
     return {
       wirkstoff: name,
@@ -359,10 +368,10 @@ const routes = [
       note: shortagesRepo.getWatchNote(userId, name),
       also_watching: shortagesRepo.usersWatching(name).filter(id => id !== userId).length,
       shortages: shortages.listWithCounts(userId).filter(s => eq(s.wirkstoff)),
-      prices: prices.comparisons(userId).filter(g => eq(g.wirkstoff)),
+      prices: priceBlocked ? [] : prices.comparisons(userId).filter(g => eq(g.wirkstoff)),
       rabatte: dealsBlocked ? [] : rabatte.top10(userId).filter(r => eq(r.wirkstoff)),
       exchange: { biete: ex.filter(e => e.kind === 'biete'), suche: ex.filter(e => e.kind === 'suche') },
-      posts: enrichPosts(social.searchPosts(userId, name).slice(0, 10)),
+      posts: enrichPosts(social.searchPosts(userId, name).slice(0, 10), userId),
     };
   }],
   ['GET', /^\/api\/profiles\/([^/]+)\/(followers|following)$/, true, async ({ userId, params }) => {
@@ -396,12 +405,12 @@ const routes = [
   ['GET', /^\/api\/verify\/requests$/, true, async ({ userId }) => ({ requests: social.verificationQueue(userId) })],
   ['POST', /^\/api\/verify\/([^/]+)\/resolve$/, true, async ({ userId, params, body }) => social.resolveVerification(userId, params[0], !!body.approve)],
 
-  ['GET', /^\/api\/feed\/home$/, true, async ({ userId }) => ({ posts: enrichPosts(social.homeFeed(userId)) })],
-  ['GET', /^\/api\/feed\/public$/, true, async ({ userId, query }) => ({ country: activeCountry(userId, query), posts: enrichPosts(social.publicFeed(userId, { sort: query.get('sort') || 'neu', filter: query.get('filter') || 'all', country: activeCountry(userId, query) })) })],
+  ['GET', /^\/api\/feed\/home$/, true, async ({ userId }) => ({ posts: enrichPosts(social.homeFeed(userId), userId) })],
+  ['GET', /^\/api\/feed\/public$/, true, async ({ userId, query }) => ({ country: activeCountry(userId, query), posts: enrichPosts(social.publicFeed(userId, { sort: query.get('sort') || 'neu', filter: query.get('filter') || 'all', country: activeCountry(userId, query) }), userId) })],
 
   ['POST', /^\/api\/posts$/, true, async ({ userId, body }) => social.createPost(userId, { body: body.body, visibility: body.visibility, kind: body.kind, image: body.image, sourceUrl: body.sourceUrl, pollOptions: body.pollOptions })],
-  ['GET', /^\/api\/news$/, true, async ({ userId, query }) => ({ country: activeCountry(userId, query), posts: enrichPosts(social.newsFeed(userId, { country: activeCountry(userId, query) })) })],
-  ['GET', /^\/api\/hashtag\/([^/]+)$/, true, async ({ userId, params }) => ({ tag: decodeURIComponent(params[0]), posts: enrichPosts(social.postsByHashtag(userId, decodeURIComponent(params[0]))) })],
+  ['GET', /^\/api\/news$/, true, async ({ userId, query }) => ({ country: activeCountry(userId, query), posts: enrichPosts(social.newsFeed(userId, { country: activeCountry(userId, query) }), userId) })],
+  ['GET', /^\/api\/hashtag\/([^/]+)$/, true, async ({ userId, params }) => ({ tag: decodeURIComponent(params[0]), posts: enrichPosts(social.postsByHashtag(userId, decodeURIComponent(params[0])), userId) })],
   ['GET', /^\/api\/trending\/hashtags$/, true, async ({ userId }) => ({ hashtags: social.trendingHashtags(userId) })],
   // Mehrsprachige Patienten-Infokarten (Antibiotika) — für Aufklärung bei der Abgabe.
   ['GET', /^\/api\/patient-info$/, true, async ({ query }) => patientInfo.cards(query.get('lang') || 'de')],
@@ -425,7 +434,7 @@ const routes = [
   ['GET', /^\/api\/posts\/([^/]+)$/, true, async ({ userId, params }) => {
     const p = social.getPost(userId, params[0]);
     if (!p) { const e = new Error('Beitrag nicht gefunden'); e.status = 404; throw e; }
-    return { post: enrichPosts([p])[0] };
+    return { post: enrichPosts([p], userId)[0] };
   }],
   ['GET', /^\/api\/posts\/([^/]+)\/comments$/, true, async ({ userId, params }) => ({ comments: social.listComments(userId, params[0]) })],
   ['POST', /^\/api\/posts\/([^/]+)\/comments$/, true, async ({ userId, params, body }) => social.comment(userId, params[0], { body: body.body, parentCommentId: body.parentCommentId, image: body.image })],
@@ -441,7 +450,7 @@ const routes = [
   ['POST', /^\/api\/posts\/([^/]+)\/repost$/, true, async ({ userId, params, body }) => social.repost(userId, params[0], { comment: body.comment, visibility: body.visibility })],
   ['POST', /^\/api\/posts\/([^/]+)\/accept$/, true, async ({ userId, params, body }) => social.acceptAnswer(userId, params[0], body.commentId)],
   ['POST', /^\/api\/polls\/([^/]+)\/vote$/, true, async ({ userId, params, body }) => social.votePoll(userId, params[0], body.optionId ?? null)],
-  ['GET', /^\/api\/bookmarks$/, true, async ({ userId }) => ({ posts: enrichPosts(social.listBookmarks(userId)) })],
+  ['GET', /^\/api\/bookmarks$/, true, async ({ userId }) => ({ posts: enrichPosts(social.listBookmarks(userId), userId) })],
   ['GET', /^\/api\/bookmarks\/ids$/, true, async ({ userId }) => ({ ids: social.bookmarkIds(userId) })],
   // Einkaufsliste (Bestell-Merkzettel)
   ['GET', /^\/api\/cart$/, true, async ({ userId }) => social.cart(userId)],
@@ -453,7 +462,7 @@ const routes = [
   ['GET', /^\/api\/profiles\/([^/]+)\/page$/, true, async ({ userId, params }) => {
     const d = social.profilePage(userId, params[0]);
     if (!d) { const e = new Error('Profil nicht gefunden'); e.status = 404; throw e; }
-    return { ...d, posts: enrichPosts(d.posts) };
+    return { ...d, posts: enrichPosts(d.posts, userId) };
   }],
   ['GET', /^\/api\/profiles\/([^/]+)$/, true, async ({ params }) => ({ profile: social.getProfile(params[0]) })],
   ['POST', /^\/api\/profiles\/([^/]+)\/endorse$/, true, async ({ userId, params, body }) => social.endorseSkill(userId, params[0], body.skill)],
@@ -508,31 +517,32 @@ const routes = [
   ['POST', /^\/api\/watchlist\/([^/]+)\/alert$/, true, async ({ userId, params, body }) => ({ items: shortages.setWatchAlert(userId, decodeURIComponent(params[0]), body.pct) })],
 
   // ── Preise (Priorität 3) ──
-  ['GET', /^\/api\/prices$/, true, async ({ userId }) => ({ comparisons: prices.comparisons(userId), savings: prices.savingsSummary() })],
+  ['GET', /^\/api\/prices$/, true, async ({ userId }) => { ensureFeatureAllowed('price_compare', userId); return { comparisons: prices.comparisons(userId), savings: prices.savingsSummary() }; }],
   ['GET', /^\/api\/prices\/([^/]+)$/, true, async ({ userId, params }) => {
+    ensureFeatureAllowed('price_compare', userId);
     const d = prices.withActivity(userId, params[0]);
     if (!d) { const e = new Error('Preis nicht gefunden'); e.status = 404; throw e; }
     return d;
   }],
-  ['POST', /^\/api\/prices\/([^/]+)\/post$/, true, async ({ userId, params, body }) => prices.postAbout(userId, params[0], { body: body.body, visibility: body.visibility })],
+  ['POST', /^\/api\/prices\/([^/]+)\/post$/, true, async ({ userId, params, body }) => { ensureFeatureAllowed('price_compare', userId); return prices.postAbout(userId, params[0], { body: body.body, visibility: body.visibility }); }],
 
   // ── Top-10-Rabatte (Priorität 5) — in Ländern mit Rx-Rabatt-/Werbeverbot gesperrt ──
-  ['GET', /^\/api\/rabatte$/, true, async ({ userId, query }) => { ensureFeatureAllowed('deals', userId, query); return { rabatte: rabatte.top10(userId) }; }],
+  ['GET', /^\/api\/rabatte$/, true, async ({ userId, query }) => { ensureFeatureAllowed('deals', userId); return { rabatte: rabatte.top10(userId) }; }],
   ['GET', /^\/api\/rabatte\/([^/]+)$/, true, async ({ userId, params, query }) => {
-    ensureFeatureAllowed('deals', userId, query);
+    ensureFeatureAllowed('deals', userId);
     const d = rabatte.withActivity(userId, params[0]);
     if (!d) { const e = new Error('Rabatt-Aktion nicht gefunden'); e.status = 404; throw e; }
     return d;
   }],
-  ['POST', /^\/api\/rabatte\/([^/]+)\/post$/, true, async ({ userId, params, body, query }) => { ensureFeatureAllowed('deals', userId, query); return rabatte.postAbout(userId, params[0], { body: body.body, visibility: body.visibility }); }],
+  ['POST', /^\/api\/rabatte\/([^/]+)\/post$/, true, async ({ userId, params, body, query }) => { ensureFeatureAllowed('deals', userId); return rabatte.postAbout(userId, params[0], { body: body.body, visibility: body.visibility }); }],
 
   // ── Bestandsaustausch (Biete/Suche) — in Ländern ohne zulässige P2P-Abgabe gesperrt ──
-  ['GET', /^\/api\/exchange$/, true, async ({ userId, query }) => { ensureFeatureAllowed('stock_exchange', userId, query); return { entries: exchange.list(userId, { kind: query.get('kind') || null, status: query.get('status') || 'offen', q: query.get('q') || null, bundesland: query.get('bundesland') || null }) }; }],
-  ['POST', /^\/api\/exchange$/, true, async ({ userId, body, query }) => { ensureFeatureAllowed('stock_exchange', userId, query); return exchange.create(userId, { kind: body.kind, bezeichnung: body.bezeichnung, menge: body.menge, ort: body.ort, bundesland: body.bundesland, note: body.note, image: body.image }); }],
-  ['GET', /^\/api\/exchange\/mine$/, true, async ({ userId, query }) => { ensureFeatureAllowed('stock_exchange', userId, query); return { entries: exchange.mine(userId, { status: query.get('status') || null }) }; }],
-  ['POST', /^\/api\/exchange\/([^/]+)\/resolve$/, true, async ({ userId, params, query }) => { ensureFeatureAllowed('stock_exchange', userId, query); return exchange.markResolved(userId, params[0]); }],
-  ['POST', /^\/api\/exchange\/([^/]+)\/reopen$/, true, async ({ userId, params, query }) => { ensureFeatureAllowed('stock_exchange', userId, query); return exchange.reopen(userId, params[0]); }],
-  ['POST', /^\/api\/exchange\/([^/]+)\/delete$/, true, async ({ userId, params, query }) => { ensureFeatureAllowed('stock_exchange', userId, query); return exchange.remove(userId, params[0]); }],
+  ['GET', /^\/api\/exchange$/, true, async ({ userId, query }) => { ensureFeatureAllowed('stock_exchange', userId); return { entries: exchange.list(userId, { kind: query.get('kind') || null, status: query.get('status') || 'offen', q: query.get('q') || null, bundesland: query.get('bundesland') || null }) }; }],
+  ['POST', /^\/api\/exchange$/, true, async ({ userId, body, query }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.create(userId, { kind: body.kind, bezeichnung: body.bezeichnung, menge: body.menge, ort: body.ort, bundesland: body.bundesland, note: body.note, image: body.image }); }],
+  ['GET', /^\/api\/exchange\/mine$/, true, async ({ userId, query }) => { ensureFeatureAllowed('stock_exchange', userId); return { entries: exchange.mine(userId, { status: query.get('status') || null }) }; }],
+  ['POST', /^\/api\/exchange\/([^/]+)\/resolve$/, true, async ({ userId, params, query }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.markResolved(userId, params[0]); }],
+  ['POST', /^\/api\/exchange\/([^/]+)\/reopen$/, true, async ({ userId, params, query }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.reopen(userId, params[0]); }],
+  ['POST', /^\/api\/exchange\/([^/]+)\/delete$/, true, async ({ userId, params, query }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.remove(userId, params[0]); }],
 
   // ── Übergreifende Suche (Priorität 7) ── gesperrte Module aus den Treffern nehmen.
   ['GET', /^\/api\/search$/, true, async ({ userId, query }) => {
@@ -540,8 +550,9 @@ const routes = [
     const home = userCountry(userId);
     const rabatteHits = isFeatureBlocked(home, 'deals') ? [] : r.rabatte;
     const exchangeHits = isFeatureBlocked(home, 'stock_exchange') ? [] : r.exchange;
-    const total = r.total - (r.rabatte.length - rabatteHits.length) - (r.exchange.length - exchangeHits.length);
-    return { ...r, rabatte: rabatteHits, exchange: exchangeHits, total, posts: enrichPosts(r.posts) };
+    const priceHits = isFeatureBlocked(home, 'price_compare') ? [] : r.prices;
+    const total = r.total - (r.rabatte.length - rabatteHits.length) - (r.exchange.length - exchangeHits.length) - (r.prices.length - priceHits.length);
+    return { ...r, rabatte: rabatteHits, exchange: exchangeHits, prices: priceHits, total, posts: enrichPosts(r.posts, userId) };
   }],
 ];
 

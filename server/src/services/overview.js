@@ -4,7 +4,7 @@
 // bereits getesteter Dienste.
 export function createOverviewService({ shortages, exchange, social, rabatte, prices, amr = null }) {
   return {
-    forUser(userId) {
+    forUser(userId, opts = {}) {
       const sh = shortages.listWithCounts(userId);
       const kritisch = sh.filter(s => s.status === 'kritisch');
       // Aktive Antibiotika-Engpässe (nicht "wieder verfügbar") — für die AMR-Kachel.
@@ -57,7 +57,9 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
       // Rabatt-Alarm: wenn die aktuelle beste Aktion die gesetzte Schwelle erreicht und diese
       // konkrete Aktion noch nicht gemeldet wurde -> einmalig benachrichtigen (Dedup). Läuft
       // bei jedem Übersichts-Aufruf; sobald Live-Daten angeschlossen sind, greift es automatisch.
-      if (social.pushNotification && shortages.wasAlerted) {
+      // Rechts-Gate: In Ländern mit Rabatt-/Werbeverbot (deals gesperrt) dürfen auch keine
+      // Rabatt-Push-Meldungen ausgelöst werden — sonst umgeht die Benachrichtigung die Sperre.
+      if (social.pushNotification && shortages.wasAlerted && !opts.dealsBlocked) {
         for (const wd of watchDeals) {
           if (!wd.alert_pct || wd.rabatt_pct < wd.alert_pct) continue;
           const dealKey = `${wd.wirkstoff.trim().toLowerCase()}|${wd.gueltig_bis}|${wd.rabatt_pct}`;
