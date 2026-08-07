@@ -2732,7 +2732,15 @@ function reportShortageCard(existing = []) {
   // Datenqualität: gibt es schon eine offene Meldung zum getippten Wirkstoff, zum Ansehen/
   // Bestätigen führen statt ein Duplikat anzulegen (nur Hinweis, blockiert nichts).
   const openByWirkstoff = new Map();
-  (existing || []).forEach(s => { if (s.status && s.status !== 'verfuegbar' && s.wirkstoff) openByWirkstoff.set(s.wirkstoff.trim().toLowerCase(), s.wirkstoff.trim()); });
+  (existing || []).forEach(s => {
+    if (s.status && s.status !== 'verfuegbar' && s.wirkstoff) {
+      const k = s.wirkstoff.trim().toLowerCase();
+      // Erster offener Treffer, bevorzugt eine bestätigbare Community-Meldung (Datenqualität).
+      const cur = openByWirkstoff.get(k);
+      const confirmable = s.provenance === 'community' && !s.is_reporter && !s.i_confirmed;
+      if (!cur || (confirmable && !(cur.provenance === 'community' && !cur.is_reporter && !cur.i_confirmed))) openByWirkstoff.set(k, s);
+    }
+  });
   const existsBox = card.querySelector('[data-exists]');
   const winput = card.querySelector('[data-w]');
   let deb;
@@ -2740,11 +2748,15 @@ function reportShortageCard(existing = []) {
     clearTimeout(deb);
     deb = setTimeout(() => {
       const w = winput.value.trim().toLowerCase();
-      const hit = openByWirkstoff.get(w);
+      const s = openByWirkstoff.get(w);
       existsBox.innerHTML = '';
-      if (hit) {
-        const hint = el(`<div class="muted" style="font-size:13px;background:var(--info-bg,#eef);border:1px solid var(--info-bd,#cce);border-radius:8px;padding:6px 10px">${esc(ti('sh_rep_exists', { w: hit }))} <button class="linklike small" data-view>${esc(t('sh_rep_exists_view'))}</button></div>`);
-        hint.querySelector('[data-view]').onclick = () => openWirkstoff(hit);
+      if (s) {
+        // Statt ein Duplikat anzulegen: ansehen — und bei fremder Community-Meldung direkt „Auch bei uns".
+        const canConfirm = s.provenance === 'community' && !s.is_reporter && !s.i_confirmed && !(me && me.account_type === 'private');
+        const hint = el(`<div class="muted" style="font-size:13px;background:var(--info-bg,#eef);border:1px solid var(--info-bd,#cce);border-radius:8px;padding:6px 10px">${esc(ti('sh_rep_exists', { w: s.wirkstoff }))} <button class="linklike small" data-view>${esc(t('sh_rep_exists_view'))}</button>${canConfirm ? ` <button class="small" data-confirm style="margin-left:6px">${esc(t('sc_conf_btn'))}</button>` : ''}</div>`);
+        hint.querySelector('[data-view]').onclick = () => openWirkstoff(s.wirkstoff);
+        const cb = hint.querySelector('[data-confirm]');
+        if (cb) cb.onclick = async () => { cb.disabled = true; try { await api('POST', `/api/shortages/${s.id}/confirm`); loadShortages(); } catch (e) { alert(e.message); cb.disabled = false; } };
         existsBox.appendChild(hint);
       }
     }, 300);
