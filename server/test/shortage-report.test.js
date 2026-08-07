@@ -51,6 +51,14 @@ test('updateExpectedDate: Melder:in verschiebt Termin; Fremde dürfen nicht; Wat
   assert.equal(cleared.voraussichtlich_bis, null);
 });
 
+test('reportShortage: Überlauf-Datum (2026-02-30) wird abgelehnt, nicht normalisiert', () => {
+  const { shortages, a } = setup();
+  assert.throws(() => shortages.reportShortage(a, { wirkstoff: 'Ramipril', voraussichtlichBis: '2026-02-30' }), /Datum/);
+  // Gültiges Datum bleibt erhalten
+  const r = shortages.reportShortage(a, { wirkstoff: 'Metformin', voraussichtlichBis: '2026-09-01' });
+  assert.equal(r.voraussichtlich_bis, '2026-09-01');
+});
+
 test('reportShortage: leerer Wirkstoff abgelehnt', () => {
   const { shortages, a } = setup();
   assert.throws(() => shortages.reportShortage(a, { wirkstoff: '  ' }), /Wirkstoff/);

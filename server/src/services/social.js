@@ -855,7 +855,11 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (existing) {
         let m = Math.round((Number(existing.menge) || 0) + menge);
         if (m > 100000) m = 100000;
-        return social.updateCartItem(existing.id, { menge: m });
+        const patch = { menge: m };
+        // Fehlenden Listenpreis nachtragen, wenn die neue (identische) Position ihn mitbringt
+        // — sonst bliebe die Ersparnis-Anzeige für die zusammengeführte Position leer.
+        if (existing.listenpreis == null && row.listenpreis != null) patch.listenpreis = row.listenpreis;
+        return social.updateCartItem(existing.id, patch);
       }
       return social.addCartItem(row);
     },

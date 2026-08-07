@@ -53,6 +53,18 @@ test('Einkaufsliste: Gesamtersparnis aus Listen- vs. Aktionspreis', () => {
   assert.equal(social.cart(a).total_savings, 12);
 });
 
+test('Einkaufsliste: Merge trägt fehlenden Listenpreis nach (Ersparnis aktiv)', () => {
+  const { social, a } = setup();
+  const base = { bezeichnung: 'Amoxi', wirkstoff: 'Amoxicillin', supplier: 'Kwizda', aktionspreis: 7, sourceKind: 'rabatt' };
+  social.addToCart(a, { ...base, menge: 2 });                 // ohne Listenpreis
+  assert.equal(social.cart(a).total_savings, 0);
+  social.addToCart(a, { ...base, listenpreis: 10, menge: 1 }); // identische Position, jetzt mit Listenpreis
+  const c = social.cart(a);
+  assert.equal(c.count, 1, 'zusammengeführt');
+  assert.equal(c.items[0].menge, 3);
+  assert.equal(c.total_savings, (10 - 7) * 3); // Listenpreis nachgetragen -> 9
+});
+
 test('Einkaufsliste: identisches Angebot doppelt hinzufügen führt Menge zusammen (keine Dublette)', () => {
   const { social, a } = setup();
   const base = { bezeichnung: 'Amoxi 1000', wirkstoff: 'Amoxicillin', supplier: 'Kwizda', aktionspreis: 4.5, sourceKind: 'rabatt' };

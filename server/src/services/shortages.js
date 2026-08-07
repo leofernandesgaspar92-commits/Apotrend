@@ -7,6 +7,13 @@ import { AppError } from '../domain/errors.js';
 const STATUS_LABEL = { kritisch: 'Kritischer Engpass', eingeschraenkt: 'Eingeschränkt lieferbar', verfuegbar: 'Wieder verfügbar' };
 const VALID_STATUS = Object.keys(STATUS_LABEL);
 
+// Strenger Kalendertag (YYYY-MM-DD): Date.parse normalisiert Überläufe (z. B. 2026-02-30
+// -> 02.03.), deshalb muss der geparste Tag wieder exakt denselben ISO-String ergeben.
+function isValidCalendarDay(raw) {
+  const d = new Date(raw + 'T00:00:00Z');
+  return /^\d{4}-\d{2}-\d{2}$/.test(raw) && !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === raw;
+}
+
 // Tage zwischen zwei ISO-Kalendertagen (YYYY-MM-DD), b − a. Null bei ungültigen Daten.
 function daysBetween(a, b) {
   const da = Date.parse(String(a) + 'T00:00:00Z'), db = Date.parse(String(b) + 'T00:00:00Z');
@@ -95,9 +102,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       let voraussichtlich_bis = null;
       const vb = String(voraussichtlichBis || '').trim();
       if (vb) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(vb) || Number.isNaN(Date.parse(vb + 'T00:00:00Z'))) {
-          throw new Error('Ungültiges Datum (voraussichtlich bis).');
-        }
+        if (!isValidCalendarDay(vb)) throw new Error('Ungültiges Datum (voraussichtlich bis).');
         voraussichtlich_bis = vb;
       }
       // Doppel-/Fehlklick-Schutz: dieselbe Apotheke soll denselben Wirkstoff nicht
@@ -170,7 +175,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       let vb = null;
       const raw = String(voraussichtlichBis || '').trim();
       if (raw) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(raw) || Number.isNaN(Date.parse(raw + 'T00:00:00Z'))) {
+        if (!isValidCalendarDay(raw)) {
           throw new AppError('shortage_bad_date', 'Ungültiges Datum (voraussichtlich bis).', 400);
         }
         vb = raw;
