@@ -173,6 +173,15 @@ function userCountry(userId) {
   const prof = userId ? social.getProfile(userId) : null;
   return normalizeCountry(prof && prof.country);
 }
+// Anzeigename einer Nutzer-ID (für Team-Listen); null wenn unbekannt.
+function userName(id) { const u = id ? repo.getUserById(id) : null; return u ? u.name : null; }
+// Echtes Kalenderdatum (YYYY-MM-DD), das nicht überläuft (z.B. 2026-02-31 -> ungültig).
+function isValidCalendarDay(s) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(s + 'T00:00:00Z');
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+}
+const MAX_TITLE = 120;
 // Rechts-Gate: ist die Funktion im Heimatland des Nutzers hart gesperrt, mit HTTP 451
 // ("Unavailable For Legal Reasons") abweisen. So kommen selbst bei direktem API-Aufruf
 // keine Daten einer in diesem Land unzulässigen Funktion durch (UI blendet sie ohnehin aus).
@@ -399,10 +408,9 @@ const routes = [
   ['GET', /^\/api\/tasks$/, true, async ({ userId }) => {
     const mem = orgAuth.myMembership(userId);
     if (!mem) return { tasks: [], can_assign: false, members: [] };
-    const uname = (id) => { const u = id ? repo.getUserById(id) : null; return u ? u.name : null; };
     const order = { offen: 0, in_arbeit: 1, erledigt: 2 };
     const tasks = collab.listTasks(userId, mem.organization_id)
-      .map(t => ({ ...t, assignee_name: uname(t.assignee_user_id), creator_name: uname(t.created_by), mine: t.assignee_user_id === userId }))
+      .map(t => ({ ...t, assignee_name: userName(t.assignee_user_id), creator_name: userName(t.created_by), mine: t.assignee_user_id === userId }))
       .sort((a, b) => (order[a.status] - order[b.status]) || String(b.created_at).localeCompare(String(a.created_at)));
     const can_assign = roleCan(mem.role, 'assign_tasks');
     return { tasks, can_assign, members: orgAuth.orgMembers(userId).map(m => ({ user_id: m.user_id, name: m.name })) };
@@ -412,26 +420,29 @@ const routes = [
     if (!mem) { const e = new Error('Keine Organisation.'); e.status = 403; throw e; }
     const title = String(body.title || '').trim();
     if (title.length < 2) { const e = new Error('Aufgabe braucht einen Titel.'); e.status = 400; throw e; }
+    if (title.length > MAX_TITLE) { const e = new Error(`Titel zu lang (max ${MAX_TITLE}).`); e.status = 400; throw e; }
     const dueDate = body.dueDate ? String(body.dueDate).trim() : null;
-    if (dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) { const e = new Error('Ungültiges Fälligkeitsdatum.'); e.status = 400; throw e; }
+    if (dueDate && !isValidCalendarDay(dueDate)) { const e = new Error('Ungültiges Fälligkeitsdatum.'); e.status = 400; throw e; }
     return { task: collab.createTask(userId, mem.organization_id, { title, description: body.description ? String(body.description).slice(0, 1000) : null, assigneeUserId: body.assigneeUserId || null, dueDate }) };
   }],
   ['POST', /^\/api\/tasks\/([^/]+)\/status$/, true, async ({ userId, params, body }) => ({ task: collab.updateTaskStatus(userId, params[0], body.status) })],
   // ── Team-Notizen (gemeinsame Wissensablage, apothekenintern) ──
   ['GET', /^\/api\/notes$/, true, async ({ userId }) => {
     const mem = orgAuth.myMembership(userId);
-    if (!mem) return { notes: [], can_pin: false };
-    const uname = (id) => { const u = id ? repo.getUserById(id) : null; return u ? u.name : null; };
+    if (!mem) return { notes: [], can_pin: false, can_delete_role: false, can_create: false };
     const notes = collab.listNotes(userId, mem.organization_id)
-      .map(n => ({ ...n, creator_name: uname(n.created_by), mine: n.created_by === userId }))
+      .map(n => ({ ...n, creator_name: userName(n.created_by), mine: n.created_by === userId }))
       .sort((a, b) => (Number(b.pinned) - Number(a.pinned)) || String(b.created_at).localeCompare(String(a.created_at)));
-    return { notes, can_pin: roleCan(mem.role, 'collab'), can_delete_role: roleCan(mem.role, 'collab') };
+    const canCollab = roleCan(mem.role, 'collab'); // Anheften + fremde Notizen löschen
+    const canCreate = canCollab || roleCan(mem.role, 'collab_assigned'); // Teilnahme am collab
+    return { notes, can_pin: canCollab, can_delete_role: canCollab, can_create: canCreate };
   }],
   ['POST', /^\/api\/notes$/, true, async ({ userId, body }) => {
     const mem = orgAuth.myMembership(userId);
     if (!mem) { const e = new Error('Keine Organisation.'); e.status = 403; throw e; }
     const title = String(body.title || '').trim();
     if (title.length < 2) { const e = new Error('Notiz braucht einen Titel.'); e.status = 400; throw e; }
+    if (title.length > MAX_TITLE) { const e = new Error(`Titel zu lang (max ${MAX_TITLE}).`); e.status = 400; throw e; }
     let docUrl = null;
     if (body.docUrl && String(body.docUrl).trim()) {
       try { docUrl = cleanSourceUrl(body.docUrl); } catch { const e = new Error('Link muss ein http(s)-Link sein.'); e.status = 400; throw e; }
