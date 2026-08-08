@@ -28,8 +28,28 @@ export function createSocialService(social, foundationRepo, options = {}) {
     return u;
   }
 
+  // Ordnet jeden Benachrichtigungs-Typ einer nutzerseitig schaltbaren Kategorie zu.
+  // Nicht gemappte Typen (z.B. 'verified') sind systemseitig und immer zustellbar.
+  const NOTIF_CATEGORY = {
+    follow: 'follows',
+    comment: 'community', reaction: 'community', mention: 'community', repost: 'community',
+    poll_vote: 'community', answer_accepted: 'community', endorsement: 'community', recommendation: 'community',
+    dm: 'dm',
+    watch_alert: 'watch', price_alert: 'watch', watch_offer: 'watch', shortage_confirm: 'watch',
+    live_start: 'live_appts', appt_request: 'live_appts', appt_confirmed: 'live_appts', appt_declined: 'live_appts', appt_cancelled: 'live_appts',
+    promo_like: 'promos', promo_comment: 'promos',
+  };
+  const NOTIF_CATEGORIES = ['follows', 'community', 'dm', 'watch', 'live_appts', 'promos'];
+  // Darf dieser Typ an diese:n Empfänger:in zugestellt werden (Einstellungen)?
+  function notifAllowed(userId, type) {
+    const cat = NOTIF_CATEGORY[type];
+    if (!cat) return true; // systemseitig / nicht abschaltbar
+    return social.getNotifPrefs(userId)[cat] !== false;
+  }
+
   function notify(userId, type, actorUserId, refType, refId) {
     if (!userId || userId === actorUserId) return; // nie sich selbst benachrichtigen
+    if (!notifAllowed(userId, type)) return;        // vom Empfänger deaktivierte Kategorie
     social.createNotification({ userId, type, actorUserId, refType, refId });
   }
 
@@ -262,7 +282,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
         social.removeEndorsement(actorUserId, prof.user_id, s); mine = false;
       } else {
         social.addEndorsement({ endorserUserId: actorUserId, targetUserId: prof.user_id, skill: s }); mine = true;
-        social.createNotification({ userId: prof.user_id, type: 'endorsement', actorUserId, refType: 'skill', refId: s, label: s });
+        if (notifAllowed(prof.user_id, 'endorsement')) social.createNotification({ userId: prof.user_id, type: 'endorsement', actorUserId, refType: 'skill', refId: s, label: s });
       }
       const count = social.listEndorsementsForTarget(prof.user_id).filter(e => e.skill === s).length;
       return { skill: s, count, mine };
@@ -283,7 +303,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
         row = social.createRecommendation({ authorUserId: actorUserId, targetUserId: prof.user_id, body: text });
       } else {
         row = social.createRecommendation({ authorUserId: actorUserId, targetUserId: prof.user_id, body: text });
-        social.createNotification({ userId: prof.user_id, type: 'recommendation', actorUserId, refType: 'profile', refId: prof.handle });
+        if (notifAllowed(prof.user_id, 'recommendation')) social.createNotification({ userId: prof.user_id, type: 'recommendation', actorUserId, refType: 'profile', refId: prof.handle });
       }
       return row;
     },
@@ -714,7 +734,23 @@ export function createSocialService(social, foundationRepo, options = {}) {
     // Öffentliche Benachrichtigung (z.B. vom Austausch-Modul für Matching genutzt).
     pushNotification({ userId, type, actorUserId = null, refType = null, refId = null, label = null }) {
       if (!userId || userId === actorUserId) return null;
+      if (!notifAllowed(userId, type)) return null; // vom Empfänger deaktivierte Kategorie
       return social.createNotification({ userId, type, actorUserId, refType, refId, label });
+    },
+    // ── Benachrichtigungs-Einstellungen ──
+    notifCategories() { return NOTIF_CATEGORIES.slice(); },
+    getNotifSettings(userId) {
+      requireUser(userId);
+      const disabled = social.getNotifPrefs(userId);
+      const settings = {};
+      for (const c of NOTIF_CATEGORIES) settings[c] = disabled[c] !== false;
+      return settings;
+    },
+    setNotifSetting(userId, category, enabled) {
+      requireUser(userId);
+      if (!NOTIF_CATEGORIES.includes(category)) throw new AppError('notif_bad_category', 'Unbekannte Kategorie.', 400);
+      social.setNotifPref(userId, category, !!enabled);
+      return this.getNotifSettings(userId);
     },
     notifications(userId) {
       requireUser(userId);

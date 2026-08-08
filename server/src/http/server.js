@@ -511,6 +511,8 @@ const routes = [
   ['POST', /^\/api\/unmute$/, true, async ({ userId, body }) => social.unmute(userId, body.handle)],
   ['GET', /^\/api\/muted$/, true, async ({ userId }) => ({ muted: social.listMuted(userId) })],
 
+  ['GET', /^\/api\/notification-prefs$/, true, async ({ userId }) => ({ settings: social.getNotifSettings(userId), categories: social.notifCategories() })],
+  ['POST', /^\/api\/notification-prefs$/, true, async ({ userId, body }) => ({ settings: social.setNotifSetting(userId, body.category, body.enabled) })],
   ['GET', /^\/api\/notifications$/, true, async ({ userId }) => ({ notifications: social.notifications(userId), unread: social.unreadCount(userId) })],
   ['POST', /^\/api\/notifications\/read-all$/, true, async ({ userId }) => { social.markAllNotificationsRead(userId); return { ok: true }; }],
   ['POST', /^\/api\/notifications\/([^/]+)\/read$/, true, async ({ userId, params }) => { social.markNotificationRead(userId, params[0]); return { ok: true }; }],

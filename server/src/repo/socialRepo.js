@@ -27,6 +27,7 @@ export function createSocialRepo() {
   const appointments = new Map();    // id -> row (Videosprechstunde-Termine: Anbieter <-> Anfrager)
   const promotions = new Map();      // id -> row (Premium-Werbung/Shop: beworbene Produkte/Angebote)
   const liveSessions = new Map();     // id -> row (Premium-Live-Sessions: geplante/laufende Video-Runden)
+  const notifPrefs = new Map();        // userId -> { [kategorie]: false } (nur DEAKTIVIERTE Kategorien; Default = alles an)
 
   const uuid = () => crypto.randomUUID();
   const now = () => new Date().toISOString();
@@ -313,6 +314,14 @@ export function createSocialRepo() {
     listNotifications(userId) {
       return [...notifications.values()].filter(n => n.user_id === userId).sort((a, b) => b.created_at.localeCompare(a.created_at)).map(n => ({ ...n }));
     },
+    // ── Benachrichtigungs-Einstellungen (je Kategorie an/aus; nur Abweichungen speichern) ──
+    getNotifPrefs(userId) { return { ...(notifPrefs.get(userId) || {}) }; },
+    setNotifPref(userId, category, enabled) {
+      const cur = notifPrefs.get(userId) || {};
+      if (enabled) delete cur[category]; else cur[category] = false;
+      if (Object.keys(cur).length) notifPrefs.set(userId, cur); else notifPrefs.delete(userId);
+      return { ...cur };
+    },
     markNotificationRead(id) { const n = notifications.get(id); if (n) n.read = true; },
     markAllNotificationsRead(userId) { for (const n of notifications.values()) if (n.user_id === userId) n.read = true; },
     unreadNotificationCount(userId) { return [...notifications.values()].filter(n => n.user_id === userId && !n.read).length; },
@@ -385,6 +394,7 @@ export function createSocialRepo() {
       for (const [id, r] of appointments) if (r.provider_user_id === userId || r.requester_user_id === userId) appointments.delete(id);
       for (const [id, r] of promotions) if (r.author_user_id === userId) promotions.delete(id);
       for (const [id, r] of liveSessions) if (r.host_user_id === userId) liveSessions.delete(id);
+      notifPrefs.delete(userId);
       for (const [id, r] of reports) if (r.reporter_user_id === userId) reports.delete(id);
       verifications.delete(userId);
     },
@@ -395,7 +405,7 @@ export function createSocialRepo() {
         profiles: [...profiles], profilesByHandle: [...profilesByHandle], posts: [...posts],
         comments: [...comments], reactions: [...reactions], pollVotes: [...pollVotes], follows: [...follows], mutes: [...mutes],
         notifications: [...notifications], dmThreads: [...dmThreads], dmMessages: [...dmMessages], reports: [...reports],
-        verifications: [...verifications], bookmarks: [...bookmarks], endorsements: [...endorsements], profileViews: [...profileViews], recommendations: [...recommendations], cartItems: [...cartItems], orders: [...orders], appointments: [...appointments], promotions: [...promotions], liveSessions: [...liveSessions],
+        verifications: [...verifications], bookmarks: [...bookmarks], endorsements: [...endorsements], profileViews: [...profileViews], recommendations: [...recommendations], cartItems: [...cartItems], orders: [...orders], appointments: [...appointments], promotions: [...promotions], liveSessions: [...liveSessions], notifPrefs: [...notifPrefs],
       };
     },
     __load(d) {
@@ -404,7 +414,7 @@ export function createSocialRepo() {
       fill(profiles, d.profiles); fill(profilesByHandle, d.profilesByHandle); fill(posts, d.posts);
       fill(comments, d.comments); fill(reactions, d.reactions); fill(pollVotes, d.pollVotes); fill(follows, d.follows); fill(mutes, d.mutes);
       fill(notifications, d.notifications); fill(dmThreads, d.dmThreads); fill(dmMessages, d.dmMessages); fill(reports, d.reports);
-      fill(verifications, d.verifications); fill(bookmarks, d.bookmarks); fill(endorsements, d.endorsements); fill(profileViews, d.profileViews); fill(recommendations, d.recommendations); fill(cartItems, d.cartItems); fill(orders, d.orders); fill(appointments, d.appointments); fill(promotions, d.promotions); fill(liveSessions, d.liveSessions);
+      fill(verifications, d.verifications); fill(bookmarks, d.bookmarks); fill(endorsements, d.endorsements); fill(profileViews, d.profileViews); fill(recommendations, d.recommendations); fill(cartItems, d.cartItems); fill(orders, d.orders); fill(appointments, d.appointments); fill(promotions, d.promotions); fill(liveSessions, d.liveSessions); fill(notifPrefs, d.notifPrefs);
     },
   };
 }

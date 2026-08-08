@@ -208,6 +208,8 @@ const I18N = {
     cm_del_confirm:'Kommentar löschen?', cm_save:'Speichern',
     gen_back:'Zurück', notif_title:'🔔 Benachrichtigungen', notif_doc:'Benachrichtigungen',
     notif_readall:'Alle als gelesen markieren', nf_all:'Alle', nf_procurement:'⭐ Engpässe & Beschaffung', nf_social:'💬 Sozial', notif_empty:'Noch keine Benachrichtigungen.',
+    np_open:'⚙ Einstellungen', np_title:'⚙ Benachrichtigungen', np_sub:'Lege fest, worüber du benachrichtigt werden willst. Änderungen gelten sofort.', np_on:'An', np_off:'Aus',
+    np_c_follows:'Neue Follower', np_c_follows_d:'Wenn dir jemand folgt.', np_c_community:'Community', np_c_community_d:'Kommentare, Reaktionen, Erwähnungen, geteilte Beiträge, Empfehlungen.', np_c_dm:'Direktnachrichten', np_c_dm_d:'Wenn dir jemand privat schreibt.', np_c_watch:'Beobachtung & Preise', np_c_watch_d:'Engpass-Warnungen zu beobachteten Wirkstoffen, Bestandsangebote, Preis-Hinweise.', np_c_live:'Live & Termine', np_c_live_d:'Live-Sessions und Videosprechstunde-Termine.', np_c_promos:'Angebote & Werbung', np_c_promos_d:'Gefällt-mir und Anfragen zu deinen Angeboten.',
     notif_someone:'Jemand', post_doc:'Beitrag', post_title:'Beitrag', post_back:'← zurück zum Feed',
     nv_follow:'folgt dir jetzt', nv_comment:'hat kommentiert', nv_reaction:'hat reagiert auf deinen Beitrag', nv_endorsement:'hat dein Fachgebiet bestätigt', en_hint:'Fachgebiet bestätigen', nv_recommendation:'hat dich empfohlen', nv_price_alert:'Rabatt-Alarm:',
     rec_title:'Empfehlungen', rec_write:'✍️ Empfehlung schreiben', rec_edit:'✍️ Empfehlung bearbeiten', rec_ph:'Wie war die fachliche Zusammenarbeit mit dieser Person? (max. 600 Zeichen)', rec_save:'Empfehlung veröffentlichen', rec_none:'Noch keine Empfehlungen.', rec_remove:'Empfehlung entfernen', rec_remove_confirm:'Diese Empfehlung wirklich entfernen?',
@@ -546,6 +548,8 @@ const I18N = {
     cm_del_confirm:'Delete comment?', cm_save:'Save',
     gen_back:'Back', notif_title:'🔔 Notifications', notif_doc:'Notifications',
     notif_readall:'Mark all as read', nf_all:'All', nf_procurement:'⭐ Shortages & sourcing', nf_social:'💬 Social', notif_empty:'No notifications yet.',
+    np_open:'⚙ Settings', np_title:'⚙ Notifications', np_sub:'Choose what you want to be notified about. Changes apply immediately.', np_on:'On', np_off:'Off',
+    np_c_follows:'New followers', np_c_follows_d:'When someone follows you.', np_c_community:'Community', np_c_community_d:'Comments, reactions, mentions, reposts, recommendations.', np_c_dm:'Direct messages', np_c_dm_d:'When someone messages you privately.', np_c_watch:'Watchlist & prices', np_c_watch_d:'Shortage alerts for substances you watch, stock offers, price hints.', np_c_live:'Live & appointments', np_c_live_d:'Live sessions and video consultation appointments.', np_c_promos:'Listings & ads', np_c_promos_d:'Likes and enquiries on your listings.',
     notif_someone:'Someone', post_doc:'Post', post_title:'Post', post_back:'← back to feed',
     nv_follow:'now follows you', nv_comment:'commented', nv_reaction:'reacted to your post', nv_endorsement:'endorsed your skill', en_hint:'Endorse this skill', nv_recommendation:'recommended you', nv_price_alert:'Discount alert:',
     rec_title:'Recommendations', rec_write:'✍️ Write a recommendation', rec_edit:'✍️ Edit recommendation', rec_ph:'How was working with this person professionally? (max. 600 characters)', rec_save:'Publish recommendation', rec_none:'No recommendations yet.', rec_remove:'Remove recommendation', rec_remove_confirm:'Really remove this recommendation?',
@@ -884,6 +888,8 @@ const I18N = {
     cm_del_confirm:'Eliminar comentário?', cm_save:'Guardar',
     gen_back:'Voltar', notif_title:'🔔 Notificações', notif_doc:'Notificações',
     notif_readall:'Marcar todas como lidas', nf_all:'Todas', nf_procurement:'⭐ Faltas & compras', nf_social:'💬 Social', notif_empty:'Ainda sem notificações.',
+    np_open:'⚙ Definições', np_title:'⚙ Notificações', np_sub:'Escolha sobre o que quer ser notificado. As alterações aplicam-se de imediato.', np_on:'Ligado', np_off:'Desligado',
+    np_c_follows:'Novos seguidores', np_c_follows_d:'Quando alguém o segue.', np_c_community:'Comunidade', np_c_community_d:'Comentários, reações, menções, partilhas, recomendações.', np_c_dm:'Mensagens diretas', np_c_dm_d:'Quando alguém lhe escreve em privado.', np_c_watch:'Vigilância & preços', np_c_watch_d:'Alertas de rutura das substâncias que vigia, ofertas de stock, avisos de preço.', np_c_live:'Ao vivo & marcações', np_c_live_d:'Sessões ao vivo e marcações de teleconsulta.', np_c_promos:'Anúncios & ofertas', np_c_promos_d:'Gostos e contactos nos seus anúncios.',
     notif_someone:'Alguém', post_doc:'Publicação', post_title:'Publicação', post_back:'← voltar ao feed',
     nv_follow:'começou a segui-lo', nv_comment:'comentou', nv_reaction:'reagiu à sua publicação', nv_endorsement:'confirmou a sua área', en_hint:'Confirmar esta área', nv_recommendation:'recomendou-o', nv_price_alert:'Alerta de desconto:',
     rec_title:'Recomendações', rec_write:'✍️ Escrever recomendação', rec_edit:'✍️ Editar recomendação', rec_ph:'Como foi a colaboração profissional com esta pessoa? (máx. 600 caracteres)', rec_save:'Publicar recomendação', rec_none:'Ainda sem recomendações.', rec_remove:'Remover recomendação', rec_remove_confirm:'Remover mesmo esta recomendação?',
@@ -5962,7 +5968,7 @@ async function showNotifications() {
       <button class="small sortbtn" data-nf="social">${esc(t('nf_social'))}</button>
     </div>`:''}
     <div id="notiflist" style="margin-top:8px"></div>
-    <div style="margin-top:12px"><button class="small" id="readall">${esc(t('notif_readall'))}</button></div></div>`);
+    <div class="row" style="margin-top:12px;gap:8px"><button class="small" id="readall">${esc(t('notif_readall'))}</button><button class="ghost small" id="notifsettings">${esc(t('np_open'))}</button></div></div>`);
   app.appendChild(head);
   const list = head.querySelector('#notiflist');
   if (!showFilter) notifFilter = 'all';
@@ -6008,7 +6014,57 @@ async function showNotifications() {
   if (showFilter) head.querySelectorAll('[data-nf]').forEach(b => b.onclick = () => { notifFilter = b.dataset.nf; drawNotifs(); });
   head.querySelector('#back').onclick = mainScreen;
   head.querySelector('#readall').onclick = async () => { await api('POST','/api/notifications/read-all'); refreshNotifCount(); showNotifications(); };
+  head.querySelector('#notifsettings').onclick = openNotifSettings;
   refreshNotifCount();
+}
+
+// Benachrichtigungs-Einstellungen: je Kategorie an/aus. Sofort gespeichert.
+async function openNotifSettings() {
+  setDocTitle(t('np_title'));
+  app.innerHTML = '<div class="loading">…</div>';
+  let d;
+  try { d = await api('GET','/api/notification-prefs'); }
+  catch(e){ app.innerHTML=''; app.appendChild(errorState(e.message, openNotifSettings)); return; }
+  const meta = {
+    follows:   ['👥', t('np_c_follows'),   t('np_c_follows_d')],
+    community: ['💬', t('np_c_community'), t('np_c_community_d')],
+    dm:        ['✉️', t('np_c_dm'),        t('np_c_dm_d')],
+    watch:     ['⭐', t('np_c_watch'),     t('np_c_watch_d')],
+    live_appts:['📹', t('np_c_live'),      t('np_c_live_d')],
+    promos:    ['🏷️', t('np_c_promos'),    t('np_c_promos_d')],
+  };
+  app.innerHTML = '';
+  const head = el(`<div class="card">
+    <div class="row"><h1 style="flex:1">${esc(t('np_title'))}</h1><button class="ghost small" id="back">${esc(t('gen_back'))}</button></div>
+    <div class="muted" style="margin-bottom:10px">${esc(t('np_sub'))}</div>
+    <div id="np_list"></div>
+  </div>`);
+  const list = head.querySelector('#np_list');
+  for (const cat of d.categories) {
+    const [icon, label, desc] = meta[cat] || ['🔔', cat, ''];
+    const on = d.settings[cat] !== false;
+    const row = el(`<div class="row" style="align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid var(--line)">
+      <div style="font-size:22px;line-height:1.2">${icon}</div>
+      <div style="flex:1"><b>${esc(label)}</b><div class="muted" style="font-size:13px">${esc(desc)}</div></div>
+      <button class="${on?'':'ghost '}small" data-cat="${esc(cat)}" aria-pressed="${on}">${on?esc(t('np_on')):esc(t('np_off'))}</button>
+    </div>`);
+    const btn = row.querySelector('[data-cat]');
+    btn.onclick = async () => {
+      const next = btn.getAttribute('aria-pressed') !== 'true'; // umschalten
+      btn.disabled = true;
+      try {
+        const r = await api('POST','/api/notification-prefs', { category: cat, enabled: next });
+        const nowOn = r.settings[cat] !== false;
+        btn.setAttribute('aria-pressed', String(nowOn));
+        btn.textContent = nowOn ? t('np_on') : t('np_off');
+        btn.classList.toggle('ghost', !nowOn);
+      } catch(e){ alert(e.message); }
+      btn.disabled = false;
+    };
+    list.appendChild(row);
+  }
+  head.querySelector('#back').onclick = showNotifications;
+  app.appendChild(head);
 }
 
 // Einzelbeitrag-Ansicht (z.B. aus einer Benachrichtigung heraus), Kommentare offen.
