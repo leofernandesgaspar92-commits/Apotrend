@@ -96,11 +96,34 @@ test('Live: Erinnern benachrichtigt nicht doppelt (Follower + Interesse)', () =>
   assert.equal(n.length, 1, 'genau eine Benachrichtigung trotz Follower+Interesse');
 });
 
-test('Live: nur Host/Mod darf löschen', () => {
+test('Live: bereits laufende Session lässt sich nicht erneut starten (kein Notify-Spam)', () => {
   const { repo, social, host, viewer } = setup();
   repo.grantEntitlement(host, 'premium');
+  social.follow(viewer, host);
+  const s = social.createLiveSession(host, { titel: 'Q&A', geplant_am: '2026-09-01T18:00' });
+  social.startLiveSession(host, s.id);
+  assert.throws(() => social.startLiveSession(host, s.id), /gestartet|startable/i);
+  // Genau EINE Live-Benachrichtigung trotz zweitem Startversuch
+  assert.equal(social.notifications(viewer).filter(n => n.type === 'live_start').length, 1);
+});
+
+test('Live: nur Host/Mod darf löschen; Vormerkungen werden aufgeräumt', () => {
+  const repo = createMemoryRepo();
+  const orgAuth = createOrgAuthService(repo);
+  const socialRepo = createSocialRepo();
+  const social = createSocialService(socialRepo, repo);
+  const mk = (handle, email) => {
+    const r = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: handle }, owner: { name: handle, email, password: 'geheim123' } });
+    social.createProfile(r.user.id, { handle, displayName: handle });
+    return r.user.id;
+  };
+  const host = mk('host', 'h@a.at'); const viewer = mk('viewer', 'v@a.at');
+  repo.grantEntitlement(host, 'premium');
   const s = social.createLiveSession(host, { titel: 'Test', geplant_am: '2026-09-01T18:00' });
+  social.toggleLiveInterest(viewer, s.id);
+  assert.equal(socialRepo.listReactions('live', s.id).length, 1);
   assert.throws(() => social.deleteLiveSession(viewer, s.id), ForbiddenError);
   social.deleteLiveSession(host, s.id);
   assert.equal(social.listLiveSessions(viewer).length, 0);
+  assert.equal(socialRepo.listReactions('live', s.id).length, 0, 'Vormerkungen entfernt');
 });

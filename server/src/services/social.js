@@ -1061,18 +1061,23 @@ export function createSocialService(social, foundationRepo, options = {}) {
         is_mine: viewerUserId === p.author_user_id,
       };
     },
-    listPromotions(viewerUserId, { kategorie = null } = {}) {
+    listPromotions(viewerUserId, { kategorie = null, country = null } = {}) {
       requireUser(viewerUserId);
       const muted = new Set(social.listMuted(viewerUserId));
       const cat = kategorie && PROMO_CATEGORIES.includes(kategorie) ? kategorie : null;
+      const c = country ? normalizeCountry(country) : null; // Markt-Segmentierung wie Feeds
       return social.listPromotions()
         .filter(p => !muted.has(p.author_user_id))
         .filter(p => !cat || p.kategorie === cat)
+        .filter(p => !c || (p.country || 'AT') === c)
         .map(p => this.decoratePromo(p, viewerUserId));
     },
-    listMyPromotions(userId) {
+    // Eigene Angebote: keine Länder-Filterung (man sieht immer die eigenen),
+    // aber Kategoriefilter wie in der Gesamtliste konsistent anwenden.
+    listMyPromotions(userId, { kategorie = null } = {}) {
       requireUser(userId);
-      return social.listPromotionsByAuthor(userId).map(p => this.decoratePromo(p, userId));
+      const cat = kategorie && PROMO_CATEGORIES.includes(kategorie) ? kategorie : null;
+      return social.listPromotionsByAuthor(userId).filter(p => !cat || p.kategorie === cat).map(p => this.decoratePromo(p, userId));
     },
     getPromotion(viewerUserId, id) {
       requireUser(viewerUserId);
@@ -1083,7 +1088,9 @@ export function createSocialService(social, foundationRepo, options = {}) {
         const prof = social.getProfileByUserId(c.author_user_id);
         return { ...c, author: prof ? { handle: prof.handle, display_name: prof.display_name, avatar_url: prof.avatar_url || null, verified: !!prof.verified, account_type: prof.account_type } : null };
       });
-      return { ...this.decoratePromo(p, viewerUserId), comments };
+      // comment_count an die (stummgeschaltet-gefilterte) Liste angleichen, sonst
+      // weicht die Kopfzahl von den angezeigten Zeilen ab.
+      return { ...this.decoratePromo(p, viewerUserId), comment_count: comments.length, comments };
     },
     createPromotion(userId, { titel, beschreibung, kategorie, preis, einheit, image, link } = {}) {
       requireUser(userId);
@@ -1148,6 +1155,9 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (!p) throw new AppError('promo_not_found', 'Angebot nicht gefunden.', 404);
       if (p.author_user_id !== userId && !isModerator(userId)) throw new ForbiddenError('Nur der/die Autor:in oder Moderation darf löschen.');
       social.softDeletePromotion(id);
+      // Verwaiste Likes/Kommentare des Angebots aufräumen (nicht mehr erreichbar).
+      social.removeReactionsForTarget('promotion', id);
+      social.removeCommentsForPost(id);
       return { ok: true };
     },
     likePromotion(userId, id) {
@@ -1172,7 +1182,8 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (text.length > MAX_BODY) throw new AppError('comment_too_long', `Kommentar zu lang (max ${MAX_BODY}).`, 400);
       const comment = social.createComment({ postId: id, authorUserId: userId, body: text });
       notify(p.author_user_id, 'promo_comment', userId, 'promotion', id);
-      notifyMentions(text, userId, 'promotion', id);
+      // Kein notifyMentions: 'promotion' ist kein Post-Ref, die Mention-Benachrichtigung
+      // würde ins Leere (Profil statt Angebot) routen und den Autor doppelt benachrichtigen.
       const prof = social.getProfileByUserId(userId);
       return { ...comment, author: prof ? { handle: prof.handle, display_name: prof.display_name, avatar_url: prof.avatar_url || null, verified: !!prof.verified, account_type: prof.account_type } : null };
     },
@@ -1242,7 +1253,9 @@ export function createSocialService(social, foundationRepo, options = {}) {
       const s = social.getLiveSession(id);
       if (!s) throw new AppError('live_not_found', 'Session nicht gefunden.', 404);
       if (s.host_user_id !== userId) throw new ForbiddenError('Nur der/die Gastgeber:in darf starten.');
-      if (s.status === 'beendet') throw new AppError('live_ended', 'Session ist bereits beendet.', 400);
+      // Nur aus 'geplant' startbar — verhindert Doppel-Benachrichtigung bei
+      // erneutem Klick/Retry auf eine bereits laufende Session.
+      if (s.status !== 'geplant') throw new AppError('live_not_startable', 'Session kann nicht (erneut) gestartet werden.', 400);
       const updated = social.updateLiveSession(id, { status: 'live', room_url: `https://meet.jit.si/apotrend-live-${s.id}`, started_at: new Date().toISOString() });
       // Beim Start benachrichtigen: Follower:innen UND alle, die sich die Session
       // vorgemerkt haben („Erinnern") — dedupliziert, ohne Gastgeber:in selbst.
@@ -1266,6 +1279,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (!s) throw new AppError('live_not_found', 'Session nicht gefunden.', 404);
       if (s.host_user_id !== userId && !isModerator(userId)) throw new ForbiddenError('Nur der/die Gastgeber:in oder Moderation darf löschen.');
       social.removeLiveSession(id);
+      social.removeReactionsForTarget('live', id); // verwaiste „Erinnern"-Vormerkungen entfernen
       return { ok: true };
     },
 

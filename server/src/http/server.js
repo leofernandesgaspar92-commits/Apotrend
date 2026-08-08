@@ -469,8 +469,8 @@ const routes = [
   ['POST', /^\/api\/appointments\/([^/]+)\/respond$/, true, async ({ userId, params, body }) => ({ appointment: social.respondVideoAppointment(userId, params[0], !!body.accept) })],
   ['POST', /^\/api\/appointments\/([^/]+)\/cancel$/, true, async ({ userId, params }) => ({ appointment: social.cancelVideoAppointment(userId, params[0]) })],
   // ── Premium-Werbung/Shop (beworbene Produkte/Angebote) ──
-  ['GET', /^\/api\/promotions$/, true, async ({ userId, query }) => ({ promotions: social.listPromotions(userId, { kategorie: query.get('kategorie') || null }), premium: payments.hasFeature(userId, 'premium') })],
-  ['GET', /^\/api\/promotions\/mine$/, true, async ({ userId }) => ({ promotions: social.listMyPromotions(userId), premium: payments.hasFeature(userId, 'premium') })],
+  ['GET', /^\/api\/promotions$/, true, async ({ userId, query }) => ({ promotions: social.listPromotions(userId, { kategorie: query.get('kategorie') || null, country: activeCountry(userId, query) }), premium: payments.hasFeature(userId, 'premium') })],
+  ['GET', /^\/api\/promotions\/mine$/, true, async ({ userId, query }) => ({ promotions: social.listMyPromotions(userId, { kategorie: query.get('kategorie') || null }), premium: payments.hasFeature(userId, 'premium') })],
   ['POST', /^\/api\/promotions$/, true, async ({ userId, body }) => ({ promotion: social.createPromotion(userId, body) })],
   ['GET', /^\/api\/promotions\/([^/]+)$/, true, async ({ userId, params }) => ({ promotion: social.getPromotion(userId, params[0]) })],
   ['POST', /^\/api\/promotions\/([^/]+)\/update$/, true, async ({ userId, params, body }) => ({ promotion: social.updatePromotion(userId, params[0], body) })],

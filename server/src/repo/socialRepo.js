@@ -182,6 +182,16 @@ export function createSocialRepo() {
     listReactions(targetType, targetId) {
       return [...reactions.values()].filter(r => r.target_type === targetType && r.target_id === targetId).map(r => ({ ...r }));
     },
+    // Alle Reaktionen auf ein Ziel entfernen (z.B. beim Löschen des Ziels), damit
+    // keine verwaisten Reaktionen im Store zurückbleiben.
+    removeReactionsForTarget(targetType, targetId) {
+      for (const [k, r] of reactions) if (r.target_type === targetType && r.target_id === targetId) reactions.delete(k);
+    },
+    // Alle Kommentare zu einer post_id endgültig entfernen (z.B. beim Löschen eines
+    // Angebots, dessen Kommentare über die post_id=Angebot-ID laufen).
+    removeCommentsForPost(postId) {
+      for (const [id, c] of comments) if (c.post_id === postId) comments.delete(id);
+    },
 
     // ── Follows (gerichtet) ──
     follow(followerId, followeeId) {

@@ -4229,7 +4229,9 @@ function openLiveForm() {
   const feed = document.getElementById('feed');
   setDocTitle(t('lv_new'));
   feed.innerHTML = '';
-  const now = new Date(Date.now() + 3600000).toISOString().slice(0,16); // Default: in 1 Stunde
+  // Default: in 1 Stunde, in lokaler Zeit (datetime-local erwartet Ortszeit, nicht UTC).
+  const dt = new Date(Date.now() + 3600000);
+  const now = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().slice(0,16);
   const card = el(`<div class="card">
     <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button></div>
     <h1 style="margin:8px 0 8px">🔴 ${esc(t('lv_new'))}</h1>
