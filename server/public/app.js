@@ -253,6 +253,7 @@ const I18N = {
     nv_live_start:'sendet jetzt live',
     lv_nav:'🔴 Live-Sessions', lv_title:'🔴 Live-Sessions', lv_sub:'Öffentliche Live-Video-Runden der Branche (Fach-Q&A, Produktvorstellungen). Premium-Mitglieder senden, alle können beitreten.', lv_new:'+ Session planen', lv_mine:'Meine Sessions', lv_all:'Alle Sessions', lv_premium_only:'Live senden ist Premium-Mitgliedern vorbehalten.', lv_go_premium:'Premium freischalten', lv_empty_t:'Keine Live-Sessions', lv_empty_s:'Aktuell ist nichts geplant oder live. Als Premium-Mitglied planst du hier deine erste Session.', lv_empty_mine_s:'Du hast noch keine Session geplant.',
     lv_f_title:'Titel', lv_f_title_ph:'z.B. Q&A: Antibiotika-Engpässe', lv_f_topic:'Thema / Beschreibung', lv_f_topic_ph:'Worum geht es? (optional)', lv_f_when:'Termin (Datum & Uhrzeit)', lv_save:'Session planen', lv_saved:'Live-Session geplant.', lv_st_planned:'Geplant', lv_st_live:'🔴 LIVE', lv_st_ended:'Beendet', lv_host:'Gastgeber:in', lv_when:'Termin', lv_start:'▶ Live starten', lv_end:'■ Beenden', lv_end_confirm:'Diese Session jetzt beenden?', lv_join:'🔴 Jetzt beitreten', lv_delete:'Löschen', lv_delete_confirm:'Diese Session löschen?', lv_privacy:'Die Live-Runde läuft in einem öffentlichen Jitsi-Meet-Raum, der erst beim Start entsteht. Kein Mitschnitt.', lv_interest:'🔔 Erinnern', lv_interested:'🔔 Vorgemerkt', lv_interest_count:'{n}× vorgemerkt', lv_ov_now:'Jetzt live', lv_ov_soon:'Demnächst live',
+    dir_nav:'🔎 Partner finden', dir_title:'Partner finden', dir_sub:'Apotheken, Pharma-Unternehmen und Behörden in deinem Land — vernetze dich entlang der Lieferkette.', dir_search:'Name, Handle oder Fachgebiet …', dir_empty_t:'Niemand gefunden', dir_empty_s:'In dieser Kategorie gibt es (noch) keine Einträge in deinem Land.', dir_followers:'{n} Follower',
     pf_no_posts:'Noch keine sichtbaren Beiträge.',
     ep_name:'Anzeigename', ep_func:'Titel / Funktion (optional)', ep_func_ph:'z.B. Fachapothekerin, Einkauf',
     ep_about:'Über mich (optional, max. 500 Zeichen)', ep_about_ph:'Kurz zu dir und deinem Schwerpunkt…',
@@ -593,6 +594,7 @@ const I18N = {
     nv_live_start:'is now live',
     lv_nav:'🔴 Live sessions', lv_title:'🔴 Live sessions', lv_sub:'Public live video sessions from the industry (expert Q&A, product demos). Premium members broadcast, everyone can join.', lv_new:'+ Schedule session', lv_mine:'My sessions', lv_all:'All sessions', lv_premium_only:'Going live is reserved for Premium members.', lv_go_premium:'Unlock Premium', lv_empty_t:'No live sessions', lv_empty_s:'Nothing scheduled or live right now. As a Premium member you schedule your first session here.', lv_empty_mine_s:'You haven’t scheduled a session yet.',
     lv_f_title:'Title', lv_f_title_ph:'e.g. Q&A: antibiotic shortages', lv_f_topic:'Topic / description', lv_f_topic_ph:'What is it about? (optional)', lv_f_when:'Date & time', lv_save:'Schedule session', lv_saved:'Live session scheduled.', lv_st_planned:'Scheduled', lv_st_live:'🔴 LIVE', lv_st_ended:'Ended', lv_host:'Host', lv_when:'When', lv_start:'▶ Go live', lv_end:'■ End', lv_end_confirm:'End this session now?', lv_join:'🔴 Join now', lv_delete:'Delete', lv_delete_confirm:'Delete this session?', lv_privacy:'The live session runs in a public Jitsi Meet room created only at start. No recording.', lv_interest:'🔔 Remind me', lv_interested:'🔔 Reminder set', lv_interest_count:'{n} interested', lv_ov_now:'Live now', lv_ov_soon:'Coming up live',
+    dir_nav:'🔎 Find partners', dir_title:'Find partners', dir_sub:'Pharmacies, pharma companies and authorities in your country — connect along the supply chain.', dir_search:'Name, handle or specialty …', dir_empty_t:'Nobody found', dir_empty_s:'No entries in this category in your country (yet).', dir_followers:'{n} followers',
     pf_no_posts:'No visible posts yet.',
     ep_name:'Display name', ep_func:'Title / role (optional)', ep_func_ph:'e.g. specialist pharmacist, purchasing',
     ep_about:'About me (optional, max. 500 characters)', ep_about_ph:'A little about you and your focus…',
@@ -933,6 +935,7 @@ const I18N = {
     nv_live_start:'está agora em direto',
     lv_nav:'🔴 Sessões ao vivo', lv_title:'🔴 Sessões ao vivo', lv_sub:'Sessões de vídeo ao vivo do setor (Q&A técnico, demonstrações). Membros Premium transmitem, todos podem participar.', lv_new:'+ Agendar sessão', lv_mine:'As minhas sessões', lv_all:'Todas as sessões', lv_premium_only:'Transmitir ao vivo é reservado a membros Premium.', lv_go_premium:'Desbloquear Premium', lv_empty_t:'Sem sessões ao vivo', lv_empty_s:'Nada agendado ou ao vivo neste momento. Como membro Premium agenda aqui a sua primeira sessão.', lv_empty_mine_s:'Ainda não agendou nenhuma sessão.',
     lv_f_title:'Título', lv_f_title_ph:'ex. Q&A: ruturas de antibióticos', lv_f_topic:'Tema / descrição', lv_f_topic_ph:'Sobre o que é? (opcional)', lv_f_when:'Data e hora', lv_save:'Agendar sessão', lv_saved:'Sessão ao vivo agendada.', lv_st_planned:'Agendada', lv_st_live:'🔴 AO VIVO', lv_st_ended:'Terminada', lv_host:'Anfitrião', lv_when:'Quando', lv_start:'▶ Iniciar', lv_end:'■ Terminar', lv_end_confirm:'Terminar esta sessão agora?', lv_join:'🔴 Participar agora', lv_delete:'Eliminar', lv_delete_confirm:'Eliminar esta sessão?', lv_privacy:'A sessão ao vivo decorre numa sala Jitsi Meet pública criada apenas no início. Sem gravação.', lv_interest:'🔔 Lembrar', lv_interested:'🔔 Marcado', lv_interest_count:'{n} interessados', lv_ov_now:'Agora ao vivo', lv_ov_soon:'Brevemente ao vivo',
+    dir_nav:'🔎 Encontrar parceiros', dir_title:'Encontrar parceiros', dir_sub:'Farmácias, empresas farmacêuticas e autoridades no seu país — ligue-se ao longo da cadeia de abastecimento.', dir_search:'Nome, handle ou especialidade …', dir_empty_t:'Ninguém encontrado', dir_empty_s:'Ainda não há entradas nesta categoria no seu país.', dir_followers:'{n} seguidores',
     pf_no_posts:'Ainda sem publicações visíveis.',
     ep_name:'Nome a apresentar', ep_func:'Título / função (opcional)', ep_func_ph:'ex. farmacêutica especialista, compras',
     ep_about:'Sobre mim (opcional, máx. 500 caracteres)', ep_about_ph:'Um pouco sobre si e a sua área…',
@@ -1891,13 +1894,14 @@ async function loadOverview() {
     <div class="row" style="flex-wrap:wrap;gap:10px">
       ${tiles.join('')}
     </div>
-    <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px"><button class="ghost small" id="ov_bm">${esc(t('ov_bookmarks'))}</button><button class="ghost small" id="ov_promos">${esc(t('wb_nav'))}</button><button class="ghost small" id="ov_live">${esc(t('lv_nav'))}</button></div>
+    <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px"><button class="ghost small" id="ov_bm">${esc(t('ov_bookmarks'))}</button><button class="ghost small" id="ov_promos">${esc(t('wb_nav'))}</button><button class="ghost small" id="ov_live">${esc(t('lv_nav'))}</button><button class="ghost small" id="ov_dir">${esc(t('dir_nav'))}</button></div>
   </div>`);
   head.querySelectorAll('.ovtile[data-go]').forEach(t => { if (t.dataset.go) t.onclick = () => { if (t.dataset.go === 'live') { openLive(); return; } if (t.dataset.filter) shortageFilter = t.dataset.filter; goTab(t.dataset.go); }; });
   head.querySelectorAll('.ovtile').forEach(t => { if (!t.dataset.go) t.onclick = () => document.getElementById('btnNotif').click(); });
   head.querySelector('#ov_bm').onclick = openBookmarks;
   head.querySelector('#ov_promos').onclick = () => openPromotions();
   head.querySelector('#ov_live').onclick = () => openLive();
+  head.querySelector('#ov_dir').onclick = () => openDirectory();
   feed.appendChild(head);
   renderLiveOverview(feed, liveNow, liveSoon); // zeitkritisch: laufende/kommende Live-Sessions ganz oben
 
@@ -4017,6 +4021,55 @@ async function openAppointments(flash) {
     const can = card.querySelector('[data-cancel]'); if (can) can.onclick = async () => { if (!confirm(t('vc_cancel_confirm'))) return; try { await api('POST',`/api/appointments/${a.id}/cancel`); openAppointments(); } catch(e){ alert(e.message); } };
     feed.appendChild(card);
   }
+}
+
+// ── Partner-Verzeichnis (nach Kontotyp) ─────────────────────────────────────
+const DIR_TYPES = ['pharmacy', 'pharma', 'authority'];
+const DIR_ICON = { pharmacy: '🏥', pharma: '🏭', authority: '🏛️' };
+let dirState = { type: 'pharmacy', q: '' };
+async function openDirectory(type) {
+  if (type) dirState.type = type;
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
+  setDocTitle(t('dir_title'));
+  feed.innerHTML = '<div class="loading">…</div>';
+  let counts, list;
+  try {
+    counts = await api('GET','/api/directory');
+    list = await api('GET', `/api/directory/${dirState.type}` + (dirState.q ? `?q=${encodeURIComponent(dirState.q)}` : ''));
+  } catch(e){ feed.innerHTML=''; feed.appendChild(errorState(e.message, openDirectory)); return; }
+  feed.innerHTML = '';
+  const head = el(`<div class="card">
+    <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button></div>
+    <h1 style="margin:8px 0 2px">🔎 ${esc(t('dir_title'))}</h1>
+    <div class="muted" style="margin-bottom:10px">${esc(t('dir_sub'))}</div>
+    <div class="row" style="flex-wrap:wrap;gap:6px">
+      ${DIR_TYPES.map(ty=>`<button class="small sortbtn${dirState.type===ty?' active':''}" data-type="${ty}">${DIR_ICON[ty]} ${esc(acctLabel(ty))} <span class="muted">${(counts.counts&&counts.counts[ty])||0}</span></button>`).join('')}
+    </div>
+    <div class="row" style="margin-top:8px;gap:6px"><input data-q value="${esc(dirState.q)}" placeholder="${esc(t('dir_search'))}" maxlength="60"><button class="small" data-go>🔎</button></div>
+  </div>`);
+  head.querySelector('[data-back]').onclick = () => goTab('overview');
+  head.querySelectorAll('[data-type]').forEach(b => b.onclick = () => { dirState.type = b.dataset.type; dirState.q=''; openDirectory(); });
+  const doSearch = () => { dirState.q = head.querySelector('[data-q]').value.trim(); openDirectory(); };
+  head.querySelector('[data-go]').onclick = doSearch;
+  head.querySelector('[data-q]').addEventListener('keydown', e => { if (e.key==='Enter') doSearch(); });
+  feed.appendChild(head);
+  if (!list.people.length) { feed.appendChild(emptyState({ icon:'🔎', title:t('dir_empty_t'), text:t('dir_empty_s') })); return; }
+  list.people.forEach(p => {
+    const row = el(`<div class="card"><div class="row" style="align-items:baseline;gap:6px;flex-wrap:wrap">
+      <b class="clickable" data-openprofile="${esc(p.handle)}">${esc(p.display_name||('@'+p.handle))}</b>
+      ${p.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}${p.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
+      <span class="handle clickable" data-openprofile="${esc(p.handle)}">@${esc(p.handle)}</span>
+      <span class="sp" style="flex:1"></span>
+      ${p.is_following?`<span class="muted" style="font-size:13px">${esc(t('nb_following'))}</span>`:`<button class="small" data-follow="${esc(p.handle)}">${esc(t('pf_follow'))}</button>`}
+    </div>
+    ${p.title?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(p.title)}</div>`:''}
+    <div class="muted" style="font-size:12px;margin-top:2px">${p.bundesland?esc(p.bundesland)+' · ':''}${ti('dir_followers',{n:p.follower_count})}</div></div>`);
+    row.querySelectorAll('[data-openprofile]').forEach(e2 => e2.onclick = () => openProfile(e2.dataset.openprofile));
+    const fb = row.querySelector('[data-follow]');
+    if (fb) fb.onclick = async () => { try { await api('POST','/api/follow',{ handle:p.handle }); fb.textContent=t('fl_following_btn'); fb.disabled=true; } catch(e){ alert(e.message); } };
+    feed.appendChild(row);
+  });
 }
 
 // ── Premium-Werbung/Shop ────────────────────────────────────────────────────

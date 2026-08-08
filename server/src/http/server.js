@@ -488,6 +488,9 @@ const routes = [
   ['POST', /^\/api\/live\/([^/]+)\/interest$/, true, async ({ userId, params }) => social.toggleLiveInterest(userId, params[0])],
   ['POST', /^\/api\/live\/([^/]+)\/report$/, true, async ({ userId, params, body }) => social.report(userId, 'live', params[0], body.reason)],
 
+  // ── Partner-Verzeichnis (nach Kontotyp, im eigenen Land) ──
+  ['GET', /^\/api\/directory$/, true, async ({ userId }) => social.directoryCounts(userId)],
+  ['GET', /^\/api\/directory\/([^/]+)$/, true, async ({ userId, params, query }) => social.directory(userId, params[0], { q: query.get('q') || null })],
   ['GET', /^\/api\/profiles\/([^/]+)\/page$/, true, async ({ userId, params }) => {
     const d = social.profilePage(userId, params[0]);
     if (!d) { const e = new Error('Profil nicht gefunden'); e.status = 404; throw e; }

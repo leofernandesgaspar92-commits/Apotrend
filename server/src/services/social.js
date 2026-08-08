@@ -395,6 +395,44 @@ export function createSocialService(social, foundationRepo, options = {}) {
       }
       return { counts };
     },
+    // ── Partner-Verzeichnis (nach Kontotyp) ──────────────────────────────────
+    // Verbindet die Lieferkette: Apotheken finden Pharma-Unternehmen/Behörden usw.
+    // im eigenen Land. Privatnutzer:innen erscheinen NICHT (Fachverzeichnis).
+    DIRECTORY_TYPES: ['pharmacy', 'pharma', 'authority'],
+    directoryCounts(viewerUserId) {
+      requireUser(viewerUserId);
+      const meProf = social.getProfileByUserId(viewerUserId);
+      const country = meProf && meProf.country;
+      const counts = { pharmacy: 0, pharma: 0, authority: 0 };
+      for (const p of social.listProfiles()) {
+        if (p.user_id === viewerUserId) continue;
+        if (country && p.country !== country) continue;
+        const at = p.account_type || 'pharmacy';
+        if (at in counts) counts[at]++;
+      }
+      return { counts, country: country || null };
+    },
+    directory(viewerUserId, accountType, { q = null, limit = 60 } = {}) {
+      requireUser(viewerUserId);
+      const at = normalizeAccountType(accountType);
+      if (!this.DIRECTORY_TYPES.includes(at)) throw new AppError('dir_bad_type', 'Unbekannter Kontotyp.', 400);
+      const meProf = social.getProfileByUserId(viewerUserId);
+      const country = meProf && meProf.country;
+      const following = new Set(social.listFollowing(viewerUserId));
+      const needle = q ? String(q).trim().toLowerCase() : null;
+      const people = social.listProfiles()
+        .filter(p => p.user_id !== viewerUserId && (p.account_type || 'pharmacy') === at && (!country || p.country === country))
+        .filter(p => !needle || p.handle.includes(needle) || String(p.display_name).toLowerCase().includes(needle) || String(p.title || '').toLowerCase().includes(needle) || (p.specializations || []).some(x => String(x).toLowerCase().includes(needle)))
+        .map(p => ({
+          handle: p.handle, display_name: p.display_name, avatar_url: p.avatar_url || null,
+          verified: p.verified, is_editorial: p.is_editorial, account_type: p.account_type,
+          title: p.title, bundesland: p.bundesland,
+          is_following: following.has(p.user_id), follower_count: social.listFollowers(p.user_id).length,
+        }))
+        .sort((a, b) => Number(b.verified) - Number(a.verified) || b.follower_count - a.follower_count)
+        .slice(0, limit);
+      return { account_type: at, country: country || null, people };
+    },
     // Handle-Vorschläge für @-Autovervollständigung (Präfix zuerst, dann enthält).
     searchHandles(q, limit = 6) {
       const s = String(q ?? '').trim().toLowerCase();
