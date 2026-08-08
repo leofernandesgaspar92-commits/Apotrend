@@ -832,7 +832,10 @@ export function createSocialService(social, foundationRepo, options = {}) {
     // Jede angemeldete Person kann melden.
     report(actorUserId, targetType, targetId, reason) {
       requireUser(actorUserId);
-      if (!['post', 'comment', 'profile'].includes(targetType)) throw new Error('Ungueltiger Zieltyp.');
+      if (!['post', 'comment', 'profile', 'promotion', 'live'].includes(targetType)) throw new Error('Ungueltiger Zieltyp.');
+      // Existenz prüfen, damit keine Meldungen auf Geister-IDs entstehen.
+      if (targetType === 'promotion' && !social.getPromotion(targetId)) throw new AppError('promo_not_found', 'Angebot nicht gefunden.', 404);
+      if (targetType === 'live' && !social.getLiveSession(targetId)) throw new AppError('live_not_found', 'Session nicht gefunden.', 404);
       return social.createReport({ reporterUserId: actorUserId, targetType, targetId, reason });
     },
     // Nur Moderatoren: Reports einsehen und aufloesen.
@@ -846,6 +849,8 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (!r) throw new Error('Meldung nicht gefunden.');
       if (remove && r.target_type === 'post') social.softDeletePost(r.target_id);
       if (remove && r.target_type === 'comment') social.softDeleteComment(r.target_id);
+      if (remove && r.target_type === 'promotion') { social.softDeletePromotion(r.target_id); social.removeReactionsForTarget('promotion', r.target_id); social.removeCommentsForPost(r.target_id); }
+      if (remove && r.target_type === 'live') { social.removeLiveSession(r.target_id); social.removeReactionsForTarget('live', r.target_id); }
       return social.updateReport(reportId, { status: remove ? 'entfernt' : 'geprueft' });
     },
     isModerator(userId) { return isModerator(userId); },
@@ -867,6 +872,18 @@ export function createSocialService(social, foundationRepo, options = {}) {
             const author = social.getProfileByUserId(c.author_user_id);
             out.post = { body: c.body, deleted: !!c.deleted_at, author_handle: author ? author.handle : null, is_comment: true };
           }
+        } else if (r.target_type === 'promotion') {
+          const p = social.getPromotion(r.target_id);
+          if (p) {
+            const author = social.getProfileByUserId(p.author_user_id);
+            out.post = { body: `🏷️ ${p.titel}${p.beschreibung ? ' — ' + p.beschreibung : ''}`, deleted: !!p.deleted_at, author_handle: author ? author.handle : null };
+          } else out.post = { body: '🏷️ —', deleted: true, author_handle: null };
+        } else if (r.target_type === 'live') {
+          const s = social.getLiveSession(r.target_id);
+          if (s) {
+            const host = social.getProfileByUserId(s.host_user_id);
+            out.post = { body: `🔴 ${s.titel}${s.thema ? ' — ' + s.thema : ''}`, deleted: false, author_handle: host ? host.handle : null };
+          } else out.post = { body: '🔴 —', deleted: true, author_handle: null };
         }
         return out;
       });

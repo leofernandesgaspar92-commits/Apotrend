@@ -202,7 +202,7 @@ const I18N = {
     cm_reply:'↩ Antworten', cm_accept:'✔ Als beste Antwort', cm_unaccept:'✔ Beste Antwort (aufheben)',
     cm_accept_title:'Diese Antwort als beste markieren', cm_report_title:'Kommentar melden',
     cm_report_prompt:'Warum meldest du diesen Kommentar? (optional)', cm_reported:'Danke — der Kommentar wurde gemeldet.',
-    pc_report_prompt:'Warum meldest du diesen Beitrag? (optional)', pc_reported:'Danke — der Beitrag wurde der Moderation gemeldet.', sh_resolve_confirm:'Diesen Engpass als wieder lieferbar melden? Beobachter:innen werden informiert.',
+    pc_report_prompt:'Warum meldest du diesen Beitrag? (optional)', pc_reported:'Danke — der Beitrag wurde der Moderation gemeldet.', rep_prompt:'Warum meldest du das? (optional)', rep_thanks:'Danke — der Moderation gemeldet.', sh_resolve_confirm:'Diesen Engpass als wieder lieferbar melden? Beobachter:innen werden informiert.',
     copy_text_fb:'Text:', copy_link_fb:'Link:',
     cm_reply_to:'Antwort an @{handle}…', cm_reply_send:'Antworten', cm_cancel:'Abbrechen',
     cm_del_confirm:'Kommentar löschen?', cm_save:'Speichern',
@@ -542,7 +542,7 @@ const I18N = {
     cm_reply:'↩ Reply', cm_accept:'✔ Mark as best answer', cm_unaccept:'✔ Best answer (remove)',
     cm_accept_title:'Mark this answer as best', cm_report_title:'Report comment',
     cm_report_prompt:'Why are you reporting this comment? (optional)', cm_reported:'Thanks — the comment has been reported.',
-    pc_report_prompt:'Why are you reporting this post? (optional)', pc_reported:'Thanks — the post has been reported to moderation.', sh_resolve_confirm:'Report this shortage as available again? Watchers will be notified.',
+    pc_report_prompt:'Why are you reporting this post? (optional)', pc_reported:'Thanks — the post has been reported to moderation.', rep_prompt:'Why are you reporting this? (optional)', rep_thanks:'Thanks — reported to moderation.', sh_resolve_confirm:'Report this shortage as available again? Watchers will be notified.',
     copy_text_fb:'Text:', copy_link_fb:'Link:',
     cm_reply_to:'Reply to @{handle}…', cm_reply_send:'Reply', cm_cancel:'Cancel',
     cm_del_confirm:'Delete comment?', cm_save:'Save',
@@ -882,7 +882,7 @@ const I18N = {
     cm_reply:'↩ Responder', cm_accept:'✔ Marcar como melhor resposta', cm_unaccept:'✔ Melhor resposta (remover)',
     cm_accept_title:'Marcar esta resposta como a melhor', cm_report_title:'Denunciar comentário',
     cm_report_prompt:'Porque está a denunciar este comentário? (opcional)', cm_reported:'Obrigado — o comentário foi denunciado.',
-    pc_report_prompt:'Porque está a denunciar esta publicação? (opcional)', pc_reported:'Obrigado — a publicação foi comunicada à moderação.', sh_resolve_confirm:'Comunicar esta rutura como novamente disponível? Os observadores serão notificados.',
+    pc_report_prompt:'Porque está a denunciar esta publicação? (opcional)', pc_reported:'Obrigado — a publicação foi comunicada à moderação.', rep_prompt:'Porque está a denunciar isto? (opcional)', rep_thanks:'Obrigado — comunicado à moderação.', sh_resolve_confirm:'Comunicar esta rutura como novamente disponível? Os observadores serão notificados.',
     copy_text_fb:'Texto:', copy_link_fb:'Ligação:',
     cm_reply_to:'Responder a @{handle}…', cm_reply_send:'Responder', cm_cancel:'Cancelar',
     cm_del_confirm:'Eliminar comentário?', cm_save:'Guardar',
@@ -4155,7 +4155,7 @@ async function openPromotionDetail(id) {
   setDocTitle(d.titel);
   feed.innerHTML = '';
   const head = el(`<div class="card">
-    <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span>${d.is_mine?`<button class="ghost small" data-edit>${esc(t('wb_edit'))}</button><button class="ghost small" data-del>${esc(t('wb_delete'))}</button>`:''}</div>
+    <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span>${d.is_mine?`<button class="ghost small" data-edit>${esc(t('wb_edit'))}</button><button class="ghost small" data-del>${esc(t('wb_delete'))}</button>`:`<button class="ghost small" data-report>${esc(t('pc_report'))}</button>`}</div>
     ${d.image?`<img src="${esc(d.image)}" alt="${esc(d.titel)}" style="width:100%;max-height:320px;object-fit:cover;border-radius:10px;margin:8px 0">`:''}
     <div class="row" style="align-items:baseline;gap:8px;margin-top:6px">
       <span style="display:inline-block;font-size:12px;font-weight:700;color:var(--info-fg);background:var(--info-bg);padding:2px 8px;border-radius:999px">${esc(promoCatLabel(d.kategorie))}</span>
@@ -4174,6 +4174,7 @@ async function openPromotionDetail(id) {
   head.querySelectorAll('[data-openprofile]').forEach(e2 => e2.onclick = () => openProfile(e2.dataset.openprofile));
   const ed = head.querySelector('[data-edit]'); if (ed) ed.onclick = () => openPromoForm(d);
   const de = head.querySelector('[data-del]'); if (de) de.onclick = async () => { if (!confirm(t('wb_delete_confirm'))) return; try { await api('POST', `/api/promotions/${id}/delete`); openPromotions(); } catch(e){ alert(e.message); } };
+  const rp = head.querySelector('[data-report]'); if (rp) rp.onclick = async () => { const reason = prompt(t('rep_prompt')) ?? ''; try { await api('POST', `/api/promotions/${id}/report`, { reason }); alert(t('rep_thanks')); } catch(e){ alert(e.message); } };
   head.querySelector('[data-like]').onclick = async () => {
     try { const r = await api('POST', `/api/promotions/${id}/like`); openPromotionDetail(id); void r; } catch(e){ alert(e.message); }
   };
@@ -4252,7 +4253,7 @@ async function openLive(flash) {
         ${!s.i_am_host&&s.status==='geplant'?`<button class="${s.i_am_interested?'':'ghost '}small" data-interest>${esc(s.i_am_interested?t('lv_interested'):t('lv_interest'))}</button>`:''}
         ${s.i_am_host&&s.status==='geplant'?`<button class="small" data-start>${esc(t('lv_start'))}</button>`:''}
         ${s.i_am_host&&s.status==='live'?`<button class="ghost small" data-end>${esc(t('lv_end'))}</button>`:''}
-        ${s.i_am_host?`<button class="ghost small" data-del>${esc(t('lv_delete'))}</button>`:''}
+        ${s.i_am_host?`<button class="ghost small" data-del>${esc(t('lv_delete'))}</button>`:`<button class="ghost small" data-report>${esc(t('pc_report'))}</button>`}
         ${s.interest_count?`<span class="muted" style="font-size:13px">🔔 ${esc(ti('lv_interest_count',{n:s.interest_count}))}</span>`:''}
       </div></div>`);
     card.querySelectorAll('[data-openprofile]').forEach(e2 => { if (e2.dataset.openprofile) e2.onclick = () => openProfile(e2.dataset.openprofile); });
@@ -4260,6 +4261,7 @@ async function openLive(flash) {
     const st = card.querySelector('[data-start]'); if (st) st.onclick = async () => { try { await api('POST',`/api/live/${s.id}/start`); openLive(); } catch(e){ alert(e.message); } };
     const en = card.querySelector('[data-end]'); if (en) en.onclick = async () => { if (!confirm(t('lv_end_confirm'))) return; try { await api('POST',`/api/live/${s.id}/end`); openLive(); } catch(e){ alert(e.message); } };
     const de = card.querySelector('[data-del]'); if (de) de.onclick = async () => { if (!confirm(t('lv_delete_confirm'))) return; try { await api('POST',`/api/live/${s.id}/delete`); openLive(); } catch(e){ alert(e.message); } };
+    const rp = card.querySelector('[data-report]'); if (rp) rp.onclick = async () => { const reason = prompt(t('rep_prompt')) ?? ''; try { await api('POST',`/api/live/${s.id}/report`, { reason }); alert(t('rep_thanks')); } catch(e){ alert(e.message); } };
     feed.appendChild(card);
   }
 }
