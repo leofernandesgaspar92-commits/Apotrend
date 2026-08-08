@@ -1177,6 +1177,77 @@ export function createSocialService(social, foundationRepo, options = {}) {
       return { ...comment, author: prof ? { handle: prof.handle, display_name: prof.display_name, avatar_url: prof.avatar_url || null, verified: !!prof.verified, account_type: prof.account_type } : null };
     },
 
+    // ── Premium-Live-Sessions ────────────────────────────────────────────────
+    // Premium-Mitglieder planen öffentliche Live-Video-Runden (z.B. Fach-Q&A,
+    // Produktvorstellung). Beim Start entsteht ein öffentlicher Jitsi-Meet-Raum
+    // (keine eigene Streaming-Infrastruktur nötig); alle registrierten
+    // Nutzer:innen können der laufenden Session beitreten. Kein Mitschnitt.
+    decorateLive(s, viewerUserId = null) {
+      const host = social.getProfileByUserId(s.host_user_id);
+      return {
+        ...s,
+        host: host ? { handle: host.handle, display_name: host.display_name, avatar_url: host.avatar_url || null, verified: !!host.verified, account_type: host.account_type, premium: foundationRepo.hasEntitlement(host.user_id, 'premium') } : null,
+        i_am_host: viewerUserId === s.host_user_id,
+      };
+    },
+    listLiveSessions(viewerUserId) {
+      requireUser(viewerUserId);
+      const muted = new Set(social.listMuted(viewerUserId));
+      return social.listLiveSessions()
+        .filter(s => !muted.has(s.host_user_id) || s.host_user_id === viewerUserId)
+        .map(s => this.decorateLive(s, viewerUserId));
+    },
+    listMyLiveSessions(userId) {
+      requireUser(userId);
+      return social.listLiveSessionsByHost(userId).map(s => this.decorateLive(s, userId));
+    },
+    createLiveSession(userId, { titel, thema, geplant_am } = {}) {
+      requireUser(userId);
+      const prof = social.getProfileByUserId(userId);
+      if (!prof) throw new AppError('no_profile', 'Profil nicht gefunden.', 404);
+      if (!foundationRepo.hasEntitlement(userId, 'premium')) {
+        throw new AppError('live_not_premium', 'Live-Sessions sind Premium-Mitgliedern vorbehalten.', 403);
+      }
+      const tt = String(titel ?? '').trim();
+      if (tt.length < 3) throw new AppError('live_title', 'Titel fehlt (mind. 3 Zeichen).', 400);
+      if (tt.length > 120) throw new AppError('live_title_long', 'Titel zu lang (max 120).', 400);
+      // geplant_am: ISO-nahes „YYYY-MM-DDTHH:MM" (Datum + Uhrzeit).
+      const g = String(geplant_am ?? '').trim();
+      if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(g) || Number.isNaN(Date.parse(g))) throw new AppError('live_bad_time', 'Ungültiger Termin (Datum + Uhrzeit).', 400);
+      const s = social.addLiveSession({
+        host_user_id: userId, titel: tt, thema: thema ? String(thema).trim().slice(0, 500) : null,
+        geplant_am: g, status: 'geplant', room_url: null,
+      });
+      return this.decorateLive(s, userId);
+    },
+    startLiveSession(userId, id) {
+      requireUser(userId);
+      const s = social.getLiveSession(id);
+      if (!s) throw new AppError('live_not_found', 'Session nicht gefunden.', 404);
+      if (s.host_user_id !== userId) throw new ForbiddenError('Nur der/die Gastgeber:in darf starten.');
+      if (s.status === 'beendet') throw new AppError('live_ended', 'Session ist bereits beendet.', 400);
+      const updated = social.updateLiveSession(id, { status: 'live', room_url: `https://meet.jit.si/apotrend-live-${s.id}`, started_at: new Date().toISOString() });
+      // Follower:innen benachrichtigen, dass jetzt live gesendet wird.
+      for (const f of social.listFollowers(userId)) notify(f, 'live_start', userId, 'live', id);
+      return this.decorateLive(updated, userId);
+    },
+    endLiveSession(userId, id) {
+      requireUser(userId);
+      const s = social.getLiveSession(id);
+      if (!s) throw new AppError('live_not_found', 'Session nicht gefunden.', 404);
+      if (s.host_user_id !== userId) throw new ForbiddenError('Nur der/die Gastgeber:in darf beenden.');
+      const updated = social.updateLiveSession(id, { status: 'beendet', ended_at: new Date().toISOString() });
+      return this.decorateLive(updated, userId);
+    },
+    deleteLiveSession(userId, id) {
+      requireUser(userId);
+      const s = social.getLiveSession(id);
+      if (!s) throw new AppError('live_not_found', 'Session nicht gefunden.', 404);
+      if (s.host_user_id !== userId && !isModerator(userId)) throw new ForbiddenError('Nur der/die Gastgeber:in oder Moderation darf löschen.');
+      social.removeLiveSession(id);
+      return { ok: true };
+    },
+
     // ── DSGVO: Datenexport (Recht auf Datenübertragbarkeit) ──
     exportData(userId) {
       requireUser(userId);

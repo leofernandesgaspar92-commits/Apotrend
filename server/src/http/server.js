@@ -477,6 +477,13 @@ const routes = [
   ['POST', /^\/api\/promotions\/([^/]+)\/delete$/, true, async ({ userId, params }) => social.deletePromotion(userId, params[0])],
   ['POST', /^\/api\/promotions\/([^/]+)\/like$/, true, async ({ userId, params }) => social.likePromotion(userId, params[0])],
   ['POST', /^\/api\/promotions\/([^/]+)\/comment$/, true, async ({ userId, params, body }) => ({ comment: social.commentPromotion(userId, params[0], { body: body.body }) })],
+  // ── Premium: Live-Sessions (geplante/laufende öffentliche Video-Runden) ──
+  ['GET', /^\/api\/live$/, true, async ({ userId }) => ({ sessions: social.listLiveSessions(userId), premium: payments.hasFeature(userId, 'premium') })],
+  ['GET', /^\/api\/live\/mine$/, true, async ({ userId }) => ({ sessions: social.listMyLiveSessions(userId), premium: payments.hasFeature(userId, 'premium') })],
+  ['POST', /^\/api\/live$/, true, async ({ userId, body }) => ({ session: social.createLiveSession(userId, { titel: body.titel, thema: body.thema, geplant_am: body.geplant_am }) })],
+  ['POST', /^\/api\/live\/([^/]+)\/start$/, true, async ({ userId, params }) => ({ session: social.startLiveSession(userId, params[0]) })],
+  ['POST', /^\/api\/live\/([^/]+)\/end$/, true, async ({ userId, params }) => ({ session: social.endLiveSession(userId, params[0]) })],
+  ['POST', /^\/api\/live\/([^/]+)\/delete$/, true, async ({ userId, params }) => social.deleteLiveSession(userId, params[0])],
 
   ['GET', /^\/api\/profiles\/([^/]+)\/page$/, true, async ({ userId, params }) => {
     const d = social.profilePage(userId, params[0]);

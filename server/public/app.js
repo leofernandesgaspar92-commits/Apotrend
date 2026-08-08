@@ -248,6 +248,9 @@ const I18N = {
     wb_f_title:'Titel', wb_f_title_ph:'z.B. Ibuprofen 400 mg, 100 Stück', wb_f_cat:'Kategorie', wb_f_desc:'Beschreibung', wb_f_desc_ph:'Details, Verfügbarkeit, Konditionen …', wb_f_price:'Preis (optional)', wb_f_unit:'Einheit', wb_f_unit_ph:'z.B. €/Packung', wb_f_img:'Bild (optional)', wb_f_link:'Link (optional)', wb_f_link_ph:'https://…', wb_save:'Angebot veröffentlichen', wb_save_edit:'Änderungen speichern', wb_saved:'Angebot veröffentlicht.', wb_updated:'Angebot aktualisiert.', wb_edit:'Bearbeiten', wb_delete:'Löschen', wb_delete_confirm:'Dieses Angebot löschen?',
     wb_like:'Gefällt mir', wb_liked:'Gefällt dir', wb_comments:'Anfragen & Kommentare', wb_comment_ph:'Frage oder Anfrage schreiben …', wb_comment_send:'Senden', wb_no_comments:'Noch keine Anfragen. Stell die erste Frage.', wb_by:'von', wb_on_request:'auf Anfrage', wb_ad:'Anzeige',
     promo_cat_medikamente:'Medikamente', promo_cat_kosmetik:'Kosmetik & Pflege', promo_cat_nahrungsergaenzung:'Nahrungsergänzung', promo_cat_medizinprodukte:'Medizinprodukte', promo_cat_dienstleistung:'Dienstleistung', promo_cat_sonstiges:'Sonstiges',
+    nv_live_start:'sendet jetzt live',
+    lv_nav:'🔴 Live-Sessions', lv_title:'🔴 Live-Sessions', lv_sub:'Öffentliche Live-Video-Runden der Branche (Fach-Q&A, Produktvorstellungen). Premium-Mitglieder senden, alle können beitreten.', lv_new:'+ Session planen', lv_mine:'Meine Sessions', lv_all:'Alle Sessions', lv_premium_only:'Live senden ist Premium-Mitgliedern vorbehalten.', lv_go_premium:'Premium freischalten', lv_empty_t:'Keine Live-Sessions', lv_empty_s:'Aktuell ist nichts geplant oder live. Als Premium-Mitglied planst du hier deine erste Session.', lv_empty_mine_s:'Du hast noch keine Session geplant.',
+    lv_f_title:'Titel', lv_f_title_ph:'z.B. Q&A: Antibiotika-Engpässe', lv_f_topic:'Thema / Beschreibung', lv_f_topic_ph:'Worum geht es? (optional)', lv_f_when:'Termin (Datum & Uhrzeit)', lv_save:'Session planen', lv_saved:'Live-Session geplant.', lv_st_planned:'Geplant', lv_st_live:'🔴 LIVE', lv_st_ended:'Beendet', lv_host:'Gastgeber:in', lv_when:'Termin', lv_start:'▶ Live starten', lv_end:'■ Beenden', lv_end_confirm:'Diese Session jetzt beenden?', lv_join:'🔴 Jetzt beitreten', lv_delete:'Löschen', lv_delete_confirm:'Diese Session löschen?', lv_privacy:'Die Live-Runde läuft in einem öffentlichen Jitsi-Meet-Raum, der erst beim Start entsteht. Kein Mitschnitt.',
     pf_no_posts:'Noch keine sichtbaren Beiträge.',
     ep_name:'Anzeigename', ep_func:'Titel / Funktion (optional)', ep_func_ph:'z.B. Fachapothekerin, Einkauf',
     ep_about:'Über mich (optional, max. 500 Zeichen)', ep_about_ph:'Kurz zu dir und deinem Schwerpunkt…',
@@ -583,6 +586,9 @@ const I18N = {
     wb_f_title:'Title', wb_f_title_ph:'e.g. Ibuprofen 400 mg, 100 units', wb_f_cat:'Category', wb_f_desc:'Description', wb_f_desc_ph:'Details, availability, terms …', wb_f_price:'Price (optional)', wb_f_unit:'Unit', wb_f_unit_ph:'e.g. €/pack', wb_f_img:'Image (optional)', wb_f_link:'Link (optional)', wb_f_link_ph:'https://…', wb_save:'Publish listing', wb_save_edit:'Save changes', wb_saved:'Listing published.', wb_updated:'Listing updated.', wb_edit:'Edit', wb_delete:'Delete', wb_delete_confirm:'Delete this listing?',
     wb_like:'Like', wb_liked:'Liked', wb_comments:'Enquiries & comments', wb_comment_ph:'Write a question or enquiry …', wb_comment_send:'Send', wb_no_comments:'No enquiries yet. Ask the first question.', wb_by:'by', wb_on_request:'on request', wb_ad:'Ad',
     promo_cat_medikamente:'Medicines', promo_cat_kosmetik:'Cosmetics & care', promo_cat_nahrungsergaenzung:'Supplements', promo_cat_medizinprodukte:'Medical devices', promo_cat_dienstleistung:'Service', promo_cat_sonstiges:'Other',
+    nv_live_start:'is now live',
+    lv_nav:'🔴 Live sessions', lv_title:'🔴 Live sessions', lv_sub:'Public live video sessions from the industry (expert Q&A, product demos). Premium members broadcast, everyone can join.', lv_new:'+ Schedule session', lv_mine:'My sessions', lv_all:'All sessions', lv_premium_only:'Going live is reserved for Premium members.', lv_go_premium:'Unlock Premium', lv_empty_t:'No live sessions', lv_empty_s:'Nothing scheduled or live right now. As a Premium member you schedule your first session here.', lv_empty_mine_s:'You haven’t scheduled a session yet.',
+    lv_f_title:'Title', lv_f_title_ph:'e.g. Q&A: antibiotic shortages', lv_f_topic:'Topic / description', lv_f_topic_ph:'What is it about? (optional)', lv_f_when:'Date & time', lv_save:'Schedule session', lv_saved:'Live session scheduled.', lv_st_planned:'Scheduled', lv_st_live:'🔴 LIVE', lv_st_ended:'Ended', lv_host:'Host', lv_when:'When', lv_start:'▶ Go live', lv_end:'■ End', lv_end_confirm:'End this session now?', lv_join:'🔴 Join now', lv_delete:'Delete', lv_delete_confirm:'Delete this session?', lv_privacy:'The live session runs in a public Jitsi Meet room created only at start. No recording.',
     pf_no_posts:'No visible posts yet.',
     ep_name:'Display name', ep_func:'Title / role (optional)', ep_func_ph:'e.g. specialist pharmacist, purchasing',
     ep_about:'About me (optional, max. 500 characters)', ep_about_ph:'A little about you and your focus…',
@@ -918,6 +924,9 @@ const I18N = {
     wb_f_title:'Título', wb_f_title_ph:'ex. Ibuprofeno 400 mg, 100 unidades', wb_f_cat:'Categoria', wb_f_desc:'Descrição', wb_f_desc_ph:'Detalhes, disponibilidade, condições …', wb_f_price:'Preço (opcional)', wb_f_unit:'Unidade', wb_f_unit_ph:'ex. €/embalagem', wb_f_img:'Imagem (opcional)', wb_f_link:'Link (opcional)', wb_f_link_ph:'https://…', wb_save:'Publicar anúncio', wb_save_edit:'Guardar alterações', wb_saved:'Anúncio publicado.', wb_updated:'Anúncio atualizado.', wb_edit:'Editar', wb_delete:'Eliminar', wb_delete_confirm:'Eliminar este anúncio?',
     wb_like:'Gosto', wb_liked:'Gostou', wb_comments:'Contactos & comentários', wb_comment_ph:'Escreva uma pergunta ou contacto …', wb_comment_send:'Enviar', wb_no_comments:'Ainda sem contactos. Faça a primeira pergunta.', wb_by:'por', wb_on_request:'sob consulta', wb_ad:'Anúncio',
     promo_cat_medikamente:'Medicamentos', promo_cat_kosmetik:'Cosmética & cuidado', promo_cat_nahrungsergaenzung:'Suplementos', promo_cat_medizinprodukte:'Dispositivos médicos', promo_cat_dienstleistung:'Serviço', promo_cat_sonstiges:'Outros',
+    nv_live_start:'está agora em direto',
+    lv_nav:'🔴 Sessões ao vivo', lv_title:'🔴 Sessões ao vivo', lv_sub:'Sessões de vídeo ao vivo do setor (Q&A técnico, demonstrações). Membros Premium transmitem, todos podem participar.', lv_new:'+ Agendar sessão', lv_mine:'As minhas sessões', lv_all:'Todas as sessões', lv_premium_only:'Transmitir ao vivo é reservado a membros Premium.', lv_go_premium:'Desbloquear Premium', lv_empty_t:'Sem sessões ao vivo', lv_empty_s:'Nada agendado ou ao vivo neste momento. Como membro Premium agenda aqui a sua primeira sessão.', lv_empty_mine_s:'Ainda não agendou nenhuma sessão.',
+    lv_f_title:'Título', lv_f_title_ph:'ex. Q&A: ruturas de antibióticos', lv_f_topic:'Tema / descrição', lv_f_topic_ph:'Sobre o que é? (opcional)', lv_f_when:'Data e hora', lv_save:'Agendar sessão', lv_saved:'Sessão ao vivo agendada.', lv_st_planned:'Agendada', lv_st_live:'🔴 AO VIVO', lv_st_ended:'Terminada', lv_host:'Anfitrião', lv_when:'Quando', lv_start:'▶ Iniciar', lv_end:'■ Terminar', lv_end_confirm:'Terminar esta sessão agora?', lv_join:'🔴 Participar agora', lv_delete:'Eliminar', lv_delete_confirm:'Eliminar esta sessão?', lv_privacy:'A sessão ao vivo decorre numa sala Jitsi Meet pública criada apenas no início. Sem gravação.',
     pf_no_posts:'Ainda sem publicações visíveis.',
     ep_name:'Nome a apresentar', ep_func:'Título / função (opcional)', ep_func_ph:'ex. farmacêutica especialista, compras',
     ep_about:'Sobre mim (opcional, máx. 500 caracteres)', ep_about_ph:'Um pouco sobre si e a sua área…',
@@ -1843,12 +1852,13 @@ async function loadOverview() {
     <div class="row" style="flex-wrap:wrap;gap:10px">
       ${tiles.join('')}
     </div>
-    <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px"><button class="ghost small" id="ov_bm">${esc(t('ov_bookmarks'))}</button><button class="ghost small" id="ov_promos">${esc(t('wb_nav'))}</button></div>
+    <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px"><button class="ghost small" id="ov_bm">${esc(t('ov_bookmarks'))}</button><button class="ghost small" id="ov_promos">${esc(t('wb_nav'))}</button><button class="ghost small" id="ov_live">${esc(t('lv_nav'))}</button></div>
   </div>`);
   head.querySelectorAll('.ovtile[data-go]').forEach(t => { if (t.dataset.go) t.onclick = () => { if (t.dataset.filter) shortageFilter = t.dataset.filter; goTab(t.dataset.go); }; });
   head.querySelectorAll('.ovtile').forEach(t => { if (!t.dataset.go) t.onclick = () => document.getElementById('btnNotif').click(); });
   head.querySelector('#ov_bm').onclick = openBookmarks;
   head.querySelector('#ov_promos').onclick = () => openPromotions();
+  head.querySelector('#ov_live').onclick = () => openLive();
   feed.appendChild(head);
 
   // Zuletzt angesehene Wirkstoffe (nur lokal) — schneller Wiedereinstieg.
@@ -3921,7 +3931,7 @@ function openBookVideocall(providerHandle, providerName) {
   card.querySelector('[data-vsend]').onclick = async () => {
     const err = card.querySelector('[data-verr]'); err.textContent = '';
     try {
-      await api('POST','/api/appointments', { providerHandle, datum: v('vdate'), uhrzeit: v('vtime'), grund: card.querySelector('[data-vreason]').value.trim() });
+      await api('POST','/api/appointments', { providerHandle, datum: card.querySelector('[data-vdate]').value, uhrzeit: card.querySelector('[data-vtime]').value, grund: card.querySelector('[data-vreason]').value.trim() });
       openAppointments(t('vc_requested'));
     } catch(e){ err.textContent = e.message; }
   };
@@ -4153,6 +4163,91 @@ async function openPromotionDetail(id) {
   cbox.querySelector('[data-csend]').onclick = send;
   cbox.querySelector('#pr_cinput').addEventListener('keydown', e => { if (e.key==='Enter') send(); });
   feed.appendChild(cbox);
+}
+
+// ── Premium-Live-Sessions ───────────────────────────────────────────────────
+let liveState = { mine: false };
+function liveWhen(g) { // "YYYY-MM-DDTHH:MM" -> "01.09.2026 · 18:00" (bzw. lokalisiert)
+  const [d, tm] = String(g || '').split('T');
+  return `${fmtDateDe(d)}${tm ? ' · ' + tm : ''}`;
+}
+async function openLive(flash) {
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
+  setDocTitle(t('lv_title'));
+  feed.innerHTML = '<div class="loading">…</div>';
+  let d;
+  try { d = await api('GET', liveState.mine ? '/api/live/mine' : '/api/live'); }
+  catch(e){ feed.innerHTML=''; feed.appendChild(errorState(e.message, openLive)); return; }
+  feed.innerHTML = '';
+  const head = el(`<div class="card">
+    <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span>${d.premium?`<button class="small" data-new>${esc(t('lv_new'))}</button>`:''}</div>
+    <h1 style="margin:8px 0 2px">${esc(t('lv_title'))}</h1>
+    <div class="muted" style="margin-bottom:10px">${esc(t('lv_sub'))}</div>
+    <div class="row" style="flex-wrap:wrap;gap:6px">
+      <button class="small sortbtn${liveState.mine?'':' active'}" data-scope="all">${esc(t('lv_all'))}</button>
+      <button class="small sortbtn${liveState.mine?' active':''}" data-scope="mine">${esc(t('lv_mine'))}</button>
+    </div>
+    ${d.premium?'':`<div class="muted" style="font-size:12px;margin-top:10px">${esc(t('lv_premium_only'))} <span class="linklike" data-gopremium>${esc(t('lv_go_premium'))}</span></div>`}
+  </div>`);
+  head.querySelector('[data-back]').onclick = () => goTab('overview');
+  const nb = head.querySelector('[data-new]'); if (nb) nb.onclick = () => openLiveForm();
+  const gp = head.querySelector('[data-gopremium]'); if (gp) gp.onclick = () => { if (typeof openPremium==='function') openPremium(); };
+  head.querySelectorAll('[data-scope]').forEach(b => b.onclick = () => { liveState.mine = b.dataset.scope==='mine'; openLive(); });
+  feed.appendChild(head);
+  if (flash) feed.appendChild(el(`<div class="card ok-box" style="padding:10px 14px;font-weight:600">✅ ${esc(flash)}</div>`));
+  if (!d.sessions.length) { feed.appendChild(emptyState({ icon:'🔴', title:t('lv_empty_t'), text: liveState.mine ? t('lv_empty_mine_s') : t('lv_empty_s') })); return; }
+  const statusMeta = { geplant:['var(--muted)','var(--chip-bg)',t('lv_st_planned')], live:['var(--crit-fg)','var(--crit-bg)',t('lv_st_live')], beendet:['var(--muted)','var(--chip-bg)',t('lv_st_ended')] };
+  for (const s of d.sessions) {
+    const [col,bg,lab] = statusMeta[s.status] || ['var(--muted)','var(--chip-bg)',s.status];
+    const card = el(`<div class="card">
+      <div class="row" style="align-items:baseline;gap:8px">
+        <span style="display:inline-block;font-size:12px;font-weight:800;color:${col};background:${bg};padding:2px 10px;border-radius:999px">${esc(lab)}</span>
+        <span class="sp" style="flex:1"></span>
+        <span class="muted" style="font-size:13px">🗓 ${esc(liveWhen(s.geplant_am))}</span>
+      </div>
+      <h3 style="margin:8px 0 4px">${esc(s.titel)}</h3>
+      ${s.thema?`<div class="muted" style="font-size:14px;white-space:pre-wrap">${esc(s.thema)}</div>`:''}
+      <div class="muted" style="font-size:13px;margin-top:6px">${esc(t('lv_host'))}: <b class="clickable" data-openprofile="${esc(s.host?s.host.handle:'')}">${esc(s.host?(s.host.display_name||('@'+s.host.handle)):'—')}</b>${s.host&&s.host.verified?' <span title="'+esc(t('pc_verified'))+'">✔</span>':''}${s.host&&s.host.premium?' <span title="'+esc(t('pc_premium'))+'">⭐</span>':''}</div>
+      <div class="reacts" style="margin-top:10px">
+        ${s.status==='live'&&s.room_url?`<a class="small" style="text-decoration:none;font-weight:700;color:var(--crit-fg)" href="${esc(s.room_url)}" target="_blank" rel="noopener noreferrer">${esc(t('lv_join'))}</a>`:''}
+        ${s.i_am_host&&s.status==='geplant'?`<button class="small" data-start>${esc(t('lv_start'))}</button>`:''}
+        ${s.i_am_host&&s.status==='live'?`<button class="ghost small" data-end>${esc(t('lv_end'))}</button>`:''}
+        ${s.i_am_host?`<button class="ghost small" data-del>${esc(t('lv_delete'))}</button>`:''}
+      </div></div>`);
+    card.querySelectorAll('[data-openprofile]').forEach(e2 => { if (e2.dataset.openprofile) e2.onclick = () => openProfile(e2.dataset.openprofile); });
+    const st = card.querySelector('[data-start]'); if (st) st.onclick = async () => { try { await api('POST',`/api/live/${s.id}/start`); openLive(); } catch(e){ alert(e.message); } };
+    const en = card.querySelector('[data-end]'); if (en) en.onclick = async () => { if (!confirm(t('lv_end_confirm'))) return; try { await api('POST',`/api/live/${s.id}/end`); openLive(); } catch(e){ alert(e.message); } };
+    const de = card.querySelector('[data-del]'); if (de) de.onclick = async () => { if (!confirm(t('lv_delete_confirm'))) return; try { await api('POST',`/api/live/${s.id}/delete`); openLive(); } catch(e){ alert(e.message); } };
+    feed.appendChild(card);
+  }
+}
+function openLiveForm() {
+  const feed = document.getElementById('feed');
+  setDocTitle(t('lv_new'));
+  feed.innerHTML = '';
+  const now = new Date(Date.now() + 3600000).toISOString().slice(0,16); // Default: in 1 Stunde
+  const card = el(`<div class="card">
+    <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button></div>
+    <h1 style="margin:8px 0 8px">🔴 ${esc(t('lv_new'))}</h1>
+    <label>${esc(t('lv_f_title'))}</label>
+    <input id="lv_title_in" maxlength="120" placeholder="${esc(t('lv_f_title_ph'))}">
+    <label style="margin-top:8px">${esc(t('lv_f_topic'))}</label>
+    <textarea id="lv_topic_in" rows="3" maxlength="500" placeholder="${esc(t('lv_f_topic_ph'))}"></textarea>
+    <label style="margin-top:8px">${esc(t('lv_f_when'))}</label>
+    <input id="lv_when_in" type="datetime-local" value="${now}">
+    <div class="row" style="margin-top:12px"><button data-save>${esc(t('lv_save'))}</button><span class="err" data-err style="margin-left:10px"></span></div>
+    <div class="muted" style="font-size:12px;margin-top:8px">${esc(t('lv_privacy'))}</div>
+  </div>`);
+  card.querySelector('[data-back]').onclick = () => openLive();
+  card.querySelector('[data-save]').onclick = async () => {
+    const err = card.querySelector('[data-err]'); err.textContent='';
+    try {
+      await api('POST','/api/live', { titel: document.getElementById('lv_title_in').value.trim(), thema: document.getElementById('lv_topic_in').value.trim(), geplant_am: document.getElementById('lv_when_in').value });
+      openLive(t('lv_saved'));
+    } catch(e){ err.textContent = e.message; }
+  };
+  feed.appendChild(card);
 }
 
 async function openOrders(flash) {
@@ -5818,7 +5913,7 @@ async function showNotifications() {
   setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴' };
   app.innerHTML = '';
   const procCount = d.notifications.filter(n => NOTIF_PROCUREMENT.has(n.type)).length;
   const showFilter = d.notifications.length >= 5 && procCount > 0 && procCount < d.notifications.length;
@@ -5864,6 +5959,7 @@ async function showNotifications() {
       else if (n.type === 'shortage_confirm') { mainScreen().then(()=>goTab('shortages')); }
       else if (n.type === 'appt_request' || n.type === 'appt_confirmed' || n.type === 'appt_declined' || n.type === 'appt_cancelled') { mainScreen().then(()=>openAppointments()); }
       else if (n.type === 'promo_like' || n.type === 'promo_comment') { mainScreen().then(()=> n.ref_id ? openPromotionDetail(n.ref_id) : openPromotions()); }
+      else if (n.type === 'live_start') { mainScreen().then(()=>openLive()); }
       else if (n.type === 'endorsement' || n.type === 'recommendation') { mainScreen().then(()=> me && openProfile(me.handle)); }
       else if (n.post_id) { mainScreen().then(()=>openPost(n.post_id)); }
       else if (n.actor) { mainScreen().then(()=>openProfile(n.actor.handle)); }

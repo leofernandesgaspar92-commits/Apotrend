@@ -26,6 +26,7 @@ export function createSocialRepo() {
   const orders = new Map();          // id -> row (abgeschlossene Bestellungen: Snapshot der Liste)
   const appointments = new Map();    // id -> row (Videosprechstunde-Termine: Anbieter <-> Anfrager)
   const promotions = new Map();      // id -> row (Premium-Werbung/Shop: beworbene Produkte/Angebote)
+  const liveSessions = new Map();     // id -> row (Premium-Live-Sessions: geplante/laufende Video-Runden)
 
   const uuid = () => crypto.randomUUID();
   const now = () => new Date().toISOString();
@@ -270,6 +271,21 @@ export function createSocialRepo() {
     listPromotions() { return [...promotions.values()].filter(r => !r.deleted_at).sort((a, b) => b.created_at.localeCompare(a.created_at)).map(r => ({ ...r })); },
     listPromotionsByAuthor(userId) { return [...promotions.values()].filter(r => r.author_user_id === userId && !r.deleted_at).sort((a, b) => b.created_at.localeCompare(a.created_at)).map(r => ({ ...r })); },
 
+    // ── Premium-Live-Sessions (geplante/laufende öffentliche Video-Runden) ──
+    addLiveSession(row) { const r = { id: uuid(), created_at: now(), started_at: null, ended_at: null, ...row }; liveSessions.set(r.id, r); return { ...r }; },
+    getLiveSession(id) { const r = liveSessions.get(id); return r ? { ...r } : null; },
+    updateLiveSession(id, patch) { const r = liveSessions.get(id); if (!r) return null; Object.assign(r, patch); return { ...r }; },
+    removeLiveSession(id) { liveSessions.delete(id); },
+    // Sichtbar: geplante + laufende (beendete werden nach Ablauf ausgeblendet). Sortierung:
+    // laufende zuerst, dann geplante nach Termin aufsteigend.
+    listLiveSessions() {
+      const rank = { live: 0, geplant: 1, beendet: 2 };
+      return [...liveSessions.values()].filter(r => r.status !== 'beendet')
+        .sort((a, b) => (rank[a.status] - rank[b.status]) || String(a.geplant_am).localeCompare(String(b.geplant_am)))
+        .map(r => ({ ...r }));
+    },
+    listLiveSessionsByHost(userId) { return [...liveSessions.values()].filter(r => r.host_user_id === userId).sort((a, b) => b.created_at.localeCompare(a.created_at)).map(r => ({ ...r })); },
+
     getOrder(id) { const r = orders.get(id); return r ? { ...r, items: (r.items || []).map(i => ({ ...i })) } : null; },
     listOrders(userId) {
       return [...orders.values()].filter(r => r.user_id === userId)
@@ -358,6 +374,7 @@ export function createSocialRepo() {
       for (const [id, r] of orders) if (r.user_id === userId) orders.delete(id);
       for (const [id, r] of appointments) if (r.provider_user_id === userId || r.requester_user_id === userId) appointments.delete(id);
       for (const [id, r] of promotions) if (r.author_user_id === userId) promotions.delete(id);
+      for (const [id, r] of liveSessions) if (r.host_user_id === userId) liveSessions.delete(id);
       for (const [id, r] of reports) if (r.reporter_user_id === userId) reports.delete(id);
       verifications.delete(userId);
     },
@@ -368,7 +385,7 @@ export function createSocialRepo() {
         profiles: [...profiles], profilesByHandle: [...profilesByHandle], posts: [...posts],
         comments: [...comments], reactions: [...reactions], pollVotes: [...pollVotes], follows: [...follows], mutes: [...mutes],
         notifications: [...notifications], dmThreads: [...dmThreads], dmMessages: [...dmMessages], reports: [...reports],
-        verifications: [...verifications], bookmarks: [...bookmarks], endorsements: [...endorsements], profileViews: [...profileViews], recommendations: [...recommendations], cartItems: [...cartItems], orders: [...orders], appointments: [...appointments], promotions: [...promotions],
+        verifications: [...verifications], bookmarks: [...bookmarks], endorsements: [...endorsements], profileViews: [...profileViews], recommendations: [...recommendations], cartItems: [...cartItems], orders: [...orders], appointments: [...appointments], promotions: [...promotions], liveSessions: [...liveSessions],
       };
     },
     __load(d) {
@@ -377,7 +394,7 @@ export function createSocialRepo() {
       fill(profiles, d.profiles); fill(profilesByHandle, d.profilesByHandle); fill(posts, d.posts);
       fill(comments, d.comments); fill(reactions, d.reactions); fill(pollVotes, d.pollVotes); fill(follows, d.follows); fill(mutes, d.mutes);
       fill(notifications, d.notifications); fill(dmThreads, d.dmThreads); fill(dmMessages, d.dmMessages); fill(reports, d.reports);
-      fill(verifications, d.verifications); fill(bookmarks, d.bookmarks); fill(endorsements, d.endorsements); fill(profileViews, d.profileViews); fill(recommendations, d.recommendations); fill(cartItems, d.cartItems); fill(orders, d.orders); fill(appointments, d.appointments); fill(promotions, d.promotions);
+      fill(verifications, d.verifications); fill(bookmarks, d.bookmarks); fill(endorsements, d.endorsements); fill(profileViews, d.profileViews); fill(recommendations, d.recommendations); fill(cartItems, d.cartItems); fill(orders, d.orders); fill(appointments, d.appointments); fill(promotions, d.promotions); fill(liveSessions, d.liveSessions);
     },
   };
 }
