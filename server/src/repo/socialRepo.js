@@ -277,6 +277,9 @@ export function createSocialRepo() {
     // ── Premium-Werbung/Shop (beworbene Produkte/Angebote je Premium-Mitglied) ──
     addPromotion(row) { const r = { id: uuid(), created_at: now(), edited_at: null, deleted_at: null, ...row }; promotions.set(r.id, r); return { ...r }; },
     getPromotion(id) { const r = promotions.get(id); return r && !r.deleted_at ? { ...r } : null; },
+    // Auch soft-gelöschte Angebote (für die Moderation: gemeldete Inhalte bleiben prüfbar,
+    // selbst wenn der/die Autor:in sie nach der Meldung selbst entfernt).
+    getPromotionAny(id) { const r = promotions.get(id); return r ? { ...r } : null; },
     updatePromotion(id, patch) { const r = promotions.get(id); if (!r || r.deleted_at) return null; Object.assign(r, patch, { edited_at: now() }); return { ...r }; },
     softDeletePromotion(id) { const r = promotions.get(id); if (r) r.deleted_at = now(); return r ? { ...r } : null; },
     listPromotions() { return [...promotions.values()].filter(r => !r.deleted_at).sort((a, b) => b.created_at.localeCompare(a.created_at)).map(r => ({ ...r })); },

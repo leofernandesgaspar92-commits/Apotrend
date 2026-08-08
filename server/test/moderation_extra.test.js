@@ -58,6 +58,19 @@ test('Moderation: Live-Session melden + entfernen', () => {
   assert.equal(socialRepo.listReactions('live', s.id).length, 0);
 });
 
+test('Moderation: Werbung bleibt prüfbar, auch wenn der Autor sie nach der Meldung selbst löscht', () => {
+  const { social, seller, user, mod } = setup();
+  const p = social.createPromotion(seller, { titel: 'Heikles Angebot', kategorie: 'medikamente' });
+  const rep = social.report(user, 'promotion', p.id, 'unangemessen');
+  // Autor löscht das Angebot nach der Meldung (Umgehungsversuch)
+  social.deletePromotion(seller, p.id);
+  // Moderation sieht weiterhin den Original-Inhalt (nicht nur einen Platzhalter)
+  const entry = social.moderationQueue(mod).find(x => x.id === rep.id);
+  assert.ok(entry && entry.post);
+  assert.match(entry.post.body, /Heikles Angebot/);
+  assert.equal(entry.post.deleted, true);
+});
+
 test('Moderation: Melden nicht-existenter Ziele wird abgelehnt', () => {
   const { social, user } = setup();
   assert.throws(() => social.report(user, 'promotion', 'gibt-es-nicht', null), /nicht gefunden/);

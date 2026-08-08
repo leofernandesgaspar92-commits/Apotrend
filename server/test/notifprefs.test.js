@@ -67,6 +67,24 @@ test('Einstellungen: watch_alert (cross-service pushNotification) respektiert �
   void socialRepo;
 });
 
+test('Einstellungen: transaktionale Termin-Benachrichtigungen sind nicht abschaltbar', () => {
+  const { social, a, b } = setup();
+  // Selbst mit „live" aus müssen Termin-Status-Meldungen ankommen (nicht gemappt = immer)
+  social.setNotifSetting(a, 'live', false);
+  social.pushNotification({ userId: a, type: 'appt_confirmed', actorUserId: b, refType: 'appointment', refId: 'x' });
+  assert.equal(social.notifications(a).filter(n => n.type === 'appt_confirmed').length, 1);
+  // live_start hingegen ist unter „live" abschaltbar
+  social.pushNotification({ userId: a, type: 'live_start', actorUserId: b, refType: 'live', refId: 'y' });
+  assert.equal(social.notifications(a).filter(n => n.type === 'live_start').length, 0, 'live_start unterdrückt');
+});
+
+test('Einstellungen: Austausch-Treffer (exchange_offer) respektieren „watch" aus', () => {
+  const { social, a, b } = setup();
+  social.setNotifSetting(a, 'watch', false);
+  const created = social.pushNotification({ userId: a, type: 'exchange_offer', actorUserId: b, refType: 'exchange', refId: 'x', label: 'Amoxicillin' });
+  assert.equal(created, null, 'unterdrückt (vorher immer-an)');
+});
+
 test('Einstellungen: unbekannte Kategorie wird abgelehnt', () => {
   const { social, a } = setup();
   assert.throws(() => social.setNotifSetting(a, 'quatsch', false), /Kategorie/);

@@ -30,16 +30,20 @@ export function createSocialService(social, foundationRepo, options = {}) {
 
   // Ordnet jeden Benachrichtigungs-Typ einer nutzerseitig schaltbaren Kategorie zu.
   // Nicht gemappte Typen (z.B. 'verified') sind systemseitig und immer zustellbar.
+  // Bewusst NICHT gemappt (immer zustellbar): systemseitige ('verified') und
+  // TRANSAKTIONALE, selbst angestoßene Ereignisse ('appt_*' Videosprechstunde-
+  // Status) — die soll niemand versehentlich mit-abschalten.
   const NOTIF_CATEGORY = {
     follow: 'follows',
     comment: 'community', reaction: 'community', mention: 'community', repost: 'community',
     poll_vote: 'community', answer_accepted: 'community', endorsement: 'community', recommendation: 'community',
     dm: 'dm',
     watch_alert: 'watch', price_alert: 'watch', watch_offer: 'watch', shortage_confirm: 'watch',
-    live_start: 'live_appts', appt_request: 'live_appts', appt_confirmed: 'live_appts', appt_declined: 'live_appts', appt_cancelled: 'live_appts',
+    exchange_offer: 'watch', exchange_want: 'watch',
+    live_start: 'live',
     promo_like: 'promos', promo_comment: 'promos',
   };
-  const NOTIF_CATEGORIES = ['follows', 'community', 'dm', 'watch', 'live_appts', 'promos'];
+  const NOTIF_CATEGORIES = ['follows', 'community', 'dm', 'watch', 'live', 'promos'];
   // Darf dieser Typ an diese:n Empfänger:in zugestellt werden (Einstellungen)?
   function notifAllowed(userId, type) {
     const cat = NOTIF_CATEGORY[type];
@@ -51,6 +55,18 @@ export function createSocialService(social, foundationRepo, options = {}) {
     if (!userId || userId === actorUserId) return; // nie sich selbst benachrichtigen
     if (!notifAllowed(userId, type)) return;        // vom Empfänger deaktivierte Kategorie
     social.createNotification({ userId, type, actorUserId, refType, refId });
+  }
+
+  // Einheitliches Entfernen inkl. Aufräumen verwaister Interaktionen — von Autor-Löschung
+  // UND Moderations-Entfernung genutzt, damit beide Pfade nicht auseinanderlaufen.
+  function purgePromotionData(id) {
+    social.softDeletePromotion(id);
+    social.removeReactionsForTarget('promotion', id);
+    social.removeCommentsForPost(id);
+  }
+  function purgeLiveSessionData(id) {
+    social.removeLiveSession(id);
+    social.removeReactionsForTarget('live', id);
   }
 
   // @handle-Erwaehnungen im Text -> Mention-Benachrichtigungen.
@@ -849,8 +865,8 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (!r) throw new Error('Meldung nicht gefunden.');
       if (remove && r.target_type === 'post') social.softDeletePost(r.target_id);
       if (remove && r.target_type === 'comment') social.softDeleteComment(r.target_id);
-      if (remove && r.target_type === 'promotion') { social.softDeletePromotion(r.target_id); social.removeReactionsForTarget('promotion', r.target_id); social.removeCommentsForPost(r.target_id); }
-      if (remove && r.target_type === 'live') { social.removeLiveSession(r.target_id); social.removeReactionsForTarget('live', r.target_id); }
+      if (remove && r.target_type === 'promotion') purgePromotionData(r.target_id);
+      if (remove && r.target_type === 'live') purgeLiveSessionData(r.target_id);
       return social.updateReport(reportId, { status: remove ? 'entfernt' : 'geprueft' });
     },
     isModerator(userId) { return isModerator(userId); },
@@ -873,7 +889,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
             out.post = { body: c.body, deleted: !!c.deleted_at, author_handle: author ? author.handle : null, is_comment: true };
           }
         } else if (r.target_type === 'promotion') {
-          const p = social.getPromotion(r.target_id);
+          const p = social.getPromotionAny(r.target_id); // auch soft-gelöschte anzeigen
           if (p) {
             const author = social.getProfileByUserId(p.author_user_id);
             out.post = { body: `🏷️ ${p.titel}${p.beschreibung ? ' — ' + p.beschreibung : ''}`, deleted: !!p.deleted_at, author_handle: author ? author.handle : null };
@@ -1207,10 +1223,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       const p = social.getPromotion(id);
       if (!p) throw new AppError('promo_not_found', 'Angebot nicht gefunden.', 404);
       if (p.author_user_id !== userId && !isModerator(userId)) throw new ForbiddenError('Nur der/die Autor:in oder Moderation darf löschen.');
-      social.softDeletePromotion(id);
-      // Verwaiste Likes/Kommentare des Angebots aufräumen (nicht mehr erreichbar).
-      social.removeReactionsForTarget('promotion', id);
-      social.removeCommentsForPost(id);
+      purgePromotionData(id); // soft-delete + verwaiste Likes/Kommentare aufräumen
       return { ok: true };
     },
     likePromotion(userId, id) {
@@ -1331,8 +1344,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       const s = social.getLiveSession(id);
       if (!s) throw new AppError('live_not_found', 'Session nicht gefunden.', 404);
       if (s.host_user_id !== userId && !isModerator(userId)) throw new ForbiddenError('Nur der/die Gastgeber:in oder Moderation darf löschen.');
-      social.removeLiveSession(id);
-      social.removeReactionsForTarget('live', id); // verwaiste „Erinnern"-Vormerkungen entfernen
+      purgeLiveSessionData(id); // entfernen + verwaiste „Erinnern"-Vormerkungen aufräumen
       return { ok: true };
     },
 
