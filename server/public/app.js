@@ -282,6 +282,7 @@ const I18N = {
     ac_del_btn:'Konto endgültig löschen', ac_del_confirm:'Dein Konto und alle Daten werden unwiderruflich gelöscht. Fortfahren?',
     ac_del_pw:'Zur Bestätigung dein Passwort eingeben:', ac_del_done:'Dein Konto wurde gelöscht.',
     tm_title:'Team verwalten', tm_sub:'Kolleg:innen deiner Apotheke Zugang geben.', tm_open:'👥 Team', tm_no_perm:'Nur Inhaber:innen/Admins können das Team verwalten.', tm_add_title:'Mitglied hinzufügen', tm_add_hint:'Lege ein Konto für eine:n Kolleg:in an. Das Startpasswort teilst du persönlich mit — es kann danach selbst geändert werden.', tm_name:'Name', tm_email:'E-Mail', tm_role:'Rolle', tm_pw:'Startpasswort (min. 8 Zeichen)', tm_add_btn:'Hinzufügen', tm_members:'Mitglieder ({n})', tm_you:'du', tm_remove:'Entfernen', tm_remove_confirm:'{name} wirklich aus dem Team entfernen?', tm_role_admin:'Inhaber:in/Admin', tm_role_apotheker:'Apotheker:in', tm_role_pta:'PTA', tm_role_lehrling:'Auszubildende:r',
+    th_nav:'👥 Team', th_sub:'Aufgaben, Notizen und Team-Zugänge deiner Apotheke.', th_tasks_sub:'Aufgaben zuweisen und verfolgen.', th_notes_sub:'Gemeinsame Notizen & Wissensablage.', th_manage_sub:'Mitglieder & Rollen verwalten.',
     tk_nav:'✅ Aufgaben', tk_title:'Team-Aufgaben', tk_sub:'Aufgaben im Team zuweisen und den Status verfolgen.', tk_new:'Neue Aufgabe', tk_f_title_ph:'Titel, z.B. „Amoxicillin nachbestellen"', tk_f_desc_ph:'Details (optional)', tk_f_assignee:'Zuweisen an', tk_unassigned:'Nicht zugewiesen', tk_f_due:'Fällig am', tk_add:'Aufgabe anlegen', tk_empty_t:'Keine Aufgaben', tk_empty_s:'Lege die erste Aufgabe an und weise sie einer Kollegin/einem Kollegen zu.', tk_empty_s_member:'Noch keine Aufgaben im Team.', tk_assigned_to:'{name}', tk_due:'fällig {d}', tk_overdue:'überfällig', tk_st_offen:'Offen', tk_st_in_arbeit:'In Arbeit', tk_st_erledigt:'Erledigt', tk_set_offen:'Offen', tk_set_progress:'In Arbeit', tk_set_done:'✓ Erledigt',
     kb_nav:'📋 Notizen', kb_title:'Team-Notizen', kb_sub:'Gemeinsame Wissensablage der Apotheke — Schichtübergaben, Kontakte, Merkzettel, Links.', kb_new:'Neue Notiz', kb_f_title_ph:'Titel, z.B. „Großhandel-Kontakt Nachtdienst"', kb_f_body_ph:'Inhalt (optional)', kb_f_link_ph:'Link (optional, https://…)', kb_add:'Notiz speichern', kb_empty_t:'Keine Notizen', kb_empty_s:'Lege die erste gemeinsame Notiz an — sichtbar für dein ganzes Team.', kb_by:'von {name}', kb_pin:'📌 Anheften', kb_unpin:'📌 Lösen', kb_delete:'Löschen', kb_delete_confirm:'Diese Notiz löschen?',
     fl_back:'← zurück zum Profil', fl_h_followers:'👥 Follower', fl_h_following:'➡️ Folgt',
@@ -626,6 +627,7 @@ const I18N = {
     ac_del_btn:'Delete account permanently', ac_del_confirm:'Your account and all data will be permanently deleted. Continue?',
     ac_del_pw:'Enter your password to confirm:', ac_del_done:'Your account has been deleted.',
     tm_title:'Manage team', tm_sub:'Give colleagues at your pharmacy access.', tm_open:'👥 Team', tm_no_perm:'Only owners/admins can manage the team.', tm_add_title:'Add member', tm_add_hint:'Create an account for a colleague. Share the initial password in person — they can change it afterwards.', tm_name:'Name', tm_email:'Email', tm_role:'Role', tm_pw:'Initial password (min. 8 chars)', tm_add_btn:'Add', tm_members:'Members ({n})', tm_you:'you', tm_remove:'Remove', tm_remove_confirm:'Really remove {name} from the team?', tm_role_admin:'Owner/Admin', tm_role_apotheker:'Pharmacist', tm_role_pta:'Pharmacy technician', tm_role_lehrling:'Trainee',
+    th_nav:'👥 Team', th_sub:'Tasks, notes and team access for your pharmacy.', th_tasks_sub:'Assign and track tasks.', th_notes_sub:'Shared notes & knowledge base.', th_manage_sub:'Manage members & roles.',
     tk_nav:'✅ Tasks', tk_title:'Team tasks', tk_sub:'Assign tasks across the team and track their status.', tk_new:'New task', tk_f_title_ph:'Title, e.g. “Reorder amoxicillin”', tk_f_desc_ph:'Details (optional)', tk_f_assignee:'Assign to', tk_unassigned:'Unassigned', tk_f_due:'Due date', tk_add:'Create task', tk_empty_t:'No tasks', tk_empty_s:'Create the first task and assign it to a colleague.', tk_empty_s_member:'No team tasks yet.', tk_assigned_to:'{name}', tk_due:'due {d}', tk_overdue:'overdue', tk_st_offen:'Open', tk_st_in_arbeit:'In progress', tk_st_erledigt:'Done', tk_set_offen:'Open', tk_set_progress:'In progress', tk_set_done:'✓ Done',
     kb_nav:'📋 Notes', kb_title:'Team notes', kb_sub:'Shared knowledge base for the pharmacy — shift handovers, contacts, reminders, links.', kb_new:'New note', kb_f_title_ph:'Title, e.g. “Wholesaler contact night shift”', kb_f_body_ph:'Content (optional)', kb_f_link_ph:'Link (optional, https://…)', kb_add:'Save note', kb_empty_t:'No notes', kb_empty_s:'Create the first shared note — visible to your whole team.', kb_by:'by {name}', kb_pin:'📌 Pin', kb_unpin:'📌 Unpin', kb_delete:'Delete', kb_delete_confirm:'Delete this note?',
     fl_back:'← back to profile', fl_h_followers:'👥 Followers', fl_h_following:'➡️ Following',
@@ -970,6 +972,7 @@ const I18N = {
     ac_del_btn:'Eliminar conta definitivamente', ac_del_confirm:'A sua conta e todos os dados serão eliminados definitivamente. Continuar?',
     ac_del_pw:'Introduza a sua palavra-passe para confirmar:', ac_del_done:'A sua conta foi eliminada.',
     tm_title:'Gerir equipa', tm_sub:'Dar acesso a colegas da sua farmácia.', tm_open:'👥 Equipa', tm_no_perm:'Apenas proprietários/admins podem gerir a equipa.', tm_add_title:'Adicionar membro', tm_add_hint:'Crie uma conta para um colega. Partilhe a palavra-passe inicial pessoalmente — pode ser alterada depois.', tm_name:'Nome', tm_email:'E-mail', tm_role:'Função', tm_pw:'Palavra-passe inicial (mín. 8 caracteres)', tm_add_btn:'Adicionar', tm_members:'Membros ({n})', tm_you:'você', tm_remove:'Remover', tm_remove_confirm:'Remover mesmo {name} da equipa?', tm_role_admin:'Proprietário/Admin', tm_role_apotheker:'Farmacêutico(a)', tm_role_pta:'Técnico(a) de farmácia', tm_role_lehrling:'Estagiário(a)',
+    th_nav:'👥 Equipa', th_sub:'Tarefas, notas e acessos da equipa da sua farmácia.', th_tasks_sub:'Atribuir e acompanhar tarefas.', th_notes_sub:'Notas partilhadas & base de conhecimento.', th_manage_sub:'Gerir membros & funções.',
     tk_nav:'✅ Tarefas', tk_title:'Tarefas da equipa', tk_sub:'Atribuir tarefas na equipa e acompanhar o estado.', tk_new:'Nova tarefa', tk_f_title_ph:'Título, ex. “Encomendar amoxicilina”', tk_f_desc_ph:'Detalhes (opcional)', tk_f_assignee:'Atribuir a', tk_unassigned:'Não atribuída', tk_f_due:'Data-limite', tk_add:'Criar tarefa', tk_empty_t:'Sem tarefas', tk_empty_s:'Crie a primeira tarefa e atribua-a a um colega.', tk_empty_s_member:'Ainda sem tarefas na equipa.', tk_assigned_to:'{name}', tk_due:'até {d}', tk_overdue:'em atraso', tk_st_offen:'Aberta', tk_st_in_arbeit:'Em curso', tk_st_erledigt:'Concluída', tk_set_offen:'Aberta', tk_set_progress:'Em curso', tk_set_done:'✓ Concluída',
     kb_nav:'📋 Notas', kb_title:'Notas da equipa', kb_sub:'Base de conhecimento partilhada da farmácia — passagens de turno, contactos, lembretes, links.', kb_new:'Nova nota', kb_f_title_ph:'Título, ex. “Contacto grossista turno noite”', kb_f_body_ph:'Conteúdo (opcional)', kb_f_link_ph:'Link (opcional, https://…)', kb_add:'Guardar nota', kb_empty_t:'Sem notas', kb_empty_s:'Crie a primeira nota partilhada — visível para toda a equipa.', kb_by:'por {name}', kb_pin:'📌 Fixar', kb_unpin:'📌 Desafixar', kb_delete:'Eliminar', kb_delete_confirm:'Eliminar esta nota?',
     fl_back:'← voltar ao perfil', fl_h_followers:'👥 Seguidores', fl_h_following:'➡️ A seguir',
@@ -1903,7 +1906,7 @@ async function loadOverview() {
     <div class="row" style="flex-wrap:wrap;gap:10px">
       ${tiles.join('')}
     </div>
-    <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px"><button class="ghost small" id="ov_bm">${esc(t('ov_bookmarks'))}</button><button class="ghost small" id="ov_promos">${esc(t('wb_nav'))}</button><button class="ghost small" id="ov_live">${esc(t('lv_nav'))}</button><button class="ghost small" id="ov_dir">${esc(t('dir_nav'))}</button><button class="ghost small" id="ov_tasks">${esc(t('tk_nav'))}</button><button class="ghost small" id="ov_notes">${esc(t('kb_nav'))}</button></div>
+    <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px"><button class="ghost small" id="ov_bm">${esc(t('ov_bookmarks'))}</button><button class="ghost small" id="ov_promos">${esc(t('wb_nav'))}</button><button class="ghost small" id="ov_live">${esc(t('lv_nav'))}</button><button class="ghost small" id="ov_dir">${esc(t('dir_nav'))}</button><button class="ghost small" id="ov_team">${esc(t('th_nav'))}</button></div>
   </div>`);
   head.querySelectorAll('.ovtile[data-go]').forEach(t => { if (t.dataset.go) t.onclick = () => { if (t.dataset.go === 'live') { openLive(); return; } if (t.dataset.filter) shortageFilter = t.dataset.filter; goTab(t.dataset.go); }; });
   head.querySelectorAll('.ovtile').forEach(t => { if (!t.dataset.go) t.onclick = () => document.getElementById('btnNotif').click(); });
@@ -1911,8 +1914,7 @@ async function loadOverview() {
   head.querySelector('#ov_promos').onclick = () => openPromotions();
   head.querySelector('#ov_live').onclick = () => openLive();
   head.querySelector('#ov_dir').onclick = () => openDirectory();
-  head.querySelector('#ov_tasks').onclick = () => openTasks();
-  head.querySelector('#ov_notes').onclick = () => openNotes();
+  head.querySelector('#ov_team').onclick = () => openTeamHub();
   feed.appendChild(head);
   renderLiveOverview(feed, liveNow, liveSoon); // zeitkritisch: laufende/kommende Live-Sessions ganz oben
 
@@ -4053,7 +4055,7 @@ async function openTeam() {
     <h1 style="margin:8px 0 2px">👥 ${esc(t('tm_title'))}</h1>
     <div class="muted">${mem?esc(mem.org_name||''):''}${mem?' · '+esc(roleLabel(mem.role)):''}</div>
   </div>`);
-  head.querySelector('[data-back]').onclick = () => me && openProfile(me.handle);
+  head.querySelector('[data-back]').onclick = () => openTeamHub();
   feed.appendChild(head);
   if (!mem || !mem.can_manage_users) {
     feed.appendChild(el(`<div class="card muted">${esc(t('tm_no_perm'))}</div>`));
@@ -4099,6 +4101,32 @@ async function openTeam() {
   feed.appendChild(listCard);
 }
 
+// ── Team-Arbeitsbereich (Hub: Aufgaben, Notizen, Verwaltung) ────────────────
+async function openTeamHub() {
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
+  setDocTitle(t('th_nav'));
+  feed.innerHTML = '<div class="loading">…</div>';
+  let mem = null;
+  try { mem = (await api('GET','/api/team')).membership; } catch(e){ feed.innerHTML=''; feed.appendChild(errorState(e.message, () => openTeamHub())); return; }
+  feed.innerHTML = '';
+  const head = el(`<div class="card">
+    <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button></div>
+    <h1 style="margin:8px 0 2px">👥 ${esc(t('th_nav'))}</h1>
+    <div class="muted">${mem?esc(mem.org_name||''):''}${mem&&mem.role?' · '+esc(roleLabel(mem.role)):''}</div>
+  </div>`);
+  head.querySelector('[data-back]').onclick = () => goTab('overview');
+  feed.appendChild(head);
+  const tile = (icon, title, sub, fn) => {
+    const c = el(`<div class="card clickable" role="button" tabindex="0" style="cursor:pointer"><div class="row" style="align-items:center;gap:12px"><div style="font-size:26px">${icon}</div><div style="flex:1"><b>${esc(title)}</b><div class="muted" style="font-size:13px">${esc(sub)}</div></div><span class="ovtile-go" aria-hidden="true">›</span></div></div>`);
+    c.onclick = fn; c.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); } };
+    feed.appendChild(c);
+  };
+  tile('✅', t('tk_title'), t('th_tasks_sub'), () => openTasks());
+  tile('📋', t('kb_title'), t('th_notes_sub'), () => openNotes());
+  if (mem && mem.can_manage_users) tile('⚙️', t('tm_title'), t('th_manage_sub'), () => openTeam());
+}
+
 // ── Team-Aufgaben ───────────────────────────────────────────────────────────
 function taskStatusMeta(s) {
   if (s === 'erledigt')  return ['var(--ok-fg)', 'var(--ok-bg)', t('tk_st_erledigt')];
@@ -4118,7 +4146,7 @@ async function openTasks() {
     <h1 style="margin:8px 0 2px">✅ ${esc(t('tk_title'))}</h1>
     <div class="muted">${esc(t('tk_sub'))}</div>
   </div>`);
-  head.querySelector('[data-back]').onclick = () => goTab('overview');
+  head.querySelector('[data-back]').onclick = () => openTeamHub();
   feed.appendChild(head);
   if (d.can_assign) {
     const opts = `<option value="">${esc(t('tk_unassigned'))}</option>` + d.members.map(m=>`<option value="${esc(m.user_id)}">${esc(m.name||'')}</option>`).join('');
@@ -4180,7 +4208,7 @@ async function openNotes() {
     <h1 style="margin:8px 0 2px">📋 ${esc(t('kb_title'))}</h1>
     <div class="muted">${esc(t('kb_sub'))}</div>
   </div>`);
-  head.querySelector('[data-back]').onclick = () => goTab('overview');
+  head.querySelector('[data-back]').onclick = () => openTeamHub();
   feed.appendChild(head);
   if (d.can_create) {
     const addCard = el(`<div class="card">
@@ -5395,8 +5423,8 @@ async function openProfile(handle) {
       const pcard = el(`<div class="card"><div class="row"><b style="flex:1">${esc(t('pr_title'))}</b><button class="small" id="go_premium">${esc(t('ac_premium'))}</button></div></div>`);
       pcard.querySelector('#go_premium').onclick = openPremium;
       feed.appendChild(pcard);
-      const tcard = el(`<div class="card"><div class="row"><div style="flex:1"><b>${esc(t('tm_title'))}</b><div class="muted" style="font-size:13px">${esc(t('tm_sub'))}</div></div><button class="small" id="go_team">${esc(t('tm_open'))}</button></div></div>`);
-      tcard.querySelector('#go_team').onclick = openTeam;
+      const tcard = el(`<div class="card"><div class="row"><div style="flex:1"><b>${esc(t('th_nav'))}</b><div class="muted" style="font-size:13px">${esc(t('th_sub'))}</div></div><button class="small" id="go_team">${esc(t('tm_open'))}</button></div></div>`);
+      tcard.querySelector('#go_team').onclick = openTeamHub;
       feed.appendChild(tcard);
       const dcard = el(`<div class="card"><b>${esc(t('ac_title'))}</b>
         <div class="muted" style="margin-top:4px">${esc(t('ac_export_d'))}</div>
