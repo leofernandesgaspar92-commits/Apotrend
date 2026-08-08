@@ -84,3 +84,19 @@ test('Notizen: PTA legt an & Apotheker heftet an; Lehrling darf nicht anheften',
   assert.equal(pinned.pinned, true);
   assert.throws(() => collab.setNotePinned(aAzubi.user.id, n.id, false), ForbiddenError);
 });
+
+test('Notizen löschen: Ersteller:in ja, fremder Lehrling nein, Apotheker ja; Fremdorg nein', () => {
+  const { collab, A, aApo, aPta, aAzubi, B } = setup();
+  // Vom Azubi erstellte Notiz darf der Azubi selbst löschen
+  const own = collab.createNote(aAzubi.user.id, A.organization.id, { title: 'Azubi-Notiz' });
+  collab.deleteNote(aAzubi.user.id, own.id);
+  assert.equal(collab.listNotes(aApo.user.id, A.organization.id).some(x => x.id === own.id), false);
+  // Vom PTA erstellte Notiz: Azubi (nicht Ersteller, keine collab-Rolle) darf NICHT löschen
+  const n = collab.createNote(aPta.user.id, A.organization.id, { title: 'PTA-Notiz' });
+  assert.throws(() => collab.deleteNote(aAzubi.user.id, n.id), ForbiddenError);
+  // Fremde Organisation (Isolation): B darf A-Notiz nicht löschen
+  assert.throws(() => collab.deleteNote(B.user.id, n.id), ForbiddenError);
+  // Apotheker (collab-Rolle) darf löschen
+  collab.deleteNote(aApo.user.id, n.id);
+  assert.equal(collab.listNotes(aApo.user.id, A.organization.id).some(x => x.id === n.id), false);
+});

@@ -18,6 +18,7 @@ import { createPersistence } from '../repo/persistence.js';
 import { createOrgAuthService, ForbiddenError } from '../services/orgAuth.js';
 import { createCollabService } from '../services/collab.js';
 import { can as roleCan } from '../domain/roles.js';
+import { cleanSourceUrl } from '../domain/media.js';
 import { createSocialService } from '../services/social.js';
 import { createShortagesService } from '../services/shortages.js';
 import { createPricesService } from '../services/prices.js';
@@ -416,6 +417,29 @@ const routes = [
     return { task: collab.createTask(userId, mem.organization_id, { title, description: body.description ? String(body.description).slice(0, 1000) : null, assigneeUserId: body.assigneeUserId || null, dueDate }) };
   }],
   ['POST', /^\/api\/tasks\/([^/]+)\/status$/, true, async ({ userId, params, body }) => ({ task: collab.updateTaskStatus(userId, params[0], body.status) })],
+  // ── Team-Notizen (gemeinsame Wissensablage, apothekenintern) ──
+  ['GET', /^\/api\/notes$/, true, async ({ userId }) => {
+    const mem = orgAuth.myMembership(userId);
+    if (!mem) return { notes: [], can_pin: false };
+    const uname = (id) => { const u = id ? repo.getUserById(id) : null; return u ? u.name : null; };
+    const notes = collab.listNotes(userId, mem.organization_id)
+      .map(n => ({ ...n, creator_name: uname(n.created_by), mine: n.created_by === userId }))
+      .sort((a, b) => (Number(b.pinned) - Number(a.pinned)) || String(b.created_at).localeCompare(String(a.created_at)));
+    return { notes, can_pin: roleCan(mem.role, 'collab'), can_delete_role: roleCan(mem.role, 'collab') };
+  }],
+  ['POST', /^\/api\/notes$/, true, async ({ userId, body }) => {
+    const mem = orgAuth.myMembership(userId);
+    if (!mem) { const e = new Error('Keine Organisation.'); e.status = 403; throw e; }
+    const title = String(body.title || '').trim();
+    if (title.length < 2) { const e = new Error('Notiz braucht einen Titel.'); e.status = 400; throw e; }
+    let docUrl = null;
+    if (body.docUrl && String(body.docUrl).trim()) {
+      try { docUrl = cleanSourceUrl(body.docUrl); } catch { const e = new Error('Link muss ein http(s)-Link sein.'); e.status = 400; throw e; }
+    }
+    return { note: collab.createNote(userId, mem.organization_id, { title, body: body.body ? String(body.body).slice(0, 2000) : null, docUrl }) };
+  }],
+  ['POST', /^\/api\/notes\/([^/]+)\/pin$/, true, async ({ userId, params, body }) => ({ note: collab.setNotePinned(userId, params[0], !!body.pinned) })],
+  ['POST', /^\/api\/notes\/([^/]+)\/delete$/, true, async ({ userId, params }) => collab.deleteNote(userId, params[0])],
   ['POST', /^\/api\/me\/delete$/, true, async ({ userId, body }) => {
     if (!orgAuth.verifyUserPassword(userId, body.password)) { const e = new Error('Passwort ist falsch.'); e.status = 401; throw e; }
     socialRepo.purgeUser(userId);

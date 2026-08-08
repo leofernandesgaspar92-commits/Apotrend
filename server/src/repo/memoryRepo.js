@@ -224,6 +224,7 @@ export function createMemoryRepo() {
     },
     getNote(id) { const n = notes.get(id); return n ? { ...n } : null; },
     setNotePinned(id, pinned) { const n = notes.get(id); if (n) n.pinned = pinned; return n ? { ...n } : null; },
+    deleteNote(id) { return notes.delete(id); },
     listNotes(orgId) {
       return [...notes.values()].filter(n => n.organization_id === orgId).map(n => ({ ...n }));
     },

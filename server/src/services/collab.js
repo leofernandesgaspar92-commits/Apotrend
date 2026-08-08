@@ -89,6 +89,18 @@ export function createCollabService(repo, orgAuth) {
       return repo.listNotes(organizationId);
     },
 
+    // Notiz löschen: Ersteller:in ODER eine Rolle mit 'collab' (Admin/Apotheker:in/PTA).
+    deleteNote(actorUserId, noteId) {
+      const n = repo.getNote(noteId);
+      if (!n) throw new Error('Notiz nicht gefunden.');
+      const role = orgRole(actorUserId, n.organization_id); // Isolation
+      if (n.created_by !== actorUserId && !can(role, 'collab')) {
+        throw new ForbiddenError('Nur Ersteller:in oder eine berechtigte Rolle darf löschen.');
+      }
+      repo.deleteNote(noteId);
+      return { ok: true };
+    },
+
     createTask(actorUserId, organizationId, { title, description = null, assigneeUserId = null, dueDate = null, channelId = null }) {
       const role = orgRole(actorUserId, organizationId);
       if (!can(role, 'assign_tasks')) throw new ForbiddenError('Diese Rolle darf keine Aufgaben anlegen/zuweisen.');
