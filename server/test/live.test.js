@@ -66,6 +66,36 @@ test('Live: laufende Session zuerst; beendete verschwindet aus der Liste', () =>
   assert.equal(social.listMyLiveSessions(host).length, 2, 'Host sieht auch beendete');
 });
 
+test('Live: „Erinnern" umschalten + Interessierte werden beim Start benachrichtigt', () => {
+  const { repo, social, host, viewer } = setup();
+  repo.grantEntitlement(host, 'premium');
+  const s = social.createLiveSession(host, { titel: 'Q&A', geplant_am: '2026-09-01T18:00' });
+  // Interesse setzen (viewer folgt dem Host NICHT -> nur über Erinnern erreichbar)
+  const on = social.toggleLiveInterest(viewer, s.id);
+  assert.equal(on.interested, true);
+  assert.equal(on.interest_count, 1);
+  assert.equal(social.listLiveSessions(viewer)[0].i_am_interested, true);
+  assert.equal(social.listLiveSessions(host)[0].interest_count, 1, 'Host sieht die Nachfrage');
+  // Start -> vorgemerkte Person wird benachrichtigt (obwohl kein Follower)
+  social.startLiveSession(host, s.id);
+  assert.ok(social.notifications(viewer).some(n => n.type === 'live_start'));
+  // Umschalten aus
+  const off = social.toggleLiveInterest(viewer, s.id);
+  assert.equal(off.interested, false);
+  assert.equal(off.interest_count, 0);
+});
+
+test('Live: Erinnern benachrichtigt nicht doppelt (Follower + Interesse)', () => {
+  const { repo, social, host, viewer } = setup();
+  repo.grantEntitlement(host, 'premium');
+  social.follow(viewer, host);
+  const s = social.createLiveSession(host, { titel: 'Doppelt?', geplant_am: '2026-09-01T18:00' });
+  social.toggleLiveInterest(viewer, s.id); // zugleich Follower UND interessiert
+  social.startLiveSession(host, s.id);
+  const n = social.notifications(viewer).filter(x => x.type === 'live_start');
+  assert.equal(n.length, 1, 'genau eine Benachrichtigung trotz Follower+Interesse');
+});
+
 test('Live: nur Host/Mod darf löschen', () => {
   const { repo, social, host, viewer } = setup();
   repo.grantEntitlement(host, 'premium');

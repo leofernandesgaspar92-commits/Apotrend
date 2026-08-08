@@ -484,6 +484,7 @@ const routes = [
   ['POST', /^\/api\/live\/([^/]+)\/start$/, true, async ({ userId, params }) => ({ session: social.startLiveSession(userId, params[0]) })],
   ['POST', /^\/api\/live\/([^/]+)\/end$/, true, async ({ userId, params }) => ({ session: social.endLiveSession(userId, params[0]) })],
   ['POST', /^\/api\/live\/([^/]+)\/delete$/, true, async ({ userId, params }) => social.deleteLiveSession(userId, params[0])],
+  ['POST', /^\/api\/live\/([^/]+)\/interest$/, true, async ({ userId, params }) => social.toggleLiveInterest(userId, params[0])],
 
   ['GET', /^\/api\/profiles\/([^/]+)\/page$/, true, async ({ userId, params }) => {
     const d = social.profilePage(userId, params[0]);

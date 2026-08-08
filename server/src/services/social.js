@@ -1184,11 +1184,28 @@ export function createSocialService(social, foundationRepo, options = {}) {
     // Nutzer:innen können der laufenden Session beitreten. Kein Mitschnitt.
     decorateLive(s, viewerUserId = null) {
       const host = social.getProfileByUserId(s.host_user_id);
+      const interested = social.listReactions('live', s.id);
       return {
         ...s,
         host: host ? { handle: host.handle, display_name: host.display_name, avatar_url: host.avatar_url || null, verified: !!host.verified, account_type: host.account_type, premium: foundationRepo.hasEntitlement(host.user_id, 'premium') } : null,
         i_am_host: viewerUserId === s.host_user_id,
+        interest_count: interested.length,
+        i_am_interested: !!(viewerUserId && interested.some(r => r.user_id === viewerUserId)),
       };
+    },
+    // „Erinnern/Interessiert": Nutzer:in vormerken, um beim Live-Start
+    // benachrichtigt zu werden. Umschaltbar. Läuft über die Reaktions-Infrastruktur.
+    toggleLiveInterest(userId, id) {
+      requireUser(userId);
+      const s = social.getLiveSession(id);
+      if (!s) throw new AppError('live_not_found', 'Session nicht gefunden.', 404);
+      const mine = social.listReactions('live', id).find(r => r.user_id === userId);
+      if (mine) {
+        social.removeReaction({ userId, targetType: 'live', targetId: id });
+        return { interested: false, interest_count: social.listReactions('live', id).length };
+      }
+      social.setReaction({ userId, targetType: 'live', targetId: id, type: 'interesse' });
+      return { interested: true, interest_count: social.listReactions('live', id).length };
     },
     listLiveSessions(viewerUserId) {
       requireUser(viewerUserId);
@@ -1227,8 +1244,12 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (s.host_user_id !== userId) throw new ForbiddenError('Nur der/die Gastgeber:in darf starten.');
       if (s.status === 'beendet') throw new AppError('live_ended', 'Session ist bereits beendet.', 400);
       const updated = social.updateLiveSession(id, { status: 'live', room_url: `https://meet.jit.si/apotrend-live-${s.id}`, started_at: new Date().toISOString() });
-      // Follower:innen benachrichtigen, dass jetzt live gesendet wird.
-      for (const f of social.listFollowers(userId)) notify(f, 'live_start', userId, 'live', id);
+      // Beim Start benachrichtigen: Follower:innen UND alle, die sich die Session
+      // vorgemerkt haben („Erinnern") — dedupliziert, ohne Gastgeber:in selbst.
+      const recipients = new Set(social.listFollowers(userId));
+      for (const r of social.listReactions('live', id)) recipients.add(r.user_id);
+      recipients.delete(userId);
+      for (const u of recipients) notify(u, 'live_start', userId, 'live', id);
       return this.decorateLive(updated, userId);
     },
     endLiveSession(userId, id) {
