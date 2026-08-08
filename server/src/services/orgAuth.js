@@ -110,6 +110,73 @@ export function createOrgAuthService(repo) {
       if (!can(m.role, capability)) throw new ForbiddenError(`Rolle "${m.role}" darf "${capability}" nicht.`);
       return m;
     },
+
+    // ── Team-Verwaltung (Mitglieder einer Organisation) ─────────────────────
+    // Primäre Organisation des Nutzers (in der Praxis genau eine: die eigene Apotheke).
+    primaryOrg(userId) {
+      const ms = repo.getMembershipsForUser(userId);
+      return ms[0] || null;
+    },
+    // Für die UI: eigene Rolle + ob Team-Verwaltung erlaubt ist.
+    myMembership(userId) {
+      const m = this.primaryOrg(userId);
+      if (!m) return null;
+      const org = repo.getOrganization(m.organization_id);
+      return { organization_id: m.organization_id, org_name: org ? org.name : null, org_type: org ? org.type : null, role: m.role, can_manage_users: can(m.role, 'manage_users') };
+    },
+    // Team der eigenen Organisation (nur mit manage_users).
+    teamMembers(actorUserId) {
+      const m = this.primaryOrg(actorUserId);
+      if (!m) throw new ForbiddenError('Keine Organisation.');
+      this.assertCan(actorUserId, m.organization_id, 'manage_users');
+      return repo.getMembershipsForOrganization(m.organization_id).map(mem => {
+        const u = repo.getUserById(mem.user_id);
+        return { user_id: mem.user_id, name: u ? u.name : null, email: u ? u.email : null, role: mem.role, is_self: mem.user_id === actorUserId, created_at: mem.created_at };
+      }).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+    },
+    addTeamMember(actorUserId, { name, email, password, role }) {
+      const m = this.primaryOrg(actorUserId);
+      if (!m) throw new ForbiddenError('Keine Organisation.');
+      this.assertCan(actorUserId, m.organization_id, 'manage_users');
+      const nm = String(name ?? '').trim();
+      const em = String(email ?? '').trim();
+      if (nm.length < 2) throw new AppError('team_name', 'Name fehlt.', 400);
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) throw new AppError('team_email', 'Gültige E-Mail erforderlich.', 400);
+      if (!password || String(password).length < 8) throw new AppError('new_pw_short', 'Passwort: mindestens 8 Zeichen.', 400);
+      // addMember prüft roleAllowedForOrgType (wirft bei ungültiger Rolle für den Org-Typ).
+      return this.addMember({ organizationId: m.organization_id, name: nm, email: em, password, role });
+    },
+    setMemberRole(actorUserId, targetUserId, role) {
+      const m = this.primaryOrg(actorUserId);
+      if (!m) throw new ForbiddenError('Keine Organisation.');
+      this.assertCan(actorUserId, m.organization_id, 'manage_users');
+      const org = repo.getOrganization(m.organization_id);
+      if (!roleAllowedForOrgType(role, org.type)) throw new AppError('team_role', 'Rolle im Org-Typ nicht zulässig.', 400);
+      const members = repo.getMembershipsForOrganization(m.organization_id);
+      const target = members.find(x => x.user_id === targetUserId);
+      if (!target) throw new AppError('team_not_member', 'Kein Mitglied dieser Organisation.', 404);
+      // Letzten Admin nicht herabstufen (sonst niemand mehr verwaltungsberechtigt).
+      if (target.role === ROLES.ADMIN && role !== ROLES.ADMIN) {
+        const admins = members.filter(x => x.role === ROLES.ADMIN).length;
+        if (admins <= 1) throw new AppError('team_last_admin', 'Die letzte Admin-Rolle kann nicht entzogen werden.', 400);
+      }
+      const updated = repo.setMembershipRole(targetUserId, m.organization_id, role);
+      return { user_id: targetUserId, role: updated ? updated.role : role };
+    },
+    removeTeamMember(actorUserId, targetUserId) {
+      const m = this.primaryOrg(actorUserId);
+      if (!m) throw new ForbiddenError('Keine Organisation.');
+      this.assertCan(actorUserId, m.organization_id, 'manage_users');
+      if (targetUserId === actorUserId) throw new AppError('team_self', 'Sich selbst kann man nicht entfernen.', 400);
+      const members = repo.getMembershipsForOrganization(m.organization_id);
+      const target = members.find(x => x.user_id === targetUserId);
+      if (!target) throw new AppError('team_not_member', 'Kein Mitglied dieser Organisation.', 404);
+      if (target.role === ROLES.ADMIN && members.filter(x => x.role === ROLES.ADMIN).length <= 1) {
+        throw new AppError('team_last_admin', 'Die letzte Admin-Rolle kann nicht entfernt werden.', 400);
+      }
+      repo.removeMembership(targetUserId, m.organization_id);
+      return { ok: true, removed: targetUserId };
+    },
   };
 }
 

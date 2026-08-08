@@ -173,6 +173,21 @@ export function createMemoryRepo() {
       const ids = [...memberships.values()].filter(m => m.organization_id === orgId).map(m => m.user_id);
       return ids.map(id => ({ ...users.get(id) }));
     },
+    getMembershipsForOrganization(orgId) {
+      return [...memberships.values()].filter(m => m.organization_id === orgId).map(m => ({ ...m }));
+    },
+    setMembershipRole(userId, orgId, role) {
+      for (const m of memberships.values()) {
+        if (m.user_id === userId && m.organization_id === orgId) { m.role = role; return { ...m }; }
+      }
+      return null;
+    },
+    removeMembership(userId, orgId) {
+      for (const [id, m] of memberships) {
+        if (m.user_id === userId && m.organization_id === orgId) { memberships.delete(id); return true; }
+      }
+      return false;
+    },
 
     // ── collab-Modul ────────────────────────────────────────────────────────
     createChannel({ organizationId, name, visibility = 'all_members', createdBy = null }) {

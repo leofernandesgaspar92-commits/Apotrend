@@ -281,6 +281,7 @@ const I18N = {
     ac_del_title:'Konto löschen', ac_del_d:'Unwiderruflich: alle deine Daten (Profil, Beiträge, Kommentare, Nachrichten, Austausch) werden gelöscht.',
     ac_del_btn:'Konto endgültig löschen', ac_del_confirm:'Dein Konto und alle Daten werden unwiderruflich gelöscht. Fortfahren?',
     ac_del_pw:'Zur Bestätigung dein Passwort eingeben:', ac_del_done:'Dein Konto wurde gelöscht.',
+    tm_title:'Team verwalten', tm_sub:'Kolleg:innen deiner Apotheke Zugang geben.', tm_open:'👥 Team', tm_no_perm:'Nur Inhaber:innen/Admins können das Team verwalten.', tm_add_title:'Mitglied hinzufügen', tm_add_hint:'Lege ein Konto für eine:n Kolleg:in an. Das Startpasswort teilst du persönlich mit — es kann danach selbst geändert werden.', tm_name:'Name', tm_email:'E-Mail', tm_role:'Rolle', tm_pw:'Startpasswort (min. 8 Zeichen)', tm_add_btn:'Hinzufügen', tm_members:'Mitglieder ({n})', tm_you:'du', tm_remove:'Entfernen', tm_remove_confirm:'{name} wirklich aus dem Team entfernen?', tm_role_admin:'Inhaber:in/Admin', tm_role_apotheker:'Apotheker:in', tm_role_pta:'PTA', tm_role_lehrling:'Auszubildende:r',
     fl_back:'← zurück zum Profil', fl_h_followers:'👥 Follower', fl_h_following:'➡️ Folgt',
     fl_who_followers:'Wer @{h} folgt', fl_who_following:'Wem @{h} folgt',
     fl_none_fr_t:'Noch keine Follower', fl_none_fr_s:'Diesem Profil folgt noch niemand.',
@@ -622,6 +623,7 @@ const I18N = {
     ac_del_title:'Delete account', ac_del_d:'Irreversible: all your data (profile, posts, comments, messages, exchange) will be deleted.',
     ac_del_btn:'Delete account permanently', ac_del_confirm:'Your account and all data will be permanently deleted. Continue?',
     ac_del_pw:'Enter your password to confirm:', ac_del_done:'Your account has been deleted.',
+    tm_title:'Manage team', tm_sub:'Give colleagues at your pharmacy access.', tm_open:'👥 Team', tm_no_perm:'Only owners/admins can manage the team.', tm_add_title:'Add member', tm_add_hint:'Create an account for a colleague. Share the initial password in person — they can change it afterwards.', tm_name:'Name', tm_email:'Email', tm_role:'Role', tm_pw:'Initial password (min. 8 chars)', tm_add_btn:'Add', tm_members:'Members ({n})', tm_you:'you', tm_remove:'Remove', tm_remove_confirm:'Really remove {name} from the team?', tm_role_admin:'Owner/Admin', tm_role_apotheker:'Pharmacist', tm_role_pta:'Pharmacy technician', tm_role_lehrling:'Trainee',
     fl_back:'← back to profile', fl_h_followers:'👥 Followers', fl_h_following:'➡️ Following',
     fl_who_followers:'Who follows @{h}', fl_who_following:'Who @{h} follows',
     fl_none_fr_t:'No followers yet', fl_none_fr_s:'Nobody follows this profile yet.',
@@ -963,6 +965,7 @@ const I18N = {
     ac_del_title:'Eliminar conta', ac_del_d:'Irreversível: todos os seus dados (perfil, publicações, comentários, mensagens, troca) serão eliminados.',
     ac_del_btn:'Eliminar conta definitivamente', ac_del_confirm:'A sua conta e todos os dados serão eliminados definitivamente. Continuar?',
     ac_del_pw:'Introduza a sua palavra-passe para confirmar:', ac_del_done:'A sua conta foi eliminada.',
+    tm_title:'Gerir equipa', tm_sub:'Dar acesso a colegas da sua farmácia.', tm_open:'👥 Equipa', tm_no_perm:'Apenas proprietários/admins podem gerir a equipa.', tm_add_title:'Adicionar membro', tm_add_hint:'Crie uma conta para um colega. Partilhe a palavra-passe inicial pessoalmente — pode ser alterada depois.', tm_name:'Nome', tm_email:'E-mail', tm_role:'Função', tm_pw:'Palavra-passe inicial (mín. 8 caracteres)', tm_add_btn:'Adicionar', tm_members:'Membros ({n})', tm_you:'você', tm_remove:'Remover', tm_remove_confirm:'Remover mesmo {name} da equipa?', tm_role_admin:'Proprietário/Admin', tm_role_apotheker:'Farmacêutico(a)', tm_role_pta:'Técnico(a) de farmácia', tm_role_lehrling:'Estagiário(a)',
     fl_back:'← voltar ao perfil', fl_h_followers:'👥 Seguidores', fl_h_following:'➡️ A seguir',
     fl_who_followers:'Quem segue @{h}', fl_who_following:'Quem @{h} segue',
     fl_none_fr_t:'Ainda sem seguidores', fl_none_fr_s:'Ninguém segue este perfil ainda.',
@@ -4025,6 +4028,69 @@ async function openAppointments(flash) {
   }
 }
 
+// ── Team-Verwaltung (Mitglieder der eigenen Organisation) ───────────────────
+const TEAM_ROLES = ['admin', 'apotheker', 'pta', 'lehrling'];
+function roleLabel(r) { return t('tm_role_' + r) !== 'tm_role_' + r ? t('tm_role_' + r) : r; }
+async function openTeam() {
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
+  setDocTitle(t('tm_title'));
+  feed.innerHTML = '<div class="loading">…</div>';
+  let d;
+  try { d = await api('GET','/api/team'); } catch(e){ feed.innerHTML=''; feed.appendChild(errorState(e.message, openTeam)); return; }
+  feed.innerHTML = '';
+  const mem = d.membership;
+  const head = el(`<div class="card">
+    <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button></div>
+    <h1 style="margin:8px 0 2px">👥 ${esc(t('tm_title'))}</h1>
+    <div class="muted">${mem?esc(mem.org_name||''):''}${mem?' · '+esc(roleLabel(mem.role)):''}</div>
+  </div>`);
+  head.querySelector('[data-back]').onclick = () => me && openProfile(me.handle);
+  feed.appendChild(head);
+  if (!mem || !mem.can_manage_users) {
+    feed.appendChild(el(`<div class="card muted">${esc(t('tm_no_perm'))}</div>`));
+    return;
+  }
+  // Mitglied hinzufügen
+  const addCard = el(`<div class="card">
+    <b>${esc(t('tm_add_title'))}</b>
+    <div class="muted" style="font-size:13px;margin:2px 0 8px">${esc(t('tm_add_hint'))}</div>
+    <input id="tm_name" placeholder="${esc(t('tm_name'))}" maxlength="80">
+    <input id="tm_email" type="email" placeholder="${esc(t('tm_email'))}" style="margin-top:6px">
+    <div class="row" style="gap:6px;margin-top:6px">
+      <select id="tm_role" aria-label="${esc(t('tm_role'))}">${TEAM_ROLES.map(r=>`<option value="${r}"${r==='pta'?' selected':''}>${esc(roleLabel(r))}</option>`).join('')}</select>
+      <input id="tm_pw" type="text" placeholder="${esc(t('tm_pw'))}" style="flex:1;min-width:120px">
+    </div>
+    <div class="row" style="margin-top:8px"><button data-add>${esc(t('tm_add_btn'))}</button><span class="err" data-err style="margin-left:10px"></span></div>
+  </div>`);
+  addCard.querySelector('[data-add]').onclick = async () => {
+    const err = addCard.querySelector('[data-err]'); err.textContent='';
+    try {
+      await api('POST','/api/team', { name: v('tm_name'), email: v('tm_email'), role: document.getElementById('tm_role').value, password: document.getElementById('tm_pw').value });
+      openTeam();
+    } catch(e){ err.textContent = e.message; }
+  };
+  feed.appendChild(addCard);
+  // Mitgliederliste
+  const listCard = el(`<div class="card"><b>${esc(ti('tm_members',{n:d.members.length}))}</b><div data-ml style="margin-top:8px"></div></div>`);
+  const ml = listCard.querySelector('[data-ml]');
+  d.members.forEach(m => {
+    const row = el(`<div class="row" style="align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap">
+      <div style="flex:1;min-width:140px"><b>${esc(m.name||m.email)}</b>${m.is_self?` <span class="muted">(${esc(t('tm_you'))})</span>`:''}<div class="muted" style="font-size:13px">${esc(m.email)}</div></div>
+      <select data-role aria-label="${esc(t('tm_role'))}">${TEAM_ROLES.map(r=>`<option value="${r}"${m.role===r?' selected':''}>${esc(roleLabel(r))}</option>`).join('')}</select>
+      <button class="ghost small" data-remove ${m.is_self?'disabled':''}>${esc(t('tm_remove'))}</button>
+    </div>`);
+    row.querySelector('[data-role]').onchange = async (e) => {
+      try { await api('POST',`/api/team/${m.user_id}/role`,{ role: e.target.value }); openTeam(); }
+      catch(err){ alert(err.message); openTeam(); }
+    };
+    const rm = row.querySelector('[data-remove]');
+    if (!m.is_self) rm.onclick = async () => { if (!confirm(ti('tm_remove_confirm',{name:m.name||m.email}))) return; try { await api('POST',`/api/team/${m.user_id}/remove`); openTeam(); } catch(err){ alert(err.message); } };
+    ml.appendChild(row);
+  });
+  feed.appendChild(listCard);
+}
+
 // Direktnachricht mit einer Person starten (aus Entdecken-/Verzeichnis-Listen).
 async function messagePerson(handle) {
   try { const r = await api('POST','/api/dm/start',{ handle }); openDmThread(r.thread.id); }
@@ -5198,6 +5264,9 @@ async function openProfile(handle) {
       const pcard = el(`<div class="card"><div class="row"><b style="flex:1">${esc(t('pr_title'))}</b><button class="small" id="go_premium">${esc(t('ac_premium'))}</button></div></div>`);
       pcard.querySelector('#go_premium').onclick = openPremium;
       feed.appendChild(pcard);
+      const tcard = el(`<div class="card"><div class="row"><div style="flex:1"><b>${esc(t('tm_title'))}</b><div class="muted" style="font-size:13px">${esc(t('tm_sub'))}</div></div><button class="small" id="go_team">${esc(t('tm_open'))}</button></div></div>`);
+      tcard.querySelector('#go_team').onclick = openTeam;
+      feed.appendChild(tcard);
       const dcard = el(`<div class="card"><b>${esc(t('ac_title'))}</b>
         <div class="muted" style="margin-top:4px">${esc(t('ac_export_d'))}</div>
         <div style="margin-top:8px"><button class="ghost small" id="dl_export">${esc(t('ac_export_btn'))}</button></div>

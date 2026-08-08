@@ -386,6 +386,11 @@ const routes = [
   ['GET', /^\/api\/handles$/, true, async ({ query }) => ({ handles: social.searchHandles(query.get('q') || '') })],
   ['GET', /^\/api\/me\/export$/, true, async ({ userId }) => ({ ...social.exportData(userId), exchange_entries: exchange.mine(userId) })],
   ['POST', /^\/api\/me\/password$/, true, async ({ userId, body }) => orgAuth.changePassword(userId, { oldPassword: body.oldPassword, newPassword: body.newPassword })],
+  // ── Team-Verwaltung (Mitglieder der eigenen Organisation) ──
+  ['GET', /^\/api\/team$/, true, async ({ userId }) => ({ membership: orgAuth.myMembership(userId), members: orgAuth.myMembership(userId)?.can_manage_users ? orgAuth.teamMembers(userId) : [] })],
+  ['POST', /^\/api\/team$/, true, async ({ userId, body }) => ({ member: orgAuth.addTeamMember(userId, { name: body.name, email: body.email, password: body.password, role: body.role }) })],
+  ['POST', /^\/api\/team\/([^/]+)\/role$/, true, async ({ userId, params, body }) => orgAuth.setMemberRole(userId, params[0], body.role)],
+  ['POST', /^\/api\/team\/([^/]+)\/remove$/, true, async ({ userId, params }) => orgAuth.removeTeamMember(userId, params[0])],
   ['POST', /^\/api\/me\/delete$/, true, async ({ userId, body }) => {
     if (!orgAuth.verifyUserPassword(userId, body.password)) { const e = new Error('Passwort ist falsch.'); e.status = 401; throw e; }
     socialRepo.purgeUser(userId);
