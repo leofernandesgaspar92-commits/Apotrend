@@ -2076,11 +2076,13 @@ async function renderNearbyColleagues(feed) {
       <span class="handle clickable" data-openprofile="${esc(p.handle)}">@${esc(p.handle)}</span>
       ${p.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}${p.verified?'<span class="verified">✔</span>':''}
       <span class="sp" style="flex:1"></span>
+      <button class="ghost small" data-msg="${esc(p.handle)}">${esc(t('pf_dm'))}</button>
       ${p.is_following?`<span class="muted" style="font-size:13px">${esc(t('nb_following'))}</span>`:`<button class="small" data-follow="${esc(p.handle)}">${esc(t('pf_follow'))}</button>`}
     </div>${p.title?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(p.title)}</div>`:''}</div>`);
     row.querySelectorAll('[data-openprofile]').forEach(el=>el.onclick=()=>openProfile(el.dataset.openprofile));
     const fb = row.querySelector('[data-follow]');
     if (fb) fb.onclick = async (ev) => { try { await api('POST','/api/follow',{ handle:p.handle }); ev.target.textContent=t('fl_following_btn'); ev.target.disabled=true; } catch(e){ alert(e.message); } };
+    row.querySelector('[data-msg]').onclick = () => messagePerson(p.handle);
     box.appendChild(row);
   });
   feed.appendChild(card);
@@ -4023,6 +4025,12 @@ async function openAppointments(flash) {
   }
 }
 
+// Direktnachricht mit einer Person starten (aus Entdecken-/Verzeichnis-Listen).
+async function messagePerson(handle) {
+  try { const r = await api('POST','/api/dm/start',{ handle }); openDmThread(r.thread.id); }
+  catch(e){ alert(e.message); }
+}
+
 // ── Partner-Verzeichnis (nach Kontotyp) ─────────────────────────────────────
 const DIR_TYPES = ['pharmacy', 'pharma', 'authority'];
 const DIR_ICON = { pharmacy: '🏥', pharma: '🏭', authority: '🏛️' };
@@ -4061,6 +4069,7 @@ async function openDirectory(type) {
       ${p.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}${p.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
       <span class="handle clickable" data-openprofile="${esc(p.handle)}">@${esc(p.handle)}</span>
       <span class="sp" style="flex:1"></span>
+      <button class="ghost small" data-msg="${esc(p.handle)}">${esc(t('pf_dm'))}</button>
       ${p.is_following?`<span class="muted" style="font-size:13px">${esc(t('nb_following'))}</span>`:`<button class="small" data-follow="${esc(p.handle)}">${esc(t('pf_follow'))}</button>`}
     </div>
     ${p.title?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(p.title)}</div>`:''}
@@ -4068,6 +4077,7 @@ async function openDirectory(type) {
     row.querySelectorAll('[data-openprofile]').forEach(e2 => e2.onclick = () => openProfile(e2.dataset.openprofile));
     const fb = row.querySelector('[data-follow]');
     if (fb) fb.onclick = async () => { try { await api('POST','/api/follow',{ handle:p.handle }); fb.textContent=t('fl_following_btn'); fb.disabled=true; } catch(e){ alert(e.message); } };
+    row.querySelector('[data-msg]').onclick = () => messagePerson(p.handle);
     feed.appendChild(row);
   });
 }
@@ -5373,9 +5383,13 @@ async function openDiscoverOpenTo(key) {
         ${p.title?`<div class="muted" style="font-size:13px">${esc(p.title)}</div>`:''}
         ${p.bundesland?`<div class="muted" style="font-size:13px">📍 ${esc(p.bundesland)}</div>`:''}
       </div>
-      <button class="${p.is_following?'ghost ':''}small" data-follow="${esc(p.handle)}" data-on="${p.is_following?'1':'0'}">${p.is_following?esc(t('fl_following_btn')):esc(t('pf_follow'))}</button>
+      <div class="row" style="gap:6px">
+        <button class="ghost small" data-msg="${esc(p.handle)}">${esc(t('pf_dm'))}</button>
+        <button class="${p.is_following?'ghost ':''}small" data-follow="${esc(p.handle)}" data-on="${p.is_following?'1':'0'}">${p.is_following?esc(t('fl_following_btn')):esc(t('pf_follow'))}</button>
+      </div>
     </div><div style="margin-top:6px">${badges}</div></div>`);
     card.querySelectorAll('[data-openprofile]').forEach(el => el.onclick = () => openProfile(el.dataset.openprofile));
+    card.querySelector('[data-msg]').onclick = () => messagePerson(p.handle);
     const fb = card.querySelector('[data-follow]');
     if (fb) fb.onclick = async () => {
       const on = fb.dataset.on === '1';
