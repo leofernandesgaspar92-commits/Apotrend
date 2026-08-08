@@ -124,6 +124,16 @@ export function createOrgAuthService(repo) {
       const org = repo.getOrganization(m.organization_id);
       return { organization_id: m.organization_id, org_name: org ? org.name : null, org_type: org ? org.type : null, role: m.role, can_manage_users: can(m.role, 'manage_users') };
     },
+    // Kolleg:innen der eigenen Organisation (nur Isolation, KEINE manage_users-Pflicht) —
+    // z.B. für die Auswahl beim Zuweisen von Aufgaben.
+    orgMembers(userId) {
+      const m = this.primaryOrg(userId);
+      if (!m) return [];
+      return repo.getMembershipsForOrganization(m.organization_id).map(mem => {
+        const u = repo.getUserById(mem.user_id);
+        return { user_id: mem.user_id, name: u ? u.name : null, role: mem.role };
+      });
+    },
     // Team der eigenen Organisation (nur mit manage_users).
     teamMembers(actorUserId) {
       const m = this.primaryOrg(actorUserId);

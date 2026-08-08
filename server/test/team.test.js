@@ -69,6 +69,18 @@ test('Team: Rolle ändern; letzter Admin ist geschützt', () => {
   assert.throws(() => orgAuth.setMemberRole(other, other, 'pta'), /Admin/);
 });
 
+test('Team: orgMembers listet Kolleg:innen ohne manage_users-Pflicht (für Aufgaben-Zuweisung)', () => {
+  const { orgAuth, owner } = setup();
+  const r = orgAuth.addTeamMember(owner, { name: 'PTA', email: 'pta@a.at', password: 'Passwort1', role: 'pta' });
+  const pta = r.user.id;
+  // PTA darf das Team NICHT verwalten, aber die Kolleg:innen-Liste (zum Zuweisen) sehen
+  assert.throws(() => orgAuth.teamMembers(pta), ForbiddenError);
+  const members = orgAuth.orgMembers(pta);
+  assert.equal(members.length, 2);
+  assert.ok(members.some(m => m.name === 'PTA' && m.role === 'pta'));
+  assert.ok(members.some(m => m.role === 'admin'));
+});
+
 test('Team: Mitglied entfernen; nicht sich selbst; nicht letzten Admin', () => {
   const { orgAuth, owner } = setup();
   const r = orgAuth.addTeamMember(owner, { name: 'PTA', email: 'pta@a.at', password: 'Passwort1', role: 'pta' });

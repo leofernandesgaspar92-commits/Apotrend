@@ -282,6 +282,7 @@ const I18N = {
     ac_del_btn:'Konto endgültig löschen', ac_del_confirm:'Dein Konto und alle Daten werden unwiderruflich gelöscht. Fortfahren?',
     ac_del_pw:'Zur Bestätigung dein Passwort eingeben:', ac_del_done:'Dein Konto wurde gelöscht.',
     tm_title:'Team verwalten', tm_sub:'Kolleg:innen deiner Apotheke Zugang geben.', tm_open:'👥 Team', tm_no_perm:'Nur Inhaber:innen/Admins können das Team verwalten.', tm_add_title:'Mitglied hinzufügen', tm_add_hint:'Lege ein Konto für eine:n Kolleg:in an. Das Startpasswort teilst du persönlich mit — es kann danach selbst geändert werden.', tm_name:'Name', tm_email:'E-Mail', tm_role:'Rolle', tm_pw:'Startpasswort (min. 8 Zeichen)', tm_add_btn:'Hinzufügen', tm_members:'Mitglieder ({n})', tm_you:'du', tm_remove:'Entfernen', tm_remove_confirm:'{name} wirklich aus dem Team entfernen?', tm_role_admin:'Inhaber:in/Admin', tm_role_apotheker:'Apotheker:in', tm_role_pta:'PTA', tm_role_lehrling:'Auszubildende:r',
+    tk_nav:'✅ Aufgaben', tk_title:'Team-Aufgaben', tk_sub:'Aufgaben im Team zuweisen und den Status verfolgen.', tk_new:'Neue Aufgabe', tk_f_title_ph:'Titel, z.B. „Amoxicillin nachbestellen"', tk_f_desc_ph:'Details (optional)', tk_f_assignee:'Zuweisen an', tk_unassigned:'Nicht zugewiesen', tk_f_due:'Fällig am', tk_add:'Aufgabe anlegen', tk_empty_t:'Keine Aufgaben', tk_empty_s:'Lege die erste Aufgabe an und weise sie einer Kollegin/einem Kollegen zu.', tk_empty_s_member:'Aktuell sind dir keine Aufgaben zugewiesen.', tk_assigned_to:'{name}', tk_due:'fällig {d}', tk_overdue:'überfällig', tk_st_offen:'Offen', tk_st_in_arbeit:'In Arbeit', tk_st_erledigt:'Erledigt', tk_set_offen:'Offen', tk_set_progress:'In Arbeit', tk_set_done:'✓ Erledigt',
     fl_back:'← zurück zum Profil', fl_h_followers:'👥 Follower', fl_h_following:'➡️ Folgt',
     fl_who_followers:'Wer @{h} folgt', fl_who_following:'Wem @{h} folgt',
     fl_none_fr_t:'Noch keine Follower', fl_none_fr_s:'Diesem Profil folgt noch niemand.',
@@ -624,6 +625,7 @@ const I18N = {
     ac_del_btn:'Delete account permanently', ac_del_confirm:'Your account and all data will be permanently deleted. Continue?',
     ac_del_pw:'Enter your password to confirm:', ac_del_done:'Your account has been deleted.',
     tm_title:'Manage team', tm_sub:'Give colleagues at your pharmacy access.', tm_open:'👥 Team', tm_no_perm:'Only owners/admins can manage the team.', tm_add_title:'Add member', tm_add_hint:'Create an account for a colleague. Share the initial password in person — they can change it afterwards.', tm_name:'Name', tm_email:'Email', tm_role:'Role', tm_pw:'Initial password (min. 8 chars)', tm_add_btn:'Add', tm_members:'Members ({n})', tm_you:'you', tm_remove:'Remove', tm_remove_confirm:'Really remove {name} from the team?', tm_role_admin:'Owner/Admin', tm_role_apotheker:'Pharmacist', tm_role_pta:'Pharmacy technician', tm_role_lehrling:'Trainee',
+    tk_nav:'✅ Tasks', tk_title:'Team tasks', tk_sub:'Assign tasks across the team and track their status.', tk_new:'New task', tk_f_title_ph:'Title, e.g. “Reorder amoxicillin”', tk_f_desc_ph:'Details (optional)', tk_f_assignee:'Assign to', tk_unassigned:'Unassigned', tk_f_due:'Due date', tk_add:'Create task', tk_empty_t:'No tasks', tk_empty_s:'Create the first task and assign it to a colleague.', tk_empty_s_member:'You have no tasks assigned right now.', tk_assigned_to:'{name}', tk_due:'due {d}', tk_overdue:'overdue', tk_st_offen:'Open', tk_st_in_arbeit:'In progress', tk_st_erledigt:'Done', tk_set_offen:'Open', tk_set_progress:'In progress', tk_set_done:'✓ Done',
     fl_back:'← back to profile', fl_h_followers:'👥 Followers', fl_h_following:'➡️ Following',
     fl_who_followers:'Who follows @{h}', fl_who_following:'Who @{h} follows',
     fl_none_fr_t:'No followers yet', fl_none_fr_s:'Nobody follows this profile yet.',
@@ -966,6 +968,7 @@ const I18N = {
     ac_del_btn:'Eliminar conta definitivamente', ac_del_confirm:'A sua conta e todos os dados serão eliminados definitivamente. Continuar?',
     ac_del_pw:'Introduza a sua palavra-passe para confirmar:', ac_del_done:'A sua conta foi eliminada.',
     tm_title:'Gerir equipa', tm_sub:'Dar acesso a colegas da sua farmácia.', tm_open:'👥 Equipa', tm_no_perm:'Apenas proprietários/admins podem gerir a equipa.', tm_add_title:'Adicionar membro', tm_add_hint:'Crie uma conta para um colega. Partilhe a palavra-passe inicial pessoalmente — pode ser alterada depois.', tm_name:'Nome', tm_email:'E-mail', tm_role:'Função', tm_pw:'Palavra-passe inicial (mín. 8 caracteres)', tm_add_btn:'Adicionar', tm_members:'Membros ({n})', tm_you:'você', tm_remove:'Remover', tm_remove_confirm:'Remover mesmo {name} da equipa?', tm_role_admin:'Proprietário/Admin', tm_role_apotheker:'Farmacêutico(a)', tm_role_pta:'Técnico(a) de farmácia', tm_role_lehrling:'Estagiário(a)',
+    tk_nav:'✅ Tarefas', tk_title:'Tarefas da equipa', tk_sub:'Atribuir tarefas na equipa e acompanhar o estado.', tk_new:'Nova tarefa', tk_f_title_ph:'Título, ex. “Encomendar amoxicilina”', tk_f_desc_ph:'Detalhes (opcional)', tk_f_assignee:'Atribuir a', tk_unassigned:'Não atribuída', tk_f_due:'Data-limite', tk_add:'Criar tarefa', tk_empty_t:'Sem tarefas', tk_empty_s:'Crie a primeira tarefa e atribua-a a um colega.', tk_empty_s_member:'Não tem tarefas atribuídas de momento.', tk_assigned_to:'{name}', tk_due:'até {d}', tk_overdue:'em atraso', tk_st_offen:'Aberta', tk_st_in_arbeit:'Em curso', tk_st_erledigt:'Concluída', tk_set_offen:'Aberta', tk_set_progress:'Em curso', tk_set_done:'✓ Concluída',
     fl_back:'← voltar ao perfil', fl_h_followers:'👥 Seguidores', fl_h_following:'➡️ A seguir',
     fl_who_followers:'Quem segue @{h}', fl_who_following:'Quem @{h} segue',
     fl_none_fr_t:'Ainda sem seguidores', fl_none_fr_s:'Ninguém segue este perfil ainda.',
@@ -1897,7 +1900,7 @@ async function loadOverview() {
     <div class="row" style="flex-wrap:wrap;gap:10px">
       ${tiles.join('')}
     </div>
-    <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px"><button class="ghost small" id="ov_bm">${esc(t('ov_bookmarks'))}</button><button class="ghost small" id="ov_promos">${esc(t('wb_nav'))}</button><button class="ghost small" id="ov_live">${esc(t('lv_nav'))}</button><button class="ghost small" id="ov_dir">${esc(t('dir_nav'))}</button></div>
+    <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px"><button class="ghost small" id="ov_bm">${esc(t('ov_bookmarks'))}</button><button class="ghost small" id="ov_promos">${esc(t('wb_nav'))}</button><button class="ghost small" id="ov_live">${esc(t('lv_nav'))}</button><button class="ghost small" id="ov_dir">${esc(t('dir_nav'))}</button><button class="ghost small" id="ov_tasks">${esc(t('tk_nav'))}</button></div>
   </div>`);
   head.querySelectorAll('.ovtile[data-go]').forEach(t => { if (t.dataset.go) t.onclick = () => { if (t.dataset.go === 'live') { openLive(); return; } if (t.dataset.filter) shortageFilter = t.dataset.filter; goTab(t.dataset.go); }; });
   head.querySelectorAll('.ovtile').forEach(t => { if (!t.dataset.go) t.onclick = () => document.getElementById('btnNotif').click(); });
@@ -1905,6 +1908,7 @@ async function loadOverview() {
   head.querySelector('#ov_promos').onclick = () => openPromotions();
   head.querySelector('#ov_live').onclick = () => openLive();
   head.querySelector('#ov_dir').onclick = () => openDirectory();
+  head.querySelector('#ov_tasks').onclick = () => openTasks();
   feed.appendChild(head);
   renderLiveOverview(feed, liveNow, liveSoon); // zeitkritisch: laufende/kommende Live-Sessions ganz oben
 
@@ -4089,6 +4093,73 @@ async function openTeam() {
     ml.appendChild(row);
   });
   feed.appendChild(listCard);
+}
+
+// ── Team-Aufgaben ───────────────────────────────────────────────────────────
+function taskStatusMeta(s) {
+  if (s === 'erledigt')  return ['var(--ok-fg)', 'var(--ok-bg)', t('tk_st_erledigt')];
+  if (s === 'in_arbeit') return ['var(--warn-fg)', 'var(--warn-bg)', t('tk_st_in_arbeit')];
+  return ['var(--muted)', 'var(--chip-bg)', t('tk_st_offen')];
+}
+async function openTasks() {
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
+  setDocTitle(t('tk_title'));
+  feed.innerHTML = '<div class="loading">…</div>';
+  let d;
+  try { d = await api('GET','/api/tasks'); } catch(e){ feed.innerHTML=''; feed.appendChild(errorState(e.message, () => openTasks())); return; }
+  feed.innerHTML = '';
+  const head = el(`<div class="card">
+    <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button></div>
+    <h1 style="margin:8px 0 2px">✅ ${esc(t('tk_title'))}</h1>
+    <div class="muted">${esc(t('tk_sub'))}</div>
+  </div>`);
+  head.querySelector('[data-back]').onclick = () => goTab('overview');
+  feed.appendChild(head);
+  if (d.can_assign) {
+    const opts = `<option value="">${esc(t('tk_unassigned'))}</option>` + d.members.map(m=>`<option value="${esc(m.user_id)}">${esc(m.name||'')}</option>`).join('');
+    const addCard = el(`<div class="card">
+      <b>${esc(t('tk_new'))}</b>
+      <input id="tk_title" placeholder="${esc(t('tk_f_title_ph'))}" maxlength="120" style="margin-top:6px">
+      <textarea id="tk_desc" rows="2" placeholder="${esc(t('tk_f_desc_ph'))}" maxlength="1000" style="margin-top:6px"></textarea>
+      <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap">
+        <select id="tk_assignee" aria-label="${esc(t('tk_f_assignee'))}">${opts}</select>
+        <input id="tk_due" type="date" aria-label="${esc(t('tk_f_due'))}">
+      </div>
+      <div class="row" style="margin-top:8px"><button data-add>${esc(t('tk_add'))}</button><span class="err" data-err style="margin-left:10px"></span></div>
+    </div>`);
+    addCard.querySelector('[data-add]').onclick = async () => {
+      const err = addCard.querySelector('[data-err]'); err.textContent='';
+      try {
+        await api('POST','/api/tasks', { title: v('tk_title'), description: document.getElementById('tk_desc').value.trim(), assigneeUserId: document.getElementById('tk_assignee').value || null, dueDate: document.getElementById('tk_due').value || null });
+        openTasks();
+      } catch(e){ err.textContent = e.message; }
+    };
+    feed.appendChild(addCard);
+  }
+  if (!d.tasks.length) { feed.appendChild(emptyState({ icon:'✅', title:t('tk_empty_t'), text: d.can_assign ? t('tk_empty_s') : t('tk_empty_s_member') })); return; }
+  d.tasks.forEach(tk => {
+    const [col,bg,lab] = taskStatusMeta(tk.status);
+    const canEdit = tk.mine || d.can_assign;
+    const overdue = tk.due_date && tk.status !== 'erledigt' && tk.due_date < new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+    const card = el(`<div class="card">
+      <div class="row" style="align-items:baseline;gap:8px">
+        <b style="flex:1">${esc(tk.title)}</b>
+        <span style="display:inline-block;font-size:12px;font-weight:800;color:${col};background:${bg};padding:2px 10px;border-radius:999px">${esc(lab)}</span>
+      </div>
+      ${tk.description?`<div class="muted" style="font-size:14px;white-space:pre-wrap;margin-top:4px">${esc(tk.description)}</div>`:''}
+      <div class="muted" style="font-size:13px;margin-top:6px">
+        ${tk.assignee_name?`👤 ${esc(ti('tk_assigned_to',{name:tk.assignee_name}))}`:`👤 ${esc(t('tk_unassigned'))}`}
+        ${tk.due_date?` · 🗓 ${esc(ti('tk_due',{d:fmtDateDe(tk.due_date)}))}${overdue?` <b style="color:var(--crit-fg)">(${esc(t('tk_overdue'))})</b>`:''}`:''}
+      </div>
+      ${canEdit?`<div class="reacts" style="margin-top:8px">
+        <button class="ghost small" data-st="offen"${tk.status==='offen'?' disabled':''}>${esc(t('tk_set_offen'))}</button>
+        <button class="ghost small" data-st="in_arbeit"${tk.status==='in_arbeit'?' disabled':''}>${esc(t('tk_set_progress'))}</button>
+        <button class="small" data-st="erledigt"${tk.status==='erledigt'?' disabled':''}>${esc(t('tk_set_done'))}</button>
+      </div>`:''}</div>`);
+    card.querySelectorAll('[data-st]').forEach(b => { if (!b.disabled) b.onclick = async () => { try { await api('POST',`/api/tasks/${tk.id}/status`,{ status: b.dataset.st }); openTasks(); } catch(e){ alert(e.message); } }; });
+    feed.appendChild(card);
+  });
 }
 
 // Direktnachricht mit einer Person starten (aus Entdecken-/Verzeichnis-Listen).

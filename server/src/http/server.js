@@ -16,6 +16,8 @@ import { createRabatteRepo } from '../repo/rabatteRepo.js';
 import { createExchangeRepo } from '../repo/exchangeRepo.js';
 import { createPersistence } from '../repo/persistence.js';
 import { createOrgAuthService, ForbiddenError } from '../services/orgAuth.js';
+import { createCollabService } from '../services/collab.js';
+import { can as roleCan } from '../domain/roles.js';
 import { createSocialService } from '../services/social.js';
 import { createShortagesService } from '../services/shortages.js';
 import { createPricesService } from '../services/prices.js';
@@ -55,6 +57,7 @@ const restoring = !!snapshot;
 // ── Dienste (einmalig) ──
 const repo = createMemoryRepo();
 const orgAuth = createOrgAuthService(repo);
+const collab = createCollabService(repo, orgAuth);
 const socialRepo = createSocialRepo();
 // Moderatoren = Redaktions-/Admin-Konten (Profil-Flag is_editorial).
 const social = createSocialService(socialRepo, repo, {
@@ -391,6 +394,28 @@ const routes = [
   ['POST', /^\/api\/team$/, true, async ({ userId, body }) => ({ member: orgAuth.addTeamMember(userId, { name: body.name, email: body.email, password: body.password, role: body.role }) })],
   ['POST', /^\/api\/team\/([^/]+)\/role$/, true, async ({ userId, params, body }) => orgAuth.setMemberRole(userId, params[0], body.role)],
   ['POST', /^\/api\/team\/([^/]+)\/remove$/, true, async ({ userId, params }) => orgAuth.removeTeamMember(userId, params[0])],
+  // ── Team-Aufgaben (apothekenintern, zuweisbar) ──
+  ['GET', /^\/api\/tasks$/, true, async ({ userId }) => {
+    const mem = orgAuth.myMembership(userId);
+    if (!mem) return { tasks: [], can_assign: false, members: [] };
+    const uname = (id) => { const u = id ? repo.getUserById(id) : null; return u ? u.name : null; };
+    const order = { offen: 0, in_arbeit: 1, erledigt: 2 };
+    const tasks = collab.listTasks(userId, mem.organization_id)
+      .map(t => ({ ...t, assignee_name: uname(t.assignee_user_id), creator_name: uname(t.created_by), mine: t.assignee_user_id === userId }))
+      .sort((a, b) => (order[a.status] - order[b.status]) || String(b.created_at).localeCompare(String(a.created_at)));
+    const can_assign = roleCan(mem.role, 'assign_tasks');
+    return { tasks, can_assign, members: orgAuth.orgMembers(userId).map(m => ({ user_id: m.user_id, name: m.name })) };
+  }],
+  ['POST', /^\/api\/tasks$/, true, async ({ userId, body }) => {
+    const mem = orgAuth.myMembership(userId);
+    if (!mem) { const e = new Error('Keine Organisation.'); e.status = 403; throw e; }
+    const title = String(body.title || '').trim();
+    if (title.length < 2) { const e = new Error('Aufgabe braucht einen Titel.'); e.status = 400; throw e; }
+    const dueDate = body.dueDate ? String(body.dueDate).trim() : null;
+    if (dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) { const e = new Error('Ungültiges Fälligkeitsdatum.'); e.status = 400; throw e; }
+    return { task: collab.createTask(userId, mem.organization_id, { title, description: body.description ? String(body.description).slice(0, 1000) : null, assigneeUserId: body.assigneeUserId || null, dueDate }) };
+  }],
+  ['POST', /^\/api\/tasks\/([^/]+)\/status$/, true, async ({ userId, params, body }) => ({ task: collab.updateTaskStatus(userId, params[0], body.status) })],
   ['POST', /^\/api\/me\/delete$/, true, async ({ userId, body }) => {
     if (!orgAuth.verifyUserPassword(userId, body.password)) { const e = new Error('Passwort ist falsch.'); e.status = 401; throw e; }
     socialRepo.purgeUser(userId);
