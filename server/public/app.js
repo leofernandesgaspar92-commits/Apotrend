@@ -4109,9 +4109,12 @@ async function openDirectory(type) {
   feed.innerHTML = '<div class="loading">…</div>';
   let counts, list;
   try {
-    counts = await api('GET','/api/directory');
-    list = await api('GET', `/api/directory/${dirState.type}` + (dirState.q ? `?q=${encodeURIComponent(dirState.q)}` : ''));
-  } catch(e){ feed.innerHTML=''; feed.appendChild(errorState(e.message, openDirectory)); return; }
+    // Unabhängige Anfragen parallel (Zähler + Liste).
+    [counts, list] = await Promise.all([
+      api('GET','/api/directory'),
+      api('GET', `/api/directory/${dirState.type}` + (dirState.q ? `?q=${encodeURIComponent(dirState.q)}` : '')),
+    ]);
+  } catch(e){ feed.innerHTML=''; feed.appendChild(errorState(e.message, () => openDirectory())); return; }
   feed.innerHTML = '';
   const head = el(`<div class="card">
     <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button></div>

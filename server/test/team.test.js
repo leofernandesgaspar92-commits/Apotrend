@@ -34,6 +34,18 @@ test('Team: Mitglied hinzufügen (Rolle geprüft) und auflisten', () => {
   assert.throws(() => orgAuth.addTeamMember(owner, { name: 'Pw Kurz', email: 'z@a.at', password: 'kurz', role: 'pta' }), /8 Zeichen/);
 });
 
+test('Team: doppelte E-Mail wird als 400-Feldfehler gemeldet', () => {
+  const { orgAuth, owner } = setup();
+  // chef@a.at existiert bereits (Inhaber)
+  try {
+    orgAuth.addTeamMember(owner, { name: 'Doppelt', email: 'chef@a.at', password: 'Passwort1', role: 'pta' });
+    assert.fail('sollte werfen');
+  } catch (e) {
+    assert.equal(e.status, 400, 'Feldfehler, kein Serverfehler');
+    assert.match(e.message, /vergeben/);
+  }
+});
+
 test('Team: Nicht-Admin darf nicht verwalten', () => {
   const { orgAuth, owner } = setup();
   const r = orgAuth.addTeamMember(owner, { name: 'Azubi', email: 'azubi@a.at', password: 'Passwort1', role: 'lehrling' });

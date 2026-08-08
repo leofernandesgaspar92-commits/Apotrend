@@ -143,6 +143,8 @@ export function createOrgAuthService(repo) {
       if (nm.length < 2) throw new AppError('team_name', 'Name fehlt.', 400);
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) throw new AppError('team_email', 'Gültige E-Mail erforderlich.', 400);
       if (!password || String(password).length < 8) throw new AppError('new_pw_short', 'Passwort: mindestens 8 Zeichen.', 400);
+      // Doppelte E-Mail als 400-Feldfehler melden (nicht als 500), konsistent mit den übrigen Prüfungen.
+      if (repo.getUserByEmail(em)) throw new AppError('team_email_taken', 'E-Mail ist bereits vergeben.', 400);
       // addMember prüft roleAllowedForOrgType (wirft bei ungültiger Rolle für den Org-Typ).
       return this.addMember({ organizationId: m.organization_id, name: nm, email: em, password, role });
     },
