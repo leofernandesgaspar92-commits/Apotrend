@@ -13,6 +13,9 @@ const MAX_BODY = 1000;
 // „Offen für" — wofür ein Profil offen ist (Vernetzungs-/Geschäftssignale). Feste
 // Schlüssel; die Beschriftung/Übersetzung liegt im Frontend.
 export const OPEN_TO_KEYS = ['kooperation', 'einkauf', 'vertretung', 'austausch', 'mentoring', 'jobs'];
+// Feste Kategorie-Schlüssel für die Premium-Werbung/Shop. Beschriftung/Übersetzung
+// liegt im Frontend (promo_cat_*).
+export const PROMO_CATEGORIES = ['medikamente', 'kosmetik', 'nahrungsergaenzung', 'medizinprodukte', 'dienstleistung', 'sonstiges'];
 
 export function createSocialService(social, foundationRepo, options = {}) {
   // Wer darf moderieren (Reports bearbeiten, fremde Inhalte entfernen)? Bewusst
@@ -1038,6 +1041,140 @@ export function createSocialService(social, foundationRepo, options = {}) {
     listVideoAppointments(userId) {
       requireUser(userId);
       return social.listAppointments(userId).map(a => this.decorateAppt(a, userId));
+    },
+
+    // ── Premium-Werbung/Shop ─────────────────────────────────────────────────
+    // Nur Premium-Mitglieder dürfen Produkte/Angebote bewerben. Alle
+    // registrierten Nutzer:innen können stöbern, „Gefällt mir" geben und
+    // kommentieren (B2B-Anfragen). Feste Kategorie-Schlüssel; Beschriftung im Frontend.
+    // Likes laufen über die Reaktions-Infrastruktur (target_type='promotion'),
+    // Kommentare über die Kommentar-Infrastruktur (post_id = Promotion-ID).
+    decoratePromo(p, viewerUserId = null) {
+      const prof = social.getProfileByUserId(p.author_user_id);
+      const likes = social.listReactions('promotion', p.id);
+      return {
+        ...p,
+        author: prof ? { handle: prof.handle, display_name: prof.display_name, avatar_url: prof.avatar_url || null, verified: !!prof.verified, account_type: prof.account_type, premium: foundationRepo.hasEntitlement(prof.user_id, 'premium') } : null,
+        like_count: likes.length,
+        liked_by_me: !!(viewerUserId && likes.some(r => r.user_id === viewerUserId)),
+        comment_count: social.countComments(p.id),
+        is_mine: viewerUserId === p.author_user_id,
+      };
+    },
+    listPromotions(viewerUserId, { kategorie = null } = {}) {
+      requireUser(viewerUserId);
+      const muted = new Set(social.listMuted(viewerUserId));
+      const cat = kategorie && PROMO_CATEGORIES.includes(kategorie) ? kategorie : null;
+      return social.listPromotions()
+        .filter(p => !muted.has(p.author_user_id))
+        .filter(p => !cat || p.kategorie === cat)
+        .map(p => this.decoratePromo(p, viewerUserId));
+    },
+    listMyPromotions(userId) {
+      requireUser(userId);
+      return social.listPromotionsByAuthor(userId).map(p => this.decoratePromo(p, userId));
+    },
+    getPromotion(viewerUserId, id) {
+      requireUser(viewerUserId);
+      const p = social.getPromotion(id);
+      if (!p) throw new AppError('promo_not_found', 'Angebot nicht gefunden.', 404);
+      const muted = new Set(social.listMuted(viewerUserId));
+      const comments = social.listComments(id).filter(c => !muted.has(c.author_user_id)).map(c => {
+        const prof = social.getProfileByUserId(c.author_user_id);
+        return { ...c, author: prof ? { handle: prof.handle, display_name: prof.display_name, avatar_url: prof.avatar_url || null, verified: !!prof.verified, account_type: prof.account_type } : null };
+      });
+      return { ...this.decoratePromo(p, viewerUserId), comments };
+    },
+    createPromotion(userId, { titel, beschreibung, kategorie, preis, einheit, image, link } = {}) {
+      requireUser(userId);
+      const prof = social.getProfileByUserId(userId);
+      if (!prof) throw new AppError('no_profile', 'Profil nicht gefunden.', 404);
+      if (!foundationRepo.hasEntitlement(userId, 'premium')) {
+        throw new AppError('promo_not_premium', 'Eigene Werbung ist Premium-Mitgliedern vorbehalten.', 403);
+      }
+      const t = String(titel ?? '').trim();
+      if (t.length < 3) throw new AppError('promo_title', 'Titel fehlt (mind. 3 Zeichen).', 400);
+      if (t.length > 120) throw new AppError('promo_title_long', 'Titel zu lang (max 120).', 400);
+      const b = String(beschreibung ?? '').trim();
+      if (b.length > MAX_BODY) throw new AppError('promo_body_long', `Beschreibung zu lang (max ${MAX_BODY}).`, 400);
+      const cat = PROMO_CATEGORIES.includes(kategorie) ? kategorie : 'sonstiges';
+      let price = null;
+      if (preis != null && preis !== '') {
+        price = Number(preis);
+        if (!Number.isFinite(price) || price < 0 || price > 1_000_000) throw new AppError('promo_price', 'Ungültiger Preis.', 400);
+        price = Math.round(price * 100) / 100;
+      }
+      const promo = social.addPromotion({
+        author_user_id: userId, titel: t, beschreibung: b || null, kategorie: cat,
+        preis: price, einheit: einheit ? String(einheit).trim().slice(0, 30) : null,
+        image: cleanImage(image), link: cleanSourceUrl(link), country: prof.country || 'AT',
+      });
+      return this.decoratePromo(promo, userId);
+    },
+    updatePromotion(userId, id, patch = {}) {
+      requireUser(userId);
+      const p = social.getPromotion(id);
+      if (!p) throw new AppError('promo_not_found', 'Angebot nicht gefunden.', 404);
+      if (p.author_user_id !== userId) throw new ForbiddenError('Nur der/die Autor:in darf bearbeiten.');
+      const next = {};
+      if ('titel' in patch) {
+        const t = String(patch.titel ?? '').trim();
+        if (t.length < 3) throw new AppError('promo_title', 'Titel fehlt (mind. 3 Zeichen).', 400);
+        if (t.length > 120) throw new AppError('promo_title_long', 'Titel zu lang (max 120).', 400);
+        next.titel = t;
+      }
+      if ('beschreibung' in patch) {
+        const b = String(patch.beschreibung ?? '').trim();
+        if (b.length > MAX_BODY) throw new AppError('promo_body_long', `Beschreibung zu lang (max ${MAX_BODY}).`, 400);
+        next.beschreibung = b || null;
+      }
+      if ('kategorie' in patch && PROMO_CATEGORIES.includes(patch.kategorie)) next.kategorie = patch.kategorie;
+      if ('preis' in patch) {
+        if (patch.preis == null || patch.preis === '') next.preis = null;
+        else {
+          const price = Number(patch.preis);
+          if (!Number.isFinite(price) || price < 0 || price > 1_000_000) throw new AppError('promo_price', 'Ungültiger Preis.', 400);
+          next.preis = Math.round(price * 100) / 100;
+        }
+      }
+      if ('einheit' in patch) next.einheit = patch.einheit ? String(patch.einheit).trim().slice(0, 30) : null;
+      if ('image' in patch) next.image = cleanImage(patch.image);
+      if ('link' in patch) next.link = cleanSourceUrl(patch.link);
+      return this.decoratePromo(social.updatePromotion(id, next), userId);
+    },
+    deletePromotion(userId, id) {
+      requireUser(userId);
+      const p = social.getPromotion(id);
+      if (!p) throw new AppError('promo_not_found', 'Angebot nicht gefunden.', 404);
+      if (p.author_user_id !== userId && !isModerator(userId)) throw new ForbiddenError('Nur der/die Autor:in oder Moderation darf löschen.');
+      social.softDeletePromotion(id);
+      return { ok: true };
+    },
+    likePromotion(userId, id) {
+      requireUser(userId);
+      const p = social.getPromotion(id);
+      if (!p) throw new AppError('promo_not_found', 'Angebot nicht gefunden.', 404);
+      const mine = social.listReactions('promotion', id).find(r => r.user_id === userId);
+      if (mine) {
+        social.removeReaction({ userId, targetType: 'promotion', targetId: id });
+        return { liked: false, like_count: social.listReactions('promotion', id).length };
+      }
+      social.setReaction({ userId, targetType: 'promotion', targetId: id, type: 'gefaellt' });
+      notify(p.author_user_id, 'promo_like', userId, 'promotion', id);
+      return { liked: true, like_count: social.listReactions('promotion', id).length };
+    },
+    commentPromotion(userId, id, { body } = {}) {
+      requireUser(userId);
+      const p = social.getPromotion(id);
+      if (!p) throw new AppError('promo_not_found', 'Angebot nicht gefunden.', 404);
+      const text = String(body ?? '').trim();
+      if (!text) throw new AppError('comment_empty', 'Kommentar darf nicht leer sein.', 400);
+      if (text.length > MAX_BODY) throw new AppError('comment_too_long', `Kommentar zu lang (max ${MAX_BODY}).`, 400);
+      const comment = social.createComment({ postId: id, authorUserId: userId, body: text });
+      notify(p.author_user_id, 'promo_comment', userId, 'promotion', id);
+      notifyMentions(text, userId, 'promotion', id);
+      const prof = social.getProfileByUserId(userId);
+      return { ...comment, author: prof ? { handle: prof.handle, display_name: prof.display_name, avatar_url: prof.avatar_url || null, verified: !!prof.verified, account_type: prof.account_type } : null };
     },
 
     // ── DSGVO: Datenexport (Recht auf Datenübertragbarkeit) ──

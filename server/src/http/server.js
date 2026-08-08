@@ -468,6 +468,15 @@ const routes = [
   ['POST', /^\/api\/appointments$/, true, async ({ userId, body }) => ({ appointment: social.requestVideoAppointment(userId, body.providerHandle, { datum: body.datum, uhrzeit: body.uhrzeit, grund: body.grund }) })],
   ['POST', /^\/api\/appointments\/([^/]+)\/respond$/, true, async ({ userId, params, body }) => ({ appointment: social.respondVideoAppointment(userId, params[0], !!body.accept) })],
   ['POST', /^\/api\/appointments\/([^/]+)\/cancel$/, true, async ({ userId, params }) => ({ appointment: social.cancelVideoAppointment(userId, params[0]) })],
+  // ── Premium-Werbung/Shop (beworbene Produkte/Angebote) ──
+  ['GET', /^\/api\/promotions$/, true, async ({ userId, query }) => ({ promotions: social.listPromotions(userId, { kategorie: query.get('kategorie') || null }), premium: payments.hasFeature(userId, 'premium') })],
+  ['GET', /^\/api\/promotions\/mine$/, true, async ({ userId }) => ({ promotions: social.listMyPromotions(userId), premium: payments.hasFeature(userId, 'premium') })],
+  ['POST', /^\/api\/promotions$/, true, async ({ userId, body }) => ({ promotion: social.createPromotion(userId, body) })],
+  ['GET', /^\/api\/promotions\/([^/]+)$/, true, async ({ userId, params }) => ({ promotion: social.getPromotion(userId, params[0]) })],
+  ['POST', /^\/api\/promotions\/([^/]+)\/update$/, true, async ({ userId, params, body }) => ({ promotion: social.updatePromotion(userId, params[0], body) })],
+  ['POST', /^\/api\/promotions\/([^/]+)\/delete$/, true, async ({ userId, params }) => social.deletePromotion(userId, params[0])],
+  ['POST', /^\/api\/promotions\/([^/]+)\/like$/, true, async ({ userId, params }) => social.likePromotion(userId, params[0])],
+  ['POST', /^\/api\/promotions\/([^/]+)\/comment$/, true, async ({ userId, params, body }) => ({ comment: social.commentPromotion(userId, params[0], { body: body.body }) })],
 
   ['GET', /^\/api\/profiles\/([^/]+)\/page$/, true, async ({ userId, params }) => {
     const d = social.profilePage(userId, params[0]);

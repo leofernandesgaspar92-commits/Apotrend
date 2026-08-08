@@ -243,6 +243,11 @@ const I18N = {
     pf_dm:'✉️ Nachricht', pf_unfollow:'✓ Du folgst — entfolgen', pf_follow:'+ Folgen', pf_mute:'🔇 Stummschalten', pf_unmute:'🔊 Stumm aufheben', pf_muted_title:'Stummgeschaltete ({n})',
     vc_book:'📹 Videosprechstunde buchen', vc_book_sub:'Termin bei {name} anfragen', vc_my:'📹 Meine Videosprechstunden', vc_my_sub_premium:'Du bietest als Premium-Apotheke Videosprechstunden an und kannst Anfragen bestätigen.', vc_my_sub_free:'Deine angefragten und gebuchten Videosprechstunden.', vc_date:'Datum', vc_time:'Uhrzeit', vc_reason:'Anliegen (optional)', vc_reason_ph:'z.B. Medikationsberatung', vc_request:'Termin anfragen', vc_requested:'Terminanfrage gesendet.', vc_privacy:'Der Videoanruf läuft über einen sicheren Jitsi-Meet-Raum, der erst bei Bestätigung entsteht.', vc_empty_t:'Noch keine Termine', vc_empty_s:'Buche eine Videosprechstunde bei einer Premium-Apotheke — oder erhalte als Premium hier Anfragen.', vc_st_pending:'Angefragt', vc_st_confirmed:'Bestätigt', vc_st_declined:'Abgelehnt', vc_st_cancelled:'Storniert', vc_with_customer:'Mit Kund:in', vc_with_pharmacy:'Mit Apotheke', vc_join:'Call starten', vc_accept:'✓ Bestätigen', vc_decline:'Ablehnen', vc_cancel:'Stornieren', vc_cancel_confirm:'Diesen Termin stornieren?',
     nv_appt_request:'möchte eine Videosprechstunde', nv_appt_confirmed:'hat deine Videosprechstunde bestätigt', nv_appt_declined:'hat deine Terminanfrage abgelehnt', nv_appt_cancelled:'hat eine Videosprechstunde storniert',
+    nv_promo_like:'gefällt dein Angebot', nv_promo_comment:'hat dein Angebot kommentiert',
+    wb_nav:'🏷️ Angebote & Werbung', wb_title:'🏷️ Angebote & Werbung', wb_sub:'Beworbene Produkte & Dienstleistungen aus der Branche. Premium-Mitglieder inserieren, alle können anfragen.', wb_new:'+ Neues Angebot', wb_mine:'Meine Angebote', wb_all:'Alle Angebote', wb_premium_only:'Eigene Werbung ist Premium-Mitgliedern vorbehalten.', wb_go_premium:'Premium freischalten', wb_empty_t:'Noch keine Angebote', wb_empty_s:'Sei die/der Erste: Als Premium-Mitglied bewirbst du hier Produkte und Dienstleistungen.', wb_empty_mine_s:'Du hast noch nichts inseriert. Lege dein erstes Angebot an.',
+    wb_f_title:'Titel', wb_f_title_ph:'z.B. Ibuprofen 400 mg, 100 Stück', wb_f_cat:'Kategorie', wb_f_desc:'Beschreibung', wb_f_desc_ph:'Details, Verfügbarkeit, Konditionen …', wb_f_price:'Preis (optional)', wb_f_unit:'Einheit', wb_f_unit_ph:'z.B. €/Packung', wb_f_img:'Bild (optional)', wb_f_link:'Link (optional)', wb_f_link_ph:'https://…', wb_save:'Angebot veröffentlichen', wb_save_edit:'Änderungen speichern', wb_saved:'Angebot veröffentlicht.', wb_updated:'Angebot aktualisiert.', wb_edit:'Bearbeiten', wb_delete:'Löschen', wb_delete_confirm:'Dieses Angebot löschen?',
+    wb_like:'Gefällt mir', wb_liked:'Gefällt dir', wb_comments:'Anfragen & Kommentare', wb_comment_ph:'Frage oder Anfrage schreiben …', wb_comment_send:'Senden', wb_no_comments:'Noch keine Anfragen. Stell die erste Frage.', wb_by:'von', wb_on_request:'auf Anfrage', wb_ad:'Anzeige',
+    promo_cat_medikamente:'Medikamente', promo_cat_kosmetik:'Kosmetik & Pflege', promo_cat_nahrungsergaenzung:'Nahrungsergänzung', promo_cat_medizinprodukte:'Medizinprodukte', promo_cat_dienstleistung:'Dienstleistung', promo_cat_sonstiges:'Sonstiges',
     pf_no_posts:'Noch keine sichtbaren Beiträge.',
     ep_name:'Anzeigename', ep_func:'Titel / Funktion (optional)', ep_func_ph:'z.B. Fachapothekerin, Einkauf',
     ep_about:'Über mich (optional, max. 500 Zeichen)', ep_about_ph:'Kurz zu dir und deinem Schwerpunkt…',
@@ -573,6 +578,11 @@ const I18N = {
     pf_dm:'✉️ Message', pf_unfollow:'✓ Following — unfollow', pf_follow:'+ Follow', pf_mute:'🔇 Mute', pf_unmute:'🔊 Unmute', pf_muted_title:'Muted ({n})',
     vc_book:'📹 Book video consultation', vc_book_sub:'Request an appointment with {name}', vc_my:'📹 My video consultations', vc_my_sub_premium:'As a Premium pharmacy you offer video consultations and can confirm requests.', vc_my_sub_free:'Your requested and booked video consultations.', vc_date:'Date', vc_time:'Time', vc_reason:'Reason (optional)', vc_reason_ph:'e.g. medication review', vc_request:'Request appointment', vc_requested:'Appointment request sent.', vc_privacy:'The video call runs in a secure Jitsi Meet room created only upon confirmation.', vc_empty_t:'No appointments yet', vc_empty_s:'Book a video consultation with a Premium pharmacy — or, as Premium, receive requests here.', vc_st_pending:'Requested', vc_st_confirmed:'Confirmed', vc_st_declined:'Declined', vc_st_cancelled:'Cancelled', vc_with_customer:'With customer', vc_with_pharmacy:'With pharmacy', vc_join:'Join call', vc_accept:'✓ Confirm', vc_decline:'Decline', vc_cancel:'Cancel', vc_cancel_confirm:'Cancel this appointment?',
     nv_appt_request:'wants a video consultation', nv_appt_confirmed:'confirmed your video consultation', nv_appt_declined:'declined your appointment request', nv_appt_cancelled:'cancelled a video consultation',
+    nv_promo_like:'likes your listing', nv_promo_comment:'commented on your listing',
+    wb_nav:'🏷️ Listings & Ads', wb_title:'🏷️ Listings & Ads', wb_sub:'Advertised products & services from the industry. Premium members post, everyone can enquire.', wb_new:'+ New listing', wb_mine:'My listings', wb_all:'All listings', wb_premium_only:'Posting your own ads is reserved for Premium members.', wb_go_premium:'Unlock Premium', wb_empty_t:'No listings yet', wb_empty_s:'Be the first: as a Premium member you advertise products and services here.', wb_empty_mine_s:'You haven’t posted anything yet. Create your first listing.',
+    wb_f_title:'Title', wb_f_title_ph:'e.g. Ibuprofen 400 mg, 100 units', wb_f_cat:'Category', wb_f_desc:'Description', wb_f_desc_ph:'Details, availability, terms …', wb_f_price:'Price (optional)', wb_f_unit:'Unit', wb_f_unit_ph:'e.g. €/pack', wb_f_img:'Image (optional)', wb_f_link:'Link (optional)', wb_f_link_ph:'https://…', wb_save:'Publish listing', wb_save_edit:'Save changes', wb_saved:'Listing published.', wb_updated:'Listing updated.', wb_edit:'Edit', wb_delete:'Delete', wb_delete_confirm:'Delete this listing?',
+    wb_like:'Like', wb_liked:'Liked', wb_comments:'Enquiries & comments', wb_comment_ph:'Write a question or enquiry …', wb_comment_send:'Send', wb_no_comments:'No enquiries yet. Ask the first question.', wb_by:'by', wb_on_request:'on request', wb_ad:'Ad',
+    promo_cat_medikamente:'Medicines', promo_cat_kosmetik:'Cosmetics & care', promo_cat_nahrungsergaenzung:'Supplements', promo_cat_medizinprodukte:'Medical devices', promo_cat_dienstleistung:'Service', promo_cat_sonstiges:'Other',
     pf_no_posts:'No visible posts yet.',
     ep_name:'Display name', ep_func:'Title / role (optional)', ep_func_ph:'e.g. specialist pharmacist, purchasing',
     ep_about:'About me (optional, max. 500 characters)', ep_about_ph:'A little about you and your focus…',
@@ -903,6 +913,11 @@ const I18N = {
     pf_dm:'✉️ Mensagem', pf_unfollow:'✓ A seguir — deixar de seguir', pf_follow:'+ Seguir', pf_mute:'🔇 Silenciar', pf_unmute:'🔊 Reativar som', pf_muted_title:'Silenciados ({n})',
     vc_book:'📹 Marcar teleconsulta', vc_book_sub:'Pedir uma marcação com {name}', vc_my:'📹 As minhas teleconsultas', vc_my_sub_premium:'Como farmácia Premium, oferece teleconsultas e pode confirmar pedidos.', vc_my_sub_free:'As suas teleconsultas pedidas e marcadas.', vc_date:'Data', vc_time:'Hora', vc_reason:'Motivo (opcional)', vc_reason_ph:'ex. revisão da medicação', vc_request:'Pedir marcação', vc_requested:'Pedido de marcação enviado.', vc_privacy:'A chamada de vídeo decorre numa sala Jitsi Meet segura criada apenas após confirmação.', vc_empty_t:'Ainda sem marcações', vc_empty_s:'Marque uma teleconsulta numa farmácia Premium — ou, como Premium, receba pedidos aqui.', vc_st_pending:'Pedido', vc_st_confirmed:'Confirmado', vc_st_declined:'Recusado', vc_st_cancelled:'Cancelado', vc_with_customer:'Com cliente', vc_with_pharmacy:'Com farmácia', vc_join:'Entrar na chamada', vc_accept:'✓ Confirmar', vc_decline:'Recusar', vc_cancel:'Cancelar', vc_cancel_confirm:'Cancelar esta marcação?',
     nv_appt_request:'quer uma teleconsulta', nv_appt_confirmed:'confirmou a sua teleconsulta', nv_appt_declined:'recusou o seu pedido de marcação', nv_appt_cancelled:'cancelou uma teleconsulta',
+    nv_promo_like:'gostou do seu anúncio', nv_promo_comment:'comentou o seu anúncio',
+    wb_nav:'🏷️ Anúncios & Ofertas', wb_title:'🏷️ Anúncios & Ofertas', wb_sub:'Produtos e serviços anunciados do setor. Membros Premium publicam, todos podem contactar.', wb_new:'+ Novo anúncio', wb_mine:'Os meus anúncios', wb_all:'Todos os anúncios', wb_premium_only:'Publicar anúncios próprios é reservado a membros Premium.', wb_go_premium:'Desbloquear Premium', wb_empty_t:'Ainda sem anúncios', wb_empty_s:'Seja o primeiro: como membro Premium anuncia aqui produtos e serviços.', wb_empty_mine_s:'Ainda não publicou nada. Crie o seu primeiro anúncio.',
+    wb_f_title:'Título', wb_f_title_ph:'ex. Ibuprofeno 400 mg, 100 unidades', wb_f_cat:'Categoria', wb_f_desc:'Descrição', wb_f_desc_ph:'Detalhes, disponibilidade, condições …', wb_f_price:'Preço (opcional)', wb_f_unit:'Unidade', wb_f_unit_ph:'ex. €/embalagem', wb_f_img:'Imagem (opcional)', wb_f_link:'Link (opcional)', wb_f_link_ph:'https://…', wb_save:'Publicar anúncio', wb_save_edit:'Guardar alterações', wb_saved:'Anúncio publicado.', wb_updated:'Anúncio atualizado.', wb_edit:'Editar', wb_delete:'Eliminar', wb_delete_confirm:'Eliminar este anúncio?',
+    wb_like:'Gosto', wb_liked:'Gostou', wb_comments:'Contactos & comentários', wb_comment_ph:'Escreva uma pergunta ou contacto …', wb_comment_send:'Enviar', wb_no_comments:'Ainda sem contactos. Faça a primeira pergunta.', wb_by:'por', wb_on_request:'sob consulta', wb_ad:'Anúncio',
+    promo_cat_medikamente:'Medicamentos', promo_cat_kosmetik:'Cosmética & cuidado', promo_cat_nahrungsergaenzung:'Suplementos', promo_cat_medizinprodukte:'Dispositivos médicos', promo_cat_dienstleistung:'Serviço', promo_cat_sonstiges:'Outros',
     pf_no_posts:'Ainda sem publicações visíveis.',
     ep_name:'Nome a apresentar', ep_func:'Título / função (opcional)', ep_func_ph:'ex. farmacêutica especialista, compras',
     ep_about:'Sobre mim (opcional, máx. 500 caracteres)', ep_about_ph:'Um pouco sobre si e a sua área…',
@@ -1828,11 +1843,12 @@ async function loadOverview() {
     <div class="row" style="flex-wrap:wrap;gap:10px">
       ${tiles.join('')}
     </div>
-    <div class="row" style="margin-top:12px"><button class="ghost small" id="ov_bm">${esc(t('ov_bookmarks'))}</button></div>
+    <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px"><button class="ghost small" id="ov_bm">${esc(t('ov_bookmarks'))}</button><button class="ghost small" id="ov_promos">${esc(t('wb_nav'))}</button></div>
   </div>`);
   head.querySelectorAll('.ovtile[data-go]').forEach(t => { if (t.dataset.go) t.onclick = () => { if (t.dataset.filter) shortageFilter = t.dataset.filter; goTab(t.dataset.go); }; });
   head.querySelectorAll('.ovtile').forEach(t => { if (!t.dataset.go) t.onclick = () => document.getElementById('btnNotif').click(); });
   head.querySelector('#ov_bm').onclick = openBookmarks;
+  head.querySelector('#ov_promos').onclick = () => openPromotions();
   feed.appendChild(head);
 
   // Zuletzt angesehene Wirkstoffe (nur lokal) — schneller Wiedereinstieg.
@@ -3953,6 +3969,192 @@ async function openAppointments(flash) {
   }
 }
 
+// ── Premium-Werbung/Shop ────────────────────────────────────────────────────
+const PROMO_CATS = ['medikamente','kosmetik','nahrungsergaenzung','medizinprodukte','dienstleistung','sonstiges'];
+function promoCatLabel(cat) { return t('promo_cat_' + (PROMO_CATS.includes(cat) ? cat : 'sonstiges')); }
+let promoState = { cat: null, mine: false };
+
+function promoAuthorLine(a) {
+  if (!a) return '';
+  const badge = (a.verified ? ' <span title="'+esc(t('pc_verified'))+'">✔</span>' : '') + (a.premium ? ' <span title="'+esc(t('pc_premium'))+'">⭐</span>' : '');
+  const av = a.avatar_url ? `<img src="${esc(a.avatar_url)}" alt="" style="width:22px;height:22px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:5px">` : '';
+  return `<span class="clickable" data-openprofile="${esc(a.handle)}">${av}<b>${esc(a.display_name||('@'+a.handle))}</b>${badge}</span>`;
+}
+function promoPrice(p) {
+  if (p.preis == null) return `<span class="muted">${esc(t('wb_on_request'))}</span>`;
+  return `<b>€ ${esc(fmtMoney(p.preis))}</b>${p.einheit?` <span class="muted" style="font-size:12px">${esc(p.einheit)}</span>`:''}`;
+}
+function promoCard(p) {
+  const card = el(`<div class="card" style="cursor:pointer" data-open="${esc(p.id)}">
+    ${p.image?`<img src="${esc(p.image)}" alt="${esc(p.titel)}" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;margin-bottom:8px">`:''}
+    <div class="row" style="align-items:baseline;gap:8px">
+      <span style="display:inline-block;font-size:12px;font-weight:700;color:var(--info-fg);background:var(--info-bg);padding:2px 8px;border-radius:999px">${esc(promoCatLabel(p.kategorie))}</span>
+      <span class="sp" style="flex:1"></span>
+      <span style="font-size:11px;font-weight:700;color:var(--muted);border:1px solid var(--line);padding:1px 6px;border-radius:6px">${esc(t('wb_ad'))}</span>
+    </div>
+    <h3 style="margin:8px 0 4px">${esc(p.titel)}</h3>
+    <div style="margin-bottom:6px">${promoPrice(p)}</div>
+    ${p.beschreibung?`<div class="muted" style="font-size:14px;white-space:pre-wrap">${esc(p.beschreibung.length>160?p.beschreibung.slice(0,160)+'…':p.beschreibung)}</div>`:''}
+    <div class="row" style="margin-top:10px;align-items:center;gap:12px;font-size:13px">
+      <span class="muted">${esc(t('wb_by'))} ${promoAuthorLine(p.author)}</span>
+      <span class="sp" style="flex:1"></span>
+      <span title="${esc(t('wb_like'))}">${p.liked_by_me?'❤️':'🤍'} ${p.like_count}</span>
+      <span title="${esc(t('wb_comments'))}">💬 ${p.comment_count}</span>
+    </div>
+  </div>`);
+  card.querySelectorAll('[data-openprofile]').forEach(e2 => { e2.onclick = (ev) => { ev.stopPropagation(); openProfile(e2.dataset.openprofile); }; });
+  card.onclick = () => openPromotionDetail(p.id);
+  return card;
+}
+
+async function openPromotions(flash) {
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
+  setDocTitle(t('wb_title'));
+  feed.innerHTML = '<div class="loading">…</div>';
+  const qs = [];
+  if (promoState.cat) qs.push('kategorie=' + encodeURIComponent(promoState.cat));
+  let d;
+  try { d = await api('GET', (promoState.mine ? '/api/promotions/mine' : '/api/promotions') + (qs.length?('?'+qs.join('&')):'')); }
+  catch(e){ feed.innerHTML=''; feed.appendChild(errorState(e.message, openPromotions)); return; }
+  feed.innerHTML = '';
+  const head = el(`<div class="card">
+    <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span>${d.premium?`<button class="small" data-new>${esc(t('wb_new'))}</button>`:''}</div>
+    <h1 style="margin:8px 0 2px">${esc(t('wb_title'))}</h1>
+    <div class="muted" style="margin-bottom:10px">${esc(t('wb_sub'))}</div>
+    <div class="row" style="flex-wrap:wrap;gap:6px">
+      <button class="small sortbtn${promoState.mine?'':' active'}" data-scope="all">${esc(t('wb_all'))}</button>
+      <button class="small sortbtn${promoState.mine?' active':''}" data-scope="mine">${esc(t('wb_mine'))}</button>
+    </div>
+    <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px">
+      <button class="small sortbtn${promoState.cat?'':' active'}" data-cat="">${esc(t('wb_all'))}</button>
+      ${PROMO_CATS.map(c=>`<button class="small sortbtn${promoState.cat===c?' active':''}" data-cat="${c}">${esc(promoCatLabel(c))}</button>`).join('')}
+    </div>
+    ${d.premium?'':`<div class="muted" style="font-size:12px;margin-top:10px">${esc(t('wb_premium_only'))} <span class="linklike" data-gopremium>${esc(t('wb_go_premium'))}</span></div>`}
+  </div>`);
+  head.querySelector('[data-back]').onclick = () => goTab('overview');
+  const nb = head.querySelector('[data-new]'); if (nb) nb.onclick = () => openPromoForm(null);
+  const gp = head.querySelector('[data-gopremium]'); if (gp) gp.onclick = () => { if (typeof openPremium==='function') openPremium(); };
+  head.querySelectorAll('[data-scope]').forEach(b => b.onclick = () => { promoState.mine = b.dataset.scope==='mine'; openPromotions(); });
+  head.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { promoState.cat = b.dataset.cat || null; openPromotions(); });
+  feed.appendChild(head);
+  if (flash) feed.appendChild(el(`<div class="card ok-box" style="padding:10px 14px;font-weight:600">✅ ${esc(flash)}</div>`));
+  if (!d.promotions.length) { feed.appendChild(emptyState({ icon:'🏷️', title:t('wb_empty_t'), text: promoState.mine ? t('wb_empty_mine_s') : t('wb_empty_s') })); return; }
+  for (const p of d.promotions) feed.appendChild(promoCard(p));
+}
+
+function openPromoForm(existing) {
+  const feed = document.getElementById('feed');
+  setDocTitle(t(existing?'wb_edit':'wb_new'));
+  feed.innerHTML = '';
+  let img = existing && existing.image ? existing.image : null;
+  const card = el(`<div class="card">
+    <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button></div>
+    <h1 style="margin:8px 0 8px">${esc(existing?t('wb_edit'):t('wb_new'))}</h1>
+    <label>${esc(t('wb_f_title'))}</label>
+    <input id="pr_title" maxlength="120" placeholder="${esc(t('wb_f_title_ph'))}" value="${esc(existing?existing.titel:'')}">
+    <label style="margin-top:8px">${esc(t('wb_f_cat'))}</label>
+    <select id="pr_cat">${PROMO_CATS.map(c=>`<option value="${c}"${existing&&existing.kategorie===c?' selected':''}>${esc(promoCatLabel(c))}</option>`).join('')}</select>
+    <label style="margin-top:8px">${esc(t('wb_f_desc'))}</label>
+    <textarea id="pr_desc" rows="4" maxlength="1000" placeholder="${esc(t('wb_f_desc_ph'))}">${esc(existing&&existing.beschreibung?existing.beschreibung:'')}</textarea>
+    <div class="row" style="gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:140px"><label>${esc(t('wb_f_price'))}</label><input id="pr_price" type="number" min="0" step="0.01" value="${existing&&existing.preis!=null?existing.preis:''}"></div>
+      <div style="flex:1;min-width:140px"><label>${esc(t('wb_f_unit'))}</label><input id="pr_unit" maxlength="30" placeholder="${esc(t('wb_f_unit_ph'))}" value="${esc(existing&&existing.einheit?existing.einheit:'')}"></div>
+    </div>
+    <label style="margin-top:8px">${esc(t('wb_f_link'))}</label>
+    <input id="pr_link" maxlength="500" placeholder="${esc(t('wb_f_link_ph'))}" value="${esc(existing&&existing.link?existing.link:'')}">
+    <div class="row" style="margin-top:10px;align-items:center;gap:10px">
+      <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px">${esc(t('wb_f_img'))}<input type="file" id="pr_img" accept="image/*" style="display:none"></label>
+      <img id="pr_imgprev" alt="" style="${img?'':'display:none;'}max-height:80px;border-radius:8px" ${img?`src="${esc(img)}"`:''}>
+      <button class="linklike small" id="pr_imgclear" style="${img?'':'display:none'}">✕</button>
+    </div>
+    <div class="row" style="margin-top:12px"><button data-save>${esc(existing?t('wb_save_edit'):t('wb_save'))}</button><span class="err" data-err style="margin-left:10px"></span></div>
+  </div>`);
+  card.querySelector('[data-back]').onclick = () => existing ? openPromotionDetail(existing.id) : openPromotions();
+  const prev = card.querySelector('#pr_imgprev'), clr = card.querySelector('#pr_imgclear');
+  card.querySelector('#pr_img').onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    try { img = await fileToDataUrl(f); prev.src = img; prev.style.display='inline-block'; clr.style.display='inline-block'; }
+    catch(err){ alert(err.message); }
+  };
+  clr.onclick = () => { img = null; prev.style.display='none'; clr.style.display='none'; card.querySelector('#pr_img').value=''; };
+  card.querySelector('[data-save]').onclick = async () => {
+    const err = card.querySelector('[data-err]'); err.textContent='';
+    const payload = {
+      titel: document.getElementById('pr_title').value.trim(),
+      kategorie: document.getElementById('pr_cat').value,
+      beschreibung: document.getElementById('pr_desc').value.trim(),
+      preis: document.getElementById('pr_price').value.trim(),
+      einheit: document.getElementById('pr_unit').value.trim(),
+      link: document.getElementById('pr_link').value.trim(),
+      image: img,
+    };
+    try {
+      if (existing) { await api('POST', `/api/promotions/${existing.id}/update`, payload); openPromotions(t('wb_updated')); }
+      else { await api('POST', '/api/promotions', payload); openPromotions(t('wb_saved')); }
+    } catch(e){ err.textContent = e.message; }
+  };
+  feed.appendChild(card);
+}
+
+async function openPromotionDetail(id) {
+  const feed = document.getElementById('feed');
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
+  feed.innerHTML = '<div class="loading">…</div>';
+  let d;
+  try { d = (await api('GET', `/api/promotions/${id}`)).promotion; }
+  catch(e){ feed.innerHTML=''; feed.appendChild(errorState(e.message, openPromotions)); return; }
+  setDocTitle(d.titel);
+  feed.innerHTML = '';
+  const head = el(`<div class="card">
+    <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span>${d.is_mine?`<button class="ghost small" data-edit>${esc(t('wb_edit'))}</button><button class="ghost small" data-del>${esc(t('wb_delete'))}</button>`:''}</div>
+    ${d.image?`<img src="${esc(d.image)}" alt="${esc(d.titel)}" style="width:100%;max-height:320px;object-fit:cover;border-radius:10px;margin:8px 0">`:''}
+    <div class="row" style="align-items:baseline;gap:8px;margin-top:6px">
+      <span style="display:inline-block;font-size:12px;font-weight:700;color:var(--info-fg);background:var(--info-bg);padding:2px 8px;border-radius:999px">${esc(promoCatLabel(d.kategorie))}</span>
+      <span class="sp" style="flex:1"></span><span style="font-size:11px;font-weight:700;color:var(--muted);border:1px solid var(--line);padding:1px 6px;border-radius:6px">${esc(t('wb_ad'))}</span>
+    </div>
+    <h1 style="margin:8px 0 4px">${esc(d.titel)}</h1>
+    <div style="font-size:18px;margin-bottom:6px">${promoPrice(d)}</div>
+    ${d.beschreibung?`<div class="post-body" style="white-space:pre-wrap;margin:8px 0">${esc(d.beschreibung)}</div>`:''}
+    ${d.link?`<div style="margin:6px 0"><a href="${esc(d.link)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(d.link)}</a></div>`:''}
+    <div class="muted" style="font-size:13px;margin-top:6px">${esc(t('wb_by'))} ${promoAuthorLine(d.author)} · ${esc(relTime(d.created_at))}</div>
+    <div class="reacts" style="margin-top:10px">
+      <button class="${d.liked_by_me?'':'ghost '}small" data-like>${d.liked_by_me?'❤️':'🤍'} ${esc(d.liked_by_me?t('wb_liked'):t('wb_like'))} · <span data-likecount>${d.like_count}</span></button>
+    </div>
+  </div>`);
+  head.querySelector('[data-back]').onclick = () => openPromotions();
+  head.querySelectorAll('[data-openprofile]').forEach(e2 => e2.onclick = () => openProfile(e2.dataset.openprofile));
+  const ed = head.querySelector('[data-edit]'); if (ed) ed.onclick = () => openPromoForm(d);
+  const de = head.querySelector('[data-del]'); if (de) de.onclick = async () => { if (!confirm(t('wb_delete_confirm'))) return; try { await api('POST', `/api/promotions/${id}/delete`); openPromotions(); } catch(e){ alert(e.message); } };
+  head.querySelector('[data-like]').onclick = async () => {
+    try { const r = await api('POST', `/api/promotions/${id}/like`); openPromotionDetail(id); void r; } catch(e){ alert(e.message); }
+  };
+  feed.appendChild(head);
+
+  // Anfragen & Kommentare
+  const cbox = el(`<div class="card">
+    <b>${esc(t('wb_comments'))} (${d.comment_count})</b>
+    <div class="row" style="margin-top:8px;gap:6px"><input id="pr_cinput" placeholder="${esc(t('wb_comment_ph'))}" maxlength="1000"><button class="small" data-csend>${esc(t('wb_comment_send'))}</button></div>
+    <div data-clist style="margin-top:10px"></div>
+  </div>`);
+  const clist = cbox.querySelector('[data-clist]');
+  if (!d.comments.length) clist.appendChild(el(`<div class="muted" style="font-size:13px">${esc(t('wb_no_comments'))}</div>`));
+  for (const c of d.comments) {
+    const row = el(`<div style="padding:8px 0;border-top:1px solid var(--line)">
+      <div class="muted" style="font-size:13px">${promoAuthorLine(c.author)} · ${esc(relTime(c.created_at))}</div>
+      <div style="white-space:pre-wrap;margin-top:2px">${esc(c.body)}</div></div>`);
+    row.querySelectorAll('[data-openprofile]').forEach(e2 => e2.onclick = () => openProfile(e2.dataset.openprofile));
+    clist.appendChild(row);
+  }
+  const send = async () => {
+    const inp = document.getElementById('pr_cinput'); const body = inp.value.trim(); if (!body) return;
+    try { await api('POST', `/api/promotions/${id}/comment`, { body }); openPromotionDetail(id); } catch(e){ alert(e.message); }
+  };
+  cbox.querySelector('[data-csend]').onclick = send;
+  cbox.querySelector('#pr_cinput').addEventListener('keydown', e => { if (e.key==='Enter') send(); });
+  feed.appendChild(cbox);
+}
+
 async function openOrders(flash) {
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
@@ -5616,7 +5818,7 @@ async function showNotifications() {
   setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬' };
   app.innerHTML = '';
   const procCount = d.notifications.filter(n => NOTIF_PROCUREMENT.has(n.type)).length;
   const showFilter = d.notifications.length >= 5 && procCount > 0 && procCount < d.notifications.length;
@@ -5661,6 +5863,7 @@ async function showNotifications() {
       else if (n.type === 'price_alert') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('rabatte')); }
       else if (n.type === 'shortage_confirm') { mainScreen().then(()=>goTab('shortages')); }
       else if (n.type === 'appt_request' || n.type === 'appt_confirmed' || n.type === 'appt_declined' || n.type === 'appt_cancelled') { mainScreen().then(()=>openAppointments()); }
+      else if (n.type === 'promo_like' || n.type === 'promo_comment') { mainScreen().then(()=> n.ref_id ? openPromotionDetail(n.ref_id) : openPromotions()); }
       else if (n.type === 'endorsement' || n.type === 'recommendation') { mainScreen().then(()=> me && openProfile(me.handle)); }
       else if (n.post_id) { mainScreen().then(()=>openPost(n.post_id)); }
       else if (n.actor) { mainScreen().then(()=>openProfile(n.actor.handle)); }

@@ -25,6 +25,7 @@ export function createSocialRepo() {
   const cartItems = new Map();       // id -> row (Einkaufsliste/Bestell-Merkzettel je Nutzer:in)
   const orders = new Map();          // id -> row (abgeschlossene Bestellungen: Snapshot der Liste)
   const appointments = new Map();    // id -> row (Videosprechstunde-Termine: Anbieter <-> Anfrager)
+  const promotions = new Map();      // id -> row (Premium-Werbung/Shop: beworbene Produkte/Angebote)
 
   const uuid = () => crypto.randomUUID();
   const now = () => new Date().toISOString();
@@ -261,6 +262,14 @@ export function createSocialRepo() {
       return [...appointments.values()].filter(r => r.provider_user_id === userId || r.requester_user_id === userId)
         .sort((a, b) => (a.datum + a.uhrzeit).localeCompare(b.datum + b.uhrzeit)).map(r => ({ ...r }));
     },
+    // ── Premium-Werbung/Shop (beworbene Produkte/Angebote je Premium-Mitglied) ──
+    addPromotion(row) { const r = { id: uuid(), created_at: now(), edited_at: null, deleted_at: null, ...row }; promotions.set(r.id, r); return { ...r }; },
+    getPromotion(id) { const r = promotions.get(id); return r && !r.deleted_at ? { ...r } : null; },
+    updatePromotion(id, patch) { const r = promotions.get(id); if (!r || r.deleted_at) return null; Object.assign(r, patch, { edited_at: now() }); return { ...r }; },
+    softDeletePromotion(id) { const r = promotions.get(id); if (r) r.deleted_at = now(); return r ? { ...r } : null; },
+    listPromotions() { return [...promotions.values()].filter(r => !r.deleted_at).sort((a, b) => b.created_at.localeCompare(a.created_at)).map(r => ({ ...r })); },
+    listPromotionsByAuthor(userId) { return [...promotions.values()].filter(r => r.author_user_id === userId && !r.deleted_at).sort((a, b) => b.created_at.localeCompare(a.created_at)).map(r => ({ ...r })); },
+
     getOrder(id) { const r = orders.get(id); return r ? { ...r, items: (r.items || []).map(i => ({ ...i })) } : null; },
     listOrders(userId) {
       return [...orders.values()].filter(r => r.user_id === userId)
@@ -348,6 +357,7 @@ export function createSocialRepo() {
       for (const [id, r] of cartItems) if (r.user_id === userId) cartItems.delete(id);
       for (const [id, r] of orders) if (r.user_id === userId) orders.delete(id);
       for (const [id, r] of appointments) if (r.provider_user_id === userId || r.requester_user_id === userId) appointments.delete(id);
+      for (const [id, r] of promotions) if (r.author_user_id === userId) promotions.delete(id);
       for (const [id, r] of reports) if (r.reporter_user_id === userId) reports.delete(id);
       verifications.delete(userId);
     },
@@ -358,7 +368,7 @@ export function createSocialRepo() {
         profiles: [...profiles], profilesByHandle: [...profilesByHandle], posts: [...posts],
         comments: [...comments], reactions: [...reactions], pollVotes: [...pollVotes], follows: [...follows], mutes: [...mutes],
         notifications: [...notifications], dmThreads: [...dmThreads], dmMessages: [...dmMessages], reports: [...reports],
-        verifications: [...verifications], bookmarks: [...bookmarks], endorsements: [...endorsements], profileViews: [...profileViews], recommendations: [...recommendations], cartItems: [...cartItems], orders: [...orders], appointments: [...appointments],
+        verifications: [...verifications], bookmarks: [...bookmarks], endorsements: [...endorsements], profileViews: [...profileViews], recommendations: [...recommendations], cartItems: [...cartItems], orders: [...orders], appointments: [...appointments], promotions: [...promotions],
       };
     },
     __load(d) {
@@ -367,7 +377,7 @@ export function createSocialRepo() {
       fill(profiles, d.profiles); fill(profilesByHandle, d.profilesByHandle); fill(posts, d.posts);
       fill(comments, d.comments); fill(reactions, d.reactions); fill(pollVotes, d.pollVotes); fill(follows, d.follows); fill(mutes, d.mutes);
       fill(notifications, d.notifications); fill(dmThreads, d.dmThreads); fill(dmMessages, d.dmMessages); fill(reports, d.reports);
-      fill(verifications, d.verifications); fill(bookmarks, d.bookmarks); fill(endorsements, d.endorsements); fill(profileViews, d.profileViews); fill(recommendations, d.recommendations); fill(cartItems, d.cartItems); fill(orders, d.orders); fill(appointments, d.appointments);
+      fill(verifications, d.verifications); fill(bookmarks, d.bookmarks); fill(endorsements, d.endorsements); fill(profileViews, d.profileViews); fill(recommendations, d.recommendations); fill(cartItems, d.cartItems); fill(orders, d.orders); fill(appointments, d.appointments); fill(promotions, d.promotions);
     },
   };
 }
