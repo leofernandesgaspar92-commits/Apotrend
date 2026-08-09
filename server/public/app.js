@@ -3607,7 +3607,7 @@ function exchangeCard(e) {
       <span class="muted" style="font-size:12px">${relTime(e.created_at)}</span>
     </div>
     <div class="muted" style="margin-top:4px">${e.menge?esc(t('ex_qty'))+' '+esc(e.menge):''}${e.menge&&(e.ort||e.bundesland)?' · ':''}${e.ort||e.bundesland?'📍 '+esc([e.ort,e.bundesland].filter(Boolean).join(', ')):''}</div>
-    ${e.ablauf?(()=>{const du=e.days_until_expiry;const expired=du!=null&&du<0;const soon=du!=null&&du>=0&&du<=30;const col=expired?'var(--crit-fg)':(soon?'var(--warn-fg)':'var(--muted)');const bg=expired?'var(--crit-bg)':(soon?'var(--warn-bg)':'var(--chip-bg)');const txt=expired?t('ex_expired'):(du===0?t('ex_exp_today'):(du===1?t('ex_exp_1'):ti('ex_exp_in',{d:du})));return `<div style="display:inline-block;margin-top:6px;font-size:13px;font-weight:700;color:${col};background:${bg};border-radius:999px;padding:2px 10px">⏳ ${esc(t('ex_valid'))} ${esc(fmtDateDe(e.ablauf))} · ${esc(txt)}</div>`;})():''}
+    ${e.ablauf?(()=>{const lt=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);const du=Math.round((Date.parse(e.ablauf+'T00:00:00Z')-Date.parse(lt+'T00:00:00Z'))/86400000);const expired=du!=null&&du<0;const soon=du!=null&&du>=0&&du<=30;const col=expired?'var(--crit-fg)':(soon?'var(--warn-fg)':'var(--muted)');const bg=expired?'var(--crit-bg)':(soon?'var(--warn-bg)':'var(--chip-bg)');const txt=expired?t('ex_expired'):(du===0?t('ex_exp_today'):(du===1?t('ex_exp_1'):ti('ex_exp_in',{d:du})));return `<div style="display:inline-block;margin-top:6px;font-size:13px;font-weight:700;color:${col};background:${bg};border-radius:999px;padding:2px 10px">⏳ ${esc(t('ex_valid'))} ${esc(fmtDateDe(e.ablauf))} · ${esc(txt)}</div>`;})():''}
     ${mc?`<div style="margin-top:6px"><button class="linklike small" data-match style="color:var(--green);font-weight:700">${esc(matchLabel)}</button></div>`:''}
     ${e.note?`<div class="post-body" style="margin:6px 0">${esc(e.note)}</div>`:''}
     ${e.image && /^data:image\//.test(e.image) ? `<img src="${e.image}" alt="${esc(t('ex_photo_alt'))}" style="max-width:100%;border-radius:10px;margin-top:6px;display:block" />` : ''}
@@ -3624,6 +3624,7 @@ function exchangeCard(e) {
       <div class="row" style="margin-top:6px"><input data-e-menge value="${esc(e.menge||'')}" placeholder="${esc(t('ex_menge_ph'))}"><input data-e-ort value="${esc(e.ort||'')}" placeholder="${esc(t('ex_ort_ph'))}"></div>
       <select data-e-bl data-i18n-aria="ex_bl_ph" aria-label="${esc(t('ex_bl_ph'))}" style="margin-top:6px"><option value="">${esc(t('ex_bl_ph'))}</option>${blOptions(e.bundesland||'')}</select>
       <input data-e-note value="${esc(e.note||'')}" placeholder="${esc(t('ex_note_ph'))}" style="margin-top:6px">
+      <div class="row" style="margin-top:6px;align-items:center;gap:6px"><label style="font-size:13px;margin:0">⏳ ${esc(t('ex_expiry'))}</label><input type="date" data-e-ablauf value="${esc(e.ablauf||'')}" aria-label="${esc(t('ex_expiry'))}"></div>
       <div class="row" style="margin-top:8px"><button class="small" data-e-save>${esc(t('cm_save'))}</button><button class="ghost small" data-e-cancel>${esc(t('ex_edit_cancel'))}</button><span class="err" data-e-err style="margin-left:8px"></span></div>
     </div>` : ''}
   </div>`);
@@ -3661,7 +3662,7 @@ function exchangeCard(e) {
     card.querySelector('[data-e-save]').onclick = async () => {
       const q = (sel) => card.querySelector(sel).value;
       try {
-        await api('POST', `/api/exchange/${e.id}/update`, { bezeichnung: q('[data-e-bez]'), menge: q('[data-e-menge]'), ort: q('[data-e-ort]'), bundesland: q('[data-e-bl]'), note: q('[data-e-note]') });
+        await api('POST', `/api/exchange/${e.id}/update`, { bezeichnung: q('[data-e-bez]'), menge: q('[data-e-menge]'), ort: q('[data-e-ort]'), bundesland: q('[data-e-bl]'), note: q('[data-e-note]'), ablauf: q('[data-e-ablauf]') || null });
         loadExchange();
       } catch (err) { card.querySelector('[data-e-err]').textContent = err.message; }
     };
@@ -3753,7 +3754,7 @@ function rabattCard(r, watchedSet, onWatchChange) {
     </div>
     <div class="muted" style="margin-top:4px">${esc(ti('rb_saving',{x:fmtMoney(r.ersparnis)}))}${r.min_menge?` · ${esc(ti('pg_from',{n:r.min_menge}))}`:''} · ${esc(t('pg_valid'))} <b>${esc(r.gueltig_bis)}</b></div>
     ${r.min_menge&&r.ersparnis>0?`<div style="margin-top:4px;font-size:13px;font-weight:700;color:var(--ok-fg)">${esc(ti('rb_minorder',{n:r.min_menge,x:fmtMoney(Number(r.ersparnis)*Number(r.min_menge))}))}</div>`:''}
-    ${r.aktionspreis!=null?`<div class="row" style="margin-top:6px;align-items:center;gap:6px;flex-wrap:wrap"><label style="font-size:13px" data-qtylabel>🧮 ${esc(t('rb_calc_qty'))}</label><input type="number" min="1" step="1" value="${r.min_menge||1}" data-qty style="width:88px" aria-label="${esc(t('rb_calc_qty'))}"><span data-calc style="font-size:13px;font-weight:700;color:var(--ok-fg)"></span></div>`:''}
+    ${r.aktionspreis!=null?`<div class="row" style="margin-top:6px;align-items:center;gap:6px;flex-wrap:wrap"><label style="font-size:13px">🧮 ${esc(t('rb_calc_qty'))}</label><input type="number" min="1" step="1" value="${r.min_menge||1}" data-qty style="width:88px" aria-label="${esc(t('rb_calc_qty'))}"><span data-calc style="font-size:13px;font-weight:700;color:var(--ok-fg)"></span></div>`:''}
     ${r.best_for_wirkstoff?`<div style="display:inline-block;margin-top:6px;background:rgba(11,127,40,.12);color:var(--ok-fg);border:1px solid rgba(11,127,40,.35);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px">${esc(ti('rb_best',{w:r.wirkstoff,alt:(r.wirkstoff_alternatives===1?t('rb_alt_one'):ti('rb_alt_many',{n:r.wirkstoff_alternatives}))}))}</div>`:''}
     ${!r.best_for_wirkstoff&&r.wirkstoff_alternatives>0?`<div class="muted" style="margin-top:6px;font-size:13px">${esc(ti('rb_cheaper_hint',{w:r.wirkstoff}))}</div>`:''}
     ${r.expiring_soon?`<div style="display:inline-block;margin-top:6px;background:${r.days_left<=3?'#c0392b':'#c77700'};color:#fff;font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px">⏳ ${esc(r.days_left<=0?t('rb_exp_today'):(r.days_left===1?t('rb_exp_one'):ti('pg_only_days',{d:r.days_left})))}</div>`:''}
