@@ -145,7 +145,7 @@ const I18N = {
     cart_empty_t:'Einkaufsliste ist leer', cart_empty_s:'Fügen Sie bei Rabatten „🛒 Einkaufsliste" hinzu — dann hier als CSV/Ausdruck für den Großhandel exportieren.',
     cart_col_menge:'Menge', cart_col_sum:'Summe', cart_col_note:'Notiz', cart_print_title:'Einkaufsliste / Bestellung', cart_print_foot:'Preise sind Momentaufnahmen (Aktions-/Referenzpreis) — im Zweifel beim Großhandel prüfen.',
     cart_manual_add:'+ Hinzufügen', cart_manual_ph:'Eigene Position (z. B. Ibuprofen 400)', cart_note_ph:'Notiz (z. B. „bis Freitag", „für Rezeptur")',
-    cart_supplier_none:'Ohne Lieferant / eigene Positionen', cart_subtotal:'Zwischensumme', cart_sub_line:'Zwischensumme · {n} Pos. · € {sum}',
+    cart_supplier_none:'Ohne Lieferant / eigene Positionen', cart_subtotal:'Zwischensumme', cart_sub_line:'Zwischensumme · {n} Pos. · € {sum}', cart_copy_order:'Bestellung kopieren', cart_order_copied:'✓ Kopiert', cart_order_title:'Bestellung — {supplier}',
     rb_none:'Keine Aktion für diese Auswahl.', rb_saving:'Ersparnis € {x} je Packung',
     rb_minorder:'💰 Bei Mindestabnahme ({n} Stück): € {x} gespart', rb_calc_qty:'Deine Menge:', rb_calc_result:'gesamt € {total} · gespart € {saved}', rb_calc_below_min:'unter Mindestmenge {n}',
     rb_best:'⭐ Beste Aktion für {w} ({alt})', rb_alt_one:'1 weitere läuft', rb_alt_many:'{n} weitere laufen',
@@ -490,7 +490,7 @@ const I18N = {
     cart_empty_t:'Shopping list is empty', cart_empty_s:'Add items via “🛒 Shopping list” on discounts — then export here as CSV/print for your wholesaler.',
     cart_col_menge:'Qty', cart_col_sum:'Total', cart_col_note:'Note', cart_print_title:'Shopping list / order', cart_print_foot:'Prices are snapshots (deal/reference price) — verify with your wholesaler if in doubt.',
     cart_manual_add:'+ Add', cart_manual_ph:'Own item (e.g. Ibuprofen 400)', cart_note_ph:'Note (e.g. “by Friday”, “for compounding”)',
-    cart_supplier_none:'No supplier / own items', cart_subtotal:'Subtotal', cart_sub_line:'Subtotal · {n} items · € {sum}',
+    cart_supplier_none:'No supplier / own items', cart_subtotal:'Subtotal', cart_sub_line:'Subtotal · {n} items · € {sum}', cart_copy_order:'Copy order', cart_order_copied:'✓ Copied', cart_order_title:'Order — {supplier}',
     rb_none:'No offer for this selection.', rb_saving:'Saving € {x} per pack',
     rb_minorder:'💰 At minimum order ({n} units): € {x} saved', rb_calc_qty:'Your quantity:', rb_calc_result:'total € {total} · saved € {saved}', rb_calc_below_min:'below minimum {n}',
     rb_best:'⭐ Best deal for {w} ({alt})', rb_alt_one:'1 more running', rb_alt_many:'{n} more running',
@@ -835,7 +835,7 @@ const I18N = {
     cart_empty_t:'Lista de compras vazia', cart_empty_s:'Adicione itens em “🛒 Lista de compras” nas promoções — depois exporte aqui em CSV/impressão para o distribuidor.',
     cart_col_menge:'Qtd', cart_col_sum:'Total', cart_col_note:'Nota', cart_print_title:'Lista de compras / encomenda', cart_print_foot:'Os preços são momentâneos (promoção/referência) — confirme com o distribuidor em caso de dúvida.',
     cart_manual_add:'+ Adicionar', cart_manual_ph:'Item próprio (ex. Ibuprofeno 400)', cart_note_ph:'Nota (ex. “até sexta”, “para manipulação”)',
-    cart_supplier_none:'Sem fornecedor / itens próprios', cart_subtotal:'Subtotal', cart_sub_line:'Subtotal · {n} itens · € {sum}',
+    cart_supplier_none:'Sem fornecedor / itens próprios', cart_subtotal:'Subtotal', cart_sub_line:'Subtotal · {n} itens · € {sum}', cart_copy_order:'Copiar encomenda', cart_order_copied:'✓ Copiado', cart_order_title:'Encomenda — {supplier}',
     rb_none:'Nenhuma promoção para esta seleção.', rb_saving:'Poupança € {x} por embalagem',
     rb_minorder:'💰 Na compra mínima ({n} unidades): € {x} poupados', rb_calc_qty:'A sua quantidade:', rb_calc_result:'total € {total} · poupado € {saved}', rb_calc_below_min:'abaixo do mínimo {n}',
     rb_best:'⭐ Melhor promoção para {w} ({alt})', rb_alt_one:'mais 1 ativa', rb_alt_many:'mais {n} ativas',
@@ -3823,6 +3823,24 @@ async function cartAdd(payload, btn) {
   } catch(e){ alert(e.message); }
 }
 
+// Bestellung eines Lieferanten als Klartext in die Zwischenablage (zum Einfügen in
+// Bestellportal/E-Mail des Großhandels). Positionen dieses Lieferanten + Summe.
+async function copySupplierOrder(supplier, items, btn) {
+  const key = (supplier || '').trim();
+  const mine = items.filter(i => (i.supplier || '').trim() === key);
+  if (!mine.length) return;
+  const lines = mine.map(i => `- ${i.menge}× ${i.bezeichnung}${i.wirkstoff ? ` (${i.wirkstoff})` : ''}${i.aktionspreis != null ? ` — € ${fmtMoney(i.aktionspreis)}` : ''}`);
+  const pieces = mine.reduce((s, i) => s + (Number(i.menge) || 0), 0);
+  const sum = mine.reduce((s, i) => s + (i.aktionspreis != null ? Number(i.aktionspreis) * (Number(i.menge) || 0) : 0), 0);
+  const text = [
+    ti('cart_order_title', { supplier: key || t('cart_supplier_none') }),
+    ...lines,
+    ti('cart_summary', { n: pieces, sum: fmtMoney(Math.round(sum * 100) / 100) }),
+  ].join('\n');
+  try { await navigator.clipboard.writeText(text); if (btn) { const o = btn.textContent; btn.textContent = t('cart_order_copied'); setTimeout(() => { btn.textContent = o; }, 1600); } }
+  catch { prompt(t('copy_link_fb'), text); }
+}
+
 // Einkaufsliste (Bestell-Merkzettel): Positionen mit Menge, Entfernen, CSV/Ausdruck.
 async function openCart() {
   const feed = document.getElementById('feed');
@@ -3930,7 +3948,12 @@ async function openCart() {
   let lastSupplier = null;
   bySupplier.forEach((i, idx) => {
     const sup = (i.supplier || '').trim();
-    if (sup !== lastSupplier) { lastSupplier = sup; feed.appendChild(el(`<div class="cart-sup">🏢 ${esc(sup || t('cart_supplier_none'))}</div>`)); }
+    if (sup !== lastSupplier) {
+      lastSupplier = sup;
+      const sh = el(`<div class="cart-sup" style="display:flex;align-items:center;gap:8px"><span style="flex:1">🏢 ${esc(sup || t('cart_supplier_none'))}</span><button class="ghost small" data-supcopy title="${esc(t('cart_copy_order'))}">📋 ${esc(t('cart_copy_order'))}</button></div>`);
+      sh.querySelector('[data-supcopy]').onclick = (ev) => copySupplierOrder(sup, d.items, ev.target);
+      feed.appendChild(sh);
+    }
     const card = el(`<div class="card"><div class="row" style="align-items:baseline">
       <span class="post-author">${esc(i.bezeichnung)}</span>
       ${i.wirkstoff?`<span class="handle">${esc(i.wirkstoff)}</span>`:''}
