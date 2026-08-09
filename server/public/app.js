@@ -147,7 +147,7 @@ const I18N = {
     cart_manual_add:'+ Hinzufügen', cart_manual_ph:'Eigene Position (z. B. Ibuprofen 400)', cart_note_ph:'Notiz (z. B. „bis Freitag", „für Rezeptur")',
     cart_supplier_none:'Ohne Lieferant / eigene Positionen', cart_subtotal:'Zwischensumme', cart_sub_line:'Zwischensumme · {n} Pos. · € {sum}',
     rb_none:'Keine Aktion für diese Auswahl.', rb_saving:'Ersparnis € {x} je Packung',
-    rb_minorder:'💰 Bei Mindestabnahme ({n} Stück): € {x} gespart',
+    rb_minorder:'💰 Bei Mindestabnahme ({n} Stück): € {x} gespart', rb_calc_qty:'Deine Menge:', rb_calc_result:'gesamt € {total} · gespart € {saved}', rb_calc_below_min:'unter Mindestmenge {n}',
     rb_best:'⭐ Beste Aktion für {w} ({alt})', rb_alt_one:'1 weitere läuft', rb_alt_many:'{n} weitere laufen',
     rb_cheaper_hint:'💡 Für {w} läuft eine günstigere Aktion — siehe ⭐ in der Liste.',
     rb_exp_today:'läuft heute ab', rb_exp_one:'nur noch 1 Tag',
@@ -492,7 +492,7 @@ const I18N = {
     cart_manual_add:'+ Add', cart_manual_ph:'Own item (e.g. Ibuprofen 400)', cart_note_ph:'Note (e.g. “by Friday”, “for compounding”)',
     cart_supplier_none:'No supplier / own items', cart_subtotal:'Subtotal', cart_sub_line:'Subtotal · {n} items · € {sum}',
     rb_none:'No offer for this selection.', rb_saving:'Saving € {x} per pack',
-    rb_minorder:'💰 At minimum order ({n} units): € {x} saved',
+    rb_minorder:'💰 At minimum order ({n} units): € {x} saved', rb_calc_qty:'Your quantity:', rb_calc_result:'total € {total} · saved € {saved}', rb_calc_below_min:'below minimum {n}',
     rb_best:'⭐ Best deal for {w} ({alt})', rb_alt_one:'1 more running', rb_alt_many:'{n} more running',
     rb_cheaper_hint:'💡 A cheaper deal is running for {w} — see ⭐ in the list.',
     rb_exp_today:'ends today', rb_exp_one:'only 1 day left',
@@ -837,7 +837,7 @@ const I18N = {
     cart_manual_add:'+ Adicionar', cart_manual_ph:'Item próprio (ex. Ibuprofeno 400)', cart_note_ph:'Nota (ex. “até sexta”, “para manipulação”)',
     cart_supplier_none:'Sem fornecedor / itens próprios', cart_subtotal:'Subtotal', cart_sub_line:'Subtotal · {n} itens · € {sum}',
     rb_none:'Nenhuma promoção para esta seleção.', rb_saving:'Poupança € {x} por embalagem',
-    rb_minorder:'💰 Na compra mínima ({n} unidades): € {x} poupados',
+    rb_minorder:'💰 Na compra mínima ({n} unidades): € {x} poupados', rb_calc_qty:'A sua quantidade:', rb_calc_result:'total € {total} · poupado € {saved}', rb_calc_below_min:'abaixo do mínimo {n}',
     rb_best:'⭐ Melhor promoção para {w} ({alt})', rb_alt_one:'mais 1 ativa', rb_alt_many:'mais {n} ativas',
     rb_cheaper_hint:'💡 Há uma promoção mais barata para {w} — veja ⭐ na lista.',
     rb_exp_today:'termina hoje', rb_exp_one:'falta 1 dia',
@@ -3751,6 +3751,7 @@ function rabattCard(r, watchedSet, onWatchChange) {
     </div>
     <div class="muted" style="margin-top:4px">${esc(ti('rb_saving',{x:fmtMoney(r.ersparnis)}))}${r.min_menge?` · ${esc(ti('pg_from',{n:r.min_menge}))}`:''} · ${esc(t('pg_valid'))} <b>${esc(r.gueltig_bis)}</b></div>
     ${r.min_menge&&r.ersparnis>0?`<div style="margin-top:4px;font-size:13px;font-weight:700;color:var(--ok-fg)">${esc(ti('rb_minorder',{n:r.min_menge,x:fmtMoney(Number(r.ersparnis)*Number(r.min_menge))}))}</div>`:''}
+    ${r.aktionspreis!=null?`<div class="row" style="margin-top:6px;align-items:center;gap:6px;flex-wrap:wrap"><label style="font-size:13px" data-qtylabel>🧮 ${esc(t('rb_calc_qty'))}</label><input type="number" min="1" step="1" value="${r.min_menge||1}" data-qty style="width:88px" aria-label="${esc(t('rb_calc_qty'))}"><span data-calc style="font-size:13px;font-weight:700;color:var(--ok-fg)"></span></div>`:''}
     ${r.best_for_wirkstoff?`<div style="display:inline-block;margin-top:6px;background:rgba(11,127,40,.12);color:var(--ok-fg);border:1px solid rgba(11,127,40,.35);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px">${esc(ti('rb_best',{w:r.wirkstoff,alt:(r.wirkstoff_alternatives===1?t('rb_alt_one'):ti('rb_alt_many',{n:r.wirkstoff_alternatives}))}))}</div>`:''}
     ${!r.best_for_wirkstoff&&r.wirkstoff_alternatives>0?`<div class="muted" style="margin-top:6px;font-size:13px">${esc(ti('rb_cheaper_hint',{w:r.wirkstoff}))}</div>`:''}
     ${r.expiring_soon?`<div style="display:inline-block;margin-top:6px;background:${r.days_left<=3?'#c0392b':'#c77700'};color:#fff;font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px">⏳ ${esc(r.days_left<=0?t('rb_exp_today'):(r.days_left===1?t('rb_exp_one'):ti('pg_only_days',{d:r.days_left})))}</div>`:''}
@@ -3767,6 +3768,21 @@ function rabattCard(r, watchedSet, onWatchChange) {
   </div>`);
   const ppbox = card.querySelector('[data-ppbox]');
   card.querySelector('[data-pp]').onclick = () => ppbox.classList.toggle('hidden');
+  // Mengenrechner: Gesamtpreis + Gesamtersparnis für die eingegebene Bestellmenge.
+  const qtyIn = card.querySelector('[data-qty]'), calcOut = card.querySelector('[data-calc]');
+  if (qtyIn && calcOut) {
+    const recalc = () => {
+      const n = Math.max(0, Math.floor(Number(qtyIn.value) || 0));
+      if (!n) { calcOut.textContent = ''; return; }
+      const total = Number(r.aktionspreis) * n;
+      const saved = Number(r.ersparnis || 0) * n;
+      let txt = ti('rb_calc_result', { total: fmtMoney(total), saved: fmtMoney(saved) });
+      if (r.min_menge && n < r.min_menge) txt += ' · ' + ti('rb_calc_below_min', { n: r.min_menge });
+      calcOut.textContent = txt;
+    };
+    qtyIn.addEventListener('input', recalc);
+    recalc();
+  }
   card.querySelector('[data-ppsend]').onclick = async () => {
     const t = card.querySelector('[data-ppinput]');
     if (!t.value.trim()) return;
