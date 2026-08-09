@@ -3808,7 +3808,8 @@ function rabattCard(r, watchedSet, onWatchChange) {
   card.querySelector('[data-addcart]').onclick = (ev) => cartAdd({
     bezeichnung: r.bezeichnung, wirkstoff: r.wirkstoff, supplier: r.supplier,
     aktionspreis: r.aktionspreis, listenpreis: r.listenpreis, rabattPct: r.rabatt_pct, gueltigBis: r.gueltig_bis,
-    menge: r.min_menge || 1, sourceKind: 'rabatt',
+    // Menge aus dem Mengenrechner übernehmen (die gerade berechnete Menge = die Bestellmenge).
+    menge: (qtyIn && Math.floor(Number(qtyIn.value)) > 0) ? Math.floor(Number(qtyIn.value)) : (r.min_menge || 1), sourceKind: 'rabatt',
   }, ev.target);
   return card;
 }
