@@ -4685,6 +4685,7 @@ async function openOrders(flash) {
       ${o.reference?`<div class="muted" style="font-size:12px">${esc(relTime(o.created_at))}</div>`:''}
       <div class="muted" style="font-size:13px;margin-top:4px">${esc(ti('ord_positions',{n:o.positions}))} · ${o.total_pieces} ${esc(t('cart_col_menge'))}${o.total_savings>0?` · <span style="color:var(--ok-fg);font-weight:700">${esc(ti('cart_savings',{sum:fmtMoney(o.total_savings)}))}</span>`:''}</div>
       ${suppliers.length?`<div class="muted" style="font-size:13px;margin-top:2px">🏢 ${esc(suppliers.join(' · '))}</div>`:''}
+      ${suppliers.length?`<div class="reacts" style="margin-top:8px;gap:6px;flex-wrap:wrap">${suppliers.map(s=>`<button class="ghost small" data-copysup="${esc(s)}" title="${esc(t('cart_copy_order'))}">📋 ${esc(s)}</button>`).join('')}</div>`:''}
       <div class="reacts" style="margin-top:8px">
         <button class="small" data-reorder>${esc(t('ord_reorder'))}</button>
         <button class="ghost small" data-oprint>🖨️ ${esc(t('pr_print_btn'))}</button>
@@ -4695,6 +4696,7 @@ async function openOrders(flash) {
     const orderDoc = { items: o.items, total_positions: o.total_pieces, total_price: o.total_price, total_savings: o.total_savings };
     card.querySelector('[data-oprint]').onclick = () => printCart(orderDoc);
     card.querySelector('[data-ocsv]').onclick = () => exportCartCsv(o.items);
+    card.querySelectorAll('[data-copysup]').forEach(b => b.onclick = (ev) => copySupplierOrder(b.dataset.copysup, o.items, ev.target));
     card.querySelector('[data-reorder]').onclick = async () => { try { await api('POST',`/api/orders/${o.id}/reorder`); openCart(); } catch(e){ alert(e.message); } };
     card.querySelector('[data-odel]').onclick = async () => { if (!confirm(t('ord_delete_confirm'))) return; try { await api('POST',`/api/orders/${o.id}/delete`); openOrders(); } catch(e){ alert(e.message); } };
     feed.appendChild(card);
