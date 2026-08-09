@@ -36,6 +36,24 @@ test('match_count: passende offene Gegen-Einträge je Autor:in, sich selbst nich
   assert.equal(exchange.mine(a).find(e => e.id === other.id).match_count, 0);
 });
 
+test('Verfallsdatum: gültig gespeichert + Rest-Tage berechnet; ungültig abgelehnt; änderbar', () => {
+  const { exchange, a } = setup();
+  const future = new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10);
+  const offer = exchange.create(a, { kind: 'biete', bezeichnung: 'Ibuprofen 400 mg', menge: '30 Pkg', ablauf: future });
+  assert.equal(offer.ablauf, future);
+  assert.ok(offer.days_until_expiry >= 9 && offer.days_until_expiry <= 10, 'Rest-Tage ~10');
+  // Ungültiges Kalenderdatum abgelehnt
+  assert.throws(() => exchange.create(a, { kind: 'biete', bezeichnung: 'X', ablauf: '2026-02-31' }), /Verfallsdatum/);
+  assert.throws(() => exchange.create(a, { kind: 'biete', bezeichnung: 'X', ablauf: '31.12.2026' }), /Verfallsdatum/);
+  // Ohne Verfallsdatum -> null
+  const noAbl = exchange.create(a, { kind: 'biete', bezeichnung: 'Ohne Datum' });
+  assert.equal(noAbl.ablauf, null);
+  assert.equal(noAbl.days_until_expiry, null);
+  // Änderbar (auch entfernbar)
+  const upd = exchange.update(a, offer.id, { ablauf: '' });
+  assert.equal(upd.ablauf, null);
+});
+
 test('Matching ignoriert Darreichungsform- und Zahl-Wörter (keine Fehltreffer)', () => {
   const { exchange, a, b } = setup();
   // Gemeinsam nur das Formwort „Tabletten" -> KEIN Match

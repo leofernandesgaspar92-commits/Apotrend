@@ -681,11 +681,11 @@ const routes = [
 
   // ── Bestandsaustausch (Biete/Suche) — in Ländern ohne zulässige P2P-Abgabe gesperrt ──
   ['GET', /^\/api\/exchange$/, true, async ({ userId, query }) => { ensureFeatureAllowed('stock_exchange', userId); return { entries: exchange.list(userId, { kind: query.get('kind') || null, status: query.get('status') || 'offen', q: query.get('q') || null, bundesland: query.get('bundesland') || null }) }; }],
-  ['POST', /^\/api\/exchange$/, true, async ({ userId, body, query }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.create(userId, { kind: body.kind, bezeichnung: body.bezeichnung, menge: body.menge, ort: body.ort, bundesland: body.bundesland, note: body.note, image: body.image }); }],
+  ['POST', /^\/api\/exchange$/, true, async ({ userId, body, query }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.create(userId, { kind: body.kind, bezeichnung: body.bezeichnung, menge: body.menge, ort: body.ort, bundesland: body.bundesland, note: body.note, image: body.image, ablauf: body.ablauf }); }],
   ['GET', /^\/api\/exchange\/mine$/, true, async ({ userId, query }) => { ensureFeatureAllowed('stock_exchange', userId); return { entries: exchange.mine(userId, { status: query.get('status') || null }) }; }],
   ['POST', /^\/api\/exchange\/([^/]+)\/resolve$/, true, async ({ userId, params, query }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.markResolved(userId, params[0]); }],
   ['POST', /^\/api\/exchange\/([^/]+)\/reopen$/, true, async ({ userId, params, query }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.reopen(userId, params[0]); }],
-  ['POST', /^\/api\/exchange\/([^/]+)\/update$/, true, async ({ userId, params, body }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.update(userId, params[0], { bezeichnung: body.bezeichnung, menge: body.menge, ort: body.ort, bundesland: body.bundesland, note: body.note }); }],
+  ['POST', /^\/api\/exchange\/([^/]+)\/update$/, true, async ({ userId, params, body }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.update(userId, params[0], { bezeichnung: body.bezeichnung, menge: body.menge, ort: body.ort, bundesland: body.bundesland, note: body.note, ablauf: body.ablauf }); }],
   ['POST', /^\/api\/exchange\/([^/]+)\/delete$/, true, async ({ userId, params, query }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.remove(userId, params[0]); }],
 
   // ── Übergreifende Suche (Priorität 7) ── gesperrte Module aus den Treffern nehmen.

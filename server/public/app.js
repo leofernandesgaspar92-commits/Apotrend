@@ -156,7 +156,7 @@ const I18N = {
     ex_offer:'📦 Ich biete', ex_seek:'🔎 Ich suche',
     ex_bez_ph:'Präparat / Wirkstoff, z.B. Amoxicillin 1000 mg', ex_menge_ph:'Menge (z.B. 20 Packungen)',
     ex_ort_ph:'Ort (z.B. Postleitzahl, Stadt)', ex_bl_ph:'Region wählen (für Umkreis-Suche)…',
-    ex_note_ph:'Hinweis (optional)', ex_photo:'📷 Foto (z.B. Charge/Ablauf)',
+    ex_note_ph:'Hinweis (optional)', ex_photo:'📷 Foto (z.B. Charge/Ablauf)', ex_expiry:'Verfällt am (optional)', ex_valid:'gültig bis', ex_expired:'abgelaufen', ex_exp_today:'läuft heute ab', ex_exp_1:'noch 1 Tag', ex_exp_in:'noch {d} Tage',
     ex_publish:'Eintrag veröffentlichen', ex_private:'ℹ️ Der Bestandsaustausch (Biete/Suche) ist Apotheken und Fachkreisen vorbehalten. Als Privatnutzer:in kannst du Einträge lesen, aber keine anlegen.',
     ex_contact:'Kontakt läuft über Direktnachricht — keine öffentlichen Kontaktdaten.',
     ex_q_ph:'Nach Präparat filtern…', ex_filter_btn:'Filtern', ex_csv_sub:'{n} Einträge in dieser Auswahl', ex_csv_art:'Art', ex_csv_menge:'Menge', ex_csv_ort:'Ort/Region', ex_csv_anbieter:'Anbieter', ex_csv_handle:'Handle', ex_csv_erstellt:'Erstellt', ex_csv_treffer:'Passende Treffer', ex_print_title:'Bestandsaustausch (Biete/Suche)',
@@ -501,7 +501,7 @@ const I18N = {
     ex_offer:'📦 I offer', ex_seek:'🔎 I seek',
     ex_bez_ph:'Product / substance, e.g. Amoxicillin 1000 mg', ex_menge_ph:'Quantity (e.g. 20 packs)',
     ex_ort_ph:'Location (e.g. postcode, city)', ex_bl_ph:'Choose region (for nearby search)…',
-    ex_note_ph:'Note (optional)', ex_photo:'📷 Photo (e.g. batch/expiry)',
+    ex_note_ph:'Note (optional)', ex_photo:'📷 Photo (e.g. batch/expiry)', ex_expiry:'Expires on (optional)', ex_valid:'use by', ex_expired:'expired', ex_exp_today:'expires today', ex_exp_1:'1 day left', ex_exp_in:'{d} days left',
     ex_publish:'Publish entry', ex_private:'ℹ️ Stock exchange (offer/seek) is reserved for pharmacies and professionals. As a private user you can read entries but not create them.',
     ex_contact:'Contact is via direct message — no public contact details.',
     ex_q_ph:'Filter by product…', ex_filter_btn:'Filter', ex_csv_sub:'{n} entries in this selection', ex_csv_art:'Type', ex_csv_menge:'Quantity', ex_csv_ort:'Location/region', ex_csv_anbieter:'Provider', ex_csv_handle:'Handle', ex_csv_erstellt:'Created', ex_csv_treffer:'Matching hits', ex_print_title:'Stock exchange (offer/seek)',
@@ -846,7 +846,7 @@ const I18N = {
     ex_offer:'📦 Ofereço', ex_seek:'🔎 Procuro',
     ex_bez_ph:'Produto / substância, ex. Amoxicilina 1000 mg', ex_menge_ph:'Quantidade (ex. 20 embalagens)',
     ex_ort_ph:'Local (ex. código postal, cidade)', ex_bl_ph:'Escolher região (procura por proximidade)…',
-    ex_note_ph:'Observação (opcional)', ex_photo:'📷 Foto (ex. lote/validade)',
+    ex_note_ph:'Observação (opcional)', ex_photo:'📷 Foto (ex. lote/validade)', ex_expiry:'Validade (opcional)', ex_valid:'válido até', ex_expired:'expirado', ex_exp_today:'expira hoje', ex_exp_1:'falta 1 dia', ex_exp_in:'faltam {d} dias',
     ex_publish:'Publicar entrada', ex_private:'ℹ️ A troca de stock (ofertar/procurar) é reservada a farmácias e profissionais. Como utilizador particular pode ler as entradas, mas não criá-las.',
     ex_contact:'O contacto é por mensagem direta — sem dados de contacto públicos.',
     ex_q_ph:'Filtrar por produto…', ex_filter_btn:'Filtrar', ex_csv_sub:'{n} entradas nesta seleção', ex_csv_art:'Tipo', ex_csv_menge:'Quantidade', ex_csv_ort:'Local/região', ex_csv_anbieter:'Fornecedor', ex_csv_handle:'Handle', ex_csv_erstellt:'Criado', ex_csv_treffer:'Correspondências', ex_print_title:'Troca de stock (oferta/procura)',
@@ -3480,6 +3480,7 @@ async function loadExchange() {
     </div>
     <select id="ex_bl" data-i18n-aria="ex_bl_ph" aria-label="${esc(t('ex_bl_ph'))}" style="margin-top:6px"><option value="">${esc(t('ex_bl_ph'))}</option>${blOptions((me&&me.bundesland)||'')}</select>
     <input id="ex_note" placeholder="${esc(t('ex_note_ph'))}" style="margin-top:6px">
+    <div class="row" style="margin-top:6px;align-items:center;gap:6px"><label style="font-size:13px;margin:0" for="ex_ablauf">⏳ ${esc(t('ex_expiry'))}</label><input id="ex_ablauf" type="date" aria-label="${esc(t('ex_expiry'))}"></div>
     <div class="row" style="margin-top:6px">
       <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px">${esc(t('ex_photo'))}<input type="file" id="ex_img" accept="image/*" style="display:none"></label>
       <span class="muted" id="ex_imgname" style="font-size:13px"></span>
@@ -3511,7 +3512,7 @@ async function loadExchange() {
   exImgclear.onclick = clearEx;
   document.getElementById('ex_go').onclick = async () => {
     try {
-      const created = await api('POST','/api/exchange',{ kind:v('ex_kind'), bezeichnung:v('ex_bez'), menge:v('ex_menge'), ort:v('ex_ort'), bundesland:v('ex_bl'), note:v('ex_note'), image:exImage });
+      const created = await api('POST','/api/exchange',{ kind:v('ex_kind'), bezeichnung:v('ex_bez'), menge:v('ex_menge'), ort:v('ex_ort'), bundesland:v('ex_bl'), note:v('ex_note'), image:exImage, ablauf: document.getElementById('ex_ablauf').value || null });
       // Genau im Moment der Absicht: wenn es passende Gegenstücke gibt, direkt dorthin filtern + Hinweis.
       if (created && created.match_count >= 1) {
         const key = (String(created.bezeichnung).toLowerCase().match(/[a-zäöüß0-9]{4,}/g) || [])[0] || created.bezeichnung;
@@ -3606,6 +3607,7 @@ function exchangeCard(e) {
       <span class="muted" style="font-size:12px">${relTime(e.created_at)}</span>
     </div>
     <div class="muted" style="margin-top:4px">${e.menge?esc(t('ex_qty'))+' '+esc(e.menge):''}${e.menge&&(e.ort||e.bundesland)?' · ':''}${e.ort||e.bundesland?'📍 '+esc([e.ort,e.bundesland].filter(Boolean).join(', ')):''}</div>
+    ${e.ablauf?(()=>{const du=e.days_until_expiry;const expired=du!=null&&du<0;const soon=du!=null&&du>=0&&du<=30;const col=expired?'var(--crit-fg)':(soon?'var(--warn-fg)':'var(--muted)');const bg=expired?'var(--crit-bg)':(soon?'var(--warn-bg)':'var(--chip-bg)');const txt=expired?t('ex_expired'):(du===0?t('ex_exp_today'):(du===1?t('ex_exp_1'):ti('ex_exp_in',{d:du})));return `<div style="display:inline-block;margin-top:6px;font-size:13px;font-weight:700;color:${col};background:${bg};border-radius:999px;padding:2px 10px">⏳ ${esc(t('ex_valid'))} ${esc(fmtDateDe(e.ablauf))} · ${esc(txt)}</div>`;})():''}
     ${mc?`<div style="margin-top:6px"><button class="linklike small" data-match style="color:var(--green);font-weight:700">${esc(matchLabel)}</button></div>`:''}
     ${e.note?`<div class="post-body" style="margin:6px 0">${esc(e.note)}</div>`:''}
     ${e.image && /^data:image\//.test(e.image) ? `<img src="${e.image}" alt="${esc(t('ex_photo_alt'))}" style="max-width:100%;border-radius:10px;margin-top:6px;display:block" />` : ''}

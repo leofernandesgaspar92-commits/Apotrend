@@ -6,6 +6,19 @@ import { cleanImage } from '../domain/media.js';
 import { AppError } from '../domain/errors.js';
 
 const KINDS = ['biete', 'suche'];
+// Echtes Kalenderdatum (YYYY-MM-DD), kein Überlauf (z.B. 2026-02-31 ungültig).
+function isValidCalendarDay(s) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(s + 'T00:00:00Z');
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+}
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const today = new Date().toISOString().slice(0, 10);
+  const a = Date.parse(today + 'T00:00:00Z'), b = Date.parse(dateStr + 'T00:00:00Z');
+  if (Number.isNaN(a) || Number.isNaN(b)) return null;
+  return Math.round((b - a) / 86400000);
+}
 export const BUNDESLAENDER = ['Wien', 'Niederösterreich', 'Oberösterreich', 'Steiermark', 'Tirol', 'Kärnten', 'Salzburg', 'Vorarlberg', 'Burgenland'];
 
 // Darreichungsform-/Füll-/Einheitenwörter, die keine Substanz kennzeichnen — beim
@@ -71,11 +84,12 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       ...e,
       author: prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified } : null,
       match_count: countMatches(e),
+      days_until_expiry: daysUntil(e.ablauf), // null wenn kein Verfallsdatum
     };
   }
 
   return {
-    create(actorUserId, { kind, bezeichnung, menge, ort, bundesland, note, image }) {
+    create(actorUserId, { kind, bezeichnung, menge, ort, bundesland, note, image, ablauf }) {
       requireUser(actorUserId);
       // Bestandsaustausch ist professioneller B2B-Vorgang (Apotheken tauschen Bestand) —
       // Privatnutzer:innen können Einträge lesen, aber keine anlegen.
@@ -89,11 +103,14 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       if (b.length > 200) throw new Error('Bezeichnung zu lang.');
       const bl = bundesland ? String(bundesland).trim() : null;
       if (bl && !BUNDESLAENDER.includes(bl)) throw new Error('Ungültiges Bundesland.');
+      const abl = ablauf ? String(ablauf).trim() : null;
+      if (abl && !isValidCalendarDay(abl)) throw new AppError('exchange_bad_date', 'Ungültiges Verfallsdatum.', 400);
       const created = exchangeRepo.create({
         kind, authorUserId: actorUserId, bezeichnung: b,
         menge: (menge ?? '').toString().trim() || null,
         ort: (ort ?? '').toString().trim() || null,
         bundesland: bl,
+        ablauf: abl,
         note: (note ?? '').toString().trim() || null,
         image: cleanImage(image),
       });
@@ -147,7 +164,7 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
     },
     // Eigenen Eintrag bearbeiten (Ersteller): Präparat/Menge/Ort/Bundesland/Notiz. Die Art
     // (biete/suche) bleibt fest. Ändert sich die Bezeichnung, wird das Matching neu ausgelöst.
-    update(actorUserId, id, { bezeichnung, menge, ort, bundesland, note } = {}) {
+    update(actorUserId, id, { bezeichnung, menge, ort, bundesland, note, ablauf } = {}) {
       const e = exchangeRepo.get(id);
       if (!e) throw new AppError('exchange_not_found', 'Eintrag nicht gefunden.', 404);
       if (e.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Ersteller darf bearbeiten.');
@@ -166,6 +183,11 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
         patch.bundesland = bl;
       }
       if (note !== undefined) patch.note = (note ?? '').toString().trim() || null;
+      if (ablauf !== undefined) {
+        const abl = ablauf ? String(ablauf).trim() : null;
+        if (abl && !isValidCalendarDay(abl)) throw new AppError('exchange_bad_date', 'Ungültiges Verfallsdatum.', 400);
+        patch.ablauf = abl;
+      }
       const updated = exchangeRepo.update(id, patch);
       // Bei geänderter Bezeichnung (und noch offenem Eintrag) erneut passende Gegenstücke suchen.
       if (patch.bezeichnung !== undefined && updated.status === 'offen') notifyMatches(updated);
