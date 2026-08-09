@@ -423,9 +423,21 @@ const routes = [
     if (title.length > MAX_TITLE) { const e = new Error(`Titel zu lang (max ${MAX_TITLE}).`); e.status = 400; throw e; }
     const dueDate = body.dueDate ? String(body.dueDate).trim() : null;
     if (dueDate && !isValidCalendarDay(dueDate)) { const e = new Error('Ungültiges Fälligkeitsdatum.'); e.status = 400; throw e; }
-    return { task: collab.createTask(userId, mem.organization_id, { title, description: body.description ? String(body.description).slice(0, 1000) : null, assigneeUserId: body.assigneeUserId || null, dueDate }) };
+    const task = collab.createTask(userId, mem.organization_id, { title, description: body.description ? String(body.description).slice(0, 1000) : null, assigneeUserId: body.assigneeUserId || null, dueDate });
+    // Zugewiesene Person benachrichtigen (transaktional; nicht sich selbst).
+    if (task.assignee_user_id && task.assignee_user_id !== userId) {
+      social.pushNotification({ userId: task.assignee_user_id, type: 'task_assigned', actorUserId: userId, refType: 'task', refId: task.id, label: task.title });
+    }
+    return { task };
   }],
-  ['POST', /^\/api\/tasks\/([^/]+)\/status$/, true, async ({ userId, params, body }) => ({ task: collab.updateTaskStatus(userId, params[0], body.status) })],
+  ['POST', /^\/api\/tasks\/([^/]+)\/status$/, true, async ({ userId, params, body }) => {
+    const task = collab.updateTaskStatus(userId, params[0], body.status);
+    // Ersteller:in benachrichtigen, wenn jemand anderes die Aufgabe erledigt.
+    if (task.status === 'erledigt' && task.created_by && task.created_by !== userId) {
+      social.pushNotification({ userId: task.created_by, type: 'task_done', actorUserId: userId, refType: 'task', refId: task.id, label: task.title });
+    }
+    return { task };
+  }],
   // ── Team-Notizen (gemeinsame Wissensablage, apothekenintern) ──
   ['GET', /^\/api\/notes$/, true, async ({ userId }) => {
     const mem = orgAuth.myMembership(userId);
