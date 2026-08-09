@@ -424,17 +424,21 @@ const routes = [
     const dueDate = body.dueDate ? String(body.dueDate).trim() : null;
     if (dueDate && !isValidCalendarDay(dueDate)) { const e = new Error('Ungültiges Fälligkeitsdatum.'); e.status = 400; throw e; }
     const task = collab.createTask(userId, mem.organization_id, { title, description: body.description ? String(body.description).slice(0, 1000) : null, assigneeUserId: body.assigneeUserId || null, dueDate });
-    // Zugewiesene Person benachrichtigen (transaktional; nicht sich selbst).
+    // Zugewiesene Person benachrichtigen (transaktional; nicht sich selbst). Best-effort:
+    // ein Fehler beim Zustellen darf die schon angelegte Aufgabe nicht als 500 erscheinen lassen.
     if (task.assignee_user_id && task.assignee_user_id !== userId) {
-      social.pushNotification({ userId: task.assignee_user_id, type: 'task_assigned', actorUserId: userId, refType: 'task', refId: task.id, label: task.title });
+      try { social.pushNotification({ userId: task.assignee_user_id, type: 'task_assigned', actorUserId: userId, refType: 'task', refId: task.id, label: task.title }); } catch { /* egal */ }
     }
     return { task };
   }],
   ['POST', /^\/api\/tasks\/([^/]+)\/status$/, true, async ({ userId, params, body }) => {
+    const prevStatus = (repo.getTask(params[0]) || {}).status; // Vorher-Status für Übergangs-Prüfung
+    // (updateTaskStatus erzwingt Isolation/Rechte; repo.getTask dient nur dem Status-Vergleich)
     const task = collab.updateTaskStatus(userId, params[0], body.status);
-    // Ersteller:in benachrichtigen, wenn jemand anderes die Aufgabe erledigt.
-    if (task.status === 'erledigt' && task.created_by && task.created_by !== userId) {
-      social.pushNotification({ userId: task.created_by, type: 'task_done', actorUserId: userId, refType: 'task', refId: task.id, label: task.title });
+    // Ersteller:in NUR beim Übergang nach 'erledigt' benachrichtigen (kein Spam bei
+    // wiederholtem/idempotentem Setzen oder Wieder-Öffnen+Erledigen).
+    if (task.status === 'erledigt' && prevStatus !== 'erledigt' && task.created_by && task.created_by !== userId) {
+      try { social.pushNotification({ userId: task.created_by, type: 'task_done', actorUserId: userId, refType: 'task', refId: task.id, label: task.title }); } catch { /* egal */ }
     }
     return { task };
   }],
