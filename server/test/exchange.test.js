@@ -54,6 +54,18 @@ test('Verfallsdatum: gültig gespeichert + Rest-Tage berechnet; ungültig abgele
   assert.equal(upd.ablauf, null);
 });
 
+test('Sortierung „bald ablaufend": frühestes Verfallsdatum zuerst, ohne Datum ans Ende', () => {
+  const { exchange, a } = setup();
+  const d = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
+  exchange.create(a, { kind: 'biete', bezeichnung: 'Spät ablaufend', ablauf: d(40) });
+  exchange.create(a, { kind: 'biete', bezeichnung: 'Bald ablaufend', ablauf: d(3) });
+  exchange.create(a, { kind: 'biete', bezeichnung: 'Ohne Datum' });
+  exchange.create(a, { kind: 'biete', bezeichnung: 'Mittel', ablauf: d(15) });
+  const sorted = exchange.list(a, { kind: 'biete', sort: 'ablauf' }).map(e => e.bezeichnung);
+  assert.deepEqual(sorted.slice(0, 3), ['Bald ablaufend', 'Mittel', 'Spät ablaufend']);
+  assert.equal(sorted[3], 'Ohne Datum', 'ohne Verfallsdatum zuletzt');
+});
+
 test('Matching ignoriert Darreichungsform- und Zahl-Wörter (keine Fehltreffer)', () => {
   const { exchange, a, b } = setup();
   // Gemeinsam nur das Formwort „Tabletten" -> KEIN Match

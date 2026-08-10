@@ -124,14 +124,23 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       return decorate(created);
     },
     // Offene Einträge (Standard), optional nach Art + Text (Präparat) + Bundesland gefiltert.
-    list(viewerUserId, { kind = null, status = 'offen', q = null, bundesland = null } = {}) {
+    // sort='ablauf' -> bald ablaufende zuerst (ohne Verfallsdatum ans Ende).
+    list(viewerUserId, { kind = null, status = 'offen', q = null, bundesland = null, sort = null } = {}) {
       requireUser(viewerUserId);
       const query = q ? String(q).trim().toLowerCase() : null;
-      return exchangeRepo.list()
+      const out = exchangeRepo.list()
         .filter(e => (!status || e.status === status) && (!kind || e.kind === kind)
           && (!query || e.bezeichnung.toLowerCase().includes(query))
           && (!bundesland || e.bundesland === bundesland))
         .map(decorate);
+      if (sort === 'ablauf') {
+        // Nur Einträge MIT Verfallsdatum aufsteigend; ohne Datum unverändert ans Ende.
+        out.sort((a, b) => {
+          const av = a.ablauf || '9999-12-31', bv = b.ablauf || '9999-12-31';
+          return av.localeCompare(bv);
+        });
+      }
+      return out;
     },
     // Eigene Einträge (alle Status), neueste zuerst — für „Meine Einträge"/Historie.
     mine(actorUserId, { status = null } = {}) {

@@ -156,7 +156,7 @@ const I18N = {
     ex_offer:'📦 Ich biete', ex_seek:'🔎 Ich suche',
     ex_bez_ph:'Präparat / Wirkstoff, z.B. Amoxicillin 1000 mg', ex_menge_ph:'Menge (z.B. 20 Packungen)',
     ex_ort_ph:'Ort (z.B. Postleitzahl, Stadt)', ex_bl_ph:'Region wählen (für Umkreis-Suche)…',
-    ex_note_ph:'Hinweis (optional)', ex_photo:'📷 Foto (z.B. Charge/Ablauf)', ex_expiry:'Verfällt am (optional)', ex_valid:'gültig bis', ex_expired:'abgelaufen', ex_exp_today:'läuft heute ab', ex_exp_1:'noch 1 Tag', ex_exp_in:'noch {d} Tage',
+    ex_note_ph:'Hinweis (optional)', ex_photo:'📷 Foto (z.B. Charge/Ablauf)', ex_expiry:'Verfällt am (optional)', ex_sort_expiry:'⏳ Bald ablaufend', ex_valid:'gültig bis', ex_expired:'abgelaufen', ex_exp_today:'läuft heute ab', ex_exp_1:'noch 1 Tag', ex_exp_in:'noch {d} Tage',
     ex_publish:'Eintrag veröffentlichen', ex_private:'ℹ️ Der Bestandsaustausch (Biete/Suche) ist Apotheken und Fachkreisen vorbehalten. Als Privatnutzer:in kannst du Einträge lesen, aber keine anlegen.',
     ex_contact:'Kontakt läuft über Direktnachricht — keine öffentlichen Kontaktdaten.',
     ex_q_ph:'Nach Präparat filtern…', ex_filter_btn:'Filtern', ex_csv_sub:'{n} Einträge in dieser Auswahl', ex_csv_art:'Art', ex_csv_menge:'Menge', ex_csv_ort:'Ort/Region', ex_csv_anbieter:'Anbieter', ex_csv_handle:'Handle', ex_csv_erstellt:'Erstellt', ex_csv_treffer:'Passende Treffer', ex_print_title:'Bestandsaustausch (Biete/Suche)',
@@ -501,7 +501,7 @@ const I18N = {
     ex_offer:'📦 I offer', ex_seek:'🔎 I seek',
     ex_bez_ph:'Product / substance, e.g. Amoxicillin 1000 mg', ex_menge_ph:'Quantity (e.g. 20 packs)',
     ex_ort_ph:'Location (e.g. postcode, city)', ex_bl_ph:'Choose region (for nearby search)…',
-    ex_note_ph:'Note (optional)', ex_photo:'📷 Photo (e.g. batch/expiry)', ex_expiry:'Expires on (optional)', ex_valid:'use by', ex_expired:'expired', ex_exp_today:'expires today', ex_exp_1:'1 day left', ex_exp_in:'{d} days left',
+    ex_note_ph:'Note (optional)', ex_photo:'📷 Photo (e.g. batch/expiry)', ex_expiry:'Expires on (optional)', ex_sort_expiry:'⏳ Expiring soon', ex_valid:'use by', ex_expired:'expired', ex_exp_today:'expires today', ex_exp_1:'1 day left', ex_exp_in:'{d} days left',
     ex_publish:'Publish entry', ex_private:'ℹ️ Stock exchange (offer/seek) is reserved for pharmacies and professionals. As a private user you can read entries but not create them.',
     ex_contact:'Contact is via direct message — no public contact details.',
     ex_q_ph:'Filter by product…', ex_filter_btn:'Filter', ex_csv_sub:'{n} entries in this selection', ex_csv_art:'Type', ex_csv_menge:'Quantity', ex_csv_ort:'Location/region', ex_csv_anbieter:'Provider', ex_csv_handle:'Handle', ex_csv_erstellt:'Created', ex_csv_treffer:'Matching hits', ex_print_title:'Stock exchange (offer/seek)',
@@ -846,7 +846,7 @@ const I18N = {
     ex_offer:'📦 Ofereço', ex_seek:'🔎 Procuro',
     ex_bez_ph:'Produto / substância, ex. Amoxicilina 1000 mg', ex_menge_ph:'Quantidade (ex. 20 embalagens)',
     ex_ort_ph:'Local (ex. código postal, cidade)', ex_bl_ph:'Escolher região (procura por proximidade)…',
-    ex_note_ph:'Observação (opcional)', ex_photo:'📷 Foto (ex. lote/validade)', ex_expiry:'Validade (opcional)', ex_valid:'válido até', ex_expired:'expirado', ex_exp_today:'expira hoje', ex_exp_1:'falta 1 dia', ex_exp_in:'faltam {d} dias',
+    ex_note_ph:'Observação (opcional)', ex_photo:'📷 Foto (ex. lote/validade)', ex_expiry:'Validade (opcional)', ex_sort_expiry:'⏳ A expirar', ex_valid:'válido até', ex_expired:'expirado', ex_exp_today:'expira hoje', ex_exp_1:'falta 1 dia', ex_exp_in:'faltam {d} dias',
     ex_publish:'Publicar entrada', ex_private:'ℹ️ A troca de stock (ofertar/procurar) é reservada a farmácias e profissionais. Como utilizador particular pode ler as entradas, mas não criá-las.',
     ex_contact:'O contacto é por mensagem direta — sem dados de contacto públicos.',
     ex_q_ph:'Filtrar por produto…', ex_filter_btn:'Filtrar', ex_csv_sub:'{n} entradas nesta seleção', ex_csv_art:'Tipo', ex_csv_menge:'Quantidade', ex_csv_ort:'Local/região', ex_csv_anbieter:'Fornecedor', ex_csv_handle:'Handle', ex_csv_erstellt:'Criado', ex_csv_treffer:'Correspondências', ex_print_title:'Troca de stock (oferta/procura)',
@@ -3464,6 +3464,7 @@ let exchangeFilter = ''; // '', 'biete', 'suche'
 let exchangeQuery = '';   // Text-Filter (z.B. aus einem Engpass heraus vorbelegt)
 let exchangeBL = '';      // Bundesland-Filter
 let exchangeMine = false;  // nur eigene Einträge (inkl. erledigte)
+let exchangeSort = '';     // '' = neueste; 'ablauf' = bald ablaufend zuerst
 let exchangeBLInit = false; // Standard-Vorbelegung auf eigenes Bundesland nur einmal
 let exchangeFlash = null;  // Einmal-Hinweis nach dem Anlegen: { count, kind } — passende Gegenstücke gefunden
 let exchangePrefill = null; // Einmal-Vorbelegung des Formulars: { kind, bezeichnung } — z.B. „Ich suche das" aus einem Engpass
@@ -3544,10 +3545,12 @@ async function loadExchange() {
       <button class="${!exchangeMine&&exchangeFilter==='biete'?'':'ghost '}small" data-f="biete">${esc(t('ex_offers'))}</button>
       <button class="${!exchangeMine&&exchangeFilter==='suche'?'':'ghost '}small" data-f="suche">${esc(t('ex_seeks'))}</button>
       <button class="${exchangeMine?'':'ghost '}small" data-mine>${esc(t('ex_mine'))}</button>
+      <button class="${!exchangeMine&&exchangeSort==='ablauf'?'':'ghost '}small" data-sortabl ${exchangeMine?'disabled':''} title="${esc(t('ex_sort_expiry'))}">${esc(t('ex_sort_expiry'))}</button>
       <select id="ex_blf" data-i18n-aria="ex_all_bl" aria-label="${esc(t('ex_all_bl'))}" class="small" style="margin-left:auto" ${exchangeMine?'disabled':''}><option value="">${esc(t('ex_all_bl'))}</option>${blOptions(exchangeBL)}</select>
     </div></div>`);
   filt.querySelectorAll('[data-f]').forEach(btn => btn.onclick = () => { exchangeMine=false; exchangeFilter = btn.dataset.f; loadExchange(); });
   filt.querySelector('[data-mine]').onclick = () => { exchangeMine = !exchangeMine; loadExchange(); };
+  filt.querySelector('[data-sortabl]').onclick = () => { exchangeMine=false; exchangeSort = exchangeSort==='ablauf' ? '' : 'ablauf'; loadExchange(); };
   filt.querySelector('#ex_qgo').onclick = () => { exchangeQuery = v('ex_q').trim(); loadExchange(); };
   filt.querySelector('#ex_q').addEventListener('keydown', e => { if (e.key==='Enter') { exchangeQuery = v('ex_q').trim(); loadExchange(); } });
   const blf = filt.querySelector('#ex_blf'); if (blf) blf.onchange = (ev) => { exchangeBL = ev.target.value; loadExchange(); };
@@ -3578,6 +3581,7 @@ async function loadExchange() {
       if (exchangeFilter) params.set('kind', exchangeFilter);
       if (exchangeQuery) params.set('q', exchangeQuery);
       if (exchangeBL) params.set('bundesland', exchangeBL);
+      if (exchangeSort) params.set('sort', exchangeSort);
       d = await api('GET','/api/exchange'+(params.toString()?'?'+params.toString():''));
       if (!d.entries.length) { feed.appendChild(exchangeQuery
         ? emptyState({ icon:'🔍', title:ti('ex_search_empty_t',{q:exchangeQuery}), text:t('ex_search_empty_s') })
