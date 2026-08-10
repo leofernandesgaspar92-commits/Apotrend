@@ -141,7 +141,7 @@ const I18N = {
     rb_expiring:'⏳ Bald ablaufend', rb_watched_only:'⭐ Nur beobachtete', rb_sort_aria:'Sortierung der Aktionen', rb_sort_pct:'Höchster Rabatt %', rb_sort_saving:'Größte Ersparnis €', rb_csv_t:'Aktuelle Auswahl als CSV (Excel) für den Einkauf', rb_print_t:'Aktuelle Auswahl als Aushang drucken', rb_print_title:'Laufende Rabatt-Aktionen',
     cart_title:'Einkaufsliste', cart_add:'Einkaufsliste', cart_added:'hinzugefügt', cart_summary:'{n} Stück · Summe € {sum}', cart_savings:'💰 Ersparnis ggü. Listenpreis: € {sum}', cart_clear:'Liste leeren',
     cart_orders:'📋 Bestell-Historie', cart_last_order:'🔁 Letzte Bestellung: {ref}', cart_checkout:'✓ Als bestellt markieren', cart_checkout_ref_ph:'Referenz (optional, z.B. KW32)', cart_checkout_done:'Als Bestellung gespeichert.',
-    ord_title:'📋 Bestell-Historie', ord_empty_t:'Noch keine Bestellungen', ord_empty_s:'Schließe eine Einkaufsliste mit „Als bestellt markieren" ab — sie erscheint dann hier.', ord_positions:'{n} Positionen', ord_reorder:'🔁 Erneut bestellen', ord_delete:'🗑 Löschen', ord_delete_confirm:'Diese Bestellung aus der Historie löschen?', cart_clear_confirm:'Ganze Einkaufsliste leeren?', cart_remove:'Position entfernen',
+    ord_title:'📋 Bestell-Historie', os_title:'Deine Beschaffung', os_orders:'Bestellungen', os_spent:'Ausgaben', os_saved:'Ersparnis', os_pieces:'Stück gesamt', os_top:'Häufigste Präparate', ord_empty_t:'Noch keine Bestellungen', ord_empty_s:'Schließe eine Einkaufsliste mit „Als bestellt markieren" ab — sie erscheint dann hier.', ord_positions:'{n} Positionen', ord_reorder:'🔁 Erneut bestellen', ord_delete:'🗑 Löschen', ord_delete_confirm:'Diese Bestellung aus der Historie löschen?', cart_clear_confirm:'Ganze Einkaufsliste leeren?', cart_remove:'Position entfernen',
     cart_empty_t:'Einkaufsliste ist leer', cart_empty_s:'Fügen Sie bei Rabatten „🛒 Einkaufsliste" hinzu — dann hier als CSV/Ausdruck für den Großhandel exportieren.',
     cart_col_menge:'Menge', cart_col_sum:'Summe', cart_col_note:'Notiz', cart_print_title:'Einkaufsliste / Bestellung', cart_print_foot:'Preise sind Momentaufnahmen (Aktions-/Referenzpreis) — im Zweifel beim Großhandel prüfen.',
     cart_manual_add:'+ Hinzufügen', cart_manual_ph:'Eigene Position (z. B. Ibuprofen 400)', cart_note_ph:'Notiz (z. B. „bis Freitag", „für Rezeptur")',
@@ -486,7 +486,7 @@ const I18N = {
     rb_expiring:'⏳ Expiring soon', rb_watched_only:'⭐ Watched only', rb_sort_aria:'Sort deals', rb_sort_pct:'Highest discount %', rb_sort_saving:'Biggest savings €', rb_csv_t:'Export current selection as CSV (Excel) for purchasing', rb_print_t:'Print current selection as a notice', rb_print_title:'Current discount deals',
     cart_title:'Shopping list', cart_add:'Shopping list', cart_added:'added', cart_summary:'{n} units · total € {sum}', cart_savings:'💰 Savings vs list price: € {sum}', cart_clear:'Clear list',
     cart_orders:'📋 Order history', cart_last_order:'🔁 Last order: {ref}', cart_checkout:'✓ Mark as ordered', cart_checkout_ref_ph:'Reference (optional, e.g. wk32)', cart_checkout_done:'Saved as an order.',
-    ord_title:'📋 Order history', ord_empty_t:'No orders yet', ord_empty_s:'Finish a shopping list with “Mark as ordered” — it will show up here.', ord_positions:'{n} items', ord_reorder:'🔁 Reorder', ord_delete:'🗑 Delete', ord_delete_confirm:'Delete this order from the history?', cart_clear_confirm:'Clear the whole shopping list?', cart_remove:'Remove item',
+    ord_title:'📋 Order history', os_title:'Your procurement', os_orders:'orders', os_spent:'Spent', os_saved:'Saved', os_pieces:'units total', os_top:'Most-ordered products', ord_empty_t:'No orders yet', ord_empty_s:'Finish a shopping list with “Mark as ordered” — it will show up here.', ord_positions:'{n} items', ord_reorder:'🔁 Reorder', ord_delete:'🗑 Delete', ord_delete_confirm:'Delete this order from the history?', cart_clear_confirm:'Clear the whole shopping list?', cart_remove:'Remove item',
     cart_empty_t:'Shopping list is empty', cart_empty_s:'Add items via “🛒 Shopping list” on discounts — then export here as CSV/print for your wholesaler.',
     cart_col_menge:'Qty', cart_col_sum:'Total', cart_col_note:'Note', cart_print_title:'Shopping list / order', cart_print_foot:'Prices are snapshots (deal/reference price) — verify with your wholesaler if in doubt.',
     cart_manual_add:'+ Add', cart_manual_ph:'Own item (e.g. Ibuprofen 400)', cart_note_ph:'Note (e.g. “by Friday”, “for compounding”)',
@@ -831,7 +831,7 @@ const I18N = {
     rb_expiring:'⏳ A expirar em breve', rb_watched_only:'⭐ Só vigiadas', rb_sort_aria:'Ordenar promoções', rb_sort_pct:'Maior desconto %', rb_sort_saving:'Maior poupança €', rb_csv_t:'Exportar a seleção atual como CSV (Excel) para compras', rb_print_t:'Imprimir a seleção atual como cartaz', rb_print_title:'Promoções em curso',
     cart_title:'Lista de compras', cart_add:'Lista de compras', cart_added:'adicionado', cart_summary:'{n} unidades · total € {sum}', cart_savings:'💰 Poupança vs preço de tabela: € {sum}', cart_clear:'Limpar lista',
     cart_orders:'📋 Histórico de pedidos', cart_last_order:'🔁 Último pedido: {ref}', cart_checkout:'✓ Marcar como encomendado', cart_checkout_ref_ph:'Referência (opcional, ex. sem32)', cart_checkout_done:'Guardado como pedido.',
-    ord_title:'📋 Histórico de pedidos', ord_empty_t:'Ainda sem pedidos', ord_empty_s:'Conclua uma lista de compras com „Marcar como encomendado" — aparecerá aqui.', ord_positions:'{n} posições', ord_reorder:'🔁 Encomendar de novo', ord_delete:'🗑 Eliminar', ord_delete_confirm:'Eliminar este pedido do histórico?', cart_clear_confirm:'Limpar toda a lista de compras?', cart_remove:'Remover item',
+    ord_title:'📋 Histórico de pedidos', os_title:'A sua aquisição', os_orders:'pedidos', os_spent:'Gasto', os_saved:'Poupança', os_pieces:'unidades no total', os_top:'Produtos mais pedidos', ord_empty_t:'Ainda sem pedidos', ord_empty_s:'Conclua uma lista de compras com „Marcar como encomendado" — aparecerá aqui.', ord_positions:'{n} posições', ord_reorder:'🔁 Encomendar de novo', ord_delete:'🗑 Eliminar', ord_delete_confirm:'Eliminar este pedido do histórico?', cart_clear_confirm:'Limpar toda a lista de compras?', cart_remove:'Remover item',
     cart_empty_t:'Lista de compras vazia', cart_empty_s:'Adicione itens em “🛒 Lista de compras” nas promoções — depois exporte aqui em CSV/impressão para o distribuidor.',
     cart_col_menge:'Qtd', cart_col_sum:'Total', cart_col_note:'Nota', cart_print_title:'Lista de compras / encomenda', cart_print_foot:'Os preços são momentâneos (promoção/referência) — confirme com o distribuidor em caso de dúvida.',
     cart_manual_add:'+ Adicionar', cart_manual_ph:'Item próprio (ex. Ibuprofeno 400)', cart_note_ph:'Nota (ex. “até sexta”, “para manipulação”)',
@@ -4690,6 +4690,30 @@ async function openOrders(flash) {
   feed.appendChild(head);
   if (flash) feed.appendChild(el(`<div class="card ok-box" style="padding:10px 14px;font-weight:600">✅ ${esc(flash)}</div>`));
   if (!d.orders.length) { feed.appendChild(emptyState({ icon:'📋', title:t('ord_empty_t'), text:t('ord_empty_s') })); return; }
+  // Beschaffungs-Statistik über alle Bestellungen: Ausgaben, Ersparnis, Top-Präparate.
+  {
+    const spent = d.orders.reduce((s, o) => s + (Number(o.total_price) || 0), 0);
+    const saved = d.orders.reduce((s, o) => s + (Number(o.total_savings) || 0), 0);
+    const pieces = d.orders.reduce((s, o) => s + (Number(o.total_pieces) || 0), 0);
+    const byProduct = new Map(); // Präparat -> Gesamtmenge
+    for (const o of d.orders) for (const i of (o.items || [])) {
+      const key = (i.wirkstoff || i.bezeichnung || '').trim(); if (!key) continue;
+      byProduct.set(key, (byProduct.get(key) || 0) + (Number(i.menge) || 0));
+    }
+    const top = [...byProduct.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+    const stat = (num, label, col) => `<div style="flex:1;min-width:96px"><div style="font-size:20px;font-weight:800;color:${col}">${num}</div><div class="muted" style="font-size:12px">${esc(label)}</div></div>`;
+    const card = el(`<div class="card">
+      <b>📊 ${esc(t('os_title'))}</b>
+      <div class="row" style="flex-wrap:wrap;gap:12px;margin-top:8px">
+        ${stat(d.orders.length, t('os_orders'), 'var(--text)')}
+        ${stat('€ '+fmtMoney(spent), t('os_spent'), 'var(--text)')}
+        ${saved>0?stat('€ '+fmtMoney(saved), t('os_saved'), 'var(--ok-fg)'):''}
+        ${stat(pieces, t('os_pieces'), 'var(--text)')}
+      </div>
+      ${top.length?`<div class="muted" style="font-size:13px;margin-top:10px">${esc(t('os_top'))}: ${top.map(([n,m])=>`<span class="spec">${esc(n)} · ${m}</span>`).join(' ')}</div>`:''}
+    </div>`);
+    feed.appendChild(card);
+  }
   for (const o of d.orders) {
     // Lieferanten-Kurzliste (eindeutig) für den Überblick.
     const suppliers = [...new Set((o.items||[]).map(i => (i.supplier||'').trim()).filter(Boolean))];
