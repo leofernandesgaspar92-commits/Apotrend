@@ -538,6 +538,12 @@ const routes = [
   ['POST', /^\/api\/cart$/, true, async ({ userId, body }) => ({ item: social.addToCart(userId, body) })],
   ['POST', /^\/api\/cart\/clear$/, true, async ({ userId }) => social.clearCart(userId)],
   ['POST', /^\/api\/cart\/checkout$/, true, async ({ userId, body }) => ({ order: social.checkoutCart(userId, { reference: body && body.reference, supplier: body ? body.supplier : undefined }) })],
+  // Bestell-Vorlagen: VOR den generischen /api/cart/:id-Routen, damit „templates" nicht als
+  // Positions-ID interpretiert wird.
+  ['GET', /^\/api\/cart\/templates$/, true, async ({ userId }) => ({ templates: social.listCartTemplates(userId) })],
+  ['POST', /^\/api\/cart\/templates$/, true, async ({ userId, body }) => ({ template: social.saveCartAsTemplate(userId, body && body.name) })],
+  ['POST', /^\/api\/cart\/templates\/([^/]+)\/apply$/, true, async ({ userId, params }) => social.applyCartTemplate(userId, params[0])],
+  ['POST', /^\/api\/cart\/templates\/([^/]+)\/delete$/, true, async ({ userId, params }) => social.deleteCartTemplate(userId, params[0])],
   ['POST', /^\/api\/cart\/([^/]+)\/remove$/, true, async ({ userId, params }) => social.removeCartItem(userId, params[0])],
   ['POST', /^\/api\/cart\/([^/]+)$/, true, async ({ userId, params, body }) => ({ item: social.updateCartItem(userId, params[0], body) })],
   // ── Bestell-Historie (abgeschlossene Einkaufslisten) ──

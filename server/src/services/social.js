@@ -1103,6 +1103,61 @@ export function createSocialService(social, foundationRepo, options = {}) {
       return { ok: true };
     },
 
+    // ── Bestell-Vorlagen: wiederkehrende Einkaufslisten als benannte Vorlage sichern und
+    // per Klick wieder in die Liste laden (z.B. „Wochenbestellung Antibiotika"). ──
+    saveCartAsTemplate(userId, name) {
+      requireUser(userId);
+      const nm = String(name || '').trim();
+      if (nm.length < 2) throw new AppError('template_name', 'Vorlage braucht einen Namen (min. 2 Zeichen).', 400);
+      const summary = this.cart(userId);
+      if (!summary.items.length) throw new AppError('cart_empty', 'Einkaufsliste ist leer.', 400);
+      // Positionen als eigenständigen Snapshot ablegen (ohne Cart-IDs/User-ID) — wie bei Bestellungen.
+      const items = summary.items.map(i => ({
+        bezeichnung: i.bezeichnung, wirkstoff: i.wirkstoff || null, supplier: i.supplier || null,
+        aktionspreis: i.aktionspreis ?? null, listenpreis: i.listenpreis ?? null,
+        rabatt_pct: i.rabatt_pct ?? null, gueltig_bis: i.gueltig_bis || null,
+        source_kind: i.source_kind || 'manual', menge: i.menge, note: i.note || null,
+      }));
+      const tpl = social.addCartTemplate({ user_id: userId, name: nm.slice(0, 80), items });
+      return this.templateSummary(tpl);
+    },
+    // Kompakte Vorlagen-Info (ohne Positionen) für Listen/Übersicht.
+    templateSummary(tpl) {
+      const items = tpl.items || [];
+      return {
+        id: tpl.id, name: tpl.name, created_at: tpl.created_at,
+        positions: items.length,
+        total_pieces: items.reduce((s, i) => s + (Number(i.menge) || 0), 0),
+        total_price: Math.round(items.reduce((s, i) => s + (Number(i.aktionspreis) || 0) * (Number(i.menge) || 0), 0) * 100) / 100,
+      };
+    },
+    listCartTemplates(userId) {
+      requireUser(userId);
+      return social.listCartTemplates(userId).map(tpl => this.templateSummary(tpl));
+    },
+    // Vorlage anwenden: alle Positionen in die (aktuelle) Einkaufsliste übernehmen (Merge greift,
+    // gleiche Positionen summieren Mengen). Gibt die aktualisierte Liste zurück.
+    applyCartTemplate(userId, id) {
+      requireUser(userId);
+      const tpl = social.getCartTemplate(id);
+      if (!tpl || tpl.user_id !== userId) throw new AppError('template_not_found', 'Vorlage nicht gefunden.', 404);
+      for (const i of tpl.items || []) {
+        this.addToCart(userId, {
+          bezeichnung: i.bezeichnung, wirkstoff: i.wirkstoff, supplier: i.supplier,
+          aktionspreis: i.aktionspreis, listenpreis: i.listenpreis, rabattPct: i.rabatt_pct,
+          gueltigBis: i.gueltig_bis, sourceKind: i.source_kind, menge: i.menge, note: i.note,
+        });
+      }
+      return this.cart(userId);
+    },
+    deleteCartTemplate(userId, id) {
+      requireUser(userId);
+      const tpl = social.getCartTemplate(id);
+      if (!tpl || tpl.user_id !== userId) throw new AppError('template_not_found', 'Vorlage nicht gefunden.', 404);
+      social.removeCartTemplate(id);
+      return { ok: true };
+    },
+
     // ── Premium: Videosprechstunde (Terminbuchung) ──────────────────────────────
     // Nur Premium-Apotheken können Beratungen ANBIETEN (buchbar sein). Jede:r
     // registrierte Nutzer:in kann bei einer Premium-Apotheke einen Termin ANFRAGEN.

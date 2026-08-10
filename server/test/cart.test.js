@@ -112,6 +112,49 @@ test('Checkout je Lieferant: unbekannter Lieferant wirft, ganze Liste bleibt una
   assert.equal(social.listOrders(a).length, 0, 'keine Order angelegt');
 });
 
+test('Bestell-Vorlagen: speichern, anwenden (Merge in Liste), löschen; leere Liste wirft', () => {
+  const { social, a } = setup();
+  // Leere Liste -> Speichern nicht möglich.
+  assert.throws(() => social.saveCartAsTemplate(a, 'Woche'), /leer|empty/i);
+  // Name-Validierung.
+  social.addToCart(a, { bezeichnung: 'Amoxi', supplier: 'Kwizda', aktionspreis: 7, listenpreis: 10, menge: 3, sourceKind: 'rabatt' });
+  social.addToCart(a, { bezeichnung: 'Ibu', supplier: 'Herba', aktionspreis: 5, menge: 2, sourceKind: 'price' });
+  assert.throws(() => social.saveCartAsTemplate(a, ' '), /Namen|name/i);
+  // Vorlage speichern -> Zusammenfassung stimmt; Liste bleibt unangetastet.
+  const tpl = social.saveCartAsTemplate(a, '  Wochenbestellung  ');
+  assert.equal(tpl.name, 'Wochenbestellung'); // getrimmt
+  assert.equal(tpl.positions, 2);
+  assert.equal(tpl.total_pieces, 5);
+  assert.equal(tpl.total_price, 7 * 3 + 5 * 2); // 31
+  assert.equal(social.cart(a).count, 2, 'Liste durch Speichern nicht verändert');
+  assert.equal(social.listCartTemplates(a).length, 1);
+
+  // Liste leeren, dann Vorlage anwenden -> Positionen zurück in der Liste.
+  social.clearCart(a);
+  assert.equal(social.cart(a).count, 0);
+  const cart = social.applyCartTemplate(a, tpl.id);
+  assert.equal(cart.count, 2);
+  assert.equal(cart.total_price, 31);
+  // Erneut anwenden -> Merge summiert Mengen (keine Dubletten).
+  social.applyCartTemplate(a, tpl.id);
+  const merged = social.cart(a);
+  assert.equal(merged.count, 2, 'gleiche Positionen zusammengeführt');
+  assert.equal(merged.items.find(i => i.bezeichnung === 'Amoxi').menge, 6);
+
+  // Löschen.
+  social.deleteCartTemplate(a, tpl.id);
+  assert.equal(social.listCartTemplates(a).length, 0);
+});
+
+test('Bestell-Vorlagen: strikt pro Nutzer:in; fremde Vorlage nicht anwendbar/löschbar', () => {
+  const { social, a, b } = setup();
+  social.addToCart(a, { bezeichnung: 'X', aktionspreis: 1, menge: 1, sourceKind: 'manual' });
+  const tpl = social.saveCartAsTemplate(a, 'Nur A');
+  assert.equal(social.listCartTemplates(b).length, 0, 'B sieht A-Vorlage nicht');
+  assert.throws(() => social.applyCartTemplate(b, tpl.id), /nicht gefunden|not_found/i);
+  assert.throws(() => social.deleteCartTemplate(b, tpl.id), /nicht gefunden|not_found/i);
+});
+
 test('Bestell-Historie: fremde Order nicht abrufbar/änderbar', () => {
   const { social, a, b } = setup();
   social.addToCart(a, { bezeichnung: 'X', aktionspreis: 1, menge: 1, sourceKind: 'manual' });

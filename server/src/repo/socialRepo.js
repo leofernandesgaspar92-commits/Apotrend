@@ -24,6 +24,7 @@ export function createSocialRepo() {
   const recommendations = new Map(); // id -> row (fachliche Empfehlung author -> target)
   const cartItems = new Map();       // id -> row (Einkaufsliste/Bestell-Merkzettel je Nutzer:in)
   const orders = new Map();          // id -> row (abgeschlossene Bestellungen: Snapshot der Liste)
+  const cartTemplates = new Map();   // id -> row (gespeicherte Bestell-Vorlagen je Nutzer:in)
   const appointments = new Map();    // id -> row (Videosprechstunde-Termine: Anbieter <-> Anfrager)
   const promotions = new Map();      // id -> row (Premium-Werbung/Shop: beworbene Produkte/Angebote)
   const liveSessions = new Map();     // id -> row (Premium-Live-Sessions: geplante/laufende Video-Runden)
@@ -308,6 +309,16 @@ export function createSocialRepo() {
     },
     removeOrder(id) { orders.delete(id); },
 
+    // ── Bestell-Vorlagen (wiederverwendbare Einkaufslisten je Nutzer:in) ──
+    addCartTemplate(row) { const r = { id: uuid(), created_at: now(), ...row }; cartTemplates.set(r.id, r); return { ...r, items: (r.items || []).map(i => ({ ...i })) }; },
+    getCartTemplate(id) { const r = cartTemplates.get(id); return r ? { ...r, items: (r.items || []).map(i => ({ ...i })) } : null; },
+    listCartTemplates(userId) {
+      return [...cartTemplates.values()].filter(r => r.user_id === userId)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .map(r => ({ ...r, items: (r.items || []).map(i => ({ ...i })) }));
+    },
+    removeCartTemplate(id) { cartTemplates.delete(id); },
+
     // ── Benachrichtigungen ──
     createNotification(n) {
       const row = { id: uuid(), user_id: n.userId, type: n.type, actor_user_id: n.actorUserId ?? null, ref_type: n.refType ?? null, ref_id: n.refId ?? null, label: n.label ?? null, read: false, created_at: now() };
@@ -394,6 +405,7 @@ export function createSocialRepo() {
       for (const [id, r] of recommendations) if (r.author_user_id === userId || r.target_user_id === userId) recommendations.delete(id);
       for (const [id, r] of cartItems) if (r.user_id === userId) cartItems.delete(id);
       for (const [id, r] of orders) if (r.user_id === userId) orders.delete(id);
+      for (const [id, r] of cartTemplates) if (r.user_id === userId) cartTemplates.delete(id);
       for (const [id, r] of appointments) if (r.provider_user_id === userId || r.requester_user_id === userId) appointments.delete(id);
       for (const [id, r] of promotions) if (r.author_user_id === userId) promotions.delete(id);
       for (const [id, r] of liveSessions) if (r.host_user_id === userId) liveSessions.delete(id);
@@ -408,7 +420,7 @@ export function createSocialRepo() {
         profiles: [...profiles], profilesByHandle: [...profilesByHandle], posts: [...posts],
         comments: [...comments], reactions: [...reactions], pollVotes: [...pollVotes], follows: [...follows], mutes: [...mutes],
         notifications: [...notifications], dmThreads: [...dmThreads], dmMessages: [...dmMessages], reports: [...reports],
-        verifications: [...verifications], bookmarks: [...bookmarks], endorsements: [...endorsements], profileViews: [...profileViews], recommendations: [...recommendations], cartItems: [...cartItems], orders: [...orders], appointments: [...appointments], promotions: [...promotions], liveSessions: [...liveSessions], notifPrefs: [...notifPrefs],
+        verifications: [...verifications], bookmarks: [...bookmarks], endorsements: [...endorsements], profileViews: [...profileViews], recommendations: [...recommendations], cartItems: [...cartItems], orders: [...orders], cartTemplates: [...cartTemplates], appointments: [...appointments], promotions: [...promotions], liveSessions: [...liveSessions], notifPrefs: [...notifPrefs],
       };
     },
     __load(d) {
@@ -417,7 +429,7 @@ export function createSocialRepo() {
       fill(profiles, d.profiles); fill(profilesByHandle, d.profilesByHandle); fill(posts, d.posts);
       fill(comments, d.comments); fill(reactions, d.reactions); fill(pollVotes, d.pollVotes); fill(follows, d.follows); fill(mutes, d.mutes);
       fill(notifications, d.notifications); fill(dmThreads, d.dmThreads); fill(dmMessages, d.dmMessages); fill(reports, d.reports);
-      fill(verifications, d.verifications); fill(bookmarks, d.bookmarks); fill(endorsements, d.endorsements); fill(profileViews, d.profileViews); fill(recommendations, d.recommendations); fill(cartItems, d.cartItems); fill(orders, d.orders); fill(appointments, d.appointments); fill(promotions, d.promotions); fill(liveSessions, d.liveSessions); fill(notifPrefs, d.notifPrefs);
+      fill(verifications, d.verifications); fill(bookmarks, d.bookmarks); fill(endorsements, d.endorsements); fill(profileViews, d.profileViews); fill(recommendations, d.recommendations); fill(cartItems, d.cartItems); fill(orders, d.orders); fill(cartTemplates, d.cartTemplates); fill(appointments, d.appointments); fill(promotions, d.promotions); fill(liveSessions, d.liveSessions); fill(notifPrefs, d.notifPrefs);
     },
   };
 }

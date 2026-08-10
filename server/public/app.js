@@ -140,7 +140,7 @@ const I18N = {
     rb_empty_s:'Aktuell sind keine Rabatt-Aktionen hinterlegt. Schau später wieder vorbei.',
     rb_expiring:'⏳ Bald ablaufend', rb_watched_only:'⭐ Nur beobachtete', rb_sort_aria:'Sortierung der Aktionen', rb_sort_pct:'Höchster Rabatt %', rb_sort_saving:'Größte Ersparnis €', rb_csv_t:'Aktuelle Auswahl als CSV (Excel) für den Einkauf', rb_print_t:'Aktuelle Auswahl als Aushang drucken', rb_print_title:'Laufende Rabatt-Aktionen',
     cart_title:'Einkaufsliste', cart_add:'Einkaufsliste', cart_added:'hinzugefügt', cart_summary:'{n} Stück · Summe € {sum}', cart_savings:'💰 Ersparnis ggü. Listenpreis: € {sum}', cart_clear:'Liste leeren',
-    cart_orders:'📋 Bestell-Historie', cart_last_order:'🔁 Letzte Bestellung: {ref}', cart_checkout:'✓ Als bestellt markieren', cart_checkout_ref_ph:'Referenz (optional, z.B. KW32)', cart_checkout_done:'Als Bestellung gespeichert.',
+    cart_orders:'📋 Bestell-Historie', cart_last_order:'🔁 Letzte Bestellung: {ref}', tpl_title:'📋 Bestell-Vorlagen', tpl_sub:'Wiederkehrende Einkaufslisten mit einem Klick in die Liste laden.', tpl_apply:'In Liste laden', tpl_delete:'Vorlage löschen', tpl_delete_confirm:'Vorlage „{name}" löschen?', tpl_applied:'„{name}" in die Liste geladen.', tpl_save:'💾 Als Vorlage', tpl_save_t:'Diese Einkaufsliste als wiederverwendbare Vorlage speichern', tpl_save_prompt:'Name der Vorlage (z.B. „Wochenbestellung Antibiotika"):', tpl_name_short:'Bitte einen Namen mit mindestens 2 Zeichen eingeben.', tpl_saved:'Als Vorlage „{name}" gespeichert.', cart_checkout:'✓ Als bestellt markieren', cart_checkout_ref_ph:'Referenz (optional, z.B. KW32)', cart_checkout_done:'Als Bestellung gespeichert.',
     ord_title:'📋 Bestell-Historie', os_title:'Deine Beschaffung', os_orders:'Bestellungen', os_spent:'Ausgaben', os_saved:'Ersparnis', os_pieces:'Stück gesamt', os_top:'Top-Präparate (nach Menge)', ord_empty_t:'Noch keine Bestellungen', ord_empty_s:'Schließe eine Einkaufsliste mit „Als bestellt markieren" ab — sie erscheint dann hier.', ord_positions:'{n} Positionen', ord_reorder:'🔁 Erneut bestellen', ord_delete:'🗑 Löschen', ord_delete_confirm:'Diese Bestellung aus der Historie löschen?', cart_clear_confirm:'Ganze Einkaufsliste leeren?', cart_remove:'Position entfernen',
     cart_empty_t:'Einkaufsliste ist leer', cart_empty_s:'Fügen Sie bei Rabatten „🛒 Einkaufsliste" hinzu — dann hier als CSV/Ausdruck für den Großhandel exportieren.',
     cart_col_menge:'Menge', cart_col_sum:'Summe', cart_col_note:'Notiz', cart_print_title:'Einkaufsliste / Bestellung', cart_print_foot:'Preise sind Momentaufnahmen (Aktions-/Referenzpreis) — im Zweifel beim Großhandel prüfen.',
@@ -489,7 +489,7 @@ const I18N = {
     rb_empty_s:'There are currently no discount offers on file. Check back later.',
     rb_expiring:'⏳ Expiring soon', rb_watched_only:'⭐ Watched only', rb_sort_aria:'Sort deals', rb_sort_pct:'Highest discount %', rb_sort_saving:'Biggest savings €', rb_csv_t:'Export current selection as CSV (Excel) for purchasing', rb_print_t:'Print current selection as a notice', rb_print_title:'Current discount deals',
     cart_title:'Shopping list', cart_add:'Shopping list', cart_added:'added', cart_summary:'{n} units · total € {sum}', cart_savings:'💰 Savings vs list price: € {sum}', cart_clear:'Clear list',
-    cart_orders:'📋 Order history', cart_last_order:'🔁 Last order: {ref}', cart_checkout:'✓ Mark as ordered', cart_checkout_ref_ph:'Reference (optional, e.g. wk32)', cart_checkout_done:'Saved as an order.',
+    cart_orders:'📋 Order history', cart_last_order:'🔁 Last order: {ref}', tpl_title:'📋 Order templates', tpl_sub:'Load recurring shopping lists into the list with one click.', tpl_apply:'Load into list', tpl_delete:'Delete template', tpl_delete_confirm:'Delete template “{name}”?', tpl_applied:'“{name}” loaded into the list.', tpl_save:'💾 Save as template', tpl_save_t:'Save this shopping list as a reusable template', tpl_save_prompt:'Template name (e.g. “Weekly antibiotics order”):', tpl_name_short:'Please enter a name with at least 2 characters.', tpl_saved:'Saved as template “{name}”.', cart_checkout:'✓ Mark as ordered', cart_checkout_ref_ph:'Reference (optional, e.g. wk32)', cart_checkout_done:'Saved as an order.',
     ord_title:'📋 Order history', os_title:'Your procurement', os_orders:'orders', os_spent:'Spent', os_saved:'Saved', os_pieces:'units total', os_top:'Top products (by quantity)', ord_empty_t:'No orders yet', ord_empty_s:'Finish a shopping list with “Mark as ordered” — it will show up here.', ord_positions:'{n} items', ord_reorder:'🔁 Reorder', ord_delete:'🗑 Delete', ord_delete_confirm:'Delete this order from the history?', cart_clear_confirm:'Clear the whole shopping list?', cart_remove:'Remove item',
     cart_empty_t:'Shopping list is empty', cart_empty_s:'Add items via “🛒 Shopping list” on discounts — then export here as CSV/print for your wholesaler.',
     cart_col_menge:'Qty', cart_col_sum:'Total', cart_col_note:'Note', cart_print_title:'Shopping list / order', cart_print_foot:'Prices are snapshots (deal/reference price) — verify with your wholesaler if in doubt.',
@@ -838,7 +838,7 @@ const I18N = {
     rb_empty_s:'Não há promoções de desconto registadas. Volte mais tarde.',
     rb_expiring:'⏳ A expirar em breve', rb_watched_only:'⭐ Só vigiadas', rb_sort_aria:'Ordenar promoções', rb_sort_pct:'Maior desconto %', rb_sort_saving:'Maior poupança €', rb_csv_t:'Exportar a seleção atual como CSV (Excel) para compras', rb_print_t:'Imprimir a seleção atual como cartaz', rb_print_title:'Promoções em curso',
     cart_title:'Lista de compras', cart_add:'Lista de compras', cart_added:'adicionado', cart_summary:'{n} unidades · total € {sum}', cart_savings:'💰 Poupança vs preço de tabela: € {sum}', cart_clear:'Limpar lista',
-    cart_orders:'📋 Histórico de pedidos', cart_last_order:'🔁 Último pedido: {ref}', cart_checkout:'✓ Marcar como encomendado', cart_checkout_ref_ph:'Referência (opcional, ex. sem32)', cart_checkout_done:'Guardado como pedido.',
+    cart_orders:'📋 Histórico de pedidos', cart_last_order:'🔁 Último pedido: {ref}', tpl_title:'📋 Modelos de pedido', tpl_sub:'Carregue listas de compras recorrentes na lista com um clique.', tpl_apply:'Carregar na lista', tpl_delete:'Eliminar modelo', tpl_delete_confirm:'Eliminar o modelo „{name}"?', tpl_applied:'„{name}" carregado na lista.', tpl_save:'💾 Guardar como modelo', tpl_save_t:'Guardar esta lista de compras como modelo reutilizável', tpl_save_prompt:'Nome do modelo (ex. „Pedido semanal de antibióticos"):', tpl_name_short:'Introduza um nome com pelo menos 2 caracteres.', tpl_saved:'Guardado como modelo „{name}".', cart_checkout:'✓ Marcar como encomendado', cart_checkout_ref_ph:'Referência (opcional, ex. sem32)', cart_checkout_done:'Guardado como pedido.',
     ord_title:'📋 Histórico de pedidos', os_title:'A sua aquisição', os_orders:'pedidos', os_spent:'Gasto', os_saved:'Poupança', os_pieces:'unidades no total', os_top:'Produtos principais (por quantidade)', ord_empty_t:'Ainda sem pedidos', ord_empty_s:'Conclua uma lista de compras com „Marcar como encomendado" — aparecerá aqui.', ord_positions:'{n} posições', ord_reorder:'🔁 Encomendar de novo', ord_delete:'🗑 Eliminar', ord_delete_confirm:'Eliminar este pedido do histórico?', cart_clear_confirm:'Limpar toda a lista de compras?', cart_remove:'Remover item',
     cart_empty_t:'Lista de compras vazia', cart_empty_s:'Adicione itens em “🛒 Lista de compras” nas promoções — depois exporte aqui em CSV/impressão para o distribuidor.',
     cart_col_menge:'Qtd', cart_col_sum:'Total', cart_col_note:'Nota', cart_print_title:'Lista de compras / encomenda', cart_print_foot:'Os preços são momentâneos (promoção/referência) — confirme com o distribuidor em caso de dúvida.',
@@ -3954,13 +3954,44 @@ async function openCart(flash) {
     ${d.items.length?`<div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap">
       <input data-cref placeholder="${esc(t('cart_checkout_ref_ph'))}" style="flex:1;min-width:140px" aria-label="${esc(t('cart_checkout_ref_ph'))}">
       <button class="small" data-ccheckout>${esc(t('cart_checkout'))}</button>
+      <button class="ghost small" data-savetpl title="${esc(t('tpl_save_t'))}">${esc(t('tpl_save'))}</button>
       <button class="ghost small" data-cclear>${esc(t('cart_clear'))}</button>
     </div>`:''}
   </div>`);
   head.querySelector('[data-back]').onclick = () => loadTab();
   head.querySelector('[data-corders]').onclick = () => openOrders();
+  const stBtn = head.querySelector('[data-savetpl]');
+  if (stBtn) stBtn.onclick = async () => {
+    const name = prompt(t('tpl_save_prompt'));
+    if (name == null) return;
+    const nm = name.trim();
+    if (nm.length < 2) { alert(t('tpl_name_short')); return; }
+    try { await api('POST','/api/cart/templates',{ name: nm }); openCart(ti('tpl_saved',{name:nm})); }
+    catch(e){ alert(e.message); }
+  };
   feed.appendChild(head);
   if (flash) feed.appendChild(el(`<div class="card ok-box" style="padding:10px 14px;font-weight:600">✅ ${esc(flash)}</div>`));
+  // Bestell-Vorlagen: wiederkehrende Listen per Klick laden. Immer anzeigen (auch bei leerer
+  // Liste — genau dann will man eine Vorlage anwenden).
+  try {
+    const tl = await api('GET','/api/cart/templates');
+    if (tl.templates && tl.templates.length) {
+      const tc = el(`<div class="card"><b>${esc(t('tpl_title'))}</b><div class="muted" style="font-size:13px;margin:2px 0 8px">${esc(t('tpl_sub'))}</div><div data-tpllist></div></div>`);
+      const box = tc.querySelector('[data-tpllist]');
+      tl.templates.forEach(tp => {
+        const row = el(`<div class="comment"><div class="row" style="align-items:baseline;gap:8px;flex-wrap:wrap">
+          <b style="flex:1;min-width:120px">📋 ${esc(tp.name)}</b>
+          <span class="muted" style="font-size:13px">${esc(ti('ord_positions',{n:tp.positions}))}${tp.total_price>0?` · € ${fmtMoney(tp.total_price)}`:''}</span>
+          <button class="small" data-apply>${esc(t('tpl_apply'))}</button>
+          <button class="ghost small" data-del title="${esc(t('tpl_delete'))}" aria-label="${esc(t('tpl_delete'))}">🗑</button>
+        </div></div>`);
+        row.querySelector('[data-apply]').onclick = async () => { try { await api('POST',`/api/cart/templates/${tp.id}/apply`); openCart(ti('tpl_applied',{name:tp.name})); } catch(e){ alert(e.message); } };
+        row.querySelector('[data-del]').onclick = async () => { if (!confirm(ti('tpl_delete_confirm',{name:tp.name}))) return; try { await api('POST',`/api/cart/templates/${tp.id}/delete`); openCart(); } catch(e){ alert(e.message); } };
+        box.appendChild(row);
+      });
+      feed.appendChild(tc);
+    }
+  } catch { /* ohne Vorlagen weiter */ }
   const madd = head.querySelector('[data-madd]');
   const addManual = async () => {
     const bez = madd.value.trim(); if (!bez) { madd.focus(); return; }
