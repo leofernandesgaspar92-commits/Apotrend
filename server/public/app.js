@@ -4541,7 +4541,7 @@ async function messagePerson(handle) {
 // ── Partner-Verzeichnis (nach Kontotyp) ─────────────────────────────────────
 const DIR_TYPES = ['pharmacy', 'pharma', 'authority'];
 const DIR_ICON = { pharmacy: '🏥', pharma: '🏭', authority: '🏛️' };
-let dirState = { type: 'pharmacy', q: '' };
+let dirState = { type: 'pharmacy', q: '', bl: '' };
 async function openDirectory(type) {
   if (type) dirState.type = type;
   const feed = document.getElementById('feed');
@@ -4553,7 +4553,7 @@ async function openDirectory(type) {
     // Unabhängige Anfragen parallel (Zähler + Liste).
     [counts, list] = await Promise.all([
       api('GET','/api/directory'),
-      api('GET', `/api/directory/${dirState.type}` + (dirState.q ? `?q=${encodeURIComponent(dirState.q)}` : '')),
+      (() => { const p = new URLSearchParams(); if (dirState.q) p.set('q', dirState.q); if (dirState.bl) p.set('bundesland', dirState.bl); const qs = p.toString(); return api('GET', `/api/directory/${dirState.type}` + (qs ? `?${qs}` : '')); })(),
     ]);
   } catch(e){ feed.innerHTML=''; feed.appendChild(errorState(e.message, () => openDirectory())); return; }
   feed.innerHTML = '';
@@ -4564,13 +4564,16 @@ async function openDirectory(type) {
     <div class="row" style="flex-wrap:wrap;gap:6px">
       ${DIR_TYPES.map(ty=>`<button class="small sortbtn${dirState.type===ty?' active':''}" data-type="${ty}">${DIR_ICON[ty]} ${esc(acctLabel(ty))} <span class="muted">${(counts.counts&&counts.counts[ty])||0}</span></button>`).join('')}
     </div>
-    <div class="row" style="margin-top:8px;gap:6px"><input data-q value="${esc(dirState.q)}" placeholder="${esc(t('dir_search'))}" maxlength="60"><button class="small" data-go>🔎</button></div>
+    <div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap"><input data-q value="${esc(dirState.q)}" placeholder="${esc(t('dir_search'))}" maxlength="60" style="flex:1;min-width:140px"><button class="small" data-go>🔎</button>
+      ${(me&&me.country==='AT')?`<select data-blf class="small" data-i18n-aria="ex_all_bl" aria-label="${esc(t('ex_all_bl'))}"><option value="">${esc(t('ex_all_bl'))}</option>${blOptions(dirState.bl)}</select>`:''}
+    </div>
   </div>`);
   head.querySelector('[data-back]').onclick = () => goTab('overview');
-  head.querySelectorAll('[data-type]').forEach(b => b.onclick = () => { dirState.type = b.dataset.type; dirState.q=''; openDirectory(); });
+  head.querySelectorAll('[data-type]').forEach(b => b.onclick = () => { dirState.type = b.dataset.type; dirState.q=''; dirState.bl=''; openDirectory(); });
   const doSearch = () => { dirState.q = head.querySelector('[data-q]').value.trim(); openDirectory(); };
   head.querySelector('[data-go]').onclick = doSearch;
   head.querySelector('[data-q]').addEventListener('keydown', e => { if (e.key==='Enter') doSearch(); });
+  { const blf = head.querySelector('[data-blf]'); if (blf) blf.onchange = () => { dirState.bl = blf.value; openDirectory(); }; }
   feed.appendChild(head);
   if (!list.people.length) { feed.appendChild(emptyState({ icon:'🔎', title:t('dir_empty_t'), text:t('dir_empty_s') })); return; }
   list.people.forEach(p => {

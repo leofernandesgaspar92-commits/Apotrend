@@ -412,7 +412,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       }
       return { counts, country: country || null };
     },
-    directory(viewerUserId, accountType, { q = null, limit = 60 } = {}) {
+    directory(viewerUserId, accountType, { q = null, bundesland = null, limit = 60 } = {}) {
       requireUser(viewerUserId);
       const at = normalizeAccountType(accountType);
       if (!this.DIRECTORY_TYPES.includes(at)) throw new AppError('dir_bad_type', 'Unbekannter Kontotyp.', 400);
@@ -420,8 +420,10 @@ export function createSocialService(social, foundationRepo, options = {}) {
       const country = meProf && meProf.country;
       const following = new Set(social.listFollowing(viewerUserId));
       const needle = q ? String(q).trim().toLowerCase() : null;
+      const bl = bundesland ? String(bundesland).trim() : null; // Regions-Filter (v.a. AT-Bundesländer)
       const people = social.listProfiles()
         .filter(p => p.user_id !== viewerUserId && (p.account_type || 'pharmacy') === at && (!country || p.country === country))
+        .filter(p => !bl || p.bundesland === bl)
         .filter(p => !needle || p.handle.includes(needle) || String(p.display_name || '').toLowerCase().includes(needle) || String(p.title || '').toLowerCase().includes(needle) || (p.specializations || []).some(x => String(x).toLowerCase().includes(needle)))
         .map(p => ({
           handle: p.handle, display_name: p.display_name, avatar_url: p.avatar_url || null,

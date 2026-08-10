@@ -48,6 +48,22 @@ test('Verzeichnis: Suche filtert nach Name/Fachgebiet', () => {
   assert.equal(res.people[0].handle, 'bayer');
 });
 
+test('Verzeichnis: Bundesland-Filter grenzt auf die Region ein', () => {
+  const { social, meApo } = setup();
+  // Regionen setzen (createProfile kennt kein Bundesland -> per updateProfile).
+  social.updateProfile(social.getProfile('bayer').user_id, { bundesland: 'Tirol' });
+  social.updateProfile(social.getProfile('sandoz').user_id, { bundesland: 'Wien' });
+  const tirol = social.directory(meApo, 'pharma', { bundesland: 'Tirol' });
+  assert.deepEqual(tirol.people.map(p => p.handle), ['bayer']);
+  const wien = social.directory(meApo, 'pharma', { bundesland: 'Wien' });
+  assert.deepEqual(wien.people.map(p => p.handle), ['sandoz']);
+  // Ohne Filter weiterhin beide.
+  assert.equal(social.directory(meApo, 'pharma').people.length, 2);
+  // Bundesland + Textsuche kombiniert.
+  const combo = social.directory(meApo, 'pharma', { bundesland: 'Wien', q: 'bayer' });
+  assert.equal(combo.people.length, 0, 'bayer ist in Tirol, nicht in Wien');
+});
+
 test('Verzeichnis: is_following spiegelt Beziehung', () => {
   const { social, meApo } = setup();
   const bayer = social.getProfile('bayer');

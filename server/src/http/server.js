@@ -577,7 +577,7 @@ const routes = [
 
   // ── Partner-Verzeichnis (nach Kontotyp, im eigenen Land) ──
   ['GET', /^\/api\/directory$/, true, async ({ userId }) => social.directoryCounts(userId)],
-  ['GET', /^\/api\/directory\/([^/]+)$/, true, async ({ userId, params, query }) => social.directory(userId, params[0], { q: query.get('q') || null })],
+  ['GET', /^\/api\/directory\/([^/]+)$/, true, async ({ userId, params, query }) => social.directory(userId, params[0], { q: query.get('q') || null, bundesland: query.get('bundesland') || null })],
   ['GET', /^\/api\/profiles\/([^/]+)\/page$/, true, async ({ userId, params }) => {
     const d = social.profilePage(userId, params[0]);
     if (!d) { const e = new Error('Profil nicht gefunden'); e.status = 404; throw e; }
