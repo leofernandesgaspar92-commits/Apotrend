@@ -140,6 +140,41 @@ test('expiring_offers: leer ohne Angebote mit Verfallsdatum', () => {
   assert.deepEqual(overview.forUser(a).expiring_offers, { count: 0, items: [] });
 });
 
+test('my_reports: eigene, lange offene Community-Meldungen zum Prüfen; fremde/frische/gelöste nicht', () => {
+  const repo = createMemoryRepo();
+  const orgAuth = createOrgAuthService(repo);
+  const social = createSocialService(createSocialRepo(), repo);
+  const shortagesRepo = createShortagesRepo({ seed: false });
+  const shortages = createShortagesService(shortagesRepo, social, { today: () => '2026-07-30' });
+  const rabatte = createRabatteService(createRabatteRepo({ today: '2026-07-07' }), social);
+  const exchange = createExchangeService(createExchangeRepo(), social, repo);
+  const prices = createPricesService(createPricesRepo(), social);
+  const overview = createOverviewService({ shortages, exchange, social, rabatte, prices, amr: createAmrService() });
+  const A = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'A' }, owner: { name: 'Anna', email: 'a@a.at', password: 'geheim123' } });
+  social.createProfile(A.user.id, { handle: 'anna', displayName: 'Anna' });
+  const B = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'B' }, owner: { name: 'Bea', email: 'b@b.at', password: 'geheim123' } });
+  social.createProfile(B.user.id, { handle: 'bea', displayName: 'Bea' });
+  const a = A.user.id, b = B.user.id;
+
+  // Alte eigene Meldung (20 Tage) -> muss auftauchen.
+  shortagesRepo.upsert({ wirkstoff: 'Ramipril', bezeichnung: 'Ramipril 5 mg', status: 'kritisch', provenance: 'community', reporter_user_id: a, gemeldet_am: '2026-07-10' });
+  // Frische eigene Meldung (2 Tage) -> NICHT (< 14 Tage).
+  shortagesRepo.upsert({ wirkstoff: 'Metformin', bezeichnung: 'Metformin 850 mg', status: 'kritisch', provenance: 'community', reporter_user_id: a, gemeldet_am: '2026-07-28' });
+  // Alte, aber schon wieder lieferbar -> NICHT.
+  shortagesRepo.upsert({ wirkstoff: 'Ibuprofen', bezeichnung: 'Ibuprofen 400 mg', status: 'verfuegbar', provenance: 'community', reporter_user_id: a, gemeldet_am: '2026-07-01' });
+  // Alte Meldung einer anderen Apotheke -> für A NICHT.
+  shortagesRepo.upsert({ wirkstoff: 'Salbutamol', bezeichnung: 'Salbutamol Spray', status: 'kritisch', provenance: 'community', reporter_user_id: b, gemeldet_am: '2026-06-01' });
+
+  const oa = overview.forUser(a);
+  assert.equal(oa.my_reports.count, 1, 'nur die alte, offene, eigene Community-Meldung');
+  assert.equal(oa.my_reports.items[0].wirkstoff, 'Ramipril');
+  assert.equal(oa.my_reports.items[0].days_reported, 20);
+  // Für B nur die eigene alte Meldung (Salbutamol), Rampiril/Metformin gehören A.
+  const ob = overview.forUser(b);
+  assert.equal(ob.my_reports.count, 1);
+  assert.equal(ob.my_reports.items[0].wirkstoff, 'Salbutamol');
+});
+
 test('Rabatt-Alarm: einmalige Benachrichtigung ab Schwelle, kein Duplikat; Validierung', () => {
   const repo = createMemoryRepo();
   const orgAuth = createOrgAuthService(repo);

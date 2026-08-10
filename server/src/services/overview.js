@@ -60,6 +60,16 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
           expired: e.days_until_expiry < 0, match_count: e.match_count || 0,
         }));
 
+      // Eigene, lange offene Community-Engpass-Meldungen (≥14 Tage, noch nicht „wieder
+      // lieferbar"): Anstoß an die Melder:in, den Status zu prüfen/aktualisieren. Hält die
+      // Engpass-Daten vertrauenswürdig — direkt aus dem Owner-Prinzip „sicherheitsrelevante
+      // Aussagen (Engpass) aktuell halten". Nur eigene Community-Meldungen, nie fremde.
+      const STALE_REPORT_DAYS = 14;
+      const myStaleReports = sh
+        .filter(s => s.provenance === 'community' && s.is_reporter && s.status !== 'verfuegbar' && (s.days_reported || 0) >= STALE_REPORT_DAYS)
+        .map(s => ({ id: s.id, wirkstoff: s.wirkstoff, bezeichnung: s.bezeichnung, status: s.status, days_reported: s.days_reported, confirm_count: s.confirm_count || 0 }))
+        .sort((a, b) => (b.days_reported || 0) - (a.days_reported || 0));
+
       // Eigene offene Gesuche mit passenden Angeboten: schließt die Nachfrageseite —
       // wer per „Ich suche das" Bedarf meldet, sieht hier, wo inzwischen „Biete"-Angebote
       // existieren, und springt direkt zu den Treffern. match_count = eindeutige Anbieter.
@@ -90,6 +100,7 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
         watch_deals: watchDeals,
         watch_offers: watchOffers,
         expiring_offers: { count: expiringOffers.length, items: expiringOffers.slice(0, 5) },
+        my_reports: { count: myStaleReports.length, items: myStaleReports.slice(0, 5) },
         my_seeks: { open: mySeeks.length, with_matches: seeksWithMatches.length, items: seeksWithMatches.slice(0, 3) },
         exchange: {
           biete: ex.filter(e => e.kind === 'biete').length,

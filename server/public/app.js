@@ -328,6 +328,7 @@ const I18N = {
     wo_offers_sg:'Angebot', wo_offers_pl:'Angebote', wo_in_exchange:'im Bestandsaustausch',
     ms_title:'🔎 Deine Gesuche mit Treffern', ms_sub:'Zu diesen offenen Gesuchen bieten Apotheken jetzt Bestand an:', ms_matches_sg:'passendes Angebot', ms_matches_pl:'passende Angebote',
     xo_title:'⏳ Deine Angebote laufen bald ab', xo_sub:'Restbestand rechtzeitig abgeben, bevor er verfällt — spart Geld und vermeidet Verschwendung.', xo_all:'Meine Einträge', xo_expires:'Verfällt am', xo_expired:'abgelaufen', xo_today:'läuft heute ab', xo_days_one:'noch 1 Tag', xo_days_many:'noch {n} Tage', xo_matches_sg:'1 passendes Gesuch', xo_matches_pl:'{n} passende Gesuche',
+    sr_title:'🔄 Deine Engpass-Meldungen prüfen', sr_sub:'Diese von dir gemeldeten Engpässe stehen schon länger — noch aktuell? Ein kurzer Status-Check hält die Daten verlässlich.', sr_since_one:'seit 1 Tag', sr_since_many:'seit {n} Tagen', sr_confirms_one:'1 Bestätigung', sr_confirms_many:'{n} Bestätigungen',
     bm_doc:'Merkliste', bm_title:'🔖 Meine Merkliste', bm_empty_t:'Noch nichts gemerkt',
     bm_empty_s:'Tippe bei einem Beitrag auf „🔖 Merken", dann findest du ihn hier jederzeit wieder.',
     ht_posts:'{n} Beiträge', ht_empty_t:'Noch keine Beiträge zu diesem Thema', ht_empty_s:'Sei der/die Erste und schreibe etwas mit #{tag}.',
@@ -674,6 +675,7 @@ const I18N = {
     wo_offers_sg:'offer', wo_offers_pl:'offers', wo_in_exchange:'in the stock exchange',
     ms_title:'🔎 Your wants with matches', ms_sub:'Pharmacies are now offering stock for these open wants of yours:', ms_matches_sg:'matching offer', ms_matches_pl:'matching offers',
     xo_title:'⏳ Your offers are expiring soon', xo_sub:'Pass on leftover stock in time, before it expires — saves money and avoids waste.', xo_all:'My listings', xo_expires:'Expires on', xo_expired:'expired', xo_today:'expires today', xo_days_one:'1 day left', xo_days_many:'{n} days left', xo_matches_sg:'1 matching want', xo_matches_pl:'{n} matching wants',
+    sr_title:'🔄 Review your shortage reports', sr_sub:'These shortages you reported have been open for a while — still current? A quick status check keeps the data reliable.', sr_since_one:'for 1 day', sr_since_many:'for {n} days', sr_confirms_one:'1 confirmation', sr_confirms_many:'{n} confirmations',
     bm_doc:'Bookmarks', bm_title:'🔖 My bookmarks', bm_empty_t:'Nothing saved yet',
     bm_empty_s:'Tap “🔖 Save” on a post to find it here anytime.',
     ht_posts:'{n} posts', ht_empty_t:'No posts on this topic yet', ht_empty_s:'Be the first and post something with #{tag}.',
@@ -1020,6 +1022,7 @@ const I18N = {
     wo_offers_sg:'oferta', wo_offers_pl:'ofertas', wo_in_exchange:'na troca de stock',
     ms_title:'🔎 Os seus pedidos com correspondências', ms_sub:'Há farmácias a oferecer stock para estes pedidos abertos seus:', ms_matches_sg:'oferta correspondente', ms_matches_pl:'ofertas correspondentes',
     xo_title:'⏳ As suas ofertas expiram em breve', xo_sub:'Ceda o stock restante a tempo, antes que expire — poupa dinheiro e evita desperdício.', xo_all:'As minhas entradas', xo_expires:'Expira a', xo_expired:'expirado', xo_today:'expira hoje', xo_days_one:'falta 1 dia', xo_days_many:'faltam {n} dias', xo_matches_sg:'1 pedido correspondente', xo_matches_pl:'{n} pedidos correspondentes',
+    sr_title:'🔄 Reveja as suas comunicações de rutura', sr_sub:'Estas ruturas que comunicou estão abertas há algum tempo — ainda atuais? Uma verificação rápida do estado mantém os dados fiáveis.', sr_since_one:'há 1 dia', sr_since_many:'há {n} dias', sr_confirms_one:'1 confirmação', sr_confirms_many:'{n} confirmações',
     bm_doc:'Marcadores', bm_title:'🔖 Os meus marcadores', bm_empty_t:'Ainda nada guardado',
     bm_empty_s:'Toque em “🔖 Guardar” numa publicação para a encontrar aqui a qualquer momento.',
     ht_posts:'{n} publicações', ht_empty_t:'Ainda sem publicações sobre este tema', ht_empty_s:'Seja o primeiro e publique algo com #{tag}.',
@@ -2010,6 +2013,17 @@ async function loadOverview() {
       ${d.expiring_offers.items.map(o=>`<div class="comment clickable" data-open>📦 <b>${esc(o.bezeichnung)}</b>${o.menge?` <span class="muted">· ${esc(o.menge)}</span>`:''} ${daysChip(o)}<div class="muted" style="font-size:12px;margin-top:2px">${esc(t('xo_expires'))} <b>${esc(fmtDateDe(o.ablauf))}</b>${o.match_count>0?` · <span style="color:var(--ok-fg);font-weight:700">${esc(o.match_count>1?ti('xo_matches_pl',{n:o.match_count}):t('xo_matches_sg'))}</span>`:''}</div></div>`).join('')}</div>`);
     c.querySelector('[data-all]').onclick = () => { exchangeMine = true; goTab('exchange'); };
     c.querySelectorAll('[data-open]').forEach(row => row.onclick = () => { exchangeMine = true; goTab('exchange'); });
+    feed.appendChild(c);
+  }
+
+  // Eigene, lange offene Community-Engpass-Meldungen: Anstoß, den Status zu prüfen —
+  // hält die Engpass-Daten verlässlich (nur die eigenen Meldungen der Nutzer:in).
+  if (d.my_reports && d.my_reports.count) {
+    const c = el(`<div class="card" style="border-left:4px solid var(--info-fg)"><div class="row"><b>${esc(t('sr_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>${esc(t('sp_view_all'))}</button></div>
+      <div class="muted" style="font-size:13px;margin:2px 0 6px">${esc(t('sr_sub'))}</div>
+      ${d.my_reports.items.map(r=>{const m=watchStatusMeta(r.status);return `<div class="comment clickable" data-wk="${esc(r.wirkstoff)}"><span style="font-size:16px">${m.icon}</span> <b>${esc(r.wirkstoff)}</b>${r.bezeichnung?` <span class="muted">${esc(r.bezeichnung)}</span>`:''} <span style="display:inline-block;font-size:12px;font-weight:700;color:var(--warn-fg);background:var(--warn-bg);border:1px solid var(--warn-bd);padding:1px 8px;border-radius:999px">${esc(nlabel(r.days_reported,'sr_since_one','sr_since_many'))}</span>${r.confirm_count>0?` <span class="muted" style="font-size:12px">· ${esc(nlabel(r.confirm_count,'sr_confirms_one','sr_confirms_many'))}</span>`:''} <span class="ovtile-go" aria-hidden="true">›</span></div>`;}).join('')}</div>`);
+    c.querySelector('[data-all]').onclick = () => goTab('shortages');
+    c.querySelectorAll('[data-wk]').forEach(row => row.onclick = () => openWirkstoff(row.dataset.wk));
     feed.appendChild(c);
   }
 
