@@ -113,6 +113,33 @@ test('my_seeks: eigenes offenes Gesuch mit passendem Angebot einer anderen Apoth
   assert.equal(overview.forUser(b).my_seeks.with_matches, 0);
 });
 
+// Datum relativ zu heute (UTC) — deckt sich mit daysUntil() im Exchange-Service.
+function isoInDays(n) { const d = new Date(); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+
+test('expiring_offers: eigene Biete-Angebote mit nahendem/überschrittenem Verfall', () => {
+  const { overview, exchange, a } = setup();
+  exchange.create(a, { kind: 'biete', bezeichnung: 'Ibuprofen 400 mg', menge: '20 Pkg', ablauf: isoInDays(5) });   // bald (≤30) -> zählt
+  exchange.create(a, { kind: 'biete', bezeichnung: 'Metformin 850 mg', ablauf: isoInDays(-3) });                   // abgelaufen -> zählt, expired
+  exchange.create(a, { kind: 'biete', bezeichnung: 'Pantoprazol 40 mg', ablauf: isoInDays(60) });                  // erst in 60 Tagen -> NICHT
+  exchange.create(a, { kind: 'biete', bezeichnung: 'Simvastatin 20 mg' });                                         // kein Verfall -> NICHT
+  exchange.create(a, { kind: 'suche', bezeichnung: 'Ramipril 5 mg', ablauf: isoInDays(2) });                       // Gesuch -> NICHT
+  const o = overview.forUser(a);
+  assert.equal(o.expiring_offers.count, 2, 'nur die beiden Biete-Angebote mit Verfall ≤30 Tagen');
+  // Sortierung: bald ablaufende zuerst — hier zuerst das bereits abgelaufene (-3 < 5).
+  assert.equal(o.expiring_offers.items[0].bezeichnung, 'Metformin 850 mg');
+  assert.equal(o.expiring_offers.items[0].expired, true);
+  assert.equal(o.expiring_offers.items[1].bezeichnung, 'Ibuprofen 400 mg');
+  assert.equal(o.expiring_offers.items[1].expired, false);
+  assert.equal(o.expiring_offers.items[1].days_until_expiry, 5);
+  assert.equal(o.expiring_offers.items[1].menge, '20 Pkg');
+});
+
+test('expiring_offers: leer ohne Angebote mit Verfallsdatum', () => {
+  const { overview, exchange, a } = setup();
+  exchange.create(a, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg' }); // ohne Verfall
+  assert.deepEqual(overview.forUser(a).expiring_offers, { count: 0, items: [] });
+});
+
 test('Rabatt-Alarm: einmalige Benachrichtigung ab Schwelle, kein Duplikat; Validierung', () => {
   const repo = createMemoryRepo();
   const orgAuth = createOrgAuthService(repo);

@@ -335,7 +335,7 @@ const routes = [
     const ov = overview.forUser(userId, { dealsBlocked });
     // Rechts-Gate (Heimatland): gesperrte Module aus der Übersicht nehmen.
     if (dealsBlocked) { ov.top_rabatt = null; ov.rabatte_expiring = { count: 0, soonest: null }; ov.watch_deals = []; }
-    if (isFeatureBlocked(home, 'stock_exchange')) { ov.exchange = { biete: 0, suche: 0, recent: [] }; ov.my_seeks = { open: 0, with_matches: 0, items: [] }; ov.watch_offers = []; }
+    if (isFeatureBlocked(home, 'stock_exchange')) { ov.exchange = { biete: 0, suche: 0, recent: [] }; ov.my_seeks = { open: 0, with_matches: 0, items: [] }; ov.watch_offers = []; ov.expiring_offers = { count: 0, items: [] }; }
     if (isFeatureBlocked(home, 'price_compare')) { ov.savings = null; }
     return { ...ov, premium: payments.hasFeature(userId, 'premium'), data_live: isLive(activeCountry(userId, query)) };
   }],

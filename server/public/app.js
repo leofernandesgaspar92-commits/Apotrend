@@ -327,6 +327,7 @@ const I18N = {
     wo_title:'🔄 Bezugsquellen zu deinen Wirkstoffen', wo_sub:'Für diese beobachteten Wirkstoffe bieten Apotheken gerade Bestand an:',
     wo_offers_sg:'Angebot', wo_offers_pl:'Angebote', wo_in_exchange:'im Bestandsaustausch',
     ms_title:'🔎 Deine Gesuche mit Treffern', ms_sub:'Zu diesen offenen Gesuchen bieten Apotheken jetzt Bestand an:', ms_matches_sg:'passendes Angebot', ms_matches_pl:'passende Angebote',
+    xo_title:'⏳ Deine Angebote laufen bald ab', xo_sub:'Restbestand rechtzeitig abgeben, bevor er verfällt — spart Geld und vermeidet Verschwendung.', xo_all:'Meine Einträge', xo_expires:'Verfällt am', xo_expired:'abgelaufen', xo_today:'läuft heute ab', xo_days_one:'noch 1 Tag', xo_days_many:'noch {n} Tage', xo_matches_sg:'1 passendes Gesuch', xo_matches_pl:'{n} passende Gesuche',
     bm_doc:'Merkliste', bm_title:'🔖 Meine Merkliste', bm_empty_t:'Noch nichts gemerkt',
     bm_empty_s:'Tippe bei einem Beitrag auf „🔖 Merken", dann findest du ihn hier jederzeit wieder.',
     ht_posts:'{n} Beiträge', ht_empty_t:'Noch keine Beiträge zu diesem Thema', ht_empty_s:'Sei der/die Erste und schreibe etwas mit #{tag}.',
@@ -672,6 +673,7 @@ const I18N = {
     wo_title:'🔄 Sources for your substances', wo_sub:'Pharmacies are currently offering stock for these substances you watch:',
     wo_offers_sg:'offer', wo_offers_pl:'offers', wo_in_exchange:'in the stock exchange',
     ms_title:'🔎 Your wants with matches', ms_sub:'Pharmacies are now offering stock for these open wants of yours:', ms_matches_sg:'matching offer', ms_matches_pl:'matching offers',
+    xo_title:'⏳ Your offers are expiring soon', xo_sub:'Pass on leftover stock in time, before it expires — saves money and avoids waste.', xo_all:'My listings', xo_expires:'Expires on', xo_expired:'expired', xo_today:'expires today', xo_days_one:'1 day left', xo_days_many:'{n} days left', xo_matches_sg:'1 matching want', xo_matches_pl:'{n} matching wants',
     bm_doc:'Bookmarks', bm_title:'🔖 My bookmarks', bm_empty_t:'Nothing saved yet',
     bm_empty_s:'Tap “🔖 Save” on a post to find it here anytime.',
     ht_posts:'{n} posts', ht_empty_t:'No posts on this topic yet', ht_empty_s:'Be the first and post something with #{tag}.',
@@ -1017,6 +1019,7 @@ const I18N = {
     wo_title:'🔄 Fontes para as suas substâncias', wo_sub:'Há farmácias a oferecer stock para estas substâncias que vigia:',
     wo_offers_sg:'oferta', wo_offers_pl:'ofertas', wo_in_exchange:'na troca de stock',
     ms_title:'🔎 Os seus pedidos com correspondências', ms_sub:'Há farmácias a oferecer stock para estes pedidos abertos seus:', ms_matches_sg:'oferta correspondente', ms_matches_pl:'ofertas correspondentes',
+    xo_title:'⏳ As suas ofertas expiram em breve', xo_sub:'Ceda o stock restante a tempo, antes que expire — poupa dinheiro e evita desperdício.', xo_all:'As minhas entradas', xo_expires:'Expira a', xo_expired:'expirado', xo_today:'expira hoje', xo_days_one:'falta 1 dia', xo_days_many:'faltam {n} dias', xo_matches_sg:'1 pedido correspondente', xo_matches_pl:'{n} pedidos correspondentes',
     bm_doc:'Marcadores', bm_title:'🔖 Os meus marcadores', bm_empty_t:'Ainda nada guardado',
     bm_empty_s:'Toque em “🔖 Guardar” numa publicação para a encontrar aqui a qualquer momento.',
     ht_posts:'{n} publicações', ht_empty_t:'Ainda sem publicações sobre este tema', ht_empty_s:'Seja o primeiro e publique algo com #{tag}.',
@@ -1987,6 +1990,26 @@ async function loadOverview() {
       box.appendChild(row);
     });
     c.querySelector('[data-all]').onclick = () => goTab('rabatte');
+    feed.appendChild(c);
+  }
+
+  // Eigene „Biete"-Angebote mit nahendem/überschrittenem Verfallsdatum: aktiver Anstoß,
+  // Restbestand abzugeben, bevor er verfällt (spart Geld, vermeidet Verschwendung).
+  if (d.expiring_offers && d.expiring_offers.count) {
+    const daysChip = (o) => {
+      if (o.expired) return `<span style="display:inline-block;font-size:12px;font-weight:700;color:#fff;background:var(--crit-fg);padding:2px 8px;border-radius:999px">${esc(t('xo_expired'))}</span>`;
+      const label = o.days_until_expiry === 0 ? t('xo_today') : nlabel(o.days_until_expiry, 'xo_days_one', 'xo_days_many');
+      const soon = o.days_until_expiry <= 7;
+      const col = soon ? 'var(--warn-fg)' : 'var(--muted)';
+      const bg = soon ? 'var(--warn-bg)' : 'var(--chip-bg)';
+      const bd = soon ? 'var(--warn-bd)' : 'var(--line)';
+      return `<span style="display:inline-block;font-size:12px;font-weight:700;color:${col};background:${bg};border:1px solid ${bd};padding:2px 8px;border-radius:999px">${esc(label)}</span>`;
+    };
+    const c = el(`<div class="card" style="border-left:4px solid var(--warn-fg)"><div class="row"><b>${esc(t('xo_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>${esc(t('xo_all'))}</button></div>
+      <div class="muted" style="font-size:13px;margin:2px 0 6px">${esc(t('xo_sub'))}</div>
+      ${d.expiring_offers.items.map(o=>`<div class="comment clickable" data-open>📦 <b>${esc(o.bezeichnung)}</b>${o.menge?` <span class="muted">· ${esc(o.menge)}</span>`:''} ${daysChip(o)}<div class="muted" style="font-size:12px;margin-top:2px">${esc(t('xo_expires'))} <b>${esc(fmtDateDe(o.ablauf))}</b>${o.match_count>0?` · <span style="color:var(--ok-fg);font-weight:700">${esc(o.match_count>1?ti('xo_matches_pl',{n:o.match_count}):t('xo_matches_sg'))}</span>`:''}</div></div>`).join('')}</div>`);
+    c.querySelector('[data-all]').onclick = () => { exchangeMine = true; goTab('exchange'); };
+    c.querySelectorAll('[data-open]').forEach(row => row.onclick = () => { exchangeMine = true; goTab('exchange'); });
     feed.appendChild(c);
   }
 

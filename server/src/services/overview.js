@@ -45,6 +45,21 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
           gueltig_bis: x.deal.gueltig_bis, days_left: x.deal.days_left, expiring_soon: x.deal.expiring_soon,
         }));
 
+      // Eigene „Biete"-Angebote, deren Verfallsdatum naht (≤ 30 Tage) oder bereits
+      // überschritten ist: aktiver Anstoß, Restbestand rechtzeitig abzugeben, bevor er
+      // verfällt — spart Geld und vermeidet Arzneimittel-Verschwendung. days_until_expiry
+      // kommt bereits aus exchange.mine(); expired = Datum liegt in der Vergangenheit.
+      const EXPIRY_SOON_DAYS = 30;
+      const myOffers = exchange.mine(userId, { status: 'offen' }).filter(e => e.kind === 'biete');
+      const expiringOffers = myOffers
+        .filter(e => e.days_until_expiry != null && e.days_until_expiry <= EXPIRY_SOON_DAYS)
+        .sort((a, b) => a.days_until_expiry - b.days_until_expiry)
+        .map(e => ({
+          id: e.id, bezeichnung: e.bezeichnung, menge: e.menge || null,
+          ablauf: e.ablauf, days_until_expiry: e.days_until_expiry,
+          expired: e.days_until_expiry < 0, match_count: e.match_count || 0,
+        }));
+
       // Eigene offene Gesuche mit passenden Angeboten: schließt die Nachfrageseite —
       // wer per „Ich suche das" Bedarf meldet, sieht hier, wo inzwischen „Biete"-Angebote
       // existieren, und springt direkt zu den Treffern. match_count = eindeutige Anbieter.
@@ -74,6 +89,7 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
         watchlist: { total: watchlist.length, items: watchlist, alerts: watchlist.filter(w => w.status === 'kritisch' || w.status === 'eingeschraenkt').length },
         watch_deals: watchDeals,
         watch_offers: watchOffers,
+        expiring_offers: { count: expiringOffers.length, items: expiringOffers.slice(0, 5) },
         my_seeks: { open: mySeeks.length, with_matches: seeksWithMatches.length, items: seeksWithMatches.slice(0, 3) },
         exchange: {
           biete: ex.filter(e => e.kind === 'biete').length,
