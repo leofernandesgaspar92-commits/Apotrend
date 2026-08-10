@@ -66,6 +66,52 @@ test('Bestell-Historie: checkout schnappschottet + leert, reorder füllt neu, de
   assert.equal(social.listOrders(a).length, 0);
 });
 
+test('Checkout je Lieferant: nur die Positionen eines Großhandels abschließen, Rest bleibt', () => {
+  const { social, a } = setup();
+  social.addToCart(a, { bezeichnung: 'Amoxi', supplier: 'Kwizda', aktionspreis: 7, listenpreis: 10, menge: 3, sourceKind: 'rabatt' });
+  social.addToCart(a, { bezeichnung: 'Clari', supplier: 'Kwizda', aktionspreis: 4, menge: 2, sourceKind: 'price' });
+  social.addToCart(a, { bezeichnung: 'Ibu', supplier: 'Herba', aktionspreis: 5, menge: 2, sourceKind: 'price' });
+  social.addToCart(a, { bezeichnung: 'Handschuhe', menge: 1, sourceKind: 'manual' }); // ohne Lieferant
+
+  // Nur Kwizda abschließen: eigene Order mit korrekten Summen NUR aus Kwizda-Positionen.
+  const order = social.checkoutCart(a, { reference: 'KW32', supplier: 'Kwizda' });
+  assert.equal(order.positions, 2);
+  assert.equal(order.total_pieces, 5); // 3 + 2
+  assert.equal(order.total_price, 7 * 3 + 4 * 2); // 29 — Herba/manuell NICHT enthalten
+  assert.equal(order.total_savings, (10 - 7) * 3); // 9
+  assert.ok(order.items.every(i => i.supplier === 'Kwizda'));
+
+  // Rest bleibt in der Liste (Herba + Handschuhe).
+  const c = social.cart(a);
+  assert.equal(c.count, 2);
+  assert.ok(c.items.some(i => i.bezeichnung === 'Ibu'));
+  assert.ok(c.items.some(i => i.bezeichnung === 'Handschuhe'));
+  assert.equal(c.total_price, 5 * 2); // nur Ibu hat einen Preis
+
+  // Groß-/Kleinschreibung des Lieferantennamens ist egal.
+  const order2 = social.checkoutCart(a, { supplier: 'herba' });
+  assert.equal(order2.positions, 1);
+  assert.equal(order2.items[0].bezeichnung, 'Ibu');
+  assert.equal(social.cart(a).count, 1); // nur noch Handschuhe
+
+  // Gruppe „ohne Lieferant" gezielt abschließen (supplier: '').
+  const order3 = social.checkoutCart(a, { supplier: '' });
+  assert.equal(order3.positions, 1);
+  assert.equal(order3.items[0].bezeichnung, 'Handschuhe');
+  assert.equal(social.cart(a).count, 0);
+
+  // Drei getrennte Bestellungen in der Historie.
+  assert.equal(social.listOrders(a).length, 3);
+});
+
+test('Checkout je Lieferant: unbekannter Lieferant wirft, ganze Liste bleibt unangetastet', () => {
+  const { social, a } = setup();
+  social.addToCart(a, { bezeichnung: 'Amoxi', supplier: 'Kwizda', aktionspreis: 7, menge: 3, sourceKind: 'rabatt' });
+  assert.throws(() => social.checkoutCart(a, { supplier: 'GibtsNicht' }), /Lieferanten|supplier/i);
+  assert.equal(social.cart(a).count, 1, 'nichts entfernt');
+  assert.equal(social.listOrders(a).length, 0, 'keine Order angelegt');
+});
+
 test('Bestell-Historie: fremde Order nicht abrufbar/änderbar', () => {
   const { social, a, b } = setup();
   social.addToCart(a, { bezeichnung: 'X', aktionspreis: 1, menge: 1, sourceKind: 'manual' });

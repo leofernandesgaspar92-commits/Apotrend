@@ -146,6 +146,7 @@ const I18N = {
     cart_col_menge:'Menge', cart_col_sum:'Summe', cart_col_note:'Notiz', cart_print_title:'Einkaufsliste / Bestellung', cart_print_foot:'Preise sind Momentaufnahmen (Aktions-/Referenzpreis) — im Zweifel beim Großhandel prüfen.',
     cart_manual_add:'+ Hinzufügen', cart_manual_ph:'Eigene Position (z. B. Ibuprofen 400)', cart_note_ph:'Notiz (z. B. „bis Freitag", „für Rezeptur")',
     cart_supplier_none:'Ohne Lieferant / eigene Positionen', cart_subtotal:'Zwischensumme', cart_sub_line:'Zwischensumme · {n} Pos. · € {sum}', cart_copy_order:'Bestellung kopieren', cart_order_copied:'✓ Kopiert', cart_order_title:'Bestellung — {supplier}',
+    cart_sup_checkout:'Als bestellt', cart_sup_checkout_t:'Nur diesen Lieferanten als bestellt abschließen — der Rest bleibt in der Liste.', cart_sup_checkout_confirm:'Alle Positionen von „{sup}" jetzt als bestellt markieren? Sie wandern in die Bestell-Historie, der Rest der Liste bleibt.', cart_sup_checkout_done:'„{sup}" als bestellt abgeschlossen.',
     rb_none:'Keine Aktion für diese Auswahl.', rb_saving:'Ersparnis € {x} je Packung',
     rb_minorder:'💰 Bei Mindestabnahme ({n} Stück): € {x} gespart', rb_calc_qty:'Deine Menge:', rb_calc_result:'gesamt € {total} · gespart € {saved}', rb_calc_below_min:'unter Mindestmenge {n}',
     rb_best:'⭐ Beste Aktion für {w} ({alt})', rb_alt_one:'1 weitere läuft', rb_alt_many:'{n} weitere laufen',
@@ -493,6 +494,7 @@ const I18N = {
     cart_col_menge:'Qty', cart_col_sum:'Total', cart_col_note:'Note', cart_print_title:'Shopping list / order', cart_print_foot:'Prices are snapshots (deal/reference price) — verify with your wholesaler if in doubt.',
     cart_manual_add:'+ Add', cart_manual_ph:'Own item (e.g. Ibuprofen 400)', cart_note_ph:'Note (e.g. “by Friday”, “for compounding”)',
     cart_supplier_none:'No supplier / own items', cart_subtotal:'Subtotal', cart_sub_line:'Subtotal · {n} items · € {sum}', cart_copy_order:'Copy order', cart_order_copied:'✓ Copied', cart_order_title:'Order — {supplier}',
+    cart_sup_checkout:'Mark ordered', cart_sup_checkout_t:'Check out only this supplier — the rest stays in the list.', cart_sup_checkout_confirm:'Mark all items from “{sup}” as ordered now? They move to the order history; the rest of the list stays.', cart_sup_checkout_done:'“{sup}” checked out as ordered.',
     rb_none:'No offer for this selection.', rb_saving:'Saving € {x} per pack',
     rb_minorder:'💰 At minimum order ({n} units): € {x} saved', rb_calc_qty:'Your quantity:', rb_calc_result:'total € {total} · saved € {saved}', rb_calc_below_min:'below minimum {n}',
     rb_best:'⭐ Best deal for {w} ({alt})', rb_alt_one:'1 more running', rb_alt_many:'{n} more running',
@@ -840,6 +842,7 @@ const I18N = {
     cart_col_menge:'Qtd', cart_col_sum:'Total', cart_col_note:'Nota', cart_print_title:'Lista de compras / encomenda', cart_print_foot:'Os preços são momentâneos (promoção/referência) — confirme com o distribuidor em caso de dúvida.',
     cart_manual_add:'+ Adicionar', cart_manual_ph:'Item próprio (ex. Ibuprofeno 400)', cart_note_ph:'Nota (ex. “até sexta”, “para manipulação”)',
     cart_supplier_none:'Sem fornecedor / itens próprios', cart_subtotal:'Subtotal', cart_sub_line:'Subtotal · {n} itens · € {sum}', cart_copy_order:'Copiar encomenda', cart_order_copied:'✓ Copiado', cart_order_title:'Encomenda — {supplier}',
+    cart_sup_checkout:'Marcar encomendado', cart_sup_checkout_t:'Concluir apenas este fornecedor — o resto fica na lista.', cart_sup_checkout_confirm:'Marcar todos os itens de „{sup}" como encomendados agora? Passam para o histórico de pedidos; o resto da lista permanece.', cart_sup_checkout_done:'„{sup}" concluído como encomendado.',
     rb_none:'Nenhuma promoção para esta seleção.', rb_saving:'Poupança € {x} por embalagem',
     rb_minorder:'💰 Na compra mínima ({n} unidades): € {x} poupados', rb_calc_qty:'A sua quantidade:', rb_calc_result:'total € {total} · poupado € {saved}', rb_calc_below_min:'abaixo do mínimo {n}',
     rb_best:'⭐ Melhor promoção para {w} ({alt})', rb_alt_one:'mais 1 ativa', rb_alt_many:'mais {n} ativas',
@@ -3903,7 +3906,7 @@ async function copySupplierOrder(supplier, items, btn) {
 }
 
 // Einkaufsliste (Bestell-Merkzettel): Positionen mit Menge, Entfernen, CSV/Ausdruck.
-async function openCart() {
+async function openCart(flash) {
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   setDocTitle(t('cart_title'));
@@ -3934,6 +3937,7 @@ async function openCart() {
   head.querySelector('[data-back]').onclick = () => loadTab();
   head.querySelector('[data-corders]').onclick = () => openOrders();
   feed.appendChild(head);
+  if (flash) feed.appendChild(el(`<div class="card ok-box" style="padding:10px 14px;font-weight:600">✅ ${esc(flash)}</div>`));
   const madd = head.querySelector('[data-madd]');
   const addManual = async () => {
     const bez = madd.value.trim(); if (!bez) { madd.focus(); return; }
@@ -4006,13 +4010,27 @@ async function openCart() {
       savingsEl.textContent = sv > 0 ? ti('cart_savings', { sum: fmtMoney(sv) }) : '';
     }
   };
+  // Mehrere Lieferantengruppen? Dann kann die Apotheke einen Großhandel jetzt als bestellt
+  // abschließen und den Rest später — jede Gruppe bekommt einen eigenen „bestellt"-Button.
+  const supplierGroupCount = new Set(d.items.map(i => (i.supplier || '').trim().toLowerCase())).size;
   let lastSupplier = null;
   bySupplier.forEach((i, idx) => {
     const sup = (i.supplier || '').trim();
     if (sup !== lastSupplier) {
       lastSupplier = sup;
-      const sh = el(`<div class="cart-sup" style="display:flex;align-items:center;gap:8px"><span style="flex:1">🏢 ${esc(sup || t('cart_supplier_none'))}</span><button class="ghost small" data-supcopy title="${esc(t('cart_copy_order'))}">📋 ${esc(t('cart_copy_order'))}</button></div>`);
+      const sh = el(`<div class="cart-sup" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="flex:1">🏢 ${esc(sup || t('cart_supplier_none'))}</span>${supplierGroupCount>=2?`<button class="small" data-supcheckout title="${esc(t('cart_sup_checkout_t'))}">✓ ${esc(t('cart_sup_checkout'))}</button>`:''}<button class="ghost small" data-supcopy title="${esc(t('cart_copy_order'))}">📋 ${esc(t('cart_copy_order'))}</button></div>`);
       sh.querySelector('[data-supcopy]').onclick = (ev) => copySupplierOrder(sup, d.items, ev.target);
+      const scBtn = sh.querySelector('[data-supcheckout]');
+      if (scBtn) scBtn.onclick = async () => {
+        const supLabel = sup || t('cart_supplier_none');
+        if (!confirm(ti('cart_sup_checkout_confirm', { sup: supLabel }))) return;
+        scBtn.disabled = true;
+        const reference = (head.querySelector('[data-cref]') || {}).value;
+        try {
+          await api('POST','/api/cart/checkout',{ reference: reference ? reference.trim() : '', supplier: sup });
+          openCart(ti('cart_sup_checkout_done', { sup: supLabel }));
+        } catch(e){ alert(e.message); scBtn.disabled = false; }
+      };
       feed.appendChild(sh);
     }
     const card = el(`<div class="card"><div class="row" style="align-items:baseline">

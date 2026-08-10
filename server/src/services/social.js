@@ -1041,24 +1041,43 @@ export function createSocialService(social, foundationRepo, options = {}) {
     clearCart(userId) { requireUser(userId); social.clearCart(userId); return { ok: true }; },
 
     // ── Bestell-Historie: Einkaufsliste als „bestellt" abschließen (Snapshot) und leeren ──
-    checkoutCart(userId, { reference } = {}) {
+    // supplier (optional): nur Positionen dieses Großhandels abschließen — Bestellungen gehen
+    // je Großhandel separat raus, also kann die Apotheke einen Lieferanten jetzt bestellen und
+    // den Rest später. supplier===undefined => ganze Liste (wie bisher). '' = Gruppe „ohne
+    // Lieferant". Nur die abgeschlossenen Positionen werden aus der Liste entfernt.
+    checkoutCart(userId, { reference, supplier } = {}) {
       requireUser(userId);
       const summary = this.cart(userId);
       if (!summary.items.length) throw new AppError('cart_empty', 'Einkaufsliste ist leer.');
+      const bySupplier = supplier !== undefined && supplier !== null;
+      const supKey = bySupplier ? String(supplier).trim().toLowerCase() : null;
+      const selected = bySupplier
+        ? summary.items.filter(i => (i.supplier || '').trim().toLowerCase() === supKey)
+        : summary.items;
+      if (!selected.length) throw new AppError('cart_supplier_empty', 'Keine Positionen für diesen Lieferanten.');
       // Positionen als eigenständigen Snapshot ablegen (ohne Cart-IDs/User-ID).
-      const items = summary.items.map(i => ({
+      const items = selected.map(i => ({
         bezeichnung: i.bezeichnung, wirkstoff: i.wirkstoff || null, supplier: i.supplier || null,
         aktionspreis: i.aktionspreis ?? null, listenpreis: i.listenpreis ?? null,
         rabatt_pct: i.rabatt_pct ?? null, gueltig_bis: i.gueltig_bis || null,
         source_kind: i.source_kind || 'manual', menge: i.menge, note: i.note || null,
       }));
+      // Summen aus der Auswahl (nicht aus summary, das die ganze Liste zählt).
+      const total_pieces = selected.reduce((s, i) => s + (Number(i.menge) || 0), 0);
+      const total_price = Math.round(selected.reduce((s, i) => s + (Number(i.aktionspreis) || 0) * (Number(i.menge) || 0), 0) * 100) / 100;
+      const total_savings = Math.round(selected.reduce((s, i) => {
+        if (i.listenpreis == null || i.aktionspreis == null) return s;
+        const lp = Number(i.listenpreis), ap = Number(i.aktionspreis), m = Number(i.menge) || 0;
+        return lp > ap ? s + (lp - ap) * m : s;
+      }, 0) * 100) / 100;
       const order = social.addOrder({
         user_id: userId,
         reference: reference ? String(reference).trim().slice(0, 120) : null,
-        items, positions: items.length,
-        total_pieces: summary.total_positions, total_price: summary.total_price, total_savings: summary.total_savings,
+        items, positions: items.length, total_pieces, total_price, total_savings,
       });
-      social.clearCart(userId);
+      // Nur die abgeschlossenen Positionen entfernen; bei Voll-Checkout die ganze Liste.
+      if (bySupplier) { for (const i of selected) social.removeCartItem(i.id); }
+      else social.clearCart(userId);
       return order;
     },
     listOrders(userId) { requireUser(userId); return social.listOrders(userId); },

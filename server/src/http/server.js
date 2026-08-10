@@ -537,7 +537,7 @@ const routes = [
   ['GET', /^\/api\/cart$/, true, async ({ userId }) => social.cart(userId)],
   ['POST', /^\/api\/cart$/, true, async ({ userId, body }) => ({ item: social.addToCart(userId, body) })],
   ['POST', /^\/api\/cart\/clear$/, true, async ({ userId }) => social.clearCart(userId)],
-  ['POST', /^\/api\/cart\/checkout$/, true, async ({ userId, body }) => ({ order: social.checkoutCart(userId, { reference: body && body.reference }) })],
+  ['POST', /^\/api\/cart\/checkout$/, true, async ({ userId, body }) => ({ order: social.checkoutCart(userId, { reference: body && body.reference, supplier: body ? body.supplier : undefined }) })],
   ['POST', /^\/api\/cart\/([^/]+)\/remove$/, true, async ({ userId, params }) => social.removeCartItem(userId, params[0])],
   ['POST', /^\/api\/cart\/([^/]+)$/, true, async ({ userId, params, body }) => ({ item: social.updateCartItem(userId, params[0], body) })],
   // ── Bestell-Historie (abgeschlossene Einkaufslisten) ──
