@@ -67,7 +67,7 @@ const I18N = {
     oq_title:'❓ Offene Fachfragen', oq_waiting:'Kolleg:innen warten auf Antwort',
     oq_answer_sg:'Antwort', oq_answer_pl:'Antworten', tr_title:'🏷️ Aktuelle Themen:',
     sh_q_ph:'🔎 Wirkstoff oder Präparat suchen…', sh_f_all:'Alle', sh_f_crit:'🔴 Nur kritisch',
-    sh_f_abx:'🧫 Antibiotika', sh_f_watched:'⭐ Beobachtet', sh_f_comm:'👥 Community',
+    sh_f_abx:'🧫 Antibiotika', sh_f_watched:'⭐ Beobachtet', sh_f_comm:'👥 Community', sh_f_available:'✅ Wieder verfügbar',
     sh_print_asof:'Stand: ', sh_print_filter:' · Filter: ', sh_print_query:' · Suche: ',
     csv_yes:'ja', csv_no:'nein', csv_praeparat:'Präparat', csv_wirkstoff:'Wirkstoff', csv_lieferant:'Lieferant',
     csv_aep:'AEP (€)', csv_trend:'Trend (%)', csv_guenstigster:'Günstigster', csv_saving_vs_max:'Ersparnis ggü. teuerstem (€)',
@@ -416,7 +416,7 @@ const I18N = {
     oq_title:'❓ Open questions', oq_waiting:'Colleagues are waiting for an answer',
     oq_answer_sg:'answer', oq_answer_pl:'answers', tr_title:'🏷️ Trending topics:',
     sh_q_ph:'🔎 Search substance or product…', sh_f_all:'All', sh_f_crit:'🔴 Critical only',
-    sh_f_abx:'🧫 Antibiotics', sh_f_watched:'⭐ Watched', sh_f_comm:'👥 Community',
+    sh_f_abx:'🧫 Antibiotics', sh_f_watched:'⭐ Watched', sh_f_comm:'👥 Community', sh_f_available:'✅ Available again',
     sh_print_asof:'As of: ', sh_print_filter:' · Filter: ', sh_print_query:' · Search: ',
     csv_yes:'yes', csv_no:'no', csv_praeparat:'Product', csv_wirkstoff:'Substance', csv_lieferant:'Supplier',
     csv_aep:'List price (€)', csv_trend:'Trend (%)', csv_guenstigster:'Cheapest', csv_saving_vs_max:'Saving vs. most expensive (€)',
@@ -765,7 +765,7 @@ const I18N = {
     oq_title:'❓ Perguntas em aberto', oq_waiting:'Colegas à espera de resposta',
     oq_answer_sg:'resposta', oq_answer_pl:'respostas', tr_title:'🏷️ Temas atuais:',
     sh_q_ph:'🔎 Pesquisar substância ou produto…', sh_f_all:'Todas', sh_f_crit:'🔴 Só críticas',
-    sh_f_abx:'🧫 Antibióticos', sh_f_watched:'⭐ Vigiadas', sh_f_comm:'👥 Comunidade',
+    sh_f_abx:'🧫 Antibióticos', sh_f_watched:'⭐ Vigiadas', sh_f_comm:'👥 Comunidade', sh_f_available:'✅ Disponível de novo',
     sh_print_asof:'Atualizado: ', sh_print_filter:' · Filtro: ', sh_print_query:' · Pesquisa: ',
     csv_yes:'sim', csv_no:'não', csv_praeparat:'Produto', csv_wirkstoff:'Substância', csv_lieferant:'Fornecedor',
     csv_aep:'Preço de tabela (€)', csv_trend:'Tendência (%)', csv_guenstigster:'Mais barato', csv_saving_vs_max:'Poupança vs. mais caro (€)',
@@ -2813,18 +2813,27 @@ async function loadShortages() {
 
 // Filtert die (bereits geladenen) Engpässe und füllt nur die Listenbox — die
 // Filterleiste bleibt bestehen, damit der Suchfokus beim Tippen nicht verloren geht.
+// Prädikate je Filter — geteilt von Liste UND Chip-Zählern (eine Quelle der Wahrheit).
+const SHORTAGE_FILTERS = {
+  '': () => true,
+  kritisch: s => s.status === 'kritisch',
+  antibiotika: s => !!s.is_antibiotic,
+  watched: s => !!s.watched,
+  community: s => s.provenance === 'community',
+  verfuegbar: s => s.status === 'verfuegbar',
+};
 function renderShortlist(listBox, bar, all) {
-  bar.querySelectorAll('[data-f]').forEach(b => { const on = b.dataset.f === shortageFilter; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
-  bar.querySelectorAll('[data-sort]').forEach(b => { const on = b.dataset.sort === shortageSort; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
   const q = shortageQuery.trim().toLowerCase();
-  const list = all.filter(s => {
-    if (shortageFilter === 'kritisch' && s.status !== 'kritisch') return false;
-    if (shortageFilter === 'antibiotika' && !s.is_antibiotic) return false;
-    if (shortageFilter === 'watched' && !s.watched) return false;
-    if (shortageFilter === 'community' && s.provenance !== 'community') return false;
-    if (q && !((s.wirkstoff||'').toLowerCase().includes(q) || (s.bezeichnung||'').toLowerCase().includes(q))) return false;
-    return true;
+  // Basis = Textsuche angewandt; darauf zählen die Chips, damit die Zahlen zur Ansicht passen.
+  const base = all.filter(s => !q || (s.wirkstoff||'').toLowerCase().includes(q) || (s.bezeichnung||'').toLowerCase().includes(q));
+  bar.querySelectorAll('[data-f]').forEach(b => {
+    const on = b.dataset.f === shortageFilter;
+    b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on));
+    const cs = b.querySelector('[data-fc]');
+    if (cs) cs.textContent = String(base.filter(SHORTAGE_FILTERS[b.dataset.f] || (() => true)).length);
   });
+  bar.querySelectorAll('[data-sort]').forEach(b => { const on = b.dataset.sort === shortageSort; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
+  const list = base.filter(SHORTAGE_FILTERS[shortageFilter] || (() => true));
   // Sortierung: kritischste zuerst (Status → Bestätigungen → Datum) oder neueste zuerst.
   const when = s => s.gemeldet_am || (s.created_at ? s.created_at.slice(0,10) : '');
   const rank = { kritisch: 3, eingeschraenkt: 2, verfuegbar: 1 };
@@ -2847,11 +2856,11 @@ function renderShortlist(listBox, bar, all) {
 
 // Filter- und Suchleiste für den Engpässe-Reiter.
 function shortageFilterBar() {
-  const chips = [['',t('sh_f_all')],['kritisch',t('sh_f_crit')],['antibiotika',t('sh_f_abx')],['watched',t('sh_f_watched')],['community',t('sh_f_comm')]];
+  const chips = [['',t('sh_f_all')],['kritisch',t('sh_f_crit')],['antibiotika',t('sh_f_abx')],['watched',t('sh_f_watched')],['community',t('sh_f_comm')],['verfuegbar',t('sh_f_available')]];
   const bar = el(`<div class="card">
     <div class="row" style="gap:6px"><input data-q placeholder="${esc(t('sh_q_ph'))}" value="${esc(shortageQuery)}" style="flex:1"></div>
     <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px">
-      ${chips.map(([v,l])=>`<button class="small sortbtn${shortageFilter===v?' active':''}" data-f="${v}" aria-pressed="${shortageFilter===v}">${esc(l)}</button>`).join('')}
+      ${chips.map(([v,l])=>`<button class="small sortbtn${shortageFilter===v?' active':''}" data-f="${v}" aria-pressed="${shortageFilter===v}">${esc(l)} <span class="muted" data-fc></span></button>`).join('')}
       <span class="sp" style="flex:1"></span>
       <button class="ghost small" data-sprint title="${esc(t('sh_print_t'))}">${esc(t('sh_print'))}</button>
       <button class="ghost small" data-scsv title="${esc(t('sh_csv_t'))}">⬇️ CSV</button>
