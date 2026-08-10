@@ -224,6 +224,7 @@ const I18N = {
     dm_doc:'Nachrichten', dm_title:'✉️ Nachrichten', dm_to_ph:'@Handle für neue Nachricht…', dm_write:'Schreiben',
     dm_empty:'Noch keine Konversationen. Starte oben eine neue.', dm_back:'← Nachrichten',
     dm_body_ph:'Nachricht schreiben…', dm_no_msgs:'Noch keine Nachrichten — sag Hallo 👋',
+    dm_today:'Heute', dm_yesterday:'Gestern', dm_read:'Gelesen', dm_delivered:'Zugestellt',
     wc_title:'👋 Willkommen bei ApoTrend', wc_sub:'Das Fachnetzwerk für Apotheken — kurz erklärt:',
     wc_s1_t:'Wirkstoffe beobachten (Frühwarnnetz)', wc_s1_d:'Setz die Wirkstoffe, die du führst, auf deine Beobachtungsliste (☆ am Engpass oder auf „Für dich"). Ändert sich der Status oder meldet eine Kolleg:in einen Engpass, wirst du sofort benachrichtigt.',
     wc_s2_t:'Engpass selbst melden', wc_s2_d:'Merkst du einen Lieferengpass vor den offiziellen Daten? Melde ihn im Reiter „Engpässe" — andere bestätigen mit „Auch bei uns". So wisst ihr es gemeinsam zuerst.',
@@ -572,6 +573,7 @@ const I18N = {
     dm_doc:'Messages', dm_title:'✉️ Messages', dm_to_ph:'@handle for a new message…', dm_write:'Write',
     dm_empty:'No conversations yet. Start one above.', dm_back:'← Messages',
     dm_body_ph:'Write a message…', dm_no_msgs:'No messages yet — say hi 👋',
+    dm_today:'Today', dm_yesterday:'Yesterday', dm_read:'Read', dm_delivered:'Delivered',
     wc_title:'👋 Welcome to ApoTrend', wc_sub:'The professional network for pharmacies — briefly explained:',
     wc_s1_t:'Watch substances (early-warning network)', wc_s1_d:'Add the substances you stock to your watchlist (☆ on a shortage or on “For you”). If the status changes or a colleague reports a shortage, you are notified right away.',
     wc_s2_t:'Report a shortage yourself', wc_s2_d:'Notice a supply shortage before the official data? Report it in the “Shortages” tab — others confirm with “Us too”. That way you know first, together.',
@@ -920,6 +922,7 @@ const I18N = {
     dm_doc:'Mensagens', dm_title:'✉️ Mensagens', dm_to_ph:'@handle para nova mensagem…', dm_write:'Escrever',
     dm_empty:'Ainda sem conversas. Inicie uma acima.', dm_back:'← Mensagens',
     dm_body_ph:'Escrever mensagem…', dm_no_msgs:'Ainda sem mensagens — diga olá 👋',
+    dm_today:'Hoje', dm_yesterday:'Ontem', dm_read:'Lida', dm_delivered:'Entregue',
     wc_title:'👋 Bem-vindo à ApoTrend', wc_sub:'A rede profissional para farmácias — explicação rápida:',
     wc_s1_t:'Vigiar substâncias (rede de alerta precoce)', wc_s1_d:'Adicione as substâncias que tem à sua lista de vigilância (☆ numa falta ou em “Para si”). Se o estado mudar ou um colega reportar uma falta, é notificado de imediato.',
     wc_s2_t:'Reportar uma falta', wc_s2_d:'Nota uma falta antes dos dados oficiais? Reporte-a no separador “Faltas” — os outros confirmam com “Nós também”. Assim ficam a saber primeiro, juntos.',
@@ -1272,6 +1275,17 @@ const fmtDateDe = (ymd) => {
   const ts = Date.parse(String(ymd || '') + 'T00:00:00Z');
   if (Number.isNaN(ts)) return String(ymd || '');
   return new Date(ts).toLocaleDateString(t('_bcp47'), { day:'2-digit', month:'2-digit', year:'numeric', timeZone:'UTC' });
+};
+// Uhrzeit (HH:MM) eines ISO-Zeitstempels in der aktiven Sprache; ungültig -> leer.
+const fmtClock = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString(t('_bcp47'), { hour:'2-digit', minute:'2-digit' }); };
+// Tages-Trenner für Nachrichtenverläufe: „Heute"/„Gestern" oder das Datum.
+const dayLabel = (iso) => {
+  const d = new Date(iso); if (Number.isNaN(d.getTime())) return '';
+  const now = new Date(), y = new Date(); y.setDate(now.getDate() - 1);
+  const same = (a, b) => a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+  if (same(d, now)) return t('dm_today');
+  if (same(d, y)) return t('dm_yesterday');
+  return d.toLocaleDateString(t('_bcp47'), { day:'2-digit', month:'2-digit', year:'numeric' });
 };
 // Text escapen UND @Handles + #Hashtags anklickbar machen (kein @ mitten in E-Mails).
 const linkifyMentions = (s) => esc(s)
@@ -6699,11 +6713,29 @@ async function openDmThread(threadId, prefill) {
   const msgs = document.getElementById('dmmsgs');
   const render = (messages) => {
     msgs.innerHTML = '';
-    if (!messages.length) msgs.innerHTML = `<div class="muted">${esc(t('dm_no_msgs'))}</div>`;
-    messages.forEach(m => {
+    if (!messages.length) { msgs.innerHTML = `<div class="muted">${esc(t('dm_no_msgs'))}</div>`; return; }
+    // Letzte eigene Nachricht merken: nur dort steht der Zustellungs-/Gelesen-Hinweis
+    // (Messenger-Konvention — nicht an jeder einzelnen Nachricht).
+    let lastMineIdx = -1;
+    messages.forEach((m, i) => { if (me && m.sender_user_id === me.user_id) lastMineIdx = i; });
+    let lastDay = null;
+    messages.forEach((m, i) => {
+      const day = (m.created_at || '').slice(0, 10);
+      if (day && day !== lastDay) {
+        lastDay = day;
+        msgs.appendChild(el(`<div style="text-align:center;margin:12px 0 6px"><span class="muted" style="font-size:12px;background:var(--chip-bg);border:1px solid var(--line);border-radius:999px;padding:2px 10px">${esc(dayLabel(m.created_at))}</span></div>`));
+      }
       const mine = me && m.sender_user_id === me.user_id;
-      msgs.appendChild(el(`<div style="display:flex;margin:4px 0;${mine?'justify-content:flex-end':''}">
-        <div style="max-width:75%;padding:8px 12px;border-radius:12px;background:${mine?'var(--green)':'var(--chip-bg)'};color:${mine?'#fff':'inherit'}">${esc(m.body)}</div></div>`));
+      // Zustell-/Lese-Hinweis nur unter der letzten eigenen Nachricht: „Gelesen" (grün) sobald
+      // read_at gesetzt ist (Gegenüber hat den Verlauf geöffnet), sonst „Zugestellt".
+      const receipt = (mine && i === lastMineIdx)
+        ? `<div style="font-size:11px;margin-top:2px;font-weight:600;color:${m.read_at ? 'var(--ok-fg)' : 'var(--muted)'}">${m.read_at ? '✓✓ ' + esc(t('dm_read')) : '✓ ' + esc(t('dm_delivered'))}</div>`
+        : '';
+      msgs.appendChild(el(`<div style="display:flex;flex-direction:column;margin:4px 0;${mine?'align-items:flex-end':'align-items:flex-start'}">
+        <div style="max-width:75%;padding:8px 12px;border-radius:12px;background:${mine?'var(--green)':'var(--chip-bg)'};color:${mine?'#fff':'inherit'}">${esc(m.body)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${esc(fmtClock(m.created_at))}</div>
+        ${receipt}
+      </div>`));
     });
     msgs.scrollTop = msgs.scrollHeight;
   };
