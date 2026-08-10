@@ -36,6 +36,30 @@ test('match_count: passende offene Gegen-Einträge je Autor:in, sich selbst nich
   assert.equal(exchange.mine(a).find(e => e.id === other.id).match_count, 0);
 });
 
+test('byAuthor: offene Biete/Suche einer Apotheke fürs Profil; nur offene, nur eigene', () => {
+  const { exchange, a, b } = setup();
+  exchange.create(a, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg' });
+  exchange.create(a, { kind: 'suche', bezeichnung: 'Salbutamol Spray' });
+  const done = exchange.create(a, { kind: 'biete', bezeichnung: 'Ibuprofen 400 mg' });
+  exchange.markResolved(a, done.id); // erledigt -> NICHT im Profil
+  exchange.create(b, { kind: 'biete', bezeichnung: 'Pantoprazol 40 mg' }); // andere Apotheke -> NICHT
+
+  const forA = exchange.byAuthor(a, { status: 'offen' });
+  assert.equal(forA.length, 2, 'nur die zwei offenen Einträge von A');
+  assert.ok(forA.every(e => e.author && e.author.handle === 'anna'), 'alle mit Autor-Profil A');
+  assert.ok(!forA.some(e => e.id === done.id), 'erledigter Eintrag ausgeschlossen');
+  // Beide offenen Einträge sind enthalten (Reihenfolge hängt von der Erstell-Zeit ab und
+  // wird hier nicht geprüft, um Zeitstempel-Gleichstände im Testlauf nicht flaky zu machen).
+  assert.deepEqual(forA.map(e => e.bezeichnung).sort(), ['Amoxicillin 1000 mg', 'Salbutamol Spray']);
+  // Für B nur der eigene Eintrag.
+  const forB = exchange.byAuthor(b, { status: 'offen' });
+  assert.equal(forB.length, 1);
+  assert.equal(forB[0].bezeichnung, 'Pantoprazol 40 mg');
+  // Limit greift; unbekannte/leere ID -> leer.
+  assert.equal(exchange.byAuthor(a, { limit: 1 }).length, 1);
+  assert.deepEqual(exchange.byAuthor(null), []);
+});
+
 test('Verfallsdatum: gültig gespeichert + Rest-Tage berechnet; ungültig abgelehnt; änderbar', () => {
   const { exchange, a } = setup();
   const future = new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10);

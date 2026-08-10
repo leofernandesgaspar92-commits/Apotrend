@@ -575,7 +575,11 @@ const routes = [
   ['GET', /^\/api\/profiles\/([^/]+)\/page$/, true, async ({ userId, params }) => {
     const d = social.profilePage(userId, params[0]);
     if (!d) { const e = new Error('Profil nicht gefunden'); e.status = 404; throw e; }
-    return { ...d, posts: enrichPosts(d.posts, userId) };
+    // Offene Biete/Suche der Apotheke — Rechts-Gate am Heimatland des Betrachters (wie die
+    // Austausch-Reiter): wo der Bestandsaustausch gesperrt ist, keine Einträge zeigen.
+    const exBlocked = isFeatureBlocked(userCountry(userId), 'stock_exchange');
+    const exchange_entries = exBlocked ? [] : exchange.byAuthor(d.profile.user_id, { status: 'offen' });
+    return { ...d, posts: enrichPosts(d.posts, userId), exchange_entries };
   }],
   ['GET', /^\/api\/profiles\/([^/]+)$/, true, async ({ params }) => ({ profile: social.getProfile(params[0]) })],
   ['POST', /^\/api\/profiles\/([^/]+)\/endorse$/, true, async ({ userId, params, body }) => social.endorseSkill(userId, params[0], body.skill)],

@@ -5707,6 +5707,24 @@ async function openProfile(handle) {
       };
       feed.appendChild(dcard);
     }
+    // Offene Biete/Suche der Apotheke: macht die Apotheke als Bezugsquelle/Nachfrager sichtbar
+    // (Netzwerk-Nutzen). Kontakt läuft wie im Austausch per DM; Klick springt zum Eintrag.
+    if (d.exchange_entries && d.exchange_entries.length) {
+      const exCard = el(`<div class="card"><div class="row"><b style="flex:1">${esc(t('nav_exchange'))}</b><button class="ghost small" data-exall>${esc(t('sp_exch_go'))} ›</button></div>
+        ${d.exchange_entries.map(e => {
+          const isB = e.kind === 'biete';
+          const badge = isB
+            ? `<span style="background:var(--ok-bg);color:var(--ok-fg);border:1px solid var(--ok-bd);border-radius:999px;padding:1px 8px;font-weight:700;font-size:12px">${esc(t('ex_badge_biete'))}</span>`
+            : `<span style="background:var(--warn-bg);color:var(--warn-fg);border:1px solid var(--warn-bd);border-radius:999px;padding:1px 8px;font-weight:700;font-size:12px">${esc(t('ex_badge_suche'))}</span>`;
+          const loc = [e.ort, e.bundesland].filter(Boolean).join(', ');
+          return `<div class="comment clickable" data-exq="${esc(e.bezeichnung)}" data-exk="${esc(e.kind)}">${badge} <b>${esc(e.bezeichnung)}</b>${e.menge?` <span class="muted">· ${esc(t('ex_qty'))} ${esc(e.menge)}</span>`:''}${loc?` <span class="muted" style="font-size:12px">· 📍 ${esc(loc)}</span>`:''} <span class="ovtile-go" aria-hidden="true">›</span></div>`;
+        }).join('')}</div>`);
+      exCard.querySelector('[data-exall]').onclick = () => goTab('exchange');
+      exCard.querySelectorAll('[data-exq]').forEach(row => row.onclick = () => {
+        exchangeMine = false; exchangeFilter = row.dataset.exk; exchangeQuery = row.dataset.exq; exchangeBL = ''; goTab('exchange');
+      });
+      feed.appendChild(exCard);
+    }
     feed.appendChild(recommendationsCard(d, p.handle));
     if (!d.posts.length) feed.appendChild(el(`<div class="card muted">${esc(t('pf_no_posts'))}</div>`));
     d.posts.forEach(post => feed.appendChild(postCard(post)));

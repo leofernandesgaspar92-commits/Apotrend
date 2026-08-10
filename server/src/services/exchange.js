@@ -142,6 +142,17 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       }
       return out;
     },
+    // Offene Einträge einer bestimmten Apotheke — für deren öffentliches Profil (Biete/Suche
+    // auf einen Blick; Kontakt läuft wie üblich per DM). Öffentlich lesbar wie die Liste,
+    // daher kein Owner-Zwang. Neueste zuerst, begrenzt.
+    byAuthor(authorUserId, { status = 'offen', limit = 12 } = {}) {
+      if (!authorUserId) return [];
+      const out = exchangeRepo.list()
+        .filter(e => e.author_user_id === authorUserId && (!status || e.status === status))
+        .map(decorate)
+        .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+      return limit ? out.slice(0, limit) : out;
+    },
     // Eigene Einträge (alle Status), neueste zuerst — für „Meine Einträge"/Historie.
     mine(actorUserId, { status = null } = {}) {
       requireUser(actorUserId);
