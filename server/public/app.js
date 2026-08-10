@@ -6821,7 +6821,7 @@ async function showDmInbox() {
     const unread = th.unread > 0;
     const row = el(`<div class="comment clickable" style="cursor:pointer${unread?';background:rgba(11,127,40,.06);border-radius:8px':''}">
       <div class="row"><b style="${unread?'font-weight:800':''}">${esc(o.display_name||t('ex_unknown'))}</b> <span class="handle">@${esc(o.handle||'?')}</span>
-      <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:12px;margin-right:6px">${when}</span>`:''}${unread?`<span class="badge">${th.unread}</span>`:''}</div>
+      <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:12px;margin-right:6px">${when}</span>`:''}${unread?`<span style="background:var(--green);color:#fff;border-radius:999px;font-size:12px;font-weight:700;padding:1px 8px;min-width:20px;text-align:center">${th.unread}</span>`:''}</div>
       <div class="muted" style="margin-top:2px${unread?';color:inherit;font-weight:600':''}">${esc((th.last_message?.body||'').slice(0,60))}</div></div>`);
     row.onclick = () => openDmThread(th.thread_id);
     list.appendChild(row);
