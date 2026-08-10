@@ -285,7 +285,7 @@ const I18N = {
     ac_del_pw:'Zur Bestätigung dein Passwort eingeben:', ac_del_done:'Dein Konto wurde gelöscht.',
     tm_title:'Team verwalten', tm_sub:'Kolleg:innen deiner Apotheke Zugang geben.', tm_open:'👥 Team', tm_no_perm:'Nur Inhaber:innen/Admins können das Team verwalten.', tm_add_title:'Mitglied hinzufügen', tm_add_hint:'Lege ein Konto für eine:n Kolleg:in an. Das Startpasswort teilst du persönlich mit — es kann danach selbst geändert werden.', tm_name:'Name', tm_email:'E-Mail', tm_role:'Rolle', tm_pw:'Startpasswort (min. 8 Zeichen)', tm_add_btn:'Hinzufügen', tm_members:'Mitglieder ({n})', tm_you:'du', tm_remove:'Entfernen', tm_remove_confirm:'{name} wirklich aus dem Team entfernen?', tm_role_admin:'Inhaber:in/Admin', tm_role_apotheker:'Apotheker:in', tm_role_pta:'PTA', tm_role_lehrling:'Auszubildende:r',
     th_nav:'👥 Team', th_sub:'Aufgaben, Notizen und Team-Zugänge deiner Apotheke.', th_tasks_sub:'Aufgaben zuweisen und verfolgen.', th_notes_sub:'Gemeinsame Notizen & Wissensablage.', th_manage_sub:'Mitglieder & Rollen verwalten.',
-    tk_nav:'✅ Aufgaben', tk_title:'Team-Aufgaben', tk_sub:'Aufgaben im Team zuweisen und den Status verfolgen.', tk_new:'Neue Aufgabe', tk_f_title_ph:'Titel, z.B. „Amoxicillin nachbestellen"', tk_f_desc_ph:'Details (optional)', tk_f_assignee:'Zuweisen an', tk_unassigned:'Nicht zugewiesen', tk_f_due:'Fällig am', tk_add:'Aufgabe anlegen', tk_empty_t:'Keine Aufgaben', tk_empty_s:'Lege die erste Aufgabe an und weise sie einer Kollegin/einem Kollegen zu.', tk_empty_s_member:'Noch keine Aufgaben im Team.', tk_assigned_to:'{name}', tk_due:'fällig {d}', tk_overdue:'überfällig', tk_st_offen:'Offen', tk_st_in_arbeit:'In Arbeit', tk_st_erledigt:'Erledigt', tk_set_offen:'Offen', tk_set_progress:'In Arbeit', tk_set_done:'✓ Erledigt', tk_as_task:'✅ Als Aufgabe', tk_from_shortage:'Engpass bearbeiten: {w}', ovt_title:'Deine Aufgaben ({n})', ovt_overdue:'{n} überfällig', ovt_all:'Alle', tk_no_create:'Du darfst keine Aufgaben anlegen. Bitte eine berechtigte Kollegin/einen berechtigten Kollegen, die Aufgabe zu erstellen.',
+    tk_nav:'✅ Aufgaben', tk_title:'Team-Aufgaben', tk_sub:'Aufgaben im Team zuweisen und den Status verfolgen.', tk_new:'Neue Aufgabe', tk_f_title_ph:'Titel, z.B. „Amoxicillin nachbestellen"', tk_f_desc_ph:'Details (optional)', tk_f_assignee:'Zuweisen an', tk_unassigned:'Nicht zugewiesen', tk_f_due:'Fällig am', tk_add:'Aufgabe anlegen', tk_empty_t:'Keine Aufgaben', tk_empty_s:'Lege die erste Aufgabe an und weise sie einer Kollegin/einem Kollegen zu.', tk_empty_s_member:'Noch keine Aufgaben im Team.', tk_assigned_to:'{name}', tk_due:'fällig {d}', tk_overdue:'überfällig', tk_st_offen:'Offen', tk_st_in_arbeit:'In Arbeit', tk_st_erledigt:'Erledigt', tk_set_offen:'Offen', tk_set_progress:'In Arbeit', tk_set_done:'✓ Erledigt', tk_as_task:'✅ Als Aufgabe', tk_from_shortage:'Engpass bearbeiten: {w}', ovt_title:'Deine Aufgaben ({n})', ovt_overdue:'{n} überfällig', ovt_all:'Alle', tk_no_create:'Du darfst keine Aufgaben anlegen. Bitte eine berechtigte Kollegin/einen berechtigten Kollegen, die Aufgabe zu erstellen.', tk_f_active:'Aktiv', tk_f_mine:'Meine', tk_f_overdue:'Überfällig', tk_f_done:'Erledigt', tk_f_all:'Alle', tk_filter_aria:'Aufgaben filtern', tk_none_filter:'Keine Aufgaben in dieser Ansicht.',
     kb_nav:'📋 Notizen', kb_title:'Team-Notizen', kb_sub:'Gemeinsame Wissensablage der Apotheke — Schichtübergaben, Kontakte, Merkzettel, Links.', kb_new:'Neue Notiz', kb_f_title_ph:'Titel, z.B. „Großhandel-Kontakt Nachtdienst"', kb_f_body_ph:'Inhalt (optional)', kb_f_link_ph:'Link (optional, https://…)', kb_add:'Notiz speichern', kb_empty_t:'Keine Notizen', kb_empty_s:'Lege die erste gemeinsame Notiz an — sichtbar für dein ganzes Team.', kb_by:'von {name}', kb_pin:'📌 Anheften', kb_unpin:'📌 Lösen', kb_delete:'Löschen', kb_delete_confirm:'Diese Notiz löschen?',
     fl_back:'← zurück zum Profil', fl_h_followers:'👥 Follower', fl_h_following:'➡️ Folgt',
     fl_who_followers:'Wer @{h} folgt', fl_who_following:'Wem @{h} folgt',
@@ -634,7 +634,7 @@ const I18N = {
     ac_del_pw:'Enter your password to confirm:', ac_del_done:'Your account has been deleted.',
     tm_title:'Manage team', tm_sub:'Give colleagues at your pharmacy access.', tm_open:'👥 Team', tm_no_perm:'Only owners/admins can manage the team.', tm_add_title:'Add member', tm_add_hint:'Create an account for a colleague. Share the initial password in person — they can change it afterwards.', tm_name:'Name', tm_email:'Email', tm_role:'Role', tm_pw:'Initial password (min. 8 chars)', tm_add_btn:'Add', tm_members:'Members ({n})', tm_you:'you', tm_remove:'Remove', tm_remove_confirm:'Really remove {name} from the team?', tm_role_admin:'Owner/Admin', tm_role_apotheker:'Pharmacist', tm_role_pta:'Pharmacy technician', tm_role_lehrling:'Trainee',
     th_nav:'👥 Team', th_sub:'Tasks, notes and team access for your pharmacy.', th_tasks_sub:'Assign and track tasks.', th_notes_sub:'Shared notes & knowledge base.', th_manage_sub:'Manage members & roles.',
-    tk_nav:'✅ Tasks', tk_title:'Team tasks', tk_sub:'Assign tasks across the team and track their status.', tk_new:'New task', tk_f_title_ph:'Title, e.g. “Reorder amoxicillin”', tk_f_desc_ph:'Details (optional)', tk_f_assignee:'Assign to', tk_unassigned:'Unassigned', tk_f_due:'Due date', tk_add:'Create task', tk_empty_t:'No tasks', tk_empty_s:'Create the first task and assign it to a colleague.', tk_empty_s_member:'No team tasks yet.', tk_assigned_to:'{name}', tk_due:'due {d}', tk_overdue:'overdue', tk_st_offen:'Open', tk_st_in_arbeit:'In progress', tk_st_erledigt:'Done', tk_set_offen:'Open', tk_set_progress:'In progress', tk_set_done:'✓ Done', tk_as_task:'✅ As task', tk_from_shortage:'Handle shortage: {w}', ovt_title:'Your tasks ({n})', ovt_overdue:'{n} overdue', ovt_all:'All', tk_no_create:'You are not allowed to create tasks. Ask a colleague with permission to create it.',
+    tk_nav:'✅ Tasks', tk_title:'Team tasks', tk_sub:'Assign tasks across the team and track their status.', tk_new:'New task', tk_f_title_ph:'Title, e.g. “Reorder amoxicillin”', tk_f_desc_ph:'Details (optional)', tk_f_assignee:'Assign to', tk_unassigned:'Unassigned', tk_f_due:'Due date', tk_add:'Create task', tk_empty_t:'No tasks', tk_empty_s:'Create the first task and assign it to a colleague.', tk_empty_s_member:'No team tasks yet.', tk_assigned_to:'{name}', tk_due:'due {d}', tk_overdue:'overdue', tk_st_offen:'Open', tk_st_in_arbeit:'In progress', tk_st_erledigt:'Done', tk_set_offen:'Open', tk_set_progress:'In progress', tk_set_done:'✓ Done', tk_as_task:'✅ As task', tk_from_shortage:'Handle shortage: {w}', ovt_title:'Your tasks ({n})', ovt_overdue:'{n} overdue', ovt_all:'All', tk_no_create:'You are not allowed to create tasks. Ask a colleague with permission to create it.', tk_f_active:'Active', tk_f_mine:'Mine', tk_f_overdue:'Overdue', tk_f_done:'Done', tk_f_all:'All', tk_filter_aria:'Filter tasks', tk_none_filter:'No tasks in this view.',
     kb_nav:'📋 Notes', kb_title:'Team notes', kb_sub:'Shared knowledge base for the pharmacy — shift handovers, contacts, reminders, links.', kb_new:'New note', kb_f_title_ph:'Title, e.g. “Wholesaler contact night shift”', kb_f_body_ph:'Content (optional)', kb_f_link_ph:'Link (optional, https://…)', kb_add:'Save note', kb_empty_t:'No notes', kb_empty_s:'Create the first shared note — visible to your whole team.', kb_by:'by {name}', kb_pin:'📌 Pin', kb_unpin:'📌 Unpin', kb_delete:'Delete', kb_delete_confirm:'Delete this note?',
     fl_back:'← back to profile', fl_h_followers:'👥 Followers', fl_h_following:'➡️ Following',
     fl_who_followers:'Who follows @{h}', fl_who_following:'Who @{h} follows',
@@ -983,7 +983,7 @@ const I18N = {
     ac_del_pw:'Introduza a sua palavra-passe para confirmar:', ac_del_done:'A sua conta foi eliminada.',
     tm_title:'Gerir equipa', tm_sub:'Dar acesso a colegas da sua farmácia.', tm_open:'👥 Equipa', tm_no_perm:'Apenas proprietários/admins podem gerir a equipa.', tm_add_title:'Adicionar membro', tm_add_hint:'Crie uma conta para um colega. Partilhe a palavra-passe inicial pessoalmente — pode ser alterada depois.', tm_name:'Nome', tm_email:'E-mail', tm_role:'Função', tm_pw:'Palavra-passe inicial (mín. 8 caracteres)', tm_add_btn:'Adicionar', tm_members:'Membros ({n})', tm_you:'você', tm_remove:'Remover', tm_remove_confirm:'Remover mesmo {name} da equipa?', tm_role_admin:'Proprietário/Admin', tm_role_apotheker:'Farmacêutico(a)', tm_role_pta:'Técnico(a) de farmácia', tm_role_lehrling:'Estagiário(a)',
     th_nav:'👥 Equipa', th_sub:'Tarefas, notas e acessos da equipa da sua farmácia.', th_tasks_sub:'Atribuir e acompanhar tarefas.', th_notes_sub:'Notas partilhadas & base de conhecimento.', th_manage_sub:'Gerir membros & funções.',
-    tk_nav:'✅ Tarefas', tk_title:'Tarefas da equipa', tk_sub:'Atribuir tarefas na equipa e acompanhar o estado.', tk_new:'Nova tarefa', tk_f_title_ph:'Título, ex. “Encomendar amoxicilina”', tk_f_desc_ph:'Detalhes (opcional)', tk_f_assignee:'Atribuir a', tk_unassigned:'Não atribuída', tk_f_due:'Data-limite', tk_add:'Criar tarefa', tk_empty_t:'Sem tarefas', tk_empty_s:'Crie a primeira tarefa e atribua-a a um colega.', tk_empty_s_member:'Ainda sem tarefas na equipa.', tk_assigned_to:'{name}', tk_due:'até {d}', tk_overdue:'em atraso', tk_st_offen:'Aberta', tk_st_in_arbeit:'Em curso', tk_st_erledigt:'Concluída', tk_set_offen:'Aberta', tk_set_progress:'Em curso', tk_set_done:'✓ Concluída', tk_as_task:'✅ Como tarefa', tk_from_shortage:'Tratar rutura: {w}', ovt_title:'As suas tarefas ({n})', ovt_overdue:'{n} em atraso', ovt_all:'Todas', tk_no_create:'Não pode criar tarefas. Peça a um colega com permissão para a criar.',
+    tk_nav:'✅ Tarefas', tk_title:'Tarefas da equipa', tk_sub:'Atribuir tarefas na equipa e acompanhar o estado.', tk_new:'Nova tarefa', tk_f_title_ph:'Título, ex. “Encomendar amoxicilina”', tk_f_desc_ph:'Detalhes (opcional)', tk_f_assignee:'Atribuir a', tk_unassigned:'Não atribuída', tk_f_due:'Data-limite', tk_add:'Criar tarefa', tk_empty_t:'Sem tarefas', tk_empty_s:'Crie a primeira tarefa e atribua-a a um colega.', tk_empty_s_member:'Ainda sem tarefas na equipa.', tk_assigned_to:'{name}', tk_due:'até {d}', tk_overdue:'em atraso', tk_st_offen:'Aberta', tk_st_in_arbeit:'Em curso', tk_st_erledigt:'Concluída', tk_set_offen:'Aberta', tk_set_progress:'Em curso', tk_set_done:'✓ Concluída', tk_as_task:'✅ Como tarefa', tk_from_shortage:'Tratar rutura: {w}', ovt_title:'As suas tarefas ({n})', ovt_overdue:'{n} em atraso', ovt_all:'Todas', tk_no_create:'Não pode criar tarefas. Peça a um colega com permissão para a criar.', tk_f_active:'Ativas', tk_f_mine:'Minhas', tk_f_overdue:'Em atraso', tk_f_done:'Concluídas', tk_f_all:'Todas', tk_filter_aria:'Filtrar tarefas', tk_none_filter:'Sem tarefas nesta vista.',
     kb_nav:'📋 Notas', kb_title:'Notas da equipa', kb_sub:'Base de conhecimento partilhada da farmácia — passagens de turno, contactos, lembretes, links.', kb_new:'Nova nota', kb_f_title_ph:'Título, ex. “Contacto grossista turno noite”', kb_f_body_ph:'Conteúdo (opcional)', kb_f_link_ph:'Link (opcional, https://…)', kb_add:'Guardar nota', kb_empty_t:'Sem notas', kb_empty_s:'Crie a primeira nota partilhada — visível para toda a equipa.', kb_by:'por {name}', kb_pin:'📌 Fixar', kb_unpin:'📌 Desafixar', kb_delete:'Eliminar', kb_delete_confirm:'Eliminar esta nota?',
     fl_back:'← voltar ao perfil', fl_h_followers:'👥 Seguidores', fl_h_following:'➡️ A seguir',
     fl_who_followers:'Quem segue @{h}', fl_who_following:'Quem @{h} segue',
@@ -4288,6 +4288,7 @@ async function openTeamHub() {
 
 // ── Team-Aufgaben ───────────────────────────────────────────────────────────
 let taskPrefill = null; // {title} — z.B. „Als Aufgabe" aus einem Engpass
+let taskFilter = 'aktiv'; // 'aktiv' (offen+in Arbeit) | 'meine' | 'ueberfaellig' | 'erledigt' | 'alle'
 function taskStatusMeta(s) {
   if (s === 'erledigt')  return ['var(--ok-fg)', 'var(--ok-bg)', t('tk_st_erledigt')];
   if (s === 'in_arbeit') return ['var(--warn-fg)', 'var(--warn-bg)', t('tk_st_in_arbeit')];
@@ -4337,28 +4338,58 @@ async function openTasks() {
   }
   taskPrefill = null; // Vorbelegung ist einmalig
   if (!d.tasks.length) { feed.appendChild(emptyState({ icon:'✅', title:t('tk_empty_t'), text: d.can_assign ? t('tk_empty_s') : t('tk_empty_s_member') })); return; }
-  d.tasks.forEach(tk => {
-    const [col,bg,lab] = taskStatusMeta(tk.status);
-    const canEdit = tk.mine || d.can_assign;
-    const overdue = tk.due_date && tk.status !== 'erledigt' && tk.due_date < new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
-    const card = el(`<div class="card">
-      <div class="row" style="align-items:baseline;gap:8px">
-        <b style="flex:1">${esc(tk.title)}</b>
-        <span style="display:inline-block;font-size:12px;font-weight:800;color:${col};background:${bg};padding:2px 10px;border-radius:999px">${esc(lab)}</span>
-      </div>
-      ${tk.description?`<div class="muted" style="font-size:14px;white-space:pre-wrap;margin-top:4px">${esc(tk.description)}</div>`:''}
-      <div class="muted" style="font-size:13px;margin-top:6px">
-        ${tk.assignee_name?`👤 ${esc(ti('tk_assigned_to',{name:tk.assignee_name}))}`:`👤 ${esc(t('tk_unassigned'))}`}
-        ${tk.due_date?` · 🗓 ${esc(ti('tk_due',{d:fmtDateDe(tk.due_date)}))}${overdue?` <b style="color:var(--crit-fg)">(${esc(t('tk_overdue'))})</b>`:''}`:''}
-      </div>
-      ${canEdit?`<div class="reacts" style="margin-top:8px">
-        <button class="ghost small" data-st="offen"${tk.status==='offen'?' disabled':''}>${esc(t('tk_set_offen'))}</button>
-        <button class="ghost small" data-st="in_arbeit"${tk.status==='in_arbeit'?' disabled':''}>${esc(t('tk_set_progress'))}</button>
-        <button class="small" data-st="erledigt"${tk.status==='erledigt'?' disabled':''}>${esc(t('tk_set_done'))}</button>
-      </div>`:''}</div>`);
-    card.querySelectorAll('[data-st]').forEach(b => { if (!b.disabled) b.onclick = async () => { try { await api('POST',`/api/tasks/${tk.id}/status`,{ status: b.dataset.st }); openTasks(); } catch(e){ alert(e.message); } }; });
-    feed.appendChild(card);
-  });
+  const localToday = new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+  const isOverdue = (tk) => tk.due_date && tk.status !== 'erledigt' && tk.due_date < localToday;
+  // Filter-Prädikate: „aktiv" (Standard) blendet Erledigtes aus, damit die Liste auf das
+  // Handlungsrelevante fokussiert — weniger Scrollen für ein zeitknappes Team.
+  const preds = {
+    aktiv: (tk) => tk.status !== 'erledigt',
+    meine: (tk) => tk.mine && tk.status !== 'erledigt',
+    ueberfaellig: (tk) => isOverdue(tk),
+    erledigt: (tk) => tk.status === 'erledigt',
+    alle: () => true,
+  };
+  if (!preds[taskFilter]) taskFilter = 'aktiv';
+  const count = (k) => d.tasks.filter(preds[k]).length;
+  // Nur sinnvolle Chips zeigen: „Meine" nur wenn es welche gibt, „Überfällig" nur bei Bedarf.
+  const chips = [['aktiv', t('tk_f_active')], ['meine', t('tk_f_mine')], ['ueberfaellig', t('tk_f_overdue')], ['erledigt', t('tk_f_done')], ['alle', t('tk_f_all')]]
+    .filter(([k]) => k === 'aktiv' || k === 'alle' || count(k) > 0);
+  const bar = el(`<div class="card" style="padding:8px 12px"><div class="reacts" style="flex-wrap:wrap" role="group" aria-label="${esc(t('tk_filter_aria'))}">
+    ${chips.map(([k,l]) => `<button class="small sortbtn${taskFilter===k?' active':''}" data-tf="${k}" aria-pressed="${taskFilter===k}">${esc(l)} <span class="muted">${count(k)}</span></button>`).join('')}
+  </div></div>`);
+  feed.appendChild(bar);
+  const listBox = el('<div data-tasklist></div>');
+  feed.appendChild(listBox);
+  const renderList = () => {
+    listBox.innerHTML = '';
+    bar.querySelectorAll('[data-tf]').forEach(b => { const on = b.dataset.tf === taskFilter; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
+    const shown = d.tasks.filter(preds[taskFilter] || preds.aktiv);
+    if (!shown.length) { listBox.appendChild(el(`<div class="card muted">${esc(t('tk_none_filter'))}</div>`)); return; }
+    shown.forEach(tk => {
+      const [col,bg,lab] = taskStatusMeta(tk.status);
+      const canEdit = tk.mine || d.can_assign;
+      const overdue = isOverdue(tk);
+      const card = el(`<div class="card">
+        <div class="row" style="align-items:baseline;gap:8px">
+          <b style="flex:1">${esc(tk.title)}</b>
+          <span style="display:inline-block;font-size:12px;font-weight:800;color:${col};background:${bg};padding:2px 10px;border-radius:999px">${esc(lab)}</span>
+        </div>
+        ${tk.description?`<div class="muted" style="font-size:14px;white-space:pre-wrap;margin-top:4px">${esc(tk.description)}</div>`:''}
+        <div class="muted" style="font-size:13px;margin-top:6px">
+          ${tk.assignee_name?`👤 ${esc(ti('tk_assigned_to',{name:tk.assignee_name}))}`:`👤 ${esc(t('tk_unassigned'))}`}
+          ${tk.due_date?` · 🗓 ${esc(ti('tk_due',{d:fmtDateDe(tk.due_date)}))}${overdue?` <b style="color:var(--crit-fg)">(${esc(t('tk_overdue'))})</b>`:''}`:''}
+        </div>
+        ${canEdit?`<div class="reacts" style="margin-top:8px">
+          <button class="ghost small" data-st="offen"${tk.status==='offen'?' disabled':''}>${esc(t('tk_set_offen'))}</button>
+          <button class="ghost small" data-st="in_arbeit"${tk.status==='in_arbeit'?' disabled':''}>${esc(t('tk_set_progress'))}</button>
+          <button class="small" data-st="erledigt"${tk.status==='erledigt'?' disabled':''}>${esc(t('tk_set_done'))}</button>
+        </div>`:''}</div>`);
+      card.querySelectorAll('[data-st]').forEach(b => { if (!b.disabled) b.onclick = async () => { try { await api('POST',`/api/tasks/${tk.id}/status`,{ status: b.dataset.st }); openTasks(); } catch(e){ alert(e.message); } }; });
+      listBox.appendChild(card);
+    });
+  };
+  bar.querySelectorAll('[data-tf]').forEach(b => b.onclick = () => { taskFilter = b.dataset.tf; renderList(); });
+  renderList();
 }
 
 // ── Team-Notizen (gemeinsame Wissensablage) ─────────────────────────────────
