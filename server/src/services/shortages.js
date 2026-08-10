@@ -262,6 +262,16 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       shortagesRepo.setWatchAlert(userId, wirkstoff, p);
       return this.myWatchlist(userId);
     },
+    // Rabatt-Alarm für ALLE beobachteten Wirkstoffe auf einmal setzen/abschalten — spart
+    // Zeit bei großer Beobachtungsliste. pct leer/0 => alle Alarme aus. 1..99. Gibt die
+    // Anzahl betroffener Wirkstoffe + die aktualisierte Liste zurück.
+    setWatchAlertAll(userId, pct) {
+      let p = (pct == null || pct === '') ? null : Math.round(Number(pct));
+      if (p != null && (isNaN(p) || p < 1 || p > 99)) throw new AppError('alert_pct_range', 'Alarm-Schwelle: 1–99 %.');
+      const watched = shortagesRepo.listWatch(userId);
+      for (const w of watched) shortagesRepo.setWatchAlert(userId, w, p);
+      return { count: watched.length, pct: p, items: this.myWatchlist(userId) };
+    },
     wasAlerted(userId, dealKey) { return shortagesRepo.wasDealAlerted(userId, dealKey); },
     markAlerted(userId, dealKey) { shortagesRepo.markDealAlerted(userId, dealKey); },
 

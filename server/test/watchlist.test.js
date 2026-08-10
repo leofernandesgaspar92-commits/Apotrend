@@ -98,6 +98,30 @@ test('Watchlist: purgeUser entfernt Beobachtungen (DSGVO)', () => {
   assert.equal(shortagesRepo.listWatch(uid).length, 0);
 });
 
+test('Sammel-Rabattalarm: setWatchAlertAll setzt/abschaltet für alle beobachteten; Validierung', () => {
+  const { shortages, uid } = setup();
+  shortages.watch(uid, 'Amoxicillin');
+  shortages.watch(uid, 'Ibuprofen');
+  shortages.watch(uid, 'Ramipril');
+  // Für alle auf 10 % setzen.
+  const r = shortages.setWatchAlertAll(uid, 10);
+  assert.equal(r.count, 3);
+  assert.equal(r.pct, 10);
+  assert.ok(r.items.every(i => i.alert_pct === 10), 'alle Wirkstoffe auf 10 %');
+  // Einzelnen überschreiben, dann erneut Sammel-Set -> wieder einheitlich.
+  shortages.setWatchAlert(uid, 'Ibuprofen', 25);
+  assert.equal(shortages.myWatchlist(uid).find(i => i.wirkstoff === 'Ibuprofen').alert_pct, 25);
+  shortages.setWatchAlertAll(uid, 5);
+  assert.ok(shortages.myWatchlist(uid).every(i => i.alert_pct === 5));
+  // Alle ausschalten (null/leer).
+  const off = shortages.setWatchAlertAll(uid, null);
+  assert.equal(off.pct, null);
+  assert.ok(off.items.every(i => i.alert_pct == null), 'alle Alarme aus');
+  // Validierung 1..99.
+  assert.throws(() => shortages.setWatchAlertAll(uid, 0), /1.*99|Schwelle/);
+  assert.throws(() => shortages.setWatchAlertAll(uid, 120), /1.*99|Schwelle/);
+});
+
 test('Premium-Notizen: nur mit Premium, nur für beobachtete Wirkstoffe, erscheinen in myWatchlist', () => {
   const repo = createMemoryRepo();
   const orgAuth = createOrgAuthService(repo);
