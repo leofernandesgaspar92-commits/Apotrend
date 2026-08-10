@@ -132,7 +132,7 @@ const I18N = {
     pg_act_title:'🏷️ Aktion günstiger als der beste Einkaufspreis', pg_instead:'statt',
     pg_per_pack:'pro Packung', pg_aep:'(AEP)', pg_from:'ab {n} Stück',
     pg_only_today:'nur noch heute', pg_only_days:'nur noch {d} Tage', pg_valid:'gültig bis',
-    pg_cheapest:'günstigster', pg_no_series:'keine Verlaufsdaten', pg_posts:'{n} Beiträge dazu', pg_posts_one:'1 Beitrag dazu',
+    pg_cheapest:'günstigster', pg_calc_qty:'Deine Menge:', pg_calc_result:'günstigster ({supplier}): € {total}', pg_no_series:'keine Verlaufsdaten', pg_posts:'{n} Beiträge dazu', pg_posts_one:'1 Beitrag dazu',
     spark_label:'Preisverlauf {dir}: ', spark_rising:'steigend', spark_falling:'fallend', spark_stable:'gleichbleibend', spark_eur:'Euro',
     pg_post_ph:'z.B. Preis bei {supplier} gerade gestiegen…',
     rb_header:'🏷️ <b>Top-10 Rabatt-Aktionen</b> · höchster Rabatt oben · nur laufende Aktionen ·',
@@ -477,7 +477,7 @@ const I18N = {
     pg_act_title:'🏷️ Deal cheaper than the best purchase price', pg_instead:'instead of',
     pg_per_pack:'per pack', pg_aep:'(list)', pg_from:'from {n} units',
     pg_only_today:'today only', pg_only_days:'only {d} days left', pg_valid:'valid until',
-    pg_cheapest:'cheapest', pg_no_series:'no history data', pg_posts:'{n} posts about this', pg_posts_one:'1 post about this',
+    pg_cheapest:'cheapest', pg_calc_qty:'Your quantity:', pg_calc_result:'cheapest ({supplier}): € {total}', pg_no_series:'no history data', pg_posts:'{n} posts about this', pg_posts_one:'1 post about this',
     spark_label:'Price trend {dir}: ', spark_rising:'rising', spark_falling:'falling', spark_stable:'stable', spark_eur:'euros',
     pg_post_ph:'e.g. price at {supplier} just went up…',
     rb_header:'🏷️ <b>Top 10 deals</b> · highest discount on top · running offers only ·',
@@ -822,7 +822,7 @@ const I18N = {
     pg_act_title:'🏷️ Promoção mais barata que o melhor preço de compra', pg_instead:'em vez de',
     pg_per_pack:'por embalagem', pg_aep:'(preço)', pg_from:'a partir de {n} unidades',
     pg_only_today:'só hoje', pg_only_days:'faltam {d} dias', pg_valid:'válido até',
-    pg_cheapest:'mais barato', pg_no_series:'sem histórico', pg_posts:'{n} publicações sobre isto', pg_posts_one:'1 publicação sobre isto',
+    pg_cheapest:'mais barato', pg_calc_qty:'A sua quantidade:', pg_calc_result:'mais barato ({supplier}): € {total}', pg_no_series:'sem histórico', pg_posts:'{n} publicações sobre isto', pg_posts_one:'1 publicação sobre isto',
     spark_label:'Evolução do preço {dir}: ', spark_rising:'em subida', spark_falling:'em queda', spark_stable:'estável', spark_eur:'euros',
     pg_post_ph:'ex. o preço em {supplier} acabou de subir…',
     rb_header:'🏷️ <b>Top 10 descontos</b> · maior desconto no topo · só promoções ativas ·',
@@ -3382,7 +3382,17 @@ function priceGroup(g, watchedSet, onWatchChange) {
       <div style="margin-top:6px"><button class="ghost small" data-actcart>🛒 ${esc(t('cart_add'))}</button></div>
     </div>`:''}
     <div data-offers></div>
+    ${cheapest&&cheapest.aep!=null?`<div class="row" style="margin-top:8px;align-items:center;gap:6px;flex-wrap:wrap"><label style="font-size:13px">🧮 ${esc(t('pg_calc_qty'))}</label><input type="number" min="1" step="1" value="1" data-pqty style="width:88px" aria-label="${esc(t('pg_calc_qty'))}"><span data-pcalc style="font-size:13px;font-weight:700;color:var(--ok-fg)"></span></div>`:''}
   </div>`);
+  // Mengen-Kostenrechner: geschätzte Kosten beim günstigsten Anbieter für die Bestellmenge.
+  const pq = card.querySelector('[data-pqty]'), pc = card.querySelector('[data-pcalc]');
+  if (pq && pc && cheapest && cheapest.aep != null) {
+    const rc = () => {
+      const n = Math.max(0, Math.floor(Number(pq.value) || 0));
+      pc.textContent = n ? ti('pg_calc_result', { supplier: cheapest.supplier, total: fmtMoney(Number(cheapest.aep) * n) }) : '';
+    };
+    pq.addEventListener('input', rc); rc();
+  }
   // Beste laufende Aktion direkt zum Aktionspreis (+ Mindestmenge) in die Einkaufsliste.
   const actCart = card.querySelector('[data-actcart]');
   if (actCart) actCart.onclick = (ev) => {
