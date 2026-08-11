@@ -399,14 +399,16 @@ export function createSocialService(social, foundationRepo, options = {}) {
     // Verbindet die Lieferkette: Apotheken finden Pharma-Unternehmen/Behörden usw.
     // im eigenen Land. Privatnutzer:innen erscheinen NICHT (Fachverzeichnis).
     DIRECTORY_TYPES: ['pharmacy', 'pharma', 'authority'],
-    directoryCounts(viewerUserId) {
+    directoryCounts(viewerUserId, { bundesland = null } = {}) {
       requireUser(viewerUserId);
       const meProf = social.getProfileByUserId(viewerUserId);
       const country = meProf && meProf.country;
+      const bl = bundesland ? String(bundesland).trim() : null; // Zähler sollen zum Regions-Filter passen
       const counts = { pharmacy: 0, pharma: 0, authority: 0 };
       for (const p of social.listProfiles()) {
         if (p.user_id === viewerUserId) continue;
         if (country && p.country !== country) continue;
+        if (bl && p.bundesland !== bl) continue;
         const at = p.account_type || 'pharmacy';
         if (at in counts) counts[at]++;
       }

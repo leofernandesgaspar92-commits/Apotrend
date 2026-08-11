@@ -117,9 +117,14 @@ test('Sammel-Rabattalarm: setWatchAlertAll setzt/abschaltet für alle beobachtet
   const off = shortages.setWatchAlertAll(uid, null);
   assert.equal(off.pct, null);
   assert.ok(off.items.every(i => i.alert_pct == null), 'alle Alarme aus');
-  // Validierung 1..99.
-  assert.throws(() => shortages.setWatchAlertAll(uid, 0), /1.*99|Schwelle/);
+  // 0 schaltet ebenfalls alle aus (dokumentiertes Verhalten), wirft nicht.
+  shortages.setWatchAlertAll(uid, 15);
+  const zero = shortages.setWatchAlertAll(uid, 0);
+  assert.equal(zero.pct, null);
+  assert.ok(zero.items.every(i => i.alert_pct == null), '0 => alle aus');
+  // Ungültige Werte 1..99.
   assert.throws(() => shortages.setWatchAlertAll(uid, 120), /1.*99|Schwelle/);
+  assert.throws(() => shortages.setWatchAlertAll(uid, -3), /1.*99|Schwelle/);
 });
 
 test('Premium-Notizen: nur mit Premium, nur für beobachtete Wirkstoffe, erscheinen in myWatchlist', () => {

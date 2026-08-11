@@ -1310,11 +1310,13 @@ function openLightbox(src, alt) {
   document.body.appendChild(ov);
   ov.focus();
 }
-// Delegation: Klick auf ein Inhaltsbild mit data-zoom öffnet die Lightbox.
+// Delegation (Capture-Phase): Klick auf ein Inhaltsbild mit data-zoom öffnet die Lightbox.
+// Capture + stopPropagation verhindert, dass ein klickbares Eltern-Element (z.B. Angebots-Karte
+// oder Repost-Einbettung) zusätzlich navigiert — sonst öffnete der Klick beides.
 document.addEventListener('click', (e) => {
   const img = e.target && e.target.closest && e.target.closest('img[data-zoom]');
-  if (img) { e.preventDefault(); openLightbox(img.getAttribute('src') || img.src, img.getAttribute('alt')); }
-});
+  if (img) { e.preventDefault(); e.stopPropagation(); openLightbox(img.getAttribute('src') || img.src, img.getAttribute('alt')); }
+}, true);
 const app = document.getElementById('app');
 let me = null, tab = 'overview', iAmModerator = false, publicSort = 'neu', publicFilter = 'all';
 // Rechtsstatus der Module im aktiven Land (aus /api/country-config): feature_id → 'blocked'|'restricted'.
@@ -4598,7 +4600,7 @@ async function openDirectory(type) {
   try {
     // Unabhängige Anfragen parallel (Zähler + Liste).
     [counts, list] = await Promise.all([
-      api('GET','/api/directory'),
+      api('GET','/api/directory' + (dirState.bl ? '?bundesland=' + encodeURIComponent(dirState.bl) : '')),
       (() => { const p = new URLSearchParams(); if (dirState.q) p.set('q', dirState.q); if (dirState.bl) p.set('bundesland', dirState.bl); const qs = p.toString(); return api('GET', `/api/directory/${dirState.type}` + (qs ? `?${qs}` : '')); })(),
     ]);
   } catch(e){ feed.innerHTML=''; feed.appendChild(errorState(e.message, () => openDirectory())); return; }
@@ -4726,8 +4728,8 @@ async function openPromotions(flash) {
   const renderPromos = () => {
     listBox.innerHTML = '';
     const shown = !promoQuery ? d.promotions : d.promotions.filter(p =>
-      (p.title||'').toLowerCase().includes(promoQuery)
-      || (p.description||'').toLowerCase().includes(promoQuery)
+      (p.titel||'').toLowerCase().includes(promoQuery)
+      || (p.beschreibung||'').toLowerCase().includes(promoQuery)
       || (p.author && ((p.author.display_name||'').toLowerCase().includes(promoQuery) || (p.author.handle||'').toLowerCase().includes(promoQuery))));
     if (!shown.length) { listBox.appendChild(el(`<div class="card muted">${esc(ti('wb_none_filter',{q:promoQuery}))}</div>`)); return; }
     for (const p of shown) listBox.appendChild(promoCard(p));

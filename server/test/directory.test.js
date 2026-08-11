@@ -59,6 +59,9 @@ test('Verzeichnis: Bundesland-Filter grenzt auf die Region ein', () => {
   assert.deepEqual(wien.people.map(p => p.handle), ['sandoz']);
   // Ohne Filter weiterhin beide.
   assert.equal(social.directory(meApo, 'pharma').people.length, 2);
+  // Zähler passen zum Regions-Filter (sonst widersprechen sie der Liste).
+  assert.equal(social.directoryCounts(meApo, { bundesland: 'Tirol' }).counts.pharma, 1);
+  assert.equal(social.directoryCounts(meApo).counts.pharma, 2, 'ohne Filter unverändert');
   // Bundesland + Textsuche kombiniert.
   const combo = social.directory(meApo, 'pharma', { bundesland: 'Wien', q: 'bayer' });
   assert.equal(combo.people.length, 0, 'bayer ist in Tirol, nicht in Wien');
