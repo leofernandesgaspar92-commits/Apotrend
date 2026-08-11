@@ -43,3 +43,26 @@ test('Antwort auf Kommentar: post_id wird aus dem Kommentar aufgelöst', () => {
   assert.ok(n, 'Kommentar-Referenz vorhanden');
   assert.equal(n.post_id, post.id, 'post_id aus Kommentar aufgelöst');
 });
+
+test('Gelesene aufräumen: entfernt nur gelesene, behält ungelesene; strikt pro Nutzer:in', () => {
+  const { social, a, b } = setup();
+  // Zwei Benachrichtigungen für Anna erzeugen (Follow + Kommentar auf ihren Beitrag).
+  social.follow(b, a);
+  const post = social.createPost(a, { body: 'Beitrag' });
+  social.comment(b, post.id, { body: 'Bens Kommentar' });
+  let list = social.notifications(a);
+  assert.ok(list.length >= 2);
+  // Eine als gelesen markieren, dann aufräumen -> nur die gelesene verschwindet.
+  const first = list[0];
+  social.markNotificationRead(a, first.id);
+  const res = social.clearReadNotifications(a);
+  assert.equal(res.removed, 1);
+  const after = social.notifications(a);
+  assert.equal(after.length, list.length - 1);
+  assert.ok(!after.some(n => n.id === first.id), 'gelesene entfernt');
+  assert.ok(after.every(n => !n.read), 'nur ungelesene bleiben');
+  // Bens Liste bleibt unangetastet (strikte Trennung).
+  const bBefore = social.notifications(b).length;
+  social.clearReadNotifications(a);
+  assert.equal(social.notifications(b).length, bBefore);
+});

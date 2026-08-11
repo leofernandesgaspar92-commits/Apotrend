@@ -828,6 +828,8 @@ export function createSocialService(social, foundationRepo, options = {}) {
       social.markNotificationRead(id);
     },
     markAllNotificationsRead(userId) { requireUser(userId); social.markAllNotificationsRead(userId); },
+    // Gelesene Benachrichtigungen entfernen — hält die Liste bei aktiven Nutzer:innen übersichtlich.
+    clearReadNotifications(userId) { requireUser(userId); return { removed: social.clearReadNotifications(userId) }; },
 
     // ── Direktnachrichten (1:1, privat, getrennt vom Feed) ──
     startDm(actorUserId, otherUserId) {

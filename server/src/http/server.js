@@ -612,6 +612,7 @@ const routes = [
   ['POST', /^\/api\/notification-prefs$/, true, async ({ userId, body }) => ({ settings: social.setNotifSetting(userId, body.category, body.enabled) })],
   ['GET', /^\/api\/notifications$/, true, async ({ userId }) => ({ notifications: social.notifications(userId), unread: social.unreadCount(userId) })],
   ['POST', /^\/api\/notifications\/read-all$/, true, async ({ userId }) => { social.markAllNotificationsRead(userId); return { ok: true }; }],
+  ['POST', /^\/api\/notifications\/clear-read$/, true, async ({ userId }) => social.clearReadNotifications(userId)],
   ['POST', /^\/api\/notifications\/([^/]+)\/read$/, true, async ({ userId, params }) => { social.markNotificationRead(userId, params[0]); return { ok: true }; }],
 
   // ── Direktnachrichten (1:1, privat) ──

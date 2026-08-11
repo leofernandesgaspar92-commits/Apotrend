@@ -339,6 +339,8 @@ export function createSocialRepo() {
     },
     markNotificationRead(id) { const n = notifications.get(id); if (n) n.read = true; },
     markAllNotificationsRead(userId) { for (const n of notifications.values()) if (n.user_id === userId) n.read = true; },
+    // Gelesene Benachrichtigungen entfernen (Liste aufräumen); gibt die Anzahl zurück.
+    clearReadNotifications(userId) { let n = 0; for (const [id, r] of notifications) if (r.user_id === userId && r.read) { notifications.delete(id); n++; } return n; },
     unreadNotificationCount(userId) { return [...notifications.values()].filter(n => n.user_id === userId && !n.read).length; },
 
     // ── Direktnachrichten (1:1) ──
