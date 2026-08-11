@@ -307,6 +307,7 @@ export function createSocialRepo() {
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
         .map(r => ({ ...r, items: (r.items || []).map(i => ({ ...i })) }));
     },
+    updateOrder(id, patch) { const r = orders.get(id); if (!r) return null; Object.assign(r, patch); return { ...r, items: (r.items || []).map(i => ({ ...i })) }; },
     removeOrder(id) { orders.delete(id); },
 
     // ── Bestell-Vorlagen (wiederverwendbare Einkaufslisten je Nutzer:in) ──

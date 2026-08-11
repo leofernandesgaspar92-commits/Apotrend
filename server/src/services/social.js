@@ -1104,6 +1104,13 @@ export function createSocialService(social, foundationRepo, options = {}) {
       social.removeOrder(orderId);
       return { ok: true };
     },
+    // Bestellung als geliefert/offen markieren (Lieferstatus verfolgen). received=false setzt zurück.
+    setOrderReceived(userId, orderId, received) {
+      requireUser(userId);
+      const order = social.getOrder(orderId);
+      if (!order || order.user_id !== userId) throw new AppError('order_not_found', 'Bestellung nicht gefunden.');
+      return social.updateOrder(orderId, { received_at: received ? new Date().toISOString() : null });
+    },
 
     // ── Bestell-Vorlagen: wiederkehrende Einkaufslisten als benannte Vorlage sichern und
     // per Klick wieder in die Liste laden (z.B. „Wochenbestellung Antibiotika"). ──

@@ -550,6 +550,7 @@ const routes = [
   ['GET', /^\/api\/orders$/, true, async ({ userId }) => ({ orders: social.listOrders(userId) })],
   ['POST', /^\/api\/orders\/([^/]+)\/reorder$/, true, async ({ userId, params }) => social.reorder(userId, params[0])],
   ['POST', /^\/api\/orders\/([^/]+)\/delete$/, true, async ({ userId, params }) => social.deleteOrder(userId, params[0])],
+  ['POST', /^\/api\/orders\/([^/]+)\/received$/, true, async ({ userId, params, body }) => ({ order: social.setOrderReceived(userId, params[0], !!(body && body.received)) })],
   // ── Premium: Videosprechstunde (Terminbuchung) ──
   ['GET', /^\/api\/appointments$/, true, async ({ userId }) => ({ appointments: social.listVideoAppointments(userId), premium: payments.hasFeature(userId, 'premium') })],
   ['POST', /^\/api\/appointments$/, true, async ({ userId, body }) => ({ appointment: social.requestVideoAppointment(userId, body.providerHandle, { datum: body.datum, uhrzeit: body.uhrzeit, grund: body.grund }) })],

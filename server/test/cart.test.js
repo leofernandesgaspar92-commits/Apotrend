@@ -146,6 +146,25 @@ test('Bestell-Vorlagen: speichern, anwenden (Merge in Liste), löschen; leere Li
   assert.equal(social.listCartTemplates(a).length, 0);
 });
 
+test('Bestellung: Lieferstatus setzen/zurücksetzen; fremde Order gesperrt; Persistenz', () => {
+  const { srepo, social, a, b } = setup();
+  social.addToCart(a, { bezeichnung: 'Amoxi', supplier: 'Kwizda', aktionspreis: 7, menge: 3, sourceKind: 'rabatt' });
+  const order = social.checkoutCart(a);
+  assert.equal(order.received_at ?? null, null, 'frisch: noch nicht geliefert');
+  // Als geliefert markieren -> received_at gesetzt; in der Liste sichtbar.
+  const up = social.setOrderReceived(a, order.id, true);
+  assert.ok(up.received_at, 'received_at gesetzt');
+  assert.ok(social.listOrders(a)[0].received_at, 'in der Historie geliefert');
+  // Zurücksetzen.
+  assert.equal(social.setOrderReceived(a, order.id, false).received_at, null);
+  // Fremde Order gesperrt.
+  assert.throws(() => social.setOrderReceived(b, order.id, true), /nicht gefunden|not_found/i);
+  // Persistenz-Roundtrip des Flags.
+  social.setOrderReceived(a, order.id, true);
+  const srepo2 = createSocialRepo(); srepo2.__load(srepo.__dump());
+  assert.ok(srepo2.getOrder(order.id).received_at, 'Lieferstatus übersteht dump/load');
+});
+
 test('Bestell-Vorlagen: strikt pro Nutzer:in; fremde Vorlage nicht anwendbar/löschbar', () => {
   const { social, a, b } = setup();
   social.addToCart(a, { bezeichnung: 'X', aktionspreis: 1, menge: 1, sourceKind: 'manual' });
