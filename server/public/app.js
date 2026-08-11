@@ -161,7 +161,7 @@ const I18N = {
     ex_publish:'Eintrag veröffentlichen', ex_private:'ℹ️ Der Bestandsaustausch (Biete/Suche) ist Apotheken und Fachkreisen vorbehalten. Als Privatnutzer:in kannst du Einträge lesen, aber keine anlegen.',
     ex_contact:'Kontakt läuft über Direktnachricht — keine öffentlichen Kontaktdaten.',
     ex_q_ph:'Nach Präparat filtern…', ex_filter_btn:'Filtern', ex_csv_sub:'{n} Einträge in dieser Auswahl', ex_csv_art:'Art', ex_csv_menge:'Menge', ex_csv_ort:'Ort/Region', ex_csv_anbieter:'Anbieter', ex_csv_handle:'Handle', ex_csv_erstellt:'Erstellt', ex_csv_treffer:'Passende Treffer', ex_print_title:'Bestandsaustausch (Biete/Suche)',
-    ex_offers:'📦 Angebote', ex_seeks:'🔎 Gesuche', ex_mine:'🗂️ Meine', ex_all_bl:'📍 Alle Regionen',
+    ex_offers:'📦 Angebote', ex_seeks:'🔎 Gesuche', ex_mine:'🗂️ Meine', ex_all_bl:'📍 Alle Regionen', ex_mine_status:'Status:', ex_st_open:'Offen', ex_st_done:'Erledigt', ex_mine_none_filter:'Keine Einträge in dieser Ansicht.', ex_mine_show_all:'Alle anzeigen',
     ex_mine_empty_t:'Noch keine eigenen Einträge', ex_mine_empty_s:'Du hast bisher nichts angeboten oder gesucht.',
     ex_new:'Eintrag anlegen', ex_search_empty_t:'Nichts zu „{q}"',
     ex_search_empty_s:'Keine offenen Biete-/Suche-Einträge für diesen Begriff. Filter zurücksetzen oder anderen Begriff probieren.',
@@ -510,7 +510,7 @@ const I18N = {
     ex_publish:'Publish entry', ex_private:'ℹ️ Stock exchange (offer/seek) is reserved for pharmacies and professionals. As a private user you can read entries but not create them.',
     ex_contact:'Contact is via direct message — no public contact details.',
     ex_q_ph:'Filter by product…', ex_filter_btn:'Filter', ex_csv_sub:'{n} entries in this selection', ex_csv_art:'Type', ex_csv_menge:'Quantity', ex_csv_ort:'Location/region', ex_csv_anbieter:'Provider', ex_csv_handle:'Handle', ex_csv_erstellt:'Created', ex_csv_treffer:'Matching hits', ex_print_title:'Stock exchange (offer/seek)',
-    ex_offers:'📦 Offers', ex_seeks:'🔎 Requests', ex_mine:'🗂️ Mine', ex_all_bl:'📍 All regions',
+    ex_offers:'📦 Offers', ex_seeks:'🔎 Requests', ex_mine:'🗂️ Mine', ex_all_bl:'📍 All regions', ex_mine_status:'Status:', ex_st_open:'Open', ex_st_done:'Done', ex_mine_none_filter:'No entries in this view.', ex_mine_show_all:'Show all',
     ex_mine_empty_t:'No entries of your own yet', ex_mine_empty_s:'You have not offered or sought anything so far.',
     ex_new:'Create entry', ex_search_empty_t:'Nothing for “{q}”',
     ex_search_empty_s:'No open offer/request entries for this term. Reset the filter or try another term.',
@@ -859,7 +859,7 @@ const I18N = {
     ex_publish:'Publicar entrada', ex_private:'ℹ️ A troca de stock (ofertar/procurar) é reservada a farmácias e profissionais. Como utilizador particular pode ler as entradas, mas não criá-las.',
     ex_contact:'O contacto é por mensagem direta — sem dados de contacto públicos.',
     ex_q_ph:'Filtrar por produto…', ex_filter_btn:'Filtrar', ex_csv_sub:'{n} entradas nesta seleção', ex_csv_art:'Tipo', ex_csv_menge:'Quantidade', ex_csv_ort:'Local/região', ex_csv_anbieter:'Fornecedor', ex_csv_handle:'Handle', ex_csv_erstellt:'Criado', ex_csv_treffer:'Correspondências', ex_print_title:'Troca de stock (oferta/procura)',
-    ex_offers:'📦 Ofertas', ex_seeks:'🔎 Procuras', ex_mine:'🗂️ Minhas', ex_all_bl:'📍 Todas as regiões',
+    ex_offers:'📦 Ofertas', ex_seeks:'🔎 Procuras', ex_mine:'🗂️ Minhas', ex_all_bl:'📍 Todas as regiões', ex_mine_status:'Estado:', ex_st_open:'Abertas', ex_st_done:'Concluídas', ex_mine_none_filter:'Sem entradas nesta vista.', ex_mine_show_all:'Mostrar todas',
     ex_mine_empty_t:'Ainda sem entradas próprias', ex_mine_empty_s:'Até agora não ofereceu nem procurou nada.',
     ex_new:'Criar entrada', ex_search_empty_t:'Nada para “{q}”',
     ex_search_empty_s:'Sem entradas de oferta/procura abertas para este termo. Reponha o filtro ou tente outro termo.',
@@ -3591,7 +3591,8 @@ const blOptions = (sel) => BUNDESLAENDER.map(b=>`<option value="${b}"${b===sel?'
 let exchangeFilter = ''; // '', 'biete', 'suche'
 let exchangeQuery = '';   // Text-Filter (z.B. aus einem Engpass heraus vorbelegt)
 let exchangeBL = '';      // Bundesland-Filter
-let exchangeMine = false;  // nur eigene Einträge (inkl. erledigte)
+let exchangeMine = false;  // nur eigene Einträge
+let exchangeMineStatus = 'offen'; // Status-Filter der eigenen Einträge: 'offen' | 'erledigt' | '' (alle)
 let exchangeSort = '';     // '' = neueste; 'ablauf' = bald ablaufend zuerst
 let exchangeBLInit = false; // Standard-Vorbelegung auf eigenes Bundesland nur einmal
 let exchangeFlash = null;  // Einmal-Hinweis nach dem Anlegen: { count, kind } — passende Gegenstücke gefunden
@@ -3675,9 +3676,14 @@ async function loadExchange() {
       <button class="${exchangeMine?'':'ghost '}small" data-mine>${esc(t('ex_mine'))}</button>
       <button class="${!exchangeMine&&exchangeSort==='ablauf'?'':'ghost '}small" data-sortabl ${exchangeMine?'disabled':''} title="${esc(t('ex_sort_expiry'))}">${esc(t('ex_sort_expiry'))}</button>
       <select id="ex_blf" data-i18n-aria="ex_all_bl" aria-label="${esc(t('ex_all_bl'))}" class="small" style="margin-left:auto" ${exchangeMine?'disabled':''}><option value="">${esc(t('ex_all_bl'))}</option>${blOptions(exchangeBL)}</select>
-    </div></div>`);
+    </div>
+    ${exchangeMine?`<div class="reacts" style="margin-top:6px;align-items:center">
+      <span class="muted" style="font-size:13px">${esc(t('ex_mine_status'))}</span>
+      ${[['offen',t('ex_st_open')],['erledigt',t('ex_st_done')],['',t('sh_f_all')]].map(([v2,l])=>`<button class="small sortbtn${exchangeMineStatus===v2?' active':''}" data-mst="${v2}" aria-pressed="${exchangeMineStatus===v2}">${esc(l)}</button>`).join('')}
+    </div>`:''}</div>`);
   filt.querySelectorAll('[data-f]').forEach(btn => btn.onclick = () => { exchangeMine=false; exchangeFilter = btn.dataset.f; loadExchange(); });
   filt.querySelector('[data-mine]').onclick = () => { exchangeMine = !exchangeMine; loadExchange(); };
+  filt.querySelectorAll('[data-mst]').forEach(b => b.onclick = () => { exchangeMineStatus = b.dataset.mst; loadExchange(); });
   filt.querySelector('[data-sortabl]').onclick = () => { exchangeMine=false; exchangeSort = exchangeSort==='ablauf' ? '' : 'ablauf'; loadExchange(); };
   filt.querySelector('#ex_qgo').onclick = () => { exchangeQuery = v('ex_q').trim(); loadExchange(); };
   filt.querySelector('#ex_q').addEventListener('keydown', e => { if (e.key==='Enter') { exchangeQuery = v('ex_q').trim(); loadExchange(); } });
@@ -3702,8 +3708,16 @@ async function loadExchange() {
   try {
     let d;
     if (exchangeMine) {
-      d = await api('GET','/api/exchange/mine');
-      if (!d.entries.length) { feed.appendChild(emptyState({ icon:'🗂️', title:t('ex_mine_empty_t'), text:t('ex_mine_empty_s'), cta:{ label:t('ex_new'), onClick:()=>{ const b=document.getElementById('ex_bez'); if(b){ b.focus(); b.scrollIntoView({behavior:'smooth',block:'center'}); } } } })); return; }
+      d = await api('GET','/api/exchange/mine' + (exchangeMineStatus ? '?status=' + encodeURIComponent(exchangeMineStatus) : ''));
+      if (!d.entries.length) {
+        if (exchangeMineStatus) {
+          // Nur diese Status-Ansicht ist leer — nicht die „lege den ersten Eintrag an"-Sackgasse.
+          const c = el(`<div class="card muted">${esc(t('ex_mine_none_filter'))} <button class="linklike small" data-showall>${esc(t('ex_mine_show_all'))}</button></div>`);
+          c.querySelector('[data-showall]').onclick = () => { exchangeMineStatus = ''; loadExchange(); };
+          feed.appendChild(c); return;
+        }
+        feed.appendChild(emptyState({ icon:'🗂️', title:t('ex_mine_empty_t'), text:t('ex_mine_empty_s'), cta:{ label:t('ex_new'), onClick:()=>{ const b=document.getElementById('ex_bez'); if(b){ b.focus(); b.scrollIntoView({behavior:'smooth',block:'center'}); } } } })); return;
+      }
     } else {
       const params = new URLSearchParams();
       if (exchangeFilter) params.set('kind', exchangeFilter);
