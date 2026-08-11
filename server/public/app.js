@@ -1827,16 +1827,18 @@ async function mainScreen() {
   startNewsRail();      // News-Livestream links starten (nur auf breiten Bildschirmen sichtbar)
   loadTab();
   // Deep-Links: /?post=ID öffnet einen Beitrag, /?wirkstoff=Name die Wirkstoff-Seite,
-  // /?profile=Handle ein Profil.
+  // /?profile=Handle ein Profil, /?hashtag=Tag einen Hashtag-Feed.
   const params = new URLSearchParams(location.search);
   const sharedPost = params.get('post');
   const sharedWirkstoff = params.get('wirkstoff');
   const sharedProfile = params.get('profile');
+  const sharedHashtag = params.get('hashtag');
   const deepTab = params.get('tab');
   const validTabs = ['overview','public','home','shortages','prices','rabatte','exchange','news'];
   if (sharedPost) { history.replaceState(null, '', location.pathname); openPost(sharedPost); }
   else if (sharedWirkstoff) { history.replaceState(null, '', location.pathname); openWirkstoff(sharedWirkstoff); }
   else if (sharedProfile) { history.replaceState(null, '', location.pathname); openProfile(sharedProfile); }
+  else if (sharedHashtag) { history.replaceState(null, '', location.pathname); openHashtag(sharedHashtag); }
   else if (deepTab && validTabs.includes(deepTab)) { history.replaceState(null, '', location.pathname); goTab(deepTab); }
   else if (!localStorage.getItem('apo_welcome_seen')) showWelcome(false);
 }
@@ -5177,8 +5179,13 @@ async function openHashtag(tag) {
   try {
     const d = await api('GET','/api/hashtag/'+encodeURIComponent(tag));
     feed.innerHTML = '';
-    const head = el(`<div class="card"><div class="row"><b>🏷️ #${esc(d.tag)}</b><span class="sp" style="flex:1"></span><span class="muted">${esc(ti('ht_posts',{n:d.posts.length}))}</span><button class="ghost small" data-back style="margin-left:10px">${esc(t('search_back'))}</button></div></div>`);
+    const head = el(`<div class="card"><div class="row" style="flex-wrap:wrap;gap:6px"><b>🏷️ #${esc(d.tag)}</b><span class="sp" style="flex:1"></span><span class="muted">${esc(ti('ht_posts',{n:d.posts.length}))}</span><button class="ghost small" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button><button class="ghost small" data-back>${esc(t('search_back'))}</button></div></div>`);
     head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
+    { const shb = head.querySelector('[data-share]'); if (shb) shb.onclick = async () => {
+      const url = location.origin + '/?hashtag=' + encodeURIComponent(d.tag);
+      try { await navigator.clipboard.writeText(url); shb.textContent = t('pc_copied'); setTimeout(()=>{ shb.textContent = t('pc_share'); }, 1500); }
+      catch { prompt(t('copy_link_fb'), url); }
+    }; }
     feed.appendChild(head);
     if (!d.posts.length) feed.appendChild(emptyState({ icon:'🏷️', title:t('ht_empty_t'), text:ti('ht_empty_s',{tag:d.tag}) }));
     d.posts.forEach(p => feed.appendChild(postCard(p)));
