@@ -103,6 +103,26 @@ test('Notizen: PTA legt an & Apotheker heftet an; Lehrling darf nicht anheften',
   assert.throws(() => collab.setNotePinned(aAzubi.user.id, n.id, false), ForbiddenError);
 });
 
+test('Notizen bearbeiten: Ersteller:in & Apotheker ja, fremder Lehrling nein, Fremdorg nein, leerer Titel abgelehnt, Teiländerung', () => {
+  const { collab, A, aApo, aPta, aAzubi, B } = setup();
+  const n = collab.createNote(aPta.user.id, A.organization.id, { title: 'Notdienst-Plan', body: 'KW 28', docUrl: null });
+  // Ersteller:in (PTA) darf bearbeiten
+  const upd = collab.updateNote(aPta.user.id, n.id, { title: 'Notdienst-Plan KW 29', body: 'aktualisiert' });
+  assert.equal(upd.title, 'Notdienst-Plan KW 29');
+  assert.equal(upd.body, 'aktualisiert');
+  // Teiländerung: nur der Link, Titel/Inhalt bleiben
+  const upd2 = collab.updateNote(aApo.user.id, n.id, { docUrl: 'https://example.org/plan' });
+  assert.equal(upd2.doc_url, 'https://example.org/plan');
+  assert.equal(upd2.title, 'Notdienst-Plan KW 29');
+  assert.equal(upd2.body, 'aktualisiert');
+  // Lehrling (nicht Ersteller, keine collab-Rolle) darf NICHT bearbeiten
+  assert.throws(() => collab.updateNote(aAzubi.user.id, n.id, { title: 'Kaputt' }), ForbiddenError);
+  // Fremde Organisation (Isolation)
+  assert.throws(() => collab.updateNote(B.user.id, n.id, { title: 'Spion' }), ForbiddenError);
+  // Leerer Titel abgelehnt
+  assert.throws(() => collab.updateNote(aApo.user.id, n.id, { title: '   ' }), /Titel/);
+});
+
 test('Notizen löschen: Ersteller:in ja, fremder Lehrling nein, Apotheker ja; Fremdorg nein', () => {
   const { collab, A, aApo, aPta, aAzubi, B } = setup();
   // Vom Azubi erstellte Notiz darf der Azubi selbst löschen

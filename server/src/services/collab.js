@@ -89,6 +89,25 @@ export function createCollabService(repo, orgAuth) {
       return repo.listNotes(organizationId);
     },
 
+    // Notiz bearbeiten: Ersteller:in ODER eine Rolle mit 'collab' (Admin/Apotheker:in/PTA).
+    // Nur übergebene Felder werden geändert (title/body/docUrl); Titel darf nicht leeren.
+    updateNote(actorUserId, noteId, { title, body, docUrl } = {}) {
+      const n = repo.getNote(noteId);
+      if (!n) throw new Error('Notiz nicht gefunden.');
+      const role = orgRole(actorUserId, n.organization_id); // Isolation
+      if (n.created_by !== actorUserId && !can(role, 'collab')) {
+        throw new ForbiddenError('Nur Ersteller:in oder eine berechtigte Rolle darf bearbeiten.');
+      }
+      const fields = {};
+      if (title !== undefined) {
+        if (!title || !String(title).trim()) throw new Error('Notiz braucht einen Titel.');
+        fields.title = String(title);
+      }
+      if (body !== undefined) fields.body = body;
+      if (docUrl !== undefined) fields.docUrl = docUrl;
+      return repo.updateNote(noteId, fields);
+    },
+
     // Notiz löschen: Ersteller:in ODER eine Rolle mit 'collab' (Admin/Apotheker:in/PTA).
     deleteNote(actorUserId, noteId) {
       const n = repo.getNote(noteId);

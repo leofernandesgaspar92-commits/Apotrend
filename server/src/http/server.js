@@ -474,6 +474,24 @@ const routes = [
     }
     return { note: collab.createNote(userId, mem.organization_id, { title, body: body.body ? String(body.body).slice(0, 2000) : null, docUrl }) };
   }],
+  ['POST', /^\/api\/notes\/([^/]+)$/, true, async ({ userId, params, body }) => {
+    const fields = {};
+    if (body.title !== undefined) {
+      const title = String(body.title || '').trim();
+      if (title.length < 2) { const e = new Error('Notiz braucht einen Titel.'); e.status = 400; throw e; }
+      if (title.length > MAX_TITLE) { const e = new Error(`Titel zu lang (max ${MAX_TITLE}).`); e.status = 400; throw e; }
+      fields.title = title;
+    }
+    if (body.body !== undefined) fields.body = body.body ? String(body.body).slice(0, 2000) : null;
+    if (body.docUrl !== undefined) {
+      let docUrl = null;
+      if (body.docUrl && String(body.docUrl).trim()) {
+        try { docUrl = cleanSourceUrl(body.docUrl); } catch { const e = new Error('Link muss ein http(s)-Link sein.'); e.status = 400; throw e; }
+      }
+      fields.docUrl = docUrl;
+    }
+    return { note: collab.updateNote(userId, params[0], fields) };
+  }],
   ['POST', /^\/api\/notes\/([^/]+)\/pin$/, true, async ({ userId, params, body }) => ({ note: collab.setNotePinned(userId, params[0], !!body.pinned) })],
   ['POST', /^\/api\/notes\/([^/]+)\/delete$/, true, async ({ userId, params }) => collab.deleteNote(userId, params[0])],
   ['POST', /^\/api\/me\/delete$/, true, async ({ userId, body }) => {
