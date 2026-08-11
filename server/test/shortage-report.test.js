@@ -124,6 +124,18 @@ test('confirmShortage: benachrichtigt Melder:in', () => {
   assert.match(n.label, /Ramipril/);
 });
 
+test('confirm/unconfirm-Toggle: Melder:in wird je Apotheke nur EINMAL benachrichtigt (kein Spam)', () => {
+  const { social, shortages, a, b } = setup();
+  const r = shortages.reportShortage(a, { wirkstoff: 'Ramipril' });
+  shortages.confirmShortage(b, r.id);
+  shortages.unconfirmShortage(b, r.id);
+  shortages.confirmShortage(b, r.id); // erneut bestätigen -> KEINE zweite Benachrichtigung
+  shortages.unconfirmShortage(b, r.id);
+  shortages.confirmShortage(b, r.id);
+  const notes = social.notifications(a).filter(x => x.type === 'shortage_confirm' && x.actor && x.actor.handle === 'apob');
+  assert.equal(notes.length, 1, 'trotz mehrfachem Toggle nur eine Benachrichtigung');
+});
+
 test('Kontotyp-Rechte: Privatnutzer:in darf Engpässe weder melden noch bestätigen; Fachkreis darf', () => {
   const repo = createMemoryRepo();
   const orgAuth = createOrgAuthService(repo);

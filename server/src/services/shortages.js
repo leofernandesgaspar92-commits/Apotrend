@@ -46,6 +46,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
     return {
       ...s,
       confirmations: undefined, // rohe User-IDs nicht nach außen geben
+      notified_confirmers: undefined, // interne Dedup-Liste nicht nach außen geben
       confirm_count: confirmations.length,
       i_confirmed: !!viewerUserId && confirmations.includes(viewerUserId),
       reporter: reporter ? { handle: reporter.handle, display_name: reporter.display_name, verified: !!reporter.verified } : null,
@@ -133,8 +134,11 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       const before = shortagesRepo.get(id);
       if (!before) { const e = new Error('Engpass nicht gefunden.'); e.status = 404; throw e; }
       const updated = shortagesRepo.confirm(id, userId);
-      // Melder:in über Bestätigung informieren (soziales Feedback).
-      if (before.reporter_user_id && (updated.confirmations || []).length > (before.confirmations || []).length) {
+      // Melder:in über Bestätigung informieren (soziales Feedback) — aber nur EINMAL je Apotheke,
+      // sonst würde ein confirm/unconfirm/confirm-Toggle die Melder:in mit Meldungen fluten.
+      const grew = (updated.confirmations || []).length > (before.confirmations || []).length;
+      if (before.reporter_user_id && grew && !shortagesRepo.wasConfirmNotified(id, userId)) {
+        shortagesRepo.markConfirmNotified(id, userId);
         social.pushNotification({ userId: before.reporter_user_id, type: 'shortage_confirm', actorUserId: userId, refType: 'shortage', refId: id, label: before.wirkstoff });
       }
       return decorate(updated, userId);
