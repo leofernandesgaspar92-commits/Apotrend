@@ -238,7 +238,7 @@ const I18N = {
     wc_go:"Los geht's →",
     search_doc:'Suche', search_results_for:'Suchergebnisse für „{q}"', search_hits:'{n} Treffer',
     search_back:'← zurück', search_none_t:'Keine Treffer',
-    search_none_s:'Für „{q}" wurde nichts gefunden. Andere Schreibweise oder ein kürzeres Stichwort probieren.',
+    search_none_s:'Für „{q}" wurde nichts gefunden. Andere Schreibweise oder ein kürzeres Stichwort probieren.', search_none_lead:'Nichts gefunden — mach daraus einen nächsten Schritt:', search_none_watch:'⭐ „{q}" beobachten', search_none_report:'📣 „{q}" als Engpass melden',
     search_wk:'💊 Alles zu einem Wirkstoff auf einer Seite:', search_recent:'🕘 Letzte Suchen:', search_watch:'+ Beobachten', search_watched:'✓ Beobachtet', search_watch_title:'Diesen Wirkstoff beobachten / nicht mehr beobachten',
     search_sec_people:'👥 Personen', search_sec_posts:'📝 Beiträge', search_sec_shortages:'📦 Engpässe',
     search_sec_prices:'💶 Preise', search_sec_rabatte:'🏷️ Rabatt-Aktionen',
@@ -587,7 +587,7 @@ const I18N = {
     wc_go:"Let's go →",
     search_doc:'Search', search_results_for:'Search results for “{q}”', search_hits:'{n} hits',
     search_back:'← back', search_none_t:'No results',
-    search_none_s:'Nothing found for “{q}”. Try a different spelling or a shorter keyword.',
+    search_none_s:'Nothing found for “{q}”. Try a different spelling or a shorter keyword.', search_none_lead:'Nothing found — turn it into a next step:', search_none_watch:'⭐ Watch “{q}”', search_none_report:'📣 Report “{q}” as a shortage',
     search_wk:'💊 Everything about a substance on one page:', search_recent:'🕘 Recent searches:', search_watch:'+ Watch', search_watched:'✓ Watching', search_watch_title:'Watch / unwatch this substance',
     search_sec_people:'👥 People', search_sec_posts:'📝 Posts', search_sec_shortages:'📦 Shortages',
     search_sec_prices:'💶 Prices', search_sec_rabatte:'🏷️ Discount deals',
@@ -936,7 +936,7 @@ const I18N = {
     wc_go:'Vamos começar →',
     search_doc:'Pesquisa', search_results_for:'Resultados para “{q}”', search_hits:'{n} resultados',
     search_back:'← voltar', search_none_t:'Sem resultados',
-    search_none_s:'Nada encontrado para “{q}”. Tente outra grafia ou uma palavra mais curta.',
+    search_none_s:'Nada encontrado para “{q}”. Tente outra grafia ou uma palavra mais curta.', search_none_lead:'Nada encontrado — transforme em próximo passo:', search_none_watch:'⭐ Vigiar „{q}"', search_none_report:'📣 Reportar „{q}" como rutura',
     search_wk:'💊 Tudo sobre uma substância numa página:', search_recent:'🕘 Pesquisas recentes:', search_watch:'+ Vigiar', search_watched:'✓ A vigiar', search_watch_title:'Vigiar / deixar de vigiar esta substância',
     search_sec_people:'👥 Pessoas', search_sec_posts:'📝 Publicações', search_sec_shortages:'📦 Faltas',
     search_sec_prices:'💶 Preços', search_sec_rabatte:'🏷️ Promoções',
@@ -1346,6 +1346,7 @@ const viewCountry = () => ACTIVE_COUNTRY || (me && me.country) || 'AT';
 let shortageFilter = ''; // '', 'kritisch', 'watched', 'community'
 let shortageQuery = '';  // Textsuche nach Wirkstoff/Präparat
 let shortageSort = 'kritisch'; // 'kritisch' (kritischste zuerst) | 'neu' (neueste zuerst)
+let shortageReportPrefill = null; // Wirkstoff, mit dem das Meldeformular vorbelegt/geöffnet wird (z.B. aus der Suche)
 let rabattQuery = '';     // Textsuche im Rabatt-Reiter
 let rabattExpiring = false; // nur bald ablaufende Aktionen
 let rabattWatchedOnly = false; // nur Aktionen zu beobachteten Wirkstoffen
@@ -3015,6 +3016,13 @@ function reportShortageCard(existing = []) {
       loadShortages();
     } catch(e){ err.textContent = e.message; }
   };
+  // Vorbelegung aus der Suche: Formular öffnen und Wirkstoff eintragen (Sackgasse -> nächster Schritt).
+  if (shortageReportPrefill) {
+    const w = shortageReportPrefill; shortageReportPrefill = null;
+    form.classList.remove('hidden'); toggle.textContent = t('sh_rep_close');
+    winput.value = w;
+    setTimeout(() => { winput.dispatchEvent(new Event('input')); winput.focus(); }, 0);
+  }
   return card;
 }
 
@@ -5409,7 +5417,31 @@ async function renderSearch(q) {
       others.slice(0, 6).forEach(qq => { const c = el(`<button class="small sortbtn">🔎 ${esc(qq)}</button>`); c.onclick = () => renderSearch(qq); rb.appendChild(c); });
       feed.appendChild(rs);
     }
-    if (!d.total) { feed.appendChild(emptyState({ icon:'🔍', title:t('search_none_t'), text:ti('search_none_s',{q:d.query}) })); return; }
+    if (!d.total) {
+      feed.appendChild(emptyState({ icon:'🔍', title:t('search_none_t'), text:ti('search_none_s',{q:d.query}) }));
+      // Sackgasse vermeiden: den Suchbegriff direkt beobachten oder (Fachkreis) als Engpass melden.
+      // Originaltext der Suche verwenden (behält Groß-/Kleinschreibung; d.query ist normalisiert).
+      const nq = (q||'').trim();
+      if (nq.length >= 2 && nq.length <= 80) {
+        const acts = el(`<div class="card" style="text-align:center">
+          <div class="muted" style="font-size:14px;margin-bottom:8px">${esc(t('search_none_lead'))}</div>
+          <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap">
+            <button class="small" data-swatch>${esc(ti('search_none_watch',{q:nq}))}</button>
+            ${(me&&me.account_type!=='private')?`<button class="ghost small" data-sreport>${esc(ti('search_none_report',{q:nq}))}</button>`:''}
+          </div>
+          <div class="err" data-serr style="margin-top:6px"></div>
+        </div>`);
+        acts.querySelector('[data-swatch]').onclick = async (ev) => {
+          ev.target.disabled = true;
+          try { await api('POST','/api/watchlist',{ wirkstoff: nq }); ev.target.textContent = '✓ ' + t('sc_watched'); }
+          catch(e){ acts.querySelector('[data-serr]').textContent = e.message; ev.target.disabled = false; }
+        };
+        const rb = acts.querySelector('[data-sreport]');
+        if (rb) rb.onclick = () => { shortageReportPrefill = nq; goTab('shortages'); };
+        feed.appendChild(acts);
+      }
+      return;
+    }
     // Direkter Weg zur Wirkstoff-Detailseite: aus den Treffern gefundene Wirkstoffe.
     const wset = new Map();
     [...d.shortages, ...d.prices, ...d.rabatte].forEach(x => { if (x.wirkstoff) wset.set(x.wirkstoff.toLowerCase(), x.wirkstoff); });
