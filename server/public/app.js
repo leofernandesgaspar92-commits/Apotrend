@@ -222,7 +222,7 @@ const I18N = {
     rt_hour_one:'vor 1 Stunde', rt_hour_many:'vor {n} Stunden', rt_day_one:'vor 1 Tag', rt_day_many:'vor {n} Tagen',
     _bcp47:'de-AT',
     dm_doc:'Nachrichten', dm_title:'✉️ Nachrichten', dm_to_ph:'@Handle für neue Nachricht…', dm_write:'Schreiben',
-    dm_empty:'Noch keine Konversationen. Starte oben eine neue.', dm_back:'← Nachrichten',
+    dm_empty:'Noch keine Konversationen. Starte oben eine neue.', dm_search_ph:'🔎 Nachrichten durchsuchen…', dm_none_filter:'Kein Verlauf passt zu „{q}".', dm_back:'← Nachrichten',
     dm_body_ph:'Nachricht schreiben…', dm_no_msgs:'Noch keine Nachrichten — sag Hallo 👋',
     dm_today:'Heute', dm_yesterday:'Gestern', dm_read:'Gelesen', dm_delivered:'Zugestellt',
     wc_title:'👋 Willkommen bei ApoTrend', wc_sub:'Das Fachnetzwerk für Apotheken — kurz erklärt:',
@@ -571,7 +571,7 @@ const I18N = {
     rt_hour_one:'1 hour ago', rt_hour_many:'{n} hours ago', rt_day_one:'1 day ago', rt_day_many:'{n} days ago',
     _bcp47:'en-GB',
     dm_doc:'Messages', dm_title:'✉️ Messages', dm_to_ph:'@handle for a new message…', dm_write:'Write',
-    dm_empty:'No conversations yet. Start one above.', dm_back:'← Messages',
+    dm_empty:'No conversations yet. Start one above.', dm_search_ph:'🔎 Search messages…', dm_none_filter:'No conversation matches “{q}”.', dm_back:'← Messages',
     dm_body_ph:'Write a message…', dm_no_msgs:'No messages yet — say hi 👋',
     dm_today:'Today', dm_yesterday:'Yesterday', dm_read:'Read', dm_delivered:'Delivered',
     wc_title:'👋 Welcome to ApoTrend', wc_sub:'The professional network for pharmacies — briefly explained:',
@@ -920,7 +920,7 @@ const I18N = {
     rt_hour_one:'há 1 hora', rt_hour_many:'há {n} horas', rt_day_one:'há 1 dia', rt_day_many:'há {n} dias',
     _bcp47:'pt-PT',
     dm_doc:'Mensagens', dm_title:'✉️ Mensagens', dm_to_ph:'@handle para nova mensagem…', dm_write:'Escrever',
-    dm_empty:'Ainda sem conversas. Inicie uma acima.', dm_back:'← Mensagens',
+    dm_empty:'Ainda sem conversas. Inicie uma acima.', dm_search_ph:'🔎 Pesquisar mensagens…', dm_none_filter:'Nenhuma conversa corresponde a „{q}".', dm_back:'← Mensagens',
     dm_body_ph:'Escrever mensagem…', dm_no_msgs:'Ainda sem mensagens — diga olá 👋',
     dm_today:'Hoje', dm_yesterday:'Ontem', dm_read:'Lida', dm_delivered:'Entregue',
     wc_title:'👋 Bem-vindo à ApoTrend', wc_sub:'A rede profissional para farmácias — explicação rápida:',
@@ -6957,6 +6957,7 @@ async function showDmInbox() {
   const box = el(`<div class="card"><div class="row"><h1 style="flex:1">${esc(t('dm_title'))}</h1>
     <button class="ghost small" id="back">${esc(t('gen_back'))}</button></div>
     <div class="row" style="margin:6px 0 12px"><input id="dmto" placeholder="${esc(t('dm_to_ph'))}"><button class="small" id="dmnew">${esc(t('dm_write'))}</button></div>
+    ${d.threads.length>=4?`<div style="margin:0 0 10px"><input id="dmq" placeholder="${esc(t('dm_search_ph'))}" aria-label="${esc(t('dm_search_ph'))}" style="width:100%"></div>`:''}
     <div id="dmthreads"></div></div>`);
   app.appendChild(box);
   document.getElementById('back').onclick = mainScreen;
@@ -6968,18 +6969,30 @@ async function showDmInbox() {
   document.getElementById('dmnew').onclick = dmnew;
   document.getElementById('dmto').onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); dmnew(); } };
   const list = document.getElementById('dmthreads');
-  if (!d.threads.length) { list.innerHTML = `<div class="muted">${esc(t('dm_empty'))}</div>`; }
-  else d.threads.forEach(th => {
-    const o = th.other || {};
-    const when = th.last_message?.created_at ? relTime(th.last_message.created_at) : '';
-    const unread = th.unread > 0;
-    const row = el(`<div class="comment clickable" style="cursor:pointer${unread?';background:rgba(11,127,40,.06);border-radius:8px':''}">
-      <div class="row"><b style="${unread?'font-weight:800':''}">${esc(o.display_name||t('ex_unknown'))}</b> <span class="handle">@${esc(o.handle||'?')}</span>
-      <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:12px;margin-right:6px">${when}</span>`:''}${unread?`<span style="background:var(--green);color:#fff;border-radius:999px;font-size:12px;font-weight:700;padding:1px 8px;min-width:20px;text-align:center">${th.unread}</span>`:''}</div>
-      <div class="muted" style="margin-top:2px${unread?';color:inherit;font-weight:600':''}">${esc((th.last_message?.body||'').slice(0,60))}</div></div>`);
-    row.onclick = () => openDmThread(th.thread_id);
-    list.appendChild(row);
-  });
+  if (!d.threads.length) { list.innerHTML = `<div class="muted">${esc(t('dm_empty'))}</div>`; refreshDmCount(); return; }
+  // Suche über Kontakt (Name/Handle) und letzte Nachricht — findet den richtigen Verlauf schnell.
+  let dmQuery = '';
+  const renderThreads = () => {
+    list.innerHTML = '';
+    const shown = !dmQuery ? d.threads : d.threads.filter(th => {
+      const o = th.other || {};
+      return (o.display_name||'').toLowerCase().includes(dmQuery) || (o.handle||'').toLowerCase().includes(dmQuery) || (th.last_message?.body||'').toLowerCase().includes(dmQuery);
+    });
+    if (!shown.length) { list.innerHTML = `<div class="muted">${esc(ti('dm_none_filter',{q:dmQuery}))}</div>`; return; }
+    shown.forEach(th => {
+      const o = th.other || {};
+      const when = th.last_message?.created_at ? relTime(th.last_message.created_at) : '';
+      const unread = th.unread > 0;
+      const row = el(`<div class="comment clickable" style="cursor:pointer${unread?';background:rgba(11,127,40,.06);border-radius:8px':''}">
+        <div class="row"><b style="${unread?'font-weight:800':''}">${esc(o.display_name||t('ex_unknown'))}</b> <span class="handle">@${esc(o.handle||'?')}</span>
+        <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:12px;margin-right:6px">${when}</span>`:''}${unread?`<span style="background:var(--green);color:#fff;border-radius:999px;font-size:12px;font-weight:700;padding:1px 8px;min-width:20px;text-align:center">${th.unread}</span>`:''}</div>
+        <div class="muted" style="margin-top:2px${unread?';color:inherit;font-weight:600':''}">${esc((th.last_message?.body||'').slice(0,60))}</div></div>`);
+      row.onclick = () => openDmThread(th.thread_id);
+      list.appendChild(row);
+    });
+  };
+  { const dq = document.getElementById('dmq'); if (dq) dq.oninput = () => { dmQuery = dq.value.trim().toLowerCase(); renderThreads(); }; }
+  renderThreads();
   refreshDmCount();
 }
 
