@@ -442,6 +442,15 @@ const routes = [
     }
     return { task };
   }],
+  ['POST', /^\/api\/tasks\/([^/]+)\/assign$/, true, async ({ userId, params, body }) => {
+    const prev = (repo.getTask(params[0]) || {}).assignee_user_id;
+    const task = collab.reassignTask(userId, params[0], body.assigneeUserId || null);
+    // Neu zugewiesene Person benachrichtigen (nicht sich selbst, nur bei echtem Wechsel). Best-effort.
+    if (task.assignee_user_id && task.assignee_user_id !== prev && task.assignee_user_id !== userId) {
+      try { social.pushNotification({ userId: task.assignee_user_id, type: 'task_assigned', actorUserId: userId, refType: 'task', refId: task.id, label: task.title }); } catch { /* egal */ }
+    }
+    return { task };
+  }],
   // ── Team-Notizen (gemeinsame Wissensablage, apothekenintern) ──
   ['GET', /^\/api\/notes$/, true, async ({ userId }) => {
     const mem = orgAuth.myMembership(userId);

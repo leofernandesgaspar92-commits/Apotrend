@@ -4516,8 +4516,16 @@ async function openTasks() {
           <button class="ghost small" data-st="offen"${tk.status==='offen'?' disabled':''}>${esc(t('tk_set_offen'))}</button>
           <button class="ghost small" data-st="in_arbeit"${tk.status==='in_arbeit'?' disabled':''}>${esc(t('tk_set_progress'))}</button>
           <button class="small" data-st="erledigt"${tk.status==='erledigt'?' disabled':''}>${esc(t('tk_set_done'))}</button>
+        </div>`:''}
+        ${d.can_assign?`<div class="row" style="margin-top:8px;align-items:center;gap:6px;flex-wrap:wrap">
+          <label style="margin:0;font-size:13px" for="tkasg_${esc(tk.id)}">${esc(t('tk_f_assignee'))}</label>
+          <select data-reassign id="tkasg_${esc(tk.id)}" class="small" style="max-width:100%">
+            <option value="">${esc(t('tk_unassigned'))}</option>
+            ${d.members.map(m=>`<option value="${esc(m.user_id)}"${tk.assignee_user_id===m.user_id?' selected':''}>${esc(m.name||'')}</option>`).join('')}
+          </select>
         </div>`:''}</div>`);
       card.querySelectorAll('[data-st]').forEach(b => { if (!b.disabled) b.onclick = async () => { try { await api('POST',`/api/tasks/${tk.id}/status`,{ status: b.dataset.st }); openTasks(); } catch(e){ alert(e.message); } }; });
+      { const rs = card.querySelector('[data-reassign]'); if (rs) rs.onchange = async () => { try { await api('POST',`/api/tasks/${tk.id}/assign`,{ assigneeUserId: rs.value || null }); openTasks(); } catch(e){ alert(e.message); } }; }
       listBox.appendChild(card);
     });
   };

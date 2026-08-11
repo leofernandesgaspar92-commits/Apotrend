@@ -123,6 +123,19 @@ export function createCollabService(repo, orgAuth) {
       return repo.updateTask(taskId, { status });
     },
 
+    // Aufgabe neu zuweisen (oder Zuweisung entfernen mit null) — nur berechtigte Rolle.
+    reassignTask(actorUserId, taskId, assigneeUserId) {
+      const t = repo.getTask(taskId);
+      if (!t) throw new Error('Aufgabe nicht gefunden.');
+      const role = orgRole(actorUserId, t.organization_id); // Isolation
+      if (!can(role, 'assign_tasks')) throw new ForbiddenError('Diese Rolle darf Aufgaben nicht zuweisen.');
+      const newAssignee = assigneeUserId || null;
+      if (newAssignee && !orgAuth.membershipOf(newAssignee, t.organization_id)) {
+        throw new ForbiddenError('Zugewiesene Person gehoert nicht zur Organisation.');
+      }
+      return repo.updateTask(taskId, { assignee_user_id: newAssignee });
+    },
+
     listTasks(actorUserId, organizationId) {
       orgRole(actorUserId, organizationId); // Isolation
       return repo.listTasks(organizationId);

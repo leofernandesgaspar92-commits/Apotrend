@@ -76,6 +76,24 @@ test('Aufgaben: Apotheker weist zu, Lehrling darf nicht anlegen, aber eigene erl
   assert.throws(() => collab.updateTaskStatus(aAzubi.user.id, t2.id, 'erledigt'), ForbiddenError);
 });
 
+test('Aufgabe neu zuweisen: Apotheker ja, Lehrling nein, Nicht-Mitglied abgewiesen, Entfernen mit null', () => {
+  const { collab, orgAuth, A, aApo, aPta, aAzubi, B } = setup();
+  const t = collab.createTask(aApo.user.id, A.organization.id, { title: 'Retoure', assigneeUserId: aPta.user.id });
+  assert.equal(t.assignee_user_id, aPta.user.id);
+  // Apotheker weist die Aufgabe dem Lehrling neu zu
+  const re = collab.reassignTask(aApo.user.id, t.id, aAzubi.user.id);
+  assert.equal(re.assignee_user_id, aAzubi.user.id);
+  // Zuweisung entfernen (null)
+  const cleared = collab.reassignTask(aApo.user.id, t.id, null);
+  assert.equal(cleared.assignee_user_id, null);
+  // Lehrling darf nicht neu zuweisen
+  assert.throws(() => collab.reassignTask(aAzubi.user.id, t.id, aPta.user.id), ForbiddenError);
+  // Person aus fremder Organisation kann nicht zugewiesen werden
+  assert.throws(() => collab.reassignTask(aApo.user.id, t.id, B.user.id), ForbiddenError);
+  // Fremdorg-Handelnder kommt gar nicht an die Aufgabe (Isolation)
+  assert.throws(() => collab.reassignTask(B.user.id, t.id, B.user.id), ForbiddenError);
+});
+
 test('Notizen: PTA legt an & Apotheker heftet an; Lehrling darf nicht anheften', () => {
   const { collab, A, aApo, aPta, aAzubi } = setup();
   const n = collab.createNote(aPta.user.id, A.organization.id, { title: 'Notdienst-Plan', body: 'KW 28' });
