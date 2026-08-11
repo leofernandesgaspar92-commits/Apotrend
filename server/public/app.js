@@ -332,7 +332,7 @@ const I18N = {
     xo_title:'⏳ Deine Angebote laufen bald ab', xo_sub:'Restbestand rechtzeitig abgeben, bevor er verfällt — spart Geld und vermeidet Verschwendung.', xo_all:'Meine Einträge', xo_expires:'Verfällt am', xo_expired:'abgelaufen', xo_today:'läuft heute ab', xo_days_one:'noch 1 Tag', xo_days_many:'noch {n} Tage', xo_matches_sg:'1 passendes Gesuch', xo_matches_pl:'{n} passende Gesuche',
     sr_title:'🔄 Deine Engpass-Meldungen prüfen', sr_sub:'Diese von dir gemeldeten Engpässe stehen schon länger — noch aktuell? Ein kurzer Status-Check hält die Daten verlässlich.', sr_since_one:'seit 1 Tag', sr_since_many:'seit {n} Tagen', sr_confirms_one:'1 Bestätigung', sr_confirms_many:'{n} Bestätigungen',
     bm_doc:'Merkliste', bm_title:'🔖 Meine Merkliste', bm_empty_t:'Noch nichts gemerkt',
-    bm_empty_s:'Tippe bei einem Beitrag auf „🔖 Merken", dann findest du ihn hier jederzeit wieder.',
+    bm_empty_s:'Tippe bei einem Beitrag auf „🔖 Merken", dann findest du ihn hier jederzeit wieder.', bm_search_ph:'🔎 Merkliste durchsuchen…', bm_none_filter:'Kein Beitrag passt zu „{q}".',
     ht_posts:'{n} Beiträge', ht_empty_t:'Noch keine Beiträge zu diesem Thema', ht_empty_s:'Sei der/die Erste und schreibe etwas mit #{tag}.',
     ma_doc:'Meine Aktivität', ma_title:'🗂️ Meine Aktivität', ma_sub:'Deine Fragen, Engpass-Meldungen und Austausch-Einträge auf einen Blick.',
     ma_stats:'📊 Meine Beitrag-Statistik', ma_k_posts:'Beiträge', ma_k_questions:'Fragen', ma_open_suffix:'offen',
@@ -681,7 +681,7 @@ const I18N = {
     xo_title:'⏳ Your offers are expiring soon', xo_sub:'Pass on leftover stock in time, before it expires — saves money and avoids waste.', xo_all:'My listings', xo_expires:'Expires on', xo_expired:'expired', xo_today:'expires today', xo_days_one:'1 day left', xo_days_many:'{n} days left', xo_matches_sg:'1 matching want', xo_matches_pl:'{n} matching wants',
     sr_title:'🔄 Review your shortage reports', sr_sub:'These shortages you reported have been open for a while — still current? A quick status check keeps the data reliable.', sr_since_one:'for 1 day', sr_since_many:'for {n} days', sr_confirms_one:'1 confirmation', sr_confirms_many:'{n} confirmations',
     bm_doc:'Bookmarks', bm_title:'🔖 My bookmarks', bm_empty_t:'Nothing saved yet',
-    bm_empty_s:'Tap “🔖 Save” on a post to find it here anytime.',
+    bm_empty_s:'Tap “🔖 Save” on a post to find it here anytime.', bm_search_ph:'🔎 Search bookmarks…', bm_none_filter:'No post matches “{q}”.',
     ht_posts:'{n} posts', ht_empty_t:'No posts on this topic yet', ht_empty_s:'Be the first and post something with #{tag}.',
     ma_doc:'My activity', ma_title:'🗂️ My activity', ma_sub:'Your questions, shortage reports and exchange entries at a glance.',
     ma_stats:'📊 My contribution stats', ma_k_posts:'Posts', ma_k_questions:'Questions', ma_open_suffix:'open',
@@ -1030,7 +1030,7 @@ const I18N = {
     xo_title:'⏳ As suas ofertas expiram em breve', xo_sub:'Ceda o stock restante a tempo, antes que expire — poupa dinheiro e evita desperdício.', xo_all:'As minhas entradas', xo_expires:'Expira a', xo_expired:'expirado', xo_today:'expira hoje', xo_days_one:'falta 1 dia', xo_days_many:'faltam {n} dias', xo_matches_sg:'1 pedido correspondente', xo_matches_pl:'{n} pedidos correspondentes',
     sr_title:'🔄 Reveja as suas comunicações de rutura', sr_sub:'Estas ruturas que comunicou estão abertas há algum tempo — ainda atuais? Uma verificação rápida do estado mantém os dados fiáveis.', sr_since_one:'há 1 dia', sr_since_many:'há {n} dias', sr_confirms_one:'1 confirmação', sr_confirms_many:'{n} confirmações',
     bm_doc:'Marcadores', bm_title:'🔖 Os meus marcadores', bm_empty_t:'Ainda nada guardado',
-    bm_empty_s:'Toque em “🔖 Guardar” numa publicação para a encontrar aqui a qualquer momento.',
+    bm_empty_s:'Toque em “🔖 Guardar” numa publicação para a encontrar aqui a qualquer momento.', bm_search_ph:'🔎 Pesquisar marcadores…', bm_none_filter:'Nenhuma publicação corresponde a „{q}".',
     ht_posts:'{n} publicações', ht_empty_t:'Ainda sem publicações sobre este tema', ht_empty_s:'Seja o primeiro e publique algo com #{tag}.',
     ma_doc:'A minha atividade', ma_title:'🗂️ A minha atividade', ma_sub:'As suas perguntas, avisos de falta e entradas de troca num relance.',
     ma_stats:'📊 As minhas estatísticas', ma_k_posts:'Publicações', ma_k_questions:'Perguntas', ma_open_suffix:'em aberto',
@@ -5190,8 +5190,26 @@ async function openBookmarks() {
     const head = el(`<div class="card"><div class="row"><b>${esc(t('bm_title'))}</b><span class="sp" style="flex:1"></span><span class="muted">${d.posts.length}</span><button class="ghost small" data-back style="margin-left:10px">${esc(t('search_back'))}</button></div></div>`);
     head.querySelector('[data-back]').onclick = () => goTab('overview');
     feed.appendChild(head);
-    if (!d.posts.length) feed.appendChild(emptyState({ icon:'🔖', title:t('bm_empty_t'), text:t('bm_empty_s') }));
-    d.posts.forEach(p => feed.appendChild(postCard(p)));
+    if (!d.posts.length) { feed.appendChild(emptyState({ icon:'🔖', title:t('bm_empty_t'), text:t('bm_empty_s') })); return; }
+    // Suche über Text/Autor — hilft, in einer wachsenden Merkliste den richtigen Beitrag zu finden.
+    let bmQuery = '';
+    if (d.posts.length >= 4) {
+      const sc = el(`<div class="card" style="padding:8px 12px"><div class="row" style="gap:6px"><input data-bmq placeholder="${esc(t('bm_search_ph'))}" aria-label="${esc(t('bm_search_ph'))}" style="flex:1"></div></div>`);
+      const inp = sc.querySelector('[data-bmq]');
+      inp.oninput = () => { bmQuery = inp.value.trim().toLowerCase(); renderBm(); };
+      feed.appendChild(sc);
+    }
+    const listBox = el('<div data-bmlist></div>');
+    feed.appendChild(listBox);
+    const renderBm = () => {
+      listBox.innerHTML = '';
+      const shown = !bmQuery ? d.posts : d.posts.filter(p =>
+        (p.body||'').toLowerCase().includes(bmQuery)
+        || (p.author && ((p.author.display_name||'').toLowerCase().includes(bmQuery) || (p.author.handle||'').toLowerCase().includes(bmQuery))));
+      if (!shown.length) { listBox.appendChild(el(`<div class="card muted">${esc(ti('bm_none_filter',{q:bmQuery}))}</div>`)); return; }
+      shown.forEach(p => listBox.appendChild(postCard(p)));
+    };
+    renderBm();
   } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
 
