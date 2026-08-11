@@ -176,7 +176,7 @@ const I18N = {
     co_question:'❓ Als Fachfrage stellen (beste Antwort auswählbar)',
     co_poll:'📊 Umfrage', co_poll_q_ph:'Deine Frage…', co_poll_opt:'Antwortmöglichkeit', co_poll_add:'+ Option hinzufügen', co_poll_del:'Option entfernen', cc_remaining:'noch {n} Zeichen', cc_over:'{n} Zeichen zu viel', dr_restored:'✎ Entwurf wiederhergestellt', dr_discard:'verwerfen',
     pl_total:'{n} Stimmen', pl_total_one:'1 Stimme', pl_total_zero:'Noch keine Stimmen', pl_you:'✓ deine Stimme', pl_tap:'Tippe auf eine Option zum Abstimmen',
-    a11y_img_preview:'Bildvorschau', backtotop_aria:'Nach oben scrollen', co_vis_aria:'Sichtbarkeit des Beitrags', ex_kind_aria:'Art des Eintrags',
+    a11y_img_preview:'Bildvorschau', backtotop_aria:'Nach oben scrollen', lb_close:'Schließen', co_vis_aria:'Sichtbarkeit des Beitrags', ex_kind_aria:'Art des Eintrags',
     pv_public:'🌍 Öffentlich (alle Apotheker)', pv_followers:'👥 Nur meine Follower',
     co_follow_label:'Jemandem folgen (@Handle)', co_follow_btn:'Folgen',
     fe_home_t:'Dein Feed ist noch leer', fe_home_s:'Folge Kolleg:innen, dann erscheinen ihre Beiträge hier.',
@@ -525,7 +525,7 @@ const I18N = {
     co_question:'❓ Ask as a professional question (mark the best answer)',
     co_poll:'📊 Poll', co_poll_q_ph:'Your question…', co_poll_opt:'Answer option', co_poll_add:'+ Add option', co_poll_del:'Remove option', cc_remaining:'{n} characters left', cc_over:'{n} characters too many', dr_restored:'✎ Draft restored', dr_discard:'discard',
     pl_total:'{n} votes', pl_total_one:'1 vote', pl_total_zero:'No votes yet', pl_you:'✓ your vote', pl_tap:'Tap an option to vote',
-    a11y_img_preview:'Image preview', backtotop_aria:'Scroll to top', co_vis_aria:'Post visibility', ex_kind_aria:'Entry type',
+    a11y_img_preview:'Image preview', backtotop_aria:'Scroll to top', lb_close:'Close', co_vis_aria:'Post visibility', ex_kind_aria:'Entry type',
     pv_public:'🌍 Public (all pharmacists)', pv_followers:'👥 My followers only',
     co_follow_label:'Follow someone (@handle)', co_follow_btn:'Follow',
     fe_home_t:'Your feed is still empty', fe_home_s:'Follow colleagues and their posts will show up here.',
@@ -874,7 +874,7 @@ const I18N = {
     co_question:'❓ Colocar como pergunta técnica (permite marcar a melhor resposta)',
     co_poll:'📊 Sondagem', co_poll_q_ph:'A sua pergunta…', co_poll_opt:'Opção de resposta', co_poll_add:'+ Adicionar opção', co_poll_del:'Remover opção', cc_remaining:'faltam {n} caracteres', cc_over:'{n} caracteres a mais', dr_restored:'✎ Rascunho restaurado', dr_discard:'descartar',
     pl_total:'{n} votos', pl_total_one:'1 voto', pl_total_zero:'Ainda sem votos', pl_you:'✓ o seu voto', pl_tap:'Toque numa opção para votar',
-    a11y_img_preview:'Pré-visualização da imagem', backtotop_aria:'Voltar ao topo', co_vis_aria:'Visibilidade da publicação', ex_kind_aria:'Tipo de entrada',
+    a11y_img_preview:'Pré-visualização da imagem', backtotop_aria:'Voltar ao topo', lb_close:'Fechar', co_vis_aria:'Visibilidade da publicação', ex_kind_aria:'Tipo de entrada',
     pv_public:'🌍 Público (todos os farmacêuticos)', pv_followers:'👥 Só os meus seguidores',
     co_follow_label:'Seguir alguém (@handle)', co_follow_btn:'Seguir',
     fe_home_t:'O seu feed ainda está vazio', fe_home_s:'Siga colegas e as publicações deles aparecerão aqui.',
@@ -1293,6 +1293,28 @@ const linkifyMentions = (s) => esc(s)
     (m, pre, h) => `${pre}<span class="mention clickable" data-openprofile="${h}">@${h}</span>`)
   .replace(/(^|[^\w#])#([a-z0-9äöüß_]{2,30})/gi,
     (m, pre, t) => `${pre}<span class="hashtag clickable" data-hashtag="${t}">#${t}</span>`);
+// Bild-Lightbox: Inhaltsbilder (data-zoom) in voller Größe ansehen — wichtig, um kleine
+// Details wie Charge/Verfallsdatum auf Verpackungsfotos lesen zu können. Schließen per
+// Klick auf den Hintergrund, ✕ oder Escape.
+function openLightbox(src, alt) {
+  if (!src) return;
+  const ov = el(`<div class="lightbox" role="dialog" aria-modal="true" tabindex="-1" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:16px">
+    <img alt="${esc(alt||'')}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px">
+    <button class="lightbox-close" aria-label="${esc(t('lb_close'))}" title="${esc(t('lb_close'))}" style="position:absolute;top:12px;right:12px;font-size:22px;line-height:1;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:999px;width:42px;height:42px;cursor:pointer">✕</button>
+  </div>`);
+  ov.querySelector('img').src = src; // src per Property setzen (auch große data:-URLs sicher)
+  const close = () => { document.removeEventListener('keydown', onKey); ov.remove(); };
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  ov.onclick = (e) => { if (e.target === ov || (e.target.closest && e.target.closest('.lightbox-close'))) close(); };
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(ov);
+  ov.focus();
+}
+// Delegation: Klick auf ein Inhaltsbild mit data-zoom öffnet die Lightbox.
+document.addEventListener('click', (e) => {
+  const img = e.target && e.target.closest && e.target.closest('img[data-zoom]');
+  if (img) { e.preventDefault(); openLightbox(img.getAttribute('src') || img.src, img.getAttribute('alt')); }
+});
 const app = document.getElementById('app');
 let me = null, tab = 'overview', iAmModerator = false, publicSort = 'neu', publicFilter = 'all';
 // Rechtsstatus der Module im aktiven Land (aus /api/country-config): feature_id → 'blocked'|'restricted'.
@@ -3720,7 +3742,7 @@ function exchangeCard(e) {
     ${e.ablauf?(()=>{const lt=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);const du=Math.round((Date.parse(e.ablauf+'T00:00:00Z')-Date.parse(lt+'T00:00:00Z'))/86400000);const expired=du!=null&&du<0;const soon=du!=null&&du>=0&&du<=30;const col=expired?'var(--crit-fg)':(soon?'var(--warn-fg)':'var(--muted)');const bg=expired?'var(--crit-bg)':(soon?'var(--warn-bg)':'var(--chip-bg)');const txt=expired?t('ex_expired'):(du===0?t('ex_exp_today'):(du===1?t('ex_exp_1'):ti('ex_exp_in',{d:du})));return `<div style="display:inline-block;margin-top:6px;font-size:13px;font-weight:700;color:${col};background:${bg};border-radius:999px;padding:2px 10px">⏳ ${esc(t('ex_valid'))} ${esc(fmtDateDe(e.ablauf))} · ${esc(txt)}</div>`;})():''}
     ${mc?`<div style="margin-top:6px"><button class="linklike small" data-match style="color:var(--green);font-weight:700">${esc(matchLabel)}</button></div>`:''}
     ${e.note?`<div class="post-body" style="margin:6px 0">${esc(e.note)}</div>`:''}
-    ${e.image && /^data:image\//.test(e.image) ? `<img src="${e.image}" alt="${esc(t('ex_photo_alt'))}" style="max-width:100%;border-radius:10px;margin-top:6px;display:block" />` : ''}
+    ${e.image && /^data:image\//.test(e.image) ? `<img data-zoom src="${e.image}" alt="${esc(t('ex_photo_alt'))}" style="max-width:100%;border-radius:10px;margin-top:6px;display:block;cursor:zoom-in" />` : ''}
     ${stale?`<div style="font-size:13px;margin-top:6px;background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-fg);border-radius:8px;padding:6px 10px">⏳ ${esc(ti('ex_stale',{d:ageDays}))} <button class="linklike small" data-freshdone>${esc(t('ex_stale_done'))}</button></div>`:''}
     <div class="row" style="margin-top:8px;align-items:baseline">
       <span class="handle clickable" data-openprofile="${esc(au.handle||'')}">${esc(t('ex_by'))} ${esc(au.display_name||t('ex_unknown'))} @${esc(au.handle||'?')}</span>
@@ -4612,7 +4634,7 @@ function promoPrice(p) {
 }
 function promoCard(p) {
   const card = el(`<div class="card" style="cursor:pointer" data-open="${esc(p.id)}">
-    ${p.image?`<img src="${esc(p.image)}" alt="${esc(p.titel)}" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;margin-bottom:8px">`:''}
+    ${p.image?`<img data-zoom src="${esc(p.image)}" alt="${esc(p.titel)}" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;margin-bottom:8px;cursor:zoom-in">`:''}
     <div class="row" style="align-items:baseline;gap:8px">
       <span style="display:inline-block;font-size:12px;font-weight:700;color:var(--info-fg);background:var(--info-bg);padding:2px 8px;border-radius:999px">${esc(promoCatLabel(p.kategorie))}</span>
       <span class="sp" style="flex:1"></span>
@@ -4754,7 +4776,7 @@ async function openPromotionDetail(id) {
   feed.innerHTML = '';
   const head = el(`<div class="card">
     <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span>${d.is_mine?`<button class="ghost small" data-edit>${esc(t('wb_edit'))}</button><button class="ghost small" data-del>${esc(t('wb_delete'))}</button>`:`<button class="ghost small" data-report>${esc(t('pc_report'))}</button>`}</div>
-    ${d.image?`<img src="${esc(d.image)}" alt="${esc(d.titel)}" style="width:100%;max-height:320px;object-fit:cover;border-radius:10px;margin:8px 0">`:''}
+    ${d.image?`<img data-zoom src="${esc(d.image)}" alt="${esc(d.titel)}" style="width:100%;max-height:320px;object-fit:cover;border-radius:10px;margin:8px 0;cursor:zoom-in">`:''}
     <div class="row" style="align-items:baseline;gap:8px;margin-top:6px">
       <span style="display:inline-block;font-size:12px;font-weight:700;color:var(--info-fg);background:var(--info-bg);padding:2px 8px;border-radius:999px">${esc(promoCatLabel(d.kategorie))}</span>
       <span class="sp" style="flex:1"></span><span style="font-size:11px;font-weight:700;color:var(--muted);border:1px solid var(--line);padding:1px 6px;border-radius:6px">${esc(t('wb_ad'))}</span>
@@ -6320,7 +6342,7 @@ function repostEmbedHtml(o) {
   if (!o) return '';
   if (o.deleted) return `<div class="repost-embed muted">${esc(t('rp_deleted'))}</div>`;
   const a = o.author || {};
-  const img = o.image && /^data:image\//.test(o.image) ? `<img src="${o.image}" alt="${esc(t('pc_img_alt'))}" style="max-width:100%;border-radius:8px;margin-top:6px;display:block" />` : '';
+  const img = o.image && /^data:image\//.test(o.image) ? `<img data-zoom src="${o.image}" alt="${esc(t('pc_img_alt'))}" style="max-width:100%;border-radius:8px;margin-top:6px;display:block;cursor:zoom-in" />` : '';
   const pollHint = o.poll ? `<div class="muted" style="font-size:13px;margin-top:4px">${esc(t('rp_poll_hint'))}</div>` : '';
   // Vorschau-Text als reiner Text (kein linkifyMentions): die ganze Einbettung ist EIN
   // anklickbares/tastaturbedienbares Element — verschachtelte Klick-Elemente (Mentions/
@@ -6361,7 +6383,7 @@ function postCard(p) {
     ${(p.body||'').trim()||!p.repost_of_post?`<div class="post-body" data-body>${linkifyMentions(p.body)}</div>`:'<div class="post-body" data-body hidden></div>'}
     ${p.poll ? pollHtml(p) : ''}
     ${p.repost_of_post ? repostEmbedHtml(p.repost_of_post) : ''}
-    ${p.image && /^data:image\//.test(p.image) ? `<img src="${p.image}" alt="${esc(t('pc_img_alt'))}" style="max-width:100%;border-radius:10px;margin-top:8px;display:block" />` : ''}
+    ${p.image && /^data:image\//.test(p.image) ? `<img data-zoom src="${p.image}" alt="${esc(t('pc_img_alt'))}" style="max-width:100%;border-radius:10px;margin-top:8px;display:block;cursor:zoom-in" />` : ''}
     ${p.source_url ? `<div style="margin-top:6px"><a href="${esc(p.source_url)}" target="_blank" rel="noopener noreferrer" class="mention">${esc(t('pc_source'))}</a></div>` : ''}
     <div class="vis" data-edited ${p.edited_at?'':'style="display:none"'}>${esc(t('pc_edited'))}</div>
     ${refChip(p.ref_summary)}
@@ -6526,7 +6548,7 @@ function commentRow(postId, c, card, depth = 0) {
       ${mine?'<button class="ghost small" data-ced>✏️</button><button class="ghost small" data-cdel>🗑</button>':''}
     </div>
     <div data-cbody style="margin-top:2px">${linkifyMentions(c.body)}</div>
-    ${c.image && /^data:image\//.test(c.image) ? `<img src="${c.image}" alt="${esc(t('cm_img_alt'))}" style="max-width:100%;border-radius:8px;margin-top:6px;display:block" />` : ''}
+    ${c.image && /^data:image\//.test(c.image) ? `<img data-zoom src="${c.image}" alt="${esc(t('cm_img_alt'))}" style="max-width:100%;border-radius:8px;margin-top:6px;display:block;cursor:zoom-in" />` : ''}
     <div class="reacts" style="margin-top:4px">
       ${REACTS.map(([k,keyLab])=>{const n=c.reaction_counts&&c.reaction_counts[k];const on=c.my_reaction===k;return `<button class="small${on?' reacted':''}" data-creact="${k}" aria-pressed="${on}">${esc(t(keyLab).split(' ')[0])}${n?` ${n}`:''}</button>`;}).join('')}
       <button class="ghost small" data-creply>${esc(t('cm_reply'))}</button>
