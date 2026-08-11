@@ -139,6 +139,13 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       }
       return decorate(updated, userId);
     },
+    // Bestätigung zurücknehmen (Fehlklick/Wieder-lieferbar bei uns) — Gegenstück zu confirmShortage.
+    unconfirmShortage(userId, id) {
+      requireProfessional(userId);
+      const s = shortagesRepo.get(id);
+      if (!s) { const e = new Error('Engpass nicht gefunden.'); e.status = 404; throw e; }
+      return decorate(shortagesRepo.unconfirm(id, userId), userId);
+    },
 
     // Melder:in (oder Moderation) meldet die eigene Community-Meldung als wieder lieferbar.
     resolveShortage(userId, id) {

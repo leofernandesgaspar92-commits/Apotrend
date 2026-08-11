@@ -115,7 +115,7 @@ const I18N = {
     sc_conf_one:'weitere Apotheke bestätigt', sc_conf_many:'weitere Apotheken bestätigt',
     sc_posts_zero:'💬 Noch keine Beiträge', sc_posts_one:'💬 1 Beitrag dazu', sc_posts_many:'💬 {n} Beiträge dazu', sc_post_about:'✍ Dazu posten',
     sc_watched:'⭐ Beobachtet', sc_watch:'☆ Beobachten', sc_sources:'📦 Bezugsquellen', sc_sources_t:'Wer hat diesen Wirkstoff aktuell im Angebot? (Biete-Einträge)', sc_seek:'🔎 Ich suche das', sc_seek_t:'Bedarf melden: Gesuch zu diesem Wirkstoff anlegen (Anbieter werden benachrichtigt)',
-    sc_conf_btn:'➕ Auch bei uns', sc_confd_btn:'✅ Bestätigt', sc_resolve:'✓ Wieder lieferbar', sc_setdate:'🗓️ Termin ändern', sc_date_clear:'Termin offen',
+    sc_conf_btn:'➕ Auch bei uns', sc_confd_btn:'✅ Bestätigt', sc_unconfirm_t:'Bestätigung zurücknehmen', sc_resolve:'✓ Wieder lieferbar', sc_setdate:'🗓️ Termin ändern', sc_date_clear:'Termin offen',
     sc_history:'📜 Verlauf', sc_post_ph:'Dein Beitrag zu diesem Engpass (öffentlich)…', sc_post_send:'Posten',
     sc_mod_status:'📝 Status ändern (Redaktion)', sc_mod_new:'Neuer Status',
     sc_mod_src:'Quelle (Pflicht, http[s]-Link – z.B. BASG)',
@@ -464,7 +464,7 @@ const I18N = {
     sc_conf_one:'more pharmacy confirms', sc_conf_many:'more pharmacies confirm',
     sc_posts_zero:'💬 No posts yet', sc_posts_one:'💬 1 post about this', sc_posts_many:'💬 {n} posts about this', sc_post_about:'✍ Post about this',
     sc_watched:'⭐ Watched', sc_watch:'☆ Watch', sc_sources:'📦 Sources', sc_sources_t:'Who currently offers this substance? (offer entries)', sc_seek:'🔎 I need this', sc_seek_t:'Signal demand: post a want for this substance (offerers get notified)',
-    sc_conf_btn:'➕ Us too', sc_confd_btn:'✅ Confirmed', sc_resolve:'✓ Available again', sc_setdate:'🗓️ Change date', sc_date_clear:'No date',
+    sc_conf_btn:'➕ Us too', sc_confd_btn:'✅ Confirmed', sc_unconfirm_t:'Withdraw confirmation', sc_resolve:'✓ Available again', sc_setdate:'🗓️ Change date', sc_date_clear:'No date',
     sc_history:'📜 History', sc_post_ph:'Your post about this shortage (public)…', sc_post_send:'Post',
     sc_mod_status:'📝 Change status (editorial)', sc_mod_new:'New status',
     sc_mod_src:'Source (required, http[s] link – e.g. BASG)',
@@ -813,7 +813,7 @@ const I18N = {
     sc_conf_one:'outra farmácia confirma', sc_conf_many:'outras farmácias confirmam',
     sc_posts_zero:'💬 Ainda sem publicações', sc_posts_one:'💬 1 publicação sobre isto', sc_posts_many:'💬 {n} publicações sobre isto', sc_post_about:'✍ Publicar sobre isto',
     sc_watched:'⭐ Vigiada', sc_watch:'☆ Vigiar', sc_sources:'📦 Fontes', sc_sources_t:'Quem oferece atualmente esta substância? (entradas de oferta)', sc_seek:'🔎 Preciso disto', sc_seek_t:'Sinalizar procura: criar um pedido para esta substância (os ofertantes são notificados)',
-    sc_conf_btn:'➕ Nós também', sc_confd_btn:'✅ Confirmado', sc_resolve:'✓ Disponível novamente', sc_setdate:'🗓️ Alterar prazo', sc_date_clear:'Sem prazo',
+    sc_conf_btn:'➕ Nós também', sc_confd_btn:'✅ Confirmado', sc_unconfirm_t:'Retirar confirmação', sc_resolve:'✓ Disponível novamente', sc_setdate:'🗓️ Alterar prazo', sc_date_clear:'Sem prazo',
     sc_history:'📜 Histórico', sc_post_ph:'A sua publicação sobre esta falta (pública)…', sc_post_send:'Publicar',
     sc_mod_status:'📝 Alterar estado (redação)', sc_mod_new:'Novo estado',
     sc_mod_src:'Fonte (obrigatória, ligação http[s] – ex. BASG)',
@@ -3159,10 +3159,12 @@ function shortageCard(s) {
     };
   }
   const confirmBtn = card.querySelector('[data-confirm]');
-  if (confirmBtn && !s.i_confirmed) {
+  if (confirmBtn) {
+    // Toggle: bestätigen bzw. Bestätigung zurücknehmen (Fehlklick/„bei uns wieder da").
+    if (s.i_confirmed) confirmBtn.title = t('sc_unconfirm_t');
     confirmBtn.onclick = async () => {
       confirmBtn.disabled = true;
-      try { await api('POST',`/api/shortages/${s.id}/confirm`); loadShortages(); }
+      try { await api('POST',`/api/shortages/${s.id}/${s.i_confirmed?'unconfirm':'confirm'}`); loadShortages(); }
       catch(e){ alert(e.message); confirmBtn.disabled = false; }
     };
   }

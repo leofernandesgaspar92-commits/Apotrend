@@ -99,6 +99,22 @@ test('confirmShortage: zählt Bestätigung, kein Doppel, nicht der Melder', () =
   assert.equal(u.confirm_count, 1);
 });
 
+test('unconfirmShortage: nimmt die eigene Bestätigung zurück; idempotent; Melder unberührt', () => {
+  const { shortages, a, b } = setup();
+  const r = shortages.reportShortage(a, { wirkstoff: 'Ramipril' });
+  shortages.confirmShortage(b, r.id);
+  assert.equal(shortages.withActivity(b, r.id).shortage.confirm_count, 1);
+  // Zurücknehmen -> Zähler 0, i_confirmed false.
+  let u = shortages.unconfirmShortage(b, r.id);
+  assert.equal(u.confirm_count, 0);
+  assert.equal(u.i_confirmed, false);
+  // Erneutes Zurücknehmen ist idempotent (kein Fehler, bleibt 0).
+  u = shortages.unconfirmShortage(b, r.id);
+  assert.equal(u.confirm_count, 0);
+  // Wieder bestätigen funktioniert danach normal.
+  assert.equal(shortages.confirmShortage(b, r.id).confirm_count, 1);
+});
+
 test('confirmShortage: benachrichtigt Melder:in', () => {
   const { social, shortages, a, b } = setup();
   const r = shortages.reportShortage(a, { wirkstoff: 'Ramipril' });

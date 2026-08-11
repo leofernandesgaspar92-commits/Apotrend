@@ -91,6 +91,12 @@ export function createShortagesRepo({ seed = true } = {}) {
       if (userId && userId !== s.reporter_user_id && !s.confirmations.includes(userId)) s.confirmations.push(userId);
       return { ...s, confirmations: [...s.confirmations] };
     },
+    unconfirm(id, userId) {
+      const s = shortages.get(id);
+      if (!s) return null;
+      if (Array.isArray(s.confirmations)) s.confirmations = s.confirmations.filter(u => u !== userId);
+      return { ...s, confirmations: [...(s.confirmations || [])] };
+    },
 
     // ── Beobachtungsliste (Wirkstoffe je Nutzer) ──
     addWatch(userId, wirkstoff) {
