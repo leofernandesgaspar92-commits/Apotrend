@@ -5910,24 +5910,24 @@ async function openProfile(handle) {
     feed.innerHTML = '';
     const head = el(`<div class="card">
       <div class="row"><button class="ghost small" data-back>${esc(t('post_back'))}</button><span class="sp" style="flex:1"></span><button class="ghost small" data-shareprofile title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button></div>
-      ${p.cover_url?`<div class="profile-cover" style="margin-top:10px;background-image:url('${esc(p.cover_url)}')"></div>`:''}
-      <div class="row" style="margin-top:10px;align-items:center">
-        ${p.avatar_url?`<img class="avatar" style="object-fit:cover" alt="${esc(p.display_name||'')}" src="${esc(p.avatar_url)}">`:`<span class="avatar">${esc(initials)}</span>`}
-        <div style="margin-left:12px">
-          <div class="row" style="align-items:center">
-            <span class="post-author" style="font-size:19px">${esc(p.display_name||t('ex_unknown'))}</span>
-            ${p.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}
-            ${p.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
-            ${p.premium?`<span class="premium-badge" title="${esc(t('pc_premium'))}">${esc(t('pc_premium'))}</span>`:''}
-            ${p.account_type?`<span class="spec" style="margin-left:2px">${esc(acctLabel(p.account_type))}</span>`:''}
-          </div>
-          <div class="handle">@${esc(p.handle)}</div>
-          ${p.title?`<div class="muted">${esc(p.title)}</div>`:''}
-          ${p.bundesland?`<div class="muted" style="font-size:13px">📍 ${esc(p.bundesland)}</div>`:''}
-          ${p.website?`<div style="font-size:13px;margin-top:2px">🔗 <a href="${esc(p.website)}" target="_blank" rel="noopener noreferrer nofollow" class="mention">${esc(prettyUrl(p.website))}</a></div>`:''}
-          ${p.public_email?`<div style="font-size:13px;margin-top:2px">📧 <a href="mailto:${encodeURIComponent(p.public_email)}" class="mention">${esc(p.public_email)}</a></div>`:''}
-          ${p.phone?`<div style="font-size:13px;margin-top:2px">📞 <a href="tel:${encodeURIComponent(p.phone.replace(/[^0-9+]/g,''))}" class="mention">${esc(p.phone)}</a></div>`:''}
+      <div class="profile-cover${p.cover_url?'':' profile-cover-ph'}" style="margin-top:10px${p.cover_url?`;background-image:url('${esc(p.cover_url)}')`:''}"></div>
+      <div class="profile-avatar-wrap">
+        ${p.avatar_url?`<img class="avatar profile-avatar" style="object-fit:cover" alt="${esc(p.display_name||'')}" src="${esc(p.avatar_url)}">`:`<span class="avatar profile-avatar">${esc(initials)}</span>`}
+      </div>
+      <div class="profile-idblock">
+        <div class="row" style="align-items:center">
+          <span class="post-author" style="font-size:20px">${esc(p.display_name||t('ex_unknown'))}</span>
+          ${p.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}
+          ${p.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
+          ${p.premium?`<span class="premium-badge" title="${esc(t('pc_premium'))}">${esc(t('pc_premium'))}</span>`:''}
+          ${p.account_type?`<span class="spec" style="margin-left:2px">${esc(acctLabel(p.account_type))}</span>`:''}
         </div>
+        <div class="handle">@${esc(p.handle)}</div>
+        ${p.title?`<div class="muted">${esc(p.title)}</div>`:''}
+        ${p.bundesland?`<div class="muted" style="font-size:13px">📍 ${esc(p.bundesland)}</div>`:''}
+        ${p.website?`<div style="font-size:13px;margin-top:2px">🔗 <a href="${esc(p.website)}" target="_blank" rel="noopener noreferrer nofollow" class="mention">${esc(prettyUrl(p.website))}</a></div>`:''}
+        ${p.public_email?`<div style="font-size:13px;margin-top:2px">📧 <a href="mailto:${encodeURIComponent(p.public_email)}" class="mention">${esc(p.public_email)}</a></div>`:''}
+        ${p.phone?`<div style="font-size:13px;margin-top:2px">📞 <a href="tel:${encodeURIComponent(p.phone.replace(/[^0-9+]/g,''))}" class="mention">${esc(p.phone)}</a></div>`:''}
       </div>
       ${p.bio?`<div class="post-body">${esc(p.bio)}</div>`:''}
       ${(p.open_to&&p.open_to.length)?`<div class="opento-row">🤝 <b>${esc(t('pf_opento'))}:</b> ${p.open_to.filter(k=>OPEN_TO.includes(k)).map(k=>`<button class="opento-badge clickable" data-opento="${esc(k)}" title="${esc(t('ot_discover_hint'))}">${esc(openToLabel(k))}</button>`).join(' ')}</div>`:''}
