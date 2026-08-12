@@ -36,6 +36,37 @@ test('match_count: passende offene Gegen-Einträge je Autor:in, sich selbst nich
   assert.equal(exchange.mine(a).find(e => e.id === other.id).match_count, 0);
 });
 
+test('setReserved: Ersteller markiert reserviert (bleibt sichtbar), nimmt aus Matchmaking; Fremde/erledigt abgewiesen', () => {
+  const { exchange, a, b } = setup();
+  const offer = exchange.create(a, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg Filmtabletten' });
+  const seek = exchange.create(b, { kind: 'suche', bezeichnung: 'Amoxicillin dringend gesucht' });
+  // Vor Reservierung: beide sehen 1 Match
+  assert.equal(exchange.mine(a).find(e => e.id === offer.id).match_count, 1);
+  assert.equal(exchange.list(b, { kind: 'suche' })[0].match_count, 1);
+  // A reserviert sein Angebot
+  const res = exchange.setReserved(a, offer.id, true);
+  assert.equal(res.reserved, true);
+  // Eintrag bleibt in der offenen Liste sichtbar (nur gekennzeichnet), Status weiter offen
+  const inList = exchange.list(b, { kind: 'biete' }).find(e => e.id === offer.id);
+  assert.ok(inList, 'reservierter Eintrag bleibt sichtbar');
+  assert.equal(inList.status, 'offen');
+  assert.equal(inList.reserved, true);
+  // Aus dem aktiven Matchmaking genommen: reserviertes Angebot zählt für Bs Gesuch nicht mehr
+  assert.equal(exchange.list(b, { kind: 'suche' })[0].match_count, 0, 'reserviertes Angebot nicht mehr als Match');
+  // ...und das reservierte Angebot selbst zeigt keine Matches
+  assert.equal(exchange.mine(a).find(e => e.id === offer.id).match_count, 0);
+  // Freigeben stellt das Matching wieder her
+  exchange.setReserved(a, offer.id, false);
+  assert.equal(exchange.list(b, { kind: 'suche' })[0].match_count, 1);
+  // Nur der Ersteller darf reservieren
+  assert.throws(() => exchange.setReserved(b, offer.id, true), /Ersteller/);
+  // Erledigte Einträge lassen sich nicht reservieren; markResolved setzt reserved zurück
+  exchange.setReserved(a, offer.id, true);
+  const doneE = exchange.markResolved(a, offer.id);
+  assert.equal(doneE.reserved, false);
+  assert.throws(() => exchange.setReserved(a, offer.id, true), /offene|nicht/);
+});
+
 test('byAuthor: offene Biete/Suche einer Apotheke fürs Profil; nur offene, nur eigene', () => {
   const { exchange, a, b } = setup();
   exchange.create(a, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg' });

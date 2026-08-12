@@ -53,7 +53,7 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
     const type = entry.kind === 'biete' ? 'exchange_offer' : 'exchange_want';
     const seen = new Set();
     for (const other of exchangeRepo.list()) {
-      if (other.status !== 'offen' || other.kind !== opposite || other.id === entry.id) continue;
+      if (other.status !== 'offen' || other.reserved || other.kind !== opposite || other.id === entry.id) continue;
       if (other.author_user_id === entry.author_user_id || seen.has(other.author_user_id)) continue;
       if (!shareWord(mine, words(other.bezeichnung))) continue;
       seen.add(other.author_user_id);
@@ -64,13 +64,13 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
   // Anzahl passender offener Gegen-Einträge (nach Autor:in eindeutig) — für ein sichtbares
   // Matchmaking-Signal am Eintrag: „N passende Angebote/Gesuche". Nur für offene Einträge.
   function countMatches(entry) {
-    if (entry.status !== 'offen') return 0;
+    if (entry.status !== 'offen' || entry.reserved) return 0; // reservierte sind vergeben – kein aktives Matchmaking
     const opposite = entry.kind === 'biete' ? 'suche' : 'biete';
     const mine = words(entry.bezeichnung);
     if (!mine.size) return 0;
     const authors = new Set();
     for (const other of exchangeRepo.list()) {
-      if (other.status !== 'offen' || other.kind !== opposite || other.id === entry.id) continue;
+      if (other.status !== 'offen' || other.reserved || other.kind !== opposite || other.id === entry.id) continue;
       if (other.author_user_id === entry.author_user_id) continue;
       if (!shareWord(mine, words(other.bezeichnung))) continue;
       authors.add(other.author_user_id);
@@ -173,7 +173,18 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       const e = exchangeRepo.get(id);
       if (!e) throw new Error('Eintrag nicht gefunden.');
       if (e.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Ersteller darf das.');
-      return exchangeRepo.update(id, { status: 'erledigt', resolved_at: new Date().toISOString() });
+      return exchangeRepo.update(id, { status: 'erledigt', reserved: false, resolved_at: new Date().toISOString() });
+    },
+    // Eintrag als „reserviert" markieren/freigeben (nur Ersteller, nur bei offenen Einträgen).
+    // Reserviert = ein Tausch ist per Direktnachricht in Absprache; der Eintrag bleibt für alle
+    // sichtbar, aber klar gekennzeichnet und aus dem aktiven Matchmaking genommen — so sparen
+    // sich Kolleg:innen doppelte Anfragen zu bereits vergebener Ware.
+    setReserved(actorUserId, id, reserved) {
+      const e = exchangeRepo.get(id);
+      if (!e) throw new AppError('exchange_not_found', 'Eintrag nicht gefunden.', 404);
+      if (e.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Ersteller darf das.');
+      if (e.status !== 'offen') throw new AppError('exchange_not_open', 'Nur offene Einträge lassen sich reservieren.', 400);
+      return decorate(exchangeRepo.update(id, { reserved: !!reserved }));
     },
     remove(actorUserId, id) {
       const e = exchangeRepo.get(id);

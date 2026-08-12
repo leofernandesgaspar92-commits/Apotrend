@@ -13,7 +13,7 @@ export function createExchangeRepo() {
         id: uuid(), kind: e.kind, author_user_id: e.authorUserId,
         bezeichnung: e.bezeichnung, menge: e.menge ?? null, ort: e.ort ?? null, bundesland: e.bundesland ?? null,
         ablauf: e.ablauf ?? null, // Verfallsdatum (v.a. bei „biete": Restbestand vor Ablauf)
-        note: e.note ?? null, image: e.image ?? null, status: 'offen', created_at: now(), resolved_at: null,
+        note: e.note ?? null, image: e.image ?? null, status: 'offen', reserved: false, created_at: now(), resolved_at: null,
       };
       entries.set(row.id, row);
       return { ...row };

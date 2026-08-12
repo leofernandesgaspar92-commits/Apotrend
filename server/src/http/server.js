@@ -744,6 +744,7 @@ const routes = [
   ['GET', /^\/api\/exchange\/mine$/, true, async ({ userId, query }) => { ensureFeatureAllowed('stock_exchange', userId); return { entries: exchange.mine(userId, { status: query.get('status') || null }) }; }],
   ['POST', /^\/api\/exchange\/([^/]+)\/resolve$/, true, async ({ userId, params, query }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.markResolved(userId, params[0]); }],
   ['POST', /^\/api\/exchange\/([^/]+)\/reopen$/, true, async ({ userId, params, query }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.reopen(userId, params[0]); }],
+  ['POST', /^\/api\/exchange\/([^/]+)\/reserve$/, true, async ({ userId, params, body }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.setReserved(userId, params[0], body.reserved !== false); }],
   ['POST', /^\/api\/exchange\/([^/]+)\/update$/, true, async ({ userId, params, body }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.update(userId, params[0], { bezeichnung: body.bezeichnung, menge: body.menge, ort: body.ort, bundesland: body.bundesland, note: body.note, ablauf: body.ablauf }); }],
   ['POST', /^\/api\/exchange\/([^/]+)\/delete$/, true, async ({ userId, params, query }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.remove(userId, params[0]); }],
 

@@ -168,7 +168,7 @@ const I18N = {
     ex_empty_t:'Noch keine offenen Einträge', ex_empty_s:'Biete Überbestand an oder suche dringend Benötigtes — sei der/die Erste.',
     ex_badge_biete:'📦 Biete', ex_badge_suche:'🔎 Suche', ex_done_badge:'✓ erledigt', ex_qty:'Menge:', ex_match_offers:'🔗 {n} passende Angebote', ex_match_offers_1:'🔗 1 passendes Angebot', ex_match_seeks:'🔗 {n} passende Gesuche', ex_match_seeks_1:'🔗 1 passendes Gesuch', ex_flash_offers:'{n} passende Angebote gefunden — hier deine Treffer.', ex_flash_offers_1:'1 passendes Angebot gefunden — hier dein Treffer.', ex_flash_seeks:'{n} passende Gesuche gefunden — hier deine Treffer.', ex_flash_seeks_1:'1 passendes Gesuch gefunden — hier dein Treffer.', ex_flash_none_biete:'Angebot veröffentlicht. Noch kein passendes Gesuch — du wirst benachrichtigt, sobald jemand danach sucht.', ex_flash_none_suche:'Gesuch veröffentlicht. Noch kein passendes Angebot — du wirst benachrichtigt, sobald jemand es anbietet.',
     ex_photo_alt:'Foto zum Eintrag', ex_by:'von', ex_unknown:'Unbekannt',
-    ex_contact_btn:'✉️ Kontaktieren', ex_dm_draft:'Hallo! Zu deinem Eintrag „{kind}: {item}" — ist das noch aktuell?', ex_reopen:'↻ Wieder öffnen', ex_done_btn:'✓ Erledigt', ex_edit:'Bearbeiten', ex_edit_cancel:'Abbrechen',
+    ex_contact_btn:'✉️ Kontaktieren', ex_dm_draft:'Hallo! Zu deinem Eintrag „{kind}: {item}" — ist das noch aktuell?', ex_reopen:'↻ Wieder öffnen', ex_done_btn:'✓ Erledigt', ex_reserve:'🔒 Reservieren', ex_unreserve:'🔓 Freigeben', ex_reserved_badge:'🔒 reserviert', ex_reserve_t:'Ein Tausch ist in Absprache — für alle sichtbar als „reserviert" markieren, ohne den Eintrag zu schließen.', ex_edit:'Bearbeiten', ex_edit_cancel:'Abbrechen',
     ex_del_confirm:'Eintrag löschen?', ex_stale:'Dieser Eintrag ist {d} Tage alt — noch aktuell?', ex_stale_done:'Als erledigt markieren',
     co_label:"Was gibt's Neues? (kurzer Fachbeitrag)",
     co_ph:'Bei uns gerade Engpass bei Amoxicillin — wer hat noch Bestand?',
@@ -517,7 +517,7 @@ const I18N = {
     ex_empty_t:'No open entries yet', ex_empty_s:'Offer surplus or seek urgently needed items — be the first.',
     ex_badge_biete:'📦 Offer', ex_badge_suche:'🔎 Request', ex_done_badge:'✓ done', ex_qty:'Quantity:', ex_match_offers:'🔗 {n} matching offers', ex_match_offers_1:'🔗 1 matching offer', ex_match_seeks:'🔗 {n} matching requests', ex_match_seeks_1:'🔗 1 matching request', ex_flash_offers:'{n} matching offers found — here are your hits.', ex_flash_offers_1:'1 matching offer found — here is your hit.', ex_flash_seeks:'{n} matching requests found — here are your hits.', ex_flash_seeks_1:'1 matching request found — here is your hit.', ex_flash_none_biete:'Offer published. No matching request yet — you will be notified as soon as someone seeks it.', ex_flash_none_suche:'Request published. No matching offer yet — you will be notified as soon as someone offers it.',
     ex_photo_alt:'Entry photo', ex_by:'by', ex_unknown:'Unknown',
-    ex_contact_btn:'✉️ Contact', ex_dm_draft:'Hi! About your listing “{kind}: {item}” — is it still available?', ex_reopen:'↻ Reopen', ex_done_btn:'✓ Done', ex_edit:'Edit', ex_edit_cancel:'Cancel',
+    ex_contact_btn:'✉️ Contact', ex_dm_draft:'Hi! About your listing “{kind}: {item}” — is it still available?', ex_reopen:'↻ Reopen', ex_done_btn:'✓ Done', ex_reserve:'🔒 Reserve', ex_unreserve:'🔓 Release', ex_reserved_badge:'🔒 reserved', ex_reserve_t:'A swap is being arranged — mark it visibly as “reserved” for everyone without closing the listing.', ex_edit:'Edit', ex_edit_cancel:'Cancel',
     ex_del_confirm:'Delete entry?', ex_stale:'This entry is {d} days old — still current?', ex_stale_done:'Mark as done',
     co_label:"What's new? (short professional post)",
     co_ph:'We have a shortage of Amoxicillin right now — who still has stock?',
@@ -866,7 +866,7 @@ const I18N = {
     ex_empty_t:'Ainda sem entradas abertas', ex_empty_s:'Ofereça excedente ou procure algo urgente — seja o primeiro.',
     ex_badge_biete:'📦 Oferta', ex_badge_suche:'🔎 Procura', ex_done_badge:'✓ concluído', ex_qty:'Quantidade:', ex_match_offers:'🔗 {n} ofertas correspondentes', ex_match_offers_1:'🔗 1 oferta correspondente', ex_match_seeks:'🔗 {n} procuras correspondentes', ex_match_seeks_1:'🔗 1 procura correspondente', ex_flash_offers:'{n} ofertas correspondentes encontradas — aqui estão.', ex_flash_offers_1:'1 oferta correspondente encontrada — aqui está.', ex_flash_seeks:'{n} procuras correspondentes encontradas — aqui estão.', ex_flash_seeks_1:'1 procura correspondente encontrada — aqui está.', ex_flash_none_biete:'Oferta publicada. Ainda sem procura correspondente — será notificado assim que alguém procurar.', ex_flash_none_suche:'Procura publicada. Ainda sem oferta correspondente — será notificado assim que alguém oferecer.',
     ex_photo_alt:'Foto da entrada', ex_by:'de', ex_unknown:'Desconhecido',
-    ex_contact_btn:'✉️ Contactar', ex_dm_draft:'Olá! Sobre a sua entrada „{kind}: {item}" — ainda está disponível?', ex_reopen:'↻ Reabrir', ex_done_btn:'✓ Concluído', ex_edit:'Editar', ex_edit_cancel:'Cancelar',
+    ex_contact_btn:'✉️ Contactar', ex_dm_draft:'Olá! Sobre a sua entrada „{kind}: {item}" — ainda está disponível?', ex_reopen:'↻ Reabrir', ex_done_btn:'✓ Concluído', ex_reserve:'🔒 Reservar', ex_unreserve:'🔓 Libertar', ex_reserved_badge:'🔒 reservado', ex_reserve_t:'Uma troca está a ser combinada — marque-a visivelmente como „reservado" para todos sem fechar o anúncio.', ex_edit:'Editar', ex_edit_cancel:'Cancelar',
     ex_del_confirm:'Eliminar entrada?', ex_stale:'Esta entrada tem {d} dias — ainda atual?', ex_stale_done:'Marcar como concluída',
     co_label:'O que há de novo? (publicação técnica curta)',
     co_ph:'Temos falta de Amoxicilina agora — quem ainda tem stock?',
@@ -3810,6 +3810,7 @@ function exchangeCard(e) {
                         : `<span style="background:var(--warn-bg);color:var(--warn-fg);border:1px solid var(--warn-bd);border-radius:999px;padding:2px 10px;font-weight:700;font-size:13px">${esc(t('ex_badge_suche'))}</span>`;
   const erledigt = e.status === 'erledigt';
   const doneBadge = erledigt ? ` <span style="background:var(--line);color:var(--muted);border-radius:999px;padding:2px 8px;font-size:12px;font-weight:600">${esc(t('ex_done_badge'))}</span>` : '';
+  const reservedBadge = (!erledigt && e.reserved) ? ` <span style="background:var(--warn-bg);color:var(--warn-fg);border:1px solid var(--warn-bd);border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700">${esc(t('ex_reserved_badge'))}</span>` : '';
   // Frische-Hinweis: eigener, offener Eintrag, der schon lange steht — zum Aufräumen anregen
   // (hält Angebot/Nachfrage im Netzwerk aktuell). Schwelle: 21 Tage.
   const ageDays = e.created_at ? Math.floor((Date.now() - Date.parse(e.created_at)) / 86400000) : 0;
@@ -3821,7 +3822,7 @@ function exchangeCard(e) {
     : (mc === 1 ? t('ex_match_offers_1') : ti('ex_match_offers', { n: mc }))) : '';
   const card = el(`<div class="card"${erledigt?' style="opacity:.75"':''}>
     <div class="row" style="align-items:baseline">
-      ${badge}${doneBadge}
+      ${badge}${doneBadge}${reservedBadge}
       <b style="margin-left:8px">${esc(e.bezeichnung)}</b>
       <span class="sp" style="flex:1"></span>
       <span class="muted" style="font-size:12px">${relTime(e.created_at)}</span>
@@ -3837,7 +3838,7 @@ function exchangeCard(e) {
       <span class="sp" style="flex:1"></span>
       ${!mine ? `<button class="small" data-contact>${esc(t('ex_contact_btn'))}</button>`
               : (erledigt ? `<button class="ghost small" data-edit title="${esc(t('ex_edit'))}">✏️</button><button class="ghost small" data-reopen>${esc(t('ex_reopen'))}</button><button class="ghost small" data-del>🗑</button>`
-                          : `<button class="ghost small" data-edit title="${esc(t('ex_edit'))}">✏️</button><button class="ghost small" data-done>${esc(t('ex_done_btn'))}</button><button class="ghost small" data-del>🗑</button>`)}
+                          : `<button class="ghost small" data-reserve title="${esc(t('ex_reserve_t'))}">${esc(e.reserved?t('ex_unreserve'):t('ex_reserve'))}</button><button class="ghost small" data-edit title="${esc(t('ex_edit'))}">✏️</button><button class="ghost small" data-done>${esc(t('ex_done_btn'))}</button><button class="ghost small" data-del>🗑</button>`)}
     </div>
     ${mine ? `<div class="comments hidden" data-editbox style="margin-top:8px">
       <input data-e-bez value="${esc(e.bezeichnung||'')}" placeholder="${esc(t('ex_bez_ph'))}">
@@ -3867,6 +3868,8 @@ function exchangeCard(e) {
   };
   const done = card.querySelector('[data-done]');
   if (done) done.onclick = async () => { try { await api('POST',`/api/exchange/${e.id}/resolve`); loadExchange(); } catch(err){ alert(err.message); } };
+  const reserve = card.querySelector('[data-reserve]');
+  if (reserve) reserve.onclick = async () => { try { await api('POST',`/api/exchange/${e.id}/reserve`,{ reserved: !e.reserved }); loadExchange(); } catch(err){ alert(err.message); } };
   const freshDone = card.querySelector('[data-freshdone]');
   if (freshDone) freshDone.onclick = async () => { try { await api('POST',`/api/exchange/${e.id}/resolve`); loadExchange(); } catch(err){ alert(err.message); } };
   const reopen = card.querySelector('[data-reopen]');
