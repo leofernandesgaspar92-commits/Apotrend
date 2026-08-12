@@ -6628,18 +6628,24 @@ function postCard(p) {
   const rc = p.reaction_counts || {};
   const mine = me && a.handle === me.handle;
   const card = el(`<div class="card">
-    <div class="row">
+    <div class="post-head">
       ${avatarHtml(a)}
-      <span class="post-author clickable" data-openprofile="${esc(a.handle||'')}">${esc(a.display_name||t('ex_unknown'))}</span>
-      <span class="handle clickable" data-openprofile="${esc(a.handle||'')}">@${esc(a.handle||'?')}</span>
-      ${a.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}
-      ${a.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
-      ${a.premium?`<span class="premium-badge" title="${esc(t('pc_premium'))}">${esc(t('pc_premium'))}</span>`:''}
-      ${a.account_type&&a.account_type!=='pharmacy'?`<span class="spec" style="margin-left:2px">${esc(acctLabel(a.account_type))}</span>`:''}
-      <span class="sp" style="flex:1"></span>
-      ${mine?'':`<button class="${a.is_following?'ghost ':''}small" data-follow="${esc(a.handle)}" data-on="${a.is_following?'1':'0'}">${a.is_following?esc(t('fl_following_btn')):esc(t('co_follow_btn'))}</button>`}
+      <div class="post-hd-main">
+        <div class="post-hd-top">
+          <span class="post-author clickable" data-openprofile="${esc(a.handle||'')}">${esc(a.display_name||t('ex_unknown'))}</span>
+          ${a.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}
+          ${a.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
+          ${a.premium?`<span class="premium-badge" title="${esc(t('pc_premium'))}">${esc(t('pc_premium'))}</span>`:''}
+          ${a.account_type&&a.account_type!=='pharmacy'?`<span class="spec" style="margin-left:2px">${esc(acctLabel(a.account_type))}</span>`:''}
+          ${mine?'':`<button class="${a.is_following?'ghost ':''}small" data-follow="${esc(a.handle)}" data-on="${a.is_following?'1':'0'}" style="margin-left:auto">${a.is_following?esc(t('fl_following_btn')):esc(t('co_follow_btn'))}</button>`}
+        </div>
+        <div class="post-hd-sub">
+          <span class="handle clickable" data-openprofile="${esc(a.handle||'')}">@${esc(a.handle||'?')}</span>
+          <span aria-hidden="true">·</span>
+          <span title="${esc(p.created_at)}">${relTime(p.created_at)}</span>
+        </div>
+      </div>
     </div>
-    <div class="muted" style="font-size:13px" title="${esc(p.created_at)}">🕒 ${relTime(p.created_at)}</div>
     ${p.is_question?`<div style="margin-top:4px" data-qbadge>${qBadgeHtml(p.answered)}</div>`:''}
     ${p.repost_of_post?`<div class="vis" style="margin-top:2px">🔁 ${esc(t('rp_shared'))}</div>`:''}
     ${(p.body||'').trim()||!p.repost_of_post?`<div class="post-body" data-body>${linkifyMentions(p.body)}</div>`:'<div class="post-body" data-body hidden></div>'}

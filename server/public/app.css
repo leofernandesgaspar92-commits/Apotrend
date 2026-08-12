@@ -102,6 +102,13 @@
     .tabs button { flex:none; padding-left:4px; padding-right:4px; }
   }
   .post-author { font-weight:700; }
+  /* Social-Header: Avatar links, daneben Name (fett) über „@handle · Zeit" — die vertraute
+     Feed-Optik von X/LinkedIn, aber mit gut lesbarer Größe (keine Winzig-Schrift). */
+  .post-head { display:flex; align-items:flex-start; }
+  .post-hd-main { flex:1; min-width:0; }
+  .post-hd-top { display:flex; align-items:center; gap:6px; flex-wrap:wrap; row-gap:4px; }
+  .post-hd-sub { display:flex; align-items:center; gap:6px; flex-wrap:wrap; color:var(--muted); font-size:13px; margin-top:1px; }
+  .post-hd-sub .handle { font-size:13px; }
   .handle { color:var(--muted); font-weight:400; font-size:0.9em; }
   .verified { color:var(--green); font-size:13px; }
   .editorial { background:var(--info-bg); color:var(--info-fg); font-size:12px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid var(--info-bd); }
@@ -147,7 +154,7 @@
   /* Weicher Zeichenzähler an Textfeldern: dezent, wird bei Überschreitung rot. */
   .char-counter { font-size:12px; text-align:right; margin-top:2px; min-height:14px; }
   .char-counter.over { color:var(--crit-fg); font-weight:700; }
-  .avatar { display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:50%; background:var(--green); color:#fff; font-weight:800; font-size:19px; flex:0 0 auto; }
+  .avatar { display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:50%; background:var(--green); color:#fff; font-weight:800; font-size:19px; flex:0 0 auto; box-shadow:0 0 0 1px var(--line); }
   .profile-cover { width:100%; height:150px; border-radius:12px; background:var(--chip-bg); background-size:cover; background-position:center; border:1px solid var(--line); }
   #whoami.clickable { display:inline-flex; align-items:center; cursor:pointer; border-radius:999px; padding:2px 8px 2px 2px; }
   #whoami.clickable:hover { background:rgba(255,255,255,0.15); }
@@ -208,7 +215,7 @@
   .vis { font-size:12px; color:var(--muted); }
   .reacts { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
   .reacts button { background:var(--chip-bg); color:var(--text); border:1px solid var(--line); padding:8px 12px; font-size:0.85em; font-weight:500; min-height:40px; }
-  .reacts button:hover { border-color:var(--green); }
+  .reacts button:not(.reacted):hover { border-color:var(--green); color:var(--green); }
   .reacts button.reacted { background:var(--green); color:#fff; border-color:var(--green); font-weight:700; } /* eigene Reaktion sichtbar markiert (nochmal klicken = entfernen) */
   body.dark .reacts button.reacted { background:var(--green); color:#fff; }
   .muted { color:var(--muted); font-size:14px; }
