@@ -4818,6 +4818,10 @@ async function openDirectory(type) {
   { const blf = head.querySelector('[data-blf]'); if (blf) blf.onchange = () => { dirState.bl = blf.value; openDirectory(); }; }
   feed.appendChild(head);
   if (!list.people.length) { feed.appendChild(emptyState({ icon:'🔎', title:t('dir_empty_t'), text: dirState.verified ? t('dir_empty_verified') : t('dir_empty_s') })); return; }
+  // Auf breiteren Screens mehrspaltig (füllt den Platz), am Handy einspaltig — responsiv
+  // über auto-fill, ohne Media-Query.
+  const grid = el('<div class="dir-grid"></div>');
+  feed.appendChild(grid);
   list.people.forEach(p => {
     const row = el(`<div class="card"><div class="row" style="align-items:baseline;gap:6px;flex-wrap:wrap">
       <b class="clickable" data-openprofile="${esc(p.handle)}">${esc(p.display_name||('@'+p.handle))}</b>
@@ -4833,7 +4837,7 @@ async function openDirectory(type) {
     const fb = row.querySelector('[data-follow]');
     if (fb) fb.onclick = async () => { try { await api('POST','/api/follow',{ handle:p.handle }); fb.textContent=t('fl_following_btn'); fb.disabled=true; } catch(e){ alert(e.message); } };
     row.querySelector('[data-msg]').onclick = () => messagePerson(p.handle);
-    feed.appendChild(row);
+    grid.appendChild(row);
   });
 }
 

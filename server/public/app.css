@@ -277,6 +277,10 @@
   .comments { border-top:1px solid var(--line); margin-top:10px; padding-top:10px; }
   .comment { font-size:0.9em; padding:6px 0; border-bottom:1px solid var(--line); }
   .comment:last-child { border-bottom:none; }
+  /* Verzeichnis: mehrspaltiges Karten-Raster ab genug Breite (auto-fill füllt den Platz),
+     am Handy automatisch einspaltig — bessere Raumnutzung auf Laptop/Desktop. */
+  .dir-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:14px; }
+  .dir-grid > .card { margin-bottom:0; }
   .hidden { display:none; }
   /* Offline-Hinweis: gut sichtbarer Bernstein-Balken (nicht Rot — Rot bleibt dem
      kritischen Engpass vorbehalten). Fest oben, damit er nie übersehen wird. */
