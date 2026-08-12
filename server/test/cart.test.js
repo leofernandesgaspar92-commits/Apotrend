@@ -39,6 +39,21 @@ test('Einkaufsliste: hinzufügen, Summe, Menge ändern, entfernen, leeren', () =
   assert.equal(social.cart(a).count, 0);
 });
 
+test('Bestellung: erwartetes Lieferdatum setzen/entfernen; fremde Order gesperrt', () => {
+  const { social, a, b } = setup();
+  social.addToCart(a, { bezeichnung: 'Amoxi 1000', supplier: 'GH Nord', aktionspreis: 4.5, menge: 2, sourceKind: 'rabatt' });
+  const order = social.checkoutCart(a, { reference: 'KW40' });
+  // Termin setzen
+  const upd = social.setOrderExpected(a, order.id, '2026-09-30');
+  assert.equal(upd.expected_delivery, '2026-09-30');
+  assert.equal(social.listOrders(a).find(o => o.id === order.id).expected_delivery, '2026-09-30');
+  // Termin entfernen (leer)
+  const cleared = social.setOrderExpected(a, order.id, null);
+  assert.equal(cleared.expected_delivery, null);
+  // Fremde Bestellung ist gesperrt
+  assert.throws(() => social.setOrderExpected(b, order.id, '2026-09-30'), /nicht gefunden|not_found/i);
+});
+
 test('Bestell-Historie: checkout schnappschottet + leert, reorder füllt neu, delete entfernt', () => {
   const { social, a } = setup();
   social.addToCart(a, { bezeichnung: 'Amoxi', supplier: 'Kwizda', aktionspreis: 7, listenpreis: 10, menge: 3, sourceKind: 'rabatt' });

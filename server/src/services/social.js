@@ -1141,6 +1141,14 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (!order || order.user_id !== userId) throw new AppError('order_not_found', 'Bestellung nicht gefunden.');
       return social.updateOrder(orderId, { received_at: received ? new Date().toISOString() : null });
     },
+    // Erwartetes Lieferdatum setzen/entfernen (nur eigene Bestellung). Der Kalendertag wird
+    // bereits im HTTP-Layer validiert (leer = kein Termin). Ermöglicht „Lieferung überfällig".
+    setOrderExpected(userId, orderId, expected) {
+      requireUser(userId);
+      const order = social.getOrder(orderId);
+      if (!order || order.user_id !== userId) throw new AppError('order_not_found', 'Bestellung nicht gefunden.');
+      return social.updateOrder(orderId, { expected_delivery: expected || null });
+    },
 
     // ── Bestell-Vorlagen: wiederkehrende Einkaufslisten als benannte Vorlage sichern und
     // per Klick wieder in die Liste laden (z.B. „Wochenbestellung Antibiotika"). ──
