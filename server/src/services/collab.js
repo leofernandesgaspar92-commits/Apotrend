@@ -155,6 +155,23 @@ export function createCollabService(repo, orgAuth) {
       return repo.updateTask(taskId, { assignee_user_id: newAssignee });
     },
 
+    // Aufgabe bearbeiten (Titel/Beschreibung/Fälligkeit) — nur berechtigte Rolle.
+    // Nur übergebene Felder werden geändert; Titel darf nicht geleert werden.
+    editTask(actorUserId, taskId, { title, description, dueDate } = {}) {
+      const t = repo.getTask(taskId);
+      if (!t) throw new Error('Aufgabe nicht gefunden.');
+      const role = orgRole(actorUserId, t.organization_id); // Isolation
+      if (!can(role, 'assign_tasks')) throw new ForbiddenError('Diese Rolle darf Aufgaben nicht bearbeiten.');
+      const fields = {};
+      if (title !== undefined) {
+        if (!title || !String(title).trim()) throw new Error('Aufgabe braucht einen Titel.');
+        fields.title = String(title).trim();
+      }
+      if (description !== undefined) fields.description = description;
+      if (dueDate !== undefined) fields.due_date = dueDate || null;
+      return repo.updateTask(taskId, fields);
+    },
+
     listTasks(actorUserId, organizationId) {
       orgRole(actorUserId, organizationId); // Isolation
       return repo.listTasks(organizationId);

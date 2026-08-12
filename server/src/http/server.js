@@ -451,6 +451,22 @@ const routes = [
     }
     return { task };
   }],
+  ['POST', /^\/api\/tasks\/([^/]+)$/, true, async ({ userId, params, body }) => {
+    const fields = {};
+    if (body.title !== undefined) {
+      const title = String(body.title || '').trim();
+      if (title.length < 2) { const e = new Error('Aufgabe braucht einen Titel.'); e.status = 400; throw e; }
+      if (title.length > MAX_TITLE) { const e = new Error(`Titel zu lang (max ${MAX_TITLE}).`); e.status = 400; throw e; }
+      fields.title = title;
+    }
+    if (body.description !== undefined) fields.description = body.description ? String(body.description).slice(0, 1000) : null;
+    if (body.dueDate !== undefined) {
+      const dueDate = body.dueDate ? String(body.dueDate).trim() : null;
+      if (dueDate && !isValidCalendarDay(dueDate)) { const e = new Error('Ungültiges Fälligkeitsdatum.'); e.status = 400; throw e; }
+      fields.dueDate = dueDate;
+    }
+    return { task: collab.editTask(userId, params[0], fields) };
+  }],
   // ── Team-Notizen (gemeinsame Wissensablage, apothekenintern) ──
   ['GET', /^\/api\/notes$/, true, async ({ userId }) => {
     const mem = orgAuth.myMembership(userId);

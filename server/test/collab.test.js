@@ -103,6 +103,29 @@ test('Notizen: PTA legt an & Apotheker heftet an; Lehrling darf nicht anheften',
   assert.throws(() => collab.setNotePinned(aAzubi.user.id, n.id, false), ForbiddenError);
 });
 
+test('Aufgabe bearbeiten: Apotheker ändert Titel/Details/Fälligkeit, Lehrling nein, leerer Titel abgelehnt, Teiländerung, Isolation', () => {
+  const { collab, A, aApo, aPta, aAzubi, B } = setup();
+  const t = collab.createTask(aApo.user.id, A.organization.id, { title: 'Retoure', description: 'alt', assigneeUserId: aPta.user.id, dueDate: '2026-09-01' });
+  // Apotheker (assign_tasks) bearbeitet Titel + Details + Fälligkeit
+  const upd = collab.editTask(aApo.user.id, t.id, { title: 'Retoure Amoxicillin', description: 'neu', dueDate: '2026-09-15' });
+  assert.equal(upd.title, 'Retoure Amoxicillin');
+  assert.equal(upd.description, 'neu');
+  assert.equal(upd.due_date, '2026-09-15');
+  // Teiländerung: nur Fälligkeit entfernen (null), Titel/Details bleiben
+  const upd2 = collab.editTask(aApo.user.id, t.id, { dueDate: null });
+  assert.equal(upd2.due_date, null);
+  assert.equal(upd2.title, 'Retoure Amoxicillin');
+  assert.equal(upd2.description, 'neu');
+  // Zuweisung bleibt durch Bearbeiten unberührt
+  assert.equal(upd2.assignee_user_id, aPta.user.id);
+  // Lehrling darf nicht bearbeiten
+  assert.throws(() => collab.editTask(aAzubi.user.id, t.id, { title: 'Kaputt' }), ForbiddenError);
+  // Leerer Titel abgelehnt
+  assert.throws(() => collab.editTask(aApo.user.id, t.id, { title: '  ' }), /Titel/);
+  // Fremde Organisation (Isolation)
+  assert.throws(() => collab.editTask(B.user.id, t.id, { title: 'Spion' }), ForbiddenError);
+});
+
 test('Notizen bearbeiten: Ersteller:in & Apotheker ja, fremder Lehrling nein, Fremdorg nein, leerer Titel abgelehnt, Teiländerung', () => {
   const { collab, A, aApo, aPta, aAzubi, B } = setup();
   const n = collab.createNote(aPta.user.id, A.organization.id, { title: 'Notdienst-Plan', body: 'KW 28', docUrl: null });
