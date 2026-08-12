@@ -24,7 +24,7 @@
   body { margin:0; font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; background:var(--bg); color:var(--text); font-size:16px; line-height:1.5; -webkit-font-smoothing:antialiased; }
   /* Tastatur-Fokus deutlich sichtbar (Barrierefreiheit) */
   :focus-visible { outline:3px solid #1a73e8; outline-offset:2px; }
-  header { background:var(--green); color:#fff; padding:12px 16px; display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:5; box-shadow:0 1px 4px rgba(0,0,0,.14); }
+  header { background:var(--green); color:#fff; padding:12px 16px; display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:5; box-shadow:0 2px 8px rgba(0,0,0,.16); }
   header .logo { font-weight:800; letter-spacing:.5px; font-size:1.25em; display:inline-flex; align-items:center; gap:8px; }
   header .logo .logo-ic { display:block; flex:0 0 auto; }
   header .logo:hover { text-decoration:none; opacity:.9; }
@@ -36,7 +36,10 @@
   .country-pick:hover { border-color:var(--green); background:transparent; }
   .country-pick .flag { font-size:1.5em; line-height:1; }
   header .sp { flex:1; }
-  header button { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.5); min-height:42px; min-width:42px; }
+  header button { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.5); border-radius:var(--radius-sm); min-height:42px; min-width:42px; }
+  /* Kopf-Aktionen: helles Aufleuchten beim Hover (statt Dunkelgrün der Basis-Regel,
+     das auf dem grünen Balken unruhig wirkt). */
+  header button:hover { background:rgba(255,255,255,.3); }
   /* Länder-/Sprach-Umschalter in der Kopfzeile: klar erkennbar, lesbar (Karten-
      Hintergrund statt Weiß-auf-Grün), kompakt genug fürs Handy. */
   header #countrySwitch { width:auto; max-width:240px; min-height:42px; padding:8px 10px; font-size:0.92em; font-weight:600; background:var(--card); color:var(--text); border:1px solid rgba(255,255,255,.6); border-radius:8px; cursor:pointer; }
@@ -93,8 +96,12 @@
      damit auf Mobil der Button umbricht statt die Überschrift mitten im Wort zu zerreißen. */
   .row > h1 { flex:1 1 auto !important; }
   .tabs { display:flex; gap:8px; margin-bottom:12px; }
-  .tabs button { flex:1; background:var(--card); color:var(--text); border:1px solid var(--line); }
-  .tabs button.active { background:var(--green); color:#fff; border-color:var(--green); }
+  .tabs button { flex:1; background:var(--card); color:var(--text); border:1px solid var(--line); font-weight:600; }
+  /* Klares Hover-Feedback (grün) wie bei den Aktions-Buttons — Nav fühlt sich lebendig an. */
+  .tabs button:not(.active):hover { border-color:var(--green); color:var(--green); }
+  /* Aktiver Reiter deutlich hervorgehoben: grün + kräftiger + dezenter grüner Schein
+     (segmentierte Pill-Nav à la X/Instagram), damit „wo bin ich" sofort klar ist. */
+  .tabs button.active { background:var(--green); color:#fff; border-color:var(--green); font-weight:800; box-shadow:0 2px 8px rgba(11,127,40,.28); }
   /* Mobil: 8 Tabs passen nicht in eine Zeile (Horizontal-Scroll, halbe Tabs
      unsichtbar). Als 4-Spalten-Grid umbrechen -> alle Tabs sichtbar, kein Overflow. */
   @media (max-width: 640px) {
