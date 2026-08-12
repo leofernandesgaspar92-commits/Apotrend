@@ -16,7 +16,7 @@ function setup() {
   social.createProfile(A.user.id, { handle: 'anna', displayName: 'Anna Huber' });
   const B = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'B' }, owner: { name: 'Ben', email: 'b@b.at', password: 'geheim123' } });
   social.createProfile(B.user.id, { handle: 'ben', displayName: 'Ben Mayer' });
-  return { exchange, a: A.user.id, b: B.user.id };
+  return { exchange, social, a: A.user.id, b: B.user.id };
 }
 
 test('match_count: passende offene Gegen-Einträge je Autor:in, sich selbst nicht mitzählen', () => {
@@ -65,6 +65,24 @@ test('setReserved: Ersteller markiert reserviert (bleibt sichtbar), nimmt aus Ma
   const doneE = exchange.markResolved(a, offer.id);
   assert.equal(doneE.reserved, false);
   assert.throws(() => exchange.setReserved(a, offer.id, true), /offene|nicht/);
+});
+
+test('reserviert + umbenennen löst KEIN Matchmaking aus (kein Benachrichtigungs-Leck)', () => {
+  const { exchange, social, a, b } = setup();
+  // B sucht Amoxicillin (Gegenstück existiert bereits)
+  exchange.create(b, { kind: 'suche', bezeichnung: 'Amoxicillin dringend gesucht' });
+  // A bietet zunächst etwas anderes an (kein Match zu Bs Gesuch)
+  const offer = exchange.create(a, { kind: 'biete', bezeichnung: 'Metformin 1000 mg' });
+  const before = social.notifications(b).filter(n => n.type === 'exchange_offer').length;
+  // A reserviert den Eintrag und benennt ihn dann in Amoxicillin um (würde ohne Fix Bs Gesuch treffen)
+  exchange.setReserved(a, offer.id, true);
+  exchange.update(a, offer.id, { bezeichnung: 'Amoxicillin 1000 mg Filmtabletten' });
+  // B darf NICHT benachrichtigt werden — der Eintrag ist reserviert (vergeben)
+  assert.equal(social.notifications(b).filter(n => n.type === 'exchange_offer').length, before, 'reservierter Eintrag benachrichtigt nicht beim Umbenennen');
+  // Gegenprobe: nach Freigabe + Umbenennung wird B sehr wohl benachrichtigt
+  exchange.setReserved(a, offer.id, false);
+  exchange.update(a, offer.id, { bezeichnung: 'Amoxicillin 1000 mg jetzt frei' });
+  assert.ok(social.notifications(b).filter(n => n.type === 'exchange_offer').length > before, 'nach Freigabe normales Matchmaking');
 });
 
 test('byAuthor: offene Biete/Suche einer Apotheke fürs Profil; nur offene, nur eigene', () => {

@@ -47,6 +47,7 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
   function shareWord(a, b) { for (const w of a) if (b.has(w)) return true; return false; }
   // Nach dem Anlegen: passende Gegen-Einträge finden und deren Autor:innen benachrichtigen.
   function notifyMatches(entry) {
+    if (entry.reserved) return; // reservierte Einträge lösen kein Matchmaking aus (auch nicht beim Umbenennen)
     const opposite = entry.kind === 'biete' ? 'suche' : 'biete';
     const mine = words(entry.bezeichnung);
     if (!mine.size) return;
@@ -173,7 +174,7 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       const e = exchangeRepo.get(id);
       if (!e) throw new Error('Eintrag nicht gefunden.');
       if (e.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Ersteller darf das.');
-      return exchangeRepo.update(id, { status: 'erledigt', reserved: false, resolved_at: new Date().toISOString() });
+      return decorate(exchangeRepo.update(id, { status: 'erledigt', reserved: false, resolved_at: new Date().toISOString() }));
     },
     // Eintrag als „reserviert" markieren/freigeben (nur Ersteller, nur bei offenen Einträgen).
     // Reserviert = ein Tausch ist per Direktnachricht in Absprache; der Eintrag bleibt für alle

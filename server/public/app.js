@@ -1885,13 +1885,18 @@ function goTab(name) {
 
 // Zeitkritische Live-Sessions auf der Übersicht: laufende zum sofortigen Beitreten,
 // die nächsten geplanten mit „Erinnern". Nur gerendert, wenn es etwas gibt.
+// Lokaler Kalendertag (Wall-Clock) + einheitliche Überfällig-Regel für ALLE Aufgaben-Ansichten
+// (Übersicht, Team-Überfällig, Aufgaben-Filter, Aushang) — eine Quelle der Wahrheit.
+const taskToday = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,10);
+const taskIsOverdue = (t, today = taskToday()) => !!(t.due_date && t.status !== 'erledigt' && t.due_date < today);
+
 // Deine offenen Aufgaben auf der Übersicht (nur wenn welche dir zugewiesen sind).
 // Überfällige zuerst; „auf einen Screen" — direkter Einstieg in die Team-Aufgaben.
 function renderMyTasksOverview(feed, tasks) {
-  const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,10);
+  const today = taskToday();
   const mine = (tasks || []).filter(t => t.mine && t.status !== 'erledigt');
   if (!mine.length) return;
-  const isOverdue = (t) => t.due_date && t.due_date < today;
+  const isOverdue = (t) => taskIsOverdue(t, today);
   mine.sort((a, b) => (Number(isOverdue(b)) - Number(isOverdue(a))) || String(a.due_date || '9999').localeCompare(String(b.due_date || '9999')));
   const overdue = mine.filter(isOverdue).length;
   const top = mine.slice(0, 3);
@@ -1911,8 +1916,8 @@ function renderMyTasksOverview(feed, tasks) {
 // Team-Ansicht öffnen zu müssen. Ergänzt „Deine Aufgaben" (dort stehen deine eigenen).
 function renderTeamOverdueOverview(feed, tasks, canAssign) {
   if (!canAssign) return;
-  const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,10);
-  const teamOverdue = (tasks || []).filter(t => !t.mine && t.status !== 'erledigt' && t.due_date && t.due_date < today)
+  const today = taskToday();
+  const teamOverdue = (tasks || []).filter(t => !t.mine && taskIsOverdue(t, today))
     .sort((a, b) => String(a.due_date).localeCompare(String(b.due_date))); // am längsten überfällig zuerst
   if (!teamOverdue.length) return;
   const top = teamOverdue.slice(0, 3);
@@ -2522,12 +2527,12 @@ function printWatchlist(items) {
 // nicht-erledigte Aufgaben, überfällige klar markiert — konsistent zu den übrigen
 // „Aushang/Drucken"-Funktionen (Engpässe, Beobachtungsliste, Preise, Rabatte).
 function printTasks(tasks) {
-  const localToday = new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+  const localToday = taskToday();
   const open = (tasks || []).filter(tk => tk.status !== 'erledigt')
     .sort((a,b) => (a.due_date||'9999').localeCompare(b.due_date||'9999')); // frühester Termin zuerst, ohne Termin ans Ende
   const stLabel = { offen: t('tk_st_offen'), in_arbeit: t('tk_st_in_arbeit') };
   const rows = open.map(tk => {
-    const overdue = tk.due_date && tk.due_date < localToday;
+    const overdue = taskIsOverdue(tk, localToday);
     const due = tk.due_date ? `${esc(fmtDateDe(tk.due_date))}${overdue?` <b class="od">(${esc(t('tk_overdue'))})</b>`:''}` : '<span class="empty">—</span>';
     return `<tr>
       <td class="tk">${esc(tk.title)}${tk.description?`<div class="ds">${esc(tk.description)}</div>`:''}</td>
@@ -4554,8 +4559,8 @@ async function openTasks() {
   }
   taskPrefill = null; // Vorbelegung ist einmalig
   if (!d.tasks.length) { feed.appendChild(emptyState({ icon:'✅', title:t('tk_empty_t'), text: d.can_assign ? t('tk_empty_s') : t('tk_empty_s_member') })); return; }
-  const localToday = new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
-  const isOverdue = (tk) => tk.due_date && tk.status !== 'erledigt' && tk.due_date < localToday;
+  const localToday = taskToday();
+  const isOverdue = (tk) => taskIsOverdue(tk, localToday);
   // Filter-Prädikate: „aktiv" (Standard) blendet Erledigtes aus, damit die Liste auf das
   // Handlungsrelevante fokussiert — weniger Scrollen für ein zeitknappes Team.
   const preds = {
@@ -6903,7 +6908,7 @@ async function showNotifications() {
   list.innerHTML = '';
   const shown = d.notifications.filter(matchesFilter);
   if (showFilter) head.querySelectorAll('[data-nf]').forEach(b => { const on = b.dataset.nf === notifFilter; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
-  { const ub = head.querySelector('[data-unreadonly]'); if (ub) { ub.classList.toggle('active', notifUnreadOnly); ub.setAttribute('aria-pressed', String(notifUnreadOnly)); } }
+  { const ub = head.querySelector('[data-unreadonly]'); if (ub) { ub.textContent = ti('nf_unread_only',{n:d.notifications.filter(n=>!n.read).length}); ub.classList.toggle('active', notifUnreadOnly); ub.setAttribute('aria-pressed', String(notifUnreadOnly)); } }
   if (!shown.length) { list.innerHTML = `<div class="muted">${esc(t('notif_empty'))}</div>`; return; }
   shown.forEach(n => {
     const who = n.actor ? n.actor.display_name : t('notif_someone');
