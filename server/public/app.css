@@ -5,7 +5,10 @@
     --ok-bg:#e6f7ef; --ok-fg:#0b7f28; --ok-bd:#b6e6cf;
     --warn-bg:#fff4e6; --warn-fg:#b26a00; --warn-bd:#ffd9a8;
     --crit-bg:#fdece9; --crit-fg:#c0392b; --crit-bd:#f2c6bf;
-    --info-bg:#e6ecfb; --info-fg:#2952cc; --info-bd:#c9d6f7; }
+    --info-bg:#e6ecfb; --info-fg:#2952cc; --info-bd:#c9d6f7;
+    /* Design-System: einheitliche Radien & Abstandsraster (Social-Feed-Ruhe). */
+    --radius:14px; --radius-sm:10px;
+    --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; }
   body.dark { --green:#22cc5c; --green-d:#1aa749; --bg:#14181a; --card:#1e2427; --line:#38443f; --text:#e7ece9; --muted:#a6b6ae;
     --chip-bg:#2a352f;
     --shadow:0 1px 2px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.28);
@@ -18,7 +21,7 @@
   body.dark input, body.dark textarea, body.dark select { background:#161b1d; }
   body.dark .editorial { background:#1e2f5a; color:#bcd0ff; border-color:#2e4680; }
   * { box-sizing:border-box; }
-  body { margin:0; font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); font-size:16px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+  body { margin:0; font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; background:var(--bg); color:var(--text); font-size:16px; line-height:1.5; -webkit-font-smoothing:antialiased; }
   /* Tastatur-Fokus deutlich sichtbar (Barrierefreiheit) */
   :focus-visible { outline:3px solid #1a73e8; outline-offset:2px; }
   header { background:var(--green); color:#fff; padding:12px 16px; display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:5; box-shadow:0 1px 4px rgba(0,0,0,.14); }
@@ -48,12 +51,12 @@
      kein Horizontal-Scroll. Logo oben, Aktionen darunter. */
   @media (max-width:560px){ #whoami { display:none; } header { gap:4px; padding:9px 8px; flex-wrap:wrap; } header .logo { font-size:0.96em; letter-spacing:0; } header button { min-width:0; min-height:40px; padding:8px 7px; } }
   .wrap { max-width:640px; margin:0 auto; padding:16px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; overflow-wrap:anywhere; box-shadow:var(--shadow); }
-  h1 { font-size:1.4em; margin:0 0 12px; line-height:1.2; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:16px; margin-bottom:14px; overflow-wrap:anywhere; box-shadow:var(--shadow); }
+  h1 { font-size:1.45em; font-weight:800; letter-spacing:-0.01em; margin:0 0 12px; line-height:1.22; }
   label { display:block; font-size:0.9em; color:var(--muted); margin:10px 0 4px; }
-  input, textarea, select { width:100%; padding:12px; border:1px solid var(--line); border-radius:8px; font-size:1em; font-family:inherit; min-height:46px; background:var(--card); color:var(--text); }
+  input, textarea, select { width:100%; padding:12px; border:1px solid var(--line); border-radius:var(--radius-sm); font-size:1em; font-family:inherit; min-height:46px; background:var(--card); color:var(--text); }
   textarea { resize:vertical; min-height:70px; }
-  button { background:var(--green); color:#fff; border:none; border-radius:8px; padding:12px 16px; font-size:0.95em; font-weight:600; cursor:pointer; min-height:44px; transition:background .13s ease, border-color .13s ease, box-shadow .13s ease, transform .04s ease; }
+  button { background:var(--green); color:#fff; border:none; border-radius:var(--radius-sm); padding:12px 16px; font-size:0.95em; font-weight:600; cursor:pointer; min-height:44px; transition:background .13s ease, border-color .13s ease, box-shadow .13s ease, transform .04s ease; }
   button:hover { background:var(--green-d); }
   /* Tasthaftes Drücken: jeder Button gibt beim Klick sichtbar nach (klare Affordanz für
      nicht-technische Nutzer:innen). @media reduced-motion respektiert Bewegungsstopp. */
@@ -120,7 +123,7 @@
   .crypto-pay { border:1px solid var(--line); border-radius:10px; padding:12px; margin-top:10px; background:var(--bg); }
   .crypto-addr { margin-top:8px; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
   .crypto-addr code { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.92em; word-break:break-all; }
-  a.btn-link { display:inline-flex; align-items:center; justify-content:center; background:var(--green); color:#fff; border-radius:8px; padding:10px 14px; font-weight:600; font-size:0.9em; text-decoration:none; min-height:40px; }
+  a.btn-link { display:inline-flex; align-items:center; justify-content:center; background:var(--green); color:#fff; border-radius:var(--radius-sm); padding:10px 14px; font-weight:600; font-size:0.9em; text-decoration:none; min-height:40px; }
   a.btn-link:hover { background:var(--green-d); }
   .ok-box { background:var(--ok-bg); color:var(--ok-fg); border-radius:8px; }
   /* Premium-Abzeichen: sichtbarer Vorteil für zahlende Mitglieder (gold, gut lesbar). */
@@ -201,7 +204,7 @@
   .cart-sup { font-weight:800; margin:10px 2px 6px; color:var(--muted); }
   .cart-subline { text-align:right; font-weight:800; margin:2px 2px 8px; padding:6px 12px; border-top:2px solid var(--line); color:var(--text); }
   .spec { display:inline-block; background:var(--chip-bg); border:1px solid var(--line); border-radius:999px; padding:3px 10px; font-size:13px; margin:2px 2px 2px 0; }
-  .post-body { margin:8px 0; white-space:pre-wrap; line-height:1.45; overflow-wrap:anywhere; }
+  .post-body { margin:8px 0; white-space:pre-wrap; line-height:1.55; overflow-wrap:anywhere; }
   .vis { font-size:12px; color:var(--muted); }
   .reacts { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
   .reacts button { background:var(--chip-bg); color:var(--text); border:1px solid var(--line); padding:8px 12px; font-size:0.85em; font-weight:500; min-height:40px; }
