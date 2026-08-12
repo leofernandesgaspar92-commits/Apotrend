@@ -231,6 +231,16 @@
   .news-inline .nr-card { box-shadow:none; background:var(--chip-bg); }
   .news-inline .nr-card:last-child { margin-bottom:0; }
   @media (min-width:1440px){ .news-inline { display:none; } }
+  /* Laptop/Desktop: der leere rechte Rand neben der zentrierten Spalte wird zum
+     Schnellzugriff-Rail (analog zum News-Rail links) — sekundäre Bereiche griffbereit,
+     ohne den Feed anzufassen. Erst ab 1240px, damit es die Spalte nicht überlappt. */
+  .quick-rail { display:none; box-sizing:border-box; position:fixed; right:24px; top:76px; width:250px; max-height:calc(100vh - 96px); overflow-y:auto; z-index:20; }
+  @media (min-width:1240px){ .quick-rail.on { display:block; } }
+  .qr-card { padding:12px; }
+  .qr-title { font-weight:800; font-size:13px; letter-spacing:.02em; color:var(--muted); text-transform:uppercase; margin:2px 2px 8px; }
+  .qr-link { display:block; width:100%; text-align:left; background:transparent; color:var(--text); border:1px solid transparent; border-radius:var(--radius-sm); padding:11px 12px; font-weight:600; font-size:15px; margin-bottom:4px; }
+  .qr-link:last-child { margin-bottom:0; }
+  .qr-link:hover { background:var(--chip-bg); border-color:var(--line); color:var(--green); }
   .cart-sup { font-weight:800; margin:10px 2px 6px; color:var(--muted); }
   .cart-subline { text-align:right; font-weight:800; margin:2px 2px 8px; padding:6px 12px; border-top:2px solid var(--line); color:var(--text); }
   .spec { display:inline-block; background:var(--chip-bg); border:1px solid var(--line); border-radius:999px; padding:3px 10px; font-size:13px; margin:2px 2px 2px 0; }
