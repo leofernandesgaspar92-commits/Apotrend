@@ -1838,6 +1838,7 @@ async function mainScreen() {
   initCountrySwitcher(); // Länder-/Sprach-Umschalter in der Kopfzeile aktivieren
   startNewsRail();      // News-Livestream links starten (nur auf breiten Bildschirmen sichtbar)
   renderQuickRail();    // Schnellzugriff-Rail rechts (nur auf Laptop/Desktop sichtbar)
+  renderAdSlot();       // Anzeigen-Fläche rechts unter dem Schnellzugriff (Monetarisierung)
   setHeaderHeightVar(); // Kopfhöhe für die klebrige mobile Reiter-Leiste
   loadTab();
   // Deep-Links: /?post=ID öffnet einen Beitrag, /?wirkstoff=Name die Wirkstoff-Seite,
@@ -2738,6 +2739,30 @@ function renderQuickRail() {
 function stopQuickRail() {
   const rail = document.getElementById('quickRail');
   if (rail) { rail.classList.remove('on'); rail.innerHTML = ''; }
+}
+// Anzeigen-Fläche (nur Laptop/Desktop, eigene Ebene rechts): zeigt EINE klar als „Anzeige"
+// gekennzeichnete Werbung aus dem bestehenden Angebote-System — die Monetarisierungs-Fläche.
+// Gibt es keine Anzeige, bleibt der Platz leer (die Seite wirkt nie überladen).
+async function renderAdSlot() {
+  const rail = document.getElementById('quickRail');
+  if (!rail) return;
+  let promos = [];
+  try { promos = ((await api('GET', '/api/promotions')).promotions) || []; } catch { return; }
+  if (!promos.length) return;
+  const p = promos[Math.floor(Math.random() * Math.min(promos.length, 5))]; // leichte Rotation
+  const author = p.author ? (p.author.display_name || ('@' + (p.author.handle || ''))) : '';
+  const card = el(`<div class="card qr-ad clickable" data-openpromo="${esc(p.id)}" role="link" tabindex="0" aria-label="${esc(t('wb_ad'))}: ${esc(p.titel || '')}">
+    <div class="qr-ad-label">${esc(t('wb_ad'))}</div>
+    ${p.image ? `<img class="qr-ad-img" src="${esc(p.image)}" alt="">` : ''}
+    <div class="qr-ad-cat">${esc(promoCatLabel(p.kategorie))}</div>
+    <div class="qr-ad-title">${esc(p.titel || '')}</div>
+    <div class="qr-ad-price">${promoPrice(p)}</div>
+    ${author ? `<div class="qr-ad-by">${esc(t('wb_by'))} ${esc(author)}</div>` : ''}
+  </div>`);
+  const open = () => openPromotionDetail(p.id);
+  card.onclick = open;
+  card.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } };
+  rail.appendChild(card);
 }
 function startNewsRail() {
   const rail = document.getElementById('newsRail');
