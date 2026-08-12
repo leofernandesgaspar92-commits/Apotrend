@@ -115,7 +115,7 @@ const I18N = {
     sc_conf_one:'weitere Apotheke bestätigt', sc_conf_many:'weitere Apotheken bestätigt',
     sc_posts_zero:'💬 Noch keine Beiträge', sc_posts_one:'💬 1 Beitrag dazu', sc_posts_many:'💬 {n} Beiträge dazu', sc_post_about:'✍ Dazu posten',
     sc_watched:'⭐ Beobachtet', sc_watch:'☆ Beobachten', sc_sources:'📦 Bezugsquellen', sc_sources_t:'Wer hat diesen Wirkstoff aktuell im Angebot? (Biete-Einträge)', sc_seek:'🔎 Ich suche das', sc_seek_t:'Bedarf melden: Gesuch zu diesem Wirkstoff anlegen (Anbieter werden benachrichtigt)',
-    sc_conf_btn:'➕ Auch bei uns', sc_confd_btn:'✅ Bestätigt', sc_unconfirm_btn:'↩︎ Zurücknehmen', sc_resolve:'✓ Wieder lieferbar', sc_setdate:'🗓️ Termin ändern', sc_date_clear:'Termin offen',
+    sc_conf_btn:'➕ Auch bei uns', sc_confd_btn:'✅ Bestätigt', sc_unconfirm_btn:'↩︎ Zurücknehmen', sc_resolve:'✓ Wieder lieferbar', sc_setdate:'🗓️ Termin ändern', sc_date_clear:'Termin offen', sc_repstatus:'🔄 Status ändern', sc_repstatus_label:'Aktueller Lieferstatus',
     sc_history:'📜 Verlauf', sc_post_ph:'Dein Beitrag zu diesem Engpass (öffentlich)…', sc_post_send:'Posten',
     sc_mod_status:'📝 Status ändern (Redaktion)', sc_mod_new:'Neuer Status',
     sc_mod_src:'Quelle (Pflicht, http[s]-Link – z.B. BASG)',
@@ -464,7 +464,7 @@ const I18N = {
     sc_conf_one:'more pharmacy confirms', sc_conf_many:'more pharmacies confirm',
     sc_posts_zero:'💬 No posts yet', sc_posts_one:'💬 1 post about this', sc_posts_many:'💬 {n} posts about this', sc_post_about:'✍ Post about this',
     sc_watched:'⭐ Watched', sc_watch:'☆ Watch', sc_sources:'📦 Sources', sc_sources_t:'Who currently offers this substance? (offer entries)', sc_seek:'🔎 I need this', sc_seek_t:'Signal demand: post a want for this substance (offerers get notified)',
-    sc_conf_btn:'➕ Us too', sc_confd_btn:'✅ Confirmed', sc_unconfirm_btn:'↩︎ Withdraw', sc_resolve:'✓ Available again', sc_setdate:'🗓️ Change date', sc_date_clear:'No date',
+    sc_conf_btn:'➕ Us too', sc_confd_btn:'✅ Confirmed', sc_unconfirm_btn:'↩︎ Withdraw', sc_resolve:'✓ Available again', sc_setdate:'🗓️ Change date', sc_date_clear:'No date', sc_repstatus:'🔄 Change status', sc_repstatus_label:'Current supply status',
     sc_history:'📜 History', sc_post_ph:'Your post about this shortage (public)…', sc_post_send:'Post',
     sc_mod_status:'📝 Change status (editorial)', sc_mod_new:'New status',
     sc_mod_src:'Source (required, http[s] link – e.g. BASG)',
@@ -813,7 +813,7 @@ const I18N = {
     sc_conf_one:'outra farmácia confirma', sc_conf_many:'outras farmácias confirmam',
     sc_posts_zero:'💬 Ainda sem publicações', sc_posts_one:'💬 1 publicação sobre isto', sc_posts_many:'💬 {n} publicações sobre isto', sc_post_about:'✍ Publicar sobre isto',
     sc_watched:'⭐ Vigiada', sc_watch:'☆ Vigiar', sc_sources:'📦 Fontes', sc_sources_t:'Quem oferece atualmente esta substância? (entradas de oferta)', sc_seek:'🔎 Preciso disto', sc_seek_t:'Sinalizar procura: criar um pedido para esta substância (os ofertantes são notificados)',
-    sc_conf_btn:'➕ Nós também', sc_confd_btn:'✅ Confirmado', sc_unconfirm_btn:'↩︎ Retirar', sc_resolve:'✓ Disponível novamente', sc_setdate:'🗓️ Alterar prazo', sc_date_clear:'Sem prazo',
+    sc_conf_btn:'➕ Nós também', sc_confd_btn:'✅ Confirmado', sc_unconfirm_btn:'↩︎ Retirar', sc_resolve:'✓ Disponível novamente', sc_setdate:'🗓️ Alterar prazo', sc_date_clear:'Sem prazo', sc_repstatus:'🔄 Alterar estado', sc_repstatus_label:'Estado de fornecimento atual',
     sc_history:'📜 Histórico', sc_post_ph:'A sua publicação sobre esta falta (pública)…', sc_post_send:'Publicar',
     sc_mod_status:'📝 Alterar estado (redação)', sc_mod_new:'Novo estado',
     sc_mod_src:'Fonte (obrigatória, ligação http[s] – ex. BASG)',
@@ -3071,7 +3071,19 @@ function shortageCard(s) {
         : `<button class="ghost" data-confirm>${esc(t('sc_conf_btn'))}</button>`):''}
       ${s.provenance==='community'&&s.is_reporter&&s.status!=='verfuegbar'?`<button class="ghost" data-resolve>${esc(t('sc_resolve'))}</button>`:''}
       ${s.provenance==='community'&&s.is_reporter&&s.status!=='verfuegbar'?`<button class="ghost" data-datebtn>${esc(t('sc_setdate'))}</button>`:''}
+      ${s.provenance==='community'&&s.is_reporter&&s.status!=='verfuegbar'?`<button class="ghost" data-repstatusbtn>${esc(t('sc_repstatus'))}</button>`:''}
       ${(s.history||[]).length>1?`<button class="ghost" data-hist aria-expanded="false">${esc(t('sc_history'))} (${s.history.length})</button>`:''}
+    </div>
+    <div class="comments hidden" data-repstatusbox>
+      <label style="font-size:13px" for="rst_${esc(s.id)}">${esc(t('sc_repstatus_label'))}</label>
+      <select data-rstatus id="rst_${esc(s.id)}" style="margin-top:4px">
+        <option value="kritisch"${s.status==='kritisch'?' selected':''}>${esc(t('st_krit'))}</option>
+        <option value="eingeschraenkt"${s.status==='eingeschraenkt'?' selected':''}>${esc(t('st_eing'))}</option>
+      </select>
+      <label style="font-size:13px;margin-top:6px" for="rgr_${esc(s.id)}">${esc(t('sh_rep_reason'))}</label>
+      <input data-rgrund id="rgr_${esc(s.id)}" placeholder="${esc(t('sh_rep_reason_ph'))}" maxlength="200" value="${esc(s.grund||'')}">
+      <div style="margin-top:6px"><button class="small" data-rsave>${esc(t('cm_save'))}</button></div>
+      <div class="err" data-rerr></div>
     </div>
     <div class="comments hidden" data-datebox>
       <label style="font-size:13px">${esc(t('sh_rep_until'))}</label>
@@ -3193,6 +3205,20 @@ function shortageCard(s) {
     card.querySelector('[data-dsave]').onclick = () => saveDate(false);
     const dclear = card.querySelector('[data-dclear]');
     if (dclear) dclear.onclick = () => saveDate(true);
+  }
+  // Lieferstatus/Grund der eigenen Meldung aktualisieren (kritisch ↔ eingeschränkt lieferbar),
+  // ohne löschen + neu melden — die Bestätigungen der Kolleg:innen bleiben erhalten.
+  const repStatusBtn = card.querySelector('[data-repstatusbtn]');
+  if (repStatusBtn) {
+    const box = card.querySelector('[data-repstatusbox]');
+    repStatusBtn.onclick = () => box.classList.toggle('hidden');
+    card.querySelector('[data-rsave]').onclick = async () => {
+      const err = card.querySelector('[data-rerr]'); err.textContent = '';
+      const status = card.querySelector('[data-rstatus]').value;
+      const grund = card.querySelector('[data-rgrund]').value.trim();
+      try { await api('POST',`/api/shortages/${s.id}/report-update`, { status, grund }); loadShortages(); }
+      catch(e){ err.textContent = e.message; }
+    };
   }
   const watchBtn = card.querySelector('[data-watch]');
   let isWatched = !!s.watched;

@@ -51,6 +51,34 @@ test('updateExpectedDate: Melder:in verschiebt Termin; Fremde dürfen nicht; Wat
   assert.equal(cleared.voraussichtlich_bis, null);
 });
 
+test('updateShortageReport: Melder:in ändert Lieferstatus + Grund; Bestätigungen bleiben; Watcher informiert; Fremde/verfuegbar/Privat abgewiesen', () => {
+  const { shortages, social, shortagesRepo, a, b, c } = setup();
+  const r = shortages.reportShortage(a, { wirkstoff: 'Ramipril', status: 'kritisch', grund: 'Nichts lieferbar' });
+  shortages.confirmShortage(b, r.id);      // Kolleg:in bestätigt
+  shortagesRepo.addWatch(c, 'Ramipril');   // Beobachter:in
+  const before = social.notifications(c).filter(n => n.type === 'watch_alert').length;
+  // Fremde Apotheke darf nicht bearbeiten
+  assert.throws(() => shortages.updateShortageReport(b, r.id, { status: 'eingeschraenkt' }), /meldende Apotheke/);
+  // Melder:in stuft von kritisch auf eingeschränkt herab + korrigiert den Grund
+  const upd = shortages.updateShortageReport(a, r.id, { status: 'eingeschraenkt', grund: 'Nur Teilmengen lieferbar' });
+  assert.equal(upd.status, 'eingeschraenkt');
+  assert.equal(upd.grund, 'Nur Teilmengen lieferbar');
+  // Bestätigung der Kolleg:in bleibt erhalten (nicht gelöscht/neu gemeldet)
+  assert.equal(upd.confirm_count, 1);
+  // Beobachter:in + Bestätiger:in wurden über die Statusänderung informiert, Melder:in nicht
+  assert.ok(social.notifications(c).filter(n => n.type === 'watch_alert').length > before, 'Watcher informiert');
+  assert.ok(social.notifications(b).filter(n => n.type === 'watch_alert').length >= 1, 'Bestätiger informiert');
+  assert.equal(social.notifications(a).filter(n => n.type === 'watch_alert').length, 0, 'Melder:in nicht');
+  // Reine Grund-Korrektur (kein Statuswechsel) benachrichtigt NICHT erneut (kein Spam)
+  const cCount = social.notifications(c).filter(n => n.type === 'watch_alert').length;
+  const upd2 = shortages.updateShortageReport(a, r.id, { grund: 'Kleinkorrektur' });
+  assert.equal(upd2.grund, 'Kleinkorrektur');
+  assert.equal(upd2.status, 'eingeschraenkt');
+  assert.equal(social.notifications(c).filter(n => n.type === 'watch_alert').length, cCount, 'keine Zusatz-Benachrichtigung bei reiner Grund-Korrektur');
+  // 'verfuegbar' ist hier nicht erlaubt (läuft über resolve)
+  assert.throws(() => shortages.updateShortageReport(a, r.id, { status: 'verfuegbar' }), /kritisch|eingeschränkt|wieder/);
+});
+
 test('reportShortage: Überlauf-Datum (2026-02-30) wird abgelehnt, nicht normalisiert', () => {
   const { shortages, a } = setup();
   assert.throws(() => shortages.reportShortage(a, { wirkstoff: 'Ramipril', voraussichtlichBis: '2026-02-30' }), /Datum/);

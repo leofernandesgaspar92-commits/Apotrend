@@ -690,6 +690,7 @@ const routes = [
   ['POST', /^\/api\/shortages\/([^/]+)\/unconfirm$/, true, async ({ userId, params }) => shortages.unconfirmShortage(userId, params[0])],
   ['POST', /^\/api\/shortages\/([^/]+)\/resolve$/, true, async ({ userId, params }) => shortages.resolveShortage(userId, params[0])],
   ['POST', /^\/api\/shortages\/([^/]+)\/expected$/, true, async ({ userId, params, body }) => shortages.updateExpectedDate(userId, params[0], body.voraussichtlichBis)],
+  ['POST', /^\/api\/shortages\/([^/]+)\/report-update$/, true, async ({ userId, params, body }) => shortages.updateShortageReport(userId, params[0], { status: body.status, grund: body.grund })],
 
   // ── Beobachtungsliste (Wirkstoffe im Blick behalten) ──
   ['GET', /^\/api\/watchlist$/, true, async ({ userId }) => ({ items: shortages.myWatchlist(userId) })],

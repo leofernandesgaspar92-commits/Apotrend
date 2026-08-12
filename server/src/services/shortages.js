@@ -202,6 +202,46 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       return decorate(updated, userId);
     },
 
+    // Melder:in (oder Moderation) aktualisiert die eigene Community-Meldung: Lieferstatus
+    // (kritisch ↔ eingeschränkt lieferbar) und/oder Grund — ohne die Meldung löschen/neu
+    // anlegen zu müssen (Bestätigungen der Kolleg:innen bleiben erhalten). „Wieder verfügbar"
+    // läuft bewusst weiter über resolveShortage (eigene Semantik). Nur bei echter
+    // Statusänderung werden Beobachter:innen + Bestätiger:innen informiert (kein Spam bei
+    // reiner Grund-Korrektur).
+    updateShortageReport(userId, id, { status, grund } = {}) {
+      requireProfessional(userId);
+      const s = shortagesRepo.get(id);
+      if (!s) { const e = new Error('Engpass nicht gefunden.'); e.status = 404; throw e; }
+      if (s.provenance !== 'community') throw new AppError('shortage_not_community', 'Nur Community-Meldungen können bearbeitet werden.', 400);
+      if (s.reporter_user_id !== userId && !social.isModerator(userId)) {
+        const e = new Error('Nur die meldende Apotheke kann die Meldung bearbeiten.');
+        e.status = 403; throw e;
+      }
+      // Validierung vorab, damit nichts halb angewendet wird.
+      let newStatus;
+      if (status !== undefined && status !== null && String(status) !== '') {
+        if (!['kritisch', 'eingeschraenkt'].includes(status)) {
+          throw new AppError('shortage_bad_status', 'Status hier nur „kritisch" oder „eingeschränkt lieferbar". Für wieder lieferbar den Button „wieder verfügbar" nutzen.', 400);
+        }
+        newStatus = status;
+      }
+      const statusChanged = newStatus !== undefined && newStatus !== s.status;
+      const patch = {};
+      if (statusChanged) { patch.status = newStatus; patch.gemeldet_am = new Date().toISOString().slice(0, 10); }
+      if (grund !== undefined) patch.grund = grund ? String(grund).trim().slice(0, 200) : null;
+      let updated = s;
+      if (Object.keys(patch).length) updated = shortagesRepo.setStatus(id, patch);
+      if (statusChanged) {
+        const targets = new Set([...shortagesRepo.usersWatching(s.wirkstoff), ...(s.confirmations || [])]);
+        targets.delete(userId);
+        const label = `${s.wirkstoff} · ${STATUS_LABEL[newStatus]} (aktualisiert)`;
+        for (const uid of targets) {
+          social.pushNotification({ userId: uid, type: 'watch_alert', actorUserId: userId, refType: 'shortage', refId: id, label });
+        }
+      }
+      return decorate(updated, userId);
+    },
+
     // ── Engpass-Status ändern (nur Redaktion/Moderation) + Watcher benachrichtigen ──
     // Sicherheitsrelevante Aussage => Quelle (http[s]-Link) ist Pflicht (CLAUDE.md).
     updateStatus(actorUserId, id, { status, sourceUrl }) {

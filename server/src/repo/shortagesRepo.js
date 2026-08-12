@@ -56,7 +56,7 @@ export function createShortagesRepo({ seed = true } = {}) {
       return n;
     },
     // Status (+ Quelle/Herkunft) eines bestehenden Engpasses ändern, andere Felder erhalten.
-    setStatus(id, { status, quelle, provenance, gemeldet_am }) {
+    setStatus(id, { status, quelle, provenance, gemeldet_am, grund }) {
       const s = shortages.get(id);
       if (!s) return null;
       const before = s.status;
@@ -64,6 +64,7 @@ export function createShortagesRepo({ seed = true } = {}) {
       if (quelle !== undefined) s.quelle = quelle;
       if (provenance !== undefined) s.provenance = provenance;
       if (gemeldet_am !== undefined) s.gemeldet_am = gemeldet_am;
+      if (grund !== undefined) s.grund = grund;
       // Statusverlauf fortschreiben (nur bei echter Statusänderung).
       if (status !== undefined && status !== before) {
         if (!Array.isArray(s.history)) s.history = []; // alte Snapshots ohne history
