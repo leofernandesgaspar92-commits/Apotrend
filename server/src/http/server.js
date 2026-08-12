@@ -659,7 +659,7 @@ const routes = [
   ['POST', /^\/api\/notifications\/([^/]+)\/read$/, true, async ({ userId, params }) => { social.markNotificationRead(userId, params[0]); return { ok: true }; }],
 
   // ── Direktnachrichten (1:1, privat) ──
-  ['GET', /^\/api\/dm$/, true, async ({ userId }) => ({ threads: social.dmInbox(userId), unread: social.dmUnreadTotal(userId) })],
+  ['GET', /^\/api\/dm$/, true, async ({ userId }) => ({ threads: social.dmInbox(userId), unread: social.dmUnreadTotal(userId), archived: social.dmArchived(userId) })],
   ['POST', /^\/api\/dm\/start$/, true, async ({ userId, body }) => {
     const target = social.getProfile(body.handle);
     if (!target) { const e = new Error('Profil nicht gefunden'); e.status = 404; throw e; }

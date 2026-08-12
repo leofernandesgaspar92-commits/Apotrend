@@ -860,20 +860,29 @@ export function createSocialService(social, foundationRepo, options = {}) {
       const prof = social.getProfileByUserId(otherId);
       return prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified, is_editorial: prof.is_editorial } : null;
     },
-    // Posteingang: alle Konversationen mit letzter Nachricht + ungelesen-Zähler,
-    // neueste zuerst.
+    // Konversations-Zusammenfassungen (letzte Nachricht + ungelesen), neueste zuerst.
+    // archived=false: aktiver Posteingang (ohne archivierte); archived=true: nur archivierte.
+    dmThreadSummaries(viewerUserId, archived = false) {
+      return social.listDmThreadsForUser(viewerUserId)
+        .filter(t => (t.hidden_by || []).includes(viewerUserId) === archived)
+        .map(t => {
+          const msgs = social.listDmMessages(t.id);
+          const last = msgs[msgs.length - 1] || null;
+          const unread = msgs.filter(m => m.sender_user_id !== viewerUserId && !m.read_at).length;
+          return { thread_id: t.id, other: this.dmOther(viewerUserId, t), last_message: last, unread, created_at: t.created_at };
+        })
+        .filter(x => x.last_message) // leere Threads (noch keine Nachricht) ausblenden
+        .sort((a, b) => (b.last_message.created_at).localeCompare(a.last_message.created_at));
+    },
+    // Posteingang: aktive Konversationen (archivierte ausgeblendet).
     dmInbox(viewerUserId) {
       requireUser(viewerUserId);
-      return social.listDmThreadsForUser(viewerUserId)
-        .filter(t => !(t.hidden_by || []).includes(viewerUserId)) // archivierte ausblenden
-        .map(t => {
-        const msgs = social.listDmMessages(t.id);
-        const last = msgs[msgs.length - 1] || null;
-        const unread = msgs.filter(m => m.sender_user_id !== viewerUserId && !m.read_at).length;
-        return { thread_id: t.id, other: this.dmOther(viewerUserId, t), last_message: last, unread, created_at: t.created_at };
-      })
-      .filter(x => x.last_message) // leere Threads (noch keine Nachricht) ausblenden
-      .sort((a, b) => (b.last_message.created_at).localeCompare(a.last_message.created_at));
+      return this.dmThreadSummaries(viewerUserId, false);
+    },
+    // Archiv: die von dieser Person ausgeblendeten Konversationen (zum Wiederherstellen).
+    dmArchived(viewerUserId) {
+      requireUser(viewerUserId);
+      return this.dmThreadSummaries(viewerUserId, true);
     },
     // Konversation öffnen: Nachrichten + Partner, markiert Eingang als gelesen.
     dmConversation(viewerUserId, threadId) {

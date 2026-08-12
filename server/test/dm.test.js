@@ -68,6 +68,11 @@ test('DM: archivieren blendet Konversation nur für die archivierende Person aus
   social.setDmConversationHidden(b, t.id, true);
   assert.equal(social.dmInbox(b).length, 0);
   assert.equal(social.dmUnreadTotal(b), 0);
+  // ...taucht aber im Archiv auf (wiederherstellbar, keine Sackgasse)
+  assert.equal(social.dmArchived(b).length, 1);
+  assert.equal(social.dmArchived(b)[0].thread_id, t.id);
+  // Bei Anna ist nichts archiviert
+  assert.equal(social.dmArchived(a).length, 0);
   // Bei Anna ist die Konversation weiterhin sichtbar (nur Bens Sicht betroffen)
   assert.equal(social.dmInbox(a).length, 1);
   // Öffnen/Lesen bleibt möglich (kein Datenverlust)
