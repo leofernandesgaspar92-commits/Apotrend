@@ -67,6 +67,24 @@ test('setReserved: Ersteller markiert reserviert (bleibt sichtbar), nimmt aus Ma
   assert.throws(() => exchange.setReserved(a, offer.id, true), /offene|nicht/);
 });
 
+test('renew: frischt das Erstelldatum auf (nach oben), nur Ersteller/offen, kein Matchmaking', () => {
+  const { exchange, social, a, b } = setup();
+  const e = exchange.create(a, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg' });
+  const beforeTs = exchange.mine(a).find(x => x.id === e.id).created_at;
+  // B hat ein passendes Gesuch -> beim Anlegen wurde ggf. benachrichtigt; Zähler merken
+  exchange.create(b, { kind: 'suche', bezeichnung: 'Amoxicillin gesucht' });
+  const beforeNotifs = social.notifications(b).filter(n => n.type === 'exchange_offer').length;
+  // renew frischt created_at auf (>= vorher) und löst KEIN neues Matchmaking aus
+  const renewed = exchange.renew(a, e.id);
+  assert.ok(renewed.created_at >= beforeTs, 'created_at aufgefrischt (nicht älter)');
+  assert.equal(social.notifications(b).filter(n => n.type === 'exchange_offer').length, beforeNotifs, 'renew benachrichtigt nicht erneut');
+  // Nur der Ersteller darf auffrischen
+  assert.throws(() => exchange.renew(b, e.id), /Ersteller/);
+  // Erledigte Einträge lassen sich nicht auffrischen
+  exchange.markResolved(a, e.id);
+  assert.throws(() => exchange.renew(a, e.id), /offene|nicht/);
+});
+
 test('reserviert + umbenennen löst KEIN Matchmaking aus (kein Benachrichtigungs-Leck)', () => {
   const { exchange, social, a, b } = setup();
   // B sucht Amoxicillin (Gegenstück existiert bereits)

@@ -161,6 +161,16 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
         .filter(e => e.author_user_id === actorUserId && (!status || e.status === status))
         .map(decorate);
     },
+    // Noch gültigen, aber alten Eintrag auffrischen (nur Ersteller, nur offen): setzt das
+    // Erstelldatum auf jetzt, damit er wieder oben in der Liste steht und der „veraltet"-Hinweis
+    // verschwindet — ohne löschen + neu anlegen. Löst kein neues Matchmaking aus (Inhalt bleibt).
+    renew(actorUserId, id) {
+      const e = exchangeRepo.get(id);
+      if (!e) throw new AppError('exchange_not_found', 'Eintrag nicht gefunden.', 404);
+      if (e.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Ersteller darf das.');
+      if (e.status !== 'offen') throw new AppError('exchange_not_open', 'Nur offene Einträge lassen sich auffrischen.', 400);
+      return decorate(exchangeRepo.update(id, { created_at: new Date().toISOString() }));
+    },
     // Erledigten Eintrag wieder öffnen (nur Ersteller) — löst erneut Matching aus.
     reopen(actorUserId, id) {
       const e = exchangeRepo.get(id);
