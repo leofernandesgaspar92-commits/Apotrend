@@ -8,19 +8,20 @@ import { createSocialService } from '../src/services/social.js';
 function setup() {
   const repo = createMemoryRepo();
   const orgAuth = createOrgAuthService(repo);
-  const social = createSocialService(createSocialRepo(), repo);
+  const socialRepo = createSocialRepo();
+  const social = createSocialService(socialRepo, repo);
   const mk = (handle, email, accountType, country = 'AT', extra = {}) => {
     const r = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: handle }, owner: { name: handle, email, password: 'geheim123' } });
     social.createProfile(r.user.id, { handle, displayName: handle, accountType, country, ...extra });
     return r.user.id;
   };
   const meApo = mk('meine_apo', 'me@a.at', 'pharmacy', 'AT');
-  mk('bayer', 'b@a.at', 'pharma', 'AT', { title: 'Antibiotika-Hersteller' });
+  const bayer = mk('bayer', 'b@a.at', 'pharma', 'AT', { title: 'Antibiotika-Hersteller' });
   mk('sandoz', 's@a.at', 'pharma', 'AT');
   mk('basg', 'x@a.at', 'authority', 'AT');
   mk('deutsche_pharma', 'd@a.de', 'pharma', 'DE'); // anderes Land -> nicht sichtbar
   mk('privat', 'p@a.at', 'private', 'AT');          // Privat -> nicht im Fachverzeichnis
-  return { repo, social, meApo };
+  return { repo, socialRepo, social, meApo, bayer };
 }
 
 test('Verzeichnis: Zähler je Kontotyp im eigenen Land (ohne sich selbst)', () => {
@@ -39,6 +40,20 @@ test('Verzeichnis: Liste nach Typ, länderbeschränkt, Privat ausgeschlossen', (
   assert.deepEqual(handles, ['bayer', 'sandoz'], 'nur AT-Pharma, kein DE');
   // Privat ist kein gültiger Verzeichnistyp
   assert.throws(() => social.directory(meApo, 'private'), /Kontotyp/);
+});
+
+test('Verzeichnis: Filter „nur verifizierte" zeigt ausschließlich verifizierte Partner', () => {
+  const { social, socialRepo, meApo, bayer } = setup();
+  // Ohne Filter: beide AT-Pharma sichtbar
+  assert.equal(social.directory(meApo, 'pharma').people.length, 2);
+  // bayer verifizieren
+  socialRepo.setProfileVerified(bayer, true);
+  const only = social.directory(meApo, 'pharma', { verifiedOnly: true });
+  assert.equal(only.people.length, 1, 'nur der verifizierte Partner');
+  assert.equal(only.people[0].handle, 'bayer');
+  assert.equal(only.people[0].verified, true);
+  // Filter aus -> wieder beide
+  assert.equal(social.directory(meApo, 'pharma', { verifiedOnly: false }).people.length, 2);
 });
 
 test('Verzeichnis: Suche filtert nach Name/Fachgebiet', () => {
