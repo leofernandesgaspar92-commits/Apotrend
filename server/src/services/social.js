@@ -864,7 +864,9 @@ export function createSocialService(social, foundationRepo, options = {}) {
     // neueste zuerst.
     dmInbox(viewerUserId) {
       requireUser(viewerUserId);
-      return social.listDmThreadsForUser(viewerUserId).map(t => {
+      return social.listDmThreadsForUser(viewerUserId)
+        .filter(t => !(t.hidden_by || []).includes(viewerUserId)) // archivierte ausblenden
+        .map(t => {
         const msgs = social.listDmMessages(t.id);
         const last = msgs[msgs.length - 1] || null;
         const unread = msgs.filter(m => m.sender_user_id !== viewerUserId && !m.read_at).length;
@@ -882,10 +884,24 @@ export function createSocialService(social, foundationRepo, options = {}) {
       return { thread_id: threadId, other: this.dmOther(viewerUserId, t), messages: social.listDmMessages(threadId) };
     },
     // Gesamtzahl ungelesener DM-Nachrichten (für ein Badge in der Kopfzeile).
+    // Archivierte Konversationen zählen nicht (konsistent zum ausgeblendeten Posteingang);
+    // eine neue Nachricht holt den Thread automatisch zurück und zählt dann wieder.
     dmUnreadTotal(viewerUserId) {
       requireUser(viewerUserId);
-      return social.listDmThreadsForUser(viewerUserId).reduce((sum, t) =>
-        sum + social.listDmMessages(t.id).filter(m => m.sender_user_id !== viewerUserId && !m.read_at).length, 0);
+      return social.listDmThreadsForUser(viewerUserId)
+        .filter(t => !(t.hidden_by || []).includes(viewerUserId))
+        .reduce((sum, t) =>
+          sum + social.listDmMessages(t.id).filter(m => m.sender_user_id !== viewerUserId && !m.read_at).length, 0);
+    },
+    // Konversation archivieren/aus dem Archiv holen (nur Teilnehmer:in). Beim Archivieren
+    // wird der Eingang als gelesen markiert, damit das Badge konsistent bleibt.
+    setDmConversationHidden(viewerUserId, threadId, hidden) {
+      const t = social.getDmThread(threadId);
+      if (!t) throw new Error('Thread nicht gefunden.');
+      if (t.user_a_id !== viewerUserId && t.user_b_id !== viewerUserId) throw new ForbiddenError('Nicht Teil dieser Konversation.');
+      if (hidden) social.markDmThreadRead(threadId, viewerUserId);
+      social.setDmThreadHidden(threadId, viewerUserId, !!hidden);
+      return { ok: true, hidden: !!hidden };
     },
 
     // ── Melden / Moderation ──

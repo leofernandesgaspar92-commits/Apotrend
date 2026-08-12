@@ -359,7 +359,20 @@ export function createSocialRepo() {
     createDmMessage({ threadId, senderUserId, body }) {
       const m = { id: uuid(), thread_id: threadId, sender_user_id: senderUserId, body, created_at: now(), read_at: null };
       dmMessages.set(m.id, m);
+      // Neue Nachricht holt eine zuvor archivierte Konversation für BEIDE zurück in den
+      // Posteingang (Archivieren ist „aus dem Blick", nicht „endgültig weg").
+      const t = dmThreads.get(threadId);
+      if (t && Array.isArray(t.hidden_by) && t.hidden_by.length) t.hidden_by = [];
       return { ...m };
+    },
+    // Konversation für eine:n Teilnehmer:in aus dem Posteingang aus-/einblenden (Archiv).
+    setDmThreadHidden(threadId, userId, hidden) {
+      const t = dmThreads.get(threadId);
+      if (!t) return null;
+      const set = new Set(t.hidden_by || []);
+      if (hidden) set.add(userId); else set.delete(userId);
+      t.hidden_by = [...set];
+      return { ...t };
     },
     listDmMessages(threadId) {
       return [...dmMessages.values()].filter(m => m.thread_id === threadId).sort((a, b) => a.created_at.localeCompare(b.created_at)).map(m => ({ ...m }));

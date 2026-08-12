@@ -222,7 +222,7 @@ const I18N = {
     rt_hour_one:'vor 1 Stunde', rt_hour_many:'vor {n} Stunden', rt_day_one:'vor 1 Tag', rt_day_many:'vor {n} Tagen',
     _bcp47:'de-AT',
     dm_doc:'Nachrichten', dm_title:'✉️ Nachrichten', dm_to_ph:'@Handle für neue Nachricht…', dm_write:'Schreiben',
-    dm_empty:'Noch keine Konversationen. Starte oben eine neue.', dm_search_ph:'🔎 Nachrichten durchsuchen…', dm_none_filter:'Kein Verlauf passt zu „{q}".', dm_back:'← Nachrichten',
+    dm_empty:'Noch keine Konversationen. Starte oben eine neue.', dm_search_ph:'🔎 Nachrichten durchsuchen…', dm_none_filter:'Kein Verlauf passt zu „{q}".', dm_back:'← Nachrichten', dm_archive:'Archivieren',
     dm_body_ph:'Nachricht schreiben…', dm_no_msgs:'Noch keine Nachrichten — sag Hallo 👋',
     dm_today:'Heute', dm_yesterday:'Gestern', dm_read:'Gelesen', dm_delivered:'Zugestellt',
     wc_title:'👋 Willkommen bei ApoTrend', wc_sub:'Das Fachnetzwerk für Apotheken — kurz erklärt:',
@@ -571,7 +571,7 @@ const I18N = {
     rt_hour_one:'1 hour ago', rt_hour_many:'{n} hours ago', rt_day_one:'1 day ago', rt_day_many:'{n} days ago',
     _bcp47:'en-GB',
     dm_doc:'Messages', dm_title:'✉️ Messages', dm_to_ph:'@handle for a new message…', dm_write:'Write',
-    dm_empty:'No conversations yet. Start one above.', dm_search_ph:'🔎 Search messages…', dm_none_filter:'No conversation matches “{q}”.', dm_back:'← Messages',
+    dm_empty:'No conversations yet. Start one above.', dm_search_ph:'🔎 Search messages…', dm_none_filter:'No conversation matches “{q}”.', dm_back:'← Messages', dm_archive:'Archive',
     dm_body_ph:'Write a message…', dm_no_msgs:'No messages yet — say hi 👋',
     dm_today:'Today', dm_yesterday:'Yesterday', dm_read:'Read', dm_delivered:'Delivered',
     wc_title:'👋 Welcome to ApoTrend', wc_sub:'The professional network for pharmacies — briefly explained:',
@@ -920,7 +920,7 @@ const I18N = {
     rt_hour_one:'há 1 hora', rt_hour_many:'há {n} horas', rt_day_one:'há 1 dia', rt_day_many:'há {n} dias',
     _bcp47:'pt-PT',
     dm_doc:'Mensagens', dm_title:'✉️ Mensagens', dm_to_ph:'@handle para nova mensagem…', dm_write:'Escrever',
-    dm_empty:'Ainda sem conversas. Inicie uma acima.', dm_search_ph:'🔎 Pesquisar mensagens…', dm_none_filter:'Nenhuma conversa corresponde a „{q}".', dm_back:'← Mensagens',
+    dm_empty:'Ainda sem conversas. Inicie uma acima.', dm_search_ph:'🔎 Pesquisar mensagens…', dm_none_filter:'Nenhuma conversa corresponde a „{q}".', dm_back:'← Mensagens', dm_archive:'Arquivar',
     dm_body_ph:'Escrever mensagem…', dm_no_msgs:'Ainda sem mensagens — diga olá 👋',
     dm_today:'Hoje', dm_yesterday:'Ontem', dm_read:'Lida', dm_delivered:'Entregue',
     wc_title:'👋 Bem-vindo à ApoTrend', wc_sub:'A rede profissional para farmácias — explicação rápida:',
@@ -7066,9 +7066,14 @@ async function showDmInbox() {
       const unread = th.unread > 0;
       const row = el(`<div class="comment clickable" style="cursor:pointer${unread?';background:rgba(11,127,40,.06);border-radius:8px':''}">
         <div class="row"><b style="${unread?'font-weight:800':''}">${esc(o.display_name||t('ex_unknown'))}</b> <span class="handle">@${esc(o.handle||'?')}</span>
-        <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:12px;margin-right:6px">${when}</span>`:''}${unread?`<span style="background:var(--green);color:#fff;border-radius:999px;font-size:12px;font-weight:700;padding:1px 8px;min-width:20px;text-align:center">${th.unread}</span>`:''}</div>
+        <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:12px;margin-right:6px">${when}</span>`:''}${unread?`<span style="background:var(--green);color:#fff;border-radius:999px;font-size:12px;font-weight:700;padding:1px 8px;min-width:20px;text-align:center;margin-right:6px">${th.unread}</span>`:''}<button class="ghost small" data-archive title="${esc(t('dm_archive'))}" aria-label="${esc(t('dm_archive'))}">🗂</button></div>
         <div class="muted" style="margin-top:2px${unread?';color:inherit;font-weight:600':''}">${esc((th.last_message?.body||'').slice(0,60))}</div></div>`);
       row.onclick = () => openDmThread(th.thread_id);
+      row.querySelector('[data-archive]').onclick = async (e) => {
+        e.stopPropagation();
+        try { await api('POST',`/api/dm/${th.thread_id}/hide`,{ hidden: true }); showDmInbox(); }
+        catch(err){ alert(err.message); }
+      };
       list.appendChild(row);
     });
   };

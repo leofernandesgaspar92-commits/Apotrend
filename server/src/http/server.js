@@ -666,6 +666,7 @@ const routes = [
     return { thread: social.startDm(userId, target.user_id) };
   }],
   ['GET', /^\/api\/dm\/([^/]+)$/, true, async ({ userId, params }) => social.dmConversation(userId, params[0])],
+  ['POST', /^\/api\/dm\/([^/]+)\/hide$/, true, async ({ userId, params, body }) => social.setDmConversationHidden(userId, params[0], body.hidden !== false)],
   ['POST', /^\/api\/dm\/([^/]+)$/, true, async ({ userId, params, body }) => social.sendDm(userId, params[0], body.body)],
 
   // ── Lieferengpässe (Priorität 2) ──

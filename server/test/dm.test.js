@@ -59,3 +59,49 @@ test('DM: eigener Posteingang zeigt keine leeren Threads', () => {
   social.startDm(a, b); // Thread ohne Nachricht
   assert.equal(social.dmInbox(a).length, 0);
 });
+
+test('DM: archivieren blendet Konversation nur für die archivierende Person aus; neue Nachricht holt sie zurück', () => {
+  const { social, a, b } = setup();
+  const t = social.startDm(a, b);
+  social.sendDm(a, t.id, 'Hallo Ben');
+  // Ben archiviert die Konversation -> verschwindet aus SEINEM Posteingang + Badge auf 0
+  social.setDmConversationHidden(b, t.id, true);
+  assert.equal(social.dmInbox(b).length, 0);
+  assert.equal(social.dmUnreadTotal(b), 0);
+  // Bei Anna ist die Konversation weiterhin sichtbar (nur Bens Sicht betroffen)
+  assert.equal(social.dmInbox(a).length, 1);
+  // Öffnen/Lesen bleibt möglich (kein Datenverlust)
+  assert.equal(social.dmConversation(b, t.id).messages.length, 1);
+  // Neue Nachricht von Anna holt die Konversation in Bens Posteingang zurück
+  social.sendDm(a, t.id, 'Noch da?');
+  assert.equal(social.dmInbox(b).length, 1);
+  assert.equal(social.dmUnreadTotal(b), 1);
+  // Wieder-Einblenden (hidden=false) funktioniert ebenfalls
+  social.setDmConversationHidden(b, t.id, true);
+  assert.equal(social.dmInbox(b).length, 0);
+  social.setDmConversationHidden(b, t.id, false);
+  assert.equal(social.dmInbox(b).length, 1);
+  // Nicht-Teilnehmer:in darf nicht archivieren
+  assert.throws(() => social.setDmConversationHidden('fremde-id', t.id, true), /Nicht Teil|nicht gefunden/);
+});
+
+test('DM: archivierter Thread übersteht dump/load (hidden_by persistiert)', () => {
+  const repo = createMemoryRepo();
+  const orgAuth = createOrgAuthService(repo);
+  const socialRepo = createSocialRepo();
+  const social = createSocialService(socialRepo, repo);
+  const A = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'A' }, owner: { name: 'Anna', email: 'a@a.at', password: 'geheim123' } });
+  social.createProfile(A.user.id, { handle: 'anna', displayName: 'Anna' });
+  const B = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'B' }, owner: { name: 'Ben', email: 'b@b.at', password: 'geheim123' } });
+  social.createProfile(B.user.id, { handle: 'ben', displayName: 'Ben' });
+  const a = A.user.id, b = B.user.id;
+  const t = social.startDm(a, b);
+  social.sendDm(a, t.id, 'Hallo');
+  social.setDmConversationHidden(b, t.id, true);
+  // dump/load auf Repo-Ebene (analog Shortage-/Persistenz-Tests)
+  const fresh = createSocialRepo();
+  fresh.__load(socialRepo.__dump());
+  const freshSocial = createSocialService(fresh, repo);
+  assert.equal(freshSocial.dmInbox(b).length, 0, 'archiviert bleibt archiviert nach load');
+  assert.equal(freshSocial.dmInbox(a).length, 1);
+});
