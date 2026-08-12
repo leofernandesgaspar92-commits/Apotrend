@@ -115,7 +115,9 @@
   /* Mobil: 8 Tabs passen nicht in eine Zeile (Horizontal-Scroll, halbe Tabs
      unsichtbar). Als 4-Spalten-Grid umbrechen -> alle Tabs sichtbar, kein Overflow. */
   @media (max-width: 640px) {
-    .tabs { display:grid; grid-template-columns:repeat(4, 1fr); }
+    /* Reiter-Leiste bleibt beim Scrollen erreichbar (klebt direkt unter der Kopfzeile) —
+       app-typische Navigation am Handy. Hintergrund deckt durchscrollende Karten ab. */
+    .tabs { display:grid; grid-template-columns:repeat(4, 1fr); position:sticky; top:var(--header-h, 58px); z-index:4; background:var(--bg); padding:8px 0; margin-bottom:8px; box-shadow:0 6px 6px -6px rgba(0,0,0,.14); }
     .tabs button { flex:none; padding-left:4px; padding-right:4px; }
   }
   .post-author { font-weight:700; }

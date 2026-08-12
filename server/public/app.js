@@ -1664,6 +1664,15 @@ function switchTab(name) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// Höhe der (klebrigen) Kopfzeile als CSS-Variable — damit die mobile Reiter-Leiste
+// exakt darunter kleben kann (Kopf kann je nach Breite/Umbruch unterschiedlich hoch sein).
+function setHeaderHeightVar() {
+  const h = document.querySelector('header');
+  if (h) document.documentElement.style.setProperty('--header-h', h.offsetHeight + 'px');
+}
+window.addEventListener('resize', setHeaderHeightVar);
+window.addEventListener('orientationchange', setHeaderHeightVar);
+
 // ── Haupt-Screen (Feed) ──
 async function mainScreen() {
   const meData = await api('GET','/api/me');
@@ -1829,6 +1838,7 @@ async function mainScreen() {
   initCountrySwitcher(); // Länder-/Sprach-Umschalter in der Kopfzeile aktivieren
   startNewsRail();      // News-Livestream links starten (nur auf breiten Bildschirmen sichtbar)
   renderQuickRail();    // Schnellzugriff-Rail rechts (nur auf Laptop/Desktop sichtbar)
+  setHeaderHeightVar(); // Kopfhöhe für die klebrige mobile Reiter-Leiste
   loadTab();
   // Deep-Links: /?post=ID öffnet einen Beitrag, /?wirkstoff=Name die Wirkstoff-Seite,
   // /?profile=Handle ein Profil, /?hashtag=Tag einen Hashtag-Feed.
