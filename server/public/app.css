@@ -59,7 +59,10 @@
   label { display:block; font-size:0.9em; color:var(--muted); margin:10px 0 4px; }
   input, textarea, select { width:100%; padding:12px; border:1px solid var(--line); border-radius:var(--radius-sm); font-size:1em; font-family:inherit; min-height:46px; background:var(--card); color:var(--text); }
   textarea { resize:vertical; min-height:70px; }
-  button { background:var(--green); color:#fff; border:none; border-radius:var(--radius-sm); padding:12px 16px; font-size:0.95em; font-weight:600; cursor:pointer; min-height:44px; transition:background .13s ease, border-color .13s ease, box-shadow .13s ease, transform .04s ease; }
+  /* Aktives Eingabefeld klar erkennbar (grüner Rahmen) — moderne Formular-Optik, ergänzt
+     den Tastatur-Fokusring, ohne ihn zu ersetzen. */
+  input:focus, textarea:focus, select:focus { border-color:var(--green); }
+  button { background:var(--green); color:#fff; border:none; border-radius:var(--radius-sm); padding:12px 16px; font-size:0.95em; font-weight:600; cursor:pointer; min-height:44px; transition:background .13s ease, border-color .13s ease, color .13s ease, box-shadow .13s ease, transform .04s ease; }
   button:hover { background:var(--green-d); }
   /* Tasthaftes Drücken: jeder Button gibt beim Klick sichtbar nach (klare Affordanz für
      nicht-technische Nutzer:innen). @media reduced-motion respektiert Bewegungsstopp. */
@@ -227,16 +230,19 @@
   body.dark .reacts button.reacted { background:var(--green); color:#fff; }
   .muted { color:var(--muted); font-size:14px; }
   .err { color:var(--crit-fg); font-size:14px; margin-top:8px; }
-  /* Einheitlicher, freundlicher Leerzustand (Icon + Titel + Text + optionale Aktion). */
-  .empty { text-align:center; padding:34px 20px; }
-  .empty-ic { font-size:42px; line-height:1; }
-  .empty-t { font-size:17px; font-weight:700; margin-top:10px; }
+  /* Einheitlicher, freundlicher Leerzustand (Icon + Titel + Text + optionale Aktion).
+     Icon in einem sanft getönten Kreis (moderne App-Optik), Karte gleitet dezent ein. */
+  .empty { text-align:center; padding:34px 20px; animation:apo-fade-up .28s ease both; }
+  .empty-ic { display:inline-flex; align-items:center; justify-content:center; width:76px; height:76px; border-radius:50%; background:var(--chip-bg); font-size:36px; line-height:1; }
+  .empty-t { font-size:17px; font-weight:700; margin-top:12px; }
   .empty-s { margin-top:6px; max-width:44ch; margin-left:auto; margin-right:auto; }
+  @keyframes apo-fade-up { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+  @media (prefers-reduced-motion:reduce){ .empty { animation:none; } }
   /* Einheitlicher, dezenter Lade-Indikator (Spinner + Text), theme-tauglich. */
-  .loading { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:14px; padding:8px 2px; }
+  .loading { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:14px; padding:8px 2px; animation:apo-fade-up .28s ease both; }
   .loading::before { content:''; width:18px; height:18px; border:3px solid var(--line); border-top-color:var(--green); border-radius:50%; animation:apo-spin .7s linear infinite; flex:none; }
   @keyframes apo-spin { to { transform:rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce) { .loading::before { animation:none; } }
+  @media (prefers-reduced-motion: reduce) { .loading::before { animation:none; } .loading { animation:none; } }
   .bell { position:relative; }
   .badge { position:absolute; top:-6px; right:-6px; background:#e02a2a; color:#fff; border-radius:10px; font-size:11px; padding:1px 6px; }
   /* Klartext-Beschriftung der Header-Aktionen (Zielgruppe: nicht-technisch). Auf
