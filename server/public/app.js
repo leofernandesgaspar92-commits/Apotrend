@@ -2025,7 +2025,10 @@ async function loadOverview() {
   const tiles = [
     tile('🔴', d.shortages.kritisch, t('ov_t_crit'), 'var(--crit-fg)', 'shortages'),
   ];
-  if (d.shortages.antibiotika) tiles.push(tile('🧫', d.shortages.antibiotika, t('ov_t_abx'), 'var(--ok-fg)', 'shortages', 'antibiotika'));
+  // Antibiotika-Engpässe: neutral-informativ (blau), NICHT grün — grün stünde für
+  // „gut/ok", ein Engpass-Zähler ist aber nichts Positives (Owner-Prinzip: konsistente
+  // Farb-Semantik). Rot bleibt der „kritisch"-Kachel vorbehalten.
+  if (d.shortages.antibiotika) tiles.push(tile('🧫', d.shortages.antibiotika, t('ov_t_abx'), 'var(--info-fg)', 'shortages', 'antibiotika'));
   tiles.push(
     tile('📦', d.exchange.biete, t('ov_t_offer'), 'var(--ok-fg)', 'exchange'),
     tile('🔎', d.exchange.suche, t('ov_t_seek'), 'var(--warn-fg)', 'exchange'),
