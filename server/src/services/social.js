@@ -859,7 +859,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     dmOther(viewerUserId, thread) {
       const otherId = thread.user_a_id === viewerUserId ? thread.user_b_id : thread.user_a_id;
       const prof = social.getProfileByUserId(otherId);
-      return prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified, is_editorial: prof.is_editorial } : null;
+      return prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified, is_editorial: prof.is_editorial, avatar_url: prof.avatar_url || null } : null;
     },
     // Konversations-Zusammenfassungen (letzte Nachricht + ungelesen), neueste zuerst.
     // archived=false: aktiver Posteingang (ohne archivierte); archived=true: nur archivierte.

@@ -7281,9 +7281,10 @@ async function showDmInbox() {
       const o = th.other || {};
       const when = th.last_message?.created_at ? relTime(th.last_message.created_at) : '';
       const r = el(`<div class="comment clickable" style="cursor:pointer;opacity:.85">
+        <div class="row" style="align-items:center">${avatarHtml(o, 38, false)}<div style="flex:1;min-width:0">
         <div class="row"><b>${esc(o.display_name||t('ex_unknown'))}</b> <span class="handle">@${esc(o.handle||'?')}</span>
         <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:12px;margin-right:6px">${when}</span>`:''}<button class="ghost small" data-restore>${esc(t('dm_restore'))}</button></div>
-        <div class="muted" style="margin-top:2px">${esc((th.last_message?.body||'').slice(0,60))}</div></div>`);
+        <div class="muted" style="margin-top:2px">${esc((th.last_message?.body||'').slice(0,60))}</div></div></div></div>`);
       r.onclick = () => openDmThread(th.thread_id);
       r.querySelector('[data-restore]').onclick = async (e) => {
         e.stopPropagation();
@@ -7317,10 +7318,12 @@ async function showDmInbox() {
       const o = th.other || {};
       const when = th.last_message?.created_at ? relTime(th.last_message.created_at) : '';
       const unread = th.unread > 0;
+      // Profilbild des Kontakts links (wie überall) — Verlauf schneller wiederzuerkennen.
       const row = el(`<div class="comment clickable" style="cursor:pointer${unread?';background:rgba(11,127,40,.06);border-radius:8px':''}">
+        <div class="row" style="align-items:center">${avatarHtml(o, 38, false)}<div style="flex:1;min-width:0">
         <div class="row"><b style="${unread?'font-weight:800':''}">${esc(o.display_name||t('ex_unknown'))}</b> <span class="handle">@${esc(o.handle||'?')}</span>
         <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:12px;margin-right:6px">${when}</span>`:''}${unread?`<span style="background:var(--green);color:#fff;border-radius:999px;font-size:12px;font-weight:700;padding:1px 8px;min-width:20px;text-align:center;margin-right:6px">${th.unread}</span>`:''}<button class="ghost small" data-archive title="${esc(t('dm_archive'))}" aria-label="${esc(t('dm_archive'))}">🗂</button></div>
-        <div class="muted" style="margin-top:2px${unread?';color:inherit;font-weight:600':''}">${esc((th.last_message?.body||'').slice(0,60))}</div></div>`);
+        <div class="muted" style="margin-top:2px${unread?';color:inherit;font-weight:600':''}">${esc((th.last_message?.body||'').slice(0,60))}</div></div></div></div>`);
       row.onclick = () => openDmThread(th.thread_id);
       row.querySelector('[data-archive]').onclick = async (e) => {
         e.stopPropagation();
@@ -7340,9 +7343,10 @@ async function openDmThread(threadId, prefill) {
   const d = await api('GET','/api/dm/'+encodeURIComponent(threadId));
   const o = d.other || {};
   app.innerHTML = '';
-  const box = el(`<div class="card"><div class="row">
+  const box = el(`<div class="card"><div class="row" style="align-items:center">
       <button class="ghost small" id="back">${esc(t('dm_back'))}</button>
       <span class="sp" style="flex:1"></span>
+      ${avatarHtml(o, 30, false)}
       <b class="clickable" data-openprofile="${esc(o.handle||'')}">${esc(o.display_name||t('ex_unknown'))}</b>
       <span class="handle">@${esc(o.handle||'?')}</span>
     </div>
