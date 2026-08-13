@@ -130,8 +130,10 @@
      ohne Umbruch ragten sie bisher rechts über alle Karten hinaus. Jetzt sauberer
      Umbruch in zwei Reihen zu je vier (bündig mit dem Inhalt). */
   .tabs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
-  .tabs button { flex:1 1 140px; background:var(--card); color:var(--text); border:1px solid var(--line); font-weight:600; }
-  /* Klares Hover-Feedback (grün) wie bei den Aktions-Buttons — Nav fühlt sich lebendig an. */
+  /* Reiter im selben ruhigen Karten-System wie der Inhalt: hell randlos mit sanftem
+     Schatten, dunkel feiner Rand (--card-bd). Wirkt wie eine zusammengehörige Pill-Nav. */
+  .tabs button { flex:1 1 140px; background:var(--card); color:var(--text); border:1px solid var(--card-bd); box-shadow:var(--shadow); font-weight:600; }
+  /* Klares Hover-Feedback (grüner Rand + Text) — Nav fühlt sich lebendig an, bleibt eindeutig klickbar. */
   .tabs button:not(.active):hover { border-color:var(--green); color:var(--green); }
   /* Aktiver Reiter deutlich hervorgehoben: grün + kräftiger + dezenter grüner Schein
      (segmentierte Pill-Nav à la X/Instagram), damit „wo bin ich" sofort klar ist. */
