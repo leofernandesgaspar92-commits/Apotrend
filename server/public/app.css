@@ -90,8 +90,7 @@
   textarea { resize:vertical; min-height:70px; }
   /* Aktives Eingabefeld klar erkennbar (grüner Rahmen) — moderne Formular-Optik, ergänzt
      den Tastatur-Fokusring, ohne ihn zu ersetzen. */
-  input:focus, textarea:focus, select:focus { border-color:var(--green); }
-  button { background:var(--green); color:#fff; border:none; border-radius:var(--radius-sm); padding:12px 16px; font-size:0.95em; font-weight:600; cursor:pointer; min-height:44px; transition:background .13s ease, border-color .13s ease, color .13s ease, box-shadow .13s ease, transform .04s ease; }
+  input:focus, textarea:focus, select:focus { border-color:var(--green); }  button { background:var(--green); color:#fff; border:none; border-radius:var(--radius-sm); padding:12px 16px; font-size:0.95em; font-weight:600; cursor:pointer; min-height:44px; transition:background .13s ease, border-color .13s ease, color .13s ease, box-shadow .13s ease, transform .04s ease; }
   button:hover { background:var(--green-d); }
   /* Tasthaftes Drücken: jeder Button gibt beim Klick sichtbar nach (klare Affordanz für
      nicht-technische Nutzer:innen). @media reduced-motion respektiert Bewegungsstopp. */
@@ -319,7 +318,13 @@
   /* Klartext-Beschriftung der Header-Aktionen (Zielgruppe: nicht-technisch). Auf
      schmalen Screens Icon-only, damit die Kopfzeile nicht umbricht. */
   .hlabel { margin-left:6px; font-size:0.84em; font-weight:600; }
-  @media (max-width: 980px) { .hlabel { display:none; } header button { min-width:42px; } }
+  /* Kopf-Beschriftungen nur zeigen, wenn die volle Reihe sicher passt (≥~1180px).
+     Darunter Icon-only (mit aria-label/Tooltip) — sonst ragte die Reihe über die Seite
+     hinaus (Querscroll). */
+  @media (max-width: 1180px) { .hlabel { display:none; } header button { min-width:42px; } }
+  /* Passt selbst die Icon-Reihe nicht mehr (≤~980px: Tablet, kleines/geteiltes Fenster),
+     bricht die Kopfzeile sauber um statt Querscroll. */
+  @media (max-width: 980px) { header { flex-wrap:wrap; } }
   .comments { border-top:1px solid var(--line); margin-top:10px; padding-top:10px; }
   .comment { font-size:0.9em; padding:6px 0; border-bottom:1px solid var(--line); }
   .comment:last-child { border-bottom:none; }
