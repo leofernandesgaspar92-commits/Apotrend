@@ -4,6 +4,9 @@ const FONT_LABELS = ['A', 'A⁺', 'A⁺⁺'];
 function applyFontScale() {
   const lvl = Math.max(0, Math.min(2, parseInt(localStorage.getItem('apo_fontscale') || '0', 10) || 0));
   document.body.style.fontSize = FONT_STEPS[lvl] + 'px';
+  // Große Schrift markieren, damit das Layout darauf reagieren kann (sonst Querscroll:
+  // z.B. Kopf-Beschriftungen passen dann nicht mehr — a11y-Vorgabe „gut lesbar").
+  document.body.setAttribute('data-fontscale', String(lvl));
   const btn = document.getElementById('btnFont');
   const ic = document.getElementById('fontIcon');
   if (ic) ic.textContent = FONT_LABELS[lvl];

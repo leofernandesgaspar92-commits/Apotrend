@@ -143,8 +143,12 @@
   @media (max-width: 640px) {
     /* Reiter-Leiste bleibt beim Scrollen erreichbar (klebt direkt unter der Kopfzeile) —
        app-typische Navigation am Handy. Hintergrund deckt durchscrollende Karten ab. */
-    .tabs { display:grid; grid-template-columns:repeat(4, 1fr); position:sticky; top:var(--header-h, 58px); z-index:4; background:var(--bg); padding:8px 0; margin-bottom:8px; box-shadow:0 6px 6px -6px rgba(0,0,0,.14); }
-    .tabs button { flex:none; padding-left:4px; padding-right:4px; }
+    /* minmax(0,1fr): Spalten dürfen unter ihre Inhaltsbreite schrumpfen — sonst ragte das
+       Raster bei großer Schrift über den Rand (Querscroll). overflow-wrap bricht lange Wörter. */
+    .tabs { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); position:sticky; top:var(--header-h, 58px); z-index:4; background:var(--bg); padding:8px 0; margin-bottom:8px; box-shadow:0 6px 6px -6px rgba(0,0,0,.14); }
+    .tabs button { flex:none; padding-left:4px; padding-right:4px; overflow-wrap:anywhere; }
+    /* Sehr große Schrift: 3 Spalten geben den längeren Beschriftungen genug Platz. */
+    body[data-fontscale="2"] .tabs { grid-template-columns:repeat(3, minmax(0, 1fr)); }
   }
   .post-author { font-weight:700; }
   /* Social-Header: Avatar links, daneben Name (fett) über „@handle · Zeit" — die vertraute
@@ -324,6 +328,9 @@
   /* Klartext-Beschriftung der Header-Aktionen (Zielgruppe: nicht-technisch). Auf
      schmalen Screens Icon-only, damit die Kopfzeile nicht umbricht. */
   .hlabel { margin-left:6px; font-size:0.84em; font-weight:600; }
+  /* Große Schrift: Kopf-Beschriftungen ausblenden (Icon-only, Tooltip/aria-label bleiben) —
+     sonst passt die Kopfzeile nicht mehr in eine Reihe und die Seite scrollt horizontal. */
+  body[data-fontscale="1"] .hlabel, body[data-fontscale="2"] .hlabel { display:none; }
   /* Kopf-Beschriftungen nur zeigen, wenn die volle Reihe sicher passt (≥~1180px).
      Darunter Icon-only (mit aria-label/Tooltip) — sonst ragte die Reihe über die Seite
      hinaus (Querscroll). */
