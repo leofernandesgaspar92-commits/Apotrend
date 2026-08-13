@@ -5299,6 +5299,28 @@ function refChip(r) {
   return `<div class="vis" style="${base}">${esc(t('rc_shortage'))} <b>${esc(r.wirkstoff)}</b> — ${esc(r.bezeichnung)}</div>`;
 }
 
+// In-Feed-Anzeige (Social-Media-Prinzip, Owner-Vorgabe Monetarisierung): EINE klar als
+// „Anzeige" gekennzeichnete native Werbung aus dem bestehenden Angebote-System, dezent
+// zwischen die Beiträge gesetzt. Optik wie ein Beitrag, aber unmissverständlich als
+// Werbung markiert (Klartext-Prinzip + rechtliche Kennzeichnung). Klick öffnet das Angebot.
+function feedAdCard(p) {
+  const author = p.author ? (p.author.display_name || ('@' + (p.author.handle || ''))) : '';
+  const card = el(`<div class="card feed-ad clickable" data-openpromo="${esc(p.id)}" role="link" tabindex="0" aria-label="${esc(t('wb_ad'))}: ${esc(p.titel || '')}">
+    <div class="row" style="align-items:center;gap:8px;margin-bottom:8px">
+      <span class="qr-ad-label" style="margin:0">${esc(t('wb_ad'))}</span>
+      <span class="qr-ad-cat">${esc(promoCatLabel(p.kategorie))}</span>
+    </div>
+    ${p.image ? `<img class="feed-ad-img" src="${esc(p.image)}" alt="">` : ''}
+    <div class="feed-ad-title">${esc(p.titel || '')}</div>
+    <div class="qr-ad-price">${promoPrice(p)}</div>
+    ${author ? `<div class="qr-ad-by">${esc(t('wb_by'))} ${esc(author)}</div>` : ''}
+  </div>`);
+  const open = () => openPromotionDetail(p.id);
+  card.onclick = open;
+  card.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } };
+  return card;
+}
+
 async function loadFeed() {
   const feed = document.getElementById('feed');
   feed.innerHTML = '<div class="loading">…</div>';
@@ -5340,7 +5362,21 @@ async function loadFeed() {
       }
       return;
     }
-    d.posts.forEach(p => feed.appendChild(postCard(p)));
+    // Eine In-Feed-Anzeige nur im öffentlichen Feed und nur, wenn Werbung vorhanden ist
+    // (sonst nichts — die Seite wirkt nie überladen). Platzierung nach dem 3. Beitrag,
+    // damit sie nie allein ganz unten hängt.
+    let adCard = null;
+    if (tab !== 'home') {
+      try {
+        const promos = ((await api('GET','/api/promotions')).promotions) || [];
+        if (promos.length) adCard = feedAdCard(promos[Math.floor(Math.random() * Math.min(promos.length, 5))]);
+      } catch { /* keine Werbung → nichts anzeigen */ }
+    }
+    const adAfter = Math.min(2, d.posts.length - 1); // nach dem 3. Beitrag (oder letzter, wenn kürzer)
+    d.posts.forEach((p, i) => {
+      feed.appendChild(postCard(p));
+      if (adCard && i === adAfter) { feed.appendChild(adCard); adCard = null; }
+    });
   } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
 
