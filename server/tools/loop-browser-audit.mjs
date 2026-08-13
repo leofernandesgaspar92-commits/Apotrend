@@ -97,12 +97,35 @@ async function main() {
     if (errors.length) findings.push(`JS-Fehler [${theme}]: ${[...new Set(errors)].slice(0, 3).join(' | ')}`);
     await ctx.close();
   }
+  // Querscroll auch bei mittleren & Desktop-Breiten prüfen (Tablet, kleines/geteiltes
+  // Fenster, Laptop). Der Mobil-390-Check allein übersieht Overflow in diesem Bereich —
+  // genau dort versteckte sich einmal ein Kopfzeilen-Overflow (561–1170px). Ein Theme
+  // genügt: horizontaler Overflow ist Layout, weitgehend themen-unabhängig.
+  const SWEEP_WIDTHS = [768, 1024, 1280, 1440];
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, colorScheme: 'light' });
+    const page = await ctx.newPage();
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
+    await page.goto(BASE, { waitUntil: 'networkidle' });
+    for (const w of SWEEP_WIDTHS) {
+      await page.setViewportSize({ width: w, height: 900 });
+      await page.waitForTimeout(200);
+      for (const [name, label] of TABS) {
+        await page.getByText(label, { exact: false }).first().click().catch(() => {});
+        await page.waitForTimeout(200);
+        const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+        if (overflow) findings.push(`Querscroll: ${name} [${w}px]`);
+      }
+    }
+    await ctx.close();
+  }
+
   await browser.close();
   stopServer();
 
-  console.log('── ApoTrend Loop · GATHER (Browser) · Mobil 390 ──');
+  console.log('── ApoTrend Loop · GATHER (Browser) · 390 + 768/1024/1280/1440 ──');
   if (findings.length === 0) {
-    console.log('✓ Kein Querscroll, keine JS-Fehler, keine a11y-Lücken auf 8 Reitern (hell + dunkel).');
+    console.log('✓ Kein Querscroll (Mobil + Tablet/Laptop-Breiten), keine JS-Fehler, keine a11y-Lücken auf 8 Reitern (hell + dunkel).');
   } else {
     console.log(`⚠️ ${findings.length} Befund(e):`);
     findings.forEach((f) => console.log('  - ' + f));
