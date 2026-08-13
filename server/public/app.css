@@ -85,7 +85,7 @@
   /* Tasthaftes Drücken: jeder Button gibt beim Klick sichtbar nach (klare Affordanz für
      nicht-technische Nutzer:innen). @media reduced-motion respektiert Bewegungsstopp. */
   button:active { transform:translateY(1px); }
-  @media (prefers-reduced-motion: reduce) { button, .ovtile { transition:none; } button:active { transform:none; } }
+  @media (prefers-reduced-motion: reduce) { button, .ovtile { transition:none; } button:active, .ovtile.clickable:hover, .ovtile.clickable:focus-visible { transform:none; } }
   button.ghost { background:transparent; color:var(--green); border:1px solid var(--green); }
   button.small { padding:8px 12px; font-size:0.85em; min-height:40px; }
   /* Text-Link-artiger Button (z. B. „Passwort vergessen?") — sieht aus wie ein Link,
@@ -153,9 +153,14 @@
   .clickable:hover { text-decoration:underline; }
   /* Übersichts-Kacheln sind Navigations-Buttons: klare Karten-Optik + sichtbare
      Hover-/Fokus-Affordanz (Rahmen wird grün), aber KEIN Unterstreichen (Karte, kein Link). */
-  .ovtile { background:var(--bg); border:1px solid var(--line); border-radius:12px; transition:border-color .12s, box-shadow .12s; }
-  .ovtile.clickable:hover, .ovtile.clickable:focus-visible { text-decoration:none; border-color:var(--green); box-shadow:0 1px 6px rgba(0,0,0,.08); }
-  .ovtile-go { color:var(--green); font-weight:800; opacity:.75; }
+  /* Kennzahlen-Kacheln (der Überblick „auf einen Blick"): farbiger Rand-Akzent links
+     macht die Semantik sofort scannbar (rot = kritisch); klare Klick-Affordanz
+     (Hover hebt die Kachel leicht an + Schatten), damit erkennbar ist: anklickbar. */
+  .ovtile { background:var(--card); border:1px solid var(--line); border-left:4px solid var(--tile-accent, var(--line)); border-radius:12px; box-shadow:var(--shadow); transition:border-color .12s, box-shadow .12s, transform .12s; }
+  .ovtile.clickable { cursor:pointer; }
+  .ovtile.clickable:hover, .ovtile.clickable:focus-visible { text-decoration:none; border-color:var(--green); border-left-color:var(--tile-accent, var(--green)); box-shadow:0 6px 18px rgba(0,0,0,.12); transform:translateY(-2px); }
+  .ovtile-go { color:var(--green); font-weight:800; opacity:.7; transition:opacity .12s; }
+  .ovtile.clickable:hover .ovtile-go, .ovtile.clickable:focus-visible .ovtile-go { opacity:1; }
   /* Krypto-Zahlung: klare Karte je Coin, Adresse gut lesbar (monospace, umbrechbar). */
   .crypto-pay { border:1px solid var(--line); border-radius:10px; padding:12px; margin-top:10px; background:var(--bg); }
   .crypto-addr { margin-top:8px; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
