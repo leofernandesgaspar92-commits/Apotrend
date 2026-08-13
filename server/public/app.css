@@ -116,8 +116,11 @@
   /* Überschrift in einer Kopfzeile hält ihre Inhaltsbreite (flex-basis:auto statt 0),
      damit auf Mobil der Button umbricht statt die Überschrift mitten im Wort zu zerreißen. */
   .row > h1 { flex:1 1 auto !important; }
-  .tabs { display:flex; gap:8px; margin-bottom:12px; }
-  .tabs button { flex:1; background:var(--card); color:var(--text); border:1px solid var(--line); font-weight:600; }
+  /* Reiter füllen die 640px-Spalte, aber die 8 Labels passen nicht in EINE Zeile —
+     ohne Umbruch ragten sie bisher rechts über alle Karten hinaus. Jetzt sauberer
+     Umbruch in zwei Reihen zu je vier (bündig mit dem Inhalt). */
+  .tabs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+  .tabs button { flex:1 1 140px; background:var(--card); color:var(--text); border:1px solid var(--line); font-weight:600; }
   /* Klares Hover-Feedback (grün) wie bei den Aktions-Buttons — Nav fühlt sich lebendig an. */
   .tabs button:not(.active):hover { border-color:var(--green); color:var(--green); }
   /* Aktiver Reiter deutlich hervorgehoben: grün + kräftiger + dezenter grüner Schein
