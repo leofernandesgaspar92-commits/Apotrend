@@ -4871,16 +4871,24 @@ async function openDirectory(type) {
   const grid = el('<div class="dir-grid"></div>');
   feed.appendChild(grid);
   list.people.forEach(p => {
-    const row = el(`<div class="card"><div class="row" style="align-items:baseline;gap:6px;flex-wrap:wrap">
-      <b class="clickable" data-openprofile="${esc(p.handle)}">${esc(p.display_name||('@'+p.handle))}</b>
-      ${p.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}${p.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
-      <span class="handle clickable" data-openprofile="${esc(p.handle)}">@${esc(p.handle)}</span>
-      <span class="sp" style="flex:1"></span>
-      <button class="ghost small" data-msg="${esc(p.handle)}">${esc(t('pf_dm'))}</button>
-      ${p.is_following?`<span class="muted" style="font-size:13px">${esc(t('nb_following'))}</span>`:`<button class="small" data-follow="${esc(p.handle)}">${esc(t('pf_follow'))}</button>`}
+    // Karte mit Profilbild (wie im Feed): Avatar links, Info-Spalte rechts, Aktionen darunter.
+    // Konsistente, scannbare Optik; Foto wenn vorhanden, sonst Initialen.
+    const row = el(`<div class="card"><div class="row" style="align-items:flex-start">
+      ${avatarHtml(p, 44)}
+      <div style="flex:1;min-width:0">
+        <div class="row" style="align-items:baseline;gap:6px;flex-wrap:wrap">
+          <b class="clickable" data-openprofile="${esc(p.handle)}">${esc(p.display_name||('@'+p.handle))}</b>
+          ${p.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}${p.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
+          <span class="handle clickable" data-openprofile="${esc(p.handle)}">@${esc(p.handle)}</span>
+        </div>
+        ${p.title?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(p.title)}</div>`:''}
+        <div class="muted" style="font-size:12px;margin-top:2px">${p.bundesland?esc(p.bundesland)+' · ':''}${ti('dir_followers',{n:p.follower_count})}</div>
+      </div>
     </div>
-    ${p.title?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(p.title)}</div>`:''}
-    <div class="muted" style="font-size:12px;margin-top:2px">${p.bundesland?esc(p.bundesland)+' · ':''}${ti('dir_followers',{n:p.follower_count})}</div></div>`);
+    <div class="row" style="margin-top:10px;gap:6px">
+      <button class="ghost small" data-msg="${esc(p.handle)}">${esc(t('pf_dm'))}</button>
+      ${p.is_following?`<span class="muted" style="font-size:13px;align-self:center">${esc(t('nb_following'))}</span>`:`<button class="small" data-follow="${esc(p.handle)}">${esc(t('pf_follow'))}</button>`}
+    </div></div>`);
     row.querySelectorAll('[data-openprofile]').forEach(e2 => e2.onclick = () => openProfile(e2.dataset.openprofile));
     const fb = row.querySelector('[data-follow]');
     if (fb) fb.onclick = async () => { try { await api('POST','/api/follow',{ handle:p.handle }); fb.textContent=t('fl_following_btn'); fb.disabled=true; } catch(e){ alert(e.message); } };
