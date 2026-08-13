@@ -2005,11 +2005,11 @@ async function loadOverview() {
   // „Demnächst": nur künftige geplante Sessions (lokale Wall-Clock, lexikografisch vergleichbar).
   const localNow = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,16);
   const liveSoon = (liveData && liveData.sessions || []).filter(s => s.status === 'geplant' && String(s.geplant_am) >= localNow);
+  // Reihenfolge (Desktop, Owner-Vorgabe „sofort verständlich, weniger scrollen"):
+  // zuerst der Wert auf einen Blick — Begrüßung + Kennzahlen-Kacheln — und das
+  // Zeitkritische (Live). Danach erst Referenz-/Hinweis-Karten (Behörde, Profil,
+  // Umrechner). Nur die kleine Daten-Ehrlichkeits-Notiz bleibt ganz oben.
   { const n = countryDataNotice(); if (n) feed.appendChild(n); }
-  { const r = countryRegulatorCard(!!d.data_live); if (r) feed.appendChild(r); }
-  renderNewsInline(feed);   // News-Karten fürs Handy (nur wenn die Seitenleiste fehlt)
-  renderProfileNudge(feed); // Hinweis, das eigene Profil zu vervollständigen (nur wenn unfertig)
-  renderCurrencyConverter(feed);
   const hello = me ? (me.display_name || '@'+me.handle) : '';
   const firstName = hello ? (hello.split(/\s+/).find(w => !/\.$/.test(w)) || hello) : '';
   // Kennzahlen-Kacheln
@@ -2052,6 +2052,11 @@ async function loadOverview() {
   renderLiveOverview(feed, liveNow, liveSoon); // zeitkritisch: laufende/kommende Live-Sessions ganz oben
   renderMyTasksOverview(feed, (tasksData && tasksData.tasks) || []); // deine offenen Aufgaben
   renderTeamOverdueOverview(feed, (tasksData && tasksData.tasks) || [], !!(tasksData && tasksData.can_assign)); // Manager: Team-Überfälligkeiten
+  // Sekundäre Karten unter dem Wert-Überblick (siehe Reihenfolge-Hinweis oben).
+  { const r = countryRegulatorCard(!!d.data_live); if (r) feed.appendChild(r); } // offizielle Behörde/Quelle
+  renderNewsInline(feed);    // News-Karten fürs Handy (nur wenn die Seitenleiste fehlt)
+  renderProfileNudge(feed);  // Hinweis, das eigene Profil zu vervollständigen (nur wenn unfertig)
+  renderCurrencyConverter(feed);
 
   // Zuletzt angesehene Wirkstoffe (nur lokal) — schneller Wiedereinstieg.
   const recent = getRecentWirkstoff();
