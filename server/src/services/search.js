@@ -15,6 +15,7 @@ export function createSearchService({ social, shortagesRepo, pricesRepo, rabatte
       const people = social.searchProfiles(q).slice(0, limit).map(p => ({
         handle: p.handle, display_name: p.display_name, verified: p.verified,
         is_editorial: p.is_editorial, specializations: p.specializations || [],
+        avatar_url: p.avatar_url || null,
       }));
 
       const posts = social.searchPosts(viewerUserId, q).slice(0, limit);

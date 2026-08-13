@@ -5836,12 +5836,18 @@ async function renderSearch(q) {
       section(t('search_sec_people'));
       d.people.forEach(p => {
         const specs = (p.specializations||[]).map(s=>`<span class="spec">${esc(s)}</span>`).join(' ');
-        const card = el(`<div class="card"><div class="row">
-          <span class="post-author clickable" data-openprofile="${esc(p.handle)}">${esc(p.display_name)}</span>
-          <span class="handle clickable" data-openprofile="${esc(p.handle)}">@${esc(p.handle)}</span>
-          ${p.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}
-          ${p.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
-        </div>${specs?`<div style="margin-top:6px">${specs}</div>`:''}</div>`);
+        // Mit Profilbild — konsistent zu Feed und Verzeichnis, schneller wiederzuerkennen.
+        const card = el(`<div class="card"><div class="row" style="align-items:flex-start">
+          ${avatarHtml(p, 40)}
+          <div style="flex:1;min-width:0">
+            <div class="row" style="align-items:baseline;gap:6px;flex-wrap:wrap">
+              <span class="post-author clickable" data-openprofile="${esc(p.handle)}">${esc(p.display_name)}</span>
+              <span class="handle clickable" data-openprofile="${esc(p.handle)}">@${esc(p.handle)}</span>
+              ${p.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}
+              ${p.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
+            </div>${specs?`<div style="margin-top:6px">${specs}</div>`:''}
+          </div>
+        </div></div>`);
         card.querySelectorAll('[data-openprofile]').forEach(el => el.onclick = () => openProfile(el.dataset.openprofile));
         feed.appendChild(card);
       });
