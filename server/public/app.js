@@ -302,7 +302,7 @@ const I18N = {
     md_remove_comment:'🗑 Kommentar entfernen', md_remove_post:'🗑 Beitrag entfernen', md_ok:'✓ In Ordnung (Meldung schließen)',
     cs_title:'Wähle dein Land', cs_sub:'Danach siehst du Engpässe, Preise und das Netzwerk speziell für dein Land.', cs_change:'← Land ändern', logo_home:'Zur Startseite',
     vc_visiting:'🌍 Du besuchst gerade {flag} {land} — dein Konto bleibt unverändert.', vc_back:'↩ Zurück zu {flag} {land}',
-    au_login:'Anmelden', au_email:'E-Mail', au_email_ph:'name@apotheke.at', au_pw:'Passwort', au_register:'Neu registrieren', au_name:'Name',
+    au_hero_title:'Das Netzwerk für die Arzneimittel-Versorgung', au_hero_sub:'Für Apotheken, Ärzt:innen, Einkauf, Großhandel & Logistik — länderspezifisch.', au_hero_1:'📦 Lieferengpässe früh erkennen — mit Quelle', au_hero_2:'💶 Preise & Rabatte vergleichen, günstiger einkaufen', au_hero_3:'🔄 Bestände tauschen statt verfallen lassen', au_hero_4:'👥 Fachnetzwerk: Apotheken, Pharma & Behörden', au_login:'Anmelden', au_email:'E-Mail', au_email_ph:'name@apotheke.at', au_pw:'Passwort', au_register:'Neu registrieren', au_name:'Name',
     au_handle:'@Handle (öffentlicher Name im Netzwerk)', au_pw8:'Passwort (mind. 8 Zeichen)',
     au_country:'Land (bestimmt Feed-Inhalte & Sprache)', au_create:'Konto erstellen',
     au_forgot:'Passwort vergessen?',
@@ -651,7 +651,7 @@ const I18N = {
     md_remove_comment:'🗑 Remove comment', md_remove_post:'🗑 Remove post', md_ok:'✓ OK (close report)',
     cs_title:'Choose your country', cs_sub:'You’ll then see shortages, prices and the network specific to your country.', cs_change:'← Change country', logo_home:'To home',
     vc_visiting:'🌍 You’re visiting {flag} {land} — your account stays unchanged.', vc_back:'↩ Back to {flag} {land}',
-    au_login:'Log in', au_email:'Email', au_email_ph:'name@pharmacy.com', au_pw:'Password', au_register:'Sign up', au_name:'Name',
+    au_hero_title:'The network for medicine supply', au_hero_sub:'For pharmacies, doctors, purchasing, wholesale & logistics — country-specific.', au_hero_1:'📦 Spot supply shortages early — with sources', au_hero_2:'💶 Compare prices & deals, buy cheaper', au_hero_3:'🔄 Swap stock instead of letting it expire', au_hero_4:'👥 Professional network: pharmacies, pharma & authorities', au_login:'Log in', au_email:'Email', au_email_ph:'name@pharmacy.com', au_pw:'Password', au_register:'Sign up', au_name:'Name',
     au_handle:'@handle (public name in the network)', au_pw8:'Password (min. 8 characters)',
     au_country:'Country (sets feed content & language)', au_create:'Create account',
     au_forgot:'Forgot your password?',
@@ -1000,7 +1000,7 @@ const I18N = {
     md_remove_comment:'🗑 Remover comentário', md_remove_post:'🗑 Remover publicação', md_ok:'✓ OK (fechar denúncia)',
     cs_title:'Escolha o seu país', cs_sub:'Verá depois faltas, preços e a rede específicos do seu país.', cs_change:'← Mudar de país', logo_home:'Para o início',
     vc_visiting:'🌍 Está a visitar {flag} {land} — a sua conta permanece inalterada.', vc_back:'↩ Voltar para {flag} {land}',
-    au_login:'Entrar', au_email:'E-mail', au_email_ph:'nome@farmacia.pt', au_pw:'Palavra-passe', au_register:'Registar', au_name:'Nome',
+    au_hero_title:'A rede para o abastecimento de medicamentos', au_hero_sub:'Para farmácias, médicos, compras, distribuição e logística — específico do país.', au_hero_1:'📦 Detetar ruturas cedo — com fonte', au_hero_2:'💶 Comparar preços e promoções, comprar mais barato', au_hero_3:'🔄 Trocar stock em vez de o deixar expirar', au_hero_4:'👥 Rede profissional: farmácias, farmacêuticas e autoridades', au_login:'Entrar', au_email:'E-mail', au_email_ph:'nome@farmacia.pt', au_pw:'Palavra-passe', au_register:'Registar', au_name:'Nome',
     au_handle:'@handle (nome público na rede)', au_pw8:'Palavra-passe (mín. 8 caracteres)',
     au_country:'País (define conteúdo do feed & idioma)', au_create:'Criar conta',
     au_forgot:'Esqueceu-se da palavra-passe?',
@@ -1367,6 +1367,7 @@ function hideHeaderForAuth() {
   document.getElementById('whoami').classList.remove('clickable');
   stopNewsRail();
   stopQuickRail();
+  app.classList.remove('auth-mode'); // Standardbreite; authScreen setzt sie danach gezielt wieder
 }
 function currentAuthCountry() {
   const c = (localStorage.getItem('apo_country') || '').toUpperCase();
@@ -1407,6 +1408,7 @@ function authScreen() {
   setDocTitle('');
   hideHeaderForAuth();
   app.innerHTML = '';
+  app.classList.add('auth-mode'); // breitere Landing-Ansicht (Wert links, Formulare rechts)
   const ac = currentAuthCountry();
   // Gewähltes Land oben + „Land ändern" (zurück zu Schritt 1).
   app.appendChild(el(`
@@ -1415,25 +1417,40 @@ function authScreen() {
     <button class="ghost small" id="changeCountry">${esc(t('cs_change'))}</button>
   </div>`));
   app.appendChild(el(`
-  <div class="card">
-    <h1>${esc(t('au_login'))}</h1>
-    <label for="li_email">${esc(t('au_email'))}</label><input id="li_email" type="email" placeholder="${esc(t('au_email_ph'))}">
-    <label for="li_pw">${esc(t('au_pw'))}</label><input id="li_pw" type="password" placeholder="${esc(t('au_pw'))}">
-    <div style="margin-top:12px"><button id="li_go">${esc(t('au_login'))}</button></div>
-    <div style="margin-top:8px"><button class="linklike small" id="li_forgot">${esc(t('au_forgot'))}</button></div>
-    <div id="oauthBtns"></div>
-    <div class="err" id="li_err"></div>
-  </div>
-  <div class="card">
-    <h1>${esc(t('au_register'))}</h1>
-    <label for="rg_name">${esc(t('au_name'))}</label><input id="rg_name" placeholder="Dr. Anna Huber">
-    <label for="rg_handle">${esc(t('au_handle'))}</label><input id="rg_handle" placeholder="anna_huber">
-    <label for="rg_email">${esc(t('au_email'))}</label><input id="rg_email" type="email" placeholder="${esc(t('au_email_ph'))}">
-    <label for="rg_pw">${esc(t('au_pw8'))}</label><input id="rg_pw" type="password">
-    <label for="rg_country">${esc(t('au_country'))}</label><select id="rg_country"></select>
-    <label for="rg_accounttype">${esc(t('at_label'))}</label><select id="rg_accounttype"></select>
-    <div style="margin-top:12px"><button id="rg_go">${esc(t('au_create'))}</button></div>
-    <div class="err" id="rg_err"></div>
+  <div class="auth-grid">
+    <div class="card auth-hero">
+      <div class="auth-hero-brand">➕ ApoTrend</div>
+      <div class="auth-hero-title">${esc(t('au_hero_title'))}</div>
+      <div class="auth-hero-sub">${esc(t('au_hero_sub'))}</div>
+      <ul class="auth-hero-list">
+        <li>${esc(t('au_hero_1'))}</li>
+        <li>${esc(t('au_hero_2'))}</li>
+        <li>${esc(t('au_hero_3'))}</li>
+        <li>${esc(t('au_hero_4'))}</li>
+      </ul>
+    </div>
+    <div class="auth-forms">
+      <div class="card">
+        <h1>${esc(t('au_login'))}</h1>
+        <label for="li_email">${esc(t('au_email'))}</label><input id="li_email" type="email" placeholder="${esc(t('au_email_ph'))}">
+        <label for="li_pw">${esc(t('au_pw'))}</label><input id="li_pw" type="password" placeholder="${esc(t('au_pw'))}">
+        <div style="margin-top:12px"><button id="li_go">${esc(t('au_login'))}</button></div>
+        <div style="margin-top:8px"><button class="linklike small" id="li_forgot">${esc(t('au_forgot'))}</button></div>
+        <div id="oauthBtns"></div>
+        <div class="err" id="li_err"></div>
+      </div>
+      <div class="card">
+        <h1>${esc(t('au_register'))}</h1>
+        <label for="rg_name">${esc(t('au_name'))}</label><input id="rg_name" placeholder="Dr. Anna Huber">
+        <label for="rg_handle">${esc(t('au_handle'))}</label><input id="rg_handle" placeholder="anna_huber">
+        <label for="rg_email">${esc(t('au_email'))}</label><input id="rg_email" type="email" placeholder="${esc(t('au_email_ph'))}">
+        <label for="rg_pw">${esc(t('au_pw8'))}</label><input id="rg_pw" type="password">
+        <label for="rg_country">${esc(t('au_country'))}</label><select id="rg_country"></select>
+        <label for="rg_accounttype">${esc(t('at_label'))}</label><select id="rg_accounttype"></select>
+        <div style="margin-top:12px"><button id="rg_go">${esc(t('au_create'))}</button></div>
+        <div class="err" id="rg_err"></div>
+      </div>
+    </div>
   </div>`));
 
   // „Land ändern" -> zurück zur Länderauswahl (Schritt 1).
@@ -1702,6 +1719,7 @@ async function mainScreen() {
   try { myBookmarks = new Set((await api('GET','/api/bookmarks/ids')).ids); } catch { myBookmarks = new Set(); }
 
   app.innerHTML = '';
+  app.classList.remove('auth-mode'); // Haupt-App in Standardbreite
   app.appendChild(el(`
     <div class="card" style="padding:10px 12px">
       <div class="row"><input id="sq" data-i18n-ph="search_ph" data-i18n-aria="search_go" placeholder="🔎 Suchen: Wirkstoff, Kolleg:in (@handle), Beitrag, Engpass, Preis…" aria-label="Suche"><button class="small" id="sgo" data-i18n="search_go">Suchen</button></div>

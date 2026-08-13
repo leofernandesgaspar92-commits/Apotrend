@@ -42,6 +42,17 @@
   @media (max-width:460px){ .country-grid { grid-template-columns:1fr; } }
   .country-pick:hover { border-color:var(--green); background:transparent; }
   .country-pick .flag { font-size:1.5em; line-height:1; }
+  /* Start-/Anmelde-Landing: breiter, klar in Ebenen — links der Wert (was ist ApoTrend),
+     rechts die Formulare. Neue Besucher:innen verstehen sofort, worum es geht. */
+  #app.auth-mode { max-width:920px; }
+  .auth-grid { display:grid; grid-template-columns:1fr; gap:16px; align-items:start; }
+  @media (min-width:820px){ .auth-grid { grid-template-columns:1.05fr .95fr; } }
+  .card.auth-hero { background:linear-gradient(150deg, var(--green), var(--green-d)); color:#fff; border-color:transparent; box-shadow:0 6px 20px rgba(11,127,40,.25); }
+  .auth-hero-brand { font-weight:800; letter-spacing:.5px; font-size:1.15em; opacity:.95; }
+  .auth-hero-title { font-size:1.5em; font-weight:800; line-height:1.22; margin:10px 0 6px; letter-spacing:-0.01em; }
+  .auth-hero-sub { opacity:.92; font-size:1.02em; }
+  .auth-hero-list { list-style:none; padding:0; margin:16px 0 0; display:grid; gap:10px; }
+  .auth-hero-list li { font-size:1.02em; font-weight:600; line-height:1.4; }
   header .sp { flex:1; }
   header button { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.5); border-radius:var(--radius-sm); min-height:42px; min-width:42px; }
   /* Kopf-Aktionen: helles Aufleuchten beim Hover (statt Dunkelgrün der Basis-Regel,
