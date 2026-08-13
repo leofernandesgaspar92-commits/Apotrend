@@ -4436,7 +4436,7 @@ function openBookVideocall(providerHandle, providerName) {
   const today = new Date().toISOString().slice(0,10);
   const card = el(`<div class="card">
     <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button></div>
-    <h1 style="margin:8px 0 2px">📹 ${esc(t('vc_book'))}</h1>
+    <h1 style="margin:8px 0 2px">${esc(t('vc_book'))}</h1>
     <div class="muted" style="margin-bottom:10px">${esc(ti('vc_book_sub',{name: providerName||('@'+providerHandle)}))}</div>
     <label>${esc(t('vc_date'))}</label>
     <input type="date" data-vdate min="${today}" value="${today}">
@@ -4468,7 +4468,7 @@ async function openAppointments(flash) {
   try { d = await api('GET','/api/appointments'); } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   feed.innerHTML = '';
   const head = el(`<div class="card"><div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span></div>
-    <h1 style="margin:8px 0 2px">📹 ${esc(t('vc_my'))}</h1>
+    <h1 style="margin:8px 0 2px">${esc(t('vc_my'))}</h1>
     <div class="muted">${esc(d.premium?t('vc_my_sub_premium'):t('vc_my_sub_free'))}</div></div>`);
   head.querySelector('[data-back]').onclick = () => me && openProfile(me.handle);
   feed.appendChild(head);
@@ -4573,7 +4573,7 @@ async function openTeamHub() {
   feed.innerHTML = '';
   const head = el(`<div class="card">
     <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button></div>
-    <h1 style="margin:8px 0 2px">👥 ${esc(t('th_nav'))}</h1>
+    <h1 style="margin:8px 0 2px">${esc(t('th_nav'))}</h1>
     <div class="muted">${mem?esc(mem.org_name||''):''}${mem&&mem.role?' · '+esc(roleLabel(mem.role)):''}</div>
   </div>`);
   head.querySelector('[data-back]').onclick = () => goTab('overview');
