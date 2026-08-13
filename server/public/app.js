@@ -2699,7 +2699,7 @@ function renderProfileNudge(feed) {
 // News-Karten inline in „Für dich" — nur auf schmalen Screens (Handy), wo die feste
 // Seitenleiste nicht sichtbar ist. Gleiche 𝕏-Karten-Optik wie der Livestream links.
 async function renderNewsInline(feed) {
-  if (window.matchMedia('(min-width:1440px)').matches) return; // breit: Seitenleiste zeigt News
+  if (window.matchMedia('(min-width:1300px)').matches) return; // breit: Seitenleiste zeigt News
   let d;
   try { d = await api('GET', '/api/news?country=' + viewCountry()); } catch { return; }
   const top = ((d && d.posts) || []).slice(0, 3);
