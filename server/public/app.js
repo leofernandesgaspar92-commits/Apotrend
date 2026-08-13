@@ -1904,7 +1904,11 @@ function showWelcome(reopened) {
   ov.querySelector('#welcomeClose').onclick = close;
   ov.onclick = (e) => { if (e.target === ov) close(); };
   document.addEventListener('keydown', onKey);       // Escape schließt (Barrierefreiheit)
-  ov.querySelector('#welcomeClose').focus();          // Fokus in den Dialog setzen
+  // Fokus in den Dialog setzen — aber OHNE zu scrollen: der „Los geht's"-Button steht
+  // ganz unten; ein normaler focus() würde den langen Dialog nach unten scrollen und den
+  // Titel/ersten Schritt oben abschneiden. preventScroll hält den Anfang sichtbar.
+  ov.querySelector('#welcomeClose').focus({ preventScroll: true });
+  ov.querySelector('.card').scrollTop = 0;           // sicher am Anfang starten (Titel zuerst)
 }
 
 function goTab(name) {
