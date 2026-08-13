@@ -819,7 +819,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
         let post_id = null;
         if (n.ref_type === 'post') post_id = n.ref_id;
         else if (n.ref_type === 'comment') { const c = social.getComment(n.ref_id); post_id = c ? c.post_id : null; }
-        return { ...n, actor: actor ? { handle: actor.handle, display_name: actor.display_name } : null, post_id };
+        return { ...n, actor: actor ? { handle: actor.handle, display_name: actor.display_name, avatar_url: actor.avatar_url || null } : null, post_id };
       });
     },
     unreadCount(userId) { requireUser(userId); return social.unreadNotificationCount(userId); },

@@ -7065,9 +7065,12 @@ async function showNotifications() {
   shown.forEach(n => {
     const who = n.actor ? n.actor.display_name : t('notif_someone');
     const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert';
+    // Profilbild der handelnden Person (wer) + Typ-Emoji (was) — auf einen Blick erkennbar,
+    // konsistent zu Feed/Verzeichnis/Suche. Ohne Person (System-Meldung) nur das Emoji.
     const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:var(--ok-bg)'}">
-      <div class="row" style="align-items:baseline">
-        <span>${icons[n.type]||'🔔'}</span>
+      <div class="row" style="align-items:center">
+        ${n.actor ? avatarHtml(n.actor, 34, false) : ''}
+        <span${n.actor?' style="font-size:16px"':''}>${icons[n.type]||'🔔'}</span>
         <span style="margin-left:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' „'+esc(n.label)+'"':''}${n.read?'':'</b>'}</span>
         <span class="sp" style="flex:1"></span>
         <span class="muted" style="font-size:12px">${relTime(n.created_at)}</span>
