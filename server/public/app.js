@@ -1712,7 +1712,7 @@ async function mainScreen() {
   document.getElementById('btnDm').onclick = showDmInbox;
   const btnCart = document.getElementById('btnCart');
   btnCart.classList.remove('hidden');
-  btnCart.onclick = openCart;
+  btnCart.onclick = () => openCart(); // ohne Argument: sonst landet das Klick-Event als „flash"-Text in der Liste
   refreshNotifCount();
   refreshDmCount();
   refreshCartCount();
@@ -4033,7 +4033,7 @@ async function loadRabatte() {
         <button class="ghost small" data-rcsv title="${esc(t('rb_csv_t'))}">⬇️ CSV</button>
       </div></div>`);
     feed.appendChild(bar);
-    bar.querySelector('[data-cart]').onclick = openCart;
+    bar.querySelector('[data-cart]').onclick = () => openCart();
     const listBox = el('<div data-rlist></div>');
     feed.appendChild(listBox);
     let shown = [];
@@ -4944,7 +4944,7 @@ async function openPromotions(flash) {
   if (promoState.cat) qs.push('kategorie=' + encodeURIComponent(promoState.cat));
   let d;
   try { d = await api('GET', (promoState.mine ? '/api/promotions/mine' : '/api/promotions') + (qs.length?('?'+qs.join('&')):'')); }
-  catch(e){ feed.innerHTML=''; feed.appendChild(errorState(e.message, openPromotions)); return; }
+  catch(e){ feed.innerHTML=''; feed.appendChild(errorState(e.message, () => openPromotions())); return; }
   feed.innerHTML = '';
   const head = el(`<div class="card">
     <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span>${d.premium?`<button class="small" data-new>${esc(t('wb_new'))}</button>`:''}</div>
@@ -5051,7 +5051,7 @@ async function openPromotionDetail(id) {
   feed.innerHTML = '<div class="loading">…</div>';
   let d;
   try { d = (await api('GET', `/api/promotions/${id}`)).promotion; }
-  catch(e){ feed.innerHTML=''; feed.appendChild(errorState(e.message, openPromotions)); return; }
+  catch(e){ feed.innerHTML=''; feed.appendChild(errorState(e.message, () => openPromotions())); return; }
   setDocTitle(d.titel);
   feed.innerHTML = '';
   const head = el(`<div class="card">
@@ -5117,7 +5117,7 @@ async function openLive(flash) {
   feed.innerHTML = '<div class="loading">…</div>';
   let d;
   try { d = await api('GET', liveState.mine ? '/api/live/mine' : '/api/live'); }
-  catch(e){ feed.innerHTML=''; feed.appendChild(errorState(e.message, openLive)); return; }
+  catch(e){ feed.innerHTML=''; feed.appendChild(errorState(e.message, () => openLive())); return; }
   feed.innerHTML = '';
   const head = el(`<div class="card">
     <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span>${d.premium?`<button class="small" data-new>${esc(t('lv_new'))}</button>`:''}</div>
@@ -5201,7 +5201,7 @@ async function openOrders(flash) {
   setDocTitle(t('ord_title'));
   feed.innerHTML = '<div class="loading">…</div>';
   let d;
-  try { d = await api('GET','/api/orders'); } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, openCart))); return; }
+  try { d = await api('GET','/api/orders'); } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, () => openCart()))); return; }
   feed.innerHTML = '';
   const head = el(`<div class="card"><div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span>${d.orders.length?`<button class="ghost small" data-allcsv title="${esc(t('os_csv_all_t'))}">⬇️ ${esc(t('os_csv_all'))}</button>`:''}</div>
     <h1 style="margin:8px 0 0">${esc(t('ord_title'))}</h1></div>`);
@@ -5220,7 +5220,7 @@ async function openOrders(flash) {
     }
     downloadCsv('apotrend-bestellungen', header, rows);
   }; }
-  head.querySelector('[data-back]').onclick = openCart;
+  head.querySelector('[data-back]').onclick = () => openCart();
   feed.appendChild(head);
   if (flash) feed.appendChild(el(`<div class="card ok-box" style="padding:10px 14px;font-weight:600">✅ ${esc(flash)}</div>`));
   if (!d.orders.length) { feed.appendChild(emptyState({ icon:'📋', title:t('ord_empty_t'), text:t('ord_empty_s') })); return; }
@@ -6138,7 +6138,7 @@ async function openProfile(handle) {
       catch(e){ alert(e.message); }
     };
     const apptsBtn = head.querySelector('[data-appts]');
-    if (apptsBtn) apptsBtn.onclick = openAppointments;
+    if (apptsBtn) apptsBtn.onclick = () => openAppointments();
     const bookBtn = head.querySelector('[data-bookvc]');
     if (bookBtn) bookBtn.onclick = () => openBookVideocall(p.handle, p.display_name);
     feed.appendChild(head);
