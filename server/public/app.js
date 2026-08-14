@@ -318,7 +318,7 @@ const I18N = {
     ac_rc_title:'Wiederherstellungscodes', ac_rc_remaining:'Noch {n} von 8 Codes gültig.', ac_rc_remaining_one:'Noch 1 von 8 Codes gültig.', ac_rc_remaining_zero:'Keine gültigen Codes mehr — bitte neue erzeugen.',
     ac_rc_regen:'Neue Codes erzeugen', ac_rc_warn:'Achtung: dadurch werden alle bisherigen Codes ungültig.',
     ac_premium:'⭐ Premium freischalten',
-    pr_title:'⭐ ApoTrend Premium', pr_intro:'Schalte Premium frei — einfach direkt per Krypto an uns zahlen.', pr_have:'Du hast Premium ✓',
+    pr_title:'⭐ ApoTrend Premium', pr_intro:'Schalte Premium frei — einfach direkt per Krypto an uns zahlen.', pr_benefits_lead:'Das bekommst du mit Premium:', pr_b1:'📣 Eigene Angebote bewerben — sichtbar im Feed und Schnellzugriff', pr_b2:'📹 Videosprechstunden anbieten — für Kolleg:innen buchbar', pr_b3:'🔴 Live-Sessions hosten — Fachrunden und Produktvorstellungen', pr_b4:'📝 Private Notizen zur Beobachtungsliste', pr_have:'Du hast Premium ✓',
     pr_pay_crypto:'Mit Krypto zahlen', pr_network:'Netzwerk: {net}', pr_amount:'≈ {n} {sym}', pr_amount_na:'Betrag beim Kurs-Abruf – bitte {eur} € senden',
     pr_open_wallet:'📲 In Wallet-App öffnen', pr_copy_addr:'📋 Adresse kopieren', pr_copied:'Kopiert ✓',
     pr_paid_q:'Schon gezahlt? Transaktions-ID eingeben:', pr_tx_ph:'Transaktions-ID / Hash', pr_report:'Zahlung melden',
@@ -667,7 +667,7 @@ const I18N = {
     ac_rc_title:'Recovery codes', ac_rc_remaining:'{n} of 8 codes still valid.', ac_rc_remaining_one:'1 of 8 codes still valid.', ac_rc_remaining_zero:'No valid codes left — please generate new ones.',
     ac_rc_regen:'Generate new codes', ac_rc_warn:'Note: this invalidates all previous codes.',
     ac_premium:'⭐ Unlock Premium',
-    pr_title:'⭐ ApoTrend Premium', pr_intro:'Unlock Premium — simply pay us directly with crypto.', pr_have:'You have Premium ✓',
+    pr_title:'⭐ ApoTrend Premium', pr_intro:'Unlock Premium — simply pay us directly with crypto.', pr_benefits_lead:'What you get with Premium:', pr_b1:'📣 Advertise your own listings — shown in feed and quick access', pr_b2:'📹 Offer video consultations — bookable by colleagues', pr_b3:'🔴 Host live sessions — expert rounds and product demos', pr_b4:'📝 Private notes on your watchlist', pr_have:'You have Premium ✓',
     pr_pay_crypto:'Pay with crypto', pr_network:'Network: {net}', pr_amount:'≈ {n} {sym}', pr_amount_na:'Amount at fetch time – please send {eur} €',
     pr_open_wallet:'📲 Open in wallet app', pr_copy_addr:'📋 Copy address', pr_copied:'Copied ✓',
     pr_paid_q:'Already paid? Enter the transaction ID:', pr_tx_ph:'Transaction ID / hash', pr_report:'Report payment',
@@ -1016,7 +1016,7 @@ const I18N = {
     ac_rc_title:'Códigos de recuperação', ac_rc_remaining:'{n} de 8 códigos ainda válidos.', ac_rc_remaining_one:'1 de 8 códigos ainda válido.', ac_rc_remaining_zero:'Sem códigos válidos — gere novos, por favor.',
     ac_rc_regen:'Gerar novos códigos', ac_rc_warn:'Atenção: isto invalida todos os códigos anteriores.',
     ac_premium:'⭐ Desbloquear Premium',
-    pr_title:'⭐ ApoTrend Premium', pr_intro:'Desbloqueie o Premium — pague-nos diretamente com cripto.', pr_have:'Tem Premium ✓',
+    pr_title:'⭐ ApoTrend Premium', pr_intro:'Desbloqueie o Premium — pague-nos diretamente com cripto.', pr_benefits_lead:'O que recebe com o Premium:', pr_b1:'📣 Divulgar os seus anúncios — visíveis no feed e acesso rápido', pr_b2:'📹 Oferecer teleconsultas — marcáveis por colegas', pr_b3:'🔴 Organizar sessões ao vivo — sessões e demonstrações', pr_b4:'📝 Notas privadas na lista de observação', pr_have:'Tem Premium ✓',
     pr_pay_crypto:'Pagar com cripto', pr_network:'Rede: {net}', pr_amount:'≈ {n} {sym}', pr_amount_na:'Valor ao obter a cotação – envie {eur} €',
     pr_open_wallet:'📲 Abrir na carteira', pr_copy_addr:'📋 Copiar endereço', pr_copied:'Copiado ✓',
     pr_paid_q:'Já pagou? Introduza o ID da transação:', pr_tx_ph:'ID / hash da transação', pr_report:'Comunicar pagamento',
@@ -5443,6 +5443,14 @@ async function openPremium() {
     if (mine.premium) { body.innerHTML = `<div class="ok-box" style="padding:10px 12px">${esc(t('pr_have'))}</div>`; return; }
     const opt = await api('GET', '/api/payments/crypto?product=premium_monthly');
     body.innerHTML = '';
+    // Nutzen zuerst zeigen (Warum Premium?) — sonst zahlt niemand. Klar, scannbar, ehrlich
+    // (nur tatsächlich freigeschaltete Funktionen).
+    body.appendChild(el(`<div class="ok-box" style="padding:12px 14px;margin-bottom:12px">
+      <b>${esc(t('pr_benefits_lead'))}</b>
+      <ul style="margin:8px 0 0;padding-left:18px;display:grid;gap:6px">
+        <li>${esc(t('pr_b1'))}</li><li>${esc(t('pr_b2'))}</li><li>${esc(t('pr_b3'))}</li><li>${esc(t('pr_b4'))}</li>
+      </ul>
+    </div>`));
     body.appendChild(el(`<div style="font-weight:800;font-size:1.15em;margin-bottom:8px">${esc(opt.product_name)} — <span style="color:var(--green)">${fmtMoney(opt.amount_eur)} €</span></div>`));
     if (!opt.coins.length) { body.appendChild(el(`<div class="muted">${esc(t('pr_none'))}</div>`)); }
     opt.coins.forEach(c => {
