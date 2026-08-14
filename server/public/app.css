@@ -328,9 +328,10 @@
   /* Klartext-Beschriftung der Header-Aktionen (Zielgruppe: nicht-technisch). Auf
      schmalen Screens Icon-only, damit die Kopfzeile nicht umbricht. */
   .hlabel { margin-left:6px; font-size:0.84em; font-weight:600; }
-  /* Große Schrift: Kopf-Beschriftungen ausblenden (Icon-only, Tooltip/aria-label bleiben) —
-     sonst passt die Kopfzeile nicht mehr in eine Reihe und die Seite scrollt horizontal. */
-  body[data-fontscale="1"] .hlabel, body[data-fontscale="2"] .hlabel { display:none; }
+  /* Große Schrift: Kopfzeile darf umbrechen und BEHÄLT die Beschriftungen — wer die Schrift
+     vergrößert, braucht gerade die Klartext-Labels (besser als Icon-only). Statt Querscroll
+     wird die Zeile mehrzeilig. flex-wrap greift hier nur bei großer Schrift. */
+  body[data-fontscale="1"] header, body[data-fontscale="2"] header { flex-wrap:wrap; }
   /* Kopf-Beschriftungen nur zeigen, wenn die volle Reihe sicher passt (≥~1180px).
      Darunter Icon-only (mit aria-label/Tooltip) — sonst ragte die Reihe über die Seite
      hinaus (Querscroll). */
