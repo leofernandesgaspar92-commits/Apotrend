@@ -120,12 +120,30 @@ async function main() {
     await ctx.close();
   }
 
+  // Große Schrift (a11y-Umschalter Stufe „sehr groß" = 22px) darf das Layout nicht
+  // sprengen. Prüft Querscroll auf Handy (390) und Desktop (1280) — genau die Klasse,
+  // die einmal Kopf-Beschriftungen & Reiter-Raster überlaufen ließ. Der Standard-Check
+  // testet nur 16px und übersieht das.
+  for (const w of [390, 1280]) {
+    const ctx = await browser.newContext({ viewport: { width: w, height: 900 }, colorScheme: 'light' });
+    const page = await ctx.newPage();
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); localStorage.setItem('apo_fontscale', '2'); }, token);
+    await page.goto(BASE, { waitUntil: 'networkidle' });
+    for (const [name, label] of TABS) {
+      await page.getByText(label, { exact: false }).first().click().catch(() => {});
+      await page.waitForTimeout(200);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      if (overflow) findings.push(`Querscroll: ${name} [${w}px · große Schrift]`);
+    }
+    await ctx.close();
+  }
+
   await browser.close();
   stopServer();
 
-  console.log('── ApoTrend Loop · GATHER (Browser) · 390 + 768/1024/1280/1440 ──');
+  console.log('── ApoTrend Loop · GATHER (Browser) · 390 + 768/1024/1280/1440 + große Schrift ──');
   if (findings.length === 0) {
-    console.log('✓ Kein Querscroll (Mobil + Tablet/Laptop-Breiten), keine JS-Fehler, keine a11y-Lücken auf 8 Reitern (hell + dunkel).');
+    console.log('✓ Kein Querscroll (Mobil + Tablet/Laptop-Breiten + große Schrift), keine JS-Fehler, keine a11y-Lücken auf 8 Reitern (hell + dunkel).');
   } else {
     console.log(`⚠️ ${findings.length} Befund(e):`);
     findings.forEach((f) => console.log('  - ' + f));
