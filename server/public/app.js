@@ -2523,8 +2523,8 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
   // dieser Liste (private Notizen + druckbarer Aushang). Kein Sperren von Kern-Funktionen.
   if (!premium) {
     const hint = el(`<div class="row" style="margin-top:8px;gap:8px;align-items:center;font-size:13px">
-      <span class="muted" style="flex:1">${esc(t('wl_premium_hint'))}</span>
-      <button class="linklike small" data-upsell>${esc(t('wl_premium_cta'))}</button>
+      <span class="muted" style="flex:1;min-width:140px">${esc(t('wl_premium_hint'))}</span>
+      <button class="ghost small" data-upsell>${esc(t('wl_premium_cta'))}</button>
     </div>`);
     hint.querySelector('[data-upsell]').onclick = () => { if (typeof openPremium === 'function') openPremium(); };
     card.appendChild(hint);
@@ -4969,7 +4969,7 @@ async function openPromotions(flash) {
       <button class="small sortbtn${promoState.cat?'':' active'}" data-cat="">${esc(t('wb_cat_all'))}</button>
       ${PROMO_CATS.map(c=>`<button class="small sortbtn${promoState.cat===c?' active':''}" data-cat="${c}">${esc(promoCatLabel(c))}</button>`).join('')}
     </div>
-    ${d.premium?'':`<div class="muted" style="font-size:12px;margin-top:10px">${esc(t('wb_premium_only'))} <span class="linklike" data-gopremium>${esc(t('wb_go_premium'))}</span></div>`}
+    ${d.premium?'':`<div class="row" style="align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap"><span style="font-size:13px">⭐ ${esc(t('wb_premium_only'))}</span><button class="ghost small" data-gopremium>${esc(t('wb_go_premium'))}</button></div>`}
   </div>`);
   head.querySelector('[data-back]').onclick = () => goTab('overview');
   const nb = head.querySelector('[data-new]'); if (nb) nb.onclick = () => openPromoForm(null);
@@ -5138,7 +5138,7 @@ async function openLive(flash) {
       <button class="small sortbtn${liveState.mine?'':' active'}" data-scope="all">${esc(t('lv_all'))}</button>
       <button class="small sortbtn${liveState.mine?' active':''}" data-scope="mine">${esc(t('lv_mine'))}</button>
     </div>
-    ${d.premium?'':`<div class="muted" style="font-size:12px;margin-top:10px">${esc(t('lv_premium_only'))} <span class="linklike" data-gopremium>${esc(t('lv_go_premium'))}</span></div>`}
+    ${d.premium?'':`<div class="row" style="align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap"><span style="font-size:13px">⭐ ${esc(t('lv_premium_only'))}</span><button class="ghost small" data-gopremium>${esc(t('lv_go_premium'))}</button></div>`}
   </div>`);
   head.querySelector('[data-back]').onclick = () => goTab('overview');
   const nb = head.querySelector('[data-new]'); if (nb) nb.onclick = () => openLiveForm();
