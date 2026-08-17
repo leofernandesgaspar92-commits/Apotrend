@@ -350,6 +350,7 @@ const I18N = {
     wk_amr_forum:'💬 Fachdiskussion', wk_amr_pinfo:'🧫 Patienten-Infokarten',
     wk_short_title:'📦 Engpass-Status', wk_send_community:'Als Community-Meldung senden',
     wk_community_note:'👥 Kennzeichnung als Community-Meldung (nicht offiziell verifiziert).', wk_no_short:'Aktuell keine Engpass-Meldung.',
+    wk_since:'seit {date}', wk_hist:'Verlauf ({n})', wk_hist_src:'Quelle',
     wk_offers_t:'🔄 Wer bietet an', wk_offers_e:'Niemand bietet diesen Wirkstoff gerade an.', wk_offer_cta:'➕ Angebot einstellen',
     wk_seeks_t:'🔎 Wer sucht', wk_seeks_e:'Keine offenen Gesuche.',
     wk_prices_t:'💶 Preisvergleich', wk_prices_e:'Keine Preisdaten zu diesem Wirkstoff.',
@@ -700,6 +701,7 @@ const I18N = {
     wk_amr_forum:'💬 Expert discussion', wk_amr_pinfo:'🧫 Patient info cards',
     wk_short_title:'📦 Shortage status', wk_send_community:'Send as community report',
     wk_community_note:'👥 Labelled as a community report (not officially verified).', wk_no_short:'No shortage report right now.',
+    wk_since:'since {date}', wk_hist:'History ({n})', wk_hist_src:'Source',
     wk_offers_t:'🔄 Who offers', wk_offers_e:'Nobody is offering this substance right now.', wk_offer_cta:'➕ Post an offer',
     wk_seeks_t:'🔎 Who seeks', wk_seeks_e:'No open requests.',
     wk_prices_t:'💶 Price comparison', wk_prices_e:'No price data for this substance.',
@@ -1050,6 +1052,7 @@ const I18N = {
     wk_amr_forum:'💬 Discussão técnica', wk_amr_pinfo:'🧫 Cartões informativos para doentes',
     wk_short_title:'📦 Estado de falta', wk_send_community:'Enviar como aviso da comunidade',
     wk_community_note:'👥 Identificado como aviso da comunidade (não verificado oficialmente).', wk_no_short:'Sem aviso de falta de momento.',
+    wk_since:'desde {date}', wk_hist:'Histórico ({n})', wk_hist_src:'Fonte',
     wk_offers_t:'🔄 Quem oferece', wk_offers_e:'Ninguém está a oferecer esta substância de momento.', wk_offer_cta:'➕ Publicar oferta',
     wk_seeks_t:'🔎 Quem procura', wk_seeks_e:'Sem procuras abertas.',
     wk_prices_t:'💶 Comparação de preços', wk_prices_e:'Sem dados de preço para esta substância.',
@@ -6589,7 +6592,7 @@ async function openWirkstoff(name) {
     <h1 style="margin:8px 0 2px">💊 ${esc(d.wirkstoff)}</h1>
     <div class="muted">${esc(t('wk_sub'))}</div>
     ${d.also_watching >= 1 ? `<div class="muted" style="font-size:13px;margin-top:4px">${esc(d.also_watching === 1 ? t('wk_also_1') : ti('wk_also_n', { n: d.also_watching }))}</div>` : ''}
-    <div class="row" style="margin-top:10px;gap:8px"><button class="${d.watched?'':'ghost '}small" data-watch aria-pressed="${!!d.watched}">${d.watched?esc(t('sc_watched')):esc(t('sc_watch'))}</button><button class="ghost small" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button><button class="ghost small" data-wkprint title="${esc(t('wk_print_t'))}">🖨️ ${esc(t('pr_print_btn'))}</button><button class="ghost small" data-wktask title="${esc(t('tk_as_task'))}">${esc(t('tk_as_task'))}</button></div></div>`);
+    <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap"><button class="${d.watched?'':'ghost '}small" data-watch aria-pressed="${!!d.watched}">${d.watched?esc(t('sc_watched')):esc(t('sc_watch'))}</button><button class="ghost small" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button><button class="ghost small" data-wkprint title="${esc(t('wk_print_t'))}">🖨️ ${esc(t('pr_print_btn'))}</button><button class="ghost small" data-wktask title="${esc(t('tk_as_task'))}">${esc(t('tk_as_task'))}</button></div></div>`);
   head.querySelector('[data-wkprint]').onclick = () => printWirkstoff(d);
   head.querySelector('[data-wktask]').onclick = () => { taskPrefill = { title: ti('tk_from_shortage', { w: d.wirkstoff }) }; openTasks(); };
   head.querySelector('[data-back]').onclick = () => goTab('overview');
@@ -6729,7 +6732,26 @@ async function openWirkstoff(name) {
   if (!d.shortages.length) sbody.appendChild(el(`<div class="muted" style="font-size:14px">${esc(t('wk_no_short'))}</div>`));
   else d.shortages.forEach(s => {
     const [lab,col] = statusShort(s.status);
-    sbody.appendChild(el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:12px">· ${esc(provLabel(s.provenance))}${s.grund?' · '+esc(grundLabel(s.grund)):''}</span></div>`));
+    // Erstmeldedatum aus dem Statusverlauf (Fallback: gemeldet_am) — zeigt „seit wann".
+    const hist = Array.isArray(s.history) ? s.history.filter(h => h && h.am) : [];
+    const firstAm = (hist[0] && hist[0].am) || s.gemeldet_am || null;
+    const row = el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:12px">· ${esc(provLabel(s.provenance))}${s.grund?' · '+esc(grundLabel(s.grund)):''}${firstAm?' · '+esc(ti('wk_since',{date:fmtDateDe(firstAm)})):''}</span></div>`);
+    // Statusverlauf (nur ab 2 dokumentierten Schritten): macht sichtbar, wie lange und
+    // wie stabil der Engpass ist — hilft bei der Entscheidung, ob aktiv beschafft werden
+    // muss. Standardmäßig eingeklappt, damit die Detailseite kompakt bleibt.
+    if (hist.length >= 2) {
+      const toggle = el(`<button class="linklike small" aria-expanded="false" style="margin-top:4px;display:inline-block">📈 ${esc(ti('wk_hist',{n:hist.length}))}</button>`);
+      const tl = el(`<div class="hidden" style="margin-top:6px;padding-left:8px;border-left:2px solid var(--line)"></div>`);
+      hist.forEach(h => {
+        const [hl,hc] = statusShort(h.status);
+        const q = h.quelle && /^https?:\/\//i.test(h.quelle)
+          ? ` · <a href="${esc(h.quelle)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(t('wk_hist_src'))}</a>` : '';
+        tl.appendChild(el(`<div style="display:flex;gap:8px;font-size:13px;padding:2px 0;flex-wrap:wrap"><span class="muted" style="min-width:84px">${esc(fmtDateDe(h.am))}</span><span style="color:${hc};font-weight:700">${hl}</span><span class="muted">${q}</span></div>`));
+      });
+      toggle.onclick = () => { const open = !tl.classList.toggle('hidden'); toggle.setAttribute('aria-expanded', String(open)); };
+      row.appendChild(toggle); row.appendChild(tl);
+    }
+    sbody.appendChild(row);
   });
   const sform = scard.querySelector('[data-sform]');
   scard.querySelector('[data-report]').onclick = () => sform.classList.toggle('hidden');

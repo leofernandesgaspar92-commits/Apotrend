@@ -138,12 +138,26 @@ async function main() {
     await ctx.close();
   }
 
+  // Wirkstoff-Detailseite (Hub) separat prüfen — sie ist KEIN Reiter und entging daher
+  // dem Tab-Sweep. Genau hier versteckte sich ein Kopf-Button-Überlauf bei 390px (die
+  // Aktions-Buttons brachen nicht um). Seed-Wirkstoff „Amoxicillin" ist immer vorhanden.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, colorScheme: 'light' });
+    const page = await ctx.newPage();
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
+    await page.goto(BASE + '/?wirkstoff=' + encodeURIComponent('Amoxicillin'), { waitUntil: 'networkidle' });
+    await page.waitForTimeout(400);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+    if (overflow) findings.push('Querscroll: Wirkstoff-Detail [390px]');
+    await ctx.close();
+  }
+
   await browser.close();
   stopServer();
 
-  console.log('── ApoTrend Loop · GATHER (Browser) · 390 + 768/1024/1280/1440 + große Schrift ──');
+  console.log('── ApoTrend Loop · GATHER (Browser) · 390 + 768/1024/1280/1440 + große Schrift + Wirkstoff-Detail ──');
   if (findings.length === 0) {
-    console.log('✓ Kein Querscroll (Mobil + Tablet/Laptop-Breiten + große Schrift), keine JS-Fehler, keine a11y-Lücken auf 8 Reitern (hell + dunkel).');
+    console.log('✓ Kein Querscroll (Mobil + Tablet/Laptop-Breiten + große Schrift + Detailseite), keine JS-Fehler, keine a11y-Lücken auf 8 Reitern (hell + dunkel).');
   } else {
     console.log(`⚠️ ${findings.length} Befund(e):`);
     findings.forEach((f) => console.log('  - ' + f));
