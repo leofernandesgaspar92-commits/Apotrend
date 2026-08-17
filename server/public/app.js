@@ -60,6 +60,7 @@ const I18N = {
     wl_csv_title:'Beobachtungsliste mit Status als CSV (Excel) — z.B. für den Handverkaufstisch',
     wl_print:'Aushang', wl_print_title:'Beobachtungsliste — Engpass-Status', wl_print_asof:'Stand: {date}', wl_print_count:'{n} Wirkstoffe', wl_print_count_sg:'1 Wirkstoff',
     wl_print_col_sub:'Wirkstoff / Präparat', wl_print_col_status:'Aktueller Status', wl_print_col_note:'Notiz', wl_print_foot:'Erstellt mit Apotrend · Angaben ohne Gewähr, im Zweifel Quelle prüfen.',
+    wr_title:'📋 Wochenrückblick', wr_sub:'Was sich bei Ihren beobachteten Wirkstoffen in den letzten 7 Tagen geändert hat.', wr_neu:'🆕 Neu gemeldet', wr_wieder:'✅ Wieder verfügbar', wr_status:'🔄 Status geändert', wr_ago_one:'vor 1 Tag', wr_ago_many:'vor {n} Tagen', wr_today:'heute', wr_print:'Aushang', wr_print_title:'Engpass-Wochenrückblick', wr_print_asof:'Stand: {date}', wr_print_foot:'Erstellt mit Apotrend · Zusammenfassung der letzten 7 Tage, Angaben ohne Gewähr — im Zweifel Quelle prüfen.',
     st_krit:'Kritischer Engpass', st_eing:'Eingeschränkt lieferbar', st_verf:'Wieder verfügbar',
     st_none:'Aktuell keine Meldung',
     st_krit_short:'🔴 Kritisch', st_eing_short:'🟠 Eingeschränkt', st_verf_short:'🟢 Verfügbar',
@@ -409,6 +410,7 @@ const I18N = {
     wl_csv_title:'Watchlist with status as CSV (Excel) — e.g. for the counter',
     wl_print:'Notice', wl_print_title:'Watchlist — shortage status', wl_print_asof:'As of: {date}', wl_print_count:'{n} substances', wl_print_count_sg:'1 substance',
     wl_print_col_sub:'Substance / product', wl_print_col_status:'Current status', wl_print_col_note:'Note', wl_print_foot:'Created with Apotrend · No guarantee, check the source if in doubt.',
+    wr_title:'📋 Weekly review', wr_sub:'What changed for your watched substances in the last 7 days.', wr_neu:'🆕 Newly reported', wr_wieder:'✅ Available again', wr_status:'🔄 Status changed', wr_ago_one:'1 day ago', wr_ago_many:'{n} days ago', wr_today:'today', wr_print:'Notice', wr_print_title:'Shortage weekly review', wr_print_asof:'As of: {date}', wr_print_foot:'Created with Apotrend · Summary of the last 7 days, no guarantee — check the source if in doubt.',
     st_krit:'Critical shortage', st_eing:'Limited availability', st_verf:'Available again',
     st_none:'No current report',
     st_krit_short:'🔴 Critical', st_eing_short:'🟠 Limited', st_verf_short:'🟢 Available',
@@ -758,6 +760,7 @@ const I18N = {
     wl_csv_title:'Lista de vigilância com estado em CSV (Excel) — ex. para o balcão',
     wl_print:'Cartaz', wl_print_title:'Lista de vigilância — estado de rutura', wl_print_asof:'Em: {date}', wl_print_count:'{n} substâncias', wl_print_count_sg:'1 substância',
     wl_print_col_sub:'Substância / produto', wl_print_col_status:'Estado atual', wl_print_col_note:'Nota', wl_print_foot:'Criado com Apotrend · Sem garantia, verifique a fonte em caso de dúvida.',
+    wr_title:'📋 Resumo da semana', wr_sub:'O que mudou nas suas substâncias vigiadas nos últimos 7 dias.', wr_neu:'🆕 Nova falta', wr_wieder:'✅ Disponível novamente', wr_status:'🔄 Estado alterado', wr_ago_one:'há 1 dia', wr_ago_many:'há {n} dias', wr_today:'hoje', wr_print:'Cartaz', wr_print_title:'Resumo semanal de faltas', wr_print_asof:'Em: {date}', wr_print_foot:'Criado com Apotrend · Resumo dos últimos 7 dias, sem garantia — verifique a fonte em caso de dúvida.',
     st_krit:'Falta crítica', st_eing:'Disponibilidade limitada', st_verf:'Disponível novamente',
     st_none:'Sem informação atual',
     st_krit_short:'🔴 Crítica', st_eing_short:'🟠 Limitada', st_verf_short:'🟢 Disponível',
@@ -2079,6 +2082,9 @@ async function loadOverview() {
     feed.appendChild(rc);
   }
 
+  // Wochenrückblick: was sich bei beobachteten Wirkstoffen zuletzt geändert hat (7 Tage)
+  renderWeekReview(feed, d.week_review);
+
   // Meine beobachteten Wirkstoffe (mit Schnell-Vorschlägen aus kritischen Engpässen)
   renderWatchlistCard(feed, (d.watchlist && d.watchlist.items) || [], d.shortages.top || [], !!d.premium);
 
@@ -2312,6 +2318,67 @@ function substanceWatchChip(w, watched) {
   paint();
   group.appendChild(chip); group.appendChild(btn);
   return group;
+}
+
+// Wochenrückblick-Karte: kompakte Zusammenfassung der Änderungen an beobachteten
+// Wirkstoffen der letzten 7 Tage (neu gemeldet / wieder verfügbar / Status geändert).
+// Erscheint nur, wenn es tatsächlich etwas gab — ein leerer Rückblick ist keine
+// Neuigkeit und würde die „Für dich"-Übersicht nur unnötig füllen. Druckbar fürs Team.
+function wrDaysAgo(dc) {
+  const n = dc && dc.days_ago;
+  if (n === 0) return t('wr_today');
+  return n === 1 ? t('wr_ago_one') : ti('wr_ago_many', { n });
+}
+function renderWeekReview(feed, wr) {
+  if (!wr || !wr.total) return;
+  const sections = [
+    { key: 'neu', items: wr.neu || [] },
+    { key: 'wieder_verfuegbar', items: wr.wieder_verfuegbar || [] },
+    { key: 'status', items: wr.status || [] },
+  ].filter(s => s.items.length);
+  const head = { neu: t('wr_neu'), wieder_verfuegbar: t('wr_wieder'), status: t('wr_status') };
+  const rowHtml = (it) => {
+    const m = watchStatusMeta(it.status);
+    return `<div class="comment clickable" data-wk="${esc(it.wirkstoff)}">
+      <span style="font-size:16px">${m.icon}</span> <b>${esc(it.wirkstoff)}</b>${it.bezeichnung ? ` <span class="muted">${esc(it.bezeichnung)}</span>` : ''}
+      <span style="display:inline-block;font-size:12px;font-weight:700;color:${m.color};background:${m.bg};padding:1px 8px;border-radius:999px">${esc(m.label)}</span>
+      <span class="muted" style="font-size:12px">· ${esc(wrDaysAgo(it.week_change))}</span>
+      <span class="ovtile-go" aria-hidden="true">›</span></div>`;
+  };
+  const blocks = sections.map(s => `<div style="margin-top:8px"><div class="muted" style="font-size:13px;font-weight:700;margin-bottom:4px">${esc(head[s.key])} <span style="opacity:.7">(${s.items.length})</span></div>${s.items.map(rowHtml).join('')}</div>`).join('');
+  const c = el(`<div class="card" style="border-left:4px solid var(--info-fg)">
+    <div class="row" style="flex-wrap:wrap;gap:6px"><b style="flex:1">${esc(t('wr_title'))}</b><button class="ghost small" data-wr-print title="${esc(t('wr_print_title'))}">🖨️ ${esc(t('wr_print'))}</button></div>
+    <div class="muted" style="font-size:13px;margin:2px 0 2px">${esc(t('wr_sub'))}</div>
+    ${blocks}</div>`);
+  c.querySelectorAll('[data-wk]').forEach(row => row.onclick = () => openWirkstoff(row.dataset.wk));
+  c.querySelector('[data-wr-print]').onclick = () => printWeekReview(wr);
+  feed.appendChild(c);
+}
+
+// Wochenrückblick als druckbarer Team-Aushang (gleicher Rahmen wie die übrigen Aushänge).
+function printWeekReview(wr) {
+  const head = { neu: t('wr_neu'), wieder_verfuegbar: t('wr_wieder'), status: t('wr_status') };
+  const sections = [
+    { key: 'neu', items: (wr && wr.neu) || [] },
+    { key: 'wieder_verfuegbar', items: (wr && wr.wieder_verfuegbar) || [] },
+    { key: 'status', items: (wr && wr.status) || [] },
+  ].filter(s => s.items.length);
+  const rows = (items) => items.map(it => {
+    const m = watchStatusMeta(it.status);
+    return `<tr><td class="wk">${esc(it.wirkstoff)}${it.bezeichnung ? `<div class="pr">${esc(it.bezeichnung)}</div>` : ''}</td>
+      <td><span class="st" style="color:${m.color};background:${m.bg}">${esc(m.icon)} ${esc(m.label)}</span></td>
+      <td class="nt">${esc(wrDaysAgo(it.week_change))}</td></tr>`;
+  }).join('');
+  const groups = sections.map(s => `<h2>${esc(head[s.key])}</h2><table><tbody>${rows(s.items)}</tbody></table>`).join('');
+  const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:800px;margin:24px auto;padding:0 16px;color:#111}
+    h1{font-size:22px;margin:0 0 2px} h2{font-size:15px;margin:20px 0 6px;color:#333} .meta{color:#555;font-size:13px;margin-bottom:8px}
+    table{width:100%;border-collapse:collapse} td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px}
+    .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:12px;margin-top:2px}
+    .st{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap} .nt{font-size:13px;color:#555}
+    .src{font-size:12px;color:#555;margin-top:18px}`;
+  const body = `<h1>📋 ${esc(t('wr_print_title'))}</h1><div class="meta">${esc(ti('wr_print_asof', { date: printDate() }))}</div>
+    ${groups}<div class="src">${esc(t('wr_print_foot'))}</div>`;
+  openPrintDoc(t('wr_print_title'), css, body);
 }
 
 async function renderWatchlistCard(feed, items, suggestions = [], premium = false) {

@@ -64,6 +64,21 @@ test('watch_deals: leer, wenn nichts beobachtet wird', () => {
   assert.deepEqual(overview.forUser(a).watch_deals, []);
 });
 
+test('week_review: neu gemeldeter beobachteter Wirkstoff landet in der Wochen-Zusammenfassung', () => {
+  const { overview, shortages, a } = setup();
+  // Ausgangslage: keine frischen Änderungen (Seed ist Wochen alt) -> Rückblick leer.
+  assert.equal(overview.forUser(a).week_review.total, 0);
+  // Beobachteten Wirkstoff heute melden -> erscheint als „neu".
+  shortages.watch(a, 'Frischophyllin');
+  shortages.reportShortage(a, { wirkstoff: 'Frischophyllin', status: 'kritisch' });
+  const wr = overview.forUser(a).week_review;
+  assert.equal(wr.total, 1);
+  assert.equal(wr.neu.length, 1);
+  assert.equal(wr.neu[0].wirkstoff, 'Frischophyllin');
+  assert.equal(wr.wieder_verfuegbar.length, 0);
+  assert.equal(wr.status.length, 0);
+});
+
 test('watch_offers: beobachteter Wirkstoff mit offenem Biete-Angebot', () => {
   const { overview, exchange, shortages, a } = setup();
   shortages.watch(a, 'Amoxicillin');

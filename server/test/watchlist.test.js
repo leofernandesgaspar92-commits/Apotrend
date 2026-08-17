@@ -5,7 +5,7 @@ import { createSocialRepo } from '../src/repo/socialRepo.js';
 import { createShortagesRepo } from '../src/repo/shortagesRepo.js';
 import { createOrgAuthService } from '../src/services/orgAuth.js';
 import { createSocialService } from '../src/services/social.js';
-import { createShortagesService } from '../src/services/shortages.js';
+import { createShortagesService, weeklyChange } from '../src/services/shortages.js';
 
 function setup() {
   const repo = createMemoryRepo();
@@ -125,6 +125,49 @@ test('Sammel-Rabattalarm: setWatchAlertAll setzt/abschaltet für alle beobachtet
   // Ungültige Werte 1..99.
   assert.throws(() => shortages.setWatchAlertAll(uid, 120), /1.*99|Schwelle/);
   assert.throws(() => shortages.setWatchAlertAll(uid, -3), /1.*99|Schwelle/);
+});
+
+test('Wochenrückblick: weeklyChange erkennt neu / wieder verfügbar / Status / außerhalb Fenster', () => {
+  const today = '2026-08-17';
+  // Erstmeldung (genau ein History-Eintrag) vor 2 Tagen, aktiv -> neu
+  assert.deepEqual(
+    weeklyChange({ status: 'kritisch', history: [{ am: '2026-08-15', status: 'kritisch' }] }, today),
+    { kind: 'neu', am: '2026-08-15', days_ago: 2, status: 'kritisch' });
+  // Erstmeldung vor 10 Tagen -> außerhalb des 7-Tage-Fensters -> null
+  assert.equal(
+    weeklyChange({ status: 'kritisch', history: [{ am: '2026-08-05', status: 'kritisch' }] }, today), null);
+  // Wieder verfügbar vor 1 Tag -> wieder_verfuegbar (unabhängig vom Erstmeldedatum)
+  assert.deepEqual(
+    weeklyChange({ status: 'verfuegbar', history: [{ am: '2026-07-01', status: 'kritisch' }, { am: '2026-08-16', status: 'verfuegbar' }] }, today),
+    { kind: 'wieder_verfuegbar', am: '2026-08-16', days_ago: 1, status: 'verfuegbar' });
+  // Statuswechsel (kritisch -> eingeschränkt) vor 3 Tagen -> status
+  assert.deepEqual(
+    weeklyChange({ status: 'eingeschraenkt', history: [{ am: '2026-07-01', status: 'kritisch' }, { am: '2026-08-14', status: 'eingeschraenkt' }] }, today),
+    { kind: 'status', am: '2026-08-14', days_ago: 3, status: 'eingeschraenkt' });
+  // Wieder verfügbar, aber Wechsel vor 30 Tagen -> außerhalb -> null
+  assert.equal(
+    weeklyChange({ status: 'verfuegbar', history: [{ am: '2026-07-01', status: 'kritisch' }, { am: '2026-07-18', status: 'verfuegbar' }] }, today), null);
+  // Leere/fehlende history -> null
+  assert.equal(weeklyChange({ status: 'kritisch', history: [] }, today), null);
+  assert.equal(weeklyChange({ status: 'kritisch' }, today), null);
+});
+
+test('Wochenrückblick: neu gemeldeter beobachteter Wirkstoff erscheint mit week_change=neu', () => {
+  const { shortages, uid } = setup();
+  shortages.watch(uid, 'Testophyllin');
+  shortages.reportShortage(uid, { wirkstoff: 'Testophyllin', status: 'kritisch' });
+  const item = shortages.myWatchlist(uid).find(i => i.wirkstoff === 'Testophyllin');
+  assert.ok(item.week_change, 'week_change gesetzt (heute gemeldet)');
+  assert.equal(item.week_change.kind, 'neu');
+  assert.equal(item.week_change.days_ago, 0);
+  // Auflösen -> wieder_verfuegbar
+  shortages.resolveShortage(uid, item.shortage_id);
+  const resolved = shortages.myWatchlist(uid).find(i => i.wirkstoff === 'Testophyllin');
+  assert.equal(resolved.week_change.kind, 'wieder_verfuegbar');
+  // Seed-Wirkstoff (Meldung Wochen alt) -> kein week_change
+  shortages.watch(uid, 'Amoxicillin');
+  const amox = shortages.myWatchlist(uid).find(i => i.wirkstoff === 'Amoxicillin');
+  assert.equal(amox.week_change, null);
 });
 
 test('Premium-Notizen: nur mit Premium, nur für beobachtete Wirkstoffe, erscheinen in myWatchlist', () => {

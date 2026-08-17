@@ -34,6 +34,30 @@ export function shortageAging(gemeldetAm, voraussichtlichBis, status, today) {
   };
 }
 
+// Änderung eines Engpasses innerhalb der letzten `windowDays` Tage — rein aus dem
+// Statusverlauf (history) abgeleitet, keine Sicherheitsaussage. Grundlage des
+// Wochenrückblicks: neu gemeldet, wieder verfügbar oder Status geändert.
+//   - genau ein History-Eintrag + aktiver Status  => 'neu' (Erstmeldung)
+//   - aktueller Status 'verfuegbar'               => 'wieder_verfuegbar'
+//   - mehrere Einträge + aktiver Status           => 'status' (verschärft/gelockert)
+// Gibt null zurück, wenn die letzte relevante Änderung außerhalb des Fensters liegt.
+export function weeklyChange(s, today, windowDays = 7) {
+  const hist = Array.isArray(s && s.history) ? s.history : [];
+  if (!hist.length) return null;
+  const last = hist[hist.length - 1];
+  const first = hist[0];
+  const daysLast = last.am ? daysBetween(last.am, today) : null;
+  const daysFirst = first.am ? daysBetween(first.am, today) : null;
+  const within = (d) => d != null && d >= 0 && d <= windowDays;
+  if (s.status === 'verfuegbar') {
+    return within(daysLast) ? { kind: 'wieder_verfuegbar', am: last.am, days_ago: daysLast, status: s.status } : null;
+  }
+  if (hist.length === 1) {
+    return within(daysFirst) ? { kind: 'neu', am: first.am, days_ago: daysFirst, status: s.status } : null;
+  }
+  return within(daysLast) ? { kind: 'status', am: last.am, days_ago: daysLast, status: s.status } : null;
+}
+
 export function createShortagesService(shortagesRepo, social, options = {}) {
   // Heutiger Kalendertag (injizierbar für Tests) — Grundlage der Alters-/Fristsignale.
   const today = () => (options.today ? options.today() : new Date().toISOString().slice(0, 10));
@@ -352,6 +376,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
           overdue: aging.overdue,             // voraussichtlicher Termin überschritten
           note: shortagesRepo.getWatchNote(userId, w), // Premium: private Notiz (leer für Gratis)
           alert_pct: shortagesRepo.getWatchAlert(userId, w), // Rabatt-Alarm-Schwelle (null = aus)
+          week_change: s ? weeklyChange(s, t0) : null, // Änderung der letzten 7 Tage (Wochenrückblick)
         };
       }).sort((a, b) => {
         const rank = { kritisch: 3, eingeschraenkt: 2, verfuegbar: 1, unauffaellig: 0 };

@@ -15,6 +15,18 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
       const expiringSoon = topRabatte.filter(r => r.expiring_soon);
       const watchlist = shortages.myWatchlist(userId);
 
+      // Wochenrückblick: Änderungen an beobachteten Wirkstoffen der letzten 7 Tage
+      // (neu gemeldet / wieder verfügbar / Status geändert). Ein kompakter „Was hat
+      // sich getan"-Blick, den flüchtige Push-Benachrichtigungen allein nicht bieten —
+      // eine leicht zu überfliegende Wochen-Zusammenfassung fürs Team.
+      const weekChanged = watchlist.filter(w => w.week_change);
+      const weekReview = {
+        total: weekChanged.length,
+        neu: weekChanged.filter(w => w.week_change.kind === 'neu'),
+        wieder_verfuegbar: weekChanged.filter(w => w.week_change.kind === 'wieder_verfuegbar'),
+        status: weekChanged.filter(w => w.week_change.kind === 'status'),
+      };
+
       // Bezugsquellen zu beobachteten Wirkstoffen: offene "Biete"-Einträge, deren
       // Bezeichnung einen beobachteten Wirkstoff enthält — hilft beim Beschaffen
       // während eines Engpasses. Nur wo es Angebote gibt.
@@ -97,6 +109,7 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
       return {
         shortages: { kritisch: kritisch.length, total: sh.length, antibiotika, top: kritisch.slice(0, 3) },
         watchlist: { total: watchlist.length, items: watchlist, alerts: watchlist.filter(w => w.status === 'kritisch' || w.status === 'eingeschraenkt').length },
+        week_review: weekReview,
         watch_deals: watchDeals,
         watch_offers: watchOffers,
         expiring_offers: { count: expiringOffers.length, items: expiringOffers.slice(0, 5) },
