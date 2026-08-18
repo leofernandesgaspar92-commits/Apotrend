@@ -5904,9 +5904,14 @@ async function renderSearch(q) {
   try {
     const d = await api('GET','/api/search?q='+encodeURIComponent(q));
     feed.innerHTML = '';
-    const head = el(`<div class="card"><div class="row"><b>${esc(ti('search_results_for',{q:d.query}))}</b><span class="sp" style="flex:1"></span><span class="muted">${esc(ti('search_hits',{n:d.total}))}</span><button class="ghost small" data-back style="margin-left:10px">${esc(t('search_back'))}</button></div></div>`);
+    const head = el(`<div class="card"><div class="row"><b tabindex="-1" data-stitle>${esc(ti('search_results_for',{q:d.query}))}</b><span class="sp" style="flex:1"></span><span class="muted">${esc(ti('search_hits',{n:d.total}))}</span><button class="ghost small" data-back style="margin-left:10px">${esc(t('search_back'))}</button></div></div>`);
     head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
     feed.appendChild(head);
+    // Wie die Wirkstoff-Detailseite: oben starten (man sucht oft aus einer tief gescrollten
+    // Ansicht) und Fokus auf die Ergebnis-Überschrift, damit Screenreader/Tastatur die neue
+    // Trefferliste als solche mitbekommen (Ring nur bei Tastaturnutzung via :focus-visible).
+    window.scrollTo({ top: 0 });
+    { const st = head.querySelector('[data-stitle]'); if (st) st.focus({ preventScroll: true }); }
     // Letzte Suchen (nur lokal) als Schnell-Chips — häufige Suchen mit einem Klick wiederholen.
     const others = getRecentSearches().filter(x => x.toLowerCase() !== (d.query||'').toLowerCase());
     if (others.length) {
