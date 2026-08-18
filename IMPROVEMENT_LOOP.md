@@ -32,17 +32,19 @@ die Session neu startet.
 
 ## Letzter GATHER-Snapshot
 
-_Cycle #26 · 2026-07-18_
+_Aktualisiert 2026-08-18 (Session-Fortschreibung; der frühere Snapshot stand fälschlich noch bei #26/219 Tests)_
 ```
-Tests:            219/219 grün  ·  Browser-Audit: 0 Querscroll / 0 JS-Fehler  ·  Smoke: 7/7 grün
-i18n de/en/pt:    590/590/590  · 0 Lücken  ✓ perfekte Parität
-Hartkod. Dialoge: 0  ·  Hartkod. UI-DE: 0  ·  TODO/FIXME: 0  ·  console: 0  ·  !important: 3 (legitim)
+Tests:            433/433 grün (60 Dateien)  ·  Browser-Audit: 0 Querscroll / 0 JS-Fehler / 0 a11y  ·  Smoke: 19/19 grün
+i18n de/en/pt:    0 Lücken  ✓ perfekte Parität (Guard prüft bei jedem `verify`)
+Hartkod. Dialoge: 0  ·  Hartkod. UI-DE: 0  ·  Hartkod. JS-DE: 0  ·  Helle Inline-BGs: 0  ·  !important: 3 (legitim)
+Querscroll-Sweep: 390 + 768/1024/1280/1440 + große Schrift (22px) + Wirkstoff-Detailseite
 Backend-Fehler:   alltags-relevante Fehler mehrsprachig (Codes), Fallback = DE-message
-index.html:       ~3720 Zeilen · 267 KB   ← größtes Struktur-Signal (Monolith)
+Monolith:         server/public/app.js ~7690 Zeilen · 636 KB  ← größtes Struktur-Signal (P3, CEO-Freigabe)
 ```
-Fortschritt: 26 Zyklen. Frontend-i18n lückenlos + dreifach bewacht; Backend-Fehler-i18n
-für alle Alltagsfälle; Kontotyp-Rechte doppelt getestet. Offene P3: Monolith, DB, Währung
-(je architektonisch bedeutsam → CEO-Freigabe).
+Fortschritt: Frontend-i18n lückenlos + dreifach bewacht; Backend-Fehler-i18n für alle
+Alltagsfälle; Kontotyp-Rechte doppelt getestet; Navigation/Leerzustände konsistent;
+Engpass-Sourcing sichtbar. Offene P3: Monolith (app.js), DB, Währung — je architektonisch
+bedeutsam → CEO-Freigabe.
 
 ## Priorisierter Backlog (Kandidaten für WORK)
 
@@ -52,7 +54,7 @@ prüft ihn erst (echt oder Rauschen?), setzt ihn dann um.
 **P1 — echter Nutzerwert, bounded**
 - [x] ~~Kommentar-Zähler: Klartext-CTA + Singular-Grammatik~~ → Cycle #2 erledigt.
 - [ ] Reaktionen-Aktiv-Zustand in Kommentar-Detailansicht (Feed + Kommentare bereits getestet — vermutlich schon ok, kurz gegenprüfen).
-- [ ] Leere Zustände (empty states) je Reiter auf Klartext/Handlungsaufforderung prüfen.
+- [x] ~~Leere Zustände (empty states) je Reiter auf Klartext/Handlungsaufforderung prüfen~~ → Session 2026-08-18: filterbare Daten-Reiter (Engpässe/Preise/Rabatte/Biete-Suche) mit sichtbarem „Filter zurücksetzen" (`filteredEmptyCard`).
 - [x] ~~„0 Apotheker haben dazu gepostet"-Zähler auf Engpass-Karten~~ → Cycle #3 erledigt.
 - [x] ~~„{n} Beiträge dazu" (pg_posts) Singular~~ → Cycle #4 (generischer `nlabel`-Helper).
 - [x] ~~Profil-Kopf-Zähler (pf_posts/pf_best/pf_followers) Singular~~ → Cycle #5.
@@ -80,6 +82,39 @@ Reaktions-/Folgen-Status, volle i18n DE/EN/PT (inkl. aria/title/Dialoge/Pre-Logi
 a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `server/README.md`.
 
 ## Cycle-Log
+
+### Session 2026-08-18 — Nachtrag (Log war hinter der Realität zurück)
+> **Ehrlichkeits-Hinweis:** Zwischen #147 und dieser Session liefen Zyklen, die NICHT
+> hier protokolliert wurden (u. a. Design-Auffrischung, Monetarisierungs-Vertiefung,
+> Barrierefreiheit große Schrift — sichtbar in der Git-Historie, z. B. `2edfc28`,
+> `9f7c318`, `cbab1e6`, `c50e5f9`, `287ea45`). Deren genaue Zyklus-Nummern sind nicht
+> mehr rekonstruierbar, daher hier bewusst KEINE erfundene Nummerierung. Nachfolgend die
+> mit Commit belegten Verbesserungen dieser Session (jeweils `npm run verify` grün,
+> Playwright-Check gemacht + Temp-Werkzeug gelöscht, Push auf `claude/next-steps-w6tymp`
+> UND `feed-first`):
+>
+> - `0a78113` **Engpass-Wochenrückblick** — kompakte „was änderte sich bei meinen
+>   beobachteten Wirkstoffen (7 Tage)"-Karte auf „Für dich"; abgeleitet aus dem
+>   vorhandenen Statusverlauf (`weeklyChange` in shortages.js, `week_review` in overview.js),
+>   druckbar. Tests + Overview/Watchlist-Integration.
+> - `b06d7ce` **Statusverlauf auf der Wirkstoff-Seite** — „seit {Datum}" + aufklappbarer
+>   Verlauf ab 2 Schritten; nebenbei Kopf-Button-Überlauf (390px) behoben; Audit prüft jetzt
+>   die Wirkstoff-Detailseite dauerhaft mit.
+> - `7916736` / `0deeae3` / `7133168` **Leerzustände mit „Filter zurücksetzen"** —
+>   sichtbarer Reset-Knopf in Engpässe, Preise, Rabatte und Biete/Suche (statt nur Text);
+>   gemeinsamer Helfer `filteredEmptyCard`; Biete/Suche trennt „gefiltert leer" ehrlich von
+>   „Netzwerk leer".
+> - `57c67b0` **Reiterwechsel startet oben** — `loadTab()` scrollt nach oben (nur Navigation,
+>   nicht In-Place-Aktualisierungen).
+> - `8d300cb` **Wirkstoff-Detailseite: oben + Fokus auf Überschrift** (SPA-a11y; nutzt
+>   `:focus-visible`, kein Maus-Ring).
+> - `a6133a9` **Engpass-CSV: Spalte „Tage gemeldet"** — Dauer fertig berechnet für die
+>   Excel-Auswertung.
+> - `d3777a9` **Engpass-Karte: Quelle direkt anklickbar** — „🔗 Quelle" für den aktuellen
+>   Status bei URL-Quelle (Owner-Prinzip Sourcing), nicht bei Community/Referenz.
+>
+> Erledigte Backlog-Punkte dadurch: „Leere Zustände je Reiter" (P1) — für die filterbaren
+> Daten-Reiter umgesetzt.
 
 ### Cycle #147 — 2026-07-20 — Tastatur-Kürzel „/" fokussiert die Suche
 - **THINK:** Kleiner Alltags-Komfort für tägliche Nutzer:innen (Standard-Pattern à la GitHub): „/" springt zur Suche. Unsichtbar/unschädlich für alle anderen; greift nie, während man tippt.
