@@ -2743,6 +2743,13 @@ async function applyCountryGating() {
 }
 
 function loadTab() {
+  // Reiterwechsel beginnt oben: Ohne das behält das Fenster die alte Scroll-Position,
+  // sodass man nach dem Wechsel (z. B. von einer langen Engpass-Liste zu „Preise")
+  // mitten im neuen Inhalt landet. Nur echte Navigation läuft über loadTab() —
+  // In-Place-Aktualisierungen (bestätigen/auflösen/reagieren) rufen die Spezial-Lader
+  // direkt und bleiben daher an Ort und Stelle. Sofort (nicht smooth): auf mobil soll
+  // der Wechsel unmittelbar oben starten, ohne sichtbaren Scroll-Flug.
+  window.scrollTo({ top: 0 });
   // Compose- und Folgen-Boxen gehören zum sozialen Feed — nur dort zeigen, damit
   // die Daten-Reiter (Engpässe/Preise/Rabatte/…) nicht hinter Formularen liegen.
   const sc = document.getElementById('socialCompose');
