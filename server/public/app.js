@@ -169,6 +169,7 @@ const I18N = {
     ex_mine_empty_t:'Noch keine eigenen Einträge', ex_mine_empty_s:'Du hast bisher nichts angeboten oder gesucht.',
     ex_new:'Eintrag anlegen', ex_search_empty_t:'Nichts zu „{q}"',
     ex_search_empty_s:'Keine offenen Biete-/Suche-Einträge für diesen Begriff. Filter zurücksetzen oder anderen Begriff probieren.',
+    ex_filter_empty_t:'Keine Einträge für diese Auswahl', ex_filter_empty_s:'Für die aktuellen Filter (Art/Bundesland) gibt es keine offenen Einträge. Setz die Filter zurück, um alle zu sehen.',
     ex_empty_t:'Noch keine offenen Einträge', ex_empty_s:'Biete Überbestand an oder suche dringend Benötigtes — sei der/die Erste.',
     ex_badge_biete:'📦 Biete', ex_badge_suche:'🔎 Suche', ex_done_badge:'✓ erledigt', ex_qty:'Menge:', ex_match_offers:'🔗 {n} passende Angebote', ex_match_offers_1:'🔗 1 passendes Angebot', ex_match_seeks:'🔗 {n} passende Gesuche', ex_match_seeks_1:'🔗 1 passendes Gesuch', ex_flash_offers:'{n} passende Angebote gefunden — hier deine Treffer.', ex_flash_offers_1:'1 passendes Angebot gefunden — hier dein Treffer.', ex_flash_seeks:'{n} passende Gesuche gefunden — hier deine Treffer.', ex_flash_seeks_1:'1 passendes Gesuch gefunden — hier dein Treffer.', ex_flash_none_biete:'Angebot veröffentlicht. Noch kein passendes Gesuch — du wirst benachrichtigt, sobald jemand danach sucht.', ex_flash_none_suche:'Gesuch veröffentlicht. Noch kein passendes Angebot — du wirst benachrichtigt, sobald jemand es anbietet.',
     ex_photo_alt:'Foto zum Eintrag', ex_by:'von', ex_unknown:'Unbekannt',
@@ -520,6 +521,7 @@ const I18N = {
     ex_mine_empty_t:'No entries of your own yet', ex_mine_empty_s:'You have not offered or sought anything so far.',
     ex_new:'Create entry', ex_search_empty_t:'Nothing for “{q}”',
     ex_search_empty_s:'No open offer/request entries for this term. Reset the filter or try another term.',
+    ex_filter_empty_t:'No entries for this selection', ex_filter_empty_s:'There are no open entries for the current filters (type/region). Reset the filters to see all.',
     ex_empty_t:'No open entries yet', ex_empty_s:'Offer surplus or seek urgently needed items — be the first.',
     ex_badge_biete:'📦 Offer', ex_badge_suche:'🔎 Request', ex_done_badge:'✓ done', ex_qty:'Quantity:', ex_match_offers:'🔗 {n} matching offers', ex_match_offers_1:'🔗 1 matching offer', ex_match_seeks:'🔗 {n} matching requests', ex_match_seeks_1:'🔗 1 matching request', ex_flash_offers:'{n} matching offers found — here are your hits.', ex_flash_offers_1:'1 matching offer found — here is your hit.', ex_flash_seeks:'{n} matching requests found — here are your hits.', ex_flash_seeks_1:'1 matching request found — here is your hit.', ex_flash_none_biete:'Offer published. No matching request yet — you will be notified as soon as someone seeks it.', ex_flash_none_suche:'Request published. No matching offer yet — you will be notified as soon as someone offers it.',
     ex_photo_alt:'Entry photo', ex_by:'by', ex_unknown:'Unknown',
@@ -871,6 +873,7 @@ const I18N = {
     ex_mine_empty_t:'Ainda sem entradas próprias', ex_mine_empty_s:'Até agora não ofereceu nem procurou nada.',
     ex_new:'Criar entrada', ex_search_empty_t:'Nada para “{q}”',
     ex_search_empty_s:'Sem entradas de oferta/procura abertas para este termo. Reponha o filtro ou tente outro termo.',
+    ex_filter_empty_t:'Sem entradas para esta seleção', ex_filter_empty_s:'Não há entradas abertas para os filtros atuais (tipo/região). Reponha os filtros para ver tudo.',
     ex_empty_t:'Ainda sem entradas abertas', ex_empty_s:'Ofereça excedente ou procure algo urgente — seja o primeiro.',
     ex_badge_biete:'📦 Oferta', ex_badge_suche:'🔎 Procura', ex_done_badge:'✓ concluído', ex_qty:'Quantidade:', ex_match_offers:'🔗 {n} ofertas correspondentes', ex_match_offers_1:'🔗 1 oferta correspondente', ex_match_seeks:'🔗 {n} procuras correspondentes', ex_match_seeks_1:'🔗 1 procura correspondente', ex_flash_offers:'{n} ofertas correspondentes encontradas — aqui estão.', ex_flash_offers_1:'1 oferta correspondente encontrada — aqui está.', ex_flash_seeks:'{n} procuras correspondentes encontradas — aqui estão.', ex_flash_seeks_1:'1 procura correspondente encontrada — aqui está.', ex_flash_none_biete:'Oferta publicada. Ainda sem procura correspondente — será notificado assim que alguém procurar.', ex_flash_none_suche:'Procura publicada. Ainda sem oferta correspondente — será notificado assim que alguém oferecer.',
     ex_photo_alt:'Foto da entrada', ex_by:'de', ex_unknown:'Desconhecido',
@@ -4000,9 +4003,20 @@ async function loadExchange() {
       if (exchangeBL) params.set('bundesland', exchangeBL);
       if (exchangeSort) params.set('sort', exchangeSort);
       d = await api('GET','/api/exchange'+(params.toString()?'?'+params.toString():''));
-      if (!d.entries.length) { feed.appendChild(exchangeQuery
-        ? emptyState({ icon:'🔍', title:ti('ex_search_empty_t',{q:exchangeQuery}), text:t('ex_search_empty_s') })
-        : emptyState({ icon:'🔄', title:t('ex_empty_t'), text:t('ex_empty_s'), cta:{ label:t('ex_new'), onClick:()=>{ const b=document.getElementById('ex_bez'); if(b){ b.focus(); b.scrollIntoView({behavior:'smooth',block:'center'}); } } } })); return; }
+      if (!d.entries.length) {
+        // „Gefiltert leer" ehrlich von „Netzwerk leer" trennen: liegt ein Filter an
+        // (Suche/Art/Bundesland), ist nicht das ganze Netz leer — dann einen sichtbaren
+        // „Filter zurücksetzen"-Knopf anbieten statt fälschlich „sei der/die Erste".
+        const anyFilter = exchangeQuery || exchangeFilter || exchangeBL;
+        if (anyFilter) {
+          const reset = { label: t('sh_reset'), onClick: () => { exchangeQuery=''; exchangeFilter=''; exchangeBL=''; exchangeSort=''; loadExchange(); } };
+          feed.appendChild(exchangeQuery
+            ? emptyState({ icon:'🔍', title:ti('ex_search_empty_t',{q:exchangeQuery}), text:t('ex_search_empty_s'), cta:reset })
+            : emptyState({ icon:'🔍', title:t('ex_filter_empty_t'), text:t('ex_filter_empty_s'), cta:reset }));
+          return;
+        }
+        feed.appendChild(emptyState({ icon:'🔄', title:t('ex_empty_t'), text:t('ex_empty_s'), cta:{ label:t('ex_new'), onClick:()=>{ const b=document.getElementById('ex_bez'); if(b){ b.focus(); b.scrollIntoView({behavior:'smooth',block:'center'}); } } } })); return;
+      }
     }
     // CSV-Export der aktuellen Auswahl — Netzwerk-Überblick zu Angebot/Nachfrage für den Einkauf.
     const expCard = el(`<div class="card" style="padding:8px 12px"><div class="row"><span class="muted" style="font-size:13px;flex:1">${esc(ti('ex_csv_sub',{n:d.entries.length}))}</span><button class="ghost small" data-exprint>🖨️ ${esc(t('pr_print_btn'))}</button><button class="ghost small" data-excsv>⬇️ CSV</button></div></div>`);
