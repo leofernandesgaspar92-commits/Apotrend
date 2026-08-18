@@ -78,7 +78,7 @@ const I18N = {
     csv_rang:'Rang', csv_listenpreis:'Listenpreis (€)', csv_aktionspreis:'Aktionspreis (€)', csv_rabatt:'Rabatt (%)',
     csv_saving_pkg:'Ersparnis/Pkg (€)', csv_minmenge:'Mindestmenge', csv_saving_atmin:'Ersparnis bei Mindestmenge (€)',
     csv_gueltig_bis:'gültig bis', csv_best_per_wirkstoff:'beste Aktion je Wirkstoff',
-    csv_status:'Status', csv_grund:'Grund', csv_gemeldet_am:'gemeldet am', csv_wieder_bis:'voraussichtlich wieder lieferbar bis',
+    csv_status:'Status', csv_grund:'Grund', csv_gemeldet_am:'gemeldet am', csv_tage_gemeldet:'Tage gemeldet', csv_wieder_bis:'voraussichtlich wieder lieferbar bis',
     csv_antibiotikum:'Antibiotikum', csv_herkunft:'Herkunft', csv_melder:'Melder', csv_beobachtet:'beobachtet',
     csv_prov_verified:'BASG (verifiziert)', csv_prov_reference:'Referenzdaten', csv_prov_editorial:'Redaktion', csv_prov_community:'Community-Meldung', csv_prov_simulated:'simuliert',
     sh_print:'🖨️ Drucken', sh_print_t:'Aktuelle Auswahl drucken (Team-Aushang)',
@@ -430,7 +430,7 @@ const I18N = {
     csv_rang:'Rank', csv_listenpreis:'List price (€)', csv_aktionspreis:'Deal price (€)', csv_rabatt:'Discount (%)',
     csv_saving_pkg:'Saving/pack (€)', csv_minmenge:'Min. quantity', csv_saving_atmin:'Saving at min. quantity (€)',
     csv_gueltig_bis:'valid until', csv_best_per_wirkstoff:'best deal per substance',
-    csv_status:'Status', csv_grund:'Reason', csv_gemeldet_am:'reported on', csv_wieder_bis:'expected back in stock by',
+    csv_status:'Status', csv_grund:'Reason', csv_gemeldet_am:'reported on', csv_tage_gemeldet:'days reported', csv_wieder_bis:'expected back in stock by',
     csv_antibiotikum:'Antibiotic', csv_herkunft:'Source', csv_melder:'Reporter', csv_beobachtet:'watched',
     csv_prov_verified:'BASG (verified)', csv_prov_reference:'Reference data', csv_prov_editorial:'Editorial', csv_prov_community:'Community report', csv_prov_simulated:'simulated',
     sh_print:'🖨️ Print', sh_print_t:'Print current selection (team notice)',
@@ -782,7 +782,7 @@ const I18N = {
     csv_rang:'Posição', csv_listenpreis:'Preço de tabela (€)', csv_aktionspreis:'Preço promocional (€)', csv_rabatt:'Desconto (%)',
     csv_saving_pkg:'Poupança/embalagem (€)', csv_minmenge:'Quantidade mínima', csv_saving_atmin:'Poupança na quantidade mínima (€)',
     csv_gueltig_bis:'válido até', csv_best_per_wirkstoff:'melhor promoção por substância',
-    csv_status:'Estado', csv_grund:'Motivo', csv_gemeldet_am:'comunicado em', csv_wieder_bis:'previsão de reposição até',
+    csv_status:'Estado', csv_grund:'Motivo', csv_gemeldet_am:'comunicado em', csv_tage_gemeldet:'dias comunicado', csv_wieder_bis:'previsão de reposição até',
     csv_antibiotikum:'Antibiótico', csv_herkunft:'Origem', csv_melder:'Quem comunicou', csv_beobachtet:'vigiado',
     csv_prov_verified:'BASG (verificado)', csv_prov_reference:'Dados de referência', csv_prov_editorial:'Redação', csv_prov_community:'Comunicação da comunidade', csv_prov_simulated:'simulado',
     sh_print:'🖨️ Imprimir', sh_print_t:'Imprimir a seleção atual (aviso da equipa)',
@@ -3735,13 +3735,16 @@ function exportShortagesCsv(list) {
   const rows = (list || []).map(s => [
     s.wirkstoff, s.bezeichnung || '', statusText[s.status] || s.status || '', grundLabel(s.grund),
     s.gemeldet_am || '',
+    // Dauer als fertige Zahl (Excel-Nutzer:innen müssen nicht selbst Datumsdifferenzen
+    // rechnen) — nur für noch offene Engpässe sinnvoll.
+    (s.days_reported != null && s.status !== 'verfuegbar') ? String(s.days_reported) : '',
     s.status !== 'verfuegbar' ? (s.voraussichtlich_bis || '') : '',
     csvYesNo(s.is_antibiotic),
     provText[s.provenance] || s.provenance || '',
     s.provenance === 'community' && s.reporter ? '@' + s.reporter.handle : '',
     csvYesNo(s.watched),
   ]);
-  downloadCsv('apotrend-engpaesse', [t('csv_wirkstoff'), t('csv_praeparat'), t('csv_status'), t('csv_grund'), t('csv_gemeldet_am'), t('csv_wieder_bis'), t('csv_antibiotikum'), t('csv_herkunft'), t('csv_melder'), t('csv_beobachtet')], rows);
+  downloadCsv('apotrend-engpaesse', [t('csv_wirkstoff'), t('csv_praeparat'), t('csv_status'), t('csv_grund'), t('csv_gemeldet_am'), t('csv_tage_gemeldet'), t('csv_wieder_bis'), t('csv_antibiotikum'), t('csv_herkunft'), t('csv_melder'), t('csv_beobachtet')], rows);
 }
 
 function trendStr(t) { if (t>0) return `<span style="color:var(--crit-fg)">▲ +${t}%</span>`; if (t<0) return `<span style="color:var(--ok-fg)">▼ ${t}%</span>`; return '<span class="muted">±0%</span>'; }
