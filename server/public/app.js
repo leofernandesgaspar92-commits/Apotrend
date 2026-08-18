@@ -6797,7 +6797,9 @@ async function openWirkstoff(name) {
     if (hist.length >= 2) {
       const toggle = el(`<button class="linklike small" aria-expanded="false" style="margin-top:4px;display:inline-block">📈 ${esc(ti('wk_hist',{n:hist.length}))}</button>`);
       const tl = el(`<div class="hidden" style="margin-top:6px;padding-left:8px;border-left:2px solid var(--line)"></div>`);
-      hist.forEach(h => {
+      // Neueste Änderung zuerst — konsistent mit dem „Verlauf" auf der Engpass-Karte
+      // (dort [...history].reverse()); so lesen beide Ansichten die gleiche Reihenfolge.
+      [...hist].reverse().forEach(h => {
         const [hl,hc] = statusShort(h.status);
         const q = h.quelle && /^https?:\/\//i.test(h.quelle)
           ? ` · <a href="${esc(h.quelle)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(t('wk_hist_src'))}</a>` : '';
