@@ -84,7 +84,7 @@ const I18N = {
     sh_print:'🖨️ Drucken', sh_print_t:'Aktuelle Auswahl drucken (Team-Aushang)',
     sh_csv_t:'Aktuelle Auswahl als CSV (Excel) exportieren', sh_view_all_wk:'Alles zu {wk} ansehen', sh_sort:'Sortieren:',
     sh_sort_crit:'🔴 Kritischste zuerst', sh_sort_new:'🕘 Neueste zuerst', sh_sort_active:'👥 Am meisten bestätigt',
-    sh_empty:'Keine Engpässe für diese Auswahl. Filter zurücksetzen oder Suchbegriff ändern.',
+    sh_empty:'Keine Engpässe für diese Auswahl. Filter zurücksetzen oder Suchbegriff ändern.', sh_reset:'Filter zurücksetzen',
     sh_rep_title:'➕ Engpass melden', sh_rep_open:'Formular öffnen', sh_rep_close:'Schließen',
     sh_rep_private:'ℹ️ Als Privatnutzer:in kannst du Engpässe lesen, aber nicht selbst melden oder bestätigen. Engpass-Meldungen sind sicherheitsrelevant und Fachkreisen (Apotheke, Pharma-Unternehmen, Behörde) vorbehalten.',
     sh_rep_desc:'Merkst du selbst einen Lieferengpass? Melde ihn — Kolleg:innen, die den Wirkstoff beobachten, werden sofort informiert. (Kennzeichnung: 👥 Community-Meldung, nicht offiziell verifiziert.)', sh_rep_exists:'Für „{w}" gibt es bereits eine offene Meldung.', sh_rep_exists_view:'Ansehen & bestätigen',
@@ -435,7 +435,7 @@ const I18N = {
     sh_print:'🖨️ Print', sh_print_t:'Print current selection (team notice)',
     sh_csv_t:'Export current selection as CSV (Excel)', sh_view_all_wk:'View everything about {wk}', sh_sort:'Sort:',
     sh_sort_crit:'🔴 Most critical first', sh_sort_new:'🕘 Newest first', sh_sort_active:'👥 Most confirmed',
-    sh_empty:'No shortages for this selection. Reset the filter or change the search term.',
+    sh_empty:'No shortages for this selection. Reset the filter or change the search term.', sh_reset:'Reset filter',
     sh_rep_title:'➕ Report a shortage', sh_rep_open:'Open form', sh_rep_close:'Close',
     sh_rep_private:'ℹ️ As a private user you can read shortages but not report or confirm them. Shortage reports are safety-relevant and reserved for professionals (pharmacy, pharma company, authority).',
     sh_rep_desc:'Noticing a supply shortage yourself? Report it — colleagues watching the substance are notified right away. (Labelled: 👥 community report, not officially verified.)', sh_rep_exists:'There is already an open report for “{w}”.', sh_rep_exists_view:'View & confirm',
@@ -786,7 +786,7 @@ const I18N = {
     sh_print:'🖨️ Imprimir', sh_print_t:'Imprimir a seleção atual (aviso da equipa)',
     sh_csv_t:'Exportar a seleção atual como CSV (Excel)', sh_view_all_wk:'Ver tudo sobre {wk}', sh_sort:'Ordenar:',
     sh_sort_crit:'🔴 Mais críticas primeiro', sh_sort_new:'🕘 Mais recentes primeiro', sh_sort_active:'👥 Mais confirmadas',
-    sh_empty:'Sem faltas para esta seleção. Reponha o filtro ou altere o termo de pesquisa.',
+    sh_empty:'Sem faltas para esta seleção. Reponha o filtro ou altere o termo de pesquisa.', sh_reset:'Repor filtro',
     sh_rep_title:'➕ Reportar uma falta', sh_rep_open:'Abrir formulário', sh_rep_close:'Fechar',
     sh_rep_private:'ℹ️ Como utilizador particular pode ler as faltas, mas não comunicá-las nem confirmá-las. As comunicações de falta são relevantes para a segurança e reservadas a profissionais (farmácia, empresa farmacêutica, autoridade).',
     sh_rep_desc:'Notou uma falta de fornecimento? Reporte-a — os colegas que vigiam a substância são notificados de imediato. (Identificado: 👥 aviso da comunidade, não verificado oficialmente.)', sh_rep_exists:'Já existe um aviso aberto para „{w}".', sh_rep_exists_view:'Ver & confirmar',
@@ -3117,7 +3117,20 @@ function renderShortlist(listBox, bar, all) {
     return (rank[b.status]||0) - (rank[a.status]||0) || (b.confirm_count||0) - (a.confirm_count||0) || String(when(b)).localeCompare(String(when(a)));
   });
   listBox.innerHTML = '';
-  if (!list.length) listBox.appendChild(el(`<div class="card muted">${esc(t('sh_empty'))}</div>`));
+  if (!list.length) {
+    // Leerer Zustand: Wenn ein Filter/Suchbegriff aktiv ist, den Ausweg als sichtbaren
+    // Button anbieten — nicht nur im Text erwähnen (Owner-Prinzip: offensichtliche
+    // Bedienung, Buttons als solche erkennbar, keine versteckte Geste).
+    const filtered = shortageFilter || q;
+    const empty = el(`<div class="card"><div class="muted">${esc(t('sh_empty'))}</div>${filtered?`<div style="margin-top:10px"><button class="small" data-sreset>↺ ${esc(t('sh_reset'))}</button></div>`:''}</div>`);
+    const reset = empty.querySelector('[data-sreset]');
+    if (reset) reset.onclick = () => {
+      shortageFilter = ''; shortageQuery = '';
+      const qin = bar.querySelector('[data-q]'); if (qin) qin.value = '';
+      renderShortlist(listBox, bar, all);
+    };
+    listBox.appendChild(empty);
+  }
   else list.forEach(s => listBox.appendChild(shortageCard(s)));
   // Merker für Neu-Rendern nach Filter-/Suchänderung + Export der aktuellen Auswahl
   renderShortlist._ctx = { listBox, bar, all };
