@@ -2696,6 +2696,17 @@ function emptyState({ icon = '🗒️', title, text = '', cta = null }) {
   return card;
 }
 
+// Leerer Zustand einer GEFILTERTEN Datenliste (Engpässe/Preise/Rabatte): zeigt den
+// Hinweistext und – wenn ein Filter/Suchbegriff aktiv ist – einen sichtbaren
+// „Filter zurücksetzen"-Button. Owner-Prinzip: den Ausweg als Knopf anbieten, nicht
+// nur im Text erwähnen (offensichtliche Bedienung, keine versteckte Geste).
+function filteredEmptyCard(msgKey, active, onReset) {
+  const card = el(`<div class="card"><div class="muted">${esc(t(msgKey))}</div>${active ? `<div style="margin-top:10px"><button class="small" data-reset>↺ ${esc(t('sh_reset'))}</button></div>` : ''}</div>`);
+  const btn = card.querySelector('[data-reset]');
+  if (btn) btn.onclick = onReset;
+  return card;
+}
+
 // aria-current an der aktiven Registerkarte spiegeln (Aktiv-Zustand nicht nur
 // über Farbe, sondern auch für Screenreader/Tastatur erkennbar).
 function setTabAria() {
@@ -3118,18 +3129,11 @@ function renderShortlist(listBox, bar, all) {
   });
   listBox.innerHTML = '';
   if (!list.length) {
-    // Leerer Zustand: Wenn ein Filter/Suchbegriff aktiv ist, den Ausweg als sichtbaren
-    // Button anbieten — nicht nur im Text erwähnen (Owner-Prinzip: offensichtliche
-    // Bedienung, Buttons als solche erkennbar, keine versteckte Geste).
-    const filtered = shortageFilter || q;
-    const empty = el(`<div class="card"><div class="muted">${esc(t('sh_empty'))}</div>${filtered?`<div style="margin-top:10px"><button class="small" data-sreset>↺ ${esc(t('sh_reset'))}</button></div>`:''}</div>`);
-    const reset = empty.querySelector('[data-sreset]');
-    if (reset) reset.onclick = () => {
+    listBox.appendChild(filteredEmptyCard('sh_empty', !!(shortageFilter || q), () => {
       shortageFilter = ''; shortageQuery = '';
       const qin = bar.querySelector('[data-q]'); if (qin) qin.value = '';
       renderShortlist(listBox, bar, all);
-    };
-    listBox.appendChild(empty);
+    }));
   }
   else list.forEach(s => listBox.appendChild(shortageCard(s)));
   // Merker für Neu-Rendern nach Filter-/Suchänderung + Export der aktuellen Auswahl
@@ -3536,7 +3540,11 @@ async function loadPrices() {
       { const rb = bar.querySelector('[data-prose]'); if (rb) { rb.classList.toggle('active', priceRoseOnly); rb.setAttribute('aria-pressed', String(priceRoseOnly)); } }
       shownPrices = list;
       listBox.innerHTML = '';
-      if (!list.length) listBox.appendChild(el(`<div class="card muted">${esc(t('pr_empty'))}</div>`));
+      if (!list.length) listBox.appendChild(filteredEmptyCard('pr_empty', !!(q || priceWatchedOnly || priceRoseOnly), () => {
+        priceQuery = ''; priceWatchedOnly = false; priceRoseOnly = false;
+        if (pq) pq.value = '';
+        draw();
+      }));
       else list.forEach(g => listBox.appendChild(priceGroup(g, pWatched, () => { if (priceWatchedOnly) draw(); })));
     };
     { const wb = bar.querySelector('[data-pwatched]'); if (wb) wb.onclick = () => { priceWatchedOnly = !priceWatchedOnly; draw(); }; }
@@ -4150,7 +4158,11 @@ async function loadRabatte() {
       shown = list;
       const csvBtn = bar.querySelector('[data-rcsv]'); if (csvBtn) csvBtn.textContent = `⬇️ CSV (${list.length})`;
       listBox.innerHTML = '';
-      if (!list.length) listBox.appendChild(el(`<div class="card muted">${esc(t('rb_none'))}</div>`));
+      if (!list.length) listBox.appendChild(filteredEmptyCard('rb_none', !!(q || rabattExpiring || rabattWatchedOnly), () => {
+        rabattQuery = ''; rabattExpiring = false; rabattWatchedOnly = false;
+        if (qi) qi.value = '';
+        draw();
+      }));
       else list.forEach(r => listBox.appendChild(rabattCard(r, watched, () => { if (rabattWatchedOnly) draw(); })));
     };
     bar.querySelectorAll('[data-exp]').forEach(b => b.onclick = () => { rabattExpiring = b.dataset.exp==='1'; draw(); });
