@@ -6635,7 +6635,7 @@ async function openWirkstoff(name) {
   recordRecentWirkstoff(d.wirkstoff);
   feed.innerHTML = '';
   const head = el(`<div class="card"><div><button class="ghost small" data-back>${esc(t('search_back'))}</button></div>
-    <h1 style="margin:8px 0 2px">💊 ${esc(d.wirkstoff)}</h1>
+    <h1 tabindex="-1" style="margin:8px 0 2px">💊 ${esc(d.wirkstoff)}</h1>
     <div class="muted">${esc(t('wk_sub'))}</div>
     ${d.also_watching >= 1 ? `<div class="muted" style="font-size:13px;margin-top:4px">${esc(d.also_watching === 1 ? t('wk_also_1') : ti('wk_also_n', { n: d.also_watching }))}</div>` : ''}
     <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap"><button class="${d.watched?'':'ghost '}small" data-watch aria-pressed="${!!d.watched}">${d.watched?esc(t('sc_watched')):esc(t('sc_watch'))}</button><button class="ghost small" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button><button class="ghost small" data-wkprint title="${esc(t('wk_print_t'))}">🖨️ ${esc(t('pr_print_btn'))}</button><button class="ghost small" data-wktask title="${esc(t('tk_as_task'))}">${esc(t('tk_as_task'))}</button></div></div>`);
@@ -6663,6 +6663,12 @@ async function openWirkstoff(name) {
     wb.disabled = false;
   };
   feed.appendChild(head);
+  // Detailseite oben starten (man kommt oft aus einer tief gescrollten Liste/Suche) und den
+  // Fokus auf die Überschrift setzen: Screenreader/Tastatur bekommen so mit, dass eine neue
+  // Seite geladen ist, und lesen den Wirkstoffnamen vor. Der Ring erscheint nur bei
+  // Tastaturnutzung (:focus-visible), stört Maus-Klicks also nicht.
+  window.scrollTo({ top: 0 });
+  { const h1 = head.querySelector('h1'); if (h1) h1.focus({ preventScroll: true }); }
 
   // Rabatt-Alarm für diesen Wirkstoff (nur wenn beobachtet): ab X % Rabatt benachrichtigen.
   if (d.watched) {
