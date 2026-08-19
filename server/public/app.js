@@ -7071,6 +7071,19 @@ function avatarHtml(a, size = 36, link = true) {
   if (a.avatar_url) return `<img${attr} alt="" style="object-fit:cover;${st}" src="${esc(a.avatar_url)}">`;
   return `<span${attr} style="${st}">${esc(ini)}</span>`;
 }
+// Domain einer Quelle (ohne „www.") — für Vertrauen auf einen Blick: eine amtliche
+// Quelle (z. B. basg.gv.at) ist so sofort von einer beliebigen unterscheidbar.
+function srcDomain(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; }
+}
+// Quellen-Link fürs Beitrag-/News-Rendering: „🔗 Quelle: <domain>" (Domain nur wenn
+// erkennbar). Sicher via target=_blank rel=noopener noreferrer.
+function sourceLinkHtml(url) {
+  if (!url) return '';
+  const dom = srcDomain(url);
+  return `<div style="margin-top:6px"><a href="${esc(url)}" target="_blank" rel="noopener noreferrer" class="mention">${esc(t('pc_source'))}${dom ? ': ' + esc(dom) : ''}</a></div>`;
+}
+
 function postCard(p) {
   const a = p.author || {};
   const rc = p.reaction_counts || {};
@@ -7100,7 +7113,7 @@ function postCard(p) {
     ${p.poll ? pollHtml(p) : ''}
     ${p.repost_of_post ? repostEmbedHtml(p.repost_of_post) : ''}
     ${p.image && /^data:image\//.test(p.image) ? `<img data-zoom src="${p.image}" alt="${esc(t('pc_img_alt'))}" style="max-width:100%;border-radius:10px;margin-top:8px;display:block;cursor:zoom-in" />` : ''}
-    ${p.source_url ? `<div style="margin-top:6px"><a href="${esc(p.source_url)}" target="_blank" rel="noopener noreferrer" class="mention">${esc(t('pc_source'))}</a></div>` : ''}
+    ${sourceLinkHtml(p.source_url)}
     <div class="vis" data-edited ${p.edited_at?'':'style="display:none"'}>${esc(t('pc_edited'))}</div>
     ${refChip(p.ref_summary)}
     <div class="vis">${p.visibility==='public'?esc(t('pc_vis_public')):esc(t('pc_vis_followers'))}</div>
