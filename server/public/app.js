@@ -4995,7 +4995,14 @@ async function openDirectory(type) {
   head.querySelector('[data-q]').addEventListener('keydown', e => { if (e.key==='Enter') doSearch(); });
   { const blf = head.querySelector('[data-blf]'); if (blf) blf.onchange = () => { dirState.bl = blf.value; openDirectory(); }; }
   feed.appendChild(head);
-  if (!list.people.length) { feed.appendChild(emptyState({ icon:'🔎', title:t('dir_empty_t'), text: dirState.verified ? t('dir_empty_verified') : t('dir_empty_s') })); return; }
+  if (!list.people.length) {
+    // Wie bei den Daten-Reitern: bei aktivem Filter (Suche/Bundesland/nur verifiziert) einen
+    // sichtbaren „Filter zurücksetzen"-Knopf anbieten — konsistente, offensichtliche Bedienung.
+    const active = dirState.q || dirState.bl || dirState.verified;
+    feed.appendChild(emptyState({ icon:'🔎', title:t('dir_empty_t'), text: dirState.verified ? t('dir_empty_verified') : t('dir_empty_s'),
+      cta: active ? { label: t('sh_reset'), onClick: () => { dirState.q=''; dirState.bl=''; dirState.verified=false; openDirectory(); } } : null }));
+    return;
+  }
   // Auf breiteren Screens mehrspaltig (füllt den Platz), am Handy einspaltig — responsiv
   // über auto-fill, ohne Media-Query.
   const grid = el('<div class="dir-grid"></div>');
