@@ -3300,7 +3300,7 @@ function shortageCard(s) {
       <span class="vis" title="${esc(t('pl_open'))}">${esc(provLabel(s.provenance))}</span>
     </div>
     <div class="post-body">${esc(s.bezeichnung)}</div>
-    <div class="muted">${s.grund?esc(grundLabel(s.grund))+' · ':''}${esc(t('sc_reported'))} ${esc(s.gemeldet_am||'—')}${s.days_reported>0&&s.status!=='verfuegbar'?` · ${esc(nlabel(s.days_reported,'sc_age_one','sc_age_many'))}`:''}${s.quelle&&/^https?:\/\//i.test(s.quelle)?` · <a href="${esc(s.quelle)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(t('wk_hist_src'))}</a>`:''}</div>
+    <div class="muted">${s.grund?esc(grundLabel(s.grund))+' · ':''}${esc(t('sc_reported'))} ${esc(s.gemeldet_am||'—')}${s.days_reported>0&&s.status!=='verfuegbar'?` · ${esc(nlabel(s.days_reported,'sc_age_one','sc_age_many'))}`:''}${s.quelle&&/^https?:\/\//i.test(s.quelle)?` · <a href="${esc(s.quelle)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(t('wk_hist_src'))}${srcDomSuffix(s.quelle)}</a>`:''}</div>
     ${s.voraussichtlich_bis&&s.status!=='verfuegbar'?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sc_until'))} <b>${esc(fmtDateDe(s.voraussichtlich_bis))}</b>${shortageCountdown(s)}</div>`:''}
     ${s.is_antibiotic?`<div style="margin-top:6px;font-size:13px"><span style="color:var(--ok-fg);font-weight:600">${esc(t('sc_abx'))}</span> — <span class="clickable" data-amr style="color:var(--ok-fg);text-decoration:underline">${esc(t('sc_abx_link'))}</span> <span class="muted">${esc(t('sc_abx_note'))}</span></div>`:''}
     ${s.price_alternatives>0&&s.status!=='verfuegbar'?`<div style="margin-top:6px"><button class="linklike small" data-alts style="color:var(--ok-fg);font-weight:700">${esc(ti('sc_alts',{n:s.price_alternatives}))}</button> <span class="muted" style="font-size:12px">${esc(t('sc_alts_note'))}</span></div>`:''}
@@ -3401,7 +3401,7 @@ function shortageCard(s) {
       // Quelle nur als Link zeigen — Text-Quellen (z.B. "Referenzdaten") stecken
       // bereits im Herkunfts-Label und würden doppelt erscheinen.
       const q = hEntry.quelle && /^https?:\/\//.test(hEntry.quelle)
-        ? `<a href="${esc(hEntry.quelle)}" target="_blank" rel="noopener noreferrer">Quelle 🔗</a>`
+        ? `<a href="${esc(hEntry.quelle)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(t('wk_hist_src'))}${srcDomSuffix(hEntry.quelle)}</a>`
         : '';
       box.appendChild(el(`<div class="comment" style="font-size:13px"><b>${esc(fmtDateDe(hEntry.am))}</b> — <span style="color:${m.color};font-weight:700">${m.icon} ${m.label}</span> <span class="muted">· ${esc(provLabel(hEntry.provenance))}${q?' · ':''}</span>${q}</div>`));
     });
@@ -6937,7 +6937,7 @@ async function openWirkstoff(name) {
     // Erstmeldedatum aus dem Statusverlauf (Fallback: gemeldet_am) — zeigt „seit wann".
     const hist = Array.isArray(s.history) ? s.history.filter(h => h && h.am) : [];
     const firstAm = (hist[0] && hist[0].am) || s.gemeldet_am || null;
-    const row = el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:12px">· ${esc(provLabel(s.provenance))}${s.grund?' · '+esc(grundLabel(s.grund)):''}${firstAm?' · '+esc(ti('wk_since',{date:fmtDateDe(firstAm)})):''}${s.quelle&&/^https?:\/\//i.test(s.quelle)?` · <a href="${esc(s.quelle)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(t('wk_hist_src'))}</a>`:''}</span></div>`);
+    const row = el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:12px">· ${esc(provLabel(s.provenance))}${s.grund?' · '+esc(grundLabel(s.grund)):''}${firstAm?' · '+esc(ti('wk_since',{date:fmtDateDe(firstAm)})):''}${s.quelle&&/^https?:\/\//i.test(s.quelle)?` · <a href="${esc(s.quelle)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(t('wk_hist_src'))}${srcDomSuffix(s.quelle)}</a>`:''}</span></div>`);
     // Statusverlauf (nur ab 2 dokumentierten Schritten): macht sichtbar, wie lange und
     // wie stabil der Engpass ist — hilft bei der Entscheidung, ob aktiv beschafft werden
     // muss. Standardmäßig eingeklappt, damit die Detailseite kompakt bleibt.
@@ -6949,7 +6949,7 @@ async function openWirkstoff(name) {
       [...hist].reverse().forEach(h => {
         const [hl,hc] = statusShort(h.status);
         const q = h.quelle && /^https?:\/\//i.test(h.quelle)
-          ? ` · <a href="${esc(h.quelle)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(t('wk_hist_src'))}</a>` : '';
+          ? ` · <a href="${esc(h.quelle)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(t('wk_hist_src'))}${srcDomSuffix(h.quelle)}</a>` : '';
         tl.appendChild(el(`<div style="display:flex;gap:8px;font-size:13px;padding:2px 0;flex-wrap:wrap"><span class="muted" style="min-width:84px">${esc(fmtDateDe(h.am))}</span><span style="color:${hc};font-weight:700">${hl}</span><span class="muted">${q}</span></div>`));
       });
       toggle.onclick = () => { const open = !tl.classList.toggle('hidden'); toggle.setAttribute('aria-expanded', String(open)); };
@@ -7076,12 +7076,13 @@ function avatarHtml(a, size = 36, link = true) {
 function srcDomain(url) {
   try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; }
 }
+// „: <domain>"-Suffix (bereits escaped) für Quellen-Labels — leer, wenn nicht erkennbar.
+function srcDomSuffix(url) { const d = srcDomain(url); return d ? ': ' + esc(d) : ''; }
 // Quellen-Link fürs Beitrag-/News-Rendering: „🔗 Quelle: <domain>" (Domain nur wenn
 // erkennbar). Sicher via target=_blank rel=noopener noreferrer.
 function sourceLinkHtml(url) {
   if (!url) return '';
-  const dom = srcDomain(url);
-  return `<div style="margin-top:6px"><a href="${esc(url)}" target="_blank" rel="noopener noreferrer" class="mention">${esc(t('pc_source'))}${dom ? ': ' + esc(dom) : ''}</a></div>`;
+  return `<div style="margin-top:6px"><a href="${esc(url)}" target="_blank" rel="noopener noreferrer" class="mention">${esc(t('pc_source'))}${srcDomSuffix(url)}</a></div>`;
 }
 
 function postCard(p) {
