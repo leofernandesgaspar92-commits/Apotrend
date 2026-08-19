@@ -5861,8 +5861,11 @@ function printPatientInfo(d) {
   const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:720px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:20px} .c{border:1px solid #cbd5cf;border-radius:8px;padding:12px 14px;margin:10px 0;break-inside:avoid}
     h2{font-size:16px;margin:0 0 4px} p{margin:0;font-size:14px;line-height:1.5} .src{font-size:12px;color:#555;margin-top:16px}`;
+  // Quell-Label in der Patienten-Sprache (wie die Überschrift) — ein deutsches „Quelle:"
+  // auf einem englischen/türkischen Blatt wäre inkonsistent.
+  const srcLabel = d.lang === 'en' ? 'Source' : d.lang === 'tr' ? 'Kaynak' : 'Quelle';
   const body = `<h1>🧫 ${esc(patientInfoHeading(d.lang))}</h1>${cards}
-    <div class="src">Quelle: ${esc(d.source.label)} · ${esc(d.source.url)}<br>${esc(d.disclaimer)}</div>`;
+    <div class="src">${esc(srcLabel)}: ${esc(d.source.label)} · ${esc(d.source.url)}<br>${esc(d.disclaimer)}</div>`;
   openPrintDoc(patientInfoHeading(d.lang), css, body, d.lang);
 }
 async function openPatientInfo() {
