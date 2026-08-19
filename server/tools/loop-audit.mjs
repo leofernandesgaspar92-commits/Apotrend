@@ -94,6 +94,12 @@ function run() {
       //     Der data-i18n-Ausschluss verhindert Fehlalarme auf legitimen Fallback-Texten.
       hits.push(...(outside.match(/<label(?![^>]*data-i18n)[^>]*>[^<]*[äöüßÄÖÜ][^<]*<\/label>/g) || []));
       hits.push(...(outside.match(/<(?:input|textarea)(?![^>]*data-i18n-ph)[^>]*placeholder="[^"]*[äöüßÄÖÜ][^"]*"/g) || []));
+      // (c) Deutsche UI-Wörter als LITERALER HTML-Textinhalt in Template-Literalen
+      //     (z.B. `>Quelle 🔗</a>`, `>Quelle: …`). Genau diese Klasse fanden manuelle
+      //     Sweeps, aber (a)/(b) verfehlten sie: kein Property, kein <label>, kein Umlaut.
+      //     Das führende `>` verankert echten Textinhalt und schließt Kommentare (dort
+      //     steht kein `>` vor dem Wort) sowie Wörterbuch-Werte (dort `:'Wort'`) aus.
+      hits.push(...(outside.match(/>(?:Quelle|Drucken|Speichern|Löschen|Abbrechen|Schließen|Zurück|Senden|Melden|Bearbeiten|Kopieren|Hinzufügen|Entfernen|Absenden)\b/g) || []));
       // ${...}-Interpolationen sind bereits übersetzt -> als Fehlalarm ausschließen.
       const real = hits.filter((h) => !h.includes('${'));
       return { count: real.length, samples: real.slice(0, 6).map((x) => x.replace(/\s+/g, ' ').slice(0, 52)) };
