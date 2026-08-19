@@ -6795,7 +6795,7 @@ async function openWirkstoff(name) {
     // Erstmeldedatum aus dem Statusverlauf (Fallback: gemeldet_am) — zeigt „seit wann".
     const hist = Array.isArray(s.history) ? s.history.filter(h => h && h.am) : [];
     const firstAm = (hist[0] && hist[0].am) || s.gemeldet_am || null;
-    const row = el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:12px">· ${esc(provLabel(s.provenance))}${s.grund?' · '+esc(grundLabel(s.grund)):''}${firstAm?' · '+esc(ti('wk_since',{date:fmtDateDe(firstAm)})):''}</span></div>`);
+    const row = el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:12px">· ${esc(provLabel(s.provenance))}${s.grund?' · '+esc(grundLabel(s.grund)):''}${firstAm?' · '+esc(ti('wk_since',{date:fmtDateDe(firstAm)})):''}${s.quelle&&/^https?:\/\//i.test(s.quelle)?` · <a href="${esc(s.quelle)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(t('wk_hist_src'))}</a>`:''}</span></div>`);
     // Statusverlauf (nur ab 2 dokumentierten Schritten): macht sichtbar, wie lange und
     // wie stabil der Engpass ist — hilft bei der Entscheidung, ob aktiv beschafft werden
     // muss. Standardmäßig eingeklappt, damit die Detailseite kompakt bleibt.
