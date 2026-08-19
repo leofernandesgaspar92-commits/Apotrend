@@ -4589,6 +4589,19 @@ function openBookVideocall(providerHandle, providerName) {
 }
 
 // Premium: eigene Videosprechstunden verwalten (als Anbieter bestätigen/ablehnen, Call starten).
+// Termine so ordnen, dass der NÄCHSTE zuerst steht: anstehende (heute/künftig) zuerst,
+// soonest oben; vergangene danach, neueste zuerst. Der Server liefert rein aufsteigend —
+// dabei landen erledigte Vergangenheits-Termine oben und verdecken den nächsten Termin.
+function sortAppointments(list, today) {
+  const isPast = (a) => (a && a.datum || '') < today;
+  return [...(list || [])].sort((a, b) => {
+    const pa = isPast(a), pb = isPast(b);
+    if (pa !== pb) return pa ? 1 : -1; // anstehende vor vergangenen
+    const ka = (a.datum || '') + (a.uhrzeit || ''), kb = (b.datum || '') + (b.uhrzeit || '');
+    return pa ? kb.localeCompare(ka) : ka.localeCompare(kb); // vergangene: neueste zuerst; anstehende: soonest zuerst
+  });
+}
+
 async function openAppointments(flash) {
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
@@ -4605,7 +4618,7 @@ async function openAppointments(flash) {
   if (flash) feed.appendChild(el(`<div class="card ok-box" style="padding:10px 14px;font-weight:600">✅ ${esc(flash)}</div>`));
   if (!d.appointments.length) { feed.appendChild(emptyState({ icon:'📹', title:t('vc_empty_t'), text:t('vc_empty_s') })); return; }
   const statusMeta = { angefragt:['var(--warn-fg)','var(--warn-bg)',t('vc_st_pending')], bestaetigt:['var(--ok-fg)','var(--ok-bg)',t('vc_st_confirmed')], abgelehnt:['var(--crit-fg)','var(--crit-bg)',t('vc_st_declined')], storniert:['var(--muted)','var(--chip-bg)',t('vc_st_cancelled')] };
-  for (const a of d.appointments) {
+  for (const a of sortAppointments(d.appointments, taskToday())) {
     const other = a.i_am_provider ? a.requester : a.provider;
     const [col,bg,lab] = statusMeta[a.status] || ['var(--muted)','var(--chip-bg)',a.status];
     const card = el(`<div class="card">
