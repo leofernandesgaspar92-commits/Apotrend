@@ -5403,15 +5403,21 @@ function printProcurementReport(orders) {
     if (pk) byProduct.set(pk, (byProduct.get(pk) || 0) + (Number(i.menge) || 0));
     const sk = (i.supplier || '').trim();
     const ap = i.aktionspreis != null ? Number(i.aktionspreis) : null;
-    if (sk && ap != null) bySupplier.set(sk, (bySupplier.get(sk) || 0) + ap * (Number(i.menge) || 0));
+    if (sk && ap != null) {
+      const m = Number(i.menge) || 0;
+      const cur = bySupplier.get(sk) || { spend: 0, saved: 0 };
+      cur.spend += ap * m;
+      if (i.listenpreis != null && Number(i.listenpreis) > ap) cur.saved += (Number(i.listenpreis) - ap) * m;
+      bySupplier.set(sk, cur);
+    }
   }
   const topP = [...byProduct.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
-  const topS = [...bySupplier.entries()].sort((a, b) => b[1] - a[1]);
+  const topS = [...bySupplier.entries()].sort((a, b) => b[1].spend - a[1].spend);
   const kpi = (num, label, col = '#111') => `<div class="kpi"><div class="n" style="color:${col}">${esc(num)}</div><div class="l">${esc(label)}</div></div>`;
   const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:800px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:22px;margin:0 0 2px} h2{font-size:15px;margin:20px 0 6px;color:#333} .meta{color:#555;font-size:13px;margin-bottom:14px}
     .kpis{display:flex;flex-wrap:wrap;gap:20px;margin:8px 0} .kpi .n{font-size:22px;font-weight:800} .kpi .l{color:#555;font-size:12px}
-    table{width:100%;border-collapse:collapse} td{padding:6px 8px;border-bottom:1px solid #e3e8e5;font-size:14px} td.r{text-align:right;font-weight:700;white-space:nowrap}
+    table{width:100%;border-collapse:collapse} th{text-align:left;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px} td{padding:6px 8px;border-bottom:1px solid #e3e8e5;font-size:14px} th.r,td.r{text-align:right} td.r{font-weight:700;white-space:nowrap} td.sav{color:#0b7f28}
     .src{font-size:12px;color:#555;margin-top:18px}`;
   const body = `<h1>📊 ${esc(t('os_rep_title'))}</h1>
     <div class="meta">${esc(ti('os_rep_period', { from: from ? fmtDateDe(from) : '—', to: to ? fmtDateDe(to) : '—' }))} · ${esc(ti('wl_print_asof', { date: printDate() }))}</div>
@@ -5422,7 +5428,7 @@ function printProcurementReport(orders) {
       ${saved > 0 ? kpi(rateStr, t('os_rep_rate'), '#0b7f28') : ''}
       ${kpi(String(pieces), t('os_pieces'))}
     </div>
-    ${topS.length ? `<h2>${esc(t('os_rep_suppliers'))}</h2><table><tbody>${topS.map(([s, v]) => `<tr><td>${esc(s)}</td><td class="r">€ ${esc(printMoney(v))}</td></tr>`).join('')}</tbody></table>` : ''}
+    ${topS.length ? `<h2>${esc(t('os_rep_suppliers'))}</h2><table><thead><tr><th></th><th class="r">${esc(t('os_spent'))}</th><th class="r">${esc(t('os_saved'))}</th></tr></thead><tbody>${topS.map(([s, v]) => `<tr><td>${esc(s)}</td><td class="r">€ ${esc(printMoney(v.spend))}</td><td class="r sav">${v.saved > 0 ? '€ ' + esc(printMoney(v.saved)) : '—'}</td></tr>`).join('')}</tbody></table>` : ''}
     ${topP.length ? `<h2>${esc(t('os_top'))}</h2><table><tbody>${topP.map(([n, m]) => `<tr><td>${esc(n)}</td><td class="r">${esc(String(m))}</td></tr>`).join('')}</tbody></table>` : ''}
     <div class="src">${esc(t('os_rep_foot'))}</div>`;
   openPrintDoc(t('os_rep_title'), css, body);
