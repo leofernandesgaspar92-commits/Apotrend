@@ -4799,6 +4799,11 @@ async function openTasks() {
     bar.querySelectorAll('[data-tf]').forEach(b => { const on = b.dataset.tf === taskFilter; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
     const shown = d.tasks.filter(preds[taskFilter] || preds.aktiv);
     if (!shown.length) { listBox.appendChild(el(`<div class="card muted">${esc(t('tk_none_filter'))}</div>`)); return; }
+    // Nach Dringlichkeit sortieren statt nach Anlege-Reihenfolge: überfällig zuerst, dann
+    // nach Fälligkeit (bald zuerst), dann ohne Termin, Erledigtes ans Ende. So steht das
+    // Brennendste oben — weniger Scrollen für ein zeitknappes Team.
+    const urgency = (tk) => tk.status === 'erledigt' ? 3 : (isOverdue(tk) ? 0 : (tk.due_date ? 1 : 2));
+    shown.sort((a, b) => urgency(a) - urgency(b) || String(a.due_date || '').localeCompare(String(b.due_date || '')));
     shown.forEach(tk => {
       const [col,bg,lab] = taskStatusMeta(tk.status);
       const canEdit = tk.mine || d.can_assign;
