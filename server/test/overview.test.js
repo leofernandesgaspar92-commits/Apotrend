@@ -26,7 +26,7 @@ function setup() {
   const overview = createOverviewService({ shortages, exchange, social, rabatte, prices, amr: createAmrService() });
   const A = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'A' }, owner: { name: 'Anna', email: 'a@a.at', password: 'geheim123' } });
   social.createProfile(A.user.id, { handle: 'anna', displayName: 'Anna' });
-  return { overview, exchange, shortages, a: A.user.id };
+  return { overview, exchange, shortages, social, a: A.user.id };
 }
 
 test('Übersicht bündelt Engpässe, Austausch, Benachrichtigungen, Top-Rabatt', () => {
@@ -77,6 +77,20 @@ test('week_review: neu gemeldeter beobachteter Wirkstoff landet in der Wochen-Zu
   assert.equal(wr.neu[0].wirkstoff, 'Frischophyllin');
   assert.equal(wr.wieder_verfuegbar.length, 0);
   assert.equal(wr.status.length, 0);
+});
+
+test('procurement: realisierte Ersparnis + Anzahl aus Bestellungen', () => {
+  const { overview, social, a } = setup();
+  // Ohne Bestellungen: 0.
+  const o0 = overview.forUser(a);
+  assert.equal(o0.procurement.orders, 0);
+  assert.equal(o0.procurement.saved, 0);
+  // Warenkorb mit Ersparnis (Liste 12, Aktion 10, Menge 5 => 10 gespart) + Checkout.
+  social.addToCart(a, { bezeichnung: 'Amoxicillin', aktionspreis: 10, listenpreis: 12, menge: 5, supplier: 'Kwizda' });
+  social.checkoutCart(a, { reference: 'Q3' });
+  const o1 = overview.forUser(a);
+  assert.equal(o1.procurement.orders, 1);
+  assert.equal(o1.procurement.saved, 10);
 });
 
 test('watch_offers: beobachteter Wirkstoff mit offenem Biete-Angebot', () => {

@@ -45,6 +45,7 @@ const I18N = {
     data_notice_title:'ℹ️ Hinweis zu den Daten für {land}',
     data_notice_body:'Die Live-Regulierungsdaten (Engpässe, Preise, Rabatte) decken derzeit 🇦🇹 Österreich ab. Für {land} bauen wir sie schrittweise mit den lokalen Behörden aus. Der soziale Feed und die News sind bereits länderspezifisch — die unten gezeigten Zahlen stammen aus Österreich.', reg_title:'Offizielle Arzneimittelbehörde: {reg}', reg_sub:'Verbindliche Quelle für {land} — Engpässe, Rückrufe, Zulassungen.', reg_open:'🔗 {reg} öffnen', reg_no_link:'Offizielle Website folgt.', ds_live:'Live-Daten', ds_live_title:'Echte Behördendaten sind angeschlossen und aktuell.', ds_ref:'Referenzdaten (im Aufbau)', ds_ref_title:'Kuratierte Referenzdaten — echte Live-Daten folgen, sobald die Quelle angeschlossen ist.', cc_title:'Währungsumrechner', cc_amount:'Betrag', cc_from:'Von Währung', cc_to:'In Währung', cc_swap:'Währungen tauschen', cc_updated:'Kurse: {date}', cc_unavailable:'Wechselkurse gerade nicht verfügbar.', cc_hint:'Landeswährung ↔ EUR/USD umrechnen',
     ov_hello:'Für dich', ov_sub:'Das Wichtigste auf einen Blick.',
+    ov_proc_title:'💰 Beschaffungs-Ersparnis', ov_proc_sub:'über {n} Bestellungen — ggü. Listenpreis, aus euren Aktionskäufen', ov_proc_sub_one:'über 1 Bestellung — ggü. Listenpreis', ov_proc_cta:'📊 Report ansehen',
     ov_profile_nudge:'Dein Profil ist erst zu {pct}% fertig', ov_profile_nudge_sub:'Mit Foto und Infos finden dich Kolleg:innen leichter — und du wirkst vertrauenswürdiger im Handel.',
     ov_t_crit:'kritische Engpässe', ov_t_abx:'Antibiotika-Engpässe',
     ov_t_offer:'Angebote im Austausch', ov_t_seek:'Gesuche im Austausch',
@@ -397,6 +398,7 @@ const I18N = {
     data_notice_title:'ℹ️ About the data for {land}',
     data_notice_body:'The live regulatory data (shortages, prices, deals) currently covers 🇦🇹 Austria. For {land} we are building it out step by step with the local authorities. The social feed and news are already country-specific — the figures shown below are from Austria.', reg_title:'Official medicines regulator: {reg}', reg_sub:'Authoritative source for {land} — shortages, recalls, approvals.', reg_open:'🔗 Open {reg}', reg_no_link:'Official website coming soon.', ds_live:'Live data', ds_live_title:'Real regulator data is connected and current.', ds_ref:'Reference data (in progress)', ds_ref_title:'Curated reference data — live data follows once the source is connected.', cc_title:'Currency converter', cc_amount:'Amount', cc_from:'From currency', cc_to:'To currency', cc_swap:'Swap currencies', cc_updated:'Rates: {date}', cc_unavailable:'Exchange rates unavailable right now.', cc_hint:'Convert local currency ↔ EUR/USD',
     ov_hello:'For you', ov_sub:'The essentials at a glance.',
+    ov_proc_title:'💰 Procurement savings', ov_proc_sub:'across {n} orders — vs. list price, from your deal purchases', ov_proc_sub_one:'across 1 order — vs. list price', ov_proc_cta:'📊 View report',
     ov_profile_nudge:'Your profile is only {pct}% complete', ov_profile_nudge_sub:'With a photo and details, colleagues find you more easily — and you look more trustworthy for trading.',
     ov_t_crit:'critical shortages', ov_t_abx:'antibiotic shortages',
     ov_t_offer:'offers in exchange', ov_t_seek:'requests in exchange',
@@ -749,6 +751,7 @@ const I18N = {
     data_notice_title:'ℹ️ Sobre os dados de {land}',
     data_notice_body:'Os dados regulatórios em tempo real (faltas, preços, descontos) cobrem atualmente a 🇦🇹 Áustria. Para {land} estamos a construí-los passo a passo com as autoridades locais. O feed social e as notícias já são específicos por país — os números abaixo são da Áustria.', reg_title:'Autoridade do medicamento: {reg}', reg_sub:'Fonte oficial para {land} — faltas, recolhas, autorizações.', reg_open:'🔗 Abrir {reg}', reg_no_link:'Website oficial em breve.', ds_live:'Dados em direto', ds_live_title:'Dados oficiais reais estão ligados e atualizados.', ds_ref:'Dados de referência (em construção)', ds_ref_title:'Dados de referência curados — os dados em direto seguem assim que a fonte for ligada.', cc_title:'Conversor de moeda', cc_amount:'Montante', cc_from:'De moeda', cc_to:'Para moeda', cc_swap:'Trocar moedas', cc_updated:'Câmbios: {date}', cc_unavailable:'Taxas de câmbio indisponíveis de momento.', cc_hint:'Converter moeda local ↔ EUR/USD',
     ov_hello:'Para si', ov_sub:'O essencial num relance.',
+    ov_proc_title:'💰 Poupança nas compras', ov_proc_sub:'em {n} pedidos — face ao preço de tabela, das suas compras promocionais', ov_proc_sub_one:'em 1 pedido — face ao preço de tabela', ov_proc_cta:'📊 Ver relatório',
     ov_profile_nudge:'O seu perfil está apenas {pct}% completo', ov_profile_nudge_sub:'Com foto e dados, os colegas encontram-no mais facilmente — e ganha confiança nas trocas.',
     ov_t_crit:'faltas críticas', ov_t_abx:'faltas de antibióticos',
     ov_t_offer:'ofertas na troca', ov_t_seek:'procuras na troca',
@@ -2071,6 +2074,18 @@ async function loadOverview() {
   renderLiveOverview(feed, liveNow, liveSoon); // zeitkritisch: laufende/kommende Live-Sessions ganz oben
   renderMyTasksOverview(feed, (tasksData && tasksData.tasks) || []); // deine offenen Aufgaben
   renderTeamOverdueOverview(feed, (tasksData && tasksData.tasks) || [], !!(tasksData && tasksData.can_assign)); // Manager: Team-Überfälligkeiten
+  // Realisierte Beschaffungs-Ersparnis: macht den konkreten Euro-Nutzen auf der Startseite
+  // sichtbar und führt direkt zum Report. Nur wenn tatsächlich Ersparnis erzielt wurde.
+  if (d.procurement && d.procurement.saved > 0) {
+    const pc = d.procurement;
+    const c = el(`<div class="card" style="border-left:4px solid var(--ok-fg)">
+      <div class="row" style="align-items:baseline;gap:8px;flex-wrap:wrap"><b style="flex:1">${esc(t('ov_proc_title'))}</b><button class="linklike small" data-report>${esc(t('ov_proc_cta'))} ›</button></div>
+      <div style="font-size:22px;font-weight:800;color:var(--ok-fg);margin-top:2px">€ ${fmtMoney(pc.saved)}</div>
+      <div class="muted" style="font-size:13px">${esc(pc.orders === 1 ? t('ov_proc_sub_one') : ti('ov_proc_sub', { n: pc.orders }))}</div>
+    </div>`);
+    c.querySelector('[data-report]').onclick = () => openOrders();
+    feed.appendChild(c);
+  }
   // Sekundäre Karten unter dem Wert-Überblick (siehe Reihenfolge-Hinweis oben).
   { const r = countryRegulatorCard(!!d.data_live); if (r) feed.appendChild(r); } // offizielle Behörde/Quelle
   renderNewsInline(feed);    // News-Karten fürs Handy (nur wenn die Seitenleiste fehlt)

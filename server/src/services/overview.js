@@ -15,6 +15,16 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
       const expiringSoon = topRabatte.filter(r => r.expiring_soon);
       const watchlist = shortages.myWatchlist(userId);
 
+      // Realisierte Beschaffungs-Ersparnis (aus den erfassten Bestellungen, ggü. Listenpreis).
+      // Macht den konkreten Euro-Nutzen der Plattform schon auf der Startseite sichtbar —
+      // verlinkt auf den Beschaffungs-Report. Unterscheidet sich bewusst von `savings`
+      // (potenzielles Sparpotenzial aus dem Preisvergleich).
+      const orders = (social.listOrders ? social.listOrders(userId) : []) || [];
+      const procurement = {
+        orders: orders.length,
+        saved: Math.round(orders.reduce((s, o) => s + (Number(o.total_savings) || 0), 0) * 100) / 100,
+      };
+
       // Wochenrückblick: Änderungen an beobachteten Wirkstoffen der letzten 7 Tage
       // (neu gemeldet / wieder verfügbar / Status geändert). Ein kompakter „Was hat
       // sich getan"-Blick, den flüchtige Push-Benachrichtigungen allein nicht bieten —
@@ -110,6 +120,7 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
         shortages: { kritisch: kritisch.length, total: sh.length, antibiotika, top: kritisch.slice(0, 3) },
         watchlist: { total: watchlist.length, items: watchlist, alerts: watchlist.filter(w => w.status === 'kritisch' || w.status === 'eingeschraenkt').length },
         week_review: weekReview,
+        procurement: procurement,
         watch_deals: watchDeals,
         watch_offers: watchOffers,
         expiring_offers: { count: expiringOffers.length, items: expiringOffers.slice(0, 5) },
