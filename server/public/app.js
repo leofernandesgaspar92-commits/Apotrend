@@ -70,7 +70,7 @@ const I18N = {
     sp_stew_title:'🧫 Stewardship-Fachforum', sp_stew_tag:'Fachdiskussion (AMR)',
     sp_stew_sub:'Anonymisierter Austausch zum verantwortungsvollen Antibiotikaeinsatz — keine Patientenberatung.',
     oq_title:'❓ Offene Fachfragen', oq_waiting:'Kolleg:innen warten auf Antwort',
-    oq_answer_sg:'Antwort', oq_answer_pl:'Antworten', tr_title:'🏷️ Aktuelle Themen:',
+    oq_answer_sg:'Antwort', oq_answer_pl:'Antworten', oq_no_answer:'noch ohne Antwort', tr_title:'🏷️ Aktuelle Themen:',
     sh_q_ph:'🔎 Wirkstoff oder Präparat suchen…', sh_f_all:'Alle', sh_f_crit:'🔴 Nur kritisch',
     sh_f_abx:'🧫 Antibiotika', sh_f_watched:'⭐ Beobachtet', sh_f_comm:'👥 Community', sh_f_available:'✅ Wieder verfügbar',
     sh_print_asof:'Stand: ', sh_print_filter:' · Filter: ', sh_print_query:' · Suche: ',
@@ -423,7 +423,7 @@ const I18N = {
     sp_stew_title:'🧫 Stewardship forum', sp_stew_tag:'Expert discussion (AMR)',
     sp_stew_sub:'Anonymous exchange on responsible antibiotic use — not patient advice.',
     oq_title:'❓ Open questions', oq_waiting:'Colleagues are waiting for an answer',
-    oq_answer_sg:'answer', oq_answer_pl:'answers', tr_title:'🏷️ Trending topics:',
+    oq_answer_sg:'answer', oq_answer_pl:'answers', oq_no_answer:'no reply yet', tr_title:'🏷️ Trending topics:',
     sh_q_ph:'🔎 Search substance or product…', sh_f_all:'All', sh_f_crit:'🔴 Critical only',
     sh_f_abx:'🧫 Antibiotics', sh_f_watched:'⭐ Watched', sh_f_comm:'👥 Community', sh_f_available:'✅ Available again',
     sh_print_asof:'As of: ', sh_print_filter:' · Filter: ', sh_print_query:' · Search: ',
@@ -776,7 +776,7 @@ const I18N = {
     sp_stew_title:'🧫 Fórum de stewardship', sp_stew_tag:'Discussão técnica (RAM)',
     sp_stew_sub:'Intercâmbio anónimo sobre o uso responsável de antibióticos — não é aconselhamento a doentes.',
     oq_title:'❓ Perguntas em aberto', oq_waiting:'Colegas à espera de resposta',
-    oq_answer_sg:'resposta', oq_answer_pl:'respostas', tr_title:'🏷️ Temas atuais:',
+    oq_answer_sg:'resposta', oq_answer_pl:'respostas', oq_no_answer:'ainda sem resposta', tr_title:'🏷️ Temas atuais:',
     sh_q_ph:'🔎 Pesquisar substância ou produto…', sh_f_all:'Todas', sh_f_crit:'🔴 Só críticas',
     sh_f_abx:'🧫 Antibióticos', sh_f_watched:'⭐ Vigiadas', sh_f_comm:'👥 Comunidade', sh_f_available:'✅ Disponível de novo',
     sh_print_asof:'Atualizado: ', sh_print_filter:' · Filtro: ', sh_print_query:' · Pesquisa: ',
@@ -2263,7 +2263,10 @@ async function renderOpenQuestions(feed) {
   const box = card.querySelector('[data-oq]');
   open.forEach(q => {
     const nAns = q.comment_count||0;
-    const row = el(`<div class="comment clickable">❓ ${esc((q.body||'').slice(0,90))}${(q.body||'').length>90?'…':''} <span class="muted" style="font-size:12px">· ${q.author?'@'+esc(q.author.handle):''} · ${nAns} ${esc(nAns===1?t('oq_answer_sg'):t('oq_answer_pl'))}</span></div>`);
+    const ansHtml = nAns === 0
+      ? `<b style="color:var(--warn-fg)">${esc(t('oq_no_answer'))}</b>`
+      : `${nAns} ${esc(nAns===1?t('oq_answer_sg'):t('oq_answer_pl'))}`;
+    const row = el(`<div class="comment clickable">❓ ${esc((q.body||'').slice(0,90))}${(q.body||'').length>90?'…':''} <span class="muted" style="font-size:12px">· ${q.author?'@'+esc(q.author.handle):''} · ${ansHtml}</span></div>`);
     row.onclick = () => openPost(q.id);
     box.appendChild(row);
   });
