@@ -7516,12 +7516,16 @@ async function openPost(postId) {
   try {
     const d = await api('GET','/api/posts/'+encodeURIComponent(postId));
     feed.innerHTML = '';
-    const head = el(`<div class="card"><div class="row"><b>${esc(t('post_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-back>${esc(t('post_back'))}</button></div></div>`);
+    const head = el(`<div class="card"><div class="row"><b tabindex="-1" data-ptitle>${esc(t('post_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-back>${esc(t('post_back'))}</button></div></div>`);
     head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
     feed.appendChild(head);
     const cardEl = postCard(d.post);
     feed.appendChild(cardEl);
     cardEl.querySelector('[data-comments]').click(); // Kommentare gleich aufklappen
+    // Wie Wirkstoff-/Suchdetail: oben starten (man kommt oft aus einem tief gescrollten
+    // Feed) und Fokus auf die Überschrift für Screenreader/Tastatur (Ring nur bei Tastatur).
+    window.scrollTo({ top: 0 });
+    { const pt = head.querySelector('[data-ptitle]'); if (pt) pt.focus({ preventScroll: true }); }
   } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
 
