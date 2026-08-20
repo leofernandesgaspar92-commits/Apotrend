@@ -5801,6 +5801,14 @@ async function openBookmarks() {
   } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
 
+// Einheitlicher Detailseiten-Einstieg: nach oben scrollen (man kommt oft aus einer tief
+// gescrollten Liste) und Fokus auf die Überschrift setzen, damit Screenreader/Tastatur die
+// neue Seite mitbekommen. Der Fokusring erscheint nur bei Tastaturnutzung (:focus-visible).
+function startDetailView(titleEl) {
+  window.scrollTo({ top: 0 });
+  if (titleEl) titleEl.focus({ preventScroll: true });
+}
+
 async function openHashtag(tag) {
   setDocTitle('#' + String(tag||'').replace(/^#/, ''));
   if (!tag) return;
@@ -5810,7 +5818,7 @@ async function openHashtag(tag) {
   try {
     const d = await api('GET','/api/hashtag/'+encodeURIComponent(tag));
     feed.innerHTML = '';
-    const head = el(`<div class="card"><div class="row" style="flex-wrap:wrap;gap:6px"><b>🏷️ #${esc(d.tag)}</b><span class="sp" style="flex:1"></span><span class="muted">${esc(ti('ht_posts',{n:d.posts.length}))}</span><button class="ghost small" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button><button class="ghost small" data-back>${esc(t('search_back'))}</button></div></div>`);
+    const head = el(`<div class="card"><div class="row" style="flex-wrap:wrap;gap:6px"><b tabindex="-1" data-httitle>🏷️ #${esc(d.tag)}</b><span class="sp" style="flex:1"></span><span class="muted">${esc(ti('ht_posts',{n:d.posts.length}))}</span><button class="ghost small" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button><button class="ghost small" data-back>${esc(t('search_back'))}</button></div></div>`);
     head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
     { const shb = head.querySelector('[data-share]'); if (shb) shb.onclick = async () => {
       const url = location.origin + '/?hashtag=' + encodeURIComponent(d.tag);
@@ -5820,6 +5828,7 @@ async function openHashtag(tag) {
     feed.appendChild(head);
     if (!d.posts.length) feed.appendChild(emptyState({ icon:'🏷️', title:t('ht_empty_t'), text:ti('ht_empty_s',{tag:d.tag}) }));
     d.posts.forEach(p => feed.appendChild(postCard(p)));
+    startDetailView(head.querySelector('[data-httitle]'));
   } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
 
@@ -6074,8 +6083,7 @@ async function renderSearch(q) {
     // Wie die Wirkstoff-Detailseite: oben starten (man sucht oft aus einer tief gescrollten
     // Ansicht) und Fokus auf die Ergebnis-Überschrift, damit Screenreader/Tastatur die neue
     // Trefferliste als solche mitbekommen (Ring nur bei Tastaturnutzung via :focus-visible).
-    window.scrollTo({ top: 0 });
-    { const st = head.querySelector('[data-stitle]'); if (st) st.focus({ preventScroll: true }); }
+    startDetailView(head.querySelector('[data-stitle]'));
     // Letzte Suchen (nur lokal) als Schnell-Chips — häufige Suchen mit einem Klick wiederholen.
     const others = getRecentSearches().filter(x => x.toLowerCase() !== (d.query||'').toLowerCase());
     if (others.length) {
@@ -6359,7 +6367,7 @@ async function openProfile(handle) {
       </div>
       <div class="profile-idblock">
         <div class="row" style="align-items:center">
-          <span class="post-author" style="font-size:20px">${esc(p.display_name||t('ex_unknown'))}</span>
+          <span class="post-author" tabindex="-1" data-pftitle style="font-size:20px">${esc(p.display_name||t('ex_unknown'))}</span>
           ${p.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}
           ${p.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
           ${p.premium?`<span class="premium-badge" title="${esc(t('pc_premium'))}">${esc(t('pc_premium'))}</span>`:''}
@@ -6450,6 +6458,7 @@ async function openProfile(handle) {
     const bookBtn = head.querySelector('[data-bookvc]');
     if (bookBtn) bookBtn.onclick = () => openBookVideocall(p.handle, p.display_name);
     feed.appendChild(head);
+    startDetailView(head.querySelector('[data-pftitle]'));
     // Eigenes Profil: Stummgeschaltete verwalten (aufklappbar, mit „aufheben").
     if (d.is_self && d.muted_count > 0) {
       const mc = el(`<div class="card"><button class="linklike small" data-mtoggle aria-expanded="false">🔇 ${esc(ti('pf_muted_title',{n:d.muted_count}))} ▸</button><div class="hidden" data-mbox style="margin-top:6px"></div></div>`);
@@ -6839,8 +6848,7 @@ async function openWirkstoff(name) {
   // Fokus auf die Überschrift setzen: Screenreader/Tastatur bekommen so mit, dass eine neue
   // Seite geladen ist, und lesen den Wirkstoffnamen vor. Der Ring erscheint nur bei
   // Tastaturnutzung (:focus-visible), stört Maus-Klicks also nicht.
-  window.scrollTo({ top: 0 });
-  { const h1 = head.querySelector('h1'); if (h1) h1.focus({ preventScroll: true }); }
+  startDetailView(head.querySelector('h1'));
 
   // Rabatt-Alarm für diesen Wirkstoff (nur wenn beobachtet): ab X % Rabatt benachrichtigen.
   if (d.watched) {
@@ -7522,10 +7530,7 @@ async function openPost(postId) {
     const cardEl = postCard(d.post);
     feed.appendChild(cardEl);
     cardEl.querySelector('[data-comments]').click(); // Kommentare gleich aufklappen
-    // Wie Wirkstoff-/Suchdetail: oben starten (man kommt oft aus einem tief gescrollten
-    // Feed) und Fokus auf die Überschrift für Screenreader/Tastatur (Ring nur bei Tastatur).
-    window.scrollTo({ top: 0 });
-    { const pt = head.querySelector('[data-ptitle]'); if (pt) pt.focus({ preventScroll: true }); }
+    startDetailView(head.querySelector('[data-ptitle]'));
   } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
 
