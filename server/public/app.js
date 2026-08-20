@@ -5379,22 +5379,24 @@ function monthlySavings(orders, maxMonths = 6) {
     .map(([ym, saved]) => ({ ym, saved }));
 }
 
+// Monats-Label „Mon. JJJJ" in aktueller Sprache aus „YYYY-MM" (UTC, tagesunabhängig).
+function ymLabel(ym) {
+  const [y, m] = String(ym).split('-');
+  return new Date(Date.UTC(+y, +m - 1, 1)).toLocaleDateString(t('_bcp47'), { month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
 // Kleiner, gut lesbarer Ersparnis-Verlauf (waagerechte Balken je Monat) — erzählt den
 // Wert über die Zeit („wir sparen laufend"). Erst ab 2 Monaten sinnvoll, sonst null.
 function renderMonthlySavings(orders) {
   const data = monthlySavings(orders);
   if (data.length < 2) return null;
   const max = Math.max(...data.map(d => d.saved));
-  const monthLabel = (ym) => {
-    const [y, m] = ym.split('-');
-    return new Date(Date.UTC(+y, +m - 1, 1)).toLocaleDateString(t('_bcp47'), { month: 'short', year: 'numeric', timeZone: 'UTC' });
-  };
   const card = el(`<div class="card"><b>📈 ${esc(t('os_month_title'))}</b><div class="muted" style="font-size:13px;margin:2px 0 10px">${esc(t('os_month_sub'))}</div><div data-bars></div></div>`);
   const box = card.querySelector('[data-bars]');
   data.forEach(d => {
     const pct = max > 0 ? Math.max(4, Math.round(d.saved / max * 100)) : 0;
     box.appendChild(el(`<div class="row" style="align-items:center;gap:8px;margin-bottom:6px">
-      <span class="muted" style="min-width:72px;font-size:13px">${esc(monthLabel(d.ym))}</span>
+      <span class="muted" style="min-width:72px;font-size:13px">${esc(ymLabel(d.ym))}</span>
       <span style="flex:1;min-width:40px;background:var(--chip-bg);border-radius:6px;height:16px;overflow:hidden" aria-hidden="true"><span style="display:block;height:100%;width:${pct}%;background:var(--ok-fg);border-radius:6px"></span></span>
       <b style="min-width:72px;text-align:right;color:var(--ok-fg)">€ ${fmtMoney(d.saved)}</b>
     </div>`));
@@ -5431,6 +5433,7 @@ function printProcurementReport(orders) {
   }
   const topP = [...byProduct.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
   const topS = [...bySupplier.entries()].sort((a, b) => b[1].spend - a[1].spend);
+  const months = monthlySavings(list); // Ersparnis-Verlauf je Monat (falls ≥2 Monate)
   const kpi = (num, label, col = '#111') => `<div class="kpi"><div class="n" style="color:${col}">${esc(num)}</div><div class="l">${esc(label)}</div></div>`;
   const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:800px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:22px;margin:0 0 2px} h2{font-size:15px;margin:20px 0 6px;color:#333} .meta{color:#555;font-size:13px;margin-bottom:14px}
@@ -5446,6 +5449,7 @@ function printProcurementReport(orders) {
       ${saved > 0 ? kpi(rateStr, t('os_rep_rate'), '#0b7f28') : ''}
       ${kpi(String(pieces), t('os_pieces'))}
     </div>
+    ${months.length >= 2 ? `<h2>${esc(t('os_month_title'))}</h2><table><tbody>${months.map(m => `<tr><td>${esc(ymLabel(m.ym))}</td><td class="r sav">€ ${esc(printMoney(m.saved))}</td></tr>`).join('')}</tbody></table>` : ''}
     ${topS.length ? `<h2>${esc(t('os_rep_suppliers'))}</h2><table><thead><tr><th></th><th class="r">${esc(t('os_spent'))}</th><th class="r">${esc(t('os_saved'))}</th></tr></thead><tbody>${topS.map(([s, v]) => `<tr><td>${esc(s)}</td><td class="r">€ ${esc(printMoney(v.spend))}</td><td class="r sav">${v.saved > 0 ? '€ ' + esc(printMoney(v.saved)) : '—'}</td></tr>`).join('')}</tbody></table>` : ''}
     ${topP.length ? `<h2>${esc(t('os_top'))}</h2><table><tbody>${topP.map(([n, m]) => `<tr><td>${esc(n)}</td><td class="r">${esc(String(m))}</td></tr>`).join('')}</tbody></table>` : ''}
     <div class="src">${esc(t('os_rep_foot'))}</div>`;
