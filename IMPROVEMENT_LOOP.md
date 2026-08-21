@@ -32,18 +32,22 @@ die Session neu startet.
 
 ## Letzter GATHER-Snapshot
 
-_Aktualisiert 2026-08-18 (Session-Fortschreibung; der frühere Snapshot stand fälschlich noch bei #26/219 Tests)_
+_Aktualisiert 2026-08-18 (Session-Fortschreibung, 2. Hälfte)_
 ```
-Tests:            433/433 grün (60 Dateien)  ·  Browser-Audit: 0 Querscroll / 0 JS-Fehler / 0 a11y  ·  Smoke: 19/19 grün
+Tests:            434/434 grün (60 Dateien)  ·  Browser-Audit: 0 Querscroll / 0 JS-Fehler / 0 a11y  ·  Smoke: 19/19 grün
 i18n de/en/pt:    0 Lücken  ✓ perfekte Parität (Guard prüft bei jedem `verify`)
-Hartkod. Dialoge: 0  ·  Hartkod. UI-DE: 0  ·  Hartkod. JS-DE: 0  ·  Helle Inline-BGs: 0  ·  !important: 3 (legitim)
+Hartkod. Dialoge: 0  ·  Hartkod. UI-DE: 0 (Wächter jetzt inkl. Textinhalt `>Wort`)  ·  Hartkod. JS-DE: 0  ·  Helle Inline-BGs: 0  ·  !important: 3 (legitim)
 Querscroll-Sweep: 390 + 768/1024/1280/1440 + große Schrift (22px) + Wirkstoff-Detailseite
 Backend-Fehler:   alltags-relevante Fehler mehrsprachig (Codes), Fallback = DE-message
-Monolith:         server/public/app.js ~7690 Zeilen · 636 KB  ← größtes Struktur-Signal (P3, CEO-Freigabe)
+Monolith:         server/public/app.js ~7890 Zeilen · 652 KB  ← größtes Struktur-Signal (P3, CEO-Freigabe)
 ```
-Fortschritt: Frontend-i18n lückenlos + dreifach bewacht; Backend-Fehler-i18n für alle
-Alltagsfälle; Kontotyp-Rechte doppelt getestet; Navigation/Leerzustände konsistent;
-Engpass-Sourcing sichtbar. Offene P3: Monolith (app.js), DB, Währung — je architektonisch
+Fortschritt: Frontend-i18n lückenlos + vierfach bewacht (Wächter fängt jetzt auch
+hartkodiertes Deutsch als HTML-Textinhalt); Navigation aller Detailseiten konsistent
+(oben starten + Fokus, DRY via startDetailView); Beschaffungs-/ROI-Nutzen ausgebaut
+(druckbarer Report + Zeitraum + Monatsverlauf + je Lieferant, auf „Für dich" entdeckbar);
+Engpass-Quellen überall mit Domain sichtbar. Offene P3: Monolith (app.js), DB, Währung —
+und der einzige große offene NUTZEN-Hebel: Live-Engpassdaten (sicherheitsrelevant →
+mit Owner). Je architektonisch
 bedeutsam → CEO-Freigabe.
 
 ## Priorisierter Backlog (Kandidaten für WORK)
@@ -82,6 +86,39 @@ Reaktions-/Folgen-Status, volle i18n DE/EN/PT (inkl. aria/title/Dialoge/Pre-Logi
 a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `server/README.md`.
 
 ## Cycle-Log
+
+### Session 2026-08-18 — 2. Hälfte (Fortschreibung, mit Commit belegt)
+> Nach der ersten Hälfte (unten) folgte eine gezielte Richtung, vom Owner delegiert
+> („entscheide du"): **Beschaffungs-/ROI-Nutzen vertiefen** — plus Navigations- und
+> i18n-Härtung. Alle Änderungen: `npm run verify` grün, Playwright-Check + Temp-Werkzeug
+> gelöscht, Push auf `claude/next-steps-w6tymp` UND `feed-first`.
+>
+> **ROI/Beschaffung (für die zahlende Einkaufs-Zielgruppe):**
+> - `90c8793` druckbarer **Beschaffungs-Report** (KPIs, je Lieferant, Top-Präparate).
+> - `a50a90e` **Zeitraum-Auswahl** (Alle/Jahr/90/30 Tage) skaliert Statistik + Report.
+> - `c84df36` **Ersparnis-Verlauf pro Monat** (Bildschirm-Balken) · `7907918` derselbe
+>   auch im Druck-Report · `5b84672` **Ersparnis je Lieferant** im Report.
+> - `36c73cc` realisierte **Beschaffungs-Ersparnis auf „Für dich"** (Report entdeckbar,
+>   Backend `overview.procurement`, +1 Test → 434).
+>
+> **Navigation/a11y:** `cdc62b3` Suche, `2223104` Beitrag, `7a1fab7` Hashtag/Profil +
+> DRY-Helfer `startDetailView` — alle Detailseiten starten oben + fokussieren die
+> Überschrift (SPA-a11y, Ring nur bei Tastatur via `:focus-visible`).
+>
+> **i18n-Härtung (Instrument geschärft, #7/#11-Disziplin):** `265a490`/`5f84c35`
+> Quell-**Domain** überall bei Beiträgen/Engpass-Quellen + hartkodiertes „Quelle"
+> lokalisiert · `f19876c` Patienteninfo-Druck-Quelle in Patientensprache · `a3723ab`
+> **Audit-Wächter (c)**: fängt jetzt hartkodiertes Deutsch als HTML-Textinhalt (`>Wort`)
+> — genau die Klasse, die zwei Hand-Sweeps fanden. Positiv-/Negativ-Kontrolle grün.
+>
+> **Konsistenz-Fixes:** `9585677` Engpass-Verlauf gleiche Reihenfolge · `9697a81`
+> Aufgaben nach Dringlichkeit · `00821d6` Termine „nächster zuerst" · `ba970e4`
+> Verzeichnis-Reset · `43d078e` Engpass-Quelle auf Detailseite · `3fc68ee` offene
+> Fragen ohne Antwort hervorgehoben.
+>
+> **Stand danach:** Jeder Funktionsbereich durchgesehen und ausgereift. Verbleibender
+> großer Hebel = **Live-Engpassdaten** (sicherheitsrelevant → mit Owner, nicht im
+> Autopilot). Weitere Zyklen sind Feinschliff.
 
 ### Session 2026-08-18 — Nachtrag (Log war hinter der Realität zurück)
 > **Ehrlichkeits-Hinweis:** Zwischen #147 und dieser Session liefen Zyklen, die NICHT
