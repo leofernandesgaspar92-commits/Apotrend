@@ -3780,13 +3780,16 @@ function sparkline(series) {
   const y = (v) => h - pad - ((v - min) / span) * (h - 2*pad);
   const pts = series.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
   const dir = series[n-1] - series[0];
-  const col = dir > 0 ? '#c0392b' : (dir < 0 ? '#0b7f28' : '#9aa4ad');
+  // Theme-aware (wie trendStr): im Dunkelmodus wären die hellen Hex-Töne #c0392b/#0b7f28
+  // auf dem dunklen Kartengrund kaum sichtbar. Als CSS-Variable im style (nicht als SVG-
+  // Attribut, wo var() unzuverlässig ist) passt die Farbe sich an und bleibt kontrastreich.
+  const col = dir > 0 ? 'var(--crit-fg)' : (dir < 0 ? 'var(--ok-fg)' : 'var(--muted)');
   const lastX = x(n-1).toFixed(1), lastY = y(series[n-1]).toFixed(1);
   const dirWord = dir > 0 ? t('spark_rising') : (dir < 0 ? t('spark_falling') : t('spark_stable'));
   const label = ti('spark_label', { dir: dirWord }) + series.map(v => fmtMoney(v) + ' ' + t('spark_eur')).join(', ');
   return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${label}" style="display:block;overflow:visible">
-    <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="${lastX}" cy="${lastY}" r="2.5" fill="${col}"/>
+    <polyline points="${pts}" fill="none" style="stroke:${col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${lastX}" cy="${lastY}" r="2.5" style="fill:${col}"/>
   </svg>`;
 }
 
