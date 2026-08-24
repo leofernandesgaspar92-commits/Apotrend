@@ -1,0 +1,85 @@
+/* =============================================================
+ * ERZEUGTE DATEI — NICHT VON HAND BEARBEITEN.
+ * Quelle: src/styles/tokens.mjs   Generator: tools/build-tokens.mjs
+ * Änderungen hier gehen beim nächsten Build verloren und lassen
+ * "npm run check:tokens" fehlschlagen.
+ * ============================================================= */
+
+:root {
+  color-scheme: light;
+  --color-bg: 250 249 247; /* #FAF9F7 */
+  --color-surface: 255 255 255; /* #FFFFFF */
+  --color-surface-raised: 255 255 255; /* #FFFFFF */
+  --color-surface-sunken: 244 242 238; /* #F4F2EE */
+  --color-border: 232 229 223; /* #E8E5DF */
+  --color-border-strong: 139 133 122; /* #8B857A */
+  --color-text: 28 27 25; /* #1C1B19 */
+  --color-text-muted: 107 101 91; /* #6B655B */
+  --color-text-inverted: 255 255 255; /* #FFFFFF */
+  --color-action: 14 124 74; /* #0E7C4A */
+  --color-action-hover: 10 97 57; /* #0A6139 */
+  --color-action-active: 9 78 47; /* #094E2F */
+  --color-action-fg: 255 255 255; /* #FFFFFF */
+  --color-action-subtle: 236 248 241; /* #ECF8F1 */
+  --color-care: 11 106 168; /* #0B6AA8 */
+  --color-care-hover: 8 87 136; /* #085788 */
+  --color-care-fg: 255 255 255; /* #FFFFFF */
+  --color-care-subtle: 234 244 251; /* #EAF4FB */
+  --color-rx: 78 66 166; /* #4E42A6 */
+  --color-rx-fg: 255 255 255; /* #FFFFFF */
+  --color-rx-subtle: 239 238 251; /* #EFEEFB */
+  --color-rx-border: 191 186 236; /* #BFBAEC */
+  --color-success: 14 124 74; /* #0E7C4A */
+  --color-success-subtle: 236 248 241; /* #ECF8F1 */
+  --color-success-border: 168 223 195; /* #A8DFC3 */
+  --color-warning: 154 91 0; /* #9A5B00 */
+  --color-warning-subtle: 255 244 230; /* #FFF4E6 */
+  --color-warning-border: 245 206 147; /* #F5CE93 */
+  --color-danger: 179 38 30; /* #B3261E */
+  --color-danger-subtle: 253 236 234; /* #FDECEA */
+  --color-danger-border: 243 189 184; /* #F3BDB8 */
+  --color-info: 11 106 168; /* #0B6AA8 */
+  --color-info-subtle: 234 244 251; /* #EAF4FB */
+  --color-info-border: 163 207 238; /* #A3CFEE */
+  --color-focus: 26 115 232; /* #1A73E8 */
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg: 20 19 18; /* #141312 */
+  --color-surface: 28 27 25; /* #1C1B19 */
+  --color-surface-raised: 38 36 33; /* #262421 */
+  --color-surface-sunken: 20 19 18; /* #141312 */
+  --color-border: 53 50 45; /* #35322D */
+  --color-border-strong: 139 133 122; /* #8B857A */
+  --color-text: 237 234 228; /* #EDEAE4 */
+  --color-text-muted: 180 175 165; /* #B4AFA5 */
+  --color-text-inverted: 28 27 25; /* #1C1B19 */
+  --color-action: 64 174 124; /* #40AE7C */
+  --color-action-hover: 116 201 160; /* #74C9A0 */
+  --color-action-active: 168 223 195; /* #A8DFC3 */
+  --color-action-fg: 3 35 23; /* #032317 */
+  --color-action-subtle: 9 78 47; /* #094E2F */
+  --color-care: 59 146 209; /* #3B92D1 */
+  --color-care-hover: 110 178 225; /* #6EB2E1 */
+  --color-care-fg: 4 34 58; /* #04223A */
+  --color-care-subtle: 8 71 110; /* #08476E */
+  --color-rx: 191 186 236; /* #BFBAEC */
+  --color-rx-fg: 26 22 58; /* #1A163A */
+  --color-rx-subtle: 52 45 112; /* #342D70 */
+  --color-rx-border: 63 54 138; /* #3F368A */
+  --color-success: 116 201 160; /* #74C9A0 */
+  --color-success-subtle: 9 78 47; /* #094E2F */
+  --color-success-border: 10 97 57; /* #0A6139 */
+  --color-warning: 226 172 68; /* #E2AC44 */
+  --color-warning-subtle: 51 40 15; /* #33280F */
+  --color-warning-border: 90 70 32; /* #5A4620 */
+  --color-danger: 240 133 122; /* #F0857A */
+  --color-danger-subtle: 58 28 24; /* #3A1C18 */
+  --color-danger-border: 94 43 37; /* #5E2B25 */
+  --color-info: 163 207 238; /* #A3CFEE */
+  --color-info-subtle: 8 71 110; /* #08476E */
+  --color-info-border: 8 87 136; /* #085788 */
+  --color-focus: 138 180 248; /* #8AB4F8 */
+}
+
