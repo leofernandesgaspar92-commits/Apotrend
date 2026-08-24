@@ -12,6 +12,10 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    // Node --experimental-strip-types verlangt die explizite .ts-Endung im
+    // Import; ohne dieses Flag beanstandet TypeScript genau das. Erlaubt, weil
+    // hier ohnehin nur geprüft und nicht emittiert wird (noEmit).
+    "allowImportingTsExtensions": true,
     "jsx": "preserve",
     "incremental": true,
     "plugins": [{ "name": "next" }],

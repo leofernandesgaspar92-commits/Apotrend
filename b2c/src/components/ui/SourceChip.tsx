@@ -48,7 +48,10 @@ export function SourceChip({ url, className }: { url: string; className?: string
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-pill border px-3 py-0.5',
+        // Eigenständiges Klick-Ziel (kein Inline-Link im Fließtext) — also gilt
+        // das 48-px-Prinzip. Die Chips stehen in einer eigenen Zeile, deshalb
+        // wirkt die volle Trefferhöhe hier nicht schwer.
+        'inline-flex min-h-touch items-center gap-1.5 rounded-pill border px-4',
         'text-xs font-semibold no-underline',
         'focus-visible:outline-none focus-visible:ring focus-visible:ring-focus focus-visible:ring-offset-2',
         official

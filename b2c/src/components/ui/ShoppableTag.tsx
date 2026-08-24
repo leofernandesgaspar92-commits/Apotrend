@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { cn } from '@/lib/cn'
 import { Badge } from './Badge'
+import { AddToCartForm } from './AddToCartForm'
 import { Button } from './Button'
 import { PflichttextBlock } from './PflichttextBlock'
 import {
@@ -39,24 +40,21 @@ function formatPrice(cents: number, currency: 'EUR' | 'CHF'): string {
 
 interface ShoppableTagProps {
   product: Product
-  onAddToCart?: (product: ShoppableProduct) => void
   className?: string
 }
 
-export function ShoppableTag({ product, onAddToCart, className }: ShoppableTagProps) {
+export function ShoppableTag({ product, className }: ShoppableTagProps) {
   if (isRx(product)) return <RxInfoTag product={product} className={className} />
-  return <BuyableTag product={product} onAddToCart={onAddToCart} className={className} />
+  return <BuyableTag product={product} className={className} />
 }
 
 // --- Kaufbarer Zweig --------------------------------------------------------
 
 function BuyableTag({
   product,
-  onAddToCart,
   className,
 }: {
   product: ShoppableProduct
-  onAddToCart?: (product: ShoppableProduct) => void
   className?: string
 }) {
   // Laufzeit-Netz für Daten aus API/DB: wirft bei Rx und bei fehlendem
@@ -92,14 +90,11 @@ function BuyableTag({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Button
-          size="sm"
-          onClick={() => onAddToCart?.(product)}
-          disabled={!product.inStock}
-          disabledReason={!product.inStock ? 'Derzeit nicht lieferbar' : undefined}
-        >
-          {product.inStock ? CTA_BY_CLASS[product.productClass] : 'Nicht lieferbar'}
-        </Button>
+        <AddToCartForm
+          productId={product.id}
+          label={CTA_BY_CLASS[product.productClass]}
+          inStock={product.inStock}
+        />
         {isArzneimittel(product.productClass) && <Badge tone="neutral">Apothekenpflichtig</Badge>}
       </div>
 
