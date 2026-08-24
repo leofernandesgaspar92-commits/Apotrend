@@ -6,8 +6,8 @@
 //  geprüft — nicht in der Komponente, die man umgehen kann.
 // ============================================================================
 
-import { assertShoppable, ComplianceError, type ShoppableProduct } from './product'
-import { getProduct } from './data'
+import { assertShoppable, ComplianceError, type ShoppableProduct } from './product.ts'
+import { getProduct } from './data.ts'
 
 export interface CartLine {
   productId: string

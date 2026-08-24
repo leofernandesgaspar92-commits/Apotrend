@@ -7,7 +7,7 @@
 //  Umbau der Oberfläche.
 // ============================================================================
 
-import type { Product } from './product'
+import type { Product } from './product.ts'
 
 export interface Author {
   handle: string

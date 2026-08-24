@@ -127,6 +127,58 @@ b2c/
 
 ---
 
+## Care-Strecke (Teil 3) — Art.-9-Daten
+
+### Betriebsvoraussetzung: echter Schlüssel
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+# -> APOTREND_HEALTH_KEY_V1 setzen (siehe .env.example)
+```
+
+Ohne diesen Schlüssel **startet die Verarbeitung in Produktion nicht**. Das ist
+Absicht: Ein Entwicklungsschlüssel, der unbemerkt in Produktion landet, ist
+schlimmer als gar keine Verschlüsselung — er erzeugt ein falsches
+Sicherheitsgefühl. Beim ersten e2e-Lauf hat genau diese Sperre ausgelöst
+(`next start` läuft mit `NODE_ENV=production`) und den Upload mit 500
+abgewiesen, bis ein Schlüssel gestellt wurde.
+
+`keyVersion` liegt an jedem Datensatz — Schlüsselrotation ist damit möglich,
+**ohne** bestehende Daten zu migrieren.
+
+### Was die Tests zusichern (18 Tests in `test/care.test.ts`)
+
+| Bereich | Zusage |
+|---|---|
+| Verschlüsselung | AES-256-GCM; manipulierter Ciphertext **und** manipuliertes Auth-Tag werden erkannt; gleicher Klartext ergibt verschiedene Ciphertexte |
+| IP-Nachweis | wird nur gehasht gespeichert, nie im Klartext |
+| Einwilligung | granular je Zweck · Widerruf wirkt sofort · **überholte Textfassung gilt nicht mehr** · Historie wird angehängt, nie überschrieben |
+| Koppelungsverbot | Aufzeichnung ist als freiwillig deklariert und blockiert die Leistung nicht |
+| Rezept | ohne Einwilligung wird das Dokument **nicht einmal gelesen** · Fremdzugriff abgewiesen · Ziel-Apotheke darf |
+| Datenminimierung | nach Einlösung ist das Dokument sofort weg, der Vorgang bleibt · Aufräum-Job löscht nur Abgelaufenes |
+| E-Rezept | ohne gematik-Zulassung gesperrt — nicht „halb gebaut" |
+
+### Was die Oberfläche zusichert (e2e)
+
+- Kästchen sind **nicht vorangekreuzt** (EuGH *Planet49*)
+- Freiwillige Einwilligung allein schaltet **nicht** frei
+- Ablehnen ist genauso erreichbar wie Zustimmen — kein Dark Pattern
+- **Veralteter Tab nach Widerruf:** Der Server lehnt den Upload trotzdem ab —
+  die Sperre hängt nicht an der Oberfläche
+
+### Bewusst NICHT gebaut
+
+- **Videosprechstunde.** Das Modell (`Consultation`, Wartezimmer, Aufzeichnungs-
+  Einwilligung) steht im Prisma-Entwurf, die Umsetzung braucht aber einen
+  Anbieter-Vertrag (Daily.co EU-Region + AVV) und eine Entscheidung zu P2P+E2EE
+  vs. SFU. Eine Attrappe zu bauen, die aussieht wie eine sichere Sprechstunde,
+  wäre hier das falsche Signal.
+- **Datei-Upload.** Der Demo-Stand nimmt Text statt Bilddatei entgegen; der Weg
+  durch Einwilligung, Verschlüsselung und Löschfrist ist derselbe. Echter Upload
+  braucht Objektspeicher mit signierten URLs und Virenprüfung.
+
+---
+
 ## Noch offen
 
 Das Next.js-Gerüst (App Router, Layout, Routen) ist **noch nicht** aufgesetzt —
