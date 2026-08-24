@@ -1,0 +1,1174 @@
+// ============================================================================
+//  Apotrend B2C — Datenbank-Schema (Schritt 2/3)  · ENTWURF
+// ============================================================================
+//  Gehört zum Greenfield-Track (siehe docs/architecture/design-system.md).
+//  NICHT das Schema der bestehenden B2B-App in diesem Repo.
+//
+//  Getroffene Annahmen (vom Owner delegiert, siehe Doku Abschnitt "Annahmen"):
+//   1. Multi-Tenant ab Tag 1 (Marktplatz-fähig, Start mit einer Apotheke)
+//   2. E-Rezept schema-seitig vorbereitet, zum Start nur Papier-/Privatrezept aktiv
+//   3. Beratung zum Start pharmazeutisch; ärztlich ohne Migration nachrüstbar
+//   4. Länder-Scope DE zum Start, AT/CH im Modell vorgesehen
+// ============================================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["core", "health"]
+}
+
+// ============================================================================
+//  A. IDENTITÄT & MANDANTEN                                          [core]
+// ============================================================================
+
+enum Country {
+  DE
+  AT
+  CH
+
+  @@schema("core")
+}
+
+enum UserRole {
+  CONSUMER
+  PHARMACIST
+  PHARMACY_ADMIN
+  PHYSICIAN
+  MODERATOR
+  ADMIN
+
+  @@schema("core")
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETION_REQUESTED
+  DELETED
+
+  @@schema("core")
+}
+
+model User {
+  id               String     @id @default(cuid())
+  email            String     @unique
+  emailVerifiedAt  DateTime?
+  passwordHash     String?
+  role             UserRole   @default(CONSUMER)
+  status           UserStatus @default(ACTIVE)
+  country          Country    @default(DE)
+  locale           String     @default("de-DE")
+
+  // 2FA — für alle Fachrollen verpflichtend (Service-Guard)
+  twoFactorEnabled Boolean @default(false)
+  twoFactorSecret  Bytes? // verschlüsselt, nie im Klartext
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+
+  profile          Profile?
+  accounts         Account[]
+  sessions         Session[]
+  memberships      PharmacyMember[]
+  credentials      ProfessionalCredential[]
+  addresses        Address[]
+
+  posts            Post[]
+  comments         Comment[]
+  reactions        Reaction[]
+  following        Follow[]         @relation("Follower")
+  followers        Follow[]         @relation("Following")
+  liveSessions     LiveSession[]    @relation("LiveHost")
+  liveMessages     LiveMessage[]
+  reportsFiled     Report[]         @relation("Reporter")
+  reportsResolved  Report[]         @relation("ReportResolver")
+  credentialsIssued ProfessionalCredential[] @relation("CredentialVerifier")
+
+  cart             Cart?
+  orderGroups      OrderGroup[]
+  notifications    Notification[]
+
+  @@index([role, status])
+  @@index([country])
+  @@schema("core")
+}
+
+model Profile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  handle        String   @unique
+  displayName   String
+  bio           String?  @db.VarChar(500)
+  avatarUrl     String?
+  birthYear     Int? // nur Jahr — Datenminimierung (Altersfreigaben)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([handle])
+  @@schema("core")
+}
+
+// --- Auth.js ---------------------------------------------------------------
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@schema("core")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+  ipHash       String?
+  userAgent    String?
+
+  @@index([userId])
+  @@schema("core")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@schema("core")
+}
+
+// --- Mandant: Apotheke -----------------------------------------------------
+
+enum PharmacyStatus {
+  PENDING_REVIEW
+  ACTIVE
+  SUSPENDED
+
+  @@schema("core")
+}
+
+model Pharmacy {
+  id                String         @id @default(cuid())
+  slug              String         @unique
+  name              String
+  legalName         String
+  country           Country        @default(DE)
+  status            PharmacyStatus @default(PENDING_REVIEW)
+
+  // Erlaubnisse — steuern, WAS diese Apotheke darf
+  operatingLicenceNo String   // Betriebserlaubnis (ApBetrO)
+  mailOrderLicence   Boolean  @default(false) // Versandhandelserlaubnis §11a ApoG
+  mailOrderLicenceNo String?
+  licenceValidUntil  DateTime?
+
+  addressLine        String
+  postalCode         String
+  city               String
+  phone              String
+  email              String
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  members            PharmacyMember[]
+  listings           PharmacyListing[]
+  orders             Order[]
+  consultationSlots  ConsultationSlot[]
+
+  @@index([status, country])
+  @@schema("core")
+}
+
+enum PharmacyMemberRole {
+  OWNER
+  PHARMACIST
+  PTA
+  STAFF
+
+  @@schema("core")
+}
+
+model PharmacyMember {
+  id         String             @id @default(cuid())
+  pharmacyId String
+  pharmacy   Pharmacy           @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       PharmacyMemberRole
+  createdAt  DateTime           @default(now())
+
+  @@unique([pharmacyId, userId])
+  @@index([userId])
+  @@schema("core")
+}
+
+// --- Fachliche Verifizierung ----------------------------------------------
+
+enum CredentialType {
+  APPROBATION_PHARMACIST
+  PTA_CERTIFICATE
+  PHYSICIAN_REGISTRATION
+  PHARMACY_OPERATING_LICENCE
+
+  @@schema("core")
+}
+
+enum CredentialStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  EXPIRED
+
+  @@schema("core")
+}
+
+/// Grundlage für den VerifiedPharmacistBadge.
+/// Regel: Badge nur bei status=VERIFIED UND verifiedUntil in der Zukunft.
+/// verifiedById/verifiedUntil sind bei VERIFIED per DB-CHECK Pflicht.
+model ProfessionalCredential {
+  id             String           @id @default(cuid())
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type           CredentialType
+  status         CredentialStatus @default(PENDING)
+
+  registryNumber String? // Kammer-/Registernummer
+  evidenceUrl    String? // Nachweis-Upload (signierte URL, eingeschränkter Zugriff)
+
+  verifiedById   String?
+  verifiedBy     User?            @relation("CredentialVerifier", fields: [verifiedById], references: [id])
+  verifiedAt     DateTime?
+  verifiedUntil  DateTime? // Pflichtfeld bei VERIFIED — kein stiller Weiterbestand
+  rejectionNote  String?
+
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([userId, status])
+  @@index([status, verifiedUntil])
+  @@schema("core")
+}
+
+model Address {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label      String?
+  recipient  String
+  line1      String
+  line2      String?
+  postalCode String
+  city       String
+  country    Country  @default(DE)
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  orders     Order[]
+
+  @@index([userId])
+  @@schema("core")
+}
+
+// ============================================================================
+//  B. KATALOG & HANDEL                                               [core]
+// ============================================================================
+
+/// Die zentrale Compliance-Achse des gesamten Systems.
+/// RX_ARZNEIMITTEL darf NIE in Warenkorb, Bestellung oder Shoppable-Tag erscheinen.
+enum ProductClass {
+  OTC_ARZNEIMITTEL
+  RX_ARZNEIMITTEL
+  MEDIZINPRODUKT
+  NAHRUNGSERGAENZUNG
+  KOSMETIK
+  SONSTIGES
+
+  @@schema("core")
+}
+
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+
+  @@schema("core")
+}
+
+model Product {
+  id            String        @id @default(cuid())
+  slug          String        @unique
+  name          String
+  manufacturer  String?
+  productClass  ProductClass
+  status        ProductStatus @default(DRAFT)
+  country       Country       @default(DE)
+
+  description   String?       @db.Text
+  usageNote     String?       @db.Text // Anwendungshinweis (kein Werbetext)
+
+  // § 4 HWG: bei Arzneimitteln zwingend (DB-CHECK erzwingt es)
+  pflichttextId String?
+  pflichttext   Pflichttext?  @relation(fields: [pflichttextId], references: [id])
+
+  // Medizinprodukt: CE + Zweckbestimmung
+  ceMarking     String?
+  intendedUse   String?       @db.Text
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  variants      ProductVariant[]
+  ingredients   ProductIngredient[]
+  media         ProductMedia[]
+  categories    ProductCategory[]
+
+  @@index([productClass, status])
+  @@index([country, status])
+  @@schema("core")
+}
+
+model ProductVariant {
+  id            String   @id @default(cuid())
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  pzn           String?  @unique // Pharmazentralnummer (DE, 8-stellig)
+  gtin          String?
+  dosageForm    String? // Darreichungsform: Tablette, Salbe, …
+  packageSize   String? // z. B. "20 St", "100 ml"
+  strength      String? // z. B. "400 mg"
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  listings      PharmacyListing[]
+  postTags      PostProductTag[]
+
+  @@index([productId])
+  @@index([pzn])
+  @@schema("core")
+}
+
+/// Pflichtangaben nach § 4 HWG, versioniert (Nachweisbarkeit, welcher Text galt).
+model Pflichttext {
+  id        String    @id @default(cuid())
+  version   Int       @default(1)
+  body      String    @db.Text
+  validFrom DateTime  @default(now())
+  validTo   DateTime?
+  createdAt DateTime  @default(now())
+
+  products  Product[]
+
+  @@index([validFrom, validTo])
+  @@schema("core")
+}
+
+model ActiveIngredient {
+  id       String              @id @default(cuid())
+  name     String              @unique
+  atcCode  String?
+  products ProductIngredient[]
+
+  @@schema("core")
+}
+
+model ProductIngredient {
+  id           String           @id @default(cuid())
+  productId    String
+  product      Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  ingredientId String
+  ingredient   ActiveIngredient @relation(fields: [ingredientId], references: [id])
+  amount       String?
+
+  @@unique([productId, ingredientId])
+  @@schema("core")
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+
+  @@schema("core")
+}
+
+model ProductMedia {
+  id        String    @id @default(cuid())
+  productId String
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type      MediaType @default(IMAGE)
+  url       String
+  alt       String // Pflicht — Barrierefreiheit
+  position  Int       @default(0)
+
+  @@index([productId, position])
+  @@schema("core")
+}
+
+model Category {
+  id       String            @id @default(cuid())
+  slug     String            @unique
+  name     String
+  parentId String?
+  parent   Category?         @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[]        @relation("CategoryTree")
+  products ProductCategory[]
+
+  @@schema("core")
+}
+
+model ProductCategory {
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([productId, categoryId])
+  @@schema("core")
+}
+
+/// Marktplatz-Kern: eine Apotheke bietet eine Variante zu ihrem Preis an.
+/// Denormalisiertes productClass ermöglicht den DB-CHECK gegen Rx-Verkauf.
+model PharmacyListing {
+  id           String       @id @default(cuid())
+  pharmacyId   String
+  pharmacy     Pharmacy     @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+  variantId    String
+  variant      ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  productClass ProductClass // denormalisiert für CHECK-Constraint
+  priceCents   Int
+  currency     String       @default("EUR")
+  stock        Int          @default(0)
+  active       Boolean      @default(true)
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
+
+  @@unique([pharmacyId, variantId])
+  @@index([variantId, active])
+  @@index([pharmacyId, active])
+  @@schema("core")
+}
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  items     CartItem[]
+
+  @@schema("core")
+}
+
+/// productClass denormalisiert → DB-CHECK verhindert Rx im Warenkorb
+/// auch dann, wenn Typ- und Service-Ebene umgangen würden.
+model CartItem {
+  id           String          @id @default(cuid())
+  cartId       String
+  cart         Cart            @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  listingId    String
+  listing      PharmacyListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  productClass ProductClass // CHECK: <> 'RX_ARZNEIMITTEL'
+  quantity     Int             @default(1)
+  addedAt      DateTime        @default(now())
+
+  @@unique([cartId, listingId])
+  @@index([cartId])
+  @@schema("core")
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  IN_PREPARATION
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+
+  @@schema("core")
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+
+  @@schema("core")
+}
+
+/// Ein Checkout kann mehrere Apotheken betreffen → eine OrderGroup, mehrere Orders.
+model OrderGroup {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  totalCents    Int
+  currency      String        @default("EUR")
+  paymentStatus PaymentStatus @default(PENDING)
+  paymentRef    String?
+  createdAt     DateTime      @default(now())
+
+  orders        Order[]
+
+  @@index([userId, createdAt])
+  @@schema("core")
+}
+
+model Order {
+  id           String            @id @default(cuid())
+  orderNumber  String            @unique
+  groupId      String
+  group        OrderGroup        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  pharmacyId   String
+  pharmacy     Pharmacy          @relation(fields: [pharmacyId], references: [id])
+  addressId    String
+  address      Address           @relation(fields: [addressId], references: [id])
+
+  status       OrderStatus       @default(PENDING_PAYMENT)
+  subtotalCents Int
+  shippingCents Int              @default(0)
+  totalCents   Int
+  currency     String            @default("EUR")
+
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  items        OrderItem[]
+  events       OrderStatusEvent[]
+
+  @@index([pharmacyId, status])
+  @@index([groupId])
+  @@schema("core")
+}
+
+/// Preis- und Textsnapshot: Bestellungen dürfen sich nicht rückwirkend ändern,
+/// wenn Katalogdaten aktualisiert werden (Nachweispflicht).
+model OrderItem {
+  id             String          @id @default(cuid())
+  orderId        String
+  order          Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  listingId      String
+  listing        PharmacyListing @relation(fields: [listingId], references: [id])
+
+  productClass   ProductClass // CHECK: <> 'RX_ARZNEIMITTEL'
+  productName    String // Snapshot
+  pzn            String? // Snapshot
+  unitPriceCents Int // Snapshot
+  quantity       Int
+  pflichttextSnapshot String? @db.Text // Snapshot des gültigen Pflichttextes
+
+  @@index([orderId])
+  @@schema("core")
+}
+
+model OrderStatusEvent {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  note      String?
+  createdAt DateTime    @default(now())
+
+  @@index([orderId, createdAt])
+  @@schema("core")
+}
+
+// ============================================================================
+//  C. INHALT & SOCIAL                                                [core]
+// ============================================================================
+
+enum PostKind {
+  ARTICLE // Ratgeber, redaktionell
+  SHORT // Kurzformat (Video/Bild)
+  QUESTION // Fachfrage
+  ANNOUNCEMENT
+
+  @@schema("core")
+}
+
+enum PostVisibility {
+  PUBLIC
+  FOLLOWERS
+  UNLISTED
+
+  @@schema("core")
+}
+
+enum ModerationState {
+  OK
+  FLAGGED
+  UNDER_REVIEW
+  REMOVED
+
+  @@schema("core")
+}
+
+model Post {
+  id              String          @id @default(cuid())
+  authorId        String
+  author          User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  kind            PostKind        @default(SHORT)
+  visibility      PostVisibility  @default(PUBLIC)
+  moderationState ModerationState @default(OK)
+
+  title           String?
+  body            String          @db.Text
+  country         Country         @default(DE)
+
+  /// Kommerzieller Inhalt MUSS als Anzeige gekennzeichnet werden
+  isSponsored     Boolean         @default(false)
+
+  publishedAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  deletedAt       DateTime?
+
+  media           PostMedia[]
+  sources         ContentSource[]
+  productTags     PostProductTag[]
+  comments        Comment[]
+  reactions       Reaction[]
+  hashtags        PostHashtag[]
+  reports         Report[]
+
+  @@index([visibility, publishedAt])
+  @@index([authorId, createdAt])
+  @@index([country, kind, publishedAt])
+  @@schema("core")
+}
+
+model PostMedia {
+  id       String    @id @default(cuid())
+  postId   String
+  post     Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  type     MediaType
+  url      String
+  alt      String // Pflicht — Barrierefreiheit
+  posterUrl String?
+  durationMs Int?
+  position Int       @default(0)
+
+  @@index([postId, position])
+  @@schema("core")
+}
+
+/// Evidenz-Anker (SourceChip). Ohne Quelle keine Gesundheitsaussage.
+model ContentSource {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  label     String
+  url       String
+  domain    String // z. B. "bfarm.de" — amtlich vs. beliebig sofort erkennbar
+  isOfficial Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+  @@schema("core")
+}
+
+/// Shoppable Tag. productClass denormalisiert → DB-CHECK verhindert die
+/// Bewerbung verschreibungspflichtiger Arzneimittel gegenüber Laien (§ 10 HWG).
+model PostProductTag {
+  id           String         @id @default(cuid())
+  postId       String
+  post         Post           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  variantId    String
+  variant      ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  productClass ProductClass // CHECK: <> 'RX_ARZNEIMITTEL'
+  x            Float? // 0..1 relative Position im Medium
+  y            Float?
+  timestampMs  Int? // Einblendezeitpunkt im Video
+
+  @@unique([postId, variantId])
+  @@index([variantId])
+  @@schema("core")
+}
+
+model Comment {
+  id              String          @id @default(cuid())
+  postId          String
+  post            Post            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId        String
+  author          User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parentId        String?
+  parent          Comment?        @relation("CommentTree", fields: [parentId], references: [id])
+  replies         Comment[]       @relation("CommentTree")
+
+  body            String          @db.Text
+  moderationState ModerationState @default(OK)
+  isPinnedAnswer  Boolean         @default(false) // „Antwort anpinnen" der Fachperson
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  deletedAt       DateTime?
+
+  reports         Report[]
+
+  @@index([postId, createdAt])
+  @@index([authorId])
+  @@schema("core")
+}
+
+enum ReactionKind {
+  HELPFUL
+  THANKS
+  INSIGHTFUL
+
+  @@schema("core")
+}
+
+model Reaction {
+  id        String       @id @default(cuid())
+  postId    String
+  post      Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      ReactionKind
+  createdAt DateTime     @default(now())
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@schema("core")
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+  @@schema("core")
+}
+
+model Hashtag {
+  id    String        @id @default(cuid())
+  tag   String        @unique
+  posts PostHashtag[]
+
+  @@schema("core")
+}
+
+model PostHashtag {
+  postId    String
+  post      Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  hashtagId String
+  hashtag   Hashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, hashtagId])
+  @@schema("core")
+}
+
+enum LiveStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+
+  @@schema("core")
+}
+
+model LiveSession {
+  id          String     @id @default(cuid())
+  hostId      String
+  host        User       @relation("LiveHost", fields: [hostId], references: [id], onDelete: Cascade)
+  title       String
+  topic       String?    @db.Text
+  status      LiveStatus @default(SCHEDULED)
+  scheduledAt DateTime
+  startedAt   DateTime?
+  endedAt     DateTime?
+
+  /// Raum wird nur serverseitig erzeugt; nie im Client persistiert
+  roomName    String?
+  peakViewers Int        @default(0)
+
+  createdAt   DateTime   @default(now())
+
+  messages    LiveMessage[]
+
+  @@index([status, scheduledAt])
+  @@schema("core")
+}
+
+model LiveMessage {
+  id              String          @id @default(cuid())
+  sessionId       String
+  session         LiveSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  authorId        String
+  author          User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body            String          @db.VarChar(500)
+  isPinnedAnswer  Boolean         @default(false)
+  moderationState ModerationState @default(OK)
+  createdAt       DateTime        @default(now())
+
+  @@index([sessionId, createdAt])
+  @@schema("core")
+}
+
+// ============================================================================
+//  D. VERSORGUNG — Art. 9 DSGVO                                    [health]
+// ============================================================================
+
+enum PrescriptionSource {
+  PAPER_UPLOAD // Muster 16 (Papier) — AKTIV
+  PRIVATE_UPLOAD // Privatrezept — AKTIV
+  EREZEPT_TOKEN // gematik E-Rezept-App — vorbereitet, inaktiv
+  EREZEPT_CARDLINK // gematik CardLink (eGK) — vorbereitet, inaktiv
+
+  @@schema("health")
+}
+
+enum PrescriptionStatus {
+  SUBMITTED
+  IN_REVIEW
+  ACCEPTED
+  REJECTED
+  DISPENSED
+  EXPIRED
+  WITHDRAWN
+
+  @@schema("health")
+}
+
+/// Rezept-Einreichung. Das Bild wird nach Einlösung gelöscht (Datenminimierung);
+/// nur der revisionssichere Nachweis bleibt.
+model Prescription {
+  id            String             @id @default(cuid())
+  patientUserId String
+  pharmacyId    String
+  source        PrescriptionSource
+  status        PrescriptionStatus @default(SUBMITTED)
+
+  /// Verschlüsselter Objektschlüssel des Uploads (AES-256-GCM, Schlüssel im KMS)
+  documentKeyCipher Bytes?
+  documentNonce     Bytes?
+  keyVersion        Int      @default(1)
+
+  /// gematik-Felder — erst mit zugelassener Anbindung befüllt
+  erezeptTaskId     String?
+  erezeptAccessCode Bytes?
+
+  submittedAt       DateTime  @default(now())
+  reviewedAt        DateTime?
+  reviewedByUserId  String?
+  rejectionReason   String?
+
+  /// Automatische Löschung des Dokuments (Job); Datensatz bleibt als Nachweis
+  documentPurgeAt   DateTime?
+  documentPurgedAt  DateTime?
+
+  items             PrescriptionItem[]
+
+  @@index([patientUserId, submittedAt])
+  @@index([pharmacyId, status])
+  @@index([documentPurgeAt])
+  @@schema("health")
+}
+
+model PrescriptionItem {
+  id             String       @id @default(cuid())
+  prescriptionId String
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+
+  /// Kein FK ins core-Schema: Trennung der Schutzniveaus.
+  /// Verknüpfung nur über PZN als Wert, nicht als Relation.
+  pzn            String?
+  labelCipher    Bytes // Freitext des Präparats, verschlüsselt
+  labelNonce     Bytes
+  keyVersion     Int          @default(1)
+  quantity       Int          @default(1)
+
+  @@index([prescriptionId])
+  @@schema("health")
+}
+
+enum ConsultationProviderType {
+  PHARMACIST // AKTIV
+  PHYSICIAN // vorbereitet — zieht Berufsrecht/Dokumentationspflicht nach sich
+
+  @@schema("health")
+}
+
+enum ConsultationStatus {
+  REQUESTED
+  CONFIRMED
+  WAITING_ROOM
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+
+  @@schema("health")
+}
+
+model ConsultationSlot {
+  id           String   @id @default(cuid())
+  pharmacyId   String
+  pharmacy     Pharmacy @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+  providerUserId String
+  startsAt     DateTime
+  endsAt       DateTime
+  isBooked     Boolean  @default(false)
+
+  consultation Consultation?
+
+  @@index([pharmacyId, startsAt])
+  @@index([providerUserId, startsAt])
+  @@schema("health")
+}
+
+model Consultation {
+  id             String                   @id @default(cuid())
+  slotId         String?                  @unique
+  slot           ConsultationSlot?        @relation(fields: [slotId], references: [id])
+
+  patientUserId  String
+  providerUserId String
+  providerType   ConsultationProviderType @default(PHARMACIST)
+  status         ConsultationStatus       @default(REQUESTED)
+
+  /// Anliegen der Patient:in — Gesundheitsdatum, verschlüsselt
+  reasonCipher   Bytes?
+  reasonNonce    Bytes?
+  keyVersion     Int                      @default(1)
+
+  /// Raum + Token werden serverseitig erzeugt und laufen ab
+  roomName       String?
+  scheduledAt    DateTime
+  startedAt      DateTime?
+  endedAt        DateTime?
+
+  /// Aufzeichnung standardmäßig AUS; nur mit separater Einwilligung
+  recordingConsentId String?
+  recordingUrl       String?
+  recordingPurgeAt   DateTime?
+
+  createdAt      DateTime                 @default(now())
+
+  notes          ConsultationNote[]
+
+  @@index([patientUserId, scheduledAt])
+  @@index([providerUserId, status])
+  @@schema("health")
+}
+
+/// Beratungsdokumentation — vollständig verschlüsselt, jeder Lesezugriff auditiert.
+model ConsultationNote {
+  id             String       @id @default(cuid())
+  consultationId String
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  authorUserId   String
+
+  contentCipher  Bytes
+  contentNonce   Bytes
+  keyVersion     Int          @default(1)
+
+  createdAt      DateTime     @default(now())
+  retentionUntil DateTime // harte Aufbewahrungsfrist, Job löscht danach
+
+  @@index([consultationId])
+  @@index([retentionUntil])
+  @@schema("health")
+}
+
+/// Freiwillige Medikationsliste der Nutzer:in (Basis für Wechselwirkungs-Hinweise).
+model MedicationEntry {
+  id           String    @id @default(cuid())
+  userId       String
+  pzn          String?
+  labelCipher  Bytes
+  labelNonce   Bytes
+  keyVersion   Int       @default(1)
+  startedAt    DateTime?
+  endedAt      DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+  @@schema("health")
+}
+
+enum ConsentPurpose {
+  HEALTH_DATA_PROCESSING // Art. 9 Abs. 2 lit. a
+  VIDEO_CONSULTATION
+  VIDEO_RECORDING
+  MEDICATION_LIST
+  PRESCRIPTION_HANDLING
+
+  @@schema("health")
+}
+
+/// Versionierte Einwilligung — nachweisbar, welche Fassung wann akzeptiert wurde.
+model Consent {
+  id              String         @id @default(cuid())
+  userId          String
+  purpose         ConsentPurpose
+  documentVersion String // z. B. "dse-2026-03-01"
+  granted         Boolean
+  grantedAt       DateTime       @default(now())
+  revokedAt       DateTime?
+  ipHash          String?
+  userAgent       String?
+
+  @@index([userId, purpose, grantedAt])
+  @@schema("health")
+}
+
+enum HealthAccessAction {
+  READ
+  WRITE
+  EXPORT
+  DELETE
+
+  @@schema("health")
+}
+
+/// Pflicht-Audit: JEDER Zugriff auf Art.-9-Daten wird protokolliert.
+/// Wird von der Datenzugriffsschicht automatisch geschrieben, nie manuell.
+model HealthAccessLog {
+  id            String             @id @default(cuid())
+  actorUserId   String
+  subjectUserId String
+  resourceType  String
+  resourceId    String
+  action        HealthAccessAction
+  reason        String
+  ipHash        String?
+  createdAt     DateTime           @default(now())
+
+  @@index([subjectUserId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@schema("health")
+}
+
+// ============================================================================
+//  E. QUERSCHNITT                                                    [core]
+// ============================================================================
+
+enum ReportReason {
+  MISINFORMATION
+  ILLEGAL_ADVERTISING // HWG-Verstoß
+  SPAM
+  HARASSMENT
+  PRIVACY
+  OTHER
+
+  @@schema("core")
+}
+
+enum ReportStatus {
+  OPEN
+  UNDER_REVIEW
+  ACTIONED
+  DISMISSED
+
+  @@schema("core")
+}
+
+model Report {
+  id             String       @id @default(cuid())
+  reporterId     String
+  reporter       User         @relation("Reporter", fields: [reporterId], references: [id])
+  postId         String?
+  post           Post?        @relation(fields: [postId], references: [id], onDelete: Cascade)
+  commentId      String?
+  comment        Comment?     @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  reason         ReportReason
+  note           String?
+  status         ReportStatus @default(OPEN)
+
+  resolvedById   String?
+  resolvedBy     User?        @relation("ReportResolver", fields: [resolvedById], references: [id])
+  resolvedAt     DateTime?
+  resolutionNote String?
+
+  createdAt      DateTime     @default(now())
+
+  @@index([status, createdAt])
+  @@index([postId])
+  @@schema("core")
+}
+
+enum NotificationType {
+  COMMENT
+  REACTION
+  FOLLOW
+  ANSWER_PINNED
+  ORDER_STATUS
+  PRESCRIPTION_STATUS
+  CONSULTATION_REMINDER
+  LIVE_STARTING
+
+  @@schema("core")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  /// Bewusst KEIN Gesundheitsinhalt im Klartext — nur neutrale Referenz
+  refType   String?
+  refId     String?
+  label     String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, readAt, createdAt])
+  @@schema("core")
+}
+
+/// Allgemeines Audit für sicherheitsrelevante Aktionen im core-Schema
+/// (Rollenwechsel, Verifizierung, Preisänderung, Moderation).
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorUserId  String?
+  action       String
+  resourceType String
+  resourceId   String
+  metadata     Json?
+  ipHash       String?
+  createdAt    DateTime @default(now())
+
+  @@index([resourceType, resourceId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@schema("core")
+}
