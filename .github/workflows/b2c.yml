@@ -1,0 +1,66 @@
+name: B2C — Qualitäts-Gates
+
+# Läuft nur, wenn der B2C-Track berührt wird. Die bestehende B2B-App hat ihre
+# eigene Prüfkette und wird davon nicht ausgebremst.
+on:
+  push:
+    paths:
+      - 'b2c/**'
+      - '.github/workflows/b2c.yml'
+  pull_request:
+    paths:
+      - 'b2c/**'
+      - '.github/workflows/b2c.yml'
+
+defaults:
+  run:
+    working-directory: b2c
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Node 22: --experimental-strip-types wird für die Tests gebraucht.
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: b2c/package-lock.json
+
+      - name: Abhängigkeiten installieren
+        run: npm ci
+
+      # --- Schnelle Gates zuerst: sie scheitern in Sekunden, nicht Minuten ---
+
+      - name: Design-Drift (tokens.css == tokens.mjs)
+        run: npm run check:tokens
+
+      - name: Kontrast (WCAG 2.1 AA, beide Themes)
+        run: npm run check:contrast
+
+      - name: Compliance- und Care-Tests
+        run: npm test
+
+      - name: Typprüfung
+        run: npm run typecheck
+
+      # --- Langsame Gates ---
+
+      - name: Build
+        run: npm run build
+
+      - name: Browser für e2e
+        run: npx playwright install --with-deps chromium
+
+      # Der e2e-Lauf erzeugt seinen Schlüssel selbst (tools/with-server.mjs):
+      # crypto.ts verweigert in Produktion den Entwicklungsschlüssel.
+      - name: End-to-End (Rx-Sperre, Einwilligung, a11y)
+        run: npm run check:e2e
+
+      - name: Server-Ausgabe bei Fehlschlag
+        if: failure()
+        run: cat /tmp/next*.log 2>/dev/null || echo 'keine Server-Logs'

@@ -9,13 +9,15 @@
     "check:tokens": "node tools/build-tokens.mjs --check",
     "check:contrast": "node tools/check-contrast.mjs",
     "test": "node --experimental-strip-types --test test/*.test.ts",
-    "verify": "npm run check:tokens && npm run check:contrast && npm run test",
+    "verify": "npm run check:tokens && npm run check:contrast && npm run test && npm run typecheck",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "next lint",
-    "check:e2e": "node tools/e2e-check.mjs"
+    "check:e2e": "node tools/with-server.mjs",
+    "check:e2e:manual": "node tools/e2e-check.mjs",
+    "verify:all": "npm run verify && npm run build && npm run check:e2e"
   },
   "dependencies": {
     "next": "^14.2.0",
@@ -32,6 +34,7 @@
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.0",
     "eslint-plugin-jsx-a11y": "^6.9.0",
+    "playwright": "^1.47.0",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.4",
     "typescript": "^5.5.0"

@@ -12,18 +12,53 @@ Grundlagen: [`../docs/architecture/design-system.md`](../docs/architecture/desig
 
 ---
 
-## Was hier schon läuft — ohne `npm install`
-
-Die Qualitäts-Gates sind bewusst abhängigkeitsfrei gebaut. Sie laufen mit purem
-Node 22 und sind damit **jetzt** ausführbar, nicht erst nach dem Aufsetzen von
-Next.js:
+## Prüfen
 
 ```bash
-npm run verify          # alle drei Gates nacheinander
+npm run verify          # schnelle Gates: Tokens, Kontrast, 26 Tests, Typprüfung
+npm run verify:all      # zusätzlich: Build + End-to-End im echten Browser
+```
+
+Die schnellen Gates brauchen **kein** `npm install` — sie sind bewusst
+abhängigkeitsfrei gebaut und laufen mit purem Node 22:
+
+```bash
 npm run check:tokens    # Design-Drift: tokens.css == tokens.mjs ?
 npm run check:contrast  # WCAG 2.1 AA über alle Token-Paarungen, beide Themes
-npm test                # Compliance-Wächter (node --experimental-strip-types)
+npm test                # Compliance- und Care-Tests (--experimental-strip-types)
+npm run typecheck       # tsc --noEmit
 ```
+
+`verify:all` ist die vollständige Kette. Sie ist absichtlich zweigeteilt: die
+schnellen Gates scheitern in Sekunden, der Browser-Lauf dauert Minuten — wer
+zuerst das Langsame startet, wartet unnötig auf einen Tippfehler.
+
+### End-to-End: der Server verwaltet sich selbst
+
+```bash
+npm run check:e2e         # startet Server, prüft, räumt auf  (28 Prüfungen)
+npm run check:e2e:manual  # nur der Check gegen einen laufenden Server
+```
+
+`tools/with-server.mjs` sucht einen freien Port, erzeugt einen frischen
+Schlüssel (`next start` läuft mit `NODE_ENV=production`, und `crypto.ts`
+verweigert dort den Entwicklungsschlüssel — siehe unten), wartet auf Bereitschaft
+und beendet den Server danach zuverlässig.
+
+> Zwei echte Fehler kamen erst beim Bauen dieses Skripts heraus:
+> `server.kill()` beendete nur den `npx`-Wrapper, während der eigentliche
+> `next-server` weiterlief und den Port belegt hielt — deshalb `detached: true`
+> plus `process.kill(-pid)` auf die ganze Prozessgruppe, mit SIGKILL als
+> Nachfassen. Und `e2e-check.mjs` lud Playwright über einen absoluten
+> Sandbox-Pfad; in CI hätte das scheitern müssen. Jetzt wird regulär aus
+> `node_modules` aufgelöst, global nur als Rückfallebene.
+
+### CI
+
+`.github/workflows/b2c.yml` fährt genau diese Kette bei jeder Änderung unter
+`b2c/` — pfadgefiltert, damit die bestehende B2B-App nicht ausgebremst wird und
+umgekehrt. Reihenfolge wie lokal: erst die schnellen Gates, dann Build, dann
+Browser-Installation und e2e. Bei Fehlschlag wird die Server-Ausgabe angehängt.
 
 ---
 
@@ -88,24 +123,44 @@ function buy(p: Product) {
 ```
 b2c/
 ├─ src/
+│  ├─ app/                   ← Next.js App Router
+│  │  ├─ layout.tsx          ← Themes ohne Aufblitzen, Sprungmarke
+│  │  ├─ feed/page.tsx       ← Feed mit Shoppable Tags
+│  │  ├─ warenkorb/page.tsx
+│  │  ├─ rezept/             ← Care-Strecke (Einwilligung + Upload)
+│  │  ├─ actions.ts          ← Server Actions Commerce
+│  │  └─ care-actions.ts     ← Server Actions Gesundheitsdaten
 │  ├─ styles/
 │  │  ├─ tokens.mjs          ← EINZIGE QUELLE DER WAHRHEIT für Farben
 │  │  ├─ tokens.css          ← erzeugt, nicht bearbeiten
 │  │  └─ globals.css
 │  ├─ lib/
 │  │  ├─ product.ts          ← typsichere Rx-Sperre
+│  │  ├─ cart.ts             ← prüft assertShoppable an der Systemgrenze
+│  │  ├─ consent.ts          ← granular, versioniert, widerrufbar
+│  │  ├─ crypto.ts           ← AES-256-GCM mit keyVersion
+│  │  ├─ prescription.ts     ← Löschfristen, E-Rezept gesperrt
+│  │  ├─ data.ts
 │  │  └─ cn.ts
-│  └─ components/ui/
-│     ├─ Button.tsx          ← 48px Touch-Target auch in „sm"
-│     ├─ Badge.tsx           ← ohne „urgency"-Variante (§ 11 HWG)
-│     ├─ ShoppableTag.tsx    ← Kauf ODER Rx-Info, nie beides
-│     ├─ VerifiedBadge.tsx   ← verfällt automatisch
-│     ├─ PflichttextBlock.tsx
-│     └─ SourceChip.tsx      ← zeigt die Domain, nicht nur „Quelle"
-├─ test/compliance.test.ts
+│  └─ components/
+│     ├─ feed/PostCard.tsx
+│     ├─ care/ConsentGate.tsx  ← nichts vorangekreuzt (EuGH Planet49)
+│     └─ ui/
+│        ├─ Button.tsx       ← 48px Touch-Target auch in „sm"
+│        ├─ Badge.tsx        ← ohne „urgency"-Variante (§ 11 HWG)
+│        ├─ ShoppableTag.tsx ← Kauf ODER Rx-Info, nie beides
+│        ├─ VerifiedBadge.tsx ← verfällt automatisch
+│        ├─ AddToCartForm.tsx
+│        ├─ PflichttextBlock.tsx
+│        └─ SourceChip.tsx   ← zeigt die Domain, nicht nur „Quelle"
+├─ test/
+│  ├─ compliance.test.ts     ← 8 Tests Rx-Sperre
+│  └─ care.test.ts           ← 18 Tests Art.-9-Daten
 └─ tools/
-   ├─ build-tokens.mjs
-   └─ check-contrast.mjs
+   ├─ build-tokens.mjs       ← erzeugt tokens.css, --check als Drift-Wächter
+   ├─ check-contrast.mjs     ← WCAG-Rechner, abhängigkeitsfrei
+   ├─ with-server.mjs        ← Server-Lebenszyklus für e2e
+   └─ e2e-check.mjs          ← 28 Browser-Prüfungen
 ```
 
 ---
@@ -179,10 +234,20 @@ abgewiesen, bis ein Schlüssel gestellt wurde.
 
 ---
 
-## Noch offen
+## Noch offen — Entscheidungen des Owners
 
-Das Next.js-Gerüst (App Router, Layout, Routen) ist **noch nicht** aufgesetzt —
-`package.json` deklariert die Abhängigkeiten, aber es wurde bewusst kein
-`npm install` ausgeführt und keine Seite gebaut. Erst wenn entschieden ist, ob
-dieser Track ein eigenes Repository bekommt, lohnt sich das Gerüst; die hier
-gebauten Gates und Komponenten sind davon unabhängig und wandern unverändert mit.
+Diese Punkte sind **nicht** vergessen, sondern bewusst nicht einseitig
+entschieden, weil sie Verträge, Zulassungen oder Geld betreffen:
+
+| Frage | Warum sie hier blockiert |
+|---|---|
+| **Eigenes Repository?** | `b2c/` ist so geschnitten, dass `git subtree split --prefix=b2c` verlustfrei geht. Solange beide Tracks hier liegen, brauchen sie getrennte CI-Pfade (ist eingerichtet). |
+| **gematik-Zulassung E-Rezept** | Ohne sie bleibt `ENABLED_SOURCES` auf Papier-/Privatrezept. Der Code ist vorbereitet, aber gesperrt — nicht „halb gebaut". |
+| **Marktplatz-Umfang** | Eine Bestellung über mehrere Apotheken = mehrere Kaufverträge. Das Datenmodell trennt `OrderGroup` und `Order` bereits; die Frage ist die kaufmännische, nicht die technische. |
+| **Hosting / Auftragsverarbeitung** | Art.-9-Daten brauchen einen AVV und eine EU-Region. Der Schlüssel ist versioniert, Rotation also ohne Datenmigration möglich. |
+| **Länder-Umfang** | Versandhandels-Erlaubnis ist national geregelt; der Trigger in `compliance-constraints.sql` erzwingt sie bereits pro Apotheke. |
+| **Ärztliche Telemedizin** | Videosprechstunde ist bewusst nicht gebaut (siehe oben) — sie braucht Anbietervertrag und eine Entscheidung zu P2P+E2EE vs. SFU. |
+
+Was **steht**: Design-System mit geprüften Kontrasten, die Rx-Sperre in drei
+Ebenen, die Care-Strecke mit Einwilligung und Löschfristen, 26 Tests, 28
+Browser-Prüfungen und eine CI, die alles davon bei jeder Änderung fährt.

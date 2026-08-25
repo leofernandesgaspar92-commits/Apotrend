@@ -1,8 +1,35 @@
 // End-to-End-Gate: Feed + Shoppable Commerce.
-// Voraussetzung: laufender Server (npx next start -p 3100).
+// Der Server wird von tools/with-server.mjs verwaltet (npm run check:e2e).
 // Kernfrage: Hält die Rx-Sperre, wenn im Browser manipuliert wird?
-import pkg from '/opt/node22/lib/node_modules/playwright/index.js'
-const { chromium } = pkg
+// Playwright auflösen: regulär aus node_modules (CI, nach `npm ci`), sonst aus
+// einer globalen Installation (lokale Umgebungen, die es bereits mitbringen).
+// Ein fest verdrahteter absoluter Pfad würde in CI scheitern.
+async function loadChromium() {
+  // Playwright ist ein CommonJS-Modul: je nach Auflösungsweg liegt `chromium`
+  // als Named Export vor ODER auf dem Default-Export (Interop). Beides prüfen.
+  const pick = (mod) => mod?.chromium ?? mod?.default?.chromium
+  try {
+    const found = pick(await import('playwright'))
+    if (found) return found
+  } catch {
+    // nicht installiert — globaler Weg unten
+  }
+  {
+    const global = '/opt/node22/lib/node_modules/playwright/index.js'
+    try {
+      const found = pick(await import(global))
+      if (found) return found
+      throw new Error('kein chromium-Export')
+    } catch {
+      console.error(
+        '✗ Playwright nicht gefunden. Installieren mit:\n' +
+          '  npm i -D playwright && npx playwright install chromium',
+      )
+      process.exit(2)
+    }
+  }
+}
+const chromium = await loadChromium()
 const BASE = process.argv[2] || 'http://127.0.0.1:3100'
 
 const results = []
