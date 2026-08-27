@@ -116,10 +116,12 @@ ist einzelstaatlich geregelt. Der Betreiber kann sie je Bundesstaat freischalten
 server/src/domain/compliance.js   Engine: Profile, Zahlwege, Gebühren, Manager
 server/src/domain/qr.js           QR-Encoder (Byte-Modus, Stufe M, Version 1–12)
 server/src/data/plans.js          Abo-Katalog mit Preisliste je Währung
-server/test/compliance-engine.test.js   29 Tests
+server/test/compliance-engine.test.js   29 Tests (Länder, Gebühren, Krypto-Gebot)
+server/test/crypto-wallets.test.js      14 Tests (Empfangswege aus echten Wallets)
+server/src/data/cryptoWallets.js        die Empfangsadressen — EINZIGE Quelle
 server/tools/verify-qr.mjs        QR gegen python-qrcode und segno prüfen
 server/tools/build-checkout-demo.mjs    Demo bauen (Engine + Tailwind einbetten)
-server/tools/check-checkout-demo.mjs    42 Browser-Prüfungen der Demo
+server/tools/check-checkout-demo.mjs    54 Browser-Prüfungen der Demo
 docs/architecture/prisma-schema-commerce.prisma
 docs/architecture/compliance-constraints-commerce.sql
 ```
@@ -137,6 +139,7 @@ GET /api/compliance/:code                  Profil, Modus, Zahlwege, Felder, Geb�
 GET /api/compliance/:code/quote?amount=…   Gebühren-Vorschau für einen Betrag
 GET /api/plans?country=…&interval=…        Pläne in der Landeswährung
 GET /api/plans/:id/price?country=…         abrechenbarer Preis-Datensatz
+GET /api/payments/wallets                  hinterlegte Krypto-Empfangswege (live)
 ```
 
 ### Der Zustands-Manager
@@ -215,12 +218,57 @@ Zeichenzähler und werden ignoriert.
 
 ---
 
+## Ihre Wallets — eine Quelle, kein Abtippen
+
+Die Empfangsadressen stehen **ausschließlich** in
+[`server/src/data/cryptoWallets.js`](../server/src/data/cryptoWallets.js). Das Modal
+bettet diese Datei ein und zieht beim Laden zusätzlich die Live-Liste über
+`GET /api/payments/wallets` — damit greifen ENV-Überschreibungen sofort, ohne neuen Build.
+Woher die angezeigten Adressen stammen, steht im Modal („Adressen: live vom Server" bzw.
+„eingebettet").
+
+Hinterlegt sind vier Wallets:
+
+| ID | Wert | Kette | Bezeichnung |
+|---|---|---|---|
+| `btc` | BTC | Bitcoin (Mainnet) | — |
+| `eth` | ETH | Ethereum (Mainnet) | — |
+| `sol_seeker` | SOL | Solana (Mainnet) | Seeker · leokennedy.skr |
+| `sol_phantom` | SOL | Solana (Mainnet) | Phantom |
+
+Daraus leitet `paymentRoutes()` die Zahlwege ab — **Stablecoins haben keine eigene
+Adresse**: USDT und USDC über ERC-20 gehen an dieselbe Ethereum-Adresse wie ETH, USDC auf
+Solana an dieselbe Solana-Adresse wie SOL. Beide Solana-Wallets stehen einzeln zur Wahl,
+genau wie das Datenmodell es vorsieht.
+
+### Steuerung über Umgebungsvariablen
+
+| Variable | Wirkung |
+|---|---|
+| `APOTREND_WALLET_BTC` / `_ETH` / `_SOL_SEEKER` / `_SOL_PHANTOM` | Adresse ersetzen |
+| *dieselbe Variable auf leer* | **Wallet abschalten** — die zugehörigen Wege verschwinden |
+| `APOTREND_WALLET_TRON` | schaltet USDT über TRC-20 frei (braucht eine eigene Tron-Adresse) |
+| `APOTREND_EVM_NETWORKS="Polygon,Base"` | zusätzliche EVM-Ketten auf derselben Ethereum-Adresse |
+
+> **Warum EVM-Ketten Opt-in sind:** Eine gewöhnliche Konto-Adresse gilt auf allen
+> EVM-Ketten — es ist dieselbe Adresse aus demselben Schlüssel. Für ein
+> Smart-Contract-Wallet (z. B. Safe) gilt das **nicht**, das existiert nur dort, wo es
+> ausgerollt wurde. Von außen ist beides nicht unterscheidbar. Deshalb wird gefragt
+> statt geraten: Bei MetaMask, Ledger oder Phantom können Sie die Ketten bedenkenlos
+> freischalten.
+
+> **Warum „leer" abschaltet:** Mit einem schlichten `||` fiele ein leerer Wert auf die
+> Standardadresse zurück — eine Kette ließe sich dann gar nicht aus dem Angebot nehmen.
+
+---
+
 ## Was in der Demo bewusst nicht passiert
 
-- **Keine Wallet-Adresse wird erfunden.** Netzwerke ohne hinterlegte Empfangsadresse
-  (Tron, Polygon, Arbitrum) sind sichtbar deaktiviert und mit „Adresse noch zu
-  hinterlegen" gekennzeichnet. Eine erfundene Adresse wäre der teuerste denkbare
-  Platzhalter.
+- **Keine Wallet-Adresse wird erfunden.** Angeboten wird nur, wofür eine Adresse
+  hinterlegt ist. USDT über TRC-20 erscheint erst, wenn `APOTREND_WALLET_TRON` gesetzt
+  ist — eine erfundene Adresse wäre der teuerste denkbare Platzhalter.
+- **Warnung am Token-Weg.** Bei Stablecoins steht „Nur diesen Token auf dieser Kette
+  senden" — ein anderer Token an dieselbe Adresse ist verloren.
 - **Kein Betrag im Zahlungslink.** Ohne angebundenen Kursdienst wäre ein geschätzter
   Kurs eine falsche Zusage. Im Betrieb rechnet der Zahlungsdienst live um und zählt
   die Netzwerk-Bestätigungen (`services/cryptoRates.js`, `services/payments.js`).

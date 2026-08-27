@@ -385,18 +385,32 @@ __ENGINE_SOURCE__
 
   var manager = createComplianceManager({ country: 'AT', purpose: 'saas_license' });
 
-  /* Echte Empfangsadressen des Betreibers (öffentlich, aus cryptoWallets.js).
-     Netzwerke ohne hinterlegte Adresse werden als „noch zu hinterlegen"
-     ausgewiesen und lassen sich nicht auswählen — eine erfundene Wallet-Adresse
-     wäre der teuerste denkbare Platzhalter. */
-  var WALLETS = {
-    'usdt|Ethereum (ERC-20)': { address: '0x5f50991186014eDcbDE301467bE7a20C6CCc179B', uri: 'ethereum' },
-    'usdc|Ethereum (ERC-20)': { address: '0x5f50991186014eDcbDE301467bE7a20C6CCc179B', uri: 'ethereum' },
-    'usdc|Solana':            { address: 'Egbc7cfzHLj5dkgnR4E7Xk3MfDNrA5imqKJ1FV1n1DW', uri: 'solana' },
-    'btc|Bitcoin (Mainnet)':  { address: 'bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46', uri: 'bitcoin' }
-  };
+  /* Empfangswege: aus den TATSÄCHLICH hinterlegten Wallets abgeleitet
+     (cryptoWallets.js, hier eingebettet) — keine abgetippte Zweitfassung.
+     Wird die Seite vom Server ausgeliefert, ersetzt die Live-Liste diese
+     Voreinstellung, damit ENV-Überschreibungen sofort greifen. */
+  var ROUTES = paymentRoutes();
+  var routeSource = 'eingebettet';
 
-  var state = { plan: 'apo_basis', tab: 'fiat', asset: 'usdt', network: null, fiat: null };
+  var state = { plan: 'apo_basis', tab: 'fiat', asset: 'usdt', routeKey: null, fiat: null };
+
+  var routeKeyOf = function (r) { return r.walletId + '|' + r.network; };
+
+  /* Live-Adressen holen, wenn ein Server dahintersteht. Schlägt der Aufruf fehl
+     (Datei direkt geöffnet), bleibt es bei den eingebetteten Adressen — das
+     wird unten auch so ausgewiesen statt stillschweigend angenommen. */
+  if (typeof fetch === 'function') {
+    fetch('/api/payments/wallets', { headers: { accept: 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (!j || !j.routes || !j.routes.length) return;
+        ROUTES = j.routes;
+        routeSource = 'live vom Server';
+        state.routeKey = null;
+        renderCrypto();
+      })
+      .catch(function () { /* offline: eingebettete Adressen bleiben gültig */ });
+  }
 
   var $ = function (id) { return document.getElementById(id); };
   var esc = function (s) {
@@ -615,8 +629,15 @@ __ENGINE_SOURCE__
   }
 
   function renderCrypto() {
-    var s = manager.getState();
-    var assets = s.cryptoMethods;
+    var offered = manager.getState().cryptoMethods;   // WAS angeboten wird (Politik)
+    var byAsset = {};                                  // WOHIN empfangen wird (Fähigkeit)
+    ROUTES.forEach(function (r) { byAsset[r.asset] = r; });
+
+    // Nur anzeigen, was auch wirklich empfangen werden kann. WalletConnect
+    // braucht keine feste Empfangsadresse, deshalb immer dabei.
+    var assets = offered.filter(function (m) {
+      return m.id === 'walletconnect' || byAsset[m.id];
+    });
 
     var html = '';
     assets.forEach(function (m) {
@@ -631,48 +652,50 @@ __ENGINE_SOURCE__
 
     var asset = null;
     assets.forEach(function (m) { if (m.id === state.asset) asset = m; });
-    if (!asset) { asset = assets[0]; state.asset = asset.id; }
+    if (!asset) { asset = assets[0]; state.asset = asset ? asset.id : null; }
+    if (!asset) { $('co-networks').innerHTML = ''; $('co-crypto-detail').innerHTML = ''; return; }
 
-    if (state.network === null || asset.networks.indexOf(state.network) === -1) {
-      // Erstes Netzwerk mit hinterlegter Adresse bevorzugen.
-      state.network = null;
-      asset.networks.forEach(function (n) {
-        if (state.network === null && WALLETS[asset.id + '|' + n]) state.network = n;
-      });
-      if (state.network === null) state.network = asset.networks[0];
+    var routes = (byAsset[asset.id] || { routes: [] }).routes;
+
+    if (state.routeKey === null || !routes.some(function (r) { return routeKeyOf(r) === state.routeKey; })) {
+      state.routeKey = routes.length ? routeKeyOf(routes[0]) : null;
     }
 
     var nets = '';
-    asset.networks.forEach(function (n) {
-      var wallet = WALLETS[asset.id + '|' + n];
-      var on = state.network === n;
-      nets += '<li><label class="flex min-h-[3rem] items-center gap-3 rounded-lg border px-4 py-2 '
-        + (wallet ? 'cursor-pointer ' : 'cursor-not-allowed opacity-60 ')
-        + (on ? 'border-brass bg-surface' : 'border-line bg-surface') + '">'
-        + '<input type="radio" name="network" value="' + esc(n) + '"' + (on ? ' checked' : '')
-        + (wallet ? '' : ' disabled') + ' class="h-5 w-5 accent-[rgb(var(--brass))]">'
-        + '<span class="font-semibold">' + esc(n) + '</span>'
-        + (wallet ? '' : '<span class="ml-auto text-xs text-muted">Adresse noch zu hinterlegen</span>')
+    routes.forEach(function (r) {
+      var key = routeKeyOf(r);
+      var on = state.routeKey === key;
+      // Bei mehreren Wallets derselben Kette (Seeker/Phantom) entscheidet die
+      // Beschriftung — sonst wären zwei Zeilen nicht unterscheidbar.
+      nets += '<li><label class="flex min-h-[3rem] cursor-pointer items-center gap-3 rounded-lg border px-4 py-2 '
+        + (on ? 'border-brass bg-surface' : 'border-line bg-surface hover:bg-sunken') + '">'
+        + '<input type="radio" name="network" value="' + esc(key) + '"' + (on ? ' checked' : '')
+        + ' class="h-5 w-5 accent-[rgb(var(--brass))]">'
+        + '<span class="font-semibold">' + esc(r.network) + '</span>'
+        + (r.label ? '<span class="ml-auto text-xs text-muted">' + esc(r.label) + '</span>' : '')
         + '</label></li>';
     });
-    $('co-networks').innerHTML = nets;
+    $('co-networks').innerHTML = nets
+      || '<li class="text-sm text-muted">Für diesen Wert ist keine Empfangsadresse hinterlegt.</li>';
 
     Array.prototype.forEach.call($('co-assets').querySelectorAll('button[data-asset]'), function (b) {
       b.addEventListener('click', function () {
         state.asset = b.getAttribute('data-asset');
-        state.network = null;
+        state.routeKey = null;
         renderCrypto();
         updateTotals();
       });
     });
     Array.prototype.forEach.call($('co-networks').querySelectorAll('input[name="network"]'), function (r) {
-      r.addEventListener('change', function () { state.network = r.value; renderCrypto(); updateTotals(); });
+      r.addEventListener('change', function () { state.routeKey = r.value; renderCrypto(); updateTotals(); });
     });
 
-    renderCryptoDetail(asset);
+    var active = null;
+    routes.forEach(function (r) { if (routeKeyOf(r) === state.routeKey) active = r; });
+    renderCryptoDetail(asset, active);
   }
 
-  function renderCryptoDetail(asset) {
+  function renderCryptoDetail(asset, route) {
     var box = $('co-crypto-detail');
 
     if (asset.id === 'walletconnect') {
@@ -686,21 +709,18 @@ __ENGINE_SOURCE__
       return;
     }
 
-    var wallet = WALLETS[asset.id + '|' + state.network];
-    if (!wallet) {
+    if (!route) {
       box.innerHTML =
         '<div class="rounded-lg border border-warn/40 bg-warnsoft p-4">'
-        + '<p class="text-sm leading-relaxed"><strong class="font-semibold">Für dieses Netzwerk ist noch keine '
-        + 'Empfangsadresse hinterlegt.</strong> Sie wird vom Betreiber gesetzt '
-        + '(<span class="mono">APOTREND_WALLET_…</span>). Eine erfundene Adresse steht hier bewusst nicht — '
-        + 'eine falsche Wallet-Adresse bedeutet unwiederbringlich verlorenes Geld.</p></div>';
+        + '<p class="text-sm leading-relaxed">Für diesen Wert ist noch keine Empfangsadresse hinterlegt. '
+        + 'Sie wird über eine Umgebungsvariable gesetzt (<span class="mono">APOTREND_WALLET_…</span>). '
+        + 'Eine erfundene Adresse steht hier bewusst nicht.</p></div>';
       return;
     }
 
-    var uri = wallet.uri + ':' + wallet.address;
     var svg;
     try {
-      svg = qrToSvg(uri, { moduleSize: 4, quietZone: 3, dark: '#000000', light: '#ffffff' });
+      svg = qrToSvg(route.uri, { moduleSize: 4, quietZone: 3, dark: '#000000', light: '#ffffff' });
     } catch (e) {
       svg = '';
     }
@@ -711,14 +731,21 @@ __ENGINE_SOURCE__
       + (svg || '<p class="p-4 text-xs text-stop">QR konnte nicht erzeugt werden.</p>')
       + '</div>'
       + '<div class="min-w-0">'
-      + '<p class="text-xs font-semibold uppercase tracking-wider text-muted">Empfangsadresse</p>'
-      + '<p class="mono mt-1 break-all text-sm leading-relaxed" data-testid="wallet-address">' + esc(wallet.address) + '</p>'
-      + '<button type="button" data-copy="' + esc(wallet.address) + '" data-testid="copy-address" '
+      + '<p class="text-xs font-semibold uppercase tracking-wider text-muted">Empfangsadresse'
+      + (route.label ? ' · ' + esc(route.label) : '') + '</p>'
+      + '<p class="mono mt-1 break-all text-sm leading-relaxed" data-testid="wallet-address">'
+      + esc(route.address) + '</p>'
+      + '<button type="button" data-copy="' + esc(route.address) + '" data-testid="copy-address" '
       + 'class="btn-secondary mt-3">Adresse kopieren</button>'
-      + '<p class="mt-3 text-xs leading-relaxed text-muted">Der QR enthält Adresse und Netzwerk, '
+      + (route.note
+          ? '<p class="mt-3 rounded-lg border border-warn/40 bg-warnsoft px-3 py-2 text-xs font-semibold leading-relaxed">'
+            + esc(route.note) + '</p>'
+          : '')
+      + '<p class="mt-3 text-xs leading-relaxed text-muted">Der QR enthält Adresse und Kette, '
       + '<strong class="font-semibold">keinen Betrag</strong>: In dieser Demo ist kein Kursdienst angebunden, '
       + 'und ein geschätzter Kurs im Zahlungslink wäre eine falsche Zusage. Im Betrieb rechnet der '
       + 'Zahlungsdienst live um und zählt die Netzwerk-Bestätigungen.</p>'
+      + '<p class="mono mt-2 text-[11px] text-muted" data-testid="route-source">Adressen: ' + esc(routeSource) + '</p>'
       + '</div></div>';
 
     var copyBtn = box.querySelector('[data-copy]');
@@ -766,7 +793,8 @@ __ENGINE_SOURCE__
     }
 
     rows += row('Zahlweg', state.tab === 'crypto'
-      ? 'Krypto · ' + state.asset.toUpperCase()
+      ? 'Krypto · ' + String(state.asset || '').toUpperCase()
+        + (state.routeKey ? ' · ' + state.routeKey.split('|')[1] : '')
       : 'Fiat · ' + (state.fiat || '—'));
 
     $('co-summary').innerHTML = rows;

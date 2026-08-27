@@ -50,12 +50,12 @@ test('Krypto ist in JEDEM Land und JEDEM Zweck verfügbar', () => {
   assert.ok(checked >= ALL_COUNTRIES.length, `zu wenige Kombinationen geprüft: ${checked}`);
 });
 
-test('USDT, USDC, BTC und WalletConnect sind überall dabei', () => {
+test('USDT, USDC, BTC, ETH, SOL und WalletConnect sind überall dabei', () => {
   for (const country of ALL_COUNTRIES) {
     const ids = paymentMethodsFor(country, 'saas_license')
       .filter((m) => m.rail === 'crypto')
       .map((m) => m.id);
-    for (const required of ['usdt', 'usdc', 'btc', 'walletconnect']) {
+    for (const required of ['usdt', 'usdc', 'btc', 'eth', 'sol', 'walletconnect']) {
       assert.ok(ids.includes(required), `${country}: ${required} fehlt`);
     }
   }

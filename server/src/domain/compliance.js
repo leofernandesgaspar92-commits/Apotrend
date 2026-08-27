@@ -57,25 +57,34 @@ export class ComplianceError extends Error {
 //  Global verfügbar für grenzüberschreitende B2B-Lizenzen, Händler-Guthaben und
 //  internationale Transaktionen. Reihenfolge = Anzeigereihenfolge.
 
+//  Bewusst OHNE Netzwerk-Listen: Welche Ketten tatsächlich zur Verfügung stehen,
+//  ergibt sich aus den hinterlegten Wallets (data/cryptoWallets.js,
+//  `paymentRoutes()`) — nicht aus einer zweiten Liste hier. Beides parallel zu
+//  führen hieße, dem Kunden Wege anzubieten, für die keine Empfangsadresse
+//  existiert. Diese Datei sagt WAS angeboten wird, die Wallet-Datei WOHIN.
 export const CRYPTO_METHODS = Object.freeze([
   Object.freeze({
     id: 'usdt', rail: 'crypto', label: 'USDT (Tether)', asset: 'USDT',
-    networks: Object.freeze(['Ethereum (ERC-20)', 'Tron (TRC-20)']),
     settlement: 'stablecoin', confirmations: 12,
   }),
   Object.freeze({
     id: 'usdc', rail: 'crypto', label: 'USDC (Circle)', asset: 'USDC',
-    networks: Object.freeze(['Ethereum (ERC-20)', 'Solana', 'Polygon']),
     settlement: 'stablecoin', confirmations: 12,
   }),
   Object.freeze({
     id: 'btc', rail: 'crypto', label: 'Bitcoin', asset: 'BTC',
-    networks: Object.freeze(['Bitcoin (Mainnet)']),
     settlement: 'volatile', confirmations: 2,
   }),
   Object.freeze({
+    id: 'eth', rail: 'crypto', label: 'Ethereum', asset: 'ETH',
+    settlement: 'volatile', confirmations: 12,
+  }),
+  Object.freeze({
+    id: 'sol', rail: 'crypto', label: 'Solana', asset: 'SOL',
+    settlement: 'volatile', confirmations: 32,
+  }),
+  Object.freeze({
     id: 'walletconnect', rail: 'crypto', label: 'Web3-Wallet (WalletConnect)', asset: 'MULTI',
-    networks: Object.freeze(['Ethereum', 'Polygon', 'Arbitrum']),
     settlement: 'wallet', confirmations: 12,
   }),
 ]);
@@ -422,7 +431,7 @@ export function paymentMethodsFor(code, purpose = 'saas_license', overrides = {}
     .map((m) => ({ ...m, currency: p.currency }));
 
   // Krypto: ohne Länderfilter, in jedem Zweck.
-  const crypto = CRYPTO_METHODS.map((m) => ({ ...m, networks: [...m.networks] }));
+  const crypto = CRYPTO_METHODS.map((m) => ({ ...m }));
 
   return assertCryptoAvailable([...fiat, ...crypto], p.country, purpose);
 }

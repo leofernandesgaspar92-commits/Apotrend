@@ -44,6 +44,9 @@ const OUT_ARTIFACT = join(REPO, 'docs', 'demos', 'dynamic-checkout.html');
 // Reihenfolge zählt: plans.js benutzt compliance.js.
 const MODULES = [
   join(SERVER, 'src/data/countries.js'),
+  // Die echten Empfangsadressen des Betreibers — nicht abgetippt, sondern
+  // dieselbe Datei, die auch der Server benutzt.
+  join(SERVER, 'src/data/cryptoWallets.js'),
   join(SERVER, 'src/domain/compliance.js'),
   join(SERVER, 'src/domain/qr.js'),
   join(SERVER, 'src/data/plans.js'),

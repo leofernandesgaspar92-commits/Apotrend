@@ -107,9 +107,9 @@ async function main() {
     await page.waitForTimeout(60);
     visited++;
     const n = await page.locator('[data-testid="s-crypto"] li').count();
-    if (n !== 4) { cryptoEverywhere = false; cryptoMissing = `${code}: ${n} Methoden`; break; }
+    if (n !== 6) { cryptoEverywhere = false; cryptoMissing = `${code}: ${n} Methoden`; break; }
   }
-  check('Krypto steht in JEDEM Land (4 Methoden)',
+  check('Krypto steht in JEDEM Land (6 Methoden)',
     cryptoEverywhere && visited === 16, cryptoMissing || `${visited} Länder geprüft`);
 
   // --- 3. Länderwechsel schaltet um -----------------------------------------
@@ -189,8 +189,14 @@ async function main() {
   check('Krypto-Reiter lässt sich öffnen',
     (await page.locator('[data-testid="tab-crypto"]').getAttribute('aria-selected')) === 'true');
 
+  // Angeboten wird nur, wofür auch eine Empfangsadresse hinterlegt ist —
+  // die Liste stammt aus cryptoWallets.js, nicht aus einer zweiten Aufzählung.
   const assets = await page.locator('[data-testid="co-assets"] button').allInnerTexts();
-  check('USDT, USDC, BTC und Wallet stehen bereit', assets.length === 4, assets.join(' | '));
+  const assetText = assets.join(' | ');
+  check('Alle hinterlegten Werte stehen bereit', assets.length === 6, assetText);
+  for (const want of ['USDT', 'USDC', 'Bitcoin', 'Ethereum', 'Solana', 'WalletConnect']) {
+    check(`  · ${want} wählbar`, assetText.includes(want));
+  }
 
   const qrSvg = await page.locator('[data-testid="qr-plate"] svg').count();
   check('QR-Code ist gerendert', qrSvg === 1);
@@ -210,6 +216,43 @@ async function main() {
   const address = await page.locator('[data-testid="wallet-address"]').innerText();
   check('Empfangsadresse steht im Klartext daneben', /^bc1|^0x|^[1-9A-HJ-NP-Za-km-z]{32,}/.test(address.trim()),
     address.trim().slice(0, 28) + '…');
+
+  // --- Die echten Wallets des Betreibers -------------------------------------
+  // USDC läuft über Ethereum ODER Solana — und dort gibt es ZWEI Wallets
+  // (Seeker und Phantom). Beide müssen einzeln wählbar sein, so ist das
+  // Datenmodell in cryptoWallets.js ausdrücklich angelegt.
+  await page.click('[data-testid="co-assets"] button:has-text("USDC")');
+  await page.waitForTimeout(250);
+  const usdcNets = (await page.locator('[data-testid="co-networks"]').innerText()).replace(/\s+/g, ' ');
+  check('USDC: Ethereum und Solana stehen zur Wahl',
+    /Ethereum/.test(usdcNets) && /Solana/.test(usdcNets), usdcNets.slice(0, 70));
+  check('Beide Solana-Wallets sind unterscheidbar',
+    /Seeker/.test(usdcNets) && /Phantom/.test(usdcNets), usdcNets.slice(0, 90));
+
+  const usdcRoutes = await page.locator('[data-testid="co-networks"] input[name="network"]').count();
+  check('Keine Empfangsadresse ist ausgegraut', 
+    (await page.locator('[data-testid="co-networks"] input[disabled]').count()) === 0,
+    `${usdcRoutes} Wege`);
+
+  // Auf die Phantom-Wallet umschalten und prüfen, dass die Adresse wirklich wechselt.
+  const addrBefore = (await page.locator('[data-testid="wallet-address"]').innerText()).trim();
+  await page.locator('[data-testid="co-networks"] label:has-text("Phantom") input').check();
+  await page.waitForTimeout(250);
+  const addrAfter = (await page.locator('[data-testid="wallet-address"]').innerText()).trim();
+  check('Wallet-Wahl ändert die Empfangsadresse', addrBefore !== addrAfter,
+    addrAfter.slice(0, 24) + '…');
+
+  check('Herkunft der Adressen wird ausgewiesen',
+    /Adressen:/.test(await page.locator('[data-testid="route-source"]').innerText()),
+    (await page.locator('[data-testid="route-source"]').innerText()).slice(0, 40));
+
+  // Token-Warnung: falscher Token auf der richtigen Kette ist der teuerste Fehler.
+  const noteText = (await page.locator('[data-testid="co-crypto-detail"]').innerText()).replace(/\s+/g, ' ');
+  check('Token-Warnung steht am Weg', /geht verloren/.test(noteText), noteText.slice(0, 70));
+
+  // Zurück auf Bitcoin für die folgenden Prüfungen.
+  await page.click('[data-testid="co-assets"] button:has-text("Bitcoin")');
+  await page.waitForTimeout(200);
 
   // Krypto darf auch im strengsten Land nicht verschwinden.
   await page.selectOption('[data-testid="co-country"]', 'DE');

@@ -30,7 +30,7 @@ import { createOAuthService, buildProvidersFromEnv } from '../services/oauth.js'
 import { createPaymentsService, buildPaymentProvidersFromEnv } from '../services/payments.js';
 import { createCryptoRates } from '../services/cryptoRates.js';
 import { createFxRates } from '../services/fxRates.js';
-import { cryptoWallets } from '../data/cryptoWallets.js';
+import { cryptoWallets, paymentRoutes } from '../data/cryptoWallets.js';
 import { listProducts, getProduct } from '../data/products.js';
 import { createAmrService } from '../services/amr.js';
 import { createPatientInfoService } from '../services/patientInfo.js';
@@ -283,6 +283,15 @@ const routes = [
   // Verbleibende Wiederherstellungscodes (eingeloggt) + Neu-Erzeugung.
   ['GET', /^\/api\/recovery-codes$/, true, async ({ userId }) => ({ remaining: orgAuth.remainingRecoveryCodes(userId) })],
   ['POST', /^\/api\/recovery-codes\/regenerate$/, true, async ({ userId }) => orgAuth.regenerateRecoveryCodes(userId)],
+
+  // Hinterlegte Krypto-Empfangswege. Öffentlich, weil Empfangsadressen kein
+  // Geheimnis sind — und weil das Checkout-Modal sie zur Laufzeit zieht, statt
+  // eine abgetippte Kopie mitzuschleppen. So wirken ENV-Änderungen sofort.
+  ['GET', /^\/api\/payments\/wallets$/, false, async () => ({
+    wallets: cryptoWallets().map(({ id, coin, symbol, address, network, label }) =>
+      ({ id, coin, symbol, address, network, label })),
+    routes: paymentRoutes(),
+  })],
 
   // ── Dynamic Country Compliance ────────────────────────────────────────────
   // Liefert Handels-Modus, Gebührenmodell, zulässige Zahlwege und Pflichtfelder
