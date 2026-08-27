@@ -1,0 +1,471 @@
+// ============================================================================
+//  Apotrend — Schema: Länder-Compliance, Mehrwährungs-Abos, Hybrid-Zahlungen
+// ============================================================================
+//  Ergänzt prisma-schema-draft.prisma (Kernplattform) und
+//  prisma-schema-media.prisma (Feed/Medien).
+//
+//  Fünf Entwurfsentscheidungen, die den Rest erklären:
+//
+//  1. BETRÄGE SIND `BigInt` IN DER KLEINSTEN WÄHRUNGSEINHEIT — nie Float.
+//     Ein Monatspreis in Kwanza liegt bei 45.000.000 Cêntimos; das passt zwar
+//     noch in einen Int32, aber ein Jahresumsatz über mehrere Kunden nicht mehr.
+//     `Decimal` wäre auch möglich, `BigInt` erzwingt jedoch, dass niemand
+//     versehentlich mit Nachkommastellen rechnet. `minorUnits` steht am Land,
+//     weil nicht jede Währung zwei Nachkommastellen hat.
+//
+//  2. `Country` IST EINE TABELLE, nicht nur ein Enum. Das Gebührenmodell muss
+//     vom Betreiber änderbar sein, ohne Deployment — genau die
+//     „operator-overridable"-Kultur aus LEGAL_COUNTRY_MATRIX.md. Der Code in
+//     domain/compliance.js liefert den sicheren STANDARD, diese Tabelle den
+//     tatsächlich gültigen Stand.
+//
+//  3. FIAT- UND KRYPTO-BELEGE LIEGEN IN GETRENNTEN SPALTEN, nicht in einem
+//     generischen `reference`-Feld. Eine Stripe-Session-ID und ein
+//     Transaktions-Hash sind unterschiedliche Dinge mit unterschiedlicher
+//     Beweiskraft: der Hash ist öffentlich nachprüfbar, die Session-ID nicht.
+//     Ein gemeinsames Textfeld hätte diese Unterscheidung verwischt.
+//
+//  4. `feeKind` UNTERSCHEIDET `SAAS_FLAT` VON `COMMISSION_FEE`. Das ist keine
+//     Kosmetik: In DACH darf auf Arzneimittel keine prozentuale Provision
+//     anfallen. Nur wenn beide Arten getrennt buchbar sind, lässt sich das
+//     prüfen — und der CHECK-Constraint in compliance-constraints-commerce.sql
+//     macht daraus eine Zusicherung.
+//
+//  5. KRYPTO IST KEIN OPTIONALES MODUL. `PaymentRail.CRYPTO` steht im Enum,
+//     `CountryPaymentMethod` kennt keine Möglichkeit, es länderweise
+//     abzuschalten (siehe Kommentar dort), und ein Trigger stellt sicher, dass
+//     jedes aktive Land mindestens eine Krypto-Methode führt.
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+//  Aufzählungen
+// ---------------------------------------------------------------------------
+
+enum CommerceMode {
+  /// Nur Software-Lizenzen. Keine Provision auf den Warenwert.
+  SAAS_ONLY
+  /// Marktplatz mit Transaktions- und Logistikgebühren.
+  MARKETPLACE_FEES
+
+  @@schema("core")
+}
+
+enum PaymentRail {
+  FIAT
+  /// Dauerhaft verfügbar in allen Ländern (Owner-Vorgabe). Siehe Trigger.
+  CRYPTO
+
+  @@schema("core")
+}
+
+enum PaymentPurpose {
+  SAAS_LICENSE
+  MARKETPLACE_ORDER
+  MERCHANT_CREDIT
+
+  @@schema("core")
+}
+
+enum FeeKind {
+  /// Feste Lizenzgebühr je Abrechnungszeitraum.
+  SAAS_FLAT
+  /// Prozentuale Vermittlungs-/Logistikgebühr auf den Warenwert.
+  COMMISSION_FEE
+  /// Weder noch (z. B. kostenfreie Notfall-Aushilfe in DACH).
+  NONE
+
+  @@schema("core")
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  /// Zahlung eingegangen, aber Pflichtnachweis (z. B. Einfuhrlizenz) fehlt.
+  PENDING_COMPLIANCE
+
+  @@schema("core")
+}
+
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+
+  @@schema("core")
+}
+
+enum TransactionStatus {
+  PENDING
+  /// Krypto: gesendet, Netzwerk-Bestätigungen noch nicht ausreichend.
+  AWAITING_CONFIRMATIONS
+  /// Krypto direkt in eigene Wallet: Kund:in hat Tx-ID genannt, Prüfung offen.
+  PENDING_REVIEW
+  SETTLED
+  FAILED
+  REFUNDED
+
+  @@schema("core")
+}
+
+enum CryptoAsset {
+  USDT
+  USDC
+  BTC
+  ETH
+  SOL
+  /// WalletConnect: das konkrete Asset steht erst beim Signieren fest.
+  MULTI
+
+  @@schema("core")
+}
+
+// ---------------------------------------------------------------------------
+//  Länder-Compliance
+// ---------------------------------------------------------------------------
+
+model Country {
+  /// ISO 3166-1 alpha-2.
+  code String @id @db.Char(2)
+
+  name       String
+  region     String // 'DACH' | 'EU' | 'AFRICA' | 'AMERICAS' | 'UK' | 'APAC'
+  /// ISO 4217.
+  currency   String @db.Char(3)
+  /// Nachkommastellen der Währung. NICHT überall 2 — deshalb ein Feld.
+  minorUnits Int    @default(2)
+  locale     String @default("en")
+  timezone   String
+
+  /// --- Rechtsrahmen (Bezeichnungen, keine Auslegung) ---
+  legalFramework String[] // z. B. ['AMG (DE)','HWG','ApoG','DSGVO']
+  regulator      String?
+  regulatorUrl   String?
+  /// Rückverfolgbarkeits-Regime, sofern eines gilt: 'DSCSA', 'EU-FMD', null.
+  traceability   String?
+
+  /// --- Monetarisierung ---
+  commerceMode CommerceMode @default(SAAS_ONLY)
+
+  /// DER entscheidende Schalter. false = keine prozentuale Provision auf
+  /// Arzneimittel (DACH). Ein CHECK verhindert, dass trotzdem eine gebucht wird.
+  transactionFeeAllowed Boolean @default(false)
+
+  /// Basispunkte (1 bps = 0,01 %). Nur wirksam, wenn transactionFeeAllowed.
+  marketplaceFeeBps Int @default(0)
+  logisticsFeeBps   Int @default(0)
+
+  /// Kostenfreie Funktionen, die niemals abgerechnet werden (z. B. Notfall-Aushilfe).
+  freeFeatures String[]
+
+  isActive  Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+
+  paymentMethods  CountryPaymentMethod[]
+  requiredFields  CountryCheckoutField[]
+  subscriptions   Subscription[]
+  transactions    Transaction[]
+
+  @@index([region])
+  @@schema("core")
+}
+
+/// Zulässige Bezahlwege je Land.
+///
+/// WICHTIG: Es gibt hier bewusst KEINE Spalte, mit der sich die Krypto-Schiene
+/// länderweise abschalten ließe. `isEnabled` existiert für Fiat-Ausfälle
+/// (Anbieterstörung, gekündigter Vertrag); der Trigger
+/// `enforce_crypto_rail_present` verhindert, dass ein Land ohne aktive
+/// Krypto-Methode zurückbleibt.
+model CountryPaymentMethod {
+  id          String  @id @default(cuid())
+  countryCode String  @db.Char(2)
+  country     Country @relation(fields: [countryCode], references: [code], onDelete: Cascade)
+
+  /// 'sepa' | 'card' | 'mbway' | 'multicaixa' | 'mpesa' | 'pix' | 'usdt' | …
+  methodId String
+  rail     PaymentRail
+  label    String
+  /// Abwickelnder Anbieter: 'stripe' | 'sibs' | 'emis' | 'coinbase' | 'direct' | …
+  provider String
+
+  /// Für welche Zwecke zugelassen. Leer = alle.
+  purposes PaymentPurpose[]
+
+  /// Anzeigereihenfolge — lokal übliche Wege stehen vorn (MB WAY in PT, M-Pesa in KE).
+  position  Int     @default(0)
+  isEnabled Boolean @default(true)
+
+  /// --- nur CRYPTO ---
+  asset               CryptoAsset?
+  networks            String[]
+  minimumConfirmations Int?        @default(12)
+
+  @@unique([countryCode, methodId])
+  @@index([countryCode, rail, position])
+  @@schema("core")
+}
+
+/// Pflicht- und Kann-Felder im Checkout je Land und Zweck.
+/// Beispiele: FDA-Registrierungsnummer (US), Einfuhrlizenz (AO/NG/KE), UID (EU).
+model CountryCheckoutField {
+  id          String  @id @default(cuid())
+  countryCode String  @db.Char(2)
+  country     Country @relation(fields: [countryCode], references: [code], onDelete: Cascade)
+
+  fieldId String // 'fda_registration' | 'import_licence' | 'gmp_certificate' | …
+  label   String
+  /// 'text' | 'file'
+  inputType String @default("text")
+  isRequired Boolean @default(true)
+
+  /// Für welche Zwecke das Feld gilt. Ein Herkunftszertifikat ergibt bei einer
+  /// reinen Software-Lizenz keinen Sinn — ein unbegründetes Pflichtfeld ist
+  /// eine Hürde ohne Gegenwert.
+  purposes PaymentPurpose[]
+
+  /// Prüfregel als Zeichenkette, damit Server (new RegExp) und HTML-Formular
+  /// (pattern-Attribut) dieselbe Regel benutzen statt zweier Fassungen.
+  validationPattern String?
+  example           String?
+  hint              String?
+  legalBasis        String?
+
+  position Int @default(0)
+
+  @@unique([countryCode, fieldId])
+  @@schema("core")
+}
+
+// ---------------------------------------------------------------------------
+//  Abonnements
+// ---------------------------------------------------------------------------
+
+model Plan {
+  id       String  @id
+  name     String
+  tier     Int
+  audience String
+  features String[]
+
+  /// Nur buchbar, wo ein Marktplatz existiert.
+  requiresMarketplace Boolean @default(false)
+  isActive            Boolean @default(true)
+
+  prices        PlanPrice[]
+  subscriptions Subscription[]
+
+  @@schema("core")
+}
+
+/// Gepflegte Preisliste je Währung und Intervall.
+///
+/// Bewusst KEINE Umrechnung zum Tageskurs: ein Abo, dessen Betrag monatlich mit
+/// dem Wechselkurs schwankt, ist nicht planbar und in der Buchhaltung ein
+/// Ärgernis. Der FX-Dienst dient der Anzeige von Vergleichswerten, nicht der
+/// Abrechnung.
+model PlanPrice {
+  id     String @id @default(cuid())
+  planId String
+  plan   Plan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  currency    String          @db.Char(3)
+  interval    BillingInterval
+  amountMinor BigInt
+
+  validFrom DateTime  @default(now())
+  validTo   DateTime?
+
+  @@unique([planId, currency, interval, validFrom])
+  @@index([planId, currency, interval])
+  @@schema("core")
+}
+
+model Subscription {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Abos laufen auf die Organisation, nicht auf die Person — sonst endet das
+  /// Abo, wenn die Inhaberin das Konto löscht.
+  pharmacyId String?
+
+  planId String
+  plan   Plan   @relation(fields: [planId], references: [id])
+
+  countryCode String  @db.Char(2)
+  country     Country @relation(fields: [countryCode], references: [code])
+
+  /// Preis wird beim Abschluss FESTGESCHRIEBEN. Eine spätere Preisänderung
+  /// darf ein laufendes Abo nicht rückwirkend verteuern.
+  currency    String          @db.Char(3)
+  amountMinor BigInt
+  interval    BillingInterval
+
+  status SubscriptionStatus @default(TRIALING)
+
+  /// Bezahlweg dieses Abos — Fiat ODER Krypto.
+  paymentRail     PaymentRail
+  paymentMethodId String
+  /// 'stripe' | 'sibs' | 'emis' | 'coinbase' | 'direct' | …
+  paymentProvider String
+  /// Abo-Kennung beim Anbieter (Stripe-Subscription-ID o. Ä.).
+  providerRef     String?
+
+  /// Krypto-Abos laufen nicht als Lastschrift: jede Periode wird einzeln
+  /// bezahlt. Dieses Feld hält fest, bis wann bezahlt ist.
+  paidThrough        DateTime?
+  currentPeriodStart DateTime  @default(now())
+  currentPeriodEnd   DateTime
+  cancelAt           DateTime?
+  canceledAt         DateTime?
+
+  /// Eingereichte Nachweise (Einfuhrlizenz, FDA-Nummer …). Solange ein Pflicht-
+  /// nachweis fehlt, bleibt der Status PENDING_COMPLIANCE — bezahlt ist nicht
+  /// gleich freigeschaltet.
+  complianceData Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions Transaction[]
+
+  @@index([userId, status])
+  @@index([pharmacyId])
+  @@index([countryCode, status])
+  @@index([currentPeriodEnd])
+  @@schema("core")
+}
+
+// ---------------------------------------------------------------------------
+//  Transaktionen
+// ---------------------------------------------------------------------------
+
+/// Jede Geldbewegung — Fiat wie Krypto, Lizenz wie Provision.
+///
+/// Die Trennung von `feeKind` ist der Grund, warum diese Tabelle so aussieht:
+/// Steuerlich und aufsichtsrechtlich ist eine Lizenzpauschale etwas anderes als
+/// eine Vermittlungsprovision auf Arzneimittel. Ein gemeinsames `amount`-Feld
+/// ohne diese Unterscheidung würde die Prüfung „in DACH keine Provision"
+/// unmöglich machen.
+model Transaction {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  countryCode String  @db.Char(2)
+  country     Country @relation(fields: [countryCode], references: [code])
+
+  purpose PaymentPurpose
+  rail    PaymentRail
+  status  TransactionStatus @default(PENDING)
+
+  /// --- Beträge (kleinste Währungseinheit) ---
+  currency        String @db.Char(3)
+  /// Bruttobetrag: Lizenzgebühr bzw. Warenwert.
+  grossAmountMinor BigInt
+  /// Einbehaltene Gebühr der Plattform.
+  feeAmountMinor   BigInt @default(0)
+  /// Auszahlung an die Verkäuferin (nur bei Marktplatz-Bestellungen).
+  netAmountMinor   BigInt
+
+  /// --- Gebührenmodell ---
+  feeKind FeeKind
+  /// Angewandte Basispunkte. MUSS 0 sein, wenn feeKind <> COMMISSION_FEE.
+  feeBps  Int     @default(0)
+
+  // ---- FIAT-Belege --------------------------------------------------------
+  /// 'stripe' | 'sibs' | 'emis' | 'safaricom' | 'paystack' | …
+  fiatProvider       String?
+  /// Session-/Intent-ID beim Anbieter. Idempotenzschlüssel des Webhooks.
+  fiatProviderRef    String?
+  fiatPaymentMethod  String? // 'card' | 'sepa' | 'mbway' | 'multicaixa' | 'mpesa' | …
+  /// Letzte vier Stellen o. Ä. — NIE vollständige Kartendaten.
+  fiatInstrumentHint String?
+
+  // ---- KRYPTO-Belege ------------------------------------------------------
+  //  Getrennt von den Fiat-Feldern, weil ein Transaktions-Hash öffentlich
+  //  nachprüfbar ist und eine Anbieter-Referenz nicht. Beweiskraft ist
+  //  unterschiedlich, also gehören sie nicht in dasselbe Feld.
+  cryptoAsset       CryptoAsset?
+  cryptoNetwork     String? // 'Ethereum (ERC-20)' | 'Tron (TRC-20)' | 'Bitcoin (Mainnet)' | …
+  /// Transaktions-Hash der Kette. Eindeutig — schützt vor doppelter Gutschrift.
+  cryptoTxHash      String?
+  /// Absender-Adresse, sofern aus der Kette ablesbar.
+  cryptoFromAddress String?
+  /// Empfangsadresse der Plattform (öffentlich, kein Geheimnis).
+  cryptoToAddress   String?
+  /// Betrag in der Kryptowährung. `Decimal` statt BigInt: 18 Nachkommastellen
+  /// bei ETH lassen sich nicht sinnvoll als kleinste Einheit führen.
+  cryptoAmount      Decimal? @db.Decimal(38, 18)
+  /// Kurs zum Zeitpunkt der Zahlung — für die Buchhaltung nachvollziehbar.
+  cryptoRateMinor   BigInt?
+  confirmations     Int?     @default(0)
+  /// WalletConnect: die verbundene Wallet-Adresse.
+  walletAddress     String?
+
+  /// --- Nachweise ---
+  /// Bei US-Transaktionen die FDA-Nummer, bei AO/NG/KE die Einfuhrlizenz usw.
+  /// Als Json, weil die Pflichtfelder je Land verschieden sind — die Struktur
+  /// steht in CountryCheckoutField, nicht in einer starren Spaltenliste.
+  complianceSnapshot Json?
+  /// Unveränderlicher Nachweis für Track-and-Trace (DSCSA): Hash über
+  /// Transaction Information + History + Statement.
+  traceabilityHash   String?
+
+  failureCode   String?
+  failureReason String?
+
+  createdAt  DateTime  @default(now())
+  settledAt  DateTime?
+  refundedAt DateTime?
+
+  @@unique([fiatProvider, fiatProviderRef])
+  @@unique([cryptoTxHash])
+  @@index([userId, createdAt])
+  @@index([countryCode, feeKind, createdAt])
+  @@index([status, rail])
+  @@index([subscriptionId])
+  @@schema("core")
+}
+
+/// Händler-Guthaben. Wird per Fiat ODER Krypto aufgeladen und über Lizenz- bzw.
+/// Marktplatz-Gebühren verbraucht — der Hauptgrund, warum Krypto auch in
+/// SaaS-only-Ländern gebraucht wird: grenzüberschreitende Aufladung ohne
+/// Korrespondenzbank.
+model MerchantCredit {
+  id         String  @id @default(cuid())
+  userId     String  @unique
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pharmacyId String?
+
+  currency     String @db.Char(3)
+  balanceMinor BigInt @default(0)
+
+  updatedAt DateTime @updatedAt
+
+  entries MerchantCreditEntry[]
+
+  @@schema("core")
+}
+
+/// Kontobewegungen des Guthabens. Append-only: Korrekturen sind Gegenbuchungen,
+/// keine Änderungen — sonst ist der Saldo nicht mehr nachvollziehbar.
+model MerchantCreditEntry {
+  id       String         @id @default(cuid())
+  creditId String
+  credit   MerchantCredit @relation(fields: [creditId], references: [id], onDelete: Cascade)
+
+  /// Positiv = Aufladung, negativ = Verbrauch.
+  deltaMinor    BigInt
+  balanceAfter  BigInt
+  reason        String // 'topup' | 'license_fee' | 'marketplace_fee' | 'correction'
+  transactionId String?
+
+  createdAt DateTime @default(now())
+
+  @@index([creditId, createdAt])
+  @@schema("core")
+}

@@ -1,0 +1,868 @@
+<!--
+  ============================================================================
+   QUELLE des Checkout-Modals — nicht direkt öffnen.
+  ============================================================================
+   Gebaut wird daraus mit:  node tools/build-checkout-demo.mjs
+
+   Der Build ersetzt drei Marken (hier bewusst NICHT wörtlich genannt — sie
+   dürfen in dieser Datei jeweils genau einmal vorkommen, sonst ersetzt der
+   Build die Erwähnung im Kommentar statt die echte Stelle):
+     · die CSS-Marke      -> erzeugtes Tailwind-CSS (kein CDN, keine Netzabfrage)
+     · die Engine-Marke   -> compliance.js + qr.js + plans.js + countries.js
+     · die Stempel-Marke  -> Zeitpunkt des Builds
+   Der Build prüft das und bricht ab, wenn eine Marke mehrfach auftaucht.
+
+   Die Engine wird EINGEBETTET, nicht nachgebaut: Dasselbe compliance.js, das
+   der Server benutzt, entscheidet hier im Browser. Zwei Fassungen derselben
+   Compliance-Regeln würden auseinanderlaufen — ausgerechnet an der Stelle, an
+   der das am teuersten ist.
+  ============================================================================
+-->
+<title>Apotrend Länder-Checkout</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>__TAILWIND_CSS__</style>
+
+<style>
+  /* --- Farbtoken ---------------------------------------------------------
+     Vollständige Hell-Palette auf blankem :root. Der Dunkelmodus definiert
+     ausschließlich dieselben Token neu — nie einzelne Bauteile. Beide
+     Umschaltwege sind abgedeckt: die Systemeinstellung (ohne data-theme) und
+     die ausdrückliche Wahl. */
+  :root {
+    --ground: 234 236 241;
+    --surface: 255 255 255;
+    --sunken: 244 246 250;
+    --raised: 255 255 255;
+    --ink: 20 24 33;
+    --ink-muted: 89 98 122;
+    --line: 207 213 225;
+    --line-strong: 168 178 197;
+    --accent: 46 58 140;
+    --accent-ink: 255 255 255;
+    --accent-soft: 228 232 248;
+    --ok: 27 107 74;
+    --ok-soft: 224 240 232;
+    --warn: 138 83 0;
+    --warn-soft: 249 238 219;
+    --stop: 153 45 38;
+    --stop-soft: 250 231 229;
+    --brass: 122 90 21;
+    --brass-soft: 247 240 222;
+    --shadow: 0 1px 2px rgb(20 24 33 / 0.06), 0 8px 24px -12px rgb(20 24 33 / 0.22);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --ground: 13 16 22;
+      --surface: 22 26 35;
+      --sunken: 17 20 27;
+      --raised: 28 33 44;
+      --ink: 230 233 241;
+      --ink-muted: 152 161 184;
+      --line: 40 48 63;
+      --line-strong: 68 79 100;
+      --accent: 148 163 255;
+      --accent-ink: 12 15 26;
+      --accent-soft: 28 35 64;
+      --ok: 84 190 140;
+      --ok-soft: 18 40 32;
+      --warn: 220 161 63;
+      --warn-soft: 44 34 14;
+      --stop: 240 138 130;
+      --stop-soft: 51 25 24;
+      --brass: 214 174 94;
+      --brass-soft: 44 36 18;
+      --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 28px -12px rgb(0 0 0 / 0.7);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme='dark'] {
+    --ground: 13 16 22;
+    --surface: 22 26 35;
+    --sunken: 17 20 27;
+    --raised: 28 33 44;
+    --ink: 230 233 241;
+    --ink-muted: 152 161 184;
+    --line: 40 48 63;
+    --line-strong: 68 79 100;
+    --accent: 148 163 255;
+    --accent-ink: 12 15 26;
+    --accent-soft: 28 35 64;
+    --ok: 84 190 140;
+    --ok-soft: 18 40 32;
+    --warn: 220 161 63;
+    --warn-soft: 44 34 14;
+    --stop: 240 138 130;
+    --stop-soft: 51 25 24;
+    --brass: 214 174 94;
+    --brass-soft: 44 36 18;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 28px -12px rgb(0 0 0 / 0.7);
+    color-scheme: dark;
+  }
+
+  body {
+    background: rgb(var(--ground));
+    color: rgb(var(--ink));
+    font-family: 'Archivo', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace; }
+
+  /* Sichtbarer Fokus überall — Tastaturbedienung ist kein Sonderfall. */
+  :where(a, button, select, input, textarea, [tabindex]):focus-visible {
+    outline: 3px solid rgb(var(--accent));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  dialog::backdrop { background: rgb(8 10 16 / 0.62); backdrop-filter: blur(2px); }
+  dialog { max-width: none; max-height: none; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .anim-in { animation: rise 220ms cubic-bezier(0.2, 0, 0.2, 1) both; }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  }
+
+  /* Der QR-Code bleibt IMMER schwarz auf weiß — auch im Dunkelmodus.
+     Ein invertierter QR wird von vielen Scannern nicht erkannt, und bei einer
+     Wallet-Adresse ist „meistens lesbar" nicht gut genug. */
+  .qr-plate { background: #fff; }
+</style>
+
+<div class="min-h-screen">
+  <div class="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:py-12">
+
+    <!-- ================= Kopf ================= -->
+    <header class="anim-in">
+      <p class="mono text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+        Apotrend · Länder-Compliance
+      </p>
+      <h1 class="mt-2 max-w-3xl text-3xl font-bold leading-tight tracking-tight sm:text-4xl" style="text-wrap: balance">
+        Ein Checkout, sechzehn Rechtsordnungen
+      </h1>
+      <p class="mt-3 max-w-2xl text-base leading-relaxed text-muted">
+        Wechseln Sie das Land — Handels-Modus, Gebührenmodell, Zahlwege und Pflichtfelder
+        stellen sich um. Die Entscheidungen trifft dieselbe
+        <span class="mono text-sm">compliance.js</span>, die auch im Server läuft.
+      </p>
+
+      <div class="mt-5 flex flex-wrap items-start gap-3 rounded-lg border border-line bg-warnsoft p-4">
+        <span aria-hidden="true" class="text-lg leading-none">⚖️</span>
+        <p class="max-w-3xl text-sm leading-relaxed">
+          <strong class="font-semibold">Kein Rechtsrat.</strong>
+          Konservative Einschätzung zur Produktsteuerung, kein anwaltlicher Rat. Im Zweifel
+          wurde die strengere Variante gewählt. Alle Profile sind vom Betreiber übersteuerbar
+          und vor produktivem Einsatz von Fachjurist:innen der jeweiligen Rechtsordnung zu prüfen.
+        </p>
+      </div>
+    </header>
+
+    <!-- ================= Steuerleiste ================= -->
+    <section aria-labelledby="steuerung" class="mt-8">
+      <h2 id="steuerung" class="sr-only">Steuerung</h2>
+      <div class="grid gap-4 rounded-xl border border-line bg-surface p-4 shadow-card sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <label for="page-country" class="block text-xs font-semibold uppercase tracking-wider text-muted">Land</label>
+          <select id="page-country" data-testid="page-country" class="ctrl mt-1.5"></select>
+        </div>
+        <div>
+          <label for="page-purpose" class="block text-xs font-semibold uppercase tracking-wider text-muted">Wofür</label>
+          <select id="page-purpose" data-testid="page-purpose" class="ctrl mt-1.5"></select>
+        </div>
+        <div>
+          <label for="page-plan" class="block text-xs font-semibold uppercase tracking-wider text-muted">Lizenz</label>
+          <select id="page-plan" data-testid="page-plan" class="ctrl mt-1.5"></select>
+        </div>
+        <div class="flex items-end">
+          <button type="button" id="open-checkout" data-testid="open-checkout"
+            class="btn-primary w-full">Zur Kasse</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Zustand ================= -->
+    <section aria-labelledby="zustand" class="mt-6">
+      <h2 id="zustand" class="text-lg font-semibold">Was die Engine entschieden hat</h2>
+
+      <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <article class="card">
+          <p class="card-label">Handels-Modus</p>
+          <p id="s-mode" data-testid="s-mode" class="mono mt-1 text-lg font-semibold"></p>
+          <p id="s-mode-note" class="mt-1 text-sm text-muted"></p>
+        </article>
+
+        <article class="card">
+          <p class="card-label">Gebührenmodell</p>
+          <p id="s-fee" data-testid="s-fee" class="mono mt-1 text-lg font-semibold"></p>
+          <p id="s-fee-note" class="mt-1 text-sm text-muted"></p>
+        </article>
+
+        <article class="card">
+          <p class="card-label">Währung</p>
+          <p id="s-currency" data-testid="s-currency" class="mono mt-1 text-lg font-semibold"></p>
+          <p id="s-price" class="mt-1 text-sm text-muted"></p>
+        </article>
+
+        <article class="card">
+          <p class="card-label">Aufsicht</p>
+          <p id="s-regulator" data-testid="s-regulator" class="mt-1 text-lg font-semibold"></p>
+          <p id="s-framework" class="mono mt-1 text-xs leading-relaxed text-muted"></p>
+        </article>
+      </div>
+
+      <div id="s-notes" data-testid="s-notes" class="mt-3 grid gap-2"></div>
+    </section>
+
+    <!-- ================= Zahlwege ================= -->
+    <section aria-labelledby="wege" class="mt-6">
+      <h2 id="wege" class="text-lg font-semibold">Zugelassene Zahlwege</h2>
+      <div class="mt-3 grid gap-3 lg:grid-cols-2">
+        <article class="card">
+          <p class="card-label">Fiat — nach Land gefiltert</p>
+          <ul id="s-fiat" data-testid="s-fiat" class="mt-2 flex flex-wrap gap-2"></ul>
+        </article>
+        <article class="card border-brass/40 bg-brasssoft">
+          <div class="flex flex-wrap items-center gap-2">
+            <p class="card-label">Krypto — global</p>
+            <span class="chip-fixed">In allen Ländern dauerhaft verfügbar</span>
+          </div>
+          <ul id="s-crypto" data-testid="s-crypto" class="mt-2 flex flex-wrap gap-2"></ul>
+          <p class="mt-2 text-xs leading-relaxed text-muted">
+            Für grenzüberschreitende B2B-Lizenzen, Händler-Guthaben und internationale
+            Transaktionen. Wird nicht länderabhängig gefiltert — <span class="mono">assertCryptoAvailable()</span>
+            wirft, falls die Schiene je fehlt.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <footer class="mt-10 border-t border-line pt-5 text-xs leading-relaxed text-muted">
+      <p>
+        Eingebettet: <span class="mono">compliance.js</span>, <span class="mono">plans.js</span>,
+        <span class="mono">qr.js</span>, <span class="mono">countries.js</span> — unverändert aus dem Server.
+        QR-Encoder gegen <span class="mono">python-qrcode</span> und <span class="mono">segno</span> geprüft
+        (64 Matrizen, jede Zelle identisch).
+      </p>
+      <p class="mono mt-1">Build __BUILD_STAMP__</p>
+    </footer>
+  </div>
+</div>
+
+<!-- ================= Das Modal ================= -->
+<dialog id="checkout" data-testid="checkout"
+  class="w-[min(56rem,calc(100vw-1.5rem))] rounded-xl border border-line bg-surface p-0 text-ink shadow-card">
+
+  <form method="dialog" class="contents">
+    <!-- Top-Bar mit Länderwahl -->
+    <header class="flex flex-wrap items-center gap-3 border-b border-line bg-sunken px-5 py-4">
+      <div class="min-w-0">
+        <p class="mono text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Kasse</p>
+        <h2 id="co-title" class="truncate text-xl font-bold">Lizenz abschließen</h2>
+      </div>
+
+      <div class="ml-auto flex flex-wrap items-end gap-3">
+        <div>
+          <label for="co-country" class="block text-[11px] font-semibold uppercase tracking-wider text-muted">Land</label>
+          <select id="co-country" data-testid="co-country" class="ctrl mt-1 min-w-[13rem]"></select>
+        </div>
+        <div class="text-right">
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-muted">Währung</p>
+          <p id="co-currency" data-testid="co-currency" class="mono mt-1 text-lg font-semibold leading-none"></p>
+        </div>
+        <button type="button" id="co-close" data-testid="co-close" aria-label="Kasse schließen"
+          class="grid h-12 w-12 place-items-center rounded-lg border border-linestrong bg-surface text-xl leading-none hover:bg-sunken">✕</button>
+      </div>
+    </header>
+
+    <div class="max-h-[72vh] overflow-y-auto">
+      <div class="grid gap-6 p-5 lg:grid-cols-[1.35fr_1fr]">
+
+        <!-- ---------- linke Spalte: Zahlung ---------- -->
+        <div>
+          <!-- Hinweisleiste des Landes -->
+          <div id="co-notice" data-testid="co-notice" class="mb-4 grid gap-2"></div>
+
+          <!-- Pflichtfelder -->
+          <section id="co-fields-wrap" class="mb-5">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-muted">Angaben für dieses Land</h3>
+            <div id="co-fields" data-testid="co-fields" class="mt-2 grid gap-3"></div>
+          </section>
+
+          <!-- Reiter -->
+          <section>
+            <h3 class="sr-only">Zahlungsart</h3>
+            <div role="tablist" aria-label="Zahlungsart" class="flex gap-2">
+              <button type="button" role="tab" id="tab-fiat" data-testid="tab-fiat"
+                aria-selected="true" aria-controls="panel-fiat" class="tab">
+                Karte &amp; Lastschrift
+              </button>
+              <button type="button" role="tab" id="tab-crypto" data-testid="tab-crypto"
+                aria-selected="false" aria-controls="panel-crypto" class="tab">
+                Krypto
+                <span class="ml-2 rounded-full bg-brass px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-surface">immer</span>
+              </button>
+            </div>
+
+            <!-- Fiat -->
+            <div role="tabpanel" id="panel-fiat" aria-labelledby="tab-fiat"
+              class="mt-3 rounded-lg border border-line bg-sunken p-4">
+              <ul id="co-fiat" data-testid="co-fiat" class="grid gap-2"></ul>
+            </div>
+
+            <!-- Krypto -->
+            <div role="tabpanel" id="panel-crypto" aria-labelledby="tab-crypto" hidden
+              class="mt-3 rounded-lg border border-brass/40 bg-brasssoft p-4">
+
+              <p class="text-sm leading-relaxed">
+                <strong class="font-semibold">Dauerhaft verfügbar</strong> — unabhängig vom gewählten Land.
+              </p>
+
+              <fieldset class="mt-3">
+                <legend class="text-xs font-semibold uppercase tracking-wider text-muted">Vermögenswert</legend>
+                <ul id="co-assets" data-testid="co-assets" class="mt-2 flex flex-wrap gap-2"></ul>
+              </fieldset>
+
+              <fieldset class="mt-4">
+                <legend class="text-xs font-semibold uppercase tracking-wider text-muted">Netzwerk</legend>
+                <ul id="co-networks" data-testid="co-networks" class="mt-2 grid gap-2"></ul>
+              </fieldset>
+
+              <div id="co-crypto-detail" data-testid="co-crypto-detail" class="mt-4"></div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ---------- rechte Spalte: Zusammenfassung ---------- -->
+        <aside class="lg:sticky lg:top-0">
+          <div class="rounded-lg border border-line bg-sunken p-4">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-muted">Zusammenfassung</h3>
+
+            <dl id="co-summary" data-testid="co-summary" class="mt-3 grid gap-2 text-sm"></dl>
+
+            <div class="mt-4 border-t border-line pt-3">
+              <div class="flex items-baseline justify-between gap-3">
+                <span class="text-sm font-semibold">Zu zahlen</span>
+                <span id="co-total" data-testid="co-total" class="mono text-2xl font-bold tabular-nums"></span>
+              </div>
+              <p id="co-total-note" class="mt-1 text-xs leading-relaxed text-muted"></p>
+            </div>
+
+            <button type="button" id="co-pay" data-testid="co-pay" class="btn-primary mt-4 w-full"></button>
+            <p id="co-blocked" data-testid="co-blocked" class="mt-2 text-xs font-semibold text-stop" hidden></p>
+
+            <p class="mt-3 text-[11px] leading-relaxed text-muted">
+              Demo ohne Anbieteranbindung: Es wird keine Zahlung ausgelöst. Der echte Ablauf
+              läuft über gehostete, lizenzierte Anbieter mit signierten Webhooks.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<script>
+/* ============================================================================
+   Eingebettete Engine — unverändert aus dem Server übernommen.
+   ============================================================================ */
+__ENGINE_SOURCE__
+</script>
+
+<script>
+/* ============================================================================
+   Oberfläche
+   ============================================================================
+   Ein einziger Manager versorgt beide Ansichten (Seite und Modal). Deshalb
+   springt der Länderwechsel im Modal auch auf der Seite um und umgekehrt —
+   das ist der Punkt der Übung: EIN Zustand, viele Ansichten.
+   ============================================================================ */
+(function () {
+  'use strict';
+
+  var manager = createComplianceManager({ country: 'AT', purpose: 'saas_license' });
+
+  /* Echte Empfangsadressen des Betreibers (öffentlich, aus cryptoWallets.js).
+     Netzwerke ohne hinterlegte Adresse werden als „noch zu hinterlegen"
+     ausgewiesen und lassen sich nicht auswählen — eine erfundene Wallet-Adresse
+     wäre der teuerste denkbare Platzhalter. */
+  var WALLETS = {
+    'usdt|Ethereum (ERC-20)': { address: '0x5f50991186014eDcbDE301467bE7a20C6CCc179B', uri: 'ethereum' },
+    'usdc|Ethereum (ERC-20)': { address: '0x5f50991186014eDcbDE301467bE7a20C6CCc179B', uri: 'ethereum' },
+    'usdc|Solana':            { address: 'Egbc7cfzHLj5dkgnR4E7Xk3MfDNrA5imqKJ1FV1n1DW', uri: 'solana' },
+    'btc|Bitcoin (Mainnet)':  { address: 'bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46', uri: 'bitcoin' }
+  };
+
+  var state = { plan: 'apo_basis', tab: 'fiat', asset: 'usdt', network: null, fiat: null };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+
+  var MODE_LABEL = { SAAS_ONLY: 'SAAS_ONLY', MARKETPLACE_FEES: 'MARKETPLACE_FEES' };
+  var MODE_NOTE = {
+    SAAS_ONLY: 'Nur Software-Lizenzen. Keine Provision auf den Warenwert.',
+    MARKETPLACE_FEES: 'Marktplatz mit Vermittlungs- und Logistikgebühr.'
+  };
+
+  /* ---------- Auswahlfelder füllen ---------- */
+
+  function countryOptions(select) {
+    var html = '';
+    Object.keys(COUNTRIES).forEach(function (code) {
+      if (!hasProfile(code)) return;
+      var c = COUNTRIES[code];
+      html += '<option value="' + code + '">' + c.flag + '  ' + esc(c.name) + ' · ' + c.currency + '</option>';
+    });
+    select.innerHTML = html;
+  }
+  countryOptions($('page-country'));
+  countryOptions($('co-country'));
+
+  function refreshPurposes() {
+    var s = manager.getState();
+    var html = '';
+    s.availablePurposes.forEach(function (id) {
+      html += '<option value="' + id + '">' + esc(PURPOSE_LABELS[id]) + '</option>';
+    });
+    $('page-purpose').innerHTML = html;
+    $('page-purpose').value = s.purpose;
+  }
+
+  function refreshPlans() {
+    var s = manager.getState();
+    var plans = plansForCountry(s.country, { interval: 'monthly' });
+    var html = '';
+    plans.forEach(function (p) {
+      html += '<option value="' + p.id + '">' + esc(p.name) + ' · ' + esc(p.display) + '</option>';
+    });
+    $('page-plan').innerHTML = html;
+    if (!plans.some(function (p) { return p.id === state.plan; })) {
+      state.plan = plans.length ? plans[0].id : null;
+    }
+    if (state.plan) $('page-plan').value = state.plan;
+  }
+
+  function currentPlan() {
+    var s = manager.getState();
+    var plans = plansForCountry(s.country, { interval: 'monthly' });
+    for (var i = 0; i < plans.length; i++) if (plans[i].id === state.plan) return plans[i];
+    return plans[0] || null;
+  }
+
+  /* ---------- Seiten-Zustand zeichnen ---------- */
+
+  function renderPage() {
+    var s = manager.getState();
+    var plan = currentPlan();
+
+    $('page-country').value = s.country;
+    $('co-country').value = s.country;
+
+    $('s-mode').textContent = MODE_LABEL[s.commerceMode];
+    $('s-mode-note').textContent = MODE_NOTE[s.commerceMode];
+
+    if (s.fees) {
+      $('s-fee').textContent = s.fees.kind;
+      $('s-fee-note').textContent = s.fees.reason;
+    } else {
+      $('s-fee').textContent = '—';
+      $('s-fee-note').textContent = s.error ? s.error.message : '';
+    }
+
+    $('s-currency').textContent = s.currency;
+    $('s-price').textContent = plan ? plan.name + ': ' + plan.display + ' je Monat' : '—';
+
+    $('s-regulator').textContent = s.profile.regulator || 'kein Profil hinterlegt';
+    $('s-framework').textContent = (s.profile.legalFramework || []).join(' · ');
+
+    var notes = '';
+    (s.profile.notes || []).forEach(function (n) {
+      notes += '<p class="rounded-lg border border-line bg-surface px-4 py-3 text-sm leading-relaxed">' + esc(n) + '</p>';
+    });
+    if (s.purposeCorrected) {
+      notes = '<p class="rounded-lg border border-warn/40 bg-warnsoft px-4 py-3 text-sm leading-relaxed">'
+        + '<strong class="font-semibold">Zweck angepasst.</strong> „Marktplatz-Bestellung" gibt es in '
+        + esc(COUNTRIES[s.country].name) + ' nicht — es wurde auf „'
+        + esc(PURPOSE_LABELS[s.purpose]) + '" umgestellt.</p>' + notes;
+    }
+    $('s-notes').innerHTML = notes;
+
+    var fiat = '';
+    s.fiatMethods.forEach(function (m) {
+      fiat += '<li class="chip">' + esc(m.label) + '<span class="mono ml-2 text-[11px] text-muted">'
+        + esc(m.provider) + '</span></li>';
+    });
+    $('s-fiat').innerHTML = fiat || '<li class="text-sm text-muted">keine</li>';
+
+    var crypto = '';
+    s.cryptoMethods.forEach(function (m) {
+      crypto += '<li class="chip-brass">' + esc(m.label) + '</li>';
+    });
+    $('s-crypto').innerHTML = crypto;
+  }
+
+  /* ---------- Modal zeichnen ---------- */
+
+  function renderNotice() {
+    var s = manager.getState();
+    var html = '';
+    if (s.profile.traceability) {
+      html += '<p class="rounded-lg border border-accent/40 bg-accentsoft px-4 py-3 text-sm leading-relaxed">'
+        + '<strong class="font-semibold">Rückverfolgbarkeit ' + esc(s.profile.traceability) + '.</strong> '
+        + 'Die Angaben unten werden mit der Transaktion verknüpft und sind später nicht änderbar.</p>';
+    }
+    if (s.commerceMode === 'SAAS_ONLY') {
+      html += '<p class="rounded-lg border border-ok/40 bg-oksoft px-4 py-3 text-sm leading-relaxed">'
+        + '<strong class="font-semibold">Keine Verkaufsprovision.</strong> '
+        + 'Abgerechnet wird ausschließlich die Lizenz — nicht der Warenwert von Arzneimitteln.</p>';
+    }
+    $('co-notice').innerHTML = html;
+  }
+
+  function renderFields() {
+    var s = manager.getState();
+    var html = '';
+    s.fields.forEach(function (f) {
+      var id = 'field-' + f.id;
+      html += '<div>';
+      html += '<label for="' + id + '" class="block text-sm font-semibold">' + esc(f.label)
+        + (f.required ? ' <span class="text-stop">*</span>' : ' <span class="font-normal text-muted">(optional)</span>')
+        + '</label>';
+      if (f.type === 'file') {
+        html += '<input type="file" id="' + id + '" data-field="' + f.id + '" accept="' + esc(f.accept || '') + '"'
+          + ' class="mt-1 block w-full text-sm file:mr-3 file:min-h-[3rem] file:rounded-lg file:border file:border-linestrong'
+          + ' file:bg-surface file:px-4 file:font-semibold file:text-ink">';
+      } else {
+        html += '<input type="text" id="' + id + '" data-field="' + f.id + '"'
+          + (f.pattern ? ' pattern="' + esc(f.pattern) + '"' : '')
+          + (f.required ? ' required' : '')
+          + ' placeholder="' + esc(f.example || '') + '" class="ctrl mono mt-1 w-full">';
+      }
+      html += '<p class="mt-1 text-xs leading-relaxed text-muted">' + esc(f.hint || '');
+      if (f.legalBasis) html += ' <span class="mono">(' + esc(f.legalBasis) + ')</span>';
+      html += '</p>';
+      html += '<p class="mt-1 hidden text-xs font-semibold text-stop" data-error-for="' + f.id + '"></p>';
+      html += '</div>';
+    });
+    $('co-fields').innerHTML = html || '<p class="text-sm text-muted">Für dieses Land sind keine zusätzlichen Angaben nötig.</p>';
+    $('co-fields-wrap').hidden = s.fields.length === 0;
+
+    Array.prototype.forEach.call($('co-fields').querySelectorAll('input[type="text"]'), function (input) {
+      input.addEventListener('input', function () { validateFields(); updateTotals(); });
+    });
+    Array.prototype.forEach.call($('co-fields').querySelectorAll('input[type="file"]'), function (input) {
+      input.addEventListener('change', function () { validateFields(); updateTotals(); });
+    });
+  }
+
+  /* Prüft die Pflichtfelder gegen genau das Muster, das auch der Server benutzt. */
+  function validateFields() {
+    var s = manager.getState();
+    var missing = [];
+    s.fields.forEach(function (f) {
+      var input = document.getElementById('field-' + f.id);
+      var err = $('co-fields').querySelector('[data-error-for="' + f.id + '"]');
+      if (!input || !err) return;
+
+      var value = f.type === 'file' ? (input.files && input.files.length ? 'datei' : '') : input.value.trim();
+      var problem = null;
+
+      if (f.required && !value) {
+        problem = 'Pflichtangabe für ' + (COUNTRIES[s.country] ? COUNTRIES[s.country].name : s.country) + '.';
+      } else if (value && f.pattern && f.type !== 'file' && !new RegExp('^(?:' + f.pattern.replace(/^\^|\$$/g, '') + ')$').test(value)) {
+        problem = 'Format stimmt nicht. Beispiel: ' + (f.example || '—');
+      }
+
+      if (problem) {
+        err.textContent = problem;
+        err.classList.remove('hidden');
+        input.setAttribute('aria-invalid', 'true');
+        if (f.required) missing.push(f.label);
+      } else {
+        err.classList.add('hidden');
+        input.removeAttribute('aria-invalid');
+      }
+    });
+    return missing;
+  }
+
+  function renderFiat() {
+    var s = manager.getState();
+    var html = '';
+    s.fiatMethods.forEach(function (m, i) {
+      if (state.fiat === null && i === 0) state.fiat = m.id;
+      var checked = state.fiat === m.id;
+      html += '<li><label class="flex min-h-[3rem] cursor-pointer items-center gap-3 rounded-lg border px-4 py-2 '
+        + (checked ? 'border-accent bg-accentsoft' : 'border-line bg-surface hover:bg-sunken') + '">'
+        + '<input type="radio" name="fiat" value="' + m.id + '"' + (checked ? ' checked' : '')
+        + ' class="h-5 w-5 accent-[rgb(var(--accent))]">'
+        + '<span class="font-semibold">' + esc(m.label) + '</span>'
+        + '<span class="mono ml-auto text-xs text-muted">' + esc(m.provider)
+        + ' · ' + m.settlementDays + ' Tage</span>'
+        + '</label></li>';
+    });
+    $('co-fiat').innerHTML = html;
+    Array.prototype.forEach.call($('co-fiat').querySelectorAll('input[name="fiat"]'), function (r) {
+      r.addEventListener('change', function () { state.fiat = r.value; renderFiat(); updateTotals(); });
+    });
+  }
+
+  function renderCrypto() {
+    var s = manager.getState();
+    var assets = s.cryptoMethods;
+
+    var html = '';
+    assets.forEach(function (m) {
+      var on = state.asset === m.id;
+      html += '<li><button type="button" data-asset="' + m.id + '"'
+        + ' aria-pressed="' + on + '"'
+        + ' class="min-h-[3rem] rounded-lg border px-4 font-semibold '
+        + (on ? 'border-brass bg-brass text-surface' : 'border-linestrong bg-surface hover:bg-sunken')
+        + '">' + esc(m.label) + '</button></li>';
+    });
+    $('co-assets').innerHTML = html;
+
+    var asset = null;
+    assets.forEach(function (m) { if (m.id === state.asset) asset = m; });
+    if (!asset) { asset = assets[0]; state.asset = asset.id; }
+
+    if (state.network === null || asset.networks.indexOf(state.network) === -1) {
+      // Erstes Netzwerk mit hinterlegter Adresse bevorzugen.
+      state.network = null;
+      asset.networks.forEach(function (n) {
+        if (state.network === null && WALLETS[asset.id + '|' + n]) state.network = n;
+      });
+      if (state.network === null) state.network = asset.networks[0];
+    }
+
+    var nets = '';
+    asset.networks.forEach(function (n) {
+      var wallet = WALLETS[asset.id + '|' + n];
+      var on = state.network === n;
+      nets += '<li><label class="flex min-h-[3rem] items-center gap-3 rounded-lg border px-4 py-2 '
+        + (wallet ? 'cursor-pointer ' : 'cursor-not-allowed opacity-60 ')
+        + (on ? 'border-brass bg-surface' : 'border-line bg-surface') + '">'
+        + '<input type="radio" name="network" value="' + esc(n) + '"' + (on ? ' checked' : '')
+        + (wallet ? '' : ' disabled') + ' class="h-5 w-5 accent-[rgb(var(--brass))]">'
+        + '<span class="font-semibold">' + esc(n) + '</span>'
+        + (wallet ? '' : '<span class="ml-auto text-xs text-muted">Adresse noch zu hinterlegen</span>')
+        + '</label></li>';
+    });
+    $('co-networks').innerHTML = nets;
+
+    Array.prototype.forEach.call($('co-assets').querySelectorAll('button[data-asset]'), function (b) {
+      b.addEventListener('click', function () {
+        state.asset = b.getAttribute('data-asset');
+        state.network = null;
+        renderCrypto();
+        updateTotals();
+      });
+    });
+    Array.prototype.forEach.call($('co-networks').querySelectorAll('input[name="network"]'), function (r) {
+      r.addEventListener('change', function () { state.network = r.value; renderCrypto(); updateTotals(); });
+    });
+
+    renderCryptoDetail(asset);
+  }
+
+  function renderCryptoDetail(asset) {
+    var box = $('co-crypto-detail');
+
+    if (asset.id === 'walletconnect') {
+      box.innerHTML =
+        '<div class="rounded-lg border border-line bg-surface p-4">'
+        + '<p class="text-sm leading-relaxed">Wallet über WalletConnect verbinden. Die Wallet zeigt Betrag '
+        + 'und Empfänger an, bevor Sie signieren.</p>'
+        + '<button type="button" data-testid="wc-connect" class="btn-secondary mt-3 w-full">Wallet verbinden</button>'
+        + '<p class="mt-2 text-xs text-muted">Braucht eine WalletConnect-Projekt-ID; in dieser Demo nicht angebunden.</p>'
+        + '</div>';
+      return;
+    }
+
+    var wallet = WALLETS[asset.id + '|' + state.network];
+    if (!wallet) {
+      box.innerHTML =
+        '<div class="rounded-lg border border-warn/40 bg-warnsoft p-4">'
+        + '<p class="text-sm leading-relaxed"><strong class="font-semibold">Für dieses Netzwerk ist noch keine '
+        + 'Empfangsadresse hinterlegt.</strong> Sie wird vom Betreiber gesetzt '
+        + '(<span class="mono">APOTREND_WALLET_…</span>). Eine erfundene Adresse steht hier bewusst nicht — '
+        + 'eine falsche Wallet-Adresse bedeutet unwiederbringlich verlorenes Geld.</p></div>';
+      return;
+    }
+
+    var uri = wallet.uri + ':' + wallet.address;
+    var svg;
+    try {
+      svg = qrToSvg(uri, { moduleSize: 4, quietZone: 3, dark: '#000000', light: '#ffffff' });
+    } catch (e) {
+      svg = '';
+    }
+
+    box.innerHTML =
+      '<div class="grid gap-4 sm:grid-cols-[auto_1fr]">'
+      + '<div class="qr-plate rounded-lg border border-line p-2" data-testid="qr-plate">'
+      + (svg || '<p class="p-4 text-xs text-stop">QR konnte nicht erzeugt werden.</p>')
+      + '</div>'
+      + '<div class="min-w-0">'
+      + '<p class="text-xs font-semibold uppercase tracking-wider text-muted">Empfangsadresse</p>'
+      + '<p class="mono mt-1 break-all text-sm leading-relaxed" data-testid="wallet-address">' + esc(wallet.address) + '</p>'
+      + '<button type="button" data-copy="' + esc(wallet.address) + '" data-testid="copy-address" '
+      + 'class="btn-secondary mt-3">Adresse kopieren</button>'
+      + '<p class="mt-3 text-xs leading-relaxed text-muted">Der QR enthält Adresse und Netzwerk, '
+      + '<strong class="font-semibold">keinen Betrag</strong>: In dieser Demo ist kein Kursdienst angebunden, '
+      + 'und ein geschätzter Kurs im Zahlungslink wäre eine falsche Zusage. Im Betrieb rechnet der '
+      + 'Zahlungsdienst live um und zählt die Netzwerk-Bestätigungen.</p>'
+      + '</div></div>';
+
+    var copyBtn = box.querySelector('[data-copy]');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function () {
+        var text = copyBtn.getAttribute('data-copy');
+        var done = function () {
+          copyBtn.textContent = 'Kopiert';
+          setTimeout(function () { copyBtn.textContent = 'Adresse kopieren'; }, 1600);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, done);
+        } else { done(); }
+      });
+    }
+  }
+
+  /* ---------- Summe und Gebühren ---------- */
+
+  function updateTotals() {
+    var s = manager.getState();
+    var plan = currentPlan();
+    if (!plan) return;
+
+    var quote = manager.quote(plan.amount_minor);
+    var rows = '';
+    var row = function (label, value, strong) {
+      return '<div class="flex items-baseline justify-between gap-3">'
+        + '<dt class="' + (strong ? 'font-semibold' : 'text-muted') + '">' + esc(label) + '</dt>'
+        + '<dd class="mono tabular-nums ' + (strong ? 'font-semibold' : '') + '">' + esc(value) + '</dd></div>';
+    };
+
+    rows += row('Lizenz', plan.name, true);
+    rows += row('Land', COUNTRIES[s.country].flag + ' ' + COUNTRIES[s.country].name);
+    rows += row('Abrechnung', PURPOSE_LABELS[s.purpose]);
+    rows += row('Grundbetrag', formatAmount(quote.amountMinor, plan.currency));
+
+    if (quote.kind === 'COMMISSION_FEE') {
+      rows += row('Vermittlung (' + (quote.marketplaceBps / 100).toFixed(2) + ' %)',
+        formatAmount(Math.round(quote.amountMinor * quote.marketplaceBps / 10000), plan.currency));
+      rows += row('Logistik (' + (quote.logisticsBps / 100).toFixed(2) + ' %)',
+        formatAmount(Math.round(quote.amountMinor * quote.logisticsBps / 10000), plan.currency));
+    } else {
+      rows += row('Plattform-Gebühr', 'entfällt (Pauschale)');
+    }
+
+    rows += row('Zahlweg', state.tab === 'crypto'
+      ? 'Krypto · ' + state.asset.toUpperCase()
+      : 'Fiat · ' + (state.fiat || '—'));
+
+    $('co-summary').innerHTML = rows;
+    $('co-total').textContent = formatAmount(quote.amountMinor, plan.currency);
+    $('co-currency').textContent = plan.currency;
+    $('co-title').textContent = plan.name + ' · ' + PURPOSE_LABELS[s.purpose];
+
+    $('co-total-note').textContent = quote.kind === 'COMMISSION_FEE'
+      ? 'Enthält ' + (quote.bps / 100).toFixed(2) + ' % Plattform-Gebühr auf den Warenwert.'
+      : 'Feste Lizenzgebühr je Monat. Keine Provision auf den Warenwert.';
+
+    var missing = validateFields();
+    var payBtn = $('co-pay');
+    var blocked = $('co-blocked');
+
+    payBtn.textContent = state.tab === 'crypto'
+      ? 'Krypto-Zahlung anzeigen'
+      : formatAmount(quote.amountMinor, plan.currency) + ' bezahlen';
+
+    if (missing.length > 0) {
+      payBtn.disabled = true;
+      blocked.hidden = false;
+      blocked.textContent = 'Noch offen: ' + missing.join(', ') + '.';
+    } else {
+      payBtn.disabled = false;
+      blocked.hidden = true;
+    }
+  }
+
+  /* ---------- Reiter ---------- */
+
+  function setTab(name) {
+    state.tab = name;
+    var fiatOn = name === 'fiat';
+    $('tab-fiat').setAttribute('aria-selected', String(fiatOn));
+    $('tab-crypto').setAttribute('aria-selected', String(!fiatOn));
+    $('panel-fiat').hidden = !fiatOn;
+    $('panel-crypto').hidden = fiatOn;
+    updateTotals();
+  }
+
+  $('tab-fiat').addEventListener('click', function () { setTab('fiat'); });
+  $('tab-crypto').addEventListener('click', function () { setTab('crypto'); });
+
+  /* Pfeiltasten im Reiter-Band — erwartetes Verhalten für Tastaturnutzung. */
+  [$('tab-fiat'), $('tab-crypto')].forEach(function (tab) {
+    tab.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault();
+      var next = state.tab === 'fiat' ? 'crypto' : 'fiat';
+      setTab(next);
+      $(next === 'fiat' ? 'tab-fiat' : 'tab-crypto').focus();
+    });
+  });
+
+  /* ---------- Verdrahtung ---------- */
+
+  function renderAll() {
+    refreshPurposes();
+    refreshPlans();
+    renderPage();
+    renderNotice();
+    renderFields();
+    renderFiat();
+    renderCrypto();
+    updateTotals();
+  }
+
+  manager.subscribe(renderAll);
+
+  $('page-country').addEventListener('change', function () {
+    state.fiat = null;
+    manager.setCountry(this.value);
+  });
+  $('co-country').addEventListener('change', function () {
+    state.fiat = null;
+    manager.setCountry(this.value);
+  });
+  $('page-purpose').addEventListener('change', function () { manager.setPurpose(this.value); });
+  $('page-plan').addEventListener('change', function () { state.plan = this.value; updateTotals(); });
+
+  $('open-checkout').addEventListener('click', function () { $('checkout').showModal(); });
+  $('co-close').addEventListener('click', function () { $('checkout').close(); });
+
+  $('co-pay').addEventListener('click', function () {
+    if (state.tab === 'crypto') { setTab('crypto'); return; }
+    var missing = validateFields();
+    if (missing.length === 0) {
+      $('co-blocked').hidden = false;
+      $('co-blocked').classList.remove('text-stop');
+      $('co-blocked').classList.add('text-ok');
+      $('co-blocked').textContent = 'Demo: hier würde der gehostete Checkout des Anbieters öffnen.';
+    }
+  });
+
+  renderAll();
+  setTab('fiat');
+})();
+</script>

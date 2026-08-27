@@ -1,0 +1,2236 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Apotrend — Länder-Compliance, Mehrwährungs-Abos und Hybrid-Zahlungen im Checkout.">
+<!--
+  ============================================================================
+   QUELLE des Checkout-Modals — nicht direkt öffnen.
+  ============================================================================
+   Gebaut wird daraus mit:  node tools/build-checkout-demo.mjs
+
+   Der Build ersetzt drei Marken (hier bewusst NICHT wörtlich genannt — sie
+   dürfen in dieser Datei jeweils genau einmal vorkommen, sonst ersetzt der
+   Build die Erwähnung im Kommentar statt die echte Stelle):
+     · die CSS-Marke      -> erzeugtes Tailwind-CSS (kein CDN, keine Netzabfrage)
+     · die Engine-Marke   -> compliance.js + qr.js + plans.js + countries.js
+     · die Stempel-Marke  -> Zeitpunkt des Builds
+   Der Build prüft das und bricht ab, wenn eine Marke mehrfach auftaucht.
+
+   Die Engine wird EINGEBETTET, nicht nachgebaut: Dasselbe compliance.js, das
+   der Server benutzt, entscheidet hier im Browser. Zwei Fassungen derselben
+   Compliance-Regeln würden auseinanderlaufen — ausgerechnet an der Stelle, an
+   der das am teuersten ist.
+  ============================================================================
+-->
+<title>Apotrend Länder-Checkout</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>*,:after,:before{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/*! tailwindcss v3.4.19 | MIT License | https://tailwindcss.com*/*,:after,:before{box-sizing:border-box;border-width:0;border-style:solid;border-color:rgb(var(--line)/1)}:after,:before{--tw-content:""}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4;font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0}fieldset,legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:#9ca3af}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.ctrl{display:block;width:100%;border-radius:.5rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(var(--line-strong)/var(--tw-border-opacity,1));background-color:rgb(var(--surface)/var(--tw-bg-opacity,1));padding-left:.75rem;padding-right:.75rem;color:rgb(var(--ink)/var(--tw-text-opacity,1))}.btn-primary,.ctrl{min-height:3rem;--tw-bg-opacity:1;font-size:1rem;line-height:1.5rem;--tw-text-opacity:1}.btn-primary{display:inline-flex;align-items:center;justify-content:center;border-radius:.5rem;background-color:rgb(var(--accent)/var(--tw-bg-opacity,1));padding-left:1.25rem;padding-right:1.25rem;font-weight:600;color:rgb(var(--accent-ink)/var(--tw-text-opacity,1));transition-property:color,background-color,border-color,text-decoration-color,fill,stroke;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.btn-primary:hover{--tw-brightness:brightness(1.1);filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.btn-primary:disabled{cursor:not-allowed;opacity:.5}.btn-secondary{display:inline-flex;min-height:3rem;align-items:center;justify-content:center;border-radius:.5rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(var(--line-strong)/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(var(--surface)/var(--tw-bg-opacity,1));padding-left:1.25rem;padding-right:1.25rem;font-size:1rem;line-height:1.5rem;font-weight:600;--tw-text-opacity:1;color:rgb(var(--ink)/var(--tw-text-opacity,1));transition-property:color,background-color,border-color,text-decoration-color,fill,stroke;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.btn-secondary:hover{--tw-bg-opacity:1;background-color:rgb(var(--sunken)/var(--tw-bg-opacity,1))}.card{border-radius:.5rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(var(--line)/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(var(--surface)/var(--tw-bg-opacity,1));padding:1rem;--tw-shadow:var(--shadow);--tw-shadow-colored:var(--shadow);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.card-label{font-size:.75rem;line-height:1rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;--tw-text-opacity:1;color:rgb(var(--ink-muted)/var(--tw-text-opacity,1))}.chip{border-radius:9999px;border-width:1px;--tw-border-opacity:1;border-color:rgb(var(--line)/var(--tw-border-opacity,1));background-color:rgb(var(--sunken)/var(--tw-bg-opacity,1));font-weight:500}.chip,.chip-brass{display:inline-flex;align-items:center;--tw-bg-opacity:1;padding:.25rem .75rem;font-size:.875rem;line-height:1.25rem}.chip-brass{border-radius:9999px;border-width:1px;border-color:rgb(var(--brass)/.5);background-color:rgb(var(--surface)/var(--tw-bg-opacity,1));font-weight:600}.chip-fixed{display:inline-flex;align-items:center;border-radius:9999px;--tw-bg-opacity:1;background-color:rgb(var(--brass)/var(--tw-bg-opacity,1));padding:.25rem .75rem;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.025em;--tw-text-opacity:1;color:rgb(var(--surface)/var(--tw-text-opacity,1))}.tab{display:inline-flex;min-height:3rem;align-items:center;border-radius:.5rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(var(--line)/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(var(--surface)/var(--tw-bg-opacity,1));padding-left:1rem;padding-right:1rem;font-size:1rem;line-height:1.5rem;font-weight:600;--tw-text-opacity:1;color:rgb(var(--ink)/var(--tw-text-opacity,1));transition-property:color,background-color,border-color,text-decoration-color,fill,stroke;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.tab:hover{--tw-bg-opacity:1;background-color:rgb(var(--sunken)/var(--tw-bg-opacity,1))}.tab[aria-selected=true]{--tw-border-opacity:1;border-color:rgb(var(--accent)/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(var(--accent-soft)/var(--tw-bg-opacity,1))}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0}.mx-auto{margin-left:auto;margin-right:auto}.mb-4{margin-bottom:1rem}.mb-5{margin-bottom:1.25rem}.ml-2{margin-left:.5rem}.ml-auto{margin-left:auto}.mt-1{margin-top:.25rem}.mt-1\.5{margin-top:.375rem}.mt-10{margin-top:2.5rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-5{margin-top:1.25rem}.mt-6{margin-top:1.5rem}.mt-8{margin-top:2rem}.block{display:block}.flex{display:flex}.table{display:table}.grid{display:grid}.contents{display:contents}.hidden{display:none}.h-12{height:3rem}.h-5{height:1.25rem}.max-h-\[72vh\]{max-height:72vh}.min-h-\[3rem\]{min-height:3rem}.min-h-screen{min-height:100vh}.w-12{width:3rem}.w-5{width:1.25rem}.w-\[min\(56rem\2c calc\(100vw-1\.5rem\)\)\]{width:min(56rem,calc(100vw - 1.5rem))}.w-full{width:100%}.min-w-0{min-width:0}.min-w-\[13rem\]{min-width:13rem}.max-w-2xl{max-width:42rem}.max-w-3xl{max-width:48rem}.max-w-6xl{max-width:72rem}.transform{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.cursor-not-allowed{cursor:not-allowed}.cursor-pointer{cursor:pointer}.flex-wrap{flex-wrap:wrap}.place-items-center{place-items:center}.items-start{align-items:flex-start}.items-end{align-items:flex-end}.items-center{align-items:center}.items-baseline{align-items:baseline}.justify-between{justify-content:space-between}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.gap-6{gap:1.5rem}.overflow-y-auto{overflow-y:auto}.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.text-wrap{text-wrap:wrap}.break-all{word-break:break-all}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:.5rem}.rounded-xl{border-radius:.75rem}.border{border-width:1px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.border-accent{--tw-border-opacity:1;border-color:rgb(var(--accent)/var(--tw-border-opacity,1))}.border-accent\/40{border-color:rgb(var(--accent)/.4)}.border-brass{--tw-border-opacity:1;border-color:rgb(var(--brass)/var(--tw-border-opacity,1))}.border-brass\/40{border-color:rgb(var(--brass)/.4)}.border-line{--tw-border-opacity:1;border-color:rgb(var(--line)/var(--tw-border-opacity,1))}.border-linestrong{--tw-border-opacity:1;border-color:rgb(var(--line-strong)/var(--tw-border-opacity,1))}.border-ok\/40{border-color:rgb(var(--ok)/.4)}.border-warn\/40{border-color:rgb(var(--warn)/.4)}.bg-accentsoft{--tw-bg-opacity:1;background-color:rgb(var(--accent-soft)/var(--tw-bg-opacity,1))}.bg-brass{--tw-bg-opacity:1;background-color:rgb(var(--brass)/var(--tw-bg-opacity,1))}.bg-brasssoft{--tw-bg-opacity:1;background-color:rgb(var(--brass-soft)/var(--tw-bg-opacity,1))}.bg-oksoft{--tw-bg-opacity:1;background-color:rgb(var(--ok-soft)/var(--tw-bg-opacity,1))}.bg-sunken{--tw-bg-opacity:1;background-color:rgb(var(--sunken)/var(--tw-bg-opacity,1))}.bg-surface{--tw-bg-opacity:1;background-color:rgb(var(--surface)/var(--tw-bg-opacity,1))}.bg-warnsoft{--tw-bg-opacity:1;background-color:rgb(var(--warn-soft)/var(--tw-bg-opacity,1))}.p-0{padding:0}.p-2{padding:.5rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-4{padding-left:1rem;padding-right:1rem}.px-5{padding-left:1.25rem;padding-right:1.25rem}.py-0\.5{padding-top:.125rem;padding-bottom:.125rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}.py-4{padding-top:1rem;padding-bottom:1rem}.py-8{padding-top:2rem;padding-bottom:2rem}.pt-3{padding-top:.75rem}.pt-5{padding-top:1.25rem}.text-right{text-align:right}.text-2xl{font-size:1.5rem;line-height:2rem}.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-\[10px\]{font-size:10px}.text-\[11px\]{font-size:11px}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:.75rem;line-height:1rem}.font-bold{font-weight:700}.font-normal{font-weight:400}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.tabular-nums{--tw-numeric-spacing:tabular-nums;font-variant-numeric:var(--tw-ordinal) var(--tw-slashed-zero) var(--tw-numeric-figure) var(--tw-numeric-spacing) var(--tw-numeric-fraction)}.leading-none{line-height:1}.leading-relaxed{line-height:1.625}.leading-tight{line-height:1.25}.tracking-\[0\.16em\]{letter-spacing:.16em}.tracking-\[0\.18em\]{letter-spacing:.18em}.tracking-tight{letter-spacing:-.025em}.tracking-wide{letter-spacing:.025em}.tracking-wider{letter-spacing:.05em}.text-ink{--tw-text-opacity:1;color:rgb(var(--ink)/var(--tw-text-opacity,1))}.text-muted{--tw-text-opacity:1;color:rgb(var(--ink-muted)/var(--tw-text-opacity,1))}.text-ok{--tw-text-opacity:1;color:rgb(var(--ok)/var(--tw-text-opacity,1))}.text-stop{--tw-text-opacity:1;color:rgb(var(--stop)/var(--tw-text-opacity,1))}.text-surface{--tw-text-opacity:1;color:rgb(var(--surface)/var(--tw-text-opacity,1))}.antialiased{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}.accent-\[rgb\(var\(--accent\)\)\]{accent-color:rgb(var(--accent))}.accent-\[rgb\(var\(--brass\)\)\]{accent-color:rgb(var(--brass))}.opacity-60{opacity:.6}.shadow-card{--tw-shadow:var(--shadow);--tw-shadow-colored:var(--shadow);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.outline{outline-style:solid}.ring{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(3px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow,0 0 #0000)}.blur{--tw-blur:blur(8px)}.blur,.filter{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.backdrop-filter{backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.file\:mr-3::file-selector-button{margin-right:.75rem}.file\:min-h-\[3rem\]::file-selector-button{min-height:3rem}.file\:rounded-lg::file-selector-button{border-radius:.5rem}.file\:border::file-selector-button{border-width:1px}.file\:border-linestrong::file-selector-button{--tw-border-opacity:1;border-color:rgb(var(--line-strong)/var(--tw-border-opacity,1))}.file\:bg-surface::file-selector-button{--tw-bg-opacity:1;background-color:rgb(var(--surface)/var(--tw-bg-opacity,1))}.file\:px-4::file-selector-button{padding-left:1rem;padding-right:1rem}.file\:font-semibold::file-selector-button{font-weight:600}.file\:text-ink::file-selector-button{--tw-text-opacity:1;color:rgb(var(--ink)/var(--tw-text-opacity,1))}.hover\:bg-sunken:hover{--tw-bg-opacity:1;background-color:rgb(var(--sunken)/var(--tw-bg-opacity,1))}@media (min-width:640px){.sm\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.sm\:grid-cols-\[auto_1fr\]{grid-template-columns:auto 1fr}.sm\:px-6{padding-left:1.5rem;padding-right:1.5rem}.sm\:text-4xl{font-size:2.25rem;line-height:2.5rem}}@media (min-width:1024px){.lg\:sticky{position:sticky}.lg\:top-0{top:0}.lg\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.lg\:grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}.lg\:grid-cols-\[1\.35fr_1fr\]{grid-template-columns:1.35fr 1fr}.lg\:py-12{padding-top:3rem;padding-bottom:3rem}}</style>
+
+<style>
+  /* --- Farbtoken ---------------------------------------------------------
+     Vollständige Hell-Palette auf blankem :root. Der Dunkelmodus definiert
+     ausschließlich dieselben Token neu — nie einzelne Bauteile. Beide
+     Umschaltwege sind abgedeckt: die Systemeinstellung (ohne data-theme) und
+     die ausdrückliche Wahl. */
+  :root {
+    --ground: 234 236 241;
+    --surface: 255 255 255;
+    --sunken: 244 246 250;
+    --raised: 255 255 255;
+    --ink: 20 24 33;
+    --ink-muted: 89 98 122;
+    --line: 207 213 225;
+    --line-strong: 168 178 197;
+    --accent: 46 58 140;
+    --accent-ink: 255 255 255;
+    --accent-soft: 228 232 248;
+    --ok: 27 107 74;
+    --ok-soft: 224 240 232;
+    --warn: 138 83 0;
+    --warn-soft: 249 238 219;
+    --stop: 153 45 38;
+    --stop-soft: 250 231 229;
+    --brass: 122 90 21;
+    --brass-soft: 247 240 222;
+    --shadow: 0 1px 2px rgb(20 24 33 / 0.06), 0 8px 24px -12px rgb(20 24 33 / 0.22);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --ground: 13 16 22;
+      --surface: 22 26 35;
+      --sunken: 17 20 27;
+      --raised: 28 33 44;
+      --ink: 230 233 241;
+      --ink-muted: 152 161 184;
+      --line: 40 48 63;
+      --line-strong: 68 79 100;
+      --accent: 148 163 255;
+      --accent-ink: 12 15 26;
+      --accent-soft: 28 35 64;
+      --ok: 84 190 140;
+      --ok-soft: 18 40 32;
+      --warn: 220 161 63;
+      --warn-soft: 44 34 14;
+      --stop: 240 138 130;
+      --stop-soft: 51 25 24;
+      --brass: 214 174 94;
+      --brass-soft: 44 36 18;
+      --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 28px -12px rgb(0 0 0 / 0.7);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme='dark'] {
+    --ground: 13 16 22;
+    --surface: 22 26 35;
+    --sunken: 17 20 27;
+    --raised: 28 33 44;
+    --ink: 230 233 241;
+    --ink-muted: 152 161 184;
+    --line: 40 48 63;
+    --line-strong: 68 79 100;
+    --accent: 148 163 255;
+    --accent-ink: 12 15 26;
+    --accent-soft: 28 35 64;
+    --ok: 84 190 140;
+    --ok-soft: 18 40 32;
+    --warn: 220 161 63;
+    --warn-soft: 44 34 14;
+    --stop: 240 138 130;
+    --stop-soft: 51 25 24;
+    --brass: 214 174 94;
+    --brass-soft: 44 36 18;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 28px -12px rgb(0 0 0 / 0.7);
+    color-scheme: dark;
+  }
+
+  body {
+    background: rgb(var(--ground));
+    color: rgb(var(--ink));
+    font-family: 'Archivo', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace; }
+
+  /* Sichtbarer Fokus überall — Tastaturbedienung ist kein Sonderfall. */
+  :where(a, button, select, input, textarea, [tabindex]):focus-visible {
+    outline: 3px solid rgb(var(--accent));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  dialog::backdrop { background: rgb(8 10 16 / 0.62); backdrop-filter: blur(2px); }
+  dialog { max-width: none; max-height: none; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .anim-in { animation: rise 220ms cubic-bezier(0.2, 0, 0.2, 1) both; }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  }
+
+  /* Der QR-Code bleibt IMMER schwarz auf weiß — auch im Dunkelmodus.
+     Ein invertierter QR wird von vielen Scannern nicht erkannt, und bei einer
+     Wallet-Adresse ist „meistens lesbar" nicht gut genug. */
+  .qr-plate { background: #fff; }
+</style>
+</head>
+<body>
+<div class="min-h-screen">
+  <div class="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:py-12">
+
+    <!-- ================= Kopf ================= -->
+    <header class="anim-in">
+      <p class="mono text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+        Apotrend · Länder-Compliance
+      </p>
+      <h1 class="mt-2 max-w-3xl text-3xl font-bold leading-tight tracking-tight sm:text-4xl" style="text-wrap: balance">
+        Ein Checkout, sechzehn Rechtsordnungen
+      </h1>
+      <p class="mt-3 max-w-2xl text-base leading-relaxed text-muted">
+        Wechseln Sie das Land — Handels-Modus, Gebührenmodell, Zahlwege und Pflichtfelder
+        stellen sich um. Die Entscheidungen trifft dieselbe
+        <span class="mono text-sm">compliance.js</span>, die auch im Server läuft.
+      </p>
+
+      <div class="mt-5 flex flex-wrap items-start gap-3 rounded-lg border border-line bg-warnsoft p-4">
+        <span aria-hidden="true" class="text-lg leading-none">⚖️</span>
+        <p class="max-w-3xl text-sm leading-relaxed">
+          <strong class="font-semibold">Kein Rechtsrat.</strong>
+          Konservative Einschätzung zur Produktsteuerung, kein anwaltlicher Rat. Im Zweifel
+          wurde die strengere Variante gewählt. Alle Profile sind vom Betreiber übersteuerbar
+          und vor produktivem Einsatz von Fachjurist:innen der jeweiligen Rechtsordnung zu prüfen.
+        </p>
+      </div>
+    </header>
+
+    <!-- ================= Steuerleiste ================= -->
+    <section aria-labelledby="steuerung" class="mt-8">
+      <h2 id="steuerung" class="sr-only">Steuerung</h2>
+      <div class="grid gap-4 rounded-xl border border-line bg-surface p-4 shadow-card sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <label for="page-country" class="block text-xs font-semibold uppercase tracking-wider text-muted">Land</label>
+          <select id="page-country" data-testid="page-country" class="ctrl mt-1.5"></select>
+        </div>
+        <div>
+          <label for="page-purpose" class="block text-xs font-semibold uppercase tracking-wider text-muted">Wofür</label>
+          <select id="page-purpose" data-testid="page-purpose" class="ctrl mt-1.5"></select>
+        </div>
+        <div>
+          <label for="page-plan" class="block text-xs font-semibold uppercase tracking-wider text-muted">Lizenz</label>
+          <select id="page-plan" data-testid="page-plan" class="ctrl mt-1.5"></select>
+        </div>
+        <div class="flex items-end">
+          <button type="button" id="open-checkout" data-testid="open-checkout"
+            class="btn-primary w-full">Zur Kasse</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Zustand ================= -->
+    <section aria-labelledby="zustand" class="mt-6">
+      <h2 id="zustand" class="text-lg font-semibold">Was die Engine entschieden hat</h2>
+
+      <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <article class="card">
+          <p class="card-label">Handels-Modus</p>
+          <p id="s-mode" data-testid="s-mode" class="mono mt-1 text-lg font-semibold"></p>
+          <p id="s-mode-note" class="mt-1 text-sm text-muted"></p>
+        </article>
+
+        <article class="card">
+          <p class="card-label">Gebührenmodell</p>
+          <p id="s-fee" data-testid="s-fee" class="mono mt-1 text-lg font-semibold"></p>
+          <p id="s-fee-note" class="mt-1 text-sm text-muted"></p>
+        </article>
+
+        <article class="card">
+          <p class="card-label">Währung</p>
+          <p id="s-currency" data-testid="s-currency" class="mono mt-1 text-lg font-semibold"></p>
+          <p id="s-price" class="mt-1 text-sm text-muted"></p>
+        </article>
+
+        <article class="card">
+          <p class="card-label">Aufsicht</p>
+          <p id="s-regulator" data-testid="s-regulator" class="mt-1 text-lg font-semibold"></p>
+          <p id="s-framework" class="mono mt-1 text-xs leading-relaxed text-muted"></p>
+        </article>
+      </div>
+
+      <div id="s-notes" data-testid="s-notes" class="mt-3 grid gap-2"></div>
+    </section>
+
+    <!-- ================= Zahlwege ================= -->
+    <section aria-labelledby="wege" class="mt-6">
+      <h2 id="wege" class="text-lg font-semibold">Zugelassene Zahlwege</h2>
+      <div class="mt-3 grid gap-3 lg:grid-cols-2">
+        <article class="card">
+          <p class="card-label">Fiat — nach Land gefiltert</p>
+          <ul id="s-fiat" data-testid="s-fiat" class="mt-2 flex flex-wrap gap-2"></ul>
+        </article>
+        <article class="card border-brass/40 bg-brasssoft">
+          <div class="flex flex-wrap items-center gap-2">
+            <p class="card-label">Krypto — global</p>
+            <span class="chip-fixed">In allen Ländern dauerhaft verfügbar</span>
+          </div>
+          <ul id="s-crypto" data-testid="s-crypto" class="mt-2 flex flex-wrap gap-2"></ul>
+          <p class="mt-2 text-xs leading-relaxed text-muted">
+            Für grenzüberschreitende B2B-Lizenzen, Händler-Guthaben und internationale
+            Transaktionen. Wird nicht länderabhängig gefiltert — <span class="mono">assertCryptoAvailable()</span>
+            wirft, falls die Schiene je fehlt.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <footer class="mt-10 border-t border-line pt-5 text-xs leading-relaxed text-muted">
+      <p>
+        Eingebettet: <span class="mono">compliance.js</span>, <span class="mono">plans.js</span>,
+        <span class="mono">qr.js</span>, <span class="mono">countries.js</span> — unverändert aus dem Server.
+        QR-Encoder gegen <span class="mono">python-qrcode</span> und <span class="mono">segno</span> geprüft
+        (64 Matrizen, jede Zelle identisch).
+      </p>
+      <p class="mono mt-1">Build 2026-08-27 19:52 UTC</p>
+    </footer>
+  </div>
+</div>
+
+<!-- ================= Das Modal ================= -->
+<dialog id="checkout" data-testid="checkout"
+  class="w-[min(56rem,calc(100vw-1.5rem))] rounded-xl border border-line bg-surface p-0 text-ink shadow-card">
+
+  <form method="dialog" class="contents">
+    <!-- Top-Bar mit Länderwahl -->
+    <header class="flex flex-wrap items-center gap-3 border-b border-line bg-sunken px-5 py-4">
+      <div class="min-w-0">
+        <p class="mono text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Kasse</p>
+        <h2 id="co-title" class="truncate text-xl font-bold">Lizenz abschließen</h2>
+      </div>
+
+      <div class="ml-auto flex flex-wrap items-end gap-3">
+        <div>
+          <label for="co-country" class="block text-[11px] font-semibold uppercase tracking-wider text-muted">Land</label>
+          <select id="co-country" data-testid="co-country" class="ctrl mt-1 min-w-[13rem]"></select>
+        </div>
+        <div class="text-right">
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-muted">Währung</p>
+          <p id="co-currency" data-testid="co-currency" class="mono mt-1 text-lg font-semibold leading-none"></p>
+        </div>
+        <button type="button" id="co-close" data-testid="co-close" aria-label="Kasse schließen"
+          class="grid h-12 w-12 place-items-center rounded-lg border border-linestrong bg-surface text-xl leading-none hover:bg-sunken">✕</button>
+      </div>
+    </header>
+
+    <div class="max-h-[72vh] overflow-y-auto">
+      <div class="grid gap-6 p-5 lg:grid-cols-[1.35fr_1fr]">
+
+        <!-- ---------- linke Spalte: Zahlung ---------- -->
+        <div>
+          <!-- Hinweisleiste des Landes -->
+          <div id="co-notice" data-testid="co-notice" class="mb-4 grid gap-2"></div>
+
+          <!-- Pflichtfelder -->
+          <section id="co-fields-wrap" class="mb-5">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-muted">Angaben für dieses Land</h3>
+            <div id="co-fields" data-testid="co-fields" class="mt-2 grid gap-3"></div>
+          </section>
+
+          <!-- Reiter -->
+          <section>
+            <h3 class="sr-only">Zahlungsart</h3>
+            <div role="tablist" aria-label="Zahlungsart" class="flex gap-2">
+              <button type="button" role="tab" id="tab-fiat" data-testid="tab-fiat"
+                aria-selected="true" aria-controls="panel-fiat" class="tab">
+                Karte &amp; Lastschrift
+              </button>
+              <button type="button" role="tab" id="tab-crypto" data-testid="tab-crypto"
+                aria-selected="false" aria-controls="panel-crypto" class="tab">
+                Krypto
+                <span class="ml-2 rounded-full bg-brass px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-surface">immer</span>
+              </button>
+            </div>
+
+            <!-- Fiat -->
+            <div role="tabpanel" id="panel-fiat" aria-labelledby="tab-fiat"
+              class="mt-3 rounded-lg border border-line bg-sunken p-4">
+              <ul id="co-fiat" data-testid="co-fiat" class="grid gap-2"></ul>
+            </div>
+
+            <!-- Krypto -->
+            <div role="tabpanel" id="panel-crypto" aria-labelledby="tab-crypto" hidden
+              class="mt-3 rounded-lg border border-brass/40 bg-brasssoft p-4">
+
+              <p class="text-sm leading-relaxed">
+                <strong class="font-semibold">Dauerhaft verfügbar</strong> — unabhängig vom gewählten Land.
+              </p>
+
+              <fieldset class="mt-3">
+                <legend class="text-xs font-semibold uppercase tracking-wider text-muted">Vermögenswert</legend>
+                <ul id="co-assets" data-testid="co-assets" class="mt-2 flex flex-wrap gap-2"></ul>
+              </fieldset>
+
+              <fieldset class="mt-4">
+                <legend class="text-xs font-semibold uppercase tracking-wider text-muted">Netzwerk</legend>
+                <ul id="co-networks" data-testid="co-networks" class="mt-2 grid gap-2"></ul>
+              </fieldset>
+
+              <div id="co-crypto-detail" data-testid="co-crypto-detail" class="mt-4"></div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ---------- rechte Spalte: Zusammenfassung ---------- -->
+        <aside class="lg:sticky lg:top-0">
+          <div class="rounded-lg border border-line bg-sunken p-4">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-muted">Zusammenfassung</h3>
+
+            <dl id="co-summary" data-testid="co-summary" class="mt-3 grid gap-2 text-sm"></dl>
+
+            <div class="mt-4 border-t border-line pt-3">
+              <div class="flex items-baseline justify-between gap-3">
+                <span class="text-sm font-semibold">Zu zahlen</span>
+                <span id="co-total" data-testid="co-total" class="mono text-2xl font-bold tabular-nums"></span>
+              </div>
+              <p id="co-total-note" class="mt-1 text-xs leading-relaxed text-muted"></p>
+            </div>
+
+            <button type="button" id="co-pay" data-testid="co-pay" class="btn-primary mt-4 w-full"></button>
+            <p id="co-blocked" data-testid="co-blocked" class="mt-2 text-xs font-semibold text-stop" hidden></p>
+
+            <p class="mt-3 text-[11px] leading-relaxed text-muted">
+              Demo ohne Anbieteranbindung: Es wird keine Zahlung ausgelöst. Der echte Ablauf
+              läuft über gehostete, lizenzierte Anbieter mit signierten Webhooks.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<script>
+/* ============================================================================
+   Eingebettete Engine — unverändert aus dem Server übernommen.
+   ============================================================================ */
+/* ---- src/data/countries.js ---------------------------------------------- */
+// Länder-Register für die länderübergreifende Plattform (MVP Stufe 1).
+// Steuert Sichtbarkeits-Scope der Inhalte, UI-Sprache (locale_default), Währung
+// und Zeitzone. Rechte hängen an der Rolle, NICHT am Land — das Land bestimmt nur
+// Sichtbarkeit/Sprache/Währung. Regulator = offizielle News-/Engpassquelle je Land
+// (Aussagen dazu nur mit belegter Quelle).
+// regulator_url = offizielle Website der Arzneimittelbehörde (echte, verifizierte Quelle;
+// null, wo die offizielle Domain nicht sicher belegt ist — lieber kein Link als ein falscher,
+// gerade bei Sicherheits-/Echtheitsthemen). Aussagen/Alerts NUR aus solchen belegten Quellen.
+const COUNTRIES = {
+  AT: { code: 'AT', name: 'Österreich',       flag: '🇦🇹', locale_default: 'de', locales: ['de'],             currency: 'EUR', timezone: 'Europe/Vienna',     regulator: 'BASG',            regulator_url: 'https://www.basg.gv.at' },
+  DE: { code: 'DE', name: 'Deutschland',      flag: '🇩🇪', locale_default: 'de', locales: ['de'],             currency: 'EUR', timezone: 'Europe/Berlin',     regulator: 'BfArM',           regulator_url: 'https://www.bfarm.de' },
+  CH: { code: 'CH', name: 'Schweiz',          flag: '🇨🇭', locale_default: 'de', locales: ['de', 'en'],       currency: 'CHF', timezone: 'Europe/Zurich',     regulator: 'Swissmedic',      regulator_url: 'https://www.swissmedic.ch' },
+  LI: { code: 'LI', name: 'Liechtenstein',    flag: '🇱🇮', locale_default: 'de', locales: ['de'],             currency: 'CHF', timezone: 'Europe/Vaduz',      regulator: 'Amt für Gesundheit', regulator_url: null },
+  PT: { code: 'PT', name: 'Portugal',         flag: '🇵🇹', locale_default: 'pt', locales: ['pt'],             currency: 'EUR', timezone: 'Europe/Lisbon',     regulator: 'INFARMED',        regulator_url: 'https://www.infarmed.pt' },
+  BR: { code: 'BR', name: 'Brasil',           flag: '🇧🇷', locale_default: 'pt', locales: ['pt'],             currency: 'BRL', timezone: 'America/Sao_Paulo', regulator: 'ANVISA',          regulator_url: 'https://www.gov.br/anvisa' },
+  AO: { code: 'AO', name: 'Angola',           flag: '🇦🇴', locale_default: 'pt', locales: ['pt'],             currency: 'AOA', timezone: 'Africa/Luanda',     regulator: 'ARMED',           regulator_url: null },
+  MZ: { code: 'MZ', name: 'Moçambique',       flag: '🇲🇿', locale_default: 'pt', locales: ['pt'],             currency: 'MZN', timezone: 'Africa/Maputo',     regulator: 'ANARME',          regulator_url: null },
+  GB: { code: 'GB', name: 'United Kingdom',   flag: '🇬🇧', locale_default: 'en', locales: ['en'],             currency: 'GBP', timezone: 'Europe/London',     regulator: 'MHRA',            regulator_url: 'https://www.gov.uk/government/organisations/medicines-and-healthcare-products-regulatory-agency' },
+  US: { code: 'US', name: 'United States',    flag: '🇺🇸', locale_default: 'en', locales: ['en'],             currency: 'USD', timezone: 'America/New_York',  regulator: 'FDA',             regulator_url: 'https://www.fda.gov' },
+  NG: { code: 'NG', name: 'Nigeria',          flag: '🇳🇬', locale_default: 'en', locales: ['en'],             currency: 'NGN', timezone: 'Africa/Lagos',      regulator: 'NAFDAC',          regulator_url: 'https://www.nafdac.gov.ng' },
+  KE: { code: 'KE', name: 'Kenya',            flag: '🇰🇪', locale_default: 'en', locales: ['en'],             currency: 'KES', timezone: 'Africa/Nairobi',    regulator: 'PPB',             regulator_url: 'https://ppb.go.ke' },
+  GH: { code: 'GH', name: 'Ghana',            flag: '🇬🇭', locale_default: 'en', locales: ['en'],             currency: 'GHS', timezone: 'Africa/Accra',      regulator: 'FDA Ghana',       regulator_url: 'https://fdaghana.gov.gh' },
+  CA: { code: 'CA', name: 'Canada',           flag: '🇨🇦', locale_default: 'en', locales: ['en'],             currency: 'CAD', timezone: 'America/Toronto',   regulator: 'Health Canada',   regulator_url: 'https://www.canada.ca/en/health-canada.html' },
+  AU: { code: 'AU', name: 'Australia',        flag: '🇦🇺', locale_default: 'en', locales: ['en'],             currency: 'AUD', timezone: 'Australia/Sydney',  regulator: 'TGA',             regulator_url: 'https://www.tga.gov.au' },
+  ZA: { code: 'ZA', name: 'South Africa',     flag: '🇿🇦', locale_default: 'en', locales: ['en'],             currency: 'ZAR', timezone: 'Africa/Johannesburg', regulator: 'SAHPRA',        regulator_url: 'https://www.sahpra.org.za' },
+};
+
+const DEFAULT_COUNTRY = 'AT';
+const SUPPORTED_LOCALES = ['de', 'en', 'pt'];
+
+// Gültiger Ländercode? (Großschreibung normalisiert.)
+function isValidCountry(code) {
+  return typeof code === 'string' && Object.prototype.hasOwnProperty.call(COUNTRIES, code.toUpperCase());
+}
+
+// Land normalisieren mit Fallback auf Standardland.
+function normalizeCountry(code) {
+  return isValidCountry(code) ? code.toUpperCase() : DEFAULT_COUNTRY;
+}
+
+// UI-Sprache validieren; Fallback = Standardsprache des (ggf. normalisierten) Landes.
+function normalizeLocale(locale, country) {
+  if (typeof locale === 'string' && SUPPORTED_LOCALES.includes(locale.toLowerCase())) return locale.toLowerCase();
+  return COUNTRIES[normalizeCountry(country)].locale_default;
+}
+
+// Öffentliche Liste fürs Frontend (stabile Reihenfolge = Einfügereihenfolge).
+function listCountries() {
+  return Object.values(COUNTRIES).map((c) => ({ ...c, locales: [...c.locales] }));
+}
+
+
+/* ---- src/domain/compliance.js ---------------------------------------------- */
+// ============================================================================
+//  Dynamic Country Compliance Engine
+// ============================================================================
+//  Beim Wechsel des Landes im Header ändern sich drei Dinge gleichzeitig:
+//    1. der zulässige Handels-Modus  (SAAS_ONLY vs. MARKETPLACE_FEES)
+//    2. das Gebührenmodell           (SAAS_FLAT vs. COMMISSION_FEE)
+//    3. die zulässigen Bezahlwege    (lokale Fiat-Schienen je Land)
+//
+//  ⚠️ Kein Rechtsrat. Wie docs/LEGAL_COUNTRY_MATRIX.md ist das eine konservative
+//     Gating-Einschätzung zur Produktsteuerung, kein anwaltlicher Rat. Im Zweifel
+//     wurde die strengere Variante gewählt. Alle Profile sind vom Betreiber
+//     übersteuerbar (siehe `withOverrides`).
+//
+//  BEWUSST OHNE node:-Importe und ohne Abhängigkeiten: dieselbe Datei läuft im
+//  Server UND — über tools/build-checkout-demo.mjs eingebettet — im Browser.
+//  Zwei Kopien derselben Regeln würden garantiert auseinanderlaufen, und
+//  ausgerechnet bei Compliance-Regeln wäre das der teuerste Ort dafür.
+//
+//  ──────────────────────────────────────────────────────────────────────────
+//  KRYPTO-GEBOT (Owner-Vorgabe, nicht verhandelbar)
+//  ──────────────────────────────────────────────────────────────────────────
+//  Krypto-Zahlungen sind in JEDEM Land für JEDEN Zweck verfügbar und dürfen
+//  nicht herausgefiltert werden. Das steht hier nicht nur als Kommentar:
+//  `paymentMethodsFor()` ruft am Ende `assertCryptoAvailable()` auf und WIRFT,
+//  wenn die Krypto-Schiene fehlt. Ein Filter, der sie versehentlich entfernt,
+//  bringt damit sofort den Aufruf zum Absturz statt still zu wirken — und der
+//  Test `compliance-engine.test.js` prüft alle Länder × alle Zwecke.
+//  Ein Kommentar wäre eine Bitte. Das hier ist eine Zusicherung.
+// ============================================================================
+
+// --- Handels-Modi -----------------------------------------------------------
+
+/** Nur Software-Lizenzen. Keine Provision auf den Warenwert. */
+const SAAS_ONLY = 'SAAS_ONLY';
+/** Marktplatz mit Transaktions-/Logistikgebühr auf vermittelte Bestellungen. */
+const MARKETPLACE_FEES = 'MARKETPLACE_FEES';
+
+/** Wofür wird gezahlt? Steuert Gebührenmodell und Pflichtfelder. */
+const PURPOSES = ['saas_license', 'marketplace_order', 'merchant_credit'];
+
+const PURPOSE_LABELS = {
+  saas_license: 'Software-Lizenz (Abo)',
+  marketplace_order: 'Marktplatz-Bestellung',
+  merchant_credit: 'Händler-Guthaben',
+};
+
+class ComplianceError extends Error {
+  constructor(code, message) {
+    super(message);
+    this.name = 'ComplianceError';
+    this.code = code;
+    this.status = 422;
+  }
+}
+
+// --- Krypto: die unverrückbare Schiene ---------------------------------------
+//  Global verfügbar für grenzüberschreitende B2B-Lizenzen, Händler-Guthaben und
+//  internationale Transaktionen. Reihenfolge = Anzeigereihenfolge.
+
+const CRYPTO_METHODS = Object.freeze([
+  Object.freeze({
+    id: 'usdt', rail: 'crypto', label: 'USDT (Tether)', asset: 'USDT',
+    networks: Object.freeze(['Ethereum (ERC-20)', 'Tron (TRC-20)']),
+    settlement: 'stablecoin', confirmations: 12,
+  }),
+  Object.freeze({
+    id: 'usdc', rail: 'crypto', label: 'USDC (Circle)', asset: 'USDC',
+    networks: Object.freeze(['Ethereum (ERC-20)', 'Solana', 'Polygon']),
+    settlement: 'stablecoin', confirmations: 12,
+  }),
+  Object.freeze({
+    id: 'btc', rail: 'crypto', label: 'Bitcoin', asset: 'BTC',
+    networks: Object.freeze(['Bitcoin (Mainnet)']),
+    settlement: 'volatile', confirmations: 2,
+  }),
+  Object.freeze({
+    id: 'walletconnect', rail: 'crypto', label: 'Web3-Wallet (WalletConnect)', asset: 'MULTI',
+    networks: Object.freeze(['Ethereum', 'Polygon', 'Arbitrum']),
+    settlement: 'wallet', confirmations: 12,
+  }),
+]);
+
+/**
+ * Torwächter für das Krypto-Gebot.
+ *
+ * Wird am Ende JEDER Methodenliste aufgerufen. Wer künftig einen Länderfilter
+ * ergänzt, der die Krypto-Schiene mit erwischt, bekommt hier sofort einen
+ * Fehler statt einer stillen Regression in Produktion.
+ */
+function assertCryptoAvailable(methods, country, purpose) {
+  const crypto = methods.filter((m) => m.rail === 'crypto');
+  if (crypto.length === 0) {
+    throw new ComplianceError(
+      'crypto_rail_missing',
+      `Krypto-Zahlung fehlt für ${country}/${purpose}. Die Krypto-Schiene ist ` +
+        'eine feste Zusage der Plattform und darf nicht länderabhängig gefiltert werden.',
+    );
+  }
+  return methods;
+}
+
+// --- Fiat-Schienen ----------------------------------------------------------
+
+const FIAT = {
+  card: { id: 'card', rail: 'fiat', label: 'Kredit-/Debitkarte', provider: 'stripe', settlementDays: 2 },
+  sepa: { id: 'sepa', rail: 'fiat', label: 'SEPA-Lastschrift', provider: 'stripe', settlementDays: 5 },
+  sepa_credit: { id: 'sepa_credit', rail: 'fiat', label: 'SEPA-Überweisung', provider: 'bank', settlementDays: 2 },
+  invoice: { id: 'invoice', rail: 'fiat', label: 'Rechnung (30 Tage)', provider: 'internal', settlementDays: 30 },
+  mbway: { id: 'mbway', rail: 'fiat', label: 'MB WAY', provider: 'sibs', settlementDays: 1 },
+  multicaixa: { id: 'multicaixa', rail: 'fiat', label: 'Multicaixa Express', provider: 'emis', settlementDays: 1 },
+  mpesa: { id: 'mpesa', rail: 'fiat', label: 'M-Pesa', provider: 'safaricom', settlementDays: 1 },
+  paystack: { id: 'paystack', rail: 'fiat', label: 'Karte / Bank-Transfer (Paystack)', provider: 'paystack', settlementDays: 2 },
+  pix: { id: 'pix', rail: 'fiat', label: 'Pix', provider: 'stripe', settlementDays: 1 },
+  ach: { id: 'ach', rail: 'fiat', label: 'ACH-Lastschrift', provider: 'stripe', settlementDays: 4 },
+  bacs: { id: 'bacs', rail: 'fiat', label: 'Bacs-Lastschrift', provider: 'stripe', settlementDays: 3 },
+};
+
+const FIAT_METHODS = Object.freeze(FIAT);
+
+// --- Pflichtfelder im Checkout ----------------------------------------------
+//  `pattern` ist eine Zeichenkette statt eines RegExp-Literals: so lässt sich
+//  dasselbe Feld im Server (new RegExp) und im HTML-Formular (pattern-Attribut)
+//  verwenden, ohne die Regel zweimal zu schreiben.
+
+const FIELD = {
+  vat_id: {
+    id: 'vat_id', label: 'USt-IdNr. / UID', required: false,
+    pattern: '^[A-Z]{2}[0-9A-Z]{8,12}$', example: 'ATU12345678',
+    hint: 'Für den innergemeinschaftlichen Bezug (Reverse Charge). Ohne Angabe wird die Umsatzsteuer des Sitzlandes berechnet.',
+    legalBasis: 'Art. 196 MwStSystRL',
+  },
+  fda_registration: {
+    id: 'fda_registration', label: 'FDA Establishment Registration Number', required: true,
+    pattern: '^[0-9]{7,11}$', example: '3001234567',
+    hint: 'Pflicht für die Lieferkettendokumentation nach DSCSA. Wird bei jeder Transaktion mitgeführt.',
+    legalBasis: 'FD&C Act § 582 (DSCSA)',
+  },
+  dea_number: {
+    id: 'dea_number', label: 'DEA-Nummer (nur bei kontrollierten Substanzen)', required: false,
+    pattern: '^[A-Z]{2}[0-9]{7}$', example: 'AB1234563',
+    hint: 'Nur erforderlich, wenn kontrollierte Substanzen im Auftrag enthalten sind.',
+    legalBasis: '21 CFR 1301',
+  },
+  import_licence: {
+    id: 'import_licence', label: 'Einfuhr-Lizenznummer', required: true,
+    pattern: '^[A-Za-z0-9\\-/]{5,32}$', example: 'ARMED/IMP/2026/0042',
+    hint: 'Nummer der Einfuhrgenehmigung der nationalen Arzneimittelbehörde.',
+    legalBasis: 'nationale Einfuhrbestimmungen',
+  },
+  gmp_certificate: {
+    id: 'gmp_certificate', label: 'GMP-/Herkunftszertifikat', required: true, type: 'file',
+    accept: 'application/pdf,image/jpeg,image/png',
+    hint: 'Nachweis der Herkunft gegen gefälschte Arzneimittel. Wird bei der Freigabe der Bestellung geprüft.',
+    legalBasis: 'WHO GDP; nationale Vorgaben',
+  },
+  pharmacy_licence: {
+    id: 'pharmacy_licence', label: 'Apotheken-/Betriebserlaubnis', required: true,
+    pattern: '^[A-Za-z0-9\\-/ ]{4,40}$', example: 'BR-K-2024-1188',
+    hint: 'Nur zugelassene Betriebe dürfen bestellen. Wird gegen das Register geprüft.',
+    legalBasis: 'nationale Apothekengesetze',
+  },
+};
+
+const CHECKOUT_FIELDS = Object.freeze(FIELD);
+
+// --- Länderprofile ----------------------------------------------------------
+//  Die Angaben zu Gesetzen sind BEZEICHNUNGEN von Rechtsrahmen, keine Auslegung.
+//  `notes` sind Hinweistexte für die Oberfläche, kein Gutachten.
+
+const PROFILES = {
+  // ── DACH: strikt SaaS. Keine Provision auf Arzneimittel. ──────────────────
+  AT: {
+    region: 'DACH', currency: 'EUR', commerceMode: SAAS_ONLY, transactionFeeAllowed: false,
+    legalFramework: ['AMG (AT)', 'HWG', 'Apothekengesetz', 'DSGVO'],
+    regulator: 'BASG',
+    fiat: ['sepa', 'card', 'invoice', 'sepa_credit'],
+    fields: ['vat_id'],
+    monetization: ['saas_flat', 'verified_manufacturer_post', 'emergency_aid_free'],
+    notes: [
+      'Keine prozentuale Verkaufsprovision auf Arzneimittel — die Plattform verdient ausschließlich an Software-Lizenzen und gekennzeichneten Hersteller-Beiträgen.',
+      'Notfall-Aushilfe zwischen Apotheken ist dauerhaft kostenfrei und wird nicht abgerechnet.',
+    ],
+  },
+  DE: {
+    region: 'DACH', currency: 'EUR', commerceMode: SAAS_ONLY, transactionFeeAllowed: false,
+    legalFramework: ['AMG (DE)', 'HWG', 'ApoG', 'AMPreisV', 'DSGVO'],
+    regulator: 'BfArM',
+    fiat: ['sepa', 'card', 'invoice', 'sepa_credit'],
+    fields: ['vat_id'],
+    monetization: ['saas_flat', 'verified_manufacturer_post', 'emergency_aid_free'],
+    notes: [
+      'Keine prozentuale Verkaufsprovision auf Arzneimittel. Die Arzneimittelpreisverordnung lässt für preisgebundene Arzneimittel ohnehin keinen Spielraum für Vermittlungsentgelte am Warenwert.',
+      'Notfall-Aushilfe zwischen Apotheken ist dauerhaft kostenfrei.',
+    ],
+  },
+  CH: {
+    region: 'DACH', currency: 'CHF', commerceMode: SAAS_ONLY, transactionFeeAllowed: false,
+    legalFramework: ['HMG', 'AWV', 'revDSG'],
+    regulator: 'Swissmedic',
+    fiat: ['card', 'invoice', 'sepa_credit'],
+    fields: [],
+    monetization: ['saas_flat', 'verified_manufacturer_post', 'emergency_aid_free'],
+    notes: [
+      'Nicht-EU: kein SEPA-Lastschriftverfahren, Abrechnung in CHF.',
+      'Keine prozentuale Verkaufsprovision auf Arzneimittel.',
+    ],
+  },
+  LI: {
+    region: 'DACH', currency: 'CHF', commerceMode: SAAS_ONLY, transactionFeeAllowed: false,
+    legalFramework: ['HMG (übernommen)', 'EWR-Recht', 'DSGVO'],
+    regulator: 'Amt für Gesundheit',
+    fiat: ['card', 'invoice', 'sepa_credit'],
+    fields: ['vat_id'],
+    monetization: ['saas_flat', 'verified_manufacturer_post', 'emergency_aid_free'],
+    notes: ['Keine prozentuale Verkaufsprovision auf Arzneimittel.'],
+  },
+
+  // ── EU (Portugal und übrige EU): SaaS mit lokalen Zahlwegen ───────────────
+  PT: {
+    region: 'EU', currency: 'EUR', commerceMode: SAAS_ONLY, transactionFeeAllowed: false,
+    legalFramework: ['Decreto-Lei 176/2006', 'EU-Richtlinie 2001/83/EG', 'DSGVO'],
+    regulator: 'INFARMED',
+    fiat: ['mbway', 'sepa', 'card', 'invoice'],
+    fields: ['vat_id'],
+    monetization: ['saas_flat', 'verified_manufacturer_post'],
+    notes: [
+      'MB WAY ist der verbreitetste lokale Zahlweg und steht vor Karte.',
+      'SaaS-Modell: keine Provision auf den Warenwert von Arzneimitteln.',
+    ],
+  },
+
+  // ── Afrikanische Märkte: Marktplatz mit Gebühren + Echtheitsnachweis ──────
+  AO: {
+    region: 'AFRICA', currency: 'AOA', commerceMode: MARKETPLACE_FEES, transactionFeeAllowed: true,
+    marketplaceFeeBps: 250, logisticsFeeBps: 150,
+    legalFramework: ['ARMED-Regulierung', 'MINSA-Vorgaben', 'Lei de Proteção de Dados'],
+    regulator: 'ARMED',
+    fiat: ['multicaixa', 'card', 'invoice'],
+    fields: ['import_licence', 'gmp_certificate', 'pharmacy_licence'],
+    monetization: ['marketplace_fee', 'logistics_fee', 'saas_flat'],
+    notes: [
+      'Marktplatz-Transaktionsgebühren sind freigeschaltet: 2,5 % Vermittlung plus 1,5 % Logistik.',
+      'Einfuhr-Lizenz und Herkunftszertifikat sind Pflicht — der Nachweis gegen gefälschte Arzneimittel ist hier der Kern der Regulierung.',
+    ],
+  },
+  MZ: {
+    region: 'AFRICA', currency: 'MZN', commerceMode: MARKETPLACE_FEES, transactionFeeAllowed: true,
+    marketplaceFeeBps: 250, logisticsFeeBps: 150,
+    legalFramework: ['ANARME-Regulierung'],
+    regulator: 'ANARME',
+    fiat: ['card', 'invoice'],
+    fields: ['import_licence', 'gmp_certificate', 'pharmacy_licence'],
+    monetization: ['marketplace_fee', 'logistics_fee', 'saas_flat'],
+    notes: ['Einfuhr-Lizenz und Herkunftszertifikat sind Pflicht.'],
+  },
+  NG: {
+    region: 'AFRICA', currency: 'NGN', commerceMode: MARKETPLACE_FEES, transactionFeeAllowed: true,
+    marketplaceFeeBps: 250, logisticsFeeBps: 150,
+    legalFramework: ['NAFDAC Act', 'NDPR'],
+    regulator: 'NAFDAC',
+    fiat: ['paystack', 'card', 'invoice'],
+    fields: ['import_licence', 'gmp_certificate', 'pharmacy_licence'],
+    monetization: ['marketplace_fee', 'logistics_fee', 'saas_flat'],
+    notes: [
+      'NAFDAC-Registrierungsnummer und Herkunftszertifikat sind Pflicht.',
+      'Marktplatz-Gebühren freigeschaltet.',
+    ],
+  },
+  KE: {
+    region: 'AFRICA', currency: 'KES', commerceMode: MARKETPLACE_FEES, transactionFeeAllowed: true,
+    marketplaceFeeBps: 250, logisticsFeeBps: 150,
+    legalFramework: ['Pharmacy and Poisons Act', 'Data Protection Act 2019'],
+    regulator: 'PPB',
+    fiat: ['mpesa', 'card', 'invoice'],
+    fields: ['import_licence', 'gmp_certificate', 'pharmacy_licence'],
+    monetization: ['marketplace_fee', 'logistics_fee', 'saas_flat'],
+    notes: [
+      'M-Pesa steht als verbreitetster Zahlweg an erster Stelle.',
+      'PPB-Lizenz und Herkunftszertifikat sind Pflicht.',
+    ],
+  },
+  GH: {
+    region: 'AFRICA', currency: 'GHS', commerceMode: MARKETPLACE_FEES, transactionFeeAllowed: true,
+    marketplaceFeeBps: 250, logisticsFeeBps: 150,
+    legalFramework: ['Public Health Act 851'],
+    regulator: 'FDA Ghana',
+    fiat: ['paystack', 'card', 'invoice'],
+    fields: ['import_licence', 'gmp_certificate', 'pharmacy_licence'],
+    monetization: ['marketplace_fee', 'logistics_fee', 'saas_flat'],
+    notes: ['Einfuhr-Lizenz und Herkunftszertifikat sind Pflicht.'],
+  },
+  ZA: {
+    region: 'AFRICA', currency: 'ZAR', commerceMode: MARKETPLACE_FEES, transactionFeeAllowed: true,
+    marketplaceFeeBps: 200, logisticsFeeBps: 100,
+    legalFramework: ['Medicines and Related Substances Act', 'POPIA'],
+    regulator: 'SAHPRA',
+    fiat: ['card', 'invoice', 'paystack'],
+    fields: ['pharmacy_licence'],
+    monetization: ['marketplace_fee', 'logistics_fee', 'saas_flat'],
+    notes: ['SAHPRA-Lizenz erforderlich; Einfuhrnachweis nur bei Importware.'],
+  },
+
+  // ── USA: SaaS + strikte Rückverfolgbarkeit ────────────────────────────────
+  US: {
+    region: 'AMERICAS', currency: 'USD', commerceMode: SAAS_ONLY, transactionFeeAllowed: false,
+    legalFramework: ['FD&C Act', 'DSCSA (Title II DQSA)', 'State Board of Pharmacy'],
+    regulator: 'FDA',
+    traceability: 'DSCSA',
+    fiat: ['card', 'ach', 'invoice'],
+    fields: ['fda_registration', 'dea_number'],
+    monetization: ['saas_flat', 'verified_manufacturer_post'],
+    notes: [
+      'Track-and-Trace nach DSCSA: Jede Transaktion führt die FDA-Registrierungsnummer mit und erzeugt einen unveränderlichen Nachweis (Transaction Information / History / Statement).',
+      'Konservative Voreinstellung ohne Marktplatz-Provision — die Großhandelserlaubnis ist einzelstaatlich geregelt und vom Betreiber je Bundesstaat freizuschalten.',
+    ],
+  },
+  CA: {
+    region: 'AMERICAS', currency: 'CAD', commerceMode: SAAS_ONLY, transactionFeeAllowed: false,
+    legalFramework: ['Food and Drugs Act', 'PIPEDA'],
+    regulator: 'Health Canada',
+    fiat: ['card', 'invoice'],
+    fields: [],
+    monetization: ['saas_flat', 'verified_manufacturer_post'],
+    notes: ['SaaS-Modell; Marktplatz-Gebühren nicht freigeschaltet.'],
+  },
+  BR: {
+    region: 'AMERICAS', currency: 'BRL', commerceMode: SAAS_ONLY, transactionFeeAllowed: false,
+    legalFramework: ['Lei 6.360/1976', 'RDC ANVISA', 'LGPD'],
+    regulator: 'ANVISA',
+    fiat: ['pix', 'card', 'invoice'],
+    fields: ['pharmacy_licence'],
+    monetization: ['saas_flat', 'verified_manufacturer_post'],
+    notes: ['Pix als verbreitetster lokaler Zahlweg steht an erster Stelle.'],
+  },
+
+  // ── Übrige ───────────────────────────────────────────────────────────────
+  GB: {
+    region: 'UK', currency: 'GBP', commerceMode: SAAS_ONLY, transactionFeeAllowed: false,
+    legalFramework: ['Human Medicines Regulations 2012', 'UK GDPR'],
+    regulator: 'MHRA',
+    fiat: ['card', 'bacs', 'invoice'],
+    fields: [],
+    monetization: ['saas_flat', 'verified_manufacturer_post'],
+    notes: ['Nicht-EU: kein SEPA-Lastschriftverfahren, Abrechnung in GBP.'],
+  },
+  AU: {
+    region: 'APAC', currency: 'AUD', commerceMode: SAAS_ONLY, transactionFeeAllowed: false,
+    legalFramework: ['Therapeutic Goods Act 1989', 'Privacy Act 1988'],
+    regulator: 'TGA',
+    fiat: ['card', 'invoice'],
+    fields: [],
+    monetization: ['saas_flat', 'verified_manufacturer_post'],
+    notes: ['SaaS-Modell; Marktplatz-Gebühren nicht freigeschaltet.'],
+  },
+};
+
+/** Land ohne eigenes Profil: konservativer Rückfall (SaaS, keine Gebühren). */
+const FALLBACK_PROFILE = {
+  region: 'OTHER', currency: 'EUR', commerceMode: SAAS_ONLY, transactionFeeAllowed: false,
+  legalFramework: ['unbestimmt'], regulator: null,
+  fiat: ['card', 'invoice'], fields: [],
+  monetization: ['saas_flat'],
+  notes: ['Für dieses Land liegt noch kein geprüftes Profil vor. Konservative Voreinstellung: nur Software-Lizenzen, keine Marktplatz-Gebühren.'],
+};
+
+const COMPLIANCE_PROFILES = PROFILES;
+
+// --- Zugriff ----------------------------------------------------------------
+
+function hasProfile(code) {
+  return typeof code === 'string' && Object.prototype.hasOwnProperty.call(PROFILES, code.toUpperCase());
+}
+
+/**
+ * Vollständiges Profil eines Landes.
+ * `overrides` erlaubt dem Betreiber, einzelne Felder zu übersteuern — dieselbe
+ * Kultur wie in LEGAL_COUNTRY_MATRIX.md: die Engine setzt einen sicheren
+ * Standard, keine unumstößliche Sperre.
+ */
+function complianceProfile(code, overrides = {}) {
+  const upper = typeof code === 'string' ? code.toUpperCase() : '';
+  const base = PROFILES[upper] || FALLBACK_PROFILE;
+  const merged = { ...base, ...(overrides[upper] || {}) };
+  return { country: upper || 'XX', ...merged };
+}
+
+/** Welche Zahlungszwecke sind in diesem Land überhaupt möglich? */
+function availablePurposes(code, overrides = {}) {
+  const p = complianceProfile(code, overrides);
+  // Marktplatz-Bestellungen gibt es nur, wo Transaktionsgebühren zulässig sind.
+  // In DACH ist das der Kern der Vorgabe: keine Provision auf Arzneimittel.
+  return p.transactionFeeAllowed
+    ? ['saas_license', 'marketplace_order', 'merchant_credit']
+    : ['saas_license', 'merchant_credit'];
+}
+
+/**
+ * Zulässige Bezahlwege für Land + Zweck.
+ *
+ * Fiat wird nach Land gefiltert; Krypto wird IMMER angehängt (Owner-Vorgabe)
+ * und der Anhang anschließend durch `assertCryptoAvailable` abgesichert.
+ */
+function paymentMethodsFor(code, purpose = 'saas_license', overrides = {}) {
+  if (!PURPOSES.includes(purpose)) {
+    throw new ComplianceError('purpose_unknown', `Unbekannter Zahlungszweck: ${purpose}`);
+  }
+  const p = complianceProfile(code, overrides);
+
+  if (purpose === 'marketplace_order' && !p.transactionFeeAllowed) {
+    throw new ComplianceError(
+      'marketplace_disabled',
+      `Marktplatz-Bestellungen sind in ${p.country} nicht freigeschaltet: ` +
+        'Auf Arzneimittel wird dort keine Verkaufsprovision erhoben.',
+    );
+  }
+
+  const fiat = (p.fiat || [])
+    .map((id) => FIAT[id])
+    .filter(Boolean)
+    // Rechnung ergibt bei Guthaben-Aufladung keinen Sinn (Vorkasse-Logik).
+    .filter((m) => !(purpose === 'merchant_credit' && m.id === 'invoice'))
+    .map((m) => ({ ...m, currency: p.currency }));
+
+  // Krypto: ohne Länderfilter, in jedem Zweck.
+  const crypto = CRYPTO_METHODS.map((m) => ({ ...m, networks: [...m.networks] }));
+
+  return assertCryptoAvailable([...fiat, ...crypto], p.country, purpose);
+}
+
+/** Pflicht- und Kann-Felder im Checkout für Land + Zweck. */
+function checkoutFieldsFor(code, purpose = 'saas_license', overrides = {}) {
+  const p = complianceProfile(code, overrides);
+  const ids = p.fields || [];
+
+  return ids
+    .map((id) => FIELD[id])
+    .filter(Boolean)
+    .map((f) => ({ ...f }))
+    // Herkunfts-/Lizenznachweise hängen an der WARE. Bei einer reinen
+    // Software-Lizenz oder Guthaben-Aufladung sind sie sachlich unbegründet —
+    // und ein unbegründetes Pflichtfeld ist eine Hürde ohne Gegenwert.
+    .filter((f) => {
+      const goodsOnly = ['import_licence', 'gmp_certificate', 'pharmacy_licence'];
+      if (purpose !== 'marketplace_order' && goodsOnly.includes(f.id)) return false;
+      return true;
+    });
+}
+
+/**
+ * Gebührenmodell für Land + Zweck.
+ *
+ * Der wichtigste Rückgabewert ist `kind`: `SAAS_FLAT` und `COMMISSION_FEE`
+ * werden in der Transaktionstabelle getrennt geführt, weil die steuerliche und
+ * die aufsichtsrechtliche Behandlung unterschiedlich ist.
+ */
+function feeModel(code, purpose = 'saas_license', overrides = {}) {
+  const p = complianceProfile(code, overrides);
+
+  if (purpose === 'saas_license') {
+    return {
+      kind: 'SAAS_FLAT', bps: 0, appliesTo: 'subscription',
+      reason: 'Feste Lizenzgebühr je Abrechnungszeitraum, unabhängig vom Warenwert.',
+    };
+  }
+
+  if (purpose === 'merchant_credit') {
+    return {
+      kind: 'SAAS_FLAT', bps: 0, appliesTo: 'credit_topup',
+      reason: 'Guthaben-Aufladung ohne Aufschlag; verbraucht wird es über Lizenz- oder Marktplatz-Gebühren.',
+    };
+  }
+
+  // marketplace_order
+  if (!p.transactionFeeAllowed) {
+    throw new ComplianceError(
+      'commission_forbidden',
+      `In ${p.country} ist keine prozentuale Verkaufsprovision auf Arzneimittel vorgesehen.`,
+    );
+  }
+
+  const marketplaceBps = p.marketplaceFeeBps ?? 0;
+  const logisticsBps = p.logisticsFeeBps ?? 0;
+  return {
+    kind: 'COMMISSION_FEE',
+    bps: marketplaceBps + logisticsBps,
+    marketplaceBps,
+    logisticsBps,
+    appliesTo: 'order_value',
+    reason: `Vermittlung ${(marketplaceBps / 100).toFixed(2)} % zzgl. Logistik ${(logisticsBps / 100).toFixed(2)} %.`,
+  };
+}
+
+/** Gebühr in kleinster Währungseinheit. Kaufmännisch gerundet. */
+function calculateFee(amountMinor, code, purpose = 'saas_license', overrides = {}) {
+  const model = feeModel(code, purpose, overrides);
+  const amount = Number.isFinite(amountMinor) ? Math.max(0, Math.round(amountMinor)) : 0;
+  const fee = model.kind === 'COMMISSION_FEE' ? Math.round((amount * model.bps) / 10000) : 0;
+  return { ...model, amountMinor: amount, feeMinor: fee, netMinor: amount - fee };
+}
+
+// --- Währungsdarstellung ----------------------------------------------------
+//  Nicht jede Währung hat zwei Nachkommastellen. AOA und KES werden im Handel
+//  üblicherweise ohne Bruchteile ausgewiesen; JPY hat gar keine. Ein fest
+//  verdrahtetes „/100" wäre in diesen Märkten schlicht falsch.
+
+const CURRENCY_MINOR_UNITS = {
+  EUR: 2, CHF: 2, USD: 2, GBP: 2, CAD: 2, AUD: 2, BRL: 2, ZAR: 2, GHS: 2, MZN: 2,
+  AOA: 2, KES: 2, NGN: 2,
+};
+
+function minorUnits(currency) {
+  return CURRENCY_MINOR_UNITS[currency] ?? 2;
+}
+
+/**
+ * Betrag formatieren. `locale` optional — sonst wird aus der Währung eine
+ * sinnvolle Voreinstellung abgeleitet.
+ */
+function formatAmount(amountMinor, currency, locale = null) {
+  const digits = minorUnits(currency);
+  const value = amountMinor / 10 ** digits;
+  const loc = locale || DEFAULT_LOCALE_BY_CURRENCY[currency] || 'de-DE';
+  try {
+    return new Intl.NumberFormat(loc, {
+      style: 'currency', currency,
+      minimumFractionDigits: digits, maximumFractionDigits: digits,
+    }).format(value);
+  } catch {
+    // Unbekannter Währungscode: lieber roh anzeigen als abstürzen.
+    return `${value.toFixed(digits)} ${currency}`;
+  }
+}
+
+const DEFAULT_LOCALE_BY_CURRENCY = {
+  EUR: 'de-DE', CHF: 'de-CH', USD: 'en-US', GBP: 'en-GB', CAD: 'en-CA', AUD: 'en-AU',
+  BRL: 'pt-BR', AOA: 'pt-AO', MZN: 'pt-MZ', NGN: 'en-NG', KES: 'en-KE', GHS: 'en-GH', ZAR: 'en-ZA',
+};
+
+// --- Der Zustands-Manager ---------------------------------------------------
+
+/**
+ * CountryComplianceManager — beobachtbarer Zustand für den Länderwechsel.
+ *
+ * Bewusst ohne Framework: `subscribe(fn)` gibt eine Abmeldefunktion zurück, das
+ * ist genau die Form, die `useSyncExternalStore` in React erwartet. Damit läuft
+ * derselbe Manager in der Vanilla-SPA, im React-Context und im Server, ohne dass
+ * die Regeln dreimal existieren.
+ *
+ *   const manager = createComplianceManager({ country: 'AT' })
+ *   const off = manager.subscribe(() => render(manager.getState()))
+ *   manager.setCountry('AO')   // -> Modus, Gebühren, Zahlwege wechseln
+ */
+function createComplianceManager({
+  country = 'AT',
+  purpose = 'saas_license',
+  overrides = {},
+} = {}) {
+  let currentCountry = hasProfile(country) ? country.toUpperCase() : 'AT';
+  let currentPurpose = PURPOSES.includes(purpose) ? purpose : 'saas_license';
+  let snapshot = null;
+  const listeners = new Set();
+
+  function build() {
+    const profile = complianceProfile(currentCountry, overrides);
+    const purposes = availablePurposes(currentCountry, overrides);
+
+    // Zweck ggf. korrigieren: Wer in Angola eine Marktplatz-Bestellung offen
+    // hat und nach Deutschland wechselt, darf nicht in einem Zustand landen,
+    // den es dort nicht gibt.
+    const effectivePurpose = purposes.includes(currentPurpose) ? currentPurpose : purposes[0];
+    const purposeCorrected = effectivePurpose !== currentPurpose;
+    currentPurpose = effectivePurpose;
+
+    let methods = [];
+    let fees = null;
+    let error = null;
+    try {
+      methods = paymentMethodsFor(currentCountry, currentPurpose, overrides);
+      fees = feeModel(currentCountry, currentPurpose, overrides);
+    } catch (e) {
+      // Die Krypto-Zusicherung darf niemals verschluckt werden: wenn sie
+      // auslöst, ist die Konfiguration kaputt und das muss laut scheitern.
+      if (e.code === 'crypto_rail_missing') throw e;
+      error = { code: e.code, message: e.message };
+    }
+
+    snapshot = Object.freeze({
+      country: currentCountry,
+      purpose: currentPurpose,
+      purposeCorrected,
+      availablePurposes: purposes,
+      profile,
+      commerceMode: profile.commerceMode,
+      currency: profile.currency,
+      transactionFeeAllowed: profile.transactionFeeAllowed,
+      methods,
+      fiatMethods: methods.filter((m) => m.rail === 'fiat'),
+      cryptoMethods: methods.filter((m) => m.rail === 'crypto'),
+      fields: checkoutFieldsFor(currentCountry, currentPurpose, overrides),
+      fees,
+      error,
+    });
+    return snapshot;
+  }
+
+  function emit() {
+    build();
+    for (const fn of listeners) fn(snapshot);
+  }
+
+  build();
+
+  return {
+    getState: () => snapshot,
+    /** Signatur passend zu React `useSyncExternalStore`. */
+    getSnapshot: () => snapshot,
+    subscribe(fn) {
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    },
+    setCountry(code) {
+      const next = hasProfile(code) ? code.toUpperCase() : currentCountry;
+      if (next === currentCountry) return snapshot;
+      currentCountry = next;
+      emit();
+      return snapshot;
+    },
+    setPurpose(next) {
+      if (!PURPOSES.includes(next) || next === currentPurpose) return snapshot;
+      currentPurpose = next;
+      emit();
+      return snapshot;
+    },
+    /** Gebühr für einen konkreten Betrag im aktuellen Zustand. */
+    quote(amountMinor) {
+      return calculateFee(amountMinor, currentCountry, currentPurpose, overrides);
+    },
+  };
+}
+
+
+/* ---- src/domain/qr.js ---------------------------------------------- */
+// ============================================================================
+//  QR-Encoder (Byte-Modus, Fehlerkorrektur-Stufe M)
+// ============================================================================
+//  Gebraucht für die Krypto-Zahlung: Die Empfangsadresse samt Betrag soll sich
+//  mit der Wallet-App scannen lassen, statt abgetippt zu werden. Eine falsch
+//  abgetippte Wallet-Adresse bedeutet unwiederbringlich verlorenes Geld — das
+//  ist genau der Fall, für den es QR-Codes gibt.
+//
+//  Warum selbst geschrieben statt Bibliothek: Das Checkout-Modal ist eine
+//  EINZELNE, in sich geschlossene HTML-Datei ohne Netzzugriff (eine externe
+//  QR-Bibliothek per CDN wäre sowohl ein Ladefehler-Risiko als auch ein
+//  Datenschutzproblem, weil die Wallet-Adresse an den CDN-Betreiber ginge).
+//
+//  BELEGT, nicht behauptet: tools/verify-qr.mjs vergleicht die erzeugte
+//  Modul-Matrix Zelle für Zelle mit `segno` (unabhängige, etablierte
+//  Python-Implementierung) — für mehrere Nutzlasten × alle acht Masken.
+//  Ohne diesen Abgleich wäre ein selbstgebauter Encoder eine Zumutung: ein
+//  QR-Code, der aussieht wie einer, aber falsch decodiert, ist schlimmer als
+//  gar keiner.
+//
+//  Umfang: Byte-Modus, Stufe M, Versionen 1–12 (bis 213 Byte Nutzlast).
+//  Das deckt Wallet-URIs einschließlich WalletConnect ab.
+// ============================================================================
+
+// --- Galois-Feld GF(256), Primitivpolynom 0x11D ------------------------------
+
+const EXP = new Uint8Array(512);
+const LOG = new Uint8Array(256);
+(function initGaloisField() {
+  let x = 1;
+  for (let i = 0; i < 255; i++) {
+    EXP[i] = x;
+    LOG[x] = i;
+    x <<= 1;
+    if (x & 0x100) x ^= 0x11d;
+  }
+  for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+})();
+
+const gfMul = (a, b) => (a === 0 || b === 0 ? 0 : EXP[LOG[a] + LOG[b]]);
+
+/** Generatorpolynom für `degree` Fehlerkorrektur-Codewörter. */
+function rsGenerator(degree) {
+  let poly = [1];
+  for (let i = 0; i < degree; i++) {
+    const next = new Array(poly.length + 1).fill(0);
+    for (let j = 0; j < poly.length; j++) {
+      next[j] ^= poly[j];
+      next[j + 1] ^= gfMul(poly[j], EXP[i]);
+    }
+    poly = next;
+  }
+  return poly;
+}
+
+/** Reed-Solomon-Rest von `data` für `degree` Prüf-Codewörter. */
+function rsEncode(data, degree) {
+  const gen = rsGenerator(degree);
+  const remainder = new Array(degree).fill(0);
+  for (const byte of data) {
+    const factor = byte ^ remainder[0];
+    remainder.shift();
+    remainder.push(0);
+    for (let j = 0; j < degree; j++) remainder[j] ^= gfMul(gen[j + 1], factor);
+  }
+  return remainder;
+}
+
+// --- Versionstabellen (nur Stufe M) -----------------------------------------
+//  [ecCodewordsProBlock, [gruppe1Blöcke, datenCodewörterProBlock],
+//                        [gruppe2Blöcke, datenCodewörterProBlock] | null]
+
+const EC_M = {
+  1: [10, [1, 16], null],
+  2: [16, [1, 28], null],
+  3: [26, [1, 44], null],
+  4: [18, [2, 32], null],
+  5: [24, [2, 43], null],
+  6: [16, [4, 27], null],
+  7: [18, [4, 31], null],
+  8: [22, [2, 38], [2, 39]],
+  9: [22, [3, 36], [2, 37]],
+  10: [26, [4, 43], [1, 44]],
+  11: [30, [1, 50], [4, 51]],
+  12: [22, [6, 36], [2, 37]],
+};
+
+/** Mittelpunkte der Ausrichtungsmuster je Version. */
+const ALIGNMENT = {
+  1: [], 2: [6, 18], 3: [6, 22], 4: [6, 26], 5: [6, 30], 6: [6, 34],
+  7: [6, 22, 38], 8: [6, 24, 42], 9: [6, 26, 46], 10: [6, 28, 50],
+  11: [6, 30, 54], 12: [6, 32, 58],
+};
+
+/** Zusätzliche Restbits nach den Codewörtern. */
+const REMAINDER_BITS = { 1: 0, 2: 7, 3: 7, 4: 7, 5: 7, 6: 7, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0, 12: 0 };
+
+function dataCapacityBytes(version) {
+  const [, g1, g2] = EC_M[version];
+  return g1[0] * g1[1] + (g2 ? g2[0] * g2[1] : 0);
+}
+
+class QrError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'QrError';
+  }
+}
+
+// --- Bitstrom ---------------------------------------------------------------
+
+function buildBitStream(bytes, version) {
+  const bits = [];
+  const push = (value, length) => {
+    for (let i = length - 1; i >= 0; i--) bits.push((value >> i) & 1);
+  };
+
+  push(0b0100, 4); // Modusindikator: Byte
+  push(bytes.length, version <= 9 ? 8 : 16); // Zeichenzähler
+
+  for (const b of bytes) push(b, 8);
+
+  const capacityBits = dataCapacityBytes(version) * 8;
+  if (bits.length > capacityBits) {
+    throw new QrError(`Nutzlast passt nicht in Version ${version}.`);
+  }
+
+  // Abschlusszeichen: bis zu vier Nullbits, aber nur so viele wie noch passen.
+  push(0, Math.min(4, capacityBits - bits.length));
+  while (bits.length % 8 !== 0) bits.push(0);
+
+  // Auffüll-Codewörter im vorgeschriebenen Wechsel.
+  const padBytes = [0xec, 0x11];
+  let padIndex = 0;
+  while (bits.length < capacityBits) {
+    push(padBytes[padIndex % 2], 8);
+    padIndex++;
+  }
+
+  const codewords = [];
+  for (let i = 0; i < bits.length; i += 8) {
+    let byte = 0;
+    for (let j = 0; j < 8; j++) byte = (byte << 1) | bits[i + j];
+    codewords.push(byte);
+  }
+  return codewords;
+}
+
+/** Daten- und Prüfblöcke verschränken, wie die Norm es vorschreibt. */
+function interleave(codewords, version) {
+  const [ecCount, g1, g2] = EC_M[version];
+  const blocks = [];
+  let offset = 0;
+
+  const take = (count, size) => {
+    for (let i = 0; i < count; i++) {
+      const data = codewords.slice(offset, offset + size);
+      offset += size;
+      blocks.push({ data, ec: rsEncode(data, ecCount) });
+    }
+  };
+  take(g1[0], g1[1]);
+  if (g2) take(g2[0], g2[1]);
+
+  const out = [];
+  const maxData = Math.max(...blocks.map((b) => b.data.length));
+  for (let i = 0; i < maxData; i++) {
+    for (const b of blocks) if (i < b.data.length) out.push(b.data[i]);
+  }
+  for (let i = 0; i < ecCount; i++) {
+    for (const b of blocks) out.push(b.ec[i]);
+  }
+  return out;
+}
+
+// --- BCH-Codes für Format- und Versionsinformation --------------------------
+//  Berechnet statt tabelliert: eine abgetippte Tabelle ist eine Fehlerquelle,
+//  die Rechnung ist nachvollziehbar.
+
+function bch(value, generator, generatorBits) {
+  let rest = value << (generatorBits - 1);
+  const total = bitLength(generator);
+  while (bitLength(rest) >= total) {
+    rest ^= generator << (bitLength(rest) - total);
+  }
+  return rest;
+}
+
+function bitLength(n) {
+  let len = 0;
+  while (n >>> len) len++;
+  return len;
+}
+
+/** 15 Bit: 2 Bit Fehlerkorrekturstufe + 3 Bit Maske, BCH(15,5), XOR 0x5412. */
+function formatBits(mask) {
+  const EC_LEVEL_M = 0b00;
+  const data = (EC_LEVEL_M << 3) | mask;
+  return ((data << 10) | bch(data, 0b10100110111, 11)) ^ 0b101010000010010;
+}
+
+/**
+ * 18 Bit ab Version 7: 6 Bit Version + 12 Bit BCH(18,6).
+ * Generatorpolynom G(x) = x¹² + x¹¹ + x¹⁰ + x⁹ + x⁸ + x⁵ + x² + 1 = 0x1F25.
+ * (Ein um die letzten Stellen gekürztes Polynom erzeugt einen Code, der bis
+ * Version 6 unauffällig bleibt und erst ab Version 7 falsch wird — genau
+ * dieser Fall fiel beim Abgleich mit python-qrcode auf.)
+ */
+function versionBits(version) {
+  return (version << 12) | bch(version, 0b1111100100101, 13);
+}
+
+// --- Matrix -----------------------------------------------------------------
+
+function createMatrix(version) {
+  const size = version * 4 + 17;
+  // null = noch frei; true/false = gesetztes Modul
+  const modules = Array.from({ length: size }, () => new Array(size).fill(null));
+  const reserved = Array.from({ length: size }, () => new Array(size).fill(false));
+
+  const set = (row, col, dark, isFunction = true) => {
+    modules[row][col] = dark;
+    if (isFunction) reserved[row][col] = true;
+  };
+
+  // Suchmuster mit Trennern
+  const placeFinder = (top, left) => {
+    for (let r = -1; r <= 7; r++) {
+      for (let c = -1; c <= 7; c++) {
+        const row = top + r;
+        const col = left + c;
+        if (row < 0 || col < 0 || row >= size || col >= size) continue;
+        const inRing = (r >= 0 && r <= 6 && (c === 0 || c === 6)) || (c >= 0 && c <= 6 && (r === 0 || r === 6));
+        const inCore = r >= 2 && r <= 4 && c >= 2 && c <= 4;
+        set(row, col, inRing || inCore);
+      }
+    }
+  };
+  placeFinder(0, 0);
+  placeFinder(0, size - 7);
+  placeFinder(size - 7, 0);
+
+  // Taktmuster
+  for (let i = 8; i < size - 8; i++) {
+    set(6, i, i % 2 === 0);
+    set(i, 6, i % 2 === 0);
+  }
+
+  // Ausrichtungsmuster (nicht über den Suchmustern)
+  const centers = ALIGNMENT[version];
+  for (const r of centers) {
+    for (const c of centers) {
+      const nearFinder =
+        (r <= 8 && c <= 8) || (r <= 8 && c >= size - 9) || (r >= size - 9 && c <= 8);
+      if (nearFinder) continue;
+      for (let dr = -2; dr <= 2; dr++) {
+        for (let dc = -2; dc <= 2; dc++) {
+          const ring = Math.max(Math.abs(dr), Math.abs(dc));
+          set(r + dr, c + dc, ring !== 1);
+        }
+      }
+    }
+  }
+
+  // Dunkles Modul
+  set(size - 8, 8, true);
+
+  // Formatbereiche freihalten
+  for (let i = 0; i < 9; i++) {
+    if (modules[8][i] === null) set(8, i, false);
+    if (modules[i][8] === null) set(i, 8, false);
+  }
+  for (let i = 0; i < 8; i++) {
+    if (modules[8][size - 1 - i] === null) set(8, size - 1 - i, false);
+    if (modules[size - 1 - i][8] === null) set(size - 1 - i, 8, false);
+  }
+
+  // Versionsbereiche ab Version 7 freihalten
+  if (version >= 7) {
+    for (let i = 0; i < 6; i++) {
+      for (let j = 0; j < 3; j++) {
+        set(size - 11 + j, i, false);
+        set(i, size - 11 + j, false);
+      }
+    }
+  }
+
+  return { modules, reserved, size };
+}
+
+/** Daten im Zickzack von rechts unten nach oben einlegen. */
+function placeData(matrix, data) {
+  const { modules, reserved, size } = matrix;
+  let bitIndex = 0;
+  const totalBits = data.length * 8;
+  const nextBit = () => {
+    if (bitIndex >= totalBits) return false; // Restbits sind 0
+    const bit = (data[bitIndex >> 3] >> (7 - (bitIndex & 7))) & 1;
+    bitIndex++;
+    return bit === 1;
+  };
+
+  let upward = true;
+  for (let right = size - 1; right >= 1; right -= 2) {
+    // Die Taktspalte 6 wird übersprungen.
+    if (right === 6) right = 5;
+    for (let step = 0; step < size; step++) {
+      const row = upward ? size - 1 - step : step;
+      for (let c = 0; c < 2; c++) {
+        const col = right - c;
+        if (reserved[row][col]) continue;
+        modules[row][col] = nextBit();
+      }
+    }
+    upward = !upward;
+  }
+}
+
+const MASK_FN = [
+  (i, j) => (i + j) % 2 === 0,
+  (i) => i % 2 === 0,
+  (i, j) => j % 3 === 0,
+  (i, j) => (i + j) % 3 === 0,
+  (i, j) => (Math.floor(i / 2) + Math.floor(j / 3)) % 2 === 0,
+  (i, j) => ((i * j) % 2) + ((i * j) % 3) === 0,
+  (i, j) => (((i * j) % 2) + ((i * j) % 3)) % 2 === 0,
+  (i, j) => (((i + j) % 2) + ((i * j) % 3)) % 2 === 0,
+];
+
+function applyMask(matrix, mask) {
+  const { modules, reserved, size } = matrix;
+  const fn = MASK_FN[mask];
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (!reserved[r][c] && fn(r, c)) modules[r][c] = !modules[r][c];
+    }
+  }
+}
+
+function writeFormatAndVersion(matrix, version, mask) {
+  const { modules, size } = matrix;
+  const bits = formatBits(mask);
+  const bit = (n) => ((bits >> n) & 1) === 1;
+
+  // Reihenfolge: das höchstwertige Bit zuerst. (Die naheliegende Annahme
+  // „Bit 0 zuerst" erzeugt einen Code, der strukturell einwandfrei aussieht,
+  // aber nicht decodiert — der Abgleich mit segno hat genau das aufgedeckt.)
+
+  // Erste Kopie: Zeile 8 nach rechts, dann Spalte 8 nach oben.
+  for (let i = 0; i <= 5; i++) modules[8][i] = bit(14 - i);
+  modules[8][7] = bit(8);
+  modules[8][8] = bit(7);
+  modules[7][8] = bit(6);
+  for (let r = 0; r <= 5; r++) modules[r][8] = bit(r);
+
+  // Zweite Kopie: Spalte 8 von unten, dann Zeile 8 nach rechts.
+  // Das dunkle Modul liegt bei (size-8, 8) und wird davon nicht berührt.
+  for (let i = 0; i <= 6; i++) modules[size - 1 - i][8] = bit(14 - i);
+  for (let i = 0; i <= 7; i++) modules[8][size - 8 + i] = bit(7 - i);
+
+  if (version >= 7) {
+    const vbits = versionBits(version);
+    for (let i = 0; i < 18; i++) {
+      const on = ((vbits >> i) & 1) === 1;
+      const r = Math.floor(i / 3);
+      const c = size - 11 + (i % 3);
+      modules[r][c] = on;
+      modules[c][r] = on;
+    }
+  }
+}
+
+// --- Maskenbewertung --------------------------------------------------------
+
+function penalty(matrix) {
+  const { modules, size } = matrix;
+  let score = 0;
+
+  // Regel 1: fünf oder mehr gleiche Module in Folge
+  const runScore = (line) => {
+    let total = 0;
+    let run = 1;
+    for (let i = 1; i < line.length; i++) {
+      if (line[i] === line[i - 1]) {
+        run++;
+      } else {
+        if (run >= 5) total += run - 2;
+        run = 1;
+      }
+    }
+    if (run >= 5) total += run - 2;
+    return total;
+  };
+  for (let r = 0; r < size; r++) score += runScore(modules[r]);
+  for (let c = 0; c < size; c++) score += runScore(modules.map((row) => row[c]));
+
+  // Regel 2: gleichfarbige 2×2-Blöcke
+  for (let r = 0; r < size - 1; r++) {
+    for (let c = 0; c < size - 1; c++) {
+      const v = modules[r][c];
+      if (v === modules[r][c + 1] && v === modules[r + 1][c] && v === modules[r + 1][c + 1]) score += 3;
+    }
+  }
+
+  // Regel 3: suchmusterähnliche Folgen
+  const PATTERN_A = [true, false, true, true, true, false, true, false, false, false, false];
+  const PATTERN_B = [false, false, false, false, true, false, true, true, true, false, true];
+  const matches = (line, start, pattern) => {
+    for (let i = 0; i < pattern.length; i++) if (line[start + i] !== pattern[i]) return false;
+    return true;
+  };
+  const scanLine = (line) => {
+    let total = 0;
+    for (let i = 0; i + 11 <= line.length; i++) {
+      if (matches(line, i, PATTERN_A) || matches(line, i, PATTERN_B)) total += 40;
+    }
+    return total;
+  };
+  for (let r = 0; r < size; r++) score += scanLine(modules[r]);
+  for (let c = 0; c < size; c++) score += scanLine(modules.map((row) => row[c]));
+
+  // Regel 4: Abweichung vom Gleichgewicht hell/dunkel
+  let dark = 0;
+  for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) if (modules[r][c]) dark++;
+  const percent = (dark * 100) / (size * size);
+  score += Math.floor(Math.abs(percent - 50) / 5) * 10;
+
+  return score;
+}
+
+// --- Öffentliche Schnittstelle ----------------------------------------------
+
+function utf8Bytes(text) {
+  // TextEncoder gibt es in Node und im Browser — kein Polyfill nötig.
+  return Array.from(new TextEncoder().encode(text));
+}
+
+function chooseVersion(byteLength) {
+  for (const version of Object.keys(EC_M).map(Number).sort((a, b) => a - b)) {
+    const headerBits = 4 + (version <= 9 ? 8 : 16);
+    if (headerBits + byteLength * 8 <= dataCapacityBytes(version) * 8) return version;
+  }
+  throw new QrError(
+    `Nutzlast von ${byteLength} Byte übersteigt Version 12 (Stufe M). ` +
+      'Für längere Inhalte müssen die Versionstabellen erweitert werden.',
+  );
+}
+
+/**
+ * Erzeugt die Modul-Matrix.
+ *
+ * @param {string} text  Nutzlast (z. B. `bitcoin:bc1…?amount=0.001`)
+ * @param {{mask?: number}} options  Maske erzwingen (sonst beste nach Bewertung)
+ * @returns {{ size: number, modules: boolean[][], version: number, mask: number }}
+ */
+function encodeQr(text, { mask = null } = {}) {
+  if (typeof text !== 'string' || text.length === 0) {
+    throw new QrError('Leere Nutzlast.');
+  }
+  const bytes = utf8Bytes(text);
+  const version = chooseVersion(bytes.length);
+  const codewords = interleave(buildBitStream(bytes, version), version);
+
+  const build = (m) => {
+    const matrix = createMatrix(version);
+    placeData(matrix, codewords);
+    // Restbits sind bereits 0, weil placeData jenseits der Daten `false` legt.
+    void REMAINDER_BITS[version];
+    applyMask(matrix, m);
+    writeFormatAndVersion(matrix, version, m);
+    return matrix;
+  };
+
+  let best;
+  let bestMask;
+  if (mask !== null) {
+    if (!Number.isInteger(mask) || mask < 0 || mask > 7) throw new QrError(`Maske ${mask} ungültig.`);
+    best = build(mask);
+    bestMask = mask;
+  } else {
+    let bestScore = Infinity;
+    for (let m = 0; m < 8; m++) {
+      const candidate = build(m);
+      const score = penalty(candidate);
+      if (score < bestScore) {
+        bestScore = score;
+        best = candidate;
+        bestMask = m;
+      }
+    }
+  }
+
+  return {
+    size: best.size,
+    modules: best.modules.map((row) => row.map(Boolean)),
+    version,
+    mask: bestMask,
+  };
+}
+
+/**
+ * QR als SVG-Zeichenkette. `dark`/`light` als CSS-Farben, damit sich der Code
+ * in beide Themes einfügt — ein QR auf weißem Kasten im Dunkelmodus ist zwar
+ * scannbar, sieht aber aus wie ein Fremdkörper.
+ */
+function qrToSvg(text, { moduleSize = 4, quietZone = 4, dark = '#000', light = '#fff', mask = null } = {}) {
+  const { modules, size } = encodeQr(text, { mask });
+  const total = (size + quietZone * 2) * moduleSize;
+
+  let path = '';
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (!modules[r][c]) continue;
+      const x = (c + quietZone) * moduleSize;
+      const y = (r + quietZone) * moduleSize;
+      path += `M${x} ${y}h${moduleSize}v${moduleSize}h-${moduleSize}z`;
+    }
+  }
+
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${total}" width="${total}" height="${total}" shape-rendering="crispEdges">` +
+    `<rect width="${total}" height="${total}" fill="${light}"/>` +
+    `<path d="${path}" fill="${dark}"/>` +
+    '</svg>'
+  );
+}
+
+
+/* ---- src/data/plans.js ---------------------------------------------- */
+// ============================================================================
+//  Abo-Katalog — Mehrwährungs-Lizenzen
+// ============================================================================
+//  WICHTIG zur Ehrlichkeit: Die Beträge unten sind eine BEISPIEL-Preisliste zur
+//  Demonstration der Mechanik, keine betriebswirtschaftliche Empfehlung. Der
+//  Betreiber setzt die echten Preise.
+//
+//  Warum feste Preise je Währung statt Umrechnung zum Tageskurs:
+//  Ein Abo, dessen Betrag jeden Monat mit dem Wechselkurs schwankt, ist für die
+//  Kundin nicht planbar und in der Buchhaltung ein Ärgernis. Übliche Praxis im
+//  SaaS-Geschäft ist deshalb eine gepflegte Preisliste je Währung. Der
+//  FX-Dienst (services/fxRates.js) dient der ANZEIGE von Vergleichswerten,
+//  nicht der Abrechnung.
+//
+//  Beträge in der kleinsten Währungseinheit (Cent, Cêntimo, …).
+// ============================================================================
+
+
+const BILLING_INTERVALS = ['monthly', 'yearly'];
+
+/**
+ * Preis je Währung. Fehlt eine Währung, greift `fallbackCurrency` —
+ * besser eine klar benannte Fremdwährung als ein erfundener Umrechnungskurs.
+ */
+const PLANS = [
+  {
+    id: 'apo_basis',
+    name: 'Basis',
+    tier: 1,
+    audience: 'Einzelapotheke',
+    features: [
+      'Engpass-Radar mit Behörden-Quellen',
+      'Wirkstoff-Merkliste',
+      'Notfall-Aushilfe (immer kostenfrei)',
+      '1 Standort, 3 Konten',
+    ],
+    monthly: { EUR: 4900, CHF: 4900, GBP: 4200, USD: 5400, CAD: 7400, AUD: 8200, BRL: 27900, AOA: 4500000, MZN: 349000, NGN: 8900000, KES: 700000, GHS: 82000, ZAR: 99000 },
+    yearly: { EUR: 49000, CHF: 49000, GBP: 42000, USD: 54000, CAD: 74000, AUD: 82000, BRL: 279000, AOA: 45000000, MZN: 3490000, NGN: 89000000, KES: 7000000, GHS: 820000, ZAR: 990000 },
+  },
+  {
+    id: 'apo_pro',
+    name: 'Professional',
+    tier: 2,
+    audience: 'Apothekenverbund, Klinikapotheke',
+    features: [
+      'Alles aus Basis',
+      'Preisvergleich mehrerer Lieferanten',
+      'Beschaffungs-Statistik und Export',
+      'Bis 10 Standorte, 25 Konten',
+    ],
+    monthly: { EUR: 14900, CHF: 14900, GBP: 12900, USD: 16400, CAD: 22400, AUD: 24900, BRL: 84900, AOA: 13700000, MZN: 1060000, NGN: 27000000, KES: 2130000, GHS: 249000, ZAR: 299000 },
+    yearly: { EUR: 149000, CHF: 149000, GBP: 129000, USD: 164000, CAD: 224000, AUD: 249000, BRL: 849000, AOA: 137000000, MZN: 10600000, NGN: 270000000, KES: 21300000, GHS: 2490000, ZAR: 2990000 },
+  },
+  {
+    id: 'apo_logistics',
+    name: 'Logistik',
+    tier: 3,
+    audience: 'Großhandel, Importeur',
+    features: [
+      'Alles aus Professional',
+      'Marktplatz-Listungen und Auftragsabwicklung',
+      'Import-Zertifikate und Chargen-Nachweis',
+      'Unbegrenzte Standorte',
+    ],
+    monthly: { EUR: 39900, CHF: 39900, GBP: 34900, USD: 43900, CAD: 59900, AUD: 66900, BRL: 227000, AOA: 36600000, MZN: 2840000, NGN: 72000000, KES: 5690000, GHS: 665000, ZAR: 799000 },
+    yearly: { EUR: 399000, CHF: 399000, GBP: 349000, USD: 439000, CAD: 599000, AUD: 669000, BRL: 2270000, AOA: 366000000, MZN: 28400000, NGN: 720000000, KES: 56900000, GHS: 6650000, ZAR: 7990000 },
+    /** Nur dort buchbar, wo Marktplatz-Gebühren freigeschaltet sind. */
+    requiresMarketplace: true,
+  },
+];
+
+const FALLBACK_CURRENCY = 'EUR';
+
+function listPlanIds() {
+  return PLANS.map((p) => p.id);
+}
+
+/**
+ * Pläne für ein Land, bepreist in dessen Währung.
+ *
+ * `requiresMarketplace` filtert den Logistik-Plan dort heraus, wo es gar keinen
+ * Marktplatz gibt — ein buchbarer Plan ohne Funktion wäre eine Falle.
+ */
+function plansForCountry(code, { interval = 'monthly' } = {}) {
+  const profile = complianceProfile(code);
+  const currency = profile.currency;
+  const period = BILLING_INTERVALS.includes(interval) ? interval : 'monthly';
+
+  return PLANS
+    .filter((p) => !p.requiresMarketplace || profile.transactionFeeAllowed)
+    .map((p) => {
+      const table = p[period];
+      const native = table[currency];
+      const usedCurrency = native != null ? currency : FALLBACK_CURRENCY;
+      const amountMinor = native != null ? native : table[FALLBACK_CURRENCY];
+
+      return {
+        id: p.id,
+        name: p.name,
+        tier: p.tier,
+        audience: p.audience,
+        features: [...p.features],
+        interval: period,
+        currency: usedCurrency,
+        amount_minor: amountMinor,
+        minor_units: minorUnits(usedCurrency),
+        display: formatAmount(amountMinor, usedCurrency),
+        // Ehrlich kennzeichnen, wenn in Fremdwährung abgerechnet würde.
+        billed_in_foreign_currency: usedCurrency !== currency,
+      };
+    });
+}
+
+function getPlan(id) {
+  return PLANS.find((p) => p.id === id) || null;
+}
+
+/** Preis eines Plans in einem Land — Grundlage für den Abo-Datensatz. */
+function priceFor(planId, code, interval = 'monthly') {
+  const plan = getPlan(planId);
+  if (!plan) return null;
+  const profile = complianceProfile(code);
+  const period = BILLING_INTERVALS.includes(interval) ? interval : 'monthly';
+  const table = plan[period];
+  const native = table[profile.currency];
+  const currency = native != null ? profile.currency : FALLBACK_CURRENCY;
+  return {
+    plan_id: plan.id,
+    currency,
+    amount_minor: native != null ? native : table[FALLBACK_CURRENCY],
+    interval: period,
+  };
+}
+
+</script>
+
+<script>
+/* ============================================================================
+   Oberfläche
+   ============================================================================
+   Ein einziger Manager versorgt beide Ansichten (Seite und Modal). Deshalb
+   springt der Länderwechsel im Modal auch auf der Seite um und umgekehrt —
+   das ist der Punkt der Übung: EIN Zustand, viele Ansichten.
+   ============================================================================ */
+(function () {
+  'use strict';
+
+  var manager = createComplianceManager({ country: 'AT', purpose: 'saas_license' });
+
+  /* Echte Empfangsadressen des Betreibers (öffentlich, aus cryptoWallets.js).
+     Netzwerke ohne hinterlegte Adresse werden als „noch zu hinterlegen"
+     ausgewiesen und lassen sich nicht auswählen — eine erfundene Wallet-Adresse
+     wäre der teuerste denkbare Platzhalter. */
+  var WALLETS = {
+    'usdt|Ethereum (ERC-20)': { address: '0x5f50991186014eDcbDE301467bE7a20C6CCc179B', uri: 'ethereum' },
+    'usdc|Ethereum (ERC-20)': { address: '0x5f50991186014eDcbDE301467bE7a20C6CCc179B', uri: 'ethereum' },
+    'usdc|Solana':            { address: 'Egbc7cfzHLj5dkgnR4E7Xk3MfDNrA5imqKJ1FV1n1DW', uri: 'solana' },
+    'btc|Bitcoin (Mainnet)':  { address: 'bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46', uri: 'bitcoin' }
+  };
+
+  var state = { plan: 'apo_basis', tab: 'fiat', asset: 'usdt', network: null, fiat: null };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+
+  var MODE_LABEL = { SAAS_ONLY: 'SAAS_ONLY', MARKETPLACE_FEES: 'MARKETPLACE_FEES' };
+  var MODE_NOTE = {
+    SAAS_ONLY: 'Nur Software-Lizenzen. Keine Provision auf den Warenwert.',
+    MARKETPLACE_FEES: 'Marktplatz mit Vermittlungs- und Logistikgebühr.'
+  };
+
+  /* ---------- Auswahlfelder füllen ---------- */
+
+  function countryOptions(select) {
+    var html = '';
+    Object.keys(COUNTRIES).forEach(function (code) {
+      if (!hasProfile(code)) return;
+      var c = COUNTRIES[code];
+      html += '<option value="' + code + '">' + c.flag + '  ' + esc(c.name) + ' · ' + c.currency + '</option>';
+    });
+    select.innerHTML = html;
+  }
+  countryOptions($('page-country'));
+  countryOptions($('co-country'));
+
+  function refreshPurposes() {
+    var s = manager.getState();
+    var html = '';
+    s.availablePurposes.forEach(function (id) {
+      html += '<option value="' + id + '">' + esc(PURPOSE_LABELS[id]) + '</option>';
+    });
+    $('page-purpose').innerHTML = html;
+    $('page-purpose').value = s.purpose;
+  }
+
+  function refreshPlans() {
+    var s = manager.getState();
+    var plans = plansForCountry(s.country, { interval: 'monthly' });
+    var html = '';
+    plans.forEach(function (p) {
+      html += '<option value="' + p.id + '">' + esc(p.name) + ' · ' + esc(p.display) + '</option>';
+    });
+    $('page-plan').innerHTML = html;
+    if (!plans.some(function (p) { return p.id === state.plan; })) {
+      state.plan = plans.length ? plans[0].id : null;
+    }
+    if (state.plan) $('page-plan').value = state.plan;
+  }
+
+  function currentPlan() {
+    var s = manager.getState();
+    var plans = plansForCountry(s.country, { interval: 'monthly' });
+    for (var i = 0; i < plans.length; i++) if (plans[i].id === state.plan) return plans[i];
+    return plans[0] || null;
+  }
+
+  /* ---------- Seiten-Zustand zeichnen ---------- */
+
+  function renderPage() {
+    var s = manager.getState();
+    var plan = currentPlan();
+
+    $('page-country').value = s.country;
+    $('co-country').value = s.country;
+
+    $('s-mode').textContent = MODE_LABEL[s.commerceMode];
+    $('s-mode-note').textContent = MODE_NOTE[s.commerceMode];
+
+    if (s.fees) {
+      $('s-fee').textContent = s.fees.kind;
+      $('s-fee-note').textContent = s.fees.reason;
+    } else {
+      $('s-fee').textContent = '—';
+      $('s-fee-note').textContent = s.error ? s.error.message : '';
+    }
+
+    $('s-currency').textContent = s.currency;
+    $('s-price').textContent = plan ? plan.name + ': ' + plan.display + ' je Monat' : '—';
+
+    $('s-regulator').textContent = s.profile.regulator || 'kein Profil hinterlegt';
+    $('s-framework').textContent = (s.profile.legalFramework || []).join(' · ');
+
+    var notes = '';
+    (s.profile.notes || []).forEach(function (n) {
+      notes += '<p class="rounded-lg border border-line bg-surface px-4 py-3 text-sm leading-relaxed">' + esc(n) + '</p>';
+    });
+    if (s.purposeCorrected) {
+      notes = '<p class="rounded-lg border border-warn/40 bg-warnsoft px-4 py-3 text-sm leading-relaxed">'
+        + '<strong class="font-semibold">Zweck angepasst.</strong> „Marktplatz-Bestellung" gibt es in '
+        + esc(COUNTRIES[s.country].name) + ' nicht — es wurde auf „'
+        + esc(PURPOSE_LABELS[s.purpose]) + '" umgestellt.</p>' + notes;
+    }
+    $('s-notes').innerHTML = notes;
+
+    var fiat = '';
+    s.fiatMethods.forEach(function (m) {
+      fiat += '<li class="chip">' + esc(m.label) + '<span class="mono ml-2 text-[11px] text-muted">'
+        + esc(m.provider) + '</span></li>';
+    });
+    $('s-fiat').innerHTML = fiat || '<li class="text-sm text-muted">keine</li>';
+
+    var crypto = '';
+    s.cryptoMethods.forEach(function (m) {
+      crypto += '<li class="chip-brass">' + esc(m.label) + '</li>';
+    });
+    $('s-crypto').innerHTML = crypto;
+  }
+
+  /* ---------- Modal zeichnen ---------- */
+
+  function renderNotice() {
+    var s = manager.getState();
+    var html = '';
+    if (s.profile.traceability) {
+      html += '<p class="rounded-lg border border-accent/40 bg-accentsoft px-4 py-3 text-sm leading-relaxed">'
+        + '<strong class="font-semibold">Rückverfolgbarkeit ' + esc(s.profile.traceability) + '.</strong> '
+        + 'Die Angaben unten werden mit der Transaktion verknüpft und sind später nicht änderbar.</p>';
+    }
+    if (s.commerceMode === 'SAAS_ONLY') {
+      html += '<p class="rounded-lg border border-ok/40 bg-oksoft px-4 py-3 text-sm leading-relaxed">'
+        + '<strong class="font-semibold">Keine Verkaufsprovision.</strong> '
+        + 'Abgerechnet wird ausschließlich die Lizenz — nicht der Warenwert von Arzneimitteln.</p>';
+    }
+    $('co-notice').innerHTML = html;
+  }
+
+  function renderFields() {
+    var s = manager.getState();
+    var html = '';
+    s.fields.forEach(function (f) {
+      var id = 'field-' + f.id;
+      html += '<div>';
+      html += '<label for="' + id + '" class="block text-sm font-semibold">' + esc(f.label)
+        + (f.required ? ' <span class="text-stop">*</span>' : ' <span class="font-normal text-muted">(optional)</span>')
+        + '</label>';
+      if (f.type === 'file') {
+        html += '<input type="file" id="' + id + '" data-field="' + f.id + '" accept="' + esc(f.accept || '') + '"'
+          + ' class="mt-1 block w-full text-sm file:mr-3 file:min-h-[3rem] file:rounded-lg file:border file:border-linestrong'
+          + ' file:bg-surface file:px-4 file:font-semibold file:text-ink">';
+      } else {
+        html += '<input type="text" id="' + id + '" data-field="' + f.id + '"'
+          + (f.pattern ? ' pattern="' + esc(f.pattern) + '"' : '')
+          + (f.required ? ' required' : '')
+          + ' placeholder="' + esc(f.example || '') + '" class="ctrl mono mt-1 w-full">';
+      }
+      html += '<p class="mt-1 text-xs leading-relaxed text-muted">' + esc(f.hint || '');
+      if (f.legalBasis) html += ' <span class="mono">(' + esc(f.legalBasis) + ')</span>';
+      html += '</p>';
+      html += '<p class="mt-1 hidden text-xs font-semibold text-stop" data-error-for="' + f.id + '"></p>';
+      html += '</div>';
+    });
+    $('co-fields').innerHTML = html || '<p class="text-sm text-muted">Für dieses Land sind keine zusätzlichen Angaben nötig.</p>';
+    $('co-fields-wrap').hidden = s.fields.length === 0;
+
+    Array.prototype.forEach.call($('co-fields').querySelectorAll('input[type="text"]'), function (input) {
+      input.addEventListener('input', function () { validateFields(); updateTotals(); });
+    });
+    Array.prototype.forEach.call($('co-fields').querySelectorAll('input[type="file"]'), function (input) {
+      input.addEventListener('change', function () { validateFields(); updateTotals(); });
+    });
+  }
+
+  /* Prüft die Pflichtfelder gegen genau das Muster, das auch der Server benutzt. */
+  function validateFields() {
+    var s = manager.getState();
+    var missing = [];
+    s.fields.forEach(function (f) {
+      var input = document.getElementById('field-' + f.id);
+      var err = $('co-fields').querySelector('[data-error-for="' + f.id + '"]');
+      if (!input || !err) return;
+
+      var value = f.type === 'file' ? (input.files && input.files.length ? 'datei' : '') : input.value.trim();
+      var problem = null;
+
+      if (f.required && !value) {
+        problem = 'Pflichtangabe für ' + (COUNTRIES[s.country] ? COUNTRIES[s.country].name : s.country) + '.';
+      } else if (value && f.pattern && f.type !== 'file' && !new RegExp('^(?:' + f.pattern.replace(/^\^|\$$/g, '') + ')$').test(value)) {
+        problem = 'Format stimmt nicht. Beispiel: ' + (f.example || '—');
+      }
+
+      if (problem) {
+        err.textContent = problem;
+        err.classList.remove('hidden');
+        input.setAttribute('aria-invalid', 'true');
+        if (f.required) missing.push(f.label);
+      } else {
+        err.classList.add('hidden');
+        input.removeAttribute('aria-invalid');
+      }
+    });
+    return missing;
+  }
+
+  function renderFiat() {
+    var s = manager.getState();
+    var html = '';
+    s.fiatMethods.forEach(function (m, i) {
+      if (state.fiat === null && i === 0) state.fiat = m.id;
+      var checked = state.fiat === m.id;
+      html += '<li><label class="flex min-h-[3rem] cursor-pointer items-center gap-3 rounded-lg border px-4 py-2 '
+        + (checked ? 'border-accent bg-accentsoft' : 'border-line bg-surface hover:bg-sunken') + '">'
+        + '<input type="radio" name="fiat" value="' + m.id + '"' + (checked ? ' checked' : '')
+        + ' class="h-5 w-5 accent-[rgb(var(--accent))]">'
+        + '<span class="font-semibold">' + esc(m.label) + '</span>'
+        + '<span class="mono ml-auto text-xs text-muted">' + esc(m.provider)
+        + ' · ' + m.settlementDays + ' Tage</span>'
+        + '</label></li>';
+    });
+    $('co-fiat').innerHTML = html;
+    Array.prototype.forEach.call($('co-fiat').querySelectorAll('input[name="fiat"]'), function (r) {
+      r.addEventListener('change', function () { state.fiat = r.value; renderFiat(); updateTotals(); });
+    });
+  }
+
+  function renderCrypto() {
+    var s = manager.getState();
+    var assets = s.cryptoMethods;
+
+    var html = '';
+    assets.forEach(function (m) {
+      var on = state.asset === m.id;
+      html += '<li><button type="button" data-asset="' + m.id + '"'
+        + ' aria-pressed="' + on + '"'
+        + ' class="min-h-[3rem] rounded-lg border px-4 font-semibold '
+        + (on ? 'border-brass bg-brass text-surface' : 'border-linestrong bg-surface hover:bg-sunken')
+        + '">' + esc(m.label) + '</button></li>';
+    });
+    $('co-assets').innerHTML = html;
+
+    var asset = null;
+    assets.forEach(function (m) { if (m.id === state.asset) asset = m; });
+    if (!asset) { asset = assets[0]; state.asset = asset.id; }
+
+    if (state.network === null || asset.networks.indexOf(state.network) === -1) {
+      // Erstes Netzwerk mit hinterlegter Adresse bevorzugen.
+      state.network = null;
+      asset.networks.forEach(function (n) {
+        if (state.network === null && WALLETS[asset.id + '|' + n]) state.network = n;
+      });
+      if (state.network === null) state.network = asset.networks[0];
+    }
+
+    var nets = '';
+    asset.networks.forEach(function (n) {
+      var wallet = WALLETS[asset.id + '|' + n];
+      var on = state.network === n;
+      nets += '<li><label class="flex min-h-[3rem] items-center gap-3 rounded-lg border px-4 py-2 '
+        + (wallet ? 'cursor-pointer ' : 'cursor-not-allowed opacity-60 ')
+        + (on ? 'border-brass bg-surface' : 'border-line bg-surface') + '">'
+        + '<input type="radio" name="network" value="' + esc(n) + '"' + (on ? ' checked' : '')
+        + (wallet ? '' : ' disabled') + ' class="h-5 w-5 accent-[rgb(var(--brass))]">'
+        + '<span class="font-semibold">' + esc(n) + '</span>'
+        + (wallet ? '' : '<span class="ml-auto text-xs text-muted">Adresse noch zu hinterlegen</span>')
+        + '</label></li>';
+    });
+    $('co-networks').innerHTML = nets;
+
+    Array.prototype.forEach.call($('co-assets').querySelectorAll('button[data-asset]'), function (b) {
+      b.addEventListener('click', function () {
+        state.asset = b.getAttribute('data-asset');
+        state.network = null;
+        renderCrypto();
+        updateTotals();
+      });
+    });
+    Array.prototype.forEach.call($('co-networks').querySelectorAll('input[name="network"]'), function (r) {
+      r.addEventListener('change', function () { state.network = r.value; renderCrypto(); updateTotals(); });
+    });
+
+    renderCryptoDetail(asset);
+  }
+
+  function renderCryptoDetail(asset) {
+    var box = $('co-crypto-detail');
+
+    if (asset.id === 'walletconnect') {
+      box.innerHTML =
+        '<div class="rounded-lg border border-line bg-surface p-4">'
+        + '<p class="text-sm leading-relaxed">Wallet über WalletConnect verbinden. Die Wallet zeigt Betrag '
+        + 'und Empfänger an, bevor Sie signieren.</p>'
+        + '<button type="button" data-testid="wc-connect" class="btn-secondary mt-3 w-full">Wallet verbinden</button>'
+        + '<p class="mt-2 text-xs text-muted">Braucht eine WalletConnect-Projekt-ID; in dieser Demo nicht angebunden.</p>'
+        + '</div>';
+      return;
+    }
+
+    var wallet = WALLETS[asset.id + '|' + state.network];
+    if (!wallet) {
+      box.innerHTML =
+        '<div class="rounded-lg border border-warn/40 bg-warnsoft p-4">'
+        + '<p class="text-sm leading-relaxed"><strong class="font-semibold">Für dieses Netzwerk ist noch keine '
+        + 'Empfangsadresse hinterlegt.</strong> Sie wird vom Betreiber gesetzt '
+        + '(<span class="mono">APOTREND_WALLET_…</span>). Eine erfundene Adresse steht hier bewusst nicht — '
+        + 'eine falsche Wallet-Adresse bedeutet unwiederbringlich verlorenes Geld.</p></div>';
+      return;
+    }
+
+    var uri = wallet.uri + ':' + wallet.address;
+    var svg;
+    try {
+      svg = qrToSvg(uri, { moduleSize: 4, quietZone: 3, dark: '#000000', light: '#ffffff' });
+    } catch (e) {
+      svg = '';
+    }
+
+    box.innerHTML =
+      '<div class="grid gap-4 sm:grid-cols-[auto_1fr]">'
+      + '<div class="qr-plate rounded-lg border border-line p-2" data-testid="qr-plate">'
+      + (svg || '<p class="p-4 text-xs text-stop">QR konnte nicht erzeugt werden.</p>')
+      + '</div>'
+      + '<div class="min-w-0">'
+      + '<p class="text-xs font-semibold uppercase tracking-wider text-muted">Empfangsadresse</p>'
+      + '<p class="mono mt-1 break-all text-sm leading-relaxed" data-testid="wallet-address">' + esc(wallet.address) + '</p>'
+      + '<button type="button" data-copy="' + esc(wallet.address) + '" data-testid="copy-address" '
+      + 'class="btn-secondary mt-3">Adresse kopieren</button>'
+      + '<p class="mt-3 text-xs leading-relaxed text-muted">Der QR enthält Adresse und Netzwerk, '
+      + '<strong class="font-semibold">keinen Betrag</strong>: In dieser Demo ist kein Kursdienst angebunden, '
+      + 'und ein geschätzter Kurs im Zahlungslink wäre eine falsche Zusage. Im Betrieb rechnet der '
+      + 'Zahlungsdienst live um und zählt die Netzwerk-Bestätigungen.</p>'
+      + '</div></div>';
+
+    var copyBtn = box.querySelector('[data-copy]');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function () {
+        var text = copyBtn.getAttribute('data-copy');
+        var done = function () {
+          copyBtn.textContent = 'Kopiert';
+          setTimeout(function () { copyBtn.textContent = 'Adresse kopieren'; }, 1600);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, done);
+        } else { done(); }
+      });
+    }
+  }
+
+  /* ---------- Summe und Gebühren ---------- */
+
+  function updateTotals() {
+    var s = manager.getState();
+    var plan = currentPlan();
+    if (!plan) return;
+
+    var quote = manager.quote(plan.amount_minor);
+    var rows = '';
+    var row = function (label, value, strong) {
+      return '<div class="flex items-baseline justify-between gap-3">'
+        + '<dt class="' + (strong ? 'font-semibold' : 'text-muted') + '">' + esc(label) + '</dt>'
+        + '<dd class="mono tabular-nums ' + (strong ? 'font-semibold' : '') + '">' + esc(value) + '</dd></div>';
+    };
+
+    rows += row('Lizenz', plan.name, true);
+    rows += row('Land', COUNTRIES[s.country].flag + ' ' + COUNTRIES[s.country].name);
+    rows += row('Abrechnung', PURPOSE_LABELS[s.purpose]);
+    rows += row('Grundbetrag', formatAmount(quote.amountMinor, plan.currency));
+
+    if (quote.kind === 'COMMISSION_FEE') {
+      rows += row('Vermittlung (' + (quote.marketplaceBps / 100).toFixed(2) + ' %)',
+        formatAmount(Math.round(quote.amountMinor * quote.marketplaceBps / 10000), plan.currency));
+      rows += row('Logistik (' + (quote.logisticsBps / 100).toFixed(2) + ' %)',
+        formatAmount(Math.round(quote.amountMinor * quote.logisticsBps / 10000), plan.currency));
+    } else {
+      rows += row('Plattform-Gebühr', 'entfällt (Pauschale)');
+    }
+
+    rows += row('Zahlweg', state.tab === 'crypto'
+      ? 'Krypto · ' + state.asset.toUpperCase()
+      : 'Fiat · ' + (state.fiat || '—'));
+
+    $('co-summary').innerHTML = rows;
+    $('co-total').textContent = formatAmount(quote.amountMinor, plan.currency);
+    $('co-currency').textContent = plan.currency;
+    $('co-title').textContent = plan.name + ' · ' + PURPOSE_LABELS[s.purpose];
+
+    $('co-total-note').textContent = quote.kind === 'COMMISSION_FEE'
+      ? 'Enthält ' + (quote.bps / 100).toFixed(2) + ' % Plattform-Gebühr auf den Warenwert.'
+      : 'Feste Lizenzgebühr je Monat. Keine Provision auf den Warenwert.';
+
+    var missing = validateFields();
+    var payBtn = $('co-pay');
+    var blocked = $('co-blocked');
+
+    payBtn.textContent = state.tab === 'crypto'
+      ? 'Krypto-Zahlung anzeigen'
+      : formatAmount(quote.amountMinor, plan.currency) + ' bezahlen';
+
+    if (missing.length > 0) {
+      payBtn.disabled = true;
+      blocked.hidden = false;
+      blocked.textContent = 'Noch offen: ' + missing.join(', ') + '.';
+    } else {
+      payBtn.disabled = false;
+      blocked.hidden = true;
+    }
+  }
+
+  /* ---------- Reiter ---------- */
+
+  function setTab(name) {
+    state.tab = name;
+    var fiatOn = name === 'fiat';
+    $('tab-fiat').setAttribute('aria-selected', String(fiatOn));
+    $('tab-crypto').setAttribute('aria-selected', String(!fiatOn));
+    $('panel-fiat').hidden = !fiatOn;
+    $('panel-crypto').hidden = fiatOn;
+    updateTotals();
+  }
+
+  $('tab-fiat').addEventListener('click', function () { setTab('fiat'); });
+  $('tab-crypto').addEventListener('click', function () { setTab('crypto'); });
+
+  /* Pfeiltasten im Reiter-Band — erwartetes Verhalten für Tastaturnutzung. */
+  [$('tab-fiat'), $('tab-crypto')].forEach(function (tab) {
+    tab.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault();
+      var next = state.tab === 'fiat' ? 'crypto' : 'fiat';
+      setTab(next);
+      $(next === 'fiat' ? 'tab-fiat' : 'tab-crypto').focus();
+    });
+  });
+
+  /* ---------- Verdrahtung ---------- */
+
+  function renderAll() {
+    refreshPurposes();
+    refreshPlans();
+    renderPage();
+    renderNotice();
+    renderFields();
+    renderFiat();
+    renderCrypto();
+    updateTotals();
+  }
+
+  manager.subscribe(renderAll);
+
+  $('page-country').addEventListener('change', function () {
+    state.fiat = null;
+    manager.setCountry(this.value);
+  });
+  $('co-country').addEventListener('change', function () {
+    state.fiat = null;
+    manager.setCountry(this.value);
+  });
+  $('page-purpose').addEventListener('change', function () { manager.setPurpose(this.value); });
+  $('page-plan').addEventListener('change', function () { state.plan = this.value; updateTotals(); });
+
+  $('open-checkout').addEventListener('click', function () { $('checkout').showModal(); });
+  $('co-close').addEventListener('click', function () { $('checkout').close(); });
+
+  $('co-pay').addEventListener('click', function () {
+    if (state.tab === 'crypto') { setTab('crypto'); return; }
+    var missing = validateFields();
+    if (missing.length === 0) {
+      $('co-blocked').hidden = false;
+      $('co-blocked').classList.remove('text-stop');
+      $('co-blocked').classList.add('text-ok');
+      $('co-blocked').textContent = 'Demo: hier würde der gehostete Checkout des Anbieters öffnen.';
+    }
+  });
+
+  renderAll();
+  setTab('fiat');
+})();
+</script>
+</body>
+</html>

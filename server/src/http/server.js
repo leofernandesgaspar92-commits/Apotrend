@@ -36,6 +36,11 @@ import { createAmrService } from '../services/amr.js';
 import { createPatientInfoService } from '../services/patientInfo.js';
 import { listCountries, normalizeCountry, normalizeLocale } from '../data/countries.js';
 import { countryConfig, featureStatus, isFeatureBlocked } from '../data/countryFeatures.js';
+import {
+  availablePurposes, calculateFee, checkoutFieldsFor, complianceProfile,
+  feeModel, paymentMethodsFor, PURPOSES, PURPOSE_LABELS,
+} from '../domain/compliance.js';
+import { plansForCountry, priceFor } from '../data/plans.js';
 import { isLive, isPriceLive, isRabatteLive, liveSources, livePriceSources, liveRabatteSources, startLiveRefresh } from '../services/liveData.js';
 import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
 import { issueToken, verifyToken } from './token.js';
@@ -278,6 +283,57 @@ const routes = [
   // Verbleibende Wiederherstellungscodes (eingeloggt) + Neu-Erzeugung.
   ['GET', /^\/api\/recovery-codes$/, true, async ({ userId }) => ({ remaining: orgAuth.remainingRecoveryCodes(userId) })],
   ['POST', /^\/api\/recovery-codes\/regenerate$/, true, async ({ userId }) => orgAuth.regenerateRecoveryCodes(userId)],
+
+  // ── Dynamic Country Compliance ────────────────────────────────────────────
+  // Liefert Handels-Modus, Gebührenmodell, zulässige Zahlwege und Pflichtfelder
+  // für ein Land. Öffentlich, weil die Preis-/Rechtslage vor dem Login sichtbar
+  // sein muss — und weil das Checkout-Modal sie beim Länderwechsel neu zieht.
+  ['GET', /^\/api\/compliance\/([A-Za-z]{2})$/, false, async ({ params, query }) => {
+    const country = params[0].toUpperCase();
+    const purpose = PURPOSES.includes(query.get('purpose')) ? query.get('purpose') : 'saas_license';
+    const profile = complianceProfile(country);
+    const purposes = availablePurposes(country);
+    // Zweck, den es hier nicht gibt, still auf den ersten möglichen korrigieren
+    // — dieselbe Regel wie im Manager, damit API und UI nicht auseinanderlaufen.
+    const effective = purposes.includes(purpose) ? purpose : purposes[0];
+
+    return {
+      country,
+      profile,
+      commerce_mode: profile.commerceMode,
+      currency: profile.currency,
+      transaction_fee_allowed: profile.transactionFeeAllowed,
+      purpose: effective,
+      purpose_corrected: effective !== purpose,
+      available_purposes: purposes.map((id) => ({ id, label: PURPOSE_LABELS[id] })),
+      methods: paymentMethodsFor(country, effective),
+      fields: checkoutFieldsFor(country, effective),
+      fees: feeModel(country, effective),
+    };
+  }],
+
+  // Gebühren-Vorschau für einen konkreten Betrag (kleinste Währungseinheit).
+  ['GET', /^\/api\/compliance\/([A-Za-z]{2})\/quote$/, false, async ({ params, query }) => {
+    const country = params[0].toUpperCase();
+    const purpose = PURPOSES.includes(query.get('purpose')) ? query.get('purpose') : 'saas_license';
+    const amount = Number(query.get('amount') || 0);
+    if (!Number.isFinite(amount) || amount < 0) {
+      const e = new Error('Betrag ungültig.'); e.status = 400; e.code = 'amount_invalid'; throw e;
+    }
+    return { country, purpose, ...calculateFee(amount, country, purpose) };
+  }],
+
+  // Abo-Pläne in der Landeswährung.
+  ['GET', /^\/api\/plans$/, false, async ({ query }) => {
+    const country = normalizeCountry(query.get('country'));
+    const interval = query.get('interval') === 'yearly' ? 'yearly' : 'monthly';
+    return { country, interval, currency: complianceProfile(country).currency, plans: plansForCountry(country, { interval }) };
+  }],
+  ['GET', /^\/api\/plans\/([a-z_]+)\/price$/, false, async ({ params, query }) => {
+    const price = priceFor(params[0], normalizeCountry(query.get('country')), query.get('interval'));
+    if (!price) { const e = new Error('Plan unbekannt.'); e.status = 404; e.code = 'plan_unknown'; throw e; }
+    return price;
+  }],
 
   // ── Zahlungen / Premium — inaktiv, solange kein Anbieter konfiguriert ist. ──
   ['GET', /^\/api\/payments\/products$/, false, async () => ({ products: listProducts() })],
