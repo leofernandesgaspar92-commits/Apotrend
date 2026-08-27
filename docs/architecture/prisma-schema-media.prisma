@@ -1,0 +1,383 @@
+// ============================================================================
+//  Apotrend — Schema-Erweiterung: Rich Media, Reaktionen, Threads, Nachrichten
+// ============================================================================
+//  Ergänzt prisma-schema-draft.prisma. Beim Zusammenführen ersetzen die hier
+//  markierten Modelle ihre Vorgänger; alles Übrige kommt hinzu.
+//
+//  Vier Entwurfsentscheidungen, die den Rest erklären:
+//
+//  1. MEDIEN LIEGEN IN EINER TABELLE JE ORT (PostMedia, CommentMedia,
+//     MessageMedia) — nicht in einer gemeinsamen polymorphen Tabelle.
+//     Grund: Nur so lassen sich die Pflichtfelder je Ort unterschiedlich
+//     erzwingen. Ein öffentliches Video BRAUCHT Untertitel oder Abschrift; eine
+//     Sprachnachricht in einer Direktnachricht darf sie nachreichen. Mit einer
+//     gemeinsamen Tabelle wäre das nur noch Anwendungslogik — also eine Bitte,
+//     kein Constraint.
+//
+//  2. REAKTIONEN SIND POLYMORPH, aber mit exklusivem CHECK: genau eine
+//     Ziel-Spalte ist gesetzt. Zwei getrennte Tabellen (PostReaction,
+//     CommentReaction) hätten jede Aggregation verdoppelt.
+//
+//  3. `mediaKind` WIRD AN JEDER MEDIEN-ZEILE DENORMALISIERT MITGEFÜHRT, damit
+//     CHECK-Constraints ohne Join greifen — dieselbe Bauart wie `productClass`
+//     am PostProductTag im Ausgangsentwurf.
+//
+//  4. SPONSORING IST EINE EIGENE TABELLE, kein Boolean. Ein bezahlter Beitrag
+//     ohne benannten Auftraggeber ist damit nicht speicherbar (§ 6 TMG,
+//     § 22 MStV). Der bisherige `Post.isSponsored` bleibt als abgeleitetes,
+//     per Trigger gepflegtes Feld erhalten, weil Feed-Abfragen danach filtern.
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+//  Aufzählungen
+// ---------------------------------------------------------------------------
+
+/// ERSETZT die bisherige Fassung (IMAGE, VIDEO).
+enum MediaType {
+  IMAGE
+  VIDEO
+  GIF
+  AUDIO // Sprachnachricht
+
+  @@schema("core")
+}
+
+/// ERSETZT die bisherige Fassung (HELPFUL, THANKS, INSIGHTFUL).
+/// Bewusst GESCHLOSSEN und bewusst ohne produktbewertende Reaktion:
+/// § 11 Abs. 1 Nr. 11 HWG untersagt Laien-Äußerungen mit Empfehlungscharakter
+/// in der Publikumswerbung für Arzneimittel. Die vier Werte bewerten den
+/// BEITRAG, nicht die Wirkung eines Präparats.
+enum ReactionKind {
+  LIKE // 👍 Gefällt mir
+  INSIGHTFUL // 💡 Informativ
+  HELPFUL // ❤️ Hilfreich
+  THANKS // 👏 Danke
+
+  @@schema("core")
+}
+
+/// Woher ein Feed-Beitrag stammt. Steuert die Kennzeichnung in der Oberfläche.
+enum PostOrigin {
+  USER // von einer angemeldeten Person verfasst
+  EDITORIAL // redaktionell
+  AUTOMATED_FEED // automatisch übernommen (Fach-News)
+  SPONSORED // bezahlt
+
+  @@schema("core")
+}
+
+enum GifProvider {
+  TENOR
+  GIPHY
+  OWN_LIBRARY
+
+  @@schema("core")
+}
+
+// ---------------------------------------------------------------------------
+//  Medien am Beitrag
+// ---------------------------------------------------------------------------
+
+/// ERSETZT PostMedia aus dem Ausgangsentwurf.
+model PostMedia {
+  id     String @id @default(cuid())
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  type MediaType
+  url  String
+
+  /// Pflichtfeld für IMAGE und GIF. Leerer String = bewusst dekorativ,
+  /// NULL ist per CHECK ausgeschlossen — Vergessen und Entscheiden sind
+  /// unterscheidbar (WCAG 1.1.1).
+  alt String?
+
+  /// Pixelmaße. Ohne sie springt das Layout beim Nachladen (CLS).
+  width  Int
+  height Int
+
+  /// --- nur VIDEO ---
+  posterUrl   String?
+  posterAlt   String?
+  durationMs  Int?
+  /// WebVTT. NULL nur zulässig, wenn `transcript` gefüllt ist (CHECK).
+  captionsUrl String?
+  /// Volltext-Alternative (WCAG 1.2.2/1.2.3).
+  transcript  String? @db.Text
+  orientation String? // 'portrait' | 'landscape'
+  mimeType    String?
+
+  /// --- nur GIF ---
+  gifProvider   GifProvider?
+  /// Lizenzbedingung von Tenor/Giphy: Anbieter muss genannt werden.
+  gifAttribution String?
+  gifTitle       String?
+
+  /// --- nur AUDIO ---
+  /// Normalisierte Ausschläge 0..1 für die Wellenform. Als Zahlenfeld statt
+  /// JSON, damit die Länge prüfbar bleibt.
+  waveform Float[]
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([postId, position])
+  @@schema("core")
+}
+
+// ---------------------------------------------------------------------------
+//  Herkunft und Kennzeichnung
+// ---------------------------------------------------------------------------
+
+/// Bezahlter Beitrag. Die Existenz DIESER ZEILE ist die Kennzeichnung —
+/// nicht ein Häkchen, das jemand zu setzen vergisst.
+model PostSponsorship {
+  id     String @id @default(cuid())
+  postId String @unique
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  /// Auftraggeber im Klartext. NOT NULL, mindestens 2 Zeichen (CHECK).
+  advertiser    String
+  advertiserUrl String
+  /// Optionale Auftrags-/Kampagnenkennung für die Nachweisführung.
+  campaignRef   String?
+
+  /// Für Arzneimittelwerbung: wer die Pflichtangaben verantwortet.
+  responsibleEntity String?
+
+  createdAt DateTime @default(now())
+
+  @@schema("core")
+}
+
+/// Automatisch übernommener Fach-Beitrag. Trennt „von uns geschrieben" von
+/// „aus einer fremden Quelle eingespielt" — für Haftung und Korrekturpflicht
+/// ein Unterschied.
+model PostFeedOrigin {
+  id     String @id @default(cuid())
+  postId String @unique
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  outlet      String
+  outletUrl   String
+  /// Kennung im Quellsystem — verhindert Doppel-Einspielung.
+  externalId  String
+  fetchedAt   DateTime @default(now())
+  /// Wurde der übernommene Text fachlich gegengelesen?
+  reviewedById String?
+  reviewedAt   DateTime?
+
+  @@unique([outlet, externalId])
+  @@schema("core")
+}
+
+// ---------------------------------------------------------------------------
+//  Kommentare
+// ---------------------------------------------------------------------------
+
+/// ERSETZT Comment aus dem Ausgangsentwurf (ergänzt Tiefe, Bezug, Medien).
+model Comment {
+  id     String @id @default(cuid())
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  parentId String?
+  parent   Comment?  @relation("CommentTree", fields: [parentId], references: [id])
+  replies  Comment[] @relation("CommentTree")
+
+  /// 0 = oberste Ebene. Wird beim Anlegen BERECHNET und per CHECK auf <= 3
+  /// begrenzt: tiefere Einrückung ist auf 390 px Breite nicht mehr lesbar.
+  depth Int @default(0)
+
+  /// Bei erreichter Deckelung hängt die Antwort eine Ebene höher — der Bezug
+  /// bleibt über dieses Feld erhalten („Antwort an @handle").
+  replyToUserId String?
+
+  body String @db.Text
+
+  moderationState ModerationState @default(OK)
+  isPinnedAnswer  Boolean         @default(false)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  media     CommentMedia[]
+  reactions Reaction[]
+  reports   Report[]
+
+  @@index([postId, createdAt])
+  @@index([parentId])
+  @@index([authorId])
+  @@schema("core")
+}
+
+/// Anhänge am Kommentar. Bewusst OHNE Video: ein Kommentarbereich mit fünf
+/// Playern ist auf dem Telefon unbenutzbar, und die Untertitelpflicht wäre für
+/// einen Zweizeiler eine Hürde, die niemand nimmt (CHECK erzwingt das).
+model CommentMedia {
+  id        String  @id @default(cuid())
+  commentId String
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  type MediaType // CHECK: IN ('IMAGE','GIF')
+  url  String
+  alt  String? // NOT NULL per CHECK, leerer String = dekorativ
+
+  width  Int
+  height Int
+
+  gifProvider    GifProvider?
+  gifAttribution String?
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([commentId, position])
+  @@schema("core")
+}
+
+// ---------------------------------------------------------------------------
+//  Reaktionen
+// ---------------------------------------------------------------------------
+
+/// ERSETZT Reaction aus dem Ausgangsentwurf.
+///
+/// Polymorph über zwei nullbare Fremdschlüssel plus CHECK „genau einer gesetzt".
+/// Die beiden partiellen Unique-Indizes setzen die Regel „eine Person, eine
+/// Reaktion je Ziel" durch — ein zusammengesetzter Unique-Index über zwei
+/// nullbare Spalten täte das in PostgreSQL NICHT, weil NULL dort nie gleich
+/// NULL ist. Genau diese Falle ist der Grund für die zwei getrennten Indizes.
+model Reaction {
+  id String @id @default(cuid())
+
+  postId String?
+  post   Post?   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  commentId String?
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  kind      ReactionKind
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([postId])
+  @@index([commentId])
+  @@index([userId])
+  @@schema("core")
+}
+
+/// Vorberechnete Zähler. Ohne sie kostet jede Feed-Seite ein GROUP BY über die
+/// gesamte Reaktionstabelle. Per Trigger gepflegt, nicht von der Anwendung —
+/// sonst driften Anzeige und Wahrheit auseinander.
+model ReactionTally {
+  id        String  @id @default(cuid())
+  postId    String?
+  commentId String?
+
+  kind  ReactionKind
+  count Int          @default(0)
+
+  @@unique([postId, kind])
+  @@unique([commentId, kind])
+  @@schema("core")
+}
+
+// ---------------------------------------------------------------------------
+//  Direktnachrichten
+// ---------------------------------------------------------------------------
+//  ACHTUNG, Datenschutz: Eine Nachricht an eine Apotheke enthält regelmäßig
+//  Gesundheitsdaten (Art. 9 DSGVO) — „Ist das Mittel für meinen Sohn geeignet?"
+//  Deshalb steht der Nachrichtentext VERSCHLÜSSELT in der Tabelle, mit
+//  derselben Umschlag-Verschlüsselung und `keyVersion` wie die Rezeptdaten.
+//  Das ist der Grund, warum `body` hier `Bytes` ist und nicht `String`.
+
+model Conversation {
+  id        String   @id @default(cuid())
+  /// Direktnachricht zwischen zwei Konten oder Anfrage an eine Apotheke.
+  pharmacyId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([pharmacyId])
+  @@schema("core")
+}
+
+model ConversationParticipant {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  joinedAt   DateTime  @default(now())
+  lastReadAt DateTime?
+
+  @@unique([conversationId, userId])
+  @@schema("core")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  /// AES-256-GCM. Klartext steht nie in der Datenbank.
+  bodyCipher Bytes?
+  bodyNonce  Bytes?
+  /// Ermöglicht Schlüsselrotation OHNE Migration bestehender Zeilen.
+  keyVersion Int    @default(1)
+
+  createdAt DateTime  @default(now())
+  editedAt  DateTime?
+  deletedAt DateTime?
+
+  media MessageMedia[]
+
+  @@index([conversationId, createdAt])
+  @@schema("core")
+}
+
+/// Anhänge einer Direktnachricht — einschließlich Sprachnachricht.
+///
+/// Anders als bei öffentlichen Medien ist `transcript` hier NICHT erzwungen:
+/// eine spontan aufgenommene Sprachnachricht bringt keine fertige Abschrift
+/// mit. Stattdessen hält `transcriptStatus` fest, dass sie fehlt — damit die
+/// Oberfläche eine Abschrift anbieten kann, statt das Fehlen zu verschweigen.
+model MessageMedia {
+  id        String  @id @default(cuid())
+  messageId String
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  type MediaType
+  /// Objektspeicher-Schlüssel, nicht die öffentliche URL: der Zugriff läuft
+  /// über kurzlebige signierte URLs, nie über einen erratbaren Pfad.
+  storageKey String
+  mimeType   String
+  byteSize   Int
+
+  alt        String?
+  width      Int?
+  height     Int?
+  durationMs Int?
+  waveform   Float[]
+
+  transcript       String? @db.Text
+  transcriptStatus String  @default("none") // 'none' | 'requested' | 'ready'
+
+  createdAt DateTime @default(now())
+
+  @@index([messageId])
+  @@schema("core")
+}

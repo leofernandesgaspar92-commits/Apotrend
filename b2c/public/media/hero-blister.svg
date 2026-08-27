@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="1200" height="675" role="img" aria-label="Tablettenblister mit zehn Tabletten">
+<title>Tablettenblister mit zehn Tabletten</title>
+<rect width="1200" height="675" fill="#eaf5f0"/>
+<g transform="translate(150 130)">
+  <rect x="0" y="0" width="900" height="420" rx="28" fill="#ffffff" stroke="#1a7a5a" stroke-width="6"/>
+  <g><rect x="38" y="68" width="104" height="84" rx="42" fill="#eaf5f0" stroke="#1a7a5a" stroke-width="5"/><rect x="88" y="68" width="4" height="84" fill="#1a7a5a" opacity="0.45"/></g>
+  <g><rect x="198" y="68" width="104" height="84" rx="42" fill="#eaf5f0" stroke="#1a7a5a" stroke-width="5"/><rect x="248" y="68" width="4" height="84" fill="#1a7a5a" opacity="0.45"/></g>
+  <g><rect x="358" y="68" width="104" height="84" rx="42" fill="#eaf5f0" stroke="#1a7a5a" stroke-width="5"/><rect x="408" y="68" width="4" height="84" fill="#1a7a5a" opacity="0.45"/></g>
+  <g><rect x="518" y="68" width="104" height="84" rx="42" fill="#eaf5f0" stroke="#1a7a5a" stroke-width="5"/><rect x="568" y="68" width="4" height="84" fill="#1a7a5a" opacity="0.45"/></g>
+  <g><rect x="678" y="68" width="104" height="84" rx="42" fill="#eaf5f0" stroke="#1a7a5a" stroke-width="5"/><rect x="728" y="68" width="4" height="84" fill="#1a7a5a" opacity="0.45"/></g>
+  <g><rect x="38" y="248" width="104" height="84" rx="42" fill="#eaf5f0" stroke="#1a7a5a" stroke-width="5"/><rect x="88" y="248" width="4" height="84" fill="#1a7a5a" opacity="0.45"/></g>
+  <g><rect x="198" y="248" width="104" height="84" rx="42" fill="#eaf5f0" stroke="#1a7a5a" stroke-width="5"/><rect x="248" y="248" width="4" height="84" fill="#1a7a5a" opacity="0.45"/></g>
+  <g><rect x="358" y="248" width="104" height="84" rx="42" fill="#eaf5f0" stroke="#1a7a5a" stroke-width="5"/><rect x="408" y="248" width="4" height="84" fill="#1a7a5a" opacity="0.45"/></g>
+  <g><rect x="518" y="248" width="104" height="84" rx="42" fill="#eaf5f0" stroke="#1a7a5a" stroke-width="5"/><rect x="568" y="248" width="4" height="84" fill="#1a7a5a" opacity="0.45"/></g>
+  <g><rect x="678" y="248" width="104" height="84" rx="42" fill="#eaf5f0" stroke="#1a7a5a" stroke-width="5"/><rect x="728" y="248" width="4" height="84" fill="#1a7a5a" opacity="0.45"/></g>
+</g>
+</svg>

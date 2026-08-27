@@ -96,8 +96,17 @@ async function main() {
     process.exit(2)
   }
 
-  const check = spawn('node', ['tools/e2e-check.mjs', base], { stdio: 'inherit' })
-  const code = await new Promise((resolve) => check.on('exit', resolve))
+  // Beide Prüfdateien gegen DENSELBEN Server. Sie laufen nacheinander, weil
+  // sie sich einen Zustand teilen (In-Memory-Speicher) und paralleles Schreiben
+  // die Erwartungswerte gegenseitig verschöbe.
+  const suites = ['tools/e2e-check.mjs', 'tools/e2e-social-check.mjs']
+  let code = 0
+  for (const suite of suites) {
+    console.log(`\n── ${suite} ──`)
+    const check = spawn('node', [suite, base], { stdio: 'inherit' })
+    const result = await new Promise((resolve) => check.on('exit', resolve))
+    if (result !== 0) code = result ?? 1
+  }
 
   stop()
   // Auf den tatsächlichen Exit warten, nicht auf eine geschätzte Frist: ein

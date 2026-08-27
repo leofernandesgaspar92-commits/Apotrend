@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="1200" height="675" role="img" aria-label="Nasenspray-Flasche mit angedeutetem Sprühnebel">
+<title>Nasenspray-Flasche mit angedeutetem Sprühnebel</title>
+<rect width="1200" height="675" fill="#e8eef8"/>
+<g transform="translate(470 90)">
+  <rect x="40" y="150" width="180" height="380" rx="34" fill="#ffffff" stroke="#1e407c" stroke-width="7"/>
+  <rect x="96" y="70" width="68" height="90" rx="14" fill="#1e407c"/>
+  <rect x="78" y="34" width="104" height="44" rx="16" fill="#1e407c"/>
+  <rect x="72" y="250" width="116" height="180" rx="14" fill="#cfe0f5"/>
+</g>
+<g fill="#1e407c" opacity="0.55">
+  <circle cx="600" cy="40" r="9"/>
+  <circle cx="628.7052004803645" cy="41.504325269090586" r="8.6"/>
+  <circle cx="659.875955998223" cy="45.94186792585485" r="8.2"/>
+  <circle cx="691.6530008732339" cy="53.090111051918214" r="7.8"/>
+  <circle cx="721.9657112650126" cy="62.59061188847599" r="7.4"/>
+  <circle cx="748.6598632038991" cy="73.96697565294652" r="7"/>
+  <circle cx="769.6374567196373" cy="86.64874396262114" r="6.6"/>
+  <circle cx="783" cy="100" r="6.199999999999999"/>
+  <circle cx="787.1861591389102" cy="113.35125603737886" r="5.8"/>
+  <circle cx="781.0947424483862" cy="126.03302434705348" r="5.4"/>
+  <circle cx="764.1846113182862" cy="137.409388111524" r="5"/>
+  <circle cx="736.5442666070627" cy="146.9098889480818" r="4.6"/>
+  <circle cx="698.9254925188033" cy="154.05813207414513" r="4.199999999999999"/>
+  <circle cx="652.7374613476466" cy="158.4956747309094" r="3.8"/>
+</g>
+</svg>

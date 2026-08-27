@@ -9,7 +9,7 @@
     "check:tokens": "node tools/build-tokens.mjs --check",
     "check:contrast": "node tools/check-contrast.mjs",
     "test": "node --experimental-strip-types --test test/*.test.ts",
-    "verify": "npm run check:tokens && npm run check:contrast && npm run test && npm run typecheck",
+    "verify": "npm run check:tokens && npm run check:contrast && npm run check:media && npm run test && npm run typecheck",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -17,7 +17,9 @@
     "lint": "next lint",
     "check:e2e": "node tools/with-server.mjs",
     "check:e2e:manual": "node tools/e2e-check.mjs",
-    "verify:all": "npm run verify && npm run build && npm run check:e2e"
+    "verify:all": "npm run verify && npm run build && npm run check:e2e",
+    "media": "node tools/make-demo-media.mjs",
+    "check:media": "node tools/make-demo-media.mjs --check"
   },
   "dependencies": {
     "next": "^14.2.0",

@@ -42,6 +42,9 @@ jobs:
       - name: Kontrast (WCAG 2.1 AA, beide Themes)
         run: npm run check:contrast
 
+      - name: Demo-Medien vollständig
+        run: npm run check:media
+
       - name: Compliance- und Care-Tests
         run: npm test
 
@@ -58,7 +61,8 @@ jobs:
 
       # Der e2e-Lauf erzeugt seinen Schlüssel selbst (tools/with-server.mjs):
       # crypto.ts verweigert in Produktion den Entwicklungsschlüssel.
-      - name: End-to-End (Rx-Sperre, Einwilligung, a11y)
+      # Zwei Prüfdateien gegen denselben Server: Commerce/Care und Rich Media.
+      - name: End-to-End (Rx-Sperre, Einwilligung, Medien, a11y)
         run: npm run check:e2e
 
       - name: Server-Ausgabe bei Fehlschlag

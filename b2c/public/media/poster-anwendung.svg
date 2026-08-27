@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1280" width="720" height="1280" role="img" aria-label="Videovorschau: Anleitung zur Anwendung eines Nasensprays">
+<title>Videovorschau: Anleitung zur Anwendung eines Nasensprays</title>
+<rect width="720" height="1280" fill="#0b3d2e"/>
+<circle cx="360" cy="560" r="150" fill="#ffffff" opacity="0.14"/>
+<path d="M320 490 L470 560 L320 630 Z" fill="#ffffff"/>
+<rect x="90" y="820" width="540" height="18" rx="9" fill="#ffffff" opacity="0.85"/>
+<rect x="90" y="870" width="420" height="18" rx="9" fill="#ffffff" opacity="0.6"/>
+<rect x="90" y="920" width="330" height="18" rx="9" fill="#ffffff" opacity="0.4"/>
+</svg>
