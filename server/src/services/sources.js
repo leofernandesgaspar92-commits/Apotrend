@@ -69,6 +69,56 @@ const BUILTIN = [
     url: 'https://www.ema.europa.eu/en/rss.xml',
     official: true,
   },
+  // --- Vom Owner benannte Länder ------------------------------------------
+  //  Alle sechs Behörden stehen bereits im Länder-Register (data/countries.js)
+  //  mit genau diesen Namen — die Quellenangabe am Beitrag passt damit zum
+  //  Land, das die Nutzerin ausgewählt hat.
+  {
+    id: 'swissmedic_news', kind: 'news', country: 'CH', format: 'rss',
+    label: 'Swissmedic — Mitteilungen',
+    url: 'https://www.swissmedic.ch/swissmedic/de/home/news/mitteilungen.rss',
+    official: true,
+  },
+  {
+    id: 'mhra_news', kind: 'news', country: 'GB', format: 'rss',
+    label: 'MHRA — News and announcements',
+    // Atom statt RSS 2.0 — der Parser erkennt beides am Wurzelelement.
+    url: 'https://www.gov.uk/government/organisations/medicines-and-healthcare-products-regulatory-agency.atom',
+    official: true,
+  },
+  {
+    id: 'fda_news', kind: 'news', country: 'US', format: 'rss',
+    label: 'FDA — Press releases',
+    url: 'https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/press-releases/rss.xml',
+    official: true,
+  },
+  {
+    id: 'healthcanada_news', kind: 'news', country: 'CA', format: 'rss',
+    label: 'Health Canada — Recalls and safety alerts',
+    url: 'https://recalls-rappels.canada.ca/en/feed/recalls-alerts-rss',
+    official: true,
+  },
+  {
+    id: 'tga_news', kind: 'news', country: 'AU', format: 'rss',
+    label: 'TGA — News',
+    url: 'https://www.tga.gov.au/news/rss.xml',
+    official: true,
+  },
+  {
+    id: 'sahpra_news', kind: 'news', country: 'ZA', format: 'rss',
+    label: 'SAHPRA — News',
+    url: 'https://www.sahpra.org.za/feed/',
+    official: true,
+  },
+  // --- Engpässe als strukturierter Export ---------------------------------
+  //  Das ist der EINZIGE Weg, auf dem Engpass-Datensätze entstehen: benannte
+  //  Felder, keine Interpretation von Schlagzeilen (siehe Kopf dieser Datei).
+  {
+    id: 'basg_shortages', kind: 'shortages', country: 'AT', format: 'json',
+    label: 'BASG — Vertriebseinschränkungen',
+    url: 'https://vertriebseinschraenkungen.basg.gv.at/api/v1/public/shortages',
+    official: true,
+  },
 ];
 
 /** Umgebungsvariablen-Namen einer Quelle. */
@@ -246,6 +296,71 @@ export function shortagesFromCsv(raw, { columns = {} } = {}) {
       grund: String(pickColumn(row, map.grund) || '').trim() || null,
       gemeldet_am: String(pickColumn(row, map.gemeldet_am) || '').trim() || null,
       voraussichtlich_bis: String(pickColumn(row, map.voraussichtlich_bis) || '').trim() || null,
+    });
+  }
+  return { rows: out, rejected };
+}
+
+/**
+ * JSON-Export eines Registers in Engpass-Zeilen wandeln.
+ *
+ * Gebaut für die BASG-Schnittstelle (Vertriebseinschränkungen), aber bewusst
+ * nicht auf sie festgenagelt: Die genaue Antwortform ließ sich hier nicht
+ * abrufen (die Bauumgebung hat keinen Netzzugang). Deshalb
+ *
+ *  · wird die Liste auch in einer üblichen Hülle gefunden (`items`, `data`,
+ *    `results`, `shortages`) statt nur als nacktes Array,
+ *  · werden Feldnamen über Kandidatenlisten gesucht (deutsch UND englisch),
+ *  · und wird eine Zeile VERWORFEN statt geraten, sobald Bezeichnung oder
+ *    Status fehlen.
+ *
+ * Der letzte Punkt ist der entscheidende. Ein `status: item.status || 'LIMITED'`
+ * würde den Rohwert der Behörde ungeprüft in eine Statusspalte schreiben: Ein
+ * unbekannter Wert flöge entweder beim Schreiben auf die Nase oder — schlimmer —
+ * ein „nicht lieferbar" käme als „eingeschränkt lieferbar" in der Apotheke an.
+ * Genau an dieser Stelle entscheidet jemand, ob umbestellt wird.
+ */
+export function shortagesFromJson(raw, { columns = {} } = {}) {
+  let payload;
+  try {
+    payload = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch (e) {
+    throw new Error('Antwort ist kein gültiges JSON: ' + (e && e.message));
+  }
+
+  const list = Array.isArray(payload)
+    ? payload
+    : ['items', 'data', 'results', 'shortages', 'content'].reduce(
+      (found, key) => found || (payload && Array.isArray(payload[key]) ? payload[key] : null), null);
+
+  if (!list) {
+    throw new Error('Keine Liste gefunden (weder Array noch items/data/results/shortages).');
+  }
+
+  const map = { ...DEFAULT_COLUMNS };
+  for (const [field, name] of Object.entries(columns)) {
+    if (name) map[field] = [String(name).toLowerCase(), ...(map[field] || [])];
+  }
+
+  const out = [];
+  const rejected = [];
+  for (const [i, row] of list.entries()) {
+    if (!row || typeof row !== 'object') { rejected.push(`#${i}: kein Objekt`); continue; }
+    const wirkstoff = String(pickColumn(row, map.wirkstoff) ?? '').trim();
+    const bezeichnung = String(pickColumn(row, map.bezeichnung) ?? '').trim();
+    const rohStatus = pickColumn(row, map.status);
+    const status = normalizeStatus(rohStatus);
+
+    if (!bezeichnung) { rejected.push(`#${i}: Bezeichnung fehlt`); continue; }
+    if (!status) { rejected.push(`#${i}: Status unbekannt (${rohStatus || 'leer'})`); continue; }
+
+    out.push({
+      wirkstoff: wirkstoff || bezeichnung,
+      bezeichnung,
+      status,
+      grund: String(pickColumn(row, map.grund) ?? '').trim() || null,
+      gemeldet_am: String(pickColumn(row, map.gemeldet_am) ?? '').trim() || null,
+      voraussichtlich_bis: String(pickColumn(row, map.voraussichtlich_bis) ?? '').trim() || null,
     });
   }
   return { rows: out, rejected };

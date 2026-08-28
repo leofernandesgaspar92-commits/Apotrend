@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 
 import {
   activeSources, sourcesByKind, newsFromSource, shortagesFromCsv,
-  dedupeShortages, normalizeStatus, sourceEnvKeys,
+  dedupeShortages, normalizeStatus, sourceEnvKeys, SOURCE_KINDS,
 } from '../src/services/sources.js';
 import {
   createNewsSeenStore, composePost, isFreshEnough, ingestNews,
@@ -48,7 +48,13 @@ test('Eingebaute Quellen sind aktiv, ohne dass etwas konfiguriert wurde', () => 
   const s = activeSources({});
   assert.ok(s.length >= 4, `${s.length} Quellen`);
   assert.ok(s.every((x) => x.url.startsWith('https://')), 'nur HTTPS');
-  assert.ok(s.every((x) => x.kind === 'news'), 'eingebaut sind zunächst News-Quellen');
+  // Früher stand hier „eingebaut sind zunächst News-Quellen". Das gilt nicht
+  // mehr: Seit dem BASG-Export gibt es auch eine Engpass-Quelle. Geprüft wird
+  // deshalb, was dauerhaft stimmen muss — jede Quelle hat eine BEKANNTE Art,
+  // und beide Arten kommen vor.
+  assert.ok(s.every((x) => SOURCE_KINDS.includes(x.kind)), 'unbekannte Quellenart');
+  assert.ok(s.some((x) => x.kind === 'news'), 'keine News-Quelle');
+  assert.ok(s.some((x) => x.kind === 'shortages'), 'keine Engpass-Quelle');
 });
 
 test('Eine Quelle lässt sich umbiegen und abschalten', () => {

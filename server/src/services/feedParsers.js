@@ -71,7 +71,26 @@ export function stripMarkup(html) {
   text = removeTags(text);          // echte Tags (CDATA, normales HTML)
   text = decodeEntities(text);      // kodiertes Markup wird jetzt sichtbar …
   text = removeTags(text);          // … und einmal entfernt. KEIN zweites Decode.
+  text = decodeAmpersandOnly(text); // … außer dem Kaufmanns-Und, siehe unten.
   return text.replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Nur noch `&amp;` auflösen — nichts sonst.
+ *
+ * Doppelt kodierte Titel sind bei Behörden die Regel, nicht die Ausnahme
+ * („Medicines &amp;amp; Healthcare"). Nach dem einen erlaubten Decode bleibt
+ * davon `&amp;` übrig, und die Leserin sieht wörtlich „Medicines &amp;
+ * Healthcare" im Feed stehen.
+ *
+ * Warum das sicher ist, obwohl oben ausdrücklich kein zweites Decode
+ * stattfindet: Dieser Schritt kann NUR ein `&` erzeugen — niemals `<` oder `>`.
+ * Aus `&amp;lt;script&amp;gt;` wird hier `&lt;script&gt;`, also weiterhin
+ * sichtbarer Text und kein Tag. Für ein echtes Tag müsste `&lt;` aufgelöst
+ * werden, und genau das passiert hier nicht.
+ */
+function decodeAmpersandOnly(text) {
+  return text.replace(/&(?:amp|#0*38|#[xX]0*26);/g, '&');
 }
 
 // --- XML-Zugriff -------------------------------------------------------------

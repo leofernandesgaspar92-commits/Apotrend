@@ -44,7 +44,7 @@ import { plansForCountry, priceFor } from '../data/plans.js';
 import { isLive, isPriceLive, isRabatteLive, liveSources, livePriceSources, liveRabatteSources, refreshShortages, refreshPrices, refreshRabatte, fetchJsonDefault } from '../services/liveData.js';
 import { createScheduler, INTERVALS } from '../services/scheduler.js';
 import { createNewsSeenStore, ingestNews } from '../services/newsIngest.js';
-import { activeSources, sourcesByKind, shortagesFromCsv, dedupeShortages, fetchTextDefault } from '../services/sources.js';
+import { activeSources, sourcesByKind, shortagesFromCsv, shortagesFromJson, dedupeShortages, fetchTextDefault } from '../services/sources.js';
 import { createDealsService, seedDemoDealsIfNoneRunning } from '../services/deals.js';
 import { createPrismaStore } from '../repo/prismaStore.js';
 import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
@@ -328,6 +328,27 @@ async function runNewsIngest() {
  *
  * Aus News-Schlagzeilen entstehen KEINE Engpass-Datensätze (siehe sources.js).
  */
+/**
+ * Feldzuordnung einer Quelle aus der Umgebung lesen.
+ *
+ *   APOTREND_SOURCE_BASG_SHORTAGES_COLUMNS='{"bezeichnung":"nameDesArzneimittels"}'
+ *
+ * Der Grund ist praktisch: Benennt eine Behörde ein Feld um, muss dafür kein
+ * Deploy stattfinden — die Zuordnung ist eine Umgebungsvariable. Ungültiges
+ * JSON wird gemeldet und ignoriert, statt den ganzen Lauf zu kippen.
+ */
+function sourceColumns(id) {
+  const raw = process.env[`APOTREND_SOURCE_${String(id).toUpperCase()}_COLUMNS`];
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    console.warn(`ApoTrend Quellen: COLUMNS für ${id} ist kein gültiges JSON — ignoriert.`);
+    return {};
+  }
+}
+
 async function runShortageIngest() {
   const summary = { countries: [], prices: [], rabatte: [], csv: [], rejected: 0 };
 
@@ -348,20 +369,40 @@ async function runShortageIngest() {
     summary.rabatte.push({ country: cc, ok: !!r.ok, count: r.count ?? 0, error: r.error || null });
   }
 
+  // Strukturierte Engpass-Exporte (CSV und JSON). ERST alle einsammeln, DANN
+  // einmal ersetzen: `replaceFeed` löscht den gesamten Nicht-Community-Bestand.
+  // Bei zwei Quellen nacheinander aufgerufen, würde die zweite die Zeilen der
+  // ersten wieder wegräumen — und der Bestand hinge davon ab, wer zuletzt
+  // geantwortet hat.
+  const gesammelt = [];
+  const quellen = [];
   for (const source of sourcesByKind('shortages', process.env)) {
-    if (source.format !== 'csv') continue;
+    if (source.format !== 'csv' && source.format !== 'json') continue;
     try {
       const raw = await fetchTextDefault(source.url);
-      const { rows, rejected } = shortagesFromCsv(raw);
-      const clean = dedupeShortages(rows);
-      if (clean.length) {
-        shortagesRepo.replaceFeed(clean, { provenance: 'verified', quelle: source.label || source.id });
-      }
-      summary.csv.push({ id: source.id, count: clean.length, rejected: rejected.length });
+      const columns = sourceColumns(source.id);
+      const { rows, rejected } = source.format === 'json'
+        ? shortagesFromJson(raw, { columns })
+        : shortagesFromCsv(raw, { columns });
+      gesammelt.push(...rows);
+      if (rows.length) quellen.push(source.label || source.id);
+      summary.csv.push({ id: source.id, format: source.format, count: rows.length, rejected: rejected.length });
       summary.rejected += rejected.length;
+      // Verworfene Zeilen sichtbar machen: Ändert eine Behörde ihre Feldnamen,
+      // liefert die Quelle weiter brav 200 OK und NULL brauchbare Zeilen. Ohne
+      // diese Meldung fiele das erst auf, wenn jemand die leere Liste bemerkt.
+      if (rejected.length && !rows.length) {
+        console.warn(`ApoTrend Engpässe: ${source.id} lieferte ${rejected.length} Zeilen, `
+          + `keine davon verwertbar. Erste Gründe: ${rejected.slice(0, 3).join('; ')}`);
+      }
     } catch (e) {
-      summary.csv.push({ id: source.id, error: (e && e.message) || String(e) });
+      summary.csv.push({ id: source.id, format: source.format, error: (e && e.message) || String(e) });
     }
+  }
+  if (gesammelt.length) {
+    const clean = dedupeShortages(gesammelt);
+    shortagesRepo.replaceFeed(clean, { provenance: 'verified', quelle: quellen.join(', ') });
+    summary.structured = { sources: quellen.length, rows: clean.length };
   }
 
   const änderungen = [...summary.countries, ...summary.prices, ...summary.rabatte].some((c) => c.ok)

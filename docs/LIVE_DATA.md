@@ -51,8 +51,32 @@ APOTREND_SOURCE_<ID>_COUNTRY  ISO-Ländercode
 APOTREND_SOURCE_<ID>_LABEL    Anzeigename
 ```
 
-Eingebaut sind `BFARM_NEWS`, `PEI_NEWS`, `BASG_NEWS`, `EMA_NEWS`. Eine eigene
-Quelle entsteht allein durch das Setzen einer neuen `..._URL`:
+Eingebaut sind elf Quellen — zehn News und ein Engpass-Export:
+
+| Kennung | Land | Behörde | Art |
+|---|---|---|---|
+| `BASG_NEWS` | AT | BASG | News (RSS) |
+| `BFARM_NEWS` | DE | BfArM | News (RSS) |
+| `PEI_NEWS` | DE | Paul-Ehrlich-Institut | News (RSS) |
+| `SWISSMEDIC_NEWS` | CH | Swissmedic | News (RSS) |
+| `MHRA_NEWS` | GB | MHRA | News (Atom) |
+| `FDA_NEWS` | US | FDA | News (RSS) |
+| `HEALTHCANADA_NEWS` | CA | Health Canada | News (RSS) |
+| `TGA_NEWS` | AU | TGA | News (RSS) |
+| `SAHPRA_NEWS` | ZA | SAHPRA | News (RSS) |
+| `EMA_NEWS` | EU | EMA | News (RSS) |
+| `BASG_SHORTAGES` | AT | BASG Vertriebseinschränkungen | Engpässe (JSON) |
+
+Alle elf Behörden stehen mit genau diesen Namen im Länder-Register
+(`src/data/countries.js`), die Quellenangabe am Beitrag passt also zum Land.
+
+> **Die URLs sind Startwerte, keine Zusage.** Die Bauumgebung dieses Projekts
+> hat keinen Netzzugang — sie konnten hier nicht abgerufen werden. Welche
+> Quelle tatsächlich antwortet, steht nach dem ersten Lauf unter
+> `/api/live/status`; jede lässt sich per Umgebungsvariable umbiegen oder mit
+> leerem Wert abschalten.
+
+Eine eigene Quelle entsteht allein durch das Setzen einer neuen `..._URL`:
 
 ```
 APOTREND_SOURCE_APOKAMMER_URL=https://www.apothekerkammer.at/rss
@@ -72,6 +96,31 @@ APOTREND_SOURCE_BASG_REGISTER_COUNTRY=AT
 Spaltennamen werden erkannt (`Wirkstoff`, `Arzneispezialität`, `Vertriebsstatus`,
 `Status`, `Grund`, `bis` …). Passt eine Spalte nicht, meldet der Lauf sie als
 verworfen — im Ergebnis unter `/api/live/status` sichtbar.
+
+Passt gar nichts, weil eine Behörde ihre Felder umbenannt hat, lässt sich die
+Zuordnung **ohne Deploy** setzen:
+
+```
+APOTREND_SOURCE_BASG_SHORTAGES_COLUMNS={"bezeichnung":"nameDesArzneimittels","status":"vertriebsstatus"}
+```
+
+Dasselbe gilt für JSON-Quellen. Dort wird die Liste auch in einer üblichen Hülle
+gefunden (`items`, `data`, `results`, `shortages`, `content`), nicht nur als
+nacktes Array.
+
+### Warum ein unbekannter Status die Zeile verwirft
+
+Die naheliegende Schreibweise wäre `status: item.status || 'LIMITED'`. Sie
+schreibt den Rohwert der Behörde ungeprüft weiter. Zwei Folgen, beide schlecht:
+Ein unbekannter Wert fliegt beim Schreiben in die Datenbank auf die Nase (die
+Spalte ist ein Enum) — oder, schlimmer, ein „nicht lieferbar" kommt als
+„eingeschränkt lieferbar" in der Apotheke an. Das ist die eine Stelle, an der
+jemand danach entscheidet, ob umbestellt wird.
+
+Deshalb: bekannter Statuswert oder gar keine Zeile. Verworfene Zeilen werden
+gezählt; liefert eine Quelle **nur** verworfene Zeilen, schreibt der Lauf eine
+Warnung mit den ersten Gründen ins Log — sonst antwortet eine kaputte Quelle
+weiter brav mit 200 OK und null brauchbaren Daten, und es fällt niemandem auf.
 
 ## Nachsehen und anstoßen
 

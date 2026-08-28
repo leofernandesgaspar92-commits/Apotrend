@@ -231,3 +231,18 @@ test('Leeres CSV liefert leere Listen statt eines Fehlers', () => {
   assert.deepEqual(parseCsv('\n\n'), { header: [], rows: [] });
   assert.doesNotThrow(() => parseCsv(null));
 });
+
+test('doppelt kodiertes Kaufmanns-Und wird lesbar — ohne Tags zu öffnen', () => {
+  // Der Fall aus dem echten Atom-Feed: type="html" mit &amp;amp; darin.
+  assert.equal(stripMarkup('&lt;p&gt;Affected batches &amp;amp; details&lt;/p&gt;'),
+    'Affected batches & details');
+  assert.equal(stripMarkup('Medicines &amp;amp; Healthcare'), 'Medicines & Healthcare');
+  assert.equal(stripMarkup('A &#38;amp; B'), 'A & B');
+
+  // Und die Sicherheitszusage bleibt: Ein doppelt kodiertes Skript-Tag wird
+  // NICHT zu einem echten Tag — es bleibt sichtbarer Text.
+  const gefaehrlich = stripMarkup('&amp;lt;script&amp;gt;alert(1)&amp;lt;/script&amp;gt;');
+  assert.ok(!gefaehrlich.includes('<script'), `Tag wurde geöffnet: ${gefaehrlich}`);
+  assert.ok(!gefaehrlich.includes('<'), `spitze Klammer entstanden: ${gefaehrlich}`);
+  assert.equal(gefaehrlich, '&lt;script&gt;alert(1)&lt;/script&gt;');
+});
