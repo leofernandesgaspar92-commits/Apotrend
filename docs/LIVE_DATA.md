@@ -1,34 +1,116 @@
-# Live-Daten anschließen (Auto-Refresh)
+# Live-Daten anschließen (automatische Aufnahme)
 
-Solange **keine** Live-Quelle konfiguriert ist, läuft Apotrend auf kuratierten
-**Referenzdaten** (Seed, `provenance='reference'`). Das ist überall ehrlich
-gekennzeichnet. Sobald pro Land eine Quelle-URL gesetzt wird, holt der Server
-dort **automatisch** echte Engpassdaten, validiert sie und übernimmt sie
-(`provenance='verified'`). Es ist **kein Code-Deploy** nötig — nur die
-Umgebungsvariable setzen und neu starten.
+> **Stand der Prüfung:** Die Bauumgebung dieses Projekts hat **keinen Netzzugang**.
+> Die unten voreingestellten Behörden-URLs konnten hier **nicht abgerufen** werden —
+> sie sind Startwerte, keine Zusage. Parser, Doppelt-Erkennung, Taktung und
+> Fehlerverhalten sind vollständig getestet (79 Tests, injizierter Abruf); ob eine
+> konkrete URL trägt, zeigt nach dem ersten Lauf auf Render
+> **`GET /api/live/status`**.
 
-## 1. Quelle anschließen
+## Was automatisch läuft
 
-Pro Land eine Umgebungsvariable mit der Feed-URL setzen:
+| Aufgabe | Takt | Quelle | Ziel |
+|---|---|---|---|
+| **News** | alle **5 Minuten** | RSS/Atom von BfArM, PEI, BASG, EMA (+ eigene) | Beiträge im Fach-News-Feed |
+| **Engpässe** | alle **4 Stunden** | JSON-Vertrag je Land ODER CSV-Register-Export | Tabelle `shortages` |
+| Preise, Rabatte | alle 4 Stunden | JSON-Vertrag je Land | `prices`, `rabatte` |
+
+Beide starten **versetzt** (8 s bzw. 25 s nach dem Hochfahren), damit der erste
+Request nach einem Deploy nicht mit Netzabrufen um die CPU konkurriert. Alle
+Zeitgeber sind `unref()`-t — sie halten weder Anfragen auf noch den Prozess-Exit.
+Läuft eine Aufgabe noch, wird der nächste Takt übersprungen statt aufgestaut.
+
+## Warum aus News keine Engpass-Datensätze werden
+
+Eine Schlagzeile wie „Lieferengpass: Amoxicillin 1000 mg" ist eine **Meldung**,
+kein Datensatz. Daraus per Textanalyse Wirkstoff, Status und Enddatum zu raten,
+erzeugt Zahlen, die aussehen wie geprüfte Daten und keine sind — und eine
+Apotheke entscheidet danach, ob sie umbestellt.
+
+Deshalb zwei getrennte Wege:
+
+- **News** (RSS/Atom) → Beiträge mit Titel, Datum, Quelle und **Link**. Keine
+  Interpretation, kein Statuswert, keine Umformulierung.
+- **Engpässe** (JSON/CSV) → Datensätze in `shortages`, nur aus **strukturierten**
+  Exporten mit benannten Spalten. Fehlt eine Pflichtangabe oder ist der Status
+  unbekannt, wird die Zeile **verworfen und gezählt**, nicht geraten.
+
+Bietet ein Register nur HTML an, landet es im News-Weg — sichtbar und verlinkt,
+aber ohne erfundenen Status. Ein HTML-Scraper ist bewusst **nicht** gebaut: Er
+bricht beim ersten Redesign, und zwar still.
+
+## Quellen steuern
+
+Jede Quelle hat eine Kennung. Umgebungsvariablen:
 
 ```
-APOTREND_LIVE_SHORTAGES_AT = https://dein-server.example/at/shortages.json
-APOTREND_LIVE_SHORTAGES_NG = https://dein-server.example/ng/shortages.json
+APOTREND_SOURCE_<ID>_URL      Adresse ersetzen — LEER = Quelle abschalten
+APOTREND_SOURCE_<ID>_FORMAT   rss | json | csv
+APOTREND_SOURCE_<ID>_KIND     news | shortages
+APOTREND_SOURCE_<ID>_COUNTRY  ISO-Ländercode
+APOTREND_SOURCE_<ID>_LABEL    Anzeigename
 ```
 
-Der Ländercode ist der ISO-Code aus `server/src/data/countries.js`
-(`AT`, `DE`, `NG`, `BR`, …). Beim Start meldet der Server:
-`ApoTrend: Live-Datenquellen angeschlossen für AT, NG — Auto-Refresh aktiv.`
+Eingebaut sind `BFARM_NEWS`, `PEI_NEWS`, `BASG_NEWS`, `EMA_NEWS`. Eine eigene
+Quelle entsteht allein durch das Setzen einer neuen `..._URL`:
 
-- **Auto-Refresh:** sofort beim Start + danach alle 15 Minuten.
-- **Fehler-sicher:** Schlägt der Abruf fehl oder sind die Daten ungültig,
-  bleibt der bisherige Bestand unverändert (nie halbe/kaputte Daten).
-- **Community-Meldungen** von Apotheken (`reporter_user_id` gesetzt) werden
-  beim Aktualisieren **nie** überschrieben — nur die Feed-Daten werden ersetzt.
+```
+APOTREND_SOURCE_APOKAMMER_URL=https://www.apothekerkammer.at/rss
+APOTREND_SOURCE_APOKAMMER_COUNTRY=AT
+APOTREND_SOURCE_APOKAMMER_LABEL=Apothekerkammer
+```
 
-## 2. Der JSON-Vertrag
+Ein CSV-Register als Engpass-Quelle:
 
-Die URL muss genau dieses JSON liefern (Content-Type `application/json`):
+```
+APOTREND_SOURCE_BASG_REGISTER_URL=https://…/vertriebseinschraenkungen.csv
+APOTREND_SOURCE_BASG_REGISTER_KIND=shortages
+APOTREND_SOURCE_BASG_REGISTER_FORMAT=csv
+APOTREND_SOURCE_BASG_REGISTER_COUNTRY=AT
+```
+
+Spaltennamen werden erkannt (`Wirkstoff`, `Arzneispezialität`, `Vertriebsstatus`,
+`Status`, `Grund`, `bis` …). Passt eine Spalte nicht, meldet der Lauf sie als
+verworfen — im Ergebnis unter `/api/live/status` sichtbar.
+
+## Nachsehen und anstoßen
+
+```
+GET  /api/live/status          Aufgaben, letzter Lauf, Fehler, Quellen, Takte
+POST /api/live/run/news        sofort ausführen (nur Moderation)
+POST /api/live/run/shortages   sofort ausführen (nur Moderation)
+```
+
+Nach einem Deploy lohnt genau ein Blick: `GET /api/live/status`. Steht bei einer
+Quelle ein Fehler, hat die Behörde ihren Feed verschoben — die URL im
+Statusbericht zeigt, worauf gerade gezeigt wird.
+
+## Aktionen/Rabatte eintragen
+
+```
+GET    /api/deals/mine     eigene Aktionen + ob das Konto eintragen darf
+POST   /api/deals          Aktion anlegen
+DELETE /api/deals/:id      eigene Aktion zurückziehen
+```
+
+Nur **Apotheken- und Pharma-Konten** dürfen eintragen (`private` und `authority`
+nicht). Eingetragene Aktionen bekommen `provenance='self_reported'` und den Namen
+des Betriebs — sie sehen damit anders aus als geprüfte Feed-Daten, was sie auch
+sind. Ein Feed-Austausch löscht sie **nicht**.
+
+Abgelehnt werden: Aktionspreis ≥ Listenpreis (irreführend), Enddatum in der
+Vergangenheit, Laufzeit über 365 Tage.
+
+**Rückfall:** Läuft **keine** echte Aktion mehr, legt der Server einen
+Demobestand an — gekennzeichnet als `simulated`, Quelle „Demodaten", mit
+Anbietern wie „Demo-Großhandel A". Entscheidend ist „laufend": Die kuratierten
+Referenzdaten haben feste Enddaten und laufen nach und nach ab; eine Prüfung auf
+„gibt es überhaupt Zeilen" hätte die leere Ansicht nie bemerkt. Abschalten mit
+`APOTREND_DEMO_DEALS=off`.
+
+---
+
+## Der JSON-Vertrag (bestehender Weg, unverändert)
 
 ```json
 {

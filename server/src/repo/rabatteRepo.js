@@ -44,6 +44,9 @@ export function createRabatteRepo({ seed = true, today = null } = {}) {
       rabatt_pct: rabattPct(r.listenpreis, r.aktionspreis),
       ersparnis: Math.round((r.listenpreis - r.aktionspreis) * 100) / 100,
       provenance: r.provenance || 'reference', quelle: r.quelle || 'Referenzdaten', updated_at: now(),
+      // Wer die Aktion eingetragen hat (nur bei selbst eingetragenen gesetzt).
+      // Ohne dieses Feld ließe sich „nur eigene zurückziehen" nicht durchsetzen.
+      created_by: r.created_by ?? null,
     };
     rabatte.set(row.id, row);
     return { ...row };
@@ -55,12 +58,19 @@ export function createRabatteRepo({ seed = true, today = null } = {}) {
     upsert,
     // Live-/Referenz-Feed komplett ersetzen (Aktionen stammen vollständig aus dem Feed).
     replaceFeed(rows, { provenance = 'verified', quelle = null } = {}) {
+      // Selbst eingetragene Aktionen überleben den Feed-Austausch. Sie stammen
+      // nicht aus dem Feed — sie mit ihm zu löschen, würde einem Großhändler
+      // ohne Vorwarnung seine Aktion entfernen.
+      const own = [...rabatte.values()].filter((r) => r.created_by != null);
       rabatte.clear();
+      for (const r of own) rabatte.set(r.id, r);
       let n = 0;
       for (const r of (rows || [])) { upsert({ ...r, provenance, quelle }); n++; }
       return n;
     },
     get(id) { const r = rabatte.get(id); return r ? { ...r } : null; },
+    // Einzelne Aktion entfernen (zurückgezogene Eigen-Aktion).
+    remove(id) { return rabatte.delete(id); },
     // Verbleibende Tage bis Aktionsende (relativ zum Vergleichsdatum), Kalendertage.
     daysLeft(gueltig_bis) {
       if (!gueltig_bis) return null;

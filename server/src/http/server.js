@@ -41,7 +41,11 @@ import {
   feeModel, paymentMethodsFor, PURPOSES, PURPOSE_LABELS,
 } from '../domain/compliance.js';
 import { plansForCountry, priceFor } from '../data/plans.js';
-import { isLive, isPriceLive, isRabatteLive, liveSources, livePriceSources, liveRabatteSources, startLiveRefresh } from '../services/liveData.js';
+import { isLive, isPriceLive, isRabatteLive, liveSources, livePriceSources, liveRabatteSources, refreshShortages, refreshPrices, refreshRabatte, fetchJsonDefault } from '../services/liveData.js';
+import { createScheduler, INTERVALS } from '../services/scheduler.js';
+import { createNewsSeenStore, ingestNews } from '../services/newsIngest.js';
+import { activeSources, sourcesByKind, shortagesFromCsv, dedupeShortages, fetchTextDefault } from '../services/sources.js';
+import { createDealsService, seedDemoDealsIfNoneRunning } from '../services/deals.js';
 import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
 import { issueToken, verifyToken } from './token.js';
 import { createRateLimiter } from '../domain/rateLimiter.js';
@@ -58,6 +62,9 @@ const PORT = process.env.PORT || 4000;
 // ── Persistenz (optional, über APOTREND_DATA_FILE). Ohne die Variable: In-Memory. ──
 const persistence = createPersistence(process.env.APOTREND_DATA_FILE || null);
 const snapshot = persistence ? persistence.load() : null;
+// Bereits verarbeitete Behörden-Meldungen. Muss den Neustart überleben, sonst
+// legt der Server nach jedem Deploy dieselben News-Beiträge erneut an.
+const newsSeen = createNewsSeenStore();
 const restoring = !!snapshot;
 
 // ── Dienste (einmalig) ──
@@ -108,6 +115,7 @@ if (restoring) {
   pricesRepo.__load(snapshot.prices);
   rabatteRepo.__load(snapshot.rabatte);
   exchangeRepo.__load(snapshot.exchange);
+  newsSeen.__load(snapshot.newsSeen);
   console.log(`ApoTrend: Daten aus ${persistence.filePath} wiederhergestellt.`);
 } else {
   // Redaktions-/Admin-Account (zugleich Moderation) + kuratierte News — nur beim
@@ -149,7 +157,7 @@ function collectSnapshot() {
   return {
     foundation: repo.__dump(), social: socialRepo.__dump(),
     shortages: shortagesRepo.__dump(), prices: pricesRepo.__dump(), rabatte: rabatteRepo.__dump(),
-    exchange: exchangeRepo.__dump(),
+    exchange: exchangeRepo.__dump(), newsSeen: newsSeen.__dump(),
   };
 }
 let saveTimer = null;
@@ -249,6 +257,106 @@ const userIdFrom = (req) => verifyToken((req.headers.authorization || '').replac
 const safeUser = (u) => { if (!u) return u; const { password_hash, twofa_secret, recovery_hashes, ...rest } = u; return rest; };
 
 // Route-Tabelle: [method, regex, authRequired, handler(ctx)]
+// ============================================================================
+//  Automatische Datenaufnahme — Aufgaben
+// ============================================================================
+
+const scheduler = createScheduler();
+
+// Aktionen/Rabatte, die Fachbetriebe selbst eintragen.
+const deals = createDealsService({
+  rabatteRepo,
+  social,
+  accountTypeOf: (userId) => {
+    const p = social.getProfile(userId);
+    return (p && p.account_type) || 'private';
+  },
+});
+
+// Rückfall: Solange weder ein Feed noch eine eigene Aktion vorliegt, wird ein
+// Demobestand angelegt — sichtbar als „simuliert" gekennzeichnet. Sobald etwas
+// Echtes da ist, passiert hier nichts mehr (die Prüfung steckt in der Funktion).
+if (process.env.NODE_ENV !== 'test' && process.env.APOTREND_DEMO_DEALS !== 'off') {
+  seedDemoDealsIfNoneRunning({ rabatteRepo });
+}
+
+/**
+ * News-Durchlauf: Behörden-Feeds abrufen, neue Meldungen als Beiträge anlegen.
+ *
+ * Verfasser ist das Redaktionskonto. Jeder Beitrag trägt den Quell-Link —
+ * CLAUDE.md verlangt für sicherheitsrelevante Aussagen eine Quelle, und eine
+ * automatisch übernommene Behördenmeldung ist genau das.
+ */
+async function runNewsIngest() {
+  const editor = social.getProfile('apotrend');
+  if (!editor) return { skipped: true, reason: 'Redaktionskonto fehlt' };
+
+  const report = await ingestNews({
+    seenStore: newsSeen,
+    createPost: async (item) => {
+      social.createPost(editor.user_id, {
+        body: item.body,
+        kind: 'news',
+        sourceUrl: item.sourceUrl,
+        visibility: 'public',
+      });
+    },
+  });
+  if (report.created > 0) saveSoon(); // neue Beiträge + Gesehen-Stand sichern
+  return report;
+}
+
+/**
+ * Engpass-Durchlauf.
+ *
+ * Zwei Wege, bewusst getrennt:
+ *  · JSON-Vertrag je Land (APOTREND_LIVE_SHORTAGES_<CC>) — der bestehende Weg
+ *  · CSV-Export eines Registers (APOTREND_SOURCE_<ID>_URL mit FORMAT=csv)
+ *
+ * Aus News-Schlagzeilen entstehen KEINE Engpass-Datensätze (siehe sources.js).
+ */
+async function runShortageIngest() {
+  const summary = { countries: [], prices: [], rabatte: [], csv: [], rejected: 0 };
+
+  for (const cc of Object.keys(liveSources())) {
+    const r = await refreshShortages(cc, { fetchJson: fetchJsonDefault, shortagesRepo });
+    summary.countries.push({ country: cc, ok: !!r.ok, count: r.count ?? 0, error: r.error || null });
+  }
+
+  // Preise und Rabatte hängen an derselben Taktung. Sie liefen bisher über
+  // startLiveRefresh mit; beim Umbau auf den Planer wären sie beinahe
+  // liegengeblieben — ein stiller Ausfall, den niemand bemerkt hätte.
+  for (const cc of Object.keys(livePriceSources())) {
+    const r = await refreshPrices(cc, { fetchJson: fetchJsonDefault, pricesRepo });
+    summary.prices.push({ country: cc, ok: !!r.ok, count: r.count ?? 0, error: r.error || null });
+  }
+  for (const cc of Object.keys(liveRabatteSources())) {
+    const r = await refreshRabatte(cc, { fetchJson: fetchJsonDefault, rabatteRepo });
+    summary.rabatte.push({ country: cc, ok: !!r.ok, count: r.count ?? 0, error: r.error || null });
+  }
+
+  for (const source of sourcesByKind('shortages', process.env)) {
+    if (source.format !== 'csv') continue;
+    try {
+      const raw = await fetchTextDefault(source.url);
+      const { rows, rejected } = shortagesFromCsv(raw);
+      const clean = dedupeShortages(rows);
+      if (clean.length) {
+        shortagesRepo.replaceFeed(clean, { provenance: 'verified', quelle: source.label || source.id });
+      }
+      summary.csv.push({ id: source.id, count: clean.length, rejected: rejected.length });
+      summary.rejected += rejected.length;
+    } catch (e) {
+      summary.csv.push({ id: source.id, error: (e && e.message) || String(e) });
+    }
+  }
+
+  const änderungen = [...summary.countries, ...summary.prices, ...summary.rabatte].some((c) => c.ok)
+    || summary.csv.some((c) => c.count);
+  if (änderungen) saveSoon();
+  return summary;
+}
+
 const routes = [
   // Health-Check für Hosting-Plattformen (kein Auth, keine Daten).
   ['GET', /^\/api\/health$/, false, async () => ({ ok: true, service: 'apotrend', ts: new Date().toISOString() })],
@@ -284,6 +392,37 @@ const routes = [
   // Verbleibende Wiederherstellungscodes (eingeloggt) + Neu-Erzeugung.
   ['GET', /^\/api\/recovery-codes$/, true, async ({ userId }) => ({ remaining: orgAuth.remainingRecoveryCodes(userId) })],
   ['POST', /^\/api\/recovery-codes\/regenerate$/, true, async ({ userId }) => orgAuth.regenerateRecoveryCodes(userId)],
+
+  // ── Automatik: Stand und Handsteuerung ────────────────────────────────────
+  // Ohne diese Ansicht weiß niemand, ob die Automatik überhaupt läuft — und
+  // eine Automatik, deren Zustand man nicht sehen kann, ist keine.
+  ['GET', /^\/api\/live\/status$/, false, async () => ({
+    jobs: scheduler.status(),
+    sources: activeSources().map(({ id, kind, country, format, url, official, configured, label }) =>
+      // Die URL gehört dazu: Nur so lässt sich prüfen, ob die Voreinstellung
+      // noch stimmt oder eine Behörde ihren Feed verschoben hat.
+      ({ id, kind, country, format, url, official, configured, label })),
+    shortage_feeds: Object.keys(liveSources()),
+    news_seen: newsSeen.size(),
+    intervals: { news_ms: INTERVALS.news, shortages_ms: INTERVALS.shortages },
+  })],
+
+  // Durchlauf von Hand anstoßen (Moderation) — für den Test nach dem Deploy,
+  // ohne fünf Minuten auf den nächsten Takt zu warten.
+  ['POST', /^\/api\/live\/run\/(news|shortages)$/, true, async ({ userId, params }) => {
+    if (!social.isModerator(userId)) {
+      const e = new Error('Nur Moderation.'); e.status = 403; e.code = 'forbidden'; throw e;
+    }
+    return scheduler.runNow(params[0]);
+  }],
+
+  // ── Aktionen/Rabatte selbst eintragen ─────────────────────────────────────
+  ['GET', /^\/api\/deals\/mine$/, true, async ({ userId }) => ({
+    may_create: deals.mayCreate(userId),
+    deals: deals.mine(userId),
+  })],
+  ['POST', /^\/api\/deals$/, true, async ({ userId, body }) => deals.create(userId, body)],
+  ['DELETE', /^\/api\/deals\/([^/]+)$/, true, async ({ userId, params }) => deals.remove(userId, params[0])],
 
   // Hinterlegte Krypto-Empfangswege. Öffentlich, weil Empfangsadressen kein
   // Geheimnis sind — und weil das Checkout-Modal sie zur Laufzeit zieht, statt
@@ -934,11 +1073,31 @@ server.listen(PORT, () => {
   } else if (process.env.NODE_ENV !== 'test') {
     console.warn('⚠️  ApoTrend: KEINE Persistenz aktiv (APOTREND_DATA_FILE nicht gesetzt) — alle Daten gehen bei einem Neustart verloren. Für den Produktivbetrieb APOTREND_DATA_FILE auf einen dauerhaften Pfad setzen.');
   }
-  // Live-Daten automatisch holen, SOBALD eine Quelle angeschlossen ist (APOTREND_LIVE_SHORTAGES_<CC>).
-  // Bis dahin passiert nichts — die App läuft auf Referenzdaten. In Tests deaktiviert.
+  // ── Automatische Datenaufnahme ──────────────────────────────────────────
+  // Zwei Aufgaben mit eigenem Takt (Owner-Vorgabe): News alle 5 Minuten,
+  // Engpässe alle 4 Stunden. Beide laufen versetzt an, damit der erste Request
+  // nach einem Deploy nicht mit mehreren Netzabrufen um die CPU kämpft.
+  // In Tests deaktiviert — sonst greift jeder Testlauf ins Netz.
   if (process.env.NODE_ENV !== 'test') {
-    const handle = startLiveRefresh({ shortagesRepo, pricesRepo, rabatteRepo });
-    if (handle) console.log(`ApoTrend: Live-Datenquellen angeschlossen (${handle.tasks.join(', ')}) — Auto-Refresh aktiv.`);
+    scheduler.add('news', {
+      run: runNewsIngest,
+      intervalMs: INTERVALS.news,
+      startDelayMs: 8_000,   // erst antworten können, dann Daten holen
+    });
+    scheduler.add('shortages', {
+      run: runShortageIngest,
+      intervalMs: INTERVALS.shortages,
+      startDelayMs: 25_000,
+    });
+
+    const newsCount = sourcesByKind('news', process.env).length;
+    const shortageCount = Object.keys(liveSources()).length + Object.keys(livePriceSources()).length
+      + Object.keys(liveRabatteSources()).length + sourcesByKind('shortages', process.env).length;
+    console.log(
+      `ApoTrend: Automatik aktiv — News alle ${INTERVALS.news / 60000} min aus ${newsCount} Quelle(n), ` +
+      `Engpässe alle ${INTERVALS.shortages / 3600000} h aus ${shortageCount} Quelle(n). ` +
+      'Stand jederzeit unter GET /api/live/status.',
+    );
   }
 });
 
