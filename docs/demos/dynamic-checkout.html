@@ -247,7 +247,7 @@
         QR-Encoder gegen <span class="mono">python-qrcode</span> und <span class="mono">segno</span> geprüft
         (64 Matrizen, jede Zelle identisch).
       </p>
-      <p class="mono mt-1">Build 2026-08-27 20:12 UTC</p>
+      <p class="mono mt-1">Build 2026-08-28 19:25 UTC</p>
     </footer>
   </div>
 </div>
@@ -298,7 +298,7 @@
             <div role="tablist" aria-label="Zahlungsart" class="flex gap-2">
               <button type="button" role="tab" id="tab-fiat" data-testid="tab-fiat"
                 aria-selected="true" aria-controls="panel-fiat" class="tab">
-                Karte &amp; Lastschrift
+                Karte, PayPal &amp; Lastschrift
               </button>
               <button type="button" role="tab" id="tab-crypto" data-testid="tab-crypto"
                 aria-selected="false" aria-controls="panel-crypto" class="tab">
@@ -438,18 +438,39 @@ const defaultEnv = () => (typeof process !== 'undefined' && process.env ? proces
 
 function cryptoWallets(env = defaultEnv()) {
   const list = [];
+
+  // Nicht gesetzt  -> Standardadresse aus dieser Datei.
+  // Gesetzt        -> genau dieser Wert.
+  // Gesetzt & leer -> Wallet ist ABGESCHALTET.
+  //
+  // Der letzte Fall braucht die Unterscheidung zwischen `undefined` und '':
+  // Mit einem schlichten `||` ließe sich eine Wallet nie abschalten, weil der
+  // leere Wert auf den Standard zurückfiele. Wer eine Kette nicht mehr annehmen
+  // will, setzt die Variable auf leer und ist fertig.
+  const configured = (value, fallback) => (value === undefined ? fallback : String(value).trim());
+
   const push = (id, coin, symbol, address, network, decimals, label = null) => {
     if (address) list.push({ id, coin, symbol, address, network, decimals, label });
   };
-  push('btc', 'bitcoin', 'BTC', env.APOTREND_WALLET_BTC || 'bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46', 'Bitcoin (Mainnet)', 8);
-  push('eth', 'ethereum', 'ETH', env.APOTREND_WALLET_ETH || '0x5f50991186014eDcbDE301467bE7a20C6CCc179B', 'Ethereum (Mainnet)', 18);
+
+  push('btc', 'bitcoin', 'BTC',
+    configured(env.APOTREND_WALLET_BTC, 'bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46'),
+    'Bitcoin (Mainnet)', 8);
+  push('eth', 'ethereum', 'ETH',
+    configured(env.APOTREND_WALLET_ETH, '0x5f50991186014eDcbDE301467bE7a20C6CCc179B'),
+    'Ethereum (Mainnet)', 18);
   // Zwei Solana-Wallets (beide nur SOL): Seeker + Phantom.
-  push('sol_seeker', 'solana', 'SOL', env.APOTREND_WALLET_SOL_SEEKER || 'Egbc7cfzHLj5dkgnR4E7Xk3MfDNrA5imqKJ1FV1n1DW', 'Solana (Mainnet)', 9, 'Seeker · leokennedy.skr');
-  push('sol_phantom', 'solana', 'SOL', env.APOTREND_WALLET_SOL_PHANTOM || 'EMSJTkRGnnExNwaCkte9PDCN4Tm3BNSZKdXqcEpamWFM', 'Solana (Mainnet)', 9, 'Phantom');
-  // Tron braucht eine EIGENE Adresse (kein EVM-Format). Ohne gesetzte ENV-Variable
+  push('sol_seeker', 'solana', 'SOL',
+    configured(env.APOTREND_WALLET_SOL_SEEKER, 'Egbc7cfzHLj5dkgnR4E7Xk3MfDNrA5imqKJ1FV1n1DW'),
+    'Solana (Mainnet)', 9, 'Seeker · leokennedy.skr');
+  push('sol_phantom', 'solana', 'SOL',
+    configured(env.APOTREND_WALLET_SOL_PHANTOM, 'EMSJTkRGnnExNwaCkte9PDCN4Tm3BNSZKdXqcEpamWFM'),
+    'Solana (Mainnet)', 9, 'Phantom');
+  // Tron braucht eine EIGENE Adresse (kein EVM-Format). Ohne gesetzte Variable
   // erscheint USDT über TRC-20 gar nicht — eine erfundene Adresse wäre der
   // teuerste denkbare Platzhalter.
-  push('tron', 'tron', 'USDT', env.APOTREND_WALLET_TRON || '', 'Tron (TRC-20)', 6);
+  push('tron', 'tron', 'USDT', configured(env.APOTREND_WALLET_TRON, ''), 'Tron (TRC-20)', 6);
+
   return list;
 }
 
@@ -674,6 +695,14 @@ function assertCryptoAvailable(methods, country, purpose) {
 
 const FIAT = {
   card: { id: 'card', rail: 'fiat', label: 'Kredit-/Debitkarte', provider: 'stripe', settlementDays: 2 },
+  paypal: { id: 'paypal', rail: 'fiat', label: 'PayPal', provider: 'paypal', settlementDays: 1 },
+  // Apple Pay und Google Pay sind KEINE eigene Schiene, sondern eine andere
+  // Verpackung derselben Kartenzahlung: Der Kunde bestätigt mit Gesicht oder
+  // Fingerabdruck, abgerechnet wird über denselben Acquirer wie bei `card`.
+  // `via: 'card'` hält das fest — sonst zählt jemand später drei Kartenwege,
+  // wo es einer mit drei Bedienoberflächen ist, und rechnet Gebühren dreifach.
+  apple_pay: { id: 'apple_pay', rail: 'fiat', label: 'Apple Pay', provider: 'stripe', via: 'card', settlementDays: 2 },
+  google_pay: { id: 'google_pay', rail: 'fiat', label: 'Google Pay', provider: 'stripe', via: 'card', settlementDays: 2 },
   sepa: { id: 'sepa', rail: 'fiat', label: 'SEPA-Lastschrift', provider: 'stripe', settlementDays: 5 },
   sepa_credit: { id: 'sepa_credit', rail: 'fiat', label: 'SEPA-Überweisung', provider: 'bank', settlementDays: 2 },
   invoice: { id: 'invoice', rail: 'fiat', label: 'Rechnung (30 Tage)', provider: 'internal', settlementDays: 30 },
@@ -687,6 +716,38 @@ const FIAT = {
 };
 
 const FIAT_METHODS = Object.freeze(FIAT);
+
+// --- Geldbörsen und PayPal --------------------------------------------------
+
+/**
+ * Geldbörsen, die über die Kartenschiene abrechnen.
+ *
+ * Sie werden ABGELEITET statt in jedes der siebzehn Länderprofile eingetragen:
+ * Wo Karte geht, geht auch Apple Pay und Google Pay — es ist derselbe Acquirer.
+ * Zwei Listen parallel zu pflegen hieße, dass irgendwann ein Land Karte
+ * anbietet und Google Pay nicht, ohne dass es dafür einen Grund gäbe.
+ */
+const CARD_WALLETS = Object.freeze(['apple_pay', 'google_pay']);
+
+/**
+ * Länder, in denen PayPal angeboten wird.
+ *
+ * PayPal ist eine eigene Schiene mit eigener Länderabdeckung — anders als die
+ * Geldbörsen oben lässt es sich nicht aus „Karte geht" ableiten.
+ *
+ * EHRLICHE GRENZE: Diese Liste ist ein Startwert, keine Rechtsauskunft. Sie
+ * enthält die Märkte, in denen PayPals Geschäftsbetrieb außer Frage steht.
+ * AO, MZ, NG, KE und GH fehlen NICHT, weil PayPal dort ausgeschlossen wäre,
+ * sondern weil ich es nicht belegen kann — in mehreren dieser Märkte ist das
+ * Konto nur zum Empfangen freigeschaltet. Lieber ein Bezahlweg zu wenig als
+ * ein Knopf, der im Checkout ins Leere führt.
+ *
+ * Bestätigt sich ein Markt, genügt der Ländercode hier. Umgekehrt lässt sich
+ * PayPal je Land über `overrides.fiat` auch wieder herausnehmen.
+ */
+const PAYPAL_COUNTRIES = Object.freeze([
+  'AT', 'DE', 'CH', 'LI', 'PT', 'US', 'CA', 'GB', 'AU', 'BR', 'ZA', 'EU',
+]);
 
 // --- Pflichtfelder im Checkout ----------------------------------------------
 //  `pattern` ist eine Zeichenkette statt eines RegExp-Literals: so lässt sich
@@ -985,7 +1046,24 @@ function paymentMethodsFor(code, purpose = 'saas_license', overrides = {}) {
     );
   }
 
-  const fiat = (p.fiat || [])
+  // Wege des Landes, ergänzt um Geldbörsen und PayPal (siehe oben).
+  // Die Reihenfolge hier ist die ANZEIGEREIHENFOLGE im Checkout. Karte, PayPal
+  // und die beiden Geldbörsen gehören zusammen: Sie hinten anzuhängen hieße,
+  // Apple Pay hinter „Rechnung (30 Tage)" zu stellen — dort sucht es niemand.
+  const ids = [...(p.fiat || [])];
+  const nachKarte = [];
+  if (PAYPAL_COUNTRIES.includes(p.country) && !ids.includes('paypal')) nachKarte.push('paypal');
+  if (ids.includes('card')) {
+    for (const w of CARD_WALLETS) if (!ids.includes(w)) nachKarte.push(w);
+  }
+  if (nachKarte.length) {
+    // Ohne Karte im Profil (kommt heute nicht vor, ist aber möglich) wandert
+    // PayPal an den Anfang statt an eine zufällige Stelle.
+    const pos = ids.includes('card') ? ids.indexOf('card') + 1 : 0;
+    ids.splice(pos, 0, ...nachKarte);
+  }
+
+  const fiat = ids
     .map((id) => FIAT[id])
     .filter(Boolean)
     // Rechnung ergibt bei Guthaben-Aufladung keinen Sinn (Vorkasse-Logik).
@@ -2122,7 +2200,11 @@ function priceFor(planId, code, interval = 'monthly') {
         + '<input type="radio" name="fiat" value="' + m.id + '"' + (checked ? ' checked' : '')
         + ' class="h-5 w-5 accent-[rgb(var(--accent))]">'
         + '<span class="font-semibold">' + esc(m.label) + '</span>'
-        + '<span class="mono ml-auto text-xs text-muted">' + esc(m.provider)
+        // Bei Apple Pay und Google Pay steht dort sonst „stripe" — ein Name,
+        // der niemandem in einer Apotheke etwas sagt. „über Karte" erklärt
+        // stattdessen, was tatsächlich passiert: Es ist dieselbe Kartenzahlung.
+        + '<span class="mono ml-auto text-xs text-muted">'
+        + (m.via ? 'über Karte' : esc(m.provider))
         + ' · ' + m.settlementDays + ' Tage</span>'
         + '</label></li>';
     });

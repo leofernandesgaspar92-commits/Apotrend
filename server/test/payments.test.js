@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import { createMemoryRepo } from '../src/repo/memoryRepo.js';
 import { createPaymentsService, buildPaymentProvidersFromEnv, createStripeAdapter, createCoinbaseAdapter } from '../src/services/payments.js';
 import { cryptoWallets, walletUri } from '../src/data/cryptoWallets.js';
+import { paymentMethodsFor, COMPLIANCE_PROFILES, PURPOSES, PAYPAL_COUNTRIES } from '../src/domain/compliance.js';
 import { createCryptoRates } from '../src/services/cryptoRates.js';
 
 function fakeProvider() {
@@ -196,4 +197,75 @@ test('Coinbase-Adapter: Charge (fetch gemockt) + korrekt signierter Webhook = pa
   const sig = crypto.createHmac('sha256', 'ccsec').update(payload).digest('hex');
   assert.deepEqual(a.verifyWebhook(payload, { 'x-cc-webhook-signature': sig }), { type: 'paid', ref: 'CH123' });
   assert.throws(() => a.verifyWebhook(payload, { 'x-cc-webhook-signature': 'wrong' }), e => e.code === 'webhook_bad_signature');
+});
+
+// ── PayPal, Karte und Geldbörsen (vom Owner verlangt) ────────────────────────
+
+test('PayPal und die Geldbörsen stehen neben der Karte zur Wahl', () => {
+  const ids = paymentMethodsFor('AT', 'saas_license').map((m) => m.id);
+  for (const weg of ['card', 'paypal', 'apple_pay', 'google_pay']) {
+    assert.ok(ids.includes(weg), `${weg} fehlt in AT`);
+  }
+});
+
+test('die Reihenfolge stellt die Kartenwege zusammen, nicht hinter die Rechnung', () => {
+  // Apple Pay hinter „Rechnung (30 Tage)" sucht niemand.
+  const ids = paymentMethodsFor('AT', 'saas_license').filter((m) => m.rail === 'fiat').map((m) => m.id);
+  const nach = (id) => ids.indexOf(id);
+  assert.ok(nach('paypal') === nach('card') + 1, `PayPal steht nicht direkt hinter der Karte: ${ids}`);
+  assert.ok(nach('apple_pay') < nach('invoice'), `Apple Pay steht hinter der Rechnung: ${ids}`);
+  assert.ok(nach('google_pay') < nach('invoice'), `Google Pay steht hinter der Rechnung: ${ids}`);
+});
+
+test('Geldbörsen gibt es überall dort, wo es Karte gibt — und nur dort', () => {
+  // Abgeleitet statt in siebzehn Profilen gepflegt: Zwei Listen parallel zu
+  // führen endet damit, dass ein Land Karte anbietet und Google Pay nicht,
+  // ohne dass es dafür einen Grund gäbe.
+  for (const cc of Object.keys(COMPLIANCE_PROFILES)) {
+    const ids = paymentMethodsFor(cc, 'saas_license').map((m) => m.id);
+    const hatKarte = ids.includes('card');
+    assert.equal(ids.includes('apple_pay'), hatKarte, `Apple Pay passt nicht zur Karte in ${cc}`);
+    assert.equal(ids.includes('google_pay'), hatKarte, `Google Pay passt nicht zur Karte in ${cc}`);
+  }
+});
+
+test('Geldbörsen sind als Kartenzahlung gekennzeichnet, nicht als eigene Schiene', () => {
+  // Sonst zählt jemand später drei Kartenwege, wo es einer mit drei
+  // Bedienoberflächen ist — und rechnet die Acquirer-Gebühr dreifach.
+  const byId = Object.fromEntries(paymentMethodsFor('AT', 'saas_license').map((m) => [m.id, m]));
+  assert.equal(byId.apple_pay.via, 'card');
+  assert.equal(byId.google_pay.via, 'card');
+  assert.equal(byId.apple_pay.rail, 'fiat');
+  // PayPal ist dagegen eine echte eigene Schiene.
+  assert.equal(byId.paypal.via, undefined);
+  assert.equal(byId.paypal.provider, 'paypal');
+});
+
+test('PayPal erscheint nur in den hinterlegten Ländern', () => {
+  assert.ok(paymentMethodsFor('DE', 'saas_license').some((m) => m.id === 'paypal'));
+  // KE fehlt in PAYPAL_COUNTRIES — nicht weil PayPal dort ausgeschlossen wäre,
+  // sondern weil es nicht belegt ist. Lieber ein Weg zu wenig als ein Knopf,
+  // der im Checkout ins Leere führt.
+  assert.ok(!paymentMethodsFor('KE', 'saas_license').some((m) => m.id === 'paypal'));
+  for (const cc of PAYPAL_COUNTRIES) {
+    if (cc === 'EU') continue; // Sammelprofil, nicht über den Ländercode erreichbar
+    assert.ok(paymentMethodsFor(cc, 'saas_license').some((m) => m.id === 'paypal'), `PayPal fehlt in ${cc}`);
+  }
+});
+
+test('die neuen Bezahlwege verdrängen Krypto in KEINEM Land und KEINEM Zweck', () => {
+  // Das ist die stehende Zusage des Owners. Sie wird hier über die volle
+  // Kreuzmenge geprüft, nicht an einem Beispiel.
+  let geprueft = 0;
+  for (const cc of Object.keys(COMPLIANCE_PROFILES)) {
+    for (const zweck of PURPOSES) {
+      let methods;
+      try { methods = paymentMethodsFor(cc, zweck); }
+      catch (e) { continue; } // Zweck im Land nicht freigeschaltet
+      const krypto = methods.filter((m) => m.rail === 'crypto');
+      assert.equal(krypto.length, 6, `${cc}/${zweck}: nur ${krypto.length} Krypto-Wege`);
+      geprueft++;
+    }
+  }
+  assert.ok(geprueft >= 17, `nur ${geprueft} Kombinationen geprüft`);
 });

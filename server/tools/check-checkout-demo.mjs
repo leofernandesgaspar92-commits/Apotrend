@@ -262,6 +262,30 @@ async function main() {
   check('Krypto-Reiter trägt den Dauer-Hinweis',
     /immer/i.test(await page.locator('[data-testid="tab-crypto"]').innerText()));
 
+  // --- 5b. Die übrigen Bezahlwege --------------------------------------------
+  //  Der Owner hat PayPal, Karte und die Geldbörsen ausdrücklich verlangt —
+  //  ZUSÄTZLICH zu Krypto, nicht anstelle. Geprüft wird deshalb, dass sie im
+  //  Reiter wirklich stehen und dass Krypto daneben bestehen bleibt.
+  await page.click('[data-testid="tab-fiat"]');
+  await page.waitForTimeout(250);
+  const fiatText = (await page.locator('[data-testid="co-fiat"]').innerText()).replace(/\s+/g, ' ');
+  for (const weg of ['Kredit-/Debitkarte', 'PayPal', 'Apple Pay', 'Google Pay']) {
+    check(`Bezahlweg steht zur Wahl: ${weg}`, fiatText.includes(weg), fiatText.slice(0, 90));
+  }
+  check('Geldbörsen sind als Kartenzahlung ausgewiesen', /über Karte/.test(fiatText),
+    'Apple/Google Pay rechnen über denselben Acquirer ab');
+
+  // Auswählbar, nicht nur sichtbar: Ein Knopf, der sich nicht drücken lässt,
+  // ist kein Bezahlweg.
+  await page.click('[data-testid="co-fiat"] label:has-text("PayPal")');
+  await page.waitForTimeout(200);
+  check('PayPal lässt sich auswählen',
+    await page.locator('[data-testid="co-fiat"] input[value="paypal"]').isChecked());
+
+  // Und die Zusage gilt weiterhin: Krypto ist danach immer noch da.
+  check('Krypto bleibt neben den neuen Wegen bestehen',
+    await page.locator('[data-testid="tab-crypto"]').isVisible());
+
   // --- 6. Layout und Bedienbarkeit -------------------------------------------
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);

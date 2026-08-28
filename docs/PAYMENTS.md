@@ -24,6 +24,42 @@ eigenen Wallets (du hältst die Keys), ist der einzig verantwortbare Weg ein sel
 **BTCPay Server** — separat, nicht in Apotrend hineingebaut. Für **Solana** ist die Prozessor-
 Unterstützung uneinheitlich; kläre vor dem Anbieten, ob dein Prozessor SOL abwickelt.
 
+## 1b. Welche Bezahlwege angeboten werden
+
+Die Liste je Land liefert `paymentMethodsFor(land, zweck)` in
+`src/domain/compliance.js`. Sie besteht aus drei Teilen:
+
+| Teil | Wege | Woher |
+|---|---|---|
+| **Landesspezifisch** | SEPA, ACH, Bacs, Pix, MB WAY, Multicaixa, M-Pesa, Paystack, Rechnung | Länderprofil (`fiat: [...]`) |
+| **Karte + Umfeld** | Kredit-/Debitkarte, **PayPal**, **Apple Pay**, **Google Pay** | Karte aus dem Profil, der Rest abgeleitet |
+| **Krypto** | USDT, USDC, BTC, ETH, SOL, WalletConnect | **immer, in jedem Land und Zweck** |
+
+**Apple Pay und Google Pay sind keine eigene Schiene**, sondern eine andere
+Verpackung derselben Kartenzahlung: Der Kunde bestätigt mit Gesicht oder
+Fingerabdruck, abgerechnet wird über denselben Acquirer. Deshalb tragen sie
+`via: 'card'` und werden **abgeleitet** — wo Karte geht, gehen sie auch. Zwei
+Listen parallel zu pflegen würde bedeuten, dass irgendwann ein Land Karte
+anbietet und Google Pay nicht, ohne dass es dafür einen Grund gäbe. Das Feld
+`via` verhindert außerdem, dass jemand später drei Kartenwege zählt, wo es
+einer mit drei Bedienoberflächen ist, und die Acquirer-Gebühr dreifach ansetzt.
+
+**PayPal** ist dagegen eine echte eigene Schiene mit eigener Länderabdeckung
+und steht in `PAYPAL_COUNTRIES`. Diese Liste ist ein **Startwert, keine
+Rechtsauskunft**: AO, MZ, NG, KE und GH fehlen nicht, weil PayPal dort
+ausgeschlossen wäre, sondern weil es sich von hier aus nicht belegen ließ — in
+mehreren dieser Märkte ist das Konto nur zum Empfangen freigeschaltet. Lieber
+ein Bezahlweg zu wenig als ein Knopf, der im Checkout ins Leere führt.
+Bestätigt sich ein Markt, genügt der Ländercode in der Liste.
+
+**Krypto bleibt unberührt.** Ein Test prüft über die volle Kreuzmenge aus allen
+Ländern und allen Zwecken, dass weiterhin sechs Krypto-Wege angeboten werden —
+die neuen Bezahlwege verdrängen dort nichts.
+
+> **Status wie oben:** Die Wege stehen im Katalog und im Checkout, abgerechnet
+> wird noch nichts — für **keinen** Fiat-Weg, auch nicht für Karte oder SEPA.
+> Dazu braucht es die verifizierten Anbieter-Schlüssel aus Abschnitt 2.
+
 ## 2. Schritt-für-Schritt-Einrichtung
 
 1. **Rechtliches zuerst.** Zahlungen einzunehmen kann in Österreich/EU Gewerbe-, Umsatzsteuer-

@@ -298,7 +298,7 @@
             <div role="tablist" aria-label="Zahlungsart" class="flex gap-2">
               <button type="button" role="tab" id="tab-fiat" data-testid="tab-fiat"
                 aria-selected="true" aria-controls="panel-fiat" class="tab">
-                Karte &amp; Lastschrift
+                Karte, PayPal &amp; Lastschrift
               </button>
               <button type="button" role="tab" id="tab-crypto" data-testid="tab-crypto"
                 aria-selected="false" aria-controls="panel-crypto" class="tab">
@@ -618,8 +618,13 @@ __ENGINE_SOURCE__
         + '<input type="radio" name="fiat" value="' + m.id + '"' + (checked ? ' checked' : '')
         + ' class="h-5 w-5 accent-[rgb(var(--accent))]">'
         + '<span class="font-semibold">' + esc(m.label) + '</span>'
-        + '<span class="mono ml-auto text-xs text-muted">' + esc(m.provider)
-        + ' · ' + m.settlementDays + ' Tage</span>'
+        // Bei Apple Pay und Google Pay steht dort sonst „stripe" — ein Name,
+        // der niemandem in einer Apotheke etwas sagt. „über Karte" erklärt
+        // stattdessen, was tatsächlich passiert: Es ist dieselbe Kartenzahlung.
+        + '<span class="mono ml-auto text-xs text-muted">'
+        + (m.via ? 'über Karte' : esc(m.provider))
+        // „1 Tage" stand bisher da, sobald ein Weg an einem Tag gutschreibt.
+        + ' · ' + m.settlementDays + (m.settlementDays === 1 ? ' Tag' : ' Tage') + '</span>'
         + '</label></li>';
     });
     $('co-fiat').innerHTML = html;

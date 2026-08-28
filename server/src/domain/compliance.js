@@ -112,6 +112,14 @@ export function assertCryptoAvailable(methods, country, purpose) {
 
 const FIAT = {
   card: { id: 'card', rail: 'fiat', label: 'Kredit-/Debitkarte', provider: 'stripe', settlementDays: 2 },
+  paypal: { id: 'paypal', rail: 'fiat', label: 'PayPal', provider: 'paypal', settlementDays: 1 },
+  // Apple Pay und Google Pay sind KEINE eigene Schiene, sondern eine andere
+  // Verpackung derselben Kartenzahlung: Der Kunde bestätigt mit Gesicht oder
+  // Fingerabdruck, abgerechnet wird über denselben Acquirer wie bei `card`.
+  // `via: 'card'` hält das fest — sonst zählt jemand später drei Kartenwege,
+  // wo es einer mit drei Bedienoberflächen ist, und rechnet Gebühren dreifach.
+  apple_pay: { id: 'apple_pay', rail: 'fiat', label: 'Apple Pay', provider: 'stripe', via: 'card', settlementDays: 2 },
+  google_pay: { id: 'google_pay', rail: 'fiat', label: 'Google Pay', provider: 'stripe', via: 'card', settlementDays: 2 },
   sepa: { id: 'sepa', rail: 'fiat', label: 'SEPA-Lastschrift', provider: 'stripe', settlementDays: 5 },
   sepa_credit: { id: 'sepa_credit', rail: 'fiat', label: 'SEPA-Überweisung', provider: 'bank', settlementDays: 2 },
   invoice: { id: 'invoice', rail: 'fiat', label: 'Rechnung (30 Tage)', provider: 'internal', settlementDays: 30 },
@@ -125,6 +133,38 @@ const FIAT = {
 };
 
 export const FIAT_METHODS = Object.freeze(FIAT);
+
+// --- Geldbörsen und PayPal --------------------------------------------------
+
+/**
+ * Geldbörsen, die über die Kartenschiene abrechnen.
+ *
+ * Sie werden ABGELEITET statt in jedes der siebzehn Länderprofile eingetragen:
+ * Wo Karte geht, geht auch Apple Pay und Google Pay — es ist derselbe Acquirer.
+ * Zwei Listen parallel zu pflegen hieße, dass irgendwann ein Land Karte
+ * anbietet und Google Pay nicht, ohne dass es dafür einen Grund gäbe.
+ */
+const CARD_WALLETS = Object.freeze(['apple_pay', 'google_pay']);
+
+/**
+ * Länder, in denen PayPal angeboten wird.
+ *
+ * PayPal ist eine eigene Schiene mit eigener Länderabdeckung — anders als die
+ * Geldbörsen oben lässt es sich nicht aus „Karte geht" ableiten.
+ *
+ * EHRLICHE GRENZE: Diese Liste ist ein Startwert, keine Rechtsauskunft. Sie
+ * enthält die Märkte, in denen PayPals Geschäftsbetrieb außer Frage steht.
+ * AO, MZ, NG, KE und GH fehlen NICHT, weil PayPal dort ausgeschlossen wäre,
+ * sondern weil ich es nicht belegen kann — in mehreren dieser Märkte ist das
+ * Konto nur zum Empfangen freigeschaltet. Lieber ein Bezahlweg zu wenig als
+ * ein Knopf, der im Checkout ins Leere führt.
+ *
+ * Bestätigt sich ein Markt, genügt der Ländercode hier. Umgekehrt lässt sich
+ * PayPal je Land über `overrides.fiat` auch wieder herausnehmen.
+ */
+export const PAYPAL_COUNTRIES = Object.freeze([
+  'AT', 'DE', 'CH', 'LI', 'PT', 'US', 'CA', 'GB', 'AU', 'BR', 'ZA', 'EU',
+]);
 
 // --- Pflichtfelder im Checkout ----------------------------------------------
 //  `pattern` ist eine Zeichenkette statt eines RegExp-Literals: so lässt sich
@@ -423,7 +463,24 @@ export function paymentMethodsFor(code, purpose = 'saas_license', overrides = {}
     );
   }
 
-  const fiat = (p.fiat || [])
+  // Wege des Landes, ergänzt um Geldbörsen und PayPal (siehe oben).
+  // Die Reihenfolge hier ist die ANZEIGEREIHENFOLGE im Checkout. Karte, PayPal
+  // und die beiden Geldbörsen gehören zusammen: Sie hinten anzuhängen hieße,
+  // Apple Pay hinter „Rechnung (30 Tage)" zu stellen — dort sucht es niemand.
+  const ids = [...(p.fiat || [])];
+  const nachKarte = [];
+  if (PAYPAL_COUNTRIES.includes(p.country) && !ids.includes('paypal')) nachKarte.push('paypal');
+  if (ids.includes('card')) {
+    for (const w of CARD_WALLETS) if (!ids.includes(w)) nachKarte.push(w);
+  }
+  if (nachKarte.length) {
+    // Ohne Karte im Profil (kommt heute nicht vor, ist aber möglich) wandert
+    // PayPal an den Anfang statt an eine zufällige Stelle.
+    const pos = ids.includes('card') ? ids.indexOf('card') + 1 : 0;
+    ids.splice(pos, 0, ...nachKarte);
+  }
+
+  const fiat = ids
     .map((id) => FIAT[id])
     .filter(Boolean)
     // Rechnung ergibt bei Guthaben-Aufladung keinen Sinn (Vorkasse-Logik).
