@@ -34,7 +34,7 @@ import { cryptoWallets, paymentRoutes } from '../data/cryptoWallets.js';
 import { listProducts, getProduct } from '../data/products.js';
 import { createAmrService } from '../services/amr.js';
 import { createPatientInfoService } from '../services/patientInfo.js';
-import { COUNTRIES, DEFAULT_COUNTRY, listCountries, normalizeCountry, normalizeLocale } from '../data/countries.js';
+import { COUNTRIES, DEFAULT_COUNTRY, isValidCountry, listCountries, normalizeCountry, normalizeLocale } from '../data/countries.js';
 import { countryConfig, featureStatus, isFeatureBlocked } from '../data/countryFeatures.js';
 import {
   availablePurposes, calculateFee, checkoutFieldsFor, complianceProfile,
@@ -337,6 +337,38 @@ async function runNewsIngest() {
  * Deploy stattfinden — die Zuordnung ist eine Umgebungsvariable. Ungültiges
  * JSON wird gemeldet und ignoriert, statt den ganzen Lauf zu kippen.
  */
+/**
+ * Länderfilter aus der Abfrage.
+ *
+ * `country.toUpperCase()` ungeprüft in die Abfrage zu reichen, wäre hier zwar
+ * kein Einfallstor (Prisma parametrisiert), aber schlechte Auskunft: `?country=xx`
+ * lieferte kommentarlos eine leere Liste, und die Nutzerin hielte das für „keine
+ * Meldungen" statt für „Tippfehler". Unbekannte Codes werden deshalb abgewiesen.
+ * `EU` ist zusätzlich erlaubt — die EMA ist keinem Land zugeordnet.
+ */
+function countryFilter(value) {
+  const raw = String(value || '').trim().toUpperCase();
+  if (!raw) return null; // kein Filter = alle Länder
+  if (raw === 'EU' || isValidCountry(raw)) return raw;
+  const e = new Error(`Unbekannter Ländercode: ${raw}`);
+  e.status = 400; e.code = 'unknown_country';
+  throw e;
+}
+
+function dbNichtKonfiguriert() {
+  const e = new Error('Für diese Ansicht ist keine Datenbank angebunden (DATABASE_URL fehlt).');
+  e.status = 503; e.code = 'db_not_configured';
+  return e;
+}
+
+function dbNichtErreichbar(detail) {
+  // 503 statt 500: Das ist ein vorübergehender Zustand einer optionalen
+  // Komponente, kein Programmfehler. Das Frontend soll erneut anfragen dürfen.
+  const e = new Error('Die Datenbank ist gerade nicht erreichbar.' + (detail ? ` (${detail})` : ''));
+  e.status = 503; e.code = 'db_unavailable';
+  return e;
+}
+
 function sourceColumns(id) {
   const raw = process.env[`APOTREND_SOURCE_${String(id).toUpperCase()}_COLUMNS`];
   if (!raw) return {};
@@ -488,6 +520,51 @@ const routes = [
     // ist und wie viele Zeilen tatsächlich in Postgres liegen.
     database: db ? await db.stats() : null,
   })],
+
+  // ── Dauerhafter Bestand lesen (PostgreSQL) ────────────────────────────────
+  //  Der Spiegel war bisher ein Endlager: Es wurde hineingeschrieben, aber nie
+  //  daraus gelesen. Diese zwei Ansichten machen ihn nutzbar. Der Gewinn zeigt
+  //  sich direkt nach einem Deploy — der Arbeitsspeicher ist dann leer, die
+  //  Datenbank hält aber die Meldungen der letzten Wochen.
+  //
+  //  Angemeldet, nicht öffentlich: Die Behördenmeldungen selbst sind zwar
+  //  öffentlich, die aufbereitete Sammlung über zehn Länder ist aber die
+  //  Leistung der Plattform — wie /api/rabatte und /api/exchange auch.
+  ['GET', /^\/api\/db\/news$/, true, async ({ query }) => {
+    if (!db) throw dbNichtKonfiguriert();
+    const { rows, ok, error } = await db.listNews({
+      country: countryFilter(query.get('country')),
+      limit: query.get('limit'),
+    });
+    if (!ok) throw dbNichtErreichbar(error);
+    return {
+      news: rows.map((n) => ({
+        id: n.id, title: n.title, summary: n.summary, link: n.link,
+        source: n.source, source_id: n.sourceId, country: n.country,
+        published_at: n.publishedAt, fetched_at: n.fetchedAt,
+      })),
+    };
+  }],
+
+  ['GET', /^\/api\/db\/shortages$/, true, async ({ query }) => {
+    if (!db) throw dbNichtKonfiguriert();
+    const { rows, ok, error } = await db.listShortages({
+      country: countryFilter(query.get('country')),
+      limit: query.get('limit'),
+    });
+    if (!ok) throw dbNichtErreichbar(error);
+    return {
+      shortages: rows.map((s) => ({
+        id: s.id, bezeichnung: s.drugName, wirkstoff: s.activeSubst,
+        country: s.country, status: s.status, grund: s.reason,
+        // Herkunft fährt mit — die Oberfläche unterscheidet geprüfte von
+        // selbst gemeldeten Angaben, und ohne dieses Feld könnte sie das nicht.
+        provenance: s.provenance, quelle: s.source,
+        gemeldet_am: s.reportedAt, voraussichtlich_bis: s.expectedEnd,
+        aktualisiert_am: s.updatedAt,
+      })),
+    };
+  }],
 
   // Durchlauf von Hand anstoßen (Moderation) — für den Test nach dem Deploy,
   // ohne fünf Minuten auf den nächsten Takt zu warten.

@@ -28,8 +28,40 @@ nach jedem Deploy weg. Der Spiegel hält es dauerhaft.
 `GET /api/live/status` meldet dann `"database": null`. Das ist ein gültiger
 Betriebszustand, kein Fehler.
 
-Nächster sinnvoller Schritt (noch nicht gemacht): Feed und Engpass-Ansicht aus
-der Datenbank lesen, sobald sie gefüllt ist.
+**Gelesen wird inzwischen auch** — über zwei eigene Ansichten:
+
+```
+GET /api/db/news?country=DE&limit=50        (angemeldet)
+GET /api/db/shortages?country=AT            (angemeldet)
+```
+
+Beide filtern optional nach Land, deckeln die Menge (News max. 200, Engpässe
+max. 500) und weisen einen unbekannten Ländercode mit `400 unknown_country` ab,
+statt kommentarlos eine leere Liste zu liefern — sonst hielte man einen
+Tippfehler für „keine Meldungen". Ohne `DATABASE_URL` antworten sie mit
+`503 db_not_configured`, bei unerreichbarer Datenbank mit `503 db_unavailable`.
+
+### Eine Falle bei der Sortierung
+
+`publishedAt` ist nullbar, und PostgreSQL stellt NULL bei `ORDER BY … DESC`
+**nach vorn**. Gegen die echte Datenbank nachgestellt:
+
+```
+ title      |      publishedAt
+------------+------------------------
+ OHNE DATUM |                              <- steht oben
+ NEU        | 2026-08-20 00:00:00+00
+```
+
+Ein schlichtes `orderBy: { publishedAt: 'desc' }` hätte also ausgerechnet die
+Meldungen **ohne** Datum dauerhaft an die Spitze des Feeds gesetzt. Die
+erfundene Aktualität, die beim Schreiben vermieden wird (§2.3), käme beim Lesen
+durch die Hintertür zurück. Deshalb `nulls: 'last'` plus `fetchedAt` als
+Zweitschlüssel — ohne den wäre die Reihenfolge der undatierten Meldungen
+untereinander beliebig und änderte sich bei jedem Abruf.
+
+Nächster sinnvoller Schritt (noch nicht gemacht): den Haupt-Feed selbst aus
+diesen Ansichten speisen, statt sie nebenher anzubieten.
 
 ---
 

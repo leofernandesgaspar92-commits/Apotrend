@@ -25,15 +25,21 @@ const stumm = { log() {}, warn() {}, error() {} };
 /** Doppelgänger des Prisma-Clients: schreibt jeden Aufruf mit. */
 function fakeClient({ failOn = null, error = new Error('boom') } = {}) {
   const calls = { newsPost: [], shortage: [] };
+  const stored = { newsPost: [], shortage: [] };
   const table = (name) => ({
     upsert: async (args) => {
       if (failOn === name) throw error;
       calls[name].push(args);
       return { id: `${name}-${calls[name].length}` };
     },
+    findMany: async (args) => {
+      if (failOn === name) throw error;
+      calls[`${name}:findMany`] = args;
+      return stored[name];
+    },
     count: async () => calls[name].length,
   });
-  return { calls, newsPost: table('newsPost'), shortage: table('shortage'), $connect: async () => {}, $disconnect: async () => {} };
+  return { calls, stored, newsPost: table('newsPost'), shortage: table('shortage'), $connect: async () => {}, $disconnect: async () => {} };
 }
 
 // ── Reine Abbildungsfunktionen ──────────────────────────────────────────────
@@ -250,4 +256,69 @@ test('stats() meldet eine unerreichbare Datenbank als abgeschaltet mit Begründu
   // Und keine erfundenen Zeilenzahlen: Was nicht gelesen werden konnte, wird
   // auch nicht als 0 gemeldet — 0 hieße „nachgesehen, nichts da".
   assert.ok(!('newsRows' in s));
+});
+
+// ── Lesen ───────────────────────────────────────────────────────────────────
+
+test('News werden mit „NULL zuletzt" sortiert — sonst stünden undatierte oben', async () => {
+  // Gegen eine echte PostgreSQL-Datenbank nachgestellt: Ein schlichtes
+  // ORDER BY "publishedAt" DESC stellt die Zeile OHNE Datum an die ERSTE
+  // Stelle. Eine Behördenmeldung ohne Datum wäre damit dauerhaft die
+  // oberste Meldung im Feed — erfundene Aktualität durch die Hintertür.
+  const client = fakeClient();
+  const store = createPrismaStore({ clientFactory: () => client, log: stumm });
+  await store.listNews({ country: 'DE' });
+
+  const args = client.calls['newsPost:findMany'];
+  assert.deepEqual(args.where, { country: 'DE' });
+  assert.deepEqual(args.orderBy[0], { publishedAt: { sort: 'desc', nulls: 'last' } });
+  // Zweitschlüssel: Ohne ihn wäre die Reihenfolge der undatierten Meldungen
+  // untereinander beliebig und änderte sich bei jedem Abruf.
+  assert.deepEqual(args.orderBy[1], { fetchedAt: 'desc' });
+});
+
+test('ohne Länderangabe wird nicht gefiltert, mit Angabe schon', async () => {
+  const client = fakeClient();
+  const store = createPrismaStore({ clientFactory: () => client, log: stumm });
+  await store.listNews({});
+  assert.deepEqual(client.calls['newsPost:findMany'].where, {});
+  await store.listNews({ country: 'AT' });
+  assert.deepEqual(client.calls['newsPost:findMany'].where, { country: 'AT' });
+});
+
+test('die Obergrenze lässt sich nicht überschreiben', async () => {
+  const client = fakeClient();
+  const store = createPrismaStore({ clientFactory: () => client, log: stumm });
+
+  await store.listNews({ limit: 99999 });
+  assert.equal(client.calls['newsPost:findMany'].take, 200);
+  await store.listNews({ limit: -5 });
+  assert.equal(client.calls['newsPost:findMany'].take, 50, 'Unsinn fällt auf den Standard zurück');
+  await store.listNews({ limit: '25' });
+  assert.equal(client.calls['newsPost:findMany'].take, 25, 'Zahl als Text wird angenommen');
+  await store.listShortages({ limit: 99999 });
+  assert.equal(client.calls['shortage:findMany'].take, 500);
+});
+
+test('Engpässe kommen kritisch zuerst — das ist die Frage, mit der man die Liste öffnet', async () => {
+  const client = fakeClient();
+  client.stored.shortage = [
+    { drugName: 'B', status: 'AVAILABLE', updatedAt: '2026-08-28T10:00:00Z' },
+    { drugName: 'C', status: 'LIMITED', updatedAt: '2026-08-27T10:00:00Z' },
+    { drugName: 'A', status: 'CRITICAL', updatedAt: '2026-08-01T10:00:00Z' },
+    { drugName: 'D', status: 'CRITICAL', updatedAt: '2026-08-20T10:00:00Z' },
+  ];
+  const store = createPrismaStore({ clientFactory: () => client, log: stumm });
+  const { rows } = await store.listShortages({});
+  // Kritisch zuerst, innerhalb desselben Status das Neuere zuerst.
+  assert.deepEqual(rows.map((r) => r.drugName), ['D', 'A', 'C', 'B']);
+});
+
+test('ein Lesefehler liefert eine leere Liste statt zu werfen', async () => {
+  const client = fakeClient({ failOn: 'newsPost', error: new Error('kaputt') });
+  const store = createPrismaStore({ clientFactory: () => client, log: stumm });
+  const res = await store.listNews({});
+  assert.equal(res.ok, false);
+  assert.deepEqual(res.rows, []);
+  assert.equal(res.error, 'kaputt');
 });

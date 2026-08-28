@@ -77,6 +77,20 @@ export function toDate(value) {
 }
 
 /**
+ * Obergrenze einer Liste bestimmen.
+ *
+ * Unsinnige Eingaben (negativ, null, keine Zahl) fallen auf den Standard
+ * zurueck statt sich auf 1 herunterklemmen zu lassen: `?limit=-5` mit genau
+ * einer Zeile zu beantworten sieht aus wie ein Datenproblem, ist aber ein
+ * Tippfehler. Zu grosse Werte werden gedeckelt.
+ */
+export function clampLimit(value, { fallback, max }) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 1) return fallback;
+  return Math.min(Math.floor(n), max);
+}
+
+/**
  * Felder mit `null` aussortieren — für Updates.
  *
  * Der Unterschied zwischen „ich weiß es nicht" und „es ist leer" geht in
@@ -242,6 +256,49 @@ export function createPrismaStore({
         if (state === 'disabled') break; // Verbindung weg — Rest hat keinen Zweck
       }
       return { ok: state !== 'disabled', written, received: list.length };
+    },
+
+    // ── Lesen ────────────────────────────────────────────────────────────────
+    //  Ab hier ist der Spiegel nicht mehr nur ein Endlager. Der Nutzen liegt
+    //  genau nach einem Deploy: Der Arbeitsspeicher ist dann leer, die
+    //  Datenbank haelt aber die Meldungen der letzten Wochen.
+
+    /**
+     * Behoerden-Meldungen lesen, optional nach Land.
+     *
+     * Zur Sortierung: `publishedAt` ist nullbar, und PostgreSQL stellt NULL bei
+     * DESC standardmaessig NACH VORN. Ohne `nulls: 'last'` stuenden also
+     * ausgerechnet die Meldungen ohne Datum ganz oben im Feed — dieselbe
+     * erfundene Aktualitaet, die wir beim Schreiben vermeiden, waere beim Lesen
+     * durch die Hintertuer wieder da.
+     */
+    async listNews({ country = null, limit = 50 } = {}) {
+      const take = clampLimit(limit, { fallback: 50, max: 200 });
+      const where = country ? { country } : {};
+      let rows = [];
+      const res = await guarded('News-Liste', async (c) => {
+        rows = await c.newsPost.findMany({
+          where,
+          orderBy: [{ publishedAt: { sort: 'desc', nulls: 'last' } }, { fetchedAt: 'desc' }],
+          take,
+        });
+      });
+      return res.ok ? { ok: true, rows } : { ok: false, rows: [], error: res.error || null, skipped: res.skipped };
+    },
+
+    /** Engpaesse lesen, optional nach Land. Kritische zuerst — das ist die Frage,
+     *  mit der jemand diese Liste oeffnet. */
+    async listShortages({ country = null, limit = 200 } = {}) {
+      const take = clampLimit(limit, { fallback: 200, max: 500 });
+      const where = country ? { country } : {};
+      let rows = [];
+      const res = await guarded('Engpass-Liste', async (c) => {
+        rows = await c.shortage.findMany({ where, orderBy: { updatedAt: 'desc' }, take });
+      });
+      const rank = { CRITICAL: 0, LIMITED: 1, AVAILABLE: 2 };
+      rows.sort((a, b) => (rank[a.status] ?? 3) - (rank[b.status] ?? 3)
+        || new Date(b.updatedAt) - new Date(a.updatedAt));
+      return res.ok ? { ok: true, rows } : { ok: false, rows: [], error: res.error || null, skipped: res.skipped };
     },
 
     /**
