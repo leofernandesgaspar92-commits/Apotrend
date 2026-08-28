@@ -1,0 +1,79 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  country   String   @default("AT")
+  role      String   @default("PHARMACY") // PHARMACY, WHOLESALER, ADMIN
+  createdAt DateTime @default(now())
+
+  posts     Post[]
+  discounts Discount[]
+  trades    TradeOffer[]
+}
+
+model NewsPost {
+  id          String   @id @default(uuid())
+  title       String
+  link        String   @unique
+  summary     String?
+  source      String
+  country     String
+  publishedAt DateTime
+  createdAt   DateTime @default(now())
+}
+
+model Shortage {
+  id          String   @id @default(uuid())
+  drugName    String
+  activeSubst String?
+  country     String
+  status      String   @default("LIMITED")
+  reason      String?
+  source      String
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@unique([drugName, country])
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  country   String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Discount {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  discountPct Float
+  country     String
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model TradeOffer {
+  id          String   @id @default(uuid())
+  productName String
+  quantity    Int
+  pricePerUnit Float?
+  tradeType   String   // OFFER oder REQUEST
+  country     String
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  createdAt   DateTime @default(now())
+}

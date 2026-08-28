@@ -1,0 +1,182 @@
+// ============================================================================
+//  Apotrend — Datenbankschema
+// ============================================================================
+//  Grundlage ist der Entwurf des Owners (unverändert abgelegt unter
+//  prisma/schema.v1-owner.prisma). Er wurde übernommen, migriert und geprüft.
+//
+//  Diese Fassung ergänzt ihn an sechs Stellen. Jede Änderung steht unten am
+//  jeweiligen Feld begründet; die Übersicht mit Begründung und Rückbau-Hinweis
+//  liegt in docs/DATENBANK.md. Nichts davon ist Geschmack — es sind Punkte, an
+//  denen der Entwurf mit der laufenden Anwendung kollidiert oder Daten verliert.
+// ============================================================================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ---------------------------------------------------------------------------
+//  Herkunft — der wichtigste Zusatz
+// ---------------------------------------------------------------------------
+//  Die gesamte Anwendung kennzeichnet, WOHER eine Zahl stammt: geprüfte
+//  Behördendaten, kuratierte Referenz, Eigenangabe eines Betriebs oder
+//  Demodaten. Ohne dieses Feld sieht eine erfundene Demo-Aktion in der
+//  Datenbank exakt aus wie ein echtes Angebot eines echten Großhändlers.
+//  Das ist der eine Zusatz, auf dem ich bestehen würde.
+enum Provenance {
+  VERIFIED      // aus einer amtlichen Quelle übernommen
+  REFERENCE     // kuratierte Referenzdaten
+  SELF_REPORTED // von einem Fachbetrieb selbst eingetragen
+  SIMULATED     // Demodaten — dürfen nie wie echte aussehen
+}
+
+// Statuswerte der Anwendung. Vorher ein freier String mit Vorgabe „LIMITED":
+// Damit hätte jeder Tippfehler eine neue Statusklasse erzeugt, und die
+// deutschen Werte der Anwendung (kritisch/eingeschraenkt/verfuegbar) hätten
+// nicht zur Vorgabe gepasst.
+enum ShortageStatus {
+  CRITICAL   // kritisch — nicht lieferbar
+  LIMITED    // eingeschränkt lieferbar
+  AVAILABLE  // wieder verfügbar
+}
+
+enum TradeType {
+  OFFER
+  REQUEST
+}
+
+// ---------------------------------------------------------------------------
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  country   String   @default("AT")
+
+  // Kontotyp = WAS für ein Teilnehmer das ist. Bewusst getrennt von der
+  // Team-Rolle innerhalb eines Betriebs (admin/apotheker/pta/…), die in
+  // domain/roles.js liegt. Ein einziges `role`-Feld würde beide Achsen
+  // vermischen — dann wäre „Apotheke" und „Admin" derselbe Begriffsraum.
+  role      String   @default("PHARMACY") // PHARMACY, WHOLESALER, PHARMA, AUTHORITY, ADMIN
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  posts     Post[]
+  discounts Discount[]
+  trades    TradeOffer[]
+}
+
+model NewsPost {
+  id          String   @id @default(uuid())
+  title       String
+  link        String   @unique
+  summary     String?
+  source      String
+  country     String
+
+  // NULLBAR statt Pflicht. Viele Behörden-Feeds liefern kein Datum; der Parser
+  // gibt dann bewusst null zurück statt „jetzt" einzusetzen. Mit einem
+  // Pflichtfeld müsste die Aufnahme einen Zeitstempel erfinden — und die
+  // Meldung rutschte im Feed nach oben, ohne dass es dafür einen Beleg gibt.
+  publishedAt DateTime? @db.Timestamptz(3)
+
+  // Welche Quelle sie geliefert hat ('bfarm_news', 'basg_news', …).
+  // Erst damit lässt sich eine ausgefallene Quelle im Bestand wiederfinden.
+  sourceId    String?
+  fetchedAt   DateTime  @default(now()) @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@index([country, publishedAt(sort: Desc)])
+  @@index([sourceId])
+}
+
+model Shortage {
+  id          String   @id @default(uuid())
+  drugName    String
+  activeSubst String?
+  country     String
+
+  status      ShortageStatus @default(LIMITED)
+  reason      String?
+  source      String
+  provenance  Provenance     @default(REFERENCE)
+
+  reportedAt  DateTime? @db.Timestamptz(3)  // gemeldet am
+  expectedEnd DateTime? @db.Timestamptz(3)  // voraussichtlich bis
+
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+
+  // Der Duplikat-Schutz aus dem Entwurf — unverändert übernommen und geprüft:
+  // zweimal dasselbe Präparat im selben Land ergibt eine Zeile mit
+  // aktualisiertem Status.
+  @@unique([drugName, country])
+  @@index([country, status])
+  @@index([activeSubst])
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  country   String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([country, createdAt(sort: Desc)])
+}
+
+model Discount {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+
+  // Preise statt nur Prozent. Der Entwurf speicherte ausschließlich
+  // `discountPct` — damit lässt sich „2,35 € → 1,65 €" nicht mehr anzeigen,
+  // die Ersparnis je Packung nicht berechnen und die Angabe nicht überprüfen.
+  // Decimal statt Float: Float rechnet 1.1 + 2.2 zu 3.3000000000000003, und
+  // das ist bei Geldbeträgen keine Kleinigkeit.
+  listPrice   Decimal  @db.Decimal(10, 2)
+  dealPrice   Decimal  @db.Decimal(10, 2)
+  currency    String   @default("EUR")
+  discountPct Float    // abgeleitet, für Sortierung und Anzeige
+  minQuantity Int?
+
+  // Ohne Enddatum ist nicht feststellbar, ob eine Aktion noch läuft — die
+  // Top-10-Ansicht der Anwendung zeigt ausschließlich laufende.
+  validUntil  DateTime @db.Timestamptz(3)
+
+  country     String
+  provenance  Provenance @default(SELF_REPORTED)
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([country, validUntil])
+  @@index([authorId])
+}
+
+model TradeOffer {
+  id           String    @id @default(uuid())
+  productName  String
+  quantity     Int
+  pricePerUnit Decimal?  @db.Decimal(10, 2)
+  currency     String    @default("EUR")
+
+  // Aus dem Kommentar „OFFER oder REQUEST" wird eine Regel: Als freier String
+  // wäre „Offer", „offer" und „ANGEBOT" derselbe Fachbegriff in drei
+  // Schreibweisen — und keine Abfrage fände alle.
+  tradeType    TradeType
+
+  country      String
+  authorId     String
+  author       User      @relation(fields: [authorId], references: [id])
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@index([country, tradeType, createdAt(sort: Desc)])
+}

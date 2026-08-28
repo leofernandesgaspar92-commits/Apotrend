@@ -34,7 +34,7 @@ import { cryptoWallets, paymentRoutes } from '../data/cryptoWallets.js';
 import { listProducts, getProduct } from '../data/products.js';
 import { createAmrService } from '../services/amr.js';
 import { createPatientInfoService } from '../services/patientInfo.js';
-import { COUNTRIES, listCountries, normalizeCountry, normalizeLocale } from '../data/countries.js';
+import { COUNTRIES, DEFAULT_COUNTRY, listCountries, normalizeCountry, normalizeLocale } from '../data/countries.js';
 import { countryConfig, featureStatus, isFeatureBlocked } from '../data/countryFeatures.js';
 import {
   availablePurposes, calculateFee, checkoutFieldsFor, complianceProfile,
@@ -46,6 +46,7 @@ import { createScheduler, INTERVALS } from '../services/scheduler.js';
 import { createNewsSeenStore, ingestNews } from '../services/newsIngest.js';
 import { activeSources, sourcesByKind, shortagesFromCsv, dedupeShortages, fetchTextDefault } from '../services/sources.js';
 import { createDealsService, seedDemoDealsIfNoneRunning } from '../services/deals.js';
+import { createPrismaStore } from '../repo/prismaStore.js';
 import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
 import { issueToken, verifyToken } from './token.js';
 import { createRateLimiter } from '../domain/rateLimiter.js';
@@ -66,6 +67,13 @@ const snapshot = persistence ? persistence.load() : null;
 // legt der Server nach jedem Deploy dieselben News-Beiträge erneut an.
 const newsSeen = createNewsSeenStore();
 const restoring = !!snapshot;
+
+// ── PostgreSQL-Spiegel (optional, über DATABASE_URL) ──────────────────────────
+// Hält die automatisch geholten Live-Daten dauerhaft. Ohne die Variable ist das
+// hier `null` und die App verhält sich exakt wie bisher — siehe repo/prismaStore.js
+// und docs/DATENBANK.md. Auf dem kostenlosen Render-Tarif ist das Dateisystem
+// flüchtig; ohne Datenbank ist alles Gesammelte nach jedem Deploy weg.
+const db = createPrismaStore();
 
 // ── Dienste (einmalig) ──
 const repo = createMemoryRepo();
@@ -300,6 +308,11 @@ async function runNewsIngest() {
         sourceUrl: item.sourceUrl,
         visibility: 'public',
       });
+      // Zusätzlich dauerhaft ablegen. Bewusst NACH dem Beitrag und in einem
+      // eigenen try: Der Feed ist das, was die Nutzer:innen sehen — eine
+      // klemmende Datenbank darf ihn nicht verhindern. Der Store fängt selbst
+      // ab, das hier ist der zweite Riegel.
+      if (db) { try { await db.saveNews(item); } catch { /* Store meldet selbst */ } }
     },
   });
   if (report.created > 0) saveSoon(); // neue Beiträge + Gesehen-Stand sichern
@@ -354,6 +367,30 @@ async function runShortageIngest() {
   const änderungen = [...summary.countries, ...summary.prices, ...summary.rabatte].some((c) => c.ok)
     || summary.csv.some((c) => c.count);
   if (änderungen) saveSoon();
+
+  // Engpässe dauerhaft ablegen. Bewusst der Endstand des Repos statt der
+  // einzelnen Abrufe: `refreshShortages` schreibt direkt ins Repo und gibt die
+  // Zeilen nicht zurück — den Endstand zu spiegeln erfasst dagegen ALLE Wege
+  // (Länder-Feed, CSV, Community-Meldung) und kann keinen übersehen.
+  // Der @@unique-Schlüssel (Präparat + Land) macht daraus ein Update statt
+  // einer Kopie, deshalb ist das wiederholbar.
+  //
+  // Zum Land: Der In-Memory-Bestand führt KEIN Länderfeld — `replaceFeed`
+  // ersetzt bei jedem Lauf den gesamten Nicht-Community-Bestand, der Speicher
+  // ist also faktisch einländrig. Ist genau ein Engpass-Feed angeschlossen,
+  // ist dessen Land das richtige; sonst bleibt es beim Standardland. Geraten
+  // wird hier nichts — bei mehreren Feeds steht die Annahme im Bericht.
+  if (db) {
+    try {
+      const feeds = Object.keys(liveSources());
+      const country = feeds.length === 1 ? feeds[0] : DEFAULT_COUNTRY;
+      const rows = shortagesRepo.list();
+      const r = await db.saveShortages(rows, { source: 'ApoTrend-Automatik', country });
+      summary.db = { written: r.written, received: r.received, country, assumed: feeds.length !== 1 };
+    } catch (e) {
+      summary.db = { error: (e && e.message) || String(e) };
+    }
+  }
   return summary;
 }
 
@@ -405,6 +442,10 @@ const routes = [
     shortage_feeds: Object.keys(liveSources()),
     news_seen: newsSeen.size(),
     intervals: { news_ms: INTERVALS.news, shortages_ms: INTERVALS.shortages },
+    // Datenbank-Spiegel: `null` heißt „keine DATABASE_URL gesetzt" — das ist ein
+    // gültiger Betriebszustand, kein Fehler. Sonst steht hier, ob er verbunden
+    // ist und wie viele Zeilen tatsächlich in Postgres liegen.
+    database: db ? await db.stats() : null,
   })],
 
   // Durchlauf von Hand anstoßen (Moderation) — für den Test nach dem Deploy,

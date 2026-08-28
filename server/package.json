@@ -16,6 +16,14 @@
     "verify": "node --test && node tools/loop-smoke.mjs && node tools/loop-browser-audit.mjs && node tools/check-checkout-demo.mjs && node tools/loop-audit.mjs --skip-tests",
     "build:checkout": "node tools/build-checkout-demo.mjs",
     "check:checkout": "node tools/build-checkout-demo.mjs --check && node tools/check-checkout-demo.mjs",
-    "verify:qr": "node tools/verify-qr.mjs"
+    "verify:qr": "node tools/verify-qr.mjs",
+    "db:setup": "node tools/db-setup.mjs",
+    "db:studio": "prisma studio --schema prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "6.19.3"
+  },
+  "devDependencies": {
+    "prisma": "6.19.3"
   }
 }

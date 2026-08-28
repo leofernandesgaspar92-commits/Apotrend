@@ -22,7 +22,12 @@ services:
     # (explizit gesetzt statt auf Render-Default zu vertrauen).
     autoDeploy: true
     rootDir: server
-    buildCommand: npm install
+    # --include=dev holt die Prisma-CLI (devDependency). Render setzt beim Build
+    # teils NODE_ENV=production; ohne das Flag fehlte die CLI und db:setup fände
+    # nichts vor. db:setup erzeugt den Client und spielt Migrationen ein — OHNE
+    # DATABASE_URL überspringt es die Migrationen und lässt den Build grün
+    # (die App läuft ohne Datenbank vollständig weiter). Siehe tools/db-setup.mjs.
+    buildCommand: npm install --include=dev && npm run db:setup
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
@@ -42,6 +47,14 @@ services:
       # generateValue erzeugt Render EINMAL ein festes Secret, das über Deploys bleibt.
       - key: APOTREND_TOKEN_SECRET
         generateValue: true
+      # PostgreSQL. OPTIONAL: Ohne diese Variable läuft die App unverändert mit
+      # In-Memory-Speicher + JSON-Snapshot. Mit ihr werden die automatisch
+      # geholten Live-Daten (Behörden-News, Engpässe) zusätzlich dauerhaft
+      # abgelegt — auf dem kostenlosen Tarif der einzige Weg, dass sie ein
+      # Deploy überleben. Verbindungsstring in Render eintragen (sync:false).
+      # Details und Grenzen: docs/DATENBANK.md.
+      - key: DATABASE_URL
+        sync: false
       # PORT wird von Render automatisch gesetzt — der Server liest process.env.PORT.
     # Dauerhafte Platte (nur Bezahltarif). Zum Aktivieren einkommentieren:
     # disk:
