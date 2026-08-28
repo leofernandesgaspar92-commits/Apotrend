@@ -322,7 +322,7 @@ const I18N = {
     ac_rc_regen:'Neue Codes erzeugen', ac_rc_warn:'Achtung: dadurch werden alle bisherigen Codes ungültig.',
     ac_premium:'⭐ Premium freischalten',
     pr_title:'⭐ ApoTrend Premium', pr_intro:'Schalte Premium frei — einfach direkt per Krypto an uns zahlen.', pr_benefits_lead:'Das bekommst du mit Premium:', pr_b1:'📣 Eigene Angebote bewerben — sichtbar im Feed und Schnellzugriff', pr_b2:'📹 Videosprechstunden anbieten — für Kolleg:innen buchbar', pr_b3:'🔴 Live-Sessions hosten — Fachrunden und Produktvorstellungen', pr_b4:'📝 Private Notizen zur Beobachtungsliste', pr_have:'Du hast Premium ✓',
-    pr_pay_crypto:'Mit Krypto zahlen', pr_network:'Netzwerk: {net}', pr_amount:'≈ {n} {sym}', pr_amount_na:'Betrag beim Kurs-Abruf – bitte {eur} € senden',
+    pr_pay_crypto:'Mit Krypto zahlen', pr_network:'Netzwerk: {net}', pr_amount:'≈ {n} {sym}', pr_local_approx:'≈ {local} in deiner Landeswährung · abgerechnet wird {billed}', pr_amount_na:'Betrag beim Kurs-Abruf – bitte {amount} senden',
     pr_open_wallet:'📲 In Wallet-App öffnen', pr_copy_addr:'📋 Adresse kopieren', pr_copied:'Kopiert ✓',
     pr_paid_q:'Schon gezahlt? Transaktions-ID eingeben:', pr_tx_ph:'Transaktions-ID / Hash', pr_report:'Zahlung melden',
     pr_reported:'✓ Danke! Premium wird nach Prüfung der Zahlung freigeschaltet.',
@@ -675,7 +675,7 @@ const I18N = {
     ac_rc_regen:'Generate new codes', ac_rc_warn:'Note: this invalidates all previous codes.',
     ac_premium:'⭐ Unlock Premium',
     pr_title:'⭐ ApoTrend Premium', pr_intro:'Unlock Premium — simply pay us directly with crypto.', pr_benefits_lead:'What you get with Premium:', pr_b1:'📣 Advertise your own listings — shown in feed and quick access', pr_b2:'📹 Offer video consultations — bookable by colleagues', pr_b3:'🔴 Host live sessions — expert rounds and product demos', pr_b4:'📝 Private notes on your watchlist', pr_have:'You have Premium ✓',
-    pr_pay_crypto:'Pay with crypto', pr_network:'Network: {net}', pr_amount:'≈ {n} {sym}', pr_amount_na:'Amount at fetch time – please send {eur} €',
+    pr_pay_crypto:'Pay with crypto', pr_network:'Network: {net}', pr_amount:'≈ {n} {sym}', pr_local_approx:'≈ {local} in your local currency · billed as {billed}', pr_amount_na:'Amount at fetch time – please send {amount}',
     pr_open_wallet:'📲 Open in wallet app', pr_copy_addr:'📋 Copy address', pr_copied:'Copied ✓',
     pr_paid_q:'Already paid? Enter the transaction ID:', pr_tx_ph:'Transaction ID / hash', pr_report:'Report payment',
     pr_reported:'✓ Thank you! Premium is unlocked after the payment is verified.',
@@ -1028,7 +1028,7 @@ const I18N = {
     ac_rc_regen:'Gerar novos códigos', ac_rc_warn:'Atenção: isto invalida todos os códigos anteriores.',
     ac_premium:'⭐ Desbloquear Premium',
     pr_title:'⭐ ApoTrend Premium', pr_intro:'Desbloqueie o Premium — pague-nos diretamente com cripto.', pr_benefits_lead:'O que recebe com o Premium:', pr_b1:'📣 Divulgar os seus anúncios — visíveis no feed e acesso rápido', pr_b2:'📹 Oferecer teleconsultas — marcáveis por colegas', pr_b3:'🔴 Organizar sessões ao vivo — sessões e demonstrações', pr_b4:'📝 Notas privadas na lista de observação', pr_have:'Tem Premium ✓',
-    pr_pay_crypto:'Pagar com cripto', pr_network:'Rede: {net}', pr_amount:'≈ {n} {sym}', pr_amount_na:'Valor ao obter a cotação – envie {eur} €',
+    pr_pay_crypto:'Pagar com cripto', pr_network:'Rede: {net}', pr_amount:'≈ {n} {sym}', pr_local_approx:'≈ {local} na sua moeda local · cobrado como {billed}', pr_amount_na:'Valor ao obter a cotação – envie {amount}',
     pr_open_wallet:'📲 Abrir na carteira', pr_copy_addr:'📋 Copiar endereço', pr_copied:'Copiado ✓',
     pr_paid_q:'Já pagou? Introduza o ID da transação:', pr_tx_ph:'ID / hash da transação', pr_report:'Comunicar pagamento',
     pr_reported:'✓ Obrigado! O Premium é ativado após a verificação do pagamento.',
@@ -1114,6 +1114,22 @@ function ti(key, vars) {
 // 2 Nachkommastellen, ohne Tausender-Trenner (vorhersagbar wie bisher). Das €-Symbol
 // bleibt bewusst als Präfix („€ 1,34") — Reihenfolge zu ändern wäre ein separater Schritt.
 function fmtMoney(v) { const s = Number(v).toFixed(2); return LOCALE === 'en' ? s : s.replace('.', ','); }
+// Betrag MIT Währung. Ersetzt das früher fest angehängte „€": Die Plattform
+// rechnet in 16 Ländern mit CHF, USD, AOA, NGN … — ein hartkodiertes Symbol
+// war schlicht falsch, sobald jemand das Land wechselt.
+// Bei Währungen ohne Nachkommastellen im Handel (AOA, KES, NGN) wird gerundet,
+// sonst stehen dort Cent-Beträge, die niemand nennt.
+function fmtCurrency(v, currency) {
+  const n = Number(v);
+  if (!isFinite(n) || !currency) return fmtMoney(v);
+  const big = ['AOA', 'NGN', 'KES', 'MZN'].includes(currency) && Math.abs(n) >= 100;
+  try {
+    return new Intl.NumberFormat(LOCALE === 'en' ? 'en-GB' : LOCALE === 'pt' ? 'pt-PT' : 'de-DE', {
+      style: 'currency', currency,
+      minimumFractionDigits: big ? 0 : 2, maximumFractionDigits: big ? 0 : 2,
+    }).format(n);
+  } catch { return fmtMoney(n) + ' ' + currency; } // unbekannter Code: roh statt Absturz
+}
 // Kommentar-Button-Beschriftung: 0 -> einladende Handlungsaufforderung („Kommentieren"),
 // 1 -> korrekter Singular („1 Kommentar", nicht „1 Kommentare"), sonst Plural.
 function commentLabel(n) {
@@ -5727,7 +5743,7 @@ async function openPremium() {
   try {
     const mine = await api('GET', '/api/me/premium').catch(() => ({ premium: false }));
     if (mine.premium) { body.innerHTML = `<div class="ok-box" style="padding:10px 12px">${esc(t('pr_have'))}</div>`; return; }
-    const opt = await api('GET', '/api/payments/crypto?product=premium_monthly');
+    const opt = await api('GET', `/api/payments/crypto?product=premium_monthly&country=${encodeURIComponent(viewCountry())}`);
     body.innerHTML = '';
     // Nutzen zuerst zeigen (Warum Premium?) — sonst zahlt niemand. Klar, scannbar, ehrlich
     // (nur tatsächlich freigeschaltete Funktionen).
@@ -5737,10 +5753,18 @@ async function openPremium() {
         <li>${esc(t('pr_b1'))}</li><li>${esc(t('pr_b2'))}</li><li>${esc(t('pr_b3'))}</li><li>${esc(t('pr_b4'))}</li>
       </ul>
     </div>`));
-    body.appendChild(el(`<div style="font-weight:800;font-size:1.15em;margin-bottom:8px">${esc(opt.product_name)} — <span style="color:var(--green)">${fmtMoney(opt.amount_eur)} €</span></div>`));
+    const priceMain = fmtCurrency(opt.amount, opt.currency || 'EUR');
+    body.appendChild(el(`<div style="font-weight:800;font-size:1.15em;margin-bottom:4px">${esc(opt.product_name)} — <span style="color:var(--green)">${esc(priceMain)}</span></div>`));
+    // Näherung in der Landeswährung, damit niemand selbst umrechnen muss.
+    // Erscheint NUR mit echtem Kurs — fehlt er, steht hier bewusst nichts.
+    if (opt.local) {
+      body.appendChild(el(`<div class="muted" style="font-size:13px;margin-bottom:8px">${
+        esc(ti('pr_local_approx', { local: fmtCurrency(opt.local.amount, opt.local.currency), billed: priceMain }))
+      }</div>`));
+    }
     if (!opt.coins.length) { body.appendChild(el(`<div class="muted">${esc(t('pr_none'))}</div>`)); }
     opt.coins.forEach(c => {
-      const amountLbl = c.amount_crypto != null ? ti('pr_amount', { n: c.amount_crypto, sym: c.symbol }) : ti('pr_amount_na', { eur: fmtMoney(c.amount_eur) });
+      const amountLbl = c.amount_crypto != null ? ti('pr_amount', { n: c.amount_crypto, sym: c.symbol }) : ti('pr_amount_na', { amount: fmtCurrency(opt.amount, opt.currency || 'EUR') });
       const title = esc(c.symbol) + (c.label ? ` <span class="muted" style="font-weight:400;font-size:13px">· ${esc(c.label)}</span>` : '');
       const cc = el(`<div class="crypto-pay">
         <div class="row"><b>${title}</b> <span class="muted" style="font-size:13px">${esc(ti('pr_network', { net: c.network }))}</span><span class="sp" style="flex:1"></span><span style="font-weight:700">${esc(amountLbl)}</span></div>

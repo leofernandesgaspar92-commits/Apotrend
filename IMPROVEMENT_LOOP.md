@@ -32,23 +32,24 @@ die Session neu startet.
 
 ## Letzter GATHER-Snapshot
 
-_Aktualisiert 2026-08-18 (Session-Fortschreibung, 2. Hälfte)_
+_Aktualisiert 2026-08-28_
 ```
-Tests:            434/434 grün (60 Dateien)  ·  Browser-Audit: 0 Querscroll / 0 JS-Fehler / 0 a11y  ·  Smoke: 19/19 grün
-i18n de/en/pt:    0 Lücken  ✓ perfekte Parität (Guard prüft bei jedem `verify`)
-Hartkod. Dialoge: 0  ·  Hartkod. UI-DE: 0 (Wächter jetzt inkl. Textinhalt `>Wort`)  ·  Hartkod. JS-DE: 0  ·  Helle Inline-BGs: 0  ·  !important: 3 (legitim)
-Querscroll-Sweep: 390 + 768/1024/1280/1440 + große Schrift (22px) + Wirkstoff-Detailseite
-Backend-Fehler:   alltags-relevante Fehler mehrsprachig (Codes), Fallback = DE-message
-Monolith:         server/public/app.js ~7890 Zeilen · 652 KB  ← größtes Struktur-Signal (P3, CEO-Freigabe)
+Tests:            485/485 grün (63 Dateien)  ·  Browser-Audit: 0 Querscroll / 0 JS-Fehler / 0 a11y  ·  Smoke: 19/19 grün
+i18n de/en/pt:    1375/1375/1375 — 0 Lücken ✓ (Guard prüft bei jedem `verify`)
+Hartkod. Dialoge: 0  ·  Hartkod. UI-DE: 0  ·  Hartkod. JS-DE: 0  ·  Helle Inline-BGs: 0  ·  !important: 3 (legitim)
+Checkout-Demo:    54/54 Browser-Prüfungen (Länder-Compliance, Zahlwege, QR)
+QR-Encoder:       64/64 Matrizen zellgenau identisch zu python-qrcode + segno
+Monolith:         server/public/app.js ~7910 Zeilen  ← größtes Struktur-Signal (P3, CEO-Freigabe)
 ```
-Fortschritt: Frontend-i18n lückenlos + vierfach bewacht (Wächter fängt jetzt auch
-hartkodiertes Deutsch als HTML-Textinhalt); Navigation aller Detailseiten konsistent
-(oben starten + Fokus, DRY via startDetailView); Beschaffungs-/ROI-Nutzen ausgebaut
-(druckbarer Report + Zeitraum + Monatsverlauf + je Lieferant, auf „Für dich" entdeckbar);
-Engpass-Quellen überall mit Domain sichtbar. Offene P3: Monolith (app.js), DB, Währung —
-und der einzige große offene NUTZEN-Hebel: Live-Engpassdaten (sicherheitsrelevant →
-mit Owner). Je architektonisch
-bedeutsam → CEO-Freigabe.
+Seit dem letzten Snapshot dazugekommen: **Länder-Compliance-Engine** (`domain/compliance.js`,
+16 Länderprofile, Handels-Modus SAAS_ONLY vs. MARKETPLACE_FEES, Gebührenmodell, Pflichtfelder
+je Land, Krypto-Gebot dreifach abgesichert), **Mehrwährungs-Abo-Katalog** (`data/plans.js`),
+**Krypto-Empfangswege aus den echten Wallets** (`paymentRoutes()`, inkl. beider Solana-Wallets),
+**eigener QR-Encoder** mit Nachweis gegen zwei unabhängige Referenzen, **Checkout-Demo**
+(live unter `/checkout-demo.html`), und **Premium-Preis in der Landeswährung** (siehe unten).
+
+Offene P3 unverändert: Monolith (app.js), echtes DB-Backend. Der einzige große offene
+NUTZEN-Hebel bleibt: **Live-Engpassdaten** (sicherheitsrelevant → mit Owner klären).
 
 ## Priorisierter Backlog (Kandidaten für WORK)
 
@@ -902,3 +903,46 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 - **REPEAT:** Backlog oben angelegt. Nächster Durchlauf nimmt einen P1-Punkt.
 - **Lektion:** Bevor man auf ein Signal handelt, prüfen ob es echt ist. Ein Loop auf
   falschen Daten verstärkt Fehler — genau das soll dieser Loop nicht tun.
+
+---
+
+### Cycle · Premium-Preis in der Landeswährung (2026-08-28)
+
+**GATHER/ANALYSE.** Die App hat einen Länder-Schalter für 16 Währungen — der Premium-Preis
+stand aber fest in EUR, und in `app.js` hing ein **hartkodiertes „€"** am Betrag:
+```js
+<span style="color:var(--green)">${fmtMoney(opt.amount_eur)} €</span>
+```
+Eine Apotheke in Luanda oder Zürich sah „9,99 €" und musste selbst umrechnen. Dieselbe
+Sorte Fehler, die der i18n-Wächter für Text längst abfängt — nur für Währung gab es keinen.
+
+**WORK.** Kein zweiter Preis wurde erfunden: Abgerechnet wird weiter in der Produktwährung,
+angezeigt wird zusätzlich eine Näherung zum **echten Tageskurs** über den bereits
+vorhandenen FX-Dienst (`services/fxRates.js`, open.er-api.com, gecacht).
+
+- `payments.js` → `cryptoOptions(id, { currency })` liefert `local: { currency, amount, updated_at }`
+  oder `null`. Neue Hilfsfunktion `localApproximation()`.
+- `server.js` → `/api/payments/crypto?country=…` steuert nur die Anzeige-Währung.
+- `app.js` → neues `fmtCurrency(v, currency)` über `Intl.NumberFormat`; Währungen ohne
+  Cent-Konvention im Handel (AOA, NGN, KES, MZN) werden gerundet.
+- i18n: `pr_amount_na` enthielt in **allen drei** Wörterbüchern ein hartkodiertes „€" —
+  ersetzt durch `{amount}` (fertig formatiert). Neuer Schlüssel `pr_local_approx`.
+
+**Ergebnis:** „≈ 9.495 AOA in deiner Landeswährung · abgerechnet wird 9,99 €".
+Ohne erreichbaren Kurs steht dort **nichts** — kein geschätzter Betrag.
+
+**CHECK.** 8 neue Unit-Tests (u. a. „ohne Kurs wird nichts erfunden", FX-Cache wird nur
+einmal abgerufen), 14 Browser-Prüfungen über vier Währungen; volle Kette grün
+(485 Tests, Smoke 19/19, i18n 0 Lücken).
+
+**Zwei eigene Fehler unterwegs:**
+1. Die drei i18n-Einfügungen landeten alle im **deutschen** Wörterbuch, weil der Suchtext
+   ein Präfix des Ergebnisses ist. Der Paritäts-Wächter hat es sofort rot gemeldet
+   (1375/1374/1374) — behoben durch sprachspezifische Anker.
+2. Der erste Browser-Check prüfte nur, ob „9,99" irgendwo steht — er hätte die eigentliche
+   Neuerung gar nicht erfasst. Ersetzt durch einen Check, der `fmtCurrency` direkt aufruft
+   und die API-Antwort mit `local` einspeist.
+
+**Offen für den Owner:** Ob Premium echte lokale Festpreise bekommen soll (statt Umrechnung).
+`data/plans.js` zeigt die Bauart bereits — es wäre eine Preisliste je Währung, also eine
+kaufmännische Entscheidung, keine technische.

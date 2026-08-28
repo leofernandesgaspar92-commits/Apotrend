@@ -34,7 +34,7 @@ import { cryptoWallets, paymentRoutes } from '../data/cryptoWallets.js';
 import { listProducts, getProduct } from '../data/products.js';
 import { createAmrService } from '../services/amr.js';
 import { createPatientInfoService } from '../services/patientInfo.js';
-import { listCountries, normalizeCountry, normalizeLocale } from '../data/countries.js';
+import { COUNTRIES, listCountries, normalizeCountry, normalizeLocale } from '../data/countries.js';
 import { countryConfig, featureStatus, isFeatureBlocked } from '../data/countryFeatures.js';
 import {
   availablePurposes, calculateFee, checkoutFieldsFor, complianceProfile,
@@ -96,6 +96,7 @@ const payments = createPaymentsService({
   providers: buildPaymentProvidersFromEnv(),
   wallets: cryptoWallets, // Direkt-in-Wallet: eigene, öffentliche Empfangsadressen (ENV-überschreibbar)
   rates: cryptoRates,
+  fx: fxRates, // für die Näherung des Preises in der Landeswährung
   isModerator: (userId) => social.isModerator(userId),
   onPaid: ({ payment, product }) => { console.log(`✅ Zahlung ${payment.id} bezahlt → Feature „${product.feature}" für User ${payment.user_id} freigeschaltet.`); },
 });
@@ -352,7 +353,13 @@ const routes = [
   ['GET', /^\/api\/me\/premium$/, true, async ({ userId }) => ({ premium: payments.hasFeature(userId, 'premium'), features: payments.myEntitlements(userId) })],
   // Direkt-in-Wallet Krypto: Anzeige (Adresse + „in Wallet öffnen"-URI + Live-Betrag),
   // Start (pending), Tx-ID einreichen (pending_review), Moderation bestätigt manuell.
-  ['GET', /^\/api\/payments\/crypto$/, false, async ({ query }) => payments.cryptoOptions(query.get('product') || 'premium_monthly')],
+  // `country` steuert nur die ANZEIGE-Währung (Näherung). Abgerechnet wird in
+  // der Produktwährung — deshalb ist der Parameter unkritisch und optional.
+  ['GET', /^\/api\/payments\/crypto$/, false, async ({ query }) => {
+    const country = query.get('country');
+    const currency = country ? COUNTRIES[normalizeCountry(country)].currency : null;
+    return payments.cryptoOptions(query.get('product') || 'premium_monthly', { currency });
+  }],
   ['POST', /^\/api\/payments\/crypto\/start$/, true, async ({ userId, body }) => payments.startCryptoPayment(userId, body.productId, body.walletId ?? body.coin)],
   ['POST', /^\/api\/payments\/crypto\/([^/]+)\/claim$/, true, async ({ userId, params, body }) => payments.claimCryptoPayment(userId, params[0], body.txRef)],
   ['GET', /^\/api\/payments\/pending$/, true, async ({ userId }) => ({ payments: payments.listPendingReview(userId) })],

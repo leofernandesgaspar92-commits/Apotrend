@@ -12,14 +12,14 @@ import { getProduct } from '../data/products.js';
 import { walletUri } from '../data/cryptoWallets.js';
 import { AppError } from '../domain/errors.js';
 
-export function createPaymentsService({ repo, providers = {}, onPaid = null, wallets = () => ({}), rates = null, isModerator = () => false }) {
+export function createPaymentsService({ repo, providers = {}, onPaid = null, wallets = () => ({}), rates = null, fx = null, isModerator = () => false }) {
   const pick = (method) => Object.values(providers).find(p => (p.methods || []).includes(method)) || null;
   return {
     // ── Direkt-in-Wallet Krypto (deine eigenen Adressen). BEWUSST OHNE automatische
     //    Chain-Verifizierung: statische Adressen erlauben keine zuverlässige Zuordnung
     //    „welche:r Kund:in hat gezahlt". Ablauf: anzeigen → Kund:in nennt Tx-ID → du
     //    bestätigst manuell (confirmPayment). Ehrlich statt Fake-Auto-Freischaltung. ──
-    async cryptoOptions(productId) {
+    async cryptoOptions(productId, { currency = null } = {}) {
       const product = getProduct(productId);
       if (!product) throw new AppError('product_unknown', 'Unbekanntes Produkt.');
       const ws = wallets(); // Liste (mehrere Wallets je Coin möglich)
@@ -30,7 +30,16 @@ export function createPaymentsService({ repo, providers = {}, onPaid = null, wal
         const amount = rate ? Number((eur / rate).toFixed(8)) : null;
         return { id: w.id, coin: w.coin, symbol: w.symbol, label: w.label, address: w.address, network: w.network, amount_eur: eur, amount_crypto: amount, uri: walletUri(w, amount) };
       });
-      return { product: product.id, product_name: product.name, amount_eur: eur, coins };
+
+      // Näherung in der Landeswährung. ABGERECHNET wird weiterhin in der
+      // Produktwährung — der lokale Betrag ist eine Orientierung, damit eine
+      // Apotheke in Luanda oder Zürich nicht selbst umrechnen muss.
+      // Bewusst KEINE zweite Preisliste: einen Preis zu erfinden wäre etwas
+      // anderes als ihn zum echten Tageskurs anzuzeigen. Fehlt der Kurs,
+      // steht hier null und die Oberfläche sagt das offen.
+      const local = await localApproximation({ fx, amount: eur, from: product.currency, to: currency });
+
+      return { product: product.id, product_name: product.name, currency: product.currency, amount: eur, amount_eur: eur, local, coins };
     },
     // Kund:in wählt eine konkrete Wallet -> pending-Datensatz (zur späteren manuellen Zuordnung).
     startCryptoPayment(userId, productId, walletId) {
@@ -106,6 +115,25 @@ export function createPaymentsService({ repo, providers = {}, onPaid = null, wal
     hasFeature(userId, feature) { return repo.hasEntitlement(userId, feature); },
     myEntitlements(userId) { return repo.listEntitlements(userId); },
   };
+}
+
+/**
+ * Betrag zur Orientierung in eine andere Währung umrechnen.
+ *
+ * Gibt `null` zurück, sobald irgendetwas fehlt (kein FX-Dienst, kein Kurs,
+ * gleiche Währung). Ein geschätzter Betrag ohne Kursbeleg wäre schlimmer als
+ * gar keiner — die Oberfläche zeigt dann nur die Abrechnungswährung.
+ */
+async function localApproximation({ fx, amount, from, to }) {
+  if (!fx || !to || to === from) return null;
+  try {
+    const data = await fx.rates();
+    const converted = fx.convert(amount, from, to, data);
+    if (converted == null || !isFinite(converted)) return null;
+    return { currency: to, amount: converted, updated_at: (data && data.updated_at) || null };
+  } catch {
+    return null; // Netzfehler: lieber nichts anzeigen als etwas Erfundenes
+  }
 }
 
 // Konstante-Zeit-Vergleich zweier Hex-Signaturen.
