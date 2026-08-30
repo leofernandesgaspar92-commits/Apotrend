@@ -12,6 +12,11 @@ export function createExchangeRepo() {
       const row = {
         id: uuid(), kind: e.kind, author_user_id: e.authorUserId,
         bezeichnung: e.bezeichnung, menge: e.menge ?? null, ort: e.ort ?? null, bundesland: e.bundesland ?? null,
+        // Rechtsraum des Eintrags. Wird beim Anlegen aus dem PROFIL der
+        // Autorin gesetzt, nie aus der Anfrage — sonst könnte jemand ein
+        // Angebot unter fremder Rechtsordnung einstellen. Ältere Einträge
+        // haben hier null; die Anzeige leitet das Land dann aus dem Profil ab.
+        country: e.country ?? null,
         ablauf: e.ablauf ?? null, // Verfallsdatum (v.a. bei „biete": Restbestand vor Ablauf)
         note: e.note ?? null, image: e.image ?? null, status: 'offen', reserved: false, created_at: now(), resolved_at: null,
       };

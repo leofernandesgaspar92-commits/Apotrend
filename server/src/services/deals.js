@@ -111,6 +111,11 @@ export function createDealsService({ rabatteRepo, social, accountTypeOf, today =
         provenance: 'self_reported',
         quelle: author,
         created_by: userId,
+        // Rechtsraum AUS DEM PROFIL, nicht aus der Eingabe. Rabattwerbung fuer
+        // Arzneimittel ist laenderabhaengig reguliert (LEGAL_COUNTRY_MATRIX.md);
+        // wer sein Land selbst angeben duerfte, koennte die Regeln des eigenen
+        // umgehen, indem er die Aktion einem anderen zuschreibt.
+        country: (profile && profile.country) || null,
       });
     },
 

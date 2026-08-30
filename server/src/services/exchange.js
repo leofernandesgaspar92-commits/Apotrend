@@ -79,10 +79,35 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
     return authors.size;
   }
 
+  /**
+   * Rechtsraum eines Eintrags.
+   *
+   * Neue Eintraege tragen ihr Land selbst (beim Anlegen aus dem Profil
+   * uebernommen). Fuer Altbestand ohne Land wird es aus dem Profil der Autorin
+   * abgeleitet — sonst verschwaende die gesamte bestehende Boerse in dem
+   * Moment, in dem der Laenderfilter eingeschaltet wird.
+   */
+  function countryOf(e, prof) {
+    return e.country || (prof && prof.country) || null;
+  }
+
+  /**
+   * Freitext-Treffer. Sucht in Bezeichnung UND Notiz.
+   *
+   * Mehrere Woerter muessen ALLE vorkommen (UND, nicht ODER): „pantoprazol 40"
+   * soll die 40-mg-Packung finden und nicht jede Zeile, in der irgendwo eine 40
+   * steht. Reihenfolge egal — „40 pantoprazol" findet dasselbe.
+   */
+  function matchesQuery(e, query) {
+    const heu = `${e.bezeichnung || ''} ${e.note || ''}`.toLowerCase();
+    return query.split(/\s+/).filter(Boolean).every((w) => heu.includes(w));
+  }
+
   function decorate(e) {
     const prof = social.getProfile ? social.getProfile(e.author_user_id) : null;
     return {
       ...e,
+      country: countryOf(e, prof),
       author: prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified } : null,
       match_count: countMatches(e),
       days_until_expiry: daysUntil(e.ablauf), // null wenn kein Verfallsdatum
@@ -108,6 +133,11 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       if (abl && !isValidCalendarDay(abl)) throw new AppError('exchange_bad_date', 'Ungültiges Verfallsdatum.', 400);
       const created = exchangeRepo.create({
         kind, authorUserId: actorUserId, bezeichnung: b,
+        // Land AUS DEM PROFIL, nicht aus der Anfrage: Sonst koennte jemand ein
+        // Angebot unter fremder Rechtsordnung einstellen — bei Arzneimitteln
+        // ist der Rechtsraum keine Anzeigeoption, sondern die Grundlage dafuer,
+        // ob der Handel ueberhaupt zulaessig ist.
+        country: (prof && prof.country) || null,
         menge: (menge ?? '').toString().trim() || null,
         ort: (ort ?? '').toString().trim() || null,
         bundesland: bl,
@@ -126,14 +156,21 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
     },
     // Offene Einträge (Standard), optional nach Art + Text (Präparat) + Bundesland gefiltert.
     // sort='ablauf' -> bald ablaufende zuerst (ohne Verfallsdatum ans Ende).
-    list(viewerUserId, { kind = null, status = 'offen', q = null, bundesland = null, sort = null } = {}) {
+    list(viewerUserId, { kind = null, status = 'offen', q = null, bundesland = null, sort = null, country = null } = {}) {
       requireUser(viewerUserId);
       const query = q ? String(q).trim().toLowerCase() : null;
+      const cc = country ? String(country).toUpperCase() : null;
+      // Erst dekorieren, dann filtern: Das Land steht erst nach decorate() fest
+      // (Altbestand leitet es aus dem Profil ab).
       const out = exchangeRepo.list()
+        .map(decorate)
         .filter(e => (!status || e.status === status) && (!kind || e.kind === kind)
-          && (!query || e.bezeichnung.toLowerCase().includes(query))
-          && (!bundesland || e.bundesland === bundesland))
-        .map(decorate);
+          // Freitext ueber Bezeichnung UND Notiz: Der Wirkstoff steht bei
+          // Boersen-Eintraegen oft nur in der Notiz („INN: Pantoprazol"),
+          // und eine Suche, die ihn dort nicht findet, wirkt kaputt.
+          && (!query || matchesQuery(e, query))
+          && (!bundesland || e.bundesland === bundesland)
+          && (!cc || e.country === cc));
       if (sort === 'ablauf') {
         // Nur Einträge MIT Verfallsdatum aufsteigend; ohne Datum unverändert ans Ende.
         out.sort((a, b) => {

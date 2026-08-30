@@ -1125,7 +1125,16 @@ const routes = [
   ['POST', /^\/api\/prices\/([^/]+)\/post$/, true, async ({ userId, params, body }) => { ensureFeatureAllowed('price_compare', userId); return prices.postAbout(userId, params[0], { body: body.body, visibility: body.visibility }); }],
 
   // ── Top-10-Rabatte (Priorität 5) — in Ländern mit Rx-Rabatt-/Werbeverbot gesperrt ──
-  ['GET', /^\/api\/rabatte$/, true, async ({ userId, query }) => { ensureFeatureAllowed('deals', userId); return { rabatte: rabatte.top10(userId) }; }],
+  // Land + Freitext: Aktionen sind rechtsraumgebunden, und die Suche nach
+  // Wirkstoff (INN) oder Handelsname ist der Weg, auf dem Einkauf tatsaechlich
+  // sucht — „habe ich fuer Pantoprazol gerade eine Aktion?".
+  ['GET', /^\/api\/rabatte$/, true, async ({ userId, query }) => {
+    ensureFeatureAllowed('deals', userId);
+    return { rabatte: rabatte.top10(userId, {
+      country: activeCountry(userId, query),
+      q: query.get('q') || null,
+    }) };
+  }],
   ['GET', /^\/api\/rabatte\/([^/]+)$/, true, async ({ userId, params, query }) => {
     ensureFeatureAllowed('deals', userId);
     const d = rabatte.withActivity(userId, params[0]);
@@ -1135,7 +1144,11 @@ const routes = [
   ['POST', /^\/api\/rabatte\/([^/]+)\/post$/, true, async ({ userId, params, body, query }) => { ensureFeatureAllowed('deals', userId); return rabatte.postAbout(userId, params[0], { body: body.body, visibility: body.visibility }); }],
 
   // ── Bestandsaustausch (Biete/Suche) — in Ländern ohne zulässige P2P-Abgabe gesperrt ──
-  ['GET', /^\/api\/exchange$/, true, async ({ userId, query }) => { ensureFeatureAllowed('stock_exchange', userId); return { entries: exchange.list(userId, { kind: query.get('kind') || null, status: query.get('status') || 'offen', q: query.get('q') || null, bundesland: query.get('bundesland') || null, sort: query.get('sort') || null }) }; }],
+  ['GET', /^\/api\/exchange$/, true, async ({ userId, query }) => { ensureFeatureAllowed('stock_exchange', userId); return { entries: exchange.list(userId, { kind: query.get('kind') || null, status: query.get('status') || 'offen', q: query.get('q') || null, bundesland: query.get('bundesland') || null, sort: query.get('sort') || null,
+      // Rechtsraum: Eine Wiener Apotheke soll keine brasilianischen Angebote
+      // sehen — Arzneimittelhandel ueber Grenzen hinweg ist genehmigungs-
+      // pflichtig (AMG Paragraf 48, Einfuhrlizenzen je Land).
+      country: activeCountry(userId, query) }) }; }],
   ['POST', /^\/api\/exchange$/, true, async ({ userId, body, query }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.create(userId, { kind: body.kind, bezeichnung: body.bezeichnung, menge: body.menge, ort: body.ort, bundesland: body.bundesland, note: body.note, image: body.image, ablauf: body.ablauf }); }],
   ['GET', /^\/api\/exchange\/mine$/, true, async ({ userId, query }) => { ensureFeatureAllowed('stock_exchange', userId); return { entries: exchange.mine(userId, { status: query.get('status') || null }) }; }],
   ['POST', /^\/api\/exchange\/([^/]+)\/resolve$/, true, async ({ userId, params, query }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.markResolved(userId, params[0]); }],

@@ -4107,6 +4107,11 @@ async function loadExchange() {
       if (exchangeQuery) params.set('q', exchangeQuery);
       if (exchangeBL) params.set('bundesland', exchangeBL);
       if (exchangeSort) params.set('sort', exchangeSort);
+      // Land der ANSICHT mitschicken. Ohne diesen Parameter blieben Börse und
+      // Rabatte auf dem Heimatland stehen, während News und Engpässe dem
+      // Länder-Umschalter folgen — dieselbe Seite zeigte dann zwei
+      // verschiedene Länder gleichzeitig.
+      params.set('country', viewCountry());
       d = await api('GET','/api/exchange'+(params.toString()?'?'+params.toString():''));
       if (!d.entries.length) {
         // „Gefiltert leer" ehrlich von „Netzwerk leer" trennen: liegt ein Filter an
@@ -4229,7 +4234,7 @@ async function loadRabatte() {
   const feed = document.getElementById('feed');
   feed.innerHTML = '<div class="loading">…</div>';
   try {
-    const d = await api('GET','/api/rabatte');
+    const d = await api('GET','/api/rabatte?country=' + encodeURIComponent(viewCountry()));
     let cartN = 0; try { cartN = (await api('GET','/api/cart')).count; } catch { /* ohne Zähler weiter */ }
     // Beobachtungsliste laden, um „nur beobachtete" zu ermöglichen (Fehler = kein Filter).
     let watched = new Set();

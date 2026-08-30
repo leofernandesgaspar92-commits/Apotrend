@@ -4,8 +4,8 @@
 export function createRabatteService(rabatteRepo, social) {
   return {
     // Top-10-Ranking, je Aktion mit Aktivitäts-Zähler aus dem Feed.
-    top10(viewerUserId) {
-      return rabatteRepo.listTop10().map(r => ({
+    top10(viewerUserId, { country = null, q = null } = {}) {
+      return rabatteRepo.listTop10({ country, q }).map(r => ({
         ...r,
         post_count: social.postsAbout(viewerUserId, 'rabatt', r.id).length,
       }));

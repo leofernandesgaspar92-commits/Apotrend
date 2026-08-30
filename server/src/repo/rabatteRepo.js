@@ -47,6 +47,10 @@ export function createRabatteRepo({ seed = true, today = null } = {}) {
       // Wer die Aktion eingetragen hat (nur bei selbst eingetragenen gesetzt).
       // Ohne dieses Feld ließe sich „nur eigene zurückziehen" nicht durchsetzen.
       created_by: r.created_by ?? null,
+      // Rechtsraum der Aktion. Bei selbst eingetragenen aus dem Profil des
+      // Betriebs, bei Feed-Daten aus dem Land der Quelle. `null` = Altbestand
+      // bzw. kuratierte Referenzdaten ohne Landeszuordnung.
+      country: r.country ?? null,
     };
     rabatte.set(row.id, row);
     return { ...row };
@@ -82,9 +86,26 @@ export function createRabatteRepo({ seed = true, today = null } = {}) {
     // best_for_wirkstoff: laufen zum selben Wirkstoff mehrere Aktionen, wird die
     // mit dem niedrigsten Aktionspreis markiert (über ALLE laufenden berechnet,
     // nicht nur über die Top-10) — wirkstoff_alternatives = Zahl der weiteren.
-    listTop10() {
+    /**
+     * Laufende Aktionen, beste zuerst.
+     *
+     * `country` filtert auf den Rechtsraum. Zeilen OHNE Land (kuratierte
+     * Referenzdaten, Altbestand) bleiben sichtbar: Sie einem Land zuzuordnen,
+     * das nicht belegt ist, waere geraten — und sie zu verstecken hiesse, dem
+     * Owner beim Einschalten des Filters die halbe Ansicht zu leeren.
+     * `q` sucht in Bezeichnung, Wirkstoff (INN) und Lieferant.
+     */
+    listTop10({ country = null, q = null } = {}) {
       const cutoff = heute();
-      const active = [...rabatte.values()].filter(r => r.gueltig_bis >= cutoff);
+      const cc = country ? String(country).toUpperCase() : null;
+      const worte = q ? String(q).trim().toLowerCase().split(/\s+/).filter(Boolean) : [];
+      const active = [...rabatte.values()]
+        .filter(r => r.gueltig_bis >= cutoff)
+        .filter(r => !cc || !r.country || r.country === cc)
+        .filter(r => !worte.length || (() => {
+          const heu = `${r.bezeichnung || ''} ${r.wirkstoff || ''} ${r.supplier || ''}`.toLowerCase();
+          return worte.every((w) => heu.includes(w));
+        })());
       const byWirkstoff = new Map(); // wirkstoffLower -> { count, minPreis }
       for (const r of active) {
         const k = String(r.wirkstoff || '').trim().toLowerCase();
