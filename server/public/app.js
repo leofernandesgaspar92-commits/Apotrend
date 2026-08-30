@@ -1103,6 +1103,58 @@ function setLocale(l) {
   localStorage.setItem('apo_locale', LOCALE);
   document.documentElement.setAttribute('lang', LOCALE);
 }
+// ── Regionale Schreibweise: Sprache allein genügt nicht ─────────────────────
+// Bisher lieferte t('_bcp47') für JEDES englischsprachige Land „en-GB". In den
+// USA heißt 03/04/2026 aber März, in Großbritannien April. Bei einem
+// Engpass-Meldedatum ist das keine Kosmetik, sondern eine Fehlinformation.
+// Deshalb hängt das Format am LAND der Ansicht, nicht nur an der Sprache.
+const REGIONAL_TAGS = {
+  AT:'de-AT', DE:'de-DE', CH:'de-CH', LI:'de-CH',
+  GB:'en-GB', US:'en-US', CA:'en-CA', AU:'en-AU', ZA:'en-ZA', NG:'en-NG', KE:'en-KE', GH:'en-GH',
+  PT:'pt-PT', BR:'pt-BR', AO:'pt-AO', MZ:'pt-MZ',
+};
+// Wichtig: nur übernehmen, wenn die Kennung zur AKTIVEN SPRACHE passt. Wer
+// bewusst auf Deutsch bleibt und die US-Ansicht öffnet, will weiterhin
+// deutsche Datums- und Zahlenschreibweise sehen — nicht plötzlich 12/31/2026.
+function bcp47() {
+  const tag = REGIONAL_TAGS[typeof viewCountry === 'function' ? viewCountry() : 'AT'];
+  return (tag && tag.indexOf(LOCALE + '-') === 0) ? tag : t('_bcp47');
+}
+
+// ── Landesübliche Fachbegriffe ──────────────────────────────────────────────
+// Dieselbe Sprache, anderer Amtsbegriff: In Österreich heißt es beim BASG
+// „Vertriebseinschränkung", in Deutschland beim BfArM „Lieferengpass". Wer den
+// falschen Begriff liest, sucht im falschen Register.
+//
+// Die Übersteuerung greift NUR, wenn die angezeigte Sprache die des Landes ist
+// — auf Englisch heißt die österreichische Ansicht weiterhin „Shortages", denn
+// „Vertriebseinschränkung" hilft dort niemandem.
+//
+// ⚠️ ZU PRÜFEN: Die deutschen und englischen Begriffe sind belegt (Amtsbegriffe
+// der jeweiligen Behörde). Bei den portugiesischsprachigen Ländern bin ich mir
+// nur bei BR („desabastecimento", vom Owner genannt) sicher; PT/AO/MZ sind
+// begründete Annahmen und gehören von Fachleuten vor Ort bestätigt.
+const COUNTRY_TERMS = {
+  AT: { lang:'de', terms:{ nav_shortages:'📦 Vertriebseinschränkungen' } },
+  DE: { lang:'de', terms:{ nav_shortages:'📦 Lieferengpässe' } },
+  CH: { lang:'de', terms:{ nav_shortages:'📦 Lieferengpässe' } },
+  LI: { lang:'de', terms:{ nav_shortages:'📦 Lieferengpässe' } },
+  US: { lang:'en', terms:{ nav_shortages:'📦 Drug shortages' } },
+  CA: { lang:'en', terms:{ nav_shortages:'📦 Drug shortages' } },
+  GB: { lang:'en', terms:{ nav_shortages:'📦 Medicine supply issues' } },
+  AU: { lang:'en', terms:{ nav_shortages:'📦 Medicine shortages' } },
+  PT: { lang:'pt', terms:{ nav_shortages:'📦 Ruturas de abastecimento' } },
+  BR: { lang:'pt', terms:{ nav_shortages:'📦 Desabastecimento' } },
+  AO: { lang:'pt', terms:{ nav_shortages:'📦 Ruturas de abastecimento' } },
+  MZ: { lang:'pt', terms:{ nav_shortages:'📦 Ruturas de abastecimento' } },
+};
+// Wie t(), aber mit landesüblichem Begriff, wenn es einen gibt.
+function tc(key) {
+  const c = COUNTRY_TERMS[typeof viewCountry === 'function' ? viewCountry() : 'AT'];
+  if (c && c.lang === LOCALE && c.terms[key] != null) return c.terms[key];
+  return t(key);
+}
+
 // Füllt alle [data-i18n]-Elemente (Textinhalt) und [data-i18n-ph] (Platzhalter).
 // t() mit einfacher Platzhalter-Ersetzung: ti('key', {land:'…'}) -> {land} wird ersetzt.
 function ti(key, vars) {
@@ -1124,7 +1176,7 @@ function fmtCurrency(v, currency) {
   if (!isFinite(n) || !currency) return fmtMoney(v);
   const big = ['AOA', 'NGN', 'KES', 'MZN'].includes(currency) && Math.abs(n) >= 100;
   try {
-    return new Intl.NumberFormat(LOCALE === 'en' ? 'en-GB' : LOCALE === 'pt' ? 'pt-PT' : 'de-DE', {
+    return new Intl.NumberFormat(bcp47(), {
       style: 'currency', currency,
       minimumFractionDigits: big ? 0 : 2, maximumFractionDigits: big ? 0 : 2,
     }).format(n);
@@ -1147,7 +1199,10 @@ function nlabel(n, oneKey, manyKey) {
 }
 function applyI18n(root) {
   const scope = root || document;
-  scope.querySelectorAll('[data-i18n]').forEach(n => { n.textContent = t(n.getAttribute('data-i18n')); });
+  // tc() statt t(): landesüblicher Amtsbegriff, wo es einen gibt (AT
+  // „Vertriebseinschränkung" vs. DE „Lieferengpass"). Ohne Übersteuerung ist
+  // tc() identisch mit t(), die übrigen 1375 Schlüssel bleiben unberührt.
+  scope.querySelectorAll('[data-i18n]').forEach(n => { n.textContent = tc(n.getAttribute('data-i18n')); });
   scope.querySelectorAll('[data-i18n-ph]').forEach(n => { n.setAttribute('placeholder', t(n.getAttribute('data-i18n-ph'))); });
   scope.querySelectorAll('[data-i18n-title]').forEach(n => { n.setAttribute('title', t(n.getAttribute('data-i18n-title'))); });
   // aria-label mehrsprachig: Icon-Buttons (auf Mobil ohne sichtbares Label) für Screenreader
@@ -1299,16 +1354,19 @@ const relTime = (iso) => {
   if (diff < 79200) { const h = Math.round(diff/3600); return h===1 ? t('rt_hour_one') : ti('rt_hour_many',{n:h}); }
   const days = Math.round(diff/86400);
   if (days < 7) return days===1 ? t('rt_day_one') : ti('rt_day_many',{n:days});
-  return d.toLocaleDateString(t('_bcp47'), { day:'2-digit', month:'2-digit', year:'numeric' });
+  return d.toLocaleDateString(bcp47(), { day:'2-digit', month:'2-digit', year:'numeric' });
 };
 // Kalendertag (YYYY-MM-DD) im Datumsformat der aktiven Sprache; bei ungültiger Eingabe Rohtext.
 const fmtDateDe = (ymd) => {
   const ts = Date.parse(String(ymd || '') + 'T00:00:00Z');
   if (Number.isNaN(ts)) return String(ymd || '');
-  return new Date(ts).toLocaleDateString(t('_bcp47'), { day:'2-digit', month:'2-digit', year:'numeric', timeZone:'UTC' });
+  return new Date(ts).toLocaleDateString(bcp47(), { day:'2-digit', month:'2-digit', year:'numeric', timeZone:'UTC' });
 };
+// Für den Browser-Audit erreichbar machen: Der Test soll die ECHTE Funktion
+// prüfen, nicht eine Nachbildung — sonst prüft er seine eigene Kopie.
+window.__fmtDateDe = (ymd) => fmtDateDe(ymd);
 // Uhrzeit (HH:MM) eines ISO-Zeitstempels in der aktiven Sprache; ungültig -> leer.
-const fmtClock = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString(t('_bcp47'), { hour:'2-digit', minute:'2-digit' }); };
+const fmtClock = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString(bcp47(), { hour:'2-digit', minute:'2-digit' }); };
 // Tages-Trenner für Nachrichtenverläufe: „Heute"/„Gestern" oder das Datum.
 const dayLabel = (iso) => {
   const d = new Date(iso); if (Number.isNaN(d.getTime())) return '';
@@ -1316,7 +1374,7 @@ const dayLabel = (iso) => {
   const same = (a, b) => a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
   if (same(d, now)) return t('dm_today');
   if (same(d, y)) return t('dm_yesterday');
-  return d.toLocaleDateString(t('_bcp47'), { day:'2-digit', month:'2-digit', year:'numeric' });
+  return d.toLocaleDateString(bcp47(), { day:'2-digit', month:'2-digit', year:'numeric' });
 };
 // Text escapen UND @Handles + #Hashtags anklickbar machen (kein @ mitten in E-Mails).
 const linkifyMentions = (s) => esc(s)

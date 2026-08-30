@@ -188,6 +188,51 @@ async function main() {
     await ctx.close();
   }
 
+  // Landesübliche Schreibweise und Amtsbegriffe. Beides hängt am LAND, nicht
+  // nur an der Sprache — geprüft wird im angemeldeten Betrieb über den
+  // Länder-Umschalter im Kopf.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, colorScheme: 'light' });
+    const page = await ctx.newPage();
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
+    await page.goto(BASE, { waitUntil: 'networkidle' });
+
+    const wechsle = async (cc) => {
+      await page.selectOption('#countrySwitch', cc).catch(() => {});
+      await page.waitForTimeout(500);
+    };
+
+    // 1. Amtsbegriff: dieselbe Sprache, anderer Begriff.
+    await wechsle('AT');
+    const at = await page.locator('[data-tab="shortages"]').innerText();
+    await wechsle('DE');
+    const de = await page.locator('[data-tab="shortages"]').innerText();
+    if (!/Vertriebseinschränkung/i.test(at)) findings.push(`AT-Begriff fehlt im Reiter: "${at}"`);
+    if (!/Lieferengpass|Lieferengpässe/i.test(de)) findings.push(`DE-Begriff fehlt im Reiter: "${de}"`);
+    if (at === de) findings.push('AT und DE zeigen denselben Begriff — die Übersteuerung greift nicht');
+
+    // 2. Datumsformat: 03/04 heißt in den USA März, in Grossbritannien April.
+    //    Ein Engpass-Meldedatum falsch zu lesen ist keine Kosmetik.
+    const probe = async (cc) => {
+      await wechsle(cc);
+      return page.evaluate(() => {
+        // Über die Seitenfunktion selbst, nicht über eine Nachbildung —
+        // sonst prüfte der Test seine eigene Kopie statt der Anwendung.
+        const f = window.__fmtDateDe || null;
+        return f ? f('2026-04-03') : null;
+      });
+    };
+    const us = await probe('US');
+    const gb = await probe('GB');
+    if (us && gb) {
+      if (!/^04\/03\/2026$/.test(us)) findings.push(`US-Datumsformat falsch: "${us}" (erwartet 04/03/2026)`);
+      if (!/^03\/04\/2026$/.test(gb)) findings.push(`GB-Datumsformat falsch: "${gb}" (erwartet 03/04/2026)`);
+    } else {
+      findings.push('Datumsformat nicht prüfbar — window.__fmtDateDe fehlt');
+    }
+    await ctx.close();
+  }
+
   await browser.close();
   stopServer();
 
