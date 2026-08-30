@@ -99,9 +99,11 @@ guid-Schlüssel als gesehen galten, gelten es nicht mehr und werden einmal neu
 aufgenommen. Auf dem Freitarif folgenlos, weil der Snapshot ohnehin kein Deploy
 überlebt.
 
-Nächster sinnvoller Schritt (noch nicht gemacht): auch Engpässe beim Start aus
-der Datenbank holen — dort ist die Lage weniger dringend, weil die
-Referenzdaten beim Start ohnehin neu gesetzt werden.
+Ein eigener Engpass-Restore ist dafür **nicht** nötig, und das war eine
+Fehleinschätzung meinerseits: Nachgemessen zeigt die Engpass-Ansicht nach einem
+Deploy sofort sechs Referenzeinträge, sie ist also gar nicht leer. Und seit der
+Zustandssicherung (nächster Abschnitt) kommen ohnehin auch die
+Community-Meldungen mit zurück.
 
 ### Der teuerste Verlust: die Konten
 
