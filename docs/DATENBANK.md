@@ -8,14 +8,17 @@ Stellen** vom Entwurf des Owners abweichen (mit Begründung und Rückbau), und
 
 ## 1. Was die Datenbank heute tut — und was nicht
 
-**Sie ist ein Spiegel, noch keine Lesequelle.** Das ist eine ehrliche und
-wichtige Einschränkung:
+**Sie haelt die Live-Daten dauerhaft und fuellt den Feed nach einem Deploy
+wieder auf.** Was sie (noch) nicht ist: die laufende Lesequelle der Anwendung.
 
 - Die automatisch geholten Live-Daten (Behörden-News alle 5 Minuten,
   Engpässe alle 4 Stunden) werden **zusätzlich** nach PostgreSQL geschrieben.
-- Der Feed, die Profile, Nachrichten, Bestellungen usw. werden weiterhin aus
-  den In-Memory-Repos gerendert (`src/repo/*.js`, Snapshot in
-  `APOPULSE_DATA_FILE`).
+- **Beim Start** werden die News von dort in den Speicher zurückgeholt (siehe
+  unten) — das ist der Grund, warum die Datenbank überhaupt gebraucht wird.
+- **Im laufenden Betrieb** rendern Feed, Profile, Nachrichten und Bestellungen
+  weiterhin aus den In-Memory-Repos (`src/repo/*.js`, Snapshot in
+  `APOPULSE_DATA_FILE`). Wer die Datenbank direkt lesen will, nimmt
+  `/api/db/news` bzw. `/api/db/shortages`.
 
 **Warum dieser Zuschnitt?** Die Repos tragen den kompletten Funktionsumfang der
 Plattform. Sie in einem Zug auf eine Datenbank umzuhängen, wäre ein Umbau mit
