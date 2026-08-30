@@ -48,7 +48,7 @@ import { plansForCountry, priceFor } from '../data/plans.js';
 import { isLive, isPriceLive, isRabatteLive, liveSources, livePriceSources, liveRabatteSources, refreshShortages, refreshPrices, refreshRabatte, fetchJsonDefault } from '../services/liveData.js';
 import { createScheduler, INTERVALS } from '../services/scheduler.js';
 import { createNewsSeenStore, ingestNews } from '../services/newsIngest.js';
-import { activeSources, sourcesByKind, shortagesFromCsv, shortagesFromJson, dedupeShortages, fetchTextDefault, fetchSource } from '../services/sources.js';
+import { activeSources, sourcesByKind, shortagesFromCsv, shortagesFromJson, dedupeShortages, fetchTextDefault, fetchSource, newsKey } from '../services/sources.js';
 import { createDealsService, seedDemoDealsIfNoneRunning } from '../services/deals.js';
 import { createPrismaStore } from '../repo/prismaStore.js';
 import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
@@ -299,6 +299,66 @@ if (process.env.NODE_ENV !== 'test' && process.env.APOPULSE_DEMO_DEALS !== 'off'
  * CLAUDE.md verlangt für sicherheitsrelevante Aussagen eine Quelle, und eine
  * automatisch übernommene Behördenmeldung ist genau das.
  */
+/**
+ * Beim Start: Beiträge aus der Datenbank in den Speicher zurückholen.
+ *
+ * Der Grund steht in docs/DATENBANK.md: Auf dem kostenlosen Render-Tarif ist
+ * das Dateisystem flüchtig. Nach jedem Deploy war der News-Feed leer, während
+ * PostgreSQL die Meldungen der letzten Wochen hielt — gesammelt, gespeichert
+ * und für niemanden sichtbar.
+ *
+ * Zwei Dinge, auf die es dabei ankommt:
+ *
+ * 1. NICHTS DOPPELT. Bereits vorhandene Beiträge werden über ihren Quell-Link
+ *    erkannt (Snapshot hat überlebt -> hier gibt es nichts zu tun). Und der
+ *    Gesehen-Stand wird mit aufgefüllt, sonst legte der nächste Abruf in fünf
+ *    Minuten jede wiederhergestellte Meldung ein zweites Mal an.
+ * 2. NICHTS ERFINDEN. Übernommen wird, was in der Datenbank steht — Titel,
+ *    Anriss, Link, Land, Quelle. Kein Datum wird ergänzt, keine Meldung
+ *    umformuliert.
+ */
+async function restoreNewsFromDb({ limit = 200 } = {}) {
+  const editor = social.getProfile('apopulse') || social.getProfile('apotrend');
+  if (!editor) return { skipped: true, reason: 'Redaktionskonto fehlt' };
+
+  const { ok, rows, error } = await db.listNews({ limit });
+  if (!ok) return { skipped: true, reason: error || 'Datenbank nicht lesbar' };
+  if (!rows.length) return { restored: 0, reason: 'Datenbank leer' };
+
+  // Was schon im Speicher liegt, einmal einsammeln statt je Zeile zu suchen.
+  const vorhanden = new Set(
+    socialRepo.listPostsByAuthor(editor.user_id)
+      .filter((p) => p.kind === 'news' && p.source_url)
+      .map((p) => p.source_url),
+  );
+
+  let restored = 0;
+  // Älteste zuerst anlegen, damit die Reihenfolge im Feed stimmt.
+  for (const n of [...rows].reverse()) {
+    if (!n.link || vorhanden.has(n.link)) continue;
+    try {
+      const body = n.summary && n.summary !== n.title ? `${n.title}\n\n${n.summary}` : n.title;
+      social.createPost(editor.user_id, {
+        body, kind: 'news', sourceUrl: n.link, visibility: 'public',
+        sourceCountry: n.country,
+      });
+      // Als gesehen merken — sonst legt der nächste Abruf sie erneut an.
+      if (n.sourceId) newsSeen.add(newsKey(n.sourceId, n.link));
+      restored++;
+    } catch (e) {
+      // Eine unbrauchbare Zeile darf die übrigen nicht aufhalten.
+      console.warn(`ApoPulse: Meldung aus der Datenbank übersprungen — ${(e && e.message) || e}`);
+    }
+  }
+
+  if (restored) {
+    saveSoon();
+    console.log(`ApoPulse: ${restored} Meldung(en) aus der Datenbank in den Feed geholt `
+      + `(${rows.length} gelesen, ${rows.length - restored} waren bereits vorhanden).`);
+  }
+  return { restored, read: rows.length };
+}
+
 async function runNewsIngest() {
   const editor = social.getProfile('apopulse');
   if (!editor) return { skipped: true, reason: 'Redaktionskonto fehlt' };
@@ -1274,6 +1334,17 @@ server.listen(PORT, () => {
   } else if (process.env.NODE_ENV !== 'test') {
     console.warn('⚠️  ApoPulse: KEINE Persistenz aktiv (APOPULSE_DATA_FILE nicht gesetzt) — alle Daten gehen bei einem Neustart verloren. Für den Produktivbetrieb APOPULSE_DATA_FILE auf einen dauerhaften Pfad setzen.');
   }
+  // ── Feed aus der Datenbank auffüllen ────────────────────────────────────
+  // Vor dem ersten Abruf, damit die Ansicht nicht erst nach fünf Minuten
+  // Inhalt hat. Ohne DATABASE_URL passiert hier nichts.
+  if (process.env.NODE_ENV !== 'test' && db) {
+    restoreNewsFromDb().catch((e) => {
+      console.warn('ApoPulse: Wiederherstellung aus der Datenbank fehlgeschlagen — '
+        + ((e && e.message) || e) + '. Die App läuft weiter; der Feed füllt sich '
+        + 'dann über den nächsten Abruf.');
+    });
+  }
+
   // ── Automatische Datenaufnahme ──────────────────────────────────────────
   // Zwei Aufgaben mit eigenem Takt (Owner-Vorgabe): News alle 5 Minuten,
   // Engpässe alle 4 Stunden. Beide laufen versetzt an, damit der erste Request

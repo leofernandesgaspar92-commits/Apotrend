@@ -60,8 +60,45 @@ durch die Hintertür zurück. Deshalb `nulls: 'last'` plus `fetchedAt` als
 Zweitschlüssel — ohne den wäre die Reihenfolge der undatierten Meldungen
 untereinander beliebig und änderte sich bei jedem Abruf.
 
-Nächster sinnvoller Schritt (noch nicht gemacht): den Haupt-Feed selbst aus
-diesen Ansichten speisen, statt sie nebenher anzubieten.
+### Nach einem Deploy füllt sich der Feed aus der Datenbank
+
+Das war die eigentliche Lücke: Auf dem kostenlosen Tarif ist der Snapshot nach
+jedem Deploy weg. Der News-Feed startete leer, während PostgreSQL die Meldungen
+der letzten Wochen hielt — gesammelt, gespeichert und für niemanden sichtbar.
+
+Beim Start holt `restoreNewsFromDb()` sie zurück, jede in den Feed **ihres**
+Landes. Gegen einen laufenden Server ohne Snapshot nachgestellt:
+
+```
+ApoPulse: 7 Meldung(en) aus der Datenbank in den Feed geholt (7 gelesen, 0 vorhanden)
+  Feed DE: BfArM: Rueckruf Charge 7 [DE]
+  Feed US: FDA: Safety communication [US]
+  Feed AT: BASG: Vertriebseinschraenkung [AT]
+```
+
+**Der heikle Teil ist die Doppelt-Erkennung**, und zwar an zwei Stellen:
+
+1. *Beim Neustart mit vorhandenem Snapshot* — bereits vorhandene Beiträge
+   werden über ihren Quell-Link erkannt und übersprungen.
+2. *Beim nächsten Abruf fünf Minuten später* — dafür musste der Gesehen-Stand
+   mit wiederhergestellt werden. Der Schlüssel war bisher `quelle:guid`; der
+   guid steht aber nicht in der Datenbank. Er lautet jetzt `quelle:link`, und
+   `newsKey()` bildet ihn an beiden Enden — aus dem Feed-Eintrag und aus der
+   Datenbankzeile. Ein Test hält fest, dass die beiden übereinstimmen; liefen
+   sie auseinander, käme der Fehler als doppelter Beitrag heraus, und zwar erst
+   nach dem nächsten Deploy.
+
+Beides nachgestellt: Neustart mit Snapshot ergibt weiterhin genau einen
+Beitrag, und der anschließende Aufnahme-Lauf meldet `neu=0, angelegt=0`.
+
+Einmalige Folge der Schlüssel-Umstellung: Meldungen, die unter dem alten
+guid-Schlüssel als gesehen galten, gelten es nicht mehr und werden einmal neu
+aufgenommen. Auf dem Freitarif folgenlos, weil der Snapshot ohnehin kein Deploy
+überlebt.
+
+Nächster sinnvoller Schritt (noch nicht gemacht): auch Engpässe beim Start aus
+der Datenbank holen — dort ist die Lage weniger dringend, weil die
+Referenzdaten beim Start ohnehin neu gesetzt werden.
 
 ---
 

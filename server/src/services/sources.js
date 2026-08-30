@@ -376,6 +376,18 @@ export async function fetchSource(source, opts = {}) {
  * Roh-Antwort einer News-Quelle in normalisierte Meldungen wandeln.
  * Jede Meldung trägt Quelle und Link — ohne Beleg wird nichts veröffentlicht.
  */
+/**
+ * Gesehen-Schlüssel einer Meldung.
+ *
+ * Bewusst eine eigene Funktion und nicht eine Zeichenkette an zwei Stellen:
+ * Die Aufnahme bildet ihn aus dem Feed-Eintrag, die Wiederherstellung aus der
+ * Datenbankzeile. Liefen die beiden auseinander, käme der Fehler als
+ * doppelter Beitrag heraus — und zwar erst nach dem nächsten Deploy.
+ */
+export function newsKey(sourceId, link) {
+  return `${sourceId}:${String(link || '').trim()}`;
+}
+
 export function newsFromSource(source, raw) {
   if (source.format !== 'rss') {
     throw new Error(`Format ${source.format} ist für News nicht vorgesehen (nur rss/atom).`);
@@ -385,7 +397,19 @@ export function newsFromSource(source, raw) {
     // Stabile Kennung über die Quelle hinweg: derselbe Beitrag bei zwei
     // Quellen bleibt zwei Beiträge, derselbe Beitrag bei einem erneuten Abruf
     // bleibt einer.
-    key: `${source.id}:${it.id}`,
+    //
+    // Der LINK, nicht `it.id` (guid). Beide sind stabil, aber nur der Link
+    // steht auch in der Datenbank — er ist dort der eindeutige Schlüssel. Erst
+    // dadurch lässt sich der Gesehen-Stand aus der Datenbank wiederherstellen:
+    // Nach einem Deploy ist der Snapshot auf dem kostenlosen Tarif weg, und
+    // ohne rekonstruierbaren Schlüssel legte die nächste Aufnahme jede bereits
+    // gespeicherte Meldung ein zweites Mal an.
+    //
+    // Einmalige Folge der Umstellung: Meldungen, die unter dem alten
+    // guid-Schlüssel als gesehen galten, gelten es nicht mehr. Sie werden
+    // einmal neu aufgenommen — auf dem Freitarif ohnehin folgenlos, weil der
+    // Snapshot einen Deploy nicht überlebt.
+    key: newsKey(source.id, it.link),
     sourceId: source.id,
     sourceLabel: source.label || feedTitle || source.id,
     official: !!source.official,

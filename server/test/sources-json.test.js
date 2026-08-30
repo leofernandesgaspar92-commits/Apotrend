@@ -14,7 +14,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { shortagesFromJson, activeSources, sourcesByKind, regulatorOf,
-  fetchWithRetry, fetchSource, isPermanentError } from '../src/services/sources.js';
+  fetchWithRetry, fetchSource, isPermanentError, newsFromSource, newsKey } from '../src/services/sources.js';
 import { listCountries } from '../src/data/countries.js';
 
 /** Nur die eingebauten Quellen, ohne die Umgebung der Testmaschine. */
@@ -267,4 +267,35 @@ test('eine eigene Adresse schaltet die eingebauten Ersatzadressen ab', () => {
     .find((s) => s.id === 'basg_news');
   assert.equal(eigen.url, 'https://eigen.example/feed');
   assert.deepEqual(eigen.fallbacks, []);
+});
+
+// ── Gesehen-Schlüssel: der Vertrag zwischen Aufnahme und Wiederherstellung ──
+//  Die Aufnahme bildet den Schlüssel aus dem Feed-Eintrag, die
+//  Wiederherstellung aus der Datenbankzeile. Laufen die beiden auseinander,
+//  kommt der Fehler als doppelter Beitrag heraus — und zwar erst nach dem
+//  nächsten Deploy, wenn niemand mehr an diese Stelle denkt.
+
+test('der Schlüssel aus dem Feed ist derselbe wie der aus der Datenbankzeile', () => {
+  const quelle = { id: 'bfarm_news', kind: 'news', country: 'DE', format: 'rss', label: 'BfArM' };
+  const raw = `<?xml version="1.0"?><rss version="2.0"><channel><title>BfArM</title>
+    <item><title>Rückruf</title><link>https://bfarm.example/1</link>
+    <guid>urn:uuid:abc-123</guid><description>Text</description></item></channel></rss>`;
+
+  const [item] = newsFromSource(quelle, raw);
+  // Aus der Datenbank steht nur sourceId + link zur Verfügung — kein guid.
+  const ausDb = newsKey('bfarm_news', 'https://bfarm.example/1');
+
+  assert.equal(item.key, ausDb,
+    'Feed- und Datenbank-Schlüssel müssen übereinstimmen, sonst entstehen Duplikate');
+  assert.ok(!item.key.includes('urn:uuid'),
+    'der guid darf nicht in den Schlüssel, er steht nicht in der Datenbank');
+});
+
+test('newsKey trennt gleiche Meldungen verschiedener Quellen', () => {
+  // Dieselbe Pressemitteilung bei zwei Behörden bleibt zwei Beiträge — das war
+  // schon vorher so und darf sich durch die Umstellung nicht ändern.
+  assert.notEqual(newsKey('bfarm_news', 'https://x/1'), newsKey('pei_news', 'https://x/1'));
+  assert.equal(newsKey('bfarm_news', 'https://x/1'), newsKey('bfarm_news', 'https://x/1'));
+  // Führende/folgende Leerzeichen dürfen keinen neuen Schlüssel erzeugen.
+  assert.equal(newsKey('a', ' https://x/1 '), newsKey('a', 'https://x/1'));
 });

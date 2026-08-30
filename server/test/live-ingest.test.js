@@ -94,7 +94,11 @@ test('News-Meldungen tragen Quelle und Link', () => {
   const source = { id: 'amt', format: 'rss', country: 'DE', label: 'Amt', official: true };
   const news = newsFromSource(source, FEED(ITEM(1) + ITEM(2)));
   assert.equal(news.length, 2);
-  assert.equal(news[0].key, 'amt:id-1', 'Kennung enthält die Quelle');
+  // Die Kennung enthält Quelle UND Link. Bis zur Datenbank-Wiederherstellung
+  // stand hier der guid ('amt:id-1'); der steht aber nicht in der Datenbank,
+  // und ohne rekonstruierbare Kennung legte die erste Aufnahme nach einem
+  // Deploy jede wiederhergestellte Meldung ein zweites Mal an.
+  assert.equal(news[0].key, 'amt:https://amt.example/1', 'Kennung enthält Quelle und Link');
   assert.equal(news[0].link, 'https://amt.example/1');
   assert.equal(news[0].official, true);
 });
