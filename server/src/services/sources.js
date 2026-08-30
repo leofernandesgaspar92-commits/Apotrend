@@ -49,25 +49,27 @@ const BUILTIN = [
     id: 'bfarm_news', kind: 'news', country: 'DE', format: 'rss',
     label: 'BfArM — Aktuelles',
     url: 'https://www.bfarm.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed.xml',
-    official: true,
+    fallbacks: ['https://www.bundesgesundheitsministerium.de/rss/aktuelles.xml'],
+    official: true, verified: false,
   },
   {
     id: 'pei_news', kind: 'news', country: 'DE', format: 'rss',
     label: 'Paul-Ehrlich-Institut — Aktuelles',
     url: 'https://www.pei.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/rss-newsfeed.xml',
-    official: true,
+    official: true, verified: false,
   },
   {
     id: 'basg_news', kind: 'news', country: 'AT', format: 'rss',
     label: 'BASG — Neuigkeiten',
     url: 'https://www.basg.gv.at/rss',
-    official: true,
+    fallbacks: ['https://www.basg.gv.at/rss/news', 'https://www.sozialministerium.at/rss'],
+    official: true, verified: false,
   },
   {
     id: 'ema_news', kind: 'news', country: 'EU', format: 'rss',
     label: 'EMA — News and press releases',
     url: 'https://www.ema.europa.eu/en/rss.xml',
-    official: true,
+    official: true, verified: false,
   },
   // --- Vom Owner benannte Länder ------------------------------------------
   //  Alle sechs Behörden stehen bereits im Länder-Register (data/countries.js)
@@ -77,39 +79,123 @@ const BUILTIN = [
     id: 'swissmedic_news', kind: 'news', country: 'CH', format: 'rss',
     label: 'Swissmedic — Mitteilungen',
     url: 'https://www.swissmedic.ch/swissmedic/de/home/news/mitteilungen.rss',
-    official: true,
+    official: true, verified: false,
   },
   {
     id: 'mhra_news', kind: 'news', country: 'GB', format: 'rss',
     label: 'MHRA — News and announcements',
     // Atom statt RSS 2.0 — der Parser erkennt beides am Wurzelelement.
     url: 'https://www.gov.uk/government/organisations/medicines-and-healthcare-products-regulatory-agency.atom',
-    official: true,
+    official: true, verified: false,
   },
   {
     id: 'fda_news', kind: 'news', country: 'US', format: 'rss',
     label: 'FDA — Press releases',
     url: 'https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/press-releases/rss.xml',
-    official: true,
+    official: true, verified: false,
   },
   {
     id: 'healthcanada_news', kind: 'news', country: 'CA', format: 'rss',
     label: 'Health Canada — Recalls and safety alerts',
     url: 'https://recalls-rappels.canada.ca/en/feed/recalls-alerts-rss',
-    official: true,
+    official: true, verified: false,
   },
   {
     id: 'tga_news', kind: 'news', country: 'AU', format: 'rss',
     label: 'TGA — News',
     url: 'https://www.tga.gov.au/news/rss.xml',
-    official: true,
+    official: true, verified: false,
   },
   {
     id: 'sahpra_news', kind: 'news', country: 'ZA', format: 'rss',
     label: 'SAHPRA — News',
     url: 'https://www.sahpra.org.za/feed/',
-    official: true,
+    official: true, verified: false,
   },
+  // --- Restliche Länder des Registers -------------------------------------
+  //  Damit sind alle 16 Länder aus data/countries.js abgedeckt.
+  //
+  //  `verified: false` heißt: Die Adresse ist ein begründeter Startwert, aber
+  //  in der Bauumgebung war kein Netz — sie konnte NICHT abgerufen werden.
+  //  Das gilt für ALLE Quellen dieser Datei, auch die älteren: Dass eine URL
+  //  schon länger hier steht, macht sie nicht überprüft. `/api/live/status`
+  //  zeigt nach dem ersten Lauf, welche tatsächlich antwortet — erst dann
+  //  darf `verified` bei einer Quelle auf `true` gesetzt werden.
+  //
+  //  `fallbacks` ist der vom Owner gewünschte Rückfall: Antwortet die
+  //  Fachbehörde nicht, wird die Pressemitteilung des Gesundheitsministeriums
+  //  bzw. der Regierung versucht. Lieber die Meldung einer Ebene höher als
+  //  eine leere Länderansicht.
+  {
+    id: 'li_news', kind: 'news', country: 'LI', format: 'rss',
+    label: 'Liechtenstein — Amt für Gesundheit / Regierung',
+    // Liechtenstein hat keine eigene Zulassungsbehörde: Es übernimmt
+    // Swissmedic-Zulassungen. Ein eigener Arzneimittel-Feed ist daher
+    // unwahrscheinlich — deshalb direkt die Regierungsmitteilungen.
+    url: 'https://www.llv.li/de/rss/mitteilungen',
+    fallbacks: ['https://www.regierung.li/rss/mitteilungen'],
+    official: true, verified: false,
+  },
+  {
+    id: 'infarmed_news', kind: 'news', country: 'PT', format: 'rss',
+    label: 'INFARMED — Notícias',
+    url: 'https://www.infarmed.pt/web/infarmed/rss',
+    fallbacks: ['https://www.sns.gov.pt/feed/'],
+    official: true, verified: false,
+  },
+  {
+    id: 'anvisa_news', kind: 'news', country: 'BR', format: 'rss',
+    label: 'ANVISA — Notícias',
+    url: 'https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/RSS',
+    fallbacks: ['https://www.gov.br/saude/pt-br/assuntos/noticias/RSS'],
+    official: true, verified: false,
+  },
+  {
+    id: 'armed_news', kind: 'news', country: 'AO', format: 'rss',
+    label: 'ARMED Angola — Notícias',
+    url: 'https://armed.gov.ao/feed/',
+    fallbacks: ['https://www.minsa.gov.ao/feed/'],
+    official: true, verified: false,
+  },
+  {
+    id: 'anarme_news', kind: 'news', country: 'MZ', format: 'rss',
+    label: 'ANARME Moçambique — Notícias',
+    url: 'https://anarme.gov.mz/feed/',
+    fallbacks: ['https://www.misau.gov.mz/index.php/noticias?format=feed&type=rss'],
+    official: true, verified: false,
+  },
+  {
+    id: 'nafdac_news', kind: 'news', country: 'NG', format: 'rss',
+    label: 'NAFDAC — News',
+    url: 'https://nafdac.gov.ng/feed/',
+    fallbacks: ['https://www.health.gov.ng/feed/'],
+    official: true, verified: false,
+  },
+  {
+    id: 'ppb_news', kind: 'news', country: 'KE', format: 'rss',
+    label: 'Pharmacy and Poisons Board Kenya — News',
+    url: 'https://web.pharmacyboardkenya.org/feed/',
+    fallbacks: ['https://www.health.go.ke/feed/'],
+    official: true, verified: false,
+  },
+  {
+    id: 'fdaghana_news', kind: 'news', country: 'GH', format: 'rss',
+    label: 'FDA Ghana — News',
+    url: 'https://fdaghana.gov.gh/feed/',
+    fallbacks: ['https://www.moh.gov.gh/feed/'],
+    official: true, verified: false,
+  },
+  {
+    id: 'ashp_shortages_news', kind: 'news', country: 'US', format: 'rss',
+    label: 'ASHP — Drug Shortages (Meldungen)',
+    // ABSICHTLICH als News-Quelle, nicht als Engpass-Quelle: ASHP liefert
+    // redaktionelle Meldungen, keinen strukturierten Export mit Statusspalte.
+    // Daraus Engpass-Datensätze zu schneiden hieße raten — siehe Dateikopf.
+    url: 'https://www.ashp.org/drug-shortages/current-shortages/rss',
+    fallbacks: ['https://www.ashp.org/rss/news'],
+    official: false, verified: false,
+  },
+
   // --- Engpässe als strukturierter Export ---------------------------------
   //  Das ist der EINZIGE Weg, auf dem Engpass-Datensätze entstehen: benannte
   //  Felder, keine Interpretation von Schlagzeilen (siehe Kopf dieser Datei).
@@ -117,7 +203,7 @@ const BUILTIN = [
     id: 'basg_shortages', kind: 'shortages', country: 'AT', format: 'json',
     label: 'BASG — Vertriebseinschränkungen',
     url: 'https://vertriebseinschraenkungen.basg.gv.at/api/v1/public/shortages',
-    official: true,
+    official: true, verified: false,
   },
 ];
 
@@ -145,7 +231,12 @@ export function activeSources(env = process.env) {
     if (!url) continue;
     const format = env[keys.format] || def.format;
     if (!SOURCE_FORMATS.includes(format)) continue;
-    out.push({ ...def, url, format, configured: override !== undefined });
+    // Hat der Betreiber eine eigene Adresse gesetzt, gelten die eingebauten
+    // Ausweichadressen NICHT mehr: Sonst landete man bei einem Tippfehler in
+    // der eigenen URL stillschweigend wieder beim Voreinstellungs-Feed und
+    // hielte dessen Daten für die selbst konfigurierten.
+    const fallbacks = override !== undefined ? [] : (def.fallbacks || []);
+    out.push({ ...def, url, format, fallbacks, configured: override !== undefined });
   }
 
   // Eigene Quellen aus der Umgebung einsammeln.
@@ -193,8 +284,90 @@ export async function fetchTextDefault(url, { timeoutMs = 15_000, fetchImpl = gl
     signal: AbortSignal.timeout(timeoutMs),
     redirect: 'follow',
   });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
+  if (!res.ok) {
+    const e = new Error('HTTP ' + res.status);
+    e.status = res.status;
+    throw e;
+  }
   return res.text();
+}
+
+// --- Wiederholen und Ausweichen ---------------------------------------------
+//  Behördenserver sind unzuverlässig, und die Voreinstellungen unten konnten
+//  hier nicht geprüft werden (keine Netzverbindung in der Bauumgebung). Beides
+//  zusammen verlangt zwei getrennte Mechanismen — sie lösen verschiedene
+//  Probleme und dürfen nicht vermischt werden:
+//
+//   · WIEDERHOLEN hilft gegen VORÜBERGEHENDE Störungen (Zeitüberschreitung,
+//     502 vom Lastverteiler, Verbindungsabbruch). Dieselbe URL, später nochmal.
+//   · AUSWEICHEN hilft gegen DAUERHAFTE (404, weil die Behörde ihren Feed
+//     verschoben hat). Eine 404 hundertmal zu wiederholen ändert nichts —
+//     dann muss eine andere Adresse her.
+//
+//  Deshalb wird bei 4xx NICHT wiederholt, sondern sofort ausgewichen.
+
+/** Fehler, bei denen ein zweiter Versuch sinnlos ist (die Antwort bleibt gleich). */
+export function isPermanentError(err) {
+  const status = err && err.status;
+  // 429 ist formal 4xx, aber ausdrücklich ein „später nochmal" — also nicht dauerhaft.
+  if (typeof status === 'number') return status >= 400 && status < 500 && status !== 429;
+  return false;
+}
+
+const schlaf = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Eine URL mit Wiederholung holen.
+ *
+ * `attempts: 2` heißt: ein Versuch plus EINE Wiederholung nach 0,5 s.
+ *
+ * Warum nicht mehr — die Rechnung im schlimmsten Fall: 20 Quellen, je zwei
+ * Adressen (Behörde + Ministerium), Zeitlimit 15 s je Abruf. Bei zwei
+ * Versuchen sind das 2 × 2 × 15 s = 60 s, bei dreien schon 90 s. Die Abrufe
+ * laufen zwar parallel, aber es ist eine kostenlose Render-Instanz, und der
+ * Takt ist fünf Minuten. Eine zweite Wiederholung fängt kaum eine Störung
+ * mehr ein, die die erste nicht schon aufgefangen hätte — sie kostet nur.
+ */
+export async function fetchWithRetry(url, {
+  fetchText = fetchTextDefault, attempts = 2, baseDelayMs = 500, sleep = schlaf, log = null,
+} = {}) {
+  let letzter;
+  for (let versuch = 1; versuch <= attempts; versuch++) {
+    try {
+      return await fetchText(url);
+    } catch (e) {
+      letzter = e;
+      if (isPermanentError(e)) throw e;         // sinnlos zu wiederholen
+      if (versuch === attempts) break;
+      log?.(`ApoPulse Quellen: ${url} Versuch ${versuch} fehlgeschlagen (${e.message}) — neuer Versuch`);
+      await sleep(baseDelayMs * versuch);
+    }
+  }
+  throw letzter;
+}
+
+/**
+ * Eine Quelle holen und dabei ihre Ausweichadressen berücksichtigen.
+ *
+ * Gibt zurück, WELCHE Adresse geantwortet hat. Das ist kein Beiwerk: Läuft eine
+ * Quelle dauerhaft über die Ausweichadresse, ist die Voreinstellung falsch und
+ * gehört korrigiert — ohne diese Angabe merkt das niemand, weil ja Daten kommen.
+ */
+export async function fetchSource(source, opts = {}) {
+  const adressen = [source.url, ...(source.fallbacks || [])].filter(Boolean);
+  const fehler = [];
+  for (const [i, url] of adressen.entries()) {
+    try {
+      const raw = await fetchWithRetry(url, opts);
+      return { raw, url, usedFallback: i > 0, fallbackIndex: i, errors: fehler };
+    } catch (e) {
+      fehler.push({ url, error: (e && e.message) || String(e) });
+    }
+  }
+  const e = new Error(`Keine Adresse erreichbar (${adressen.length} versucht): `
+    + fehler.map((f) => `${f.url} -> ${f.error}`).join(' | '));
+  e.attempts = fehler;
+  throw e;
 }
 
 // --- News-Adapter ------------------------------------------------------------

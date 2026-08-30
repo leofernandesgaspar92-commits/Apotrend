@@ -13,7 +13,9 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { shortagesFromJson, activeSources, sourcesByKind, regulatorOf } from '../src/services/sources.js';
+import { shortagesFromJson, activeSources, sourcesByKind, regulatorOf,
+  fetchWithRetry, fetchSource, isPermanentError } from '../src/services/sources.js';
+import { listCountries } from '../src/data/countries.js';
 
 /** Nur die eingebauten Quellen, ohne die Umgebung der Testmaschine. */
 const nurBuiltin = () => activeSources({});
@@ -144,4 +146,125 @@ test('alle eingebauten Quellen haben eindeutige Kennungen und https-URLs', () =>
     assert.match(s.url, /^https:\/\//, `${s.id} ist nicht https`);
     assert.ok(s.label, `${s.id} hat kein Etikett`);
   }
+});
+
+// ── Wiederholen und Ausweichen ──────────────────────────────────────────────
+//  Zwei Mechanismen für zwei verschiedene Probleme. Sie zu vermischen wäre der
+//  Fehler: Eine 404 hundertmal zu wiederholen ändert nichts, und bei einer
+//  Zeitüberschreitung sofort die Ersatzadresse zu nehmen verdeckt, dass die
+//  eigentliche Quelle in Ordnung ist.
+
+test('vorübergehende Störung wird wiederholt', async () => {
+  let versuche = 0;
+  const raw = await fetchWithRetry('https://x/1', {
+    fetchText: async () => { versuche++; if (versuche < 2) throw new Error('ETIMEDOUT'); return 'ok'; },
+    sleep: async () => {}, // keine echte Wartezeit im Test
+  });
+  assert.equal(raw, 'ok');
+  assert.equal(versuche, 2, 'ein Versuch plus eine Wiederholung');
+});
+
+test('nach der letzten Wiederholung wird der Fehler weitergereicht', async () => {
+  let versuche = 0;
+  await assert.rejects(
+    () => fetchWithRetry('https://x/1', {
+      fetchText: async () => { versuche++; throw new Error('ECONNREFUSED'); },
+      sleep: async () => {},
+    }),
+    /ECONNREFUSED/,
+  );
+  assert.equal(versuche, 2, 'genau zwei Versuche, nicht endlos');
+});
+
+test('eine 404 wird NICHT wiederholt — die Antwort bliebe dieselbe', async () => {
+  let versuche = 0;
+  await assert.rejects(() => fetchWithRetry('https://x/1', {
+    fetchText: async () => { versuche++; const e = new Error('HTTP 404'); e.status = 404; throw e; },
+    sleep: async () => {},
+  }));
+  assert.equal(versuche, 1);
+});
+
+test('429 gilt als vorübergehend, obwohl es 4xx ist', () => {
+  // „Zu viele Anfragen" heißt ausdrücklich „später nochmal" — das ist der
+  // eine 4xx-Code, bei dem Wiederholen richtig ist.
+  const mit = (status) => { const e = new Error('x'); e.status = status; return e; };
+  assert.equal(isPermanentError(mit(404)), true);
+  assert.equal(isPermanentError(mit(403)), true);
+  assert.equal(isPermanentError(mit(429)), false);
+  assert.equal(isPermanentError(mit(503)), false);
+  assert.equal(isPermanentError(new Error('Netz weg')), false, 'ohne Status: vorübergehend annehmen');
+});
+
+test('fällt die Behörde aus, greift die Ersatzadresse', async () => {
+  const quelle = { id: 'x', url: 'https://behoerde/feed', fallbacks: ['https://ministerium/feed'] };
+  const res = await fetchSource(quelle, {
+    fetchText: async (u) => {
+      if (u === 'https://behoerde/feed') { const e = new Error('HTTP 404'); e.status = 404; throw e; }
+      return '<rss/>';
+    },
+    sleep: async () => {},
+  });
+  assert.equal(res.raw, '<rss/>');
+  assert.equal(res.url, 'https://ministerium/feed');
+  assert.equal(res.usedFallback, true);
+  // Der Fehler der Hauptadresse geht nicht verloren — sonst bliebe eine
+  // dauerhaft kaputte Voreinstellung für immer stehen.
+  assert.equal(res.errors.length, 1);
+  assert.match(res.errors[0].error, /404/);
+});
+
+test('antwortet die Hauptadresse, wird die Ersatzadresse gar nicht erst versucht', async () => {
+  const angefragt = [];
+  const res = await fetchSource(
+    { url: 'https://behoerde/feed', fallbacks: ['https://ministerium/feed'] },
+    { fetchText: async (u) => { angefragt.push(u); return 'gut'; }, sleep: async () => {} },
+  );
+  assert.deepEqual(angefragt, ['https://behoerde/feed']);
+  assert.equal(res.usedFallback, false);
+});
+
+test('fällt alles aus, nennt der Fehler jede versuchte Adresse', async () => {
+  await assert.rejects(
+    () => fetchSource({ url: 'https://a/1', fallbacks: ['https://b/2'] }, {
+      fetchText: async () => { const e = new Error('HTTP 404'); e.status = 404; throw e; },
+      sleep: async () => {},
+    }),
+    (e) => {
+      assert.match(e.message, /https:\/\/a\/1/);
+      assert.match(e.message, /https:\/\/b\/2/);
+      assert.equal(e.attempts.length, 2);
+      return true;
+    },
+  );
+});
+
+// ── Länderabdeckung ─────────────────────────────────────────────────────────
+
+test('jedes der 16 Länder des Registers hat eine Quelle', () => {
+  // Der eigentliche Auftrag dieser Runde. Ohne diese Prüfung fällt ein
+  // vergessenes Land erst auf, wenn dort jemand eine leere Ansicht sieht.
+  const proLand = new Set(activeSources({}).map((s) => s.country));
+  const fehlend = listCountries().map((c) => c.code).filter((cc) => !proLand.has(cc));
+  assert.deepEqual(fehlend, [], `Ohne Quelle: ${fehlend.join(', ')}`);
+});
+
+test('keine Quelle behauptet, geprüft zu sein', () => {
+  // In der Bauumgebung gibt es kein Netz — keine dieser URLs konnte abgerufen
+  // werden. `verified: true` wäre hier schlicht gelogen und dürfte erst nach
+  // einem erfolgreichen Lauf auf Render gesetzt werden.
+  for (const s of activeSources({})) {
+    assert.equal(s.verified, false, `${s.id} behauptet, geprüft zu sein`);
+  }
+});
+
+test('eine eigene Adresse schaltet die eingebauten Ersatzadressen ab', () => {
+  // Sonst landete ein Tippfehler in der eigenen URL stillschweigend wieder
+  // beim Voreinstellungs-Feed — und man hielte dessen Daten für die eigenen.
+  const mit = activeSources({}).find((s) => s.id === 'basg_news');
+  assert.ok(mit.fallbacks.length > 0);
+  const eigen = activeSources({ APOPULSE_SOURCE_BASG_NEWS_URL: 'https://eigen.example/feed' })
+    .find((s) => s.id === 'basg_news');
+  assert.equal(eigen.url, 'https://eigen.example/feed');
+  assert.deepEqual(eigen.fallbacks, []);
 });

@@ -51,7 +51,7 @@ APOPULSE_SOURCE_<ID>_COUNTRY  ISO-Ländercode
 APOPULSE_SOURCE_<ID>_LABEL    Anzeigename
 ```
 
-Eingebaut sind elf Quellen — zehn News und ein Engpass-Export:
+Eingebaut sind zwanzig Quellen — neunzehn News und ein Engpass-Export. Damit hat **jedes der 16 Länder** aus `src/data/countries.js` mindestens eine Quelle:
 
 | Kennung | Land | Behörde | Art |
 |---|---|---|---|
@@ -64,6 +64,15 @@ Eingebaut sind elf Quellen — zehn News und ein Engpass-Export:
 | `HEALTHCANADA_NEWS` | CA | Health Canada | News (RSS) |
 | `TGA_NEWS` | AU | TGA | News (RSS) |
 | `SAHPRA_NEWS` | ZA | SAHPRA | News (RSS) |
+| `LI_NEWS` | LI | Amt für Gesundheit / Regierung | News (RSS) |
+| `INFARMED_NEWS` | PT | INFARMED | News (RSS) |
+| `ANVISA_NEWS` | BR | ANVISA | News (RSS) |
+| `ARMED_NEWS` | AO | ARMED | News (RSS) |
+| `ANARME_NEWS` | MZ | ANARME | News (RSS) |
+| `NAFDAC_NEWS` | NG | NAFDAC | News (RSS) |
+| `PPB_NEWS` | KE | Pharmacy and Poisons Board | News (RSS) |
+| `FDAGHANA_NEWS` | GH | FDA Ghana | News (RSS) |
+| `ASHP_SHORTAGES_NEWS` | US | ASHP (nicht behördlich) | News (RSS) |
 | `EMA_NEWS` | EU | EMA | News (RSS) |
 | `BASG_SHORTAGES` | AT | BASG Vertriebseinschränkungen | Engpässe (JSON) |
 
@@ -71,10 +80,66 @@ Alle elf Behörden stehen mit genau diesen Namen im Länder-Register
 (`src/data/countries.js`), die Quellenangabe am Beitrag passt also zum Land.
 
 > **Die URLs sind Startwerte, keine Zusage.** Die Bauumgebung dieses Projekts
-> hat keinen Netzzugang — sie konnten hier nicht abgerufen werden. Welche
+> hat keinen Netzzugang — **keine** dieser Adressen konnte hier abgerufen
+> werden. Alle zwanzig tragen deshalb `verified: false`, auch die schon länger
+> eingetragenen: Dass eine URL alt ist, macht sie nicht überprüft. Welche
 > Quelle tatsächlich antwortet, steht nach dem ersten Lauf unter
-> `/api/live/status`; jede lässt sich per Umgebungsvariable umbiegen oder mit
-> leerem Wert abschalten.
+> `/api/live/status`; erst danach darf eine Quelle auf `verified: true`.
+> Jede lässt sich per Umgebungsvariable umbiegen oder mit leerem Wert
+> abschalten.
+>
+> Besonders unsicher sind ARMED (AO), ANARME (MZ), PPB (KE) und FDA Ghana —
+> dort ist gut möglich, dass es überhaupt keinen RSS-Feed gibt. Genau dafür
+> gibt es die Ersatzadressen.
+
+### Ersatzadressen und Wiederholungen
+
+Jede Quelle darf `fallbacks` mitbringen: Antwortet die Fachbehörde nicht, wird
+die Pressemitteilung des Gesundheitsministeriums bzw. der Regierung versucht.
+Lieber die Meldung einer Ebene höher als eine leere Länderansicht.
+
+Zwei getrennte Mechanismen, weil es zwei verschiedene Probleme sind:
+
+| Problem | Mittel | Warum nicht das andere |
+|---|---|---|
+| **Vorübergehend** (Zeitüberschreitung, 502, Verbindungsabbruch) | dieselbe Adresse nochmal (1 Wiederholung nach 0,5 s) | Sofort auszuweichen verdeckt, dass die eigentliche Quelle in Ordnung ist |
+| **Dauerhaft** (404 — Feed verschoben) | sofort die nächste Adresse | Eine 404 hundertmal zu wiederholen ändert nichts |
+
+`429 Too Many Requests` gilt als **vorübergehend**, obwohl es ein 4xx ist — der
+Code heißt ausdrücklich „später nochmal".
+
+**Warum nur eine Wiederholung.** Im schlimmsten Fall: 20 Quellen × 2 Adressen ×
+15 s Zeitlimit. Bei zwei Versuchen sind das 60 s, bei dreien 90 s. Die Abrufe
+laufen parallel, aber es ist eine kostenlose Render-Instanz und der Takt sind
+fünf Minuten. Eine zweite Wiederholung fängt kaum eine Störung mehr ein, die
+die erste nicht schon aufgefangen hätte.
+
+**Läuft eine Quelle über die Ersatzadresse, wird das gemeldet** — im Log und in
+`perSource[...].usedFallback`. Ohne diese Meldung hielte man die Voreinstellung
+weiter für richtig, es kommen ja Daten, und die falsche URL bliebe für immer
+stehen.
+
+**Eine eigene Adresse schaltet die eingebauten Ersatzadressen ab.** Sonst
+landete ein Tippfehler in der eigenen URL stillschweigend wieder beim
+Voreinstellungs-Feed — und man hielte dessen Daten für die selbst
+konfigurierten.
+
+### Länderabdeckung nachsehen
+
+`/api/live/status` enthält `coverage`:
+
+```jsonc
+"coverage": {
+  "countries": 16,
+  "withSource": 16,
+  "missing": [],          // hier stünde ein vergessenes Land
+  "bySource": { "AT": ["basg_news", "basg_shortages"], … }
+}
+```
+
+Ohne diese Zeile fällt ein Land, das durchs Raster gefallen ist, erst auf, wenn
+dort jemand eine leere Ansicht sieht. Ein Test hält zusätzlich fest, dass jedes
+Land des Registers eine Quelle hat.
 
 Eine eigene Quelle entsteht allein durch das Setzen einer neuen `..._URL`:
 

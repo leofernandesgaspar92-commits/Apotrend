@@ -17,7 +17,7 @@
 //    Umschreibung.
 // ============================================================================
 
-import { newsFromSource, sourcesByKind, fetchTextDefault, regulatorOf } from './sources.js';
+import { newsFromSource, sourcesByKind, fetchTextDefault, fetchSource, regulatorOf } from './sources.js';
 
 /** Wie viele Meldungen je Quelle und Durchlauf höchstens übernommen werden. */
 export const MAX_PER_SOURCE = 10;
@@ -95,9 +95,11 @@ export async function ingestNews({
   if (!sources.length) return report;
 
   // Parallel abrufen: eine langsame Behörde darf die anderen nicht aufhalten.
+  // `fetchSource` wiederholt bei vorübergehenden Störungen und weicht bei
+  // dauerhaften auf die hinterlegte Ersatzadresse aus (siehe sources.js).
   const results = await Promise.allSettled(sources.map(async (source) => {
-    const raw = await fetchText(source.url);
-    return { source, items: newsFromSource(source, raw) };
+    const holen = await fetchSource(source, { fetchText });
+    return { source, items: newsFromSource(source, holen.raw), holen };
   }));
 
   for (const [i, res] of results.entries()) {
@@ -110,8 +112,17 @@ export async function ingestNews({
       continue;
     }
 
-    const { items } = res.value;
+    const { items, holen } = res.value;
     report.fetched += items.length;
+
+    // Lief die Quelle über eine Ersatzadresse? Das gehört gemeldet: Wer es
+    // nicht sieht, hält die Voreinstellung weiter für richtig — es kommen ja
+    // Daten. Die falsche URL bliebe dann für immer stehen.
+    if (holen && holen.usedFallback) {
+      report.fallbacksUsed = (report.fallbacksUsed || 0) + 1;
+      log.warn?.(`ApoPulse News: ${source.id} antwortet nur über die Ersatzadresse `
+        + `(${holen.url}). Die Voreinstellung ${source.url} gehört geprüft.`);
+    }
 
     const fresh = items
       .filter((it) => !seenStore.has(it.key))
@@ -143,7 +154,12 @@ export async function ingestNews({
     }
 
     report.created += created;
-    report.perSource[source.id] = { ok: true, fetched: items.length, created };
+    report.perSource[source.id] = {
+      ok: true, fetched: items.length, created,
+      country: source.country,
+      url: holen ? holen.url : source.url,
+      usedFallback: !!(holen && holen.usedFallback),
+    };
   }
 
   return report;

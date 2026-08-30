@@ -48,7 +48,7 @@ import { plansForCountry, priceFor } from '../data/plans.js';
 import { isLive, isPriceLive, isRabatteLive, liveSources, livePriceSources, liveRabatteSources, refreshShortages, refreshPrices, refreshRabatte, fetchJsonDefault } from '../services/liveData.js';
 import { createScheduler, INTERVALS } from '../services/scheduler.js';
 import { createNewsSeenStore, ingestNews } from '../services/newsIngest.js';
-import { activeSources, sourcesByKind, shortagesFromCsv, shortagesFromJson, dedupeShortages, fetchTextDefault } from '../services/sources.js';
+import { activeSources, sourcesByKind, shortagesFromCsv, shortagesFromJson, dedupeShortages, fetchTextDefault, fetchSource } from '../services/sources.js';
 import { createDealsService, seedDemoDealsIfNoneRunning } from '../services/deals.js';
 import { createPrismaStore } from '../repo/prismaStore.js';
 import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
@@ -415,7 +415,9 @@ async function runShortageIngest() {
   for (const source of sourcesByKind('shortages', process.env)) {
     if (source.format !== 'csv' && source.format !== 'json') continue;
     try {
-      const raw = await fetchTextDefault(source.url);
+      // Wie bei den News: wiederholen bei vorübergehenden Störungen,
+      // ausweichen bei dauerhaften.
+      const { raw } = await fetchSource(source);
       const columns = sourceColumns(source.id);
       const { rows, rejected } = source.format === 'json'
         ? shortagesFromJson(raw, { columns })
@@ -512,10 +514,25 @@ const routes = [
   // eine Automatik, deren Zustand man nicht sehen kann, ist keine.
   ['GET', /^\/api\/live\/status$/, false, async () => ({
     jobs: scheduler.status(),
-    sources: activeSources().map(({ id, kind, country, format, url, official, configured, label }) =>
+    sources: activeSources().map(({ id, kind, country, format, url, official, configured, label, fallbacks, verified }) =>
       // Die URL gehört dazu: Nur so lässt sich prüfen, ob die Voreinstellung
       // noch stimmt oder eine Behörde ihren Feed verschoben hat.
-      ({ id, kind, country, format, url, official, configured, label })),
+      // `verified: false` heißt: in der Bauumgebung nicht abrufbar gewesen.
+      ({ id, kind, country, format, url, official, configured, label, verified, fallbacks: (fallbacks || []).length })),
+    // Länderabdeckung auf einen Blick: Für welches der 16 Länder gibt es
+    // überhaupt eine Quelle? Ohne diese Zeile fällt ein Land, das durchs
+    // Raster gefallen ist, erst auf, wenn jemand dort eine leere Ansicht sieht.
+    coverage: (() => {
+      const proLand = {};
+      for (const s of activeSources()) (proLand[s.country] ||= []).push(s.id);
+      const laender = listCountries().map((c) => c.code);
+      return {
+        countries: laender.length,
+        withSource: laender.filter((cc) => proLand[cc]).length,
+        missing: laender.filter((cc) => !proLand[cc]),
+        bySource: proLand,
+      };
+    })(),
     shortage_feeds: Object.keys(liveSources()),
     news_seen: newsSeen.size(),
     intervals: { news_ms: INTERVALS.news, shortages_ms: INTERVALS.shortages },
