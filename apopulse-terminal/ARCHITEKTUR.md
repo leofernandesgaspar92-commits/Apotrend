@@ -1,4 +1,4 @@
-# ApoTrend Terminal — Technische Architektur (System-Design)
+# ApoPulse Terminal — Technische Architektur (System-Design)
 
 **Version:** 0.1 (MVP-Blueprint)
 **Stand:** Juli 2026
@@ -35,7 +35,7 @@ Jede Komponente ist einer von drei Reifegraden zugeordnet. Nichts wird als
                             │ HTTPS / mTLS
                             ▼
 ┌──────────────────────────────────────────────────────────────┐
-│                   APOTREND BACKEND (Cloud, EU-Region)        │
+│                   APOPULSE BACKEND (Cloud, EU-Region)        │
 │  Node.js · REST + WebSocket · OpenAPI-dokumentiert           │
 │                                                              │
 │  ┌──────────────┐ ┌──────────────┐ ┌────────────────────┐   │
@@ -64,7 +64,7 @@ Jede Komponente ist einer von drei Reifegraden zugeordnet. Nichts wird als
 - **Kiosk-Modus:** Vollbild, kein Browser-Chrome, Auto-Reconnect.
 - **State:** lokaler Cache (IndexedDB) + Server-Sync; bei Ausfall arbeitet das
   Terminal aus dem Cache weiter.
-- **Design-System:** Weiß/Grün (bestehende ApoTrend-Identität), hohe
+- **Design-System:** Weiß/Grün (bestehende ApoPulse-Identität), hohe
   Informationsdichte („Bloomberg-Terminal"-Stil), Touch-Ziele ≥ 48 px.
 
 ### 2.2 Backend (Node.js)

@@ -1,5 +1,5 @@
 -- ===========================================================================
---  Apotrend — Constraints für Medien, Reaktionen und Threads
+--  ApoPulse — Constraints für Medien, Reaktionen und Threads
 -- ===========================================================================
 --  Ergänzt compliance-constraints.sql. Dieselbe Begründung wie dort: Ein
 --  Import-Skript, eine Migration oder eine psql-Sitzung umgeht jede

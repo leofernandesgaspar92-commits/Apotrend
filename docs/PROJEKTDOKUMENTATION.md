@@ -1,13 +1,13 @@
-# ApoTrend — Projektdokumentation
+# ApoPulse — Projektdokumentation
 **Version:** 2.4  
 **Stand:** Juni 2026  
 **Erstellt für:** Übergabe an Entwicklungspartner
 
 ---
 
-## Was ist ApoTrend?
+## Was ist ApoPulse?
 
-ApoTrend ist eine **Marktintelligenz-Plattform für Apotheken** — eine Web-App, die Apotheker mit Live-Daten zu Medikamentenengpässen, Pharma-Aktienpreisen, Rückrufen und News versorgt.
+ApoPulse ist eine **Marktintelligenz-Plattform für Apotheken** — eine Web-App, die Apotheker mit Live-Daten zu Medikamentenengpässen, Pharma-Aktienpreisen, Rückrufen und News versorgt.
 
 Die App läuft als **einzelne HTML-Datei** (frontend-index.html) und nutzt ein serverless Vercel-Backend für Live-Daten.
 
@@ -17,12 +17,12 @@ Die App läuft als **einzelne HTML-Datei** (frontend-index.html) und nutzt ein s
 
 | Dienst | URL |
 |--------|-----|
-| **App (Frontend)** | https://leofernandesgaspar92-commits.github.io/Apotrend/ |
-| **Backend API** | https://apotrend-backend.vercel.app |
-| **Stocks API** | https://apotrend-backend.vercel.app/api/stocks |
-| **Recalls API** | https://apotrend-backend.vercel.app/api/recalls |
-| **Engpass API** | https://apotrend-backend.vercel.app/api/engpass |
-| **News API** | https://apotrend-backend.vercel.app/api/news |
+| **App (Frontend)** | https://leofernandesgaspar92-commits.github.io/ApoPulse/ |
+| **Backend API** | https://apopulse-backend.vercel.app |
+| **Stocks API** | https://apopulse-backend.vercel.app/api/stocks |
+| **Recalls API** | https://apopulse-backend.vercel.app/api/recalls |
+| **Engpass API** | https://apopulse-backend.vercel.app/api/engpass |
+| **News API** | https://apopulse-backend.vercel.app/api/news |
 
 ---
 
@@ -30,8 +30,8 @@ Die App läuft als **einzelne HTML-Datei** (frontend-index.html) und nutzt ein s
 
 | Repo | Inhalt |
 |------|--------|
-| `leofernandesgaspar92-commits/Apotrend` | Frontend (index.html) → GitHub Pages |
-| `leofernandesgaspar92-commits/apotrend-backend` | Vercel-Backend (api/*.js) |
+| `leofernandesgaspar92-commits/ApoPulse` | Frontend (index.html) → GitHub Pages |
+| `leofernandesgaspar92-commits/apopulse-backend` | Vercel-Backend (api/*.js) |
 
 ---
 
@@ -117,12 +117,12 @@ Implementiert via localStorage (Simulation — kein echter Zahlungsanbieter ange
 
 ### Frontend ändern:
 1. `frontend/index.html` bearbeiten
-2. Im GitHub-Repo `Apotrend` als `index.html` hochladen
+2. Im GitHub-Repo `ApoPulse` als `index.html` hochladen
 3. GitHub Actions baut automatisch → ~1 Min bis live
 
 ### Backend ändern:
 1. Datei in `backend/api/` bearbeiten
-2. Im GitHub-Repo `apotrend-backend` unter `api/` hochladen
+2. Im GitHub-Repo `apopulse-backend` unter `api/` hochladen
 3. Vercel deployt automatisch → ~1 Min bis live
 
 ---

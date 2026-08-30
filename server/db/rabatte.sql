@@ -1,4 +1,4 @@
--- ApoTrend Plattform — Rabatt-Aktionen (Priorität 5). Zeitlich befristete
+-- ApoPulse Plattform — Rabatt-Aktionen (Priorität 5). Zeitlich befristete
 -- Aktionsangebote von Großhändlern/Herstellern je Präparat. Top-10-Ranking nach
 -- Rabatt-Höhe (rabatt_pct), nur laufende Aktionen (gueltig_bis in der Zukunft).
 -- HERKUNFTS-Flag wie bei Engpässen/Preisen (verified/reference/simulated).

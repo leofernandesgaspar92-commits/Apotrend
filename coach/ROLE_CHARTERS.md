@@ -94,7 +94,7 @@ Head of Studio / Standards Lead (Rolle 12).
 - **Definition of Done:** Ingestion + Matching + Aktualität verifiziert, Datenfehler beobachtbar.
 
 ### R6 — Platform / Backend Engineer  `<backend>`
-- **Mandat:** Datenschicht, Auth/Mandanten-Trennung, Secrets, Hosting (passt auf Apotrend-Vercel-Serverless).
+- **Mandat:** Datenschicht, Auth/Mandanten-Trennung, Secrets, Hosting (passt auf ApoPulse-Vercel-Serverless).
 - **Benchmark:** Backend/Platform Engineer B2B. Canon: Multi-Tenant-Isolation, Auth, DSGVO-Datenschutz-by-Design, Datenresidenz, Observability.
 - **Excellence-Bar:** Pro-Apotheke isolierte, sichere, persistente Daten; echte Auth; Secrets sauber.
 - **Interfaces:** ↑ von Agent/Data · ↓ an Reviewer/Compliance.

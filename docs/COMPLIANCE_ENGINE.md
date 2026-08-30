@@ -245,10 +245,10 @@ genau wie das Datenmodell es vorsieht.
 
 | Variable | Wirkung |
 |---|---|
-| `APOTREND_WALLET_BTC` / `_ETH` / `_SOL_SEEKER` / `_SOL_PHANTOM` | Adresse ersetzen |
+| `APOPULSE_WALLET_BTC` / `_ETH` / `_SOL_SEEKER` / `_SOL_PHANTOM` | Adresse ersetzen |
 | *dieselbe Variable auf leer* | **Wallet abschalten** — die zugehörigen Wege verschwinden |
-| `APOTREND_WALLET_TRON` | schaltet USDT über TRC-20 frei (braucht eine eigene Tron-Adresse) |
-| `APOTREND_EVM_NETWORKS="Polygon,Base"` | zusätzliche EVM-Ketten auf derselben Ethereum-Adresse |
+| `APOPULSE_WALLET_TRON` | schaltet USDT über TRC-20 frei (braucht eine eigene Tron-Adresse) |
+| `APOPULSE_EVM_NETWORKS="Polygon,Base"` | zusätzliche EVM-Ketten auf derselben Ethereum-Adresse |
 
 > **Warum EVM-Ketten Opt-in sind:** Eine gewöhnliche Konto-Adresse gilt auf allen
 > EVM-Ketten — es ist dieselbe Adresse aus demselben Schlüssel. Für ein
@@ -265,7 +265,7 @@ genau wie das Datenmodell es vorsieht.
 ## Was in der Demo bewusst nicht passiert
 
 - **Keine Wallet-Adresse wird erfunden.** Angeboten wird nur, wofür eine Adresse
-  hinterlegt ist. USDT über TRC-20 erscheint erst, wenn `APOTREND_WALLET_TRON` gesetzt
+  hinterlegt ist. USDT über TRC-20 erscheint erst, wenn `APOPULSE_WALLET_TRON` gesetzt
   ist — eine erfundene Adresse wäre der teuerste denkbare Platzhalter.
 - **Warnung am Token-Weg.** Bei Stablecoins steht „Nur diesen Token auf dieser Kette
   senden" — ein anderer Token an dieselbe Adresse ist verloren.

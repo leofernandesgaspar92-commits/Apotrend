@@ -1,4 +1,4 @@
-# ApoTrend Feed-App — universeller Container (läuft auf Render, Railway, Fly.io,
+# ApoPulse Feed-App — universeller Container (läuft auf Render, Railway, Fly.io,
 # jedem Docker-Host). Das Backend läuft auf Node-Built-ins; einzige Abhängigkeit
 # ist der Prisma-Client für den OPTIONALEN PostgreSQL-Spiegel der Live-Daten.
 # Ohne DATABASE_URL startet der Container unverändert ohne Datenbank.

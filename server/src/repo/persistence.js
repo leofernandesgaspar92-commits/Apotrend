@@ -6,7 +6,7 @@
 // Modul kümmert sich nur um Datei-I/O. Für Mehr-Instanz-Betrieb / EU-Hosting
 // kommt später Postgres hinter denselben Seam — dann wird dieses Modul überflüssig.
 //
-// Aktiviert über die Umgebungsvariable APOTREND_DATA_FILE (Pfad zur JSON-Datei).
+// Aktiviert über die Umgebungsvariable APOPULSE_DATA_FILE (Pfad zur JSON-Datei).
 // Ohne die Variable bleibt alles reines In-Memory (z.B. in Tests).
 import fs from 'node:fs';
 import path from 'node:path';

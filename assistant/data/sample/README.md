@@ -1,4 +1,4 @@
-# Sample-Daten — Apotrend AI Assistant (synthetisch)
+# Sample-Daten — ApoPulse AI Assistant (synthetisch)
 
 > ⚠️ **Alle Daten hier sind frei erfunden** (Produktnamen, Hersteller, PZN, Preise, Chargen, Signale).
 > Sie dienen ausschließlich dem Prototyp-Bau, solange keine echten Daten vorliegen (Decision **D-012**).
@@ -11,7 +11,7 @@
 | `products.json` | **Warenverzeichnis** (Apotheker-Verlag/DATACARE) | Lizenz — D-010 |
 | `inventory.json` | **WWS-Export (AVS)** der Apotheke | CSV-Export — D-005 |
 | `availability.json` | **ePharmGH** Großhandels-Verfügbarkeit | über WWS — D-011 |
-| `signals.json` | **BASG/AGES** Engpässe & Rückrufe | bestehende Apotrend-Feeds + BASG |
+| `signals.json` | **BASG/AGES** Engpässe & Rückrufe | bestehende ApoPulse-Feeds + BASG |
 
 **Join-Key über alle Dateien: `pzn`** (Pharmazentralnummer).
 
@@ -29,4 +29,4 @@
 ## Reale Daten einschwenken (später)
 Schemas beibehalten, nur die Loader-Quelle ersetzen:
 `products` → Warenverzeichnis-Import · `inventory` → AVS-CSV-Parser · `availability` → ePharmGH-Response ·
-`signals` → BASG-Feed (+ vorhandenes Apotrend-Backend `api/engpass`, `api/recalls`).
+`signals` → BASG-Feed (+ vorhandenes ApoPulse-Backend `api/engpass`, `api/recalls`).

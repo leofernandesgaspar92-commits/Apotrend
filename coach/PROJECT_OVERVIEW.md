@@ -1,4 +1,4 @@
-# Apotrend AI Assistant — Project Overview
+# ApoPulse AI Assistant — Project Overview
 
 **Top-Level-Pitch und strategischer Rahmen.**
 
@@ -6,7 +6,7 @@
 
 ## Pitch (1 Absatz)
 
-Ein **KI-Decision-Co-Pilot für Apotheken-Mitarbeiter**, eingebettet in die Apotrend-Plattform.
+Ein **KI-Decision-Co-Pilot für Apotheken-Mitarbeiter**, eingebettet in die ApoPulse-Plattform.
 Er verknüpft den **eigenen Bestand** der Apotheke mit **Regulatorik** (Engpässe, Rückrufe, EKO),
 **Produktkatalog/Substituten** und **Markt/Preis** — und macht daraus proaktive, quellenbelegte
 Entscheidungen: was nachbestellen, was substituieren, wovor warnen, was vergleichen. Kein Chatbot,
@@ -41,7 +41,7 @@ dominiert (600+), pharmazeuten-eigen. DE/EU = Phase 2.
 
 ## Differenzierung / USP
 - **Verknüpfung statt Einzeldaten:** Bestand × Regulatorik × Markt in *einer* Entscheidung.
-- **Vorhandene Apotrend-Feeds als Startvorteil:** Engpass-, Rückruf- (openFDA), News-, Stock-Backend existiert bereits.
+- **Vorhandene ApoPulse-Feeds als Startvorteil:** Engpass-, Rückruf- (openFDA), News-, Stock-Backend existiert bereits.
 - **Vendor-unabhängiger Daten-Wedge:** Start über CSV/Export — kein WWS-Buy-in nötig (D-005, offen).
 - **Compliance-by-Design** als Verkaufsargument (Gesundheits-Domäne).
 
@@ -53,7 +53,7 @@ dominiert (600+), pharmazeuten-eigen. DE/EU = Phase 2.
 
 ## Phasen-Plan (Entwurf)
 - **Phase 0 — Sensing & Konzept (jetzt):** Domänen-/Regulatorik-/Markt-Research, Datenzugang klären, Architektur + Decisions.
-- **Phase 1 — Prototyp:** Daten-Ingestion (CSV-Export) + Agent (RAG über Apotrend-Feeds) + erste Decision-Surface; Eval-Harness; Compliance-Grundgerüst.
+- **Phase 1 — Prototyp:** Daten-Ingestion (CSV-Export) + Agent (RAG über ApoPulse-Feeds) + erste Decision-Surface; Eval-Harness; Compliance-Grundgerüst.
 - **Phase 2 — Pilot mit echter Apotheke:** Mandanten-fähige Datenschicht, echte Auth, Pilot-Apotheke, ROI messen.
 - **Phase 3 — Integration & Skalierung:** WWS-Integration/Partnerschaft, Geschäftsmodell, DE/EU.
 

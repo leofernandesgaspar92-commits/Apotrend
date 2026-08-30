@@ -4,7 +4,7 @@ export default async function handler(req, res) {
   try {
     const limit = parseInt(req.query.limit) || 20;
     const url = `https://api.fda.gov/drug/enforcement.json?search=status:Ongoing&limit=${limit}&sort=report_date:desc`;
-    const r = await fetch(url, { headers: { 'User-Agent': 'ApoTrend/2.0' } });
+    const r = await fetch(url, { headers: { 'User-Agent': 'ApoPulse/2.0' } });
     if (!r.ok) throw new Error('FDA API ' + r.status);
     const data = await r.json();
     const items = (data.results || []).map(d => ({

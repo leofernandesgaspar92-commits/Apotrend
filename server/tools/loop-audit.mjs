@@ -1,4 +1,4 @@
-// ApoTrend Self-Improvement-Loop — Schritt GATHER.
+// ApoPulse Self-Improvement-Loop — Schritt GATHER.
 // Sammelt ECHTE, messbare Signale über den Code-/UX-Zustand (keine erfundenen
 // Business-Zahlen). Node-Built-ins only, passend zum Projekt-Constraint.
 //
@@ -159,7 +159,7 @@ function run() {
 
   const t = snapshot.tests;
   const p = snapshot.i18n_parity;
-  console.log('── ApoTrend Loop · GATHER-Snapshot ──', snapshot.ts);
+  console.log('── ApoPulse Loop · GATHER-Snapshot ──', snapshot.ts);
   console.log(t.skipped
     ? 'Tests:              im Gate geprüft ✓ (node --test lief in der verify-Kette davor)'
     : `Tests:              ${t.pass}/${t.count} grün${t.fail ? `  ⚠️ ${t.fail} rot` : ''}`);

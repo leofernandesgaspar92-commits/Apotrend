@@ -1249,7 +1249,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (a.provider_user_id !== providerUserId) throw new ForbiddenError('Nur die anbietende Apotheke darf antworten.');
       if (a.status !== 'angefragt') throw new AppError('appt_not_pending', 'Termin ist nicht mehr offen.', 400);
       const patch = accept
-        ? { status: 'bestaetigt', room_url: `https://meet.jit.si/apotrend-${a.id}` }
+        ? { status: 'bestaetigt', room_url: `https://meet.jit.si/apopulse-${a.id}` }
         : { status: 'abgelehnt' };
       const updated = social.updateAppointment(apptId, patch);
       notify(a.requester_user_id, accept ? 'appt_confirmed' : 'appt_declined', providerUserId, 'appointment', apptId);
@@ -1481,7 +1481,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       // Nur aus 'geplant' startbar — verhindert Doppel-Benachrichtigung bei
       // erneutem Klick/Retry auf eine bereits laufende Session.
       if (s.status !== 'geplant') throw new AppError('live_not_startable', 'Session kann nicht (erneut) gestartet werden.', 400);
-      const updated = social.updateLiveSession(id, { status: 'live', room_url: `https://meet.jit.si/apotrend-live-${s.id}`, started_at: new Date().toISOString() });
+      const updated = social.updateLiveSession(id, { status: 'live', room_url: `https://meet.jit.si/apopulse-live-${s.id}`, started_at: new Date().toISOString() });
       // Beim Start benachrichtigen: Follower:innen UND alle, die sich die Session
       // vorgemerkt haben („Erinnern") — dedupliziert, ohne Gastgeber:in selbst.
       const recipients = new Set(social.listFollowers(userId));

@@ -1,4 +1,4 @@
-# Lokale Laufzeit-Daten der Snapshot-Persistenz (APOTREND_DATA_FILE) — nie committen.
+# Lokale Laufzeit-Daten der Snapshot-Persistenz (APOPULSE_DATA_FILE) — nie committen.
 # WICHTIG: nur das Laufzeit-Datenverzeichnis im Server-Root ignorieren, NICHT den
 # Quellcode-Ordner src/data/ (Länder-/Kontotyp-Register). Deshalb verankert (/data/).
 /data/

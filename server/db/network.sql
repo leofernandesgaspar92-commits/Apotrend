@@ -1,4 +1,4 @@
--- ApoTrend Plattform — network-Modul (Facebook-artig, ZWISCHEN Organisationen).
+-- ApoPulse Plattform — network-Modul (Facebook-artig, ZWISCHEN Organisationen).
 -- Hier verlassen Daten bewusst die eigene Apotheke — nur ueber kontrollierte
 -- Flaechen (Profil / Feed / Direktnachricht) mit EXPLIZITER Sichtbarkeit.
 -- Kein Like/Kommentar-Wettrennen: Interaktion ist fachlich (Antwort auf Frage,

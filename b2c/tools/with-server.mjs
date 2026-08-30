@@ -53,9 +53,9 @@ async function main() {
   const env = {
     ...process.env,
     PORT: String(port),
-    APOTREND_HEALTH_KEY_V1: randomBytes(32).toString('base64'),
-    APOTREND_HEALTH_KEY_CURRENT: '1',
-    APOTREND_IP_SALT: randomBytes(16).toString('hex'),
+    APOPULSE_HEALTH_KEY_V1: randomBytes(32).toString('base64'),
+    APOPULSE_HEALTH_KEY_CURRENT: '1',
+    APOPULSE_IP_SALT: randomBytes(16).toString('hex'),
   }
 
   console.log(`── e2e: Server startet auf Port ${port} ──`)

@@ -11,7 +11,7 @@ export async function ensureServer(base) {
   try { const r = await fetch(base + '/api/account-types'); if (r.ok) return () => {}; } catch { /* nicht erreichbar */ }
   const proc = spawn('node', ['src/http/server.js'], {
     cwd: SERVER_ROOT,
-    env: { ...process.env, APOTREND_TOKEN_SECRET: process.env.APOTREND_TOKEN_SECRET || 'loop-tools-secret', PORT: new URL(base).port || '4000' },
+    env: { ...process.env, APOPULSE_TOKEN_SECRET: process.env.APOPULSE_TOKEN_SECRET || 'loop-tools-secret', PORT: new URL(base).port || '4000' },
     stdio: 'ignore',
   });
   for (let i = 0; i < 50; i++) {

@@ -42,7 +42,7 @@ export const CONSENT_TEXT: Record<ConsentPurpose, { title: string; body: string 
   health_data_processing: {
     title: 'Verarbeitung von Gesundheitsdaten',
     body:
-      'Ich willige ein, dass Apotrend meine Gesundheitsdaten (z. B. Anliegen, ' +
+      'Ich willige ein, dass ApoPulse meine Gesundheitsdaten (z. B. Anliegen, ' +
       'Medikation) zur Beratung verarbeitet. Die Daten werden verschlüsselt ' +
       'gespeichert und nach der gesetzlichen Frist gelöscht.',
   },

@@ -22,7 +22,7 @@ Neue Verknüpfungstabelle (im `memoryRepo`, später Postgres hinter demselben Se
 |--------------------|--------------------------------------------------------|
 | `provider`         | z. B. `google`, `microsoft`                            |
 | `provider_user_id` | stabile ID der Person beim Anbieter (`sub`)            |
-| `user_id`          | ApoTrend-Konto, mit dem die Identität verknüpft ist    |
+| `user_id`          | ApoPulse-Konto, mit dem die Identität verknüpft ist    |
 
 Schlüssel = `${provider}:${provider_user_id}` → `user_id` (1 Identität → 1 Konto; ein Konto
 kann mehrere Identitäten tragen). Repo-Methoden: `linkIdentity`, `findUserIdByIdentity`,
@@ -74,7 +74,7 @@ OAUTH_GOOGLE_CLIENT_ID=…
 OAUTH_GOOGLE_CLIENT_SECRET=…
 ```
 
-Registrierte Redirect-URI beim Anbieter = die App-URL (z. B. `https://apotrend.onrender.com/`).
+Registrierte Redirect-URI beim Anbieter = die App-URL (z. B. `https://apopulse.onrender.com/`).
 `buildProvidersFromEnv()` aktiviert Google automatisch, sobald beide Werte vorhanden sind.
 
 ## Offen (bewusst noch nicht gebaut — braucht echten Provider zum sicheren Testen)

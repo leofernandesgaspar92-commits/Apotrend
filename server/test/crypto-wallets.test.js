@@ -71,11 +71,11 @@ test('Ohne Tron-Adresse gibt es keinen TRC-20-Weg', () => {
 });
 
 test('Mit gesetzter Tron-Adresse erscheint TRC-20 sofort', () => {
-  const env = { APOTREND_WALLET_TRON: 'TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE' };
+  const env = { APOPULSE_WALLET_TRON: 'TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE' };
   const usdt = paymentRoutes(env).find((r) => r.asset === 'usdt');
   const tron = usdt.routes.find((r) => /Tron/.test(r.network));
   assert.ok(tron, 'TRC-20 fehlt trotz gesetzter Adresse');
-  assert.equal(tron.address, env.APOTREND_WALLET_TRON);
+  assert.equal(tron.address, env.APOPULSE_WALLET_TRON);
 });
 
 test('Weitere EVM-Ketten sind Opt-in, keine Annahme', () => {
@@ -87,7 +87,7 @@ test('Weitere EVM-Ketten sind Opt-in, keine Annahme', () => {
   // Begründung: Eine gewöhnliche Konto-Adresse gilt auf allen EVM-Ketten, ein
   // Smart-Contract-Wallet aber nicht. Von außen nicht unterscheidbar — also
   // fragen statt raten.
-  const env = { APOTREND_EVM_NETWORKS: 'Polygon, Base' };
+  const env = { APOPULSE_EVM_NETWORKS: 'Polygon, Base' };
   assert.deepEqual(extraEvmNetworks(env), ['Polygon', 'Base']);
 
   const mit = paymentRoutes(env).find((r) => r.asset === 'usdc');
@@ -105,16 +105,16 @@ test('Stablecoin-Wege tragen die Token-Warnung', () => {
 });
 
 test('ENV-Überschreibung greift durch bis in die Route', () => {
-  const env = { APOTREND_WALLET_BTC: 'bc1qexampleexampleexampleexampleexamplexyz' };
+  const env = { APOPULSE_WALLET_BTC: 'bc1qexampleexampleexampleexampleexamplexyz' };
   const btc = paymentRoutes(env).find((r) => r.asset === 'btc');
-  assert.equal(btc.routes[0].address, env.APOTREND_WALLET_BTC);
+  assert.equal(btc.routes[0].address, env.APOPULSE_WALLET_BTC);
   assert.match(btc.routes[0].uri, /^bitcoin:bc1qexample/);
 });
 
 test('Eine Wallet lässt sich abschalten, ohne den Code zu ändern', () => {
   // Leer gesetzt heißt „abgeschaltet", nicht „nimm den Standard". Ohne diese
   // Unterscheidung ließe sich eine Kette nie aus dem Angebot nehmen.
-  const env = { APOTREND_WALLET_BTC: '' };
+  const env = { APOPULSE_WALLET_BTC: '' };
   assert.ok(!cryptoWallets(env).some((w) => w.id === 'btc'), 'BTC hätte verschwinden müssen');
   assert.ok(!paymentRoutes(env).some((r) => r.asset === 'btc'), 'BTC-Route besteht weiter');
 
@@ -125,7 +125,7 @@ test('Eine Wallet lässt sich abschalten, ohne den Code zu ändern', () => {
 test('Abschalten der Ethereum-Wallet nimmt auch die Stablecoin-Wege mit', () => {
   // USDT/USDC über ERC-20 hängen an genau dieser Adresse — bleibt ein Weg
   // stehen, zeigt die Oberfläche eine Adresse an, die niemand mehr abfragt.
-  const env = { APOTREND_WALLET_ETH: '' };
+  const env = { APOPULSE_WALLET_ETH: '' };
   const routes = paymentRoutes(env);
   assert.ok(!routes.some((r) => r.asset === 'eth'));
   const usdt = routes.find((r) => r.asset === 'usdt');

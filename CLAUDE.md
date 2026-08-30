@@ -1,4 +1,4 @@
-# Apotrend — Repo-weite Arbeitsanweisungen
+# ApoPulse — Repo-weite Arbeitsanweisungen
 
 Diese Datei gilt für das **gesamte Repo**. Für den AI-Coach-/AI-Assistant-Workstream
 zusätzlich `coach/CLAUDE.md` lesen.

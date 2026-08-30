@@ -1,9 +1,9 @@
-// Service Worker für ApoTrend: installierbar UND offline-tauglich für schwache/
+// Service Worker für ApoPulse: installierbar UND offline-tauglich für schwache/
 // unterbrochene Verbindungen (Ziel-Märkte mit knappem Netz), OHNE Update-Staus.
 // Strategie: NETWORK-FIRST für die App-Hülle (immer frisch, wenn online; aus dem
 // Cache, wenn offline). API-Aufrufe werden NIE gecacht (keine veralteten Sicherheits-/
 // Engpassdaten) — sie laufen unverändert übers Netz. Nur GET, nur eigene Herkunft.
-const CACHE = 'apotrend-shell-v2';
+const CACHE = 'apopulse-shell-v2';
 const SHELL = ['/', '/index.html', '/app.js', '/app.css', '/manifest.webmanifest',
   '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
 

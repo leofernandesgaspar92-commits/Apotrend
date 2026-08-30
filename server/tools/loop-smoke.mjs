@@ -1,4 +1,4 @@
-// ApoTrend Loop — Frontend-Smoke-Test. Das Frontend (index.html) hat sonst keine
+// ApoPulse Loop — Frontend-Smoke-Test. Das Frontend (index.html) hat sonst keine
 // automatisierte Abdeckung; dieser Test fährt den kritischen Happy-Path im echten
 // Browser und fängt große Frontend-Regressionen (Rendering, Interaktion, i18n).
 //

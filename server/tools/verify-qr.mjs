@@ -37,16 +37,16 @@ const PAYLOADS = [
   'bitcoin:bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46?amount=0.00123456',
   'ethereum:0x5f50991186014eDcbDE301467bE7a20C6CCc179B@1?value=125000000000000000',
   'tron:TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE?amount=149.00',
-  'solana:Egbc7cfzHLj5dkgnR4E7Xk3MfDNrA5imqKJ1FV1n1DW?amount=1.25&label=Apotrend',
+  'solana:Egbc7cfzHLj5dkgnR4E7Xk3MfDNrA5imqKJ1FV1n1DW?amount=1.25&label=ApoPulse',
   // Lang genug für Version 7+ — deckt zusätzlich die Versionsinformation ab.
   'wc:8a5e5bdc-a0e4-4702-ba63-8f1a5655744f@2?relay-protocol=irn&symKey=' +
     'c9e6d30fb34afe70a15c14e9337ba8e4d5a35dd695c39b94884b0ee60c69d168',
   // Umlaute und Sonderzeichen: prüft die UTF-8-Kodierung.
-  'Apotrend Lizenz · Österreich · 149,00 €',
+  'ApoPulse Lizenz · Österreich · 149,00 €',
 ];
 
 /** Nutzlast, die Version 1 exakt ausfüllt — dort sind sich alle einig. */
-const EXACT_FIT = 'APOTREND-DEMO1';
+const EXACT_FIT = 'APOPULSE-DEMO1';
 
 const PY_REFERENCE = `
 import sys, json

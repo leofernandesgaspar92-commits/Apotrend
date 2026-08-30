@@ -162,8 +162,8 @@ export function createStripeAdapter({ secretKey, webhookSecret, fetchImpl = glob
     async createCheckout({ payment, product, method, successUrl, cancelUrl }) {
       const body = new URLSearchParams();
       body.set('mode', 'payment');
-      body.set('success_url', successUrl || 'https://apotrend.example/premium?ok=1');
-      body.set('cancel_url', cancelUrl || 'https://apotrend.example/premium?cancel=1');
+      body.set('success_url', successUrl || 'https://apopulse.example/premium?ok=1');
+      body.set('cancel_url', cancelUrl || 'https://apopulse.example/premium?cancel=1');
       body.set('client_reference_id', payment.id);
       body.append('payment_method_types[]', method === 'paypal' ? 'paypal' : 'card');
       body.append('line_items[0][price_data][currency]', (product.currency || 'eur').toLowerCase());
@@ -205,7 +205,7 @@ export function createCoinbaseAdapter({ apiKey, webhookSecret, fetchImpl = globa
         method: 'POST',
         headers: { 'content-type': 'application/json', 'X-CC-Api-Key': apiKey, 'X-CC-Version': '2018-03-22' },
         body: JSON.stringify({
-          name: product.name, description: 'ApoTrend Premium',
+          name: product.name, description: 'ApoPulse Premium',
           pricing_type: 'fixed_price',
           local_price: { amount: (product.amount_cents / 100).toFixed(2), currency: product.currency || 'EUR' },
           metadata: { payment_id: payment.id },

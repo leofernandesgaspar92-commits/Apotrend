@@ -1,7 +1,7 @@
 {
-  "name": "apotrend-server",
+  "name": "apopulse-server",
   "version": "1.0.0",
-  "description": "ApoTrend Live-Daten Backend (Vercel Serverless)",
+  "description": "ApoPulse Live-Daten Backend (Vercel Serverless)",
   "type": "module",
   "engines": { "node": ">=18" },
   "scripts": {

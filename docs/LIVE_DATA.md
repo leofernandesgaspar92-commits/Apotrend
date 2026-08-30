@@ -44,11 +44,11 @@ bricht beim ersten Redesign, und zwar still.
 Jede Quelle hat eine Kennung. Umgebungsvariablen:
 
 ```
-APOTREND_SOURCE_<ID>_URL      Adresse ersetzen — LEER = Quelle abschalten
-APOTREND_SOURCE_<ID>_FORMAT   rss | json | csv
-APOTREND_SOURCE_<ID>_KIND     news | shortages
-APOTREND_SOURCE_<ID>_COUNTRY  ISO-Ländercode
-APOTREND_SOURCE_<ID>_LABEL    Anzeigename
+APOPULSE_SOURCE_<ID>_URL      Adresse ersetzen — LEER = Quelle abschalten
+APOPULSE_SOURCE_<ID>_FORMAT   rss | json | csv
+APOPULSE_SOURCE_<ID>_KIND     news | shortages
+APOPULSE_SOURCE_<ID>_COUNTRY  ISO-Ländercode
+APOPULSE_SOURCE_<ID>_LABEL    Anzeigename
 ```
 
 Eingebaut sind elf Quellen — zehn News und ein Engpass-Export:
@@ -79,18 +79,18 @@ Alle elf Behörden stehen mit genau diesen Namen im Länder-Register
 Eine eigene Quelle entsteht allein durch das Setzen einer neuen `..._URL`:
 
 ```
-APOTREND_SOURCE_APOKAMMER_URL=https://www.apothekerkammer.at/rss
-APOTREND_SOURCE_APOKAMMER_COUNTRY=AT
-APOTREND_SOURCE_APOKAMMER_LABEL=Apothekerkammer
+APOPULSE_SOURCE_APOKAMMER_URL=https://www.apothekerkammer.at/rss
+APOPULSE_SOURCE_APOKAMMER_COUNTRY=AT
+APOPULSE_SOURCE_APOKAMMER_LABEL=Apothekerkammer
 ```
 
 Ein CSV-Register als Engpass-Quelle:
 
 ```
-APOTREND_SOURCE_BASG_REGISTER_URL=https://…/vertriebseinschraenkungen.csv
-APOTREND_SOURCE_BASG_REGISTER_KIND=shortages
-APOTREND_SOURCE_BASG_REGISTER_FORMAT=csv
-APOTREND_SOURCE_BASG_REGISTER_COUNTRY=AT
+APOPULSE_SOURCE_BASG_REGISTER_URL=https://…/vertriebseinschraenkungen.csv
+APOPULSE_SOURCE_BASG_REGISTER_KIND=shortages
+APOPULSE_SOURCE_BASG_REGISTER_FORMAT=csv
+APOPULSE_SOURCE_BASG_REGISTER_COUNTRY=AT
 ```
 
 Spaltennamen werden erkannt (`Wirkstoff`, `Arzneispezialität`, `Vertriebsstatus`,
@@ -101,7 +101,7 @@ Passt gar nichts, weil eine Behörde ihre Felder umbenannt hat, lässt sich die
 Zuordnung **ohne Deploy** setzen:
 
 ```
-APOTREND_SOURCE_BASG_SHORTAGES_COLUMNS={"bezeichnung":"nameDesArzneimittels","status":"vertriebsstatus"}
+APOPULSE_SOURCE_BASG_SHORTAGES_COLUMNS={"bezeichnung":"nameDesArzneimittels","status":"vertriebsstatus"}
 ```
 
 Dasselbe gilt für JSON-Quellen. Dort wird die Liste auch in einer üblichen Hülle
@@ -155,7 +155,7 @@ Demobestand an — gekennzeichnet als `simulated`, Quelle „Demodaten", mit
 Anbietern wie „Demo-Großhandel A". Entscheidend ist „laufend": Die kuratierten
 Referenzdaten haben feste Enddaten und laufen nach und nach ab; eine Prüfung auf
 „gibt es überhaupt Zeilen" hätte die leere Ansicht nie bemerkt. Abschalten mit
-`APOTREND_DEMO_DEALS=off`.
+`APOPULSE_DEMO_DEALS=off`.
 
 ---
 
@@ -208,7 +208,7 @@ bleiben — bewusst streng, weil Engpassdaten sicherheitsrelevant sind.
 
 ## 4. Preise (zweiter Datentyp, gleiche Logik)
 
-Analog zu Engpässen: Umgebungsvariable `APOTREND_LIVE_PRICES_<CC>` setzen.
+Analog zu Engpässen: Umgebungsvariable `APOPULSE_LIVE_PRICES_<CC>` setzen.
 JSON-Vertrag:
 
 ```json
@@ -229,7 +229,7 @@ Payload → gesamter Abruf verworfen, alte Preise bleiben. Status unter
 
 ## 5. Rabatte/Aktionen (dritter Datentyp)
 
-Umgebungsvariable `APOTREND_LIVE_RABATTE_<CC>`. JSON-Vertrag:
+Umgebungsvariable `APOPULSE_LIVE_RABATTE_<CC>`. JSON-Vertrag:
 
 ```json
 {
@@ -252,5 +252,5 @@ Pflichtfelder je Zeile: `bezeichnung`, `supplier`, `listenpreis` (> 0),
 
 Die Schnittstelle ist bewusst pro Datentyp aufgebaut. Weitere Feeds
 (z. B. Rückrufe) folgen demselben Muster:
-`APOTREND_LIVE_<TYP>_<CC>` + Vertrag + `refresh…` in
+`APOPULSE_LIVE_<TYP>_<CC>` + Vertrag + `refresh…` in
 `server/src/services/liveData.js`.

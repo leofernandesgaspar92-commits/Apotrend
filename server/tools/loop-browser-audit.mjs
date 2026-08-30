@@ -1,4 +1,4 @@
-// ApoTrend Loop — GATHER (Browser-Teil). Automatisiert die manuellen Mobil-Checks:
+// ApoPulse Loop — GATHER (Browser-Teil). Automatisiert die manuellen Mobil-Checks:
 // Querscroll (horizontaler Overflow) und JS-Fehler pro Reiter, Hell+Dunkel, Mobil 390.
 // Fängt genau die Layout-/Laufzeit-Regressionen, die die statische Analyse nicht sieht.
 //
@@ -152,10 +152,46 @@ async function main() {
     await ctx.close();
   }
 
+  // Sprache folgt dem Land. Bisher stand diese Zusage nur im Code — geprüft
+  // wurde sie nirgends, und eine Zusage ohne Prüfung ist eine Hoffnung.
+  // Getestet wird die Wirkung, nicht die Zuweisung: Steht nach der Länderwahl
+  // tatsächlich englischer bzw. portugiesischer Text auf dem Schirm?
+  {
+    // ABGEMELDET: Die Länderwahl ist Schritt 1 des Anmeldeflusses. Mit
+    // eingespieltem Token landet man direkt im Feed und sieht sie nie —
+    // deshalb hier ausdrücklich KEIN Token.
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, colorScheme: 'light' });
+    const page = await ctx.newPage();
+
+    for (const [land, sprache] of [['GB', 'en'], ['BR', 'pt'], ['AT', 'de']]) {
+      await page.goto(BASE, { waitUntil: 'networkidle' });
+      await page.evaluate(() => { localStorage.removeItem('apo_country'); localStorage.removeItem('apo_locale'); });
+      await page.goto(BASE, { waitUntil: 'networkidle' });
+      const knopf = page.locator(`.country-pick[data-country="${land}"]`).first();
+      if (!(await knopf.count())) { findings.push(`Länderwahl: ${land} nicht anklickbar`); continue; }
+      await knopf.click();
+      await page.waitForTimeout(400);
+
+      const gesetzt = await page.evaluate(() => localStorage.getItem('apo_locale'));
+      if (gesetzt !== sprache) {
+        findings.push(`Sprache folgt Land nicht: ${land} -> "${gesetzt}" statt "${sprache}"`);
+        continue;
+      }
+      // Und der Text muss sich wirklich geändert haben — sonst wäre nur eine
+      // Variable gesetzt und die Oberfläche stünde weiter auf Deutsch.
+      const html = await page.evaluate(() => document.body.innerText.slice(0, 4000));
+      const erwartet = { en: /Shortages|Prices|Discounts|For you/i, pt: /Ruturas|Preços|Descontos|Para si/i, de: /Engpässe|Preise|Rabatte/i };
+      if (!erwartet[sprache].test(html)) {
+        findings.push(`Oberfläche nicht in "${sprache}" nach Wahl von ${land}`);
+      }
+    }
+    await ctx.close();
+  }
+
   await browser.close();
   stopServer();
 
-  console.log('── ApoTrend Loop · GATHER (Browser) · 390 + 768/1024/1280/1440 + große Schrift + Wirkstoff-Detail ──');
+  console.log('── ApoPulse Loop · GATHER (Browser) · 390 + 768/1024/1280/1440 + große Schrift + Wirkstoff-Detail ──');
   if (findings.length === 0) {
     console.log('✓ Kein Querscroll (Mobil + Tablet/Laptop-Breiten + große Schrift + Detailseite), keine JS-Fehler, keine a11y-Lücken auf 8 Reitern (hell + dunkel).');
   } else {

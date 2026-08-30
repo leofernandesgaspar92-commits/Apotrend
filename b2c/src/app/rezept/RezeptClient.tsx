@@ -23,7 +23,7 @@ const CONSENT_ITEMS = [
     purpose: 'health_data_processing',
     title: 'Verarbeitung von Gesundheitsdaten',
     body:
-      'Ich willige ein, dass Apotrend meine Gesundheitsdaten zur Beratung verarbeitet. ' +
+      'Ich willige ein, dass ApoPulse meine Gesundheitsdaten zur Beratung verarbeitet. ' +
       'Die Daten werden verschlüsselt gespeichert und nach der gesetzlichen Frist gelöscht.',
     required: true,
   },

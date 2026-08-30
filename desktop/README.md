@@ -1,4 +1,4 @@
-# ApoTrend Desktop (Electron)
+# ApoPulse Desktop (Electron)
 
 Installierbares Desktop-Programm (Windows / macOS / Linux) aus **demselben
 Web-Kern** wie die Mobile-/PWA-Version. Es wird **kein** App-Code dupliziert oder

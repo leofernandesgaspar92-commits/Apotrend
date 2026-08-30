@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="ApoTrend – Marktintelligenz für Apotheken: Live-Engpassdaten (BASG), Rückrufe, Preis-Tracker, Community und News auf einen Blick." />
+  <meta name="description" content="ApoPulse – Marktintelligenz für Apotheken: Live-Engpassdaten (BASG), Rückrufe, Preis-Tracker, Community und News auf einen Blick." />
   <meta name="theme-color" content="#00ff88" />
-  <meta property="og:title" content="ApoTrend – Marktintelligenz für Apotheker" />
+  <meta property="og:title" content="ApoPulse – Marktintelligenz für Apotheker" />
   <meta property="og:description" content="Live-Engpässe (BASG), Rückrufe, Preise, Community und News für Apotheken." />
   <meta property="og:type" content="website" />
-  <title>ApoTrend – Marktintelligenz für Apotheker</title>
+  <title>ApoPulse – Marktintelligenz für Apotheker</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -2654,7 +2654,7 @@
       .status-badge, .avail-badge, .cat-badge { border: 1px solid #999 !important; background: #f0f0f0 !important; }
       /* Print-Kopf-/Fußzeile */
       body::before {
-        content: 'ApoTrend – Marktintelligenz für Apotheker';
+        content: 'ApoPulse – Marktintelligenz für Apotheker';
         display: block;
         font-size: 18px;
         font-weight: bold;
@@ -2663,7 +2663,7 @@
         margin-bottom: 16px;
       }
       .main::after {
-        content: 'Generiert am ' attr(data-print-date) ' · ApoTrend';
+        content: 'Generiert am ' attr(data-print-date) ' · ApoPulse';
         display: block;
         margin-top: 20px;
         padding-top: 8px;
@@ -3639,7 +3639,7 @@
 
 <!-- PWA Splash -->
 <div id="pwa-splash">
-  <div class="splash-logo">APOTREND</div>
+  <div class="splash-logo">APOPULSE</div>
   <div class="splash-sub">MARKTINTELLIGENZ FÜR APOTHEKER</div>
   <div class="splash-spinner"></div>
 </div>
@@ -3791,7 +3791,7 @@
 
 <!-- Install Banner -->
 <div id="install-banner">
-  📱 <strong>ApoTrend</strong> als App installieren – schneller Zugriff direkt vom Homescreen
+  📱 <strong>ApoPulse</strong> als App installieren – schneller Zugriff direkt vom Homescreen
   <button id="btn-install" onclick="installPWA()">Installieren</button>
   <button id="btn-install-dismiss" onclick="dismissInstallBanner()" title="Schließen">×</button>
 </div>
@@ -3926,7 +3926,7 @@
     <div class="dash-col-right">
       <div class="community-sidebar">
         <div class="cs-header">
-          <span class="cs-title">🏘️ ApoTrend Community</span>
+          <span class="cs-title">🏘️ ApoPulse Community</span>
           <button class="cs-new-btn" onclick="switchTab('community', document.getElementById('nav-community'))">Alle Posts</button>
         </div>
         <div id="community-sidebar-feed"></div>
@@ -4502,7 +4502,7 @@
   <!-- ===== KI-Assistent — entkoppeltes Modul aus assistant/, via iframe eingebettet (Demo, Sample-Daten) ===== -->
   <div class="tab-panel" id="tab-assistent">
     <div class="section-label">KI-Assistent – Decision-Co-Pilot (Demo, Sample-Daten)</div>
-    <iframe src="../assistant/web/index.html" title="Apotrend AI Assistant"
+    <iframe src="../assistant/web/index.html" title="ApoPulse AI Assistant"
             style="width:100%;height:75vh;border:1px solid var(--border);border-radius:12px;background:#fff;"></iframe>
   </div>
 
@@ -4805,7 +4805,7 @@
 </div><!-- end .main -->
 
 <footer>
-  <span>ApoTrend v2.3 – Apotheken-Marktintelligenz</span>
+  <span>ApoPulse v2.3 – Apotheken-Marktintelligenz</span>
   <span>© 2026 · Alle Daten werden lokal gespeichert</span>
 </footer>
 
@@ -4815,7 +4815,7 @@
 <div class="modal-overlay" id="onboarding-modal" style="z-index:9999;">
   <div class="modal" style="max-width:460px;">
     <div class="modal-head" style="border-bottom:2px solid var(--green);">
-      <div class="modal-title">🌿 WILLKOMMEN BEI APOTREND</div>
+      <div class="modal-title">🌿 WILLKOMMEN BEI APOPULSE</div>
     </div>
     <div class="modal-body">
       <button class="btn-submit" style="background:var(--green-dark);border:1px solid var(--green-dim);color:var(--text-primary);margin-bottom:8px;" onclick="skipOnboarding()">👀 Erst kostenlos ansehen (ohne Anmeldung)</button>
@@ -5303,7 +5303,7 @@
 <div class="modal-overlay" id="upgrade-modal" onclick="if(event.target===this)closeUpgradeModal()" style="z-index:8000;">
   <div class="modal" style="max-width:700px;max-height:90vh;overflow-y:auto;">
     <div class="modal-head">
-      <div class="modal-title">⬆ DEIN APOTREND-ABO</div>
+      <div class="modal-title">⬆ DEIN APOPULSE-ABO</div>
       <button class="modal-close" onclick="closeUpgradeModal()">×</button>
     </div>
     <div class="modal-body">
@@ -5447,7 +5447,7 @@
     <div class="community-feed-col">
       <div class="community-header">
         <div>
-          <div class="community-title">🏘️ ApoTrend Community</div>
+          <div class="community-title">🏘️ ApoPulse Community</div>
           <div class="community-subtitle">Austausch für Apotheker · Fragen · Tipps · Erfahrungen</div>
         </div>
         <button class="btn-new-post" onclick="openNewPostModal()">✏️ Neuer Post</button>
@@ -6070,7 +6070,7 @@
   })();
 
   function currentUser() {
-    const role = (localStorage.getItem('apotrend_role') || 'user');
+    const role = (localStorage.getItem('apopulse_role') || 'user');
     return role === 'admin'
       ? { name: 'Administrator', initials: 'AD' }
       : { name: 'Dr. Müller', initials: 'DM' };
@@ -6200,11 +6200,11 @@
   let newsData = loadNews();
   function loadNews() {
     try {
-      const s = JSON.parse(localStorage.getItem('apotrend_news'));
+      const s = JSON.parse(localStorage.getItem('apopulse_news'));
       return Array.isArray(s) ? s : NEWS_DB.map(o => ({ ...o }));
     } catch (e) { return NEWS_DB.map(o => ({ ...o })); }
   }
-  function saveNews() { localStorage.setItem('apotrend_news', JSON.stringify(newsData)); }
+  function saveNews() { localStorage.setItem('apopulse_news', JSON.stringify(newsData)); }
 
   let _currentNewsFilter = 'all';
   function renderNews(filter = 'all') {
@@ -6262,11 +6262,11 @@
   let rabattData = loadRabatte();
   function loadRabatte() {
     try {
-      const s = JSON.parse(localStorage.getItem('apotrend_rabatte'));
+      const s = JSON.parse(localStorage.getItem('apopulse_rabatte'));
       return Array.isArray(s) ? s : RABATT_DB.map(o => ({ ...o }));
     } catch (e) { return RABATT_DB.map(o => ({ ...o })); }
   }
-  function saveRabatte() { localStorage.setItem('apotrend_rabatte', JSON.stringify(rabattData)); }
+  function saveRabatte() { localStorage.setItem('apopulse_rabatte', JSON.stringify(rabattData)); }
 
   function renderRabatt() {
     document.getElementById('rabatt-tbody').innerHTML = rabattData.map(r => `
@@ -6453,8 +6453,8 @@
   // ══════════════════════════════════════════
   //  AUTH + WATCHLIST (localStorage)
   // ══════════════════════════════════════════
-  const LS_LOGIN = 'apotrend_loggedin';
-  const LS_WATCH = 'apotrend_watchlist';
+  const LS_LOGIN = 'apopulse_loggedin';
+  const LS_WATCH = 'apopulse_watchlist';
   const DEFAULT_WATCH = ['Amoxicillin 1000mg', 'Salbutamol Inhalat'];
 
   function isLoggedIn() {
@@ -6499,9 +6499,9 @@
   // ── Rollen ──
   const PROFILES = {
     user:  { name: 'Dr. Müller',    initials: 'DM', mail: 'apotheker@example.de' },
-    admin: { name: 'Administrator', initials: 'AD', mail: 'admin@apotrend.at' },
+    admin: { name: 'Administrator', initials: 'AD', mail: 'admin@apopulse.at' },
   };
-  function getRole() { return localStorage.getItem('apotrend_role') || 'user'; }
+  function getRole() { return localStorage.getItem('apopulse_role') || 'user'; }
   function isAdmin() { return isLoggedIn() && getRole() === 'admin'; }
 
   function toggleAdminPrefill() {
@@ -6517,7 +6517,7 @@
 
     if (!email || !pw) { showToast('Bitte E-Mail und Passwort eingeben.'); return; }
 
-    const accounts = JSON.parse(localStorage.getItem('apotrend_accounts') || '[]');
+    const accounts = JSON.parse(localStorage.getItem('apopulse_accounts') || '[]');
 
     let role = 'user';
     if (wantAdmin) {
@@ -6547,7 +6547,7 @@
   // Login abschließen (nach erfolgreicher 1./2. Stufe)
   function completeLogin(role) {
     localStorage.setItem(LS_LOGIN, '1');
-    localStorage.setItem('apotrend_role', role);
+    localStorage.setItem('apopulse_role', role);
     // seed default watchlist on first login
     if (localStorage.getItem(LS_WATCH) === null) {
       setWatchlist(DEFAULT_WATCH.slice());
@@ -6568,7 +6568,7 @@
 
   function logout() {
     localStorage.removeItem(LS_LOGIN);
-    localStorage.removeItem('apotrend_role');
+    localStorage.removeItem('apopulse_role');
     document.getElementById('account-dropdown').classList.remove('open');
     document.getElementById('notif-dropdown').classList.remove('open');
     const sb = document.getElementById('session-banner');
@@ -6733,7 +6733,7 @@
   // ══════════════════════════════════════════
   //  PREISALARME
   // ══════════════════════════════════════════
-  const LS_ALARMS = 'apotrend_alarms';
+  const LS_ALARMS = 'apopulse_alarms';
   let alarmTargetDrug = null;
 
   function getAlarms() {
@@ -6824,7 +6824,7 @@
         a.triggered = true;
         a.msg = msg;
         changed = true;
-        fireNotification('🚨 ApoTrend Preisalarm', msg);
+        fireNotification('🚨 ApoPulse Preisalarm', msg);
         if (typeof addNotification === 'function') addNotification('🔔', 'Preisalarm: ' + msg);
       } else if (!hit && a.triggered) {
         // price moved back into safe zone -> re-arm
@@ -6885,27 +6885,27 @@
   // ── Engpass-Status-Overrides auf ENGPASS_DB anwenden ──
   (function applyEngpassOverrides() {
     let ov = {};
-    try { ov = JSON.parse(localStorage.getItem('apotrend_engpass_status')) || {}; } catch (e) {}
+    try { ov = JSON.parse(localStorage.getItem('apopulse_engpass_status')) || {}; } catch (e) {}
     ENGPASS_DB.forEach(d => { if (ov[d.name]) d.status = ov[d.name]; });
   })();
 
   function saveEngpassOverride(name, status) {
     let ov = {};
-    try { ov = JSON.parse(localStorage.getItem('apotrend_engpass_status')) || {}; } catch (e) {}
+    try { ov = JSON.parse(localStorage.getItem('apopulse_engpass_status')) || {}; } catch (e) {}
     ov[name] = status;
-    localStorage.setItem('apotrend_engpass_status', JSON.stringify(ov));
+    localStorage.setItem('apopulse_engpass_status', JSON.stringify(ov));
   }
 
   // ── Aktivitäts-Log ──
   function getAdminLog() {
-    try { return JSON.parse(localStorage.getItem('apotrend_admin_log')) || []; }
+    try { return JSON.parse(localStorage.getItem('apopulse_admin_log')) || []; }
     catch (e) { return []; }
   }
   function logAdmin(text) {
     const log = getAdminLog();
     const now = new Date().toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' });
     log.unshift({ text, time: now });
-    localStorage.setItem('apotrend_admin_log', JSON.stringify(log.slice(0, 20)));
+    localStorage.setItem('apopulse_admin_log', JSON.stringify(log.slice(0, 20)));
     renderAdminLog();
   }
   function renderAdminLog() {
@@ -7090,7 +7090,7 @@
       fireWebhooks('engpass.new', { name: d.name, wirkstoff: d.wirkstoff, status: sel });
       addNotification('🚨', 'Kritischer Engpass: ' + d.name);
       if (getNotifSettings().engpass) {
-        fireNotification('🚨 ApoTrend', 'Kritischer Engpass: ' + d.name);
+        fireNotification('🚨 ApoPulse', 'Kritischer Engpass: ' + d.name);
       }
     } else {
       fireWebhooks('preis.change', { name: d.name, status: sel });
@@ -7130,7 +7130,7 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `apotrend_engpassliste_${today}.csv`;
+    a.download = `apopulse_engpassliste_${today}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -7146,7 +7146,7 @@
   function buildSnapshot() {
     return {
       generated: new Date().toISOString(),
-      source: 'ApoTrend · Marktdaten',
+      source: 'ApoPulse · Marktdaten',
       engpaesse: ENGPASS_DB.map(d => ({
         name: d.name, wirkstoff: d.wirkstoff, pzn: d.pzn,
         status: d.status, bis: d.bis,
@@ -7178,9 +7178,9 @@
   // ══════════════════════════════════════════
   //  E-MAIL-BENACHRICHTIGUNGEN & NOTIFICATION CENTER
   // ══════════════════════════════════════════
-  const LS_NOTIF_SETTINGS = 'apotrend_notif_settings';
-  const LS_NOTIF_CENTER   = 'apotrend_notif_center';
-  const LS_LAST_SUMMARY   = 'apotrend_last_summary';
+  const LS_NOTIF_SETTINGS = 'apopulse_notif_settings';
+  const LS_NOTIF_CENTER   = 'apopulse_notif_center';
+  const LS_LAST_SUMMARY   = 'apopulse_last_summary';
 
   const DEFAULT_NOTIF_SETTINGS = { daily: true, engpass: true, preis: true, rabatt: false };
 
@@ -7240,7 +7240,7 @@
 
     return `Guten Morgen, ${PROFILES[getRole()].name}!
 
-Hier ist Ihre ApoTrend-Zusammenfassung für ${datum}:
+Hier ist Ihre ApoPulse-Zusammenfassung für ${datum}:
 
 📊 ENGPASS-LAGE
   Kritische Engpässe:    ${nCrit}
@@ -7256,14 +7256,14 @@ ${latestNews}
 ${topRabatt}
 
 —
-Diese E-Mail wurde automatisch von ApoTrend generiert.
+Diese E-Mail wurde automatisch von ApoPulse generiert.
 Einstellungen ändern: Profil → Benachrichtigungen`;
   }
 
   function triggerDailySummary() {
     localStorage.setItem(LS_LAST_SUMMARY, Date.now().toString());
     addNotification('📧', 'Tägliche Zusammenfassung verfügbar');
-    simulateEmail('Tägliche Zusammenfassung ApoTrend', buildDailySummaryText());
+    simulateEmail('Tägliche Zusammenfassung ApoPulse', buildDailySummaryText());
   }
 
   // simulierter Hintergrund-Job: bei Login prüfen, ob 24h vergangen
@@ -7274,7 +7274,7 @@ Einstellungen ändern: Profil → Benachrichtigungen`;
     const DAY = 24 * 60 * 60 * 1000;
     if (Date.now() - last >= DAY) {
       addNotification('📧', 'Deine tägliche Zusammenfassung ist bereit');
-      fireNotification('📧 ApoTrend', 'Deine tägliche Zusammenfassung ist bereit');
+      fireNotification('📧 ApoPulse', 'Deine tägliche Zusammenfassung ist bereit');
       // mark so it doesn't refire every reload within the window
       localStorage.setItem(LS_LAST_SUMMARY, Date.now().toString());
     }
@@ -7355,8 +7355,8 @@ Einstellungen ändern: Profil → Benachrichtigungen`;
   // ══════════════════════════════════════════
   //  API-SCHNITTSTELLE (Simulation)
   // ══════════════════════════════════════════
-  const LS_API_KEY  = 'apotrend_api_key';
-  const LS_WEBHOOKS = 'apotrend_webhooks';
+  const LS_API_KEY  = 'apopulse_api_key';
+  const LS_WEBHOOKS = 'apopulse_webhooks';
 
   function genApiKey() {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -7522,7 +7522,7 @@ Einstellungen ändern: Profil → Benachrichtigungen`;
   // ══════════════════════════════════════════
   //  MULTI-SPRACHEN-UNTERSTÜTZUNG (i18n)
   // ══════════════════════════════════════════
-  const LS_LANG = 'apotrend_lang';
+  const LS_LANG = 'apopulse_lang';
 
   const I18N = {
     de: {
@@ -7644,7 +7644,7 @@ Einstellungen ändern: Profil → Benachrichtigungen`;
   // ══════════════════════════════════════════
   //  ERWEITERTE EXPORT-FUNKTIONEN
   // ══════════════════════════════════════════
-  const LS_EXPORT_HISTORY = 'apotrend_export_history';
+  const LS_EXPORT_HISTORY = 'apopulse_export_history';
   let exportScope = 'dashboard';
 
   const EXPORT_SCOPE_LABEL = {
@@ -7723,7 +7723,7 @@ Einstellungen ändern: Profil → Benachrichtigungen`;
   function doExport(type) {
     const data = getExportData(exportScope);
     const stamp = new Date().toISOString().slice(0, 10);
-    const base = 'apotrend_' + exportScope + '_' + stamp;
+    const base = 'apopulse_' + exportScope + '_' + stamp;
 
     if (type === 'csv') {
       const csv = rowsToCSV(data.headers, data.rows);
@@ -7788,8 +7788,8 @@ Einstellungen ändern: Profil → Benachrichtigungen`;
     zip.file('analytics.csv', buildAnalyticsCSV());
     const stamp = new Date().toISOString().slice(0, 10);
     zip.generateAsync({ type: 'blob' }).then(blob => {
-      if (typeof saveAs === 'function') saveAs(blob, 'apotrend_export_' + stamp + '.zip');
-      else downloadBlob(blob, 'apotrend_export_' + stamp + '.zip');
+      if (typeof saveAs === 'function') saveAs(blob, 'apopulse_export_' + stamp + '.zip');
+      else downloadBlob(blob, 'apopulse_export_' + stamp + '.zip');
       logExport('ZIP', 'admin');
       logAdmin('Batch-Export (ZIP) erstellt');
       showToast(getLang()==='de'?'ZIP-Archiv heruntergeladen.':'ZIP archive downloaded.', 'success');
@@ -7843,13 +7843,13 @@ Einstellungen ändern: Profil → Benachrichtigungen`;
   // ══════════════════════════════════════════
   //  ZWEI-FAKTOR-AUTHENTIFIZIERUNG & SICHERHEIT
   // ══════════════════════════════════════════
-  const LS_2FA_ON      = 'apotrend_2fa_enabled';
-  const LS_2FA_SECRET  = 'apotrend_2fa_secret';
-  const LS_BACKUP      = 'apotrend_backup_codes';
-  const LS_LOGIN_HIST  = 'apotrend_login_history';
-  const LS_DEVICES     = 'apotrend_devices';
-  const LS_COOKIE      = 'apotrend_cookie_consent';
-  const LS_LAST_ACT    = 'apotrend_last_activity';
+  const LS_2FA_ON      = 'apopulse_2fa_enabled';
+  const LS_2FA_SECRET  = 'apopulse_2fa_secret';
+  const LS_BACKUP      = 'apopulse_backup_codes';
+  const LS_LOGIN_HIST  = 'apopulse_login_history';
+  const LS_DEVICES     = 'apopulse_devices';
+  const LS_COOKIE      = 'apopulse_cookie_consent';
+  const LS_LAST_ACT    = 'apopulse_last_activity';
 
   let pendingLogin = null;
   let totpInterval = null;
@@ -7993,7 +7993,7 @@ Einstellungen ändern: Profil → Benachrichtigungen`;
       // Setup starten
       pendingSecret = generateSecret();
       document.getElementById('twofa-secret').textContent = pendingSecret;
-      document.getElementById('twofa-qr').src = buildQRDataUrl('otpauth://totp/ApoTrend:' + PROFILES[getRole()].mail + '?secret=' + pendingSecret);
+      document.getElementById('twofa-qr').src = buildQRDataUrl('otpauth://totp/ApoPulse:' + PROFILES[getRole()].mail + '?secret=' + pendingSecret);
       document.getElementById('twofa-setup').style.display = 'block';
       document.getElementById('twofa-confirm').value = '';
       startTOTPDisplay();
@@ -8194,7 +8194,7 @@ Einstellungen ändern: Profil → Benachrichtigungen`;
     const headers = ['Zeitpunkt', 'IP-Adresse', 'Gerät', 'Status', 'Grund'];
     const rows = hist.map(h => [h.time, h.ip, h.device, h.success ? 'Erfolgreich' : 'Fehlgeschlagen', h.reason || '']);
     const csv = rowsToCSV(headers, rows);
-    downloadBlob(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }), 'apotrend_login_historie.csv');
+    downloadBlob(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }), 'apopulse_login_historie.csv');
     logAdmin('Login-Historie als CSV exportiert');
     showToast('Login-Historie exportiert.', 'success');
   }
@@ -8396,7 +8396,7 @@ Einstellungen ändern: Profil → Benachrichtigungen`;
   }
 
   // ── Dark / Light Mode ──────────────────────────────────────────
-  const LS_THEME = 'apotrend_theme';
+  const LS_THEME = 'apopulse_theme';
 
   function initTheme() {
     const saved = localStorage.getItem(LS_THEME) || 'light';
@@ -8424,8 +8424,8 @@ Einstellungen ändern: Profil → Benachrichtigungen`;
   // ── PWA: Web App Manifest (Blob URL) ──────────────────────────
   (function injectManifest() { try {
     const manifest = {
-      name: 'ApoTrend – Marktintelligenz',
-      short_name: 'ApoTrend',
+      name: 'ApoPulse – Marktintelligenz',
+      short_name: 'ApoPulse',
       description: 'Bloomberg-Terminal für österreichische Apotheker',
       start_url: './',
       display: 'standalone',
@@ -8450,8 +8450,8 @@ Einstellungen ändern: Profil → Benachrichtigungen`;
   (function registerSW() { try {
     if (!('serviceWorker' in navigator)) return;
     const swCode = `
-const CACHE = 'apotrend-v1';
-const OFFLINE_HTML = '<html><body style="background:#0a0a0a;color:#00ff88;font-family:monospace;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><div style="text-align:center"><div style="font-size:48px">📡</div><h2>ApoTrend – Offline</h2><p style="color:#888;margin-top:8px">Keine Internetverbindung. Bitte später erneut versuchen.</p></div></body></html>';
+const CACHE = 'apopulse-v1';
+const OFFLINE_HTML = '<html><body style="background:#0a0a0a;color:#00ff88;font-family:monospace;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><div style="text-align:center"><div style="font-size:48px">📡</div><h2>ApoPulse – Offline</h2><p style="color:#888;margin-top:8px">Keine Internetverbindung. Bitte später erneut versuchen.</p></div></body></html>';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
@@ -8491,7 +8491,7 @@ self.addEventListener('fetch', e => {
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     deferredInstallPrompt = e;
-    if (!sessionStorage.getItem('apotrend_install_dismissed')) {
+    if (!sessionStorage.getItem('apopulse_install_dismissed')) {
       document.getElementById('install-banner').classList.add('visible');
     }
   });
@@ -8506,7 +8506,7 @@ self.addEventListener('fetch', e => {
   }
 
   function dismissInstallBanner() {
-    sessionStorage.setItem('apotrend_install_dismissed', '1');
+    sessionStorage.setItem('apopulse_install_dismissed', '1');
     document.getElementById('install-banner').classList.remove('visible');
   }
 
@@ -8518,7 +8518,7 @@ self.addEventListener('fetch', e => {
     if (!w) return;
     w.classList.toggle('collapsed');
     try {
-      const key = 'apotrend_widget_' + (titleEl.textContent || '').trim().slice(0, 40);
+      const key = 'apopulse_widget_' + (titleEl.textContent || '').trim().slice(0, 40);
       localStorage.setItem(key, w.classList.contains('collapsed') ? '1' : '0');
     } catch (e) {}
   }
@@ -8527,7 +8527,7 @@ self.addEventListener('fetch', e => {
       const t = w.querySelector('.widget-title');
       if (!t) return;
       try {
-        const key = 'apotrend_widget_' + (t.textContent || '').trim().slice(0, 40);
+        const key = 'apopulse_widget_' + (t.textContent || '').trim().slice(0, 40);
         if (localStorage.getItem(key) === '1') w.classList.add('collapsed');
       } catch (e) {}
     });
@@ -8572,7 +8572,7 @@ self.addEventListener('fetch', e => {
   let wsSimInterval = null;
   let wsConnected = true;
   let wsLastUpdateTs = Date.now();
-  const LS_SYNC_QUEUE = 'apotrend_sync_queue';
+  const LS_SYNC_QUEUE = 'apopulse_sync_queue';
 
   function setWsStatus(connected) {
     wsConnected = connected;
@@ -8715,10 +8715,10 @@ self.addEventListener('fetch', e => {
     if (Notification.permission !== 'granted') return;
     if (!isLoggedIn()) return;
     try {
-      new Notification('ApoTrend – Live Update', {
+      new Notification('ApoPulse – Live Update', {
         body: headline,
         icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%23000'/%3E%3Ctext x='32' y='46' font-size='40' text-anchor='middle' fill='%2300ff88' font-family='monospace'%3EA%3C/text%3E%3C/svg%3E",
-        tag: 'apotrend-live',
+        tag: 'apopulse-live',
         silent: false,
       });
     } catch (e) { /* ignore */ }
@@ -8921,7 +8921,7 @@ self.addEventListener('fetch', e => {
     else if (action === 'alarm') showToast('Alarm-Funktion: Bitte Watchlist nutzen', 'info');
     else if (action === 'share') {
       if (navigator.share) {
-        navigator.share({ title: 'ApoTrend', url: location.href }).catch(() => {});
+        navigator.share({ title: 'ApoPulse', url: location.href }).catch(() => {});
       } else {
         navigator.clipboard && navigator.clipboard.writeText(location.href)
           .then(() => showToast('Link kopiert', 'success'))
@@ -9007,7 +9007,7 @@ self.addEventListener('fetch', e => {
     import: 'Ein Importstopp aus Indien würde besonders Wirkstoffe wie Paracetamol, Metformin und diverse Antibiotika treffen (hohe API-Abhängigkeit). Breite Engpässe wären innerhalb von 3–4 Wochen wahrscheinlich, mit Preissteigerungen von 20–40%. Empfehlung: Strategische Lagerhaltung und EU-Alternativlieferanten prüfen.',
   };
 
-  const LS_REPORTS = 'apotrend_reports';
+  const LS_REPORTS = 'apopulse_reports';
 
   function probClass(p) { return p >= 67 ? 'prob-high' : p >= 34 ? 'prob-mid' : 'prob-low'; }
   function probColor(p) { return p >= 67 ? '#ff3a3a' : p >= 34 ? '#ffcc00' : '#00ff88'; }
@@ -9320,7 +9320,7 @@ self.addEventListener('fetch', e => {
     }).sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct)).slice(0, 5);
 
     return `
-      <h1 class="rd-logo">APOTREND</h1>
+      <h1 class="rd-logo">APOPULSE</h1>
       <div class="rd-meta">
         Marktintelligenz-Bericht · Erstellt am ${now}<br>
         Empfänger: ${escapeHtml(prof.name)} (${escapeHtml(prof.mail)})
@@ -9348,7 +9348,7 @@ self.addEventListener('fetch', e => {
       </tbody></table>
 
       <p style="margin-top:20px;font-size:10px;color:#999;border-top:1px solid #ddd;padding-top:10px;">
-        Dieser Bericht wurde automatisch von ApoTrend generiert. Alle Daten werden lokal gespeichert.
+        Dieser Bericht wurde automatisch von ApoPulse generiert. Alle Daten werden lokal gespeichert.
       </p>
     `;
   }
@@ -9380,7 +9380,7 @@ self.addEventListener('fetch', e => {
     const headers = ['Medikament', 'Aktueller Status', 'Prognose 7 Tage (%)', 'Prognose 14 Tage (%)', 'Prognose 30 Tage (%)', 'KI-Konfidenz'];
     const rows = AI_FORECAST_DB.map(d => [d.name, d.status, d.p7, d.p14, d.p30, d.conf]);
     const csv = rowsToCSV(headers, rows);
-    downloadBlob(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }), 'apotrend_prognose_' + Date.now() + '.csv');
+    downloadBlob(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }), 'apopulse_prognose_' + Date.now() + '.csv');
     showToast('Prognosedaten als CSV exportiert.', 'success');
   }
 
@@ -9438,9 +9438,9 @@ self.addEventListener('fetch', e => {
   const QUICK_REPLIES = ['✅ Danke!', '🚨 Engpass gemeldet', '📊 Preise aktualisiert'];
   const CHAT_EMOJIS = ['😊', '👍', '🙏', '🚨', '💊', '📊', '✅', '❤️', '😀', '🌙'];
 
-  const LS_CHAT      = 'apotrend_chat';
-  const LS_CHAT_MUTE = 'apotrend_chat_mute';
-  const LS_CHAT_BLOCK= 'apotrend_chat_blocked';
+  const LS_CHAT      = 'apopulse_chat';
+  const LS_CHAT_MUTE = 'apopulse_chat_mute';
+  const LS_CHAT_BLOCK= 'apopulse_chat_blocked';
 
   let activeChatId = null;
   let chatSimInterval = null;
@@ -9852,7 +9852,7 @@ self.addEventListener('fetch', e => {
   // v1.6 – LIEFERANTEN-VERWALTUNG
   // ══════════════════════════════════════════
 
-  const LS_LIEF_RATINGS = 'apotrend_lief_ratings';
+  const LS_LIEF_RATINGS = 'apopulse_lief_ratings';
   const LIEF_MONTHS = ['Dez', 'Jän', 'Feb', 'Mär', 'Apr', 'Mai'];
 
   let LIEFERANTEN = [
@@ -10351,7 +10351,7 @@ self.addEventListener('fetch', e => {
     const headers = ['Name', 'Kontakt', 'Telefon', 'E-Mail', 'Zuverlässigkeit (%)', 'Ø Lieferzeit (Tage)', 'Aktive Rabatte', 'Bewertung', 'Status'];
     const rows = LIEFERANTEN.map(l => [l.name, l.kontakt, l.tel, l.mail, l.zuverl, l.lieferzeit, l.rabatte, avgRating(l.id).toFixed(1), l.status]);
     const csv = rowsToCSV(headers, rows);
-    downloadBlob(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }), 'apotrend_lieferanten_' + Date.now() + '.csv');
+    downloadBlob(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }), 'apopulse_lieferanten_' + Date.now() + '.csv');
     showToast('Lieferanten-Statistiken als CSV exportiert.', 'success');
   }
 
@@ -10383,8 +10383,8 @@ self.addEventListener('fetch', e => {
 
   // ── Onboarding (Ersteinrichtung) ──────────
   function checkOnboarding() {
-    const accounts = JSON.parse(localStorage.getItem('apotrend_accounts') || '[]');
-    const skipped = localStorage.getItem('apotrend_onboarding_skipped') === '1';
+    const accounts = JSON.parse(localStorage.getItem('apopulse_accounts') || '[]');
+    const skipped = localStorage.getItem('apopulse_onboarding_skipped') === '1';
     if (accounts.length === 0 && !skipped) {
       document.getElementById('onboarding-modal').style.display = 'flex';
     }
@@ -10392,7 +10392,7 @@ self.addEventListener('fetch', e => {
 
   // Kostenlose Vorschau ohne Anmeldung starten
   function skipOnboarding() {
-    localStorage.setItem('apotrend_onboarding_skipped', '1');
+    localStorage.setItem('apopulse_onboarding_skipped', '1');
     document.getElementById('onboarding-modal').style.display = 'none';
     // Nicht eingeloggte Nutzer erhalten automatisch den Plan "free_preview" (siehe getPlan)
     if (typeof applyAuthState === 'function') applyAuthState();
@@ -10408,8 +10408,8 @@ self.addEventListener('fetch', e => {
     if (pw.length < 6) { showToast('Passwort mindestens 6 Zeichen.'); return; }
     if (pw !== pw2) { showToast('Passwörter stimmen nicht überein.'); return; }
     const accounts = [{ email, pw, role: 'admin', name: apotheke }];
-    localStorage.setItem('apotrend_accounts', JSON.stringify(accounts));
-    localStorage.setItem('apotrend_apotheke', apotheke);
+    localStorage.setItem('apopulse_accounts', JSON.stringify(accounts));
+    localStorage.setItem('apopulse_apotheke', apotheke);
     document.getElementById('onboarding-modal').style.display = 'none';
     updateApothekeDisplay();
     // Give new users 1 month Pro, mark trial as used so no popup shows
@@ -10423,7 +10423,7 @@ self.addEventListener('fetch', e => {
   }
 
   function updateApothekeDisplay() {
-    const name = localStorage.getItem('apotrend_apotheke');
+    const name = localStorage.getItem('apopulse_apotheke');
     if (name) {
       const el = document.getElementById('header-apotheke');
       if (el) el.textContent = name;
@@ -10433,12 +10433,12 @@ self.addEventListener('fetch', e => {
   // ══════════════════════════════════════════
   // PRICING / PLAN SYSTEM
   // ══════════════════════════════════════════
-  var LS_PLAN = 'apotrend_plan';
-  var LS_PLAN_EXPIRES = 'apotrend_plan_expires';
-  var LS_PLAN_TRIAL = 'apotrend_plan_trial_used';
-  var LS_PAYMENTS = 'apotrend_payments';
+  var LS_PLAN = 'apopulse_plan';
+  var LS_PLAN_EXPIRES = 'apopulse_plan_expires';
+  var LS_PLAN_TRIAL = 'apopulse_plan_trial_used';
+  var LS_PAYMENTS = 'apopulse_payments';
   const PLAN_PRICES = { light: 9.99, pro: 24.99, year: 249.99 };
-  const DISCOUNT_CODES = { 'APOTREND10': {pct:10,months:1}, 'PHARMA20': {pct:20,months:3}, 'BETA2026': {pct:50,months:null} };
+  const DISCOUNT_CODES = { 'APOPULSE10': {pct:10,months:1}, 'PHARMA20': {pct:20,months:3}, 'BETA2026': {pct:50,months:null} };
 
   let _activePlanTarget = null;
   let _activeDiscount = null;
@@ -10647,9 +10647,9 @@ self.addEventListener('fetch', e => {
   //  KI-AGENTEN (Simulation, v1.9)
   // ══════════════════════════════════════════
   var LIGHT_PALETTE = {gruen:'#e8f5e9',blau:'#e3f2fd',gelb:'#fff9c4',orange:'#fff3e0',rot:'#ffebee',grau:'#f5f5f5'};
-  var LS_AGENT_DESIGN = 'apotrend_agent_design';
-  var LS_AGENT_DATA = 'apotrend_agent_data';
-  var LS_AGENT_PROCESS = 'apotrend_agent_process';
+  var LS_AGENT_DESIGN = 'apopulse_agent_design';
+  var LS_AGENT_DATA = 'apopulse_agent_data';
+  var LS_AGENT_PROCESS = 'apopulse_agent_process';
 
   var DESIGN_SUGGESTIONS = [
     "Button 'Watchlist' vergrößern auf 48×48px",
@@ -10726,7 +10726,7 @@ self.addEventListener('fetch', e => {
   }
   function exportDesignCSV(){
     const st = _agLoad(LS_AGENT_DESIGN, {history:[]});
-    _agentCSV(['Zeitpunkt','Empfehlungen'], (st.history||[]).map(h=>[h.time, h.anzahl]), 'apotrend_design_agent.csv');
+    _agentCSV(['Zeitpunkt','Empfehlungen'], (st.history||[]).map(h=>[h.time, h.anzahl]), 'apopulse_design_agent.csv');
   }
   function renderDesignAgent(){
     const st = _agLoad(LS_AGENT_DESIGN, {lastRun:null,recommendations:[]});
@@ -10758,7 +10758,7 @@ self.addEventListener('fetch', e => {
   }
   function exportDataHistoryCSV(){
     const st = _agLoad(LS_AGENT_DATA, {history:[]});
-    _agentCSV(['Zeitpunkt','Datenpunkte','Fehlerrate %','Engpässe','Preisänderungen','News'], (st.history||[]).map(h=>[h.time,h.dataPoints,h.errorRate,h.engpass,h.preise,h.news]), 'apotrend_data_agent.csv');
+    _agentCSV(['Zeitpunkt','Datenpunkte','Fehlerrate %','Engpässe','Preisänderungen','News'], (st.history||[]).map(h=>[h.time,h.dataPoints,h.errorRate,h.engpass,h.preise,h.news]), 'apopulse_data_agent.csv');
   }
   function renderDataAgent(){
     const st = _agLoad(LS_AGENT_DATA, {dataPoints:0,errorRate:0,sources:{}});
@@ -10804,7 +10804,7 @@ self.addEventListener('fetch', e => {
   }
   function exportProcessCSV(){
     const st = _agLoad(LS_AGENT_PROCESS, {history:[]});
-    _agentCSV(['Zeitpunkt','Schnitt','Menge','Qualität','Ort','Zeit','Quelle','Preis'], (st.history||[]).map(h=>[h.time,h.schnitt,h.menge,h.qualitaet,h.ort,h.zeit,h.quelle,h.preis]), 'apotrend_process_agent.csv');
+    _agentCSV(['Zeitpunkt','Schnitt','Menge','Qualität','Ort','Zeit','Quelle','Preis'], (st.history||[]).map(h=>[h.time,h.schnitt,h.menge,h.qualitaet,h.ort,h.zeit,h.quelle,h.preis]), 'apopulse_process_agent.csv');
   }
   function renderProcessAgent(){
     const st = _agLoad(LS_AGENT_PROCESS, {sixR:Object.assign({},SIXR_START),suggestions:[]});
@@ -10909,7 +10909,7 @@ self.addEventListener('fetch', e => {
   }
 
   // ── Global refresh: update prices ±1–3% + occasional status change ──
-  const BACKEND = 'https://apotrend-backend.vercel.app';
+  const BACKEND = 'https://apopulse-backend.vercel.app';
 
   async function fetchLiveStocks() {
     try {
@@ -11134,7 +11134,7 @@ self.addEventListener('fetch', e => {
 
   // ── Debug console ────────────────────────────
   function _log(msg) {
-    console.log('[ApoTrend]', msg);
+    console.log('[ApoPulse]', msg);
     updateDebugConsole();
   }
   function toggleDebugConsole() {
@@ -11212,7 +11212,7 @@ self.addEventListener('fetch', e => {
 // Community-Modul: eigener Script-Block, unabhängig vom Hauptskript
 try {
   // ═══════════════ COMMUNITY MODULE ═══════════════
-  var LS_COMMUNITY = 'apotrend_community_posts';
+  var LS_COMMUNITY = 'apopulse_community_posts';
   var _communityFilter = 'all';
   var _communitySort   = 'top';
   var _communityTag    = '';
@@ -11227,7 +11227,7 @@ try {
     { id:'p2', cat:'tipp', title:'Tipp: BASG-Engpassliste jetzt täglich prüfen lohnt sich',
       body:'Ich checke seit letztem Monat täglich die BASG-Lieferengpass-Seite. Es gibt öfter kurzfristige Aktualisierungen, die man sonst verpasst. Empfehle das jedem.',
       author:'Mag. Stadler', time:'vor 5 Std.', votes:18, voted:null, comments:[
-        { author:'Apotheke Zentrum', time:'vor 4 Std.', text:'Guter Tipp! Nutze dafür ApoTrend – der Engpass-Tab hier ist auch sehr hilfreich.', avatar:'🌿' }
+        { author:'Apotheke Zentrum', time:'vor 4 Std.', text:'Guter Tipp! Nutze dafür ApoPulse – der Engpass-Tab hier ist auch sehr hilfreich.', avatar:'🌿' }
       ], tags:['Tipp','BASG','Workflow'] },
     { id:'p3', cat:'frage', title:'Wie verwaltet ihr Retaxationen bei Rabattverträgen?',
       body:'Wir haben letzte Woche eine Retaxation bekommen weil das falsche Generikum abgegeben wurde, obwohl das korrekte nicht vorrätig war. Was macht ihr in dem Fall?',
@@ -11351,7 +11351,7 @@ try {
     var posts = loadCommunityPosts();
     var p = posts.find(function(x){ return x.id===postId; });
     if (!p) return;
-    var name = (typeof isLoggedIn==='function' && isLoggedIn()) ? (localStorage.getItem('apotrend_current_user') || 'Anonym') : 'Gast';
+    var name = (typeof isLoggedIn==='function' && isLoggedIn()) ? (localStorage.getItem('apopulse_current_user') || 'Anonym') : 'Gast';
     p.comments = p.comments || [];
     p.comments.push({ author:name, time:'gerade eben', text:inp.value.trim(), avatar:'👤' });
     saveCommunityPosts(posts);
@@ -11369,7 +11369,7 @@ try {
     var cat   = document.getElementById('new-post-cat').value || 'frage';
     var tags  = (document.getElementById('new-post-tags').value||'').split(',').map(function(t){ return t.trim(); }).filter(Boolean);
     if (!title) { if (typeof showToast==='function') showToast('Bitte einen Titel eingeben.'); return; }
-    var name = (typeof isLoggedIn==='function' && isLoggedIn()) ? (localStorage.getItem('apotrend_current_user') || 'Anonym') : 'Gast';
+    var name = (typeof isLoggedIn==='function' && isLoggedIn()) ? (localStorage.getItem('apopulse_current_user') || 'Anonym') : 'Gast';
     var posts = loadCommunityPosts();
     posts.unshift({ id:'p'+Date.now(), cat:cat, title:title, body:body, author:name, time:'gerade eben', votes:1, voted:'up', comments:[], tags:tags, ts:Date.now() });
     saveCommunityPosts(posts);

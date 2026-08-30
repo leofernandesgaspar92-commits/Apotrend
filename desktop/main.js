@@ -1,6 +1,6 @@
 'use strict';
 // ────────────────────────────────────────────────────────────────────────────
-//  ApoTrend Desktop — Electron-Hülle
+//  ApoPulse Desktop — Electron-Hülle
 //
 //  Lädt EXAKT denselben Web-Kern wie die Mobile-/PWA-Version (frontend/index.html)
 //  — read-only, ohne die Originaldatei zu verändern.
@@ -27,7 +27,7 @@ function createWindow() {
     minWidth: 380,
     minHeight: 600,
     backgroundColor: '#0a0a0a',
-    title: 'ApoTrend',
+    title: 'ApoPulse',
     autoHideMenuBar: true, // klarere, aufgeraeumte Oberflaeche (Menue via Alt)
     webPreferences: {
       contextIsolation: true,

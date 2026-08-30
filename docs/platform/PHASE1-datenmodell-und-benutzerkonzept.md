@@ -11,7 +11,7 @@
 |---|---|
 | **Frontend** | Eine einzige `frontend/index.html` (~11.000 Zeilen). PWA + Desktop-Hülle laden dieselbe Datei. |
 | **Datenspeicherung** | **Ausschließlich `localStorage` im Browser** (115 Zugriffe). Nichts verlässt das Gerät. |
-| **Benutzerkonten** | In `localStorage` (`apotrend_accounts`, `apotrend_role`). **Passwörter im Klartext**, kein Hashing (kein `crypto.subtle`/bcrypt gefunden). „Erstes Konto = Admin." |
+| **Benutzerkonten** | In `localStorage` (`apopulse_accounts`, `apopulse_role`). **Passwörter im Klartext**, kein Hashing (kein `crypto.subtle`/bcrypt gefunden). „Erstes Konto = Admin." |
 | **2FA / E-Mail / Sync** | Laut README **Simulationen** (Demo-2FA-Code `123456`). |
 | **„Social"-Features heute** | Community-Tab & Chat existieren, sind aber **`localStorage`-Attrappen** — Beiträge werden nicht geteilt, andere Apotheken sehen sie **nicht**. |
 | **Backend** | `backend/api/*` = **zustandslose** Vercel-Functions, die echte Fremddaten holen (BASG, openFDA, Yahoo, RSS). **Keine Datenbank, keine Nutzerdaten, keine Auth.** |
@@ -47,7 +47,7 @@ Ein Backend, klar getrennte **Domänen-Module**:
 - **orgs** — Apotheken, Nutzer, Mitgliedschaften/Rollen.
 - **collab** (Teams-artig, **privat**) — Kanäle, Nachrichten, Notizen, Aufgaben.
 - **network** (Facebook-artig, **netzwerkweit**) — Profile, Kontakte, Feed, Direktnachrichten.
-- **market** (Bloomberg-artig) — der bestehende ApoTrend-Kern; Datenherkunft klar
+- **market** (Bloomberg-artig) — der bestehende ApoPulse-Kern; Datenherkunft klar
   gekennzeichnet (echt/verifiziert vs. simuliert).
 
 Desktop (Electron) und Mobile (PWA) bleiben **dieselbe Web-App**, werden aber zu dünnen

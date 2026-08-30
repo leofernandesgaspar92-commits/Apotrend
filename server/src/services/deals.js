@@ -223,7 +223,7 @@ export function seedDemoDealsIfNoneRunning({ rabatteRepo, today = null, log = co
   for (const row of rows) {
     rabatteRepo.upsert({ ...row, provenance: 'simulated', quelle: 'Demodaten' });
   }
-  log.log?.(`ApoTrend: ${rows.length} Demo-Aktionen angelegt (als „simuliert" gekennzeichnet — `
+  log.log?.(`ApoPulse: ${rows.length} Demo-Aktionen angelegt (als „simuliert" gekennzeichnet — `
     + 'es lief keine echte Aktion mehr). Sie verschwinden, sobald echte vorliegen.');
   return { seeded: true, count: rows.length };
 }

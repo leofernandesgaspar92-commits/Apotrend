@@ -1,4 +1,4 @@
-# Project State — Apotrend AI Assistant
+# Project State — ApoPulse AI Assistant
 
 **Letztes Update:** 2026-06-05
 **Aktuelle Phase:** Phase 0 — Sensing & Konzept
@@ -93,7 +93,7 @@ APOVERLAG/DATACARE/ARGE kontrollieren das Backbone. Details + Empfehlung: `resea
 | Datum | Änderung |
 |---|---|
 | 2026-06-05 | Coach-Infrastruktur aufgesetzt; D-001…D-004; WWS-Sensing-Erstrecherche. |
-| 2026-06-06 | Mandat geschärft (Coach=Bau-Team Apotrend, Fokus Assistant); Ordner→`coach/`; D-009 Anti-Scope; Bestell-Workflow-Desk-Research + Erhebungsleitfaden; Pilot-Apotheke bestätigt. |
+| 2026-06-06 | Mandat geschärft (Coach=Bau-Team ApoPulse, Fokus Assistant); Ordner→`coach/`; D-009 Anti-Scope; Bestell-Workflow-Desk-Research + Erhebungsleitfaden; Pilot-Apotheke bestätigt. |
 | 2026-06-06 | Daten-Fundament recherchiert (Warenverzeichnis/DATACARE · ePharmGH · EUDAMED · PZN als Join-Key); D-010/D-011 ergänzt; `research/datenquellen-architektur.md`. |
 | 2026-06-06 | Sample-Daten (schema-treu) angelegt `assistant/data/sample/` + D-012; Prototyp-Agent jetzt buildable. |
 | 2026-06-06 | Prototyp-Agent gebaut + lauffähig (`assistant/`): deterministischer Decision-Engine, Tagesbriefing + Produktvergleich, 4 Szenarien quellenbelegt. |

@@ -15,7 +15,7 @@ wichtige Einschränkung:
   Engpässe alle 4 Stunden) werden **zusätzlich** nach PostgreSQL geschrieben.
 - Der Feed, die Profile, Nachrichten, Bestellungen usw. werden weiterhin aus
   den In-Memory-Repos gerendert (`src/repo/*.js`, Snapshot in
-  `APOTREND_DATA_FILE`).
+  `APOPULSE_DATA_FILE`).
 
 **Warum dieser Zuschnitt?** Die Repos tragen den kompletten Funktionsumfang der
 Plattform. Sie in einem Zug auf eine Datenbank umzuhängen, wäre ein Umbau mit
@@ -245,7 +245,7 @@ GET /api/live/status
 
 ```bash
 cd server
-export DATABASE_URL="postgresql://user@localhost:5432/apotrend"
+export DATABASE_URL="postgresql://user@localhost:5432/apopulse"
 npm run db:setup     # Client erzeugen + Migrationen einspielen
 npm run db:studio    # Daten ansehen
 ```

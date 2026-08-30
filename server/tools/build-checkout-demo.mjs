@@ -254,7 +254,7 @@ function render() {
     '<meta charset="utf-8">\n' +
     '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
     '<meta name="color-scheme" content="light dark">\n' +
-    '<meta name="description" content="Apotrend — Länder-Compliance, Mehrwährungs-Abos und Hybrid-Zahlungen im Checkout.">\n' +
+    '<meta name="description" content="ApoPulse — Länder-Compliance, Mehrwährungs-Abos und Hybrid-Zahlungen im Checkout.">\n' +
     head +
     '\n</head>\n<body>\n' +
     body +

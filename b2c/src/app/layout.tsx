@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import '@/styles/globals.css'
 
 export const metadata: Metadata = {
-  title: 'Apotrend — Beratung aus der Apotheke',
+  title: 'ApoPulse — Beratung aus der Apotheke',
   description:
     'Fachbeiträge aus geprüften Apotheken, rezeptfreie Produkte und Videosprechstunde.',
 }
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 const themeScript = `
 (function () {
   try {
-    var stored = localStorage.getItem('apotrend-theme');
+    var stored = localStorage.getItem('apopulse-theme');
     var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;

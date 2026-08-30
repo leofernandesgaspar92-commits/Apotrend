@@ -1,4 +1,4 @@
-# Apotrend — Claude Code Entry Point (AI Coach / Bau-Team)
+# ApoPulse — Claude Code Entry Point (AI Coach / Bau-Team)
 
 Dies ist die Datei, die du **zuerst liest**, wenn du an diesem Projekt arbeitest.
 
@@ -7,7 +7,7 @@ Dies ist die Datei, die du **zuerst liest**, wenn du an diesem Projekt arbeitest
 ## Was ist dieses Projekt?
 
 Dies ist der **Arbeits-Workspace des AI Coach** — des *Bau-Teams*, das beim Aufbau der
-**Apotrend-Plattform** hilft. **Aktueller primärer Workstream:** der **AI Assistant**.
+**ApoPulse-Plattform** hilft. **Aktueller primärer Workstream:** der **AI Assistant**.
 
 > **Zwei Ebenen — nie verwechseln:**
 > - 🏗️ **AI Coach** = das Bau-Team (Claude, als 12 Rollen). *Baut.*

@@ -1,4 +1,4 @@
--- ApoTrend Plattform — Preise (Priorität 3). Großhandels-Einkaufspreise (AEP) je
+-- ApoPulse Plattform — Preise (Priorität 3). Großhandels-Einkaufspreise (AEP) je
 -- Präparat und Lieferant, mit kurzer Preisentwicklung (series) und Trend.
 -- HERKUNFTS-Flag wie bei Engpässen (verified/reference/simulated).
 -- Feed-Andockpunkt: posts.ref_type='price' + posts.ref_id -> "Preis für X ist bei

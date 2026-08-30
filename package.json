@@ -1,8 +1,8 @@
 {
-  "name": "apotrend",
+  "name": "apopulse",
   "version": "1.0.0",
   "private": true,
-  "description": "ApoTrend — Mobile/PWA (frontend/) + additive Desktop-Hülle (desktop/). Gemeinsamer Web-Kern, getrennte Build-Wege.",
+  "description": "ApoPulse — Mobile/PWA (frontend/) + additive Desktop-Hülle (desktop/). Gemeinsamer Web-Kern, getrennte Build-Wege.",
   "scripts": {
     "build:mobile": "node -e \"console.log('\\nDie Mobile-/PWA-Version braucht KEINEN Build.\\nSie ist frontend/index.html und wird statisch ausgeliefert (GitHub Pages)\\nbzw. als PWA installiert. Ansehen: frontend/index.html im Browser oeffnen.\\n')\"",
     "start:desktop": "npm --prefix desktop install && npm --prefix desktop start",

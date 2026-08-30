@@ -49,7 +49,7 @@
   @media (max-width:460px){ .country-grid { grid-template-columns:1fr; } }
   .country-pick:hover { border-color:var(--green); background:transparent; }
   .country-pick .flag { font-size:1.5em; line-height:1; }
-  /* Start-/Anmelde-Landing: breiter, klar in Ebenen — links der Wert (was ist ApoTrend),
+  /* Start-/Anmelde-Landing: breiter, klar in Ebenen — links der Wert (was ist ApoPulse),
      rechts die Formulare. Neue Besucher:innen verstehen sofort, worum es geht. */
   #app.auth-mode { max-width:920px; }
   .auth-grid { display:grid; grid-template-columns:1fr; gap:16px; align-items:start; }

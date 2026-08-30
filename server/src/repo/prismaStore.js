@@ -130,7 +130,7 @@ export function createPrismaStore({
   function disable(reason) {
     state = 'disabled';
     disabledReason = reason;
-    log.warn?.(`ApoTrend DB: Spiegel abgeschaltet — ${reason}. `
+    log.warn?.(`ApoPulse DB: Spiegel abgeschaltet — ${reason}. `
       + 'Die Anwendung laeuft unveraendert weiter (In-Memory + Snapshot).');
   }
 
@@ -157,7 +157,7 @@ export function createPrismaStore({
         await client.$connect();
       }
       state = 'ready';
-      log.log?.('ApoTrend DB: Spiegel aktiv (PostgreSQL).');
+      log.log?.('ApoPulse DB: Spiegel aktiv (PostgreSQL).');
       return true;
     } catch (e) {
       const msg = (e && e.message) || String(e);
@@ -180,7 +180,7 @@ export function createPrismaStore({
     } catch (e) {
       counts.errors++;
       const msg = (e && e.message) || String(e);
-      log.warn?.(`ApoTrend DB: ${what} nicht gespeichert — ${msg}`);
+      log.warn?.(`ApoPulse DB: ${what} nicht gespeichert — ${msg}`);
       // Verbindungsfehler (Datenbank weg/Netz weg) schalten den Spiegel ab,
       // damit nicht jede einzelne Zeile in denselben Zeitablauf laeuft.
       if (/P10\d\d|ECONNREFUSED|ETIMEDOUT|terminating connection/i.test(msg)) {

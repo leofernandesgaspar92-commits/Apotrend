@@ -1,4 +1,4 @@
-# Compliance & Risk Checkliste — Apotrend AI Assistant
+# Compliance & Risk Checkliste — ApoPulse AI Assistant
 
 **Wofür:** Pflicht-Checkliste vor jedem Release. Gesundheits-Domäne → Compliance ist **Frontlinie**,
 nicht Anhang (und zugleich Verkaufsargument). Owner: Healthcare Compliance & Risk Officer (R7).

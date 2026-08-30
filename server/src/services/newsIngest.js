@@ -106,7 +106,7 @@ export async function ingestNews({
       const message = (res.reason && res.reason.message) || String(res.reason);
       report.failures.push({ id: source.id, error: message });
       report.perSource[source.id] = { ok: false, error: message };
-      log.warn?.(`ApoTrend News: ${source.id} nicht erreichbar — ${message}`);
+      log.warn?.(`ApoPulse News: ${source.id} nicht erreichbar — ${message}`);
       continue;
     }
 
@@ -138,7 +138,7 @@ export async function ingestNews({
         created++;
       } catch (e) {
         report.failures.push({ id: source.id, error: 'Beitrag: ' + (e && e.message) });
-        log.warn?.(`ApoTrend News: Beitrag aus ${source.id} nicht angelegt — ${e && e.message}`);
+        log.warn?.(`ApoPulse News: Beitrag aus ${source.id} nicht angelegt — ${e && e.message}`);
       }
     }
 

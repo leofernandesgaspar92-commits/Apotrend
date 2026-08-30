@@ -1,4 +1,4 @@
--- ApoTrend — Bestandsaustausch (Biete/Suche). Löst das tägliche Engpass-Problem:
+-- ApoPulse — Bestandsaustausch (Biete/Suche). Löst das tägliche Engpass-Problem:
 -- eine Apotheke hat Überbestand, eine andere sucht dringend — hier finden sie
 -- zueinander. Kontakt läuft über die bestehenden Direktnachrichten (kein
 -- öffentlicher Kontaktdatentausch -> Datenschutz).

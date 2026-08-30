@@ -77,7 +77,7 @@ export function createScheduler({ log = console, random = Math.random, timers = 
         failures: (job.status.failures || 0) + 1,
       });
       // Ein fehlgeschlagener Hintergrund-Lauf darf den Server nie mitreißen.
-      log.warn?.(`ApoTrend Planer: ${job.name} fehlgeschlagen — ${message}`);
+      log.warn?.(`ApoPulse Planer: ${job.name} fehlgeschlagen — ${message}`);
       return { ok: false, error: message };
     } finally {
       job.running = false;

@@ -1,10 +1,10 @@
 {
-  "name": "apotrend-desktop",
+  "name": "apopulse-desktop",
   "version": "1.0.0",
-  "description": "ApoTrend Desktop — Electron-Hülle um denselben Web-Kern wie die PWA (frontend/index.html). Additiv, verändert die Mobile-Version nicht.",
+  "description": "ApoPulse Desktop — Electron-Hülle um denselben Web-Kern wie die PWA (frontend/index.html). Additiv, verändert die Mobile-Version nicht.",
   "private": true,
-  "author": "ApoTrend <noreply@apotrend.at>",
-  "homepage": "https://leofernandesgaspar92-commits.github.io/Apotrend/",
+  "author": "ApoPulse <noreply@apopulse.at>",
+  "homepage": "https://leofernandesgaspar92-commits.github.io/ApoPulse/",
   "license": "UNLICENSED",
   "main": "main.js",
   "scripts": {
@@ -19,8 +19,8 @@
     "electron-builder": "^24.13.3"
   },
   "build": {
-    "appId": "at.apotrend.desktop",
-    "productName": "ApoTrend",
+    "appId": "at.apopulse.desktop",
+    "productName": "ApoPulse",
     "directories": { "output": "dist" },
     "files": ["main.js", "preload.js"],
     "extraResources": [

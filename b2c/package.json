@@ -1,9 +1,9 @@
 {
-  "name": "apotrend-b2c",
+  "name": "apopulse-b2c",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Apotrend B2C — Social-Commerce & Telemedizin (Greenfield-Track)",
+  "description": "ApoPulse B2C — Social-Commerce & Telemedizin (Greenfield-Track)",
   "scripts": {
     "build:tokens": "node tools/build-tokens.mjs",
     "check:tokens": "node tools/build-tokens.mjs --check",

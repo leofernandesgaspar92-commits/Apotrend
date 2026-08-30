@@ -60,8 +60,8 @@ const I18N = {
     wl_view:'Ansehen', wl_remove:'Nicht mehr beobachten', wl_note_add:'✎ Notiz hinzufügen', wl_note_edit:'✎ Notiz bearbeiten', wl_note_ph:'Notiz (z. B. Lieferant, Meldebestand)…', wl_note_save:'Speichern', wl_alert_set:'🔔 Rabatt-Alarm setzen', wl_alert_all_label:'Rabatt-Alarm für alle ab', wl_alert_all_aria:'Alarm-Schwelle in Prozent für alle beobachteten Wirkstoffe', wl_alert_all_set:'Für alle setzen', wl_alert_all_off:'Alle aus', wl_alert_all_done:'Alarm für {n} Wirkstoffe auf −{pct}% gesetzt.', wl_alert_all_off_done:'Alle Rabatt-Alarme ausgeschaltet.', wl_alert_all_need:'Bitte eine Schwelle (1–99 %) eingeben.', wl_alert_on:'🔔 Alarm ab {n}%', wl_alert_edit:'ändern', wl_alert_off_btn:'Aus', e_premium_required:'Notizen sind eine Premium-Funktion.', e_not_watched:'Wirkstoff nicht in der Beobachtungsliste.',
     wl_csv_title:'Beobachtungsliste mit Status als CSV (Excel) — z.B. für den Handverkaufstisch',
     wl_print:'Aushang', wl_print_title:'Beobachtungsliste — Engpass-Status', wl_print_asof:'Stand: {date}', wl_print_count:'{n} Wirkstoffe', wl_print_count_sg:'1 Wirkstoff',
-    wl_print_col_sub:'Wirkstoff / Präparat', wl_print_col_status:'Aktueller Status', wl_print_col_note:'Notiz', wl_print_foot:'Erstellt mit Apotrend · Angaben ohne Gewähr, im Zweifel Quelle prüfen.',
-    wr_title:'📋 Wochenrückblick', wr_sub:'Was sich bei Ihren beobachteten Wirkstoffen in den letzten 7 Tagen geändert hat.', wr_neu:'🆕 Neu gemeldet', wr_wieder:'✅ Wieder verfügbar', wr_status:'🔄 Status geändert', wr_ago_one:'vor 1 Tag', wr_ago_many:'vor {n} Tagen', wr_today:'heute', wr_print:'Aushang', wr_print_title:'Engpass-Wochenrückblick', wr_print_asof:'Stand: {date}', wr_print_foot:'Erstellt mit Apotrend · Zusammenfassung der letzten 7 Tage, Angaben ohne Gewähr — im Zweifel Quelle prüfen.',
+    wl_print_col_sub:'Wirkstoff / Präparat', wl_print_col_status:'Aktueller Status', wl_print_col_note:'Notiz', wl_print_foot:'Erstellt mit ApoPulse · Angaben ohne Gewähr, im Zweifel Quelle prüfen.',
+    wr_title:'📋 Wochenrückblick', wr_sub:'Was sich bei Ihren beobachteten Wirkstoffen in den letzten 7 Tagen geändert hat.', wr_neu:'🆕 Neu gemeldet', wr_wieder:'✅ Wieder verfügbar', wr_status:'🔄 Status geändert', wr_ago_one:'vor 1 Tag', wr_ago_many:'vor {n} Tagen', wr_today:'heute', wr_print:'Aushang', wr_print_title:'Engpass-Wochenrückblick', wr_print_asof:'Stand: {date}', wr_print_foot:'Erstellt mit ApoPulse · Zusammenfassung der letzten 7 Tage, Angaben ohne Gewähr — im Zweifel Quelle prüfen.',
     st_krit:'Kritischer Engpass', st_eing:'Eingeschränkt lieferbar', st_verf:'Wieder verfügbar',
     st_none:'Aktuell keine Meldung',
     st_krit_short:'🔴 Kritisch', st_eing_short:'🟠 Eingeschränkt', st_verf_short:'🟢 Verfügbar',
@@ -102,7 +102,7 @@ const I18N = {
     pl_close:'ℹ️ Datenherkunft & Sicherheit — schließen',
     pl_v:'✔ <b>BASG (verifiziert)</b> — offizielle Behördendaten (Bundesamt für Sicherheit im Gesundheitswesen).',
     pl_r:'📌 <b>Referenzdaten</b> — kuratierte Vergleichsdaten, nicht in Echtzeit.',
-    pl_e:'📰 <b>Redaktion</b> — von der ApoTrend-Redaktion gepflegt, immer mit Quelle.',
+    pl_e:'📰 <b>Redaktion</b> — von der ApoPulse-Redaktion gepflegt, immer mit Quelle.',
     pl_c:'👥 <b>Community-Meldung</b> — von Kolleg:innen gemeldet, <b>nicht offiziell verifiziert</b>. Zur Orientierung, im Zweifel selbst prüfen.',
     pl_note:'Grundsatz: Sicherheitsrelevante Aussagen (Engpass, Rückruf, Substitution) werden nur mit Quelle geführt. Bei Community-Meldungen ist die Quelle die meldende Apotheke.',
     legal_notice_title:'Rechtlicher Hinweis', legal_blocked_title:'In {country} nicht verfügbar', legal_your_country:'deinem Land',
@@ -146,7 +146,7 @@ const I18N = {
     rb_expiring:'⏳ Bald ablaufend', rb_watched_only:'⭐ Nur beobachtete', rb_sort_aria:'Sortierung der Aktionen', rb_sort_pct:'Höchster Rabatt %', rb_sort_saving:'Größte Ersparnis €', rb_csv_t:'Aktuelle Auswahl als CSV (Excel) für den Einkauf', rb_print_t:'Aktuelle Auswahl als Aushang drucken', rb_print_title:'Laufende Rabatt-Aktionen',
     cart_title:'Einkaufsliste', cart_add:'Einkaufsliste', cart_added:'hinzugefügt', cart_summary:'{n} Stück · Summe € {sum}', cart_savings:'💰 Ersparnis ggü. Listenpreis: € {sum}', cart_clear:'Liste leeren',
     cart_orders:'📋 Bestell-Historie', cart_last_order:'🔁 Letzte Bestellung: {ref}', tpl_title:'📋 Bestell-Vorlagen', tpl_sub:'Wiederkehrende Einkaufslisten mit einem Klick in die Liste laden.', tpl_apply:'In Liste laden', tpl_delete:'Vorlage löschen', tpl_delete_confirm:'Vorlage „{name}" löschen?', tpl_applied:'„{name}" in die Liste geladen.', tpl_save:'💾 Als Vorlage', tpl_save_t:'Diese Einkaufsliste als wiederverwendbare Vorlage speichern', tpl_save_prompt:'Name der Vorlage (z.B. „Wochenbestellung Antibiotika"):', tpl_name_short:'Bitte einen Namen mit mindestens 2 Zeichen eingeben.', tpl_saved:'Als Vorlage „{name}" gespeichert.', cart_checkout:'✓ Als bestellt markieren', cart_checkout_ref_ph:'Referenz (optional, z.B. KW32)', cart_checkout_done:'Als Bestellung gespeichert.',
-    ord_title:'📋 Bestell-Historie', os_title:'Deine Beschaffung', os_orders:'Bestellungen', os_spent:'Ausgaben', os_saved:'Ersparnis', os_pieces:'Stück gesamt', os_top:'Top-Präparate (nach Menge)', os_open:'Offene Lieferungen', os_overdue:'Überfällige Lieferungen', os_report:'Report', os_report_t:'Beschaffungs-Report für die Geschäftsführung (druckbar)', os_rep_title:'Beschaffungs-Report', os_rep_period:'Zeitraum: {from} – {to}', os_rep_rate:'Ersparnis-Quote', os_rep_vs_list:'ggü. Listenpreis', os_rep_suppliers:'Ausgaben je Lieferant', os_rep_foot:'Erstellt mit Apotrend · Ausgaben/Ersparnis aus den erfassten Bestellungen (Aktions-/Referenzpreise, Momentaufnahmen) — ohne Gewähr.', os_p_all:'Alle', os_p_year:'Dieses Jahr', os_p_90:'90 Tage', os_p_30:'30 Tage', os_p_none:'Keine Bestellungen in diesem Zeitraum.', os_month_title:'Ersparnis pro Monat', os_month_sub:'Gegenüber dem Listenpreis, aus deinen erfassten Bestellungen.', ord_expected_label:'🚚 Erwartete Lieferung', ord_delivery_overdue:'⚠️ überfällig', os_csv_all:'Alle Bestellungen (CSV)', os_csv_all_t:'Gesamte Bestell-Historie als CSV (Excel) für die Buchhaltung — eine Zeile je Position', os_col_date:'Datum', os_col_ref:'Referenz', os_col_status:'Lieferstatus', ord_received:'✓ Geliefert', ord_ordered:'Bestellt', ord_mark_received:'✓ Als geliefert', ord_mark_open:'Als offen markieren', ord_empty_t:'Noch keine Bestellungen', ord_empty_s:'Schließe eine Einkaufsliste mit „Als bestellt markieren" ab — sie erscheint dann hier.', ord_positions:'{n} Positionen', ord_reorder:'🔁 Erneut bestellen', ord_delete:'🗑 Löschen', ord_delete_confirm:'Diese Bestellung aus der Historie löschen?', cart_clear_confirm:'Ganze Einkaufsliste leeren?', cart_remove:'Position entfernen', cart_deal_expired:'Aktion abgelaufen — Preis vor der Bestellung prüfen.', cart_deal_expired_n:'{n} Aktion(en) in der Liste sind abgelaufen — Preise vor der Bestellung prüfen.',
+    ord_title:'📋 Bestell-Historie', os_title:'Deine Beschaffung', os_orders:'Bestellungen', os_spent:'Ausgaben', os_saved:'Ersparnis', os_pieces:'Stück gesamt', os_top:'Top-Präparate (nach Menge)', os_open:'Offene Lieferungen', os_overdue:'Überfällige Lieferungen', os_report:'Report', os_report_t:'Beschaffungs-Report für die Geschäftsführung (druckbar)', os_rep_title:'Beschaffungs-Report', os_rep_period:'Zeitraum: {from} – {to}', os_rep_rate:'Ersparnis-Quote', os_rep_vs_list:'ggü. Listenpreis', os_rep_suppliers:'Ausgaben je Lieferant', os_rep_foot:'Erstellt mit ApoPulse · Ausgaben/Ersparnis aus den erfassten Bestellungen (Aktions-/Referenzpreise, Momentaufnahmen) — ohne Gewähr.', os_p_all:'Alle', os_p_year:'Dieses Jahr', os_p_90:'90 Tage', os_p_30:'30 Tage', os_p_none:'Keine Bestellungen in diesem Zeitraum.', os_month_title:'Ersparnis pro Monat', os_month_sub:'Gegenüber dem Listenpreis, aus deinen erfassten Bestellungen.', ord_expected_label:'🚚 Erwartete Lieferung', ord_delivery_overdue:'⚠️ überfällig', os_csv_all:'Alle Bestellungen (CSV)', os_csv_all_t:'Gesamte Bestell-Historie als CSV (Excel) für die Buchhaltung — eine Zeile je Position', os_col_date:'Datum', os_col_ref:'Referenz', os_col_status:'Lieferstatus', ord_received:'✓ Geliefert', ord_ordered:'Bestellt', ord_mark_received:'✓ Als geliefert', ord_mark_open:'Als offen markieren', ord_empty_t:'Noch keine Bestellungen', ord_empty_s:'Schließe eine Einkaufsliste mit „Als bestellt markieren" ab — sie erscheint dann hier.', ord_positions:'{n} Positionen', ord_reorder:'🔁 Erneut bestellen', ord_delete:'🗑 Löschen', ord_delete_confirm:'Diese Bestellung aus der Historie löschen?', cart_clear_confirm:'Ganze Einkaufsliste leeren?', cart_remove:'Position entfernen', cart_deal_expired:'Aktion abgelaufen — Preis vor der Bestellung prüfen.', cart_deal_expired_n:'{n} Aktion(en) in der Liste sind abgelaufen — Preise vor der Bestellung prüfen.',
     cart_empty_t:'Einkaufsliste ist leer', cart_empty_s:'Fügen Sie bei Rabatten „🛒 Einkaufsliste" hinzu — dann hier als CSV/Ausdruck für den Großhandel exportieren.',
     cart_col_menge:'Menge', cart_qty_minus:'Menge verringern', cart_qty_plus:'Menge erhöhen', cart_col_sum:'Summe', cart_col_note:'Notiz', cart_print_title:'Einkaufsliste / Bestellung', cart_print_foot:'Preise sind Momentaufnahmen (Aktions-/Referenzpreis) — im Zweifel beim Großhandel prüfen.',
     cart_manual_add:'+ Hinzufügen', cart_manual_ph:'Eigene Position (z. B. Ibuprofen 400)', cart_note_ph:'Notiz (z. B. „bis Freitag", „für Rezeptur")',
@@ -231,7 +231,7 @@ const I18N = {
     dm_empty:'Noch keine Konversationen. Starte oben eine neue.', dm_search_ph:'🔎 Nachrichten durchsuchen…', dm_none_filter:'Kein Verlauf passt zu „{q}".', dm_back:'← Nachrichten', dm_archive:'Archivieren', dm_archived_show:'🗂 Archivierte ({n})', dm_restore:'↩︎ Wiederherstellen',
     dm_body_ph:'Nachricht schreiben…', dm_no_msgs:'Noch keine Nachrichten — sag Hallo 👋',
     dm_today:'Heute', dm_yesterday:'Gestern', dm_read:'Gelesen', dm_delivered:'Zugestellt',
-    wc_title:'👋 Willkommen bei ApoTrend', wc_sub:'Das Fachnetzwerk für Apotheken — kurz erklärt:',
+    wc_title:'👋 Willkommen bei ApoPulse', wc_sub:'Das Fachnetzwerk für Apotheken — kurz erklärt:',
     wc_s1_t:'Wirkstoffe beobachten (Frühwarnnetz)', wc_s1_d:'Setz die Wirkstoffe, die du führst, auf deine Beobachtungsliste (☆ am Engpass oder auf „Für dich"). Ändert sich der Status oder meldet eine Kolleg:in einen Engpass, wirst du sofort benachrichtigt.',
     wc_s2_t:'Engpass selbst melden', wc_s2_d:'Merkst du einen Lieferengpass vor den offiziellen Daten? Melde ihn im Reiter „Engpässe" — andere bestätigen mit „Auch bei uns". So wisst ihr es gemeinsam zuerst.',
     wc_s3_t:'Sparpotenzial beim Einkauf', wc_s3_d:'Der Reiter „Preise" zeigt, wie viel du je Packung sparst, wenn du den günstigsten Großhändler wählst. „Rabatte" warnt, wenn eine Aktion bald ausläuft.',
@@ -240,7 +240,7 @@ const I18N = {
     wc_s6_t:'Kolleg:innen folgen', wc_s6_d:'Folge anderen Apotheker:innen (@Handle) und sieh ihre Beiträge in „Mein Feed".',
     wc_s7_t:'Direktnachrichten', wc_s7_d:'Schreib jemandem privat 1:1 über das Briefsymbol oben oder „✉️ Nachricht" am Profil.',
     wc_s8_t:'Suchen & 🏷️ Themen', wc_s8_d:'Oben nach Personen, Beiträgen, Wirkstoffen suchen. #Hashtags und @Namen sind anklickbar.',
-    wc_tip_t:'📲 Tipp: Als App installieren', wc_tip_d:'Handy: Browser-Menü → „Zum Startbildschirm" (iPhone: Teilen → „Zum Home-Bildschirm"). Computer: Installations-Symbol rechts in der Adressleiste. Dann liegt ApoTrend wie eine App auf deinem Gerät.',
+    wc_tip_t:'📲 Tipp: Als App installieren', wc_tip_d:'Handy: Browser-Menü → „Zum Startbildschirm" (iPhone: Teilen → „Zum Home-Bildschirm"). Computer: Installations-Symbol rechts in der Adressleiste. Dann liegt ApoPulse wie eine App auf deinem Gerät.',
     wc_go:"Los geht's →",
     search_doc:'Suche', search_results_for:'Suchergebnisse für „{q}"', search_hits:'{n} Treffer',
     search_back:'← Zurück', search_none_t:'Keine Treffer',
@@ -291,7 +291,7 @@ const I18N = {
     ac_del_pw:'Zur Bestätigung dein Passwort eingeben:', ac_del_done:'Dein Konto wurde gelöscht.',
     tm_title:'Team verwalten', tm_sub:'Kolleg:innen deiner Apotheke Zugang geben.', tm_open:'👥 Team', tm_no_perm:'Nur Inhaber:innen/Admins können das Team verwalten.', tm_add_title:'Mitglied hinzufügen', tm_add_hint:'Lege ein Konto für eine:n Kolleg:in an. Das Startpasswort teilst du persönlich mit — es kann danach selbst geändert werden.', tm_name:'Name', tm_email:'E-Mail', tm_role:'Rolle', tm_pw:'Startpasswort (min. 8 Zeichen)', tm_add_btn:'Hinzufügen', tm_members:'Mitglieder ({n})', tm_you:'du', tm_remove:'Entfernen', tm_remove_confirm:'{name} wirklich aus dem Team entfernen?', tm_role_admin:'Inhaber:in/Admin', tm_role_apotheker:'Apotheker:in', tm_role_pta:'PTA', tm_role_lehrling:'Auszubildende:r',
     th_nav:'👥 Team', th_sub:'Aufgaben, Notizen und Team-Zugänge deiner Apotheke.', th_tasks_sub:'Aufgaben zuweisen und verfolgen.', th_notes_sub:'Gemeinsame Notizen & Wissensablage.', th_manage_sub:'Mitglieder & Rollen verwalten.',
-    tk_nav:'✅ Aufgaben', tk_title:'Team-Aufgaben', tk_sub:'Aufgaben im Team zuweisen und den Status verfolgen.', tk_new:'Neue Aufgabe', tk_f_title_ph:'Titel, z.B. „Amoxicillin nachbestellen"', tk_f_desc_ph:'Details (optional)', tk_f_assignee:'Zuweisen an', tk_unassigned:'Nicht zugewiesen', tk_f_due:'Fällig am', tk_add:'Aufgabe anlegen', tk_edit:'✎ Bearbeiten', tk_empty_t:'Keine Aufgaben', tk_empty_s:'Lege die erste Aufgabe an und weise sie einer Kollegin/einem Kollegen zu.', tk_empty_s_member:'Noch keine Aufgaben im Team.', tk_assigned_to:'{name}', tk_due:'fällig {d}', tk_overdue:'überfällig', tk_st_offen:'Offen', tk_st_in_arbeit:'In Arbeit', tk_st_erledigt:'Erledigt', tk_set_offen:'Offen', tk_set_progress:'In Arbeit', tk_set_done:'✓ Erledigt', tk_as_task:'✅ Als Aufgabe', tk_from_shortage:'Engpass bearbeiten: {w}', ovt_title:'Deine Aufgaben ({n})', ovt_overdue:'{n} überfällig', ovt_all:'Alle', ovt_team_title:'👥 Team überfällig ({n})', ovt_team_sub:'Nicht dir zugewiesen — im Blick behalten.', tk_no_create:'Du darfst keine Aufgaben anlegen. Bitte eine berechtigte Kollegin/einen berechtigten Kollegen, die Aufgabe zu erstellen.', tk_f_active:'Aktiv', tk_f_mine:'Meine', tk_f_overdue:'Überfällig', tk_f_done:'Erledigt', tk_f_all:'Alle', tk_filter_aria:'Aufgaben filtern', tk_none_filter:'Keine Aufgaben in dieser Ansicht.', tk_print:'🖨️ Aushang drucken', tk_print_t:'Offene Aufgaben als Aushang für die Team-Besprechung drucken', tk_print_title:'Team-Aufgaben (offen)', tk_print_col_task:'Aufgabe', tk_print_col_assignee:'Zuständig', tk_print_count:'{n} offene Aufgaben', tk_print_count_sg:'1 offene Aufgabe', tk_print_foot:'Erstellt mit Apotrend · für die Team-Besprechung.',
+    tk_nav:'✅ Aufgaben', tk_title:'Team-Aufgaben', tk_sub:'Aufgaben im Team zuweisen und den Status verfolgen.', tk_new:'Neue Aufgabe', tk_f_title_ph:'Titel, z.B. „Amoxicillin nachbestellen"', tk_f_desc_ph:'Details (optional)', tk_f_assignee:'Zuweisen an', tk_unassigned:'Nicht zugewiesen', tk_f_due:'Fällig am', tk_add:'Aufgabe anlegen', tk_edit:'✎ Bearbeiten', tk_empty_t:'Keine Aufgaben', tk_empty_s:'Lege die erste Aufgabe an und weise sie einer Kollegin/einem Kollegen zu.', tk_empty_s_member:'Noch keine Aufgaben im Team.', tk_assigned_to:'{name}', tk_due:'fällig {d}', tk_overdue:'überfällig', tk_st_offen:'Offen', tk_st_in_arbeit:'In Arbeit', tk_st_erledigt:'Erledigt', tk_set_offen:'Offen', tk_set_progress:'In Arbeit', tk_set_done:'✓ Erledigt', tk_as_task:'✅ Als Aufgabe', tk_from_shortage:'Engpass bearbeiten: {w}', ovt_title:'Deine Aufgaben ({n})', ovt_overdue:'{n} überfällig', ovt_all:'Alle', ovt_team_title:'👥 Team überfällig ({n})', ovt_team_sub:'Nicht dir zugewiesen — im Blick behalten.', tk_no_create:'Du darfst keine Aufgaben anlegen. Bitte eine berechtigte Kollegin/einen berechtigten Kollegen, die Aufgabe zu erstellen.', tk_f_active:'Aktiv', tk_f_mine:'Meine', tk_f_overdue:'Überfällig', tk_f_done:'Erledigt', tk_f_all:'Alle', tk_filter_aria:'Aufgaben filtern', tk_none_filter:'Keine Aufgaben in dieser Ansicht.', tk_print:'🖨️ Aushang drucken', tk_print_t:'Offene Aufgaben als Aushang für die Team-Besprechung drucken', tk_print_title:'Team-Aufgaben (offen)', tk_print_col_task:'Aufgabe', tk_print_col_assignee:'Zuständig', tk_print_count:'{n} offene Aufgaben', tk_print_count_sg:'1 offene Aufgabe', tk_print_foot:'Erstellt mit ApoPulse · für die Team-Besprechung.',
     kb_nav:'📋 Notizen', kb_title:'Team-Notizen', kb_sub:'Gemeinsame Wissensablage der Apotheke — Schichtübergaben, Kontakte, Merkzettel, Links.', kb_new:'Neue Notiz', kb_f_title_ph:'Titel, z.B. „Großhandel-Kontakt Nachtdienst"', kb_f_body_ph:'Inhalt (optional)', kb_f_link_ph:'Link (optional, https://…)', kb_add:'Notiz speichern', kb_empty_t:'Keine Notizen', kb_empty_s:'Lege die erste gemeinsame Notiz an — sichtbar für dein ganzes Team.', kb_by:'von {name}', kb_pin:'📌 Anheften', kb_unpin:'📌 Lösen', kb_delete:'Löschen', kb_delete_confirm:'Diese Notiz löschen?', kb_edit:'✎ Bearbeiten', kb_save:'Speichern', kb_cancel:'Abbrechen', kb_saved:'Notiz aktualisiert.', kb_search_ph:'🔎 Notizen durchsuchen…', kb_none_filter:'Keine Notiz passt zu „{q}".',
     fl_back:'← zurück zum Profil', fl_h_followers:'👥 Follower', fl_h_following:'➡️ Folgt',
     fl_who_followers:'Wer @{h} folgt', fl_who_following:'Wem @{h} folgt',
@@ -321,7 +321,7 @@ const I18N = {
     ac_rc_title:'Wiederherstellungscodes', ac_rc_remaining:'Noch {n} von 8 Codes gültig.', ac_rc_remaining_one:'Noch 1 von 8 Codes gültig.', ac_rc_remaining_zero:'Keine gültigen Codes mehr — bitte neue erzeugen.',
     ac_rc_regen:'Neue Codes erzeugen', ac_rc_warn:'Achtung: dadurch werden alle bisherigen Codes ungültig.',
     ac_premium:'⭐ Premium freischalten',
-    pr_title:'⭐ ApoTrend Premium', pr_intro:'Schalte Premium frei — einfach direkt per Krypto an uns zahlen.', pr_benefits_lead:'Das bekommst du mit Premium:', pr_b1:'📣 Eigene Angebote bewerben — sichtbar im Feed und Schnellzugriff', pr_b2:'📹 Videosprechstunden anbieten — für Kolleg:innen buchbar', pr_b3:'🔴 Live-Sessions hosten — Fachrunden und Produktvorstellungen', pr_b4:'📝 Private Notizen zur Beobachtungsliste', pr_have:'Du hast Premium ✓',
+    pr_title:'⭐ ApoPulse Premium', pr_intro:'Schalte Premium frei — einfach direkt per Krypto an uns zahlen.', pr_benefits_lead:'Das bekommst du mit Premium:', pr_b1:'📣 Eigene Angebote bewerben — sichtbar im Feed und Schnellzugriff', pr_b2:'📹 Videosprechstunden anbieten — für Kolleg:innen buchbar', pr_b3:'🔴 Live-Sessions hosten — Fachrunden und Produktvorstellungen', pr_b4:'📝 Private Notizen zur Beobachtungsliste', pr_have:'Du hast Premium ✓',
     pr_pay_crypto:'Mit Krypto zahlen', pr_network:'Netzwerk: {net}', pr_amount:'≈ {n} {sym}', pr_local_approx:'≈ {local} in deiner Landeswährung · abgerechnet wird {billed}', pr_amount_na:'Betrag beim Kurs-Abruf – bitte {amount} senden',
     pr_open_wallet:'📲 In Wallet-App öffnen', pr_copy_addr:'📋 Adresse kopieren', pr_copied:'Kopiert ✓',
     pr_paid_q:'Schon gezahlt? Transaktions-ID eingeben:', pr_tx_ph:'Transaktions-ID / Hash', pr_report:'Zahlung melden',
@@ -369,7 +369,7 @@ const I18N = {
     stew_post_btn:'Im Fachforum posten', stew_empty:'Noch keine Beiträge — stell die erste Fachfrage.',
     pi_title:'🧫 Patienten-Infokarten (Antibiotika)', pi_sub:'Verständliche Aufklärung zur Abgabe — Sprache wählen, anzeigen oder ausdrucken.',
     pi_zettel_btn:'📋 Begleitzettel', pi_copy:'📋 Kopieren', pi_popup:'Bitte Popups für den Druck erlauben.',
-    bz_title:'📋 Abgabe-Begleitzettel', bz_sub:'Angaben laut Verordnung eingeben — ApoTrend macht daraus einen großen, gut lesbaren Einnahmeplan für Patient:innen (mehrsprachig, druckbar).',
+    bz_title:'📋 Abgabe-Begleitzettel', bz_sub:'Angaben laut Verordnung eingeben — ApoPulse macht daraus einen großen, gut lesbaren Einnahmeplan für Patient:innen (mehrsprachig, druckbar).',
     bz_warn:'⚠️ Reine Klartext-Aufbereitung deiner Eingaben. Es wird keine Dosierung berechnet oder vorgeschlagen.',
     bz_med:'Arzneimittel (laut Verordnung) *', bz_med_ph:'z.B. Amoxicillin 1000 mg Filmtabletten',
     bz_schema:'Einnahmeschema (Stück je Zeitpunkt, laut Verordnung)',
@@ -383,7 +383,7 @@ const I18N = {
     pubf_new:'🕒 Neueste', pubf_top:'🔥 Beliebteste', pubf_show:'Anzeigen:', pubf_all:'Alle Beiträge', pubf_questions:'❓ Offene Fragen zuerst',
     gr_demand:'Erhöhte Nachfrage', gr_manuf:'Herstellungsproblem', gr_ration:'Kontingentierung', gr_delay:'Produktionsverzögerung', gr_api:'Wirkstoffknappheit',
     dt_tagline:'Apotheker-Netzwerk', dt_overview:'Für dich', dt_public:'Öffentlicher Feed', dt_home:'Mein Feed', dt_shortages:'Lieferengpässe', dt_prices:'Preise', dt_rabatte:'Rabatte', dt_exchange:'Biete/Suche', dt_news:'News',
-    skiplink:'Zum Inhalt springen', print_head:'ApoTrend — Lieferengpässe', offline_banner:'📴 Keine Internetverbindung — Inhalte können nicht geladen werden.',
+    skiplink:'Zum Inhalt springen', print_head:'ApoPulse — Lieferengpässe', offline_banner:'📴 Keine Internetverbindung — Inhalte können nicht geladen werden.',
   },
   en: {
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
@@ -413,8 +413,8 @@ const I18N = {
     wl_view:'View', wl_remove:'Stop watching', wl_note_add:'✎ Add note', wl_note_edit:'✎ Edit note', wl_note_ph:'Note (e.g. supplier, reorder level)…', wl_note_save:'Save', wl_alert_set:'🔔 Set discount alert', wl_alert_all_label:'Discount alert for all from', wl_alert_all_aria:'Alert threshold in percent for all watched substances', wl_alert_all_set:'Set for all', wl_alert_all_off:'All off', wl_alert_all_done:'Alert set to −{pct}% for {n} substances.', wl_alert_all_off_done:'All discount alerts switched off.', wl_alert_all_need:'Please enter a threshold (1–99%).', wl_alert_on:'🔔 Alert from {n}%', wl_alert_edit:'change', wl_alert_off_btn:'Off', e_premium_required:'Notes are a Premium feature.', e_not_watched:'Substance not in your watchlist.',
     wl_csv_title:'Watchlist with status as CSV (Excel) — e.g. for the counter',
     wl_print:'Notice', wl_print_title:'Watchlist — shortage status', wl_print_asof:'As of: {date}', wl_print_count:'{n} substances', wl_print_count_sg:'1 substance',
-    wl_print_col_sub:'Substance / product', wl_print_col_status:'Current status', wl_print_col_note:'Note', wl_print_foot:'Created with Apotrend · No guarantee, check the source if in doubt.',
-    wr_title:'📋 Weekly review', wr_sub:'What changed for your watched substances in the last 7 days.', wr_neu:'🆕 Newly reported', wr_wieder:'✅ Available again', wr_status:'🔄 Status changed', wr_ago_one:'1 day ago', wr_ago_many:'{n} days ago', wr_today:'today', wr_print:'Notice', wr_print_title:'Shortage weekly review', wr_print_asof:'As of: {date}', wr_print_foot:'Created with Apotrend · Summary of the last 7 days, no guarantee — check the source if in doubt.',
+    wl_print_col_sub:'Substance / product', wl_print_col_status:'Current status', wl_print_col_note:'Note', wl_print_foot:'Created with ApoPulse · No guarantee, check the source if in doubt.',
+    wr_title:'📋 Weekly review', wr_sub:'What changed for your watched substances in the last 7 days.', wr_neu:'🆕 Newly reported', wr_wieder:'✅ Available again', wr_status:'🔄 Status changed', wr_ago_one:'1 day ago', wr_ago_many:'{n} days ago', wr_today:'today', wr_print:'Notice', wr_print_title:'Shortage weekly review', wr_print_asof:'As of: {date}', wr_print_foot:'Created with ApoPulse · Summary of the last 7 days, no guarantee — check the source if in doubt.',
     st_krit:'Critical shortage', st_eing:'Limited availability', st_verf:'Available again',
     st_none:'No current report',
     st_krit_short:'🔴 Critical', st_eing_short:'🟠 Limited', st_verf_short:'🟢 Available',
@@ -455,7 +455,7 @@ const I18N = {
     pl_close:'ℹ️ Data source & safety — close',
     pl_v:'✔ <b>BASG (verified)</b> — official regulatory data (Austrian Federal Office for Safety in Health Care).',
     pl_r:'📌 <b>Reference data</b> — curated comparison data, not real-time.',
-    pl_e:'📰 <b>Editorial</b> — maintained by the ApoTrend editors, always with a source.',
+    pl_e:'📰 <b>Editorial</b> — maintained by the ApoPulse editors, always with a source.',
     pl_c:'👥 <b>Community report</b> — reported by colleagues, <b>not officially verified</b>. For orientation; when in doubt, check yourself.',
     pl_note:'Principle: safety-relevant statements (shortage, recall, substitution) are only shown with a source. For community reports, the source is the reporting pharmacy.',
     legal_notice_title:'Legal notice', legal_blocked_title:'Not available in {country}', legal_your_country:'your country',
@@ -499,7 +499,7 @@ const I18N = {
     rb_expiring:'⏳ Expiring soon', rb_watched_only:'⭐ Watched only', rb_sort_aria:'Sort deals', rb_sort_pct:'Highest discount %', rb_sort_saving:'Biggest savings €', rb_csv_t:'Export current selection as CSV (Excel) for purchasing', rb_print_t:'Print current selection as a notice', rb_print_title:'Current discount deals',
     cart_title:'Shopping list', cart_add:'Shopping list', cart_added:'added', cart_summary:'{n} units · total € {sum}', cart_savings:'💰 Savings vs list price: € {sum}', cart_clear:'Clear list',
     cart_orders:'📋 Order history', cart_last_order:'🔁 Last order: {ref}', tpl_title:'📋 Order templates', tpl_sub:'Load recurring shopping lists into the list with one click.', tpl_apply:'Load into list', tpl_delete:'Delete template', tpl_delete_confirm:'Delete template “{name}”?', tpl_applied:'“{name}” loaded into the list.', tpl_save:'💾 Save as template', tpl_save_t:'Save this shopping list as a reusable template', tpl_save_prompt:'Template name (e.g. “Weekly antibiotics order”):', tpl_name_short:'Please enter a name with at least 2 characters.', tpl_saved:'Saved as template “{name}”.', cart_checkout:'✓ Mark as ordered', cart_checkout_ref_ph:'Reference (optional, e.g. wk32)', cart_checkout_done:'Saved as an order.',
-    ord_title:'📋 Order history', os_title:'Your procurement', os_orders:'orders', os_spent:'Spent', os_saved:'Saved', os_pieces:'units total', os_top:'Top products (by quantity)', os_open:'Open deliveries', os_overdue:'Overdue deliveries', os_report:'Report', os_report_t:'Procurement report for management (printable)', os_rep_title:'Procurement report', os_rep_period:'Period: {from} – {to}', os_rep_rate:'Savings rate', os_rep_vs_list:'vs. list price', os_rep_suppliers:'Spend by supplier', os_rep_foot:'Created with Apotrend · Spend/savings from recorded orders (deal/reference prices, snapshots) — no guarantee.', os_p_all:'All', os_p_year:'This year', os_p_90:'90 days', os_p_30:'30 days', os_p_none:'No orders in this period.', os_month_title:'Savings per month', os_month_sub:'vs. list price, from your recorded orders.', ord_expected_label:'🚚 Expected delivery', ord_delivery_overdue:'⚠️ overdue', os_csv_all:'All orders (CSV)', os_csv_all_t:'Entire order history as CSV (Excel) for accounting — one row per item', os_col_date:'Date', os_col_ref:'Reference', os_col_status:'Delivery status', ord_received:'✓ Delivered', ord_ordered:'Ordered', ord_mark_received:'✓ Mark delivered', ord_mark_open:'Mark as open', ord_empty_t:'No orders yet', ord_empty_s:'Finish a shopping list with “Mark as ordered” — it will show up here.', ord_positions:'{n} items', ord_reorder:'🔁 Reorder', ord_delete:'🗑 Delete', ord_delete_confirm:'Delete this order from the history?', cart_clear_confirm:'Clear the whole shopping list?', cart_remove:'Remove item', cart_deal_expired:'Deal expired — check the price before ordering.', cart_deal_expired_n:'{n} deal(s) in the list have expired — check the prices before ordering.',
+    ord_title:'📋 Order history', os_title:'Your procurement', os_orders:'orders', os_spent:'Spent', os_saved:'Saved', os_pieces:'units total', os_top:'Top products (by quantity)', os_open:'Open deliveries', os_overdue:'Overdue deliveries', os_report:'Report', os_report_t:'Procurement report for management (printable)', os_rep_title:'Procurement report', os_rep_period:'Period: {from} – {to}', os_rep_rate:'Savings rate', os_rep_vs_list:'vs. list price', os_rep_suppliers:'Spend by supplier', os_rep_foot:'Created with ApoPulse · Spend/savings from recorded orders (deal/reference prices, snapshots) — no guarantee.', os_p_all:'All', os_p_year:'This year', os_p_90:'90 days', os_p_30:'30 days', os_p_none:'No orders in this period.', os_month_title:'Savings per month', os_month_sub:'vs. list price, from your recorded orders.', ord_expected_label:'🚚 Expected delivery', ord_delivery_overdue:'⚠️ overdue', os_csv_all:'All orders (CSV)', os_csv_all_t:'Entire order history as CSV (Excel) for accounting — one row per item', os_col_date:'Date', os_col_ref:'Reference', os_col_status:'Delivery status', ord_received:'✓ Delivered', ord_ordered:'Ordered', ord_mark_received:'✓ Mark delivered', ord_mark_open:'Mark as open', ord_empty_t:'No orders yet', ord_empty_s:'Finish a shopping list with “Mark as ordered” — it will show up here.', ord_positions:'{n} items', ord_reorder:'🔁 Reorder', ord_delete:'🗑 Delete', ord_delete_confirm:'Delete this order from the history?', cart_clear_confirm:'Clear the whole shopping list?', cart_remove:'Remove item', cart_deal_expired:'Deal expired — check the price before ordering.', cart_deal_expired_n:'{n} deal(s) in the list have expired — check the prices before ordering.',
     cart_empty_t:'Shopping list is empty', cart_empty_s:'Add items via “🛒 Shopping list” on discounts — then export here as CSV/print for your wholesaler.',
     cart_col_menge:'Qty', cart_qty_minus:'Decrease quantity', cart_qty_plus:'Increase quantity', cart_col_sum:'Total', cart_col_note:'Note', cart_print_title:'Shopping list / order', cart_print_foot:'Prices are snapshots (deal/reference price) — verify with your wholesaler if in doubt.',
     cart_manual_add:'+ Add', cart_manual_ph:'Own item (e.g. Ibuprofen 400)', cart_note_ph:'Note (e.g. “by Friday”, “for compounding”)',
@@ -584,7 +584,7 @@ const I18N = {
     dm_empty:'No conversations yet. Start one above.', dm_search_ph:'🔎 Search messages…', dm_none_filter:'No conversation matches “{q}”.', dm_back:'← Messages', dm_archive:'Archive', dm_archived_show:'🗂 Archived ({n})', dm_restore:'↩︎ Restore',
     dm_body_ph:'Write a message…', dm_no_msgs:'No messages yet — say hi 👋',
     dm_today:'Today', dm_yesterday:'Yesterday', dm_read:'Read', dm_delivered:'Delivered',
-    wc_title:'👋 Welcome to ApoTrend', wc_sub:'The professional network for pharmacies — briefly explained:',
+    wc_title:'👋 Welcome to ApoPulse', wc_sub:'The professional network for pharmacies — briefly explained:',
     wc_s1_t:'Watch substances (early-warning network)', wc_s1_d:'Add the substances you stock to your watchlist (☆ on a shortage or on “For you”). If the status changes or a colleague reports a shortage, you are notified right away.',
     wc_s2_t:'Report a shortage yourself', wc_s2_d:'Notice a supply shortage before the official data? Report it in the “Shortages” tab — others confirm with “Us too”. That way you know first, together.',
     wc_s3_t:'Savings on purchasing', wc_s3_d:'The “Prices” tab shows how much you save per pack by choosing the cheapest wholesaler. “Deals” warns you when an offer is about to expire.',
@@ -593,7 +593,7 @@ const I18N = {
     wc_s6_t:'Follow colleagues', wc_s6_d:'Follow other pharmacists (@handle) and see their posts in “My feed”.',
     wc_s7_t:'Direct messages', wc_s7_d:'Message someone privately 1:1 via the envelope icon at the top or “✉️ Message” on a profile.',
     wc_s8_t:'Search & 🏷️ topics', wc_s8_d:'Search for people, posts and substances at the top. #hashtags and @names are clickable.',
-    wc_tip_t:'📲 Tip: install as an app', wc_tip_d:'Phone: browser menu → “Add to Home Screen” (iPhone: Share → “Add to Home Screen”). Computer: install icon on the right of the address bar. Then ApoTrend sits on your device like an app.',
+    wc_tip_t:'📲 Tip: install as an app', wc_tip_d:'Phone: browser menu → “Add to Home Screen” (iPhone: Share → “Add to Home Screen”). Computer: install icon on the right of the address bar. Then ApoPulse sits on your device like an app.',
     wc_go:"Let's go →",
     search_doc:'Search', search_results_for:'Search results for “{q}”', search_hits:'{n} hits',
     search_back:'← Back', search_none_t:'No results',
@@ -644,7 +644,7 @@ const I18N = {
     ac_del_pw:'Enter your password to confirm:', ac_del_done:'Your account has been deleted.',
     tm_title:'Manage team', tm_sub:'Give colleagues at your pharmacy access.', tm_open:'👥 Team', tm_no_perm:'Only owners/admins can manage the team.', tm_add_title:'Add member', tm_add_hint:'Create an account for a colleague. Share the initial password in person — they can change it afterwards.', tm_name:'Name', tm_email:'Email', tm_role:'Role', tm_pw:'Initial password (min. 8 chars)', tm_add_btn:'Add', tm_members:'Members ({n})', tm_you:'you', tm_remove:'Remove', tm_remove_confirm:'Really remove {name} from the team?', tm_role_admin:'Owner/Admin', tm_role_apotheker:'Pharmacist', tm_role_pta:'Pharmacy technician', tm_role_lehrling:'Trainee',
     th_nav:'👥 Team', th_sub:'Tasks, notes and team access for your pharmacy.', th_tasks_sub:'Assign and track tasks.', th_notes_sub:'Shared notes & knowledge base.', th_manage_sub:'Manage members & roles.',
-    tk_nav:'✅ Tasks', tk_title:'Team tasks', tk_sub:'Assign tasks across the team and track their status.', tk_new:'New task', tk_f_title_ph:'Title, e.g. “Reorder amoxicillin”', tk_f_desc_ph:'Details (optional)', tk_f_assignee:'Assign to', tk_unassigned:'Unassigned', tk_f_due:'Due date', tk_add:'Create task', tk_edit:'✎ Edit', tk_empty_t:'No tasks', tk_empty_s:'Create the first task and assign it to a colleague.', tk_empty_s_member:'No team tasks yet.', tk_assigned_to:'{name}', tk_due:'due {d}', tk_overdue:'overdue', tk_st_offen:'Open', tk_st_in_arbeit:'In progress', tk_st_erledigt:'Done', tk_set_offen:'Open', tk_set_progress:'In progress', tk_set_done:'✓ Done', tk_as_task:'✅ As task', tk_from_shortage:'Handle shortage: {w}', ovt_title:'Your tasks ({n})', ovt_overdue:'{n} overdue', ovt_all:'All', ovt_team_title:'👥 Team overdue ({n})', ovt_team_sub:'Not assigned to you — keep an eye on these.', tk_no_create:'You are not allowed to create tasks. Ask a colleague with permission to create it.', tk_f_active:'Active', tk_f_mine:'Mine', tk_f_overdue:'Overdue', tk_f_done:'Done', tk_f_all:'All', tk_filter_aria:'Filter tasks', tk_none_filter:'No tasks in this view.', tk_print:'🖨️ Print board', tk_print_t:'Print open tasks as a notice for the team huddle', tk_print_title:'Team tasks (open)', tk_print_col_task:'Task', tk_print_col_assignee:'Responsible', tk_print_count:'{n} open tasks', tk_print_count_sg:'1 open task', tk_print_foot:'Created with Apotrend · for the team huddle.',
+    tk_nav:'✅ Tasks', tk_title:'Team tasks', tk_sub:'Assign tasks across the team and track their status.', tk_new:'New task', tk_f_title_ph:'Title, e.g. “Reorder amoxicillin”', tk_f_desc_ph:'Details (optional)', tk_f_assignee:'Assign to', tk_unassigned:'Unassigned', tk_f_due:'Due date', tk_add:'Create task', tk_edit:'✎ Edit', tk_empty_t:'No tasks', tk_empty_s:'Create the first task and assign it to a colleague.', tk_empty_s_member:'No team tasks yet.', tk_assigned_to:'{name}', tk_due:'due {d}', tk_overdue:'overdue', tk_st_offen:'Open', tk_st_in_arbeit:'In progress', tk_st_erledigt:'Done', tk_set_offen:'Open', tk_set_progress:'In progress', tk_set_done:'✓ Done', tk_as_task:'✅ As task', tk_from_shortage:'Handle shortage: {w}', ovt_title:'Your tasks ({n})', ovt_overdue:'{n} overdue', ovt_all:'All', ovt_team_title:'👥 Team overdue ({n})', ovt_team_sub:'Not assigned to you — keep an eye on these.', tk_no_create:'You are not allowed to create tasks. Ask a colleague with permission to create it.', tk_f_active:'Active', tk_f_mine:'Mine', tk_f_overdue:'Overdue', tk_f_done:'Done', tk_f_all:'All', tk_filter_aria:'Filter tasks', tk_none_filter:'No tasks in this view.', tk_print:'🖨️ Print board', tk_print_t:'Print open tasks as a notice for the team huddle', tk_print_title:'Team tasks (open)', tk_print_col_task:'Task', tk_print_col_assignee:'Responsible', tk_print_count:'{n} open tasks', tk_print_count_sg:'1 open task', tk_print_foot:'Created with ApoPulse · for the team huddle.',
     kb_nav:'📋 Notes', kb_title:'Team notes', kb_sub:'Shared knowledge base for the pharmacy — shift handovers, contacts, reminders, links.', kb_new:'New note', kb_f_title_ph:'Title, e.g. “Wholesaler contact night shift”', kb_f_body_ph:'Content (optional)', kb_f_link_ph:'Link (optional, https://…)', kb_add:'Save note', kb_empty_t:'No notes', kb_empty_s:'Create the first shared note — visible to your whole team.', kb_by:'by {name}', kb_pin:'📌 Pin', kb_unpin:'📌 Unpin', kb_delete:'Delete', kb_delete_confirm:'Delete this note?', kb_edit:'✎ Edit', kb_save:'Save', kb_cancel:'Cancel', kb_saved:'Note updated.', kb_search_ph:'🔎 Search notes…', kb_none_filter:'No note matches “{q}”.',
     fl_back:'← back to profile', fl_h_followers:'👥 Followers', fl_h_following:'➡️ Following',
     fl_who_followers:'Who follows @{h}', fl_who_following:'Who @{h} follows',
@@ -674,7 +674,7 @@ const I18N = {
     ac_rc_title:'Recovery codes', ac_rc_remaining:'{n} of 8 codes still valid.', ac_rc_remaining_one:'1 of 8 codes still valid.', ac_rc_remaining_zero:'No valid codes left — please generate new ones.',
     ac_rc_regen:'Generate new codes', ac_rc_warn:'Note: this invalidates all previous codes.',
     ac_premium:'⭐ Unlock Premium',
-    pr_title:'⭐ ApoTrend Premium', pr_intro:'Unlock Premium — simply pay us directly with crypto.', pr_benefits_lead:'What you get with Premium:', pr_b1:'📣 Advertise your own listings — shown in feed and quick access', pr_b2:'📹 Offer video consultations — bookable by colleagues', pr_b3:'🔴 Host live sessions — expert rounds and product demos', pr_b4:'📝 Private notes on your watchlist', pr_have:'You have Premium ✓',
+    pr_title:'⭐ ApoPulse Premium', pr_intro:'Unlock Premium — simply pay us directly with crypto.', pr_benefits_lead:'What you get with Premium:', pr_b1:'📣 Advertise your own listings — shown in feed and quick access', pr_b2:'📹 Offer video consultations — bookable by colleagues', pr_b3:'🔴 Host live sessions — expert rounds and product demos', pr_b4:'📝 Private notes on your watchlist', pr_have:'You have Premium ✓',
     pr_pay_crypto:'Pay with crypto', pr_network:'Network: {net}', pr_amount:'≈ {n} {sym}', pr_local_approx:'≈ {local} in your local currency · billed as {billed}', pr_amount_na:'Amount at fetch time – please send {amount}',
     pr_open_wallet:'📲 Open in wallet app', pr_copy_addr:'📋 Copy address', pr_copied:'Copied ✓',
     pr_paid_q:'Already paid? Enter the transaction ID:', pr_tx_ph:'Transaction ID / hash', pr_report:'Report payment',
@@ -722,7 +722,7 @@ const I18N = {
     stew_post_btn:'Post in the forum', stew_empty:'No posts yet — ask the first question.',
     pi_title:'🧫 Patient info cards (antibiotics)', pi_sub:'Clear guidance for dispensing — choose language, view or print.',
     pi_zettel_btn:'📋 Dispensing slip', pi_copy:'📋 Copy', pi_popup:'Please allow pop-ups for printing.',
-    bz_title:'📋 Dispensing slip', bz_sub:'Enter the details as prescribed — ApoTrend turns them into a large, easy-to-read medication schedule for patients (multilingual, printable).',
+    bz_title:'📋 Dispensing slip', bz_sub:'Enter the details as prescribed — ApoPulse turns them into a large, easy-to-read medication schedule for patients (multilingual, printable).',
     bz_warn:'⚠️ Plain-text formatting of your entries only. No dosage is calculated or suggested.',
     bz_med:'Medicine (as prescribed) *', bz_med_ph:'e.g. Amoxicillin 1000 mg film-coated tablets',
     bz_schema:'Schedule (units per time, as prescribed)',
@@ -736,7 +736,7 @@ const I18N = {
     pubf_new:'🕒 Newest', pubf_top:'🔥 Most popular', pubf_show:'Show:', pubf_all:'All posts', pubf_questions:'❓ Open questions first',
     gr_demand:'Increased demand', gr_manuf:'Manufacturing problem', gr_ration:'Rationing', gr_delay:'Production delay', gr_api:'Active-ingredient shortage',
     dt_tagline:'Pharmacist network', dt_overview:'For you', dt_public:'Public feed', dt_home:'My feed', dt_shortages:'Shortages', dt_prices:'Prices', dt_rabatte:'Deals', dt_exchange:'Offer/Seek', dt_news:'News',
-    skiplink:'Skip to content', print_head:'ApoTrend — Shortages', offline_banner:'📴 No internet connection — content cannot be loaded.',
+    skiplink:'Skip to content', print_head:'ApoPulse — Shortages', offline_banner:'📴 No internet connection — content cannot be loaded.',
   },
   pt: {
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
@@ -766,8 +766,8 @@ const I18N = {
     wl_view:'Ver', wl_remove:'Deixar de vigiar', wl_note_add:'✎ Adicionar nota', wl_note_edit:'✎ Editar nota', wl_note_ph:'Nota (ex. fornecedor, stock mínimo)…', wl_note_save:'Guardar', wl_alert_set:'🔔 Definir alerta de desconto', wl_alert_all_label:'Alerta de desconto para todas a partir de', wl_alert_all_aria:'Limiar de alerta em percentagem para todas as substâncias vigiadas', wl_alert_all_set:'Definir para todas', wl_alert_all_off:'Desligar todas', wl_alert_all_done:'Alerta definido em −{pct}% para {n} substâncias.', wl_alert_all_off_done:'Todos os alertas de desconto desligados.', wl_alert_all_need:'Introduza um limiar (1–99%).', wl_alert_on:'🔔 Alerta a partir de {n}%', wl_alert_edit:'alterar', wl_alert_off_btn:'Desligar', e_premium_required:'As notas são uma funcionalidade Premium.', e_not_watched:'Substância não está na sua lista.',
     wl_csv_title:'Lista de vigilância com estado em CSV (Excel) — ex. para o balcão',
     wl_print:'Cartaz', wl_print_title:'Lista de vigilância — estado de rutura', wl_print_asof:'Em: {date}', wl_print_count:'{n} substâncias', wl_print_count_sg:'1 substância',
-    wl_print_col_sub:'Substância / produto', wl_print_col_status:'Estado atual', wl_print_col_note:'Nota', wl_print_foot:'Criado com Apotrend · Sem garantia, verifique a fonte em caso de dúvida.',
-    wr_title:'📋 Resumo da semana', wr_sub:'O que mudou nas suas substâncias vigiadas nos últimos 7 dias.', wr_neu:'🆕 Nova falta', wr_wieder:'✅ Disponível novamente', wr_status:'🔄 Estado alterado', wr_ago_one:'há 1 dia', wr_ago_many:'há {n} dias', wr_today:'hoje', wr_print:'Cartaz', wr_print_title:'Resumo semanal de faltas', wr_print_asof:'Em: {date}', wr_print_foot:'Criado com Apotrend · Resumo dos últimos 7 dias, sem garantia — verifique a fonte em caso de dúvida.',
+    wl_print_col_sub:'Substância / produto', wl_print_col_status:'Estado atual', wl_print_col_note:'Nota', wl_print_foot:'Criado com ApoPulse · Sem garantia, verifique a fonte em caso de dúvida.',
+    wr_title:'📋 Resumo da semana', wr_sub:'O que mudou nas suas substâncias vigiadas nos últimos 7 dias.', wr_neu:'🆕 Nova falta', wr_wieder:'✅ Disponível novamente', wr_status:'🔄 Estado alterado', wr_ago_one:'há 1 dia', wr_ago_many:'há {n} dias', wr_today:'hoje', wr_print:'Cartaz', wr_print_title:'Resumo semanal de faltas', wr_print_asof:'Em: {date}', wr_print_foot:'Criado com ApoPulse · Resumo dos últimos 7 dias, sem garantia — verifique a fonte em caso de dúvida.',
     st_krit:'Falta crítica', st_eing:'Disponibilidade limitada', st_verf:'Disponível novamente',
     st_none:'Sem informação atual',
     st_krit_short:'🔴 Crítica', st_eing_short:'🟠 Limitada', st_verf_short:'🟢 Disponível',
@@ -808,7 +808,7 @@ const I18N = {
     pl_close:'ℹ️ Origem dos dados & segurança — fechar',
     pl_v:'✔ <b>BASG (verificado)</b> — dados oficiais da autoridade (Serviço Federal Austríaco de Segurança na Saúde).',
     pl_r:'📌 <b>Dados de referência</b> — dados de comparação curados, não em tempo real.',
-    pl_e:'📰 <b>Redação</b> — mantido pela redação da ApoTrend, sempre com fonte.',
+    pl_e:'📰 <b>Redação</b> — mantido pela redação da ApoPulse, sempre com fonte.',
     pl_c:'👥 <b>Aviso da comunidade</b> — reportado por colegas, <b>não verificado oficialmente</b>. Para orientação; na dúvida, confirme.',
     pl_note:'Princípio: afirmações relevantes para a segurança (falta, recolha, substituição) só são apresentadas com fonte. Nos avisos da comunidade, a fonte é a farmácia que reporta.',
     legal_notice_title:'Aviso legal', legal_blocked_title:'Não disponível em {country}', legal_your_country:'o seu país',
@@ -852,7 +852,7 @@ const I18N = {
     rb_expiring:'⏳ A expirar em breve', rb_watched_only:'⭐ Só vigiadas', rb_sort_aria:'Ordenar promoções', rb_sort_pct:'Maior desconto %', rb_sort_saving:'Maior poupança €', rb_csv_t:'Exportar a seleção atual como CSV (Excel) para compras', rb_print_t:'Imprimir a seleção atual como cartaz', rb_print_title:'Promoções em curso',
     cart_title:'Lista de compras', cart_add:'Lista de compras', cart_added:'adicionado', cart_summary:'{n} unidades · total € {sum}', cart_savings:'💰 Poupança vs preço de tabela: € {sum}', cart_clear:'Limpar lista',
     cart_orders:'📋 Histórico de pedidos', cart_last_order:'🔁 Último pedido: {ref}', tpl_title:'📋 Modelos de pedido', tpl_sub:'Carregue listas de compras recorrentes na lista com um clique.', tpl_apply:'Carregar na lista', tpl_delete:'Eliminar modelo', tpl_delete_confirm:'Eliminar o modelo „{name}"?', tpl_applied:'„{name}" carregado na lista.', tpl_save:'💾 Guardar como modelo', tpl_save_t:'Guardar esta lista de compras como modelo reutilizável', tpl_save_prompt:'Nome do modelo (ex. „Pedido semanal de antibióticos"):', tpl_name_short:'Introduza um nome com pelo menos 2 caracteres.', tpl_saved:'Guardado como modelo „{name}".', cart_checkout:'✓ Marcar como encomendado', cart_checkout_ref_ph:'Referência (opcional, ex. sem32)', cart_checkout_done:'Guardado como pedido.',
-    ord_title:'📋 Histórico de pedidos', os_title:'A sua aquisição', os_orders:'pedidos', os_spent:'Gasto', os_saved:'Poupança', os_pieces:'unidades no total', os_top:'Produtos principais (por quantidade)', os_open:'Entregas pendentes', os_overdue:'Entregas em atraso', os_report:'Relatório', os_report_t:'Relatório de aquisição para a gestão (imprimível)', os_rep_title:'Relatório de aquisição', os_rep_period:'Período: {from} – {to}', os_rep_rate:'Taxa de poupança', os_rep_vs_list:'vs. preço de tabela', os_rep_suppliers:'Gasto por fornecedor', os_rep_foot:'Criado com Apotrend · Gasto/poupança dos pedidos registados (preços promocionais/referência, momentâneos) — sem garantia.', os_p_all:'Todos', os_p_year:'Este ano', os_p_90:'90 dias', os_p_30:'30 dias', os_p_none:'Sem pedidos neste período.', os_month_title:'Poupança por mês', os_month_sub:'Face ao preço de tabela, dos seus pedidos registados.', ord_expected_label:'🚚 Entrega prevista', ord_delivery_overdue:'⚠️ em atraso', os_csv_all:'Todos os pedidos (CSV)', os_csv_all_t:'Histórico completo de pedidos em CSV (Excel) para a contabilidade — uma linha por item', os_col_date:'Data', os_col_ref:'Referência', os_col_status:'Estado da entrega', ord_received:'✓ Entregue', ord_ordered:'Encomendado', ord_mark_received:'✓ Marcar entregue', ord_mark_open:'Marcar como aberto', ord_empty_t:'Ainda sem pedidos', ord_empty_s:'Conclua uma lista de compras com „Marcar como encomendado" — aparecerá aqui.', ord_positions:'{n} posições', ord_reorder:'🔁 Encomendar de novo', ord_delete:'🗑 Eliminar', ord_delete_confirm:'Eliminar este pedido do histórico?', cart_clear_confirm:'Limpar toda a lista de compras?', cart_remove:'Remover item', cart_deal_expired:'Promoção expirada — verifique o preço antes de encomendar.', cart_deal_expired_n:'{n} promoção(ões) na lista expiraram — verifique os preços antes de encomendar.',
+    ord_title:'📋 Histórico de pedidos', os_title:'A sua aquisição', os_orders:'pedidos', os_spent:'Gasto', os_saved:'Poupança', os_pieces:'unidades no total', os_top:'Produtos principais (por quantidade)', os_open:'Entregas pendentes', os_overdue:'Entregas em atraso', os_report:'Relatório', os_report_t:'Relatório de aquisição para a gestão (imprimível)', os_rep_title:'Relatório de aquisição', os_rep_period:'Período: {from} – {to}', os_rep_rate:'Taxa de poupança', os_rep_vs_list:'vs. preço de tabela', os_rep_suppliers:'Gasto por fornecedor', os_rep_foot:'Criado com ApoPulse · Gasto/poupança dos pedidos registados (preços promocionais/referência, momentâneos) — sem garantia.', os_p_all:'Todos', os_p_year:'Este ano', os_p_90:'90 dias', os_p_30:'30 dias', os_p_none:'Sem pedidos neste período.', os_month_title:'Poupança por mês', os_month_sub:'Face ao preço de tabela, dos seus pedidos registados.', ord_expected_label:'🚚 Entrega prevista', ord_delivery_overdue:'⚠️ em atraso', os_csv_all:'Todos os pedidos (CSV)', os_csv_all_t:'Histórico completo de pedidos em CSV (Excel) para a contabilidade — uma linha por item', os_col_date:'Data', os_col_ref:'Referência', os_col_status:'Estado da entrega', ord_received:'✓ Entregue', ord_ordered:'Encomendado', ord_mark_received:'✓ Marcar entregue', ord_mark_open:'Marcar como aberto', ord_empty_t:'Ainda sem pedidos', ord_empty_s:'Conclua uma lista de compras com „Marcar como encomendado" — aparecerá aqui.', ord_positions:'{n} posições', ord_reorder:'🔁 Encomendar de novo', ord_delete:'🗑 Eliminar', ord_delete_confirm:'Eliminar este pedido do histórico?', cart_clear_confirm:'Limpar toda a lista de compras?', cart_remove:'Remover item', cart_deal_expired:'Promoção expirada — verifique o preço antes de encomendar.', cart_deal_expired_n:'{n} promoção(ões) na lista expiraram — verifique os preços antes de encomendar.',
     cart_empty_t:'Lista de compras vazia', cart_empty_s:'Adicione itens em “🛒 Lista de compras” nas promoções — depois exporte aqui em CSV/impressão para o distribuidor.',
     cart_col_menge:'Qtd', cart_qty_minus:'Diminuir quantidade', cart_qty_plus:'Aumentar quantidade', cart_col_sum:'Total', cart_col_note:'Nota', cart_print_title:'Lista de compras / encomenda', cart_print_foot:'Os preços são momentâneos (promoção/referência) — confirme com o distribuidor em caso de dúvida.',
     cart_manual_add:'+ Adicionar', cart_manual_ph:'Item próprio (ex. Ibuprofeno 400)', cart_note_ph:'Nota (ex. “até sexta”, “para manipulação”)',
@@ -937,7 +937,7 @@ const I18N = {
     dm_empty:'Ainda sem conversas. Inicie uma acima.', dm_search_ph:'🔎 Pesquisar mensagens…', dm_none_filter:'Nenhuma conversa corresponde a „{q}".', dm_back:'← Mensagens', dm_archive:'Arquivar', dm_archived_show:'🗂 Arquivadas ({n})', dm_restore:'↩︎ Restaurar',
     dm_body_ph:'Escrever mensagem…', dm_no_msgs:'Ainda sem mensagens — diga olá 👋',
     dm_today:'Hoje', dm_yesterday:'Ontem', dm_read:'Lida', dm_delivered:'Entregue',
-    wc_title:'👋 Bem-vindo à ApoTrend', wc_sub:'A rede profissional para farmácias — explicação rápida:',
+    wc_title:'👋 Bem-vindo à ApoPulse', wc_sub:'A rede profissional para farmácias — explicação rápida:',
     wc_s1_t:'Vigiar substâncias (rede de alerta precoce)', wc_s1_d:'Adicione as substâncias que tem à sua lista de vigilância (☆ numa falta ou em “Para si”). Se o estado mudar ou um colega reportar uma falta, é notificado de imediato.',
     wc_s2_t:'Reportar uma falta', wc_s2_d:'Nota uma falta antes dos dados oficiais? Reporte-a no separador “Faltas” — os outros confirmam com “Nós também”. Assim ficam a saber primeiro, juntos.',
     wc_s3_t:'Poupança nas compras', wc_s3_d:'O separador “Preços” mostra quanto poupa por embalagem ao escolher o distribuidor mais barato. “Descontos” avisa quando uma promoção está a terminar.',
@@ -946,7 +946,7 @@ const I18N = {
     wc_s6_t:'Seguir colegas', wc_s6_d:'Siga outros farmacêuticos (@handle) e veja as publicações em “Meu feed”.',
     wc_s7_t:'Mensagens diretas', wc_s7_d:'Envie mensagem privada 1:1 pelo ícone de envelope no topo ou “✉️ Mensagem” no perfil.',
     wc_s8_t:'Pesquisar & 🏷️ temas', wc_s8_d:'Pesquise pessoas, publicações e substâncias no topo. #hashtags e @nomes são clicáveis.',
-    wc_tip_t:'📲 Dica: instalar como app', wc_tip_d:'Telemóvel: menu do browser → “Adicionar ao ecrã principal” (iPhone: Partilhar → “Adicionar ao ecrã principal”). Computador: ícone de instalação à direita da barra de endereço. Depois a ApoTrend fica no seu dispositivo como uma app.',
+    wc_tip_t:'📲 Dica: instalar como app', wc_tip_d:'Telemóvel: menu do browser → “Adicionar ao ecrã principal” (iPhone: Partilhar → “Adicionar ao ecrã principal”). Computador: ícone de instalação à direita da barra de endereço. Depois a ApoPulse fica no seu dispositivo como uma app.',
     wc_go:'Vamos começar →',
     search_doc:'Pesquisa', search_results_for:'Resultados para “{q}”', search_hits:'{n} resultados',
     search_back:'← Voltar', search_none_t:'Sem resultados',
@@ -997,7 +997,7 @@ const I18N = {
     ac_del_pw:'Introduza a sua palavra-passe para confirmar:', ac_del_done:'A sua conta foi eliminada.',
     tm_title:'Gerir equipa', tm_sub:'Dar acesso a colegas da sua farmácia.', tm_open:'👥 Equipa', tm_no_perm:'Apenas proprietários/admins podem gerir a equipa.', tm_add_title:'Adicionar membro', tm_add_hint:'Crie uma conta para um colega. Partilhe a palavra-passe inicial pessoalmente — pode ser alterada depois.', tm_name:'Nome', tm_email:'E-mail', tm_role:'Função', tm_pw:'Palavra-passe inicial (mín. 8 caracteres)', tm_add_btn:'Adicionar', tm_members:'Membros ({n})', tm_you:'você', tm_remove:'Remover', tm_remove_confirm:'Remover mesmo {name} da equipa?', tm_role_admin:'Proprietário/Admin', tm_role_apotheker:'Farmacêutico(a)', tm_role_pta:'Técnico(a) de farmácia', tm_role_lehrling:'Estagiário(a)',
     th_nav:'👥 Equipa', th_sub:'Tarefas, notas e acessos da equipa da sua farmácia.', th_tasks_sub:'Atribuir e acompanhar tarefas.', th_notes_sub:'Notas partilhadas & base de conhecimento.', th_manage_sub:'Gerir membros & funções.',
-    tk_nav:'✅ Tarefas', tk_title:'Tarefas da equipa', tk_sub:'Atribuir tarefas na equipa e acompanhar o estado.', tk_new:'Nova tarefa', tk_f_title_ph:'Título, ex. “Encomendar amoxicilina”', tk_f_desc_ph:'Detalhes (opcional)', tk_f_assignee:'Atribuir a', tk_unassigned:'Não atribuída', tk_f_due:'Data-limite', tk_add:'Criar tarefa', tk_edit:'✎ Editar', tk_empty_t:'Sem tarefas', tk_empty_s:'Crie a primeira tarefa e atribua-a a um colega.', tk_empty_s_member:'Ainda sem tarefas na equipa.', tk_assigned_to:'{name}', tk_due:'até {d}', tk_overdue:'em atraso', tk_st_offen:'Aberta', tk_st_in_arbeit:'Em curso', tk_st_erledigt:'Concluída', tk_set_offen:'Aberta', tk_set_progress:'Em curso', tk_set_done:'✓ Concluída', tk_as_task:'✅ Como tarefa', tk_from_shortage:'Tratar rutura: {w}', ovt_title:'As suas tarefas ({n})', ovt_overdue:'{n} em atraso', ovt_all:'Todas', ovt_team_title:'👥 Equipa em atraso ({n})', ovt_team_sub:'Não atribuídas a si — fique atento.', tk_no_create:'Não pode criar tarefas. Peça a um colega com permissão para a criar.', tk_f_active:'Ativas', tk_f_mine:'Minhas', tk_f_overdue:'Em atraso', tk_f_done:'Concluídas', tk_f_all:'Todas', tk_filter_aria:'Filtrar tarefas', tk_none_filter:'Sem tarefas nesta vista.', tk_print:'🖨️ Imprimir cartaz', tk_print_t:'Imprimir tarefas abertas como cartaz para a reunião da equipa', tk_print_title:'Tarefas da equipa (abertas)', tk_print_col_task:'Tarefa', tk_print_col_assignee:'Responsável', tk_print_count:'{n} tarefas abertas', tk_print_count_sg:'1 tarefa aberta', tk_print_foot:'Criado com Apotrend · para a reunião da equipa.',
+    tk_nav:'✅ Tarefas', tk_title:'Tarefas da equipa', tk_sub:'Atribuir tarefas na equipa e acompanhar o estado.', tk_new:'Nova tarefa', tk_f_title_ph:'Título, ex. “Encomendar amoxicilina”', tk_f_desc_ph:'Detalhes (opcional)', tk_f_assignee:'Atribuir a', tk_unassigned:'Não atribuída', tk_f_due:'Data-limite', tk_add:'Criar tarefa', tk_edit:'✎ Editar', tk_empty_t:'Sem tarefas', tk_empty_s:'Crie a primeira tarefa e atribua-a a um colega.', tk_empty_s_member:'Ainda sem tarefas na equipa.', tk_assigned_to:'{name}', tk_due:'até {d}', tk_overdue:'em atraso', tk_st_offen:'Aberta', tk_st_in_arbeit:'Em curso', tk_st_erledigt:'Concluída', tk_set_offen:'Aberta', tk_set_progress:'Em curso', tk_set_done:'✓ Concluída', tk_as_task:'✅ Como tarefa', tk_from_shortage:'Tratar rutura: {w}', ovt_title:'As suas tarefas ({n})', ovt_overdue:'{n} em atraso', ovt_all:'Todas', ovt_team_title:'👥 Equipa em atraso ({n})', ovt_team_sub:'Não atribuídas a si — fique atento.', tk_no_create:'Não pode criar tarefas. Peça a um colega com permissão para a criar.', tk_f_active:'Ativas', tk_f_mine:'Minhas', tk_f_overdue:'Em atraso', tk_f_done:'Concluídas', tk_f_all:'Todas', tk_filter_aria:'Filtrar tarefas', tk_none_filter:'Sem tarefas nesta vista.', tk_print:'🖨️ Imprimir cartaz', tk_print_t:'Imprimir tarefas abertas como cartaz para a reunião da equipa', tk_print_title:'Tarefas da equipa (abertas)', tk_print_col_task:'Tarefa', tk_print_col_assignee:'Responsável', tk_print_count:'{n} tarefas abertas', tk_print_count_sg:'1 tarefa aberta', tk_print_foot:'Criado com ApoPulse · para a reunião da equipa.',
     kb_nav:'📋 Notas', kb_title:'Notas da equipa', kb_sub:'Base de conhecimento partilhada da farmácia — passagens de turno, contactos, lembretes, links.', kb_new:'Nova nota', kb_f_title_ph:'Título, ex. “Contacto grossista turno noite”', kb_f_body_ph:'Conteúdo (opcional)', kb_f_link_ph:'Link (opcional, https://…)', kb_add:'Guardar nota', kb_empty_t:'Sem notas', kb_empty_s:'Crie a primeira nota partilhada — visível para toda a equipa.', kb_by:'por {name}', kb_pin:'📌 Fixar', kb_unpin:'📌 Desafixar', kb_delete:'Eliminar', kb_delete_confirm:'Eliminar esta nota?', kb_edit:'✎ Editar', kb_save:'Guardar', kb_cancel:'Cancelar', kb_saved:'Nota atualizada.', kb_search_ph:'🔎 Pesquisar notas…', kb_none_filter:'Nenhuma nota corresponde a „{q}".',
     fl_back:'← voltar ao perfil', fl_h_followers:'👥 Seguidores', fl_h_following:'➡️ A seguir',
     fl_who_followers:'Quem segue @{h}', fl_who_following:'Quem @{h} segue',
@@ -1027,7 +1027,7 @@ const I18N = {
     ac_rc_title:'Códigos de recuperação', ac_rc_remaining:'{n} de 8 códigos ainda válidos.', ac_rc_remaining_one:'1 de 8 códigos ainda válido.', ac_rc_remaining_zero:'Sem códigos válidos — gere novos, por favor.',
     ac_rc_regen:'Gerar novos códigos', ac_rc_warn:'Atenção: isto invalida todos os códigos anteriores.',
     ac_premium:'⭐ Desbloquear Premium',
-    pr_title:'⭐ ApoTrend Premium', pr_intro:'Desbloqueie o Premium — pague-nos diretamente com cripto.', pr_benefits_lead:'O que recebe com o Premium:', pr_b1:'📣 Divulgar os seus anúncios — visíveis no feed e acesso rápido', pr_b2:'📹 Oferecer teleconsultas — marcáveis por colegas', pr_b3:'🔴 Organizar sessões ao vivo — sessões e demonstrações', pr_b4:'📝 Notas privadas na lista de observação', pr_have:'Tem Premium ✓',
+    pr_title:'⭐ ApoPulse Premium', pr_intro:'Desbloqueie o Premium — pague-nos diretamente com cripto.', pr_benefits_lead:'O que recebe com o Premium:', pr_b1:'📣 Divulgar os seus anúncios — visíveis no feed e acesso rápido', pr_b2:'📹 Oferecer teleconsultas — marcáveis por colegas', pr_b3:'🔴 Organizar sessões ao vivo — sessões e demonstrações', pr_b4:'📝 Notas privadas na lista de observação', pr_have:'Tem Premium ✓',
     pr_pay_crypto:'Pagar com cripto', pr_network:'Rede: {net}', pr_amount:'≈ {n} {sym}', pr_local_approx:'≈ {local} na sua moeda local · cobrado como {billed}', pr_amount_na:'Valor ao obter a cotação – envie {amount}',
     pr_open_wallet:'📲 Abrir na carteira', pr_copy_addr:'📋 Copiar endereço', pr_copied:'Copiado ✓',
     pr_paid_q:'Já pagou? Introduza o ID da transação:', pr_tx_ph:'ID / hash da transação', pr_report:'Comunicar pagamento',
@@ -1075,7 +1075,7 @@ const I18N = {
     stew_post_btn:'Publicar no fórum', stew_empty:'Ainda sem publicações — coloque a primeira pergunta.',
     pi_title:'🧫 Cartões informativos (antibióticos)', pi_sub:'Explicação clara para a dispensa — escolha o idioma, veja ou imprima.',
     pi_zettel_btn:'📋 Folha de dispensa', pi_copy:'📋 Copiar', pi_popup:'Permita pop-ups para imprimir.',
-    bz_title:'📋 Folha de dispensa', bz_sub:'Introduza os dados conforme a prescrição — a ApoTrend cria um plano de toma grande e legível para os doentes (multilingue, imprimível).',
+    bz_title:'📋 Folha de dispensa', bz_sub:'Introduza os dados conforme a prescrição — a ApoPulse cria um plano de toma grande e legível para os doentes (multilingue, imprimível).',
     bz_warn:'⚠️ Apenas formatação em texto claro das suas entradas. Nenhuma dosagem é calculada ou sugerida.',
     bz_med:'Medicamento (conforme prescrição) *', bz_med_ph:'ex. Amoxicilina 1000 mg comprimidos revestidos',
     bz_schema:'Esquema (unidades por altura, conforme prescrição)',
@@ -1089,7 +1089,7 @@ const I18N = {
     pubf_new:'🕒 Mais recentes', pubf_top:'🔥 Mais populares', pubf_show:'Mostrar:', pubf_all:'Todas as publicações', pubf_questions:'❓ Perguntas em aberto primeiro',
     gr_demand:'Procura acrescida', gr_manuf:'Problema de fabrico', gr_ration:'Contingentação', gr_delay:'Atraso de produção', gr_api:'Escassez de princípio ativo',
     dt_tagline:'Rede de farmacêuticos', dt_overview:'Para si', dt_public:'Feed público', dt_home:'Meu feed', dt_shortages:'Faltas', dt_prices:'Preços', dt_rabatte:'Descontos', dt_exchange:'Oferta/Procura', dt_news:'Notícias',
-    skiplink:'Saltar para o conteúdo', print_head:'ApoTrend — Faltas', offline_banner:'📴 Sem ligação à internet — não é possível carregar conteúdos.',
+    skiplink:'Saltar para o conteúdo', print_head:'ApoPulse — Faltas', offline_banner:'📴 Sem ligação à internet — não é possível carregar conteúdos.',
   },
 };
 const SUPPORTED_LOCALES = ['de','en','pt'];
@@ -1189,7 +1189,7 @@ const api = async (method, path, body) => {
 };
 const el = (h) => { const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.childElementCount===1 ? t.content.firstElementChild : t.content; };
 const esc = (s) => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-// Website-Link lesbar kürzen: ohne Protokoll und ohne trailing slash (z.B. „apotrend.at").
+// Website-Link lesbar kürzen: ohne Protokoll und ohne trailing slash (z.B. „apopulse.at").
 const prettyUrl = (u) => String(u||'').replace(/^https?:\/\//i,'').replace(/\/$/,'');
 // Profilstärke (wie bei LinkedIn): welche Bausteine sind ausgefüllt? Nur zur eigenen
 // Motivation gedacht — zeigt Prozent + was noch fehlt.
@@ -1450,7 +1450,7 @@ function authScreen() {
   app.appendChild(el(`
   <div class="auth-grid">
     <div class="card auth-hero">
-      <div class="auth-hero-brand">➕ ApoTrend</div>
+      <div class="auth-hero-brand">➕ ApoPulse</div>
       <div class="auth-hero-title">${esc(t('au_hero_title'))}</div>
       <div class="auth-hero-sub">${esc(t('au_hero_sub'))}</div>
       <ul class="auth-hero-list">
@@ -1554,7 +1554,7 @@ function recoveryCodesScreen(codes, onDone) {
     const blob = new Blob([text + '\n'], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = url; link.download = 'apotrend-wiederherstellungscodes.txt'; link.click();
+    link.href = url; link.download = 'apopulse-wiederherstellungscodes.txt'; link.click();
     URL.revokeObjectURL(url);
   };
   card.querySelector('#rc_done').onclick = () => { if (typeof onDone === 'function') onDone(); };
@@ -2480,7 +2480,7 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
       if (premium) r.push(it.note || '');
       return r;
     });
-    downloadCsv('apotrend-merkliste', header, rows);
+    downloadCsv('apopulse-merkliste', header, rows);
   };
   // Premium: druckbarer Team-Aushang (mit Status + Notizen) zum Aushängen am HV-Tisch.
   const printBtn = card.querySelector('[data-wl-print]');
@@ -2753,7 +2753,7 @@ function setTabAria() {
   });
 }
 // Browsertab-Titel je Ansicht setzen (Orientierung, History, Screenreader).
-const BASE_TITLE = 'ApoTrend';
+const BASE_TITLE = 'ApoPulse';
 function setDocTitle(section) { document.title = section ? `${section} · ${BASE_TITLE}` : `${BASE_TITLE} — ${t('dt_tagline')}`; }
 // Browsertab-Titel je Reiter (übersetzt, ohne Emoji): Schlüssel, zur Laufzeit via t().
 const TAB_TITLES = { overview:'dt_overview', public:'dt_public', home:'dt_home', shortages:'dt_shortages', prices:'dt_prices', rabatte:'dt_rabatte', exchange:'dt_exchange', news:'dt_news' };
@@ -3687,7 +3687,7 @@ function exportPricesCsv(comparisons) {
     csvYesNo(i === 0 && g.saving_abs > 0),
     i === 0 ? csvNum(g.saving_abs || 0) : '',
   ])));
-  downloadCsv('apotrend-preisvergleich', [t('csv_praeparat'), t('csv_wirkstoff'), t('csv_lieferant'), t('csv_aep'), t('csv_trend'), t('csv_guenstigster'), t('csv_saving_vs_max')], rows);
+  downloadCsv('apopulse-preisvergleich', [t('csv_praeparat'), t('csv_wirkstoff'), t('csv_lieferant'), t('csv_aep'), t('csv_trend'), t('csv_guenstigster'), t('csv_saving_vs_max')], rows);
 }
 
 // Rabatt-Aktionen (aktuell gefiltert) als CSV für den Einkauf.
@@ -3725,7 +3725,7 @@ function exportExchangeCsv(entries) {
     (e.author && e.author.display_name) || '', e.author && e.author.handle ? '@' + e.author.handle : '',
     (e.created_at || '').slice(0, 10), e.match_count || 0,
   ]);
-  downloadCsv('apotrend-austausch', [t('ex_csv_art'), t('csv_praeparat'), t('ex_csv_menge'), t('ex_csv_ort'), t('ex_csv_anbieter'), t('ex_csv_handle'), t('ex_csv_erstellt'), t('ex_csv_treffer')], rows);
+  downloadCsv('apopulse-austausch', [t('ex_csv_art'), t('csv_praeparat'), t('ex_csv_menge'), t('ex_csv_ort'), t('ex_csv_anbieter'), t('ex_csv_handle'), t('ex_csv_erstellt'), t('ex_csv_treffer')], rows);
 }
 
 // Bestandsaustausch als Aushang/Druck (aktuelle Auswahl) — für den Backoffice-Ausdruck.
@@ -3759,7 +3759,7 @@ function exportRabatteCsv(list) {
     r.min_menge && r.ersparnis ? csvNum(Number(r.ersparnis) * Number(r.min_menge)) : '',
     r.gueltig_bis || '', csvYesNo(r.best_for_wirkstoff),
   ]);
-  downloadCsv('apotrend-rabatte', [t('csv_rang'), t('csv_praeparat'), t('csv_wirkstoff'), t('csv_lieferant'), t('csv_listenpreis'), t('csv_aktionspreis'), t('csv_rabatt'), t('csv_saving_pkg'), t('csv_minmenge'), t('csv_saving_atmin'), t('csv_gueltig_bis'), t('csv_best_per_wirkstoff')], rows);
+  downloadCsv('apopulse-rabatte', [t('csv_rang'), t('csv_praeparat'), t('csv_wirkstoff'), t('csv_lieferant'), t('csv_listenpreis'), t('csv_aktionspreis'), t('csv_rabatt'), t('csv_saving_pkg'), t('csv_minmenge'), t('csv_saving_atmin'), t('csv_gueltig_bis'), t('csv_best_per_wirkstoff')], rows);
 }
 
 // Engpass-Liste (aktuell gefiltert) als CSV — u.a. zur Dokumentation der Nichtverfügbarkeit.
@@ -3778,7 +3778,7 @@ function exportShortagesCsv(list) {
     s.provenance === 'community' && s.reporter ? '@' + s.reporter.handle : '',
     csvYesNo(s.watched),
   ]);
-  downloadCsv('apotrend-engpaesse', [t('csv_wirkstoff'), t('csv_praeparat'), t('csv_status'), t('csv_grund'), t('csv_gemeldet_am'), t('csv_tage_gemeldet'), t('csv_wieder_bis'), t('csv_antibiotikum'), t('csv_herkunft'), t('csv_melder'), t('csv_beobachtet')], rows);
+  downloadCsv('apopulse-engpaesse', [t('csv_wirkstoff'), t('csv_praeparat'), t('csv_status'), t('csv_grund'), t('csv_gemeldet_am'), t('csv_tage_gemeldet'), t('csv_wieder_bis'), t('csv_antibiotikum'), t('csv_herkunft'), t('csv_melder'), t('csv_beobachtet')], rows);
 }
 
 function trendStr(t) { if (t>0) return `<span style="color:var(--crit-fg)">▲ +${t}%</span>`; if (t<0) return `<span style="color:var(--ok-fg)">▼ ${t}%</span>`; return '<span class="muted">±0%</span>'; }
@@ -4560,7 +4560,7 @@ async function openCart(flash) {
 function exportCartCsv(items) {
   const lineSaving = (i) => (i.listenpreis!=null && i.aktionspreis!=null && Number(i.listenpreis) > Number(i.aktionspreis)) ? (Number(i.listenpreis)-Number(i.aktionspreis))*Number(i.menge) : 0;
   const rows = (items||[]).map(i => [i.bezeichnung, i.wirkstoff||'', i.supplier||'', i.menge, i.listenpreis!=null?fmtMoney(i.listenpreis):'', i.aktionspreis!=null?fmtMoney(i.aktionspreis):'', i.aktionspreis!=null?fmtMoney(i.aktionspreis*i.menge):'', lineSaving(i)>0?fmtMoney(lineSaving(i)):'', i.gueltig_bis||'', i.note||'']);
-  downloadCsv('apotrend-einkaufsliste', [t('csv_praeparat'), t('csv_wirkstoff'), t('csv_lieferant'), t('cart_col_menge'), t('csv_listenpreis'), t('csv_aktionspreis'), t('cart_col_sum'), t('pr_print_saving'), t('csv_gueltig_bis'), t('cart_col_note')], rows);
+  downloadCsv('apopulse-einkaufsliste', [t('csv_praeparat'), t('csv_wirkstoff'), t('csv_lieferant'), t('cart_col_menge'), t('csv_listenpreis'), t('csv_aktionspreis'), t('cart_col_sum'), t('pr_print_saving'), t('csv_gueltig_bis'), t('cart_col_note')], rows);
 }
 
 function printCart(d) {
@@ -5516,7 +5516,7 @@ async function openOrders(flash) {
         rows.push([date, o.reference || '', i.bezeichnung, i.wirkstoff || '', i.supplier || '', i.menge, ap != null ? fmtMoney(ap) : '', ap != null ? fmtMoney(ap * (Number(i.menge) || 0)) : '', saving > 0 ? fmtMoney(saving) : '', status]);
       }
     }
-    downloadCsv('apotrend-bestellungen', header, rows);
+    downloadCsv('apopulse-bestellungen', header, rows);
   }; }
   head.querySelector('[data-back]').onclick = () => openCart();
   feed.appendChild(head);
@@ -6577,7 +6577,7 @@ async function openProfile(handle) {
           const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
-          link.href = url; link.download = 'apotrend-meine-daten.json'; link.click();
+          link.href = url; link.download = 'apopulse-meine-daten.json'; link.click();
           URL.revokeObjectURL(url);
         } catch(e){ alert(e.message); }
       };

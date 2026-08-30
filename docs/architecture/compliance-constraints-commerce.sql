@@ -1,5 +1,5 @@
 -- ===========================================================================
---  Apotrend — Constraints für Länder-Compliance, Abos und Zahlungen
+--  ApoPulse — Constraints für Länder-Compliance, Abos und Zahlungen
 -- ===========================================================================
 --  Ergänzt compliance-constraints.sql und compliance-constraints-media.sql.
 --

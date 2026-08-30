@@ -116,7 +116,7 @@ export function ConsentGate({
       {!allRequiredChecked && (
         <p className="mt-3 text-sm text-content-muted" role="status">
           Ohne die erforderliche Einwilligung können wir diesen Dienst nicht erbringen.
-          Alle anderen Bereiche von Apotrend bleiben nutzbar.
+          Alle anderen Bereiche von ApoPulse bleiben nutzbar.
         </p>
       )}
     </section>

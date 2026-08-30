@@ -2,7 +2,7 @@
 //   node src/cli.js                      → Tagesbriefing ("Was muss ich heute beachten?")
 //   node src/cli.js compare <PZN> <PZN>  → Produktvergleich
 //
-// Datenquelle wählbar:  APOTREND_SOURCE=file (default) | db
+// Datenquelle wählbar:  APOPULSE_SOURCE=file (default) | db
 //   file → Sample-Daten (D-012)   ·   db → echte Anbindung (Skelett, noch nicht verdrahtet)
 import { loadContext } from './data.js';
 import { FileSource } from './sources/fileSource.js';
@@ -11,7 +11,7 @@ import { buildRecommendations, compareProducts } from './engine.js';
 import { narrateBriefing } from './narrate.js';
 import { EuProviderStub } from './llm/euProviderStub.js';
 
-const source = process.env.APOTREND_SOURCE === 'db' ? new DbSource() : new FileSource();
+const source = process.env.APOPULSE_SOURCE === 'db' ? new DbSource() : new FileSource();
 const data = await loadContext(source);
 const [cmd, ...args] = process.argv.slice(2);
 
@@ -37,8 +37,8 @@ if (cmd === 'compare') {
 } else {
   const today = new Date(data.inventory.stand); // deterministisch aus den Daten
   const recs = buildRecommendations(data, today);
-  // Default: deterministisch (kein Anbieter). APOTREND_LLM=<name> aktiviert den EU-Provider-Seam (Skelett).
-  const llm = process.env.APOTREND_LLM ? new EuProviderStub({ name: process.env.APOTREND_LLM }) : null;
+  // Default: deterministisch (kein Anbieter). APOPULSE_LLM=<name> aktiviert den EU-Provider-Seam (Skelett).
+  const llm = process.env.APOPULSE_LLM ? new EuProviderStub({ name: process.env.APOPULSE_LLM }) : null;
   const meta = { apotheke_name: data.inventory.apotheke_name, stand: data.inventory.stand };
   let text;
   try {

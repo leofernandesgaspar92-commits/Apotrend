@@ -14,7 +14,7 @@ import { randomUUID } from 'node:crypto'
 import { addToCart, removeFromCart } from '@/lib/cart'
 import { ComplianceError } from '@/lib/product'
 
-const SESSION_COOKIE = 'apotrend_sid'
+const SESSION_COOKIE = 'apopulse_sid'
 
 /** Sitzungs-ID aus dem Cookie; steht später für die echte Auth-Session. */
 export async function sessionId(): Promise<string> {

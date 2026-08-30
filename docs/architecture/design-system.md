@@ -1,4 +1,4 @@
-# Apotrend B2C — Architektur & Design-System (Schritt 1/3)
+# ApoPulse B2C — Architektur & Design-System (Schritt 1/3)
 
 > **Abgrenzung (wichtig):** Dieses Dokument beschreibt einen **Greenfield-Track**
 > (Social-Commerce/Telemedizin für Endverbraucher, Next.js 14 + Prisma + Socket.io).
@@ -638,7 +638,7 @@ Drei Maßnahmen zusammen — einzeln reicht keine:
 const themeScript = `
 (function () {
   try {
-    var stored = localStorage.getItem('apotrend-theme');
+    var stored = localStorage.getItem('apopulse-theme');
     var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;

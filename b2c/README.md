@@ -1,4 +1,4 @@
-# Apotrend B2C — Design-System, Compliance-Sperren und Rich Media
+# ApoPulse B2C — Design-System, Compliance-Sperren und Rich Media
 
 > **Abgrenzung:** Greenfield-Track (Endverbraucher, Next.js 14). **Nicht** die
 > bestehende B2B-App im Wurzelverzeichnis dieses Repos (Vanilla-JS-SPA,
@@ -233,7 +233,7 @@ b2c/
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
-# -> APOTREND_HEALTH_KEY_V1 setzen (siehe .env.example)
+# -> APOPULSE_HEALTH_KEY_V1 setzen (siehe .env.example)
 ```
 
 Ohne diesen Schlüssel **startet die Verarbeitung in Produktion nicht**. Das ist

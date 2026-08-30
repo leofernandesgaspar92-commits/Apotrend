@@ -10,8 +10,8 @@ function setup() {
   const orgAuth = createOrgAuthService(repo);
   const social = createSocialService(createSocialRepo(), repo);
   // Redaktions-Account
-  const R = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'Redaktion' }, owner: { name: 'ApoTrend Redaktion', email: 'red@apotrend.at', password: 'geheim123' } });
-  social.createProfile(R.user.id, { handle: 'apotrend', displayName: 'ApoTrend-Redaktion', isEditorial: true });
+  const R = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'Redaktion' }, owner: { name: 'ApoPulse Redaktion', email: 'red@apopulse.at', password: 'geheim123' } });
+  social.createProfile(R.user.id, { handle: 'apopulse', displayName: 'ApoPulse-Redaktion', isEditorial: true });
   // normaler Apotheker
   const A = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'A' }, owner: { name: 'Anna', email: 'a@a.at', password: 'geheim123' } });
   social.createProfile(A.user.id, { handle: 'anna', displayName: 'Anna' });

@@ -18,7 +18,7 @@
    der das am teuersten ist.
   ============================================================================
 -->
-<title>Apotrend Länder-Checkout</title>
+<title>ApoPulse Länder-Checkout</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -139,7 +139,7 @@
     <!-- ================= Kopf ================= -->
     <header class="anim-in">
       <p class="mono text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-        Apotrend · Länder-Compliance
+        ApoPulse · Länder-Compliance
       </p>
       <h1 class="mt-2 max-w-3xl text-3xl font-bold leading-tight tracking-tight sm:text-4xl" style="text-wrap: balance">
         Ein Checkout, sechzehn Rechtsordnungen
@@ -247,7 +247,7 @@
         QR-Encoder gegen <span class="mono">python-qrcode</span> und <span class="mono">segno</span> geprüft
         (64 Matrizen, jede Zelle identisch).
       </p>
-      <p class="mono mt-1">Build 2026-08-28 19:25 UTC</p>
+      <p class="mono mt-1">Build 2026-08-30 15:16 UTC</p>
     </footer>
   </div>
 </div>
@@ -454,22 +454,22 @@ function cryptoWallets(env = defaultEnv()) {
   };
 
   push('btc', 'bitcoin', 'BTC',
-    configured(env.APOTREND_WALLET_BTC, 'bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46'),
+    configured(env.APOPULSE_WALLET_BTC, 'bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46'),
     'Bitcoin (Mainnet)', 8);
   push('eth', 'ethereum', 'ETH',
-    configured(env.APOTREND_WALLET_ETH, '0x5f50991186014eDcbDE301467bE7a20C6CCc179B'),
+    configured(env.APOPULSE_WALLET_ETH, '0x5f50991186014eDcbDE301467bE7a20C6CCc179B'),
     'Ethereum (Mainnet)', 18);
   // Zwei Solana-Wallets (beide nur SOL): Seeker + Phantom.
   push('sol_seeker', 'solana', 'SOL',
-    configured(env.APOTREND_WALLET_SOL_SEEKER, 'Egbc7cfzHLj5dkgnR4E7Xk3MfDNrA5imqKJ1FV1n1DW'),
+    configured(env.APOPULSE_WALLET_SOL_SEEKER, 'Egbc7cfzHLj5dkgnR4E7Xk3MfDNrA5imqKJ1FV1n1DW'),
     'Solana (Mainnet)', 9, 'Seeker · leokennedy.skr');
   push('sol_phantom', 'solana', 'SOL',
-    configured(env.APOTREND_WALLET_SOL_PHANTOM, 'EMSJTkRGnnExNwaCkte9PDCN4Tm3BNSZKdXqcEpamWFM'),
+    configured(env.APOPULSE_WALLET_SOL_PHANTOM, 'EMSJTkRGnnExNwaCkte9PDCN4Tm3BNSZKdXqcEpamWFM'),
     'Solana (Mainnet)', 9, 'Phantom');
   // Tron braucht eine EIGENE Adresse (kein EVM-Format). Ohne gesetzte Variable
   // erscheint USDT über TRC-20 gar nicht — eine erfundene Adresse wäre der
   // teuerste denkbare Platzhalter.
-  push('tron', 'tron', 'USDT', configured(env.APOTREND_WALLET_TRON, ''), 'Tron (TRC-20)', 6);
+  push('tron', 'tron', 'USDT', configured(env.APOPULSE_WALLET_TRON, ''), 'Tron (TRC-20)', 6);
 
   return list;
 }
@@ -484,11 +484,11 @@ function cryptoWallets(env = defaultEnv()) {
  *
  * Deshalb bewusst als Opt-in statt als Annahme: Wer eine gewöhnliche Wallet
  * (MetaMask, Ledger, Phantom) benutzt, setzt
- *   APOTREND_EVM_NETWORKS="Polygon,Arbitrum,Base"
+ *   APOPULSE_EVM_NETWORKS="Polygon,Arbitrum,Base"
  * und die Ketten stehen sofort zur Auswahl.
  */
 function extraEvmNetworks(env = defaultEnv()) {
-  return String(env.APOTREND_EVM_NETWORKS || '')
+  return String(env.APOPULSE_EVM_NETWORKS || '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
@@ -2205,7 +2205,8 @@ function priceFor(planId, code, interval = 'monthly') {
         // stattdessen, was tatsächlich passiert: Es ist dieselbe Kartenzahlung.
         + '<span class="mono ml-auto text-xs text-muted">'
         + (m.via ? 'über Karte' : esc(m.provider))
-        + ' · ' + m.settlementDays + ' Tage</span>'
+        // „1 Tage" stand bisher da, sobald ein Weg an einem Tag gutschreibt.
+        + ' · ' + m.settlementDays + (m.settlementDays === 1 ? ' Tag' : ' Tage') + '</span>'
         + '</label></li>';
     });
     $('co-fiat').innerHTML = html;
@@ -2299,7 +2300,7 @@ function priceFor(planId, code, interval = 'monthly') {
       box.innerHTML =
         '<div class="rounded-lg border border-warn/40 bg-warnsoft p-4">'
         + '<p class="text-sm leading-relaxed">Für diesen Wert ist noch keine Empfangsadresse hinterlegt. '
-        + 'Sie wird über eine Umgebungsvariable gesetzt (<span class="mono">APOTREND_WALLET_…</span>). '
+        + 'Sie wird über eine Umgebungsvariable gesetzt (<span class="mono">APOPULSE_WALLET_…</span>). '
         + 'Eine erfundene Adresse steht hier bewusst nicht.</p></div>';
       return;
     }

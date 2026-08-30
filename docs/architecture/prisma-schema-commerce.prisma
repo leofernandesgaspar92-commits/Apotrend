@@ -1,5 +1,5 @@
 // ============================================================================
-//  Apotrend — Schema: Länder-Compliance, Mehrwährungs-Abos, Hybrid-Zahlungen
+//  ApoPulse — Schema: Länder-Compliance, Mehrwährungs-Abos, Hybrid-Zahlungen
 // ============================================================================
 //  Ergänzt prisma-schema-draft.prisma (Kernplattform) und
 //  prisma-schema-media.prisma (Feed/Medien).

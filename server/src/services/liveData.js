@@ -23,7 +23,7 @@
 import { COUNTRIES } from '../data/countries.js';
 
 export const SHORTAGE_STATUSES = ['kritisch', 'eingeschraenkt', 'verfuegbar'];
-const envKey = (country) => `APOTREND_LIVE_SHORTAGES_${String(country || '').toUpperCase()}`;
+const envKey = (country) => `APOPULSE_LIVE_SHORTAGES_${String(country || '').toUpperCase()}`;
 
 // Ist für dieses Land eine echte Live-Quelle konfiguriert (= „angeschlossen")?
 export function isLive(country, env = process.env) {
@@ -86,7 +86,7 @@ export async function refreshShortages(country, { fetchJson, shortagesRepo, env 
 // ── Preise (zweiter Datentyp, gleiche Anschluss-Logik wie Engpässe) ──
 // Vertrag: { country, source, fetched_at, prices: [ { bezeichnung, wirkstoff?, supplier,
 //            aep (Zahl > 0), prev_aep?, currency?, series?[Zahlen] } ] }
-const priceEnvKey = (country) => `APOTREND_LIVE_PRICES_${String(country || '').toUpperCase()}`;
+const priceEnvKey = (country) => `APOPULSE_LIVE_PRICES_${String(country || '').toUpperCase()}`;
 
 export function isPriceLive(country, env = process.env) { return !!env[priceEnvKey(country)]; }
 export function livePriceSources(env = process.env) {
@@ -141,7 +141,7 @@ export async function refreshPrices(country, { fetchJson, pricesRepo, env = proc
 // Vertrag: { country, source, prices?…, rabatte: [ { bezeichnung, wirkstoff?, supplier,
 //            listenpreis (>0), aktionspreis (>0), min_menge?, gueltig_bis (YYYY-MM-DD),
 //            currency? } ] }
-const rabatteEnvKey = (country) => `APOTREND_LIVE_RABATTE_${String(country || '').toUpperCase()}`;
+const rabatteEnvKey = (country) => `APOPULSE_LIVE_RABATTE_${String(country || '').toUpperCase()}`;
 
 export function isRabatteLive(country, env = process.env) { return !!env[rabatteEnvKey(country)]; }
 export function liveRabatteSources(env = process.env) {
@@ -213,9 +213,9 @@ export function startLiveRefresh({ shortagesRepo, pricesRepo, rabatteRepo, env =
     for (const t of tasks) {
       try {
         const r = await t.run();
-        if (r.ok) log.log?.(`ApoTrend Live: ${t.cc}/${t.kind} aktualisiert (${r.count} Einträge, Quelle ${r.source})`);
-        else log.warn?.(`ApoTrend Live: ${t.cc}/${t.kind} nicht aktualisiert — ${r.error || r.reason}`);
-      } catch (e) { log.warn?.(`ApoTrend Live: ${t.cc}/${t.kind} Ausnahme — ${e && e.message}`); }
+        if (r.ok) log.log?.(`ApoPulse Live: ${t.cc}/${t.kind} aktualisiert (${r.count} Einträge, Quelle ${r.source})`);
+        else log.warn?.(`ApoPulse Live: ${t.cc}/${t.kind} nicht aktualisiert — ${r.error || r.reason}`);
+      } catch (e) { log.warn?.(`ApoPulse Live: ${t.cc}/${t.kind} Ausnahme — ${e && e.message}`); }
     }
   };
   runAll(); // sofort einmal beim Start

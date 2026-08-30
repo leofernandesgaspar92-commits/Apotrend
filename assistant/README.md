@@ -1,4 +1,4 @@
-# Apotrend AI Assistant — Prototyp
+# ApoPulse AI Assistant — Prototyp
 
 Decision-Co-Pilot für Apotheken-Mitarbeiter (Produkt, das das **Bau-Team `coach/`** baut).
 Stand: Prototyp auf **Sample-Daten** (D-012). Markt AT-first (D-003).
@@ -29,7 +29,7 @@ node src/cli.js                      # Tagesbriefing: "Was muss ich heute beacht
 node src/cli.js compare 1000011 1000028   # Produktvergleich (Original ↔ Substitut)
 
 # Datenquelle umschalten (default file):
-APOTREND_SOURCE=db node src/cli.js   # DB-/ePharmGH-Pfad (Skelett → klarer "nicht konfiguriert"-Fehler)
+APOPULSE_SOURCE=db node src/cli.js   # DB-/ePharmGH-Pfad (Skelett → klarer "nicht konfiguriert"-Fehler)
 
 # Decision-Surface (UI-Demo) ansehen:
 npm run export                       # erzeugt web/briefing.js

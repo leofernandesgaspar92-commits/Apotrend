@@ -1,4 +1,4 @@
-# ApoTrend Feed-App — live schalten (Deployment)
+# ApoPulse Feed-App — live schalten (Deployment)
 
 Diese App (grüne, personenzentrierte Feed-Plattform: Feed, Engpässe, Preise,
 Rabatte, News, Profile, Suche) ist ein **Node-Server** — sie kann **nicht** auf
@@ -7,12 +7,12 @@ GitHub Pages laufen (Pages liefert nur statische Dateien aus). Sie braucht einen
 
 ## 🚀 Schnellster Weg: 1-Klick auf Render
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/leofernandesgaspar92-commits/Apotrend/tree/feed-first)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/leofernandesgaspar92-commits/ApoPulse/tree/feed-first)
 
 Auf den Button klicken → bei Render mit GitHub anmelden → Render liest die
 `render.yaml` und richtet den Dienst ein → **Apply**. Nach ~1–2 Minuten bekommst
-du eine Live-URL wie `https://apotrend-feed.onrender.com`.
-(Beim Deploy fragt Render nach `APOTREND_ADMIN_PASSWORD` — ein Passwort deiner
+du eine Live-URL wie `https://apopulse-feed.onrender.com`.
+(Beim Deploy fragt Render nach `APOPULSE_ADMIN_PASSWORD` — ein Passwort deiner
 Wahl für den Redaktions-/Moderations-Login setzen.)
 
 > **Wo liegt die App?** Branch `feed-first`, Unterordner `server/`.
@@ -27,11 +27,11 @@ Am einfachsten, weil im Repo bereits eine `render.yaml` (Blueprint) liegt.
 
 1. Konto auf **https://render.com** anlegen (mit GitHub anmelden).
 2. Oben rechts **New +** → **Blueprint**.
-3. Das Repo **`leofernandesgaspar92-commits/Apotrend`** auswählen.
+3. Das Repo **`leofernandesgaspar92-commits/ApoPulse`** auswählen.
 4. Render liest `render.yaml` automatisch (Branch `feed-first`, Ordner `server/`,
    `npm start`). **Apply** klicken.
 5. Nach 1–2 Minuten bekommst du eine URL wie
-   `https://apotrend-feed.onrender.com` — **das ist die neue App**.
+   `https://apopulse-feed.onrender.com` — **das ist die neue App**.
 
 Health-Check läuft gegen `/api/health`. PORT setzt Render selbst.
 
@@ -58,8 +58,8 @@ Im Ordner `server/` liegt ein fertiges **`Dockerfile`**.
 
 ```bash
 cd server
-docker build -t apotrend-feed .
-docker run -p 4000:4000 apotrend-feed
+docker build -t apopulse-feed .
+docker run -p 4000:4000 apopulse-feed
 # → http://localhost:4000
 ```
 
@@ -76,7 +76,7 @@ usw. überleben dann einen Neustart.
 Aktiviert wird das über eine Umgebungsvariable:
 
 ```bash
-APOTREND_DATA_FILE=/pfad/zu/apotrend.json npm start
+APOPULSE_DATA_FILE=/pfad/zu/apopulse.json npm start
 ```
 
 - **Ohne** die Variable läuft alles rein **In-Memory** (Neustart = leer). Gut für Tests.
@@ -87,9 +87,9 @@ APOTREND_DATA_FILE=/pfad/zu/apotrend.json npm start
 - **Render (kostenlos):** Das Dateisystem ist *flüchtig*. Daten überleben einen
   Prozess-Neustart innerhalb derselben Instanz, aber **nicht ein neues Deploy**.
   Für dauerhafte Speicherung eine **Render-Disk** anlegen (Bezahltarif) und den
-  Mountpfad als `APOTREND_DATA_FILE` verwenden (in `render.yaml` vorbereitet).
+  Mountpfad als `APOPULSE_DATA_FILE` verwenden (in `render.yaml` vorbereitet).
 - **Railway / Fly.io / eigener Server:** ein persistentes Volume mounten und
-  `APOTREND_DATA_FILE` daraufsetzen.
+  `APOPULSE_DATA_FILE` daraufsetzen.
 
 **Ehrlicher Ausblick:** Der JSON-Snapshot ist ideal für Einzelinstanz + Ausprobieren.
 Für **echten Mehr-Instanz-Betrieb in der EU** kommt später **Postgres** hinter
@@ -104,13 +104,13 @@ Ein Konto mit dem Profil-Flag `is_editorial` ist zugleich **Moderation** (sieht
 die 🛡️-Queue gemeldeter Beiträge). Zugangsdaten über Umgebungsvariablen:
 
 ```bash
-APOTREND_ADMIN_EMAIL=redaktion@apotrend.at
-APOTREND_ADMIN_PASSWORD=<sicheres-passwort>
+APOPULSE_ADMIN_EMAIL=redaktion@apopulse.at
+APOPULSE_ADMIN_PASSWORD=<sicheres-passwort>
 ```
 
 Ohne gesetztes Passwort erzeugt der Server beim Frischstart ein zufälliges und
 **loggt es einmalig** in die Server-Konsole (`ℹ️ Redaktions-/Moderations-Login: …`).
-Für den echten Betrieb immer `APOTREND_ADMIN_PASSWORD` setzen.
+Für den echten Betrieb immer `APOPULSE_ADMIN_PASSWORD` setzen.
 
 ## Lokal testen (ohne Host)
 

@@ -26,8 +26,8 @@ test('validateShortagePayload: akzeptiert gültige Zeilen, sammelt Fehler, lehnt
 
 test('isLive/liveSources: nur mit gesetzter ENV-Variable „angeschlossen"', () => {
   assert.equal(isLive('AT', {}), false);
-  assert.equal(isLive('AT', { APOTREND_LIVE_SHORTAGES_AT: 'https://x/y.json' }), true);
-  const s = liveSources({ APOTREND_LIVE_SHORTAGES_NG: 'https://n/g.json', OTHER: 'x' });
+  assert.equal(isLive('AT', { APOPULSE_LIVE_SHORTAGES_AT: 'https://x/y.json' }), true);
+  const s = liveSources({ APOPULSE_LIVE_SHORTAGES_NG: 'https://n/g.json', OTHER: 'x' });
   assert.deepEqual(Object.keys(s), ['NG']);
   assert.equal(s.NG.url, 'https://n/g.json');
 });
@@ -36,7 +36,7 @@ test('refreshShortages: übernimmt gültige Live-Daten (provenance=verified), Co
   const repo = createShortagesRepo({ seed: true });
   // Eine echte Community-Meldung (reporter_user_id gesetzt) muss erhalten bleiben.
   repo.upsert({ wirkstoff: 'Community-Wirkstoff', bezeichnung: 'Von Apotheke gemeldet', status: 'kritisch', reporter_user_id: 'user-1', provenance: 'reported' });
-  const env = { APOTREND_LIVE_SHORTAGES_AT: 'https://live/at.json' };
+  const env = { APOPULSE_LIVE_SHORTAGES_AT: 'https://live/at.json' };
   const payload = { country: 'AT', source: 'BASG', shortages: [
     { wirkstoff: 'Amoxicillin', bezeichnung: 'Amoxicillin 1000 mg', status: 'kritisch' },
     { wirkstoff: 'Salbutamol', bezeichnung: 'Salbutamol Inhalat', status: 'eingeschraenkt' },
@@ -57,7 +57,7 @@ test('refreshShortages: übernimmt gültige Live-Daten (provenance=verified), Co
 test('refreshShortages: ungültige Daten oder Abruf-Fehler lassen den Bestand unverändert', async () => {
   const repo = createShortagesRepo({ seed: true });
   const before = repo.list().length;
-  const env = { APOTREND_LIVE_SHORTAGES_AT: 'https://live/at.json' };
+  const env = { APOPULSE_LIVE_SHORTAGES_AT: 'https://live/at.json' };
   // ungültiger Payload
   const bad = await refreshShortages('AT', { fetchJson: async () => ({ shortages: [{ wirkstoff: 'A', bezeichnung: 'B', status: 'x' }] }), shortagesRepo: repo, env });
   assert.equal(bad.ok, false);
@@ -97,7 +97,7 @@ test('validatePricePayload: prüft bezeichnung/supplier/aep; sammelt Fehler', ()
 test('refreshPrices: übernimmt gültige Preise (verified), ersetzt Seed; Fehler lassen Bestand', async () => {
   const repo = createPricesRepo({ seed: true });
   const before = repo.listFlat().length;
-  const env = { APOTREND_LIVE_PRICES_AT: 'https://live/prices.json' };
+  const env = { APOPULSE_LIVE_PRICES_AT: 'https://live/prices.json' };
   const payload = { source: 'Großhandel-X', prices: [
     { bezeichnung: 'Amoxicillin 1000 mg', supplier: 'Kwizda', aep: 2.99, prev_aep: 3.05 },
     { bezeichnung: 'Amoxicillin 1000 mg', supplier: 'Herba', aep: 3.40 },
@@ -129,7 +129,7 @@ test('validateRabattePayload + refreshRabatte: Pflichtfelder, Übernahme (verifi
   assert.equal(bad.errors.length, 2);
   const repo = createRabatteRepo({ seed: true, today: '2026-07-07' });
   const before = repo.listFlat().length;
-  const env = { APOTREND_LIVE_RABATTE_AT: 'https://live/deals.json' };
+  const env = { APOPULSE_LIVE_RABATTE_AT: 'https://live/deals.json' };
   const payload = { source: 'Aktions-Feed', rabatte: [
     { bezeichnung: 'Ibuprofen 400 mg', wirkstoff: 'Ibuprofen', supplier: 'Kwizda', listenpreis: 2.35, aktionspreis: 1.60, min_menge: 30, gueltig_bis: '2026-12-31' },
   ] };
@@ -153,7 +153,7 @@ test('startLiveRefresh: ruht ohne Quelle; startet + ingestiert, sobald angeschlo
   const idle = startLiveRefresh({ shortagesRepo: createShortagesRepo(), env: {}, log: {} });
   assert.equal(idle, null, 'nicht angeschlossen -> läuft nicht');
   const repo = createShortagesRepo({ seed: true });
-  const env = { APOTREND_LIVE_SHORTAGES_AT: 'https://live/at.json' };
+  const env = { APOPULSE_LIVE_SHORTAGES_AT: 'https://live/at.json' };
   const payload = { source: 'BASG', shortages: [{ wirkstoff: 'Amoxicillin', bezeichnung: 'Amoxicillin 1000 mg', status: 'kritisch' }] };
   const handle = startLiveRefresh({ shortagesRepo: repo, env, fetchJson: async () => payload, log: {}, intervalMs: 1e9 });
   assert.ok(handle && handle.countries.includes('AT'));

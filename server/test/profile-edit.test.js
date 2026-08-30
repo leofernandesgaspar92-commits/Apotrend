@@ -62,9 +62,9 @@ test('Profil bearbeiten: Profilbild wird gesetzt, geleert (null) und ungültiges
 test('Profil bearbeiten: Titelbild + Website werden gesetzt, geleert und validiert', () => {
   const { social, a } = setup();
   const png = 'data:image/png;base64,iVBORw0KGgo=';
-  const p = social.updateProfile(a, { coverUrl: png, website: 'https://apotrend.at' });
+  const p = social.updateProfile(a, { coverUrl: png, website: 'https://apopulse.at' });
   assert.equal(p.cover_url, png);
-  assert.equal(p.website, 'https://apotrend.at');
+  assert.equal(p.website, 'https://apopulse.at');
   // Leeren entfernt beide.
   const cleared = social.updateProfile(a, { coverUrl: '', website: '' });
   assert.equal(cleared.cover_url, null);

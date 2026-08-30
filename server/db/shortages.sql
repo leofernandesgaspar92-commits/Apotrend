@@ -1,4 +1,4 @@
--- ApoTrend Plattform — Lieferengpässe (Priorität 2). Marktdaten aus autoritativer
+-- ApoPulse Plattform — Lieferengpässe (Priorität 2). Marktdaten aus autoritativer
 -- Quelle (Österreich: BASG-Vertriebseinschränkungsregister). Jeder Eintrag traegt
 -- ein HERKUNFTS-Flag (provenance): verified (echt/BASG) · reference (kuratierte
 -- Referenz) · simulated (Platzhalter). Das loest den offenen "echt vs. simuliert"-Punkt.

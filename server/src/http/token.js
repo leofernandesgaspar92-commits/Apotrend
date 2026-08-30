@@ -1,13 +1,13 @@
 // Zustandsloses Session-Token: HMAC-signierte userId. Kein Klartext, kein
 // externer Dependency.
-// Secret: aus APOTREND_TOKEN_SECRET (Produktion — bleibt über Neustarts/Deploys
+// Secret: aus APOPULSE_TOKEN_SECRET (Produktion — bleibt über Neustarts/Deploys
 // stabil, Sessions überleben). Ohne die Variable: zufälliges Secret pro Prozess
 // (Dev/Demo — Neustart = neu einloggen). In Produktion die Variable setzen (>=16 Zeichen).
 import crypto from 'node:crypto';
 
-const envSecret = process.env.APOTREND_TOKEN_SECRET;
+const envSecret = process.env.APOPULSE_TOKEN_SECRET;
 const SECRET = envSecret && envSecret.length >= 16 ? Buffer.from(envSecret, 'utf8') : crypto.randomBytes(32);
-if (!envSecret) console.warn('Hinweis: APOTREND_TOKEN_SECRET nicht gesetzt — Sessions überleben keinen Neustart. Für Produktion setzen.');
+if (!envSecret) console.warn('Hinweis: APOPULSE_TOKEN_SECRET nicht gesetzt — Sessions überleben keinen Neustart. Für Produktion setzen.');
 
 export function issueToken(userId) {
   const payload = Buffer.from(String(userId)).toString('base64url');

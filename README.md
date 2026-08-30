@@ -1,4 +1,4 @@
-# ApoTrend – Apotheken-Marktintelligenz
+# ApoPulse – Apotheken-Marktintelligenz
 
 Single-File-Web-App für Apotheken: Engpass-Monitor, Preis-Tracker, KI-Prognosen,
 Chat zwischen Apothekern, Lieferanten-Verwaltung, News, Watchlist, Admin & API-Simulation.
@@ -12,18 +12,18 @@ Helles Standard-Design mit **weißem Hintergrund und grünen Akzenten**. Über d
 Abhängigkeiten nur per CDN (Chart.js, SheetJS, JSZip, FileSaver).
 
 ## Auf GitHub veröffentlichen
-1. Neues, leeres Repository auf GitHub anlegen (z. B. `apotrend`).
+1. Neues, leeres Repository auf GitHub anlegen (z. B. `apopulse`).
 2. Diesen Ordner committen und pushen:
    ```bash
    git init
    git add .
-   git commit -m "ApoTrend initial"
+   git commit -m "ApoPulse initial"
    git branch -M main
-   git remote add origin https://github.com/<dein-user>/apotrend.git
+   git remote add origin https://github.com/<dein-user>/apopulse.git
    git push -u origin main
    ```
 3. In den Repo-Einstellungen **Pages** aktivieren (Branch main, Ordner /root).
-   Die App ist dann unter https://<dein-user>.github.io/apotrend/ erreichbar,
+   Die App ist dann unter https://<dein-user>.github.io/apopulse/ erreichbar,
    da index.html automatisch als Einstieg dient.
 
 ## Plattformen: Mobile (PWA) vs. Desktop

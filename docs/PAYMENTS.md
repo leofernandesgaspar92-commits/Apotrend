@@ -21,7 +21,7 @@
 Der Prozessor nimmt entgegen, rechnet den €-Betrag **live** um, zählt Netzwerk-Bestätigungen und
 zahlt an dein dort **verifiziertes** Konto aus. Willst du Zahlungen **direkt** in genau deine
 eigenen Wallets (du hältst die Keys), ist der einzig verantwortbare Weg ein selbstgehostetes
-**BTCPay Server** — separat, nicht in Apotrend hineingebaut. Für **Solana** ist die Prozessor-
+**BTCPay Server** — separat, nicht in ApoPulse hineingebaut. Für **Solana** ist die Prozessor-
 Unterstützung uneinheitlich; kläre vor dem Anbieten, ob dein Prozessor SOL abwickelt.
 
 ## 1b. Welche Bezahlwege angeboten werden
@@ -127,9 +127,9 @@ rohen Bodys), Event `charge:confirmed`.
 Zusätzlich zum Prozessor-Weg gibt es den **einfachen Direkt-Weg**: Kund:innen zahlen direkt
 an die **eigenen** öffentlichen Empfangsadressen des Betreibers.
 
-- **Adressen:** `src/data/cryptoWallets.js` (BTC + ETH vorbelegt, per `APOTREND_WALLET_BTC/ETH`
+- **Adressen:** `src/data/cryptoWallets.js` (BTC + ETH vorbelegt, per `APOPULSE_WALLET_BTC/ETH`
   überschreibbar). **Solana** ist bewusst leer — es wurden zwei verschiedene SOL-Adressen
-  genannt; erst nach Klärung über `APOTREND_WALLET_SOL` setzen (falsche Adresse = Geldverlust).
+  genannt; erst nach Klärung über `APOPULSE_WALLET_SOL` setzen (falsche Adresse = Geldverlust).
 - **Kurse:** `src/services/cryptoRates.js` holt EUR→Coin von CoinGecko (öffentlich, lesend,
   5-min-Cache, `fetch` injizierbar). Fällt der Abruf aus, wird nur der **€-Betrag** gezeigt —
   die Zahlung (Adresse + „In Wallet-App öffnen") funktioniert **immer**.

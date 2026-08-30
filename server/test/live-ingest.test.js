@@ -71,9 +71,9 @@ test('Eine Quelle lässt sich umbiegen und abschalten', () => {
 
 test('Eigene Quellen lassen sich frei hinzufügen', () => {
   const s = activeSources({
-    APOTREND_SOURCE_APOKAMMER_URL: 'https://kammer.example/rss',
-    APOTREND_SOURCE_APOKAMMER_COUNTRY: 'AT',
-    APOTREND_SOURCE_APOKAMMER_LABEL: 'Apothekerkammer',
+    APOPULSE_SOURCE_APOKAMMER_URL: 'https://kammer.example/rss',
+    APOPULSE_SOURCE_APOKAMMER_COUNTRY: 'AT',
+    APOPULSE_SOURCE_APOKAMMER_LABEL: 'Apothekerkammer',
   });
   const eigen = s.find((x) => x.id === 'apokammer');
   assert.ok(eigen);
@@ -84,8 +84,8 @@ test('Eigene Quellen lassen sich frei hinzufügen', () => {
 
 test('Unbekannte Formate werden nicht aktiviert', () => {
   const s = activeSources({
-    APOTREND_SOURCE_KAPUTT_URL: 'https://x.example/f',
-    APOTREND_SOURCE_KAPUTT_FORMAT: 'xlsx',
+    APOPULSE_SOURCE_KAPUTT_URL: 'https://x.example/f',
+    APOPULSE_SOURCE_KAPUTT_FORMAT: 'xlsx',
   });
   assert.ok(!s.some((x) => x.id === 'kaputt'));
 });
@@ -174,7 +174,7 @@ test('normalizeStatus kennt nur definierte Werte', () => {
 test('Beiträge werden angelegt und beim zweiten Lauf NICHT wiederholt', async () => {
   const created = [];
   const seenStore = createNewsSeenStore();
-  const env = onlyEnv({ APOTREND_SOURCE_AMT_URL: 'https://amt.example/rss' });
+  const env = onlyEnv({ APOPULSE_SOURCE_AMT_URL: 'https://amt.example/rss' });
   const fetchText = async () => FEED(ITEM(1) + ITEM(2));
   const opts = { env, fetchText, seenStore, createPost: async (p) => { created.push(p); } };
 
@@ -190,7 +190,7 @@ test('Beiträge werden angelegt und beim zweiten Lauf NICHT wiederholt', async (
 });
 
 test('Nur die eingebaute Quelle wird abgeschaltet, andere laufen weiter', async () => {
-  const env = onlyEnv({ APOTREND_SOURCE_NUR_EINE_URL: 'https://eine.example/rss' });
+  const env = onlyEnv({ APOPULSE_SOURCE_NUR_EINE_URL: 'https://eine.example/rss' });
 
   const created = [];
   const r = await ingestNews({
@@ -203,8 +203,8 @@ test('Nur die eingebaute Quelle wird abgeschaltet, andere laufen weiter', async 
 
 test('Eine unerreichbare Quelle stoppt die anderen nicht', async () => {
   const env = onlyEnv({
-    APOTREND_SOURCE_A_URL: 'https://kaputt.example/rss',
-    APOTREND_SOURCE_B_URL: 'https://heil.example/rss',
+    APOPULSE_SOURCE_A_URL: 'https://kaputt.example/rss',
+    APOPULSE_SOURCE_B_URL: 'https://heil.example/rss',
   });
 
   const created = [];
@@ -224,7 +224,7 @@ test('Eine unerreichbare Quelle stoppt die anderen nicht', async () => {
 });
 
 test('Scheitert das Anlegen, gilt die Meldung NICHT als gesehen', async () => {
-  const env = onlyEnv({ APOTREND_SOURCE_X_URL: 'https://x.example/rss' });
+  const env = onlyEnv({ APOPULSE_SOURCE_X_URL: 'https://x.example/rss' });
 
   const seenStore = createNewsSeenStore();
   let fail = true;

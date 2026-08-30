@@ -1,5 +1,5 @@
 // ============================================================================
-//  Apotrend — Datenbankschema
+//  ApoPulse — Datenbankschema
 // ============================================================================
 //  Grundlage ist der Entwurf des Owners (unverändert abgelegt unter
 //  prisma/schema.v1-owner.prisma). Er wurde übernommen, migriert und geprüft.

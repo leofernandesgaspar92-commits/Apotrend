@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  ApoTrend Terminal — e-Rezept-Modul (Skelett)
+//  ApoPulse Terminal — e-Rezept-Modul (Skelett)
 //  Reifegrad: 🟡 MOCK — echter SV-Peering-Zugang ist zertifizierungspflichtig.
 //
 //  Design: Die Business-Logik (State-Machine) kennt KEINE Datenquelle.

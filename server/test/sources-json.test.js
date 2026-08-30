@@ -130,7 +130,7 @@ test('die Engpass-Quelle ist als strukturierter Export angemeldet, nicht als New
 });
 
 test('jede neue Quelle lässt sich einzeln abschalten', () => {
-  const aus = { APOTREND_SOURCE_FDA_NEWS_URL: '', APOTREND_SOURCE_SAHPRA_NEWS_URL: '' };
+  const aus = { APOPULSE_SOURCE_FDA_NEWS_URL: '', APOPULSE_SOURCE_SAHPRA_NEWS_URL: '' };
   const ids = activeSources(aus).map((s) => s.id);
   assert.ok(!ids.includes('fda_news'));
   assert.ok(!ids.includes('sahpra_news'));

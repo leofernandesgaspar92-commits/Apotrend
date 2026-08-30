@@ -42,7 +42,7 @@ export const SOURCE_KINDS = ['news', 'shortages'];
 export const SOURCE_FORMATS = ['rss', 'json', 'csv'];
 
 // --- Voreingestellte Quellen -------------------------------------------------
-//  id -> Definition. Überschreibbar mit APOTREND_SOURCE_<ID>_URL (leer = aus).
+//  id -> Definition. Überschreibbar mit APOPULSE_SOURCE_<ID>_URL (leer = aus).
 
 const BUILTIN = [
   {
@@ -123,16 +123,16 @@ const BUILTIN = [
 
 /** Umgebungsvariablen-Namen einer Quelle. */
 export const sourceEnvKeys = (id) => ({
-  url: `APOTREND_SOURCE_${id.toUpperCase()}_URL`,
-  format: `APOTREND_SOURCE_${id.toUpperCase()}_FORMAT`,
+  url: `APOPULSE_SOURCE_${id.toUpperCase()}_URL`,
+  format: `APOPULSE_SOURCE_${id.toUpperCase()}_FORMAT`,
 });
 
 /**
  * Alle aktiven Quellen.
  *
  * Zusätzlich zu den eingebauten lassen sich beliebige eigene definieren:
- *   APOTREND_SOURCE_MEINE_URL=https://…   APOTREND_SOURCE_MEINE_FORMAT=rss
- * Der Ländercode kommt aus APOTREND_SOURCE_MEINE_COUNTRY (Standard: EU).
+ *   APOPULSE_SOURCE_MEINE_URL=https://…   APOPULSE_SOURCE_MEINE_FORMAT=rss
+ * Der Ländercode kommt aus APOPULSE_SOURCE_MEINE_COUNTRY (Standard: EU).
  */
 export function activeSources(env = process.env) {
   const out = [];
@@ -151,20 +151,20 @@ export function activeSources(env = process.env) {
   // Eigene Quellen aus der Umgebung einsammeln.
   const seen = new Set(out.map((s) => s.id));
   for (const key of Object.keys(env)) {
-    const m = key.match(/^APOTREND_SOURCE_([A-Z0-9_]+)_URL$/);
+    const m = key.match(/^APOPULSE_SOURCE_([A-Z0-9_]+)_URL$/);
     if (!m) continue;
     const id = m[1].toLowerCase();
     if (seen.has(id)) continue;
     const url = String(env[key] || '').trim();
     if (!url) continue;
-    const format = env[`APOTREND_SOURCE_${m[1]}_FORMAT`] || 'rss';
+    const format = env[`APOPULSE_SOURCE_${m[1]}_FORMAT`] || 'rss';
     if (!SOURCE_FORMATS.includes(format)) continue;
-    const kind = env[`APOTREND_SOURCE_${m[1]}_KIND`] || 'news';
+    const kind = env[`APOPULSE_SOURCE_${m[1]}_KIND`] || 'news';
     if (!SOURCE_KINDS.includes(kind)) continue;
-    const country = (env[`APOTREND_SOURCE_${m[1]}_COUNTRY`] || 'EU').toUpperCase();
+    const country = (env[`APOPULSE_SOURCE_${m[1]}_COUNTRY`] || 'EU').toUpperCase();
     out.push({
       id, kind, country, format, url, configured: true, official: false,
-      label: env[`APOTREND_SOURCE_${m[1]}_LABEL`] || id,
+      label: env[`APOPULSE_SOURCE_${m[1]}_LABEL`] || id,
     });
   }
 
@@ -243,7 +243,7 @@ export function normalizeStatus(value) {
 /**
  * Spaltenzuordnung für CSV-Exporte. Register benennen ihre Spalten
  * unterschiedlich — deshalb konfigurierbar statt geraten.
- * APOTREND_SOURCE_<ID>_COLUMNS='{"wirkstoff":"Wirkstoff","bezeichnung":"Arzneispezialität",…}'
+ * APOPULSE_SOURCE_<ID>_COLUMNS='{"wirkstoff":"Wirkstoff","bezeichnung":"Arzneispezialität",…}'
  */
 export const DEFAULT_COLUMNS = {
   wirkstoff: ['wirkstoff', 'substance', 'active_substance', 'wirkstoffe'],

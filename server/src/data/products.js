@@ -3,8 +3,8 @@
 // Zahlung als Entitlement freigeschaltet. Bewusst schlank + zentral — später
 // leicht erweiterbar oder aus einer DB ladbar.
 export const PRODUCTS = {
-  premium_monthly: { id: 'premium_monthly', feature: 'premium', amount_cents: 999, currency: 'EUR', name: 'ApoTrend Premium (Monat)' },
-  premium_yearly: { id: 'premium_yearly', feature: 'premium', amount_cents: 9900, currency: 'EUR', name: 'ApoTrend Premium (Jahr)' },
+  premium_monthly: { id: 'premium_monthly', feature: 'premium', amount_cents: 999, currency: 'EUR', name: 'ApoPulse Premium (Monat)' },
+  premium_yearly: { id: 'premium_yearly', feature: 'premium', amount_cents: 9900, currency: 'EUR', name: 'ApoPulse Premium (Jahr)' },
 };
 
 export function getProduct(id) { return PRODUCTS[id] || null; }

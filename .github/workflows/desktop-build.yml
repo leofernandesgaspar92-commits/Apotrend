@@ -1,4 +1,4 @@
-# Baut die ApoTrend-Desktop-Installer (Windows/macOS/Linux) auf echten Runnern.
+# Baut die ApoPulse-Desktop-Installer (Windows/macOS/Linux) auf echten Runnern.
 # - Bei Push auf desktop-build: nur bauen + als Artefakte hochladen (Verifikation).
 # - Manuell (workflow_dispatch, release=true): zusaetzlich ein DRAFT-Release mit
 #   allen Installern erstellen (finales "Publish" macht der Owner).
@@ -72,7 +72,7 @@ jobs:
       - name: Upload installers
         uses: actions/upload-artifact@v4
         with:
-          name: apotrend-desktop-${{ matrix.os }}
+          name: apopulse-desktop-${{ matrix.os }}
           if-no-files-found: warn
           path: |
             desktop/dist/*.exe
@@ -99,10 +99,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.0
-          name: ApoTrend Desktop v1.0.0
+          name: ApoPulse Desktop v1.0.0
           draft: true
           body: |
-            Installierbare Desktop-Version von ApoTrend (gleicher Web-Kern wie die PWA).
+            Installierbare Desktop-Version von ApoPulse (gleicher Web-Kern wie die PWA).
 
             **Downloads:**
             - Windows: `.exe` (NSIS-Installer)

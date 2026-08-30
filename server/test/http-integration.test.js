@@ -17,9 +17,9 @@ function rawGet(path, headers = {}) {
 
 const PORT = 4200 + Math.floor(Math.random() * 300);
 process.env.PORT = String(PORT);
-process.env.APOTREND_ADMIN_EMAIL = 'red@apotrend.test';
-process.env.APOTREND_ADMIN_PASSWORD = 'redredred123';
-delete process.env.APOTREND_DATA_FILE; // In-Memory
+process.env.APOPULSE_ADMIN_EMAIL = 'red@apopulse.test';
+process.env.APOPULSE_ADMIN_PASSWORD = 'redredred123';
+delete process.env.APOPULSE_DATA_FILE; // In-Memory
 const BASE = `http://localhost:${PORT}`;
 const H = (t) => ({ 'content-type': 'application/json', ...(t ? { authorization: 'Bearer ' + t } : {}) });
 
@@ -509,7 +509,7 @@ test('Verifizierung über HTTP: beantragen -> Queue nur für Mods -> Redaktion g
   // Nicht-Mod darf die Verifizierungs-Queue nicht sehen.
   assert.equal((await fetch(BASE + '/api/verify/requests', { headers: H(user) })).status, 403);
   // Redaktion sieht den Antrag und genehmigt ihn (Antrag ist per user_id referenziert).
-  const login = await (await fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email: 'red@apotrend.test', password: 'redredred123' }) })).json();
+  const login = await (await fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email: 'red@apopulse.test', password: 'redredred123' }) })).json();
   const queue = await j('/api/verify/requests', login.token);
   const item = (queue.requests || []).find(r => r.handle === handle);
   assert.ok(item, 'Antrag erscheint in der Queue');
@@ -528,7 +528,7 @@ test('Moderation über HTTP: melden -> Queue nur für Mods -> auflösen+entferne
   // Nicht-Mod darf die Moderations-Queue nicht sehen.
   assert.equal((await fetch(BASE + '/api/reports', { headers: H(reporter) })).status, 403);
   // Redaktion/Mod (Seed-Konto aus dem Test-Setup) meldet sich an und sieht die Meldung.
-  const login = await (await fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email: 'red@apotrend.test', password: 'redredred123' }) })).json();
+  const login = await (await fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email: 'red@apopulse.test', password: 'redredred123' }) })).json();
   const mod = login.token;
   assert.ok(mod, 'Mod-Login liefert Token');
   const queue = await j('/api/reports', mod);
@@ -877,7 +877,7 @@ test('Direkt-Krypto über HTTP: Adressen anzeigen, Zahlung starten + Tx melden, 
   assert.equal((await forbid.json()).code, 'forbidden');
   assert.equal((await j('/api/me/premium', cust)).premium, false);
   // Admin (Redaktion) meldet sich an, sieht die offene Zahlung, bestätigt -> Premium frei
-  const adminLogin = await (await fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email: 'red@apotrend.test', password: 'redredred123' }) })).json();
+  const adminLogin = await (await fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email: 'red@apopulse.test', password: 'redredred123' }) })).json();
   const admin = adminLogin.token;
   const pending = await j('/api/payments/pending', admin);
   assert.ok(pending.payments.some(p => p.id === start.payment_id));

@@ -1,4 +1,4 @@
-# Architecture Decision Log — Apotrend AI Assistant
+# Architecture Decision Log — ApoPulse AI Assistant
 
 **Wofür:** Jede strategische, architektonische oder Tool-Entscheidung mit Datum, Kontext, Optionen,
 Begründung. **Format:** nummeriert D-001, D-002, …
@@ -50,7 +50,7 @@ Sensing-Sprint fällig.
 
 **Datum:** 2026-06-05 · **Status:** ✅ Aktiv · **Tags:** strategy, market
 
-**Kontext:** Apotrend-Plattform ist AT-zentriert; Regulatorik (BASG, EKO, Suchtmittel) ist national;
+**Kontext:** ApoPulse-Plattform ist AT-zentriert; Regulatorik (BASG, EKO, Suchtmittel) ist national;
 WWS-Landschaft AT-spezifisch.
 
 **Entscheidung:** **AT-first.** DE/EU als Phase 2 (ähnliche, aber andere Regulatorik + WWS-Anbieter).
@@ -60,11 +60,11 @@ WWS-Landschaft AT-spezifisch.
 
 ---
 
-## D-004: Auf jetzigem Apotrend als „Shell" aufbauen — aber mit eigener Datenschicht
+## D-004: Auf jetzigem ApoPulse als „Shell" aufbauen — aber mit eigener Datenschicht
 
 **Datum:** 2026-06-05 · **Status:** ✅ Aktiv · **Tags:** architecture, platform, infrastructure
 
-**Kontext:** Jetziger Apotrend = Demo-Hülle (Single-HTML 465 KB, 4 Vercel-Funktionen, „Auth"/2FA/
+**Kontext:** Jetziger ApoPulse = Demo-Hülle (Single-HTML 465 KB, 4 Vercel-Funktionen, „Auth"/2FA/
 E-Mail nur localStorage-Simulation, **keine echte DB/Mandanten-Trennung**). Ein Assistent, der den
 Bestand *einer konkreten Apotheke* kennt, braucht echte Auth, pro-Apotheke isolierte persistente
 Daten, Vektor-Store (RAG), Secrets-Management, DSGVO-Kontrollen.
@@ -172,8 +172,8 @@ dupliziert; nur Nav-Button (Desktop + Mobile) + `tabMap`-Eintrag + iframe-Panel.
       Daten-Fundament: `research/datenquellen-architektur.md`.
 ✅ **D-006 entschieden** (siehe oben): EU-Residency-Prinzip + provider-agnostische LLM-Schicht;
 Vendor beim Pilot; DB Postgres+pgvector EU.
-- [ ] **D-007: Geschäftsmodell** — wer zahlt (Inhaber), Preis-Modell, Verhältnis zu Apotrend-Abos.
-- [ ] **D-008: Produktname** des Assistenten (Arbeitstitel „Apotrend AI Assistant").
+- [ ] **D-007: Geschäftsmodell** — wer zahlt (Inhaber), Preis-Modell, Verhältnis zu ApoPulse-Abos.
+- [ ] **D-008: Produktname** des Assistenten (Arbeitstitel „ApoPulse AI Assistant").
 
 ✅ **Anti-Scope** → jetzt als **D-009** entschieden (keine klinische Therapie-Empfehlung).
 

@@ -1,4 +1,4 @@
-# ApoTrend Plattform-Backend
+# ApoPulse Plattform-Backend
 
 Neuer, **zustandsbehafteter** Backend-Pfeiler für die Hybrid-Plattform
 (Collab / Market / Network). Getrennt vom bestehenden `backend/` (das sind
@@ -9,7 +9,7 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 > - 💾 **Backend-Persistenz produktionshärter (fsync · Warnung · Tests):** Die bestehende
 >   atomare JSON-Snapshot-Persistenz (Node-`fs`, gemäß „nur Built-ins") wurde gehärtet:
 >   (1) **fsync** auf Datei + Verzeichnis — ein Absturz direkt nach dem Schreiben verliert den
->   letzten Stand nicht mehr; (2) **laute Startup-Warnung**, wenn ohne `APOTREND_DATA_FILE`
+>   letzten Stand nicht mehr; (2) **laute Startup-Warnung**, wenn ohne `APOPULSE_DATA_FILE`
 >   gestartet wird (sonst liefe ein Deploy unbemerkt rein im Speicher → Daten weg bei Neustart);
 >   (3) neue `persistence.test.js` (Round-Trip verlustfrei, kaputte Datei → Frischstart, atomar).
 >   End-to-End verifiziert: Beitrag anlegen → SIGTERM → Neustart → Daten wiederhergestellt.
@@ -92,16 +92,16 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   ungültig → 400. **Noch KEINE Rechte-Durchsetzung** (heikler Folgeschritt, erst nach Freigabe).
 >   (2 neue Integrationstests, 208 grün.)
 > - ✅ **Qualitäts-Audit — Barrierefreiheit: Skip-Link & Druck-Kopf mehrsprachig:** Der „Zum Inhalt
->   springen"-Skip-Link (Tastatur-/Screenreader-Navigation) und der Druck-Kopf („ApoTrend —
+>   springen"-Skip-Link (Tastatur-/Screenreader-Navigation) und der Druck-Kopf („ApoPulse —
 >   Lieferengpässe") standen als statisches HTML fest deutsch. Beide via `data-i18n` an `applyI18n`
 >   angebunden — der Skip-Link, das wichtigste erste Element für Screenreader-Nutzer:innen, ist
->   jetzt in der Landessprache. (Browser verifiziert: PT „Saltar para o conteúdo / ApoTrend — Faltas".)
+>   jetzt in der Landessprache. (Browser verifiziert: PT „Saltar para o conteúdo / ApoPulse — Faltas".)
 > - ✅ **Qualitäts-Audit — Browsertab-Titel mehrsprachig:** Die meisten Panels lokalisierten
 >   `document.title` bereits, aber die 8 Haupt-Reiter (`TAB_TITLES`) und der Standard-Zusatz
 >   „Apotheker-Netzwerk" blieben deutsch — sichtbar im Browsertab, in der History, in Lesezeichen
 >   und für Screenreader. `TAB_TITLES` auf i18n-Schlüssel umgestellt (zur Laufzeit via `t()`), der
->   Tagline-Zusatz übersetzt. (Browser verifiziert: EN-Nutzer sieht „For you · ApoTrend",
->   „Shortages · ApoTrend", „Prices · ApoTrend".)
+>   Tagline-Zusatz übersetzt. (Browser verifiziert: EN-Nutzer sieht „For you · ApoPulse",
+>   „Shortages · ApoPulse", „Prices · ApoPulse".)
 > - ✅ **Qualitäts-Audit — Engpass-Gründe mehrsprachig (Standard-Gründe):** Auffälligkeit im
 >   EN/PT-Screenshot: die Reiter-Beschriftungen waren übersetzt, aber das prominente **Grund**-Feld
 >   jeder Engpass-Karte zeigte deutsche Wörter („Herstellungsproblem", „Wirkstoffknappheit",
@@ -194,7 +194,7 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   Das Onboarding-Overlay (Titel, Untertitel, alle 8 Erklär-Schritte, App-Installations-Tipp,
 >   „Los geht's") ist jetzt übersetzt — der erste Eindruck neuer Nutzer:innen und die Hilfe hinter
 >   dem ❓-Button. Steps von festen Strings auf i18n-Keys umgestellt (vermeidet zugleich das
->   `t`-Shadowing im `.map`). (Browser verifiziert: „👋 Bem-vindo à ApoTrend / Vamos começar →".)
+>   `t`-Shadowing im `.map`). (Browser verifiziert: „👋 Bem-vindo à ApoPulse / Vamos começar →".)
 > - 🌍 **Länderübergreifend — Schritt 3t: Direktnachrichten mehrsprachig (DE/EN/PT):** Posteingang
 >   (Titel, Neu-schreiben-Feld, Leerzustand, Konversations-Zeilen) und Thread-Ansicht (Zurück,
 >   Nachricht-Feld, Senden, „sag Hallo") sind jetzt übersetzt. Erneut einen latenten Shadowing-Bug
@@ -343,9 +343,9 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   „current") synchronisiert. (Browser verifiziert: overview→shortages→prices wandert korrekt,
 >   Detailseite = kein current.)
 > - ✅ **Qualitäts-Audit — Browsertab-Titel je Ansicht:** `document.title` blieb überall
->   „ApoTrend …" — keine Orientierung im Tab, uneindeutige History, für Screenreader kein
+>   „ApoPulse …" — keine Orientierung im Tab, uneindeutige History, für Screenreader kein
 >   Kontext beim Seitenwechsel. Neu: `setDocTitle()` setzt pro Ansicht einen sprechenden Titel
->   („Lieferengpässe · ApoTrend", „💊 Amoxicillin · ApoTrend", „#tag", „@handle", „Suche: …",
+>   („Lieferengpässe · ApoPulse", „💊 Amoxicillin · ApoPulse", „#tag", „@handle", „Suche: …",
 >   „Nachrichten/Meldungen/Moderation", Reiter-Titel); beim Abmelden zurück auf den Basistitel.
 >   (Im Browser über alle Reiter + Detailviews verifiziert.)
 > - ✅ **Qualitäts-Audit — Mobile-Überlauf durch lange Wörter/URLs behoben:** Systematischer
@@ -500,7 +500,7 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   Integrationstest + im Browser verifiziert.)
 > - ✅ **Abgabe-Begleitzettel (Verordnungs-Klartext):** Die Apotheke gibt die Angaben laut
 >   Verordnung ein (Arzneimittel, Einnahmeschema Morgens/Mittags/Abends/Nacht, Essen, Dauer,
->   Hinweise) — ApoTrend macht daraus einen großen, gut lesbaren Einnahmeplan mit
+>   Hinweise) — ApoPulse macht daraus einen großen, gut lesbaren Einnahmeplan mit
 >   Live-Vorschau und Druck, mehrsprachig (DE/EN/TR). **Reine Klartext-Aufbereitung der
 >   Eingaben des Fachpersonals — es wird keine Dosierung berechnet oder vorgeschlagen**
 >   (Medizinprodukt-Grenze). Vierter Stewardship-Baustein; Einstieg über Patienten-Infokarten
@@ -551,7 +551,7 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   (Frontend; im Browser verifiziert.)
 > - ✅ **Engpassliste drucken (Team-Aushang):** „🖨️ Drucken" auf dem Engpässe-Reiter öffnet
 >   eine druckoptimierte Ansicht der aktuellen (gefilterten) Liste — Kopf-/Navigations-/
->   Formular-Elemente per Print-CSS ausgeblendet, Druckkopf „ApoTrend — Lieferengpässe" mit
+>   Formular-Elemente per Print-CSS ausgeblendet, Druckkopf „ApoPulse — Lieferengpässe" mit
 >   Stand/Filter. Zum Aushängen für nicht-digitale Kolleg:innen. (Im Browser via
 >   emulateMedia('print') verifiziert.)
 > - ✅ **Barrierefreiheit — „Zum Inhalt springen":** Skip-Link (per Tab sichtbar) springt
@@ -603,7 +603,7 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 > - ✅ **Produktionsreife — Sessions überleben Neustarts:** Datendurchlauf-Test
 >   (Zustand anlegen → SIGTERM/Snapshot → Neustart → prüfen) deckte auf, dass das
 >   Session-Secret pro Prozess zufällig war → jeder Deploy loggte alle aus. Jetzt aus
->   `APOTREND_TOKEN_SECRET` (in `render.yaml` via `generateValue` einmalig fest gesetzt);
+>   `APOPULSE_TOKEN_SECRET` (in `render.yaml` via `generateValue` einmalig fest gesetzt);
 >   ohne Variable Warnhinweis + Dev-Fallback. Round-Trip bestätigt: Q&A-Antwort,
 >   Beobachtungsliste, Community-Bestätigung, Merkliste überstehen den Neustart bei
 >   gültiger Session. (Neuer Test token.test.js; 181 Tests grün.)
@@ -821,7 +821,7 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   „gerade eben" / Datum (relTime, de-AT), Tooltip mit exaktem Zeitpunkt. Wichtig für
 >   zeitkritische Themen (Engpässe/News). (Frontend; im Browser verifiziert.)
 > - ✅ **Onboarding/Willkommen:** beim ersten Login ein kurzer, freundlicher Overlay
->   („So funktioniert ApoTrend": posten, folgen, Marktdaten, DMs, Suche/Themen) plus
+>   („So funktioniert ApoPulse": posten, folgen, Marktdaten, DMs, Suche/Themen) plus
 >   „Als App installieren"-Tipp; per ❓ jederzeit wieder aufrufbar, Merker in
 >   localStorage. (Frontend; im Browser verifiziert.)
 > - ✅ **PWA (installierbar auf allen Geräten):** `manifest.webmanifest`, App-Icons
@@ -844,7 +844,7 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   (mehrere Lieferanten, günstigster oben), Trend (▲/▼ %), Herkunfts-Flag,
 >   „Dazu posten" + Preis-Chip am Beitrag (`posts.ref_type='price'`). (43 Tests grün.)
 > - ✅ **Priorität 4 — News (im selben Feed-System):** News = Beiträge mit `kind='news'` —
->   kuratierte Redaktions-Beiträge (Account `@apotrend`, `is_editorial`, 📰-Badge) **plus**
+>   kuratierte Redaktions-Beiträge (Account `@apopulse`, `is_editorial`, 📰-Badge) **plus**
 >   von Nutzern geteilte News. Eigene News-Ansicht (`GET /api/news`), Sichtbarkeit
 >   (public/followers) wird respektiert, News erscheinen auch im normalen Feed. (47 Tests grün, im Browser verifiziert.)
 > - ✅ **Priorität 5 — Top-10-Rabatte (mit Feed verknüpft):** befristete Aktionsangebote
@@ -894,7 +894,7 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   (68 Tests grün, im Browser verifiziert.)
 > - ✅ **Moderations-Ansicht (nur Redaktions-/Admin-Konto):** 🛡️-Queue der offenen
 >   Meldungen mit Beitrag, Melder:in und Grund; „Beitrag entfernen" oder „In Ordnung".
->   Moderator = Konto mit `is_editorial` (Login über `APOTREND_ADMIN_EMAIL/PASSWORD`).
+>   Moderator = Konto mit `is_editorial` (Login über `APOPULSE_ADMIN_EMAIL/PASSWORD`).
 >   Zugriff für Nicht-Moderator:innen serverseitig geblockt (403). (`GET /api/reports`,
 >   `POST /api/reports/:id/resolve`; im Browser + per API verifiziert.)
 > - ✅ **Priorität 8 — Direktnachrichten-Oberfläche (Kern-Feature komplett):** 1:1-Chat
@@ -907,7 +907,7 @@ zustandslose Vercel-Daten-Fetcher — Engpass/News/Preise) und von `frontend/`
 >   `render.yaml` (Render-Blueprint) und **`DEPLOY.md`** (Schritt-für-Schritt für
 >   Render/Railway/Docker). App braucht einen Node-Host (nicht GitHub Pages!).
 > - ✅ **Persistenz (Snapshot, Built-ins-only):** kompletter Zustand als JSON
->   auf Platte (`APOTREND_DATA_FILE`), Laden beim Start, Speichern nach jeder
+>   auf Platte (`APOPULSE_DATA_FILE`), Laden beim Start, Speichern nach jeder
 >   Schreiboperation + beim Herunterfahren (atomar). Daten überleben Neustart —
 >   **im echten Server-Neustart verifiziert**. Ohne die ENV-Variable: reines
 >   In-Memory (Tests unverändert). Postgres/EU bleibt der Cloud-Zielschritt

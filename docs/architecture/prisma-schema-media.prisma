@@ -1,5 +1,5 @@
 // ============================================================================
-//  Apotrend — Schema-Erweiterung: Rich Media, Reaktionen, Threads, Nachrichten
+//  ApoPulse — Schema-Erweiterung: Rich Media, Reaktionen, Threads, Nachrichten
 // ============================================================================
 //  Ergänzt prisma-schema-draft.prisma. Beim Zusammenführen ersetzen die hier
 //  markierten Modelle ihre Vorgänger; alles Übrige kommt hinzu.

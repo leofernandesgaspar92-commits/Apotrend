@@ -1,4 +1,4 @@
--- ApoTrend Plattform — DB-Schema (Ziel-Persistenz: PostgreSQL, EU-gehostet).
+-- ApoPulse Plattform — DB-Schema (Ziel-Persistenz: PostgreSQL, EU-gehostet).
 -- Dev/Test nutzt eine austauschbare In-Memory-Implementierung HINTER demselben
 -- Repository-Interface (server/src/repo/). Dieses SQL ist die verbindliche
 -- Struktur fuer die spaetere Postgres-Anbindung (Phase 6 / Deployment).

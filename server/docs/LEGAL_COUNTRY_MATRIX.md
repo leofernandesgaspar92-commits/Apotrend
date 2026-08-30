@@ -1,4 +1,4 @@
-# Apotrend — Länder-Rechtsrisiko-Matrix (Feature-Gating)
+# ApoPulse — Länder-Rechtsrisiko-Matrix (Feature-Gating)
 
 > **⚠️ Kein Rechtsrat / Not legal advice.**
 > Dies ist eine **automatisierte Compliance-Risiko-Einschätzung** zur konservativen
@@ -14,7 +14,7 @@
 
 ## 0. Was die Features tatsächlich tun (Basis der Bewertung — aus dem Code gelesen)
 
-Apotrend ist überwiegend eine **Informations- und B2B-Kontakt-Plattform**. Entscheidend
+ApoPulse ist überwiegend eine **Informations- und B2B-Kontakt-Plattform**. Entscheidend
 für die rechtliche Einordnung: **Auf der Plattform wird kein Arzneimittel verkauft,
 abgegeben oder bezahlt.** Es geht um das **Anzeigen/Bewerben/Vermitteln**, nicht um
 Handel/Abgabe.

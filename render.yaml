@@ -1,4 +1,4 @@
-# Render.com Blueprint — 1-Klick-Deployment der ApoTrend Feed-App.
+# Render.com Blueprint — 1-Klick-Deployment der ApoPulse Feed-App.
 # Render erkennt diese Datei automatisch ("New + → Blueprint" auf render.com,
 # dann dieses Repo wählen). Kostenloser Tarif genügt zum Ausprobieren.
 #
@@ -12,6 +12,26 @@
 # Prozess-Neustart innerhalb derselben Instanz, aber nicht ein neues Deploy.
 # Für echten Dauerbetrieb / EU-Mehr-Instanz: Postgres hinter demselben Seam.
 
+# ⚠️ WARUM HIER NOCH „apotrend" STEHT — BITTE NICHT „AUFRÄUMEN"
+#
+# Die App heißt inzwischen ApoPulse. Vier Dinge in dieser Datei tragen weiterhin
+# den alten Namen, und zwar mit Absicht: Sie sind KEINE Beschriftung, sondern
+# Schlüssel, unter denen bei Render echte Werte liegen.
+#
+#   name: apotrend-feed        Umbenennen legt bei Render einen NEUEN Dienst an —
+#                              neue URL, alter Dienst bleibt verwaist zurück.
+#   APOTREND_TOKEN_SECRET      generateValue: Ein neuer Schlüsselname erzeugt ein
+#                              neues Geheimnis -> ALLE Nutzer:innen ausgeloggt.
+#   APOTREND_ADMIN_PASSWORD    sync:false, also von Hand im Dashboard gesetzt.
+#                              Unter neuem Namen ist der Wert leer -> kein
+#                              Moderationszugang mehr, nicht wiederherstellbar.
+#   APOTREND_DATA_FILE         Pfad des Snapshots. Ein anderer Pfad heißt für
+#                              alle Beteiligten: „die Daten sind weg".
+#
+# Der Servercode liest beide Schreibweisen (src/env-compat.js) und bevorzugt
+# APOPULSE_*. Die Umstellung ist damit jederzeit möglich, aber sie gehört in
+# EINEN bewussten Schritt im Render-Dashboard — Werte zuerst unter dem neuen
+# Namen anlegen, dann hier nachziehen —, nicht in ein Suchen-und-Ersetzen.
 services:
   - type: web
     name: apotrend-feed

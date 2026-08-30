@@ -1,4 +1,4 @@
--- ApoTrend — Automatische Aufnahme von Behörden-Meldungen
+-- ApoPulse — Automatische Aufnahme von Behörden-Meldungen
 --
 -- Zwei Tabellen, die zusammengehören:
 --   quellen        = was abgerufen wird (BfArM, PEI, BASG, EMA, eigene)

@@ -123,7 +123,7 @@ test('cryptoWallets: BTC + ETH + zwei SOL-Wallets (Seeker/Phantom); walletUri ba
   assert.match(byId.sol_seeker.label, /Seeker/);
   assert.equal(byId.sol_phantom.coin, 'solana');
   // ENV überschreibt
-  assert.equal(cryptoWallets({ APOTREND_WALLET_SOL_PHANTOM: 'NEU' }).find(w => w.id === 'sol_phantom').address, 'NEU');
+  assert.equal(cryptoWallets({ APOPULSE_WALLET_SOL_PHANTOM: 'NEU' }).find(w => w.id === 'sol_phantom').address, 'NEU');
   assert.equal(walletUri(byId.btc, 0.0003), 'bitcoin:bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46?amount=0.0003');
   assert.match(walletUri(byId.eth, 0.01), /^ethereum:0x5f5099.*@1\?value=\d+$/);
   assert.equal(walletUri(byId.sol_phantom, 1.5), 'solana:EMSJTkRGnnExNwaCkte9PDCN4Tm3BNSZKdXqcEpamWFM?amount=1.5');

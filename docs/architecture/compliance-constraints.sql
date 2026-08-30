@@ -1,5 +1,5 @@
 -- ============================================================================
---  Apotrend B2C — Compliance-Constraints (Schritt 2/3) · ENTWURF
+--  ApoPulse B2C — Compliance-Constraints (Schritt 2/3) · ENTWURF
 -- ============================================================================
 --  Gehört zum Greenfield-Track (docs/architecture/design-system.md).
 --  Anzuwenden als eigene Prisma-Migration NACH `prisma migrate` des Schemas.
@@ -214,17 +214,17 @@ CREATE INDEX post_sponsored_idx ON core."Post" ("isSponsored") WHERE "isSponsore
 -- ----------------------------------------------------------------------------
 
 -- Rollen (einmalig, außerhalb der Migration mit Superuser anzulegen):
---   CREATE ROLE apotrend_app  LOGIN;   -- Next.js / Worker (core)
---   CREATE ROLE apotrend_care LOGIN;   -- Care-Service (health)
+--   CREATE ROLE apopulse_app  LOGIN;   -- Next.js / Worker (core)
+--   CREATE ROLE apopulse_care LOGIN;   -- Care-Service (health)
 
 REVOKE ALL ON SCHEMA health FROM PUBLIC;
-GRANT USAGE ON SCHEMA health TO apotrend_care;
-GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA health TO apotrend_care;
+GRANT USAGE ON SCHEMA health TO apopulse_care;
+GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA health TO apopulse_care;
 -- Bewusst KEIN DELETE für den Dienst: Löschungen laufen ausschließlich über
 -- den Retention-Job mit eigener Rolle und Protokollierung.
 
-GRANT USAGE ON SCHEMA core TO apotrend_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA core TO apotrend_app;
+GRANT USAGE ON SCHEMA core TO apopulse_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA core TO apopulse_app;
 
 -- ----------------------------------------------------------------------------
 -- 9. Aufbewahrungsfristen (werden vom Retention-Job ausgewertet)

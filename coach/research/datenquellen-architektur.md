@@ -76,7 +76,7 @@ DataSource (Interface)          getProducts · getInventory · getSignals · get
 data.js  loadContext(source)     baut den Engine-Kontext quellen-agnostisch (Form fix → engine.js unverändert)
 ```
 
-Umschalten per Env: `APOTREND_SOURCE=file` (default) | `db`. Der `db`-Pfad wirft bewusst klare Fehler,
+Umschalten per Env: `APOPULSE_SOURCE=file` (default) | `db`. Der `db`-Pfad wirft bewusst klare Fehler,
 bis DB (D-004/D-006), Warenverzeichnis-Lizenz (D-010), AVS-Export (D-005) und ePharmGH (D-011) verdrahtet sind.
 
 **Anbindung pro Schicht = Implementierung einer Methode:**

@@ -41,7 +41,7 @@ test('Videosprechstunde: bestätigen erzeugt Video-Raum; ablehnen nicht; nur Anb
   // Anbieter bestätigt -> Raum-URL
   const conf = social.respondVideoAppointment(prov, a.id, true);
   assert.equal(conf.status, 'bestaetigt');
-  assert.match(conf.room_url, /^https:\/\/meet\.jit\.si\/apotrend-/);
+  assert.match(conf.room_url, /^https:\/\/meet\.jit\.si\/apopulse-/);
   // Anfrager wurde benachrichtigt
   assert.ok(social.notifications(cust).some(n => n.type === 'appt_confirmed'));
   // Nicht mehr offen -> erneute Antwort abgelehnt

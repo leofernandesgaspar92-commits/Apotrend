@@ -236,7 +236,7 @@ und keine Schnittstellen. Gilt projekt-übergreifend für jedes Multi-Rollen-/Ag
 
 Tracker zeigt, in welchen Projekten welches Pattern getriggert hat:
 
-| Pattern | Erfindergeist | iOS Kamera-App | Fin & Ari | Apotrend AI Assistant |
+| Pattern | Erfindergeist | iOS Kamera-App | Fin & Ari | ApoPulse AI Assistant |
 |---|---|---|---|---|
 | P-001 | 1x (D-048) | — | aktiv | aktiv |
 | P-002 | 1x (D-052) | — | aktiv | aktiv (LLM-Stack, D-006) |

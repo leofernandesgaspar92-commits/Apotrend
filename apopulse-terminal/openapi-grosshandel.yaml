@@ -1,21 +1,21 @@
 openapi: 3.1.0
 info:
-  title: ApoTrend Engpass- & Verfügbarkeits-API (Großhandel)
+  title: ApoPulse Engpass- & Verfügbarkeits-API (Großhandel)
   version: 0.1.0
   description: >
-    Einheitliche Abfrage-Schnittstelle, die ApoTrend gegenüber österreichischen
+    Einheitliche Abfrage-Schnittstelle, die ApoPulse gegenüber österreichischen
     Pharma-Großhändlern (Herba Chemosan, Alliance Healthcare, Sanova, PHOENIX, MPV)
     definiert. **Reifegrad 🔴/🟡:** Es existiert keine öffentliche Großhandel-API –
     dieses Dokument ist die technische VERHANDLUNGSBASIS für EDI/API-Verträge.
     Jeder Großhändler wird über einen eigenen Adapter auf dieses Schema gemappt.
   contact:
-    name: ApoTrend
+    name: ApoPulse
     email: leofernandesgaspar92@gmail.com
 
 servers:
-  - url: https://api.apotrend.at/v1
+  - url: https://api.apopulse.at/v1
     description: Produktion (EU-Region)
-  - url: https://staging.api.apotrend.at/v1
+  - url: https://staging.api.apopulse.at/v1
     description: Staging
 
 security:

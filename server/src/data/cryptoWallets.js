@@ -29,22 +29,22 @@ export function cryptoWallets(env = defaultEnv()) {
   };
 
   push('btc', 'bitcoin', 'BTC',
-    configured(env.APOTREND_WALLET_BTC, 'bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46'),
+    configured(env.APOPULSE_WALLET_BTC, 'bc1qjxckfxdw74dhul8l5jusax6ye87fy84hvvch46'),
     'Bitcoin (Mainnet)', 8);
   push('eth', 'ethereum', 'ETH',
-    configured(env.APOTREND_WALLET_ETH, '0x5f50991186014eDcbDE301467bE7a20C6CCc179B'),
+    configured(env.APOPULSE_WALLET_ETH, '0x5f50991186014eDcbDE301467bE7a20C6CCc179B'),
     'Ethereum (Mainnet)', 18);
   // Zwei Solana-Wallets (beide nur SOL): Seeker + Phantom.
   push('sol_seeker', 'solana', 'SOL',
-    configured(env.APOTREND_WALLET_SOL_SEEKER, 'Egbc7cfzHLj5dkgnR4E7Xk3MfDNrA5imqKJ1FV1n1DW'),
+    configured(env.APOPULSE_WALLET_SOL_SEEKER, 'Egbc7cfzHLj5dkgnR4E7Xk3MfDNrA5imqKJ1FV1n1DW'),
     'Solana (Mainnet)', 9, 'Seeker · leokennedy.skr');
   push('sol_phantom', 'solana', 'SOL',
-    configured(env.APOTREND_WALLET_SOL_PHANTOM, 'EMSJTkRGnnExNwaCkte9PDCN4Tm3BNSZKdXqcEpamWFM'),
+    configured(env.APOPULSE_WALLET_SOL_PHANTOM, 'EMSJTkRGnnExNwaCkte9PDCN4Tm3BNSZKdXqcEpamWFM'),
     'Solana (Mainnet)', 9, 'Phantom');
   // Tron braucht eine EIGENE Adresse (kein EVM-Format). Ohne gesetzte Variable
   // erscheint USDT über TRC-20 gar nicht — eine erfundene Adresse wäre der
   // teuerste denkbare Platzhalter.
-  push('tron', 'tron', 'USDT', configured(env.APOTREND_WALLET_TRON, ''), 'Tron (TRC-20)', 6);
+  push('tron', 'tron', 'USDT', configured(env.APOPULSE_WALLET_TRON, ''), 'Tron (TRC-20)', 6);
 
   return list;
 }
@@ -59,11 +59,11 @@ export function cryptoWallets(env = defaultEnv()) {
  *
  * Deshalb bewusst als Opt-in statt als Annahme: Wer eine gewöhnliche Wallet
  * (MetaMask, Ledger, Phantom) benutzt, setzt
- *   APOTREND_EVM_NETWORKS="Polygon,Arbitrum,Base"
+ *   APOPULSE_EVM_NETWORKS="Polygon,Arbitrum,Base"
  * und die Ketten stehen sofort zur Auswahl.
  */
 export function extraEvmNetworks(env = defaultEnv()) {
-  return String(env.APOTREND_EVM_NETWORKS || '')
+  return String(env.APOPULSE_EVM_NETWORKS || '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);

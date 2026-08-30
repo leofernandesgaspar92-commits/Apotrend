@@ -26,7 +26,7 @@ export interface Envelope {
 }
 
 /** Nur für Entwicklung/Tests — deterministisch, damit Tests reproduzierbar sind. */
-const DEV_KEY = createHash('sha256').update('apotrend-dev-key-not-for-production').digest()
+const DEV_KEY = createHash('sha256').update('apopulse-dev-key-not-for-production').digest()
 
 export class KeyConfigurationError extends Error {
   constructor(message: string) {
@@ -42,13 +42,13 @@ let warned = false
  * In echt: KMS/Vault-Abruf. Hier: Umgebungsvariable, sonst Dev-Schlüssel.
  */
 export function getKey(version: number): Buffer {
-  const fromEnv = process.env[`APOTREND_HEALTH_KEY_V${version}`]
+  const fromEnv = process.env[`APOPULSE_HEALTH_KEY_V${version}`]
 
   if (fromEnv) {
     const key = Buffer.from(fromEnv, 'base64')
     if (key.length !== 32) {
       throw new KeyConfigurationError(
-        `APOTREND_HEALTH_KEY_V${version} muss 32 Byte (base64) sein, hat ${key.length}.`,
+        `APOPULSE_HEALTH_KEY_V${version} muss 32 Byte (base64) sein, hat ${key.length}.`,
       )
     }
     return key
@@ -57,7 +57,7 @@ export function getKey(version: number): Buffer {
   if (process.env.NODE_ENV === 'production') {
     // Kein stiller Fallback. Lieber Ausfall als Scheinsicherheit.
     throw new KeyConfigurationError(
-      `Kein Schlüssel APOTREND_HEALTH_KEY_V${version} gesetzt. ` +
+      `Kein Schlüssel APOPULSE_HEALTH_KEY_V${version} gesetzt. ` +
         'Gesundheitsdaten dürfen in Produktion nicht mit dem Entwicklungsschlüssel ' +
         'verarbeitet werden.',
     )
@@ -67,7 +67,7 @@ export function getKey(version: number): Buffer {
     warned = true
     console.warn(
       '[crypto] Entwicklungsschlüssel aktiv — NICHT für echte Gesundheitsdaten. ' +
-        'Für Produktion APOTREND_HEALTH_KEY_V1 (32 Byte, base64) setzen.',
+        'Für Produktion APOPULSE_HEALTH_KEY_V1 (32 Byte, base64) setzen.',
     )
   }
   return DEV_KEY
@@ -75,7 +75,7 @@ export function getKey(version: number): Buffer {
 
 /** Aktuell zu verwendende Schlüsselversion für NEUE Datensätze. */
 export function currentKeyVersion(): number {
-  const raw = process.env.APOTREND_HEALTH_KEY_CURRENT
+  const raw = process.env.APOPULSE_HEALTH_KEY_CURRENT
   const parsed = raw ? Number.parseInt(raw, 10) : 1
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1
 }
@@ -105,6 +105,6 @@ export function decrypt(envelope: Envelope): string {
  * Zurückrechnen über eine Regenbogentabelle.
  */
 export function hashIp(ip: string): string {
-  const salt = process.env.APOTREND_IP_SALT ?? 'dev-salt'
+  const salt = process.env.APOPULSE_IP_SALT ?? 'dev-salt'
   return createHash('sha256').update(salt + '|' + ip).digest('hex').slice(0, 32)
 }

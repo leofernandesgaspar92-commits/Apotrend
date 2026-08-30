@@ -1,4 +1,4 @@
--- ApoTrend Plattform — Social-Layer (Priorität 1): Apotheker als PERSON.
+-- ApoPulse Plattform — Social-Layer (Priorität 1): Apotheker als PERSON.
 -- Twitter/X + Facebook: Fachprofile, kurze Posts, Kommentar-Threads, typisierte
 -- Reaktionen, gerichtete Follows, Benachrichtigungen, private 1:1-DMs, Moderation.
 -- Baut auf users/organizations (db/schema.sql) auf. Loest den org-zentrierten
@@ -15,7 +15,7 @@ create table profiles (
   specializations text[] not null default '{}',
   avatar_url      text,
   verified        boolean not null default false,  -- verifizierter Apotheker
-  is_editorial    boolean not null default false,  -- ApoTrend-Redaktion (kuratierte News)
+  is_editorial    boolean not null default false,  -- ApoPulse-Redaktion (kuratierte News)
   visibility      text not null default 'network'
                     check (visibility in ('public','network')),
   created_at      timestamptz not null default now()

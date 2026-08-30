@@ -1,6 +1,6 @@
 {
-  "name": "ApoTrend – Apotheker-Netzwerk",
-  "short_name": "ApoTrend",
+  "name": "ApoPulse – Apotheker-Netzwerk",
+  "short_name": "ApoPulse",
   "description": "Fachnetzwerk für Apotheken: Feed, Lieferengpässe, Preise, Rabatte, News.",
   "start_url": "/",
   "scope": "/",

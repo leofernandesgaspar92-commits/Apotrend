@@ -46,7 +46,7 @@ test('Live: Start erzeugt Raum + benachrichtigt Follower; nur Host darf', () => 
   assert.throws(() => social.startLiveSession(viewer, s.id), ForbiddenError);
   const live = social.startLiveSession(host, s.id);
   assert.equal(live.status, 'live');
-  assert.match(live.room_url, /^https:\/\/meet\.jit\.si\/apotrend-live-/);
+  assert.match(live.room_url, /^https:\/\/meet\.jit\.si\/apopulse-live-/);
   assert.ok(social.notifications(viewer).some(n => n.type === 'live_start'), 'Follower benachrichtigt');
 });
 

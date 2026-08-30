@@ -2,6 +2,10 @@
 // Node-Built-ins only. Baut auf der getesteten Domänen-/Service-Schicht auf.
 // In-Memory-Persistenz (Neustart = leer) — Postgres kommt hinter denselben
 // Repository-Seam (Phase 6).
+// ZUERST: alte Variablennamen (APOTREND_*) auf die neuen spiegeln. Muss vor
+// allen anderen Importen stehen — manche Module lesen ihre Werte beim Laden
+// (z. B. http/token.js). ESM wertet Importe in Quelltextreihenfolge aus.
+import '../env-compat.js';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -60,8 +64,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, '..', '..', 'public');
 const PORT = process.env.PORT || 4000;
 
-// ── Persistenz (optional, über APOTREND_DATA_FILE). Ohne die Variable: In-Memory. ──
-const persistence = createPersistence(process.env.APOTREND_DATA_FILE || null);
+// ── Persistenz (optional, über APOPULSE_DATA_FILE). Ohne die Variable: In-Memory. ──
+const persistence = createPersistence(process.env.APOPULSE_DATA_FILE || null);
 const snapshot = persistence ? persistence.load() : null;
 // Bereits verarbeitete Behörden-Meldungen. Muss den Neustart überleben, sonst
 // legt der Server nach jedem Deploy dieselben News-Beiträge erneut an.
@@ -124,16 +128,16 @@ if (restoring) {
   rabatteRepo.__load(snapshot.rabatte);
   exchangeRepo.__load(snapshot.exchange);
   newsSeen.__load(snapshot.newsSeen);
-  console.log(`ApoTrend: Daten aus ${persistence.filePath} wiederhergestellt.`);
+  console.log(`ApoPulse: Daten aus ${persistence.filePath} wiederhergestellt.`);
 } else {
   // Redaktions-/Admin-Account (zugleich Moderation) + kuratierte News — nur beim
   // Frischstart. Zugangsdaten über ENV steuerbar; sonst zufälliges Passwort, das
   // beim Start einmalig geloggt wird, damit sich die Redaktion anmelden kann.
-  const adminEmail = process.env.APOTREND_ADMIN_EMAIL || 'redaktion@apotrend.at';
-  const adminPassword = process.env.APOTREND_ADMIN_PASSWORD || crypto.randomUUID();
-  const red = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'ApoTrend' }, owner: { name: 'ApoTrend-Redaktion', email: adminEmail, password: adminPassword } });
-  social.createProfile(red.user.id, { handle: 'apotrend', displayName: 'ApoTrend-Redaktion', isEditorial: true });
-  if (!process.env.APOTREND_ADMIN_PASSWORD) console.log(`ℹ️  Redaktions-/Moderations-Login: ${adminEmail} / ${adminPassword}`);
+  const adminEmail = process.env.APOPULSE_ADMIN_EMAIL || 'redaktion@apopulse.at';
+  const adminPassword = process.env.APOPULSE_ADMIN_PASSWORD || crypto.randomUUID();
+  const red = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'ApoPulse' }, owner: { name: 'ApoPulse-Redaktion', email: adminEmail, password: adminPassword } });
+  social.createProfile(red.user.id, { handle: 'apopulse', displayName: 'ApoPulse-Redaktion', isEditorial: true });
+  if (!process.env.APOPULSE_ADMIN_PASSWORD) console.log(`ℹ️  Redaktions-/Moderations-Login: ${adminEmail} / ${adminPassword}`);
   [
     { body: 'Kammer-Mitteilung: Neue Regelung zur E-Medikation tritt am 01.08.2026 in Kraft.', sourceUrl: 'https://www.apothekerkammer.at/' },
     { body: 'BASG: Aktualisierte Engpassliste veröffentlicht — mehrere Antibiotika betroffen.', sourceUrl: 'https://www.basg.gv.at/' },
@@ -147,15 +151,15 @@ if (restoring) {
   // Länder-Redaktionen (DE/BR) + je ein News-Beitrag im jeweiligen Land, damit der
   // Länder-Switch echte, getrennte Inhalte zeigt. Beiträge erben das Land des Autors.
   const seedCountryEditor = (country, handle, name, posts) => {
-    const u = orgAuth.registerPharmacyWithOwner({ pharmacy: { name }, owner: { name, email: handle + '@apotrend.example', password: crypto.randomUUID() } });
+    const u = orgAuth.registerPharmacyWithOwner({ pharmacy: { name }, owner: { name, email: handle + '@apopulse.example', password: crypto.randomUUID() } });
     social.createProfile(u.user.id, { handle, displayName: name, isEditorial: true, country });
     posts.forEach(({ body, sourceUrl }) => social.createPost(u.user.id, { body, kind: 'news', sourceUrl }));
   };
-  seedCountryEditor('DE', 'apotrend_de', 'ApoTrend-Redaktion DE', [
+  seedCountryEditor('DE', 'apopulse_de', 'ApoPulse-Redaktion DE', [
     { body: 'BfArM: Aktualisierte Liste von Lieferengpässen veröffentlicht — mehrere Wirkstoffe betroffen.', sourceUrl: 'https://www.bfarm.de/' },
     { body: 'E-Rezept: bundesweite Nutzung weiter verpflichtend — Hinweise für Apotheken aktualisiert.', sourceUrl: 'https://www.bfarm.de/' },
   ]);
-  seedCountryEditor('BR', 'apotrend_br', 'ApoTrend-Redação BR', [
+  seedCountryEditor('BR', 'apopulse_br', 'ApoPulse-Redação BR', [
     { body: 'ANVISA: publicada atualização sobre desabastecimento de medicamentos.', sourceUrl: 'https://www.gov.br/anvisa/' },
   ]);
 }
@@ -284,7 +288,7 @@ const deals = createDealsService({
 // Rückfall: Solange weder ein Feed noch eine eigene Aktion vorliegt, wird ein
 // Demobestand angelegt — sichtbar als „simuliert" gekennzeichnet. Sobald etwas
 // Echtes da ist, passiert hier nichts mehr (die Prüfung steckt in der Funktion).
-if (process.env.NODE_ENV !== 'test' && process.env.APOTREND_DEMO_DEALS !== 'off') {
+if (process.env.NODE_ENV !== 'test' && process.env.APOPULSE_DEMO_DEALS !== 'off') {
   seedDemoDealsIfNoneRunning({ rabatteRepo });
 }
 
@@ -296,7 +300,7 @@ if (process.env.NODE_ENV !== 'test' && process.env.APOTREND_DEMO_DEALS !== 'off'
  * automatisch übernommene Behördenmeldung ist genau das.
  */
 async function runNewsIngest() {
-  const editor = social.getProfile('apotrend');
+  const editor = social.getProfile('apopulse');
   if (!editor) return { skipped: true, reason: 'Redaktionskonto fehlt' };
 
   const report = await ingestNews({
@@ -323,15 +327,15 @@ async function runNewsIngest() {
  * Engpass-Durchlauf.
  *
  * Zwei Wege, bewusst getrennt:
- *  · JSON-Vertrag je Land (APOTREND_LIVE_SHORTAGES_<CC>) — der bestehende Weg
- *  · CSV-Export eines Registers (APOTREND_SOURCE_<ID>_URL mit FORMAT=csv)
+ *  · JSON-Vertrag je Land (APOPULSE_LIVE_SHORTAGES_<CC>) — der bestehende Weg
+ *  · CSV-Export eines Registers (APOPULSE_SOURCE_<ID>_URL mit FORMAT=csv)
  *
  * Aus News-Schlagzeilen entstehen KEINE Engpass-Datensätze (siehe sources.js).
  */
 /**
  * Feldzuordnung einer Quelle aus der Umgebung lesen.
  *
- *   APOTREND_SOURCE_BASG_SHORTAGES_COLUMNS='{"bezeichnung":"nameDesArzneimittels"}'
+ *   APOPULSE_SOURCE_BASG_SHORTAGES_COLUMNS='{"bezeichnung":"nameDesArzneimittels"}'
  *
  * Der Grund ist praktisch: Benennt eine Behörde ein Feld um, muss dafür kein
  * Deploy stattfinden — die Zuordnung ist eine Umgebungsvariable. Ungültiges
@@ -370,13 +374,13 @@ function dbNichtErreichbar(detail) {
 }
 
 function sourceColumns(id) {
-  const raw = process.env[`APOTREND_SOURCE_${String(id).toUpperCase()}_COLUMNS`];
+  const raw = process.env[`APOPULSE_SOURCE_${String(id).toUpperCase()}_COLUMNS`];
   if (!raw) return {};
   try {
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
   } catch {
-    console.warn(`ApoTrend Quellen: COLUMNS für ${id} ist kein gültiges JSON — ignoriert.`);
+    console.warn(`ApoPulse Quellen: COLUMNS für ${id} ist kein gültiges JSON — ignoriert.`);
     return {};
   }
 }
@@ -424,7 +428,7 @@ async function runShortageIngest() {
       // liefert die Quelle weiter brav 200 OK und NULL brauchbare Zeilen. Ohne
       // diese Meldung fiele das erst auf, wenn jemand die leere Liste bemerkt.
       if (rejected.length && !rows.length) {
-        console.warn(`ApoTrend Engpässe: ${source.id} lieferte ${rejected.length} Zeilen, `
+        console.warn(`ApoPulse Engpässe: ${source.id} lieferte ${rejected.length} Zeilen, `
           + `keine davon verwertbar. Erste Gründe: ${rejected.slice(0, 3).join('; ')}`);
       }
     } catch (e) {
@@ -458,7 +462,7 @@ async function runShortageIngest() {
       const feeds = Object.keys(liveSources());
       const country = feeds.length === 1 ? feeds[0] : DEFAULT_COUNTRY;
       const rows = shortagesRepo.list();
-      const r = await db.saveShortages(rows, { source: 'ApoTrend-Automatik', country });
+      const r = await db.saveShortages(rows, { source: 'ApoPulse-Automatik', country });
       summary.db = { written: r.written, received: r.received, country, assumed: feeds.length !== 1 };
     } catch (e) {
       summary.db = { error: (e && e.message) || String(e) };
@@ -469,7 +473,7 @@ async function runShortageIngest() {
 
 const routes = [
   // Health-Check für Hosting-Plattformen (kein Auth, keine Daten).
-  ['GET', /^\/api\/health$/, false, async () => ({ ok: true, service: 'apotrend', ts: new Date().toISOString() })],
+  ['GET', /^\/api\/health$/, false, async () => ({ ok: true, service: 'apopulse', ts: new Date().toISOString() })],
 
   ['POST', /^\/api\/register$/, false, async ({ body }) => {
     const { name, email, password, handle, displayName, pharmacyName } = body;
@@ -1223,14 +1227,14 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`ApoTrend Feed-Server läuft auf http://localhost:${PORT}`);
-  // Persistenz-Status deutlich anzeigen: Ein Produktiv-Deploy OHNE APOTREND_DATA_FILE
+  console.log(`ApoPulse Feed-Server läuft auf http://localhost:${PORT}`);
+  // Persistenz-Status deutlich anzeigen: Ein Produktiv-Deploy OHNE APOPULSE_DATA_FILE
   // läuft rein im Speicher — bei jedem Neustart sind ALLE Daten weg. Das darf nicht
   // unbemerkt passieren, darum eine laute Warnung (nicht in der Testumgebung).
   if (persistence) {
-    console.log(`ApoTrend: Persistenz aktiv -> ${persistence.filePath}`);
+    console.log(`ApoPulse: Persistenz aktiv -> ${persistence.filePath}`);
   } else if (process.env.NODE_ENV !== 'test') {
-    console.warn('⚠️  ApoTrend: KEINE Persistenz aktiv (APOTREND_DATA_FILE nicht gesetzt) — alle Daten gehen bei einem Neustart verloren. Für den Produktivbetrieb APOTREND_DATA_FILE auf einen dauerhaften Pfad setzen.');
+    console.warn('⚠️  ApoPulse: KEINE Persistenz aktiv (APOPULSE_DATA_FILE nicht gesetzt) — alle Daten gehen bei einem Neustart verloren. Für den Produktivbetrieb APOPULSE_DATA_FILE auf einen dauerhaften Pfad setzen.');
   }
   // ── Automatische Datenaufnahme ──────────────────────────────────────────
   // Zwei Aufgaben mit eigenem Takt (Owner-Vorgabe): News alle 5 Minuten,
@@ -1253,7 +1257,7 @@ server.listen(PORT, () => {
     const shortageCount = Object.keys(liveSources()).length + Object.keys(livePriceSources()).length
       + Object.keys(liveRabatteSources()).length + sourcesByKind('shortages', process.env).length;
     console.log(
-      `ApoTrend: Automatik aktiv — News alle ${INTERVALS.news / 60000} min aus ${newsCount} Quelle(n), ` +
+      `ApoPulse: Automatik aktiv — News alle ${INTERVALS.news / 60000} min aus ${newsCount} Quelle(n), ` +
       `Engpässe alle ${INTERVALS.shortages / 3600000} h aus ${shortageCount} Quelle(n). ` +
       'Stand jederzeit unter GET /api/live/status.',
     );

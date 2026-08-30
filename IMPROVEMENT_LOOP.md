@@ -1,7 +1,7 @@
-# ApoTrend — Selbstverbesserungs-Loop (Autopilot)
+# ApoPulse — Selbstverbesserungs-Loop (Autopilot)
 
 Dies ist das **dauerhafte Gedächtnis** des kontinuierlichen Verbesserungs-Loops für die
-ApoTrend-App/Website. Eine Session ist flüchtig — diese Datei nicht. Jeder Loop-Durchlauf
+ApoPulse-App/Website. Eine Session ist flüchtig — diese Datei nicht. Jeder Loop-Durchlauf
 liest sie, handelt, und schreibt das Ergebnis zurück. So läuft der Loop weiter, auch wenn
 die Session neu startet.
 
@@ -256,12 +256,12 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ### Cycle #127 — 2026-07-20 — Live-Daten-Anschluss komplett: Rabatte (3. Datentyp) — Kern-Trio auto-connect
 - **THINK:** Die Auto-Connect-Datenschicht abrunden: nach Engpässen (#118) und Preisen (#126) jetzt **Rabatte** — dann ziehen alle drei Kern-Datentypen automatisch echte Daten, sobald angeschlossen.
-- **WORK:** `liveData.js` um `validateRabattePayload`/`refreshRabatte`/`isRabatteLive`/`liveRabatteSources` erweitert; `startLiveRefresh` nimmt jetzt auch `rabatteRepo`. `rabatteRepo.replaceFeed`. Env `APOTREND_LIVE_RABATTE_<CC>`; `/api/data-status` liefert `rabatte.live`; Server-Start refresht alle drei Typen. `rabatt_pct`/`ersparnis` werden serverseitig berechnet. Doku `LIVE_DATA.md` erweitert.
+- **WORK:** `liveData.js` um `validateRabattePayload`/`refreshRabatte`/`isRabatteLive`/`liveRabatteSources` erweitert; `startLiveRefresh` nimmt jetzt auch `rabatteRepo`. `rabatteRepo.replaceFeed`. Env `APOPULSE_LIVE_RABATTE_<CC>`; `/api/data-status` liefert `rabatte.live`; Server-Start refresht alle drei Typen. `rabatt_pct`/`ersparnis` werden serverseitig berechnet. Doku `LIVE_DATA.md` erweitert.
 - **CHECK:** 319 → 320 grün (+1: Pflichtfelder inkl. gueltig_bis/Preise>0, Übernahme+verified+Rabatt-Berechnung, Fehler-Fallback, isRabatteLive), Smoke 19/19, Guards 0. Anschließen = ENV-Variable, kein Code-Deploy.
 
 ### Cycle #126 — 2026-07-20 — Live-Daten-Anschluss auf Preise ausgeweitet (2. Datentyp)
 - **THINK:** Owner-Vision „sobald angeschlossen, holt sich alles automatisch echte Daten" weiter tragen: die bewährte Anschlussstelle (#118, Engpässe) auf **Preise** übertragen — gleiche Env-Gating-/Validierungs-/Fallback-Logik, ruht bis angeschlossen.
-- **WORK:** `liveData.js` um `validatePricePayload`/`refreshPrices`/`isPriceLive`/`livePriceSources` erweitert; `startLiveRefresh` generalisiert (Engpässe + Preise als Tasks). `pricesRepo.replaceFeed` (Feed komplett ersetzen). Env `APOTREND_LIVE_PRICES_<CC>`; `/api/data-status` liefert jetzt auch `prices.live`; Server-Start startet Auto-Refresh für beide Typen. Doku `LIVE_DATA.md` erweitert (Preis-Vertrag).
+- **WORK:** `liveData.js` um `validatePricePayload`/`refreshPrices`/`isPriceLive`/`livePriceSources` erweitert; `startLiveRefresh` generalisiert (Engpässe + Preise als Tasks). `pricesRepo.replaceFeed` (Feed komplett ersetzen). Env `APOPULSE_LIVE_PRICES_<CC>`; `/api/data-status` liefert jetzt auch `prices.live`; Server-Start startet Auto-Refresh für beide Typen. Doku `LIVE_DATA.md` erweitert (Preis-Vertrag).
 - **CHECK:** 317 → 319 grün (+2: Preis-Validierung inkl. aep>0/Pflichtfelder, refreshPrices Übernahme+Fehler-Fallback+isPriceLive), Smoke 19/19, Guards 0. Anschließen = ENV-Variable, kein Code-Deploy.
 
 ### Cycle #125 — 2026-07-20 — News-Reiter: Beitrags-Composer einklappbar (News zuerst)
@@ -301,7 +301,7 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ### Cycle #118 — 2026-07-20 — Live-Daten-Anschlussstelle: Auto-Refresh, sobald ein Server angeschlossen wird
 - **THINK:** Owner-Vorgabe: echte Daten kommen, sobald die Website an einen Server angeschlossen ist; bis dahin bauen. Also die „Anschluss-Stelle" bauen — ein klarer Vertrag + Ingestion, per ENV scharf geschaltet, die sich dann automatisch aktualisiert. Bis dahin unveränderte Referenzdaten.
-- **WORK:** Neues Modul `services/liveData.js`: definierter JSON-Vertrag, `validateShortagePayload` (streng), `refreshShortages` (Abruf→Validierung→Übernahme, fehlersicher: bei Fehler bleibt der Bestand), `startLiveRefresh` (ruht ohne Quelle, sofort+alle 15 min sobald `APOTREND_LIVE_SHORTAGES_<CC>` gesetzt; `unref`). Repo: `replaceFeed` ersetzt Seed/Live, **erhält Community-Meldungen**. Endpoint `GET /api/data-status`. Server-Start startet Auto-Refresh nur bei konfigurierter Quelle (in Tests aus). Doku `docs/LIVE_DATA.md` (Vertrag + ENV + Verhalten).
+- **WORK:** Neues Modul `services/liveData.js`: definierter JSON-Vertrag, `validateShortagePayload` (streng), `refreshShortages` (Abruf→Validierung→Übernahme, fehlersicher: bei Fehler bleibt der Bestand), `startLiveRefresh` (ruht ohne Quelle, sofort+alle 15 min sobald `APOPULSE_LIVE_SHORTAGES_<CC>` gesetzt; `unref`). Repo: `replaceFeed` ersetzt Seed/Live, **erhält Community-Meldungen**. Endpoint `GET /api/data-status`. Server-Start startet Auto-Refresh nur bei konfigurierter Quelle (in Tests aus). Doku `docs/LIVE_DATA.md` (Vertrag + ENV + Verhalten).
 - **CHECK:** 301 → 308 grün (+7: Validierung, Ingestion mit Community-Schutz, Fehler-/Abruf-Sicherheit, Skip ohne Quelle, startLiveRefresh dormant→ingest, /api/data-status), Smoke 19/19, Guards 0. Anschließen = eine ENV-Variable setzen, **kein Code-Deploy**.
 
 ### Cycle #117 — 2026-07-20 — Länder-Framework Schritt 1: offizielle Regulierungs-Quelle je Land (echte Links)
@@ -362,7 +362,7 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 
 ### Cycle #106 — 2026-07-20 — Beide Solana-Wallets (Seeker + Phantom) + voller App-Durchlauf verifiziert
 - **THINK:** Owner bestätigt: BEIDE SOL-Adressen gehören ihm (Seeker „leokennedy.skr" + Phantom, beide nur SOL). Beide einbauen; Kund:in wählt die Wallet. Danach die ganze App auf ein reibungsloses Kund:innen-Erlebnis prüfen.
-- **WORK:** `cryptoWallets` von Map auf **Liste** umgestellt (mehrere Wallets je Coin, stabile `id` + `label`); zwei SOL-Wallets vorbelegt (ENV: `APOTREND_WALLET_SOL_SEEKER`/`_PHANTOM`). Service/Route/Frontend auf `walletId` umgestellt; Zahlungsdatensatz trägt jetzt `coin`/`wallet_id`/`address` für die Zuordnung. Premium-UI zeigt je Wallet Label (z. B. „SOL · Seeker · leokennedy.skr").
+- **WORK:** `cryptoWallets` von Map auf **Liste** umgestellt (mehrere Wallets je Coin, stabile `id` + `label`); zwei SOL-Wallets vorbelegt (ENV: `APOPULSE_WALLET_SOL_SEEKER`/`_PHANTOM`). Service/Route/Frontend auf `walletId` umgestellt; Zahlungsdatensatz trägt jetzt `coin`/`wallet_id`/`address` für die Zuordnung. Premium-UI zeigt je Wallet Label (z. B. „SOL · Seeker · leokennedy.skr").
 - **CHECK:** 297 Tests grün (Payment-Tests auf Liste + 2× SOL angepasst), Smoke 19/19, Browser-Audit sauber, Parität 722/722/722, Guards 0. **Voller Kund:innen-Durchlauf** (hell+dunkel): alle 8 Reiter, Premium mit **4 Wallets** (BTC/ETH/2× SOL) inkl. echter Seeker- & Phantom-Adressen als Wallet-URIs, „Zahlung melden" bestätigt, **0 JS-Fehler**.
 
 ### Cycle #105 — 2026-07-20 — Direkt-in-Wallet Krypto-Zahlung (einfach, an die eigenen Adressen)
@@ -749,7 +749,7 @@ a11y-Formular-Labels, Mobil-Robustheit, Backend-Persistenz gehärtet. Details: `
 - **CHECK:** 4 Screenshots (Hell/Dunkel × Desktop/Mobil) sauber; Desktop behält 3-Spalten-Raster; 219 grün, Smoke 8/8.
 
 ### Cycle #28 — 2026-07-18 — Länder-zuerst-Flow + klickbares Logo (Home) + Render
-- **WORK:** Onboarding umgestellt: erst Land wählen → Login → länderspezifische Sicht. Grüner Punkt oben links ist jetzt das klickbare ApoTrend-Logo (SVG) → Startseite. Auf Render (feed-first) deployt.
+- **WORK:** Onboarding umgestellt: erst Land wählen → Login → länderspezifische Sicht. Grüner Punkt oben links ist jetzt das klickbare ApoPulse-Logo (SVG) → Startseite. Auf Render (feed-first) deployt.
 - **CHECK:** Smoke-Test prüft Länder-zuerst (12 Länder, AT→Anmelden/GB→Log in); 219 grün.
 
 ### Cycle #27 — 2026-07-18 — Länderauswahl-Kopf mehrsprachig (VOR der Sprachwahl)

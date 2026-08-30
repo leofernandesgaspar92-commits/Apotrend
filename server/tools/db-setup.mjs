@@ -39,7 +39,7 @@ function run(args) {
 }
 
 if (!existsSync(schema)) {
-  console.log('ApoTrend DB: kein prisma/schema.prisma — nichts zu tun.');
+  console.log('ApoPulse DB: kein prisma/schema.prisma — nichts zu tun.');
   process.exit(0);
 }
 
@@ -49,24 +49,24 @@ if (!existsSync(schema)) {
 //    stoppen — die App laeuft ohne Datenbank.
 const gen = run(['generate', '--schema', schema]);
 if (!gen.ok) {
-  console.warn(`ApoTrend DB: "prisma generate" fehlgeschlagen (${gen.reason}). `
+  console.warn(`ApoPulse DB: "prisma generate" fehlgeschlagen (${gen.reason}). `
     + 'Die App startet trotzdem — ohne Datenbank-Spiegelung.');
 }
 
 // 2. Migrationen — nur mit Datenbank.
 const url = (process.env.DATABASE_URL || '').trim();
 if (!url) {
-  console.log('ApoTrend DB: DATABASE_URL nicht gesetzt — Migrationen uebersprungen. '
+  console.log('ApoPulse DB: DATABASE_URL nicht gesetzt — Migrationen uebersprungen. '
     + 'Die App laeuft mit In-Memory-Speicher und JSON-Snapshot (siehe docs/DATENBANK.md).');
   process.exit(0);
 }
 
 const mig = run(['migrate', 'deploy', '--schema', schema]);
 if (!mig.ok) {
-  console.error(`ApoTrend DB: "prisma migrate deploy" fehlgeschlagen (${mig.reason}).`);
+  console.error(`ApoPulse DB: "prisma migrate deploy" fehlgeschlagen (${mig.reason}).`);
   console.error('Der Build wird abgebrochen: Eine angehaengte Datenbank mit unklarem '
     + 'Schemastand ist gefaehrlicher als ein fehlgeschlagenes Deploy.');
   process.exit(1);
 }
 
-console.log('ApoTrend DB: Schema aktuell.');
+console.log('ApoPulse DB: Schema aktuell.');

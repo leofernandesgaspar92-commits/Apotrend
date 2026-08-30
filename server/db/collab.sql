@@ -1,4 +1,4 @@
--- ApoTrend Plattform — collab-Modul (Teams-artig, IMMER apothekenintern).
+-- ApoPulse Plattform — collab-Modul (Teams-artig, IMMER apothekenintern).
 -- Baut auf db/schema.sql (organizations/users/memberships) auf.
 -- Alles hier ist hart auf organization_id gescoped und verlaesst die Apotheke nie.
 
