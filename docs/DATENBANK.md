@@ -197,6 +197,50 @@ weg; ein Test hält den Fall fest.
 
 ---
 
+## 3b. Indizes — und ein Index, der nichts brachte
+
+Auf `NewsPost` liegen drei Indizes. Der interessante Teil ist, warum es nicht
+die sind, die Prisma von allein erzeugt hätte.
+
+**Der Befund.** Die Leseabfrage sortiert `publishedAt DESC NULLS LAST` — sonst
+stünden Meldungen ohne Datum ganz oben (§2.3). Prismas
+`@@index([country, publishedAt(sort: Desc)])` erzeugt aber schlichtes `DESC`,
+und `DESC` heißt in PostgreSQL **NULLS FIRST**. Die Reihenfolgen passen nicht
+zueinander. Ergebnis, mit `EXPLAIN ANALYZE` an 5.000 Zeilen nachgestellt:
+
+```
+->  Sort  (Sort Key: "publishedAt" DESC NULLS LAST, "fetchedAt" DESC)
+      ->  Bitmap Index Scan on "NewsPost_country_publishedAt_idx" (rows=1251)
+```
+
+Der Index bediente nur den Länderfilter; sortiert wurde anschließend die ganze
+Treffermenge. Mit einem Index in der passenden Reihenfolge:
+
+```
+->  Index Scan using "NewsPost_country_publishedAt_nullslast_idx" (rows=50)
+```
+
+Kein Sort-Schritt, 50 gelesene Zeilen statt 1.251 sortierter.
+
+Prismas `@@index` kennt keine NULLS-Angabe, deshalb steht dieser Index als rohes
+SQL in der Migration. Der ursprüngliche wurde entfernt: Ein Index, den niemand
+liest, kostet bei jedem `INSERT` trotzdem Zeit — und die News-Aufnahme schreibt
+alle fünf Minuten.
+
+| Index | Wofür |
+|---|---|
+| `NewsPost_country_publishedAt_nullslast_idx` | die Feed-Abfrage (roh-SQL, NULLS LAST) |
+| `NewsPost_country_createdAt_idx` | „was kam seit gestern für DE dazu" — `createdAt` ist immer gesetzt |
+| `NewsPost_sourceId_idx` | eine ausgefallene Quelle im Bestand wiederfinden |
+
+**Ein Fehler dabei, der erwähnt gehört:** Der `DROP INDEX` landete zunächst
+angehängt an eine **bereits angewandte** Migration. Prisma führt die nicht
+erneut aus — der Index blieb stehen, und es fiel nur auf, weil danach in
+`pg_indexes` nachgesehen wurde. Das ist die gefährlichere Variante: Auf einer
+frischen Datenbank wäre die geänderte Fassung mitgelaufen, auf der bestehenden
+nie. Zwei Umgebungen mit demselben Migrationsstand hätten verschiedene
+Schemata. Der `DROP` liegt jetzt in einer eigenen Migration.
+
 ## 4. Betrieb auf Render
 
 **Build:** `npm install --include=dev && npm run db:setup`

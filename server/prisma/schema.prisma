@@ -90,7 +90,19 @@ model NewsPost {
   fetchedAt   DateTime  @default(now()) @db.Timestamptz(3)
   createdAt   DateTime  @default(now()) @db.Timestamptz(3)
 
-  @@index([country, publishedAt(sort: Desc)])
+  // Kein @@index auf [country, publishedAt]: Prisma erzeugt daraus DESC, und
+  // DESC heißt in PostgreSQL NULLS FIRST — die Anwendung sortiert aber
+  // NULLS LAST. Die Reihenfolgen passen nicht zueinander, der Index konnte
+  // deshalb nur den Länderfilter bedienen und PostgreSQL sortierte nach.
+  // Der passende Index steht als rohes SQL in der Migration
+  // 20260830161000_newspost_publishedat_nulls_last (Prismas @@index kennt
+  // keine NULLS-Angabe).
+  //
+  // Der Index hier deckt eine ANDERE Frage ab: „was ist seit gestern für DE
+  // dazugekommen" — der Blick nach einem Ausfall oder Neustart. Dafür ist
+  // `createdAt` die richtige Spalte, weil sie immer gesetzt ist, während
+  // `publishedAt` bei einem Teil der Meldungen leer bleibt.
+  @@index([country, createdAt(sort: Desc)])
   @@index([sourceId])
 }
 

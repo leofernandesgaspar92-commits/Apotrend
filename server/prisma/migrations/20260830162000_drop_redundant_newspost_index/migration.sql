@@ -1,0 +1,15 @@
+-- Den ueberfluessig gewordenen Index entfernen.
+--
+-- NewsPost_country_publishedAt_idx bedient nur eine Sortierung (DESC NULLS
+-- FIRST), die in der Anwendung nirgends vorkommt; den Laenderfilter deckt der
+-- Index aus der vorigen Migration mit ab. Ein Index, den niemand liest, kostet
+-- bei jedem INSERT und UPDATE trotzdem Zeit und Platz -- und die News-Aufnahme
+-- schreibt alle fuenf Minuten.
+--
+-- Warum eine EIGENE Migration statt einer Ergaenzung der vorigen: Eine bereits
+-- angewandte Migration nachtraeglich zu aendern ist eine Falle. Auf einer
+-- frischen Datenbank liefe die geaenderte Fassung mit, auf einer bestehenden
+-- nie -- zwei Umgebungen mit demselben Migrationsstand haetten dann
+-- verschiedene Schemata. Genau das ist hier beim ersten Versuch passiert und
+-- nur aufgefallen, weil danach in pg_indexes nachgesehen wurde.
+DROP INDEX IF EXISTS "NewsPost_country_publishedAt_idx";

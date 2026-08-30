@@ -1,0 +1,14 @@
+-- Zweiter Laender-Index auf NewsPost, diesmal auf createdAt.
+--
+-- Kein Duplikat des bestehenden [country, publishedAt]: `publishedAt` ist
+-- NULLBAR, weil viele Behoerden-Feeds kein Datum liefern und der Parser dann
+-- bewusst null einsetzt statt "jetzt" zu erfinden. Fuer die Frage "was ist
+-- seit gestern fuer DE dazugekommen" -- der Blick nach einem Ausfall oder
+-- Neustart -- nuetzt ein Index auf einer teilweise leeren Spalte wenig.
+-- `createdAt` ist immer gesetzt.
+--
+-- CONCURRENTLY waere im Betrieb schonender, laeuft aber nicht in der
+-- Transaktion, in die Prisma jede Migration einpackt. Bei dieser Tabellen-
+-- groesse (Behoerdenmeldungen, nicht Messwerte) ist die kurze Sperre
+-- unproblematisch.
+CREATE INDEX "NewsPost_country_createdAt_idx" ON "NewsPost"("country", "createdAt" DESC);
