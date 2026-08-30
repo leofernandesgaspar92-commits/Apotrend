@@ -3,7 +3,7 @@
 > **Stand der Prüfung:** Die Bauumgebung dieses Projekts hat **keinen Netzzugang**.
 > Die unten voreingestellten Behörden-URLs konnten hier **nicht abgerufen** werden —
 > sie sind Startwerte, keine Zusage. Parser, Doppelt-Erkennung, Taktung und
-> Fehlerverhalten sind vollständig getestet (79 Tests, injizierter Abruf); ob eine
+> Fehlerverhalten sind vollständig getestet (injizierter Abruf); ob eine
 > konkrete URL trägt, zeigt nach dem ersten Lauf auf Render
 > **`GET /api/live/status`**.
 
@@ -11,7 +11,7 @@
 
 | Aufgabe | Takt | Quelle | Ziel |
 |---|---|---|---|
-| **News** | alle **5 Minuten** | RSS/Atom von BfArM, PEI, BASG, EMA (+ eigene) | Beiträge im Fach-News-Feed |
+| **News** | alle **5 Minuten** | RSS/Atom von 19 Behörden in 16 Ländern (+ eigene) | Beiträge im Fach-News-Feed **des jeweiligen Landes** |
 | **Engpässe** | alle **4 Stunden** | JSON-Vertrag je Land ODER CSV-Register-Export | Tabelle `shortages` |
 | Preise, Rabatte | alle 4 Stunden | JSON-Vertrag je Land | `prices`, `rabatte` |
 
@@ -76,8 +76,9 @@ Eingebaut sind zwanzig Quellen — neunzehn News und ein Engpass-Export. Damit h
 | `EMA_NEWS` | EU | EMA | News (RSS) |
 | `BASG_SHORTAGES` | AT | BASG Vertriebseinschränkungen | Engpässe (JSON) |
 
-Alle elf Behörden stehen mit genau diesen Namen im Länder-Register
-(`src/data/countries.js`), die Quellenangabe am Beitrag passt also zum Land.
+Jede dieser Behörden steht mit genau diesem Namen im Länder-Register
+(`src/data/countries.js`) — die Quellenangabe am Beitrag passt also zum Land,
+und die Meldung landet im Feed dieses Landes (Abschnitt „Das Land der Meldung").
 
 > **Die URLs sind Startwerte, keine Zusage.** Die Bauumgebung dieses Projekts
 > hat keinen Netzzugang — **keine** dieser Adressen konnte hier abgerufen
