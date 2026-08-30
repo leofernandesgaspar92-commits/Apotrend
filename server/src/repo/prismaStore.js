@@ -32,6 +32,8 @@
 //     Demozeile darf in der Datenbank nicht aussehen wie eine Behoerdenmeldung.
 // ============================================================================
 
+import { gzipSync, gunzipSync } from 'node:zlib';
+
 /** Statuswerte der Anwendung -> ShortageStatus im Schema. */
 const STATUS = new Map([
   ['kritisch', 'CRITICAL'],
@@ -125,7 +127,7 @@ export function createPrismaStore({
   let client = null;
   let state = 'idle'; // idle | ready | disabled
   let disabledReason = null;
-  const counts = { newsUpserts: 0, shortageUpserts: 0, errors: 0 };
+  const counts = { newsUpserts: 0, shortageUpserts: 0, snapshotSaves: 0, errors: 0 };
 
   function disable(reason) {
     state = 'disabled';
@@ -299,6 +301,62 @@ export function createPrismaStore({
       rows.sort((a, b) => (rank[a.status] ?? 3) - (rank[b.status] ?? 3)
         || new Date(b.updatedAt) - new Date(a.updatedAt));
       return res.ok ? { ok: true, rows } : { ok: false, rows: [], error: res.error || null, skipped: res.skipped };
+    },
+
+    // ── Gesamtzustand sichern ────────────────────────────────────────────────
+    //  Der Grund steht im Schema bei `model AppSnapshot`: Auf dem kostenlosen
+    //  Render-Tarif loeschte jeder Deploy nicht nur die News, sondern JEDES
+    //  KONTO. Hier liegt der komplette Zustand als ein gepackter Blob —
+    //  ausdruecklich ein Zwischenschritt, kein Ersatz fuer richtige Tabellen.
+
+    /**
+     * Zustand sichern. `obj` ist das Ergebnis von collectSnapshot().
+     *
+     * Gepackt, weil es rund 30 % der Rohgroesse sind und der Inhalt in der
+     * Datenbank nie durchsucht wird.
+     */
+    async saveSnapshot(obj) {
+      let payload;
+      try {
+        const roh = Buffer.from(JSON.stringify(obj), 'utf8');
+        payload = { data: gzipSync(roh), rawSize: roh.length };
+      } catch (e) {
+        // Ein nicht serialisierbarer Zustand ist ein Programmfehler, kein
+        // Datenbankproblem — er darf hier nicht als "Datenbank kaputt" enden.
+        log.warn?.(`ApoPulse DB: Zustand nicht serialisierbar — ${(e && e.message) || e}`);
+        return { ok: false, error: 'nicht serialisierbar' };
+      }
+      const res = await guarded('Zustandssicherung', (c) => c.appSnapshot.upsert({
+        where: { id: 'main' },
+        update: payload,
+        create: { id: 'main', ...payload },
+      }));
+      if (res.ok) {
+        counts.snapshotSaves++;
+        counts.snapshotBytes = payload.data.length;
+        counts.snapshotRawSize = payload.rawSize;
+      }
+      return res;
+    },
+
+    /** Zustand laden. `null`, wenn keiner da ist oder die Datenbank schweigt. */
+    async loadSnapshot() {
+      let row = null;
+      const res = await guarded('Zustand lesen', async (c) => {
+        row = await c.appSnapshot.findUnique({ where: { id: 'main' } });
+      });
+      if (!res.ok || !row) return null;
+      try {
+        const obj = JSON.parse(gunzipSync(Buffer.from(row.data)).toString('utf8'));
+        return { data: obj, updatedAt: row.updatedAt, rawSize: row.rawSize };
+      } catch (e) {
+        // Kaputter Blob: NICHT werfen. Die App startet dann mit dem
+        // Datei-Snapshot bzw. leer weiter — das ist immer noch besser, als
+        // wegen einer unlesbaren Sicherung gar nicht hochzukommen.
+        log.warn?.(`ApoPulse DB: Zustandssicherung unlesbar — ${(e && e.message) || e}. `
+          + 'Start ohne sie.');
+        return null;
+      }
     },
 
     /**

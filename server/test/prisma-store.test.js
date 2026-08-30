@@ -322,3 +322,67 @@ test('ein Lesefehler liefert eine leere Liste statt zu werfen', async () => {
   assert.deepEqual(res.rows, []);
   assert.equal(res.error, 'kaputt');
 });
+
+// ── Zustandssicherung ───────────────────────────────────────────────────────
+//  Der teuerste Verlust, den es hier zu verhindern gilt: Auf dem kostenlosen
+//  Render-Tarif löschte jeder Deploy nicht nur die News, sondern JEDES KONTO.
+
+test('der Zustand wird gepackt gesichert und kommt unverändert zurück', async () => {
+  const gespeichert = {};
+  const client = {
+    $connect: async () => {}, $disconnect: async () => {},
+    appSnapshot: {
+      upsert: async ({ create }) => { Object.assign(gespeichert, create); return create; },
+      findUnique: async () => (gespeichert.data ? { ...gespeichert, updatedAt: new Date('2026-08-30') } : null),
+    },
+    newsPost: { count: async () => 0 }, shortage: { count: async () => 0 },
+  };
+  const store = createPrismaStore({ clientFactory: () => client, log: stumm });
+
+  const zustand = {
+    foundation: { users: [['u1', { email: 'a@b.at', passwordHash: 'xyz' }]] },
+    social: { posts: [['p1', { body: 'Hallo Welt', country: 'AT' }]] },
+    newsSeen: [['bfarm_news:https://x/1', '2026-08-30T00:00:00Z']],
+  };
+  assert.equal((await store.saveSnapshot(zustand)).ok, true);
+
+  // Gepackt abgelegt, Rohgröße mitgeführt — sonst bliebe Wachstum unsichtbar.
+  assert.ok(Buffer.isBuffer(gespeichert.data));
+  assert.ok(gespeichert.rawSize > gespeichert.data.length, 'gepackt muss kleiner sein als roh');
+
+  const zurueck = await store.loadSnapshot();
+  assert.deepEqual(zurueck.data, zustand, 'der Zustand muss identisch zurückkommen');
+  assert.equal(zurueck.rawSize, gespeichert.rawSize);
+});
+
+test('ohne gesicherten Zustand kommt null zurück, kein Fehler', async () => {
+  const client = {
+    $connect: async () => {}, $disconnect: async () => {},
+    appSnapshot: { findUnique: async () => null }, newsPost: { count: async () => 0 }, shortage: { count: async () => 0 },
+  };
+  const store = createPrismaStore({ clientFactory: () => client, log: stumm });
+  assert.equal(await store.loadSnapshot(), null);
+});
+
+test('eine unlesbare Sicherung verhindert den Start NICHT', async () => {
+  // Lieber ohne Sicherung hochkommen als wegen eines kaputten Blobs gar nicht.
+  const client = {
+    $connect: async () => {}, $disconnect: async () => {},
+    appSnapshot: { findUnique: async () => ({ data: Buffer.from('kein gzip'), rawSize: 9, updatedAt: new Date() }) },
+    newsPost: { count: async () => 0 }, shortage: { count: async () => 0 },
+  };
+  const store = createPrismaStore({ clientFactory: () => client, log: stumm });
+  assert.equal(await store.loadSnapshot(), null, 'null statt Absturz');
+});
+
+test('ein nicht serialisierbarer Zustand wird als Programmfehler gemeldet, nicht als Datenbankfehler', async () => {
+  const client = {
+    $connect: async () => {}, $disconnect: async () => {},
+    appSnapshot: { upsert: async () => { throw new Error('haette nicht aufgerufen werden duerfen'); } },
+  };
+  const store = createPrismaStore({ clientFactory: () => client, log: stumm });
+  const zyklisch = {}; zyklisch.self = zyklisch;
+  const res = await store.saveSnapshot(zyklisch);
+  assert.equal(res.ok, false);
+  assert.equal(res.error, 'nicht serialisierbar');
+});

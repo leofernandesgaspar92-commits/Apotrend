@@ -103,6 +103,62 @@ Nächster sinnvoller Schritt (noch nicht gemacht): auch Engpässe beim Start aus
 der Datenbank holen — dort ist die Lage weniger dringend, weil die
 Referenzdaten beim Start ohnehin neu gesetzt werden.
 
+### Der teuerste Verlust: die Konten
+
+Bis hierher ging es um News. Der weit größere Schaden lag woanders: Das
+`User`-Modell wurde von **nichts** beschrieben. Auf dem kostenlosen Tarif war
+nach jedem Deploy **jedes Konto weg** — jede Apotheke hätte sich neu
+registrieren müssen, mit neuem Passwort, ohne Profil, ohne Beiträge.
+
+Die saubere Lösung wäre, sämtliche Repos (Konten, Profile, Beiträge,
+Nachrichten, Bestellungen, Moderation) auf Prisma-Tabellen umzuhängen. Das ist
+ein Umbau mit hohem Risiko an der Anmeldung — und er hätte gedauert, während
+jeder Deploy weiter alles gelöscht hätte.
+
+Der Zwischenschritt: **`AppSnapshot`** hält den kompletten Zustand als einen
+gzip-gepackten Blob. Er nutzt denselben `__dump()`/`__load()`-Vertrag, der für
+den JSON-Snapshot schon getestet ist.
+
+**Was das ist und was nicht.** Ein Blob ist nicht abfragbar, nicht relational
+und kein Ersatz für richtige Tabellen. Er löst das akute Problem heute; die
+relationale Ablage kann Modell für Modell nachziehen (News und Engpässe liegen
+schon so), ohne dass zwischendurch Daten verloren gehen.
+
+**Zwei Takte, mit Absicht:**
+
+| | Datei | Datenbank |
+|---|---|---|
+| Takt | 400 ms | 20 s + bei `SIGTERM` |
+| Zweck | letzte Sekunde vor einem Absturz | einen **Deploy** überleben |
+
+Denselben 400-ms-Takt gegen Postgres zu fahren hieße, bei jeder Interaktion ein
+Abbild des gesamten Zustands über das Netz zu schicken. Umgekehrt reichen 20 s
+nicht als einziger Schutz — deshalb sichert der `SIGTERM`-Handler zusätzlich
+und **wartet darauf** (mit 4-Sekunden-Deckel, damit eine hängende Datenbank das
+Herunterfahren nicht blockiert). Render schickt beim Deploy SIGTERM; ohne dieses
+Abwarten ginge genau der Stand verloren, den die Sicherung retten soll.
+
+**Die Datei gewinnt beim Laden.** Liegt ein Datei-Snapshot vor, wird die
+Datenbank-Sicherung *nicht* angewandt — die Datei ist der frischere Stand. Den
+älteren über den neueren zu legen wäre Datenverlust mit Ansage. Beide
+Richtungen sind gegen einen laufenden Server nachgestellt:
+
+```
+Deploy simuliert (Datei gelöscht):
+  Zustand aus der Datenbank wiederhergestellt (31717 Bytes roh)
+  Anmeldung mit demselben Passwort:  FUNKTIONIERT
+  Beitrag von vor dem Deploy:        JA
+  Profil (Handle):                   wienapotheke
+
+Neustart mit vorhandener Datei (DB-Sicherung ist älter):
+  Daten aus /tmp/deploy2.json wiederhergestellt
+  Der neuere Beitrag überlebt:       JA
+```
+
+Eine unlesbare Sicherung verhindert den Start **nicht** — die App kommt dann
+ohne sie hoch. Lieber ohne Sicherung starten als wegen eines kaputten Blobs gar
+nicht.
+
 ---
 
 ## 2. Die sechs Abweichungen vom Entwurf

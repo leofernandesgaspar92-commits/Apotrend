@@ -120,14 +120,19 @@ const payments = createPaymentsService({
   onPaid: ({ payment, product }) => { console.log(`✅ Zahlung ${payment.id} bezahlt → Feature „${product.feature}" für User ${payment.user_id} freigeschaltet.`); },
 });
 
+/** Einen Snapshot in alle Repos einspielen. Eine Stelle, zwei Quellen. */
+function applySnapshot(snap) {
+  repo.__load(snap.foundation);
+  socialRepo.__load(snap.social);
+  shortagesRepo.__load(snap.shortages);
+  pricesRepo.__load(snap.prices);
+  rabatteRepo.__load(snap.rabatte);
+  exchangeRepo.__load(snap.exchange);
+  newsSeen.__load(snap.newsSeen);
+}
+
 if (restoring) {
-  repo.__load(snapshot.foundation);
-  socialRepo.__load(snapshot.social);
-  shortagesRepo.__load(snapshot.shortages);
-  pricesRepo.__load(snapshot.prices);
-  rabatteRepo.__load(snapshot.rabatte);
-  exchangeRepo.__load(snapshot.exchange);
-  newsSeen.__load(snapshot.newsSeen);
+  applySnapshot(snapshot);
   console.log(`ApoPulse: Daten aus ${persistence.filePath} wiederhergestellt.`);
 } else {
   // Redaktions-/Admin-Account (zugleich Moderation) + kuratierte News — nur beim
@@ -174,14 +179,49 @@ function collectSnapshot() {
 }
 let saveTimer = null;
 function saveSoon() {
+  saveToDbSoon(); // unabhaengig von der Datei: die Datenbank ist der Deploy-Schutz
   if (!persistence) return;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => { try { persistence.save(collectSnapshot()); } catch (e) { console.error('Speichern fehlgeschlagen:', e.message); } }, 400);
 }
 function saveNow() { if (persistence) { try { persistence.save(collectSnapshot()); } catch { /* egal */ } } }
+
+// ── Zustandssicherung in der Datenbank ────────────────────────────────────
+//  EIGENER, LANGSAMERER TAKT als die Datei. Die Datei wird alle 400 ms
+//  geschrieben — das ist billig und lokal. Denselben Takt gegen Postgres zu
+//  fahren hiesse, bei jeder Interaktion ein gepacktes Abbild des gesamten
+//  Zustands ueber das Netz zu schicken. 20 Sekunden reichen: Diese Sicherung
+//  soll einen DEPLOY ueberleben, nicht die letzte Sekunde vor einem Absturz.
+//  Fuer Letzteres ist die Datei da.
+const DB_SNAPSHOT_INTERVAL_MS = 20_000;
+let dbSaveTimer = null;
+let dbSavePending = false;
+
+function saveToDbSoon() {
+  if (!db || dbSaveTimer) return;
+  dbSavePending = true;
+  dbSaveTimer = setTimeout(async () => {
+    dbSaveTimer = null;
+    dbSavePending = false;
+    await db.saveSnapshot(collectSnapshot()).catch(() => {}); // Store meldet selbst
+  }, DB_SNAPSHOT_INTERVAL_MS);
+  if (dbSaveTimer.unref) dbSaveTimer.unref();
+}
 if (persistence && !restoring) saveNow(); // Ausgangszustand (Seed) sofort sichern
 // Sauber speichern beim Herunterfahren (z.B. Deploy/Neustart auf dem Host).
-for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { saveNow(); process.exit(0); });
+for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => {
+  saveNow(); // Datei: synchron, sofort fertig
+  // Datenbank: Render schickt beim Deploy SIGTERM und wartet nur kurz. Ohne
+  // dieses Abwarten ginge genau der Stand verloren, den die Sicherung retten
+  // soll — der letzte vor dem Deploy. Mit Deckel, damit eine haengende
+  // Datenbank das Herunterfahren nicht blockiert.
+  if (!db) return process.exit(0);
+  let fertig = false;
+  const raus = () => { if (!fertig) { fertig = true; process.exit(0); } };
+  const notbremse = setTimeout(raus, 4000);
+  if (notbremse.unref) notbremse.unref();
+  db.saveSnapshot(collectSnapshot()).catch(() => {}).finally(() => { clearTimeout(notbremse); raus(); });
+});
 
 // Aktives Land für länder-gescopte Inhalte: expliziter Query-Parameter →
 // Profil-Land der/des Nutzer:in → Fallback AT.
@@ -299,6 +339,33 @@ if (process.env.NODE_ENV !== 'test' && process.env.APOPULSE_DEMO_DEALS !== 'off'
  * CLAUDE.md verlangt für sicherheitsrelevante Aussagen eine Quelle, und eine
  * automatisch übernommene Behördenmeldung ist genau das.
  */
+/**
+ * Beim Start: den GESAMTEN Zustand aus der Datenbank holen.
+ *
+ * Das ist der Schutz gegen den teuersten Verlust: Auf dem kostenlosen
+ * Render-Tarif ist das Dateisystem flüchtig, und nach jedem Deploy waren nicht
+ * nur die News weg, sondern JEDES KONTO — jede Apotheke hätte sich neu
+ * registrieren müssen.
+ *
+ * Wird NUR angewandt, wenn kein Datei-Snapshot vorlag. Liegt einer vor (lokal,
+ * oder Render mit dauerhafter Platte), ist er der frischere Stand: Die Datei
+ * wird alle 400 ms geschrieben, die Datenbank alle 20 Sekunden. Den älteren
+ * Stand über den neueren zu legen wäre Datenverlust mit Ansage.
+ */
+async function restoreStateFromDb() {
+  if (restoring) {
+    return { skipped: true, reason: 'Datei-Snapshot vorhanden und frischer' };
+  }
+  const gesichert = await db.loadSnapshot();
+  if (!gesichert) return { skipped: true, reason: 'keine Sicherung in der Datenbank' };
+
+  applySnapshot(gesichert.data);
+  console.log(`ApoPulse: Zustand aus der Datenbank wiederhergestellt `
+    + `(Stand ${new Date(gesichert.updatedAt).toISOString()}, ${gesichert.rawSize} Bytes roh). `
+    + 'Konten, Profile und Beiträge haben den Neustart überlebt.');
+  return { restored: true };
+}
+
 /**
  * Beim Start: Beiträge aus der Datenbank in den Speicher zurückholen.
  *
@@ -1334,11 +1401,14 @@ server.listen(PORT, () => {
   } else if (process.env.NODE_ENV !== 'test') {
     console.warn('⚠️  ApoPulse: KEINE Persistenz aktiv (APOPULSE_DATA_FILE nicht gesetzt) — alle Daten gehen bei einem Neustart verloren. Für den Produktivbetrieb APOPULSE_DATA_FILE auf einen dauerhaften Pfad setzen.');
   }
-  // ── Feed aus der Datenbank auffüllen ────────────────────────────────────
-  // Vor dem ersten Abruf, damit die Ansicht nicht erst nach fünf Minuten
-  // Inhalt hat. Ohne DATABASE_URL passiert hier nichts.
+  // ── Zustand und Feed aus der Datenbank holen ────────────────────────────
+  // Reihenfolge zählt: ERST der Gesamtzustand (Konten, Profile, Beiträge),
+  // DANN die News-Nachlese. Andersherum legte die Nachlese Beiträge an, die der
+  // Zustand gleich darauf überschreibt.
   if (process.env.NODE_ENV !== 'test' && db) {
-    restoreNewsFromDb().catch((e) => {
+    restoreStateFromDb()
+      .then(() => restoreNewsFromDb())
+      .catch((e) => {
       console.warn('ApoPulse: Wiederherstellung aus der Datenbank fehlgeschlagen — '
         + ((e && e.message) || e) + '. Die App läuft weiter; der Feed füllt sich '
         + 'dann über den nächsten Abruf.');

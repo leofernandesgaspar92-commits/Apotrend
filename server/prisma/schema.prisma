@@ -192,3 +192,36 @@ model TradeOffer {
 
   @@index([country, tradeType, createdAt(sort: Desc)])
 }
+
+// ---------------------------------------------------------------------------
+//  Gesamtzustand als Sicherung
+// ---------------------------------------------------------------------------
+//  EHRLICHE EINORDNUNG: Das hier ist ein Zwischenschritt, keine schöne Lösung.
+//  Es speichert den kompletten Anwendungszustand als EINEN gepackten Blob —
+//  nicht abfragbar, nicht relational, kein Ersatz für richtige Tabellen.
+//
+//  Warum trotzdem: Auf dem kostenlosen Render-Tarif ist das Dateisystem
+//  flüchtig. Nach jedem Deploy waren nicht nur die News weg, sondern JEDES
+//  KONTO — jede Apotheke hätte sich neu registrieren müssen. Die Alternative
+//  wäre, sämtliche Repos (Konten, Profile, Beiträge, Nachrichten,
+//  Bestellungen, Moderation) in einem Zug auf Prisma umzuhängen. Das ist ein
+//  Umbau mit hohem Risiko an der Anmeldung, und er hätte gedauert, während
+//  jeder Deploy weiter alles gelöscht hätte.
+//
+//  Dieser Blob nutzt denselben __dump()/__load()-Vertrag, der für den
+//  JSON-Snapshot bereits getestet ist. Er löst das akute Problem heute; die
+//  relationale Ablage (News und Engpässe liegen schon so) kann Modell für
+//  Modell nachziehen, ohne dass zwischendurch Daten verloren gehen.
+model AppSnapshot {
+  // Immer 'main' — eine einzige Zeile, die überschrieben wird. Eine Historie
+  // wäre hier kein Gewinn: Der Zustand ist nur als Ganzes sinnvoll, und
+  // wachsende Kopien eines Megabyte-Blobs füllen still die Datenbank.
+  id        String   @id @default("main")
+
+  // Gzip-gepacktes JSON. Als Bytes statt Json/Text: Der Inhalt wird nie in der
+  // Datenbank durchsucht, und gepackt sind es rund 30 % der Rohgröße.
+  data      Bytes
+
+  rawSize   Int      // Rohgröße in Bytes — macht Wachstum sichtbar
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
