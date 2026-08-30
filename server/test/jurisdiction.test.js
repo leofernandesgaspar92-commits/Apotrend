@@ -22,6 +22,7 @@ import { createOrgAuthService } from '../src/services/orgAuth.js';
 import { createSocialService } from '../src/services/social.js';
 import { createExchangeService } from '../src/services/exchange.js';
 import { createDealsService } from '../src/services/deals.js';
+import { readFileSync } from 'node:fs';
 
 function setup() {
   const repo = createMemoryRepo();
@@ -167,4 +168,56 @@ test('eine selbst eingetragene Aktion bekommt das Land des eigenen Betriebs', ()
   assert.equal(angelegt.country, 'DE', 'das Profil-Land gewinnt gegen die Eingabe');
   assert.equal(rabatteRepo.listTop10({ country: 'BR' }).length, 0);
   assert.equal(rabatteRepo.listTop10({ country: 'DE' }).length, 1);
+});
+
+// ── Land der Behörden-Meldung ───────────────────────────────────────────────
+//  Der Fehler, den diese Tests festhalten, machte die gesamte Länderarbeit
+//  unsichtbar: Jeder Beitrag erbte das Land des KONTOS, das ihn anlegt. News
+//  legt das Redaktionskonto an (Sitz AT) — also landeten BfArM-, FDA- und
+//  ANVISA-Meldungen samt und sonders im österreichischen Feed, während der
+//  deutsche und der US-Feed leer blieben.
+
+test('eine Behörden-Meldung bekommt das Land ihrer QUELLE, nicht des Redaktionskontos', () => {
+  const repo = createMemoryRepo();
+  const orgAuth = createOrgAuthService(repo);
+  const social = createSocialService(createSocialRepo(), repo);
+  const red = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'Redaktion' }, owner: { name: 'Red', email: 'red@x.at', password: 'geheim123' } });
+  social.createProfile(red.user.id, { handle: 'redaktion', displayName: 'Redaktion', country: 'AT', accountType: 'authority' });
+
+  const de = social.createPost(red.user.id, { body: 'BfArM: Rückruf', kind: 'news', sourceUrl: 'https://bfarm.example/1', sourceCountry: 'DE' });
+  const us = social.createPost(red.user.id, { body: 'FDA: Warning', kind: 'news', sourceUrl: 'https://fda.example/1', sourceCountry: 'US' });
+  const eigen = social.createPost(red.user.id, { body: 'Ohne Quelle', kind: 'post' });
+
+  assert.equal(de.country, 'DE');
+  assert.equal(us.country, 'US');
+  assert.equal(eigen.country, 'AT', 'ohne Quellenland gilt weiterhin das Konto-Land');
+});
+
+test('ein unbekanntes Quellenland fällt auf das Standardland zurück, statt Unsinn zu speichern', () => {
+  const repo = createMemoryRepo();
+  const orgAuth = createOrgAuthService(repo);
+  const social = createSocialService(createSocialRepo(), repo);
+  const red = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'R' }, owner: { name: 'R', email: 'r@x.at', password: 'geheim123' } });
+  social.createProfile(red.user.id, { handle: 'red2', displayName: 'R', country: 'AT', accountType: 'authority' });
+
+  // 'EU' ist im Quellenregister erlaubt (EMA), im Länder-Register aber kein
+  // Land. normalizeCountry macht daraus das Standardland — kein Absturz, kein
+  // Phantom-Ländercode in der Datenbank.
+  const p = social.createPost(red.user.id, { body: 'EMA', kind: 'news', sourceUrl: 'https://ema.example/1', sourceCountry: 'EU' });
+  assert.equal(p.country, 'AT');
+});
+
+test('sourceCountry ist ueber die HTTP-Route NICHT erreichbar', () => {
+  // Diese Prüfung liest den Quelltext, statt einen Server zu starten: Die
+  // Route /api/posts reicht eine feste Feldliste weiter. Käme sourceCountry
+  // dort hinein, könnte jedes Konto Beiträge in eine fremde Rechtsordnung
+  // stellen — genau die Lücke, die bei Börse und Aktionen geschlossen wurde.
+  // Über HTTP gegengeprüft: Ein AT-Konto, das sourceCountry:'BR' mitschickt,
+  // landet weiterhin in AT.
+  const quelltext = readFileSync(new URL('../src/http/server.js', import.meta.url), 'utf8');
+  const route = quelltext.split('\n').find((z) => z.includes("/^\\/api\\/posts$/"));
+  assert.ok(route, 'Route /api/posts nicht gefunden — Prüfung wäre sonst wertlos');
+  assert.ok(!route.includes('sourceCountry'),
+    'sourceCountry darf nicht aus dem Anfrage-Body in createPost gelangen');
+  assert.ok(route.includes('body.body'), 'Feldliste sieht anders aus als erwartet');
 });

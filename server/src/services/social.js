@@ -507,7 +507,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     },
 
     // ── Posts ──
-    createPost(actorUserId, { body, visibility = 'public', refType = null, refId = null, kind = 'post', image = null, sourceUrl = null, pollOptions = null }) {
+    createPost(actorUserId, { body, visibility = 'public', refType = null, refId = null, kind = 'post', image = null, sourceUrl = null, pollOptions = null, sourceCountry = null }) {
       requireUser(actorUserId);
       const text = String(body ?? '').trim();
       const img = cleanImage(image);
@@ -527,7 +527,17 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (text.length > MAX_BODY) throw new AppError('post_too_long', `Beitrag zu lang (max ${MAX_BODY}).`);
       if (refType && !['shortage', 'price', 'news', 'rabatt'].includes(refType)) throw new Error('Ungueltiger Referenztyp.');
       // Beitrag erbt das Land des Autors (Sichtbarkeits-Scope je Land).
-      const country = normalizeCountry(social.getProfileByUserId(actorUserId)?.country);
+      //
+      // `sourceCountry` ist die EINZIGE Ausnahme und bewusst nicht Teil der
+      // oeffentlichen Beitrags-Schnittstelle: Es wird ausschliesslich von der
+      // Behoerden-Aufnahme gesetzt (services/newsIngest.js ueber
+      // createSourcedNewsPost). Wuerde dieses Feld aus einer Anfrage kommen,
+      // koennte jeder einen Beitrag in eine fremde Rechtsordnung stellen —
+      // dieselbe Luecke, die bei Boersen-Eintraegen und Aktionen geschlossen
+      // wurde. Deshalb erreicht die HTTP-Route /api/posts diesen Weg nicht.
+      const country = sourceCountry
+        ? normalizeCountry(sourceCountry)
+        : normalizeCountry(social.getProfileByUserId(actorUserId)?.country);
       const post = social.createPost({ authorUserId: actorUserId, body: text, visibility, refType, refId, kind, image: img, sourceUrl: src, country, pollOptions: poll });
       notifyMentions(text, actorUserId, 'post', post.id);
       return post;

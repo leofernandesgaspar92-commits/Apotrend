@@ -311,6 +311,14 @@ async function runNewsIngest() {
         kind: 'news',
         sourceUrl: item.sourceUrl,
         visibility: 'public',
+        // Land der QUELLE, nicht des Redaktionskontos.
+        //
+        // Vorher erbte jede Meldung das Land des Kontos, das sie anlegt — also
+        // AT fuer alle. Damit landeten BfArM-, FDA- und ANVISA-Meldungen
+        // saemtlich im oesterreichischen Feed, waehrend der deutsche und der
+        // US-Feed leer blieben. Die neunzehn Laenderquellen aus der
+        // Quellen-Runde waren damit fuer die Nutzer:innen unsichtbar.
+        sourceCountry: item.country,
       });
       // Zusätzlich dauerhaft ablegen. Bewusst NACH dem Beitrag und in einem
       // eigenen try: Der Feed ist das, was die Nutzer:innen sehen — eine

@@ -124,6 +124,34 @@ landete ein Tippfehler in der eigenen URL stillschweigend wieder beim
 Voreinstellungs-Feed — und man hielte dessen Daten für die selbst
 konfigurierten.
 
+### Das Land der Meldung
+
+Eine Behörden-Meldung trägt das Land ihrer **Quelle**, nicht das des
+Redaktionskontos, das sie anlegt.
+
+Das klingt selbstverständlich, war es aber nicht: Beiträge erben normalerweise
+das Land ihrer Autorin (Sichtbarkeits-Scope je Land). News legt das
+Redaktionskonto an — Sitz Österreich. Damit landeten BfArM-, FDA- und
+ANVISA-Meldungen **samt und sonders im österreichischen Feed**, während der
+deutsche und der US-Feed leer blieben. Die neunzehn Länderquellen waren für die
+Nutzer:innen unsichtbar; sichtbar wurden sie erst in der Datenbank-Spiegelung,
+die das Quellenland von Anfang an korrekt mitschrieb.
+
+Gegen den laufenden Server nachgestellt:
+
+```
+Feed AT: (nur österreichische Meldungen)
+Feed DE: BfArM Rückruf [DE]
+Feed US: FDA warnt vor Charge [US]
+```
+
+`sourceCountry` ist dabei **nicht** Teil der öffentlichen Beitrags-Schnittstelle:
+`/api/posts` reicht eine feste Feldliste weiter, in der es nicht vorkommt. Käme
+es aus dem Anfrage-Body, könnte jedes Konto Beiträge in eine fremde
+Rechtsordnung stellen — dieselbe Lücke, die bei Börsen-Einträgen und Aktionen
+geschlossen wurde. Über HTTP gegengeprüft: Ein AT-Konto, das `sourceCountry`
+mitschickt, landet weiterhin in AT. Zwei Tests halten beides fest.
+
 ### Länderabdeckung nachsehen
 
 `/api/live/status` enthält `coverage`:
