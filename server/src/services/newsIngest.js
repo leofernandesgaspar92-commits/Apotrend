@@ -18,6 +18,7 @@
 // ============================================================================
 
 import { newsFromSource, sourcesByKind, fetchTextDefault, fetchSource, regulatorOf } from './sources.js';
+import { fetchMastodonSource } from './socialSources.js';
 
 /** Wie viele Meldungen je Quelle und Durchlauf höchstens übernommen werden. */
 export const MAX_PER_SOURCE = 10;
@@ -84,6 +85,9 @@ export function isFreshEnough(item, { now = Date.now(), maxAgeDays = MAX_AGE_DAY
 export async function ingestNews({
   env = process.env,
   fetchText = fetchTextDefault,
+  // Eigener Abruf fuer soziale Netzwerke (JSON statt Text). Injizierbar wie
+  // fetchText, damit die Tests ohne Netz auskommen.
+  fetchJson = async (u) => JSON.parse(await fetchTextDefault(u)),
   seenStore,
   createPost,
   now = () => Date.now(),
@@ -98,6 +102,14 @@ export async function ingestNews({
   // `fetchSource` wiederholt bei vorübergehenden Störungen und weicht bei
   // dauerhaften auf die hinterlegte Ersatzadresse aus (siehe sources.js).
   const results = await Promise.allSettled(sources.map(async (source) => {
+    // Soziale Netzwerke gehen einen eigenen Weg: Dort wird ERST die Identitaet
+    // des Kontos geprueft und nur bei bestandener Pruefung ueberhaupt gelesen
+    // (services/socialSources.js). Ein nicht nachgewiesenes Konto liefert
+    // nichts — auch dann nicht, wenn es echt aussieht.
+    if (source.format === 'mastodon') {
+      const res = await fetchMastodonSource(source, { fetchJson, log });
+      return { source, items: res.items, social: res };
+    }
     const holen = await fetchSource(source, { fetchText });
     return { source, items: newsFromSource(source, holen.raw), holen };
   }));
@@ -114,6 +126,16 @@ export async function ingestNews({
 
     const { items, holen } = res.value;
     report.fetched += items.length;
+
+    // Ein abgelehntes Konto gehört gemeldet: Wer es eingetragen hat, muss
+    // erfahren WARUM — sonst probiert er ratlos herum oder hält die stille
+    // Leere für einen Fehler der Plattform.
+    if (res.value.social && !res.value.social.verified) {
+      report.rejectedAccounts = (report.rejectedAccounts || 0) + 1;
+      report.perSource[source.id] = { ok: true, verified: false, reason: res.value.social.reason, created: 0 };
+      log.warn?.(`ApoPulse Social: ${source.id} liefert nichts — ${res.value.social.reason}`);
+      continue;
+    }
 
     // Lief die Quelle über eine Ersatzadresse? Das gehört gemeldet: Wer es
     // nicht sieht, hält die Voreinstellung weiter für richtig — es kommen ja

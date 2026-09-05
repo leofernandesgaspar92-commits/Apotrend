@@ -153,6 +153,52 @@ Rechtsordnung stellen — dieselbe Lücke, die bei Börsen-Einträgen und Aktion
 geschlossen wurde. Über HTTP gegengeprüft: Ein AT-Konto, das `sourceCountry`
 mitschickt, landet weiterhin in AT. Zwei Tests halten beides fest.
 
+### Soziale Netzwerke — nur mit nachgewiesener Identität
+
+Behördenmeldungen kommen inzwischen auch aus sozialen Netzwerken. Unterstützt
+wird **nur Mastodon**, und zwar aus einem Grund:
+
+| Netzwerk | Warum nicht |
+|---|---|
+| X/Twitter | Lesender Zugriff ist kostenpflichtig |
+| Instagram / Facebook | Nur Seiten, die man selbst verwaltet — nach App-Prüfung und Unternehmens-Verifizierung. Fremde Behördenkonten gehen nicht |
+| LinkedIn | Nur über ein Partnerprogramm |
+| **Mastodon** | Öffentliche Schnittstelle, kein Schlüssel, keine Kosten — **und als einziges mit einem Nachweis, der sich technisch prüfen lässt** |
+
+**Was „verifiziert" hier heißt.** Nicht ein gekaufter Haken. Ein
+Mastodon-Konto hinterlegt eine Adresse im Profil; der Server prüft, ob von
+*dieser Seite* ein Rückverweis auf das Konto zeigt (`rel="me"`), und setzt erst
+dann `verified_at`. Das ist ein Nachweis, dass dieselbe Stelle beide Seiten
+kontrolliert.
+
+Dieses Projekt verlangt **zusätzlich**, dass die nachgewiesene Adresse zur
+amtlichen Domain der Behörde des Landes gehört (`regulator_url` aus
+`src/data/countries.js`). Ein Konto namens „BfArM" mit Behördenlogo kommt nicht
+durch — nur eines, das nachweislich `bfarm.de` kontrolliert.
+
+**Die Reihenfolge ist der Punkt:** Erst wird geprüft, wer da schreibt. Nur bei
+bestandener Prüfung werden überhaupt Beiträge geholt. Ein abgelehntes Konto
+löst *keinen* zweiten Abruf aus, und der Lauf meldet die Ablehnung mit
+Begründung.
+
+Übersprungen werden außerdem Weiterleitungen (der Ursprung gehört einer anderen
+Stelle, deren Identität hier nicht geprüft ist), Antworten und alles, was nicht
+öffentlich ist.
+
+**Eingebaute Konten gibt es bewusst keine.** Handles zu raten wäre genau der
+Fehler, den die Prüfung verhindern soll. Eintragen:
+
+```
+APOPULSE_SOURCE_BFARM_SOCIAL_URL=https://social.bund.de
+APOPULSE_SOURCE_BFARM_SOCIAL_ACCOUNT=@bfarm
+APOPULSE_SOURCE_BFARM_SOCIAL_FORMAT=mastodon
+APOPULSE_SOURCE_BFARM_SOCIAL_COUNTRY=DE
+APOPULSE_SOURCE_BFARM_SOCIAL_LABEL=BfArM (Mastodon)
+```
+
+Trägt das Konto die Domain nicht nach, liefert die Quelle nichts — und
+`/api/live/status` sagt unter `perSource` warum.
+
 ### Länderabdeckung nachsehen
 
 `/api/live/status` enthält `coverage`:

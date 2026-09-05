@@ -25,6 +25,13 @@
 //  Wenn ein Register nur HTML anbietet, landet es im News-Weg — sichtbar und
 //  verlinkt, aber ohne erfundenen Status.
 //
+//  Ein dritter Weg kam dazu: SOZIALE NETZWERKE (format='mastodon'). Er ist am
+//  strengsten von allen — bevor auch nur ein Beitrag geholt wird, muss das
+//  Konto nachgewiesen haben, dass es die amtliche Domain der Behoerde
+//  kontrolliert (services/socialSources.js). Eingebaute Konten gibt es
+//  bewusst KEINE: Handles zu raten waere genau der Fehler, den die Pruefung
+//  verhindern soll. Sie werden per Umgebungsvariable eingetragen.
+//
 //  ──────────────────────────────────────────────────────────────────────────
 //  ZU DEN VOREINGESTELLTEN URLs
 //  ──────────────────────────────────────────────────────────────────────────
@@ -39,7 +46,7 @@ import { COUNTRIES } from '../data/countries.js';
 import { parseFeed, parseCsv } from './feedParsers.js';
 
 export const SOURCE_KINDS = ['news', 'shortages'];
-export const SOURCE_FORMATS = ['rss', 'json', 'csv'];
+export const SOURCE_FORMATS = ['rss', 'json', 'csv', 'mastodon'];
 
 // --- Voreingestellte Quellen -------------------------------------------------
 //  id -> Definition. Überschreibbar mit APOPULSE_SOURCE_<ID>_URL (leer = aus).
@@ -271,6 +278,10 @@ export function activeSources(env = process.env) {
     out.push({
       id, kind, country, format, url, configured: true, official: false,
       label: env[`APOPULSE_SOURCE_${m[1]}_LABEL`] || id,
+      // Nur fuer format=mastodon: das Konto auf diesem Server. Ohne Konto
+      // laesst sich keine Identitaet pruefen — die Quelle wird dann beim
+      // Abruf mit klarer Ansage abgelehnt, nicht stillschweigend ignoriert.
+      account: env[`APOPULSE_SOURCE_${m[1]}_ACCOUNT`] || null,
     });
   }
 

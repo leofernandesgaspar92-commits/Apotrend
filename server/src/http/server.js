@@ -231,6 +231,59 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => {
   db.saveSnapshot(collectSnapshot()).catch(() => {}).finally(() => { clearTimeout(notbremse); raus(); });
 });
 
+/**
+ * Wie dauerhaft sind die Daten wirklich?
+ *
+ * Diese Einstufung gibt es, weil die frühere Meldung IRREFÜHREND war: Sie
+ * sagte „Persistenz aktiv", sobald ein Dateipfad gesetzt war — auch dann, wenn
+ * diese Datei auf flüchtigem Speicher lag. Auf dem kostenlosen Render-Tarif
+ * ist genau das der Fall: Die Datei überlebt einen Prozess-Neustart, aber
+ * KEIN Deploy. Der Owner hat den Verlust deshalb erst gemerkt, als er sich neu
+ * registrieren musste. Eine Anwendung, die still Daten verliert, ist schlimmer
+ * als eine, die es sagt.
+ *
+ * Absichtlich wird hier NICHT geraten, ob eine dauerhafte Platte gemountet
+ * ist — das lässt sich von innen nicht zuverlässig feststellen. Stattdessen
+ * wird benannt, was sicher gilt: Nur die Datenbank überlebt ein Deploy
+ * garantiert.
+ */
+function durabilityReport() {
+  const db_an = !!db;
+  const datei = persistence ? persistence.filePath : null;
+  const warnings = [];
+  let level, summary;
+
+  if (db_an) {
+    level = 'sicher';
+    summary = 'Konten, Profile und Beiträge werden in PostgreSQL gesichert und überleben ein Deploy.';
+  } else if (datei) {
+    level = 'unvollständig';
+    summary = `nur Datei (${datei}) — überlebt einen Neustart, aber NICHT zwingend ein Deploy.`;
+    warnings.push('ApoPulse: KEINE Datenbank angebunden (DATABASE_URL fehlt). Die Snapshot-Datei '
+      + 'liegt auf dem kostenlosen Render-Tarif auf flüchtigem Speicher: Nach dem nächsten '
+      + 'Deploy sind ALLE Konten und Passwörter weg, und alle müssen sich neu registrieren. '
+      + 'Abhilfe: In Render eine PostgreSQL-Instanz anlegen und ihre Internal Database URL '
+      + 'als DATABASE_URL beim Web-Service eintragen (siehe docs/DATENBANK.md).');
+  } else {
+    level = 'flüchtig';
+    summary = 'weder Datenbank noch Datei — alles geht schon beim Neustart verloren.';
+    warnings.push('ApoPulse: WEDER DATABASE_URL NOCH APOPULSE_DATA_FILE gesetzt. Der Server '
+      + 'hält alles nur im Arbeitsspeicher. Für den Produktivbetrieb ungeeignet.');
+  }
+
+  return {
+    level,
+    summary,
+    database: db_an,
+    snapshot_file: datei,
+    survives_restart: db_an || !!datei,
+    // Nur die Datenbank ist eine Zusage. Alles andere hängt daran, ob eine
+    // dauerhafte Platte gemountet ist — und das ist von hier nicht prüfbar.
+    survives_deploy: db_an,
+    warnings,
+  };
+}
+
 // Aktives Land für länder-gescopte Inhalte: expliziter Query-Parameter →
 // Profil-Land der/des Nutzer:in → Fallback AT.
 function activeCountry(userId, query) {
@@ -683,6 +736,8 @@ const routes = [
     // gültiger Betriebszustand, kein Fehler. Sonst steht hier, ob er verbunden
     // ist und wie viele Zeilen tatsächlich in Postgres liegen.
     database: db ? await db.stats() : null,
+    // Die wichtigste Zeile dieser Ansicht: Überleben die Daten ein Deploy?
+    durability: durabilityReport(),
   })],
 
   // ── Dauerhafter Bestand lesen (PostgreSQL) ────────────────────────────────
@@ -1404,10 +1459,10 @@ server.listen(PORT, () => {
   // Persistenz-Status deutlich anzeigen: Ein Produktiv-Deploy OHNE APOPULSE_DATA_FILE
   // läuft rein im Speicher — bei jedem Neustart sind ALLE Daten weg. Das darf nicht
   // unbemerkt passieren, darum eine laute Warnung (nicht in der Testumgebung).
-  if (persistence) {
-    console.log(`ApoPulse: Persistenz aktiv -> ${persistence.filePath}`);
-  } else if (process.env.NODE_ENV !== 'test') {
-    console.warn('⚠️  ApoPulse: KEINE Persistenz aktiv (APOPULSE_DATA_FILE nicht gesetzt) — alle Daten gehen bei einem Neustart verloren. Für den Produktivbetrieb APOPULSE_DATA_FILE auf einen dauerhaften Pfad setzen.');
+  if (process.env.NODE_ENV !== 'test') {
+    const d = durabilityReport();
+    console.log(`ApoPulse: Datenhaltung — ${d.level}: ${d.summary}`);
+    for (const zeile of d.warnings) console.warn('⚠️  ' + zeile);
   }
   // ── Zustand und Feed aus der Datenbank holen ────────────────────────────
   // Reihenfolge zählt: ERST der Gesamtzustand (Konten, Profile, Beiträge),
