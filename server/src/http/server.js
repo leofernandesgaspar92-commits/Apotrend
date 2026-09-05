@@ -675,7 +675,22 @@ async function runShortageIngest() {
 
 const routes = [
   // Health-Check für Hosting-Plattformen (kein Auth, keine Daten).
-  ['GET', /^\/api\/health$/, false, async () => ({ ok: true, service: 'apopulse', ts: new Date().toISOString() })],
+  // `durability` ist hier absichtlich ÖFFENTLICH und absichtlich NUR die Stufe.
+  //
+  // Öffentlich, weil die Person, die sich registriert, die einzige ist, die den
+  // Schaden trägt — und bisher die einzige war, die ihn nicht sehen konnte. Am
+  // 05.09.2026 beantwortete ein Dienst OHNE Datenbank die Kundendomain: Im
+  // Protokoll stand die Warnung, auf dem Anmeldebildschirm stand nichts. Wer
+  // sich dort ein Passwort angelegt hätte, wäre es beim nächsten Deploy wieder
+  // los gewesen, ohne je eine Chance auf Vorwarnung gehabt zu haben.
+  //
+  // Nur die Stufe, weil der vollständige Bericht den Pfad der Snapshot-Datei
+  // und Hinweise zur Datenbank enthält. Das ist Betriebswissen und geht die
+  // Öffentlichkeit nichts an; für die Warnung genügt „sicher" oder eben nicht.
+  ['GET', /^\/api\/health$/, false, async () => ({
+    ok: true, service: 'apopulse', ts: new Date().toISOString(),
+    durability: durabilityReport().level,
+  })],
 
   ['POST', /^\/api\/register$/, false, async ({ body }) => {
     const { name, email, password, handle, displayName, pharmacyName } = body;

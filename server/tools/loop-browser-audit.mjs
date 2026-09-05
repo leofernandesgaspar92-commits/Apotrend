@@ -233,6 +233,41 @@ async function main() {
     await ctx.close();
   }
 
+  // ── Warnung vor nicht dauerhafter Speicherung ─────────────────────────────
+  //  Eigener Kontext OHNE Anmeldung: Die übrige Prüfung meldet sich mit einem
+  //  Token an und bekommt den Registrierungs-Bildschirm deshalb nie zu sehen —
+  //  genau den Bildschirm, um den es hier geht.
+  //
+  //  Anlass ist ein echter Beinahe-Schaden: Am 05.09.2026 beantwortete ein
+  //  Render-Dienst OHNE Datenbank die Kundendomain. Im Server-Protokoll stand
+  //  die Warnung, auf dem Anmeldebildschirm stand nichts — ausgerechnet die
+  //  Person, die ihr Passwort verliert, war die einzige ohne Vorwarnung.
+  //
+  //  Diese Prüfumgebung läuft ohne DATABASE_URL. Die Warnung MUSS hier also
+  //  erscheinen; täte sie es nicht, wäre sie auch im Ernstfall stumm.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    await page.goto(BASE, { waitUntil: 'networkidle' });
+    // Bis zum Registrierungs-Formular durchklicken (Schritt 1 ist die Länderwahl).
+    await page.getByText('Österreich', { exact: false }).first().click().catch(() => {});
+    await page.waitForTimeout(600);
+    const box = page.locator('#rg_durability');
+    const sichtbar = await box.isVisible().catch(() => false);
+    const text = sichtbar ? (await box.innerText()).trim() : '';
+    const stufe = await page.evaluate(() => fetch('/api/health').then((r) => r.json()).then((h) => h.durability));
+    if (stufe === 'sicher') {
+      findings.push('Prüfumgebung hat eine Datenbank — die Warnung ist so nicht prüfbar');
+    } else if (!sichtbar) {
+      findings.push(`Keine Warnung vor flüchtiger Speicherung (Stufe: ${stufe})`);
+    } else if (!/dauerhaft|Passwort/i.test(text)) {
+      findings.push(`Warnung steht, nennt aber weder Dauerhaftigkeit noch Passwort: "${text}"`);
+    } else {
+      console.log(`✓ Warnung vor flüchtiger Speicherung steht am Registrierungs-Formular — ${text.slice(0, 60)}…`);
+    }
+    await ctx.close();
+  }
+
   await browser.close();
   stopServer();
 

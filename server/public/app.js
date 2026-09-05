@@ -311,6 +311,7 @@ const I18N = {
     au_hero_title:'Das Netzwerk für die Arzneimittel-Versorgung', au_hero_sub:'Für Apotheken, Ärzt:innen, Einkauf, Großhandel & Logistik — länderspezifisch.', au_hero_1:'📦 Lieferengpässe früh erkennen — mit Quelle', au_hero_2:'💶 Preise & Rabatte vergleichen, günstiger einkaufen', au_hero_3:'🔄 Bestände tauschen statt verfallen lassen', au_hero_4:'👥 Fachnetzwerk: Apotheken, Pharma & Behörden', au_login:'Anmelden', au_email:'E-Mail', au_email_ph:'name@apotheke.at', au_pw:'Passwort', au_register:'Neu registrieren', au_name:'Name',
     au_handle:'@Handle (öffentlicher Name im Netzwerk)', au_pw8:'Passwort (mind. 8 Zeichen)',
     au_country:'Land (bestimmt Feed-Inhalte & Sprache)', au_create:'Konto erstellen',
+    au_durability_warn:'Achtung: Dieser Server speichert Konten derzeit NICHT dauerhaft. Ein neues Konto samt Passwort kann beim nächsten Update verloren gehen. Bitte wenden Sie sich an den Betreiber, bevor Sie sich registrieren.',
     au_forgot:'Passwort vergessen?',
     au_or:'oder', au_oauth_with:'Anmelden mit {p}',
     rc_title:'🔑 Deine Wiederherstellungscodes', rc_intro:'Bewahre diese Codes sicher auf (z. B. ausdrucken). Mit einem Code kannst du dein Passwort zurücksetzen, falls du es vergisst — jeder Code funktioniert nur ein einziges Mal.',
@@ -664,6 +665,7 @@ const I18N = {
     au_hero_title:'The network for medicine supply', au_hero_sub:'For pharmacies, doctors, purchasing, wholesale & logistics — country-specific.', au_hero_1:'📦 Spot supply shortages early — with sources', au_hero_2:'💶 Compare prices & deals, buy cheaper', au_hero_3:'🔄 Swap stock instead of letting it expire', au_hero_4:'👥 Professional network: pharmacies, pharma & authorities', au_login:'Log in', au_email:'Email', au_email_ph:'name@pharmacy.com', au_pw:'Password', au_register:'Sign up', au_name:'Name',
     au_handle:'@handle (public name in the network)', au_pw8:'Password (min. 8 characters)',
     au_country:'Country (sets feed content & language)', au_create:'Create account',
+    au_durability_warn:'Warning: this server does NOT currently store accounts permanently. A new account and its password may be lost with the next update. Please contact the operator before signing up.',
     au_forgot:'Forgot your password?',
     au_or:'or', au_oauth_with:'Sign in with {p}',
     rc_title:'🔑 Your recovery codes', rc_intro:'Keep these codes somewhere safe (e.g. print them). With one code you can reset your password if you forget it — each code works only once.',
@@ -1017,6 +1019,7 @@ const I18N = {
     au_hero_title:'A rede para o abastecimento de medicamentos', au_hero_sub:'Para farmácias, médicos, compras, distribuição e logística — específico do país.', au_hero_1:'📦 Detetar ruturas cedo — com fonte', au_hero_2:'💶 Comparar preços e promoções, comprar mais barato', au_hero_3:'🔄 Trocar stock em vez de o deixar expirar', au_hero_4:'👥 Rede profissional: farmácias, farmacêuticas e autoridades', au_login:'Entrar', au_email:'E-mail', au_email_ph:'nome@farmacia.pt', au_pw:'Palavra-passe', au_register:'Registar', au_name:'Nome',
     au_handle:'@handle (nome público na rede)', au_pw8:'Palavra-passe (mín. 8 caracteres)',
     au_country:'País (define conteúdo do feed & idioma)', au_create:'Criar conta',
+    au_durability_warn:'Atenção: este servidor NÃO guarda as contas de forma permanente. Uma conta nova e a sua palavra-passe podem perder-se na próxima atualização. Contacte o responsável antes de se registar.',
     au_forgot:'Esqueceu-se da palavra-passe?',
     au_or:'ou', au_oauth_with:'Entrar com {p}',
     rc_title:'🔑 Os seus códigos de recuperação', rc_intro:'Guarde estes códigos em local seguro (por ex. imprima-os). Com um código pode redefinir a sua palavra-passe se a esquecer — cada código funciona apenas uma vez.',
@@ -1530,6 +1533,7 @@ function authScreen() {
       </div>
       <div class="card">
         <h1>${esc(t('au_register'))}</h1>
+        <div id="rg_durability" class="err" hidden></div>
         <label for="rg_name">${esc(t('au_name'))}</label><input id="rg_name" placeholder="Dr. Anna Huber">
         <label for="rg_handle">${esc(t('au_handle'))}</label><input id="rg_handle" placeholder="anna_huber">
         <label for="rg_email">${esc(t('au_email'))}</label><input id="rg_email" type="email" placeholder="${esc(t('au_email_ph'))}">
@@ -1541,6 +1545,24 @@ function authScreen() {
       </div>
     </div>
   </div>`));
+
+  // Warnung, wenn dieser Server Konten nicht dauerhaft speichert.
+  //
+  // Bewusst NICHT blockierend: Der Betreiber kann bewusst so betreiben wollen
+  // (Vorführung, Testlauf). Aber wer sich hier ein Passwort anlegt, muss es
+  // vorher wissen — bisher stand die Warnung nur im Server-Protokoll, das
+  // ausgerechnet die betroffene Person nie zu sehen bekommt.
+  //
+  // Fehlschlagen darf die Prüfung ohne Folgen: Ist die Auskunft nicht zu
+  // holen, wird nichts behauptet. Eine Warnung zu erfinden, weil eine Abfrage
+  // scheiterte, wäre derselbe Fehler in die andere Richtung.
+  fetch('/api/health').then((r) => r.json()).then((h) => {
+    if (!h || h.durability === 'sicher') return;
+    const box = document.getElementById('rg_durability');
+    if (!box) return;
+    box.textContent = t('au_durability_warn');
+    box.hidden = false;
+  }).catch(() => {});
 
   // „Land ändern" -> zurück zur Länderauswahl (Schritt 1).
   const cc = document.getElementById('changeCountry');
