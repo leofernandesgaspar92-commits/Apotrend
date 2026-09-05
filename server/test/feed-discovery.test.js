@@ -11,7 +11,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  parseFeedLinks, parseAnchorFeedLinks, discoveryPages, discoverFeed, siehtWieFeedAus,
+  parseFeedLinks, parseAnchorFeedLinks, discoveryPages, discoverFeed, siehtWieFeedAus, sortiereNachEignung,
 } from '../src/services/feedDiscovery.js';
 import { fetchSource, __discoveryCache } from '../src/services/sources.js';
 import { ingestNews, createNewsSeenStore } from '../src/services/newsIngest.js';
@@ -307,4 +307,50 @@ test('fetchSource sucht nicht bei JSON-Quellen', async () => {
     /Keine Adresse erreichbar/,
   );
   assert.equal(gesucht, false);
+});
+
+// ── Fachlich passende Fundstelle zuerst ──────────────────────────────────────
+// Anlass: Die Suche holte bei Health Canada den Feed für Rückrufe von
+// KONSUMGÜTERN — er stand auf der RSS-Seite zuerst. Technisch einwandfrei,
+// fachlich das Falsche. Eine Quelle, die verlässlich das Falsche liefert, ist
+// schlimmer als eine, die nichts liefert: Die leere Ansicht sieht jeder.
+
+test('prefer zieht die fachlich passende Fundstelle nach vorn', () => {
+  const gefunden = [
+    'https://amt.ca/en/feed/consumer-products-alerts-recalls',
+    'https://amt.ca/en/feed/vehicle-recalls',
+    'https://amt.ca/en/feed/health-product-recalls',
+  ];
+  assert.deepEqual(sortiereNachEignung(gefunden, ['health-product', 'drug']), [
+    'https://amt.ca/en/feed/health-product-recalls',
+    'https://amt.ca/en/feed/consumer-products-alerts-recalls',
+    'https://amt.ca/en/feed/vehicle-recalls',
+  ]);
+});
+
+test('prefer ist eine Reihenfolge, kein Filter', () => {
+  // Passt nichts, wird trotzdem genommen, was da ist — nur eben zuletzt.
+  const gefunden = ['https://amt.ca/a.xml', 'https://amt.ca/b.xml'];
+  assert.deepEqual(sortiereNachEignung(gefunden, ['drug']), gefunden);
+  assert.deepEqual(sortiereNachEignung(gefunden, undefined), gefunden);
+});
+
+test('prefer haelt die Rangfolge der Muster ein', () => {
+  const gefunden = ['https://amt.ca/medeffect.xml', 'https://amt.ca/drug.xml'];
+  assert.deepEqual(sortiereNachEignung(gefunden, ['drug', 'medeffect']), [
+    'https://amt.ca/drug.xml', 'https://amt.ca/medeffect.xml',
+  ]);
+});
+
+test('discoverFeed nimmt die bevorzugte Fundstelle, nicht die erste', async () => {
+  const seiten = {
+    'https://amt.ca/rss': '<a href="/feed/consumer-products">Konsumgüter</a><a href="/feed/drug-recalls">Arzneimittel</a>',
+    'https://amt.ca/feed/consumer-products': FEED,
+    'https://amt.ca/feed/drug-recalls': FEED,
+  };
+  const fund = await discoverFeed(
+    { id: 'amt', url: 'https://amt.ca/alt.xml', format: 'rss', homepage: 'https://amt.ca/rss', prefer: ['drug'] },
+    { fetchText: async (u) => { if (!(u in seiten)) throw new Error('HTTP 404'); return seiten[u]; } },
+  );
+  assert.equal(fund.url, 'https://amt.ca/feed/drug-recalls');
 });

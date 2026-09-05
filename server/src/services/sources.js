@@ -55,8 +55,22 @@ export const SOURCE_FORMATS = ['rss', 'json', 'csv', 'mastodon'];
 const BUILTIN = [
   {
     id: 'bfarm_news', kind: 'news', country: 'DE', format: 'rss',
-    label: 'BfArM — Aktuelles',
-    url: 'https://www.bfarm.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed.xml',
+    // Der Name sagt jetzt, was wirklich kommt. Das ist kein Detail: Unter
+    // „Aktuelles" erwartet man Pressemitteilungen, geliefert werden
+    // Lieferengpass-Meldungen — fuer eine Apotheke das Wertvollste, was das
+    // BfArM hat. Ein Etikett, das nicht zum Inhalt passt, kostet Vertrauen
+    // genau dort, wo es gebraucht wird.
+    label: 'BfArM — Lieferengpaesse',
+    // NACHWEISLICH GEPRUEFT. Von der Selbstfindung im Betrieb gefunden und
+    // zweimal hintereinander erfolgreich abgerufen (Protokoll 05.09.2026,
+    // 16:56:45 und 16:58:25, zwei verschiedene Prozesse):
+    //   „bfarm_news — Feed selbst gefunden unter …/Lieferengpaesse/
+    //    RSSNewsfeed.xml?nn=471282 (ausgezeichnet auf …/Lieferengpaesse/
+    //    _node.html)"
+    // Dass ausgerechnet dieser Feed gefunden wurde, ist kein Zufall: Die
+    // Lieferengpass-Seite steht seit dem letzten Lauf an erster Stelle der
+    // Suchseiten — das BfArM haengt seine Feeds an die Fachseiten.
+    url: 'https://www.bfarm.de/SiteGlobals/Functions/RSSFeed/DE/Lieferengpaesse/RSSNewsfeed.xml?nn=471282',
     // Befund vom 05.09.2026: /DE/Aktuelles/_node.html war lesbar (353 808
     // Zeichen) und trug KEINEN Feed. Das BfArM haengt seine Feeds nicht an
     // eine zentrale Newsseite, sondern an die jeweilige FACHSEITE. Fuer eine
@@ -67,8 +81,15 @@ const BUILTIN = [
       'https://www.bfarm.de/DE/Arzneimittel/Pharmakovigilanz/Risikoinformationen/Rote-Hand-Briefe/_node.html',
       'https://www.bfarm.de/DE/Arzneimittel/Zulassung/_node.html',
     ],
-    fallbacks: ['https://www.bundesgesundheitsministerium.de/rss/aktuelles.xml'],
-    official: true, verified: false,
+    // `nn=471282` ist eine Navigations-Kennung des Behoerden-Baukastens. Sie
+    // hat funktioniert, koennte aber wegfallen — deshalb dieselbe Adresse
+    // ohne Kennung als erste Ersatzadresse, bevor es zum Ministerium geht.
+    fallbacks: [
+      'https://www.bfarm.de/SiteGlobals/Functions/RSSFeed/DE/Lieferengpaesse/RSSNewsfeed.xml',
+      'https://www.bfarm.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed.xml',
+      'https://www.bundesgesundheitsministerium.de/rss/aktuelles.xml',
+    ],
+    official: true, verified: true,
   },
   {
     id: 'pei_news', kind: 'news', country: 'DE', format: 'rss',
@@ -147,9 +168,17 @@ const BUILTIN = [
     id: 'healthcanada_news', kind: 'news', country: 'CA', format: 'rss',
     label: 'Health Canada — Recalls and safety alerts',
     url: 'https://recalls-rappels.canada.ca/en/feed/recalls-alerts-rss',
-    // Die beiden zuvor hinterlegten Seiten waren LESBAR (45 469 bzw. 5 569
-    // Zeichen) und trugen dennoch keinen Feed — die Seite wird im Browser
-    // zusammengebaut. Die eigene RSS-Uebersicht ist der richtige Einstieg.
+    // Die RSS-Uebersicht ist der richtige Einstieg — belegt: Die Selbstfindung
+    // hat dort am 05.09.2026 einen gueltigen Feed gefunden.
+    //
+    // ABER: Gefunden wurde /en/feed/consumer-products-alerts-recalls —
+    // Rueckrufe von KONSUMGUETERN, weil dieser Feed auf der Seite zuerst
+    // steht. Technisch einwandfrei, fachlich das Falsche. Deshalb wird er
+    // NICHT zur Voreinstellung befoerdert: Eine Apotheke, die unter
+    // „Health Canada — Rueckrufe" Meldungen ueber Wasserkocher liest, haelt
+    // beim naechsten Mal auch die Arzneimittel-Meldung fuer Beiwerk.
+    // Stattdessen sagt `prefer` der Suche, worauf es ankommt.
+    prefer: ['health-product', 'drug', 'medeffect', 'medical-device'],
     homepage: [
       'https://recalls-rappels.canada.ca/en/rss-feeds',
       'https://recalls-rappels.canada.ca/en',

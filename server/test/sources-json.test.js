@@ -273,6 +273,11 @@ const NACHWEISLICH_GEPRUEFT = {
   //   05.09.2026, 14:33:34 — „basg_news — Feed selbst gefunden unter
   //   https://www.basg.gv.at/en/whatsnew/rss (ausgezeichnet auf …/en/whatsnew)"
   basg_news: '2026-09-05',
+  // Zweimal hintereinander gefunden und abgerufen, aus zwei verschiedenen
+  // Prozessen (05.09.2026, 16:56:45 und 16:58:25):
+  //   „bfarm_news — Feed selbst gefunden unter …/Lieferengpaesse/
+  //    RSSNewsfeed.xml?nn=471282 (ausgezeichnet auf …/Lieferengpaesse/_node.html)"
+  bfarm_news: '2026-09-05',
 };
 
 test('nur belegte Quellen behaupten, geprüft zu sein', () => {

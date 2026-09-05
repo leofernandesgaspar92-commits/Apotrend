@@ -192,10 +192,12 @@ export async function discoverFeed(source, { fetchText, log = null, maxCandidate
     // wenn es keine gibt, die unschärferen Verweise von der Übersichtsseite.
     const alle = [...parseFeedLinks(html, seite), ...parseAnchorFeedLinks(html, seite)]
       .filter((u, i, a) => a.indexOf(u) === i);
-    const kandidaten = alle
-      // DIE Regel: nur die amtliche Domain. Siehe Dateikopf.
-      .filter((u) => isSameOrSubdomain(hostOf(u), amtlich))
-      .slice(0, maxCandidates);
+    const kandidaten = sortiereNachEignung(
+      alle
+        // DIE Regel: nur die amtliche Domain. Siehe Dateikopf.
+        .filter((u) => isSameOrSubdomain(hostOf(u), amtlich)),
+      source.prefer,
+    ).slice(0, maxCandidates);
 
     // Der Unterschied zwischen „Seite nicht lesbar", „Seite gelesen, kein Feed
     // ausgezeichnet" und „Feed ausgezeichnet, aber auf fremder Domain" ist der
@@ -223,6 +225,38 @@ export async function discoverFeed(source, { fetchText, log = null, maxCandidate
     }
   }
   return null;
+}
+
+/**
+ * Fachlich passende Fundstellen zuerst.
+ *
+ * WARUM DAS NÖTIG WURDE — ein Fund, der zwar funktionierte, aber das Falsche traf:
+ * Die Selbstfindung holte bei Health Canada am 05.09.2026 den Feed
+ * `/en/feed/consumer-products-alerts-recalls` — Rückrufe von KONSUMGÜTERN.
+ * Er wurde genommen, weil er auf der RSS-Seite zuerst stand. Technisch war
+ * alles richtig: amtliche Domain, gültiger Feed, sauber abgerufen.
+ *
+ * Fachlich wäre es aber ein stiller Fehler gewesen. Eine Apotheke, die unter
+ * „Health Canada — Rückrufe" Meldungen über Kinderspielzeug und Wasserkocher
+ * liest, hält beim nächsten Mal auch die Arzneimittel-Meldung für Beiwerk.
+ * Eine Quelle, die verlässlich das Falsche liefert, ist schlimmer als eine,
+ * die nichts liefert — die leere Ansicht sieht wenigstens jeder.
+ *
+ * `prefer` ist deshalb kein Filter, sondern eine Reihenfolge: Passt nichts,
+ * wird trotzdem genommen, was da ist. Nur eben zuletzt.
+ */
+export function sortiereNachEignung(urls, prefer) {
+  if (!prefer || !prefer.length) return urls;
+  const muster = prefer.map((p) => (p instanceof RegExp ? p : new RegExp(p, 'i')));
+  const rang = (u) => {
+    const i = muster.findIndex((m) => m.test(u));
+    return i === -1 ? muster.length : i;
+  };
+  // Stabil sortieren: Bei gleichem Rang bleibt die Reihenfolge der Seite.
+  return urls
+    .map((u, i) => ({ u, i, r: rang(u) }))
+    .sort((a, b) => (a.r - b.r) || (a.i - b.i))
+    .map((x) => x.u);
 }
 
 /** Grobprüfung: Beginnt die Antwort wie ein Feed? */
