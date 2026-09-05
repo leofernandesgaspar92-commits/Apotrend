@@ -54,6 +54,38 @@ test('parseAnchorFeedLinks nimmt nur Verweise, die nach Feed aussehen', () => {
   ]);
 });
 
+test('base href wird beachtet — der echte PEI-Fall vom 05.09.2026', () => {
+  // Die Newsroom-Seite des PEI verweist RELATIV auf ihre RSS-Seite. Ohne
+  // <base> löst das gegen das Verzeichnis der Seite auf und ergibt
+  // …/DE/newsroom/DE/footer-kopfleiste/… — genau diese doppelte Adresse stand
+  // im Render-Protokoll und war eine 404.
+  const html = '<head><base href="https://www.pei.de/">'
+    + '<link rel="alternate" type="application/rss+xml" href="DE/footer-kopfleiste/rss/rss-node.html">'
+    + '</head>';
+  const seite = 'https://www.pei.de/DE/newsroom/newsroom-node.html';
+  assert.deepEqual(parseFeedLinks(html, seite), [
+    'https://www.pei.de/DE/footer-kopfleiste/rss/rss-node.html',
+  ]);
+  // Ohne <base> bliebe es bei der falschen, doppelten Auflösung — das belegt,
+  // dass der Test wirklich am <base> hängt und nicht zufällig durchgeht.
+  assert.deepEqual(parseFeedLinks(html.replace(/<base[^>]*>/, ''), seite), [
+    'https://www.pei.de/DE/newsroom/DE/footer-kopfleiste/rss/rss-node.html',
+  ]);
+});
+
+test('base href gilt auch für gewöhnliche Verweise', () => {
+  const html = '<base href="https://www.amt.de/"><a href="DE/rss/news.xml">RSS</a>';
+  assert.deepEqual(
+    parseAnchorFeedLinks(html, 'https://www.amt.de/tief/seite.html'),
+    ['https://www.amt.de/DE/rss/news.xml'],
+  );
+});
+
+test('ein relatives base href wird gegen die Seite aufgelöst', () => {
+  const html = '<base href="/x/"><link rel="alternate" type="application/rss+xml" href="f.xml">';
+  assert.deepEqual(parseFeedLinks(html, 'https://www.amt.de/a/b.html'), ['https://www.amt.de/x/f.xml']);
+});
+
 test('discoveryPages nimmt die hinterlegte Übersichtsseite und die Wurzel', () => {
   assert.deepEqual(
     discoveryPages({ url: 'https://www.amt.de/tief/alt.xml', homepage: 'https://www.amt.de/rss-seite' }),

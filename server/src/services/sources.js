@@ -57,10 +57,15 @@ const BUILTIN = [
     id: 'bfarm_news', kind: 'news', country: 'DE', format: 'rss',
     label: 'BfArM — Aktuelles',
     url: 'https://www.bfarm.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed.xml',
+    // Befund vom 05.09.2026: /DE/Aktuelles/_node.html war lesbar (353 808
+    // Zeichen) und trug KEINEN Feed. Das BfArM haengt seine Feeds nicht an
+    // eine zentrale Newsseite, sondern an die jeweilige FACHSEITE. Fuer eine
+    // Apothekenplattform sind Lieferengpaesse und Rote-Hand-Briefe ohnehin
+    // die wertvolleren Quellen als allgemeine Pressemitteilungen.
     homepage: [
-      'https://www.bfarm.de/DE/Service/RSS/_node.html',
-      'https://www.bfarm.de/DE/Aktuelles/_node.html',
-      'https://www.bfarm.de/DE/Aktuelles/Newsletter/_node.html',
+      'https://www.bfarm.de/DE/Arzneimittel/Arzneimittelinformationen/Lieferengpaesse/_node.html',
+      'https://www.bfarm.de/DE/Arzneimittel/Pharmakovigilanz/Risikoinformationen/Rote-Hand-Briefe/_node.html',
+      'https://www.bfarm.de/DE/Arzneimittel/Zulassung/_node.html',
     ],
     fallbacks: ['https://www.bundesgesundheitsministerium.de/rss/aktuelles.xml'],
     official: true, verified: false,
@@ -69,8 +74,11 @@ const BUILTIN = [
     id: 'pei_news', kind: 'news', country: 'DE', format: 'rss',
     label: 'Paul-Ehrlich-Institut — Aktuelles',
     url: 'https://www.pei.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/rss-newsfeed.xml',
+    // Die RSS-Uebersicht des PEI. Nicht geraten: Die Selbstfindung hat am
+    // 05.09.2026 auf der Newsroom-Seite genau dorthin verwiesen gefunden —
+    // nur falsch aufgeloest, weil <base href> fehlte (feedDiscovery.js).
     homepage: [
-      'https://www.pei.de/DE/service/rss/rss-node.html',
+      'https://www.pei.de/DE/footer-kopfleiste/rss/rss-inhalt.html',
       'https://www.pei.de/DE/newsroom/newsroom-node.html',
     ],
     official: true, verified: false,
@@ -112,8 +120,11 @@ const BUILTIN = [
     id: 'swissmedic_news', kind: 'news', country: 'CH', format: 'rss',
     label: 'Swissmedic — Mitteilungen',
     url: 'https://www.swissmedic.ch/swissmedic/de/home/news/mitteilungen.rss',
+    // Die deutsche Newsseite antwortete mit 404, die englische Fassung
+    // existiert und heisst ausdruecklich „Information services - newsletter,
+    // RSS feed". Deutsch bleibt zuerst, falls sie zurueckkehrt.
     homepage: [
-      'https://www.swissmedic.ch/swissmedic/de/home/news/news.html',
+      'https://www.swissmedic.ch/swissmedic/en/home/news/news.html',
       'https://www.swissmedic.ch/swissmedic/de/home.html',
     ],
     official: true, verified: false,
@@ -136,9 +147,12 @@ const BUILTIN = [
     id: 'healthcanada_news', kind: 'news', country: 'CA', format: 'rss',
     label: 'Health Canada — Recalls and safety alerts',
     url: 'https://recalls-rappels.canada.ca/en/feed/recalls-alerts-rss',
+    // Die beiden zuvor hinterlegten Seiten waren LESBAR (45 469 bzw. 5 569
+    // Zeichen) und trugen dennoch keinen Feed — die Seite wird im Browser
+    // zusammengebaut. Die eigene RSS-Uebersicht ist der richtige Einstieg.
     homepage: [
+      'https://recalls-rappels.canada.ca/en/rss-feeds',
       'https://recalls-rappels.canada.ca/en',
-      'https://recalls-rappels.canada.ca/en/search/site',
     ],
     official: true, verified: false,
   },

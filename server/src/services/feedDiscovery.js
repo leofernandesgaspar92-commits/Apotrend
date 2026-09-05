@@ -64,10 +64,33 @@ const hostOf = (u) => { try { return new URL(u).hostname.toLowerCase(); } catch 
  * Parser für den ganzen Rest wäre mehr Angriffsfläche als Nutzen.
  * Zurückgegeben werden absolute URLs in Fundreihenfolge, ohne Doppelte.
  */
+/**
+ * Die für relative Adressen maßgebliche Basis einer Seite.
+ *
+ * WARUM DAS SEIN MUSS — belegt durch einen echten Fehlschlag:
+ * Die Newsroom-Seite des Paul-Ehrlich-Instituts verweist auf ihre RSS-Seite
+ * mit einer RELATIVEN Adresse (`DE/footer-kopfleiste/rss/rss-node.html`).
+ * Ohne `<base>` löst der Browser das gegen das Verzeichnis der Seite auf und
+ * käme auf `…/DE/newsroom/DE/footer-kopfleiste/…` — genau diese doppelte
+ * Adresse stand am 05.09.2026 im Render-Protokoll, und sie war eine 404.
+ * Richtig ist `https://www.pei.de/DE/footer-kopfleiste/rss/rss-node.html`.
+ *
+ * Solche Seiten (verbreitet bei deutschen Behörden, Government Site Builder)
+ * setzen dafür ein `<base href>` im Kopf. Wer es überliest, verrechnet sich
+ * bei JEDEM relativen Verweis der Seite. Das ist kein Sonderfall, sondern ein
+ * Teil des Standards, den mein Parser schlicht ausgelassen hatte.
+ */
+export function baseHrefOf(html, fallbackUrl) {
+  const m = String(html || '').match(/<base\b[^>]*\bhref\s*=\s*["']([^"']+)["']/i);
+  if (!m) return fallbackUrl;
+  try { return new URL(decodeAmp(m[1]), fallbackUrl).toString(); } catch { return fallbackUrl; }
+}
+
 export function parseFeedLinks(html, baseUrl) {
   const out = [];
   const gesehen = new Set();
   const text = String(html || '');
+  baseUrl = baseHrefOf(text, baseUrl);
   // Alle <link …> einsammeln; Reihenfolge der Attribute ist im HTML frei.
   for (const m of text.matchAll(/<link\b([^>]*)>/gi)) {
     const attrs = m[1];
@@ -106,7 +129,9 @@ export function parseFeedLinks(html, baseUrl) {
 export function parseAnchorFeedLinks(html, baseUrl) {
   const out = [];
   const gesehen = new Set();
-  for (const m of String(html || '').matchAll(/<a\b[^>]*\bhref\s*=\s*["']([^"']+)["'][^>]*>/gi)) {
+  const text = String(html || '');
+  baseUrl = baseHrefOf(text, baseUrl);
+  for (const m of text.matchAll(/<a\b[^>]*\bhref\s*=\s*["']([^"']+)["'][^>]*>/gi)) {
     const href = decodeAmp(m[1]);
     if (!/(\.xml|\.rss)(\?|#|$)|\/rss\b|\/feeds?\b/i.test(href)) continue;
     let absolut;
