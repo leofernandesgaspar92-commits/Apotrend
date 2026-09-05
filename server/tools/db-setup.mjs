@@ -38,6 +38,9 @@ function run(args) {
   return { ok: true };
 }
 
+// Den ECHTEN Wert festhalten, bevor unten ggf. ein Platzhalter gesetzt wird.
+const echteUrl = (process.env.DATABASE_URL || '').trim();
+
 if (!existsSync(schema)) {
   console.log('ApoPulse DB: kein prisma/schema.prisma — nichts zu tun.');
   process.exit(0);
@@ -47,14 +50,32 @@ if (!existsSync(schema)) {
 //    Laufzeit; der Store faengt das ab, aber dann liefe die Datenbank-Spiegelung
 //    still nie an. Schlaegt der Schritt fehl, ist das kein Grund, das Deploy zu
 //    stoppen — die App laeuft ohne Datenbank.
+// Ohne DATABASE_URL kann `env("DATABASE_URL")` im Schema nicht aufgeloest
+// werden. Manche Prisma-Befehle brechen deshalb mit P1012 ab, BEVOR sie
+// ueberhaupt merken, dass sie gar keine Verbindung brauchen. Fuer das reine
+// Erzeugen des Clients wird nie verbunden — ein Platzhalter genuegt und macht
+// den Schritt unabhaengig davon, ob schon eine Datenbank angehaengt ist.
+//
+// Der Platzhalter gilt AUSSCHLIESSLICH hier. Fuer die Migrationen weiter unten
+// wird die echte Variable geprueft; mit dem Platzhalter zu migrieren hiesse,
+// gegen einen Rechner zu laufen, den es nicht gibt.
+if (!(process.env.DATABASE_URL || '').trim()) {
+  process.env.DATABASE_URL = 'postgresql://platzhalter:platzhalter@127.0.0.1:5432/platzhalter';
+  console.log('ApoPulse DB: keine DATABASE_URL — Client wird mit Platzhalter erzeugt '
+    + '(es wird dabei nichts verbunden).');
+}
+
 const gen = run(['generate', '--schema', schema]);
 if (!gen.ok) {
   console.warn(`ApoPulse DB: "prisma generate" fehlgeschlagen (${gen.reason}). `
     + 'Die App startet trotzdem — ohne Datenbank-Spiegelung.');
 }
 
-// 2. Migrationen — nur mit Datenbank.
-const url = (process.env.DATABASE_URL || '').trim();
+// 2. Migrationen — nur mit ECHTER Datenbank. `echteUrl` wurde ganz oben
+//    gemerkt, bevor der Platzhalter gesetzt wurde: Sonst hielte der Schritt
+//    hier den Platzhalter fuer eine Datenbank und liefe in eine Verbindung,
+//    die es nicht gibt.
+const url = echteUrl;
 if (!url) {
   console.log('ApoPulse DB: DATABASE_URL nicht gesetzt — Migrationen uebersprungen. '
     + 'Die App laeuft mit In-Memory-Speicher und JSON-Snapshot (siehe docs/DATENBANK.md).');
