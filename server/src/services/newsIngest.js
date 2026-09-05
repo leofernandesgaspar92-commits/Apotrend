@@ -140,7 +140,15 @@ export async function ingestNews({
     // Lief die Quelle über eine Ersatzadresse? Das gehört gemeldet: Wer es
     // nicht sieht, hält die Voreinstellung weiter für richtig — es kommen ja
     // Daten. Die falsche URL bliebe dann für immer stehen.
-    if (holen && holen.usedFallback) {
+    if (holen && holen.usedDiscovery) {
+      // Selbst gefunden heißt: Die eingetragene Adresse ist FALSCH, und der
+      // Server hat sich nur beholfen. Eigene Zeile, eigene Zählung — sonst
+      // verschwindet der Befund unter den gewöhnlichen Ersatzadressen.
+      report.discovered = (report.discovered || 0) + 1;
+      log.warn?.(`ApoPulse News: ${source.id} — Feed selbst gefunden unter ${holen.url}`
+        + `${holen.discoveredVia ? ` (ausgezeichnet auf ${holen.discoveredVia})` : ''}. `
+        + `Die Voreinstellung ${source.url} ist falsch und gehört ersetzt.`);
+    } else if (holen && holen.usedFallback) {
       report.fallbacksUsed = (report.fallbacksUsed || 0) + 1;
       log.warn?.(`ApoPulse News: ${source.id} antwortet nur über die Ersatzadresse `
         + `(${holen.url}). Die Voreinstellung ${source.url} gehört geprüft.`);
@@ -181,6 +189,7 @@ export async function ingestNews({
       country: source.country,
       url: holen ? holen.url : source.url,
       usedFallback: !!(holen && holen.usedFallback),
+      usedDiscovery: !!(holen && holen.usedDiscovery),
     };
   }
 

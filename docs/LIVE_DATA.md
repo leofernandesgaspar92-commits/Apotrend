@@ -125,6 +125,80 @@ landete ein Tippfehler in der eigenen URL stillschweigend wieder beim
 Voreinstellungs-Feed — und man hielte dessen Daten für die selbst
 konfigurierten.
 
+### Selbstfindung: wenn auch die Ersatzadresse 404 sagt
+
+**Der Anlass.** Der erste echte Lauf auf Render lieferte den Befund, den die
+Bauumgebung nie liefern konnte (dort gibt es keinen Netzzugang): Von 19
+News-Quellen antworteten **8 nicht** — BfArM, PEI, BASG, EMA, Swissmedic, FDA
+und Health Canada mit 404, die TGA mit Zeitüberschreitung. Zwei Quellen (LI, BR)
+kamen nur über ihre Ersatzadresse durch; die Meldung dazu funktionierte wie
+vorgesehen.
+
+**Die naheliegende Deutung ist die falsche.** „Die Behörden haben ihre Feeds
+verschoben" erklärt nicht, warum es sieben am selben Tag getan haben sollten —
+und die FDA-Adresse, die 404 lieferte, ist in Suchindizes als gültiger Feed
+verzeichnet. Sieben Behörden stehen aber sehr wohl hinter denselben CDNs, und
+die weisen Anfragen **ohne `User-Agent`** routinemäßig ab. Node's `fetch` sendet
+von sich aus keinen. Dass dabei 404 statt 403 herauskommt, ist üblich: Wer
+blockt, verrät ungern, dass er blockt.
+
+Daraus folgen zwei Änderungen:
+
+1. **Der Server stellt sich vor.** Jeder Abruf trägt jetzt eine Kennung
+   (`ApoPulseBot/1.0 (…; +https://…)`) und `Accept-Language`. Bewusst *keine*
+   Browser-Tarnung: Sich als Chrome auszugeben würde vielleicht mehr Türen
+   öffnen, wäre aber eine Lüge gegenüber genau den Stellen, deren Daten wir als
+   amtlich ausweisen.
+2. **Der Server sucht selbst**, wenn alle eingetragenen Adressen versagen.
+
+**Wie die Suche arbeitet.** Feeds sind seit jeher in der Seite ausgezeichnet:
+
+```html
+<link rel="alternate" type="application/rss+xml" href="/rss/news.xml">
+```
+
+Das ist das dokumentierte Verfahren, mit dem jeder Feedreader seit zwanzig
+Jahren arbeitet. Gesucht wird auf einer hinterlegten Übersichtsseite
+(`homepage`) und auf der Wurzel der Domain — die überlebt jeden Umbau, während
+`/DE/Service/Presse/…` genau das ist, was sich verschiebt. Findet sich dort
+keine Auszeichnung, werden zusätzlich gewöhnliche Verweise geprüft, die nach
+Feed aussehen (`.xml`, `/rss`, `/feed`) — viele Behörden listen ihre Feeds nur
+als Link auf einer „RSS-Feeds"-Seite.
+
+**Die Grenze, die nicht verhandelbar ist:** Übernommen wird eine gefundene
+Adresse **nur von der amtlichen Domain** der Quelle (Host gleich oder echte
+Unterdomäne). Ohne diese Regel wäre die Selbstfindung ein Einfallstor — wer die
+Startseite der Behörde verändern kann, lenkte den Server auf einen fremden
+Feed, und dessen Meldungen erschienen mit dem Siegel „BfArM" im Feed einer
+Apotheke. Ein schlichtes `endsWith` reicht dafür nicht: `nicht-bfarm.de` ginge
+sonst als Unterdomäne von `bfarm.de` durch. Zusätzlich muss die Antwort
+tatsächlich wie ein Feed beginnen — eine ausgezeichnete Adresse, die eine
+HTML-Seite liefert, wird verworfen.
+
+**Selbstheilung ersetzt keine Korrektur.** Eine gefundene Adresse wird gemeldet
+(Log + `perSource[...].usedDiscovery`) und gilt bis zum Neustart. Danach hat
+wieder die eingetragene Voreinstellung Vorrang — sie könnte inzwischen repariert
+sein. Wer die Meldung sieht, soll die Voreinstellung nachziehen; die Suche
+verschafft dafür nur Zeit.
+
+**Nicht für JSON-Quellen.** Eine Schnittstelle zeichnet niemand als
+`<link rel="alternate">` aus — dort wäre die Suche ein verlorener Abruf.
+
+### Warum ASHP entfernt wurde
+
+Die ASHP-Engpassliste antwortete auf **beiden** Adressen mit **403** — nicht
+404. Der Unterschied entscheidet: 404 heißt „hier ist nichts", 403 heißt „Sie
+nicht". ASHP ist ein privater Fachverband, kein Amt; die Liste ist deren
+redaktionelle Eigenleistung und lizenziert. Ein Verband, der maschinelle Abrufe
+abweist, hat sich damit geäußert.
+
+Es wäre technisch leicht, das zu umgehen. Genau das unterbleibt: `CLAUDE.md`
+verlangt „kostenlos **und** rechtlich erlaubt", und eine Plattform, die
+Engpassmeldungen als belastbar ausweist, kann sie nicht gegen den erklärten
+Willen der Quelle beschaffen. Für die USA bleibt **openFDA** — gemeinfrei,
+strukturiert und ausdrücklich zur Weiterverwendung bestimmt. Wer ASHP mit
+Lizenz anbindet, kann das ohne Deploy über `APOPULSE_SOURCE_ASHP_URL`.
+
 ### Das Land der Meldung
 
 Eine Behörden-Meldung trägt das Land ihrer **Quelle**, nicht das des

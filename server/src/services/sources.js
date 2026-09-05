@@ -44,6 +44,7 @@
 
 import { COUNTRIES } from '../data/countries.js';
 import { parseFeed, parseCsv } from './feedParsers.js';
+import { discoverFeed } from './feedDiscovery.js';
 
 export const SOURCE_KINDS = ['news', 'shortages'];
 export const SOURCE_FORMATS = ['rss', 'json', 'csv', 'mastodon'];
@@ -56,6 +57,7 @@ const BUILTIN = [
     id: 'bfarm_news', kind: 'news', country: 'DE', format: 'rss',
     label: 'BfArM — Aktuelles',
     url: 'https://www.bfarm.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed.xml',
+    homepage: 'https://www.bfarm.de/DE/Aktuelles/Newsletter/_node.html',
     fallbacks: ['https://www.bundesgesundheitsministerium.de/rss/aktuelles.xml'],
     official: true, verified: false,
   },
@@ -69,6 +71,7 @@ const BUILTIN = [
     id: 'basg_news', kind: 'news', country: 'AT', format: 'rss',
     label: 'BASG — Neuigkeiten',
     url: 'https://www.basg.gv.at/rss',
+    homepage: 'https://www.basg.gv.at/en/whatsnew',
     fallbacks: ['https://www.basg.gv.at/rss/news', 'https://www.sozialministerium.at/rss'],
     official: true, verified: false,
   },
@@ -76,6 +79,7 @@ const BUILTIN = [
     id: 'ema_news', kind: 'news', country: 'EU', format: 'rss',
     label: 'EMA — News and press releases',
     url: 'https://www.ema.europa.eu/en/rss.xml',
+    homepage: 'https://www.ema.europa.eu/en/news-events/rss-feeds',
     official: true, verified: false,
   },
   // --- Vom Owner benannte Länder ------------------------------------------
@@ -86,6 +90,7 @@ const BUILTIN = [
     id: 'swissmedic_news', kind: 'news', country: 'CH', format: 'rss',
     label: 'Swissmedic — Mitteilungen',
     url: 'https://www.swissmedic.ch/swissmedic/de/home/news/mitteilungen.rss',
+    homepage: 'https://www.swissmedic.ch/swissmedic/de/home/news/news.html',
     official: true, verified: false,
   },
   {
@@ -99,6 +104,7 @@ const BUILTIN = [
     id: 'fda_news', kind: 'news', country: 'US', format: 'rss',
     label: 'FDA — Press releases',
     url: 'https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/press-releases/rss.xml',
+    homepage: 'https://www.fda.gov/about-fda/contact-fda/subscribe-podcasts-and-news-feeds',
     official: true, verified: false,
   },
   {
@@ -109,8 +115,15 @@ const BUILTIN = [
   },
   {
     id: 'tga_news', kind: 'news', country: 'AU', format: 'rss',
+    // Korrigiert nach dem ersten Live-Lauf: /news/rss.xml lief in die
+    // Zeitüberschreitung. Die TGA führt ihre Feeds selbst unter /feeds/ —
+    // belegt durch den Inhalt ihrer eigenen RSS-Seite (homepage unten).
+    // Weiterhin verified:false: Auch diese Adresse konnte hier nicht
+    // abgerufen werden. Erst ein Lauf auf Render darf sie bestätigen.
     label: 'TGA — News',
-    url: 'https://www.tga.gov.au/news/rss.xml',
+    url: 'https://www.tga.gov.au/feeds/article/news.xml',
+    fallbacks: ['https://www.tga.gov.au/feeds/article.xml', 'https://www.tga.gov.au/feeds/alert.xml'],
+    homepage: 'https://www.tga.gov.au/news/subscribe-updates/rss-feeds',
     official: true, verified: false,
   },
   {
@@ -192,16 +205,24 @@ const BUILTIN = [
     fallbacks: ['https://www.moh.gov.gh/feed/'],
     official: true, verified: false,
   },
-  {
-    id: 'ashp_shortages_news', kind: 'news', country: 'US', format: 'rss',
-    label: 'ASHP — Drug Shortages (Meldungen)',
-    // ABSICHTLICH als News-Quelle, nicht als Engpass-Quelle: ASHP liefert
-    // redaktionelle Meldungen, keinen strukturierten Export mit Statusspalte.
-    // Daraus Engpass-Datensätze zu schneiden hieße raten — siehe Dateikopf.
-    url: 'https://www.ashp.org/drug-shortages/current-shortages/rss',
-    fallbacks: ['https://www.ashp.org/rss/news'],
-    official: false, verified: false,
-  },
+  // ENTFERNT: ashp_shortages_news
+  //
+  // Der erste Live-Lauf beantwortete beide hinterlegten Adressen mit 403 —
+  // nicht 404. Das ist ein Unterschied, auf den es ankommt: 404 heißt „hier
+  // ist nichts", 403 heißt „Sie nicht". ASHP ist ein privater Fachverband,
+  // kein Amt; die Engpassliste ist deren redaktionelle Eigenleistung und
+  // ausdrücklich lizenziert. Ein Verband, der maschinelle Abrufe abweist,
+  // hat sich damit geäußert.
+  //
+  // Es wäre technisch leicht, das zu umgehen (anderer User-Agent, langsamer
+  // takten). Genau das unterbleibt: CLAUDE.md verlangt „kostenlos UND
+  // rechtlich erlaubt", und eine Plattform, die Engpassmeldungen als belastbar
+  // ausweist, kann sie nicht gegen den erklärten Willen der Quelle beschaffen.
+  // Für die USA bleibt openFDA — gemeinfrei, strukturiert und ausdrücklich
+  // zur Weiterverwendung bestimmt (siehe unten). Der Verlust ist gering.
+  //
+  // Wer ASHP dennoch anbindet (etwa mit einer Lizenz), kann das ohne Deploy:
+  //   APOPULSE_SOURCE_ASHP_URL=…  APOPULSE_SOURCE_ASHP_COUNTRY=US
 
   // --- Engpässe als strukturierter Export ---------------------------------
   //  Das ist der EINZIGE Weg, auf dem Engpass-Datensätze entstehen: benannte
@@ -304,9 +325,37 @@ export function regulatorOf(country) {
  * Rohtext einer Quelle holen. Bewusst mit Zeitlimit: Ein Behörden-Server, der
  * nicht antwortet, darf den Planer nicht blockieren.
  */
+/**
+ * Kennung, mit der sich dieser Server bei Behörden vorstellt.
+ *
+ * WARUM DAS KEINE KOSMETIK IST — der teuerste Befund des ersten Live-Laufs:
+ * Von 19 Quellen antworteten 8 nicht, sieben davon mit 404. Die naheliegende
+ * Deutung („die Behörden haben ihre Feeds verschoben") ist die falsche.
+ * Denn dieselbe FDA-Adresse, die auf Render 404 lieferte, ist in Suchindizes
+ * als gültiger Feed verzeichnet. Sieben Behörden verschieben nicht am selben
+ * Tag ihren Feed — aber sieben Behörden stehen sehr wohl hinter denselben
+ * CDNs/Schutzschichten (Akamai, Cloudflare), und die weisen Anfragen OHNE
+ * User-Agent routinemäßig ab. Node's `fetch` sendet von sich aus keinen.
+ * Ein 404 statt 403 ist dabei üblich: Wer blockt, verrät ungern, dass er blockt.
+ *
+ * Deshalb eine ehrliche Kennung statt einer Browser-Tarnung: Name, Zweck und
+ * eine Adresse, unter der eine Behörde nachfragen oder uns aussperren kann.
+ * Sich als Chrome auszugeben würde vielleicht mehr Türen öffnen — es wäre
+ * aber eine Lüge gegenüber genau den Stellen, deren Daten wir als amtlich
+ * ausweisen. Wer so anfängt, kann die Herkunftskennzeichnung gleich lassen.
+ */
+export const USER_AGENT = 'ApoPulseBot/1.0 (Fachinformationsdienst für Apotheken; +https://apopulse-feed.onrender.com/)';
+
 export async function fetchTextDefault(url, { timeoutMs = 15_000, fetchImpl = globalThis.fetch } = {}) {
   const res = await fetchImpl(url, {
-    headers: { accept: 'application/rss+xml, application/atom+xml, application/xml, text/csv, application/json;q=0.8, */*;q=0.5' },
+    headers: {
+      accept: 'application/rss+xml, application/atom+xml, application/xml, text/csv, application/json;q=0.8, */*;q=0.5',
+      'user-agent': USER_AGENT,
+      // Ohne diesen Kopf liefern mehrsprachige Behördenauftritte (Swissmedic,
+      // EMA, Health Canada) irgendeine Sprache — meist Englisch. Die Reihenfolge
+      // bildet die Zielgruppe ab: DACH zuerst, dann EU-Englisch.
+      'accept-language': 'de,en;q=0.8,pt;q=0.6',
+    },
     signal: AbortSignal.timeout(timeoutMs),
     redirect: 'follow',
   });
@@ -379,17 +428,61 @@ export async function fetchWithRetry(url, {
  * Quelle dauerhaft über die Ausweichadresse, ist die Voreinstellung falsch und
  * gehört korrigiert — ohne diese Angabe merkt das niemand, weil ja Daten kommen.
  */
+/**
+ * Merkzettel der selbst gefundenen Adressen (siehe feedDiscovery.js).
+ *
+ * Nur im Arbeitsspeicher und mit Absicht: Die Suche kostet einen zusätzlichen
+ * Seitenabruf, und der Takt sind fünf Minuten — ohne Merkzettel läge die
+ * Startseite jeder kaputten Behörde 288-mal am Tag auf dem Server. Nach einem
+ * Neustart ist er leer; das ist richtig so, denn dann gilt wieder zuerst die
+ * eingetragene Voreinstellung — sie könnte inzwischen repariert sein.
+ */
+const gefundeneAdressen = new Map(); // sourceId -> url
+
+export const __discoveryCache = {
+  get: (id) => gefundeneAdressen.get(id) || null,
+  clear: () => gefundeneAdressen.clear(),
+  size: () => gefundeneAdressen.size,
+};
+
 export async function fetchSource(source, opts = {}) {
-  const adressen = [source.url, ...(source.fallbacks || [])].filter(Boolean);
+  const { discover = discoverFeed, log = null } = opts;
+  // Eine früher selbst gefundene Adresse wird MITPROBIERT, ersetzt die
+  // Voreinstellung aber nicht: Steht die richtige Adresse wieder, gewinnt sie.
+  const gemerkt = gefundeneAdressen.get(source.id);
+  const adressen = [source.url, ...(source.fallbacks || []), gemerkt]
+    .filter(Boolean)
+    .filter((u, i, a) => a.indexOf(u) === i);
   const fehler = [];
   for (const [i, url] of adressen.entries()) {
     try {
       const raw = await fetchWithRetry(url, opts);
-      return { raw, url, usedFallback: i > 0, fallbackIndex: i, errors: fehler };
+      return {
+        raw, url, usedFallback: i > 0, fallbackIndex: i, errors: fehler,
+        usedDiscovery: url === gemerkt && i > 0,
+      };
     } catch (e) {
       fehler.push({ url, error: (e && e.message) || String(e) });
     }
   }
+
+  // Letzter Versuch: Sagt die Behörde selbst, wo ihr Feed jetzt liegt?
+  // Nur für Feeds sinnvoll — eine JSON-Schnittstelle zeichnet niemand als
+  // <link rel="alternate"> aus, dort wäre das nur ein verlorener Abruf.
+  if (source.format === 'rss' && discover) {
+    // Die Voreinstellung war falsch, nicht die Suche: Das gehört gemeldet,
+    // sonst bleibt die falsche URL für immer im Quelltext stehen.
+    gefundeneAdressen.delete(source.id);
+    const fund = await discover(source, { ...opts, fetchText: opts.fetchText || fetchTextDefault, log });
+    if (fund) {
+      gefundeneAdressen.set(source.id, fund.url);
+      return {
+        raw: fund.raw, url: fund.url, usedFallback: true, fallbackIndex: adressen.length,
+        errors: fehler, usedDiscovery: true, discoveredVia: fund.page,
+      };
+    }
+  }
+
   const e = new Error(`Keine Adresse erreichbar (${adressen.length} versucht): `
     + fehler.map((f) => `${f.url} -> ${f.error}`).join(' | '));
   e.attempts = fehler;
