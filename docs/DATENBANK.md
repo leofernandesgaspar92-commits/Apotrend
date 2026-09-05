@@ -358,6 +358,33 @@ gescheitert — die App wäre offline, nur weil noch keine Datenbank angehängt 
 Der dritte Fall ist Absicht: Eine App gegen ein halb migriertes Schema zu
 starten ist schlimmer als ein fehlgeschlagenes Deploy.
 
+### Zu `npm audit`: 3 hohe Befunde, die hier keine sind
+
+Der Build meldet drei „high severity"-Befunde. Sie hängen alle an derselben
+Kette:
+
+```
+@prisma/client → prisma (CLI) → @prisma/config → deepmerge-ts@7.1.5
+```
+
+Der Befund ist eine Stack-Erschöpfung beim Zusammenführen rekursiver Objekte
+(GHSA-ggr8-5vv4-36mx). Bewertung für dieses Projekt:
+
+- **Nicht erreichbar zur Laufzeit.** `deepmerge-ts` wird ausschließlich von der
+  Prisma-CLI beim Lesen der eigenen Konfiguration benutzt. Der Server importiert
+  nur den erzeugten Client; dieser Codepfad läuft im Betrieb nie.
+- **Die Eingabe ist unsere eigene.** Verarbeitet wird `prisma/schema.prisma` —
+  keine Nutzereingabe, kein fremder Inhalt.
+- **Auf der Platte liegt es trotzdem**, auch bei `--omit=dev`: `@prisma/client`
+  zieht die CLI in Version 6 als Abhängigkeit mit. Vorhanden ≠ ausgeführt.
+
+**`npm audit fix --force` wäre hier ein Rückschritt**: Es stuft Prisma auf
+6.12.0 **herunter**. 6.19.3 ist die neueste 6.x — in dieser Linie gibt es keine
+bereinigte Fassung. Der Sprung auf Prisma 7 scheidet aus, weil 7 die Schreibweise
+`url = env("DATABASE_URL")` im Schema ablehnt.
+
+Beim nächsten Prisma-Wechsel erneut prüfen. Bis dahin: bewusst nichts tun.
+
 **Datenbank anhängen:** In Render eine PostgreSQL-Instanz anlegen, den
 *Internal Database URL* kopieren und beim Service als `DATABASE_URL` eintragen
 (in `render.yaml` als `sync: false` deklariert, Render fragt beim Deploy danach).
