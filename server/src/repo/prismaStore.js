@@ -33,6 +33,7 @@
 // ============================================================================
 
 import { gzipSync, gunzipSync } from 'node:zlib';
+import { dbAddressWarning } from './dbAddress.js';
 
 /** Statuswerte der Anwendung -> ShortageStatus im Schema. */
 const STATUS = new Map([
@@ -160,6 +161,11 @@ export function createPrismaStore({
       }
       state = 'ready';
       log.log?.('ApoPulse DB: Spiegel aktiv (PostgreSQL).');
+      // Erst NACH erfolgreicher Verbindung: Vorher waere die Warnung Laerm
+      // neben einem echten Fehler. Sie nennt nur den Hostnamen, nie die
+      // Zugangsdaten aus derselben URL.
+      const adresse = dbAddressWarning(url);
+      if (adresse) log.warn?.('\u26a0\ufe0f  ' + adresse);
       return true;
     } catch (e) {
       const msg = (e && e.message) || String(e);
