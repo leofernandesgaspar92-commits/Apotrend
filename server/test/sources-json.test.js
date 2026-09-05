@@ -66,13 +66,20 @@ test('englische und deutsche Statuswerte werden beide erkannt', () => {
     ['kritisch', 'eingeschraenkt', 'verfuegbar', 'kritisch']);
 });
 
-test('Zeile ohne Bezeichnung wird verworfen statt leer gespeichert', () => {
+test('Zeile ohne jeden Namen wird verworfen statt leer gespeichert', () => {
+  // Frühere Fassung dieses Tests erwartete, dass auch eine Zeile MIT Wirkstoff
+  // und ohne Handelsnamen verworfen wird. Das war zu streng und fiel bei der
+  // US-Quelle auf: Generika haben dort oft nur `generic_name`. Jetzt tritt der
+  // Wirkstoff an die Stelle des Handelsnamens — verworfen wird nur, was
+  // überhaupt keinen Namen trägt.
   const { rows, rejected } = shortagesFromJson(JSON.stringify([
     { wirkstoff: 'Nur Wirkstoff', status: 'kritisch' },
+    { status: 'kritisch' },
     null,
     'kein Objekt',
   ]));
-  assert.equal(rows.length, 0);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].bezeichnung, 'Nur Wirkstoff');
   assert.equal(rejected.length, 3);
 });
 
@@ -123,10 +130,15 @@ test('jede Länderquelle findet ihre Behörde im Länder-Register', () => {
 test('die Engpass-Quelle ist als strukturierter Export angemeldet, nicht als News', () => {
   // Der Kern der Trennung: Aus Schlagzeilen entstehen keine Engpass-Datensätze.
   const engpaesse = sourcesByKind('shortages', {});
-  assert.equal(engpaesse.length, 1);
-  assert.equal(engpaesse[0].id, 'basg_shortages');
-  assert.equal(engpaesse[0].format, 'json');
-  assert.equal(engpaesse[0].country, 'AT');
+  // Inzwischen zwei: BASG (AT) und openFDA (US). Geprüft wird nicht mehr die
+  // ANZAHL — die wächst hoffentlich weiter —, sondern was dauerhaft gelten
+  // muss: strukturiertes Format, bekanntes Land, und die AT-Quelle ist dabei.
+  assert.ok(engpaesse.length >= 1);
+  assert.ok(engpaesse.every((s) => s.format === 'json' || s.format === 'csv'),
+    'Engpässe kommen nur aus strukturierten Exporten, nie aus RSS');
+  const at = engpaesse.find((s) => s.country === 'AT');
+  assert.ok(at, 'keine AT-Engpassquelle');
+  assert.equal(at.id, 'basg_shortages');
   // Und keine der News-Quellen darf versehentlich als Engpass-Quelle gelten.
   assert.ok(sourcesByKind('news', {}).every((s) => s.format === 'rss'));
 });
@@ -298,4 +310,56 @@ test('newsKey trennt gleiche Meldungen verschiedener Quellen', () => {
   assert.equal(newsKey('bfarm_news', 'https://x/1'), newsKey('bfarm_news', 'https://x/1'));
   // Führende/folgende Leerzeichen dürfen keinen neuen Schlüssel erzeugen.
   assert.equal(newsKey('a', ' https://x/1 '), newsKey('a', 'https://x/1'));
+});
+
+// ── openFDA (US) ────────────────────────────────────────────────────────────
+//  Die einzige echte Engpass-SCHNITTSTELLE unter den 16 Ländern. Ihre
+//  Statuswerte heißen anders als in jedem europäischen Register — und ein
+//  unbekannter Status verwirft die Zeile. Ohne Vokabular käme also nichts an.
+
+test('die Statuswerte der US-Behörde werden erkannt', () => {
+  const { rows, rejected } = shortagesFromJson({ results: [
+    { generic_name: 'Amoxicillin', proprietary_name: 'Amoxil', status: 'Currently in Shortage',
+      reason_for_shortage: 'Demand increase', initial_posting_date: '2026-06-14' },
+    { generic_name: 'Metformin', status: 'Resolved' },
+    { generic_name: 'Insulin glargine', status: 'To Be Discontinued' },
+  ] });
+  assert.deepEqual(rows.map((r) => r.status), ['kritisch', 'verfuegbar', 'eingeschraenkt']);
+  assert.equal(rejected.length, 0);
+  assert.equal(rows[0].grund, 'Demand increase');
+  assert.equal(rows[0].gemeldet_am, '2026-06-14');
+});
+
+test('ohne Handelsnamen tritt der Wirkstoff an seine Stelle', () => {
+  // Der Fund, der diese Regel ausgelöst hat: Generika haben bei der US-Behörde
+  // oft gar keinen Handelsnamen — dort steht nur `generic_name`. Ohne den
+  // Rückfall verlor die Quelle den Großteil ihrer Zeilen. Dieselbe Regel gilt
+  // beim Schreiben in die Datenbank; sie hier nicht zu haben hieß, dass
+  // dieselbe Zeile je nach Weg einmal ankam und einmal nicht.
+  const { rows } = shortagesFromJson({ results: [{ generic_name: 'Metformin', status: 'Resolved' }] });
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].bezeichnung, 'Metformin');
+  assert.equal(rows[0].wirkstoff, 'Metformin');
+});
+
+test('ohne jeden Namen bleibt die Zeile draußen', () => {
+  const { rows, rejected } = shortagesFromJson({ results: [{ status: 'Currently in Shortage' }] });
+  assert.equal(rows.length, 0);
+  assert.match(rejected[0], /weder Bezeichnung noch Wirkstoff/);
+});
+
+test('ein unbekannter Status wird auch bei der US-Quelle verworfen', () => {
+  // Die Zusage gilt unverändert: lieber keine Zeile als eine geratene.
+  const { rows, rejected } = shortagesFromJson({ results: [{ generic_name: 'X', status: 'Irgendwas Neues' }] });
+  assert.equal(rows.length, 0);
+  assert.match(rejected[0], /Status unbekannt \(Irgendwas Neues\)/);
+});
+
+test('für die USA gibt es jetzt strukturierte Daten, nicht nur Schlagzeilen', () => {
+  const engpaesse = sourcesByKind('shortages', {});
+  const us = engpaesse.find((s) => s.country === 'US');
+  assert.ok(us, 'keine US-Engpassquelle');
+  assert.equal(us.id, 'openfda_shortages');
+  assert.equal(us.format, 'json');
+  assert.equal(us.verified, false, 'hier nicht abrufbar — darf nichts anderes behaupten');
 });

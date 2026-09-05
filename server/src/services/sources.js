@@ -200,6 +200,21 @@ const BUILTIN = [
   //  Das ist der EINZIGE Weg, auf dem Engpass-Datensätze entstehen: benannte
   //  Felder, keine Interpretation von Schlagzeilen (siehe Kopf dieser Datei).
   {
+    id: 'openfda_shortages', kind: 'shortages', country: 'US', format: 'json',
+    label: 'FDA — Drug Shortages (openFDA)',
+    // Die einzige mir bekannte echte Engpass-SCHNITTSTELLE: JSON, dokumentiert,
+    // ohne Schluessel nutzbar. Damit stehen fuer die USA strukturierte
+    // Datensaetze statt blosser Schlagzeilen zur Verfuegung.
+    //
+    // Gemeinfrei (US-Bundesbehoerde). Die Nutzungsbedingungen verlangen zwei
+    // Dinge, die diese Anwendung ohnehin tut: keine Behauptung einer
+    // Zusammenarbeit mit der Behoerde, und keine Darstellung der Daten als
+    // amtlich gepruefte Einzelfallauskunft. Die Herkunft faehrt bei jeder
+    // Zeile mit (provenance) und die Quelle steht am Datensatz.
+    url: 'https://api.fda.gov/drug/shortages.json?limit=1000',
+    official: true, verified: false,
+  },
+  {
     id: 'basg_shortages', kind: 'shortages', country: 'AT', format: 'json',
     label: 'BASG — Vertriebseinschränkungen',
     url: 'https://vertriebseinschraenkungen.basg.gv.at/api/v1/public/shortages',
@@ -426,6 +441,20 @@ export function newsFromSource(source, raw) {
 
 const STATUS_MAP = {
   kritisch: 'kritisch', critical: 'kritisch', 'nicht lieferbar': 'kritisch',
+  // --- openFDA (US-Behoerde) --------------------------------------------
+  //  Die Behoerde nennt ihre Statuswerte anders als jedes europaeische
+  //  Register. Ohne diese Zeilen wuerde JEDE ihrer Meldungen verworfen —
+  //  unbekannter Status heisst in diesem Projekt bewusst „Zeile weg".
+  //  ⚠️ Aus der Dokumentation uebernommen, hier NICHT gegen die echte
+  //  Schnittstelle geprueft (Bauumgebung ohne Netz). Was tatsaechlich
+  //  ankommt, zeigt der erste Lauf: Liefert die Quelle nur verworfene
+  //  Zeilen, meldet der Lauf das mit den ersten Gruenden.
+  'currently in shortage': 'kritisch',
+  'to be discontinued': 'eingeschraenkt',
+  'no longer available': 'kritisch',
+  discontinued: 'kritisch',
+  resolved: 'verfuegbar',
+  available: 'verfuegbar',
   eingeschraenkt: 'eingeschraenkt', eingeschränkt: 'eingeschraenkt',
   limited: 'eingeschraenkt', 'eingeschraenkt lieferbar': 'eingeschraenkt',
   verfuegbar: 'verfuegbar', verfügbar: 'verfuegbar', available: 'verfuegbar',
@@ -443,12 +472,12 @@ export function normalizeStatus(value) {
  * APOPULSE_SOURCE_<ID>_COLUMNS='{"wirkstoff":"Wirkstoff","bezeichnung":"Arzneispezialität",…}'
  */
 export const DEFAULT_COLUMNS = {
-  wirkstoff: ['wirkstoff', 'substance', 'active_substance', 'wirkstoffe'],
-  bezeichnung: ['bezeichnung', 'arzneispezialität', 'arzneispezialitaet', 'praeparat', 'präparat', 'name', 'product'],
+  wirkstoff: ['wirkstoff', 'substance', 'active_substance', 'wirkstoffe', 'generic_name'],
+  bezeichnung: ['bezeichnung', 'arzneispezialität', 'arzneispezialitaet', 'praeparat', 'präparat', 'name', 'product', 'proprietary_name', 'company_name'],
   status: ['status', 'vertriebsstatus', 'availability'],
-  grund: ['grund', 'reason', 'ursache'],
-  gemeldet_am: ['gemeldet_am', 'meldedatum', 'von', 'start', 'reported'],
-  voraussichtlich_bis: ['voraussichtlich_bis', 'bis', 'ende', 'expected_end', 'end'],
+  grund: ['grund', 'reason', 'ursache', 'reason_for_shortage'],
+  gemeldet_am: ['gemeldet_am', 'meldedatum', 'von', 'start', 'reported', 'initial_posting_date'],
+  voraussichtlich_bis: ['voraussichtlich_bis', 'bis', 'ende', 'expected_end', 'end', 'estimated_shortage_duration'],
 };
 
 function pickColumn(row, candidates) {
@@ -548,12 +577,22 @@ export function shortagesFromJson(raw, { columns = {} } = {}) {
     const rohStatus = pickColumn(row, map.status);
     const status = normalizeStatus(rohStatus);
 
-    if (!bezeichnung) { rejected.push(`#${i}: Bezeichnung fehlt`); continue; }
+    // Fehlt die Handelsbezeichnung, tritt der Wirkstoff an ihre Stelle.
+    //
+    // Ohne diese Regel verlor die openFDA-Quelle den GROSSTEIL ihrer Zeilen:
+    // Generika haben oft gar keinen Handelsnamen, dort steht nur
+    // `generic_name`. Ein Engpass von „Metformin" ohne Markennamen ist eine
+    // echte Information — sie wegzuwerfen waere schlechter, als sie unter dem
+    // Wirkstoffnamen zu fuehren. Dieselbe Regel gilt bereits beim Schreiben in
+    // die Datenbank (repo/prismaStore.js); sie hier NICHT zu haben hiess, dass
+    // dieselbe Zeile je nach Weg einmal ankam und einmal nicht.
+    const anzeigename = bezeichnung || wirkstoff;
+    if (!anzeigename) { rejected.push(`#${i}: weder Bezeichnung noch Wirkstoff`); continue; }
     if (!status) { rejected.push(`#${i}: Status unbekannt (${rohStatus || 'leer'})`); continue; }
 
     out.push({
-      wirkstoff: wirkstoff || bezeichnung,
-      bezeichnung,
+      wirkstoff: wirkstoff || anzeigename,
+      bezeichnung: anzeigename,
       status,
       grund: String(pickColumn(row, map.grund) ?? '').trim() || null,
       gemeldet_am: String(pickColumn(row, map.gemeldet_am) ?? '').trim() || null,

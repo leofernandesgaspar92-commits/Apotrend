@@ -29,6 +29,7 @@ import { createPricesService } from '../services/prices.js';
 import { createRabatteService } from '../services/rabatte.js';
 import { createExchangeService } from '../services/exchange.js';
 import { createSearchService } from '../services/search.js';
+import { createRxNormService } from '../services/rxnorm.js';
 import { createOverviewService } from '../services/overview.js';
 import { createOAuthService, buildProvidersFromEnv } from '../services/oauth.js';
 import { createPaymentsService, buildPaymentProvidersFromEnv } from '../services/payments.js';
@@ -99,7 +100,14 @@ const prices = createPricesService(pricesRepo, social, rabatteRepo);
 const rabatte = createRabatteService(rabatteRepo, social);
 const exchangeRepo = createExchangeRepo();
 const exchange = createExchangeService(exchangeRepo, social, repo, shortagesRepo);
-const search = createSearchService({ social, shortagesRepo, pricesRepo, rabatteRepo, exchange });
+// RxNorm ergaenzt die Suche um Namensvarianten (Wirkstoff <-> Handelsname).
+// Abschaltbar ueber APOPULSE_RXNORM=off — der Dienst geht ins Netz, und wer
+// das nicht will, soll es nicht muessen. Ohne ihn sucht die Anwendung wie
+// bisher; die Ergaenzung kann die Suche nur besser machen, nie schlechter.
+const rxnorm = String(process.env.APOPULSE_RXNORM || '').toLowerCase() === 'off'
+  ? null
+  : createRxNormService();
+const search = createSearchService({ social, shortagesRepo, pricesRepo, rabatteRepo, exchange, rxnorm });
 const amr = createAmrService();
 const overview = createOverviewService({ shortages, exchange, social, rabatte, prices, amr });
 const patientInfo = createPatientInfoService();
@@ -1295,7 +1303,7 @@ const routes = [
 
   // ── Übergreifende Suche (Priorität 7) ── gesperrte Module aus den Treffern nehmen.
   ['GET', /^\/api\/search$/, true, async ({ userId, query }) => {
-    const r = search.search(userId, query.get('q') || '');
+    const r = await search.search(userId, query.get('q') || '');
     const home = userCountry(userId);
     const rabatteHits = isFeatureBlocked(home, 'deals') ? [] : r.rabatte;
     const exchangeHits = isFeatureBlocked(home, 'stock_exchange') ? [] : r.exchange;
