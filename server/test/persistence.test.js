@@ -81,3 +81,30 @@ test('Persistenz-Integration: echte Social-Daten überleben dump -> JSON -> load
   assert.ok(socialRepo2.isFollowing(B.user.id, A.user.id), 'Follow wiederhergestellt');
   assert.ok(socialRepo2.isBookmarked(B.user.id, post.id), 'Bookmark wiederhergestellt');
 });
+
+// ── Wer warnt hier eigentlich? ───────────────────────────────────────────────
+// Hintergrund: Am 05.09.2026 liefen zwei Render-Dienste vom selben Branch.
+// Einer hatte die Datenbank, der andere die Kundendomain. Beide Protokolle
+// sahen für sich plausibel aus; erst das Nebeneinanderlegen zeigte, dass der
+// Dienst OHNE Datenbank die echte Adresse beantwortete. Eine Warnung, die
+// nicht sagt WER warnt, ist bei mehreren Diensten wertlos.
+
+import { dienstKennung } from '../src/http/serviceIdentity.js';
+
+test('die Dienst-Kennung nennt Name und öffentliche Adresse', () => {
+  assert.equal(
+    dienstKennung({ RENDER_SERVICE_NAME: 'apotrend-feed', RENDER_EXTERNAL_URL: 'https://www.apopulse.com' }),
+    ' [Dienst: apotrend-feed — https://www.apopulse.com]',
+  );
+});
+
+test('die Dienst-Kennung bleibt leer, wo Render nichts setzt', () => {
+  // Lokal und in Tests darf die Meldung nicht mit leeren Klammern enden.
+  assert.equal(dienstKennung({}), '');
+});
+
+test('die Dienst-Kennung kommt auch mit nur einer der beiden Angaben aus', () => {
+  assert.equal(dienstKennung({ RENDER_EXTERNAL_URL: 'https://x.onrender.com' }),
+    ' [Dienst: unbenannt — https://x.onrender.com]');
+  assert.equal(dienstKennung({ RENDER_SERVICE_NAME: 'nur-name' }), ' [Dienst: nur-name]');
+});

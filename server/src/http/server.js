@@ -55,6 +55,7 @@ import { createPrismaStore } from '../repo/prismaStore.js';
 import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
 import { issueToken, verifyToken } from './token.js';
 import { createRateLimiter } from '../domain/rateLimiter.js';
+import { dienstKennung } from './serviceIdentity.js';
 
 // Login-Brute-Force-Schutz: max. 5 Fehlversuche je (IP+E-Mail) in 15 Minuten.
 const loginLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
@@ -251,6 +252,7 @@ function durabilityReport() {
   const db_an = !!db;
   const datei = persistence ? persistence.filePath : null;
   const warnings = [];
+  const wer = dienstKennung();
   let level, summary;
 
   if (db_an) {
@@ -263,12 +265,14 @@ function durabilityReport() {
       + 'liegt auf dem kostenlosen Render-Tarif auf flüchtigem Speicher: Nach dem nächsten '
       + 'Deploy sind ALLE Konten und Passwörter weg, und alle müssen sich neu registrieren. '
       + 'Abhilfe: In Render eine PostgreSQL-Instanz anlegen und ihre Internal Database URL '
-      + 'als DATABASE_URL beim Web-Service eintragen (siehe docs/DATENBANK.md).');
+      + 'als DATABASE_URL beim Web-Service eintragen (siehe docs/DATENBANK.md).'
+      + wer);
   } else {
     level = 'flüchtig';
     summary = 'weder Datenbank noch Datei — alles geht schon beim Neustart verloren.';
     warnings.push('ApoPulse: WEDER DATABASE_URL NOCH APOPULSE_DATA_FILE gesetzt. Der Server '
-      + 'hält alles nur im Arbeitsspeicher. Für den Produktivbetrieb ungeeignet.');
+      + 'hält alles nur im Arbeitsspeicher. Für den Produktivbetrieb ungeeignet.'
+      + wer);
   }
 
   return {
@@ -1461,7 +1465,11 @@ server.listen(PORT, () => {
   // unbemerkt passieren, darum eine laute Warnung (nicht in der Testumgebung).
   if (process.env.NODE_ENV !== 'test') {
     const d = durabilityReport();
-    console.log(`ApoPulse: Datenhaltung — ${d.level}: ${d.summary}`);
+    // Die Kennung steht AUCH an der guten Meldung, nicht nur an der Warnung.
+    // Sonst lassen sich zwei Protokolle nicht nebeneinanderlegen — und genau
+    // das war nötig, um am 05.09.2026 zu sehen, dass der Dienst mit der
+    // Datenbank ein anderer war als der mit der Kundendomain.
+    console.log(`ApoPulse: Datenhaltung — ${d.level}: ${d.summary}${dienstKennung()}`);
     for (const zeile of d.warnings) console.warn('⚠️  ' + zeile);
   }
   // ── Zustand und Feed aus der Datenbank holen ────────────────────────────
