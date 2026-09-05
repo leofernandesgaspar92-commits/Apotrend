@@ -261,12 +261,38 @@ test('jedes der 16 Länder des Registers hat eine Quelle', () => {
   assert.deepEqual(fehlend, [], `Ohne Quelle: ${fehlend.join(', ')}`);
 });
 
-test('keine Quelle behauptet, geprüft zu sein', () => {
-  // In der Bauumgebung gibt es kein Netz — keine dieser URLs konnte abgerufen
-  // werden. `verified: true` wäre hier schlicht gelogen und dürfte erst nach
-  // einem erfolgreichen Lauf auf Render gesetzt werden.
+// Quellen, deren Adresse im BETRIEB nachweislich geantwortet hat — mit Beleg.
+// Nur wer hier steht, darf `verified: true` tragen.
+//
+// Diese Liste ist absichtlich lästig zu erweitern: Ein Eintrag verlangt ein
+// Datum und eine Fundstelle im Render-Protokoll. Ohne diese Hürde würde
+// `verified` nach und nach zu dem, was es bei keiner anderen Angabe dieser
+// Plattform sein darf — eine Behauptung.
+const NACHWEISLICH_GEPRUEFT = {
+  // Von der Selbstfindung im Betrieb gefunden und erfolgreich abgerufen:
+  //   05.09.2026, 14:33:34 — „basg_news — Feed selbst gefunden unter
+  //   https://www.basg.gv.at/en/whatsnew/rss (ausgezeichnet auf …/en/whatsnew)"
+  basg_news: '2026-09-05',
+};
+
+test('nur belegte Quellen behaupten, geprüft zu sein', () => {
+  // In der Bauumgebung gibt es kein Netz — von hier aus konnte keine dieser
+  // URLs abgerufen werden. `verified: true` ist deshalb nur zulässig, wenn ein
+  // Lauf auf Render es belegt hat (Liste oben). Sonst wäre es schlicht gelogen.
   for (const s of activeSources({})) {
-    assert.equal(s.verified, false, `${s.id} behauptet, geprüft zu sein`);
+    if (s.verified) {
+      assert.ok(
+        NACHWEISLICH_GEPRUEFT[s.id],
+        `${s.id} behauptet geprüft zu sein, steht aber ohne Beleg da. `
+        + 'Entweder Fundstelle im Render-Protokoll in NACHWEISLICH_GEPRUEFT eintragen '
+        + 'oder verified auf false setzen.',
+      );
+    } else {
+      assert.ok(
+        !NACHWEISLICH_GEPRUEFT[s.id],
+        `${s.id} ist belegt, trägt aber verified: false — Beleg oder Flag stimmt nicht.`,
+      );
+    }
   }
 });
 

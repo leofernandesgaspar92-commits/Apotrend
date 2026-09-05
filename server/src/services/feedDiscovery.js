@@ -133,7 +133,11 @@ const decodeAmp = (s) => String(s).replace(/&amp;/gi, '&');
  */
 export function discoveryPages(source) {
   const seiten = [];
-  if (source.homepage) seiten.push(source.homepage);
+  // `homepage` darf eine Adresse oder mehrere sein: Manche Behörden führen
+  // ihre Feeds auf einer eigenen Seite, andere nur auf der Nachrichtenseite.
+  const hinweise = Array.isArray(source.homepage) ? source.homepage
+    : (source.homepage ? [source.homepage] : []);
+  seiten.push(...hinweise.filter(Boolean));
   try { seiten.push(new URL('/', source.url).toString()); } catch { /* unbrauchbare URL */ }
   return [...new Set(seiten)];
 }
@@ -161,11 +165,24 @@ export async function discoverFeed(source, { fetchText, log = null, maxCandidate
 
     // Ausgezeichnete Feeds zuerst — sie sind die verlässliche Angabe. Erst
     // wenn es keine gibt, die unschärferen Verweise von der Übersichtsseite.
-    const kandidaten = [...parseFeedLinks(html, seite), ...parseAnchorFeedLinks(html, seite)]
-      .filter((u, i, a) => a.indexOf(u) === i)
+    const alle = [...parseFeedLinks(html, seite), ...parseAnchorFeedLinks(html, seite)]
+      .filter((u, i, a) => a.indexOf(u) === i);
+    const kandidaten = alle
       // DIE Regel: nur die amtliche Domain. Siehe Dateikopf.
       .filter((u) => isSameOrSubdomain(hostOf(u), amtlich))
       .slice(0, maxCandidates);
+
+    // Der Unterschied zwischen „Seite nicht lesbar", „Seite gelesen, kein Feed
+    // ausgezeichnet" und „Feed ausgezeichnet, aber auf fremder Domain" ist der
+    // ganze Diagnosewert dieser Funktion. Ohne diese Meldung sieht der
+    // Betreiber nur „nicht erreichbar" und weiß nicht, wo er ansetzen soll.
+    if (!kandidaten.length) {
+      log?.(`ApoPulse Quellen: ${source.id} — ${seite} gelesen (${html.length} Zeichen), `
+        + (alle.length
+          ? `${alle.length} Feed-Verweis(e) gefunden, aber keiner auf ${amtlich}: ${alle.slice(0, 3).join(', ')}`
+          : 'kein Feed ausgezeichnet und kein feedartiger Verweis gefunden'));
+      continue;
+    }
 
     for (const kandidat of kandidaten) {
       try {

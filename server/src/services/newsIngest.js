@@ -110,7 +110,13 @@ export async function ingestNews({
       const res = await fetchMastodonSource(source, { fetchJson, log });
       return { source, items: res.items, social: res };
     }
-    const holen = await fetchSource(source, { fetchText });
+    // `log` MUSS durchgereicht werden. Ohne diese Zeile schwieg die
+    // Selbstfindung: Sie lief, fand nichts, und niemand erfuhr warum — die
+    // Behörde meldete nur „nicht erreichbar". Beim ersten Live-Lauf kostete
+    // genau das die Diagnose: Ob die Startseite der Behörde nicht antwortet
+    // oder ob sie antwortet und schlicht keinen Feed auszeichnet, sind zwei
+    // völlig verschiedene Befunde mit zwei verschiedenen Gegenmitteln.
+    const holen = await fetchSource(source, { fetchText, log: (m) => log.warn?.(m) });
     return { source, items: newsFromSource(source, holen.raw), holen };
   }));
 

@@ -14,6 +14,7 @@ import {
   parseFeedLinks, parseAnchorFeedLinks, discoveryPages, discoverFeed, siehtWieFeedAus,
 } from '../src/services/feedDiscovery.js';
 import { fetchSource, __discoveryCache } from '../src/services/sources.js';
+import { ingestNews, createNewsSeenStore } from '../src/services/newsIngest.js';
 
 const FEED = '<?xml version="1.0"?><rss version="2.0"><channel><title>Amt</title></channel></rss>';
 
@@ -184,6 +185,81 @@ test('fetchSource merkt sich die gefundene Adresse, sucht aber nicht erneut', as
   });
   assert.equal(res.url, 'https://www.amt.de/neu.xml');
   assert.equal(versucht.includes('https://www.amt.de/'), false);
+  __discoveryCache.clear();
+});
+
+test('discoveryPages nimmt mehrere hinterlegte Seiten in Reihenfolge', () => {
+  assert.deepEqual(
+    discoveryPages({ url: 'https://www.amt.de/alt.xml', homepage: ['https://www.amt.de/a', 'https://www.amt.de/b'] }),
+    ['https://www.amt.de/a', 'https://www.amt.de/b', 'https://www.amt.de/'],
+  );
+});
+
+test('discoverFeed geht zur nächsten Seite, wenn die erste nichts hergibt', async () => {
+  const seiten = {
+    'https://www.amt.de/a': '<html>keine Feeds hier</html>',
+    'https://www.amt.de/b': '<link rel="alternate" type="application/rss+xml" href="/echt.xml">',
+    'https://www.amt.de/echt.xml': FEED,
+  };
+  const fund = await discoverFeed(
+    { id: 'amt', url: 'https://www.amt.de/alt.xml', format: 'rss', homepage: ['https://www.amt.de/a', 'https://www.amt.de/b'] },
+    { fetchText: async (u) => { if (!(u in seiten)) throw new Error('HTTP 404'); return seiten[u]; } },
+  );
+  assert.equal(fund.url, 'https://www.amt.de/echt.xml');
+  assert.equal(fund.page, 'https://www.amt.de/b');
+});
+
+test('discoverFeed unterscheidet in der Meldung die drei Fehlerursachen', async () => {
+  // Genau dieser Unterschied fehlte beim ersten Live-Lauf und kostete die
+  // Diagnose: „nicht erreichbar" sagt nicht, wo man ansetzen muss.
+  const meldungen = [];
+  await discoverFeed(
+    { id: 'amt', url: 'https://www.amt.de/alt.xml', format: 'rss', homepage: ['https://www.amt.de/tot', 'https://www.amt.de/leer', 'https://www.amt.de/fremd'] },
+    {
+      log: (m) => meldungen.push(m),
+      fetchText: async (u) => {
+        if (u === 'https://www.amt.de/leer') return '<html>nichts</html>';
+        if (u === 'https://www.amt.de/fremd') return '<link rel="alternate" type="application/rss+xml" href="https://woanders.example/f.xml">';
+        throw new Error('HTTP 404');
+      },
+    },
+  );
+  assert.match(meldungen[0], /nicht lesbar/);
+  assert.match(meldungen[1], /kein Feed ausgezeichnet/);
+  assert.match(meldungen[2], /keiner auf www\.amt\.de/);
+});
+
+test('fetchSource reicht das eigene Zeitlimit einer Quelle durch', async () => {
+  __discoveryCache.clear();
+  // Die TGA lief auf allen drei Adressen in die 15-s-Grenze — nicht in 404.
+  const gesehen = [];
+  await fetchSource(
+    { id: 'langsam', format: 'rss', url: 'https://www.fern.au/f.xml', timeoutMs: 30_000 },
+    { fetchText: async (u, o) => { gesehen.push(o); return FEED; } },
+  );
+  assert.deepEqual(gesehen[0], { timeoutMs: 30_000 });
+});
+
+test('ingestNews reicht das Protokoll bis in die Selbstfindung durch', async () => {
+  // DIE Regression: Beim ersten Live-Lauf lief die Suche, fand nichts und
+  // schwieg — weil `log` nicht durchgereicht wurde. Im Render-Protokoll stand
+  // dann nur „nicht erreichbar", und die Ursache blieb unsichtbar.
+  __discoveryCache.clear();
+  const warnungen = [];
+  await ingestNews({
+    env: { APOPULSE_SOURCE_TESTAMT_URL: 'https://www.testamt.de/kaputt.xml' },
+    seenStore: createNewsSeenStore(),
+    createPost: async () => ({}),
+    log: { warn: (m) => warnungen.push(m) },
+    fetchText: async (u) => {
+      if (u === 'https://www.testamt.de/') return '<html>keine Auszeichnung</html>';
+      const e = new Error('HTTP 404'); e.status = 404; throw e;
+    },
+  });
+  assert.ok(
+    warnungen.some((m) => /kein Feed ausgezeichnet/.test(m)),
+    'Die Diagnose der Selbstfindung muss im Protokoll ankommen. Warnungen: ' + JSON.stringify(warnungen),
+  );
   __discoveryCache.clear();
 });
 

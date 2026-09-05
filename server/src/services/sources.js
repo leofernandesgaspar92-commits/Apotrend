@@ -57,7 +57,11 @@ const BUILTIN = [
     id: 'bfarm_news', kind: 'news', country: 'DE', format: 'rss',
     label: 'BfArM — Aktuelles',
     url: 'https://www.bfarm.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed.xml',
-    homepage: 'https://www.bfarm.de/DE/Aktuelles/Newsletter/_node.html',
+    homepage: [
+      'https://www.bfarm.de/DE/Service/RSS/_node.html',
+      'https://www.bfarm.de/DE/Aktuelles/_node.html',
+      'https://www.bfarm.de/DE/Aktuelles/Newsletter/_node.html',
+    ],
     fallbacks: ['https://www.bundesgesundheitsministerium.de/rss/aktuelles.xml'],
     official: true, verified: false,
   },
@@ -65,21 +69,39 @@ const BUILTIN = [
     id: 'pei_news', kind: 'news', country: 'DE', format: 'rss',
     label: 'Paul-Ehrlich-Institut — Aktuelles',
     url: 'https://www.pei.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/rss-newsfeed.xml',
+    homepage: [
+      'https://www.pei.de/DE/service/rss/rss-node.html',
+      'https://www.pei.de/DE/newsroom/newsroom-node.html',
+    ],
     official: true, verified: false,
   },
   {
     id: 'basg_news', kind: 'news', country: 'AT', format: 'rss',
     label: 'BASG — Neuigkeiten',
-    url: 'https://www.basg.gv.at/rss',
+    // DIE ERSTE NACHWEISLICH GEPRÜFTE ADRESSE DIESER DATEI.
+    //
+    // Sie ist nicht geraten, sondern gefunden: Die Selbstfindung hat sie im
+    // Betrieb auf Render aus der Auszeichnung von /en/whatsnew gelesen und
+    // erfolgreich abgerufen — nachzulesen im Deploy-Protokoll vom 05.09.2026:
+    //   „basg_news — Feed selbst gefunden unter …/en/whatsnew/rss".
+    // Damit ist hier zum ersten Mal `verified: true` gerechtfertigt.
+    //
+    // Die alte Voreinstellung /rss (404) wandert in die Ersatzadressen: Sollte
+    // das BASG sie wieder aufleben lassen, greift sie erneut, ohne Deploy.
+    url: 'https://www.basg.gv.at/en/whatsnew/rss',
     homepage: 'https://www.basg.gv.at/en/whatsnew',
-    fallbacks: ['https://www.basg.gv.at/rss/news', 'https://www.sozialministerium.at/rss'],
-    official: true, verified: false,
+    fallbacks: ['https://www.basg.gv.at/rss', 'https://www.sozialministerium.at/rss'],
+    official: true, verified: true,
   },
   {
     id: 'ema_news', kind: 'news', country: 'EU', format: 'rss',
     label: 'EMA — News and press releases',
     url: 'https://www.ema.europa.eu/en/rss.xml',
-    homepage: 'https://www.ema.europa.eu/en/news-events/rss-feeds',
+    homepage: [
+      'https://www.ema.europa.eu/en/news-events/rss-feeds',
+      'https://www.ema.europa.eu/en/news',
+      'https://www.ema.europa.eu/en/homepage',
+    ],
     official: true, verified: false,
   },
   // --- Vom Owner benannte Länder ------------------------------------------
@@ -90,7 +112,10 @@ const BUILTIN = [
     id: 'swissmedic_news', kind: 'news', country: 'CH', format: 'rss',
     label: 'Swissmedic — Mitteilungen',
     url: 'https://www.swissmedic.ch/swissmedic/de/home/news/mitteilungen.rss',
-    homepage: 'https://www.swissmedic.ch/swissmedic/de/home/news/news.html',
+    homepage: [
+      'https://www.swissmedic.ch/swissmedic/de/home/news/news.html',
+      'https://www.swissmedic.ch/swissmedic/de/home.html',
+    ],
     official: true, verified: false,
   },
   {
@@ -111,6 +136,10 @@ const BUILTIN = [
     id: 'healthcanada_news', kind: 'news', country: 'CA', format: 'rss',
     label: 'Health Canada — Recalls and safety alerts',
     url: 'https://recalls-rappels.canada.ca/en/feed/recalls-alerts-rss',
+    homepage: [
+      'https://recalls-rappels.canada.ca/en',
+      'https://recalls-rappels.canada.ca/en/search/site',
+    ],
     official: true, verified: false,
   },
   {
@@ -124,6 +153,13 @@ const BUILTIN = [
     url: 'https://www.tga.gov.au/feeds/article/news.xml',
     fallbacks: ['https://www.tga.gov.au/feeds/article.xml', 'https://www.tga.gov.au/feeds/alert.xml'],
     homepage: 'https://www.tga.gov.au/news/subscribe-updates/rss-feeds',
+    // Alle DREI Adressen liefen in die Zeitüberschreitung — nicht in 404.
+    // Das ist ein anderer Befund: Die Pfade stimmen vermutlich, die Antwort
+    // kommt nur nicht in 15 s. Australien ist von Frankfurt aus rund 16 000 km
+    // entfernt, und dreimal 15 s hintereinander deutet auf einen langsamen
+    // Server, nicht auf drei falsche Pfade. Deshalb hier mehr Geduld statt
+    // neuer URLs. Kostet nichts: Die Quellen werden parallel geholt.
+    timeoutMs: 30_000,
     official: true, verified: false,
   },
   {
@@ -447,6 +483,17 @@ export const __discoveryCache = {
 
 export async function fetchSource(source, opts = {}) {
   const { discover = discoverFeed, log = null } = opts;
+  // Eigenes Zeitlimit der Quelle durchreichen. Nötig geworden für die TGA:
+  // Australien ist von Frankfurt aus weit, und 15 s reichten dort auf allen
+  // drei Adressen nicht — sie liefen sämtlich in die Zeitüberschreitung.
+  // Ein längeres Limit kostet nichts, solange es die Ausnahme bleibt: Die
+  // Abrufe laufen parallel, nur der langsamste bestimmt die Dauer.
+  const basis = opts.fetchText || fetchTextDefault;
+  const fetchText = source.timeoutMs
+    ? (u) => basis(u, { timeoutMs: source.timeoutMs })
+    : basis;
+  const unterOpts = { ...opts, fetchText };
+
   // Eine früher selbst gefundene Adresse wird MITPROBIERT, ersetzt die
   // Voreinstellung aber nicht: Steht die richtige Adresse wieder, gewinnt sie.
   const gemerkt = gefundeneAdressen.get(source.id);
@@ -456,7 +503,7 @@ export async function fetchSource(source, opts = {}) {
   const fehler = [];
   for (const [i, url] of adressen.entries()) {
     try {
-      const raw = await fetchWithRetry(url, opts);
+      const raw = await fetchWithRetry(url, unterOpts);
       return {
         raw, url, usedFallback: i > 0, fallbackIndex: i, errors: fehler,
         usedDiscovery: url === gemerkt && i > 0,
@@ -473,7 +520,7 @@ export async function fetchSource(source, opts = {}) {
     // Die Voreinstellung war falsch, nicht die Suche: Das gehört gemeldet,
     // sonst bleibt die falsche URL für immer im Quelltext stehen.
     gefundeneAdressen.delete(source.id);
-    const fund = await discover(source, { ...opts, fetchText: opts.fetchText || fetchTextDefault, log });
+    const fund = await discover(source, { ...unterOpts, log });
     if (fund) {
       gefundeneAdressen.set(source.id, fund.url);
       return {
