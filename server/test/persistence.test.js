@@ -94,7 +94,7 @@ import { dienstKennung } from '../src/http/serviceIdentity.js';
 test('die Dienst-Kennung nennt Name und öffentliche Adresse', () => {
   assert.equal(
     dienstKennung({ RENDER_SERVICE_NAME: 'apotrend-feed', RENDER_EXTERNAL_URL: 'https://www.apopulse.com' }),
-    ' [Dienst: apotrend-feed — https://www.apopulse.com]',
+    ' [Dienst: apotrend-feed — Render-Adresse: https://www.apopulse.com]',
   );
 });
 
@@ -105,6 +105,6 @@ test('die Dienst-Kennung bleibt leer, wo Render nichts setzt', () => {
 
 test('die Dienst-Kennung kommt auch mit nur einer der beiden Angaben aus', () => {
   assert.equal(dienstKennung({ RENDER_EXTERNAL_URL: 'https://x.onrender.com' }),
-    ' [Dienst: unbenannt — https://x.onrender.com]');
+    ' [Dienst: unbenannt — Render-Adresse: https://x.onrender.com]');
   assert.equal(dienstKennung({ RENDER_SERVICE_NAME: 'nur-name' }), ' [Dienst: nur-name]');
 });

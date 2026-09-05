@@ -165,7 +165,15 @@ const BUILTIN = [
     // abgerufen werden. Erst ein Lauf auf Render darf sie bestätigen.
     label: 'TGA — News',
     url: 'https://www.tga.gov.au/feeds/article/news.xml',
-    fallbacks: ['https://www.tga.gov.au/feeds/article.xml', 'https://www.tga.gov.au/feeds/alert.xml'],
+    // Ersatzadressen ENTFERNT — nicht weil sie falsch waeren, sondern weil sie
+    // nichts nuetzen und viel kosten. Das Protokoll vom 05.09.2026 zeigt: Auch
+    // mit 30 s laeuft der Abruf ab (Beginn 04:44:23, Abbruch 04:44:53). Wenn
+    // der HOST nicht antwortet, antwortet er auf keinem seiner drei Pfade.
+    // Mit drei Adressen und je zwei Versuchen waren das bis zu 180 s pro
+    // Durchlauf — alle fuenf Minuten, vollstaendig vergeblich. Jetzt hoechstens
+    // 60 s. Die Pfade selbst bleiben in der Doku vermerkt; sollte die TGA
+    // wieder erreichbar sein, greift die Selbstfindung ueber ihre RSS-Seite.
+    fallbacks: [],
     homepage: 'https://www.tga.gov.au/news/subscribe-updates/rss-feeds',
     // Alle DREI Adressen liefen in die Zeitüberschreitung — nicht in 404.
     // Das ist ein anderer Befund: Die Pfade stimmen vermutlich, die Antwort
