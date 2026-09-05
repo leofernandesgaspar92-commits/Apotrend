@@ -37,6 +37,21 @@ services:
     name: apotrend-feed
     runtime: node
     plan: free
+    # ⚠️ REGION — nachtraeglich NICHT aenderbar, und die haeufigste stille Falle.
+    #
+    # Render kann die Region eines bestehenden Dienstes nicht umziehen. Steht
+    # sie hier nicht, waehlt Render eine Voreinstellung (Oregon) — und genau
+    # das ist einmal passiert: Der Web-Dienst lief in Oregon, die Datenbanken
+    # in Frankfurt. Die Internal Database URL gilt nur INNERHALB einer Region;
+    # die Verbindung waere ohne jede Fehlermeldung schlicht nicht zustande
+    # gekommen.
+    #
+    # Frankfurt ist ausserdem die fachlich richtige Wahl: Die Plattform
+    # verarbeitet personenbezogene Daten oesterreichischer und deutscher
+    # Apotheken. Diese in den USA zu speichern waere ein Drittlandtransfer,
+    # der eine eigene Rechtsgrundlage braucht und in die
+    # Datenschutzerklaerung gehoert. In der EU zu bleiben erspart die Frage.
+    region: frankfurt
     branch: feed-first
     # Jeder Push auf feed-first löst automatisch ein neues Deploy aus
     # (explizit gesetzt statt auf Render-Default zu vertrauen).
