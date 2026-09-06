@@ -272,6 +272,69 @@ async function main() {
     await ctx.close();
   }
 
+  // ── Leere Ansichten erklären sich ─────────────────────────────────────────
+  //  Eine leere Liste ohne Erklärung ist das teuerste Signal der Plattform:
+  //  Sie sieht aus wie ein Defekt, und die Nutzerin sucht den Fehler bei sich.
+  //  In dieser Prüfumgebung ist noch kein Abruf gelaufen — die Ansicht muss
+  //  also sagen „der erste Abruf läuft gerade" und nicht schweigen.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
+    await page.goto(BASE, { waitUntil: 'networkidle' });
+
+    // Auf ein Land umschalten, fuer das nachweislich nichts vorliegt. Vorher
+    // hing die Pruefung davon ab, dass zufaellig eine Ansicht leer ist — und
+    // in der Pruefumgebung sind Engpaesse und News gefuellt. Sie lief damit
+    // ins Leere und belegte nichts. Kenia hat eine eingetragene Quelle, aber
+    // keine Referenzdaten: genau der Fall, um den es geht.
+    await page.selectOption('#countrySwitch', 'KE').catch(() => {});
+    await page.waitForTimeout(600);
+
+    let geprueft = 0;
+    // Je Ansicht der Container, der die Liste WIRKLICH traegt. Beide ueber
+    // #feed zu lesen sah in der Gegenprobe so aus, als pruefe die
+    // Engpass-Ansicht — tatsaechlich las sie zweimal den News-Text. Eine
+    // Pruefung, die zweimal dasselbe misst und zwei Haken meldet, ist
+    // schlimmer als eine, die es gar nicht erst versucht.
+    // Ueber data-tab statt ueber den Beschriftungstext: Kenia laeuft auf
+    // Englisch, und „📦 Engpaesse" gibt es dort nicht. Der News-Reiter traf
+    // vorher nur zufaellig, weil „News" in beiden Sprachen gleich heisst —
+    // die Engpass-Pruefung lief still ins Leere und meldete trotzdem nichts.
+    for (const [tab, name, sel] of [
+      ['news', 'News', '#newslist'],
+      ['shortages', 'Engpässe', '[data-shortlist]'],
+    ]) {
+      await page.click(`.tabs button[data-tab="${tab}"]`).catch(() => {});
+      await page.waitForTimeout(900);
+      const text = await page.locator(sel).innerText().catch(() => '');
+      if (!text) { findings.push(`${name}: Ansicht nicht lesbar (${sel} fehlt) — die Pruefung belegt hier nichts`); continue; }
+      // Nur prüfen, wenn die Ansicht tatsächlich leer ist — mit Inhalt gibt es
+      // nichts zu erklären, und eine Karte wäre dort sogar falsch.
+      // Kenia laeuft auf Englisch — beide Sprachfassungen pruefen.
+      if (!/Keine Engpässe|Keine News|Noch keine News|No shortages|No news/i.test(text)) {
+        // Nicht stillschweigend ueberspringen: Eine Ansicht, die hier Inhalt
+        // zeigt, obwohl fuer das Land keine Quelle liefert, ist selbst ein
+        // Befund — dann stammen die Zeilen aus laenderunabhaengigen
+        // Referenzdaten. Sichtbar machen, nicht verschlucken.
+        console.log(`  · ${name}: nicht leer (${text.trim().slice(0, 60).replace(/\s+/g, ' ')}…) — hier nichts zu erklaeren`);
+        continue;
+      }
+      geprueft++;
+      if (!/erste Abruf|Behördendaten|amtliche Quelle|first fetch|official data|official source/i.test(text)) {
+        findings.push(`${name}: leere Ansicht ohne Erklärung — genau das Signal, das wie ein Defekt aussieht. `
+          + `Gesehen: "${text.slice(0, 120).replace(/\s+/g, ' ')}"`);
+      } else {
+        console.log(`✓ ${name}: leere Ansicht erklärt sich`);
+      }
+    }
+    // Eine Prüfung, die still nichts tut, ist schlimmer als keine: Sie sieht im
+    // Protokoll aus wie ein bestandener Test. Findet sich keine leere Ansicht,
+    // muss das auffallen — dann stimmt die Annahme dieser Prüfung nicht mehr.
+    if (!geprueft) findings.push('Keine leere Ansicht gefunden — diese Prüfung lief ins Leere und belegt nichts');
+    await ctx.close();
+  }
+
   // ── Warnung vor nicht dauerhafter Speicherung ─────────────────────────────
   //  Eigener Kontext OHNE Anmeldung: Die übrige Prüfung meldet sich mit einem
   //  Token an und bekommt den Registrierungs-Bildschirm deshalb nie zu sehen —

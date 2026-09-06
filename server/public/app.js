@@ -3044,14 +3044,23 @@ async function refreshNewsRail() {
 function renderQuickRail() {
   const rail = document.getElementById('quickRail');
   if (!rail) return;
+  // Jeder Eintrag nennt den Bereich, zu dem er gehoert. Ohne diese Zuordnung
+  // bot die Schnellzugriff-Leiste weiter Lesezeichen, Verzeichnis, Team,
+  // Live-Sessions und Bestellungen an — allesamt ruhend, allesamt mit 404
+  // beim Klick. Genau das Signal, das wie ein Defekt der Plattform aussieht
+  // und das die Funktionsschaltung eigentlich verhindern soll. Gefunden erst,
+  // als eine Browser-Pruefung den Ueberblick im Klartext ausgab.
   const items = [
-    [t('ov_bookmarks'), openBookmarks],
-    [t('dir_nav'), () => openDirectory()],
-    [t('th_nav'), () => openTeamHub()],
-    [t('lv_nav'), () => openLive()],
-    [t('wb_nav'), () => openPromotions()],
-    [t('ord_title'), () => openOrders()],
-  ];
+    ['social', t('ov_bookmarks'), openBookmarks],
+    ['verzeichnis', t('dir_nav'), () => openDirectory()],
+    ['zusammenarbeit', t('th_nav'), () => openTeamHub()],
+    ['termine', t('lv_nav'), () => openLive()],
+    ['rabatte', t('wb_nav'), () => openPromotions()],
+    ['bestellung', t('ord_title'), () => openOrders()],
+  ].filter(([bereich]) => featureAn(bereich)).map(([, label, fn]) => [label, fn]);
+  // Bleibt nichts uebrig, gehoert die Leiste ganz weg — eine leere Karte mit
+  // Ueberschrift ist schlechter als keine Karte.
+  if (!items.length) { stopQuickRail(); return; }
   rail.classList.add('on');
   rail.innerHTML = `<div class="card qr-card"><div class="qr-title">${esc(t('qr_title'))}</div>${items.map((it,i)=>`<button class="qr-link" data-qr="${i}">${esc(it[0])}</button>`).join('')}</div>`;
   rail.querySelectorAll('[data-qr]').forEach(b => { b.onclick = items[+b.dataset.qr][1]; });
@@ -3179,7 +3188,16 @@ async function loadNews() {
   try {
     const d = await api('GET','/api/news?country=' + viewCountry());
     list.innerHTML = '';
-    if (!d.posts.length) { list.innerHTML = `<div class="card muted">${esc(t('nw_empty'))}</div>`; return; }
+    if (!d.posts.length) {
+      // Dieselbe ehrliche Ansage wie bei den Engpaessen — hier mit der
+      // NACHRICHTEN-Quelle, denn das sind andere Server. Ohne diese Karte
+      // stand hier nur „keine News", und das liest sich wie ein Defekt.
+      const st = await ladeCoverage(viewCountry(), 'news');
+      const k = coverageKarte(st);
+      if (k) list.appendChild(k);
+      list.appendChild(el(`<div class="card muted">${esc(t('nw_empty'))}</div>`));
+      return;
+    }
     d.posts.forEach(p => list.appendChild(postCard(p)));
   } catch(e){ list.innerHTML = ''; list.appendChild(errorState(e.message, loadTab)); }
 }
@@ -3369,11 +3387,18 @@ function renderShortlist(listBox, bar, all) {
     // Zuerst die Erklaerung, warum ueberhaupt nichts da ist — DANN der
     // Filter-Hinweis. Umgekehrt liest sich „Filter zuruecksetzen" wie die
     // Loesung eines Problems, das gar nicht am Filter liegt.
-    ladeCoverage(typeof viewCountry === 'function' ? viewCountry() : null, 'shortages').then((st) => {
-      const k = coverageKarte(st);
-      if (k && listBox.firstChild) listBox.insertBefore(k, listBox.firstChild);
-      else if (k) listBox.appendChild(k);
-    });
+    // NUR wenn ueberhaupt nichts da ist. Ist die Liste blos wegen Filter oder
+    // Suchbegriff leer, waere „die Behoerde hat nicht geantwortet" schlicht
+    // falsch — die Daten sind ja da, sie wurden nur weggefiltert. Eine falsche
+    // Stoerungsmeldung ist schlimmer als gar keine: Sie schickt die Nutzerin
+    // auf die Suche nach einem Fehler, den es nicht gibt.
+    if (!base.length && !shortageFilter && !q) {
+      ladeCoverage(typeof viewCountry === 'function' ? viewCountry() : null, 'shortages').then((st) => {
+        const k = coverageKarte(st);
+        if (k && listBox.firstChild) listBox.insertBefore(k, listBox.firstChild);
+        else if (k) listBox.appendChild(k);
+      });
+    }
     listBox.appendChild(filteredEmptyCard('sh_empty', !!(shortageFilter || q), () => {
       shortageFilter = ''; shortageQuery = '';
       const qin = bar.querySelector('[data-q]'); if (qin) qin.value = '';
