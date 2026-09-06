@@ -1,5 +1,10 @@
 // In-Memory-Store für Rabatt-Aktionen (Repository-Seam). Beim Deployment
 // ersetzbar durch echte Großhandels-Aktionsdaten (provenance='verified').
+//
+// Die Lieferanten heißen „Großhandel A/B/C" und nicht wie echte Häuser —
+// die Begründung steht ausführlich in repo/pricesRepo.js. Kurz: Ein erfundener
+// Preis unter einem echten Firmennamen ist auch dann ein Problem, wenn er
+// korrekt als Referenzdatum gekennzeichnet ist.
 // Hier: kuratierte Referenzdaten (provenance='reference'), Herkunft ehrlich
 // gekennzeichnet. Top-10 = laufende Aktionen, nach Rabatt-Höhe absteigend.
 import crypto from 'node:crypto';
@@ -16,22 +21,22 @@ import crypto from 'node:crypto';
 // Negative Werte sind Absicht: Eine abgelaufene Aktion gehoert in den Seed,
 // damit die Filterung „nur laufende" ueberhaupt etwas zu filtern hat.
 const SEED = [
-  { bezeichnung: 'Ibuprofen 400 mg',    wirkstoff: 'Ibuprofen',    supplier: 'Herba Chemosan', listenpreis: 2.35, aktionspreis: 1.65, min_menge: 50,  tage: 85 },
-  { bezeichnung: 'Pantoprazol 40 mg',   wirkstoff: 'Pantoprazol',  supplier: 'Kwizda',         listenpreis: 5.08, aktionspreis: 3.90, min_menge: 20,  tage: 55 },
-  { bezeichnung: 'Metformin 850 mg',    wirkstoff: 'Metformin',    supplier: 'Jacoby GM',      listenpreis: 6.95, aktionspreis: 5.20, min_menge: 30,  tage: 39 },
-  { bezeichnung: 'Amoxicillin 1000 mg', wirkstoff: 'Amoxicillin',  supplier: 'Kwizda',         listenpreis: 3.98, aktionspreis: 3.10, min_menge: 100, tage: 24 },
-  { bezeichnung: 'Cetirizin 10 mg',     wirkstoff: 'Cetirizin',    supplier: 'Herba Chemosan', listenpreis: 1.90, aktionspreis: 1.45, min_menge: 40,  tage: 116 },
-  { bezeichnung: 'Vitamin D3 20.000 IE', wirkstoff: 'Colecalciferol', supplier: 'Jacoby GM',   listenpreis: 4.20, aktionspreis: 3.15, min_menge: 25,  tage: 70 },
-  { bezeichnung: 'Simvastatin 40 mg',   wirkstoff: 'Simvastatin',  supplier: 'Herba Chemosan', listenpreis: 5.60, aktionspreis: 4.55, min_menge: 30,  tage: 44 },
-  { bezeichnung: 'Omeprazol 20 mg',     wirkstoff: 'Omeprazol',    supplier: 'Kwizda',         listenpreis: 3.30, aktionspreis: 2.75, min_menge: 50,  tage: 60 },
-  { bezeichnung: 'ASS 100 mg',          wirkstoff: 'Acetylsalicylsäure', supplier: 'Jacoby GM', listenpreis: 1.40, aktionspreis: 1.20, min_menge: 60, tage: 146 },
-  { bezeichnung: 'Ramipril 5 mg',       wirkstoff: 'Ramipril',     supplier: 'Herba Chemosan', listenpreis: 4.80, aktionspreis: 4.15, min_menge: 20,  tage: 34 },
-  { bezeichnung: 'Salbutamol Spray',    wirkstoff: 'Salbutamol',   supplier: 'Kwizda',         listenpreis: 7.90, aktionspreis: 7.10, min_menge: 10,  tage: 177 },
+  { bezeichnung: 'Ibuprofen 400 mg',    wirkstoff: 'Ibuprofen',    supplier: 'Großhandel A', listenpreis: 2.35, aktionspreis: 1.65, min_menge: 50,  tage: 85 },
+  { bezeichnung: 'Pantoprazol 40 mg',   wirkstoff: 'Pantoprazol',  supplier: 'Großhandel B',         listenpreis: 5.08, aktionspreis: 3.90, min_menge: 20,  tage: 55 },
+  { bezeichnung: 'Metformin 850 mg',    wirkstoff: 'Metformin',    supplier: 'Großhandel C',      listenpreis: 6.95, aktionspreis: 5.20, min_menge: 30,  tage: 39 },
+  { bezeichnung: 'Amoxicillin 1000 mg', wirkstoff: 'Amoxicillin',  supplier: 'Großhandel B',         listenpreis: 3.98, aktionspreis: 3.10, min_menge: 100, tage: 24 },
+  { bezeichnung: 'Cetirizin 10 mg',     wirkstoff: 'Cetirizin',    supplier: 'Großhandel A', listenpreis: 1.90, aktionspreis: 1.45, min_menge: 40,  tage: 116 },
+  { bezeichnung: 'Vitamin D3 20.000 IE', wirkstoff: 'Colecalciferol', supplier: 'Großhandel C',   listenpreis: 4.20, aktionspreis: 3.15, min_menge: 25,  tage: 70 },
+  { bezeichnung: 'Simvastatin 40 mg',   wirkstoff: 'Simvastatin',  supplier: 'Großhandel A', listenpreis: 5.60, aktionspreis: 4.55, min_menge: 30,  tage: 44 },
+  { bezeichnung: 'Omeprazol 20 mg',     wirkstoff: 'Omeprazol',    supplier: 'Großhandel B',         listenpreis: 3.30, aktionspreis: 2.75, min_menge: 50,  tage: 60 },
+  { bezeichnung: 'ASS 100 mg',          wirkstoff: 'Acetylsalicylsäure', supplier: 'Großhandel C', listenpreis: 1.40, aktionspreis: 1.20, min_menge: 60, tage: 146 },
+  { bezeichnung: 'Ramipril 5 mg',       wirkstoff: 'Ramipril',     supplier: 'Großhandel A', listenpreis: 4.80, aktionspreis: 4.15, min_menge: 20,  tage: 34 },
+  { bezeichnung: 'Salbutamol Spray',    wirkstoff: 'Salbutamol',   supplier: 'Großhandel B',         listenpreis: 7.90, aktionspreis: 7.10, min_menge: 10,  tage: 177 },
   // Zweite laufende Aktion zum selben Wirkstoff (Ibuprofen) — für den
   // "beste Aktion je Wirkstoff"-Vergleich.
-  { bezeichnung: 'Ibuprofen 400 mg',    wirkstoff: 'Ibuprofen',    supplier: 'Kwizda',         listenpreis: 2.35, aktionspreis: 1.80, min_menge: 30,  tage: 100 },
+  { bezeichnung: 'Ibuprofen 400 mg',    wirkstoff: 'Ibuprofen',    supplier: 'Großhandel B',         listenpreis: 2.35, aktionspreis: 1.80, min_menge: 30,  tage: 100 },
   // Abgelaufene Aktion — darf NICHT im Top-10 auftauchen.
-  { bezeichnung: 'Diclofenac 50 mg',    wirkstoff: 'Diclofenac',   supplier: 'Jacoby GM',      listenpreis: 3.00, aktionspreis: 1.50, min_menge: 30,  tage: -36 },
+  { bezeichnung: 'Diclofenac 50 mg',    wirkstoff: 'Diclofenac',   supplier: 'Großhandel C',      listenpreis: 3.00, aktionspreis: 1.50, min_menge: 30,  tage: -36 },
 ];
 
 export function createRabatteRepo({ seed = true, today = null } = {}) {

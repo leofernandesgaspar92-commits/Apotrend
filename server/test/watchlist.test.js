@@ -182,14 +182,14 @@ test('Premium-Notizen: nur mit Premium, nur für beobachtete Wirkstoffe, erschei
   const uid = A.user.id;
   shortages.watch(uid, 'Amoxicillin');
   // ohne Premium -> premium_required
-  assert.throws(() => shortages.setWatchNote(uid, 'Amoxicillin', 'Lieferant Kwizda'), e => e.code === 'premium_required');
+  assert.throws(() => shortages.setWatchNote(uid, 'Amoxicillin', 'Lieferant Großhandel B'), e => e.code === 'premium_required');
   premiumUsers.add(uid);
   // Notiz nur für beobachtete Wirkstoffe
   assert.throws(() => shortages.setWatchNote(uid, 'Ibuprofen', 'x'), e => e.code === 'not_watched');
   // setzen -> erscheint in myWatchlist
-  shortages.setWatchNote(uid, 'Amoxicillin', 'Lieferant Kwizda, Meldebestand 20');
+  shortages.setWatchNote(uid, 'Amoxicillin', 'Lieferant Großhandel B, Meldebestand 20');
   const item = shortages.myWatchlist(uid).find(i => i.wirkstoff === 'Amoxicillin');
-  assert.equal(item.note, 'Lieferant Kwizda, Meldebestand 20');
+  assert.equal(item.note, 'Lieferant Großhandel B, Meldebestand 20');
   // leeren -> Notiz weg; Persistenz-Roundtrip
   shortages.setWatchNote(uid, 'Amoxicillin', '  ');
   assert.equal(shortages.myWatchlist(uid).find(i => i.wirkstoff === 'Amoxicillin').note, '');

@@ -56,7 +56,7 @@ test('Bestellung: erwartetes Lieferdatum setzen/entfernen; fremde Order gesperrt
 
 test('Bestell-Historie: checkout schnappschottet + leert, reorder füllt neu, delete entfernt', () => {
   const { social, a } = setup();
-  social.addToCart(a, { bezeichnung: 'Amoxi', supplier: 'Kwizda', aktionspreis: 7, listenpreis: 10, menge: 3, sourceKind: 'rabatt' });
+  social.addToCart(a, { bezeichnung: 'Amoxi', supplier: 'Großhandel B', aktionspreis: 7, listenpreis: 10, menge: 3, sourceKind: 'rabatt' });
   social.addToCart(a, { bezeichnung: 'Ibu', supplier: 'Herba', aktionspreis: 5, menge: 2, sourceKind: 'price' });
   // Abschließen -> Order angelegt, Liste geleert
   const order = social.checkoutCart(a, { reference: 'KW32' });
@@ -83,18 +83,18 @@ test('Bestell-Historie: checkout schnappschottet + leert, reorder füllt neu, de
 
 test('Checkout je Lieferant: nur die Positionen eines Großhandels abschließen, Rest bleibt', () => {
   const { social, a } = setup();
-  social.addToCart(a, { bezeichnung: 'Amoxi', supplier: 'Kwizda', aktionspreis: 7, listenpreis: 10, menge: 3, sourceKind: 'rabatt' });
-  social.addToCart(a, { bezeichnung: 'Clari', supplier: 'Kwizda', aktionspreis: 4, menge: 2, sourceKind: 'price' });
+  social.addToCart(a, { bezeichnung: 'Amoxi', supplier: 'Großhandel B', aktionspreis: 7, listenpreis: 10, menge: 3, sourceKind: 'rabatt' });
+  social.addToCart(a, { bezeichnung: 'Clari', supplier: 'Großhandel B', aktionspreis: 4, menge: 2, sourceKind: 'price' });
   social.addToCart(a, { bezeichnung: 'Ibu', supplier: 'Herba', aktionspreis: 5, menge: 2, sourceKind: 'price' });
   social.addToCart(a, { bezeichnung: 'Handschuhe', menge: 1, sourceKind: 'manual' }); // ohne Lieferant
 
-  // Nur Kwizda abschließen: eigene Order mit korrekten Summen NUR aus Kwizda-Positionen.
-  const order = social.checkoutCart(a, { reference: 'KW32', supplier: 'Kwizda' });
+  // Nur Großhandel B abschließen: eigene Order mit korrekten Summen NUR aus Großhandel B-Positionen.
+  const order = social.checkoutCart(a, { reference: 'KW32', supplier: 'Großhandel B' });
   assert.equal(order.positions, 2);
   assert.equal(order.total_pieces, 5); // 3 + 2
   assert.equal(order.total_price, 7 * 3 + 4 * 2); // 29 — Herba/manuell NICHT enthalten
   assert.equal(order.total_savings, (10 - 7) * 3); // 9
-  assert.ok(order.items.every(i => i.supplier === 'Kwizda'));
+  assert.ok(order.items.every(i => i.supplier === 'Großhandel B'));
 
   // Rest bleibt in der Liste (Herba + Handschuhe).
   const c = social.cart(a);
@@ -121,7 +121,7 @@ test('Checkout je Lieferant: nur die Positionen eines Großhandels abschließen,
 
 test('Checkout je Lieferant: unbekannter Lieferant wirft, ganze Liste bleibt unangetastet', () => {
   const { social, a } = setup();
-  social.addToCart(a, { bezeichnung: 'Amoxi', supplier: 'Kwizda', aktionspreis: 7, menge: 3, sourceKind: 'rabatt' });
+  social.addToCart(a, { bezeichnung: 'Amoxi', supplier: 'Großhandel B', aktionspreis: 7, menge: 3, sourceKind: 'rabatt' });
   assert.throws(() => social.checkoutCart(a, { supplier: 'GibtsNicht' }), /Lieferanten|supplier/i);
   assert.equal(social.cart(a).count, 1, 'nichts entfernt');
   assert.equal(social.listOrders(a).length, 0, 'keine Order angelegt');
@@ -132,7 +132,7 @@ test('Bestell-Vorlagen: speichern, anwenden (Merge in Liste), löschen; leere Li
   // Leere Liste -> Speichern nicht möglich.
   assert.throws(() => social.saveCartAsTemplate(a, 'Woche'), /leer|empty/i);
   // Name-Validierung.
-  social.addToCart(a, { bezeichnung: 'Amoxi', supplier: 'Kwizda', aktionspreis: 7, listenpreis: 10, menge: 3, sourceKind: 'rabatt' });
+  social.addToCart(a, { bezeichnung: 'Amoxi', supplier: 'Großhandel B', aktionspreis: 7, listenpreis: 10, menge: 3, sourceKind: 'rabatt' });
   social.addToCart(a, { bezeichnung: 'Ibu', supplier: 'Herba', aktionspreis: 5, menge: 2, sourceKind: 'price' });
   assert.throws(() => social.saveCartAsTemplate(a, ' '), /Namen|name/i);
   // Vorlage speichern -> Zusammenfassung stimmt; Liste bleibt unangetastet.
@@ -163,7 +163,7 @@ test('Bestell-Vorlagen: speichern, anwenden (Merge in Liste), löschen; leere Li
 
 test('Bestellung: Lieferstatus setzen/zurücksetzen; fremde Order gesperrt; Persistenz', () => {
   const { srepo, social, a, b } = setup();
-  social.addToCart(a, { bezeichnung: 'Amoxi', supplier: 'Kwizda', aktionspreis: 7, menge: 3, sourceKind: 'rabatt' });
+  social.addToCart(a, { bezeichnung: 'Amoxi', supplier: 'Großhandel B', aktionspreis: 7, menge: 3, sourceKind: 'rabatt' });
   const order = social.checkoutCart(a);
   assert.equal(order.received_at ?? null, null, 'frisch: noch nicht geliefert');
   // Als geliefert markieren -> received_at gesetzt; in der Liste sichtbar.
@@ -201,7 +201,7 @@ test('Bestell-Historie: fremde Order nicht abrufbar/änderbar', () => {
 test('Einkaufsliste: Gesamtersparnis aus Listen- vs. Aktionspreis', () => {
   const { social, a } = setup();
   // Rabatt-Position mit Listenpreis 10, Aktionspreis 7, Menge 4 -> Ersparnis 12
-  social.addToCart(a, { bezeichnung: 'Amoxi', supplier: 'Kwizda', aktionspreis: 7, listenpreis: 10, menge: 4, sourceKind: 'rabatt' });
+  social.addToCart(a, { bezeichnung: 'Amoxi', supplier: 'Großhandel B', aktionspreis: 7, listenpreis: 10, menge: 4, sourceKind: 'rabatt' });
   // Position ohne Listenpreis zählt nicht zur Ersparnis
   social.addToCart(a, { bezeichnung: 'Ibu', supplier: 'Herba', aktionspreis: 5, menge: 2, sourceKind: 'price' });
   const c = social.cart(a);
@@ -217,7 +217,7 @@ test('Einkaufsliste: Gesamtersparnis aus Listen- vs. Aktionspreis', () => {
 
 test('Einkaufsliste: Merge trägt fehlenden Listenpreis nach (Ersparnis aktiv)', () => {
   const { social, a } = setup();
-  const base = { bezeichnung: 'Amoxi', wirkstoff: 'Amoxicillin', supplier: 'Kwizda', aktionspreis: 7, sourceKind: 'rabatt' };
+  const base = { bezeichnung: 'Amoxi', wirkstoff: 'Amoxicillin', supplier: 'Großhandel B', aktionspreis: 7, sourceKind: 'rabatt' };
   social.addToCart(a, { ...base, menge: 2 });                 // ohne Listenpreis
   assert.equal(social.cart(a).total_savings, 0);
   social.addToCart(a, { ...base, listenpreis: 10, menge: 1 }); // identische Position, jetzt mit Listenpreis
@@ -229,7 +229,7 @@ test('Einkaufsliste: Merge trägt fehlenden Listenpreis nach (Ersparnis aktiv)',
 
 test('Einkaufsliste: identisches Angebot doppelt hinzufügen führt Menge zusammen (keine Dublette)', () => {
   const { social, a } = setup();
-  const base = { bezeichnung: 'Amoxi 1000', wirkstoff: 'Amoxicillin', supplier: 'Kwizda', aktionspreis: 4.5, sourceKind: 'rabatt' };
+  const base = { bezeichnung: 'Amoxi 1000', wirkstoff: 'Amoxicillin', supplier: 'Großhandel B', aktionspreis: 4.5, sourceKind: 'rabatt' };
   social.addToCart(a, { ...base, menge: 2 });
   social.addToCart(a, { ...base, menge: 3 }); // dieselbe Position -> Menge 5
   let c = social.cart(a);

@@ -79,7 +79,7 @@ test('refreshShortages: ohne konfigurierte Quelle wird übersprungen (nicht ange
 test('validatePricePayload: prüft bezeichnung/supplier/aep; sammelt Fehler', () => {
   assert.equal(validatePricePayload({}).ok, false, 'ohne prices-Array ungültig');
   const good = validatePricePayload({ prices: [
-    { bezeichnung: 'Amoxicillin 1000 mg', wirkstoff: 'Amoxicillin', supplier: 'Kwizda', aep: 3.01, prev_aep: 3.05, series: [3.1, 3.0] },
+    { bezeichnung: 'Amoxicillin 1000 mg', wirkstoff: 'Amoxicillin', supplier: 'Großhandel B', aep: 3.01, prev_aep: 3.05, series: [3.1, 3.0] },
   ] });
   assert.equal(good.ok, true);
   assert.equal(good.rows[0].currency, 'EUR', 'Währung default EUR');
@@ -99,7 +99,7 @@ test('refreshPrices: übernimmt gültige Preise (verified), ersetzt Seed; Fehler
   const before = repo.listFlat().length;
   const env = { APOPULSE_LIVE_PRICES_AT: 'https://live/prices.json' };
   const payload = { source: 'Großhandel-X', prices: [
-    { bezeichnung: 'Amoxicillin 1000 mg', supplier: 'Kwizda', aep: 2.99, prev_aep: 3.05 },
+    { bezeichnung: 'Amoxicillin 1000 mg', supplier: 'Großhandel B', aep: 2.99, prev_aep: 3.05 },
     { bezeichnung: 'Amoxicillin 1000 mg', supplier: 'Herba', aep: 3.40 },
   ] };
   const r = await refreshPrices('AT', { fetchJson: async () => payload, pricesRepo: repo, env });
@@ -131,7 +131,7 @@ test('validateRabattePayload + refreshRabatte: Pflichtfelder, Übernahme (verifi
   const before = repo.listFlat().length;
   const env = { APOPULSE_LIVE_RABATTE_AT: 'https://live/deals.json' };
   const payload = { source: 'Aktions-Feed', rabatte: [
-    { bezeichnung: 'Ibuprofen 400 mg', wirkstoff: 'Ibuprofen', supplier: 'Kwizda', listenpreis: 2.35, aktionspreis: 1.60, min_menge: 30, gueltig_bis: '2026-12-31' },
+    { bezeichnung: 'Ibuprofen 400 mg', wirkstoff: 'Ibuprofen', supplier: 'Großhandel B', listenpreis: 2.35, aktionspreis: 1.60, min_menge: 30, gueltig_bis: '2026-12-31' },
   ] };
   const r = await refreshRabatte('AT', { fetchJson: async () => payload, rabatteRepo: repo, env });
   assert.equal(r.ok, true);

@@ -15,11 +15,24 @@ function rawGet(path, headers = {}) {
   });
 }
 
+import { featureListe, featureEnvKey } from '../src/data/features.js';
+
 const PORT = 4200 + Math.floor(Math.random() * 300);
 process.env.PORT = String(PORT);
 process.env.APOPULSE_ADMIN_EMAIL = 'red@apopulse.test';
 process.env.APOPULSE_ADMIN_PASSWORD = 'redredred123';
 delete process.env.APOPULSE_DATA_FILE; // In-Memory
+
+// ── Alle Bereiche AN, auch die ruhenden ─────────────────────────────────────
+// Das Audit vom 06.09.2026 hat mehrere Bereiche geparkt (data/features.js).
+// Geparkt heisst ausgeblendet, NICHT aufgegeben: Sie lassen sich mit einer
+// Umgebungsvariable zurueckschalten. Genau deshalb muessen sie weiter getestet
+// werden — ein ruhender Bereich, dessen Tests verfallen, ist nicht ruhend,
+// sondern kaputt, und das faellt erst beim Wiedereinschalten auf.
+//
+// Dass die Bereiche im NORMALZUSTAND tatsaechlich schweigen, prueft eine
+// eigene Datei: test/features-http.test.js. Beides gehoert zusammen.
+for (const f of featureListe({})) process.env[featureEnvKey(f.id)] = 'an';
 const BASE = `http://localhost:${PORT}`;
 const H = (t) => ({ 'content-type': 'application/json', ...(t ? { authorization: 'Bearer ' + t } : {}) });
 

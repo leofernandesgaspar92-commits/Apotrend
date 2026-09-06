@@ -73,7 +73,7 @@ test('Leere Suche liefert leeres Ergebnis', async () => {
 
 test('Rabatt-Treffer nach Rabatt-Höhe sortiert', async () => {
   const { search, a } = setup();
-  const r = await search.search(a, 'Kwizda');
+  const r = await search.search(a, 'Großhandel B');
   assert.ok(r.rabatte.length >= 1);
   for (let i = 1; i < r.rabatte.length; i++) assert.ok(r.rabatte[i-1].rabatt_pct >= r.rabatte[i].rabatt_pct);
 });

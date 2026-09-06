@@ -1,17 +1,37 @@
 // In-Memory-Store für Preise (Repository-Seam). Beim Deployment ersetzbar durch
 // echte Großhandels-/Marktdaten (provenance='verified'). Hier: kuratierte
 // Referenzdaten (provenance='reference'), Herkunft ehrlich gekennzeichnet.
+//
+// ──────────────────────────────────────────────────────────────────────────
+// WARUM DIE LIEFERANTEN „Großhandel A/B/C" HEISSEN
+// ──────────────────────────────────────────────────────────────────────────
+// Bis zum 06.09.2026 standen hier die Namen real existierender österreichischer
+// Großhändler — mit Preisen, die nicht von ihnen stammen. Intern war das als
+// provenance='reference' sauber gekennzeichnet, und die Oberfläche zeigt
+// „📌 Referenzdaten".
+//
+// Das genügt nicht. Eine Apothekerin liest „<echter Name>: 3,01 €" als Preis
+// dieses Hauses; das Wort „Referenzdaten" erklärt ihr nicht, dass die Zahl
+// erfunden ist. Und ein Großhändler, der seinen Namen neben einem nie
+// gemachten Preis findet, hat ein berechtigtes Anliegen — wettbewerbs- wie
+// äußerungsrechtlich.
+//
+// Neutrale Namen kosten nichts und nehmen dem Vergleich nichts: Der Nutzen
+// dieser Ansicht liegt in der Mechanik (mehrere Anbieter, Verlauf, Ersparnis),
+// nicht darin, welcher Name danebensteht. Sobald ECHTE Lieferantendaten
+// vorliegen, kommen mit ihnen auch die echten Namen zurück — dann aber mit
+// provenance='verified', und dann stimmt die Zuordnung auch.
 import crypto from 'node:crypto';
 
 // Mehrere Lieferanten je Präparat -> Preisvergleich. series = letzte Preise.
 const SEED = [
-  { bezeichnung: 'Amoxicillin 1000 mg', wirkstoff: 'Amoxicillin', supplier: 'Herba Chemosan', aep: 3.98, prev_aep: 3.72, series: [3.55, 3.60, 3.72, 3.98] },
-  { bezeichnung: 'Amoxicillin 1000 mg', wirkstoff: 'Amoxicillin', supplier: 'Kwizda',         aep: 3.01, prev_aep: 3.05, series: [3.10, 3.08, 3.05, 3.01] },
-  { bezeichnung: 'Amoxicillin 1000 mg', wirkstoff: 'Amoxicillin', supplier: 'Jacoby GM',      aep: 4.10, prev_aep: 4.02, series: [3.95, 4.00, 4.02, 4.10] },
-  { bezeichnung: 'Metformin 850 mg',    wirkstoff: 'Metformin',    supplier: 'Herba Chemosan', aep: 6.80, prev_aep: 6.95, series: [7.10, 7.00, 6.95, 6.80] },
-  { bezeichnung: 'Metformin 850 mg',    wirkstoff: 'Metformin',    supplier: 'Kwizda',         aep: 7.05, prev_aep: 7.05, series: [7.05, 7.05, 7.05, 7.05] },
-  { bezeichnung: 'Pantoprazol 40 mg',   wirkstoff: 'Pantoprazol',  supplier: 'Jacoby GM',      aep: 5.08, prev_aep: 4.90, series: [4.80, 4.85, 4.90, 5.08] },
-  { bezeichnung: 'Ibuprofen 400 mg',    wirkstoff: 'Ibuprofen',    supplier: 'Herba Chemosan', aep: 2.35, prev_aep: 2.20, series: [2.10, 2.15, 2.20, 2.35] },
+  { bezeichnung: 'Amoxicillin 1000 mg', wirkstoff: 'Amoxicillin', supplier: 'Großhandel A', aep: 3.98, prev_aep: 3.72, series: [3.55, 3.60, 3.72, 3.98] },
+  { bezeichnung: 'Amoxicillin 1000 mg', wirkstoff: 'Amoxicillin', supplier: 'Großhandel B',         aep: 3.01, prev_aep: 3.05, series: [3.10, 3.08, 3.05, 3.01] },
+  { bezeichnung: 'Amoxicillin 1000 mg', wirkstoff: 'Amoxicillin', supplier: 'Großhandel C',      aep: 4.10, prev_aep: 4.02, series: [3.95, 4.00, 4.02, 4.10] },
+  { bezeichnung: 'Metformin 850 mg',    wirkstoff: 'Metformin',    supplier: 'Großhandel A', aep: 6.80, prev_aep: 6.95, series: [7.10, 7.00, 6.95, 6.80] },
+  { bezeichnung: 'Metformin 850 mg',    wirkstoff: 'Metformin',    supplier: 'Großhandel B',         aep: 7.05, prev_aep: 7.05, series: [7.05, 7.05, 7.05, 7.05] },
+  { bezeichnung: 'Pantoprazol 40 mg',   wirkstoff: 'Pantoprazol',  supplier: 'Großhandel C',      aep: 5.08, prev_aep: 4.90, series: [4.80, 4.85, 4.90, 5.08] },
+  { bezeichnung: 'Ibuprofen 400 mg',    wirkstoff: 'Ibuprofen',    supplier: 'Großhandel A', aep: 2.35, prev_aep: 2.20, series: [2.10, 2.15, 2.20, 2.35] },
 ];
 
 export function createPricesRepo({ seed = true } = {}) {

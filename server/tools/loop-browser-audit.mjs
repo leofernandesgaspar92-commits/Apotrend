@@ -233,6 +233,45 @@ async function main() {
     await ctx.close();
   }
 
+  // ── Ruhende Bereiche haben keine Bedienelemente ───────────────────────────
+  //  Nach dem Audit vom 06.09.2026 ruhen mehrere Bereiche (src/data/features.js).
+  //  Ein Reiter, der beim Klick 404 liefert, ist schlimmer als kein Reiter: Er
+  //  sieht aus wie ein Fehler der Plattform, und die Nutzerin sucht den Fehler
+  //  bei sich. Diese Prüfung fährt bewusst in der VOREINSTELLUNG — sie prüft,
+  //  was tatsächlich ausgeliefert wird, nicht was der Code könnte.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
+    await page.goto(BASE, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(700);
+
+    const zustand = await page.evaluate(() => fetch('/api/features').then((r) => r.json()));
+    const ruht = new Set((zustand.features || []).filter((f) => f.zustand === 'ruht').map((f) => f.id));
+
+    const erwartet = [
+      ['tauschboerse', '.tabs button[data-tab="exchange"]', 'Reiter „Biete/Suche"'],
+      ['direktnachrichten', '#btnDm', 'Nachrichten-Knopf'],
+      ['bestellung', '#btnCart', 'Warenkorb-Knopf'],
+    ];
+    let geprueft = 0;
+    for (const [id, sel, name] of erwartet) {
+      if (!ruht.has(id)) continue;
+      geprueft++;
+      const da = await page.locator(sel).count();
+      if (da > 0) findings.push(`${name} ist sichtbar, obwohl "${id}" ruht`);
+    }
+    // Gegenprobe: Der Kern MUSS bedienbar bleiben, sonst hat die Schaltung zu
+    // viel entfernt und der Test bemerkte es nicht.
+    for (const [sel, name] of [['.tabs button[data-tab="shortages"]', 'Engpässe'],
+      ['.tabs button[data-tab="news"]', 'News']]) {
+      if (await page.locator(sel).count() === 0) findings.push(`Reiter „${name}" fehlt — die Schaltung greift zu weit`);
+    }
+    if (!geprueft) findings.push('Kein ruhender Bereich prüfbar — läuft dieser Audit versehentlich mit allen Bereichen an?');
+    else console.log(`✓ Ruhende Bereiche zeigen keine Bedienelemente (${geprueft} geprüft), Kern-Reiter vorhanden`);
+    await ctx.close();
+  }
+
   // ── Warnung vor nicht dauerhafter Speicherung ─────────────────────────────
   //  Eigener Kontext OHNE Anmeldung: Die übrige Prüfung meldet sich mit einem
   //  Token an und bekommt den Registrierungs-Bildschirm deshalb nie zu sehen —

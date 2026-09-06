@@ -25,9 +25,9 @@ test('Preisvergleich: nach Präparat gruppiert, günstigster Lieferant zuerst, T
   // guenstigster zuerst
   assert.ok(amox.offers[0].aep <= amox.offers[1].aep);
   assert.equal(amox.offers[0].provenance, 'reference');
-  // Trend: Herba 3.98 (prev 3.72) -> positiv; Kwizda 3.01 (prev 3.05) -> negativ
-  const herba = amox.offers.find(o => o.supplier === 'Herba Chemosan');
-  const kwizda = amox.offers.find(o => o.supplier === 'Kwizda');
+  // Trend: Herba 3.98 (prev 3.72) -> positiv; Großhandel B 3.01 (prev 3.05) -> negativ
+  const herba = amox.offers.find(o => o.supplier === 'Großhandel A');
+  const kwizda = amox.offers.find(o => o.supplier === 'Großhandel B');
   assert.ok(herba.trend_pct > 0);
   assert.ok(kwizda.trend_pct < 0);
 });
@@ -49,4 +49,37 @@ test('Aus Preis heraus posten -> Beitrag referenziert das Angebot + Aktivität',
 test('Posten zu unbekanntem Preis wird abgelehnt', () => {
   const { prices, a } = setup();
   assert.throws(() => prices.postAbout(a, 'nope', { body: 'x' }), /nicht gefunden/);
+});
+
+// ── Keine erfundenen Preise unter echten Firmennamen ────────────────────────
+// Bis zum 06.09.2026 nannten die Referenzdaten real existierende
+// oesterreichische Grosshaendler mit Preisen, die nicht von ihnen stammen.
+// Intern war das als provenance='reference' gekennzeichnet — das genuegt aber
+// nicht: Eine Apothekerin liest „<Name>: 3,01 €" als Preis dieses Hauses, und
+// das betroffene Unternehmen haette ein berechtigtes Anliegen.
+//
+// Dieser Test haelt die Entscheidung fest. Kommen echte Namen zurueck, dann
+// bitte GEMEINSAM mit echten Daten (provenance='verified') — dann faellt hier
+// bewusst etwas auf, und jemand muss diese Zeile mit Bedacht anfassen.
+
+import { readFileSync } from 'node:fs';
+
+test('Referenzdaten tragen keine echten Grosshaendler-Namen', () => {
+  const ECHTE_HAEUSER = [
+    'Herba Chemosan', 'Kwizda', 'Jacoby', 'Phoenix', 'Sanacorp',
+    'Noweda', 'Gehe', 'Alliance Healthcare', 'AEP Arzneimittel',
+  ];
+  for (const datei of ['../src/repo/pricesRepo.js', '../src/repo/rabatteRepo.js']) {
+    const quelltext = readFileSync(new URL(datei, import.meta.url), 'utf8');
+    // Nur der Datenteil zaehlt: Im Kommentarkopf steht die Begruendung, und
+    // dort DUERFEN die Namen nicht stehen — deshalb pruefen wir die Zeilen mit
+    // `supplier:`, wo die Daten tatsaechlich liegen.
+    const zeilen = quelltext.split('\n').filter((z) => z.includes('supplier:'));
+    for (const haus of ECHTE_HAEUSER) {
+      const treffer = zeilen.filter((z) => z.includes(haus));
+      assert.equal(treffer.length, 0,
+        `${datei}: „${haus}" steht an erfundenen Referenzdaten. `
+        + 'Entweder neutralen Namen verwenden oder echte Daten mit provenance="verified" liefern.');
+    }
+  }
 });

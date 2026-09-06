@@ -6,8 +6,12 @@
 // Aufruf:  node tools/loop-smoke.mjs [baseUrl]      Exit 0 = alle Schritte grün.
 import pkg from '/opt/node22/lib/node_modules/playwright/index.js';
 import { ensureServer } from './_ensure-server.mjs';
+import { featureListe, featureEnvKey } from '../src/data/features.js';
 const { chromium } = pkg;
-const BASE = process.argv[2] || 'http://127.0.0.1:4000';
+// Eigener Port: Dieser Test fährt mit allen Bereichen an, die Browser-Prüfung
+// mit der Voreinstellung. Gleicher Port hiesse, das zweite Werkzeug erbt den
+// Server des ersten — samt falscher Konfiguration.
+const BASE = process.argv[2] || 'http://127.0.0.1:4001';
 
 async function api(path, opts = {}) {
   const r = await fetch(BASE + path, { headers: { 'content-type': 'application/json', ...(opts.headers || {}) }, ...opts });
@@ -19,7 +23,13 @@ const step = (name, ok, detail = '') => { results.push({ name, ok, detail }); co
 
 async function main() {
   let stopServer = () => {};
-  try { stopServer = await ensureServer(BASE); }
+  // ALLE Bereiche an — auch die vom Audit geparkten. Sie sind ausgeblendet,
+  // nicht aufgegeben, und lassen sich jederzeit zurueckschalten. Waeren sie
+  // hier ungeprueft, faellt ihr Verfall erst beim Wiedereinschalten auf.
+  const allesAn = Object.fromEntries(
+    featureListe({}).map((f) => [featureEnvKey(f.id), 'an']),
+  );
+  try { stopServer = await ensureServer(BASE, allesAn); }
   catch (e) { console.error(`❌ ${e.message}`); process.exit(2); }
 
   const uniq = Date.now().toString(36);

@@ -24,7 +24,7 @@ test('comparisons: Ersparnis günstigster vs. teuerster pro Gruppe', () => {
   const amox = groups.find(g => g.bezeichnung === 'Amoxicillin 1000 mg');
   // Angebote: 3.98, 3.01, 4.10 -> min 3.01, max 4.10 -> saving 1.09
   assert.equal(amox.best_aep, 3.01);
-  assert.equal(amox.best_supplier, 'Kwizda');
+  assert.equal(amox.best_supplier, 'Großhandel B');
   assert.equal(amox.saving_abs, 1.09);
   assert.equal(amox.saving_pct, 26.6); // (4.10-3.01)/4.10 = 26.58 -> 26.6
 });
@@ -32,7 +32,7 @@ test('comparisons: Ersparnis günstigster vs. teuerster pro Gruppe', () => {
 test('comparisons: günstigster Anbieter steht oben', () => {
   const { prices, uid } = setup();
   const amox = prices.comparisons(uid).find(g => g.bezeichnung === 'Amoxicillin 1000 mg');
-  assert.equal(amox.offers[0].supplier, 'Kwizda');
+  assert.equal(amox.offers[0].supplier, 'Großhandel B');
 });
 
 test('savingsSummary: Gesamtsumme + Top-3, nur Gruppen mit Ersparnis', () => {
@@ -49,7 +49,7 @@ test('savingsSummary: Gesamtsumme + Top-3, nur Gruppen mit Ersparnis', () => {
 
 test('savingsSummary: Gruppe mit nur einem Anbieter zählt nicht', () => {
   const { prices, pricesRepo } = setup(false);
-  pricesRepo.upsert({ bezeichnung: 'Solo 10 mg', supplier: 'Kwizda', aep: 5.0, prev_aep: 5.0 });
+  pricesRepo.upsert({ bezeichnung: 'Solo 10 mg', supplier: 'Großhandel B', aep: 5.0, prev_aep: 5.0 });
   const s = prices.savingsSummary();
   assert.equal(s.count, 0);
   assert.equal(s.total_abs, 0);

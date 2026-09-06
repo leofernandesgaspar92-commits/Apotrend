@@ -49,7 +49,7 @@ test('Übersicht bündelt Engpässe, Austausch, Benachrichtigungen, Top-Rabatt',
 
 test('watch_deals: beobachtete Wirkstoffe mit laufender Aktion', () => {
   const { overview, shortages, a } = setup();
-  // Amoxicillin hat im Rabatt-Seed eine laufende Aktion (Kwizda), Ramipril auch.
+  // Amoxicillin hat im Rabatt-Seed eine laufende Aktion (Großhandel B), Ramipril auch.
   shortages.watch(a, 'Amoxicillin');
   shortages.watch(a, 'Gibtsnicht'); // ohne Aktion -> darf nicht auftauchen
   const o = overview.forUser(a);
@@ -86,7 +86,7 @@ test('procurement: realisierte Ersparnis + Anzahl aus Bestellungen', () => {
   assert.equal(o0.procurement.orders, 0);
   assert.equal(o0.procurement.saved, 0);
   // Warenkorb mit Ersparnis (Liste 12, Aktion 10, Menge 5 => 10 gespart) + Checkout.
-  social.addToCart(a, { bezeichnung: 'Amoxicillin', aktionspreis: 10, listenpreis: 12, menge: 5, supplier: 'Kwizda' });
+  social.addToCart(a, { bezeichnung: 'Amoxicillin', aktionspreis: 10, listenpreis: 12, menge: 5, supplier: 'Großhandel B' });
   social.checkoutCart(a, { reference: 'Q3' });
   const o1 = overview.forUser(a);
   assert.equal(o1.procurement.orders, 1);

@@ -136,12 +136,20 @@ test('Aktionen OHNE Land bleiben sichtbar, statt geraten zu werden', () => {
 
 test('die Aktions-Suche greift auf Wirkstoff (INN) und Handelsname zu', () => {
   const rabatteRepo = createRabatteRepo({ seed: false, today: '2026-08-01' });
-  rabatteRepo.upsert({ bezeichnung: 'Pantozol 40 mg', wirkstoff: 'Pantoprazol', supplier: 'Kwizda', listenpreis: 5, aktionspreis: 4, gueltig_bis: '2026-12-31' });
-  rabatteRepo.upsert({ bezeichnung: 'Nurofen', wirkstoff: 'Ibuprofen', supplier: 'Herba', listenpreis: 3, aktionspreis: 2, gueltig_bis: '2026-12-31' });
+  rabatteRepo.upsert({ bezeichnung: 'Pantozol 40 mg', wirkstoff: 'Pantoprazol', supplier: 'Großhandel Nord', listenpreis: 5, aktionspreis: 4, gueltig_bis: '2026-12-31' });
+  rabatteRepo.upsert({ bezeichnung: 'Nurofen', wirkstoff: 'Ibuprofen', supplier: 'Großhandel Süd', listenpreis: 3, aktionspreis: 2, gueltig_bis: '2026-12-31' });
 
   assert.deepEqual(rabatteRepo.listTop10({ q: 'pantoprazol' }).map((r) => r.bezeichnung), ['Pantozol 40 mg']);
   assert.deepEqual(rabatteRepo.listTop10({ q: 'nurofen' }).map((r) => r.bezeichnung), ['Nurofen']);
-  assert.deepEqual(rabatteRepo.listTop10({ q: 'kwizda' }).map((r) => r.bezeichnung), ['Pantozol 40 mg']);
+  // Auch der Lieferantenname ist durchsuchbar. Die Namen sind bewusst neutral —
+  // erfundene Preise unter echten Firmennamen sind seit dem 06.09.2026 raus
+  // (Begruendung in repo/pricesRepo.js).
+  //
+  // Gesucht wird nach „nord" und nicht nach „Großhandel B": Die Suche
+  // verundet Wortteile als Teilzeichenketten, und ein einzelnes „b" steckt
+  // auch in „Ibuprofen". Ein Suchbegriff im Test muss trennscharf sein,
+  // sonst prueft er die Trefferliste nicht, sondern den Zufall.
+  assert.deepEqual(rabatteRepo.listTop10({ q: 'nord' }).map((r) => r.bezeichnung), ['Pantozol 40 mg']);
   assert.equal(rabatteRepo.listTop10({ q: 'gibtsnicht' }).length, 0);
 });
 

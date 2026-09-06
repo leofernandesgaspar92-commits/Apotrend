@@ -56,6 +56,7 @@ import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js'
 import { issueToken, verifyToken } from './token.js';
 import { createRateLimiter } from '../domain/rateLimiter.js';
 import { dienstKennung } from './serviceIdentity.js';
+import { featureListe, ruhenderBereichFuer } from '../data/features.js';
 
 // Login-Brute-Force-Schutz: max. 5 Fehlversuche je (IP+E-Mail) in 15 Minuten.
 const loginLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
@@ -687,6 +688,12 @@ const routes = [
   // Nur die Stufe, weil der vollständige Bericht den Pfad der Snapshot-Datei
   // und Hinweise zur Datenbank enthält. Das ist Betriebswissen und geht die
   // Öffentlichkeit nichts an; für die Warnung genügt „sicher" oder eben nicht.
+  // Welche Bereiche laufen? Oeffentlich und ohne Anmeldung, weil die
+  // Oberflaeche schon VOR dem Login entscheiden muss, was sie ueberhaupt
+  // anbietet. Ein Reiter, der beim Klick 404 liefert, ist schlimmer als kein
+  // Reiter: Er sieht aus wie ein Fehler der Plattform.
+  ['GET', /^\/api\/features$/, false, async () => ({ features: featureListe() })],
+
   ['GET', /^\/api\/health$/, false, async () => ({
     ok: true, service: 'apopulse', ts: new Date().toISOString(),
     durability: durabilityReport().level,
@@ -1411,6 +1418,12 @@ const server = http.createServer(async (req, res) => {
 
   // ── API ──
   if (pathname.startsWith('/api/')) {
+    // Ruhende Bereiche (data/features.js) antworten, als gaebe es sie nicht.
+    // Bewusst 404 statt 403: Ein geparkter Bereich soll nichts ueber sich
+    // verraten, auch nicht seine Existenz. Die Pruefung steht VOR dem
+    // Nachschlagen der Route, damit auch eine vorhandene Route stumm bleibt.
+    const ruht = ruhenderBereichFuer(pathname);
+    if (ruht) return json(req, res, 404, { error: 'Nicht gefunden' });
     const route = routes.find(([m, rx]) => m === req.method && rx.test(pathname));
     if (!route) return json(req, res, 404, { error: 'Nicht gefunden' });
     const [, rx, authRequired, handler] = route;

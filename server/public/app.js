@@ -1809,9 +1809,10 @@ async function mainScreen() {
   // Sprache folgt dem Land des Profils (Owner-Vorgabe: länderbasierte Plattform).
   setLocale(me && me.locale ? me.locale : 'de');
   renderWhoami();
+  await ladeFeatures();
   document.getElementById('btnLogout').classList.remove('hidden');
   document.getElementById('btnNotif').classList.remove('hidden');
-  document.getElementById('btnDm').classList.remove('hidden');
+  if (featureAn('direktnachrichten')) document.getElementById('btnDm').classList.remove('hidden');
   const btnMod = document.getElementById('btnMod');
   btnMod.classList.toggle('hidden', !iAmModerator);
   btnMod.onclick = showModeration;
@@ -1822,12 +1823,16 @@ async function mainScreen() {
   document.getElementById('btnNotif').onclick = showNotifications;
   document.getElementById('btnDm').onclick = showDmInbox;
   const btnCart = document.getElementById('btnCart');
-  btnCart.classList.remove('hidden');
+  if (featureAn('bestellung')) btnCart.classList.remove('hidden');
   btnCart.onclick = () => openCart(); // ohne Argument: sonst landet das Klick-Event als „flash"-Text in der Liste
   refreshNotifCount();
-  refreshDmCount();
-  refreshCartCount();
-  try { myBookmarks = new Set((await api('GET','/api/bookmarks/ids')).ids); } catch { myBookmarks = new Set(); }
+  // Ruhende Bereiche werden gar nicht erst abgefragt: Ihre 404 landen sonst
+  // als rote Fehler in der Browser-Konsole und sehen aus wie ein Defekt.
+  if (featureAn('direktnachrichten')) refreshDmCount();
+  if (featureAn('bestellung')) refreshCartCount();
+  if (featureAn('social')) {
+    try { myBookmarks = new Set((await api('GET','/api/bookmarks/ids')).ids); } catch { myBookmarks = new Set(); }
+  } else { myBookmarks = new Set(); }
 
   app.innerHTML = '';
   app.classList.remove('auth-mode'); // Haupt-App in Standardbreite
@@ -1957,6 +1962,9 @@ async function mainScreen() {
   const runSearch = () => { const q = v('sq').trim(); if (q) renderSearch(q); };
   document.getElementById('sgo').onclick = runSearch;
   document.getElementById('sq').addEventListener('keydown', e => { if (e.key === 'Enter') runSearch(); });
+  // Ruhende Bereiche verschwinden, BEVOR Klick-Handler gesetzt werden —
+  // sonst haengt ein Handler an einem Element, das gleich entfernt wird.
+  wendeFeaturesAn();
   app.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
     app.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
     b.classList.add('active'); tab = b.dataset.tab; loadTab();
@@ -2039,6 +2047,7 @@ const taskIsOverdue = (t, today = taskToday()) => !!(t.due_date && t.status !== 
 // Deine offenen Aufgaben auf der Übersicht (nur wenn welche dir zugewiesen sind).
 // Überfällige zuerst; „auf einen Screen" — direkter Einstieg in die Team-Aufgaben.
 function renderMyTasksOverview(feed, tasks) {
+  if (!featureAn('zusammenarbeit')) return;
   const today = taskToday();
   const mine = (tasks || []).filter(t => t.mine && t.status !== 'erledigt');
   if (!mine.length) return;
@@ -2061,6 +2070,7 @@ function renderMyTasksOverview(feed, tasks) {
 // (Kolleg:innen oder unzugewiesen) — Aufsicht über liegengebliebene Delegationen, ohne die
 // Team-Ansicht öffnen zu müssen. Ergänzt „Deine Aufgaben" (dort stehen deine eigenen).
 function renderTeamOverdueOverview(feed, tasks, canAssign) {
+  if (!featureAn('zusammenarbeit')) return;
   if (!canAssign) return;
   const today = taskToday();
   const teamOverdue = (tasks || []).filter(t => !t.mine && taskIsOverdue(t, today))
@@ -2111,7 +2121,9 @@ async function loadOverview() {
     [d, liveData, tasksData] = await Promise.all([
       api('GET','/api/overview'),
       api('GET','/api/live').catch(() => null),
-      api('GET','/api/tasks').catch(() => null),
+      // Ruhende Bereiche werden gar nicht erst abgefragt — ihre 404 landen
+      // sonst als rote Fehler in der Konsole und sehen aus wie ein Defekt.
+      featureAn('zusammenarbeit') ? api('GET','/api/tasks').catch(() => null) : null,
     ]);
   }
   catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
@@ -2332,6 +2344,7 @@ async function loadOverview() {
 
 // Entdecken-Einstieg: „Offen für"-Kategorien mit Anzahl, öffnet die passende Liste.
 async function renderOpenToDiscover(feed) {
+  if (!featureAn('social')) return;
   let d;
   try { d = await api('GET','/api/discover/open-to'); } catch { return; }
   const counts = (d && d.counts) || {};
@@ -2370,6 +2383,7 @@ async function renderOpenQuestions(feed) {
 }
 
 async function renderTrendingHashtags(feed) {
+  if (!featureAn('social')) return;
   let d;
   try { d = await api('GET','/api/trending/hashtags'); } catch { return; }
   if (!d.hashtags || !d.hashtags.length) return;
@@ -2384,6 +2398,7 @@ async function renderTrendingHashtags(feed) {
 }
 
 async function renderNearbyColleagues(feed) {
+  if (!featureAn('verzeichnis')) return;
   let d;
   try { d = await api('GET','/api/colleagues/nearby'); } catch { return; }
   if (!d.bundesland || !d.people.length) return;
@@ -2450,6 +2465,7 @@ function wrDaysAgo(dc) {
   return n === 1 ? t('wr_ago_one') : ti('wr_ago_many', { n });
 }
 function renderWeekReview(feed, wr) {
+  if (!featureAn('bindungsmechanik')) return;
   if (!wr || !wr.total) return;
   const sections = [
     { key: 'neu', items: wr.neu || [] },
@@ -2893,6 +2909,7 @@ let newsRailSeen = null;       // bekannte News-IDs (für „neu"-Markierung)
 // Sanfter Hinweis auf der Startseite, das eigene Profil zu vervollständigen — nur wenn
 // es noch nicht 100 % ist. Hilft Neuen, ihr Profil überhaupt zu finden/auszufüllen.
 function renderProfileNudge(feed) {
+  if (!featureAn('bindungsmechanik')) return;
   if (!me || !me.handle) return;
   const c = profileCompleteness(me);
   if (c.pct >= 100) return;
@@ -2981,7 +2998,38 @@ function stopQuickRail() {
 // Anzeigen-Fläche (nur Laptop/Desktop, eigene Ebene rechts): zeigt EINE klar als „Anzeige"
 // gekennzeichnete Werbung aus dem bestehenden Angebote-System — die Monetarisierungs-Fläche.
 // Gibt es keine Anzeige, bleibt der Platz leer (die Seite wirkt nie überladen).
+// ── Funktionsschaltung ──────────────────────────────────────────────────────
+//  Welche Bereiche laufen, entscheidet der Server (src/data/features.js). Die
+//  Oberflaeche fragt einmal beim Start und bietet nur an, was auch beantwortet
+//  wird. Ein Reiter, der beim Klick 404 liefert, ist schlimmer als kein
+//  Reiter: Er sieht aus wie ein Fehler der Plattform.
+//
+//  Faellt die Abfrage aus, gilt ALLES als aktiv. Lieber ein Reiter zu viel als
+//  eine Anwendung, die nach einem Netzwackler halb leer startet.
+const FEATURE_ZUSTAND = {};
+async function ladeFeatures() {
+  try {
+    const d = await (await fetch('/api/features')).json();
+    for (const f of (d.features || [])) FEATURE_ZUSTAND[f.id] = f.zustand;
+  } catch { /* Voreinstellung: alles an */ }
+}
+const featureAn = (id) => FEATURE_ZUSTAND[id] !== 'ruht';
+
+/** Bedienelemente ruhender Bereiche entfernen. Entfernen, nicht nur verstecken:
+ *  Ein verstecktes Element bleibt per Tastatur erreichbar. */
+function wendeFeaturesAn() {
+  // Bewusst IMMER auf `document`: Die Kopfzeilen-Knoepfe (#btnDm, #btnCart)
+  // liegen ausserhalb des App-Containers. Ein auf `app` begrenztes Aufraeumen
+  // liess sie stehen — der Browser-Audit hat genau das gemeldet.
+  const raus = [];
+  if (!featureAn('tauschboerse')) raus.push('.tabs button[data-tab="exchange"]');
+  if (!featureAn('bestellung')) raus.push('#btnCart');
+  if (!featureAn('direktnachrichten')) raus.push('#btnDm');
+  for (const sel of raus) document.querySelectorAll(sel).forEach((el) => el.remove());
+}
+
 async function renderAdSlot() {
+  if (!featureAn('werbung')) return;
   const rail = document.getElementById('quickRail');
   if (!rail) return;
   let promos = [];
@@ -4257,7 +4305,10 @@ async function loadRabatte() {
   feed.innerHTML = '<div class="loading">…</div>';
   try {
     const d = await api('GET','/api/rabatte?country=' + encodeURIComponent(viewCountry()));
-    let cartN = 0; try { cartN = (await api('GET','/api/cart')).count; } catch { /* ohne Zähler weiter */ }
+    // Warenkorb-Zaehler nur, wenn der Bereich laeuft: Sonst quittiert der
+    // Server mit 404, und das steht als roter Fehler in der Konsole.
+    let cartN = 0;
+    if (featureAn('bestellung')) { try { cartN = (await api('GET','/api/cart')).count; } catch { /* ohne Zähler weiter */ } }
     // Beobachtungsliste laden, um „nur beobachtete" zu ermöglichen (Fehler = kein Filter).
     let watched = new Set();
     try { const wl = await api('GET','/api/watchlist'); watched = new Set((wl.items||[]).map(i => (i.wirkstoff||'').toLowerCase())); } catch { /* ohne Filter weiter */ }
@@ -5788,6 +5839,7 @@ async function loadFeed() {
 }
 
 async function renderSuggestions(feed) {
+  if (!featureAn('social')) return;
   try {
     const s = await api('GET','/api/suggestions/follow');
     if (!s.suggestions.length) return;
