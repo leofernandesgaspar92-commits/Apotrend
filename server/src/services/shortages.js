@@ -109,13 +109,24 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
     },
 
     // Liste mit Aktivitäts-Zähler pro Engpass (fuer das Dashboard).
-    listWithCounts(viewerUserId) {
-      return shortagesRepo.list().map(s => decorate(s, viewerUserId));
+    /**
+     * `country` beschraenkt auf ein Land. Ohne Angabe bleibt alles sichtbar —
+     * die Entscheidung, wer filtert, liegt bewusst beim Aufrufer: Die
+     * Wirkstoff-Detailseite etwa will auch Nachbarlaender zeigen duerfen.
+     */
+    listWithCounts(viewerUserId, { country = null } = {}) {
+      return shortagesRepo.list({ country }).map(s => decorate(s, viewerUserId));
     },
 
     // ── Community-Meldung: eine Apotheke meldet einen selbst beobachteten Engpass ──
     // Herkunft klar als 'community' gekennzeichnet (nicht offiziell/BASG-verifiziert).
-    reportShortage(userId, { wirkstoff, bezeichnung, grund, status = 'kritisch', voraussichtlichBis }) {
+    /**
+     * `country` kommt vom Aufrufer (HTTP-Schicht), nicht aus dem Dienst: Nur
+     * dort ist bekannt, zu welchem Land der Betrieb gehoert. Und es ist
+     * bewusst NICHT frei waehlbar — duerfte man sein Land selbst angeben,
+     * liesse sich die Laenderregulierung der Rabatt-/Engpassanzeige umgehen.
+     */
+    reportShortage(userId, { wirkstoff, bezeichnung, grund, status = 'kritisch', voraussichtlichBis, country = null }) {
       requireProfessional(userId);
       const w = String(wirkstoff || '').trim();
       if (!w) throw new AppError('shortage_wirkstoff_missing', 'Wirkstoff fehlt.');
@@ -142,7 +153,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       const created = shortagesRepo.upsert({
         wirkstoff: w, bezeichnung: bez, status, grund: (grund ? String(grund).trim().slice(0, 200) : null),
         provenance: 'community', quelle: null, reporter_user_id: userId, gemeldet_am: today,
-        voraussichtlich_bis,
+        voraussichtlich_bis, country,
       });
       // Beobachter:innen dieses Wirkstoffs informieren (ausser Melder selbst).
       const label = `${w} · ${STATUS_LABEL[status]} (Community-Meldung)`;

@@ -120,3 +120,25 @@ test('ein Land ohne Engpass-Quelle wird als solches benannt', async () => {
   const d = await (await fetch(BASE + '/api/coverage/DE?art=shortages')).json();
   assert.equal(d.zustand, 'keine');
 });
+
+test('/api/shortages folgt dem Laender-Umschalter', async () => {
+  // Der Umschalter ist eine BESUCHS-Ansicht. Ohne ?country= filterte die
+  // Liste stumm nach dem Heimatland — der Umschalter aenderte an den
+  // Engpaessen nichts, und Kenia zeigte weiter oesterreichische Zeilen.
+  const uniq = Date.now().toString(36);
+  const reg = await (await fetch(BASE + '/api/register', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'T', email: `t_${uniq}@ex.com`, password: 'Passwort123!', handle: `t_${uniq}`, country: 'AT', accountType: 'pharmacy' }),
+  })).json();
+  const H = { 'content-type': 'application/json', authorization: 'Bearer ' + reg.token };
+
+  const at = await (await fetch(BASE + '/api/shortages?country=AT', { headers: H })).json();
+  const ke = await (await fetch(BASE + '/api/shortages?country=KE', { headers: H })).json();
+  assert.ok(at.shortages.length > 0, 'ohne AT-Referenzdaten prueft dieser Test nichts');
+  assert.equal(ke.shortages.length, 0, 'Kenia darf keine oesterreichischen Referenzdaten sehen');
+
+  // Ein unbekannter Wert faellt auf das Heimatland zurueck — ein Tippfehler in
+  // der Adresse soll nicht wie ein Ausfall aussehen.
+  const murks = await (await fetch(BASE + '/api/shortages?country=ZZ', { headers: H })).json();
+  assert.equal(murks.shortages.length, at.shortages.length);
+});

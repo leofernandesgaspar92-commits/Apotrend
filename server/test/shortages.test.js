@@ -78,3 +78,49 @@ test('Posten zu unbekanntem Engpass wird abgelehnt', () => {
   const { shortages, a } = setup();
   assert.throws(() => shortages.postAbout(a, 'gibt-es-nicht', { body: 'x' }), /nicht gefunden/);
 });
+
+// ── Engpässe gehören zu einem Land ──────────────────────────────────────────
+// Befund vom 06.09.2026: /api/shortages filterte gar nicht nach Land. Eine
+// Apotheke in Nairobi sah österreichische Referenzdaten („Levothyroxin 100 µg,
+// kritisch") als IHRE Engpässe — korrekt als Referenzdaten gekennzeichnet und
+// trotzdem im falschen Land. Auf Engpassangaben hin wird umbestellt; das ist
+// die eine Stelle, an der eine plausible Falschanzeige teuer wird.
+
+test('die Referenzdaten gehören nach Österreich — und nur dorthin', () => {
+  const repo = createShortagesRepo();
+  const alle = repo.list();
+  assert.ok(alle.length > 0, 'ohne Referenzdaten prüft dieser Test nichts');
+  assert.ok(alle.every((s) => s.country === 'AT'),
+    'jede Referenzzeile trägt AT: ' + alle.map((s) => `${s.bezeichnung}=${s.country}`).join(', '));
+  assert.equal(repo.list({ country: 'AT' }).length, alle.length);
+  assert.equal(repo.list({ country: 'KE' }).length, 0, 'Kenia darf keine AT-Referenzdaten sehen');
+});
+
+test('eine Zeile ohne Land gilt überall', () => {
+  // „Kein Land" heißt ausdrücklich „gilt überall" und ist erlaubt. Ohne diese
+  // Regel verschwände ein bewusst länderloser Eintrag stillschweigend.
+  const repo = createShortagesRepo({ seed: false });
+  repo.upsert({ wirkstoff: 'Weltweit', bezeichnung: 'Weltweit 1 mg', status: 'kritisch', country: null });
+  assert.equal(repo.list({ country: 'KE' }).length, 1);
+  assert.equal(repo.list({ country: 'AT' }).length, 1);
+});
+
+test('ohne Länderangabe bleibt alles sichtbar', () => {
+  // Die Entscheidung, wer filtert, liegt beim Aufrufer — die Wirkstoff-
+  // Detailseite darf auch über Ländergrenzen schauen.
+  const repo = createShortagesRepo({ seed: false });
+  repo.upsert({ wirkstoff: 'A', bezeichnung: 'A', status: 'kritisch', country: 'AT' });
+  repo.upsert({ wirkstoff: 'B', bezeichnung: 'B', status: 'kritisch', country: 'KE' });
+  assert.equal(repo.list().length, 2);
+});
+
+test('das Land wird normalisiert, nicht roh übernommen', () => {
+  const repo = createShortagesRepo({ seed: false });
+  const r = repo.upsert({ wirkstoff: 'A', bezeichnung: 'A', status: 'kritisch', country: 'ke' });
+  assert.equal(r.country, 'KE');
+  assert.equal(repo.list({ country: 'KE' }).length, 1);
+  // Ein leerer String ist kein Land, sondern „überall" — sonst entstünde ein
+  // Eintrag, den kein Länderfilter je findet.
+  const leer = repo.upsert({ wirkstoff: 'B', bezeichnung: 'B', status: 'kritisch', country: '' });
+  assert.equal(leer.country, null);
+});

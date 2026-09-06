@@ -5,6 +5,12 @@
 import crypto from 'node:crypto';
 
 // Kuratierte AT-Referenzdaten (NICHT live) — klar als 'reference' gekennzeichnet.
+// Die Referenzdaten sind OESTERREICHISCH (BASG-Faelle, AT-Praeparatenamen).
+// Bis zum 06.09.2026 trugen sie kein Land und erschienen deshalb in allen
+// 16 Laendern. Jetzt stehen sie dort, wohin sie gehoeren — und die uebrigen
+// Laender zeigen eine leere Liste MIT Erklaerung (services/coverage.js).
+// Das ist die ehrlichere Ansicht: lieber leer als plausibel falsch.
+const SEED_LAND = 'AT';
 const SEED = [
   { wirkstoff: 'Amoxicillin',     bezeichnung: 'Amoxicillin 1000 mg Filmtabletten', status: 'kritisch',       grund: 'Erhöhte Nachfrage', gemeldet_am: '2026-06-14' },
   { wirkstoff: 'Salbutamol',      bezeichnung: 'Salbutamol Inhalat 100 µg',          status: 'eingeschraenkt', grund: 'Produktionsverzögerung', gemeldet_am: '2026-06-20', voraussichtlich_bis: '2026-08-15' },
@@ -30,6 +36,21 @@ export function createShortagesRepo({ seed = true } = {}) {
       id: s.id || uuid(), wirkstoff: s.wirkstoff, bezeichnung: s.bezeichnung,
       status: s.status || 'kritisch', grund: s.grund ?? null,
       gemeldet_am: s.gemeldet_am ?? null, voraussichtlich_bis: s.voraussichtlich_bis ?? null,
+      // Land des Engpasses. NICHT das Land der meldenden Person, sondern das,
+      // fuer das die Meldung gilt: Eine BASG-Meldung betrifft Oesterreich,
+      // auch wenn sie ein deutscher Kollege liest.
+      //
+      // WARUM DAS FELD UEBERHAUPT DAZUKAM (06.09.2026): Es gab keines. Damit
+      // sah eine Apotheke in Nairobi oesterreichische Referenzdaten
+      // („Levothyroxin 100 µg, kritisch") als IHRE Engpaesse. Korrekt als
+      // Referenzdaten gekennzeichnet — und trotzdem im falschen Land. Fuer
+      // eine Plattform, deren ganzer Zuschnitt laenderspezifisch ist, ist das
+      // kein Schoenheitsfehler: Auf Engpassangaben hin wird umbestellt.
+      //
+      // `null` heisst ausdruecklich „gilt ueberall" und ist erlaubt — aber
+      // nichts, was der Seed nutzt. Wer eine Zeile ohne Land einstellt, tut
+      // das bewusst.
+      country: s.country === undefined ? null : (s.country ? String(s.country).toUpperCase() : null),
       provenance: s.provenance || 'reference',
       quelle: s.quelle === undefined ? 'Referenzdaten' : s.quelle,
       reporter_user_id: s.reporter_user_id ?? null,
@@ -42,7 +63,7 @@ export function createShortagesRepo({ seed = true } = {}) {
     return { ...row, confirmations: [...row.confirmations] };
   }
 
-  if (seed) SEED.forEach(s => upsert(s));
+  if (seed) SEED.forEach(s => upsert({ ...s, country: SEED_LAND }));
 
   return {
     upsert,
@@ -80,9 +101,19 @@ export function createShortagesRepo({ seed = true } = {}) {
       return { ...s };
     },
     get(id) { const s = shortages.get(id); return s ? { ...s, confirmations: [...(s.confirmations || [])], history: (s.history || []).map(h => ({ ...h })) } : null; },
-    list() {
+    /**
+     * `country` filtert auf ein Land. Zeilen OHNE Land ("gilt ueberall")
+     * kommen immer mit — sonst verschwaende ein bewusst laenderloser Eintrag
+     * still. Ohne Angabe bleibt alles sichtbar; die Entscheidung, wer filtert,
+     * liegt beim Aufrufer.
+     */
+    list({ country = null } = {}) {
       const rank = { kritisch: 2, eingeschraenkt: 1, verfuegbar: 0 };
-      return [...shortages.values()].sort((a, b) => rank[b.status] - rank[a.status]).map(s => ({ ...s, confirmations: [...(s.confirmations || [])], history: (s.history || []).map(h => ({ ...h })) }));
+      const cc = country ? String(country).toUpperCase() : null;
+      return [...shortages.values()]
+        .filter((s) => !cc || !s.country || s.country === cc)
+        .sort((a, b) => rank[b.status] - rank[a.status])
+        .map(s => ({ ...s, confirmations: [...(s.confirmations || [])], history: (s.history || []).map(h => ({ ...h })) }));
     },
     // Bestätigung ("auch bei uns") durch eine Apotheke; kein Doppel, nicht der Melder.
     confirm(id, userId) {

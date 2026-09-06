@@ -633,7 +633,11 @@ async function runShortageIngest() {
       const { rows, rejected } = source.format === 'json'
         ? shortagesFromJson(raw, { columns })
         : shortagesFromCsv(raw, { columns });
-      gesammelt.push(...rows);
+      // Jede Zeile traegt das Land ihrer QUELLE: Eine BASG-Zeile gilt fuer
+      // Oesterreich, eine openFDA-Zeile fuer die USA. Ohne diese Zuordnung
+      // landeten beide in jedem Land — genau der Fehler, den die
+      // Referenzdaten hatten.
+      gesammelt.push(...rows.map((r) => ({ ...r, country: r.country || source.country })));
       if (rows.length) quellen.push(source.label || source.id);
       summary.csv.push({ id: source.id, format: source.format, count: rows.length, rejected: rejected.length });
       summary.rejected += rejected.length;
@@ -1332,7 +1336,25 @@ const routes = [
   // ── Lieferengpässe (Priorität 2) ──
   // is_antibiotic: markiert Antibiotika-Engpässe, damit das Frontend auf die
   // quellenbelegte AMR-Wissensecke verweisen kann (keine Substitutionsempfehlung).
-  ['GET', /^\/api\/shortages$/, true, async ({ userId }) => {
+  ['GET', /^\/api\/shortages$/, true, async ({ userId, query }) => {
+    // Nur das eigene Land. Bis zum 06.09.2026 sah eine Apotheke in Nairobi
+    // oesterreichische Referenzdaten als ihre Engpaesse — korrekt als
+    // Referenzdaten gekennzeichnet und trotzdem im falschen Land. Auf
+    // Engpassangaben hin wird umbestellt; das ist die eine Stelle, an der
+    // eine plausible Falschanzeige teuer wird.
+    //
+    // `?country=` folgt demselben Muster wie /api/news: Der Laender-Umschalter
+    // ist eine BESUCHS-Ansicht — wer nach Kenia schaut, will kenianische
+    // Engpaesse sehen, nicht die des eigenen Betriebs. Ohne diesen Parameter
+    // filterte die Ansicht stumm nach dem HEIMATLAND, und der Umschalter
+    // aenderte an der Liste nichts. Genau das hat die Browser-Pruefung
+    // gemeldet: Kenia zeigte weiter oesterreichische Zeilen.
+    //
+    // Ein unbekannter Wert faellt auf das Heimatland zurueck statt eine leere
+    // Liste zu liefern — ein Tippfehler in der Adresse soll nicht wie ein
+    // Ausfall aussehen.
+    const gewuenscht = String((query && query.get('country')) || '').toUpperCase();
+    const land = (gewuenscht && COUNTRIES[gewuenscht]) ? gewuenscht : userCountry(userId);
     // Verfügbare Alternativen (gleicher Wirkstoff, anderes Präparat im Preisvergleich) —
     // faktische Angabe (keine Substitutionsempfehlung). In price_compare-gesperrten Ländern: 0.
     const priceBlocked = isFeatureBlocked(userCountry(userId), 'price_compare');
@@ -1353,7 +1375,7 @@ const routes = [
       const self = String(s.bezeichnung || '').trim().toLowerCase();
       return [...set].filter(b => b && b !== self).length;
     };
-    return { shortages: shortages.listWithCounts(userId).map(s => ({ ...s, is_antibiotic: amr.isAntibiotic(s.wirkstoff), price_alternatives: altCount(s) })) };
+    return { shortages: shortages.listWithCounts(userId, { country: land }).map(s => ({ ...s, is_antibiotic: amr.isAntibiotic(s.wirkstoff), price_alternatives: altCount(s) })) };
   }],
   ['GET', /^\/api\/shortages\/([^/]+)$/, true, async ({ userId, params }) => {
     const d = shortages.withActivity(userId, params[0]);
@@ -1362,7 +1384,10 @@ const routes = [
   }],
   ['POST', /^\/api\/shortages\/([^/]+)\/post$/, true, async ({ userId, params, body }) => shortages.postAbout(userId, params[0], { body: body.body, visibility: body.visibility })],
   ['POST', /^\/api\/shortages\/([^/]+)\/status$/, true, async ({ userId, params, body }) => shortages.updateStatus(userId, params[0], { status: body.status, sourceUrl: body.sourceUrl })],
-  ['POST', /^\/api\/shortages\/report$/, true, async ({ userId, body }) => shortages.reportShortage(userId, { wirkstoff: body.wirkstoff, bezeichnung: body.bezeichnung, grund: body.grund, status: body.status, voraussichtlichBis: body.voraussichtlichBis })],
+  ['POST', /^\/api\/shortages\/report$/, true, async ({ userId, body }) => shortages.reportShortage(userId, { wirkstoff: body.wirkstoff, bezeichnung: body.bezeichnung, grund: body.grund, status: body.status, voraussichtlichBis: body.voraussichtlichBis,
+    // Land des eigenen Betriebs, nicht frei waehlbar: Sonst liesse sich die
+    // Laenderregulierung durch eine falsche Angabe umgehen.
+    country: userCountry(userId) })],
   ['POST', /^\/api\/shortages\/([^/]+)\/confirm$/, true, async ({ userId, params }) => shortages.confirmShortage(userId, params[0])],
   ['POST', /^\/api\/shortages\/([^/]+)\/unconfirm$/, true, async ({ userId, params }) => shortages.unconfirmShortage(userId, params[0])],
   ['POST', /^\/api\/shortages\/([^/]+)\/resolve$/, true, async ({ userId, params }) => shortages.resolveShortage(userId, params[0])],

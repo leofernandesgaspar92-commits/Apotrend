@@ -3336,7 +3336,8 @@ async function loadShortages() {
   const feed = document.getElementById('feed');
   feed.innerHTML = '<div class="loading">…</div>';
   try {
-    const d = await api('GET','/api/shortages');
+    // Wie bei den News: das ANGESEHENE Land, nicht das eigene.
+    const d = await api('GET','/api/shortages?country=' + viewCountry());
     feed.innerHTML = '';
     { const n = countryDataNotice(); if (n) feed.appendChild(n); }
     feed.appendChild(provenanceLegend());
