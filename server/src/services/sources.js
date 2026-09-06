@@ -126,9 +126,17 @@ const BUILTIN = [
     id: 'ema_news', kind: 'news', country: 'EU', format: 'rss',
     label: 'EMA — News and press releases',
     url: 'https://www.ema.europa.eu/en/rss.xml',
+    // /en/news-events/rss-feeds ist die dokumentierte RSS-Seite und stand hier
+    // schon — sie hat trotzdem nichts ergeben. Deshalb zusaetzlich die
+    // Einzahl-Variante /en/news-event/rss-feeds, die in Suchindizes ebenfalls
+    // als gueltige EMA-Seite gefuehrt wird: Die EMA hat ihren Auftritt
+    // umgebaut, und beide Schreibweisen existieren nebeneinander.
+    // Ob eine davon traegt, sagt jetzt `discovery` in /api/live/status —
+    // dafuer braucht es keinen Log-Ausschnitt mehr.
     homepage: [
       'https://www.ema.europa.eu/en/news-events/rss-feeds',
-      'https://www.ema.europa.eu/en/news',
+      'https://www.ema.europa.eu/en/news-event/rss-feeds',
+      'https://www.ema.europa.eu/en/news-events',
       'https://www.ema.europa.eu/en/homepage',
     ],
     official: true, verified: false,

@@ -58,6 +58,7 @@ import { createRateLimiter } from '../domain/rateLimiter.js';
 import { dienstKennung } from './serviceIdentity.js';
 import { featureListe, ruhenderBereichFuer } from '../data/features.js';
 import { createCoverageStore, landStatus } from '../services/coverage.js';
+import { suchProtokoll } from '../services/feedDiscovery.js';
 
 // Login-Brute-Force-Schutz: max. 5 Fehlversuche je (IP+E-Mail) in 15 Minuten.
 const loginLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
@@ -775,6 +776,11 @@ const routes = [
         gemessen: coverage.alle(),
       };
     })(),
+    // Woran die Selbstfindung scheitert, wenn sie scheitert. Lag bisher nur im
+    // Render-Protokoll — und die entscheidenden Zeilen lagen zweimal knapp
+    // ausserhalb des Ausschnitts, den jemand schicken konnte. Eine Diagnose,
+    // an die man nur ueber einen Screenshot kommt, ist im Zweifel keine.
+    discovery: suchProtokoll(),
     shortage_feeds: Object.keys(liveSources()),
     news_seen: newsSeen.size(),
     intervals: { news_ms: INTERVALS.news, shortages_ms: INTERVALS.shortages },

@@ -175,8 +175,30 @@ export function discoveryPages(source) {
  * fehl, ist die Quelle eben nicht erreichbar, und der ursprüngliche Fehler
  * ist die aussagekräftigere Meldung.
  */
+// ── Was die letzte Suche ergeben hat ────────────────────────────────────────
+//  WARUM DAS NICHT NUR INS LOG GEHOERT:
+//  Die Diagnose lag bisher ausschliesslich im Render-Protokoll. Um zu erfahren,
+//  woran die Suche bei PEI, EMA und Swissmedic scheitert, musste jemand einen
+//  Log-Ausschnitt heraussuchen und schicken — und die entscheidenden Zeilen
+//  lagen zweimal knapp ausserhalb des Ausschnitts. Eine Diagnose, an die man
+//  nur ueber einen Screenshot kommt, ist im Zweifel keine.
+//
+//  Deshalb liegt sie jetzt zusaetzlich unter GET /api/live/status. Nur im
+//  Arbeitsspeicher und nur der letzte Lauf: Es geht um „was ist gerade los",
+//  nicht um Statistik.
+const letzteSuche = new Map(); // sourceId -> { stand, versuche: [...] }
+
+/** Ergebnis der letzten Suche je Quelle — fuer /api/live/status. */
+export function suchProtokoll() {
+  return Object.fromEntries([...letzteSuche.entries()]);
+}
+
+export function __resetSuchProtokoll() { letzteSuche.clear(); }
+
 export async function discoverFeed(source, { fetchText, log = null, maxCandidates = MAX_CANDIDATES } = {}) {
   const amtlich = hostOf(source.url);
+  const versuche = [];
+  const merken = () => letzteSuche.set(source.id, { stand: new Date().toISOString(), versuche });
   if (!amtlich) return null;
 
   for (const seite of discoveryPages(source)) {
@@ -185,6 +207,7 @@ export async function discoverFeed(source, { fetchText, log = null, maxCandidate
       html = await fetchText(seite);
     } catch (e) {
       log?.(`ApoPulse Quellen: ${source.id} — Startseite ${seite} nicht lesbar (${e && e.message})`);
+      versuche.push({ seite, ergebnis: 'seite-nicht-lesbar', detail: (e && e.message) || String(e) });
       continue;
     }
 
@@ -208,6 +231,15 @@ export async function discoverFeed(source, { fetchText, log = null, maxCandidate
         + (alle.length
           ? `${alle.length} Feed-Verweis(e) gefunden, aber keiner auf ${amtlich}: ${alle.slice(0, 3).join(', ')}`
           : 'kein Feed ausgezeichnet und kein feedartiger Verweis gefunden'));
+      versuche.push({
+        seite,
+        ergebnis: alle.length ? 'nur-fremde-domain' : 'kein-feed-ausgezeichnet',
+        zeichen: html.length,
+        // Die verworfenen Fundstellen gehoeren dazu: Sie zeigen, ob die
+        // Domain-Sperre gegriffen hat oder ob die Seite schlicht nichts
+        // auszeichnet. Das sind zwei verschiedene Reparaturen.
+        verworfen: alle.slice(0, 3),
+      });
       continue;
     }
 
@@ -217,13 +249,20 @@ export async function discoverFeed(source, { fetchText, log = null, maxCandidate
         // Auszeichnung allein genügt nicht — es muss auch ein Feed herauskommen.
         // Sonst übernähme man eine Adresse, die eine HTML-Seite zurückgibt, und
         // der Fehler zeigte sich erst als „Quelle liefert 0 Meldungen".
-        if (!siehtWieFeedAus(raw)) continue;
+        if (!siehtWieFeedAus(raw)) {
+          versuche.push({ seite, ergebnis: 'fundstelle-ist-kein-feed', kandidat });
+          continue;
+        }
+        versuche.push({ seite, ergebnis: 'gefunden', kandidat });
+        merken();
         return { url: kandidat, page: seite, raw };
       } catch (e) {
         log?.(`ApoPulse Quellen: ${source.id} — Fundstelle ${kandidat} antwortet nicht (${e && e.message})`);
+        versuche.push({ seite, ergebnis: 'fundstelle-antwortet-nicht', kandidat, detail: (e && e.message) || String(e) });
       }
     }
   }
+  merken();
   return null;
 }
 

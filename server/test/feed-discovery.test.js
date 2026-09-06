@@ -11,7 +11,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  parseFeedLinks, parseAnchorFeedLinks, discoveryPages, discoverFeed, siehtWieFeedAus, sortiereNachEignung,
+  parseFeedLinks, parseAnchorFeedLinks, discoveryPages, discoverFeed, siehtWieFeedAus, sortiereNachEignung, suchProtokoll, __resetSuchProtokoll,
 } from '../src/services/feedDiscovery.js';
 import { fetchSource, __discoveryCache } from '../src/services/sources.js';
 import { ingestNews, createNewsSeenStore } from '../src/services/newsIngest.js';
@@ -353,4 +353,47 @@ test('discoverFeed nimmt die bevorzugte Fundstelle, nicht die erste', async () =
     { fetchText: async (u) => { if (!(u in seiten)) throw new Error('HTTP 404'); return seiten[u]; } },
   );
   assert.equal(fund.url, 'https://amt.ca/feed/drug-recalls');
+});
+
+// ── Diagnose ohne Screenshot ────────────────────────────────────────────────
+// Bis zum 06.09.2026 lag die Begruendung, warum die Suche scheitert, nur im
+// Render-Protokoll. Zweimal lagen die entscheidenden Zeilen knapp ausserhalb
+// des Ausschnitts, den jemand schicken konnte. Eine Diagnose, an die man nur
+// ueber einen Screenshot kommt, ist im Zweifel keine.
+
+test('das Suchprotokoll unterscheidet die Fehlerursachen', async () => {
+  __resetSuchProtokoll();
+  const seiten = {
+    'https://amt.de/leer': '<html>nichts</html>',
+    'https://amt.de/fremd': '<link rel="alternate" type="application/rss+xml" href="https://woanders.example/f.xml">',
+  };
+  await discoverFeed(
+    { id: 'amt', url: 'https://amt.de/alt.xml', format: 'rss',
+      homepage: ['https://amt.de/tot', 'https://amt.de/leer', 'https://amt.de/fremd'] },
+    { fetchText: async (u) => { if (!(u in seiten)) throw new Error('HTTP 404'); return seiten[u]; } },
+  );
+  const p = suchProtokoll().amt;
+  assert.ok(p && p.stand, 'kein Protokoll geschrieben');
+  // Der vierte Eintrag ist die Domain-Wurzel: Sie wird IMMER zusaetzlich
+  // versucht (discoveryPages) und existiert in diesem Test nicht.
+  assert.deepEqual(p.versuche.map((v) => v.ergebnis),
+    ['seite-nicht-lesbar', 'kein-feed-ausgezeichnet', 'nur-fremde-domain', 'seite-nicht-lesbar']);
+  // Die verworfene Fremd-Adresse gehoert dazu: Sie zeigt, dass die Domain-Sperre
+  // gegriffen hat — eine andere Reparatur als „Seite zeichnet nichts aus".
+  assert.deepEqual(p.versuche[2].verworfen, ['https://woanders.example/f.xml']);
+  __resetSuchProtokoll();
+});
+
+test('ein Erfolg wird ebenfalls protokolliert', async () => {
+  __resetSuchProtokoll();
+  const seiten = {
+    'https://amt.de/': '<link rel="alternate" type="application/rss+xml" href="/neu.xml">',
+    'https://amt.de/neu.xml': FEED,
+  };
+  await discoverFeed({ id: 'amt2', url: 'https://amt.de/alt.xml', format: 'rss' },
+    { fetchText: async (u) => { if (!(u in seiten)) throw new Error('HTTP 404'); return seiten[u]; } });
+  const p = suchProtokoll().amt2;
+  assert.equal(p.versuche.at(-1).ergebnis, 'gefunden');
+  assert.equal(p.versuche.at(-1).kandidat, 'https://amt.de/neu.xml');
+  __resetSuchProtokoll();
 });
