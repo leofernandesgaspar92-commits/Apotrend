@@ -3,8 +3,14 @@
 // Strategie: NETWORK-FIRST für die App-Hülle (immer frisch, wenn online; aus dem
 // Cache, wenn offline). API-Aufrufe werden NIE gecacht (keine veralteten Sicherheits-/
 // Engpassdaten) — sie laufen unverändert übers Netz. Nur GET, nur eigene Herkunft.
-const CACHE = 'apopulse-shell-v2';
-const SHELL = ['/', '/index.html', '/app.js', '/app.css', '/manifest.webmanifest',
+// v3: Die Sprachtexte liegen seit dem 06.09.2026 in einer eigenen Datei
+// (/i18n.js). Ohne neuen Cache-Namen behielten bestehende Installationen
+// ihre alte Shell — index.html ohne den neuen <script>-Eintrag — und die
+// Anwendung startete mit undefiniertem I18N: leere Beschriftungen ueberall,
+// und zwar nur bei Bestandsnutzer:innen. Die Version MUSS mitziehen, wenn
+// sich die Liste unten aendert.
+const CACHE = 'apopulse-shell-v3';
+const SHELL = ['/', '/index.html', '/i18n.js', '/app.js', '/app.css', '/manifest.webmanifest',
   '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {

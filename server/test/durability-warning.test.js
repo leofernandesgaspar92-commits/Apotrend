@@ -4,7 +4,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const app = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+// Seit dem 06.09.2026 liegen die Sprachtexte in public/i18n.js. Geprueft
+// wird, was der Browser zusammen sieht — sonst meldet dieser Test das
+// Fehlen einer Uebersetzung, die es sehr wohl gibt.
+const app = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8')
+  + readFileSync(new URL('../public/i18n.js', import.meta.url), 'utf8');
 
 test('die Warnung haengt an der Auskunft, nicht an einer Vermutung', () => {
   assert.match(app, /fetch\('\/api\/health'\)/);

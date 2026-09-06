@@ -64,7 +64,14 @@ function run() {
   // Frontend ist seit der Monolith-Entflechtung dreigeteilt: Markup (index.html),
   // Logik+i18n (app.js), Styles (app.css). Jede Prüfung liest die richtige Quelle.
   const html = rd('public/index.html');
-  const js = rd('public/app.js');
+  // Die Sprachtexte liegen seit dem 06.09.2026 in public/i18n.js. Beide
+  // Dateien zusammen ergeben das, was der Browser sieht — die Pruefungen
+  // unten (Sprachparitaet, hartkodierte Texte) muessen ueber beide laufen,
+  // sonst meldet die Paritaetspruefung ploetzlich 0/0/0 und sieht dabei
+  // gruen aus.
+  const appJs = rd('public/app.js');
+  const i18nJs = rd('public/i18n.js');
+  const js = i18nJs + '\n' + appJs;
   const css = (() => { try { return rd('public/app.css'); } catch { return ''; } })();
   const frontend = html + '\n' + js; // für Prüfungen, die Markup UND JS-Templates umspannen
   const srcFiles = execSync("find src public -name '*.js' -o -name '*.html'", { cwd: ROOT, encoding: 'utf8' })
@@ -151,7 +158,8 @@ function run() {
     css_important: countMatches(css + js, /!important/g),
     // Wartbarkeit nach Entflechtung: Markup, Logik und Styles getrennt im Blick behalten.
     index_html: { lines: html.split('\n').length, kb: Math.round(Buffer.byteLength(html) / 1024) },
-    app_js: { lines: js.split('\n').length, kb: Math.round(Buffer.byteLength(js) / 1024) },
+    app_js: { lines: appJs.split('\n').length, kb: Math.round(Buffer.byteLength(appJs) / 1024) },
+    i18n_js: { lines: i18nJs.split('\n').length, kb: Math.round(Buffer.byteLength(i18nJs) / 1024) },
     app_css: { lines: css.split('\n').length, kb: Math.round(Buffer.byteLength(css) / 1024) },
   };
 
@@ -175,7 +183,7 @@ function run() {
   console.log(`TODO/FIXME:         ${snapshot.todos}`);
   console.log(`console.* (FE):     ${snapshot.frontend_console}`);
   console.log(`!important (CSS):   ${snapshot.css_important}`);
-  console.log(`Frontend-Größe:     index.html ${snapshot.index_html.lines} Z · app.js ${snapshot.app_js.lines} Z · app.css ${snapshot.app_css.lines} Z`);
+  console.log(`Frontend-Größe:     index.html ${snapshot.index_html.lines} Z · app.js ${snapshot.app_js.lines} Z (${snapshot.app_js.kb} KB) · i18n.js ${snapshot.i18n_js.lines} Z (${snapshot.i18n_js.kb} KB) · app.css ${snapshot.app_css.lines} Z`);
 }
 
 run();
