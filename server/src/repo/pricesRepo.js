@@ -24,6 +24,11 @@
 import crypto from 'node:crypto';
 
 // Mehrere Lieferanten je Präparat -> Preisvergleich. series = letzte Preise.
+// Oesterreichische Referenzdaten (EUR, AT-Praeparate, AT-Preisniveau).
+// Bis zum 06.09.2026 trugen sie kein Land und erschienen deshalb in allen
+// 16 Laendern — ein kenianischer Einkauf haette danach kalkuliert. Dieselbe
+// Entscheidung wie bei Engpaessen und Rabatten, aus demselben Grund.
+const SEED_LAND = 'AT';
 const SEED = [
   { bezeichnung: 'Amoxicillin 1000 mg', wirkstoff: 'Amoxicillin', supplier: 'Großhandel A', aep: 3.98, prev_aep: 3.72, series: [3.55, 3.60, 3.72, 3.98] },
   { bezeichnung: 'Amoxicillin 1000 mg', wirkstoff: 'Amoxicillin', supplier: 'Großhandel B',         aep: 3.01, prev_aep: 3.05, series: [3.10, 3.08, 3.05, 3.01] },
@@ -49,13 +54,17 @@ export function createPricesRepo({ seed = true } = {}) {
       id: p.id || uuid(), bezeichnung: p.bezeichnung, wirkstoff: p.wirkstoff ?? null,
       supplier: p.supplier, aep: p.aep, prev_aep: p.prev_aep ?? null, currency: p.currency || 'EUR',
       series: p.series ?? [], trend_pct: trendPct(p.aep, p.prev_aep),
+      // Land, fuer das dieser Preis gilt. `null` heisst ausdruecklich
+      // „ueberall" und bleibt moeglich; ein leerer String wird dazu
+      // normalisiert, sonst entstuende eine Zeile, die kein Filter je findet.
+      country: p.country === undefined ? null : (p.country ? String(p.country).toUpperCase() : null),
       provenance: p.provenance || 'reference', quelle: p.quelle || 'Referenzdaten', updated_at: now(),
     };
     prices.set(row.id, row);
     return { ...row };
   }
 
-  if (seed) SEED.forEach(p => upsert(p));
+  if (seed) SEED.forEach(p => upsert({ ...p, country: SEED_LAND }));
 
   return {
     upsert,
@@ -69,9 +78,19 @@ export function createPricesRepo({ seed = true } = {}) {
     },
     get(id) { const p = prices.get(id); return p ? { ...p } : null; },
     // Nach Präparat gruppiert, je Gruppe guenstigster Lieferant zuerst.
-    listComparisons() {
+    /**
+     * `country` filtert auf ein Land. Zeilen ohne Land gelten ueberall.
+     *
+     * Ohne diesen Filter sah eine Apotheke in Nairobi oesterreichische
+     * Referenzpreise als ihre Marktlage — und ein Einkauf haette danach
+     * kalkuliert. Preise sind noch unmittelbarer als Engpaesse: Daran haengt
+     * eine Zahl, die jemand einer Verhandlung zugrunde legt.
+     */
+    listComparisons({ country = null } = {}) {
+      const cc = country ? String(country).toUpperCase() : null;
       const groups = new Map();
       for (const p of prices.values()) {
+        if (cc && p.country && p.country !== cc) continue;
         if (!groups.has(p.bezeichnung)) groups.set(p.bezeichnung, []);
         groups.get(p.bezeichnung).push({ ...p });
       }

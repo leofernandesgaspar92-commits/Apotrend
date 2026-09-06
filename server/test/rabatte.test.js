@@ -73,3 +73,15 @@ test('Posten zu unbekannter Aktion wird abgelehnt', () => {
   const { rabatte, a } = setup();
   assert.throws(() => rabatte.postAbout(a, 'nope', { body: 'x' }), /nicht gefunden/);
 });
+
+test('die Referenz-Aktionen gehören nach Österreich — und nur dorthin', () => {
+  // Bis zum 06.09.2026 trugen die kuratierten Aktionen kein Land und
+  // erschienen in allen 16 Ländern. Der frühere Kommentar nannte das
+  // „nicht geraten" — tatsächlich sind es österreichische Präparate zu
+  // österreichischen Preisen in Euro.
+  const repo = createRabatteRepo({ today: '2026-09-06' });
+  const at = repo.listTop10({ country: 'AT' });
+  assert.ok(at.length > 0, 'ohne laufende Referenz-Aktionen prüft dieser Test nichts');
+  assert.equal(repo.listTop10({ country: 'KE' }).length, 0,
+    'Kenia darf keine österreichischen Referenz-Aktionen sehen');
+});

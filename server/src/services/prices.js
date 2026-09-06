@@ -41,8 +41,12 @@ export function createPricesService(pricesRepo, social, rabatteRepo = null) {
 
   return {
     // Preisvergleich, je Gruppe mit Aktivitäts-Zähler pro Angebot + Ersparnis.
-    comparisons(viewerUserId) {
-      return pricesRepo.listComparisons().map(g => {
+    /**
+     * `country` beschraenkt auf ein Land. Ohne Angabe bleibt alles sichtbar —
+     * wer filtert, entscheidet der Aufrufer.
+     */
+    comparisons(viewerUserId, { country = null } = {}) {
+      return pricesRepo.listComparisons({ country }).map(g => {
         const withS = withSavings({
           ...g,
           offers: g.offers.map(o => ({ ...o, post_count: social.postsAbout(viewerUserId, 'price', o.id).length })),

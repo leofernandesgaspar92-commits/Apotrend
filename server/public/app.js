@@ -3762,7 +3762,7 @@ async function loadPrices() {
   const feed = document.getElementById('feed');
   feed.innerHTML = '<div class="loading">…</div>';
   try {
-    const d = await api('GET','/api/prices');
+    const d = await api('GET','/api/prices?country=' + viewCountry());
     feed.innerHTML = '';
     { const n = countryDataNotice(); if (n) feed.appendChild(n); }
     { const ln = legalNotice('price_compare'); if (ln) feed.appendChild(ln); }

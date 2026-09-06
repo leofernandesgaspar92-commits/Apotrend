@@ -1362,7 +1362,10 @@ const routes = [
     if (!priceBlocked) {
       // Leichtgewichtig aus dem Repo (nur Wirkstoff/Bezeichnung) — ohne die teure
       // Ersparnis-/Aktions-/Feed-Aufbereitung von prices.comparisons().
-      for (const g of pricesRepo.listComparisons()) {
+      // Im selben Land wie die Engpassliste: Ein „es gibt 3 Alternativen"
+      // aus einem fremden Markt waere eine Falschauskunft an genau der
+      // Stelle, an der jemand ueber eine Umbestellung entscheidet.
+      for (const g of pricesRepo.listComparisons({ country: land })) {
         const wk = String(g.wirkstoff || '').trim().toLowerCase();
         if (!wk) continue;
         if (!byWk.has(wk)) byWk.set(wk, new Set());
@@ -1404,7 +1407,10 @@ const routes = [
   ['POST', /^\/api\/watchlist\/([^/]+)\/alert$/, true, async ({ userId, params, body }) => ({ items: shortages.setWatchAlert(userId, decodeURIComponent(params[0]), body.pct) })],
 
   // ── Preise (Priorität 3) ──
-  ['GET', /^\/api\/prices$/, true, async ({ userId }) => { ensureFeatureAllowed('price_compare', userId); return { comparisons: prices.comparisons(userId), savings: prices.savingsSummary() }; }],
+  // Wie Engpaesse und Rabatte: das ANGESEHENE Land (Laender-Umschalter),
+  // nicht pauschal alles. Preise sind dabei der unmittelbarste Fall — an
+  // ihnen haengt eine Zahl, die jemand einer Verhandlung zugrunde legt.
+  ['GET', /^\/api\/prices$/, true, async ({ userId, query }) => { ensureFeatureAllowed('price_compare', userId); return { comparisons: prices.comparisons(userId, { country: activeCountry(userId, query) }), savings: prices.savingsSummary() }; }],
   ['GET', /^\/api\/prices\/([^/]+)$/, true, async ({ userId, params }) => {
     ensureFeatureAllowed('price_compare', userId);
     const d = prices.withActivity(userId, params[0]);

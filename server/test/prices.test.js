@@ -83,3 +83,41 @@ test('Referenzdaten tragen keine echten Grosshaendler-Namen', () => {
     }
   }
 });
+
+// ── Preise gehören zu einem Land ────────────────────────────────────────────
+// Dieselbe Klasse wie bei den Engpässen, nur unmittelbarer: An einem Preis
+// hängt eine Zahl, die jemand einer Verhandlung oder Bestellung zugrunde legt.
+// Bis zum 06.09.2026 sah eine Apotheke in Nairobi österreichische
+// Referenzpreise als ihre Marktlage.
+
+test('die Referenzpreise gehören nach Österreich — und nur dorthin', () => {
+  const repo = createPricesRepo();
+  const alle = repo.listFlat();
+  assert.ok(alle.length > 0, 'ohne Referenzpreise prüft dieser Test nichts');
+  assert.ok(alle.every((p) => p.country === 'AT'),
+    'jede Referenzzeile trägt AT: ' + alle.map((p) => `${p.bezeichnung}=${p.country}`).join(', '));
+  assert.ok(repo.listComparisons({ country: 'AT' }).length > 0);
+  assert.equal(repo.listComparisons({ country: 'KE' }).length, 0,
+    'Kenia darf keine österreichischen Referenzpreise sehen');
+});
+
+test('eine Preiszeile ohne Land gilt überall', () => {
+  const repo = createPricesRepo({ seed: false });
+  repo.upsert({ bezeichnung: 'Weltweit 1 mg', wirkstoff: 'W', supplier: 'Großhandel A', aep: 1, country: null });
+  assert.equal(repo.listComparisons({ country: 'KE' }).length, 1);
+  assert.equal(repo.listComparisons({ country: 'AT' }).length, 1);
+});
+
+test('ohne Länderangabe bleibt alles sichtbar', () => {
+  const repo = createPricesRepo({ seed: false });
+  repo.upsert({ bezeichnung: 'A', wirkstoff: 'A', supplier: 'S', aep: 1, country: 'AT' });
+  repo.upsert({ bezeichnung: 'B', wirkstoff: 'B', supplier: 'S', aep: 1, country: 'KE' });
+  assert.equal(repo.listComparisons().length, 2);
+});
+
+test('das Land wird normalisiert', () => {
+  const repo = createPricesRepo({ seed: false });
+  assert.equal(repo.upsert({ bezeichnung: 'A', supplier: 'S', aep: 1, country: 'ke' }).country, 'KE');
+  // Leerer String ist kein Land, sondern „überall".
+  assert.equal(repo.upsert({ bezeichnung: 'B', supplier: 'S', aep: 1, country: '' }).country, null);
+});

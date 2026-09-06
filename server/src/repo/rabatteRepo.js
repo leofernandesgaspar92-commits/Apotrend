@@ -20,6 +20,9 @@ import crypto from 'node:crypto';
 //
 // Negative Werte sind Absicht: Eine abgelaufene Aktion gehoert in den Seed,
 // damit die Filterung „nur laufende" ueberhaupt etwas zu filtern hat.
+// Oesterreichische Referenzdaten (EUR, AT-Praeparate). Ohne Land erschienen
+// sie in allen 16 Laendern — siehe Begruendung bei listTop10.
+const SEED_LAND = 'AT';
 const SEED = [
   { bezeichnung: 'Ibuprofen 400 mg',    wirkstoff: 'Ibuprofen',    supplier: 'Großhandel A', listenpreis: 2.35, aktionspreis: 1.65, min_menge: 50,  tage: 85 },
   { bezeichnung: 'Pantoprazol 40 mg',   wirkstoff: 'Pantoprazol',  supplier: 'Großhandel B',         listenpreis: 5.08, aktionspreis: 3.90, min_menge: 20,  tage: 55 },
@@ -77,7 +80,7 @@ export function createRabatteRepo({ seed = true, today = null } = {}) {
     return new Date(ms).toISOString().slice(0, 10);
   }
 
-  if (seed) SEED.forEach(({ tage, ...r }) => upsert({ ...r, gueltig_bis: bisDatum(tage) }));
+  if (seed) SEED.forEach(({ tage, ...r }) => upsert({ ...r, gueltig_bis: bisDatum(tage), country: SEED_LAND }));
 
   return {
     upsert,
@@ -110,10 +113,16 @@ export function createRabatteRepo({ seed = true, today = null } = {}) {
     /**
      * Laufende Aktionen, beste zuerst.
      *
-     * `country` filtert auf den Rechtsraum. Zeilen OHNE Land (kuratierte
-     * Referenzdaten, Altbestand) bleiben sichtbar: Sie einem Land zuzuordnen,
-     * das nicht belegt ist, waere geraten — und sie zu verstecken hiesse, dem
-     * Owner beim Einschalten des Filters die halbe Ansicht zu leeren.
+     * `country` filtert auf den Rechtsraum. Zeilen OHNE Land gelten weiterhin
+     * ueberall — das bleibt als bewusste Moeglichkeit bestehen.
+     *
+     * Die kuratierten Referenzdaten gehoeren aber NICHT mehr dazu. Hier stand
+     * frueher, sie einem Land zuzuordnen „waere geraten". Das stimmt nicht:
+     * Es sind oesterreichische Praeparate zu oesterreichischen Preisen in
+     * Euro. Sie tragen deshalb seit dem 06.09.2026 AT (SEED_LAND unten) —
+     * dieselbe Entscheidung wie bei den Engpaessen, aus demselben Grund: Eine
+     * Apotheke in Nairobi, der wir oesterreichische Aktionspreise als ihre
+     * anzeigen, bestellt danach.
      * `q` sucht in Bezeichnung, Wirkstoff (INN) und Lieferant.
      */
     listTop10({ country = null, q = null } = {}) {
