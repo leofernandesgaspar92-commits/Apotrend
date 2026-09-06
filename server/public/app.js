@@ -86,6 +86,11 @@ const I18N = {
     sh_csv_t:'Aktuelle Auswahl als CSV (Excel) exportieren', sh_view_all_wk:'Alles zu {wk} ansehen', sh_sort:'Sortieren:',
     sh_sort_crit:'🔴 Kritischste zuerst', sh_sort_new:'🕘 Neueste zuerst', sh_sort_active:'👥 Am meisten bestätigt',
     sh_empty:'Keine Engpässe für diese Auswahl. Filter zurücksetzen oder Suchbegriff ändern.', sh_reset:'Filter zurücksetzen',
+    cov_stumm_title:'Für dieses Land kommen gerade keine Behördendaten an',
+    cov_stumm_body:'Die zuständige Behörde hat beim letzten Abruf nicht geantwortet. Wir versuchen es alle fünf Minuten erneut — sobald sie wieder liefert, erscheinen die Meldungen hier von selbst. An Ihnen liegt es nicht.',
+    cov_unbekannt_body:'Der erste Abruf läuft gerade. Gleich steht hier, was für dieses Land vorliegt.',
+    cov_keine_body:'Für dieses Land ist noch keine amtliche Quelle angebunden. Wir arbeiten daran.',
+    cov_quellen:'Betroffen: {q}',
     sh_rep_title:'➕ Engpass melden', sh_rep_open:'Formular öffnen', sh_rep_close:'Schließen',
     sh_rep_private:'ℹ️ Als Privatnutzer:in kannst du Engpässe lesen, aber nicht selbst melden oder bestätigen. Engpass-Meldungen sind sicherheitsrelevant und Fachkreisen (Apotheke, Pharma-Unternehmen, Behörde) vorbehalten.',
     sh_rep_desc:'Merkst du selbst einen Lieferengpass? Melde ihn — Kolleg:innen, die den Wirkstoff beobachten, werden sofort informiert. (Kennzeichnung: 👥 Community-Meldung, nicht offiziell verifiziert.)', sh_rep_exists:'Für „{w}" gibt es bereits eine offene Meldung.', sh_rep_exists_view:'Ansehen & bestätigen',
@@ -440,6 +445,11 @@ const I18N = {
     sh_csv_t:'Export current selection as CSV (Excel)', sh_view_all_wk:'View everything about {wk}', sh_sort:'Sort:',
     sh_sort_crit:'🔴 Most critical first', sh_sort_new:'🕘 Newest first', sh_sort_active:'👥 Most confirmed',
     sh_empty:'No shortages for this selection. Reset the filter or change the search term.', sh_reset:'Reset filter',
+    cov_stumm_title:'No official data is coming in for this country right now',
+    cov_stumm_body:'The responsible authority did not respond on the last attempt. We retry every five minutes — as soon as it delivers again, the reports appear here automatically. This is not caused by anything you did.',
+    cov_unbekannt_body:'The first fetch is running. In a moment this will show what is available for this country.',
+    cov_keine_body:'No official source is connected for this country yet. We are working on it.',
+    cov_quellen:'Affected: {q}',
     sh_rep_title:'➕ Report a shortage', sh_rep_open:'Open form', sh_rep_close:'Close',
     sh_rep_private:'ℹ️ As a private user you can read shortages but not report or confirm them. Shortage reports are safety-relevant and reserved for professionals (pharmacy, pharma company, authority).',
     sh_rep_desc:'Noticing a supply shortage yourself? Report it — colleagues watching the substance are notified right away. (Labelled: 👥 community report, not officially verified.)', sh_rep_exists:'There is already an open report for “{w}”.', sh_rep_exists_view:'View & confirm',
@@ -794,6 +804,11 @@ const I18N = {
     sh_csv_t:'Exportar a seleção atual como CSV (Excel)', sh_view_all_wk:'Ver tudo sobre {wk}', sh_sort:'Ordenar:',
     sh_sort_crit:'🔴 Mais críticas primeiro', sh_sort_new:'🕘 Mais recentes primeiro', sh_sort_active:'👥 Mais confirmadas',
     sh_empty:'Sem faltas para esta seleção. Reponha o filtro ou altere o termo de pesquisa.', sh_reset:'Repor filtro',
+    cov_stumm_title:'De momento não chegam dados oficiais para este país',
+    cov_stumm_body:'A autoridade competente não respondeu na última tentativa. Tentamos de novo a cada cinco minutos — assim que voltar a fornecer, os avisos aparecem aqui automaticamente. A falha não é sua.',
+    cov_unbekannt_body:'A primeira consulta está a decorrer. Dentro de momentos verá o que existe para este país.',
+    cov_keine_body:'Ainda não há uma fonte oficial ligada a este país. Estamos a trabalhar nisso.',
+    cov_quellen:'Afetadas: {q}',
     sh_rep_title:'➕ Reportar uma falta', sh_rep_open:'Abrir formulário', sh_rep_close:'Fechar',
     sh_rep_private:'ℹ️ Como utilizador particular pode ler as faltas, mas não comunicá-las nem confirmá-las. As comunicações de falta são relevantes para a segurança e reservadas a profissionais (farmácia, empresa farmacêutica, autoridade).',
     sh_rep_desc:'Notou uma falta de fornecimento? Reporte-a — os colegas que vigiam a substância são notificados de imediato. (Identificado: 👥 aviso da comunidade, não verificado oficialmente.)', sh_rep_exists:'Já existe um aviso aberto para „{w}".', sh_rep_exists_view:'Ver & confirmar',
@@ -2120,7 +2135,9 @@ async function loadOverview() {
     // Live-Sessions + Aufgaben parallel laden (Fehler dort dürfen die Übersicht nicht blockieren).
     [d, liveData, tasksData] = await Promise.all([
       api('GET','/api/overview'),
-      api('GET','/api/live').catch(() => null),
+      // Live-Sessions ruhen (Bereich `termine`). Ohne diese Wache quittiert
+      // der Server mit 404, und das steht als roter Fehler in der Konsole.
+      featureAn('termine') ? api('GET','/api/live').catch(() => null) : null,
       // Ruhende Bereiche werden gar nicht erst abgefragt — ihre 404 landen
       // sonst als rote Fehler in der Konsole und sehen aus wie ein Defekt.
       featureAn('zusammenarbeit') ? api('GET','/api/tasks').catch(() => null) : null,
@@ -2833,6 +2850,46 @@ function emptyState({ icon = '🗒️', title, text = '', cta = null }) {
 // Hinweistext und – wenn ein Filter/Suchbegriff aktiv ist – einen sichtbaren
 // „Filter zurücksetzen"-Button. Owner-Prinzip: den Ausweg als Knopf anbieten, nicht
 // nur im Text erwähnen (offensichtliche Bedienung, keine versteckte Geste).
+// ── Ehrliche Ansage statt wortloser Leere ───────────────────────────────────
+//  Eine leere Liste ohne Erklaerung ist das teuerste Signal, das die Plattform
+//  senden kann: Sie sieht aus wie ein Defekt, und die Nutzerin sucht den
+//  Fehler bei sich. Genau das drohte in zwoelf der sechzehn Laender — dort ist
+//  eine Quelle EINGETRAGEN, aber sie liefert nicht.
+//
+//  Ausblenden waere das Naheliegende gewesen und war falsch: Nigeria, Kenia,
+//  Ghana, Angola und Mocambique tragen die Afrika-Strategie. Ein Land
+//  unsichtbar zu machen, um ein Anzeigeproblem zu loesen, legt den Markt still.
+//
+//  Der Zustand kommt aus dem letzten echten Durchlauf (services/coverage.js),
+//  nicht aus einer Liste im Code. Faengt eine Behoerde wieder an zu liefern,
+//  verschwindet der Hinweis von selbst.
+let coverageCache = null;
+async function ladeCoverage(land) {
+  if (!land) return null;
+  if (coverageCache && coverageCache.land === land) return coverageCache;
+  try {
+    coverageCache = await (await fetch('/api/coverage/' + encodeURIComponent(land))).json();
+  } catch { coverageCache = null; }
+  return coverageCache;
+}
+
+/** Erklaerkarte, oder null wenn es nichts zu erklaeren gibt. */
+function coverageKarte(status) {
+  // 'liefert' braucht keine Erklaerung: Dann ist die Liste aus einem anderen
+  // Grund leer (Filter, oder die Behoerde hat schlicht nichts gemeldet), und
+  // eine Stoerungsmeldung waere hier eine Falschaussage.
+  if (!status || status.zustand === 'liefert') return null;
+  const koerper = status.zustand === 'stumm' ? 'cov_stumm_body'
+    : status.zustand === 'unbekannt' ? 'cov_unbekannt_body'
+      : 'cov_keine_body';
+  const titel = status.zustand === 'stumm' ? `<b>${esc(t('cov_stumm_title'))}</b>` : '';
+  // Wer nicht antwortet, wird benannt. „Die NAFDAC antwortet nicht" ist eine
+  // Aussage, mit der eine Apotheke etwas anfangen kann; „keine Daten" nicht.
+  const wer = (status.stumm && status.stumm.length)
+    ? `<div class="muted" style="margin-top:8px;font-size:13px">${esc(ti('cov_quellen', { q: status.stumm.join(', ') }))}</div>` : '';
+  return el(`<div class="card">${titel}<div class="muted" style="margin-top:${titel ? '6px' : '0'}">${esc(t(koerper))}</div>${wer}</div>`);
+}
+
 function filteredEmptyCard(msgKey, active, onReset) {
   const card = el(`<div class="card"><div class="muted">${esc(t(msgKey))}</div>${active ? `<div style="margin-top:10px"><button class="small" data-reset>↺ ${esc(t('sh_reset'))}</button></div>` : ''}</div>`);
   const btn = card.querySelector('[data-reset]');
@@ -3301,6 +3358,14 @@ function renderShortlist(listBox, bar, all) {
   });
   listBox.innerHTML = '';
   if (!list.length) {
+    // Zuerst die Erklaerung, warum ueberhaupt nichts da ist — DANN der
+    // Filter-Hinweis. Umgekehrt liest sich „Filter zuruecksetzen" wie die
+    // Loesung eines Problems, das gar nicht am Filter liegt.
+    ladeCoverage(typeof viewCountry === 'function' ? viewCountry() : null).then((st) => {
+      const k = coverageKarte(st);
+      if (k && listBox.firstChild) listBox.insertBefore(k, listBox.firstChild);
+      else if (k) listBox.appendChild(k);
+    });
     listBox.appendChild(filteredEmptyCard('sh_empty', !!(shortageFilter || q), () => {
       shortageFilter = ''; shortageQuery = '';
       const qin = bar.querySelector('[data-q]'); if (qin) qin.value = '';

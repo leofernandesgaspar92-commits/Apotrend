@@ -57,6 +57,7 @@ import { issueToken, verifyToken } from './token.js';
 import { createRateLimiter } from '../domain/rateLimiter.js';
 import { dienstKennung } from './serviceIdentity.js';
 import { featureListe, ruhenderBereichFuer } from '../data/features.js';
+import { createCoverageStore, landStatus } from '../services/coverage.js';
 
 // Login-Brute-Force-Schutz: max. 5 Fehlversuche je (IP+E-Mail) in 15 Minuten.
 const loginLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
@@ -492,6 +493,10 @@ async function restoreNewsFromDb({ limit = 200 } = {}) {
   return { restored, read: rows.length };
 }
 
+// Was tatsaechlich ankommt, je Land (services/coverage.js). Wird nach jedem
+// News-Durchlauf gefuellt und speist die ehrliche Ansage in leeren Laendern.
+const coverage = createCoverageStore();
+
 async function runNewsIngest() {
   const editor = social.getProfile('apopulse');
   if (!editor) return { skipped: true, reason: 'Redaktionskonto fehlt' };
@@ -520,6 +525,10 @@ async function runNewsIngest() {
       if (db) { try { await db.saveNews(item); } catch { /* Store meldet selbst */ } }
     },
   });
+  // Gemessenen Zustand je Land festhalten — VOR dem Speichern, damit auch ein
+  // Durchlauf ohne neue Beitraege den Zustand aktualisiert. Genau der Fall
+  // zaehlt: „keine neuen Meldungen" ist etwas anderes als „Quelle stumm".
+  coverage.ausNewsReport(report, sourcesByKind('news'));
   if (report.created > 0) saveSoon(); // neue Beiträge + Gesehen-Stand sichern
   return report;
 }
@@ -694,6 +703,13 @@ const routes = [
   // Reiter: Er sieht aus wie ein Fehler der Plattform.
   ['GET', /^\/api\/features$/, false, async () => ({ features: featureListe() })],
 
+  // Liefert dieses Land gerade Daten? Oeffentlich, weil die Ansicht die Antwort
+  // BEVOR dem Login braucht — und weil eine leere Liste ohne Erklaerung das
+  // teuerste Signal ist, das die Plattform senden kann: Sie sieht aus wie ein
+  // Defekt, und die Nutzerin sucht den Fehler bei sich.
+  ['GET', /^\/api\/coverage\/([A-Za-z]{2})$/, false, async ({ params }) =>
+    landStatus(params[0], { store: coverage, quellen: sourcesByKind('news') })],
+
   ['GET', /^\/api\/health$/, false, async () => ({
     ok: true, service: 'apopulse', ts: new Date().toISOString(),
     durability: durabilityReport().level,
@@ -753,6 +769,10 @@ const routes = [
         withSource: laender.filter((cc) => proLand[cc]).length,
         missing: laender.filter((cc) => !proLand[cc]),
         bySource: proLand,
+        // `withSource` zaehlt EINGETRAGENE Quellen. Das ist etwas anderes als
+        // geliefert — der Unterschied war lange unsichtbar und hat leere
+        // Laenderansichten wie einen Defekt aussehen lassen.
+        gemessen: coverage.alle(),
       };
     })(),
     shortage_feeds: Object.keys(liveSources()),

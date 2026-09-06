@@ -124,9 +124,20 @@ export const FEATURES = [
   },
   {
     id: 'termine', zustand: 'ruht',
-    titel: 'Videosprechstunde und Termine',
+    titel: 'Videosprechstunde, Termine und Live-Sessions',
     grund: 'Eigenes Produkt, eigener Markt, eigene regulatorische Fragen.',
-    api: [/^\/api\/appointments/],
+    // ACHTUNG, doppelt belegter Pfad: /api/live traegt ZWEI verschiedene
+    // Dinge. /api/live/status und /api/live/run/* gehoeren zur
+    // Nachrichten-Aufnahme und muessen laufen; /api/live und /api/live/<id>/…
+    // sind die Video-Live-Sessions und gehoeren hierher. Ein pauschales
+    // /^\/api\/live/ haette die Nachrichten-Automatik mit stillgelegt —
+    // deshalb sind die Muster hier eng gefasst und enden auf $.
+    api: [
+      /^\/api\/appointments/,
+      /^\/api\/live$/,
+      /^\/api\/live\/mine$/,
+      /^\/api\/live\/[^/]+\/(start|end|delete|interest|report)$/,
+    ],
   },
   {
     id: 'patienteninfo', zustand: 'ruht',

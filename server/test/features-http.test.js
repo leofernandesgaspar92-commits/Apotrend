@@ -83,3 +83,20 @@ test('die Krypto-Wege bleiben offen — auch im Normalzustand', async () => {
       `Krypto-Pfad ${methode} ${pfad} ist stillgelegt. Krypto ist nicht abschaltbar.`);
   }
 });
+
+test('GET /api/coverage/:land antwortet ohne Anmeldung und ehrlich', async () => {
+  // Vor dem ersten Durchlauf ist der Zustand „unbekannt" — ausdruecklich nicht
+  // „stumm". Eine Stoerung zu melden, wo nur noch nichts gemessen wurde, waere
+  // ausgerechnet in den ersten Sekunden nach jedem Deploy eine Falschaussage.
+  const r = await fetch(BASE + '/api/coverage/NG');
+  assert.equal(r.status, 200);
+  const d = await r.json();
+  assert.equal(d.land, 'NG');
+  assert.ok(['unbekannt', 'liefert', 'stumm'].includes(d.zustand), `unerwartet: ${d.zustand}`);
+  assert.ok(d.quellen >= 1, 'fuer Nigeria ist eine Quelle eingetragen');
+});
+
+test('ein Land ohne Quelle wird als solches benannt', async () => {
+  const d = await (await fetch(BASE + '/api/coverage/JP')).json();
+  assert.equal(d.zustand, 'keine');
+});

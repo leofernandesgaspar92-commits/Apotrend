@@ -73,6 +73,17 @@ test('ruhende Bereiche fangen ihre Pfade ein', () => {
   assert.equal(ruhenderBereichFuer('/api/fx-rates', LEER).id, 'waehrungsrechner');
 });
 
+test('der doppelt belegte Pfad /api/live wird richtig getrennt', () => {
+  // /api/live traegt zwei verschiedene Dinge: die Nachrichten-Automatik
+  // (status, run) und die Video-Live-Sessions. Ein pauschales Muster haette
+  // die Automatik mit stillgelegt — und das waere erst aufgefallen, wenn
+  // tagelang keine Behoerdenmeldung mehr ankommt.
+  assert.equal(ruhenderBereichFuer('/api/live/status', LEER), null, 'die Nachrichten-Automatik muss laufen');
+  assert.equal(ruhenderBereichFuer('/api/live/run/news', LEER), null, 'der manuelle Anstoss muss laufen');
+  assert.equal(ruhenderBereichFuer('/api/live', LEER).id, 'termine');
+  assert.equal(ruhenderBereichFuer('/api/live/abc/start', LEER).id, 'termine');
+});
+
 test('aktive Bereiche bleiben unangetastet', () => {
   for (const p of ['/api/shortages', '/api/news', '/api/login', '/api/me',
     '/api/prices', '/api/rabatte', '/api/live/status', '/api/wirkstoff/ibuprofen']) {
