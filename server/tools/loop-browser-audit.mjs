@@ -261,6 +261,20 @@ async function main() {
       const da = await page.locator(sel).count();
       if (da > 0) findings.push(`${name} ist sichtbar, obwohl "${id}" ruht`);
     }
+    // Systematisch statt Einzelfall: JEDE Kachel und JEDER Schnellzugriff, der
+    // auf einen ruhenden Reiter zeigt, ist ein Klick ins Leere. Die
+    // Einzelabfragen oben fanden nur, was ich vorher gewusst habe — diese
+    // Schleife findet auch, woran ich nicht gedacht habe. Genau so kamen die
+    // Tauschboersen-Kacheln der Startuebersicht ans Licht.
+    const RUHENDE_TABS = { exchange: 'tauschboerse', live: 'termine' };
+    const zeiger = await page.$$eval('[data-go]', (els) => els.map((e) => e.dataset.go).filter(Boolean));
+    for (const ziel of new Set(zeiger)) {
+      const bereich = RUHENDE_TABS[ziel];
+      if (bereich && ruht.has(bereich)) {
+        findings.push(`Ein Bedienelement zeigt auf "${ziel}", obwohl "${bereich}" ruht`);
+      }
+    }
+
     // Gegenprobe: Der Kern MUSS bedienbar bleiben, sonst hat die Schaltung zu
     // viel entfernt und der Test bemerkte es nicht.
     for (const [sel, name] of [['.tabs button[data-tab="shortages"]', 'Engpässe'],

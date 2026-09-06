@@ -1089,10 +1089,16 @@ async function loadOverview() {
   // „gut/ok", ein Engpass-Zähler ist aber nichts Positives (Owner-Prinzip: konsistente
   // Farb-Semantik). Rot bleibt der „kritisch"-Kachel vorbehalten.
   if (d.shortages.antibiotika) tiles.push(tile('🧫', d.shortages.antibiotika, t('ov_t_abx'), 'var(--info-fg)', 'shortages', 'antibiotika'));
-  tiles.push(
-    tile('📦', d.exchange.biete, t('ov_t_offer'), 'var(--ok-fg)', 'exchange'),
-    tile('🔎', d.exchange.suche, t('ov_t_seek'), 'var(--warn-fg)', 'exchange'),
-  );
+  // Tauschboersen-Kacheln nur, wenn der Bereich laeuft. Sie zeigten sonst
+  // „0 Angebote ›" und fuehrten beim Klick auf einen Reiter, den es nicht mehr
+  // gibt. Dieselbe Klasse wie die Schnellzugriff-Leiste — und wieder erst
+  // aufgefallen, als eine Browser-Pruefung den Ueberblick im Klartext ausgab.
+  if (featureAn('tauschboerse')) {
+    tiles.push(
+      tile('📦', d.exchange.biete, t('ov_t_offer'), 'var(--ok-fg)', 'exchange'),
+      tile('🔎', d.exchange.suche, t('ov_t_seek'), 'var(--warn-fg)', 'exchange'),
+    );
+  }
   // Beobachtete Wirkstoffe mit überschrittenem Liefertermin — starkes „nachfassen"-Signal.
   const overdueWatched = ((d.watchlist && d.watchlist.items) || []).filter(w => w.overdue).length;
   if (overdueWatched) tiles.push(tile('⚠️', overdueWatched, t('ov_t_overdue'), 'var(--crit-fg)', 'shortages', 'watched'));

@@ -145,8 +145,17 @@ export function createCoverageStore({ now = () => Date.now() } = {}) {
     },
 
     size: () => proLand.size,
-    __dump: () => [...proLand],
-    __load(rows) { if (!rows) return; proLand.clear(); for (const [k, v] of rows) proLand.set(k, v); },
+    // BEWUSST KEIN __dump/__load. Die anderen Speicher dieser Anwendung werden
+    // in den Snapshot geschrieben und beim Start zurueckgeholt — dieser nicht.
+    // Ein wiederhergestellter Stand von gestern wuerde behaupten, etwas ueber
+    // HEUTE zu wissen: Er meldete „NAFDAC antwortet nicht", obwohl seit dem
+    // Neustart noch gar kein Abruf gelaufen ist. „unbekannt" ist der ehrliche
+    // Zustand, und er stellt sich nach fuenf Minuten von selbst richtig.
+    //
+    // Die Methoden gab es hier kurz — ungenutzt, weil sie im Snapshot nie
+    // eingetragen wurden. Ungenutzter Code, der wie eine Funktion aussieht,
+    // ist schlimmer als keiner: Der Naechste haelt Wiederherstellung fuer
+    // vorgesehen und baut darauf.
   };
 }
 
