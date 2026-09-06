@@ -654,6 +654,10 @@ async function runShortageIngest() {
     summary.structured = { sources: quellen.length, rows: clean.length };
   }
 
+  // Gemessenen Engpass-Zustand je Land festhalten — wie bei den Nachrichten,
+  // aber getrennt: Es sind andere Server, die unabhaengig ausfallen.
+  coverage.ausShortageSummary(summary, sourcesByKind('shortages'));
+
   const änderungen = [...summary.countries, ...summary.prices, ...summary.rabatte].some((c) => c.ok)
     || summary.csv.some((c) => c.count);
   if (änderungen) saveSoon();
@@ -708,8 +712,18 @@ const routes = [
   // BEVOR dem Login braucht — und weil eine leere Liste ohne Erklaerung das
   // teuerste Signal ist, das die Plattform senden kann: Sie sieht aus wie ein
   // Defekt, und die Nutzerin sucht den Fehler bei sich.
-  ['GET', /^\/api\/coverage\/([A-Za-z]{2})$/, false, async ({ params }) =>
-    landStatus(params[0], { store: coverage, quellen: sourcesByKind('news') })],
+  //
+  // `?art=shortages` fragt die ENGPASS-Quellen ab, sonst die Nachrichten.
+  // Das ist keine Feinheit: Oesterreich bezieht Nachrichten vom BASG-Newsfeed
+  // und Engpaesse aus einer anderen BASG-Schnittstelle. Ohne die Trennung
+  // erklaerte sich die leere Engpass-Liste mit der Gesundheit des Newsfeeds —
+  // also womoeglich mit „laeuft alles", waehrend nichts ankommt.
+  ['GET', /^\/api\/coverage\/([A-Za-z]{2})$/, false, async ({ params, query }) => {
+    // `query` ist URLSearchParams, kein Objekt — query.art waere immer
+    // undefined und die Auskunft stillschweigend immer „news".
+    const art = query && query.get('art') === 'shortages' ? 'shortages' : 'news';
+    return landStatus(params[0], { store: coverage, quellen: sourcesByKind(art), art });
+  }],
 
   ['GET', /^\/api\/health$/, false, async () => ({
     ok: true, service: 'apopulse', ts: new Date().toISOString(),

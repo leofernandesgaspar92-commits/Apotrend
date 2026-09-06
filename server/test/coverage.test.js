@@ -109,15 +109,75 @@ test('der Gesamtstand nennt jedes gemessene Land mit Zeitpunkt', () => {
     basg_news: { ok: true, fetched: 1, country: 'AT' },
     nafdac_news: { ok: false, error: 'HTTP 404' },
   } }, QUELLEN);
+  // Der Schluessel traegt die ART: Nachrichten und Engpaesse kommen aus
+  // verschiedenen Quellen und fallen unabhaengig voneinander aus.
   const alle = store.alle();
-  assert.equal(alle.AT.ok, true);
-  assert.equal(alle.NG.ok, false);
-  assert.equal(alle.AT.stand, '2026-09-06T10:00:00.000Z');
+  assert.equal(alle['news:AT'].ok, true);
+  assert.equal(alle['news:NG'].ok, false);
+  assert.equal(alle['news:AT'].stand, '2026-09-06T10:00:00.000Z');
 });
 
 test('ein leerer Bericht aendert nichts', () => {
   const store = createCoverageStore();
   store.ausNewsReport(null, QUELLEN);
   store.ausNewsReport({}, QUELLEN);
+  assert.equal(store.size(), 0);
+});
+
+// ── Engpaesse sind eigene Quellen ───────────────────────────────────────────
+// Die erste Fassung kannte diese Trennung nicht: Damit erklaerte sich die
+// leere ENGPASS-Liste mit der Gesundheit der NACHRICHTEN-Quelle. Oesterreich
+// bezieht Nachrichten vom BASG-Newsfeed und Engpaesse aus einer anderen
+// BASG-Schnittstelle — zwei Server, die unabhaengig ausfallen.
+
+const ENGPASS_QUELLEN = [
+  { id: 'basg_shortages', country: 'AT' },
+  { id: 'openfda_shortages', country: 'US' },
+];
+
+test('Engpaesse und Nachrichten werden getrennt gefuehrt', () => {
+  const store = createCoverageStore();
+  // Nachrichten laufen …
+  store.ausNewsReport({ perSource: { basg_news: { ok: true, fetched: 5, country: 'AT' } } }, QUELLEN);
+  // … die Engpass-Schnittstelle nicht.
+  store.ausShortageSummary({ csv: [{ id: 'basg_shortages', error: 'HTTP 503' }] }, ENGPASS_QUELLEN);
+
+  assert.equal(landStatus('AT', { store, quellen: QUELLEN, art: 'news' }).zustand, 'liefert');
+  const engpass = landStatus('AT', { store, quellen: ENGPASS_QUELLEN, art: 'shortages' });
+  assert.equal(engpass.zustand, 'stumm');
+  assert.deepEqual(engpass.stumm, ['basg_shortages']);
+});
+
+test('null Engpaesse sind eine gute Nachricht, keine Stoerung', () => {
+  // Ein Land ohne aktuelle Engpaesse ist der Idealzustand. Wuerde hier
+  // „stumm" stehen, meldete die Plattform ausgerechnet dann einen Ausfall,
+  // wenn alles in Ordnung ist.
+  const store = createCoverageStore();
+  store.ausShortageSummary({ csv: [{ id: 'basg_shortages', count: 0, rejected: 0 }] }, ENGPASS_QUELLEN);
+  assert.equal(landStatus('AT', { store, quellen: ENGPASS_QUELLEN, art: 'shortages' }).zustand, 'liefert');
+});
+
+test('geantwortet, aber nichts verwertbar zaehlt als stumm', () => {
+  // Aendert eine Behoerde ihre Feldnamen, liefert sie weiter brav 200 OK und
+  // null brauchbare Zeilen. Als „liefert" zu werten waere hier falsch: Es
+  // kommt nichts an, und der Grund ist ein anderer als ein Ausfall.
+  const store = createCoverageStore();
+  store.ausShortageSummary({ csv: [{ id: 'basg_shortages', count: 0, rejected: 42 }] }, ENGPASS_QUELLEN);
+  const st = landStatus('AT', { store, quellen: ENGPASS_QUELLEN, art: 'shortages' });
+  assert.equal(st.zustand, 'stumm');
+});
+
+test('ein Engpass-Durchlauf ueberschreibt die Nachrichten-Messung NICHT', () => {
+  const store = createCoverageStore();
+  store.ausNewsReport({ perSource: { basg_news: { ok: true, fetched: 2, country: 'AT' } } }, QUELLEN);
+  store.ausShortageSummary({ csv: [{ id: 'basg_shortages', error: 'timeout' }] }, ENGPASS_QUELLEN);
+  assert.equal(store.fuerLand('AT', 'news').ok, true);
+  assert.equal(store.fuerLand('AT', 'shortages').ok, false);
+});
+
+test('ein leerer Engpass-Bericht aendert nichts', () => {
+  const store = createCoverageStore();
+  store.ausShortageSummary(null, ENGPASS_QUELLEN);
+  store.ausShortageSummary({}, ENGPASS_QUELLEN);
   assert.equal(store.size(), 0);
 });

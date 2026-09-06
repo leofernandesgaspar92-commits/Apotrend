@@ -100,3 +100,23 @@ test('ein Land ohne Quelle wird als solches benannt', async () => {
   const d = await (await fetch(BASE + '/api/coverage/JP')).json();
   assert.equal(d.zustand, 'keine');
 });
+
+test('/api/coverage unterscheidet Nachrichten und Engpaesse', async () => {
+  // Oesterreich hat BEIDE Arten: den BASG-Newsfeed und die
+  // BASG-Engpass-Schnittstelle. Das sind verschiedene Server, und die Auskunft
+  // muss sie auseinanderhalten — sonst erklaert sich eine leere Engpass-Liste
+  // mit der Gesundheit des Newsfeeds.
+  const news = await (await fetch(BASE + '/api/coverage/AT')).json();
+  const engpass = await (await fetch(BASE + '/api/coverage/AT?art=shortages')).json();
+  assert.equal(news.art, 'news');
+  assert.equal(engpass.art, 'shortages');
+  assert.ok(news.quellen >= 1);
+  assert.ok(engpass.quellen >= 1, 'fuer AT ist eine Engpass-Quelle eingetragen');
+});
+
+test('ein Land ohne Engpass-Quelle wird als solches benannt', async () => {
+  // Deutschland hat Nachrichten (BfArM), aber keine strukturierte
+  // Engpass-Schnittstelle. Genau dieser Unterschied war vorher unsichtbar.
+  const d = await (await fetch(BASE + '/api/coverage/DE?art=shortages')).json();
+  assert.equal(d.zustand, 'keine');
+});

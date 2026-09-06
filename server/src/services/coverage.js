@@ -34,14 +34,43 @@
 /**
  * Speicher für das Ergebnis der letzten Durchläufe.
  *
+ * GETRENNT NACH ART (news / shortages), und das ist keine Feinheit:
+ * Es sind verschiedene Quellen. Österreich bezieht seine Nachrichten vom
+ * BASG-Newsfeed und seine Engpässe aus der BASG-Schnittstelle
+ * `vertriebseinschraenkungen.basg.gv.at` — zwei Server, die unabhängig
+ * voneinander ausfallen können.
+ *
+ * Die erste Fassung dieser Datei kannte diese Trennung nicht. Damit erklärte
+ * sich die leere ENGPASS-Liste mit der Gesundheit der NACHRICHTEN-Quelle:
+ * Läuft der Newsfeed und die Engpass-Schnittstelle nicht, hätte die Ansicht
+ * geschwiegen — leere Liste, keine Erklärung, also genau der Zustand, den
+ * diese Datei beseitigen soll. Umgekehrt hätte sie eine Störung gemeldet, wo
+ * die Engpässe einwandfrei ankommen.
+ *
  * Bewusst im Arbeitsspeicher: Nach einem Neustart ist unbekannt, was gilt —
  * und „unbekannt" ist der ehrliche Zustand, bis der erste Durchlauf gelaufen
  * ist. Ein aus der Datenbank geholter Stand von gestern würde behaupten, etwas
  * über heute zu wissen.
  */
 export function createCoverageStore({ now = () => Date.now() } = {}) {
-  /** land -> { ok, quellen: [{id, ok, fehler, meldungen}], stand } */
+  /** `${art}:${land}` -> { ok, quellen: [{id, ok, fehler, meldungen}], stand } */
   const proLand = new Map();
+  const schluessel = (art, land) => `${art}:${String(land || '').toUpperCase()}`;
+
+  /** Gemeinsamer Kern beider Übernahmen. */
+  function uebernehmen(art, gesammelt) {
+    const stand = new Date(now()).toISOString();
+    for (const [land, quellenListe] of gesammelt) {
+      proLand.set(schluessel(art, land), {
+        // „ok" heißt: mindestens eine Quelle hat geantwortet. Ob sie dabei
+        // NEUE Meldungen brachte, ist etwas anderes — eine Behörde, die drei
+        // Tage nichts veröffentlicht, ist nicht kaputt.
+        ok: quellenListe.some((q) => q.ok),
+        quellen: quellenListe,
+        stand,
+      });
+    }
+  }
 
   return {
     /**
@@ -50,7 +79,6 @@ export function createCoverageStore({ now = () => Date.now() } = {}) {
      */
     ausNewsReport(report, quellen) {
       if (!report || !report.perSource) return;
-      const stand = new Date(now()).toISOString();
       // Land der Quelle aus der Quellenliste holen: `perSource` trägt es nur
       // im Erfolgsfall, und gerade der Fehlerfall ist hier der interessante.
       const landVon = new Map((quellen || []).map((s) => [s.id, s.country]));
@@ -67,16 +95,36 @@ export function createCoverageStore({ now = () => Date.now() } = {}) {
         });
         gesammelt.set(land, liste);
       }
-      for (const [land, quellenListe] of gesammelt) {
-        proLand.set(land, {
-          // „ok" heißt: mindestens eine Quelle hat geantwortet. Ob sie dabei
-          // NEUE Meldungen brachte, ist etwas anderes — eine Behörde, die drei
-          // Tage nichts veröffentlicht, ist nicht kaputt.
-          ok: quellenListe.some((q) => q.ok),
-          quellen: quellenListe,
-          stand,
+      uebernehmen('news', gesammelt);
+    },
+
+    /**
+     * Ergebnis eines Engpass-Durchlaufs übernehmen.
+     * `summary.csv` stammt aus runLiveIngest (http/server.js) und trägt je
+     * Quelle entweder `count` (geliefert) oder `error` (gescheitert).
+     */
+    ausShortageSummary(summary, quellen) {
+      if (!summary || !Array.isArray(summary.csv)) return;
+      const landVon = new Map((quellen || []).map((s) => [s.id, s.country]));
+      const gesammelt = new Map();
+      for (const e of summary.csv) {
+        const land = landVon.get(e.id);
+        if (!land) continue;
+        const liste = gesammelt.get(land) || [];
+        liste.push({
+          id: e.id,
+          // Kein Fehler heißt geantwortet. Null Zeilen sind KEIN Ausfall —
+          // ein Land ohne aktuelle Engpässe ist eine gute Nachricht, keine
+          // Störung. Verworfene Zeilen dagegen schon: Dann hat die Behörde
+          // geantwortet, aber ihre Feldnamen geändert.
+          ok: !e.error && !(e.rejected > 0 && !e.count),
+          fehler: e.error || (e.rejected > 0 && !e.count
+            ? `${e.rejected} Zeilen empfangen, keine verwertbar` : null),
+          meldungen: Number(e.count || 0),
         });
+        gesammelt.set(land, liste);
       }
+      uebernehmen('shortages', gesammelt);
     },
 
     /**
@@ -84,13 +132,13 @@ export function createCoverageStore({ now = () => Date.now() } = {}) {
      * `null` heißt „noch kein Durchlauf" — das ist NICHT dasselbe wie „stumm"
      * und darf nicht als Störung dargestellt werden.
      */
-    fuerLand(land) {
-      return proLand.get(String(land || '').toUpperCase()) || null;
+    fuerLand(land, art = 'news') {
+      return proLand.get(schluessel(art, land)) || null;
     },
 
     /** Für /api/live/status: alle Länder mit gemessenem Zustand. */
     alle() {
-      return Object.fromEntries([...proLand.entries()].map(([land, e]) => [land, {
+      return Object.fromEntries([...proLand.entries()].map(([k, e]) => [k, {
         ok: e.ok, stand: e.stand,
         quellen: e.quellen.map((q) => ({ id: q.id, ok: q.ok, fehler: q.fehler })),
       }]));
@@ -111,16 +159,17 @@ export function createCoverageStore({ now = () => Date.now() } = {}) {
  *   'unbekannt' — noch kein Durchlauf seit dem Start (KEIN Fehler!)
  *   'keine'     — für dieses Land ist gar keine Quelle eingetragen
  */
-export function landStatus(land, { store, quellen }) {
+export function landStatus(land, { store, quellen, art = 'news' }) {
   const cc = String(land || '').toUpperCase();
   const eingetragen = (quellen || []).filter((s) => s.country === cc);
-  if (!eingetragen.length) return { land: cc, zustand: 'keine', quellen: 0, regulator: null };
+  if (!eingetragen.length) return { land: cc, art, zustand: 'keine', quellen: 0, regulator: null };
 
-  const gemessen = store.fuerLand(cc);
-  if (!gemessen) return { land: cc, zustand: 'unbekannt', quellen: eingetragen.length, regulator: null };
+  const gemessen = store.fuerLand(cc, art);
+  if (!gemessen) return { land: cc, art, zustand: 'unbekannt', quellen: eingetragen.length, regulator: null };
 
   return {
     land: cc,
+    art,
     zustand: gemessen.ok ? 'liefert' : 'stumm',
     quellen: eingetragen.length,
     stand: gemessen.stand,

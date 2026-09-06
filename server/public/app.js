@@ -2863,14 +2863,22 @@ function emptyState({ icon = '🗒️', title, text = '', cta = null }) {
 //  Der Zustand kommt aus dem letzten echten Durchlauf (services/coverage.js),
 //  nicht aus einer Liste im Code. Faengt eine Behoerde wieder an zu liefern,
 //  verschwindet der Hinweis von selbst.
-let coverageCache = null;
-async function ladeCoverage(land) {
+//  `art` unterscheidet Nachrichten und Engpaesse. Das ist keine Feinheit:
+//  Oesterreich bezieht Nachrichten vom BASG-Newsfeed und Engpaesse aus einer
+//  anderen BASG-Schnittstelle. Ohne die Trennung erklaerte sich die leere
+//  Engpass-Liste mit der Gesundheit des Newsfeeds — also womoeglich mit
+//  „laeuft alles", waehrend nichts ankommt.
+const coverageCache = new Map();
+async function ladeCoverage(land, art = 'news') {
   if (!land) return null;
-  if (coverageCache && coverageCache.land === land) return coverageCache;
+  const key = art + ':' + land;
+  if (coverageCache.has(key)) return coverageCache.get(key);
+  let st = null;
   try {
-    coverageCache = await (await fetch('/api/coverage/' + encodeURIComponent(land))).json();
-  } catch { coverageCache = null; }
-  return coverageCache;
+    st = await (await fetch(`/api/coverage/${encodeURIComponent(land)}?art=${encodeURIComponent(art)}`)).json();
+  } catch { st = null; }
+  coverageCache.set(key, st);
+  return st;
 }
 
 /** Erklaerkarte, oder null wenn es nichts zu erklaeren gibt. */
@@ -3361,7 +3369,7 @@ function renderShortlist(listBox, bar, all) {
     // Zuerst die Erklaerung, warum ueberhaupt nichts da ist — DANN der
     // Filter-Hinweis. Umgekehrt liest sich „Filter zuruecksetzen" wie die
     // Loesung eines Problems, das gar nicht am Filter liegt.
-    ladeCoverage(typeof viewCountry === 'function' ? viewCountry() : null).then((st) => {
+    ladeCoverage(typeof viewCountry === 'function' ? viewCountry() : null, 'shortages').then((st) => {
       const k = coverageKarte(st);
       if (k && listBox.firstChild) listBox.insertBefore(k, listBox.firstChild);
       else if (k) listBox.appendChild(k);
