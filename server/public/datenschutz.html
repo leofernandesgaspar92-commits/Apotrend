@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Datenschutzerklärung — ApoPulse</title>
+<meta name="description" content="Welche Daten ApoPulse verarbeitet, wozu, wie lange und welche Rechte Sie haben.">
+<link rel="stylesheet" href="/app.css">
+<style>
+  /* Eigenständige Seite: Sie muss OHNE die Anwendung funktionieren, weil der
+     Google Play Store sie direkt aufruft — und zwar von einem Server, der
+     kein JavaScript ausführt. Deshalb kein app.js, nur Markup und app.css. */
+  .dsg { max-width: 72ch; margin: 0 auto; padding: 32px 20px 80px; line-height: 1.6; }
+  .dsg h1 { font-size: 28px; line-height: 1.2; margin: 0 0 8px; }
+  .dsg h2 { font-size: 19px; margin: 32px 0 8px; }
+  .dsg p, .dsg li { font-size: 16px; }
+  .dsg ul { padding-left: 22px; }
+  .dsg table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 15px; }
+  .dsg th, .dsg td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .dsg th { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted-fg, #5f7370); }
+  .entwurf { border-left: 4px solid var(--crit-fg, #a4232b); background: var(--crit-bg, #f6e4e4);
+             padding: 14px 16px; border-radius: 0 6px 6px 0; margin: 20px 0; }
+  .luecke { font-weight: 600; color: var(--crit-fg, #a4232b); }
+  .zurueck { display: inline-block; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+<main class="dsg">
+  <a class="zurueck" href="/">← Zurück zu ApoPulse</a>
+  <h1>Datenschutzerklärung</h1>
+  <p class="muted">Stand: 3. Oktober 2026</p>
+
+  <div class="entwurf">
+    <p><strong>Entwurf — noch nicht rechtlich geprüft.</strong></p>
+    <p>Dieser Text beschreibt wahrheitsgemäß, was die Software tatsächlich tut; er ist aus
+    dem Quelltext abgeleitet, nicht aus einer Vorlage. Er ist aber <strong>keine
+    Rechtsberatung</strong> und ersetzt keine anwaltliche Prüfung. Vor der Veröffentlichung
+    im Google Play Store müssen die unten rot markierten <span class="luecke">Lücken</span>
+    ausgefüllt und der gesamte Text geprüft werden — die Plattform verarbeitet
+    personenbezogene Daten von Angehörigen eines Heilberufs in der EU.</p>
+  </div>
+
+  <h2>1. Verantwortlicher</h2>
+  <p><span class="luecke">[Noch einzutragen: Name bzw. Firma, Anschrift, E-Mail-Adresse,
+  ggf. Handelsregister und Vertretungsberechtigte.]</span></p>
+  <p>Ohne diese Angaben ist die Erklärung weder nach DSGVO noch nach den Regeln des
+  Google Play Store vollständig.</p>
+
+  <h2>2. Welche Daten wir verarbeiten</h2>
+  <table>
+    <thead><tr><th>Daten</th><th>Wozu</th><th>Rechtsgrundlage</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>E-Mail-Adresse, Name, Benutzername (Handle), Land, Kontotyp (Apotheke,
+        Großhandel, Pharma, Behörde)</td>
+        <td>Konto anlegen und anmelden; Inhalte dem richtigen Land zuordnen</td>
+        <td>Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO)</td>
+      </tr>
+      <tr>
+        <td>Passwort — gespeichert wird <strong>nie das Passwort selbst</strong>, sondern
+        ein nicht umkehrbarer Prüfwert (scrypt mit Zufallswert je Konto)</td>
+        <td>Anmeldung</td>
+        <td>Vertragserfüllung</td>
+      </tr>
+      <tr>
+        <td>Von Ihnen eingestellte Inhalte: Beiträge, Engpass-Meldungen, Kommentare,
+        Profilangaben, hochgeladene Bilder</td>
+        <td>Darstellung im Fachnetzwerk</td>
+        <td>Vertragserfüllung</td>
+      </tr>
+      <tr>
+        <td>IP-Adresse, befristet und nur in Verbindung mit Anmeldeversuchen</td>
+        <td>Schutz vor automatisiertem Durchprobieren von Passwörtern</td>
+        <td>Berechtigtes Interesse (Art. 6 Abs. 1 lit. f DSGVO) — Sicherheit der Konten</td>
+      </tr>
+      <tr>
+        <td>Wiederherstellungs-Codes (als Prüfwert)</td>
+        <td>Kontozugang bei vergessenem Passwort</td>
+        <td>Vertragserfüllung</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>3. Was wir <em>nicht</em> tun</h2>
+  <ul>
+    <li><strong>Keine Werbe- oder Analyse-Tracker.</strong> Die Anwendung bindet keine
+    Google Analytics, keine Werbenetzwerke, keine Social-Media-Pixel ein.</li>
+    <li><strong>Keine Weitergabe zu Werbezwecken</strong> und kein Verkauf von Daten.</li>
+    <li><strong>Keine Patientendaten.</strong> Die Plattform ist ein Fachnetzwerk zwischen
+    Betrieben. Sie ist nicht dafür gedacht, Angaben zu einzelnen Patientinnen und Patienten
+    zu erfassen, und fragt solche Angaben nirgends ab.</li>
+    <li><strong>Keine Zahlungsdaten bei uns.</strong> Karten- und Wallet-Daten werden
+    ausschließlich bei lizenzierten Zahlungsdienstleistern eingegeben und verarbeitet.</li>
+  </ul>
+
+  <h2>4. Wo die Daten liegen</h2>
+  <p>Die Anwendung läuft auf Servern in <strong>Frankfurt am Main (EU)</strong>; die
+  Datenbank ebenfalls. Ein Transfer in Drittländer findet im Regelbetrieb nicht statt.</p>
+  <p>Ausnahme sind die unter Punkt 5 genannten Dienste, soweit Sie sie nutzen.</p>
+
+  <h2>5. Eingebundene Dienste</h2>
+  <p>Diese Dienste werden nur aktiv, wenn Sie sie tatsächlich verwenden:</p>
+  <ul>
+    <li><strong>Anmeldung über Google</strong> (optional): Bei Nutzung erhält Google die
+    Information, dass Sie sich bei ApoPulse anmelden. Wir erhalten von dort Ihre
+    E-Mail-Adresse und Ihren Namen.</li>
+    <li><strong>Zahlungsdienstleister</strong> (optional, nur bei kostenpflichtigen
+    Funktionen): <span class="luecke">[Noch einzutragen: welche Anbieter tatsächlich
+    freigeschaltet sind, mit Verweis auf deren Datenschutzerklärung.]</span></li>
+  </ul>
+  <p>Behördenmeldungen (z. B. BfArM, BASG) holt der <em>Server</em> ab, nicht Ihr Gerät.
+  Die Behörden erfahren dadurch nichts über einzelne Nutzerinnen und Nutzer.</p>
+
+  <h2>6. Speicherdauer</h2>
+  <p>Kontodaten werden gespeichert, solange das Konto besteht. Nach einer Löschung werden
+  sie entfernt; von Ihnen veröffentlichte Beiträge können in anonymisierter Form bestehen
+  bleiben, soweit andere darauf Bezug genommen haben.</p>
+  <p>IP-Adressen aus der Anmelde-Sperre werden nur für die Dauer der jeweiligen Sperre
+  vorgehalten und nicht dauerhaft gespeichert.</p>
+
+  <h2>7. Ihre Rechte</h2>
+  <p>Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der
+  Verarbeitung, Datenübertragbarkeit und Widerspruch (Art. 15–21 DSGVO).</p>
+  <ul>
+    <li><strong>Datenexport:</strong> In der Anwendung unter „Profil → Daten exportieren".</li>
+    <li><strong>Konto löschen:</strong> In der Anwendung unter „Profil → Konto löschen".</li>
+  </ul>
+  <p>Sie können sich außerdem bei einer Datenschutz-Aufsichtsbehörde beschweren — in
+  Österreich bei der Datenschutzbehörde, in Deutschland bei der für Ihren Wohnsitz
+  zuständigen Landesbehörde.</p>
+
+  <h2>8. Hinweis zu den fachlichen Inhalten</h2>
+  <p>Engpass- und Arzneimittelmeldungen stammen aus amtlichen Quellen oder aus Meldungen
+  anderer Betriebe. Jede Angabe trägt sichtbar ihre Herkunft:
+  <em>geprüft</em>, <em>Referenzdaten</em> oder <em>Community-Meldung</em>.
+  ApoPulse gibt <strong>keine Therapie-, Dosierungs- oder Substitutionsempfehlung</strong>
+  und ersetzt keine fachliche Prüfung im Einzelfall.</p>
+
+  <h2>9. Kontakt in Datenschutzfragen</h2>
+  <p><span class="luecke">[Noch einzutragen: E-Mail-Adresse für Datenschutzanfragen;
+  falls benannt, zusätzlich Datenschutzbeauftragte:r.]</span></p>
+</main>
+</body>
+</html>

@@ -56,6 +56,7 @@ import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js'
 import { issueToken, verifyToken } from './token.js';
 import { createRateLimiter } from '../domain/rateLimiter.js';
 import { dienstKennung } from './serviceIdentity.js';
+import { assetlinksDokument, assetlinksStatus } from './assetlinks.js';
 import { featureListe, ruhenderBereichFuer } from '../data/features.js';
 import { createCoverageStore, landStatus } from '../services/coverage.js';
 import { suchProtokoll } from '../services/feedDiscovery.js';
@@ -1522,6 +1523,20 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // ── Digital Asset Links (Android-App) ──
+  //  MUSS vor dem SPA-Rueckfall stehen: Unbekannte Pfade liefern sonst
+  //  index.html mit Status 200. Android bekaeme HTML statt JSON, die Pruefung
+  //  schluege STILL fehl — kein Fehler im Protokoll, nur eine Adressleiste in
+  //  der App, die niemand erklaeren kann. Siehe http/assetlinks.js.
+  if (pathname === '/.well-known/assetlinks.json') {
+    const doc = assetlinksDokument();
+    if (!doc) return json(req, res, 404, { error: 'Nicht konfiguriert' });
+    // Kein no-cache: Android holt die Datei beim ersten Start. Eine Stunde ist
+    // kurz genug, um einen falschen Fingerabdruck schnell zu korrigieren.
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });
+    return res.end(JSON.stringify(doc, null, 2));
+  }
+
   // ── Statisches Frontend ──
   let file = pathname === '/' ? '/index.html' : pathname;
   const full = path.join(PUBLIC_DIR, path.normalize(file).replace(/^(\.\.[/\\])+/, ''));
@@ -1569,6 +1584,9 @@ server.listen(PORT, () => {
     // das war nötig, um am 05.09.2026 zu sehen, dass der Dienst mit der
     // Datenbank ein anderer war als der mit der Kundendomain.
     console.log(`ApoPulse: Datenhaltung — ${d.level}: ${d.summary}${dienstKennung()}`);
+    // Android-App: nur eine Zeile, und nur wenn jemand sie konfiguriert hat.
+    const android = assetlinksStatus();
+    if (android) console.log(android);
     for (const zeile of d.warnings) console.warn('⚠️  ' + zeile);
   }
   // ── Zustand und Feed aus der Datenbank holen ────────────────────────────

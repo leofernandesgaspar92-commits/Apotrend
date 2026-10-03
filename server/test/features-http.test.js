@@ -142,3 +142,15 @@ test('/api/shortages folgt dem Laender-Umschalter', async () => {
   const murks = await (await fetch(BASE + '/api/shortages?country=ZZ', { headers: H })).json();
   assert.equal(murks.shortages.length, at.shortages.length);
 });
+
+test('/.well-known/assetlinks.json liefert 404 statt index.html', async () => {
+  // DER stille Fehler: Der Server faellt fuer unbekannte Pfade auf index.html
+  // zurueck. Ohne eigene Route bekaeme Android HTML mit Status 200, die
+  // Pruefung schluege fehl — ohne Protokollzeile, nur mit einer Adressleiste
+  // in der App, die niemand erklaeren kann.
+  const r = await fetch(BASE + '/.well-known/assetlinks.json');
+  assert.equal(r.status, 404, 'unkonfiguriert gehoert 404, nicht 200 mit HTML');
+  assert.match(r.headers.get('content-type') || '', /application\/json/);
+  const txt = await r.text();
+  assert.doesNotMatch(txt, /<!doctype|<html/i, 'es darf unter KEINEN Umstaenden HTML sein');
+});

@@ -1,0 +1,57 @@
+{
+  "packageId": "com.apopulse.app",
+  "host": "www.apopulse.com",
+  "name": "ApoPulse – Apotheker-Netzwerk",
+  "launcherName": "ApoPulse",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#0b7f28",
+  "themeColorDark": "#0d1214",
+  "navigationColor": "#0b7f28",
+  "navigationColorDark": "#0d1214",
+  "navigationDividerColor": "#0b7f28",
+  "navigationDividerColorDark": "#0d1214",
+  "backgroundColor": "#f4f6f5",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://www.apopulse.com/icon-512.png",
+  "maskableIconUrl": "https://www.apopulse.com/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./apopulse-upload.keystore",
+    "alias": "apopulse"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "Lieferengpässe",
+      "short_name": "Engpässe",
+      "url": "/?tab=shortages",
+      "chosenIconUrl": "https://www.apopulse.com/icon-192.png"
+    },
+    {
+      "name": "Behörden-News",
+      "short_name": "News",
+      "url": "/?tab=news",
+      "chosenIconUrl": "https://www.apopulse.com/icon-192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://www.apopulse.com/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": { "enabled": false },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://www.apopulse.com/",
+  "minSdkVersion": 23,
+  "targetSdkVersion": 36,
+  "appVersion": "1.0.0",
+  "additionalTrustedOrigins": ["https://apopulse.com"],
+  "retainedBundles": [],
+  "protocolHandlers": [],
+  "fileHandlers": [],
+  "launchHandlerClientMode": "navigate-existing"
+}

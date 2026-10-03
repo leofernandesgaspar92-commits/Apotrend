@@ -1,2 +1,11 @@
 .DS_Store
 *.zip
+
+# Android-Signaturschluessel gehoert NIE ins Repository: Wer ihn hat, kann
+# Updates fuer die veroeffentlichte App signieren. Es gibt keine Rueckgaengig-
+# machung und keinen Ersatz — ein verlorener oder geleakter Schluessel bedeutet
+# eine neue App mit neuer Adresse im Store.
+*.keystore
+*.jks
+android/*.aab
+android/*.apk

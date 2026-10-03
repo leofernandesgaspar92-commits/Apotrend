@@ -13,7 +13,7 @@
     "audit": "node tools/loop-audit.mjs",
     "audit:browser": "node tools/loop-browser-audit.mjs",
     "smoke": "node tools/loop-smoke.mjs",
-    "verify": "node --test && node tools/loop-smoke.mjs && node tools/loop-browser-audit.mjs && node tools/check-checkout-demo.mjs && node tools/loop-audit.mjs --skip-tests",
+    "verify": "node --test && node tools/check-store-listing.mjs && node tools/loop-smoke.mjs && node tools/loop-browser-audit.mjs && node tools/check-checkout-demo.mjs && node tools/loop-audit.mjs --skip-tests",
     "build:checkout": "node tools/build-checkout-demo.mjs",
     "check:checkout": "node tools/build-checkout-demo.mjs --check && node tools/check-checkout-demo.mjs",
     "verify:qr": "node tools/verify-qr.mjs",
