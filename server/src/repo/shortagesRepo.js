@@ -11,16 +11,42 @@ import crypto from 'node:crypto';
 // Laender zeigen eine leere Liste MIT Erklaerung (services/coverage.js).
 // Das ist die ehrlichere Ansicht: lieber leer als plausibel falsch.
 const SEED_LAND = 'AT';
+// `vor_tagen` ist das Meldedatum RELATIV zu heute, `termin_in` der
+// voraussichtliche Termin relativ zu heute (negativ = bereits ueberschritten).
+//
+// ──────────────────────────────────────────────────────────────────────────
+// WARUM KEINE KALENDERDATEN MEHR (03.10.2026)
+// ──────────────────────────────────────────────────────────────────────────
+// Hier standen feste Daten aus Juni/Juli 2026. Vier Wochen spaeter zeigte die
+// Ansicht Engpaesse, die seit 111 Tagen als „kritisch" gemeldet waren, und
+// zwei ueberschrittene Liefertermine — ohne dass sich an einer Zeile Code
+// etwas geaendert haette. In sechs Monaten stuende dort „280 Tage seit
+// Meldung".
+//
+// Das ist dieselbe Zeitbombe, die am 05.09.2026 schon die Rabatt-Referenzdaten
+// erwischt hat: Sechs von dreizehn Aktionen waren abgelaufen, die Ansicht
+// duennte still aus, und ein Test fiel an einem Kalendertag um. Dort wurde sie
+// entschaerft, hier blieb sie stehen — jetzt nicht mehr.
+//
+// Die Abstaende bleiben bewusst erhalten: Ein frisch gemeldeter Fall, ein
+// laenger laufender, ein knapp ueberschrittener Termin und ein wieder
+// verfuegbares Praeparat. Genau diese Mischung braucht die Ansicht, damit
+// Alterssignale und Fristwarnungen ueberhaupt etwas zu zeigen haben.
 const SEED = [
-  { wirkstoff: 'Amoxicillin',     bezeichnung: 'Amoxicillin 1000 mg Filmtabletten', status: 'kritisch',       grund: 'Erhöhte Nachfrage', gemeldet_am: '2026-06-14' },
-  { wirkstoff: 'Salbutamol',      bezeichnung: 'Salbutamol Inhalat 100 µg',          status: 'eingeschraenkt', grund: 'Produktionsverzögerung', gemeldet_am: '2026-06-20', voraussichtlich_bis: '2026-08-15' },
-  { wirkstoff: 'Clarithromycin',  bezeichnung: 'Clarithromycin 500 mg',              status: 'kritisch',       grund: 'Wirkstoffknappheit', gemeldet_am: '2026-06-25', voraussichtlich_bis: '2026-09-30' },
-  { wirkstoff: 'Levothyroxin',    bezeichnung: 'Levothyroxin 100 µg Tabletten',      status: 'kritisch',       grund: 'Herstellungsproblem', gemeldet_am: '2026-06-28' },
-  { wirkstoff: 'Ibuprofen',       bezeichnung: 'Ibuprofen 400 mg',                   status: 'eingeschraenkt', grund: 'Kontingentierung', gemeldet_am: '2026-07-01' },
-  { wirkstoff: 'Metformin',       bezeichnung: 'Metformin 850 mg',                   status: 'verfuegbar',     grund: null, gemeldet_am: '2026-07-03' },
+  { wirkstoff: 'Amoxicillin',     bezeichnung: 'Amoxicillin 1000 mg Filmtabletten', status: 'kritisch',       grund: 'Erhöhte Nachfrage',      vor_tagen: 9 },
+  { wirkstoff: 'Salbutamol',      bezeichnung: 'Salbutamol Inhalat 100 µg',          status: 'eingeschraenkt', grund: 'Produktionsverzögerung', vor_tagen: 21, termin_in: 12 },
+  { wirkstoff: 'Clarithromycin',  bezeichnung: 'Clarithromycin 500 mg',              status: 'kritisch',       grund: 'Wirkstoffknappheit',     vor_tagen: 34, termin_in: -3 },
+  { wirkstoff: 'Levothyroxin',    bezeichnung: 'Levothyroxin 100 µg Tabletten',      status: 'kritisch',       grund: 'Herstellungsproblem',    vor_tagen: 48 },
+  { wirkstoff: 'Ibuprofen',       bezeichnung: 'Ibuprofen 400 mg',                   status: 'eingeschraenkt', grund: 'Kontingentierung',       vor_tagen: 5 },
+  { wirkstoff: 'Metformin',       bezeichnung: 'Metformin 850 mg',                   status: 'verfuegbar',     grund: null,                     vor_tagen: 2 },
 ];
 
-export function createShortagesRepo({ seed = true } = {}) {
+export function createShortagesRepo({ seed = true, today = null } = {}) {
+  // Injizierbar wie im Rabatt-Repo: Ein Test, der sich auf „heute" verlaesst,
+  // laeuft sonst an irgendeinem Kalendertag anders.
+  const heute = () => today || new Date().toISOString().slice(0, 10);
+  const tagVersatz = (tage) =>
+    new Date(Date.parse(heute() + 'T00:00:00Z') + tage * 86400000).toISOString().slice(0, 10);
   const shortages = new Map();
   // Beobachtungsliste je Nutzer: userId -> Map<wirkstoffLower, Anzeigename>
   const watch = new Map();
@@ -63,7 +89,14 @@ export function createShortagesRepo({ seed = true } = {}) {
     return { ...row, confirmations: [...row.confirmations] };
   }
 
-  if (seed) SEED.forEach(s => upsert({ ...s, country: SEED_LAND }));
+  if (seed) {
+    SEED.forEach(({ vor_tagen, termin_in, ...r }) => upsert({
+      ...r,
+      country: SEED_LAND,
+      gemeldet_am: tagVersatz(-vor_tagen),
+      voraussichtlich_bis: termin_in === undefined ? null : tagVersatz(termin_in),
+    }));
+  }
 
   return {
     upsert,

@@ -124,3 +124,43 @@ test('das Land wird normalisiert, nicht roh übernommen', () => {
   const leer = repo.upsert({ wirkstoff: 'B', bezeichnung: 'B', status: 'kritisch', country: '' });
   assert.equal(leer.country, null);
 });
+
+// ── Keine Kalenderdaten in den Referenzdaten ────────────────────────────────
+// Hier standen feste Daten aus Juni/Juli 2026. Vier Wochen später zeigte die
+// Ansicht Engpässe, die seit 111 Tagen als „kritisch" gemeldet waren, und zwei
+// überschrittene Liefertermine — ohne dass sich an einer Zeile Code etwas
+// geändert hätte. Dieselbe Zeitbombe hatte am 05.09.2026 schon die
+// Rabatt-Referenzdaten erwischt; dort wurde sie entschärft, hier blieb sie
+// stehen.
+
+test('die Referenzdaten altern nicht — egal an welchem Kalendertag', () => {
+  // Zwei weit auseinanderliegende Tage: Die ABSTÄNDE müssen identisch bleiben.
+  const a = createShortagesRepo({ today: '2026-10-03' });
+  const b = createShortagesRepo({ today: '2027-06-15' });
+  const alter = (repo, heute) => repo.list()
+    .map((s) => [s.bezeichnung, Math.round((Date.parse(heute) - Date.parse(s.gemeldet_am)) / 86400000)])
+    .sort();
+  assert.deepEqual(alter(a, '2026-10-03'), alter(b, '2027-06-15'));
+});
+
+test('kein Referenz-Engpass ist älter als 60 Tage', () => {
+  // Ein seit Monaten offener „kritischer" Engpass ist keine Demo, sondern ein
+  // Hinweis auf vergessene Daten — und genau so liest ihn eine Apothekerin.
+  const repo = createShortagesRepo({ today: '2027-06-15' });
+  for (const s of repo.list()) {
+    const tage = Math.round((Date.parse('2027-06-15') - Date.parse(s.gemeldet_am)) / 86400000);
+    assert.ok(tage <= 60, `${s.bezeichnung} ist ${tage} Tage alt — die Daten altern wieder mit`);
+  }
+});
+
+test('die Mischung bleibt erhalten: ein überschrittener Termin ist dabei', () => {
+  // Ohne einen überschrittenen Termin hätte die Fristwarnung nichts zu zeigen,
+  // und niemand merkte, wenn sie aufhört zu funktionieren.
+  const repo = createShortagesRepo({ today: '2027-06-15' });
+  const ueberschritten = repo.list().filter((s) =>
+    s.voraussichtlich_bis && s.voraussichtlich_bis < '2027-06-15');
+  assert.equal(ueberschritten.length, 1, 'genau ein überschrittener Termin gehört in den Seed');
+  const offen = repo.list().filter((s) =>
+    s.voraussichtlich_bis && s.voraussichtlich_bis > '2027-06-15');
+  assert.ok(offen.length >= 1, 'und mindestens ein noch laufender');
+});
