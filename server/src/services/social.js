@@ -3,6 +3,7 @@
 // Sichtbarkeit pro Post (public/followers) wird bei JEDER Leseoperation erzwungen.
 import { ForbiddenError } from './orgAuth.js';
 import { AppError } from '../domain/errors.js';
+import { rxErlaubt, verificationStatusFor, istRxFachkreis } from '../domain/jurisdiction.js';
 import { cleanImage, cleanSourceUrl } from '../domain/media.js';
 import { BUNDESLAENDER } from './exchange.js';
 import { isValidCountry, normalizeCountry, normalizeLocale } from '../data/countries.js';
@@ -1540,40 +1541,150 @@ export function createSocialService(social, foundationRepo, options = {}) {
       };
     },
 
-    // ── Verifizierung (Apotheken-Nachweis) ──
-    // Nutzer beantragt Verifizierung (z.B. mit Konzessionsnummer/Apotheke im Hinweis).
-    requestVerification(actorUserId, { note } = {}) {
+    // ══ Verifizierung: der Nachweis, auf dem die Fachkreis-Schranke steht ══
+    //  Bis hierher war das ein Formularfeld mit Freitext und ein Haken. Seit
+    //  der Rx-Schranke (domain/jurisdiction.js) haengt daran, wer Angebote fuer
+    //  verschreibungspflichtige Arzneimittel ueberhaupt sehen darf. Damit ist
+    //  die Lizenznummer keine Zierde mehr, sondern die Grundlage der Freigabe.
+
+    /**
+     * Verifizierung beantragen.
+     *
+     * Die LIZENZNUMMER ist Pflicht fuer alle Gewerbetreibenden. Ohne sie hat
+     * die Moderation nichts zu pruefen — sie koennte nur dem Freitext glauben,
+     * und eine Freigabe auf Zuruf waere genau die Schranke auf dem Papier, die
+     * die Rx-Sperre vermeiden soll.
+     *
+     * Privatnutzer:innen koennen sie NICHT beantragen: Eine Privatperson hat
+     * keine Betriebserlaubnis, und ein Antrag, der nie bewilligt werden kann,
+     * ist kein Angebot, sondern eine Sackgasse.
+     */
+    requestVerification(actorUserId, { note, licenseNumber } = {}) {
       requireUser(actorUserId);
       const prof = social.getProfileByUserId(actorUserId);
       if (!prof) throw new Error('Profil nicht gefunden.');
-      if (prof.verified) throw new Error('Profil ist bereits verifiziert.');
-      return social.upsertVerification({ userId: actorUserId, note: String(note ?? '').trim().slice(0, 300) || null });
+      if (prof.verified) throw new AppError('verify_already', 'Profil ist bereits verifiziert.', 400);
+      if (prof.account_type === 'private') {
+        throw new AppError('verify_private', 'Die Verifizierung weist eine Betriebserlaubnis nach. '
+          + 'Als Privatnutzer:in gibt es dafuer keine Grundlage — stelle das Konto im Profil auf '
+          + 'Apotheke, Grosshandel, Logistik oder Pharma-Unternehmen um.', 400);
+      }
+      const lizenz = String(licenseNumber ?? '').trim().slice(0, 80);
+      // `authority` ausgenommen: Eine Behoerde legitimiert sich anders als ein
+      // Gewerbebetrieb und hat keine Betriebserlaubnis im selben Sinn.
+      if (!lizenz && prof.account_type !== 'authority') {
+        throw new AppError('verify_license_required',
+          'Bitte die Nummer der Betriebserlaubnis / Konzession angeben. Ohne sie kann die '
+          + 'Redaktion nichts pruefen.', 400);
+      }
+      if (lizenz && lizenz.length < 3) {
+        throw new AppError('verify_license_short', 'Die Lizenznummer ist zu kurz.', 400);
+      }
+      return social.upsertVerification({
+        userId: actorUserId,
+        note: String(note ?? '').trim().slice(0, 300) || null,
+        licenseNumber: lizenz || null,
+        accountType: prof.account_type || null,
+        country: prof.country || null,
+      });
     },
-    // Eigenen Verifizierungsstatus lesen (für die UI).
+
+    /**
+     * Eigenen Status lesen — fuer die Anzeige im Profil.
+     *
+     * Gibt bei „verifiziert" AUCH zurueck, ob der Rx-Einblick dabei ist. Das
+     * ist der Unterschied, nach dem ein Logistiker sonst raetselt: Er ist
+     * verifiziert und sieht trotzdem keine Rx-Angebote, und ohne diese Angabe
+     * sieht das aus wie ein Fehler.
+     */
     myVerification(userId) {
       requireUser(userId);
       const prof = social.getProfileByUserId(userId);
-      if (prof && prof.verified) return { status: 'verifiziert' };
       const v = social.getVerification(userId);
-      return v ? { status: v.status, note: v.note, created_at: v.created_at } : { status: 'keine' };
+      if (prof && prof.verified) {
+        return {
+          status: 'verifiziert',
+          account_type: prof.account_type || null,
+          license_number: prof.license_number || (v && v.license_number) || null,
+          rx_allowed: rxErlaubt({
+            jurisdiction: String(prof.country || '').toUpperCase(),
+            verificationStatus: verificationStatusFor({ accountType: prof.account_type, verified: true }),
+            isRxAllowed: prof.is_rx_allowed,
+          }),
+        };
+      }
+      return v
+        ? { status: v.status, note: v.note, license_number: v.license_number || null, created_at: v.created_at }
+        : { status: 'keine', account_type: prof ? (prof.account_type || null) : null };
     },
-    // Nur Moderation: offene Verifizierungs-Anträge mit Profilinfo.
+
+    // Nur Moderation: offene Anträge mit allem, was zur Prüfung nötig ist.
     verificationQueue(moderatorUserId) {
       if (!isModerator(moderatorUserId)) throw new ForbiddenError('Nur Moderation.');
       return social.listVerifications('offen').map(v => {
         const prof = social.getProfileByUserId(v.user_id);
-        return { ...v, handle: prof ? prof.handle : null, display_name: prof ? prof.display_name : null };
+        return {
+          ...v,
+          handle: prof ? prof.handle : null,
+          display_name: prof ? prof.display_name : null,
+          // Der Kontotyp ENTSCHEIDET, welche Stufe freigeschaltet wird — er
+          // gehoert in die Ansicht, nicht ins Raten. Aus dem ANTRAG, nicht aus
+          // dem heutigen Profil (siehe upsertVerification).
+          account_type: v.account_type || (prof ? prof.account_type : null),
+          country: v.country || (prof ? prof.country : null),
+          // Was eine Freigabe konkret bedeutet — damit niemand „genehmigen"
+          // drueckt, ohne zu wissen, ob damit Rx-Einblick entsteht.
+          would_allow_rx: istRxFachkreis(verificationStatusFor({
+            accountType: v.account_type || (prof ? prof.account_type : null), verified: true,
+          })),
+        };
       });
     },
-    // Nur Moderation: Antrag genehmigen (setzt verified) oder ablehnen.
+
+    /**
+     * Nur Moderation: genehmigen oder ablehnen.
+     *
+     * Bei der Genehmigung wird `is_rx_allowed` AUSDRUECKLICH gesetzt — true
+     * nur fuer die erwerbsberechtigten Stufen (Apotheke, Grosshandel,
+     * Hersteller), false fuer Logistik und Behoerde. Es waere falsch, hier
+     * pauschal `true` zu setzen: Ein Transportunternehmen befoerdert
+     * Arzneimittel, es erwirbt sie nicht.
+     *
+     * Die Stufe wird aus dem ANTRAG abgeleitet, nicht aus dem heutigen Profil.
+     */
     resolveVerification(moderatorUserId, userId, approve) {
       if (!isModerator(moderatorUserId)) throw new ForbiddenError('Nur Moderation.');
-      if (!social.getVerification(userId)) throw new Error('Kein Antrag vorhanden.');
-      if (approve) social.setProfileVerified(userId, true);
+      const antrag = social.getVerification(userId);
+      if (!antrag) throw new AppError('verify_no_request', 'Kein Antrag vorhanden.', 400);
+      let rxFrei = false;
+      if (approve) {
+        const prof = social.getProfileByUserId(userId);
+        const typ = antrag.account_type || (prof ? prof.account_type : null);
+        rxFrei = istRxFachkreis(verificationStatusFor({ accountType: typ, verified: true }));
+        social.setProfileVerified(userId, true);
+        social.setProfileRxAllowed(userId, rxFrei);
+        if (antrag.license_number) social.setProfileLicense(userId, antrag.license_number);
+      }
       const status = approve ? 'verifiziert' : 'abgelehnt';
       social.updateVerification(userId, { status, resolved_at: new Date().toISOString() });
       if (approve) this.pushNotification({ userId, type: 'verified', actorUserId: moderatorUserId });
-      return { user_id: userId, status };
+      return { user_id: userId, status, rx_allowed: rxFrei };
+    },
+
+    /**
+     * Nur Moderation: Rx-Einblick entziehen oder zurueckgeben.
+     *
+     * Der Hebel, den das Schema verspricht. Eine erloschene Betriebserlaubnis
+     * muss sich sperren lassen, OHNE die Verifizierung zurueckzunehmen —
+     * sonst verliert man die Historie, warum der Betrieb einmal verifiziert
+     * war, und der naechste Antrag beginnt bei null.
+     */
+    setRxAllowed(moderatorUserId, userId, allowed) {
+      if (!isModerator(moderatorUserId)) throw new ForbiddenError('Nur Moderation.');
+      const prof = social.getProfileByUserId(userId);
+      if (!prof) throw new AppError('profile_not_found', 'Profil nicht gefunden.', 404);
+      social.setProfileRxAllowed(userId, !!allowed);
+      return { user_id: userId, rx_allowed: !!allowed };
     },
 
     // ── DSGVO: endgueltiges Loeschen (Autor oder Moderation) ──

@@ -1264,3 +1264,70 @@ und liegen jetzt.
 
 **Offen:** RxNorm-Anbindung (Säule 1), KI-Übersetzung auf Zuruf (Säule 4),
 `watchersForText` auf Wortgrenzen (aus dem letzten Zyklus).
+
+### Cycle · Verifizierungs-Durchlauf + Übersetzen auf Zuruf (2026-10-04)
+
+**Auftrag des Owners:** den Verifizierungs-Prozess im Frontend nutzbar machen,
+danach Säule 4 (KI-Übersetzung per Klick).
+
+**Warum das die richtige Reihenfolge war:** Ohne Verifizierung war die
+Fachkreis-Schranke aus dem letzten Zyklus eine geschlossene Tür ohne Schlüssel.
+Die Mechanik gab es (`/api/verify/*`), aber kein Betrieb hatte sie je benutzt —
+die Tauschbörse war damit nicht leer, sondern verschlossen.
+
+**TEIL 1 — Verifizierung.** Die Lizenznummer ist jetzt Pflichtangabe (außer für
+Behörden, die sich anders legitimieren), Privatnutzer:innen bekommen das
+Formular gar nicht zu sehen. Die Moderations-Ansicht zeigt Lizenznummer,
+Kontotyp, Land und — das Wichtigste — **`would_allow_rx`**: Vor dem Klick steht
+da, ob eine Freigabe Einblick in verschreibungspflichtige Angebote schafft.
+Vorher stand dort nur Freitext.
+
+Drei Entscheidungen, die den Unterschied machen:
+1. **Kontotyp wird MIT DEM ANTRAG festgehalten.** Das Profil lässt sich
+   dazwischen ändern — wer als Logistik beantragt und vor der Freigabe auf
+   Apotheke umstellt, bekäme sonst eine Stufe, die nie geprüft wurde.
+2. **`isRxAllowed` nach Kontotyp, nicht pauschal `true`.** Logistik und Behörde
+   werden verifiziert, bekommen aber keinen Rx-Einblick.
+3. **Entziehen ohne Entverifizieren.** Eine erloschene Betriebserlaubnis muss
+   sich sperren lassen, ohne die Historie zu verlieren.
+
+Und: Die Verifizierungs-Karte im Profil **bleibt stehen**, wenn man verifiziert
+ist (vorher verschwand sie). Sie beantwortet damit die Frage, die dann aufkommt:
+„Ich bin verifiziert, warum sehe ich trotzdem keine Rx-Angebote?"
+
+**TEIL 2 — Übersetzen.** Die wichtigste Eigenschaft ist eine negative: Der
+Dienst bekommt **nur Text**. Keine Adresse, kein Behördenname. Die Herkunft
+kann nicht verändert werden, weil sie nie hereinkommt — strukturell gelöst,
+nicht per Bitte im Prompt. Ein Prompt lässt sich umgehen, eine fehlende Eingabe
+nicht. Zwei Tests schieben genau das hinein, was nicht durchkommen darf; einer
+davon liest im Browser die echte Netzanfrage mit.
+
+Kostenbremsen, weil jeder Aufruf gegen die Abrechnung des Owners geht: auf
+Zuruf statt automatisch, Zwischenspeicher je Zielsprache + Texthash, 60
+Anbieter-Aufrufe je Stunde und Konto, und eine gescheiterte Übersetzung landet
+**nicht** im Speicher (sonst wäre ein einmaliger Netzfehler für immer als
+Ergebnis verbucht).
+
+Drei Regeln für den Knopf: Er erscheint nur mit KI-Schlüssel (ohne ihn wäre er
+eine Fehlermeldung mit Rahmen), er ersetzt nur den Text (Herkunfts-Link bleibt),
+und das Original ist per zweitem Klick zurück — mit dem ursprünglichen HTML,
+damit verlinkte @Handles nicht verloren gehen.
+
+**Ein eigener Testfehler, gefunden durch das Fehlschlagen des Tests selbst:**
+Mein Prüffall „eine leere Antwort gilt nicht als Übersetzung" lief über einen
+Testhelfer mit Vorgabewert. Bei `antwort: undefined` griff die Vorgabe
+(„Supply shortage") — der Test prüfte damit das Gegenteil von dem, was dastand,
+und wäre grün geblieben. Vorgabewerte in Testhelfern verschlucken genau den
+interessanten Fall.
+
+**CHECK.** 30 neue Tests (`test/ai-translate.test.js`, `verification.test.js`
+neu geschrieben) plus zwei HTTP-Tests und ein Browser-Prüfpunkt; 934 Tests
+gesamt grün. Zehn Wächter einmal absichtlich gebrochen — sieben im Dienst
+(Original als Übersetzung ausgeben, Zwischenspeicher ohne Zielsprache,
+Fehlschlag speichern, Lizenz nicht verlangen, pauschal Rx freischalten,
+Kontotyp zur Freigabezeit, Entzug nimmt die Verifizierung) und drei im Browser
+(Knopf ohne KI, Herkunft mitschicken, Zurückschalten entfernt) — jeder schlägt
+an.
+
+**Offen:** RxNorm-Anbindung (Säule 1), Säule 3 (B2B-Bereiche — jetzt möglich,
+weil Verifizierung funktioniert), `watchersForText` auf Wortgrenzen.

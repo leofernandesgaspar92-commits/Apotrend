@@ -168,7 +168,17 @@ export function bewerteExtraktion(e, originaltext) {
  * Provider-agnostisch wie bei Zahlungen und Social-Login: Die Fachlogik
  * darüber weiß nicht, wer antwortet.
  */
-export async function frageAnbieter(cfg, auftrag, { fetchImpl = globalThis.fetch } = {}) {
+/**
+ * Einen Auftrag an den Anbieter schicken.
+ *
+ * `system` ist ueberschreibbar, weil es einen ZWEITEN Auftrag gibt: das
+ * Uebersetzen (services/aiTranslate.js). Beide teilen den Netzaufruf, die
+ * Zeitgrenze und die Anbieterwahl — aber nicht den Auftragstext. Den
+ * Extraktions-Prompt fuer eine Uebersetzung zu verwenden hiesse, ein Modell um
+ * JSON mit Wirkstoff und Schweregrad zu bitten und eine Uebersetzung zu
+ * erwarten.
+ */
+export async function frageAnbieter(cfg, auftrag, { fetchImpl = globalThis.fetch, system = AI_SYSTEM_PROMPT } = {}) {
   const signal = AbortSignal.timeout(cfg.zeitlimit);
   if (cfg.anbieter === 'anthropic') {
     const r = await fetchImpl('https://api.anthropic.com/v1/messages', {
@@ -179,7 +189,7 @@ export async function frageAnbieter(cfg, auftrag, { fetchImpl = globalThis.fetch
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: cfg.modell, max_tokens: 1500, system: AI_SYSTEM_PROMPT,
+        model: cfg.modell, max_tokens: 1500, system,
         messages: [{ role: 'user', content: auftrag }],
       }),
     });
@@ -193,7 +203,7 @@ export async function frageAnbieter(cfg, auftrag, { fetchImpl = globalThis.fetch
     body: JSON.stringify({
       model: cfg.modell, max_tokens: 1500,
       messages: [
-        { role: 'system', content: AI_SYSTEM_PROMPT },
+        { role: 'system', content: system },
         { role: 'user', content: auftrag },
       ],
     }),

@@ -485,6 +485,113 @@ async function main() {
     await ctx.close();
   }
 
+  // ── Uebersetzen-Knopf: tut er, was er soll — und laesst er die Herkunft? ──
+  //  Der Knopf ist die einzige Stelle, an der ein Behoerdentext im Frontend
+  //  ERSETZT wird. Drei Dinge muessen dabei stimmen, und keines davon sagt ein
+  //  Unit-Test:
+  //
+  //   1. Ohne KI-Schluessel erscheint KEIN Knopf. In dieser Pruefumgebung ist
+  //      keiner gesetzt — der Knopf darf also nicht da sein. Ein Knopf, der
+  //      mit einer Fehlermeldung endet, ist schlechter als keiner.
+  //   2. Mit Schluessel ersetzt er den TEXT und nichts sonst: Quellenname und
+  //      Herkunfts-Link bleiben unveraendert stehen.
+  //   3. Das Original bleibt erreichbar. Bei einer Engpassmeldung will man im
+  //      Zweifel selbst nachlesen.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+
+    const SIGNAL = {
+      dedupeKey: 'bfarm_news:https://www.bfarm.de/tr/1',
+      title: 'Versorgungshinweis zur TRPRUEF-Charge',
+      summary: 'ORIGINALTEXT-TRPRUEF',
+      summaryDe: 'ORIGINALTEXT-TRPRUEF',
+      originalUrl: 'https://www.bfarm.de/tr/1', sourceName: 'BfArM', sourceId: 'bfarm_news',
+      country: 'DE', language: 'en', category: 'NEWS',
+      wirkstoff: null, handelsname: null, schweregrad: null, ursache: null,
+      gueltigVon: null, gueltigBis: null, confidenceScore: 0,
+      verifiedAt: new Date().toISOString(), publishedAt: null,
+    };
+    await page.route('**/api/signals*', (route) => route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ signale: [SIGNAL], stand: { land: 'DE', signale: 1, letzte: SIGNAL.verifiedAt }, ki: 'aktiv' }),
+    }));
+
+    // ── 1. Ohne Schluessel: kein Knopf ──
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
+    await page.goto(BASE, { waitUntil: 'networkidle' });
+    await page.click('.tabs button[data-tab="signals"]').catch(() => {});
+    await page.waitForTimeout(800);
+    const ohne = await page.locator('[data-siglist] [data-translate]').count();
+    if (ohne !== 0) {
+      findings.push(`Uebersetzen-Knopf erscheint OHNE KI-Schluessel (${ohne}×) — er wuerde nur eine Fehlermeldung erzeugen`);
+    } else {
+      console.log('✓ Uebersetzen: ohne KI-Schluessel kein Knopf');
+    }
+    await ctx.close();
+
+    // ── 2./3. Mit abgefangenem Status + abgefangener Uebersetzung ──
+    const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page2 = await ctx2.newPage();
+    page2.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+    const anfragen = [];
+    await page2.route('**/api/translate/status', (route) => route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ available: true, languages: ['de', 'en', 'pt'], max_chars: 4000 }),
+    }));
+    await page2.route('**/api/translate', (route) => {
+      anfragen.push(route.request().postData() || '');
+      return route.fulfill({
+        status: 200, contentType: 'application/json',
+        body: JSON.stringify({ text: 'UEBERSETZT-TRPRUEF', cached: false, ziel: 'de' }),
+      });
+    });
+    await page2.route('**/api/signals*', (route) => route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ signale: [SIGNAL], stand: { land: 'DE', signale: 1, letzte: SIGNAL.verifiedAt }, ki: 'aktiv' }),
+    }));
+    await page2.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
+    await page2.goto(BASE, { waitUntil: 'networkidle' });
+    await page2.click('.tabs button[data-tab="signals"]').catch(() => {});
+    await page2.waitForTimeout(800);
+
+    const knopf = page2.locator('[data-siglist] [data-translate]').first();
+    if (await knopf.count() === 0) {
+      findings.push('Uebersetzen-Knopf fehlt, obwohl die KI als verfuegbar gemeldet wird');
+    } else {
+      await knopf.click();
+      await page2.waitForTimeout(500);
+      const text = await page2.locator('[data-siglist]').innerText();
+      if (!/UEBERSETZT-TRPRUEF/.test(text)) findings.push('Uebersetzen: die Uebersetzung erscheint nicht auf der Karte');
+      if (/ORIGINALTEXT-TRPRUEF/.test(text)) findings.push('Uebersetzen: der Originaltext steht noch da — der Knopf hat nichts ersetzt');
+
+      // DIE ZUSICHERUNG, auf die es ankommt: Quellenname und Link unangetastet.
+      if (!/BfArM/.test(text)) findings.push('Uebersetzen: der Quellenname ist verschwunden');
+      const link = page2.locator('[data-siglist] a[href="https://www.bfarm.de/tr/1"]');
+      if (await link.count() === 0) findings.push('Uebersetzen: der Herkunfts-Link ist verschwunden');
+
+      // Und es darf NUR Text hinausgegangen sein — keine Adresse, keine Quelle.
+      const gesendet = anfragen.join(' ');
+      if (!gesendet) findings.push('Uebersetzen: keine Anfrage gesehen — diese Pruefung belegt nichts');
+      if (/bfarm\.de/i.test(gesendet)) findings.push(`Uebersetzen: die Herkunfts-Adresse wurde mitgeschickt (${gesendet.slice(0, 120)})`);
+      if (/sourceName|BfArM/.test(gesendet)) findings.push('Uebersetzen: der Quellenname wurde mitgeschickt');
+
+      // Zurueckschalten muss das Original wiederbringen.
+      await knopf.click();
+      await page2.waitForTimeout(300);
+      const zurueck = await page2.locator('[data-siglist]').innerText();
+      if (!/ORIGINALTEXT-TRPRUEF/.test(zurueck)) {
+        findings.push('Uebersetzen: das Original ist nach dem Zurueckschalten nicht wieder da');
+      } else {
+        console.log('✓ Uebersetzen: ersetzt nur den Text, Herkunft bleibt, Original erreichbar');
+      }
+    }
+    if (errors.length) findings.push(`Uebersetzen: JS-Fehler — ${errors.slice(0, 2).join(' | ')}`);
+    await ctx2.close();
+  }
+
   // ── Warnung vor nicht dauerhafter Speicherung ─────────────────────────────
   //  Eigener Kontext OHNE Anmeldung: Die übrige Prüfung meldet sich mit einem
   //  Token an und bekommt den Registrierungs-Bildschirm deshalb nie zu sehen —

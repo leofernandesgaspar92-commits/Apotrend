@@ -378,3 +378,114 @@ abgeleitet: Es ist der Hebel für die Moderation. Ein Betrieb, dessen Erlaubnis
 erloschen ist, lässt sich sperren, ohne die Verifizierung zurückzunehmen — und
 ohne die Historie zu verlieren, warum er einmal verifiziert war. Standard
 `false`: Ein neues Konto sieht kein Rx, bis es bestätigt ist.
+
+## Der Verifizierungs-Durchlauf (04.10.2026)
+
+Ohne ihn war die Fachkreis-Schranke eine geschlossene Tür ohne Schlüssel: Die
+Mechanik gab es (`/api/verify/*`), aber kein Betrieb hatte sie je benutzt — und
+die Tauschbörse war damit nicht leer, sondern **verschlossen**.
+
+### Antrag
+
+`POST /api/verify/request` nimmt jetzt `licenseNumber` **und** `note`.
+
+Die **Lizenznummer ist Pflicht** für alle Gewerbetreibenden. Ohne sie hat die
+Moderation nichts zu prüfen — sie könnte nur dem Freitext glauben, und eine
+Freigabe auf Zuruf wäre genau die Schranke auf dem Papier, die die Rx-Sperre
+vermeiden soll. Ausnahme: `authority` (eine Behörde legitimiert sich anders und
+hat keine Betriebserlaubnis im selben Sinn).
+
+**Privatnutzer:innen können nicht beantragen** (`verify_private`). Ein Antrag,
+der nie bewilligt werden kann, ist kein Angebot, sondern eine Sackgasse — der
+Fehlertext sagt, was stattdessen zu tun ist, und das Formular erscheint gar
+nicht.
+
+**Kontotyp, Land und Lizenz werden mit dem Antrag festgehalten**, nicht erst
+bei der Prüfung aus dem Profil gelesen. Das Profil lässt sich dazwischen
+ändern: Wer als Logistik beantragt und vor der Freigabe auf Apotheke umstellt,
+bekäme sonst eine Stufe freigeschaltet, die nie geprüft wurde. Ein Test
+stellt genau das nach.
+
+### Prüfung
+
+`GET /api/verify/requests` liefert zusätzlich `license_number`,
+`account_type`, `country` und — das Wichtigste — **`would_allow_rx`**. Die
+Moderations-Ansicht sagt damit vor dem Klick, ob eine Freigabe Einblick in
+verschreibungspflichtige Angebote schafft. Vorher stand dort nur Freitext.
+
+### Freigabe
+
+`resolveVerification` setzt `verified` **und** `is_rx_allowed`, letzteres
+**nach Kontotyp**:
+
+| Kontotyp | Stufe | Rx-Einblick |
+|---|---|---|
+| pharmacy | VERIFIED_PHARMACY | ✅ |
+| wholesale | VERIFIED_WHOLESALE | ✅ |
+| pharma | VERIFIED_MANUFACTURER | ✅ |
+| logistics | VERIFIED_LOGISTICS | ❌ |
+| authority | — | ❌ |
+
+Pauschal `isRxAllowed = true` zu setzen wäre falsch: Ein Transportunternehmen
+befördert Arzneimittel, es erwirbt sie nicht.
+
+### Entziehen
+
+`POST /api/verify/:userId/rx` mit `{allowed:false}` sperrt den Rx-Einblick,
+**ohne** die Verifizierung zurückzunehmen — der Hebel, den das Schema
+verspricht. Eine erloschene Betriebserlaubnis muss sich sperren lassen, ohne
+die Historie zu verlieren, warum der Betrieb einmal verifiziert war.
+
+### Status für die Nutzerin
+
+`GET /api/verify/me` gibt bei „verifiziert" **auch `rx_allowed`** zurück, und
+die Karte im Profil bleibt stehen (vorher verschwand sie). Das ist der
+Unterschied, nach dem ein Logistiker sonst rätselt: Er ist verifiziert und
+sieht trotzdem keine Rx-Angebote — ohne diese Angabe sieht das aus wie ein
+Fehler.
+
+## Übersetzen auf Zuruf (Säule 4, 04.10.2026)
+
+`POST /api/translate` mit `{ text, to }`, `GET /api/translate/status` für die
+Verfügbarkeit.
+
+### Die wichtigste Eigenschaft ist eine negative
+
+Der Dienst bekommt **nur Text**. Keine Adresse, keinen Behördennamen, keine
+Kennung. Die Herkunft kann hier also nicht verändert werden, **weil sie nie
+hereinkommt** — strukturell gelöst und nicht per Bitte im Prompt. Ein Prompt
+lässt sich umgehen, eine fehlende Eingabe nicht.
+
+Zwei Tests schieben genau das hinein, was nicht durchkommen darf: einer auf
+Dienstebene, einer im Browser-Audit (der die echte Netzanfrage mitliest).
+
+### Kostenbremse, nicht Missbrauchsschutz
+
+Jeder Aufruf geht gegen die Abrechnung des Betreibers. Deshalb:
+- **Auf Zuruf, nicht automatisch.** 500 Signale × 3 Sprachen vorab wären Geld
+  für Texte, die niemand liest.
+- **Zwischenspeicher** je `Zielsprache + Hash(Text)`. Derselbe Text wird nicht
+  zweimal bezahlt; eine Antwort aus dem Speicher zählt auch nicht gegen das
+  Limit.
+- **60 Anbieter-Aufrufe je Stunde und Konto.**
+- **Eine gescheiterte Übersetzung landet nicht im Speicher** — sonst wäre ein
+  einmaliger Netzfehler für immer als Ergebnis verbucht.
+
+### Drei Regeln für den Knopf
+
+1. **Er erscheint nur, wenn Übersetzen möglich ist.** Ohne KI-Schlüssel kein
+   Knopf — besser als einer, der mit einer Fehlermeldung endet.
+2. **Er ersetzt nur den Text.** Herkunfts-Abzeichen, Quellenname und Link
+   bleiben stehen.
+3. **Das Original bleibt erreichbar.** Ein zweiter Klick schaltet zurück (mit
+   dem ursprünglichen HTML, damit verlinkte @Handles und #Hashtags nicht
+   verloren gehen). Eine Übersetzung, die das Original ersetzt, nimmt der
+   Apothekerin die Möglichkeit, im Zweifel selbst nachzulesen — und bei einer
+   Engpassmeldung ist dieser Zweifel berechtigt.
+
+### Was der Auftrag an das Modell verbietet
+
+Ergänzungen, Erklärungen, Einordnung, Zusammenfassung, Empfehlungen — und das
+Übersetzen von Fachbegriffen: Wirkstoffnamen (INN), Handelsnamen,
+Chargennummern, Dosierungen, Zulassungsnummern und Behördennamen werden
+unverändert übernommen. Eine verdeutschte Chargennummer ist eine falsche.

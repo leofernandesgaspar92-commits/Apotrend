@@ -72,10 +72,27 @@ export function createSocialRepo() {
       return { ...p };
     },
     setProfileVerified(userId, value) { const p = profiles.get(userId); if (p) p.verified = !!value; return p ? { ...p } : null; },
+    // Rx-Einblick ausdruecklich setzen oder entziehen (domain/jurisdiction.js).
+    // Getrennt von `verified`, damit die Moderation sperren kann, ohne die
+    // Verifizierung zurueckzunehmen — und ohne die Historie zu verlieren,
+    // warum ein Betrieb einmal verifiziert war.
+    setProfileRxAllowed(userId, value) { const p = profiles.get(userId); if (p) p.is_rx_allowed = !!value; return p ? { ...p } : null; },
+    setProfileLicense(userId, value) { const p = profiles.get(userId); if (p) p.license_number = value || null; return p ? { ...p } : null; },
 
     // ── Verifizierungs-Anträge (ein offener je Nutzer) ──
-    upsertVerification({ userId, note }) {
-      const row = { user_id: userId, note: note ?? null, status: 'offen', created_at: now(), resolved_at: null };
+    upsertVerification({ userId, note, licenseNumber = null, accountType = null, country = null }) {
+      // Lizenznummer, Kontotyp und Land werden MIT DEM ANTRAG festgehalten,
+      // nicht erst bei der Pruefung aus dem Profil gelesen. Grund: Das Profil
+      // laesst sich zwischen Antrag und Freigabe aendern. Wer als Apotheke
+      // beantragt und vor der Freigabe auf Grosshandel umstellt, bekaeme sonst
+      // eine Stufe freigeschaltet, die nie geprueft wurde.
+      const row = {
+        user_id: userId, note: note ?? null,
+        license_number: licenseNumber ?? null,
+        account_type: accountType ?? null,
+        country: country ?? null,
+        status: 'offen', created_at: now(), resolved_at: null,
+      };
       verifications.set(userId, row);
       return { ...row };
     },

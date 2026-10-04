@@ -549,7 +549,13 @@ test('Fachfrage über HTTP: nur der/die Fragesteller:in darf die beste Antwort w
 test('Verifizierung über HTTP: beantragen -> Queue nur für Mods -> Redaktion genehmigt -> Profil verifiziert', async () => {
   const user = await reg('vera' + PORT);
   const handle = 'vera' + PORT;
-  assert.equal((await post('/api/verify/request', user, { note: 'Konzession ' + PORT })).status, 200);
+  // Ohne Lizenznummer wird der Antrag jetzt abgelehnt — die Nummer ist die
+  // Grundlage der Freigabe, nicht Zierde (services/social.js).
+  const ohneLizenz = await post('/api/verify/request', user, { note: 'bin eine Apotheke' });
+  assert.equal(ohneLizenz.status, 400);
+  assert.equal((await ohneLizenz.json()).code, 'verify_license_required');
+
+  assert.equal((await post('/api/verify/request', user, { licenseNumber: 'AT-K-' + PORT, note: 'Konzession ' + PORT })).status, 200);
   // Nicht-Mod darf die Verifizierungs-Queue nicht sehen.
   assert.equal((await fetch(BASE + '/api/verify/requests', { headers: H(user) })).status, 403);
   // Redaktion sieht den Antrag und genehmigt ihn (Antrag ist per user_id referenziert).
@@ -561,6 +567,49 @@ test('Verifizierung über HTTP: beantragen -> Queue nur für Mods -> Redaktion g
   // Profil ist danach verifiziert.
   const prof = await j(`/api/profiles/${handle}`, user);
   assert.ok(prof.verified || (prof.profile && prof.profile.verified), 'Profil verifiziert');
+
+  // Und der Status sagt der Nutzerin, WAS sie damit darf. Eine Apotheke
+  // bekommt Rx-Einblick; ohne diese Angabe raetselt ein Logistiker, warum er
+  // verifiziert ist und trotzdem keine Rx-Angebote sieht.
+  const mine = await j('/api/verify/me', user);
+  assert.equal(mine.status, 'verifiziert');
+  assert.equal(mine.rx_allowed, true);
+  assert.equal(mine.license_number, 'AT-K-' + PORT);
+
+  // Jetzt sieht dieselbe Apotheke auch fremde Rx-Angebote — der Durchlauf
+  // schliesst den Kreis zur Fachkreis-Schranke.
+  const anbieter = await reg('vrx' + PORT);
+  const rxTitel = 'Amoxicillin VERAPRUEF ' + PORT;
+  await post('/api/exchange', anbieter, { kind: 'biete', bezeichnung: rxTitel, rx: 'rx' });
+  const sicht = await j('/api/exchange?country=AT', user);
+  assert.ok(sicht.entries.map((e) => e.bezeichnung).includes(rxTitel),
+    'nach der Verifizierung muss das Rx-Angebot sichtbar sein');
+
+  // Entziehen sperrt es wieder — ohne die Verifizierung zurueckzunehmen.
+  assert.equal((await post(`/api/verify/${item.user_id}/rx`, login.token, { allowed: false })).status, 200);
+  const nachEntzug = await j('/api/exchange?country=AT', user);
+  assert.ok(!nachEntzug.entries.map((e) => e.bezeichnung).includes(rxTitel), 'Entzug greift');
+  assert.equal(nachEntzug.rx_reason, 'entzogen');
+  assert.equal((await j('/api/verify/me', user)).status, 'verifiziert', 'verifiziert bleibt verifiziert');
+});
+
+test('POST /api/translate: ohne KI-Schluessel ehrlich abgewiesen, nie geraten', async () => {
+  const user = await reg('trans' + PORT);
+  // In dieser Pruefumgebung ist kein KI-Schluessel gesetzt. Der Endpunkt MUSS
+  // das benennen (503) statt den Originaltext als „Uebersetzung" zurueckzugeben
+  // — ein Knopf, der nichts tut und nichts sagt, ist schlimmer als keiner.
+  const st = await j('/api/translate/status', user);
+  assert.equal(st.available, false);
+  assert.deepEqual(st.languages, ['de', 'en', 'pt']);
+
+  const r = await post('/api/translate', user, { text: 'Lieferengpass gemeldet', to: 'en' });
+  assert.equal(r.status, 503);
+  assert.equal((await r.json()).code, 'translate_unconfigured');
+
+  // Eingaben werden VOR dem Anbieter geprueft: unbekannte Sprache und leerer
+  // Text duerfen keinen bezahlten Aufruf ausloesen.
+  assert.equal((await (await post('/api/translate', user, { text: 'x', to: 'fr' })).json()).code, 'translate_lang');
+  assert.equal((await (await post('/api/translate', user, { text: '  ', to: 'en' })).json()).code, 'translate_empty');
 });
 
 test('Moderation über HTTP: melden -> Queue nur für Mods -> auflösen+entfernen -> Beitrag weg', async () => {

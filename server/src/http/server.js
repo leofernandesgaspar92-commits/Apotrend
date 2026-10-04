@@ -63,11 +63,17 @@ import { suchProtokoll } from '../services/feedDiscovery.js';
 import { createSignalStore, baueSignal } from '../services/signals.js';
 import { benachrichtigeZuSignal } from '../services/signalAlerts.js';
 import { extractSignal, aiKonfiguration, KATEGORIEN as SIGNAL_KATEGORIEN } from '../services/aiExtract.js';
+import { createTranslateService, MAX_ZEICHEN as TRANSLATE_MAX } from '../services/aiTranslate.js';
 
 // Login-Brute-Force-Schutz: max. 5 Fehlversuche je (IP+E-Mail) in 15 Minuten.
 const loginLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
 // Passwort-Reset: eng begrenzt, damit Wiederherstellungscodes nicht erraten werden.
 const resetLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
+// Uebersetzungen: 60 Anbieter-Aufrufe je Stunde und Konto. Das ist kein
+// Missbrauchsschutz im engeren Sinn, sondern eine KOSTENBREMSE — jeder Aufruf
+// geht gegen die Abrechnung des Owners. Antworten aus dem Zwischenspeicher
+// zaehlen bewusst nicht mit: Sie kosten nichts.
+const translateLimiter = createRateLimiter({ max: 60, windowMs: 60 * 60 * 1000 });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, '..', '..', 'public');
@@ -565,6 +571,11 @@ const coverage = createCoverageStore();
 // dedupeKey). Ohne DATABASE_URL ist `db` null und es bleibt beim Speicher.
 // Begruendung ausfuehrlich in services/signals.js bei createSignalStore.
 const signalStore = createSignalStore({ mirror: db });
+
+// Uebersetzen auf Zuruf (services/aiTranslate.js). Ohne KI-Schluessel meldet
+// `verfuegbar()` false und die Oberflaeche zeigt den Knopf gar nicht — besser
+// als ein Knopf, der eine Fehlermeldung produziert.
+const translate = createTranslateService();
 
 async function runNewsIngest() {
   const editor = social.getProfile('apopulse');
@@ -1384,9 +1395,38 @@ const routes = [
 
   // ── Verifizierung (Apotheken-Nachweis) ──
   ['GET', /^\/api\/verify\/me$/, true, async ({ userId }) => social.myVerification(userId)],
-  ['POST', /^\/api\/verify\/request$/, true, async ({ userId, body }) => social.requestVerification(userId, { note: body.note })],
+  ['POST', /^\/api\/verify\/request$/, true, async ({ userId, body }) =>
+    social.requestVerification(userId, { note: body.note, licenseNumber: body.licenseNumber })],
   ['GET', /^\/api\/verify\/requests$/, true, async ({ userId }) => ({ requests: social.verificationQueue(userId) })],
   ['POST', /^\/api\/verify\/([^/]+)\/resolve$/, true, async ({ userId, params, body }) => social.resolveVerification(userId, params[0], !!body.approve)],
+  // Rx-Einblick entziehen/zurueckgeben, OHNE die Verifizierung anzutasten.
+  // Der Hebel fuer eine erloschene Betriebserlaubnis (domain/jurisdiction.js).
+  ['POST', /^\/api\/verify\/([^/]+)\/rx$/, true, async ({ userId, params, body }) =>
+    social.setRxAllowed(userId, params[0], body.allowed !== false)],
+
+  // ── Uebersetzen auf Zuruf ─────────────────────────────────────────────────
+  //  NUR TEXT geht hinein. Keine Adresse, kein Behoerdenname, keine Kennung —
+  //  die Herkunft kann hier also nicht veraendert werden, weil sie nie
+  //  hereinkommt. Das ist strukturell geloest und nicht per Bitte im Prompt;
+  //  ein Prompt laesst sich umgehen, eine fehlende Eingabe nicht.
+  //
+  //  Angemeldet und ratenbegrenzt, weil jeder Aufruf beim Anbieter Geld
+  //  kostet. Der Dienst hat zusaetzlich einen Zwischenspeicher, damit derselbe
+  //  Text nicht zweimal bezahlt wird.
+  ['GET', /^\/api\/translate\/status$/, true, async () => ({
+    available: translate.verfuegbar(), languages: ['de', 'en', 'pt'], max_chars: TRANSLATE_MAX,
+  })],
+  ['POST', /^\/api\/translate$/, true, async ({ userId, body }) => {
+    const key = 'tr:' + userId;
+    if (translateLimiter.check(key).blocked) {
+      throw new AppError('translate_rate', 'Zu viele Uebersetzungen in kurzer Zeit. Bitte kurz warten.', 429);
+    }
+    const r = await translate.uebersetze(body.text, body.to);
+    // Nur bei einem echten Anbieter-Aufruf zaehlt es gegen das Limit; eine
+    // Antwort aus dem Zwischenspeicher kostet nichts und soll nicht bremsen.
+    if (!r.cached) translateLimiter.fail(key);
+    return r;
+  }],
 
   ['GET', /^\/api\/feed\/home$/, true, async ({ userId }) => ({ posts: enrichPosts(social.homeFeed(userId), userId) })],
   ['GET', /^\/api\/feed\/public$/, true, async ({ userId, query }) => ({ country: activeCountry(userId, query), posts: enrichPosts(social.publicFeed(userId, { sort: query.get('sort') || 'neu', filter: query.get('filter') || 'all', country: activeCountry(userId, query) }), userId) })],

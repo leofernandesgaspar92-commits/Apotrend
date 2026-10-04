@@ -2133,6 +2133,102 @@ function stopNewsRail() {
 //  „keine KI gelaufen" und wird als solches benannt, nicht als „0 % sicher"
 //  — das wäre eine Aussage über den Inhalt, nicht über die Anreicherung.
 
+// ════════════════════════════════════════════════════════════════════════════
+//  Übersetzen auf Zuruf
+// ════════════════════════════════════════════════════════════════════════════
+//  Die Plattform läuft in drei Sprachen, die Behörden tun das nicht. Eine
+//  NAFDAC-Meldung ist englisch, eine ANVISA-Meldung portugiesisch.
+//
+//  DREI REGELN FÜR DIESEN KNOPF:
+//
+//   1. ER ERSCHEINT NUR, WENN ÜBERSETZEN MÖGLICH IST. Ohne KI-Schlüssel gibt
+//      es keinen Knopf — besser als einer, der mit einer Fehlermeldung endet.
+//   2. ER ÜBERSETZT NUR DEN TEXT. Herkunfts-Abzeichen, Quellenname und Link
+//      bleiben unangetastet — sie werden gar nicht mitgeschickt (der Server
+//      nimmt ausschließlich Text an, siehe services/aiTranslate.js).
+//   3. DAS ORIGINAL BLEIBT ERREICHBAR. Ein zweiter Klick schaltet zurück. Eine
+//      Übersetzung, die das Original ersetzt, nimmt der Apothekerin die
+//      Möglichkeit, im Zweifel selbst nachzulesen — und bei einer
+//      Engpassmeldung ist dieser Zweifel berechtigt.
+let TRANSLATE_READY = null; // null = noch nicht gefragt
+
+async function translateVerfuegbar() {
+  if (TRANSLATE_READY !== null) return TRANSLATE_READY;
+  try {
+    const d = await api('GET', '/api/translate/status');
+    TRANSLATE_READY = !!d.available;
+  } catch { TRANSLATE_READY = false; }
+  return TRANSLATE_READY;
+}
+
+/**
+ * Einen Übersetzen-Knopf an ein Textelement hängen.
+ *
+ * `textEl` ist das Element, dessen Inhalt übersetzt wird — bewusst NUR dieses
+ * eine. Der Aufrufer entscheidet damit, was übersetzt wird, und die
+ * Herkunftszeile liegt außerhalb.
+ *
+ * Gibt `null` zurück, wenn nichts zu tun ist (keine KI, kein Text). Der
+ * Aufrufer prüft schlicht auf Wahrheitswert.
+ */
+async function translateButton(textEl, { lang = null } = {}) {
+  if (!textEl) return null;
+  const original = (textEl.textContent || '').trim();
+  if (!original) return null;
+  // Das Original-HTML mitsichern. Beitraege enthalten verlinkte @Handles und
+  // #Hashtags; die Uebersetzung ist reiner Text und wuerde sie verlieren.
+  // Beim Zurueckschalten kommt deshalb das HTML zurueck, nicht der Text —
+  // sonst waeren die Verweise nach einem Klick dauerhaft weg.
+  const originalHtml = textEl.innerHTML;
+  if (!(await translateVerfuegbar())) return null;
+  // Steht der Text schon in der Anzeigesprache, gibt es nichts zu übersetzen.
+  // `lang` ist optional: Wo die Quellsprache bekannt ist (Signale tragen sie),
+  // sparen wir den Knopf — und einen bezahlten Aufruf.
+  if (lang && String(lang).toLowerCase().slice(0, 2) === LOCALE) return null;
+
+  const btn = el(`<button class="ghost small" data-translate style="margin-top:6px">🌐 ${esc(t('tr_btn'))}</button>`);
+  let uebersetzt = null;
+  let zeigtUebersetzung = false;
+
+  btn.onclick = async () => {
+    // Zweiter Klick: zurück zum Original. Das Original MUSS erreichbar
+    // bleiben — bei einer Engpassmeldung will man im Zweifel nachlesen.
+    if (zeigtUebersetzung) {
+      textEl.innerHTML = originalHtml;
+      zeigtUebersetzung = false;
+      btn.textContent = '🌐 ' + t('tr_btn');
+      return;
+    }
+    if (uebersetzt) {
+      textEl.textContent = uebersetzt;
+      zeigtUebersetzung = true;
+      btn.textContent = '↩ ' + t('tr_original');
+      return;
+    }
+    btn.disabled = true;
+    const vorher = btn.textContent;
+    btn.textContent = '… ' + t('tr_running');
+    try {
+      // NUR der Text. Keine Adresse, kein Quellenname — der Server nimmt sie
+      // gar nicht an, und hier wird sie auch nicht angeboten.
+      const r = await api('POST', '/api/translate', { text: original, to: LOCALE });
+      uebersetzt = r.text;
+      textEl.textContent = uebersetzt;
+      zeigtUebersetzung = true;
+      btn.disabled = false;
+      btn.textContent = '↩ ' + t('tr_original');
+    } catch (e) {
+      // Ehrlich benennen statt stillschweigend das Original stehen lassen.
+      btn.disabled = false;
+      btn.textContent = vorher;
+      const msg = el(`<div class="err" style="margin-top:4px;font-size:13px">${esc(e.message)}</div>`);
+      btn.insertAdjacentElement('afterend', msg);
+      setTimeout(() => msg.remove(), 6000);
+    }
+  };
+  return btn;
+}
+
 /** Anzeige-Kategorien in Klartext. Reihenfolge = Reihenfolge der Knöpfe. */
 const SIGNAL_KATEGORIEN = ['SHORTAGE', 'RECALL', 'REGULATORY', 'NEWS'];
 
@@ -2205,13 +2301,24 @@ function signalCard(s) {
   const card = el(`<div class="card" style="${schwere ? `border-left:4px solid ${schwere.fg}` : ''}">
     ${kopf}
     <div style="font-weight:800;margin-top:6px;line-height:1.35">${esc(s.title)}</div>
-    ${zusammenfassung ? `<div style="margin-top:6px;line-height:1.5">${esc(zusammenfassung)}</div>` : ''}
+    ${zusammenfassung ? `<div data-sigtext style="margin-top:6px;line-height:1.5">${esc(zusammenfassung)}</div>` : ''}
     ${zeilen.length ? `<div style="margin-top:8px;display:grid;gap:4px;font-size:14px">${
       zeilen.map(([k, v]) => `<div><span class="muted">${esc(k)}:</span> <b>${esc(v)}</b></div>`).join('')
     }</div>` : ''}
     <div>${quellenAbzeichen(s)}</div>
     <div class="muted" style="margin-top:6px;font-size:12px">${vertrauen}</div>
   </div>`);
+
+  // Übersetzen-Knopf am TEXT, nicht an der Karte: Das Herkunfts-Abzeichen mit
+  // Quellenname und Link liegt ausdrücklich außerhalb und bleibt unangetastet.
+  // `s.language` ist die Sprache des Originals — steht es schon in der
+  // Anzeigesprache, erscheint kein Knopf (und es wird nichts bezahlt).
+  const textEl = card.querySelector('[data-sigtext]');
+  if (textEl) {
+    translateButton(textEl, { lang: s.language }).then((btn) => {
+      if (btn) textEl.insertAdjacentElement('afterend', btn);
+    });
+  }
   return card;
 }
 
@@ -6564,21 +6671,57 @@ async function openWirkstoff(name) {
   feed.appendChild(dcard);
 }
 
+/**
+ * Verifizierungs-Karte im eigenen Profil.
+ *
+ * Seit der Fachkreis-Schranke haengt daran, wer Angebote fuer
+ * verschreibungspflichtige Arzneimittel sieht. Die Karte bleibt deshalb AUCH
+ * im Zustand „verifiziert" stehen — vorher verschwand sie, und damit die
+ * Antwort auf die Frage, die dann aufkommt: „Ich bin verifiziert, warum sehe
+ * ich trotzdem keine Rx-Angebote?" (Logistik und Behoerde bekommen den
+ * Einblick nicht.)
+ */
 async function renderVerifyCard(card) {
   let s; try { s = await api('GET','/api/verify/me'); } catch { return; }
-  if (s.status === 'verifiziert') { card.remove(); return; }
+
+  if (s.status === 'verifiziert') {
+    const rx = s.rx_allowed
+      ? `<div style="margin-top:6px;color:var(--ok-fg)">✅ ${esc(t('vf_rx_yes'))}</div>`
+      : `<div style="margin-top:6px">${esc(t('vf_rx_no'))}</div>`;
+    card.innerHTML = `<b style="color:var(--ok-fg)">✔ ${esc(t('vf_done_t'))}</b>
+      ${s.license_number ? `<div class="muted" style="margin-top:4px;font-size:13px">${esc(ti('vf_license_is', { nr: s.license_number }))}</div>` : ''}
+      ${rx}`;
+    return;
+  }
   if (s.status === 'offen') {
-    card.innerHTML = `<b>${esc(t('vf_pending_t'))}</b><div class="muted" style="margin-top:4px">${esc(t('vf_pending_s'))}</div>`;
+    card.innerHTML = `<b>${esc(t('vf_pending_t'))}</b><div class="muted" style="margin-top:4px">${esc(t('vf_pending_s'))}</div>
+      ${s.license_number ? `<div class="muted" style="margin-top:6px;font-size:13px">${esc(ti('vf_license_is', { nr: s.license_number }))}</div>` : ''}`;
+    return;
+  }
+  // Privatnutzer:innen koennen sie nicht beantragen — das Formular gar nicht
+  // anzuzeigen ist ehrlicher als ein Knopf, der mit einer Fehlermeldung endet.
+  if (s.account_type === 'private') {
+    card.innerHTML = `<b>${esc(t('vf_title'))}</b>
+      <div class="muted" style="margin-top:4px">${esc(t('vf_private'))}</div>`;
     return;
   }
   const abgelehnt = s.status === 'abgelehnt';
+  // Die Lizenznummer ist Pflicht (ausser fuer Behoerden): Ohne sie hat die
+  // Redaktion nichts zu pruefen.
+  const behoerde = s.account_type === 'authority';
   card.innerHTML = `<b>${esc(t('vf_title'))}</b>
     <div class="muted" style="margin-top:4px">${abgelehnt?esc(t('vf_rejected')):''}${esc(t('vf_desc'))}</div>
-    <input id="vf_note" placeholder="${esc(t('vf_note_ph'))}" style="margin-top:8px">
+    ${behoerde ? '' : `<label for="vf_lic" style="display:block;margin-top:8px;font-size:13px">${esc(t('vf_license_label'))}</label>
+    <input id="vf_lic" placeholder="${esc(t('vf_license_ph'))}" aria-label="${esc(t('vf_license_label'))}" style="margin-top:4px">`}
+    <label for="vf_note" style="display:block;margin-top:8px;font-size:13px">${esc(t('vf_note_label'))}</label>
+    <input id="vf_note" placeholder="${esc(t('vf_note_ph'))}" aria-label="${esc(t('vf_note_label'))}" style="margin-top:4px">
+    <div class="muted" style="font-size:12px;margin-top:6px">${esc(t('vf_rx_hint'))}</div>
     <div class="row" style="margin-top:8px"><button id="vf_go">${esc(t('vf_apply'))}</button><span class="err" id="vf_err" style="margin-left:8px"></span></div>`;
   card.querySelector('#vf_go').onclick = async () => {
-    try { await api('POST','/api/verify/request',{ note: v('vf_note') }); renderVerifyCard(card); }
-    catch(e){ card.querySelector('#vf_err').textContent = e.message; }
+    try {
+      await api('POST','/api/verify/request',{ note: v('vf_note'), licenseNumber: behoerde ? null : v('vf_lic') });
+      renderVerifyCard(card);
+    } catch(e){ card.querySelector('#vf_err').textContent = e.message; }
   };
 }
 
@@ -6646,6 +6789,7 @@ function sourceLinkHtml(url) {
 
 function postCard(p) {
   const a = p.author || {};
+  // (Der Uebersetzen-Knopf wird unten an [data-body] gehaengt.)
   const rc = p.reaction_counts || {};
   const mine = me && a.handle === me.handle;
   const card = el(`<div class="card">
@@ -6785,6 +6929,25 @@ function postCard(p) {
       loadComments(p.id, card);
     } catch(e){ alert(e.message); }
   };
+
+  // ── Uebersetzen-Knopf am Beitragstext ─────────────────────────────────────
+  //  Gilt fuer Behoerdenmeldungen (kind='news') UND Fachbeitraege. Der Knopf
+  //  haengt an [data-body] — die Quellenzeile darunter (source_url) bleibt
+  //  ausdruecklich unberuehrt, denn der Server nimmt ohnehin nur Text an.
+  //
+  //  Eingeklappt und ohne Knopf bleibt ein Beitrag, der schon in der
+  //  Anzeigesprache steht: Die Oberflaechensprache des Autors ist nicht
+  //  bekannt, deshalb wird hier NICHT geraten — der Knopf erscheint, und wer
+  //  ihn nicht braucht, klickt nicht. Ein geratenes „ist schon deutsch"
+  //  waere der schlechtere Fehler, weil es die Uebersetzung unmoeglich macht.
+  {
+    const bodyEl = card.querySelector('[data-body]');
+    if (bodyEl && !bodyEl.hidden) {
+      translateButton(bodyEl).then((btn) => {
+        if (btn) bodyEl.insertAdjacentElement('afterend', btn);
+      });
+    }
+  }
   return card;
 }
 
@@ -7096,9 +7259,25 @@ async function showModeration() {
   if (vq.requests.length) {
     app.appendChild(el(`<div class="muted" style="margin:6px 2px;font-weight:700">${esc(t('md_verif_sec'))}</div>`));
     vq.requests.forEach(rq => {
+      // Die Ansicht muss sagen, WAS eine Freigabe bedeutet. Vorher stand hier
+      // nur der Freitext — wer „verifizieren" drueckte, wusste nicht, ob damit
+      // Einblick in verschreibungspflichtige Angebote entsteht.
+      const land = (COUNTRIES_CACHE || []).find(c => c.code === rq.country);
+      const typLabel = rq.account_type ? (t(ACCT_I18N[rq.account_type] || '') || rq.account_type) : '—';
       const card = el(`<div class="card">
         <div><b>${esc(rq.display_name||'?')}</b> <span class="handle">@${esc(rq.handle||'?')}</span></div>
+        <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px;font-size:14px">
+          <span>${esc(typLabel)}</span>
+          <span class="muted">${esc((land && land.flag + ' ' + land.name) || rq.country || '—')}</span>
+        </div>
+        <div style="margin-top:6px;font-size:14px">
+          <span class="muted">${esc(t('md_license'))}:</span>
+          ${rq.license_number ? `<b>${esc(rq.license_number)}</b>` : `<span class="muted">${esc(t('md_no_license'))}</span>`}
+        </div>
         <div class="post-body" style="margin:6px 0">${rq.note?esc(rq.note):`<span class="muted">${esc(t('md_no_note'))}</span>`}</div>
+        <div style="margin:6px 0;padding:6px 10px;border-radius:8px;background:${rq.would_allow_rx?'var(--warn-bg)':'var(--bg)'};border:1px solid ${rq.would_allow_rx?'var(--warn-bd)':'var(--line)'};font-size:13px${rq.would_allow_rx?';color:var(--warn-fg);font-weight:600':''}">
+          ${esc(rq.would_allow_rx ? t('md_grants_rx') : t('md_grants_no_rx'))}
+        </div>
         <div class="row"><button class="small" data-approve>${esc(t('md_verify_btn'))}</button><button class="ghost small" data-reject>${esc(t('md_reject'))}</button></div>
       </div>`);
       card.querySelector('[data-approve]').onclick = async () => { try { await api('POST',`/api/verify/${encodeURIComponent(rq.user_id)}/resolve`,{ approve:true }); showModeration(); } catch(e){ alert(e.message); } };
