@@ -1075,3 +1075,59 @@ Telemetrie-Feld entfernt — jeder schlägt an.
 eine Kachel „neu seit deinem letzten Besuch" — heute wäre jede Zahl dort
 entweder nicht handlungsleitend oder ein zweiter roter Zähler neben dem
 Engpass-Zähler mit anderer Bedeutung.
+
+### Cycle · Reparatur der stummen Quellen (2026-10-04)
+
+**Auftrag des Owners:** EMA 429, BASG `fetch failed`, PEI/Swissmedic 404, TGA
+Zeitüberschreitung, openFDA-Rückrufe „keine verwertbar".
+
+**Die Arbeit bestand zur Hälfte darin, Fehlerbild und Gegenmittel richtig
+zuzuordnen.** Vier der fünf vorgeschlagenen Maßnahmen hätten nichts bewirkt
+oder geschadet:
+
+| Vorschlag | Befund | Stattdessen |
+|---|---|---|
+| EMA: Browser-Kennung + Retry-Delay | 429 ist eine Bitte, langsamer zu sein — eine andere Kennung umgeht eine Schutzmaßnahme, und die Behörde kann uns dann nicht freischalten | `minHostGapMs: 2000` **pro Host** (beide EMA-Quellen liegen auf demselben) + `Retry-After` wird beachtet |
+| BASG: Header oder Proxy-Fallback | `fetch failed` liegt **unterhalb von HTTP** — es gibt keinen Statuscode, auf den ein Kopf wirkt | `Accept: application/json` (richtig, aber nicht die Reparatur) + offene Benennung der drei möglichen Ursachen. **Kein Proxy:** ein Drittanbieter im Pfad behördlicher Arzneimitteldaten könnte Inhalte ändern, ohne dass es auffällt — die ganze Herkunfts-Zusicherung hängt daran |
+| PEI/Swissmedic: `.html`-Adressen als `url` | Das sind **Übersichtsseiten**, keine Feeds. Als `url` gelingt der Abruf mit HTTP 200, der Parser findet null Meldungen, **im Protokoll steht kein Fehler** — schlechter als die heutige 404, weil es nach Erfolg aussieht | beide in `homepage`, wo die Selbstfindung die echte Feed-Adresse ausliest. Test verbietet `.html` in `url` |
+| TGA: Timeout auf 15 000 ms | Dort standen schon **30 000**, und das Protokoll belegt, dass selbst 30 s abliefen. 15 000 wäre eine Halbierung gewesen | hoch auf 45 000. Die Gegenprobe mit 15 000 lässt zwei Tests rot werden |
+
+**Der fünfte war echte Parser-Arbeit — mit einem zweiten Boden darunter.**
+`openfda_recalls` meldete „100 Zeilen empfangen, keine verwertbar". Ursache 1
+waren die Spaltennamen (`product_description`, und der Wirkstoff verschachtelt
+als Array unter `openfda.generic_name`). Ursache 2 war schwerer: openFDA
+liefert `status: "Ongoing"` — den Stand des **Rückrufverfahrens**, nicht die
+Lieferfähigkeit. Nur die Spalten nachzutragen und „Ongoing" auf „kritisch"
+abzubilden hätte aus 100 verworfenen Zeilen **100 Engpassmeldungen gemacht, die
+es nicht gibt**. Dazu der Zusammenstoß im Schema: `Shortage` ist über
+`[drugName, country]` eindeutig — Rückruf und echter Engpass desselben
+Präparats hätten sich um eine Zeile gestritten.
+
+Deshalb neu: `newsFromJson` als dritter Weg (strukturierter Export → Meldung,
+mit **benannter** Feldzuordnung, nichts aus Fließtext geschnitten), und
+`openfda_recalls` als `kind: 'news'`. Der Link zeigt auf den Datensatz bei der
+Behörde, abgefragt über die Rückrufnummer — bewusst die Schnittstelle, weil es
+keine amtliche HTML-Seite je Rückruf gibt und ein erfundener Pfad genau der
+Fehler wäre, der PEI und Swissmedic auf 404 gesetzt hat.
+
+**Zwei eigene Tests korrigiert, weil sie die falsche Sache zusicherten:**
+- `sourcesByKind('news').every(format === 'rss')` war eine **Näherung** der
+  Regel, nicht die Regel. Die Regel lautet: Engpass-*Datensätze* nur aus
+  strukturierten Exporten. Umgekehrt ist der Meldeweg die **vorsichtigere**
+  Richtung. Ersetzt durch die echte Zusicherung: eine JSON-Meldequelle muss
+  ihre Felder benennen.
+- Mein eigener Telemetrie-Test vom Vortag forderte „mindestens 3
+  Engpassquellen" — eine Momentaufnahme, die eine bewusste Umstufung bestraft.
+  Ersetzt durch: Gesamtzahl bleibt 22, und AT **und** US haben einen
+  strukturierten Export.
+
+**CHECK.** 29 neue Tests (`test/sources-repair.test.js`). Sieben Wächter einmal
+absichtlich gebrochen — `Retry-After` ignorieren, Mindestabstand aus,
+quellenspezifische Kopfzeilen verlieren, Punktpfad nicht auflösen, TGA auf 15 s,
+HTML-Seite als Feed-Adresse, Rückrufe zurück in den Engpassweg — jeder schlägt
+an.
+
+**Ehrliche Grenze, unverändert:** Diese Bauumgebung hat keinen Netzzugang. Ob
+die Adressen stimmen, zeigt erst der Lauf auf Render. 20 von 22 Quellen stehen
+weiter auf `verified: false`, und das bleibt so, bis ein echter Abruf sie
+bestätigt.

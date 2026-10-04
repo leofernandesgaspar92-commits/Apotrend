@@ -420,6 +420,111 @@ bleiben — bewusst streng, weil Engpassdaten sicherheitsrelevant sind.
 
 `live: true`, sobald die Quelle angeschlossen ist.
 
+## 2c. Wenn eine Quelle schweigt — Fehlerbild und Gegenmittel
+
+Die wichtigste Unterscheidung in diesem Teil des Systems. Das falsche
+Gegenmittel sieht aus wie eine Reparatur und ändert nichts — oder macht es
+schlimmer.
+
+| Im Protokoll steht | Was es heißt | Was hilft | Was NICHT hilft |
+|---|---|---|---|
+| `HTTP 404` | Pfad weg, Host antwortet | andere Adresse: `fallbacks`, Selbstfindung über `homepage` | wiederholen — die Antwort bleibt gleich |
+| `HTTP 429` | zu viele Anfragen | **weniger** Anfragen (`minHostGapMs`) + `Retry-After` beachten | andere Kennung; schneller wiederholen |
+| `HTTP 403` | Zugang verweigert | Kontakt zur Behörde, ggf. Freischaltung | — |
+| Zeitüberschreitung | Host langsam, Pfad vermutlich richtig | `timeoutMs` hoch | neue URLs raten |
+| `fetch failed` | **unterhalb von HTTP** (DNS/TLS/Verbindung) | Adresse prüfen, Netzweg am Dienst prüfen | Kopfzeilen — es gibt keinen Statuscode, auf den sie wirken |
+| `N Zeilen empfangen, keine verwertbar` | Format passt nicht zum Parser | Zuordnung prüfen — **und** ob die Quelle im richtigen Weg liegt | Spaltennamen nachtragen, ohne zu prüfen, ob die Semantik stimmt |
+
+### 429: warum ein Mindestabstand und nicht eine andere Kennung
+
+Die EMA hat mit „Too Many Requests" geantwortet. Nachgerechnet: `ema_news` und
+`ema_shortages` liegen auf **demselben Host**, jede mit bis zu vier Seiten für
+die Selbstfindung und einer Wiederholung — bis zu zehn Anfragen an
+`ema.europa.eu`, praktisch gleichzeitig, alle fünf Minuten.
+
+`minHostGapMs: 2000` serialisiert Anfragen **pro Host** (nicht pro Quelle,
+deshalb tragen beide EMA-Einträge den Wert). Zusätzlich beachtet
+`fetchWithRetry` jetzt `Retry-After`; vorher wurde nach 500 ms erneut
+angefragt — genau das Verhalten, das eine Begrenzung bestraft.
+
+**Was absichtlich nicht gemacht wurde:** eine Browser-Kennung
+(`Mozilla/5.0 …`), um der Begrenzung auszuweichen. 429 ist die ausdrückliche
+Bitte, langsamer zu sein; sie mit einer anderen Kennung zu umgehen hieße, eine
+technische Schutzmaßnahme einer Behörde zu unterlaufen — und die Behörde könnte
+uns nicht mehr freischalten, weil sie uns nicht erkennt. Unsere Kennung nennt
+Zweck und Kontaktadresse. Ein Test hält das fest.
+
+### HTML-Seiten gehören in `homepage`, niemals in `url`
+
+`…/rss/rss-node.html` (PEI) und `…/news/rss.html` (Swissmedic) sind
+**Übersichtsseiten**, die auf Feeds verweisen — keine Feeds. Als `url`
+eingetragen gelingt der Abruf mit HTTP 200, der Feed-Parser findet null
+Meldungen, und im Protokoll steht **kein Fehler**. Das ist schlechter als die
+heutige 404, weil es nach Erfolg aussieht. Beide stehen deshalb in `homepage`,
+wo die Selbstfindung die echte Feed-Adresse daraus liest. Ein Test verbietet
+`.html` in `url` für jede RSS-Quelle.
+
+### Eigene Kopfzeilen und Zeitlimits je Quelle
+
+```js
+{ id: 'basg_shortages', …, headers: { accept: 'application/json, …' } }
+{ id: 'tga_news',       …, timeoutMs: 45_000 }
+{ id: 'ema_news',       …, minHostGapMs: 2_000 }
+```
+
+Alle drei sind Eigenschaften der **Quelle**, nicht globale Voreinstellungen:
+Eine Behörde mit einer Besonderheit soll nicht das Verhalten aller anderen
+ändern. Jede wird auf dem Weg `fetchSource → fetchWithRetry → fetchText`
+durchgereicht — mit Test, denn die stille Variante des Fehlers wäre, dass der
+Kopf im Quelltext steht und nie ankommt.
+
+### openFDA-Rückrufe: vom Engpass- in den Meldeweg
+
+Das Protokoll meldete `100 Zeilen empfangen, keine verwertbar`. Zwei Ursachen,
+und die zweite ist die wichtigere:
+
+1. **Spaltennamen.** Der Engpass-Parser sucht `bezeichnung`/`name`/`product`;
+   openFDA liefert `product_description`, und der Wirkstoff steht
+   verschachtelt als Array unter `openfda.generic_name`.
+2. **Semantik.** openFDA liefert `status: "Ongoing"` — den Stand des
+   **Rückrufverfahrens**, nicht die Lieferfähigkeit. Nur die Spaltennamen
+   nachzutragen und „Ongoing" auf „kritisch" abzubilden hätte aus 100
+   verworfenen Zeilen etwas Schlimmeres gemacht: **100 Engpassmeldungen, die es
+   nicht gibt.** Ein Chargenrückruf heißt nicht, dass das Präparat nicht
+   lieferbar ist — und genau danach bestellt eine Apotheke um.
+
+Dazu der Zusammenstoß im Schema: `Shortage` ist über `[drugName, country]`
+eindeutig. Ein Rückruf und ein echter Engpass desselben Präparats in den USA
+hätten sich um **eine** Zeile gestritten.
+
+Deshalb ist `openfda_recalls` jetzt `kind: 'news'` mit dem neuen Adapter
+`newsFromJson` und einer **benannten** Feldzuordnung (`jsonNews`) — nichts wird
+aus Fließtext geschnitten:
+
+```js
+jsonNews: {
+  list: 'results',
+  title: ['product_description'],
+  summary: ['reason_for_recall'],
+  id: ['recall_number'],
+  date: ['recall_initiation_date', 'report_date'],
+  linkTemplate: 'https://api.fda.gov/drug/enforcement.json?search=recall_number:%22{id}%22',
+  extra: { Wirkstoff: ['openfda.generic_name'], Firma: ['recalling_firm'],
+           Einstufung: ['classification'], Verfahrensstand: ['status'],
+           Rueckrufnummer: ['recall_number'] },
+}
+```
+
+Der Link zeigt auf den **Datensatz bei der Behörde**, abgefragt über die
+Rückrufnummer. Bewusst die Schnittstelle und keine `fda.gov`-Seite: Es gibt
+keine amtliche HTML-Seite je Rückruf, und einen Pfad zu erfinden, der von hier
+aus nicht prüfbar ist, wäre genau der Fehler, der PEI und Swissmedic auf 404
+gesetzt hat.
+
+Die Einstufung als `RECALL` macht die KI auf der Signal-Ebene — dort mit
+Vertrauenswert und Originallink, nicht als Zahl, auf die sich jemand wie auf
+eine amtliche Statusmeldung verlässt.
+
 ## 3b. Live-Warnungen im Frontend (`VerifiedSignalFeed`)
 
 Der Reiter **„⚠️ Live-Warnungen"** (`loadSignals()` in `public/app.js`) zeigt

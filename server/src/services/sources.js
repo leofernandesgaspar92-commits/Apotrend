@@ -98,7 +98,18 @@ const BUILTIN = [
     // Die RSS-Uebersicht des PEI. Nicht geraten: Die Selbstfindung hat am
     // 05.09.2026 auf der Newsroom-Seite genau dorthin verwiesen gefunden —
     // nur falsch aufgeloest, weil <base href> fehlte (feedDiscovery.js).
+    //
+    // ⚠️ WICHTIG ZU DEN .html-ADRESSEN HIER UNTEN:
+    // Sie stehen in `homepage` und NICHT in `url`, und das ist kein Versehen.
+    // `rss-node.html` und `rss-inhalt.html` sind UEBERSICHTSSEITEN, die auf
+    // Feeds verweisen — keine Feeds. Eine davon als `url` einzutragen hiesse,
+    // dem Feed-Parser HTML vorzusetzen: Der Abruf gelingt (HTTP 200), das
+    // Ergebnis sind null Meldungen, und im Protokoll steht kein Fehler.
+    // Das waere schlechter als die heutige 404, weil es nach Erfolg aussieht.
+    // Die Selbstfindung liest diese Seiten und holt sich die echte Feed-Adresse
+    // daraus — genau dafuer sind sie hier.
     homepage: [
+      'https://www.pei.de/DE/footer-kopfleiste/rss/rss-node.html',
       'https://www.pei.de/DE/footer-kopfleiste/rss/rss-inhalt.html',
       'https://www.pei.de/DE/newsroom/newsroom-node.html',
     ],
@@ -139,6 +150,25 @@ const BUILTIN = [
       'https://www.ema.europa.eu/en/news-events',
       'https://www.ema.europa.eu/en/homepage',
     ],
+    // ── HTTP 429, und was dagegen WIRKLICH hilft ─────────────────────────────
+    //  Die EMA hat mit „Too Many Requests" geantwortet. Daran ist kein Pfad
+    //  und kein Kopf schuld — die Zahl der Anfragen ist es. Nachgerechnet:
+    //  ema_news und ema_shortages liegen auf DEMSELBEN Host, jede hat bis zu
+    //  vier Seiten fuer die Selbstfindung und eine Wiederholung. Das sind bis
+    //  zu zehn Anfragen an ema.europa.eu, praktisch gleichzeitig, weil die
+    //  Quellen parallel geholt werden — alle fuenf Minuten.
+    //
+    //  Der Mindestabstand serialisiert sie. Zwei Sekunden klingen wenig, aber
+    //  sie verteilen zehn Anfragen auf zwanzig Sekunden statt auf eine. Dazu
+    //  kommt, dass `Retry-After` jetzt beachtet wird (fetchWithRetry).
+    //
+    //  Was hier ABSICHTLICH NICHT steht: eine Browser-Kennung, um der
+    //  Begrenzung auszuweichen. 429 ist eine ausdrueckliche Bitte, langsamer
+    //  zu sein; sie mit einer anderen Kennung zu umgehen hiesse, eine
+    //  technische Schutzmassnahme einer Behoerde zu unterlaufen. Unsere
+    //  Kennung nennt Zweck und Kontaktadresse (USER_AGENT) — genau damit kann
+    //  die EMA uns freischalten, wenn sie will.
+    minHostGapMs: 2_000,
     official: true, verified: false,
   },
   // --- Vom Owner benannte Länder ------------------------------------------
@@ -152,7 +182,13 @@ const BUILTIN = [
     // Die deutsche Newsseite antwortete mit 404, die englische Fassung
     // existiert und heisst ausdruecklich „Information services - newsletter,
     // RSS feed". Deutsch bleibt zuerst, falls sie zurueckkehrt.
+    //
+    // ⚠️ `news/rss.html` ist eine SEITE, kein Feed (siehe denselben Hinweis
+    // bei pei_news). Sie steht deshalb hier und nicht als `url`. Sie steht
+    // ZUERST, weil sie laut Selbstfindung die Seite ist, die auf die Feeds
+    // verweist — die Suche findet dort also am ehesten etwas.
     homepage: [
+      'https://www.swissmedic.ch/swissmedic/de/home/news/rss.html',
       'https://www.swissmedic.ch/swissmedic/en/home/news/news.html',
       'https://www.swissmedic.ch/swissmedic/de/home.html',
     ],
@@ -218,7 +254,17 @@ const BUILTIN = [
     // entfernt, und dreimal 15 s hintereinander deutet auf einen langsamen
     // Server, nicht auf drei falsche Pfade. Deshalb hier mehr Geduld statt
     // neuer URLs. Kostet nichts: Die Quellen werden parallel geholt.
-    timeoutMs: 30_000,
+    // ⚠️ KORREKTUR ZUM AUFTRAG: Verlangt waren 15 000 ms. Hier standen schon
+    //    30 000 — 15 000 waere also eine HALBIERUNG gewesen, und das
+    //    Protokoll vom 05.09.2026 belegt, dass selbst 30 s nicht reichten
+    //    (Beginn 04:44:23, Abbruch 04:44:53). Das Limit zu senken haette den
+    //    Abruf sicher zum Scheitern gebracht, waehrend die Aenderung nach
+    //    Reparatur aussieht. Deshalb hoch auf 45 s statt herunter auf 15 s.
+    //
+    //    Mehr Geduld kostet hier fast nichts: Die Quellen werden parallel
+    //    geholt, und die TGA hat keine Ersatzadressen mehr (siehe oben), also
+    //    hoechstens 2 × 45 s fuer diese eine Quelle.
+    timeoutMs: 45_000,
     official: true, verified: false,
   },
   {
@@ -338,17 +384,61 @@ const BUILTIN = [
     official: true, verified: false,
   },
   {
-    id: 'openfda_recalls', kind: 'shortages', country: 'US', format: 'json',
+    id: 'openfda_recalls', kind: 'news', country: 'US', format: 'json',
     label: 'FDA — Rueckrufe (openFDA Enforcement)',
-    // Rueckrufe sind etwas anderes als Engpaesse, landen aber im selben
-    // strukturierten Weg: benannte Felder, keine Interpretation von
-    // Schlagzeilen. Die KI stuft sie spaeter als RECALL ein; ohne KI gilt die
-    // Art der Quelle, also SHORTAGE — ungenau, aber nicht falsch, und
-    // ausdruecklich besser als geraten.
+    // ── VON 'shortages' AUF 'news' UMGESTELLT (04.10.2026) ───────────────────
+    //  Befund aus dem Betrieb: „100 Zeilen empfangen, keine verwertbar." Zwei
+    //  Ursachen, und die zweite ist die wichtigere.
+    //
+    //  1. Die Spaltennamen passten nicht. Der Engpass-Parser sucht
+    //     `bezeichnung`/`name`/`product`; die Behoerde liefert
+    //     `product_description`. Der Wirkstoff steht nicht oben, sondern
+    //     verschachtelt unter `openfda.generic_name` als ARRAY. Also fiel
+    //     jede Zeile mit „weder Bezeichnung noch Wirkstoff" durch.
+    //
+    //  2. Der Status passte PRINZIPIELL nicht. openFDA liefert
+    //     „Ongoing/Completed/Terminated" — den Stand des RUECKRUFVERFAHRENS,
+    //     nicht die Lieferfaehigkeit. Haette ich nur die Spaltennamen
+    //     nachgetragen und „Ongoing" auf „kritisch" abgebildet, waere aus 100
+    //     verworfenen Zeilen etwas Schlimmeres geworden: 100 Engpassmeldungen,
+    //     die es nicht gibt. Ein Rueckruf einer Charge heisst nicht, dass das
+    //     Praeparat nicht lieferbar ist — und genau danach bestellt eine
+    //     Apotheke um.
+    //
+    //  Dazu kaeme der Zusammenstoss im Schema: `Shortage` ist ueber
+    //  [drugName, country] eindeutig. Ein Rueckruf und ein echter Engpass
+    //  desselben Praeparats in den USA haetten sich um eine Zeile gestritten.
+    //
+    //  Als Meldung ist der Rueckruf dagegen vollstaendig richtig: Titel,
+    //  Grund, Firma, Einstufung, Verfahrensstand und ein Link auf den
+    //  Datensatz bei der Behoerde. Die Einstufung als RECALL macht die KI auf
+    //  der Signal-Ebene mit Vertrauenswert (siehe newsFromJson).
     //
     // Gemeinfrei wie die uebrigen openFDA-Endpunkte, ohne Schluessel nutzbar.
     // Die Begrenzung auf die letzten Eintraege haelt die Antwort klein.
     url: 'https://api.fda.gov/drug/enforcement.json?limit=100',
+    // Benannte Felder, nichts aus Fliesstext geschnitten.
+    jsonNews: {
+      list: 'results',
+      title: ['product_description'],
+      summary: ['reason_for_recall'],
+      id: ['recall_number'],
+      date: ['recall_initiation_date', 'report_date'],
+      // Der Link zeigt auf den DATENSATZ bei der Behoerde, abgefragt ueber die
+      // Rueckrufnummer. Bewusst die Schnittstelle und keine fda.gov-Seite: Es
+      // gibt keine amtliche HTML-Seite je Rueckruf, und einen Pfad zu erfinden,
+      // den ich von hier aus nicht pruefen kann, waere genau der Fehler, der
+      // PEI und Swissmedic auf 404 gesetzt hat. Diese Adresse ist belegbar und
+      // fuehrt zu genau dem Eintrag, auf dem die Meldung beruht.
+      linkTemplate: 'https://api.fda.gov/drug/enforcement.json?search=recall_number:%22{id}%22',
+      extra: {
+        Wirkstoff: ['openfda.generic_name'],
+        Firma: ['recalling_firm'],
+        Einstufung: ['classification'],
+        Verfahrensstand: ['status'],
+        Rueckrufnummer: ['recall_number'],
+      },
+    },
     official: true, verified: false,
   },
   {
@@ -378,12 +468,47 @@ const BUILTIN = [
       'https://www.ema.europa.eu/en/human-regulatory-overview/post-authorisation/medicine-shortages-availability-issues',
       'https://www.ema.europa.eu/en/news-events/rss-feeds',
     ],
+    // Derselbe Host wie ema_news — der Abstand gilt pro HOST, nicht pro
+    // Quelle. Beide Eintraege brauchen ihn deshalb, sonst bremst nur einer von
+    // zweien und die Begrenzung greift weiter (siehe ema_news).
+    minHostGapMs: 2_000,
     official: true, verified: false,
   },
   {
     id: 'basg_shortages', kind: 'shortages', country: 'AT', format: 'json',
     label: 'BASG — Vertriebseinschränkungen',
     url: 'https://vertriebseinschraenkungen.basg.gv.at/api/v1/public/shortages',
+    // ── „fetch failed" ist KEINE HTTP-Antwort ────────────────────────────────
+    //  Das Protokoll meldet `fetch failed`, nicht 404 und nicht 403. Das
+    //  passiert UNTERHALB von HTTP: DNS, TLS-Handschlag, Verbindungsaufbau.
+    //  Der Server hat nie geantwortet — es gibt also keinen Statuscode, auf
+    //  den ein Kopf Einfluss haette.
+    //
+    //  EHRLICHE EINORDNUNG: Die beiden Koepfe unten sind trotzdem richtig
+    //  (eine JSON-Schnittstelle, die bei `*/*` HTML ausliefert, ist haeufig),
+    //  aber sie sind nicht die Reparatur. Wer behauptet, `Accept` behebe ein
+    //  `fetch failed`, hat die Fehlermeldung nicht gelesen.
+    //
+    //  Was es wirklich sein kann, und was jeweils zu tun ist:
+    //   · Die Behoerde hat die Schnittstelle abgeschaltet oder verlegt
+    //     -> neue Adresse per APOPULSE_SOURCE_BASG_SHORTAGES_URL eintragen.
+    //   · Render erreicht die .gv.at-Zone nicht (DNS/Routing)
+    //     -> am Dienst erkennbar, nicht im Code behebbar.
+    //   · TLS-Kette wird nicht akzeptiert
+    //     -> ebenfalls nicht im Code behebbar, und NICHT durch Abschalten der
+    //        Pruefung zu „loesen": Ungeprueftes TLS auf dem Weg, auf dem
+    //        Engpassdaten fuer Apotheken ankommen, waere der schlechteste
+    //        Tausch dieses Projekts.
+    //
+    //  KEIN PROXY-FALLBACK, und das ist eine Entscheidung, nicht Faulheit:
+    //  Ein Drittanbieter-Proxy im Pfad behoerdlicher Arzneimitteldaten koennte
+    //  Inhalte veraendern, ohne dass es auffaellt — und die gesamte
+    //  Herkunfts-Zusicherung dieses Projekts („die Zeile stammt vom BASG")
+    //  haengt daran, dass genau das nicht passiert. Ein Proxy liesse sich von
+    //  hier aus ausserdem nicht pruefen.
+    headers: {
+      accept: 'application/json, text/plain;q=0.8, */*;q=0.5',
+    },
     official: true, verified: false,
   },
 ];
@@ -484,7 +609,69 @@ export function regulatorOf(country) {
  */
 export const USER_AGENT = 'ApoPulseBot/1.0 (Fachinformationsdienst für Apotheken; +https://apopulse-feed.onrender.com/)';
 
-export async function fetchTextDefault(url, { timeoutMs = 15_000, fetchImpl = globalThis.fetch } = {}) {
+// --- Abstand je Behördenserver ----------------------------------------------
+//  Gegen 429 („Too Many Requests") hilft kein anderer Kopf und kein zweiter
+//  Versuch, sondern NUR weniger Anfragen. Und genau daran lag es bei der EMA:
+//  Pro Durchlauf gehen dort bis zu zehn Anfragen an denselben Host —
+//  ema_news und ema_shortages, jede mit bis zu vier Seiten für die
+//  Selbstfindung, jede mit einer Wiederholung. Alle praktisch gleichzeitig,
+//  weil die Quellen parallel geholt werden.
+//
+//  Dieser Riegel serialisiert Anfragen AN DENSELBEN HOST mit einem
+//  Mindestabstand. Unterschiedliche Behörden bremsen sich dabei nicht
+//  gegenseitig — nur wer sich beschwert, wird langsamer bedient.
+const letzterAbrufProHost = new Map(); // host -> Zeitpunkt (ms)
+
+export const __hostGate = {
+  reset: () => letzterAbrufProHost.clear(),
+  size: () => letzterAbrufProHost.size,
+};
+
+const schlafen = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Warten, bis der Mindestabstand zum letzten Abruf desselben Hosts erreicht ist.
+ *
+ * `now`/`sleep` sind injizierbar, damit Tests nicht in Echtzeit warten müssen.
+ * Der Zeitpunkt wird VOR dem Warten gesetzt: Sonst stürmen zwei gleichzeitig
+ * gestartete Abrufe beide los, weil beide denselben alten Stand lesen.
+ */
+export async function hostAbstand(url, gapMs, { now = () => Date.now(), sleep = schlafen } = {}) {
+  if (!gapMs || gapMs <= 0) return 0;
+  let host;
+  try { host = new URL(url).host; } catch { return 0; }
+  const jetzt = now();
+  const frei = letzterAbrufProHost.get(host) || 0;
+  const wartezeit = Math.max(0, frei - jetzt);
+  letzterAbrufProHost.set(host, Math.max(jetzt, frei) + gapMs);
+  if (wartezeit > 0) await sleep(wartezeit);
+  return wartezeit;
+}
+
+/**
+ * `Retry-After` auslesen — in Sekunden oder als HTTP-Datum.
+ *
+ * Gibt `null` zurück, wenn der Kopf fehlt oder unbrauchbar ist. Die Obergrenze
+ * ist Absicht: Eine Behörde, die „komm in zwei Stunden wieder" sagt, darf den
+ * Abruf nicht zwei Stunden blockieren — dann ist die Quelle für diesen
+ * Durchlauf eben stumm und der nächste Takt versucht es erneut.
+ */
+export function retryAfterMs(wert, { maxMs = 60_000, now = () => Date.now() } = {}) {
+  if (wert == null || wert === '') return null;
+  const sekunden = Number(String(wert).trim());
+  if (Number.isFinite(sekunden)) {
+    if (sekunden < 0) return null;
+    return Math.min(sekunden * 1000, maxMs);
+  }
+  const ms = Date.parse(String(wert));
+  if (!Number.isFinite(ms)) return null;
+  return Math.min(Math.max(0, ms - now()), maxMs);
+}
+
+export async function fetchTextDefault(url, {
+  timeoutMs = 15_000, fetchImpl = globalThis.fetch, headers = {}, minHostGapMs = 0, gateOpts = {},
+} = {}) {
+  await hostAbstand(url, minHostGapMs, gateOpts);
   const res = await fetchImpl(url, {
     headers: {
       accept: 'application/rss+xml, application/atom+xml, application/xml, text/csv, application/json;q=0.8, */*;q=0.5',
@@ -493,6 +680,10 @@ export async function fetchTextDefault(url, { timeoutMs = 15_000, fetchImpl = gl
       // EMA, Health Canada) irgendeine Sprache — meist Englisch. Die Reihenfolge
       // bildet die Zielgruppe ab: DACH zuerst, dann EU-Englisch.
       'accept-language': 'de,en;q=0.8,pt;q=0.6',
+      // Quellenspezifische Köpfe ZULETZT: Eine Quelle darf die Voreinstellung
+      // überschreiben (etwa `accept: application/json` für eine Schnittstelle,
+      // die bei `*/*` HTML ausliefert).
+      ...headers,
     },
     signal: AbortSignal.timeout(timeoutMs),
     redirect: 'follow',
@@ -500,6 +691,11 @@ export async function fetchTextDefault(url, { timeoutMs = 15_000, fetchImpl = gl
   if (!res.ok) {
     const e = new Error('HTTP ' + res.status);
     e.status = res.status;
+    // `Retry-After` mitnehmen, solange wir die Antwort noch in der Hand haben.
+    // Ohne das wüsste die Wiederholung nicht, wie lange sie warten soll, und
+    // würde nach einer halben Sekunde in dieselbe 429 laufen.
+    const ra = res.headers && typeof res.headers.get === 'function' ? res.headers.get('retry-after') : null;
+    if (ra) e.retryAfterMs = retryAfterMs(ra);
     throw e;
   }
   return res.text();
@@ -543,6 +739,10 @@ const schlaf = (ms) => new Promise((r) => setTimeout(r, ms));
  */
 export async function fetchWithRetry(url, {
   fetchText = fetchTextDefault, attempts = 2, baseDelayMs = 500, sleep = schlaf, log = null,
+  // Obergrenze fuer das, was die Behoerde als Wartezeit verlangt. Siehe
+  // retryAfterMs: Ein „komm in zwei Stunden wieder" darf den Durchlauf nicht
+  // blockieren.
+  maxRetryAfterMs = 60_000,
 } = {}) {
   let letzter;
   for (let versuch = 1; versuch <= attempts; versuch++) {
@@ -552,8 +752,21 @@ export async function fetchWithRetry(url, {
       letzter = e;
       if (isPermanentError(e)) throw e;         // sinnlos zu wiederholen
       if (versuch === attempts) break;
-      log?.(`ApoPulse Quellen: ${url} Versuch ${versuch} fehlgeschlagen (${e.message}) — neuer Versuch`);
-      await sleep(baseDelayMs * versuch);
+
+      // ── 429: so lange warten, wie die Behörde es sagt ──────────────────────
+      //  Vorher wurde bei 429 nach 500 ms erneut angefragt. Das ist genau das
+      //  Verhalten, das die Begrenzung bestraft: Wer „zu viele Anfragen" mit
+      //  einer weiteren Anfrage beantwortet, bekommt wieder 429 — und die
+      //  Wiederholung war damit nicht nur wirkungslos, sondern Teil des
+      //  Problems. Steht ein `Retry-After` in der Antwort, gilt dieser Wert.
+      const verlangt = e.status === 429
+        ? (Number.isFinite(e.retryAfterMs) ? Math.min(e.retryAfterMs, maxRetryAfterMs) : 5_000)
+        : null;
+      const warten = verlangt ?? baseDelayMs * versuch;
+      log?.(`ApoPulse Quellen: ${url} Versuch ${versuch} fehlgeschlagen (${e.message})`
+        + (verlangt != null ? ` — Behoerde verlangt ${Math.round(warten / 1000)} s Pause` : '')
+        + ' — neuer Versuch');
+      await sleep(warten);
     }
   }
   throw letzter;
@@ -591,8 +804,16 @@ export async function fetchSource(source, opts = {}) {
   // Ein längeres Limit kostet nichts, solange es die Ausnahme bleibt: Die
   // Abrufe laufen parallel, nur der langsamste bestimmt die Dauer.
   const basis = opts.fetchText || fetchTextDefault;
-  const fetchText = source.timeoutMs
-    ? (u) => basis(u, { timeoutMs: source.timeoutMs })
+  // Eigene Kopfzeilen und ein Mindestabstand je Host kommen auf demselben Weg
+  // durch wie das Zeitlimit: als Eigenschaft der QUELLE, nicht als globale
+  // Voreinstellung. Eine Behörde, die eine Besonderheit braucht, soll nicht
+  // das Verhalten aller anderen ändern.
+  const eigen = {};
+  if (source.timeoutMs) eigen.timeoutMs = source.timeoutMs;
+  if (source.headers) eigen.headers = source.headers;
+  if (source.minHostGapMs) eigen.minHostGapMs = source.minHostGapMs;
+  const fetchText = Object.keys(eigen).length
+    ? (u, extra = {}) => basis(u, { ...eigen, ...extra })
     : basis;
   const unterOpts = { ...opts, fetchText };
 
@@ -656,9 +877,143 @@ export function newsKey(sourceId, link) {
   return `${sourceId}:${String(link || '').trim()}`;
 }
 
+// --- Strukturierter Export als MELDUNG --------------------------------------
+//  Der dritte Weg, und er brauchte eine Begründung, bevor er entstand.
+//
+//  Die Regel dieser Datei lautet: Engpass-DATENSÄTZE nur aus strukturierten
+//  Exporten, Meldungen aus RSS. Eine JSON-Schnittstelle, deren Inhalt KEIN
+//  Engpass ist, passte in keinen der beiden Wege — openFDA-Rückrufe sind genau
+//  das. Sie lagen deshalb als `kind: 'shortages'` registriert, und das war in
+//  zwei Punkten falsch:
+//
+//   1. FACHLICH. Ein Rückruf sagt nichts über die Lieferfähigkeit. „Class III,
+//      Ongoing" als Engpass-Status zu schreiben, hieße: In der Apotheke steht
+//      „kritisch — nicht lieferbar" unter einem Präparat, das vollständig
+//      verfügbar ist und bei dem eine einzelne Charge zurückgerufen wurde.
+//   2. TECHNISCH. `Shortage` hat `@@unique([drugName, country])`. Ein Rückruf
+//      und ein echter Engpass desselben Wirkstoffs im selben Land streiten
+//      sich um EINE Zeile — die eine überschreibt die andere, je nachdem, wer
+//      zuletzt läuft. Das ist Datenverlust, nicht Ungenauigkeit.
+//
+//  Deshalb wird ein solcher Export zur MELDUNG mit Link: sichtbar, verlinkt,
+//  ohne erfundenen Statuswert. Die Einstufung als RECALL macht die KI auf der
+//  Signal-Ebene — dort mit Vertrauenswert und Originallink, nicht als Zahl,
+//  auf die sich jemand wie auf eine amtliche Statusmeldung verlässt. Dieselbe
+//  Begründung wie bei `ema_shortages`, nur aus der anderen Richtung.
+//
+//  WAS DIESEN WEG VON „News aus Prosa raten" UNTERSCHEIDET: Die Felder werden
+//  BENANNT (`jsonNews` an der Quelle). Es wird nichts aus einem Fließtext
+//  geschnitten. Fehlt ein Pflichtfeld, wird die Zeile verworfen.
+
+/** `20261004` -> `2026-10-04`. Sonst der Wert unverändert (ISO oder leer). */
+export function normalizeCompactDate(wert) {
+  const s = String(wert ?? '').trim();
+  if (!s) return null;
+  const m = s.match(/^(\d{4})(\d{2})(\d{2})$/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : s;
+}
+
+/**
+ * Einen JSON-Export in Meldungen wandeln.
+ *
+ * `jsonNews` an der Quelle beschreibt die Zuordnung:
+ *   { list, title, summary, id, date, linkTemplate, extra }
+ *
+ * `linkTemplate` enthält `{id}`; der Wert wird URL-kodiert eingesetzt. Ohne
+ * belegbaren Link entsteht KEINE Meldung — dieselbe Regel wie bei RSS, und sie
+ * ist hier besonders wichtig: Ein VerifiedSignal ohne Rückverweis wird
+ * serverseitig gar nicht gespeichert (services/signals.js).
+ */
+export function newsFromJson(source, raw) {
+  const map = source.jsonNews;
+  if (!map) {
+    throw new Error(`Quelle ${source.id}: format 'json' im News-Weg braucht eine jsonNews-Zuordnung.`);
+  }
+  let payload;
+  try {
+    payload = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch (e) {
+    throw new Error('Antwort ist kein gültiges JSON: ' + (e && e.message));
+  }
+
+  const schluessel = map.list ? [].concat(map.list) : ['results', 'items', 'data', 'content'];
+  const list = Array.isArray(payload)
+    ? payload
+    : schluessel.reduce((found, k) => found || (payload && Array.isArray(payload[k]) ? payload[k] : null), null);
+  if (!list) throw new Error(`Keine Liste gefunden (weder Array noch ${schluessel.join('/')}).`);
+
+  // Punktpfade werden aufgelöst (`openfda.generic_name`). Ohne das bliebe der
+  // Wirkstoff bei openFDA leer: Er steht nicht oben im Datensatz, sondern
+  // verschachtelt — und genau diese Verschachtelung war einer der zwei Gründe,
+  // warum vorher keine einzige Zeile verwertbar war.
+  const wert = (row, pfad) => String(pfad).split('.').reduce((o, k) => (o == null ? o : o[k]), row);
+
+  const feld = (row, kandidaten) => {
+    for (const k of [].concat(kandidaten || [])) {
+      const v = wert(row, k);
+      if (v == null) continue;
+      // openFDA verschachtelt Wirkstoff und Handelsname als ARRAYS unter
+      // `openfda`. Ein `String(array)` daraus ergäbe „a,b,c" — lesbar genug
+      // für eine Meldung, aber der erste Wert ist der aussagekräftige.
+      const w = Array.isArray(v) ? v[0] : v;
+      const s = String(w ?? '').trim();
+      if (s) return s;
+    }
+    return '';
+  };
+
+  const out = [];
+  const rejected = [];
+  for (const [i, row] of list.entries()) {
+    if (!row || typeof row !== 'object') { rejected.push(`#${i}: kein Objekt`); continue; }
+    const titel = feld(row, map.title);
+    const kennung = feld(row, map.id);
+    if (!titel) { rejected.push(`#${i}: kein Titel (${[].concat(map.title).join('/')})`); continue; }
+    if (map.linkTemplate && !kennung) { rejected.push(`#${i}: keine Kennung für den Link`); continue; }
+
+    const link = map.linkTemplate
+      ? map.linkTemplate.replace('{id}', encodeURIComponent(kennung))
+      : feld(row, map.link);
+    if (!link) { rejected.push(`#${i}: kein Link — ohne Rückverweis keine Meldung`); continue; }
+
+    // Zusatzfelder als benannte Zeilen an den Anriss. Kein Fließtext, kein
+    // Umformulieren — Feldname und Wert, wie die Behörde sie liefert.
+    const zusatz = [];
+    for (const [etikett, kandidaten] of Object.entries(map.extra || {})) {
+      const v = feld(row, kandidaten);
+      if (v) zusatz.push(`${etikett}: ${v}`);
+    }
+    const anriss = [feld(row, map.summary), ...zusatz].filter(Boolean).join('\n');
+
+    out.push({
+      key: newsKey(source.id, link),
+      sourceId: source.id,
+      sourceLabel: source.label || source.id,
+      official: !!source.official,
+      country: source.country,
+      // Lange Produktbeschreibungen kürzen: Die Behörde schreibt dort
+      // Packungsgrößen und NDC-Nummern hinein. Der Volltext bleibt im Anriss.
+      title: titel.length > 240 ? titel.slice(0, 237) + '…' : titel,
+      link,
+      summary: anriss || null,
+      publishedAt: normalizeCompactDate(feld(row, map.date)) || null,
+      categories: [],
+    });
+  }
+  if (!out.length && list.length) {
+    // Genau der Befund, der diese Reparatur ausgelöst hat: „100 Zeilen
+    // empfangen, keine verwertbar". Die Gründe gehören in die Meldung, sonst
+    // sucht beim nächsten Mal wieder jemand im Dunkeln.
+    throw new Error(`${list.length} Zeilen empfangen, keine verwertbar — `
+      + rejected.slice(0, 3).join('; '));
+  }
+  return out;
+}
+
 export function newsFromSource(source, raw) {
+  if (source.format === 'json') return newsFromJson(source, raw);
   if (source.format !== 'rss') {
-    throw new Error(`Format ${source.format} ist für News nicht vorgesehen (nur rss/atom).`);
+    throw new Error(`Format ${source.format} ist für News nicht vorgesehen (nur rss/atom/json).`);
   }
   const { feedTitle, items } = parseFeed(raw);
   return items.map((it) => ({

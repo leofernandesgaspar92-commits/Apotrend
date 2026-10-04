@@ -976,10 +976,25 @@ test('GET /api/live/status: Telemetrie für alle behördlichen Quellen', async (
 
   assert.equal(d.sources.length, erwartet.length, 'Antwort spiegelt die Quellenliste');
   assert.ok(d.sources.length >= 22, `mindestens 22 Quellen, sind ${d.sources.length}`);
+  // ── Untergrenzen je Art: KORRIGIERT am 04.10.2026 ────────────────────────
+  //  Hier stand „mindestens 3 Engpassquellen". Das war von Anfang an die
+  //  falsche Zusicherung, und sie wurde falsch, sobald die openFDA-Rueckrufe
+  //  vom Engpass- in den Meldeweg wechselten (ein Chargenrueckruf sagt nichts
+  //  ueber Lieferfaehigkeit — Begruendung in services/sources.js).
+  //
+  //  Eine Zahl, die eine BEWUSSTE Umstufung bestraft, misst nicht die
+  //  Gesundheit der Quellenliste, sondern haelt eine Momentaufnahme fest.
+  //  Geprueft wird deshalb, was dauerhaft gelten muss: die GESAMTZAHL bleibt
+  //  (keine Quelle verloren), und die beiden Laender mit strukturiertem
+  //  Engpass-Export sind dabei.
   const news = d.sources.filter((s) => s.kind === 'news').length;
   const engpass = d.sources.filter((s) => s.kind === 'shortages').length;
-  assert.ok(news >= 19, `mindestens 19 Nachrichtenquellen, sind ${news}`);
-  assert.ok(engpass >= 3, `mindestens 3 Engpassquellen, sind ${engpass}`);
+  assert.equal(news + engpass, d.sources.length, 'jede Quelle hat eine bekannte Art');
+  assert.ok(news >= 19, `mindestens 19 Meldequellen, sind ${news}`);
+  assert.ok(engpass >= 1, `mindestens eine Engpassquelle, sind ${engpass}`);
+  const engpassLaender = d.sources.filter((s) => s.kind === 'shortages').map((s) => s.country);
+  assert.ok(engpassLaender.includes('AT'), 'kein AT-Engpass-Export (BASG)');
+  assert.ok(engpassLaender.includes('US'), 'kein US-Engpass-Export (openFDA)');
 
   // Jede Quelle trägt dieselben Felder. `url` gehört dazu: Nur damit lässt
   // sich prüfen, ob eine Behörde ihren Feed verschoben hat.

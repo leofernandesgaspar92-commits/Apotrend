@@ -139,8 +139,35 @@ test('die Engpass-Quelle ist als strukturierter Export angemeldet, nicht als New
   const at = engpaesse.find((s) => s.country === 'AT');
   assert.ok(at, 'keine AT-Engpassquelle');
   assert.equal(at.id, 'basg_shortages');
-  // Und keine der News-Quellen darf versehentlich als Engpass-Quelle gelten.
-  assert.ok(sourcesByKind('news', {}).every((s) => s.format === 'rss'));
+  // ── Die andere Richtung, praeziser gefasst ───────────────────────────────
+  //  Hier stand: `sourcesByKind('news').every(s => s.format === 'rss')`.
+  //  Das war eine NAEHERUNG der Regel, nicht die Regel. Der Dateikopf von
+  //  sources.js sagt: Engpass-DATENSAETZE nur aus strukturierten Exporten.
+  //  Umgekehrt ist nichts verboten — ein strukturierter Export, der zur
+  //  MELDUNG wird, ist die VORSICHTIGERE Richtung: Er traegt dann keinen
+  //  Statuswert, auf den sich jemand verlaesst.
+  //
+  //  Genau das brauchten die openFDA-Rueckrufe (04.10.2026): Sie lagen als
+  //  Engpassquelle und lieferten „100 Zeilen empfangen, keine verwertbar".
+  //  Sie als Engpass zu REPARIEREN haette 100 Engpassmeldungen erzeugt, die
+  //  es nicht gibt — ein Chargenrueckruf sagt nichts ueber Lieferfaehigkeit.
+  //
+  //  Geprueft wird deshalb die echte Zusicherung: Eine News-Quelle im
+  //  JSON-Format muss ihre Felder BENENNEN. Damit ist ausgeschlossen, was die
+  //  alte Zeile eigentlich verhindern sollte — dass jemand Angaben aus
+  //  Fliesstext schneidet.
+  for (const s of sourcesByKind('news', {})) {
+    assert.ok(['rss', 'json', 'mastodon'].includes(s.format), `${s.id}: unbekanntes Format ${s.format}`);
+    if (s.format === 'json') {
+      assert.ok(s.jsonNews, `${s.id}: JSON-Meldequelle ohne jsonNews-Zuordnung — es wuerde geraten`);
+      assert.ok(s.jsonNews.title, `${s.id}: jsonNews ohne Titelfeld`);
+      assert.ok(s.jsonNews.linkTemplate || s.jsonNews.link,
+        `${s.id}: jsonNews ohne Link — eine Meldung ohne Rueckverweis wird nicht gebaut`);
+    }
+  }
+  // Und keine Engpassquelle traegt eine jsonNews-Zuordnung: Das waere ein
+  // halb umgestellter Eintrag, der auf beiden Wegen halb funktioniert.
+  assert.ok(engpaesse.every((s) => !s.jsonNews), 'Engpassquelle mit jsonNews-Zuordnung');
 });
 
 test('jede neue Quelle lässt sich einzeln abschalten', () => {
