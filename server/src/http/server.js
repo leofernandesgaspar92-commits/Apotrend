@@ -60,6 +60,8 @@ import { assetlinksDokument, assetlinksStatus } from './assetlinks.js';
 import { featureListe, ruhenderBereichFuer } from '../data/features.js';
 import { createCoverageStore, landStatus } from '../services/coverage.js';
 import { suchProtokoll } from '../services/feedDiscovery.js';
+import { createSignalStore, baueSignal } from '../services/signals.js';
+import { extractSignal, aiKonfiguration, KATEGORIEN as SIGNAL_KATEGORIEN } from '../services/aiExtract.js';
 
 // Login-Brute-Force-Schutz: max. 5 Fehlversuche je (IP+E-Mail) in 15 Minuten.
 const loginLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
@@ -94,11 +96,27 @@ const socialRepo = createSocialRepo();
 const social = createSocialService(socialRepo, repo, {
   isModerator: (userId) => { const p = socialRepo.getProfileByUserId(userId); return !!(p && p.is_editorial); },
 });
-// Marktdaten nur beim Frischstart seeden; beim Wiederherstellen kommen sie aus dem Snapshot.
-const shortagesRepo = createShortagesRepo({ seed: !restoring });
+// ── Referenzdaten: standardmaessig AUS ──────────────────────────────────────
+//  Owner-Entscheidung vom 04.10.2026: „Keine Beispieldaten." Die kuratierten
+//  Referenzdaten (Engpaesse, Preise, Rabatte) erscheinen deshalb nicht mehr im
+//  Betrieb. Was kommt, kommt aus echten Quellen — oder es kommt nichts, und
+//  die Ansicht sagt das (services/coverage.js, UI „Live-Verbindung aktiv").
+//
+//  WAS DAS KOSTET, offen gesagt: Preisvergleich und Rabatte haben KEINE
+//  Live-Quelle. Sie sind damit bis zu einer echten Grosshandels-Anbindung
+//  leer. Das ist der Preis fuer die Zusage, dass jede angezeigte Zahl echt
+//  ist — und er ist bewusst bezahlt.
+//
+//  Zurueckschaltbar ohne Deploy: APOPULSE_REFERENCE_DATA=an. Die Daten sind
+//  nicht geloescht, sondern abgeschaltet — dieselbe Linie wie bei den
+//  geparkten Bereichen (data/features.js): Wer loescht, kann sich nicht
+//  korrigieren.
+const referenzDaten = /^(an|on|true)$/i.test(String(process.env.APOPULSE_REFERENCE_DATA || '').trim());
+const seedMarkt = referenzDaten && !restoring;
+const shortagesRepo = createShortagesRepo({ seed: seedMarkt });
 const shortages = createShortagesService(shortagesRepo, social, { hasPremium: (userId) => payments.hasFeature(userId, 'premium') });
-const pricesRepo = createPricesRepo({ seed: !restoring });
-const rabatteRepo = createRabatteRepo({ seed: !restoring });
+const pricesRepo = createPricesRepo({ seed: seedMarkt });
+const rabatteRepo = createRabatteRepo({ seed: seedMarkt });
 // Rabatte in den Preisvergleich einblenden: eine laufende Aktion kann günstiger
 // sein als der beste AEP — das soll der Einkauf an einer Stelle sehen.
 const prices = createPricesService(pricesRepo, social, rabatteRepo);
@@ -394,10 +412,20 @@ const deals = createDealsService({
   },
 });
 
-// Rückfall: Solange weder ein Feed noch eine eigene Aktion vorliegt, wird ein
-// Demobestand angelegt — sichtbar als „simuliert" gekennzeichnet. Sobald etwas
-// Echtes da ist, passiert hier nichts mehr (die Prüfung steckt in der Funktion).
-if (process.env.NODE_ENV !== 'test' && process.env.APOPULSE_DEMO_DEALS !== 'off') {
+// ── Demo-Aktionen: standardmaessig AUS ──────────────────────────────────────
+//  Hier stand ein Rueckfall, der Rabattaktionen ERFAND, sobald keine echten
+//  vorlagen — korrekt als „simuliert" gekennzeichnet, mit „Demo-Grosshandel A"
+//  statt echter Firmennamen. Fuer eine Vorfuehrung war das richtig gedacht.
+//
+//  Seit dem 04.10.2026 gilt „keine Beispieldaten": Was angezeigt wird, ist
+//  echt, oder es wird nichts angezeigt. Ein zweiter Erzeuger neben den
+//  Repo-Seeds haette die Zusage still ausgehoehlt — er lief bisher unabhaengig
+//  davon und war beim Abschalten der Referenzdaten uebersehen worden. Ein Test
+//  (test/reference-data.test.js) prueft jetzt die ANTWORT der Schnittstelle
+//  statt nur die Repo-Einstellung; genau so ist er aufgefallen.
+//
+//  Beide Schalter muessen an sein, damit erfundene Aktionen erscheinen.
+if (referenzDaten && process.env.NODE_ENV !== 'test' && process.env.APOPULSE_DEMO_DEALS !== 'off') {
   seedDemoDealsIfNoneRunning({ rabatteRepo });
 }
 
@@ -499,6 +527,12 @@ async function restoreNewsFromDb({ limit = 200 } = {}) {
 // News-Durchlauf gefuellt und speist die ehrliche Ansage in leeren Laendern.
 const coverage = createCoverageStore();
 
+// Live-Signale: das universelle Modell fuer alle eingehenden Behoerdenmeldungen
+// (services/signals.js). Laeuft NEBEN NewsPost/Shortage, nicht statt ihnen —
+// die bestehenden Ansichten bleiben unberuehrt, waehrend der Signal-Weg
+// waechst.
+const signalStore = createSignalStore();
+
 async function runNewsIngest() {
   const editor = social.getProfile('apopulse');
   if (!editor) return { skipped: true, reason: 'Redaktionskonto fehlt' };
@@ -525,6 +559,33 @@ async function runNewsIngest() {
       // klemmende Datenbank darf ihn nicht verhindern. Der Store fängt selbst
       // ab, das hier ist der zweite Riegel.
       if (db) { try { await db.saveNews(item); } catch { /* Store meldet selbst */ } }
+
+      // ── Live-Signal ──
+      // Bewusst in EIGENEM try: Die KI-Anreicherung ist eine Verbesserung der
+      // Darstellung, nicht die Grundlage der Aussage. Faellt sie aus, steht
+      // der Beitrag trotzdem im Feed — mit Titel, Datum und Quelle, also mit
+      // allem, was fachlich zaehlt.
+      try {
+        const extraktion = await extractSignal(
+          { title: item.title, summary: item.summary, raw: item.summary },
+          { log: (m) => console.warn(m) },
+        );
+        signalStore.upsert(baueSignal({
+          meldung: { ...item, raw: item.summary },
+          // Die Herkunft kommt AUSSCHLIESSLICH von hier — mechanisch aus dem
+          // Abruf, nie aus der KI (services/signals.js, Dateikopf).
+          herkunft: {
+            originalUrl: item.link,
+            sourceName: item.sourceLabel || regulatorOf(item.country) || item.sourceId,
+            sourceId: item.sourceId,
+            country: item.country,
+            kind: 'news',
+          },
+          extraktion,
+        }));
+      } catch (e) {
+        console.warn(`ApoPulse Signal: ${item.sourceId} nicht uebernommen — ${e && e.message}`);
+      }
     },
   });
   // Gemessenen Zustand je Land festhalten — VOR dem Speichern, damit auch ein
@@ -712,6 +773,33 @@ const routes = [
   // anbietet. Ein Reiter, der beim Klick 404 liefert, ist schlimmer als kein
   // Reiter: Er sieht aus wie ein Fehler der Plattform.
   ['GET', /^\/api\/features$/, false, async () => ({ features: featureListe() })],
+
+  // ── Live-Signale ──────────────────────────────────────────────────────────
+  //  Die eine Abfrage, die das Frontend braucht: „Was gibt es fuer MEIN Land,
+  //  in DIESER Kategorie, zu DIESEM Wirkstoff." Genau die drei Spalten, auf
+  //  die der Index in VerifiedSignal gelegt ist.
+  //
+  //  Jede Zeile traegt ihre Herkunft mit: originalUrl und sourceName sind
+  //  Pflichtfelder, ohne sie entsteht gar kein Signal. Das Frontend zeigt sie
+  //  als Abzeichen mit Link — Punkt 4 des Auftrags.
+  ['GET', /^\/api\/signals$/, true, async ({ userId, query }) => {
+    const land = activeCountry(userId, query);
+    const kategorie = String(query.get('category') || '').toUpperCase() || null;
+    const signale = signalStore.list({
+      country: land,
+      category: SIGNAL_KATEGORIEN.includes(kategorie) ? kategorie : null,
+      wirkstoff: query.get('wirkstoff') || null,
+      limit: Number(query.get('limit')) || 100,
+    });
+    // Der Stand gehoert mit in dieselbe Antwort: Das Frontend muss „verbunden,
+    // gerade nichts Neues" von „noch nie etwas bekommen" unterscheiden koennen,
+    // ohne eine zweite Abfrage zu stellen.
+    return {
+      signale,
+      stand: signalStore.landStand(land),
+      ki: aiKonfiguration() ? 'aktiv' : 'aus',
+    };
+  }],
 
   // Liefert dieses Land gerade Daten? Oeffentlich, weil die Ansicht die Antwort
   // BEVOR dem Login braucht — und weil eine leere Liste ohne Erklaerung das
@@ -1587,6 +1675,19 @@ server.listen(PORT, () => {
     // Android-App: nur eine Zeile, und nur wenn jemand sie konfiguriert hat.
     const android = assetlinksStatus();
     if (android) console.log(android);
+    // KI-Anreicherung: eine Zeile, damit niemand raetselt, warum Signale
+    // ohne Wirkstoff ankommen. Ohne Anbieter laeuft alles weiter — nur eben
+    // unangereichert (services/aiExtract.js).
+    console.log(referenzDaten
+      ? 'ApoPulse: Referenzdaten AKTIV (APOPULSE_REFERENCE_DATA) — Engpaesse, Preise und '
+        + 'Rabatte zeigen kuratierte Beispieldaten, erkennbar an „Referenzdaten".'
+      : 'ApoPulse: Referenzdaten aus — es erscheinen nur echte Quellen. Preisvergleich und '
+        + 'Rabatte bleiben leer, solange kein Grosshandel angebunden ist.');
+    const ki = aiKonfiguration();
+    console.log(ki
+      ? `ApoPulse KI: Anreicherung aktiv (${ki.anbieter}, ${ki.modell}).`
+      : 'ApoPulse KI: keine Anreicherung konfiguriert — Meldungen erscheinen mit Titel, '
+        + 'Datum und Quelle, aber ohne Wirkstoff/Schweregrad. Siehe APOPULSE_AI_PROVIDER.');
     for (const zeile of d.warnings) console.warn('⚠️  ' + zeile);
   }
   // ── Zustand und Feed aus der Datenbank holen ────────────────────────────

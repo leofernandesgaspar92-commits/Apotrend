@@ -33,6 +33,14 @@ delete process.env.APOPULSE_DATA_FILE; // In-Memory
 // Dass die Bereiche im NORMALZUSTAND tatsaechlich schweigen, prueft eine
 // eigene Datei: test/features-http.test.js. Beides gehoert zusammen.
 for (const f of featureListe({})) process.env[featureEnvKey(f.id)] = 'an';
+// Referenzdaten AN: Seit dem 04.10.2026 sind sie im Betrieb abgeschaltet
+// („keine Beispieldaten", Owner). Die MECHANIK darueber — Laenderfilter,
+// Antibiotika-Kennzeichnung, Preis-Aktions-Verrechnung — braucht aber Zeilen,
+// an denen sie sich zeigen kann. Ein Filter ohne Daten prueft nichts.
+//
+// Dass der NORMALZUSTAND leer ist, prueft test/reference-data.test.js.
+process.env.APOPULSE_REFERENCE_DATA = 'an';
+
 const BASE = `http://localhost:${PORT}`;
 const H = (t) => ({ 'content-type': 'application/json', ...(t ? { authorization: 'Bearer ' + t } : {}) });
 

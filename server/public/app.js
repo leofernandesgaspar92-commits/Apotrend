@@ -1807,6 +1807,45 @@ async function ladeCoverage(land, art = 'news') {
   return st;
 }
 
+/**
+ * Die Karte für „verbunden, aber gerade nichts Neues".
+ *
+ * Sie ist der Gegenpol zur Störungsmeldung und genauso wichtig: Eine leere
+ * Liste bedeutet bei einer LAUFENDEN Verbindung etwas völlig anderes als bei
+ * einer gestörten. „Keine neuen Warnungen" ist für eine Apotheke eine gute
+ * Nachricht — sie darf nicht aussehen wie ein Ausfall.
+ *
+ * Erscheint NUR, wenn die Quelle nachweislich liefert (`zustand === 'liefert'`).
+ * Wer hier bei stummer Quelle „Live-Verbindung aktiv" schreibt, sagt die
+ * Unwahrheit — und zwar genau an der Stelle, an der jemand darauf vertraut,
+ * dass keine Meldung auch keine Gefahr bedeutet.
+ */
+function liveAktivKarte(status, stand) {
+  if (!status || status.zustand !== 'liefert') return null;
+  const zeit = stand && stand.letzte
+    ? `<div class="muted" style="margin-top:6px;font-size:13px">${esc(ti('live_stand', { zeit: `${dayLabel(stand.letzte)} ${fmtClock(stand.letzte)}`.trim() }))}</div>`
+    : '';
+  return el(`<div class="card">
+    <b style="color:var(--ok-fg)">🟢 ${esc(t('live_ok_title'))}</b>
+    <div class="muted" style="margin-top:6px">${esc(t('live_ok_body'))}</div>${zeit}
+  </div>`);
+}
+
+/**
+ * Herkunfts-Abzeichen: Quellenname plus direkter Link zum Original.
+ *
+ * An JEDER Zeile, ohne Ausnahme. Eine Behördenmeldung ohne Rückverweis ist ein
+ * Gerücht mit Amtsanstrich (CLAUDE.md) — und bei Engpässen wird danach
+ * umbestellt. `rel="noopener"` ist Pflicht, nicht Kosmetik: Ohne das kann die
+ * Zielseite auf das Fenster zugreifen, aus dem sie geöffnet wurde.
+ */
+function quellenAbzeichen(signal) {
+  if (!signal || !signal.originalUrl || !signal.sourceName) return '';
+  return `<a class="small ghost" href="${esc(signal.originalUrl)}" target="_blank" rel="noopener noreferrer"
+    style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;text-decoration:none">
+    🏛️ ${esc(ti('live_quelle', { name: signal.sourceName }))} · ${esc(t('live_zur_quelle'))}</a>`;
+}
+
 /** Erklaerkarte, oder null wenn es nichts zu erklaeren gibt. */
 function coverageKarte(status) {
   // 'liefert' braucht keine Erklaerung: Dann ist die Liste aus einem anderen
@@ -2321,7 +2360,9 @@ function renderShortlist(listBox, bar, all) {
     // auf die Suche nach einem Fehler, den es nicht gibt.
     if (!base.length && !shortageFilter && !q) {
       ladeCoverage(typeof viewCountry === 'function' ? viewCountry() : null, 'shortages').then((st) => {
-        const k = coverageKarte(st);
+        // „Liefert" -> gute Nachricht, „stumm/unbekannt/keine" -> Erklaerung.
+        // Beides sind leere Listen und bedeuten das Gegenteil voneinander.
+        const k = liveAktivKarte(st, null) || coverageKarte(st);
         if (k && listBox.firstChild) listBox.insertBefore(k, listBox.firstChild);
         else if (k) listBox.appendChild(k);
       });

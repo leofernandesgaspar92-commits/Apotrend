@@ -21,6 +21,14 @@ process.env.APOPULSE_ADMIN_PASSWORD = 'redredred123';
 delete process.env.APOPULSE_DATA_FILE;
 // Ausdruecklich KEINE Feature-Variablen setzen: Hier gilt die Voreinstellung.
 for (const f of featureListe({})) delete process.env[featureEnvKey(f.id)];
+// Referenzdaten AN: Seit dem 04.10.2026 sind sie im Betrieb abgeschaltet
+// („keine Beispieldaten", Owner). Die MECHANIK darueber — Laenderfilter,
+// Antibiotika-Kennzeichnung, Preis-Aktions-Verrechnung — braucht aber Zeilen,
+// an denen sie sich zeigen kann. Ein Filter ohne Daten prueft nichts.
+//
+// Dass der NORMALZUSTAND leer ist, prueft test/reference-data.test.js.
+process.env.APOPULSE_REFERENCE_DATA = 'an';
+
 
 const BASE = `http://localhost:${PORT}`;
 

@@ -338,6 +338,49 @@ const BUILTIN = [
     official: true, verified: false,
   },
   {
+    id: 'openfda_recalls', kind: 'shortages', country: 'US', format: 'json',
+    label: 'FDA — Rueckrufe (openFDA Enforcement)',
+    // Rueckrufe sind etwas anderes als Engpaesse, landen aber im selben
+    // strukturierten Weg: benannte Felder, keine Interpretation von
+    // Schlagzeilen. Die KI stuft sie spaeter als RECALL ein; ohne KI gilt die
+    // Art der Quelle, also SHORTAGE — ungenau, aber nicht falsch, und
+    // ausdruecklich besser als geraten.
+    //
+    // Gemeinfrei wie die uebrigen openFDA-Endpunkte, ohne Schluessel nutzbar.
+    // Die Begrenzung auf die letzten Eintraege haelt die Antwort klein.
+    url: 'https://api.fda.gov/drug/enforcement.json?limit=100',
+    official: true, verified: false,
+  },
+  {
+    id: 'ema_shortages', kind: 'news', country: 'EU', format: 'rss',
+    label: 'EMA — Verfuegbarkeit von Humanarzneimitteln',
+    // kind: 'news' und NICHT 'shortages' — das ist der Punkt, und ich hatte es
+    // beim ersten Versuch falsch. Ein Test hat es gefangen.
+    //
+    // Die Regel dieser Datei (siehe Dateikopf) lautet: Engpass-DATENSAETZE
+    // entstehen ausschliesslich aus strukturierten Exporten mit benannten
+    // Spalten, nie aus RSS. Wer eine Schlagzeile zu einem Datensatz mit
+    // Statusfeld macht, erzeugt Zahlen, die aussehen wie geprueft und keine
+    // sind — und eine Apotheke bestellt danach um.
+    //
+    // Die EMA veroeffentlicht
+    // ihre Engpassuebersicht als redaktionelle Seiten, nicht als Schnittstelle
+    // mit Statusspalte. Sie laeuft deshalb als MELDUNG mit Link. Die Einstufung
+    // als SHORTAGE macht die KI auf der Signal-Ebene (VerifiedSignal) — dort
+    // ist sie eine Zuordnung mit Vertrauenswert und Originallink, kein
+    // Datensatz, auf den sich jemand wie auf eine amtliche Statusmeldung
+    // verlaesst. Das ist der Unterschied.
+    //
+    // Nicht abrufbar aus dieser Bauumgebung. Die Selbstfindung sucht ueber die
+    // hinterlegten Seiten, falls die Adresse nicht mehr stimmt.
+    url: 'https://www.ema.europa.eu/en/rss/medicines-shortages.xml',
+    homepage: [
+      'https://www.ema.europa.eu/en/human-regulatory-overview/post-authorisation/medicine-shortages-availability-issues',
+      'https://www.ema.europa.eu/en/news-events/rss-feeds',
+    ],
+    official: true, verified: false,
+  },
+  {
     id: 'basg_shortages', kind: 'shortages', country: 'AT', format: 'json',
     label: 'BASG — Vertriebseinschränkungen',
     url: 'https://vertriebseinschraenkungen.basg.gv.at/api/v1/public/shortages',

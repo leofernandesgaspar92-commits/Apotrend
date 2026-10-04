@@ -225,3 +225,85 @@ model AppSnapshot {
   rawSize   Int      // Rohgröße in Bytes — macht Wachstum sichtbar
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 }
+
+// ===========================================================================
+//  VerifiedSignal — eine Meldung aus einer amtlichen Quelle, strukturiert
+// ===========================================================================
+//  Das universelle Modell für ALLE eingehenden Live-Meldungen, egal ob
+//  Engpass, Rückruf, Regulatorik oder Nachricht. Es löst NewsPost/Shortage
+//  nicht ab, sondern liegt darunter: Dort stand bisher je Datentyp eine eigene
+//  Tabelle, und jede neue Quelle brauchte eine eigene Zuordnung.
+//
+//  ─────────────────────────────────────────────────────────────────────────
+//  DIE REGEL, DIE DIESES MODELL TRÄGT
+//  ─────────────────────────────────────────────────────────────────────────
+//  `originalUrl` und `sourceName` kommen NIEMALS aus der KI. Sie stammen
+//  mechanisch aus dem Abruf: Welche Adresse wurde geholt, welche Quelle steht
+//  dahinter. Eine KI, die eine Quelle „erkennt", erfindet im Zweifel eine
+//  plausible — und dann steht unter einer Engpassmeldung ein Behördenname, der
+//  nie etwas dazu gesagt hat. Bei Engpässen wird danach umbestellt.
+//
+//  Die KI darf: zusammenfassen, übersetzen, Wirkstoff und Schweregrad
+//  vorschlagen. Sie darf NICHT: die Herkunft bestimmen.
+//
+//  `confidenceScore` bezieht sich deshalb ausschließlich auf die KI-Extraktion,
+//  nie auf die Echtheit der Quelle. 0 heißt „keine KI gelaufen" — das ist ein
+//  gültiger Betriebszustand, kein Fehler (siehe services/aiExtract.js).
+// ===========================================================================
+model VerifiedSignal {
+  id            String   @id @default(uuid())
+
+  // Stabile Kennung für die Doppelerkennung: Quelle + Original-Adresse.
+  // Ein erneuter Durchlauf derselben Meldung aktualisiert die Zeile, statt
+  // eine zweite anzulegen — sonst wächst der Feed bei jedem Abruf.
+  dedupeKey     String   @unique
+
+  title         String
+  summary       String?
+
+  // ── Herkunfts-Proof: mechanisch, nie aus der KI ──
+  originalUrl   String
+  sourceName    String
+  sourceId      String?
+
+  country       String   // ISO-3166-1 alpha-2, Großbuchstaben
+  language      String   @default("de")
+  category      String   // SHORTAGE | REGULATORY | RECALL | NEWS
+
+  // ── Von der KI vorgeschlagen (oder null, wenn keine KI lief) ──
+  wirkstoff     String?  // INN
+  handelsname   String?
+  schweregrad   String?  // kritisch | eingeschraenkt | verfuegbar | unbekannt
+  ursache       String?
+  gueltigVon    DateTime? @db.Timestamptz(3)
+  gueltigBis    DateTime? @db.Timestamptz(3)
+
+  // Übersetzte Zusammenfassungen. Fehlt eine Sprache, zeigt das Frontend die
+  // Originalfassung — ausdrücklich keine Platzhalter-Übersetzung.
+  summaryDe     String?
+  summaryEn     String?
+  summaryPt     String?
+
+  // Rohtext der Quelle. Gekürzt gespeichert: Er dient der Nachvollziehbarkeit
+  // („was stand da wirklich"), nicht der Volltextsuche.
+  rawPayload    String?
+
+  // 0.0–1.0, NUR für die KI-Extraktion. 0 = keine KI gelaufen.
+  confidenceScore Float  @default(0)
+
+  // Wann der Abruf diese Meldung gesehen hat — nicht, wann die Behörde sie
+  // veröffentlicht hat (das ist `publishedAt`).
+  verifiedAt    DateTime @default(now()) @db.Timestamptz(3)
+  publishedAt   DateTime? @db.Timestamptz(3)
+  createdAt     DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(3)
+
+  // Die Hauptabfrage des Frontends: „Was gibt es für MEIN Land in DIESER
+  // Kategorie, neueste zuerst." Ein Index auf alle drei Spalten in dieser
+  // Reihenfolge bedient sie vollständig aus dem Index.
+  @@index([country, category, verifiedAt(sort: Desc)])
+  // Zweithäufigste Frage: „Alles zu diesem Wirkstoff" — über Ländergrenzen.
+  @@index([wirkstoff, verifiedAt(sort: Desc)])
+  // Für die Statusanzeige je Land ohne Kategoriefilter.
+  @@index([country, verifiedAt(sort: Desc)])
+}

@@ -29,6 +29,16 @@ async function main() {
   const allesAn = Object.fromEntries(
     featureListe({}).map((f) => [featureEnvKey(f.id), 'an']),
   );
+  // Referenzdaten AN: Seit dem 04.10.2026 sind sie im Betrieb abgeschaltet
+  // („keine Beispieldaten"). Dieser Test prueft aber die MECHANIK — und die
+  // uebergreifende Suche kann ohne eine einzige Preis- oder Rabattzeile nicht
+  // zeigen, dass sie Treffer buendelt. Ein Test ohne Daten prueft nichts.
+  //
+  // Dass der NORMALZUSTAND leer ist, prueft test/reference-data.test.js am
+  // laufenden Server — inklusive der Antwort der Schnittstellen, nicht nur der
+  // Repo-Einstellung. Genau so ist der zweite, uebersehene Erzeuger
+  // (Demo-Aktionen) aufgefallen.
+  allesAn.APOPULSE_REFERENCE_DATA = 'an';
   try { stopServer = await ensureServer(BASE, allesAn); }
   catch (e) { console.error(`❌ ${e.message}`); process.exit(2); }
 
