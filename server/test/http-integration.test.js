@@ -959,3 +959,57 @@ test('GET /api/payments/methods: ohne Anbieter leer, und der Laenderfilter triff
     assert.ok(krypto.coins.length > 0, land + ': keine Krypto-Zahlung mehr');
   }
 });
+
+// ── GET /api/live/status: Telemetrie für alle Quellen ───────────────────────
+//  Diese Ansicht ist die einzige Stelle, an der sichtbar wird, ob die
+//  Automatik läuft und welche Behörde antwortet. Sie ist damit genau so viel
+//  wert wie ihre Vollständigkeit — ein Feld, das irgendwann wegfällt, fällt
+//  sonst erst auf, wenn jemand sie zur Fehlersuche braucht.
+//
+//  Die Quellenzahl wird SELBSTKONSISTENT geprüft (gegen die Quellenliste) UND
+//  gegen eine Untergrenze. Nur das erste wäre wertlos: Fallen zehn Quellen
+//  heraus, passen Liste und Antwort weiter zueinander.
+test('GET /api/live/status: Telemetrie für alle behördlichen Quellen', async () => {
+  const { activeSources } = await import('../src/services/sources.js');
+  const erwartet = activeSources(process.env);
+  const d = await (await fetch(BASE + '/api/live/status')).json();
+
+  assert.equal(d.sources.length, erwartet.length, 'Antwort spiegelt die Quellenliste');
+  assert.ok(d.sources.length >= 22, `mindestens 22 Quellen, sind ${d.sources.length}`);
+  const news = d.sources.filter((s) => s.kind === 'news').length;
+  const engpass = d.sources.filter((s) => s.kind === 'shortages').length;
+  assert.ok(news >= 19, `mindestens 19 Nachrichtenquellen, sind ${news}`);
+  assert.ok(engpass >= 3, `mindestens 3 Engpassquellen, sind ${engpass}`);
+
+  // Jede Quelle trägt dieselben Felder. `url` gehört dazu: Nur damit lässt
+  // sich prüfen, ob eine Behörde ihren Feed verschoben hat.
+  for (const s of d.sources) {
+    for (const feld of ['id', 'kind', 'country', 'format', 'url', 'label']) {
+      assert.ok(s[feld], `Quelle ${s.id || '?'} ohne ${feld}`);
+    }
+    assert.equal(typeof s.official, 'boolean', `${s.id}: official fehlt`);
+    assert.equal(typeof s.configured, 'boolean', `${s.id}: configured fehlt`);
+    assert.equal(typeof s.verified, 'boolean', `${s.id}: verified fehlt`);
+    assert.equal(typeof s.fallbacks, 'number', `${s.id}: fallbacks fehlt`);
+    assert.match(s.country, /^[A-Z]{2}$/, `${s.id}: Land unbrauchbar`);
+  }
+
+  // Länderabdeckung und Selbstfindungs-Protokoll.
+  assert.ok(d.coverage.countries >= 16, 'alle Länder gezählt');
+  assert.ok(Array.isArray(d.coverage.missing), 'fehlende Länder benannt');
+  assert.equal(typeof d.coverage.bySource, 'object');
+  assert.ok(d.discovery, 'Selbstfindungs-Protokoll vorhanden');
+
+  // Live-Signale: ohne diese Zeile ließe sich „Quelle liefert nicht" nicht von
+  // „Signal wird nicht gebaut" unterscheiden.
+  assert.equal(typeof d.signals.im_speicher, 'number');
+  assert.ok(['aktiv', 'aus'].includes(d.signals.ki), 'KI-Zustand benannt');
+  assert.equal(typeof d.signals.je_land, 'object');
+
+  // Ohne DATABASE_URL ist `database: null` — ein gültiger Betriebszustand,
+  // kein Fehler. Dass hier nicht geraten wird, ist der Punkt.
+  assert.ok(d.database === null || typeof d.database === 'object');
+  assert.ok(d.durability, 'Dauerhaftigkeits-Bericht vorhanden');
+  assert.equal(typeof d.news_seen, 'number');
+  assert.ok(d.intervals.news_ms > 0 && d.intervals.shortages_ms > 0);
+});

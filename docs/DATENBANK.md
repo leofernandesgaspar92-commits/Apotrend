@@ -163,6 +163,55 @@ nicht.
 
 ---
 
+## 1b. Live-Signale (`VerifiedSignal`) — seit 04.10.2026 dauerhaft
+
+Die strukturierten Behördenmeldungen lagen bis hierher **ausschließlich im
+Arbeitsspeicher**. Das war schlimmer als bei News und Engpässen, die ihre
+Tabelle haben: Der Snapshot kannte die Signale nicht einmal, `__dump`/`__load`
+des Stores wurde nirgends aufgerufen. Nach jedem Deploy war alles weg — und
+weil die KI-Anreicherung je Meldung genau einmal läuft, kam das Verlorene nur
+gegen erneute Kosten zurück.
+
+**Jetzt zwei Schichten, und die Aufteilung ist der Punkt:**
+
+| Schicht | Rolle | Datei |
+|---|---|---|
+| Arbeitsspeicher | **Lesequelle** — schnell, synchron, immer da | `services/signals.js` |
+| PostgreSQL | **dauerhafte Ablage** — überlebt jeden Deploy, dedupliziert | `repo/prismaStore.js` |
+
+- **Schreiben:** `createSignalStore({ mirror: db })` schreibt jedes Signal
+  durch — ohne `await`, Fehler verschluckt. Eine klemmende Datenbank darf keine
+  Behördenmeldung verschlucken.
+- **Deduplizieren:** `upsert` auf `dedupeKey` = `sourceId:originalUrl`
+  (`@unique` im Schema). Derselbe Hinweis im nächsten Fünf-Minuten-Takt
+  aktualisiert die Zeile, statt eine zweite anzulegen. Bewusst **nicht** der
+  Titel: Behörden ändern Überschriften nach, und die Meldung würde dann als neu
+  gelten.
+- **Lesen beim Start:** `restoreSignalsFromDb()` holt die letzten 500 Signale
+  zurück (`signalStore.uebernehmen`, **ohne** Rückschreiben — die Zeilen kommen
+  gerade von dort).
+
+**Zwei Regeln, die leicht zu übersehen und teuer sind:**
+
+1. **`verifiedAt` ist der ERSTE Fund.** Beim `update` ist das Feld
+   ausdrücklich nicht dabei. Mitzuschreiben hieße: Jede alte Meldung wandert
+   bei jedem Abruf wieder an die Spitze des Feeds, obwohl sich nichts geändert
+   hat. Dieselbe Regel gilt im Speicher — zwei Riegel für eine Regel.
+2. **`null` überschreibt beim Update nichts** (`withoutNulls`). Der Fall:
+   Erster Lauf mit KI erkennt `amoxicillin`, ein späterer Lauf ohne Schlüssel
+   liefert `null`. Ohne diese Regel wäre der erkannte Wirkstoff weg, und
+   niemand hätte es gemerkt.
+
+**Warum nicht nur die Datenbank**, obwohl „fest verbinden" der Auftrag war:
+Dann hätte ein Datenbankausfall den Signal-Feed abgeschaltet — und zwar stumm,
+mit leerer Liste, die wie „keine Warnungen" aussieht. In einer Apotheke ist das
+die teuerste Fehlanzeige, die es gibt.
+
+**Nachsehen:** `GET /api/live/status` nennt unter `signals` die Zahl im
+Speicher, den KI-Zustand und die Verteilung je Land; die dauerhafte Zahl steht
+unter `database.signalRows`. Weichen beide stark voneinander ab, hat der
+Spiegel ein Problem.
+
 ## 2. Die sechs Abweichungen vom Entwurf
 
 Grundlage ist der Entwurf des Owners, unverändert abgelegt unter

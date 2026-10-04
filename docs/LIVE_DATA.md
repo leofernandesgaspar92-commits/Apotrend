@@ -420,6 +420,48 @@ bleiben — bewusst streng, weil Engpassdaten sicherheitsrelevant sind.
 
 `live: true`, sobald die Quelle angeschlossen ist.
 
+## 3b. Live-Warnungen im Frontend (`VerifiedSignalFeed`)
+
+Der Reiter **„⚠️ Live-Warnungen"** (`loadSignals()` in `public/app.js`) zeigt
+dieselben Behördenmeldungen wie der News-Reiter — nur **aufgeschlüsselt**:
+
+| Angabe | Woher |
+|---|---|
+| Titel | Behörde, unverändert |
+| Zusammenfassung | KI-Übersetzung in der Anzeigesprache, sonst das Original |
+| Wirkstoff (INN), Handelsname, Grund, Zeitraum | KI-Extraktion — fehlt, wenn keine KI lief |
+| Herkunfts-Abzeichen mit Direktlink | **mechanisch aus dem Abruf**, nie aus der KI |
+| Land + Flagge | Land der Quelle |
+| Schweregrad | KI, farbcodiert (rot = kritisch) |
+| Vertrauenswert | KI-Extraktion, 0 = keine KI gelaufen |
+
+**Der Länderfilter ist derselbe wie überall:** das globale Land aus dem
+Kopf-Umschalter, als `?country=` an `/api/signals`. Eine eigene Länderauswahl
+in dieser Ansicht wäre ein zweiter Ort für dieselbe Entscheidung — dann steht
+im Kopf „Kenia" und die Liste zeigt Österreich, und niemand weiß, welche gilt.
+Kategorien stehen in Klartext („Lieferengpass", nicht `SHORTAGE`).
+
+**Zum Vertrauenswert:** Er bezieht sich **ausschließlich** darauf, wie gut die
+KI-Angaben im Originaltext belegt sind — nie auf die Echtheit der Quelle. Die
+ist mit Adresse und Behördenname belegt. `0` heißt „keine KI gelaufen" und
+steht so auf der Karte („ohne KI-Anreicherung"), nicht als „0 % sicher": Das
+wäre eine Aussage über den Inhalt statt über die Anreicherung.
+
+**Drei leere Zustände, die bewusst unterschiedlich aussehen:**
+
+1. gefiltert und nichts getroffen → Filter zurücksetzen anbieten
+2. Quelle liefert, nur nichts Neues → gute Nachricht, als solche benannt
+3. Quelle stumm/unbekannt/keine → Störung benennen und die Quelle nennen
+
+**Geprüft wird die Darstellung im Browser** (`tools/loop-browser-audit.mjs`):
+Die Antwort von `/api/signals` wird abgefangen, ein gebautes Signal
+eingespeist, und jede der Angaben oben einzeln auf der Karte nachgewiesen —
+dazu `rel="noopener"` am Herkunfts-Link und dass der Länderwechsel in der
+Abfrage ankommt. Die Prüfwerte sind so gewählt, dass **jeder genau einmal**
+auf der Karte vorkommt; eine erste Fassung war vakuant, weil der Wirkstoff auch
+im Titel stand und der Pruefpunkt beim Entfernen der Wirkstoff-Zeile gruen
+blieb.
+
 ## 4. Preise (zweiter Datentyp, gleiche Logik)
 
 Analog zu Engpässen: Umgebungsvariable `APOPULSE_LIVE_PRICES_<CC>` setzen.

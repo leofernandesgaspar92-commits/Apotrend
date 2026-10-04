@@ -527,6 +527,30 @@ async function restoreNewsFromDb({ limit = 200 } = {}) {
   return { restored, read: rows.length };
 }
 
+/**
+ * Beim Start: Live-Signale aus der Datenbank in den Speicher zurückholen.
+ *
+ * Derselbe Grund wie bei den Meldungen oben, nur schlimmer: Die Signale lagen
+ * AUSSCHLIESSLICH im Arbeitsspeicher und waren nach jedem Deploy weg — der
+ * Snapshot kannte sie nicht einmal. Die KI-Anreicherung läuft je Meldung
+ * genau einmal; was verloren ging, kam nicht wieder, ohne erneut zu zahlen.
+ *
+ * Bewusst über `uebernehmen` statt `upsert`: Die Zeilen kommen gerade aus der
+ * Datenbank. Jede einzeln zurückzuschreiben wären hunderte sinnlose
+ * Schreibvorgänge bei jedem Start.
+ */
+async function restoreSignalsFromDb({ limit = 500 } = {}) {
+  const { ok, rows, error } = await db.listSignals({ limit });
+  if (!ok) return { skipped: true, reason: error || 'Datenbank nicht lesbar' };
+  if (!rows.length) return { restored: 0, reason: 'noch keine Signale gespeichert' };
+  const restored = signalStore.uebernehmen(rows);
+  if (restored > 0) {
+    console.log(`ApoPulse: ${restored} Live-Signal(e) aus der Datenbank geholt `
+      + `(${rows.length} gelesen). Die KI-Anreicherung muss nicht erneut laufen.`);
+  }
+  return { restored, read: rows.length };
+}
+
 // Was tatsaechlich ankommt, je Land (services/coverage.js). Wird nach jedem
 // News-Durchlauf gefuellt und speist die ehrliche Ansage in leeren Laendern.
 const coverage = createCoverageStore();
@@ -535,7 +559,11 @@ const coverage = createCoverageStore();
 // (services/signals.js). Laeuft NEBEN NewsPost/Shortage, nicht statt ihnen —
 // die bestehenden Ansichten bleiben unberuehrt, waehrend der Signal-Weg
 // waechst.
-const signalStore = createSignalStore();
+// `mirror: db` macht aus dem Speicher eine ZWEISCHICHTIGE Ablage: Lesen aus
+// dem Arbeitsspeicher, dauerhaft in PostgreSQL (Deduplizierung ueber
+// dedupeKey). Ohne DATABASE_URL ist `db` null und es bleibt beim Speicher.
+// Begruendung ausfuehrlich in services/signals.js bei createSignalStore.
+const signalStore = createSignalStore({ mirror: db });
 
 async function runNewsIngest() {
   const editor = social.getProfile('apopulse');
@@ -894,6 +922,19 @@ const routes = [
     discovery: suchProtokoll(),
     shortage_feeds: Object.keys(liveSources()),
     news_seen: newsSeen.size(),
+    // Live-Signale: wie viele im Speicher, je Land, und laeuft die KI?
+    //
+    // Gehoert in dieselbe Ansicht wie die Quellen, weil genau hier die Frage
+    // auftaucht: „22 Quellen eingetragen — und wo sind die Signale?" Ohne
+    // diese Zeile liesse sich „Quelle liefert nicht" nicht von „Signal wird
+    // nicht gebaut" unterscheiden. Die DAUERHAFTE Zahl steht unter
+    // `database.signalRows`; weicht sie stark von `im_speicher` ab, hat der
+    // Spiegel ein Problem.
+    signals: {
+      im_speicher: signalStore.size(),
+      ki: aiKonfiguration() ? 'aktiv' : 'aus',
+      je_land: signalStore.jeLand(),
+    },
     intervals: { news_ms: INTERVALS.news, shortages_ms: INTERVALS.shortages },
     // Datenbank-Spiegel: `null` heißt „keine DATABASE_URL gesetzt" — das ist ein
     // gültiger Betriebszustand, kein Fehler. Sonst steht hier, ob er verbunden
@@ -1738,6 +1779,7 @@ server.listen(PORT, () => {
   if (process.env.NODE_ENV !== 'test' && db) {
     restoreStateFromDb()
       .then(() => restoreNewsFromDb())
+      .then(() => restoreSignalsFromDb())
       .catch((e) => {
       console.warn('ApoPulse: Wiederherstellung aus der Datenbank fehlgeschlagen — '
         + ((e && e.message) || e) + '. Die App läuft weiter; der Feed füllt sich '

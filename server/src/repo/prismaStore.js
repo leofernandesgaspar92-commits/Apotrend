@@ -170,7 +170,7 @@ export function createPrismaStore({
   let client = null;
   let state = 'idle'; // idle | ready | disabled
   let disabledReason = null;
-  const counts = { newsUpserts: 0, shortageUpserts: 0, transactionUpserts: 0, snapshotSaves: 0, errors: 0 };
+  const counts = { newsUpserts: 0, shortageUpserts: 0, signalUpserts: 0, transactionUpserts: 0, snapshotSaves: 0, errors: 0 };
 
   function disable(reason) {
     state = 'disabled';
@@ -306,6 +306,99 @@ export function createPrismaStore({
         if (state === 'disabled') break; // Verbindung weg — Rest hat keinen Zweck
       }
       return { ok: state !== 'disabled', written, received: list.length };
+    },
+
+    // ── VerifiedSignal ───────────────────────────────────────────────────────
+    //  Hier ist der Spiegel KEIN Zusatz, sondern die dauerhafte Ablage: Die
+    //  Signale lagen bisher ausschliesslich im Arbeitsspeicher und waren nach
+    //  jedem Deploy weg — anders als News und Engpaesse, die ihre Tabelle
+    //  haben. Nach vier Stunden Sammeln ein leerer Signal-Feed.
+    //
+    //  Was weiterhin gilt: Faellt die Datenbank aus, laeuft der Dienst. Der
+    //  Speicher bleibt die Lesequelle, die Datenbank haelt den Bestand und
+    //  fuellt ihn beim Start zurueck (restoreSignalsFromDb in http/server.js).
+
+    /**
+     * Ein Signal ablegen. Schluessel ist `dedupeKey` (Quelle + Original-Adresse,
+     * `@unique` im Schema) — genau die Deduplizierung, die der Auftrag verlangt:
+     * derselbe Behoerdenhinweis im naechsten Fuenf-Minuten-Takt aktualisiert die
+     * Zeile, statt eine zweite anzulegen.
+     */
+    async saveSignal(signal) {
+      if (!signal || !signal.dedupeKey || !signal.originalUrl || !signal.sourceName) {
+        return { ok: false, skipped: true, reason: 'Herkunft unvollstaendig' };
+      }
+      const data = {
+        title: String(signal.title).slice(0, 500),
+        summary: signal.summary ? String(signal.summary).slice(0, 2000) : null,
+
+        // ── Herkunfts-Proof. Kommt mechanisch aus dem Abruf, NIE aus der KI. ──
+        originalUrl: String(signal.originalUrl),
+        sourceName: String(signal.sourceName),
+        sourceId: signal.sourceId ? String(signal.sourceId) : null,
+
+        country: String(signal.country || '').toUpperCase().slice(0, 2),
+        language: String(signal.language || 'de').slice(0, 8),
+        category: String(signal.category || 'NEWS').toUpperCase(),
+
+        wirkstoff: signal.wirkstoff || null,
+        handelsname: signal.handelsname || null,
+        schweregrad: signal.schweregrad || null,
+        ursache: signal.ursache || null,
+        gueltigVon: toDate(signal.gueltigVon),
+        gueltigBis: toDate(signal.gueltigBis),
+
+        summaryDe: signal.summaryDe || null,
+        summaryEn: signal.summaryEn || null,
+        summaryPt: signal.summaryPt || null,
+        rawPayload: signal.rawPayload || null,
+
+        confidenceScore: Number(signal.confidenceScore) || 0,
+        publishedAt: toDate(signal.publishedAt),
+      };
+      const res = await guarded(`Signal "${data.title.slice(0, 60)}"`, (c) => c.verifiedSignal.upsert({
+        where: { dedupeKey: String(signal.dedupeKey) },
+        // `verifiedAt` ist beim Update ABSICHTLICH nicht dabei: Es ist der
+        // ERSTE Fund. Mitzuschreiben hiesse, dass jede alte Meldung bei jedem
+        // Abruf wieder an die Spitze des Feeds wandert, obwohl sich nichts
+        // geaendert hat. Dieselbe Regel wie im Speicher (services/signals.js).
+        update: withoutNulls(data),
+        create: {
+          ...data,
+          dedupeKey: String(signal.dedupeKey),
+          verifiedAt: toDate(signal.verifiedAt) || new Date(),
+        },
+      }));
+      if (res.ok) counts.signalUpserts = (counts.signalUpserts || 0) + 1;
+      return res;
+    },
+
+    /**
+     * Signale lesen — dieselben Filter wie der Speicher und wie die Indizes.
+     *
+     * `wirkstoff` sucht als Teilzeichenkette ueber Wirkstoff UND Handelsname,
+     * damit „amoxi" sowohl „amoxicillin" als auch „Amoxi-saar" findet. Das
+     * entspricht dem Verhalten von `createSignalStore().list()` — zwei
+     * Lesequellen mit unterschiedlicher Trefferlogik waeren ein Fehler, den
+     * niemand findet, weil beide „funktionieren".
+     */
+    async listSignals({ country = null, category = null, wirkstoff = null, limit = 200 } = {}) {
+      const take = clampLimit(limit, { fallback: 200, max: 500 });
+      const where = {};
+      if (country) where.country = String(country).toUpperCase();
+      if (category) where.category = String(category).toUpperCase();
+      if (wirkstoff) {
+        const q = String(wirkstoff).trim();
+        where.OR = [
+          { wirkstoff: { contains: q, mode: 'insensitive' } },
+          { handelsname: { contains: q, mode: 'insensitive' } },
+        ];
+      }
+      let rows = [];
+      const res = await guarded('Signal-Liste', async (c) => {
+        rows = await c.verifiedSignal.findMany({ where, orderBy: { verifiedAt: 'desc' }, take });
+      });
+      return res.ok ? { ok: true, rows } : { ok: false, rows: [], error: res.error || null, skipped: res.skipped };
     },
 
     /**
@@ -480,6 +573,7 @@ export function createPrismaStore({
       const res = await guarded('Zaehlstand', async (c) => {
         base.newsRows = await c.newsPost.count();
         base.shortageRows = await c.shortage.count();
+        base.signalRows = await c.verifiedSignal.count();
         base.transactionRows = await c.transaction.count();
       });
       if (!res.ok) base.countError = res.error || 'nicht lesbar';

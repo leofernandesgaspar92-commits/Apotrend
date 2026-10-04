@@ -1012,3 +1012,66 @@ neuen Länderfilter nicht verschwinden; ein HTTP-Test prüft das über AT/KE/NG/
 setzen (`server/.env.example` nennt jeden). Bei PayPal **beide** Webhook-Ereignisse
 abonnieren, bei Stripe Klarna im Dashboard aktivieren. Solange nichts hinterlegt ist, zeigt
 die Premium-Seite offen „Karte/PayPal folgt" — kein Knopf, der ins Leere führt.
+
+### Cycle · Live-Signale dauerhaft + Signal-Feed im Frontend (2026-10-04)
+
+**Auftrag des Owners:** VerifiedSignals fest an PostgreSQL binden (mit Dedupe),
+`VerifiedSignalFeed` im Frontend bauen, `/api/live/status` für alle 22 Quellen
+saubere Telemetrie liefern lassen.
+
+**GATHER — zwei Befunde, bevor eine Zeile Code entstand:**
+1. Die Signale lagen **ausschließlich** im Arbeitsspeicher. `collectSnapshot()`
+   kannte sie nicht, `__dump`/`__load` des Stores wurde **nirgends aufgerufen**.
+   Nach jedem Deploy war alles weg — und weil die KI-Anreicherung je Meldung
+   genau einmal läuft, kam das Verlorene nur gegen erneute Kosten zurück.
+2. `/api/signals` existierte und lieferte, aber **keine Ansicht rief es auf**.
+   Der Signal-Weg war vollständig gebaut und für Nutzer:innen unsichtbar.
+
+**ACT.**
+- `repo/prismaStore.js` → `saveSignal` (Upsert auf `dedupeKey` =
+  `sourceId:originalUrl`, `@unique`), `listSignals`, `signalRows`/`signalUpserts`
+  in der Telemetrie.
+- `services/signals.js` → `createSignalStore({ mirror })` schreibt durch;
+  neues `uebernehmen(rows)` für den Start; `jeLand()` für die Diagnose.
+- `http/server.js` → `restoreSignalsFromDb()` in der Startkette; `signals`-Block
+  in `/api/live/status`.
+- `public/app.js` → Reiter **„⚠️ Live-Warnungen"** mit `signalCard()`:
+  Titel, KI-Zusammenfassung in der Anzeigesprache, Wirkstoff (INN),
+  Handelsname, Grund, Zeitraum, Herkunfts-Abzeichen mit Direktlink, Land +
+  Flagge, farbcodierter Schweregrad, Vertrauenswert. Kategorie-Filter in
+  Klartext, Wirkstoff-Suche, Einstieg vom Dashboard. 33 i18n-Schlüssel ×3.
+
+**Die Architektur-Entscheidung, die ich gegen den Wortlaut des Auftrags
+getroffen habe:** „Fest verbinden" heißt hier **nicht** „Datenbank als einzige
+Quelle". Zwei Schichten — Speicher liest, Datenbank hält. Begründung: Ein
+Datenbankausfall hätte sonst den Signal-Feed abgeschaltet, und zwar **stumm**,
+mit leerer Liste, die wie „keine Warnungen" aussieht. In einer Apotheke ist das
+die teuerste Fehlanzeige, die es gibt.
+
+**Ein eigener Fehler, den erst die Gegenprobe gezeigt hat:** Mein neuer
+Browser-Prüfpunkt für die Signal-Karte war **vakuant**. Ich habe die
+Wirkstoff-Zeile aus der Karte entfernt — der Audit blieb grün, weil der
+Prüfwert `amoxicillin` auch im Titel stand („Lieferengpass Amoxicillin 1000
+mg"). Dasselbe für die Kategorie („Lieferengpass"). Zwei Haken, die nichts
+belegten. Behoben durch Prüfwerte, die **genau einmal** auf der Karte
+vorkommen (`pruefomycin`, Titel ohne Wirkstoff und ohne Kategoriewort); danach
+schlagen alle drei Gegenproben an.
+
+**Zweiter Befund derselben Klasse, systematisch behoben:** Die Reiter-Liste im
+Browser-Audit war **hartkodiert** und per deutschem Beschriftungstext geklickt.
+Folge: Ein neuer Reiter wurde nie geprüft (genau das wäre „Live-Warnungen"
+passiert), und in einem englischsprachigen Land trafen die Klicks nichts — die
+Prüfpunkte liefen still ins Leere. Jetzt wird die Leiste **aus dem DOM gelesen**
+und über `data-tab` geklickt, mit Untergrenze als Riegel gegen die leise
+Variante (Gegenprobe: kaputter Selektor → 5 Befunde statt grün).
+
+**CHECK.** 15 neue Tests (`test/signals-persistence.test.js` + Telemetrie-Test
+am HTTP-Layer), Browser-Audit um die Signal-Karte erweitert. Fünf Wächter
+einmal absichtlich gebrochen: `verifiedAt` im Update, `null` überschreibt,
+eingehender statt gespeicherter Stand, `uebernehmen` schreibt zurück,
+Telemetrie-Feld entfernt — jeder schlägt an.
+
+**Offen:** Ein **Gesehen-Stand** je Nutzer:in. Dann wird aus dem Dashboard-Knopf
+eine Kachel „neu seit deinem letzten Besuch" — heute wäre jede Zahl dort
+entweder nicht handlungsleitend oder ein zweiter roter Zähler neben dem
+Engpass-Zähler mit anderer Bedeutung.

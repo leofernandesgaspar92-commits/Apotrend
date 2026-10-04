@@ -780,6 +780,7 @@ async function mainScreen() {
       <button data-tab="public" data-i18n="nav_public">🌍 Öffentlich</button>
       <button data-tab="home" data-i18n="nav_home">🏠 Mein Feed</button>
       <button data-tab="shortages" data-i18n="nav_shortages">📦 Engpässe</button>
+      <button data-tab="signals" data-i18n="nav_signals">⚠️ Live-Warnungen</button>
       <button data-tab="prices" data-i18n="nav_prices">💶 Preise</button>
       <button data-tab="rabatte" data-i18n="nav_rabatte">🏷️ Top-Rabatte</button>
       <button data-tab="exchange" data-i18n="nav_exchange">🔄 Biete/Suche</button>
@@ -1112,10 +1113,20 @@ async function loadOverview() {
     <div class="row" style="flex-wrap:wrap;gap:10px">
       ${tiles.join('')}
     </div>
-    <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px"><button class="ghost small" id="ov_bm">${esc(t('ov_bookmarks'))}</button><button class="ghost small" id="ov_promos">${esc(t('wb_nav'))}</button><button class="ghost small" id="ov_live">${esc(t('lv_nav'))}</button><button class="ghost small" id="ov_dir">${esc(t('dir_nav'))}</button><button class="ghost small" id="ov_team">${esc(t('th_nav'))}</button></div>
+    <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px"><button class="ghost small" id="ov_signals">${esc(t('nav_signals'))}</button><button class="ghost small" id="ov_bm">${esc(t('ov_bookmarks'))}</button><button class="ghost small" id="ov_promos">${esc(t('wb_nav'))}</button><button class="ghost small" id="ov_live">${esc(t('lv_nav'))}</button><button class="ghost small" id="ov_dir">${esc(t('dir_nav'))}</button><button class="ghost small" id="ov_team">${esc(t('th_nav'))}</button></div>
   </div>`);
   head.querySelectorAll('.ovtile[data-go]').forEach(t => { if (t.dataset.go) t.onclick = () => { if (t.dataset.go === 'live') { openLive(); return; } if (t.dataset.filter) shortageFilter = t.dataset.filter; goTab(t.dataset.go); }; });
   head.querySelectorAll('.ovtile').forEach(t => { if (!t.dataset.go) t.onclick = () => document.getElementById('btnNotif').click(); });
+  // Einstieg in die Live-Warnungen vom Dashboard aus.
+  //
+  // Bewusst ein KNOPF und keine Zahlen-Kachel: Eine Kachel braucht eine Zahl,
+  // und die einzige, die hier ehrlich ginge, waere „alle Signale fuer dein
+  // Land" — kein handlungsleitender Wert, der nach zwei Wochen dreistellig
+  // dasteht. Eine Kachel „kritisch" waere ein ZWEITER roter Zaehler neben dem
+  // Engpass-Zaehler mit anderer Bedeutung; konsistente Farb-Semantik ist eine
+  // Owner-Vorgabe. Sobald es einen Gesehen-Stand gibt, wird daraus eine Kachel
+  // mit „neu seit deinem letzten Besuch".
+  head.querySelector('#ov_signals').onclick = () => goTab('signals');
   head.querySelector('#ov_bm').onclick = openBookmarks;
   head.querySelector('#ov_promos').onclick = () => openPromotions();
   head.querySelector('#ov_live').onclick = () => openLive();
@@ -1882,7 +1893,7 @@ function setTabAria() {
 const BASE_TITLE = 'ApoPulse';
 function setDocTitle(section) { document.title = section ? `${section} · ${BASE_TITLE}` : `${BASE_TITLE} — ${t('dt_tagline')}`; }
 // Browsertab-Titel je Reiter (übersetzt, ohne Emoji): Schlüssel, zur Laufzeit via t().
-const TAB_TITLES = { overview:'dt_overview', public:'dt_public', home:'dt_home', shortages:'dt_shortages', prices:'dt_prices', rabatte:'dt_rabatte', exchange:'dt_exchange', news:'dt_news' };
+const TAB_TITLES = { overview:'dt_overview', public:'dt_public', home:'dt_home', shortages:'dt_shortages', prices:'dt_prices', rabatte:'dt_rabatte', exchange:'dt_exchange', signals:'dt_signals', news:'dt_news' };
 
 // Rechtlich gesperrte Reiter fürs Heimatland ausblenden (aus /api/country-config).
 async function applyCountryGating() {
@@ -1929,6 +1940,7 @@ function loadTab() {
   if (tab === 'prices') return loadPrices();
   if (tab === 'rabatte') return loadRabatte();
   if (tab === 'exchange') return loadExchange();
+  if (tab === 'signals') return loadSignals();
   if (tab === 'news') return loadNews();
   loadFeed();
 }
@@ -2103,6 +2115,196 @@ function stopNewsRail() {
   clearInterval(newsRailTimer); newsRailTimer = null; newsRailSeen = null;
   const rail = document.getElementById('newsRail');
   if (rail) { rail.classList.remove('on'); rail.innerHTML = ''; }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  VerifiedSignalFeed — Behördenmeldungen, strukturiert
+// ════════════════════════════════════════════════════════════════════════════
+//  Was diese Ansicht anders macht als der News-Reiter: Dort steht die Meldung,
+//  wie die Behörde sie geschrieben hat. Hier steht, WAS DRIN STEHT —
+//  Wirkstoff, Schweregrad, Grund, Zeitraum, je Land gefiltert.
+//
+//  DIE REGEL, DIE DIESE ANSICHT TRÄGT: Jede Zeile nennt ihre Quelle mit Link
+//  (`quellenAbzeichen`). Ohne `originalUrl` und `sourceName` entsteht serverseitig
+//  gar kein Signal — das ist keine Formalie, sondern der Unterschied zwischen
+//  einer Behördenmeldung und einem Gerücht mit Amtsanstrich.
+//
+//  Und: Der Vertrauenswert gehört an die Zeile, nicht in die Fußnote. 0 heißt
+//  „keine KI gelaufen" und wird als solches benannt, nicht als „0 % sicher"
+//  — das wäre eine Aussage über den Inhalt, nicht über die Anreicherung.
+
+/** Anzeige-Kategorien in Klartext. Reihenfolge = Reihenfolge der Knöpfe. */
+const SIGNAL_KATEGORIEN = ['SHORTAGE', 'RECALL', 'REGULATORY', 'NEWS'];
+
+/** Farbe und Wort zum Schweregrad. `null` = die KI hat nichts dazu gesagt. */
+function signalSchwere(grad) {
+  if (grad === 'kritisch') return { fg: 'var(--crit-fg)', bg: 'var(--crit-bg)', bd: 'var(--crit-bd)', key: 'sig_sev_kritisch' };
+  if (grad === 'eingeschraenkt') return { fg: 'var(--warn-fg)', bg: 'var(--warn-bg)', bd: 'var(--warn-bd)', key: 'sig_sev_eingeschraenkt' };
+  if (grad === 'verfuegbar') return { fg: 'var(--ok-fg)', bg: 'var(--ok-bg)', bd: 'var(--ok-bd)', key: 'sig_sev_verfuegbar' };
+  return null;
+}
+
+/**
+ * Die Zusammenfassung in der Anzeigesprache — sonst das Original.
+ *
+ * Bewusst KEINE Platzhalter-Übersetzung und keine Notlösung über eine andere
+ * Sprache: Wer auf Portugiesisch liest und eine englische Zusammenfassung
+ * bekommt, weiß wenigstens, dass sie englisch ist. Ein maschinell
+ * zusammengerührter Mischtext wäre schlechter.
+ */
+function signalText(s) {
+  const nach = { de: s.summaryDe, en: s.summaryEn, pt: s.summaryPt };
+  return nach[LOCALE] || s.summary || null;
+}
+
+/** Eine Signal-Karte. */
+function signalCard(s) {
+  const land = (COUNTRIES_CACHE || []).find(c => c.code === s.country);
+  const schwere = signalSchwere(s.schweregrad);
+  const kat = SIGNAL_KATEGORIEN.includes(s.category) ? s.category : 'NEWS';
+
+  // Kopfzeile: Land, Art der Meldung, Schweregrad. Drei Angaben, mit denen
+  // sich in einer Liste entscheiden lässt, ob man weiterliest.
+  const kopf = `<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
+    <span style="font-size:1.1em" aria-hidden="true">${esc((land && land.flag) || '🌍')}</span>
+    <span class="muted" style="font-size:13px">${esc((land && land.name) || s.country)}</span>
+    <span style="font-weight:700">${esc(t('sig_kat_' + kat.toLowerCase()))}</span>
+    ${schwere ? `<span style="background:${schwere.bg};color:${schwere.fg};border:1px solid ${schwere.bd};border-radius:999px;padding:2px 10px;font-size:13px;font-weight:700">${esc(t(schwere.key))}</span>` : ''}
+  </div>`;
+
+  const zusammenfassung = signalText(s);
+
+  // Wirkstoff und Handelsname: der eigentliche Gewinn dieser Ansicht. Beides
+  // nur, wenn es da ist — ein leeres Feld „Wirkstoff: —" suggeriert, es gäbe
+  // keinen, obwohl die KI nur nicht gelaufen ist.
+  const zeilen = [];
+  if (s.wirkstoff) zeilen.push([t('sig_wirkstoff'), s.wirkstoff]);
+  if (s.handelsname) zeilen.push([t('sig_handelsname'), s.handelsname]);
+  if (s.ursache) zeilen.push([t('sig_ursache'), s.ursache]);
+  if (s.gueltigVon || s.gueltigBis) {
+    zeilen.push([t('sig_zeitraum'), [s.gueltigVon && dayLabel(s.gueltigVon), s.gueltigBis && dayLabel(s.gueltigBis)].filter(Boolean).join(' – ')]);
+  }
+
+  // Vertrauenswert. Bezieht sich AUSSCHLIESSLICH auf die KI-Extraktion, nie
+  // auf die Echtheit der Quelle — die ist mechanisch belegt. Der Hinweistext
+  // sagt das, damit niemand 60 % als „Meldung vielleicht erfunden" liest.
+  const vertrauen = Number(s.confidenceScore) > 0
+    ? `<span title="${esc(t('sig_conf_hint'))}">${esc(ti('sig_conf', { n: Math.round(Number(s.confidenceScore) * 100) }))}</span>`
+    : `<span title="${esc(t('sig_noai_hint'))}">${esc(t('sig_noai'))}</span>`;
+
+  const card = el(`<div class="card" style="${schwere ? `border-left:4px solid ${schwere.fg}` : ''}">
+    ${kopf}
+    <div style="font-weight:800;margin-top:6px;line-height:1.35">${esc(s.title)}</div>
+    ${zusammenfassung ? `<div style="margin-top:6px;line-height:1.5">${esc(zusammenfassung)}</div>` : ''}
+    ${zeilen.length ? `<div style="margin-top:8px;display:grid;gap:4px;font-size:14px">${
+      zeilen.map(([k, v]) => `<div><span class="muted">${esc(k)}:</span> <b>${esc(v)}</b></div>`).join('')
+    }</div>` : ''}
+    <div>${quellenAbzeichen(s)}</div>
+    <div class="muted" style="margin-top:6px;font-size:12px">${vertrauen}</div>
+  </div>`);
+  return card;
+}
+
+/**
+ * Der Reiter „Live-Warnungen".
+ *
+ * Länderfilter: Das Land kommt aus dem globalen Länder-Umschalter
+ * (`viewCountry()`) und wird als `?country=` mitgeschickt — genau wie bei News
+ * und Engpässen. Eine EIGENE Länderauswahl hier wäre ein zweiter Ort für
+ * dieselbe Entscheidung; dann steht im Kopf „Kenia" und die Liste zeigt
+ * Österreich, und niemand weiß, welche der beiden gilt.
+ */
+async function loadSignals() {
+  const feed = document.getElementById('feed');
+  feed.innerHTML = '<div class="loading">…</div>';
+  const land = viewCountry();
+  await ensureCountries();
+
+  let kategorie = null;
+  let suche = '';
+
+  const kopf = el(`<div class="card">
+    <div class="row" style="gap:8px;flex-wrap:wrap;align-items:baseline">
+      <b style="font-size:1.05em">${esc(t('sig_title'))}</b>
+      <span class="sp" style="flex:1"></span>
+      <span class="muted" data-sigcount style="font-size:13px"></span>
+    </div>
+    <div class="muted" style="margin-top:6px;font-size:14px">${esc(t('sig_sub'))}</div>
+    <div class="row" data-sigkat style="gap:6px;flex-wrap:wrap;margin-top:10px"></div>
+    <div class="row" style="gap:6px;margin-top:8px">
+      <input data-sigq placeholder="${esc(t('sig_q_ph'))}" aria-label="${esc(t('sig_q_ph'))}" style="flex:1;min-width:160px">
+    </div>
+  </div>`);
+
+  const katBox = kopf.querySelector('[data-sigkat]');
+  const zaehler = kopf.querySelector('[data-sigcount]');
+  const liste = el('<div data-siglist></div>');
+
+  // Kategorie-Knöpfe in Klartext („Lieferengpass", nicht „SHORTAGE").
+  // Mindesthöhe 44 px: Trefferfläche nach den Projektvorgaben.
+  const malKnoepfe = () => {
+    katBox.innerHTML = '';
+    const machen = (wert, label) => {
+      const aktiv = kategorie === wert;
+      const b = el(`<button class="${aktiv ? '' : 'ghost '}small" aria-pressed="${aktiv}" style="min-height:40px">${esc(label)}</button>`);
+      b.onclick = () => { kategorie = wert; malKnoepfe(); laden(); };
+      katBox.appendChild(b);
+    };
+    machen(null, t('sig_kat_alle'));
+    for (const k of SIGNAL_KATEGORIEN) machen(k, t('sig_kat_' + k.toLowerCase()));
+  };
+
+  const laden = async () => {
+    liste.innerHTML = '<div class="loading">…</div>';
+    const p = new URLSearchParams({ country: land, limit: '100' });
+    if (kategorie) p.set('category', kategorie);
+    if (suche) p.set('wirkstoff', suche);
+    let d;
+    try { d = await api('GET', '/api/signals?' + p.toString()); }
+    catch (e) { liste.innerHTML = ''; liste.appendChild(errorState(e.message, laden)); return; }
+
+    liste.innerHTML = '';
+    zaehler.textContent = ti('sig_count', { n: d.signale.length });
+
+    if (!d.signale.length) {
+      // Die ehrliche Leermeldung. Drei Fälle, die NICHT gleich aussehen dürfen:
+      //  · gefiltert und nichts getroffen  -> Filter zurücksetzen anbieten
+      //  · Quelle liefert, nichts Neues    -> gute Nachricht, so benennen
+      //  · Quelle stumm/unbekannt/keine    -> Störung benennen, Quelle nennen
+      if (kategorie || suche) {
+        liste.appendChild(filteredEmptyCard('sig_empty_filter', true, () => {
+          kategorie = null; suche = '';
+          const inp = kopf.querySelector('[data-sigq]'); if (inp) inp.value = '';
+          malKnoepfe(); laden();
+        }));
+      } else {
+        const status = await ladeCoverage(land, 'news');
+        const karte = liveAktivKarte(status, d.stand) || coverageKarte(status)
+          || el(`<div class="card"><div class="muted">${esc(t('sig_empty'))}</div></div>`);
+        liste.appendChild(karte);
+      }
+      // Läuft die KI? Ohne sie kommen Meldungen ohne Wirkstoff und Schweregrad
+      // an — die Ansicht funktioniert, zeigt aber weniger. Das offen sagen,
+      // statt es als leeren Inhalt aussehen zu lassen.
+      if (d.ki !== 'aktiv') liste.appendChild(el(`<div class="card muted" style="font-size:13px">${esc(t('sig_ki_aus'))}</div>`));
+      return;
+    }
+    d.signale.forEach(s => liste.appendChild(signalCard(s)));
+    if (d.ki !== 'aktiv') liste.appendChild(el(`<div class="card muted" style="font-size:13px">${esc(t('sig_ki_aus'))}</div>`));
+  };
+
+  let tippTimer = null;
+  kopf.querySelector('[data-sigq]').oninput = (e) => {
+    suche = e.target.value.trim();
+    clearTimeout(tippTimer);
+    tippTimer = setTimeout(laden, 300);
+  };
+
+  feed.innerHTML = '';
+  feed.appendChild(kopf);
+  feed.appendChild(liste);
+  malKnoepfe();
+  await laden();
 }
 
 async function loadNews() {

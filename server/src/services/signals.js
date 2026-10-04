@@ -102,12 +102,45 @@ export function baueSignal({ meldung, herkunft, extraktion = {}, jetzt = () => n
 /**
  * Speicher für Signale.
  *
- * Wie die übrigen Repos ein Seam: in-memory, mit __dump/__load für den
- * Snapshot. Der PostgreSQL-Spiegel hängt daneben (repo/prismaStore.js) und
- * darf ausfallen, ohne dass der Dienst steht.
+ * ZWEI SCHICHTEN, und die Aufteilung ist der Punkt:
+ *
+ *  · Der **Speicher** ist die Lesequelle. Schnell, synchron, immer da.
+ *  · Die **Datenbank** (`mirror`) ist die dauerhafte Ablage. Sie überlebt
+ *    jeden Deploy und dedupliziert über `dedupeKey` (`@unique` im Schema).
+ *
+ * Warum nicht nur die Datenbank, obwohl der Auftrag „fest verbinden" sagt:
+ * Dann hätte ein Datenbankausfall den Signal-Feed abgeschaltet — und zwar
+ * stumm, mit leerer Liste, die wie „keine Warnungen" aussieht. Das ist in
+ * einer Apotheke die teuerste Fehlanzeige, die es gibt. Deshalb schreibt der
+ * Store in beide und liest aus dem Speicher; beim Start füllt
+ * `restoreSignalsFromDb` (http/server.js) den Speicher aus der Datenbank.
+ *
+ * Warum nicht nur der Speicher, wie bisher: Dann waren nach jedem Deploy alle
+ * gesammelten Signale weg. Genau das war der Zustand vor dieser Änderung —
+ * und `__dump/__load` unten wurde nie aufgerufen, der Snapshot kannte die
+ * Signale gar nicht.
+ *
+ * `mirror` ist optional. Ohne `DATABASE_URL` gibt `createPrismaStore()` null
+ * zurück und der Store verhält sich wie vorher.
  */
-export function createSignalStore({ max = 5000 } = {}) {
+export function createSignalStore({ max = 5000, mirror = null } = {}) {
   const signale = new Map(); // dedupeKey -> Signal
+
+  /**
+   * In die Datenbank durchschreiben.
+   *
+   * Ohne `await` und mit verschlucktem Fehler — dieselbe Regel wie im
+   * Zahlungs-Spiegel: Der Abruf darf nicht an der Datenbank hängen. Der
+   * prismaStore protokolliert selbst und schaltet sich bei Verbindungsverlust
+   * ab, statt bei jeder Zeile in denselben Zeitablauf zu laufen.
+   */
+  const durchschreiben = (signal) => {
+    if (!mirror || typeof mirror.saveSignal !== 'function') return;
+    try {
+      const p = mirror.saveSignal(signal);
+      if (p && typeof p.catch === 'function') p.catch(() => { /* prismaStore meldet selbst */ });
+    } catch { /* ein kaputter Spiegel darf keinen Abruf aufhalten */ }
+  };
 
   /** Neueste zuerst. `verifiedAt` ist ISO, damit reicht ein Stringvergleich. */
   const neuesteZuerst = (a, b) => String(b.verifiedAt).localeCompare(String(a.verifiedAt));
@@ -120,9 +153,41 @@ export function createSignalStore({ max = 5000 } = {}) {
       // Beim Aktualisieren den ERSTEN Zeitpunkt behalten: Sonst wandert eine
       // Meldung bei jedem Durchlauf wieder an die Spitze des Feeds, obwohl
       // sich nichts geändert hat.
-      signale.set(signal.dedupeKey, { ...signal, verifiedAt: alt ? alt.verifiedAt : signal.verifiedAt });
+      const gespeichert = { ...signal, verifiedAt: alt ? alt.verifiedAt : signal.verifiedAt };
+      signale.set(signal.dedupeKey, gespeichert);
       while (signale.size > max) signale.delete(signale.keys().next().value);
+      // Den GESPEICHERTEN Stand durchschreiben, nicht den eingehenden: Sonst
+      // trüge die Datenbankzeile beim zweiten Sehen einen neueren Zeitpunkt als
+      // der Speicher, und nach dem nächsten Deploy stünde die Meldung wieder
+      // oben. (Die Datenbank schützt sich zusätzlich selbst, indem sie
+      // `verifiedAt` beim Update auslässt — zwei Riegel für dieselbe Regel.)
+      durchschreiben(gespeichert);
       return neu;
+    },
+
+    /**
+     * Mehrere Signale aus der Datenbank in den Speicher übernehmen.
+     *
+     * Für den Start nach einem Deploy. Bewusst OHNE Durchschreiben: Die Zeilen
+     * kommen gerade von dort. Ein `upsert` je Zeile würde sie alle sofort
+     * zurückschreiben — ein paar hundert sinnlose Schreibvorgänge bei jedem
+     * Start, und bei jedem davon die Gefahr, `verifiedAt` zu verschieben.
+     */
+    uebernehmen(rows) {
+      let zahl = 0;
+      for (const r of (rows || [])) {
+        if (!r || !r.dedupeKey || signale.has(r.dedupeKey)) continue;
+        signale.set(r.dedupeKey, {
+          ...r,
+          // Aus der Datenbank kommen Date-Objekte; der Speicher und die
+          // Sortierung rechnen mit ISO-Zeichenketten.
+          verifiedAt: r.verifiedAt instanceof Date ? r.verifiedAt.toISOString() : String(r.verifiedAt),
+          publishedAt: r.publishedAt instanceof Date ? r.publishedAt.toISOString() : (r.publishedAt || null),
+        });
+        zahl++;
+      }
+      while (signale.size > max) signale.delete(signale.keys().next().value);
+      return zahl;
     },
 
     /**
@@ -154,6 +219,19 @@ export function createSignalStore({ max = 5000 } = {}) {
       if (!eigene.length) return { land: cc, signale: 0, letzte: null };
       const letzte = eigene.sort(neuesteZuerst)[0];
       return { land: cc, signale: eigene.length, letzte: letzte.verifiedAt };
+    },
+
+    /**
+     * Anzahl je Land — für die Diagnose-Ansicht.
+     *
+     * Beantwortet die Frage, die bei 22 eingetragenen Quellen und leerem Feed
+     * zuerst kommt: Kommt für MEIN Land überhaupt etwas an? Ein Land, das hier
+     * fehlt, hat noch kein einziges Signal geliefert.
+     */
+    jeLand() {
+      const out = {};
+      for (const s of signale.values()) out[s.country] = (out[s.country] || 0) + 1;
+      return out;
     },
 
     get: (key) => signale.get(key) || null,
