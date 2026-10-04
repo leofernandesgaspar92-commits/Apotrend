@@ -567,6 +567,81 @@ auf der Karte vorkommt; eine erste Fassung war vakuant, weil der Wirkstoff auch
 im Titel stand und der Pruefpunkt beim Entfernen der Wirkstoff-Zeile gruen
 blieb.
 
+## 3c. Wirkstoff-Alarm: wenn eine Behörde etwas zu *deinem* Wirkstoff meldet
+
+Bis hierher war ApoPulse ein Portal, in das man schauen muss. Die
+Beobachtungsliste gab es, aber sie wurde nur beim Öffnen der Seite
+ausgewertet — eine Rückrufmeldung um 3 Uhr nachts erreichte niemanden.
+
+Jetzt: Kommt ein Live-Signal herein, dessen Wirkstoff jemand beobachtet,
+entsteht eine Benachrichtigung vom Typ `signal_alert` (Kategorie `watch`, also
+abschaltbar). Der Klick führt in die **Live-Warnungen**, auf den Wirkstoff
+gefiltert — nicht auf die Engpass-Seite, denn die Meldung ist kein
+Engpass-Datensatz und wäre dort nicht zu finden.
+
+### Der teuerste Fehler ist nicht ein verpasster Alarm
+
+Es ist **einer zu viel**. Wer dreimal am Tag „Neue Meldung zu Ibuprofen"
+bekommt und jedes Mal eine Pressemitteilung vorfindet, schaltet die Kategorie
+ab — und verpasst dann auch den Chargenrückruf. Ein stummer Melder ist
+schlimmer als gar keiner, weil man sich auf ihn verlässt.
+
+Drei Bremsen, jede mit eigenem Grund:
+
+| Bremse | Regel | Warum |
+|---|---|---|
+| **Wortgrenzen** | `ASS` trifft nicht in `KLASSE`; im Fließtext erst ab 4 Zeichen | häufigste Quelle von Fehlalarmen |
+| **Ein Alarm je Meldung** | Schlüssel `sig:<dedupeKey>` | derselbe Hinweis im nächsten 5-Minuten-Takt meldet nicht erneut |
+| **Ein Alarm je Wirkstoff und Tag** | Schlüssel `sigday:<wirkstoff>:<YYYY-MM-DD>` (UTC) | fünf EMA-Meldungen zu Amoxicillin ergeben einen Hinweis, nicht fünf |
+
+Beide Schlüssel liegen im bereits persistierten Alarm-Gedächtnis
+(`shortagesRepo.alertedDeals`, Teil des Snapshots). Das ist nicht Kosmetik:
+Ohne Persistenz würde **jeder Deploy** jede bekannte Meldung erneut melden — bei
+500 Signalen und zehn beobachteten Wirkstoffen eine Lawine, ausgelöst durch ein
+Deploy. Ein Test stellt den Neustart nach.
+
+### Treffer-Quellen, nach Aussagekraft
+
+1. `signal.wirkstoff` (von der KI extrahiert) — belastbar
+2. `signal.handelsname` — belastbar
+3. `signal.title` — Fließtext, **erst ab 4 Zeichen**
+
+Punkt 3 ist nötig, nicht bequem: Ohne `APOPULSE_AI_API_KEY` ist `wirkstoff`
+**immer** `null`, ein Alarm nur auf dem KI-Feld würde heute nie auslösen. Und er
+ist zulässig, weil der Alarm **keinen Status behauptet** — er sagt „eine Behörde
+hat etwas gemeldet, in dem dein Wirkstoff vorkommt, hier ist der Link". Das ist
+der Unterschied zu einem Engpass-Datensatz: Eine Meldung mit Link ist
+überprüfbar, ein geratener Statuswert nicht.
+
+### Warum Wortgrenzen über Unicode und nicht über `\b`
+
+`\b` ist in JavaScript ASCII-basiert und hält „ä" für ein Trennzeichen. Das
+geht in beide Richtungen schief:
+
+- **Fehlalarm:** `\bIbuprofen\b` trifft in „Ibuprofenähnliche Wirkstoffe".
+- **Verpasster Alarm:** `\bÖstrogen\b` trifft **nie** — am Wortanfang steht
+  kein ASCII-Wortzeichen, an dem die Grenze ansetzen könnte. Wer „Östrogen"
+  beobachtet, hätte nie einen Hinweis bekommen, und niemandem wäre es
+  aufgefallen.
+
+Deshalb `(?<![\p{L}\p{N}])…(?![\p{L}\p{N}])` mit `u`-Flag.
+
+> **Ehrliche Notiz zur Prüfung:** Die erste Fassung des Umlaut-Tests war
+> **vakuant** — der Tausch gegen `\b` ließ alle Tests grün, weil kein Fall
+> einen Umlaut direkt am Treffer hatte. Erst die fehlgeschlagene Gegenprobe hat
+> das gezeigt.
+
+### Land
+
+Eine Meldung erreicht das **Heimatland** der Person (nicht das gerade
+„besuchte" — ein Alarm folgt der eigenen Versorgungslage). EU-weite Meldungen
+(EMA, `country: 'EU'`) gehen an `EU_WEIT_EMPFAENGER` = AT, DE, PT, LI.
+
+Die **Schweiz ist bewusst nicht dabei**: Swissmedic entscheidet eigenständig,
+eine EMA-Meldung ist dort keine Behördenaussage. Sichtbar bleibt sie über den
+Länder-Umschalter — ein unaufgeforderter Alarm aus einer fremden Jurisdiktion
+ist etwas anderes als eine Ansicht, die man selbst öffnet.
+
 ## 4. Preise (zweiter Datentyp, gleiche Logik)
 
 Analog zu Engpässen: Umgebungsvariable `APOPULSE_LIVE_PRICES_<CC>` setzen.

@@ -216,6 +216,26 @@ export function createShortagesRepo({ seed = true, today = null } = {}) {
       for (const [userId, m] of watch) if (m.has(key)) out.push(userId);
       return out;
     },
+    // Alle Beobachtungslisten auf einmal — fuer den Wirkstoff-Alarm zu
+    // Behoerdenmeldungen (services/signalAlerts.js).
+    //
+    // Warum nicht `watchersForText` darunter: Dieses Modul entscheidet selbst,
+    // WIE verglichen wird. `watchersForText` prueft mit `includes`, also ohne
+    // Wortgrenzen — fuer eine kurze Austausch-Bezeichnung tragbar, fuer eine
+    // Behoerdenueberschrift nicht: Ein beobachtetes „ASS" traefe dort in
+    // „KLASSE" und „PASSIERT". Der Alarm bringt seine eigene, strengere Regel
+    // mit, und dafuer braucht er die rohen Listen.
+    //
+    // Gibt den ANZEIGENAMEN zurueck, nicht den Normschluessel: Was die Person
+    // eingetragen hat, steht spaeter in ihrer Benachrichtigung.
+    listWatchers() {
+      const out = [];
+      for (const [userId, m] of watch) {
+        const wirkstoffe = [...m.values()];
+        if (wirkstoffe.length) out.push({ userId, wirkstoffe });
+      }
+      return out;
+    },
     // Beobachter:innen, deren Wirkstoff im Freitext vorkommt (z.B. Austausch-Bezeichnung).
     // Ein Treffer je Nutzer (erster passender Wirkstoff als Label).
     watchersForText(text) {

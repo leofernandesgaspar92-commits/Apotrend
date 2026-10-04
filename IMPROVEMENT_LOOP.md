@@ -1131,3 +1131,62 @@ an.
 die Adressen stimmen, zeigt erst der Lauf auf Render. 20 von 22 Quellen stehen
 weiter auf `verified: false`, und das bleibt so, bis ein echter Abruf sie
 bestätigt.
+
+### Cycle · Wirkstoff-Alarm bei Behördenmeldungen (2026-10-04)
+
+**GATHER.** Die Plattform hatte seit gestern einen Signal-Feed und eine
+Beobachtungsliste — aber keine Verbindung zwischen beidem. Die Liste wurde nur
+beim Öffnen der Seite ausgewertet; eine Rückrufmeldung um 3 Uhr nachts
+erreichte niemanden. Damit war ApoPulse ein Portal, in das man schauen muss,
+und nicht ein System, das sich meldet. Das ist der Unterschied, der entscheidet,
+ob eine Apotheke es täglich nutzt.
+
+**ACT.** Neues `services/signalAlerts.js` (rein, ohne Repo-Zugriff — die
+Entscheidung „wer, warum, warum nicht" ist vollständig testbar), plus
+`listWatchers()` im Engpass-Repo und die Verdrahtung im Aufnahme-Durchlauf.
+Benachrichtigungstyp `signal_alert` in der bestehenden Kategorie `watch`
+(abschaltbar), Klick führt in die Live-Warnungen auf den Wirkstoff gefiltert.
+
+**Die Leitfrage war nicht „wie löse ich aus", sondern „wie löse ich NICHT
+aus".** Der teuerste Fehler hier ist ein Alarm zu viel: Wer dreimal am Tag eine
+Pressemitteilung als Warnung bekommt, schaltet die Kategorie ab — und verpasst
+dann auch den Chargenrückruf. Ein stummer Melder ist schlimmer als gar keiner.
+Drei Bremsen: Wortgrenzen (im Fließtext erst ab 4 Zeichen), ein Alarm je
+Meldung, ein Alarm je Wirkstoff und Tag. Die Dedupe-Schlüssel liegen im bereits
+persistierten Alarm-Gedächtnis — ohne das würde **jeder Deploy** jede bekannte
+Meldung erneut melden.
+
+**Der Befund, auf den ich am meisten halte, kam aus einer FEHLGESCHLAGENEN
+Gegenprobe.** Ich habe die Unicode-Wortgrenze gegen das einfachere `\b`
+getauscht, um zu belegen, dass die Tests den Unterschied merken — und **alle
+blieben grün**. Kein Fall hatte einen Umlaut direkt am Treffer, und genau dort
+liegt der einzige Unterschied: `\b` ist in JavaScript ASCII-basiert und hält
+„ä" für ein Trennzeichen. Zwei echte Fehler steckten dahinter:
+- Fehlalarm: `\bIbuprofen\b` trifft in „Ibuprofenähnliche Wirkstoffe".
+- **Verpasster Alarm:** `\bÖstrogen\b` trifft *nie* — am Wortanfang steht kein
+  ASCII-Wortzeichen, an dem die Grenze ansetzen könnte. Wer „Östrogen"
+  beobachtet, hätte nie einen Hinweis bekommen, und niemandem wäre es
+  aufgefallen.
+Test nachgezogen, Gegenprobe schlägt jetzt an. Das ist der Grund, warum eine
+Gegenprobe kein Ritual ist: Sie hat hier eine vakuante Zusicherung gefunden,
+die ich selbst für belastbar gehalten hatte.
+
+**Eine bewusste Einschränkung:** Der Titel-Treffer ist nötig, nicht bequem —
+ohne `APOPULSE_AI_API_KEY` ist `wirkstoff` immer `null`, ein Alarm nur auf dem
+KI-Feld würde beim Owner heute nie auslösen. Zulässig ist er, weil der Alarm
+**keinen Status behauptet**: „eine Behörde hat etwas gemeldet, in dem dein
+Wirkstoff vorkommt, hier ist der Link". Eine Meldung mit Link ist überprüfbar,
+ein geratener Statuswert nicht.
+
+**Nicht geändert, aber gefunden:** `shortagesRepo.watchersForText()` (für die
+Austausch-Benachrichtigungen) vergleicht mit `includes`, also ohne Wortgrenzen —
+dort trifft ein beobachtetes „ASS" in „KLASSE". Für kurze Produktbezeichnungen
+tragbar, aber dieselbe Fehlerklasse. Nicht in diesem Zyklus angefasst, weil es
+bestehendes Benachrichtigungsverhalten ändert; als nächster Kandidat vermerkt.
+
+**CHECK.** 30 neue Tests (`test/signal-alerts.test.js`), sieben Wächter einmal
+absichtlich gebrochen — davon einer, der zunächst NICHT ansprang (siehe oben).
+
+**Offen:** `watchersForText` auf Wortgrenzen umstellen; Gesehen-Stand für die
+Signal-Ansicht (dann wird aus dem Dashboard-Knopf eine Kachel „neu seit deinem
+letzten Besuch").

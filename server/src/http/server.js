@@ -61,6 +61,7 @@ import { featureListe, ruhenderBereichFuer } from '../data/features.js';
 import { createCoverageStore, landStatus } from '../services/coverage.js';
 import { suchProtokoll } from '../services/feedDiscovery.js';
 import { createSignalStore, baueSignal } from '../services/signals.js';
+import { benachrichtigeZuSignal } from '../services/signalAlerts.js';
 import { extractSignal, aiKonfiguration, KATEGORIEN as SIGNAL_KATEGORIEN } from '../services/aiExtract.js';
 
 // Login-Brute-Force-Schutz: max. 5 Fehlversuche je (IP+E-Mail) in 15 Minuten.
@@ -602,7 +603,7 @@ async function runNewsIngest() {
           { title: item.title, summary: item.summary, raw: item.summary },
           { log: (m) => console.warn(m) },
         );
-        signalStore.upsert(baueSignal({
+        const signal = baueSignal({
           meldung: { ...item, raw: item.summary },
           // Die Herkunft kommt AUSSCHLIESSLICH von hier — mechanisch aus dem
           // Abruf, nie aus der KI (services/signals.js, Dateikopf).
@@ -614,7 +615,31 @@ async function runNewsIngest() {
             kind: 'news',
           },
           extraktion,
-        }));
+        });
+        const neu = signalStore.upsert(signal);
+
+        // ── Wirkstoff-Alarm ────────────────────────────────────────────────
+        //  Nur bei einem NEUEN Signal. Beim erneuten Sehen derselben Meldung
+        //  (jeder Fuenf-Minuten-Takt) darf nicht erneut benachrichtigt werden;
+        //  `upsert` sagt, ob es neu war. Der Schluessel-Dedup im Alarm selbst
+        //  ist der zweite Riegel — aber sich auf ihn allein zu verlassen
+        //  hiesse, bei jedem Takt die ganze Beobachterliste durchzugehen.
+        if (neu) {
+          benachrichtigeZuSignal(signal, {
+            beobachter: shortagesRepo.listWatchers().map((b) => ({
+              ...b,
+              // Heimatland, nicht das gerade „besuchte": Ein Alarm folgt der
+              // eigenen Versorgungslage, nicht einer Durchsicht fremder Laender.
+              country: userCountry(b.userId),
+            })),
+            schonGemeldet: (uid, key) => shortagesRepo.wasDealAlerted(uid, key),
+            merkeGemeldet: (uid, key) => shortagesRepo.markDealAlerted(uid, key),
+            notify: ({ userId, label, refId }) => social.pushNotification({
+              userId, type: 'signal_alert', refType: 'signal', refId, label,
+            }),
+            log: (m) => console.warn(m),
+          });
+        }
       } catch (e) {
         console.warn(`ApoPulse Signal: ${item.sourceId} nicht uebernommen — ${e && e.message}`);
       }

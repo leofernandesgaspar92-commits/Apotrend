@@ -39,6 +39,11 @@ export function createSocialService(social, foundationRepo, options = {}) {
     poll_vote: 'community', answer_accepted: 'community', endorsement: 'community', recommendation: 'community',
     dm: 'dm',
     watch_alert: 'watch', price_alert: 'watch', watch_offer: 'watch', shortage_confirm: 'watch',
+    // Behoerdenmeldung zu einem beobachteten Wirkstoff (services/signalAlerts.js).
+    // Kategorie 'watch' und keine eigene: Wer Beschaffungs-Hinweise abschaltet,
+    // will auch diesen nicht — und eine zwoelfte Kategorie in den Einstellungen
+    // hilft niemandem, der nur „weniger Meldungen" moechte.
+    signal_alert: 'watch',
     exchange_offer: 'watch', exchange_want: 'watch',
     live_start: 'live',
     promo_like: 'promos', promo_comment: 'promos',

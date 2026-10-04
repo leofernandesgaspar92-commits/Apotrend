@@ -2136,6 +2136,16 @@ function stopNewsRail() {
 /** Anzeige-Kategorien in Klartext. Reihenfolge = Reihenfolge der Knöpfe. */
 const SIGNAL_KATEGORIEN = ['SHORTAGE', 'RECALL', 'REGULATORY', 'NEWS'];
 
+/**
+ * Wirkstoff-Vorgabe fuer den naechsten Aufruf der Live-Warnungen.
+ *
+ * Wird vom Klick auf eine Wirkstoff-Benachrichtigung gesetzt und beim Oeffnen
+ * der Ansicht EINMAL verbraucht. Ohne das Zuruecksetzen blieb der Filter beim
+ * naechsten Reiterwechsel stehen — die Nutzerin klickt auf „Live-Warnungen"
+ * und sieht ohne Erklaerung nur einen Wirkstoff.
+ */
+let signalPreset = '';
+
 /** Farbe und Wort zum Schweregrad. `null` = die KI hat nichts dazu gesagt. */
 function signalSchwere(grad) {
   if (grad === 'kritisch') return { fg: 'var(--crit-fg)', bg: 'var(--crit-bg)', bd: 'var(--crit-bd)', key: 'sig_sev_kritisch' };
@@ -2221,7 +2231,8 @@ async function loadSignals() {
   await ensureCountries();
 
   let kategorie = null;
-  let suche = '';
+  let suche = signalPreset || '';
+  signalPreset = ''; // einmalig: siehe Kommentar an der Variable
 
   const kopf = el(`<div class="card">
     <div class="row" style="gap:8px;flex-wrap:wrap;align-items:baseline">
@@ -2232,7 +2243,7 @@ async function loadSignals() {
     <div class="muted" style="margin-top:6px;font-size:14px">${esc(t('sig_sub'))}</div>
     <div class="row" data-sigkat style="gap:6px;flex-wrap:wrap;margin-top:10px"></div>
     <div class="row" style="gap:6px;margin-top:8px">
-      <input data-sigq placeholder="${esc(t('sig_q_ph'))}" aria-label="${esc(t('sig_q_ph'))}" style="flex:1;min-width:160px">
+      <input data-sigq value="${esc(suche)}" placeholder="${esc(t('sig_q_ph'))}" aria-label="${esc(t('sig_q_ph'))}" style="flex:1;min-width:160px">
     </div>
   </div>`);
 
@@ -6876,14 +6887,14 @@ async function refreshNotifCount() {
   } catch {}
 }
 // Engpass-/Beschaffungs-relevante Benachrichtigungstypen (für den Meldungs-Filter).
-const NOTIF_PROCUREMENT = new Set(['watch_alert','shortage_confirm','watch_offer','exchange_offer','exchange_want']);
+const NOTIF_PROCUREMENT = new Set(['watch_alert','shortage_confirm','watch_offer','exchange_offer','exchange_want','signal_alert']);
 let notifFilter = 'all'; // 'all' | 'procurement' | 'social'
 let notifUnreadOnly = false; // Zusatzfilter: nur ungelesene zeigen
 async function showNotifications() {
   setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️' };
   app.innerHTML = '';
   const procCount = d.notifications.filter(n => NOTIF_PROCUREMENT.has(n.type)).length;
   const showFilter = d.notifications.length >= 5 && procCount > 0 && procCount < d.notifications.length;
@@ -6913,7 +6924,9 @@ async function showNotifications() {
   if (!shown.length) { list.innerHTML = `<div class="muted">${esc(t('notif_empty'))}</div>`; return; }
   shown.forEach(n => {
     const who = n.actor ? n.actor.display_name : t('notif_someone');
-    const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert';
+    // Systemmeldungen ohne handelnde Person: Hier hat niemand etwas getan,
+    // eine Behoerde hat gemeldet. „Jemand hat …" waere schlicht falsch.
+    const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert';
     // Profilbild der handelnden Person (wer) + Typ-Emoji (was) — auf einen Blick erkennbar,
     // konsistent zu Feed/Verzeichnis/Suche. Ohne Person (System-Meldung) nur das Emoji.
     const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:var(--ok-bg)'}">
@@ -6934,6 +6947,11 @@ async function showNotifications() {
           const tb=document.querySelector('.tabs button[data-tab="exchange"]'); if(tb) tb.classList.add('active'); loadTab(); });
       }
       else if (n.type === 'watch_alert') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
+      // Der Klick fuehrt in die Live-Warnungen, auf den Wirkstoff gefiltert —
+      // dort steht die Meldung mit Herkunfts-Link. NICHT auf die
+      // Engpass-Seite: Die Meldung ist kein Engpass-Datensatz, und dort waere
+      // sie nicht zu finden.
+      else if (n.type === 'signal_alert') { signalPreset = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=>goTab('signals')); }
       else if (n.type === 'price_alert') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('rabatte')); }
       else if (n.type === 'shortage_confirm') { mainScreen().then(()=>goTab('shortages')); }
       else if (n.type === 'appt_request' || n.type === 'appt_confirmed' || n.type === 'appt_declined' || n.type === 'appt_cancelled') { mainScreen().then(()=>openAppointments()); }
