@@ -148,6 +148,10 @@ const payments = createPaymentsService({
   rates: cryptoRates,
   fx: fxRates, // für die Näherung des Preises in der Landeswährung
   isModerator: (userId) => social.isModerator(userId),
+  // Buchungszeile nach PostgreSQL. `db` ist null ohne DATABASE_URL — dann
+  // laufen Zahlungen wie bisher nur über Repo + Snapshot. Der Spiegel schaltet
+  // NICHTS frei; er schreibt mit (siehe `spiegeln` in services/payments.js).
+  mirror: db,
   onPaid: ({ payment, product }) => { console.log(`✅ Zahlung ${payment.id} bezahlt → Feature „${product.feature}" für User ${payment.user_id} freigeschaltet.`); },
 });
 
@@ -1023,7 +1027,44 @@ const routes = [
 
   // ── Zahlungen / Premium — inaktiv, solange kein Anbieter konfiguriert ist. ──
   ['GET', /^\/api\/payments\/products$/, false, async () => ({ products: listProducts() })],
-  ['GET', /^\/api\/payments\/methods$/, false, async () => ({ methods: payments.configuredMethods() })],
+  // Welche FIAT-Wege stehen hier und jetzt wirklich zur Verfügung?
+  //
+  // Zwei Bedingungen müssen BEIDE erfüllt sein, und sie kommen aus zwei
+  // verschiedenen Ecken: Beim Anbieter konfiguriert (ENV-Schlüssel vorhanden)
+  // UND im Land zulässig (domain/compliance.js). Nur eine von beiden zu prüfen
+  // ergibt in beide Richtungen einen kaputten Checkout: einen Knopf ohne
+  // Anbieter dahinter, oder einen Bezahlweg, den das Land nicht erlaubt.
+  //
+  // Die Krypto-Schiene ist hier NICHT betroffen und kann durch diesen Filter
+  // auch nicht verschwinden: Sie hängt an /api/payments/crypto und an den
+  // hinterlegten Wallets, nicht an `providers`. Ein Test prüft genau das — die
+  // Owner-Vorgabe „Krypto bleibt zu 100 %" darf nicht an einem Länderfilter
+  // für Kartenzahlung hängen.
+  ['GET', /^\/api\/payments\/methods$/, false, async ({ query }) => {
+    const konfiguriert = payments.configuredMethods();
+    const cc = String(query.get('country') || '').toUpperCase();
+    if (!/^[A-Z]{2}$/.test(cc)) return { methods: konfiguriert };
+    let erlaubt;
+    try {
+      erlaubt = paymentMethodsFor(cc, 'saas_license');
+    } catch {
+      // Unbekannter Zweck/Land: lieber die ungefilterte Liste als keine.
+      return { methods: konfiguriert };
+    }
+    const beschriftung = new Map(erlaubt.map((m) => [m.id, m.label]));
+    return {
+      country: cc,
+      methods: konfiguriert
+        .filter((m) => beschriftung.has(m.method))
+        .map((m) => ({ ...m, label: beschriftung.get(m.method) })),
+      // Wege, die das Land zuließe, für die aber kein Anbieter hinterlegt ist.
+      // Offen zu benennen statt zu verschweigen: Nur so sieht der Betreiber im
+      // Status, was ein Schlüssel freischalten würde.
+      pending_setup: erlaubt
+        .filter((m) => m.rail === 'fiat' && !konfiguriert.some((k) => k.method === m.id))
+        .map((m) => m.id),
+    };
+  }],
   ['POST', /^\/api\/payments\/checkout$/, true, async ({ userId, body }) =>
     payments.createCheckout(userId, { productId: body.productId, method: body.method, successUrl: body.successUrl, cancelUrl: body.cancelUrl })],
   ['GET', /^\/api\/me\/premium$/, true, async ({ userId }) => ({ premium: payments.hasFeature(userId, 'premium'), features: payments.myEntitlements(userId) })],

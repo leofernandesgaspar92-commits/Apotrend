@@ -1,6 +1,19 @@
 .DS_Store
 *.zip
 
+# Echte Umgebungsvariablen (Zahlungs-Schluessel, Token-Geheimnis, DB-Zugang).
+# `.env.example` ist davon ausdruecklich NICHT betroffen: Die Vorlage mit
+# Platzhaltern gehoert ins Repo, die Werte nie.
+#
+# Diese Zeilen stehen hier, weil server/.env.example behauptet, `.env` sei
+# ignoriert. Eine Zusicherung in einem Kommentar, die nicht stimmt, ist
+# schlimmer als keine — jemand verlaesst sich darauf und committet seine
+# Stripe-Schluessel.
+.env
+.env.local
+.env.*.local
+!.env.example
+
 # Android-Signaturschluessel gehoert NIE ins Repository: Wer ihn hat, kann
 # Updates fuer die veroeffentlichte App signieren. Es gibt keine Rueckgaengig-
 # machung und keinen Ersatz — ein verlorener oder geleakter Schluessel bedeutet

@@ -56,6 +56,48 @@ const PROVENANCE = new Map([
   ['simulated', 'SIMULATED'],
 ]);
 
+// ── Zahlungen: Anwendungswerte -> Enums im Schema ───────────────────────────
+//  Die Anwendung fuehrt `method` als freien String ('card', 'apple_pay', …),
+//  das Schema als Enum. Die Zuordnung steht hier und NICHT im Zahlungsdienst:
+//  Welche Werte die Datenbank kennt, ist eine Eigenschaft des Spiegels.
+//
+//  Ein unbekannter Wert wird NICHT geraten. `toPaymentMethod` gibt dann null
+//  zurueck und die Zeile wird uebersprungen — eine Zahlung unter falschem
+//  Bezahlweg zu verbuchen waere schlimmer als eine fehlende Spiegelzeile, denn
+//  die Anwendung laeuft ohnehin aus dem Repo.
+const PAYMENT_METHOD = new Map([
+  ['crypto_direct', 'CRYPTO_DIRECT'],
+  ['crypto', 'CRYPTO_HOSTED'],
+  ['card', 'CARD'],
+  ['apple_pay', 'APPLE_PAY'],
+  ['google_pay', 'GOOGLE_PAY'],
+  ['paypal', 'PAYPAL'],
+  ['klarna', 'KLARNA'],
+  ['sepa', 'SEPA'],
+  ['invoice', 'INVOICE'],
+]);
+
+const PAYMENT_PROVIDER = new Map([
+  ['direct', 'DIRECT'],
+  ['coinbase', 'COINBASE'],
+  ['stripe', 'STRIPE'],
+  ['paypal', 'PAYPAL'],
+]);
+
+const PAYMENT_STATUS = new Map([
+  ['pending', 'PENDING'],
+  ['pending_review', 'PENDING_REVIEW'],
+  ['paid', 'PAID'],
+  ['failed', 'FAILED'],
+  ['refunded', 'REFUNDED'],
+]);
+
+const schluessel = (v) => String(v || '').trim().toLowerCase();
+
+export function toPaymentMethod(value) { return PAYMENT_METHOD.get(schluessel(value)) || null; }
+export function toPaymentProvider(value) { return PAYMENT_PROVIDER.get(schluessel(value)) || null; }
+export function toPaymentStatus(value) { return PAYMENT_STATUS.get(schluessel(value)) || null; }
+
 export function toShortageStatus(value) {
   return STATUS.get(String(value || '').trim().toLowerCase()) || 'LIMITED';
 }
@@ -128,7 +170,7 @@ export function createPrismaStore({
   let client = null;
   let state = 'idle'; // idle | ready | disabled
   let disabledReason = null;
-  const counts = { newsUpserts: 0, shortageUpserts: 0, snapshotSaves: 0, errors: 0 };
+  const counts = { newsUpserts: 0, shortageUpserts: 0, transactionUpserts: 0, snapshotSaves: 0, errors: 0 };
 
   function disable(reason) {
     state = 'disabled';
@@ -266,6 +308,62 @@ export function createPrismaStore({
       return { ok: state !== 'disabled', written, received: list.length };
     },
 
+    /**
+     * Eine Zahlung spiegeln.
+     *
+     * Schluessel ist die Zahlungs-ID der Anwendung — derselbe Vorgang in einem
+     * spaeteren Zustand (pending -> paid) aktualisiert die Zeile.
+     *
+     * EHRLICHE EINORDNUNG, wie beim Rest dieses Moduls: Die Freischaltung
+     * haengt NICHT an dieser Tabelle. Sie geschieht im Repo, und der Spiegel
+     * laeuft danach. Faellt die Datenbank aus, bekommt die Apotheke ihr Premium
+     * trotzdem — sie hat ja bezahlt. Was dann fehlt, ist die dauerhafte
+     * Buchungszeile, nicht die Leistung.
+     *
+     * `counts.transactionUpserts` macht im Status sichtbar, ob hier etwas
+     * ankommt. Ohne Zaehler waere „keine Zahlungen" von „Spiegel schreibt
+     * nicht" nicht zu unterscheiden.
+     */
+    async saveTransaction(payment) {
+      if (!payment || !payment.id || !payment.user_id) return { ok: false, skipped: true };
+      const paymentMethod = toPaymentMethod(payment.method);
+      const provider = toPaymentProvider(payment.provider);
+      const status = toPaymentStatus(payment.status);
+      if (!paymentMethod || !provider || !status) {
+        // Lieber eine Luecke als eine falsche Buchung. Laut, damit ein neuer
+        // Bezahlweg beim ersten Mal auffaellt und nicht in Monaten.
+        log.warn?.('ApoPulse DB: Zahlung nicht gespiegelt — unbekannte Werte '
+          + `(method=${payment.method}, provider=${payment.provider}, status=${payment.status}). `
+          + 'Zuordnung in repo/prismaStore.js ergaenzen.');
+        return { ok: false, skipped: true, reason: 'unbekannte Werte' };
+      }
+
+      const data = {
+        userId: String(payment.user_id),
+        productId: String(payment.product_id || 'unbekannt'),
+        feature: payment.feature ? String(payment.feature) : null,
+        amountMinor: Math.max(0, Math.round(Number(payment.amount_cents) || 0)),
+        currency: String(payment.currency || 'EUR').toUpperCase().slice(0, 3),
+        paymentMethod, provider, status,
+        providerRef: payment.provider_ref ? String(payment.provider_ref) : null,
+        paypalOrderId: provider === 'PAYPAL' && payment.provider_ref ? String(payment.provider_ref) : null,
+        coin: payment.coin ? String(payment.coin) : null,
+        walletId: payment.wallet_id ? String(payment.wallet_id) : null,
+        txRef: payment.tx_ref ? String(payment.tx_ref) : null,
+        paidAt: toDate(payment.paid_at),
+      };
+      const res = await guarded(`Zahlung ${payment.id}`, (c) => c.transaction.upsert({
+        where: { id: String(payment.id) },
+        // Beim Update NICHTS mit null ueberschreiben: Eine spaetere
+        // Zustandsmeldung fuehrt nicht zwingend alle Felder mit, und ein
+        // bereits bekannter Transaktionsbeleg darf dabei nicht verloren gehen.
+        update: withoutNulls(data),
+        create: { ...data, id: String(payment.id) },
+      }));
+      if (res.ok) counts.transactionUpserts = (counts.transactionUpserts || 0) + 1;
+      return res;
+    },
+
     // ── Lesen ────────────────────────────────────────────────────────────────
     //  Ab hier ist der Spiegel nicht mehr nur ein Endlager. Der Nutzen liegt
     //  genau nach einem Deploy: Der Arbeitsspeicher ist dann leer, die
@@ -382,6 +480,7 @@ export function createPrismaStore({
       const res = await guarded('Zaehlstand', async (c) => {
         base.newsRows = await c.newsPost.count();
         base.shortageRows = await c.shortage.count();
+        base.transactionRows = await c.transaction.count();
       });
       if (!res.ok) base.countError = res.error || 'nicht lesbar';
       return base;

@@ -4965,6 +4965,62 @@ async function openPremium() {
         esc(ti('pr_local_approx', { local: fmtCurrency(opt.local.amount, opt.local.currency), billed: priceMain }))
       }</div>`));
     }
+    // ── Karte / PayPal / Klarna ───────────────────────────────────────────────
+    //  Steht VOR der Krypto-Zahlung, weil es für die meisten Apotheken der
+    //  erwartete Weg ist: ein Knopf, Weiterleitung zum Anbieter, fertig — ohne
+    //  Transaktions-ID und ohne Wartezeit auf eine manuelle Prüfung.
+    //  Die Krypto-Zahlung bleibt vollständig darunter stehen (Owner-Vorgabe);
+    //  sie ist für die Afrika-Strategie der tragende Weg.
+    //  Die Liste kommt gefiltert vom Server: konfigurierter Anbieter UND im
+    //  Land zulässig. Ist nichts davon da, steht hier nichts — kein Knopf, der
+    //  ins Leere führt.
+    const mt = await api('GET', `/api/payments/methods?country=${encodeURIComponent(viewCountry())}`)
+      .catch(() => ({ methods: [] }));
+    const fiat = (mt.methods || []).filter(m => m.method !== 'crypto');
+    if (fiat.length) {
+      const fbox = el(`<div class="card" style="padding:12px 14px;margin:0 0 14px;border:1px solid var(--line)">
+        <div style="font-weight:700;margin-bottom:2px">${esc(t('pr_fiat_title'))}</div>
+        <div class="muted" style="font-size:13px;margin-bottom:10px">${esc(t('pr_fiat_sub'))}</div>
+        <div class="row" data-fiat style="gap:8px;flex-wrap:wrap"></div>
+        <div data-fiat-msg style="margin-top:8px"></div>
+      </div>`);
+      const btnBox = fbox.querySelector('[data-fiat]');
+      const fmsg = fbox.querySelector('[data-fiat-msg]');
+      fiat.forEach(m => {
+        // Beschriftung aus der Übersetzung; der Server-Text ist nur der
+        // Rückfall für einen Weg, den die Oberfläche noch nicht kennt.
+        // ACHTUNG: `t()` gibt bei fehlendem Schlüssel den SCHLÜSSEL zurück,
+        // nicht undefined — ein `t(k) || m.label` würde also „pm_klarna" auf
+        // den Knopf schreiben statt der Server-Beschriftung. Deshalb der
+        // ausdrückliche Vergleich.
+        const k = 'pm_' + m.method;
+        const uebersetzt = t(k);
+        const lbl = uebersetzt === k ? (m.label || m.method) : uebersetzt;
+        const b = el(`<button data-pm="${esc(m.method)}" style="min-height:44px;font-weight:700">${esc(lbl)}</button>`);
+        b.onclick = async () => {
+          btnBox.querySelectorAll('button').forEach(x => { x.disabled = true; });
+          fmsg.style.color = ''; fmsg.textContent = t('pr_fiat_wait');
+          try {
+            const r = await api('POST', '/api/payments/checkout', {
+              productId: 'premium_monthly', method: m.method,
+              successUrl: location.origin + '/?zahlung=ok',
+              cancelUrl: location.origin + '/?zahlung=abbruch',
+            });
+            if (r && r.redirect_url) { location.href = r.redirect_url; return; }
+            // Kein Weiterleitungsziel: NICHT „läuft" behaupten. Der Vorgang
+            // liegt angelegt beim Anbieter, aber die Kundin kommt nicht hin.
+            throw new Error(t('pr_fiat_nourl'));
+          } catch (e) {
+            fmsg.style.color = 'var(--crit-fg)'; fmsg.textContent = e.message;
+            btnBox.querySelectorAll('button').forEach(x => { x.disabled = false; });
+          }
+        };
+        btnBox.appendChild(b);
+      });
+      body.appendChild(fbox);
+      body.appendChild(el(`<div style="font-weight:700;margin:0 0 6px">${esc(t('pr_pay_crypto'))}</div>`));
+    }
+
     if (!opt.coins.length) { body.appendChild(el(`<div class="muted">${esc(t('pr_none'))}</div>`)); }
     opt.coins.forEach(c => {
       const amountLbl = c.amount_crypto != null ? ti('pr_amount', { n: c.amount_crypto, sym: c.symbol }) : ti('pr_amount_na', { amount: fmtCurrency(opt.amount, opt.currency || 'EUR') });
@@ -4993,9 +5049,10 @@ async function openPremium() {
       body.appendChild(cc);
     });
     body.appendChild(el(`<div class="muted" style="font-size:13px;margin-top:10px">${esc(t('pr_note'))}</div>`));
-    // Karte/PayPal: nur anzeigen, wenn ein Anbieter aktiv ist; sonst Hinweis.
-    const methods = await api('GET', '/api/payments/methods').catch(() => ({ methods: [] }));
-    if (!methods.methods.length) body.appendChild(el(`<div class="muted" style="font-size:13px;margin-top:6px">${esc(t('pr_fiat_soon'))}</div>`));
+    // Kein Fiat-Anbieter konfiguriert: offen sagen, dass Karte/PayPal fehlt,
+    // statt die Zeile stillschweigend weglassen. Wer nach „Kann ich mit Karte
+    // zahlen?" sucht, bekommt hier eine Antwort.
+    if (!fiat.length) body.appendChild(el(`<div class="muted" style="font-size:13px;margin-top:6px">${esc(t('pr_fiat_soon'))}</div>`));
   } catch (e) { body.innerHTML = ''; body.appendChild(errorState(e.message, openPremium)); }
 }
 

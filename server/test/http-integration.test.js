@@ -925,3 +925,37 @@ test('Statische Assets: gzip-Komprimierung + ETag/304-Revalidierung', async () =
   const apiGz = await rawGet('/api/countries', { 'accept-encoding': 'gzip' });
   assert.equal(apiGz.headers['content-encoding'], 'gzip', 'große API-Antwort wird gzip-komprimiert');
 });
+
+// ── GET /api/payments/methods: Anbieter UND Land ────────────────────────────
+//  Der Endpunkt liefert nur Wege, die BEIDES sind: beim Anbieter konfiguriert
+//  und im Land zulaessig. In dieser Testumgebung ist kein Zahlungsanbieter
+//  hinterlegt (keine ENV-Schluessel) — die Liste ist daher leer, und genau das
+//  ist die Zusicherung: ein Knopf ohne Anbieter dahinter erscheint nicht.
+test('GET /api/payments/methods: ohne Anbieter leer, und der Laenderfilter trifft Krypto nicht', async () => {
+  const m = await (await fetch(BASE + '/api/payments/methods')).json();
+  assert.deepEqual(m.methods, [], 'ohne konfigurierten Anbieter kein Fiat-Knopf');
+
+  const mAt = await (await fetch(BASE + '/api/payments/methods?country=AT')).json();
+  assert.equal(mAt.country, 'AT');
+  assert.deepEqual(mAt.methods, []);
+  // Offen benennen, was ein Schluessel freischalten wuerde — statt stumm zu
+  // bleiben. In AT sind das Karte, die Geldboersen, PayPal und Klarna.
+  for (const erwartet of ['card', 'apple_pay', 'google_pay', 'paypal', 'klarna']) {
+    assert.ok(mAt.pending_setup.includes(erwartet), 'pending_setup nennt ' + erwartet + ' nicht');
+  }
+
+  // Unbekanntes/kaputtes Land darf den Endpunkt nicht zum Fehler bringen.
+  const mXx = await (await fetch(BASE + '/api/payments/methods?country=zz')).json();
+  assert.ok(Array.isArray(mXx.methods));
+  const mMuell = await (await fetch(BASE + '/api/payments/methods?country=NICHTSOWAS')).json();
+  assert.ok(Array.isArray(mMuell.methods));
+
+  // DIE ZUSICHERUNG, auf die es ankommt (Owner-Vorgabe „Krypto bleibt zu
+  // 100 %"): Die Krypto-Zahlung haengt an einem ANDEREN Endpunkt und kann
+  // durch diesen Laenderfilter nicht verschwinden — auch nicht in einem Land
+  // ohne jeden Fiat-Weg.
+  for (const land of ['AT', 'KE', 'NG', 'AO', 'ZZ']) {
+    const krypto = await (await fetch(BASE + `/api/payments/crypto?product=premium_monthly&country=${land}`)).json();
+    assert.ok(krypto.coins.length > 0, land + ': keine Krypto-Zahlung mehr');
+  }
+});

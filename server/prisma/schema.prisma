@@ -65,9 +65,115 @@ model User {
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
 
+  // ── Zahlungs-Kundennummern beim Anbieter ──────────────────────────────────
+  //  EHRLICHE EINORDNUNG: Diese zwei Felder sind VORGESEHEN, aber noch nicht
+  //  gefüllt. Die Konten liegen derzeit im In-Memory-Repo und werden über
+  //  AppSnapshot gesichert (siehe dort) — dieses User-Modell wird von der
+  //  laufenden Anwendung nicht geschrieben. Sobald die Konten relational
+  //  liegen, gehören die Kundennummern hierher und nicht in die
+  //  Transaktionszeile: Eine Apotheke hat EINE Kundennummer beim Anbieter und
+  //  beliebig viele Zahlungen.
+  //
+  //  Wer das vorher braucht, findet die Zuordnung in Transaction
+  //  (stripeCustomerId je Zahlung) — doppelt geführt, aber nicht erfunden.
+  stripeCustomerId String? @unique
+  paypalPayerId    String?
+
   posts     Post[]
   discounts Discount[]
   trades    TradeOffer[]
+}
+
+// ===========================================================================
+//  Zahlungen — FIAT neben Krypto
+// ===========================================================================
+//  Bezahlweg, den die Kundin GEWÄHLT hat. Bewusst feiner als „CRYPTO / STRIPE
+//  / PAYPAL": Zwischen Apple Pay und einer eingetippten Kartennummer liegt für
+//  die Auswertung ein Unterschied (Abbruchquote, Gerät), für die Abrechnung
+//  nicht — beides läuft über denselben Acquirer. Wer nur die drei Gruppen
+//  braucht, bekommt sie über `provider`.
+enum PaymentMethod {
+  CRYPTO_DIRECT   // eigene Wallet-Adresse, manuell geprüft
+  CRYPTO_HOSTED   // über einen Krypto-Prozessor (Coinbase Commerce)
+  CARD            // Kredit-/Debitkarte
+  APPLE_PAY       // Karte, von Apple Pay verpackt
+  GOOGLE_PAY      // Karte, von Google Pay verpackt
+  PAYPAL          // PayPal (direkt oder über Stripe — siehe `provider`)
+  KLARNA          // Rechnungskauf / Ratenzahlung
+  SEPA            // SEPA-Lastschrift
+  INVOICE         // Rechnung 30 Tage
+}
+
+// Wer das Geld tatsächlich verarbeitet. Das ist die Achse, die für Gebühren,
+// Buchhaltung und Rückfragen zählt — nicht der Knopf im Checkout.
+enum PaymentProvider {
+  DIRECT     // eigene Wallet, kein Dienstleister
+  COINBASE
+  STRIPE
+  PAYPAL
+}
+
+enum PaymentStatus {
+  PENDING         // angelegt, Kundin noch beim Anbieter
+  PENDING_REVIEW  // Krypto: Transaktions-ID eingereicht, Prüfung offen
+  PAID            // Geld geflossen, Freischaltung erfolgt
+  FAILED
+  REFUNDED
+}
+
+model Transaction {
+  id        String @id @default(uuid())
+
+  // ── KEINE Relation auf User, und das ist kein Versehen ───────────────────
+  //  Die Konten liegen (noch) nicht in diesem Schema, sondern im
+  //  In-Memory-Repo mit AppSnapshot-Sicherung. Ein Fremdschlüssel auf
+  //  `User.id` würde deshalb JEDEN Schreibvorgang ablehnen — die Zeile, auf
+  //  die er zeigt, existiert in Postgres nicht.
+  //
+  //  Lieber eine Kennung ohne Zwang als eine Tabelle, in die nichts
+  //  hineinpasst. Sobald die Konten relational liegen, wird hieraus eine echte
+  //  Relation; der Spaltenname ist deshalb schon der richtige.
+  userId    String
+
+  productId String
+  feature   String?  // welches Recht freigeschaltet wurde ('premium')
+
+  // Betrag in der kleinsten Währungseinheit (Cent). Ganzzahl statt Decimal:
+  // Der Anbieter rechnet selbst in Minor Units, und eine Umrechnung hin und
+  // zurück ist eine Rundungsstelle, die es nicht braucht.
+  amountMinor Int
+  currency    String @default("EUR")
+
+  paymentMethod PaymentMethod
+  provider      PaymentProvider
+  status        PaymentStatus @default(PENDING)
+
+  // Referenz BEIM ANBIETER (Stripe-Session, Coinbase-Charge, PayPal-Bestellung).
+  // Über sie findet der Webhook die Zahlung wieder. @unique: Zweimal dieselbe
+  // Anbieter-Referenz wäre ein Zuordnungsfehler, keine zweite Zahlung.
+  providerRef   String? @unique
+
+  // Anbieterspezifische Kennungen. Getrennte Spalten statt eines JSON-Feldes,
+  // weil nach ihnen gesucht wird, wenn ein Anbieter zurückfragt.
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  paypalOrderId        String?
+  paypalCaptureId      String?   // erst der Einzug ist Geld, nicht die Genehmigung
+
+  // Krypto-Direktzahlung: welche Wallet, welche Transaktion.
+  coin        String?
+  walletId    String?
+  txRef       String?
+
+  paidAt    DateTime? @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+
+  // „Alle Zahlungen dieses Betriebs, neueste zuerst" — die Rechnungsansicht.
+  @@index([userId, createdAt(sort: Desc)])
+  // „Was hängt bei diesem Anbieter offen" — der Blick nach einem Ausfall.
+  @@index([provider, status])
+  @@index([status, createdAt(sort: Desc)])
 }
 
 model NewsPost {

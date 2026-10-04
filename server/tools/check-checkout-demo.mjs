@@ -340,6 +340,28 @@ async function main() {
   check('Body hat eine eigene Fläche (nicht durchsichtig)',
     !/transparent|rgba\(0, 0, 0, 0\)/.test(themes.light.body), themes.light.body);
 
+  // ── Ist die erzeugte Seite noch auf dem Stand der Regeln? ─────────────────
+  //  checkout-demo.html ist ein ERZEUGTES Artefakt: build-checkout-demo.mjs
+  //  bettet domain/compliance.js ein. Wer die Regeln ändert und den Bau
+  //  vergisst, hat eine Demo, die etwas anderes zeigt als die Anwendung tut —
+  //  und genau das ist beim Hinzufügen von Klarna passiert: `verify` war grün,
+  //  die Seite veraltet.
+  //
+  //  Der naheliegende Weg (`build-checkout-demo.mjs --check`) ist hier NICHT
+  //  möglich: Er braucht die Tailwind-CLI aus b2c/node_modules, die in einem
+  //  frischen Klon nicht liegt. `verify` muss überall laufen. Deshalb eine
+  //  Prüfung mit Bordmitteln: Jede Methoden-Kennung, die die Engine kennt,
+  //  muss im erzeugten Text vorkommen.
+  const { FIAT_METHODS, CRYPTO_METHODS } = await import('../src/domain/compliance.js');
+  const seite = html.toString('utf8');
+  const fehlend = [
+    ...Object.keys(FIAT_METHODS),
+    ...CRYPTO_METHODS.map((m) => m.id),
+  ].filter((id) => !seite.includes(`'${id}'`) && !seite.includes(`"${id}"`));
+  check('Demo kennt alle Bezahlwege der Engine (Artefakt nicht veraltet)',
+    fehlend.length === 0,
+    fehlend.length ? `fehlt: ${fehlend.join(', ')} — npm run build:checkout` : `${Object.keys(FIAT_METHODS).length} Fiat + ${CRYPTO_METHODS.length} Krypto`);
+
   check('Weiterhin keine Skriptfehler', errors.length === 0, errors.slice(0, 2).join(' | '));
   if (fontFailures.length > 0) {
     console.log(`  … Hinweis: Google Fonts nicht erreichbar (${fontFailures.length} Aufrufe) — ` +

@@ -120,6 +120,10 @@ const FIAT = {
   // wo es einer mit drei Bedienoberflächen ist, und rechnet Gebühren dreifach.
   apple_pay: { id: 'apple_pay', rail: 'fiat', label: 'Apple Pay', provider: 'stripe', via: 'card', settlementDays: 2 },
   google_pay: { id: 'google_pay', rail: 'fiat', label: 'Google Pay', provider: 'stripe', via: 'card', settlementDays: 2 },
+  // Rechnungskauf/Ratenzahlung über Klarna. Läuft über Stripe als eigener
+  // payment_method_type (nicht über die Kartenschiene) — Klarna prüft die
+  // Bonität selbst und streckt den Betrag vor.
+  klarna: { id: 'klarna', rail: 'fiat', label: 'Klarna (Rechnung / Raten)', provider: 'stripe', settlementDays: 2 },
   sepa: { id: 'sepa', rail: 'fiat', label: 'SEPA-Lastschrift', provider: 'stripe', settlementDays: 5 },
   sepa_credit: { id: 'sepa_credit', rail: 'fiat', label: 'SEPA-Überweisung', provider: 'bank', settlementDays: 2 },
   invoice: { id: 'invoice', rail: 'fiat', label: 'Rechnung (30 Tage)', provider: 'internal', settlementDays: 30 },
@@ -165,6 +169,23 @@ const CARD_WALLETS = Object.freeze(['apple_pay', 'google_pay']);
 export const PAYPAL_COUNTRIES = Object.freeze([
   'AT', 'DE', 'CH', 'LI', 'PT', 'US', 'CA', 'GB', 'AU', 'BR', 'ZA', 'EU',
 ]);
+
+/**
+ * Länder, in denen Klarna angeboten wird.
+ *
+ * ⚠️ Diese Liste ist KÜRZER als die Liste der Länder, in denen Klarna
+ * existiert — und zwar aus einem technischen Grund, nicht aus Vorsicht:
+ *
+ * Klarna rechnet in der Währung des Käuferlandes ab. Ein Klarna-Kauf in der
+ * Schweiz muss in CHF ausgewiesen werden, einer in Großbritannien in GBP.
+ * Unsere Produktpreise (data/products.js) stehen in EUR. Ein Klarna-Knopf in
+ * CH, GB, US, AU oder CA würde im Checkout mit einer Währungs-Fehlermeldung
+ * abbrechen — dort fehlt also nicht Klarna, sondern eine lokale Preisliste.
+ *
+ * Deshalb steht Klarna heute nur in den EUR-Profilen. Sobald es Preise in CHF,
+ * GBP, USD, AUD und CAD gibt, kommen diese Länder hier dazu — nicht vorher.
+ */
+export const KLARNA_COUNTRIES = Object.freeze(['AT', 'DE', 'PT']);
 
 // --- Pflichtfelder im Checkout ----------------------------------------------
 //  `pattern` ist eine Zeichenkette statt eines RegExp-Literals: so lässt sich
@@ -472,6 +493,15 @@ export function paymentMethodsFor(code, purpose = 'saas_license', overrides = {}
   if (PAYPAL_COUNTRIES.includes(p.country) && !ids.includes('paypal')) nachKarte.push('paypal');
   if (ids.includes('card')) {
     for (const w of CARD_WALLETS) if (!ids.includes(w)) nachKarte.push(w);
+  }
+  // Klarna gehört NICHT zu den Geldbörsen: Es ist eine eigene Schiene mit
+  // eigener Länder- UND Währungsbedingung (siehe KLARNA_COUNTRIES). Es steht
+  // hinter den Kartenwegen, weil Rechnungskauf die Ausnahme ist, nicht der
+  // Regelfall — und nur beim Abo/Guthaben, nicht bei einer Warenbestellung:
+  // Für Arzneimittel-Bestellungen eine Ratenzahlung anzubieten wäre eine
+  // Finanzierungszusage, die diese Plattform nicht gibt.
+  if (KLARNA_COUNTRIES.includes(p.country) && purpose !== 'marketplace_order' && !ids.includes('klarna')) {
+    nachKarte.push('klarna');
   }
   if (nachKarte.length) {
     // Ohne Karte im Profil (kommt heute nicht vor, ist aber möglich) wandert

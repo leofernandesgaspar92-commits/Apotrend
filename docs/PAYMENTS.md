@@ -72,10 +72,17 @@ die neuen Bezahlwege verdrängen dort nichts.
    ```
    STRIPE_SECRET_KEY=sk_live_…
    STRIPE_WEBHOOK_SECRET=whsec_…
+   PAYPAL_CLIENT_ID=…
+   PAYPAL_CLIENT_SECRET=…
+   PAYPAL_WEBHOOK_ID=…
+   PAYPAL_MODE=live
    COINBASE_COMMERCE_API_KEY=…
    COINBASE_COMMERCE_WEBHOOK_SECRET=…
    ```
+   Vollständige, kommentierte Vorlage: **`server/.env.example`**.
    Ohne diese bleibt alles inaktiv (leere Methodenliste, keine Checkouts).
+   Ein Anbieter ist nur mit **allen** seinen Schlüsseln aktiv — halb
+   konfiguriert heißt: wird gar nicht angeboten.
 5. **Webhooks registrieren** (siehe §5).
 
 ## 3. API-Endpunkte
@@ -83,7 +90,7 @@ die neuen Bezahlwege verdrängen dort nichts.
 | Methode & Pfad | Auth | Zweck |
 |----------------|------|-------|
 | `GET /api/payments/products` | – | Produktkatalog (EUR-Preise) |
-| `GET /api/payments/methods` | – | verfügbare Methoden (leer ohne Anbieter) |
+| `GET /api/payments/methods` | – | verfügbare Methoden (leer ohne Anbieter). Mit `?country=XX` **gefiltert**: konfigurierter Anbieter **und** im Land zulässig. `pending_setup` nennt zusätzlich die Wege, die das Land zuließe, für die aber kein Schlüssel hinterlegt ist |
 | `POST /api/payments/checkout` | ✅ | gehosteten Checkout anlegen → `{ payment_id, redirect_url }`; Client leitet auf `redirect_url` weiter |
 | `GET /api/me/premium` | ✅ | `{ premium: bool, features: [...] }` |
 | `POST /api/payments/webhook/:provider` | Signatur | Anbieter meldet „bezahlt" → Feature wird freigeschaltet (idempotent) |
@@ -106,6 +113,12 @@ Kurs-Code, keine eigene Chain-Prüfung.
 `https://DEINE-DOMAIN/api/payments/webhook/stripe`, Event `checkout.session.completed`.
 Das „Signing secret" ist `STRIPE_WEBHOOK_SECRET`. Der Adapter prüft die `Stripe-Signature`
 (HMAC-SHA256 über `t.payload`) mit Node-`crypto` — kein SDK.
+
+**PayPal:** Developer Dashboard → Apps & Credentials → App → Webhooks →
+Endpoint `https://DEINE-DOMAIN/api/payments/webhook/paypal`. Die **ID** des
+Endpunkts ist `PAYPAL_WEBHOOK_ID` (nicht ein Secret — PayPal arbeitet nicht mit
+gemeinsamem Geheimnis, siehe §6b). Zu abonnieren sind **beide** Ereignisse:
+`CHECKOUT.ORDER.APPROVED` **und** `PAYMENT.CAPTURE.COMPLETED`.
 
 **Coinbase Commerce:** Settings → Webhook subscriptions → Endpoint
 `https://DEINE-DOMAIN/api/payments/webhook/coinbase`. Das „Shared secret" ist
@@ -144,6 +157,106 @@ an die **eigenen** öffentlichen Empfangsadressen des Betreibers.
   Feature frei. Damit gibt es einen sauberen Datensatz und eine bewusste Freigabe.
 - **Wichtig:** Auch der Direkt-Weg entbindet nicht von **Steuer/Buchführung** (Krypto-Eingänge
   sind zu erfassen) und ggf. gewerbe-/aufsichtsrechtlichen Pflichten.
+
+## 6b. PayPal direkt und Klarna (FIAT-Ausbau, 04.10.2026)
+
+Bis hierher lief PayPal als Zahlungsart **innerhalb** von Stripe. Das
+funktioniert, setzt aber ein Stripe-Konto voraus, kostet mehr Gebühr — und
+Stripe ist in mehreren Zielmärkten der Afrika-Strategie (NG, KE, GH, AO, MZ)
+nicht oder nur eingeschränkt verfügbar. Deshalb gibt es jetzt eine **direkte**
+PayPal-Anbindung.
+
+**Ein Bezahlweg, ein Knopf.** Beide Anbieter melden dieselbe Methoden-Kennung
+`paypal`. Welcher zum Zug kommt, entscheidet `PROVIDER_VORRANG` in
+`services/payments.js`: **direkt vor Stripe**. Ohne PayPal-Zugangsdaten bedient
+Stripe `paypal` weiterhin. `configuredMethods()` liefert je Methode genau einen
+Eintrag — zwei PayPal-Knöpfe im Checkout wären für die Kundin ein
+offensichtlicher Fehler, obwohl technisch beide stimmen.
+
+### Die zwei Stellen, an denen PayPal-Anbindungen Geld verlieren
+
+**1. „Genehmigt" ist nicht „bezahlt".** `CHECKOUT.ORDER.APPROVED` heißt: Die
+Kundin hat erlaubt, dass belastet wird. Das Geld bewegt sich erst beim
+**Einzug** (`/v2/checkout/orders/{id}/capture`). Wer das Ereignis als „bezahlt"
+liest, verschenkt Premium. Der Adapter gibt deshalb `{ type: 'approved' }`
+zurück, `handleWebhook` zieht daraufhin ein, und **nur ein abgeschlossener
+Einzug** schaltet frei. `PENDING` (PayPal prüft noch) schaltet nichts frei; die
+Freischaltung folgt dann über `PAYMENT.CAPTURE.COMPLETED`.
+
+Deshalb sind **beide** Ereignisse im PayPal-Dashboard zu abonnieren.
+
+**2. Die Signaturprüfung ist nicht optional.** Stripe und Coinbase signieren
+mit einem gemeinsamen Geheimnis — eine lokale HMAC-Rechnung. PayPal macht das
+**nicht**: Die Echtheit muss per Rückfrage bei PayPal bestätigt werden
+(`/v1/notifications/verify-webhook-signature`). Genau das wird häufig
+weggelassen, weil es umständlich ist und ohne Prüfung „auch funktioniert" —
+dann kann jeder, der die Adresse kennt, ein „Zahlung abgeschlossen" schicken.
+
+Der Adapter prüft immer und **fällt geschlossen aus**: fehlende Kopfzeile,
+kein `SUCCESS`, Netzfehler bei der Rückfrage → ungültig. Ohne
+`PAYPAL_WEBHOOK_ID` wird PayPal gar nicht erst als Anbieter registriert.
+
+**Die Belastung findet die richtige Zahlung.** Bei
+`PAYMENT.CAPTURE.COMPLETED` ist `resource.id` die **Capture**-ID, nicht unsere
+Referenz — sie trifft keine Zahlung. Verwendet wird
+`supplementary_data.related_ids.order_id`, ersatzweise unsere eigene
+Zahlungs-ID aus `custom_id` (die wir beim Anlegen der Bestellung mitgeben).
+Beim zweiten Weg wird der **Anbieter mitgeprüft**, damit eine fremde Kennung
+nicht die Zahlung eines anderen Anbieters trifft.
+
+Jede dieser Regeln steht als Test in `server/test/payments-fiat.test.js` und
+wurde einmal absichtlich gebrochen, um zu belegen, dass der Test anschlägt.
+
+### Klarna
+
+Klarna läuft über Stripe als eigener `payment_method_type` (nicht über die
+Kartenschiene) und steht in `KLARNA_COUNTRIES` — heute **nur AT, DE, PT**.
+
+Das ist kürzer als die Liste der Länder, in denen Klarna existiert, und zwar
+aus einem technischen Grund: **Klarna rechnet in der Währung des Käuferlandes
+ab.** Unsere Preise stehen in EUR. Ein Klarna-Knopf in CH, GB, US, AU oder CA
+würde im Checkout mit einer Währungs-Fehlermeldung abbrechen — dort fehlt also
+nicht Klarna, sondern eine lokale Preisliste. Ein Test prüft, dass jedes
+Klarna-Land ein EUR-Profil hat.
+
+Klarna wird außerdem **nicht** für Warenbestellungen angeboten: Für
+Arzneimittel eine Ratenzahlung anzubieten wäre eine Finanzierungszusage, die
+diese Plattform nicht gibt.
+
+Im Stripe-Dashboard muss Klarna unter „Payment methods" aktiviert sein, sonst
+lehnt Stripe die Sitzung ab.
+
+### Buchungszeile in PostgreSQL
+
+Neu: `model Transaction` (Migration `20261004170000_fiat_payments`) mit
+`paymentMethod`, `provider`, `status`, `providerRef`, `paypalOrderId`,
+`paypalCaptureId`, `stripeCustomerId`, `stripeSubscriptionId`.
+
+**Ehrliche Einordnung:** Die Freischaltung hängt **nicht** an dieser Tabelle.
+Sie geschieht im Repo, der Spiegel (`prismaStore.saveTransaction`) läuft
+danach — ohne `await`, mit verschlucktem Fehler. Fällt die Datenbank aus,
+bekommt die Apotheke ihr Premium trotzdem; was fehlt, ist die Buchungszeile,
+nicht die Leistung.
+
+Zwei weitere Punkte, die zum Modell gehören:
+- **Kein Fremdschlüssel auf `User`.** Die Konten liegen noch nicht relational
+  (In-Memory-Repo + `AppSnapshot`). Ein FK würde jeden Schreibvorgang ablehnen.
+- **`User.stripeCustomerId` / `User.paypalPayerId` sind vorgesehen, aber leer.**
+  Dieses `User`-Modell wird von der laufenden Anwendung nicht geschrieben.
+  Sobald die Konten relational liegen, gehören die Kundennummern dorthin.
+
+Ein unbekannter Methoden- oder Anbieterwert wird **nicht geraten**: Die
+Spiegelzeile entfällt mit einer Warnung im Log. Eine Zahlung unter falschem
+Bezahlweg zu verbuchen wäre schlimmer als eine Lücke.
+
+### Abweichungen vom Auftrag (bewusst)
+
+| Auftrag | Umsetzung | Grund |
+|---|---|---|
+| `npm install stripe` / PayPal-SDK | **keines**, beide über REST | Der Server läuft auf Node-Bordmitteln plus `@prisma/client`. Jede Abhängigkeit im Zahlungspfad ist eine Stelle, über die fremder Code an Zahlungsdaten käme. Beide Anbieter haben eine dokumentierte REST-Schnittstelle; der Stripe-Adapter nutzt sie seit jeher. |
+| `VITE_STRIPE_PUBLIC_KEY`, Stripe.js im Browser | **nicht gesetzt**, kein Publishable Key | Es gibt hier kein Vite (klassische Skripte, kein Build-Schritt) — und der Checkout ist **gehostet**: Der Browser wird auf `checkout.stripe.com` weitergeleitet, Stripe.js läuft bei uns gar nicht. Ein Publishable Key wäre eine Variable, die nichts liest; ein fremdes Skript auf der Bezahlseite wäre Angriffsfläche ohne Gegenwert. |
+| `npm run build` | **`npm run verify`** | Dieses Projekt hat keinen Build-Schritt. `verify` ist das Tor: Tests, Store-Texte, Smoke, Browser-Audit, Checkout-Demo, Audit. |
+| `paymentMethod` als `'CRYPTO' \| 'STRIPE' \| 'PAYPAL'` | zwei Spalten: `paymentMethod` (was die Kundin wählte) + `provider` (wer abrechnet) | Zusammengelegt verliert man die Unterscheidung. `PAYPAL` als Methode kann über `STRIPE` als Anbieter laufen — und für Gebühren und Buchhaltung zählt der Anbieter, für die Auswertung der Knopf. |
 
 ## 7. Bewusst NICHT gebaut (und warum)
 

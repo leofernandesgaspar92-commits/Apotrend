@@ -946,3 +946,69 @@ einmal abgerufen), 14 Browser-Prüfungen über vier Währungen; volle Kette grü
 **Offen für den Owner:** Ob Premium echte lokale Festpreise bekommen soll (statt Umrechnung).
 `data/plans.js` zeigt die Bauart bereits — es wäre eine Preisliste je Währung, also eine
 kaufmännische Entscheidung, keine technische.
+
+### Cycle · FIAT-Zahlungen: PayPal direkt, Klarna, Buchungszeile (2026-10-04)
+
+**Auftrag des Owners:** Karte, Apple Pay, Google Pay, Klarna und PayPal **zusätzlich**
+zur bestehenden Krypto-Zahlung.
+
+**GATHER.** Erst nachgesehen, was schon da ist — und Stripe war es: Karte, Geldbörsen
+und PayPal **über** Stripe, mit HMAC-Webhook-Prüfung. Wirklich gefehlt haben:
+PayPal **direkt**, Klarna, eine Buchungszeile in PostgreSQL, eine `.env.example` und
+eine Oberfläche, über die man überhaupt mit Karte zahlen kann. Letzteres war der
+größte Befund: Der Server konnte es, die Premium-Seite bot nur Krypto an.
+
+**ACT.**
+- `services/payments.js` → `createPayPalAdapter` (REST, **kein SDK**), `PROVIDER_VORRANG`
+  (direkt vor Stripe bei `paypal`), `configuredMethods()` liefert je Methode genau einen
+  Eintrag, `handleWebhook` kennt den Zustand `approved`.
+- `domain/compliance.js` → `klarna` + `KLARNA_COUNTRIES` (nur AT/DE/PT, Begründung unten).
+- `prisma/schema.prisma` + Migration `20261004170000_fiat_payments` → `model Transaction`,
+  drei Enums, `User.stripeCustomerId`/`paypalPayerId`.
+- `repo/prismaStore.js` → `saveTransaction` als Spiegel; unbekannte Werte werden **nicht
+  geraten**, die Zeile entfällt mit Warnung.
+- `public/app.js` + `i18n.js` → Fiat-Knöpfe auf der Premium-Seite, 11 neue Schlüssel ×3.
+- `/api/payments/methods?country=XX` → Schnittmenge aus „Anbieter konfiguriert" und
+  „im Land zulässig", plus `pending_setup` für die Wege, denen nur ein Schlüssel fehlt.
+- `.env.example` → alle Variablen, kommentiert; `.env` jetzt tatsächlich in `.gitignore`.
+
+**Drei echte Fehler gefunden — zwei davon meine eigenen:**
+1. **`handleWebhook` awaitete `verifyWebhook` nicht.** Stripe und Coinbase prüfen synchron,
+   mein PayPal-Adapter nicht. Ein Promise ist truthy, `evt.type` wäre `undefined` gewesen:
+   **jeder** PayPal-Webhook wäre stillschweigend als „ignoriert" durchgelaufen, keine
+   PayPal-Zahlung je freigeschaltet, und eine abgelehnte Signatur hätte eine unbehandelte
+   Promise-Ablehnung ausgelöst statt einer 400.
+2. **`CHECKOUT.ORDER.APPROVED` als „bezahlt" gelesen.** Genehmigt heißt: Die Kundin hat
+   die Belastung *erlaubt*. Das Geld bewegt sich erst beim Einzug. Mein erster Entwurf
+   hätte Premium verschenkt. Jetzt: `approved` → einziehen → nur ein abgeschlossener
+   Einzug schaltet frei.
+3. **Capture-ID als Referenz.** Bei `PAYMENT.CAPTURE.COMPLETED` ist `resource.id` die
+   **Belastungs**-ID, nicht unsere. Sie trifft keine Zahlung — jede Belastung wäre als
+   „unmatched" ins Leere gelaufen. Jetzt über `supplementary_data.related_ids.order_id`,
+   ersatzweise `custom_id`, und dort **mit** Anbieter-Prüfung, damit eine fremde Kennung
+   keine Krypto-Zahlung trifft.
+
+**CHECK.** 26 neue Tests (`test/payments-fiat.test.js` + einer am HTTP-Layer); volle Kette
+grün (810 Tests, Store-Texte, Smoke 19/19, Browser-Audit, Checkout-Demo 62/62, Audit).
+Drei Wächter einmal **absichtlich gebrochen**, um zu belegen, dass sie anschlagen:
+„approved → paid" (4 rote Tests), Anbieter-Prüfung entfernt (1), Capture-ID als Referenz (1).
+
+**Ein vierter Befund, den `verify` nicht gesehen hat:** `public/checkout-demo.html` ist ein
+**erzeugtes** Artefakt, das `compliance.js` einbettet. Nach dem Hinzufügen von Klarna war es
+veraltet — und `verify` blieb grün, weil nur `check:checkout` den Bau prüft, nicht `verify`.
+Neu gebaut, und `check-checkout-demo.mjs` prüft jetzt mit Bordmitteln, dass jede
+Methoden-Kennung der Engine in der Seite vorkommt (der Bau-Vergleich selbst braucht die
+Tailwind-CLI, die in einem frischen Klon fehlt — `verify` muss überall laufen).
+
+**Warum Klarna nur AT/DE/PT:** Klarna rechnet in der Währung des Käuferlandes ab, unsere
+Preise stehen in EUR. In CH, GB, US, AU, CA fehlt also keine Klarna-Verfügbarkeit, sondern
+eine lokale Preisliste — ein Knopf dort würde mit einem Währungsfehler abbrechen. Ein Test
+prüft, dass jedes Klarna-Land ein EUR-Profil hat.
+
+**Krypto unberührt.** Die Krypto-Schiene hängt an einem anderen Endpunkt und kann durch den
+neuen Länderfilter nicht verschwinden; ein HTTP-Test prüft das über AT/KE/NG/AO/ZZ.
+
+**Offen für den Owner:** Stripe- und PayPal-Konten verifizieren und die Schlüssel in Render
+setzen (`server/.env.example` nennt jeden). Bei PayPal **beide** Webhook-Ereignisse
+abonnieren, bei Stripe Klarna im Dashboard aktivieren. Solange nichts hinterlegt ist, zeigt
+die Premium-Seite offen „Karte/PayPal folgt" — kein Knopf, der ins Leere führt.
