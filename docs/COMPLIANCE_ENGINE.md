@@ -274,3 +274,107 @@ genau wie das Datenmodell es vorsieht.
   die Netzwerk-Bestätigungen (`services/cryptoRates.js`, `services/payments.js`).
 - **Keine Zahlung wird ausgelöst.** Der echte Ablauf läuft über gehostete, lizenzierte
   Anbieter mit signierten Webhooks — nie „der Client sagt, es sei bezahlt".
+
+## Jurisdiction-Guard: die Fachkreis-Schranke für Rx-Arzneimittel (04.10.2026)
+
+> ⚠️ Kein Rechtsrat. Konservative Gating-Einschätzung zur Produktsteuerung; im
+> Zweifel wurde die strengere Variante gewählt.
+
+### Der Befund war akut, nicht hypothetisch
+
+`GET /api/exchange` war angemeldet, aber **nicht auf Fachkreise beschränkt**.
+Im Code stand ausdrücklich: „Privatnutzer:innen können Einträge lesen, aber
+keine anlegen." Da die Registrierung Selbstbedienung ist, heißt das: Angebote
+für verschreibungspflichtige Arzneimittel waren praktisch öffentlich lesbar.
+In DACH ist Publikumswerbung für Rx-Arzneimittel untersagt (HWG § 10).
+
+**Zwei Lecks, nicht eines.** Neben `list()` gab es `byAuthor()` — die
+Profilansicht einer Apotheke. Sie war als „öffentlich lesbar wie die Liste"
+kommentiert und nahm gar keinen Betrachter an. Die Liste zu schützen und das
+Profil offen zu lassen hätte die Schranke wertlos gemacht. Dieselbe Prüfung
+greift jetzt auch in `search.js` und `overview.js`.
+
+### Fail closed: nichts wird geraten
+
+Ob „Amoxicillin 1000 mg" verschreibungspflichtig ist, lässt sich aus einer
+Zeichenkette **nicht** zuverlässig bestimmen — und der Fehler ginge in die
+gefährliche Richtung: Ein falsches „nicht verschreibungspflichtig" stellt ein
+Rx-Angebot öffentlich.
+
+Deshalb trägt jedes Angebot eine Kennzeichnung, die die einstellende Fachperson
+setzt:
+
+| Wert | Bedeutung | Sichtbarkeit |
+|---|---|---|
+| `otc` → `false` | ausdrücklich nicht verschreibungspflichtig | alle |
+| `rx` → `true` | verschreibungspflichtig | nur verifizierter Fachkreis |
+| alles andere → `null` | **unbestimmt** (Standard) | nur verifizierter Fachkreis |
+
+`normalizeRx` lässt nur ein ausdrückliches `otc` zu `false` werden; ein
+Tippfehler im Formular bleibt geschützt. Im Repo steht `rx: e.rx ?? null` und
+nicht `?? false` — ein `false` als Standard hätte jeden Altbestand im Moment
+des Einbaus öffentlich gestellt.
+
+### Warum `verified` und nicht nur der Kontotyp
+
+Den Kontotyp wählt man bei der Registrierung selbst. Eine Schranke, die nur
+`account_type !== 'private'` prüft, ist mit einem Klick im Anmeldeformular
+umgangen — eine Schranke auf dem Papier. Verlangt wird die von der Moderation
+bestätigte Verifizierung.
+
+**Die unbequeme Folge:** Solange niemand verifiziert ist, sieht fast niemand
+Rx-Einträge. Das ist der korrekte Zustand, kein Defekt — und der Bereich
+„Tauschbörse" ruht ohnehin (Audit vom 06.09.2026), die Schranke landet also
+**vor** der Freischaltung, nicht danach.
+
+### Verifizierungsstufen
+
+```
+UNVERIFIED · PENDING · VERIFIED_PHARMACY · VERIFIED_WHOLESALE
+VERIFIED_MANUFACTURER · VERIFIED_LOGISTICS
+```
+
+`VERIFIED_LOGISTICS` gehört **nicht** zum Rx-Fachkreis: Ein
+Transportunternehmen befördert Arzneimittel, es erwirbt sie nicht. Die Stufe
+existiert, weil Logistiker eigene Funktionen brauchen — nur eben keinen
+Rx-Einblick. Je mehr Gruppen hineindürfen, desto weniger ist die Schranke wert.
+
+Dazu zwei neue Kontotypen: `wholesale` und `logistics`. Beide unter „pharma" zu
+führen hätte genau diesen Unterschied gelöscht.
+
+### Die zwei Länder-Mechanismen dürfen sich nicht verwechseln
+
+1. **Anzeigefilter `country`** folgt dem Länder-Umschalter („Besuchen"). Eine
+   Berliner Apotheke darf sich ansehen, was in Wien los ist.
+2. **Rx-Schranke** folgt dem **Heimatland**. Eine deutsche Apotheke ist in
+   Österreich nicht erwerbsberechtigt.
+
+Wäre die Schranke an den Anzeigefilter gekoppelt, ließe sie sich mit einem
+Klick im Länder-Umschalter umgehen — dieselbe Falle, die das Rechts-Gate schon
+einmal hatte (`userCountry` ignoriert `?country=` genau deshalb). Ein Test
+hält beide Mechanismen auseinander.
+
+### Ehrliche Meldung statt leerer Liste
+
+`filterRx` **zählt**, was es verbirgt, und nennt den Grund
+(`unverifiziert | pruefung | anmeldung | entzogen | kein_land | anderes_land`).
+Die Oberfläche sagt damit „3 Angebote sind für dich nicht sichtbar — …" statt
+stillschweigend eine kürzere Liste zu zeigen. Eine Schranke ohne Erklärung
+sieht aus wie ein leerer Bereich, und das Signal wäre falsch: Es ist etwas da,
+nur nicht für diese Person.
+
+### Datenmodell
+
+`User.jurisdiction`, `User.verificationStatus`, `User.licenseNumber`,
+`User.isRxAllowed` (Migration `20261004200000_jurisdiction_guard`).
+
+**Die Durchsetzung wartet nicht auf diese Spalten.** `domain/jurisdiction.js`
+leitet die Stufe heute aus `account_type` plus `verified` ab, weil die Konten
+noch nicht relational liegen. Eine Schranke, die erst mit einer künftigen
+Datenmigration greift, ist keine.
+
+`isRxAllowed` ist bewusst ein eigenes Feld und nicht aus `verificationStatus`
+abgeleitet: Es ist der Hebel für die Moderation. Ein Betrieb, dessen Erlaubnis
+erloschen ist, lässt sich sperren, ohne die Verifizierung zurückzunehmen — und
+ohne die Historie zu verlieren, warum er einmal verifiziert war. Standard
+`false`: Ein neues Konto sieht kein Rx, bis es bestätigt ist.

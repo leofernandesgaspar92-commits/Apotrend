@@ -40,7 +40,15 @@ test('Konto löschen entfernt alle Daten + Login danach unmöglich', () => {
   assert.equal(repo.getUserByEmail('a@a.at'), null);
   assert.equal(orgAuth.login({ email: 'a@a.at', password: 'geheim123' }).ok, false);
   assert.equal(social.publicFeed(b).some(p => p.author?.handle === 'anna'), false);
-  assert.equal(exchange.list(b).length, 0);
+  // `.eintraege`: Die Liste ist seit der Fachkreis-Schranke ein Objekt mit
+  // Zaehler. Hier zaehlt beides — nach dem Loeschen darf weder ein sichtbarer
+  // noch ein VERBORGENER Eintrag von Anna uebrig sein. Nur `.eintraege` zu
+  // pruefen waere die schwaechere Zusicherung: Ein nicht geloeschter Eintrag
+  // koennte als „verborgen" durchgehen und die DSGVO-Loeschung saehe
+  // vollstaendig aus, obwohl die Zeile noch liegt.
+  const nachLoeschung = exchange.list(b);
+  assert.equal(nachLoeschung.eintraege.length, 0);
+  assert.equal(nachLoeschung.verborgen, 0, 'auch kein verborgener Rest');
   // Bens Daten bleiben
   assert.ok(social.getProfile('ben'));
 });

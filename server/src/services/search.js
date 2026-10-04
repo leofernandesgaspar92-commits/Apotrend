@@ -54,7 +54,11 @@ export function createSearchService({ social, shortagesRepo, pricesRepo, rabatte
         .slice(0, limit);
 
       // Offene Biete/Suche-Einträge im Bestandsaustausch (mit Autor-Profil).
-      const exchangeHits = exchange ? exchange.list(viewerUserId, { q }).slice(0, limit) : [];
+      // `.eintraege`: Die Suche darf die Schranke NICHT umgehen. Waere hier
+      // die ungefilterte Liste gelandet, haette die uebergreifende Suche
+      // Rx-Angebote ausgegeben, die der Austausch-Reiter verbirgt — eine
+      // Hintertuer, die niemand sucht und jeder findet.
+      const exchangeHits = exchange ? exchange.list(viewerUserId, { q }).eintraege.slice(0, limit) : [];
 
       const total = people.length + posts.length + shortages.length + prices.length + rabatte.length + exchangeHits.length;
       // `synonyms` gehoert in die Antwort: Die Oberflaeche kann damit sagen,

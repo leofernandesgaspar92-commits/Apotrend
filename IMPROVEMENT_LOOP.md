@@ -1190,3 +1190,77 @@ absichtlich gebrochen — davon einer, der zunächst NICHT ansprang (siehe oben)
 **Offen:** `watchersForText` auf Wortgrenzen umstellen; Gesehen-Stand für die
 Signal-Ansicht (dann wird aus dem Dashboard-Knopf eine Kachel „neu seit deinem
 letzten Besuch").
+
+### Cycle · Jurisdiction-Guard: Fachkreis-Schranke für Rx (2026-10-04)
+
+**Auftrag des Owners:** fünf Säulen (weltweite Quellen, Rechts-/Compliance-System,
+B2B-Mehrwert für vier Branchen, KI-Übersetzung, Deploy).
+
+**GATHER — was davon schon da war, und was wirklich fehlte:**
+- **Säule 1 ist weitgehend erledigt.** Alle 18 im Auftrag genannten Behörden
+  sind registriert (BfArM, PEI, BASG, Swissmedic, EMA ×2, openFDA ×2, MHRA,
+  Health Canada, TGA, SAHPRA, NAFDAC, PPB, FDA Ghana, INFARMED, ANVISA, ARMED,
+  ANARME) — 22 Quellen. Offen bleibt RxNorm und das Abfrage-Modul auf Zuruf.
+- **Säule 2 war der eigentliche Befund, und er war akut.** `GET /api/exchange`
+  war angemeldet, aber NICHT auf Fachkreise beschränkt. Im Code stand
+  ausdrücklich „Privatnutzer:innen können Einträge lesen" — und da die
+  Registrierung Selbstbedienung ist, waren Rx-Angebote praktisch öffentlich
+  lesbar. In DACH ist Publikumswerbung für Rx-Arzneimittel untersagt (HWG § 10).
+  `data/accountTypes.js` nannte die Rechte-Durchsetzung selbst einen „bewusst
+  getrennten Folgeschritt" — dieser Zyklus ist dieser Schritt.
+
+**Zwei Lecks, nicht eines.** Neben `list()` war `byAuthor()` offen — die
+Profilansicht einer Apotheke, kommentiert als „öffentlich lesbar wie die
+Liste", ohne jeden Betrachter-Parameter. Die Liste zu schützen und das Profil
+offen zu lassen hätte die Schranke wertlos gemacht. Dieselbe Prüfung greift
+jetzt zusätzlich in `search.js` und `overview.js` — die übergreifende Suche
+wäre sonst die dritte Hintertür gewesen.
+
+**ACT.** Neues `domain/jurisdiction.js` (rein, testbar ohne Server):
+Verifizierungsstufen, `rxErlaubt`, `rxSichtbar`, `rxGrund`, `filterRx` mit
+Zähler. Rx-Kennzeichnung am Angebot (`otc` / `rx` / unbestimmt), Prisma-Felder
+`jurisdiction`/`verificationStatus`/`licenseNumber`/`isRxAllowed` + Migration,
+zwei neue Kontotypen (`wholesale`, `logistics`), Oberfläche mit Pflichtangabe
+beim Einstellen und ehrlicher Meldung bei verborgenen Einträgen. 15 i18n-Keys ×3.
+
+**Drei Entscheidungen, die den Unterschied machen:**
+1. **FAIL CLOSED.** `rx: e.rx ?? null` und nicht `?? false`. Ein `false` als
+   Standard hätte jeden Altbestand im Moment des Einbaus öffentlich gestellt —
+   eine Sperre, die bei ihrer Einführung durchlässig ist.
+2. **`verified` statt Kontotyp.** Den Kontotyp wählt man selbst; eine Schranke,
+   die nur darauf prüft, ist mit einem Klick im Anmeldeformular umgangen.
+3. **Logistik gehört NICHT zum Rx-Fachkreis.** Ein Transportunternehmen
+   befördert Arzneimittel, es erwirbt sie nicht.
+
+**Der interessanteste Konflikt: zwei Länder-Mechanismen.** Der Anzeigefilter
+`country` folgt dem Länder-Umschalter („eine Berliner Apotheke darf sich
+ansehen, was in Wien los ist"), die Rx-Schranke folgt dem Heimatland („sie ist
+in Österreich nicht erwerbsberechtigt"). Ein bestehender Test erwartete, dass
+ein DE-Betrachter AT-Einträge sieht — mit der Schranke zu Recht nicht mehr für
+Rx. Statt die Erwartung zu senken, trennt jetzt ein neuer Test die beiden
+Mechanismen und hält fest, dass der Länder-Umschalter **keine** fremden
+Rx-Angebote öffnet. Dieselbe Falle hatte das Rechts-Gate schon einmal.
+
+**Vier eigene Tests korrigiert, jeder mit Begründung im Code:** die feste Zahl
+„4 Kontotypen" (bestrafte eine begründete Erweiterung), zwei
+Verrohrungs-Tests (brauchen `rx: 'otc'`, um ihr eigentliches Thema zu messen —
+mit ausdrücklichem Hinweis, dass das eine Testvorgabe und keine Aussage zur
+Verschreibungspflicht ist), und der DSGVO-Löschtest, der jetzt auch prüft, dass
+kein **verborgener** Rest bleibt — sonst könnte eine nicht gelöschte Zeile als
+„verborgen" durchgehen und die Löschung sähe vollständig aus.
+
+**CHECK.** 48 neue Tests (`test/rx-schranke.test.js` + Endpunkt-Test), 907 Tests
+gesamt grün. Sechs Umgehungswege einmal absichtlich geöffnet — unbestimmt gilt
+als OTC, Kontotyp statt Verifizierung, Logistik im Fachkreis, Jurisdiktion weg,
+`byAuthor` ungeschützt, Repo-Standard `false` — jeder wird erkannt.
+
+**Nicht gebaut, und warum (Säule 3):** Kühlketten-Meldungen,
+Zoll-Verzögerungen, Kapazitäten-Börse, Rote-Hand-Kanal und Jobmarkt wären fünf
+neue, zunächst LEERE Bereiche. Das Audit vom 06.09.2026 hat genau deshalb acht
+Bereiche geparkt, und die eiserne Regel verbietet Platzhalter-Inhalte. Sie
+gehören gebaut, wenn es Teilnehmer gibt, die sie füllen — die Kontotypen
+`wholesale`/`logistics` und ihre Verifizierungsstufen sind der Unterbau dafür
+und liegen jetzt.
+
+**Offen:** RxNorm-Anbindung (Säule 1), KI-Übersetzung auf Zuruf (Säule 4),
+`watchersForText` auf Wortgrenzen (aus dem letzten Zyklus).

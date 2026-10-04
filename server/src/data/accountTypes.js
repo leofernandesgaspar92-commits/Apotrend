@@ -15,6 +15,13 @@
 export const ACCOUNT_TYPES = {
   pharmacy:  { key: 'pharmacy',  icon: '🏥', label: 'Apotheke' },
   pharma:    { key: 'pharma',    icon: '🏭', label: 'Pharma-Unternehmen' },
+  // Grosshandel und Logistik: eigene Teilnehmergruppen, nicht Unterarten der
+  // Apotheke. Sie brauchen eine eigene VERIFIZIERUNGSSTUFE, weil daran die
+  // Rx-Schranke haengt (domain/jurisdiction.js): Ein Grosshaendler ist
+  // erwerbsberechtigt, ein Logistiker befoerdert nur — er erwirbt nicht.
+  // Beides unter „pharma" zu fuehren haette diesen Unterschied geloescht.
+  wholesale: { key: 'wholesale', icon: '🚚', label: 'Großhandel' },
+  logistics: { key: 'logistics', icon: '📦', label: 'Logistik / Transport' },
   authority: { key: 'authority', icon: '🏛️', label: 'Behörde' },
   private:   { key: 'private',   icon: '👤', label: 'Privatnutzer:in' },
 };

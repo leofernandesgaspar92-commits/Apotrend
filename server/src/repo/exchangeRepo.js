@@ -17,6 +17,15 @@ export function createExchangeRepo() {
         // Angebot unter fremder Rechtsordnung einstellen. Ältere Einträge
         // haben hier null; die Anzeige leitet das Land dann aus dem Profil ab.
         country: e.country ?? null,
+        // Verschreibungspflicht: true = Rx, false = ausdruecklich nicht
+        // verschreibungspflichtig, null = unbestimmt.
+        //
+        // `?? null` und NICHT `?? false`: Der Standard muss „unbestimmt"
+        // sein, denn unbestimmt gilt als geschuetzt. Ein `false` als Standard
+        // haette jeden Altbestand und jeden Eintrag ohne Angabe oeffentlich
+        // gestellt — die Schranke waere beim Einbau sofort durchlaessig
+        // gewesen (domain/jurisdiction.js, FAIL CLOSED).
+        rx: e.rx ?? null,
         ablauf: e.ablauf ?? null, // Verfallsdatum (v.a. bei „biete": Restbestand vor Ablauf)
         note: e.note ?? null, image: e.image ?? null, status: 'offen', reserved: false, created_at: now(), resolved_at: null,
       };

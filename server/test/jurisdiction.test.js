@@ -27,14 +27,24 @@ import { readFileSync } from 'node:fs';
 function setup() {
   const repo = createMemoryRepo();
   const orgAuth = createOrgAuthService(repo);
-  const social = createSocialService(createSocialRepo(), repo);
+  const socialRepo = createSocialRepo();
+  const social = createSocialService(socialRepo, repo);
   const exchange = createExchangeService(createExchangeRepo(), social, repo);
 
+  // VERIFIZIERTE Apotheken: Seit der Fachkreis-Schranke
+  // (domain/jurisdiction.js) sind Rx-Angebote nur fuer bestaetigte Fachkreise
+  // sichtbar. Diese Datei prueft den LAENDER-Zuschnitt, nicht die Schranke —
+  // ohne Verifizierung messe sie nur noch, dass alles verborgen ist.
+  //
+  // Die Schranke selbst hat eine eigene Datei: test/rx-schranke.test.js. Dass
+  // der Laender-Vergleich DORT ebenfalls geprueft wird, ist kein Doppel: Hier
+  // geht es um den Anzeigefilter `country`, dort um die Erwerbsberechtigung.
   const anlegen = (name, email, handle, country) => {
     const r = orgAuth.registerPharmacyWithOwner({
       pharmacy: { name }, owner: { name, email, password: 'geheim123' },
     });
     social.createProfile(r.user.id, { handle, displayName: name, country, accountType: 'pharmacy' });
+    socialRepo.setProfileVerified(r.user.id, true);
     return r.user.id;
   };
 
@@ -50,17 +60,45 @@ function setup() {
 
 test('ein Angebot ist nur im eigenen Rechtsraum sichtbar', () => {
   const { exchange, at, de, br } = setup();
-  exchange.create(at, { kind: 'biete', bezeichnung: 'Pantoprazol 40 mg' });
-  exchange.create(br, { kind: 'biete', bezeichnung: 'Pantoprazol 40 mg do Brasil' });
+  // `rx: 'otc'` ist hier TESTVORGABE, keine Aussage zur Verschreibungspflicht
+  // von Pantoprazol: Dieser Test prueft den ANZEIGEFILTER `country`. Die
+  // Erwerbsberechtigung ist eine zweite, strengere Schranke — sie hat ihren
+  // eigenen Test direkt darunter.
+  exchange.create(at, { kind: 'biete', bezeichnung: 'Pantoprazol 40 mg', rx: 'otc' });
+  exchange.create(br, { kind: 'biete', bezeichnung: 'Pantoprazol 40 mg do Brasil', rx: 'otc' });
 
-  const inAT = exchange.list(de, { country: 'AT' }).map((e) => e.bezeichnung);
-  const inBR = exchange.list(de, { country: 'BR' }).map((e) => e.bezeichnung);
+  const inAT = exchange.list(de, { country: 'AT' }).eintraege.map((e) => e.bezeichnung);
+  const inBR = exchange.list(de, { country: 'BR' }).eintraege.map((e) => e.bezeichnung);
 
   assert.deepEqual(inAT, ['Pantoprazol 40 mg']);
   assert.deepEqual(inBR, ['Pantoprazol 40 mg do Brasil']);
   // Ohne Filter weiterhin alles — die Einschränkung passiert bewusst in der
   // Route, nicht im Service, damit interne Aufrufe (Matchmaking) alles sehen.
-  assert.equal(exchange.list(de, {}).length, 2);
+  assert.equal(exchange.list(de, {}).eintraege.length, 2);
+});
+
+test('der Laender-Umschalter oeffnet KEINE fremden Rx-Angebote', () => {
+  // ── ZWEI LAENDER-MECHANISMEN, UND SIE DUERFEN SICH NICHT VERWECHSELN ──────
+  //  1. Der Anzeigefilter `country` folgt dem Laender-Umschalter („Besuchen").
+  //     Eine Berliner Apotheke DARF sich ansehen, was in Wien los ist.
+  //  2. Die Rx-Schranke folgt dem HEIMATLAND. Eine deutsche Apotheke ist in
+  //     Oesterreich nicht erwerbsberechtigt.
+  //
+  //  Waere die Schranke an den Anzeigefilter gekoppelt, liesse sie sich mit
+  //  einem Klick im Laender-Umschalter umgehen — dieselbe Falle, die das
+  //  Rechts-Gate schon einmal hatte (siehe `userCountry` in http/server.js:
+  //  „sonst liesse sich die Sperre durch Laender-Wechsel umgehen").
+  const { exchange, at, de } = setup();
+  exchange.create(at, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg', rx: 'rx' });
+
+  // Die Wiener Apotheke sieht ihr eigenes Angebot.
+  assert.equal(exchange.list(at, { country: 'AT' }).eintraege.length, 1);
+
+  // Die Berliner Apotheke „besucht" Oesterreich — und sieht es NICHT.
+  const besuch = exchange.list(de, { country: 'AT' });
+  assert.deepEqual(besuch.eintraege, []);
+  assert.equal(besuch.verborgen, 1);
+  assert.equal(besuch.grund, 'anderes_land');
 });
 
 test('das Land kommt aus dem Profil, nicht aus der Eingabe', () => {
@@ -68,9 +106,9 @@ test('das Land kommt aus dem Profil, nicht aus der Eingabe', () => {
   // Der Versuch, ein Angebot brasilianischem Recht zuzuschreiben, verpufft.
   const e = exchange.create(at, { kind: 'biete', bezeichnung: 'X', country: 'BR' });
   assert.equal(e.country, 'AT', 'das Profil-Land gewinnt gegen die Eingabe');
-  const sichtbar = exchange.list(at, { country: 'AT' });
+  const sichtbar = exchange.list(at, { country: 'AT' }).eintraege;
   assert.equal(sichtbar.length, 1, 'der Eintrag gehört nach AT, nicht nach BR');
-  assert.equal(exchange.list(at, { country: 'BR' }).length, 0);
+  assert.equal(exchange.list(at, { country: 'BR' }).eintraege.length, 0);
 });
 
 test('Altbestand ohne Land wird aus dem Profil abgeleitet, statt zu verschwinden', () => {
@@ -87,8 +125,8 @@ test('Altbestand ohne Land wird aus dem Profil abgeleitet, statt zu verschwinden
   // Zeile wie aus einem alten Snapshot: ohne country-Feld.
   exRepo.create({ kind: 'biete', authorUserId: r.user.id, bezeichnung: 'Altbestand' });
 
-  assert.equal(exchange.list(r.user.id, { country: 'AT' }).length, 1);
-  assert.equal(exchange.list(r.user.id, { country: 'DE' }).length, 0);
+  assert.equal(exchange.list(r.user.id, { country: 'AT' }).eintraege.length, 1);
+  assert.equal(exchange.list(r.user.id, { country: 'DE' }).eintraege.length, 0);
 });
 
 test('die Freitext-Suche findet den Wirkstoff auch in der Notiz', () => {
@@ -97,9 +135,9 @@ test('die Freitext-Suche findet den Wirkstoff auch in der Notiz', () => {
   const { exchange, at } = setup();
   exchange.create(at, { kind: 'biete', bezeichnung: 'Pantozol 40 mg', note: 'INN: Pantoprazol, 3 Packungen' });
 
-  assert.equal(exchange.list(at, { q: 'Pantoprazol' }).length, 1, 'Wirkstoff aus der Notiz');
-  assert.equal(exchange.list(at, { q: 'Pantozol' }).length, 1, 'Handelsname');
-  assert.equal(exchange.list(at, { q: 'Ibuprofen' }).length, 0);
+  assert.equal(exchange.list(at, { q: 'Pantoprazol' }).eintraege.length, 1, 'Wirkstoff aus der Notiz');
+  assert.equal(exchange.list(at, { q: 'Pantozol' }).eintraege.length, 1, 'Handelsname');
+  assert.equal(exchange.list(at, { q: 'Ibuprofen' }).eintraege.length, 0);
 });
 
 test('mehrere Suchwörter müssen ALLE vorkommen, Reihenfolge egal', () => {
@@ -108,10 +146,10 @@ test('mehrere Suchwörter müssen ALLE vorkommen, Reihenfolge egal', () => {
   exchange.create(at, { kind: 'biete', bezeichnung: 'Pantoprazol 40 mg' });
   exchange.create(at, { kind: 'biete', bezeichnung: 'Ibuprofen 40 Stück' });
 
-  assert.equal(exchange.list(at, { q: 'pantoprazol 40' }).length, 1);
-  assert.equal(exchange.list(at, { q: '40 pantoprazol' }).length, 1, 'Reihenfolge darf egal sein');
-  assert.equal(exchange.list(at, { q: '40' }).length, 2);
-  assert.equal(exchange.list(at, { q: 'pantoprazol ibuprofen' }).length, 0);
+  assert.equal(exchange.list(at, { q: 'pantoprazol 40' }).eintraege.length, 1);
+  assert.equal(exchange.list(at, { q: '40 pantoprazol' }).eintraege.length, 1, 'Reihenfolge darf egal sein');
+  assert.equal(exchange.list(at, { q: '40' }).eintraege.length, 2);
+  assert.equal(exchange.list(at, { q: 'pantoprazol ibuprofen' }).eintraege.length, 0);
 });
 
 // ── Aktionen/Rabatte ────────────────────────────────────────────────────────

@@ -156,13 +156,28 @@ test('Registrierung mit Land/Sprache setzt Profil; Länder-Switch aktualisiert; 
   assert.equal(ra.profile.locale, 'de');
 });
 
-test('GET /api/account-types: 4 Kontotypen mit Schlüssel und Icon', async () => {
+test('GET /api/account-types: das Register kommt vollstaendig durch', async () => {
+  // Selbstkonsistent statt mit fester Zahl: Hier stand „4 Kontotypen", und
+  // genau das wurde falsch, als Grosshandel und Logistik dazukamen — eine
+  // begruendete Erweiterung liess einen Test rot werden, der eigentlich nur
+  // sagen wollte „die API spiegelt das Register".
+  const { listAccountTypes } = await import('../src/data/accountTypes.js');
   const d = await (await fetch(BASE + '/api/account-types')).json();
-  assert.equal(d.account_types.length, 4, '4 Kontotypen im Register');
+  assert.equal(d.account_types.length, listAccountTypes().length, 'API spiegelt das Register');
   const keys = d.account_types.map(a => a.key).sort();
-  assert.deepEqual(keys, ['authority', 'pharma', 'pharmacy', 'private']);
-  const pharmacy = d.account_types.find(a => a.key === 'pharmacy');
-  assert.ok(pharmacy.icon && pharmacy.label, 'Icon und Referenz-Label vorhanden');
+  // Diese vier muessen dabei sein; neue duerfen dazukommen.
+  for (const k of ['authority', 'pharma', 'pharmacy', 'private']) {
+    assert.ok(keys.includes(k), 'Kontotyp fehlt: ' + k);
+  }
+  // Grosshandel und Logistik brauchen eine EIGENE Verifizierungsstufe, weil
+  // daran die Rx-Schranke haengt (domain/jurisdiction.js): Ein Grosshaendler
+  // ist erwerbsberechtigt, ein Logistiker befoerdert nur.
+  for (const k of ['wholesale', 'logistics']) {
+    assert.ok(keys.includes(k), 'Teilnehmergruppe fehlt: ' + k);
+  }
+  for (const a2 of d.account_types) {
+    assert.ok(a2.icon && a2.label, `${a2.key}: Icon und Referenz-Label vorhanden`);
+  }
 });
 
 test('Registrierung mit Kontotyp setzt Profil; Wechsel aktualisiert; ungültig abgelehnt; Fallback pharmacy', async () => {
@@ -262,7 +277,13 @@ test('Kontotyp-Rechte am HTTP-Layer: Privat -> 403 bei Engpass-Meldung/-Bestäti
 test('GET /api/wirkstoff/:name bündelt Engpass/Preise/Rabatte/Austausch', async () => {
   const a = await reg('wi_a' + PORT);
   const b = await reg('wi_b' + PORT);
-  await post('/api/exchange', b, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg Filmtabletten' });
+  // `rx: 'otc'` ist hier eine TESTVORGABE, keine Aussage ueber die
+  // Verschreibungspflicht von Amoxicillin. Dieser Test prueft die Buendelung
+  // auf der Wirkstoff-Seite; ohne die Kennzeichnung verbirgt die
+  // Fachkreis-Schranke den Eintrag vor dem unverifizierten Leser und der Test
+  // messe etwas anderes. Die Schranke selbst hat eine eigene Datei
+  // (test/rx-schranke.test.js) und einen eigenen Endpunkt-Test weiter unten.
+  await post('/api/exchange', b, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg Filmtabletten', rx: 'otc' });
   const d = await j('/api/wirkstoff/' + encodeURIComponent('Amoxicillin'), a);
   assert.equal(d.wirkstoff, 'Amoxicillin');
   assert.ok(d.shortages.length >= 1, 'Engpass-Seed vorhanden');
@@ -388,7 +409,9 @@ test('GET /api/overview enthält watch_offers für beobachteten Wirkstoff mit An
   const a = await reg('ov_a' + PORT);
   const b = await reg('ov_b' + PORT);
   await post('/api/watchlist', a, { wirkstoff: 'Pantoprazol' });
-  await post('/api/exchange', b, { kind: 'biete', bezeichnung: 'Pantoprazol 40 mg' });
+  // `rx: 'otc'` wie oben: Testvorgabe zur Isolierung, keine Aussage zur
+  // Verschreibungspflicht von Pantoprazol.
+  await post('/api/exchange', b, { kind: 'biete', bezeichnung: 'Pantoprazol 40 mg', rx: 'otc' });
   const o = await j('/api/overview', a);
   assert.ok(o.watch_offers.some(w => w.wirkstoff === 'Pantoprazol' && w.offers_count >= 1), 'Bezugsquelle im Overview');
 });
@@ -1027,4 +1050,48 @@ test('GET /api/live/status: Telemetrie für alle behördlichen Quellen', async (
   assert.ok(d.durability, 'Dauerhaftigkeits-Bericht vorhanden');
   assert.equal(typeof d.news_seen, 'number');
   assert.ok(d.intervals.news_ms > 0 && d.intervals.shortages_ms > 0);
+});
+
+// ── Fachkreis-Schranke am Endpunkt ─────────────────────────────────────────
+//  Die Einheitstests prüfen den Dienst. Dieser prüft, was wirklich über die
+//  Leitung geht — denn genau dort lag der Befund: `GET /api/exchange` war
+//  angemeldet, aber nicht auf Fachkreise beschränkt, und damit waren Angebote
+//  für verschreibungspflichtige Arzneimittel praktisch öffentlich lesbar.
+test('GET /api/exchange: Rx-Angebote nur fuer verifizierte Fachkreise', async () => {
+  // Eigene Handles (`rxg`/`rxh`): `rxa`/`rxb` sind in dieser Datei schon
+  // belegt, und `reg()` leitet die E-Mail aus dem Handle ab — eine Kollision
+  // laesst die Registrierung scheitern und der Test wird mit 401 rot, was wie
+  // ein Fehler der Schranke aussieht.
+  const anbieter = await reg('rxg' + PORT);
+  const leser = await reg('rxh' + PORT);
+
+  // Anbieter stellt ein Rx-Angebot und ein OTC-Angebot ein.
+  const rxTitel = 'Amoxicillin RXPRUEF ' + PORT;
+  const otcTitel = 'Vitamin OTCPRUEF ' + PORT;
+  assert.equal((await post('/api/exchange', anbieter, { kind: 'biete', bezeichnung: rxTitel, rx: 'rx' })).status, 200);
+  assert.equal((await post('/api/exchange', anbieter, { kind: 'biete', bezeichnung: otcTitel, rx: 'otc' })).status, 200);
+
+  // Beide Konten sind NICHT verifiziert (frische Registrierung).
+  const d = await j('/api/exchange?country=AT', leser);
+  const titel = d.entries.map((e) => e.bezeichnung);
+  assert.ok(!titel.includes(rxTitel), 'Rx-Angebot ist durchgekommen — das ist der Befund, um den es geht');
+  assert.ok(titel.includes(otcTitel), 'OTC-Angebot muss sichtbar bleiben');
+  // Und der Grund wird benannt, statt stillschweigend eine kuerzere Liste zu
+  // zeigen: Eine Schranke ohne Erklaerung sieht aus wie ein leerer Bereich.
+  assert.ok(d.rx_hidden >= 1, 'rx_hidden zaehlt nicht');
+  assert.equal(d.rx_reason, 'unverifiziert');
+
+  // Eigene Eintraege bleiben fuer den Anbieter sichtbar — sonst sieht es aus
+  // wie Datenverlust.
+  const eigen = await j('/api/exchange?country=AT', anbieter);
+  assert.ok(eigen.entries.map((e) => e.bezeichnung).includes(rxTitel));
+  const mine = await j('/api/exchange/mine', anbieter);
+  assert.ok(mine.entries.map((e) => e.bezeichnung).includes(rxTitel));
+
+  // Ohne ausdrueckliche Kennzeichnung ist ein Eintrag geschuetzt (FAIL CLOSED).
+  const ohneTitel = 'Praeparat OHNEPRUEF ' + PORT;
+  assert.equal((await post('/api/exchange', anbieter, { kind: 'biete', bezeichnung: ohneTitel })).status, 200);
+  const d2 = await j('/api/exchange?country=AT', leser);
+  assert.ok(!d2.entries.map((e) => e.bezeichnung).includes(ohneTitel),
+    'ohne Kennzeichnung durchgekommen — der Standard muss schuetzen, nicht freigeben');
 });

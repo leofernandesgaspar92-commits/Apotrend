@@ -50,6 +50,27 @@ enum TradeType {
 }
 
 // ---------------------------------------------------------------------------
+//  Verifizierungsstufen (Jurisdiction-Guard)
+// ---------------------------------------------------------------------------
+//  Die Stufen benennen, WAS für ein Betrieb bestätigt wurde. Das ist nicht
+//  Kosmetik: An ihnen hängt, wer verschreibungspflichtige Angebote sehen darf
+//  (domain/jurisdiction.js). In DACH ist Publikumswerbung für Rx-Arzneimittel
+//  untersagt (HWG § 10), in den USA gelten FDA-/DSCSA-Vorgaben.
+//
+//  VERIFIED_LOGISTICS gehört ausdrücklich NICHT zum Rx-Fachkreis: Ein
+//  Transportunternehmen befördert Arzneimittel, es erwirbt sie nicht. Die
+//  Stufe existiert trotzdem, weil Logistiker eigene Funktionen brauchen
+//  (Kapazitäten, Kühlketten-Meldungen) — nur eben keinen Rx-Einblick.
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED_PHARMACY
+  VERIFIED_WHOLESALE
+  VERIFIED_MANUFACTURER
+  VERIFIED_LOGISTICS
+}
+
+// ---------------------------------------------------------------------------
 
 model User {
   id        String   @id @default(uuid())
@@ -78,6 +99,29 @@ model User {
   //  (stripeCustomerId je Zahlung) — doppelt geführt, aber nicht erfunden.
   stripeCustomerId String? @unique
   paypalPayerId    String?
+
+  // ── Jurisdiction-Guard ────────────────────────────────────────────────────
+  //  Rechtsraum und Verifizierungsstufe. Die DURCHSETZUNG liegt in
+  //  domain/jurisdiction.js und läuft bereits — sie leitet die Stufe heute aus
+  //  `account_type` + dem von der Moderation bestätigten `verified` ab, weil
+  //  die Konten noch nicht relational liegen. Diese Felder sind der Platz, an
+  //  den die Angaben gehören, sobald sie es tun.
+  //
+  //  Dass die Durchsetzung NICHT auf diese Spalten wartet, ist Absicht: Eine
+  //  Schranke, die erst mit einer künftigen Datenmigration greift, ist keine.
+  jurisdiction       String?            // ISO-3166-1 alpha-2, Großbuchstaben
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  licenseNumber      String?            // Betriebserlaubnis-/Lizenznummer
+
+  // Darf verschreibungspflichtige Angebote SEHEN.
+  //
+  // Bewusst ein eigenes Feld und nicht aus `verificationStatus` abgeleitet:
+  // Es ist der Hebel für die Moderation. Ein Betrieb, dessen Erlaubnis
+  // erloschen ist, lässt sich sperren, ohne die Verifizierung zurückzunehmen —
+  // und ohne die Historie zu verlieren, warum er einmal verifiziert war.
+  //
+  // Standard `false`: Ein neues Konto sieht kein Rx, bis es bestätigt ist.
+  isRxAllowed        Boolean            @default(false)
 
   posts     Post[]
   discounts Discount[]

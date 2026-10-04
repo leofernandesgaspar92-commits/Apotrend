@@ -7,16 +7,27 @@ import { createOrgAuthService } from '../src/services/orgAuth.js';
 import { createSocialService } from '../src/services/social.js';
 import { createExchangeService } from '../src/services/exchange.js';
 
-function setup() {
+// ── VERIFIZIERTE Apotheken, und warum das jetzt noetig ist ─────────────────
+//  Seit der Fachkreis-Schranke (domain/jurisdiction.js) sind Rx-Angebote nur
+//  fuer BESTAETIGTE Fachkreise sichtbar. Diese Datei prueft Matching,
+//  Sortierung und Filter — nicht die Schranke. Die Konten werden deshalb
+//  verifiziert, damit hier weiter das geprueft wird, worum es geht.
+//  Die Schranke selbst hat eine eigene Datei: test/rx-schranke.test.js.
+function setup({ verifiziert = true } = {}) {
   const repo = createMemoryRepo();
   const orgAuth = createOrgAuthService(repo);
-  const social = createSocialService(createSocialRepo(), repo);
+  const socialRepo = createSocialRepo();
+  const social = createSocialService(socialRepo, repo);
   const exchange = createExchangeService(createExchangeRepo(), social, repo);
   const A = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'A' }, owner: { name: 'Anna', email: 'a@a.at', password: 'geheim123' } });
   social.createProfile(A.user.id, { handle: 'anna', displayName: 'Anna Huber' });
   const B = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'B' }, owner: { name: 'Ben', email: 'b@b.at', password: 'geheim123' } });
   social.createProfile(B.user.id, { handle: 'ben', displayName: 'Ben Mayer' });
-  return { exchange, social, a: A.user.id, b: B.user.id };
+  if (verifiziert) {
+    socialRepo.setProfileVerified(A.user.id, true);
+    socialRepo.setProfileVerified(B.user.id, true);
+  }
+  return { exchange, social, socialRepo, a: A.user.id, b: B.user.id };
 }
 
 test('match_count: passende offene Gegen-Einträge je Autor:in, sich selbst nicht mitzählen', () => {
@@ -27,7 +38,7 @@ test('match_count: passende offene Gegen-Einträge je Autor:in, sich selbst nich
   // B sucht Amoxicillin -> A sieht 1 passendes Gesuch, B sieht 1 passendes Angebot
   exchange.create(b, { kind: 'suche', bezeichnung: 'Amoxicillin dringend gesucht' });
   assert.equal(exchange.mine(a).find(e => e.id === offer.id).match_count, 1);
-  assert.equal(exchange.list(b, { kind: 'suche' })[0].match_count, 1);
+  assert.equal(exchange.list(b, { kind: 'suche' }).eintraege[0].match_count, 1);
   // Eigenes zweites Gesuch von A zählt für A NICHT (nur fremde Autor:innen)
   exchange.create(a, { kind: 'suche', bezeichnung: 'Amoxicillin auch hier' });
   assert.equal(exchange.mine(a).find(e => e.id === offer.id).match_count, 1, 'weiterhin nur B');
@@ -42,22 +53,22 @@ test('setReserved: Ersteller markiert reserviert (bleibt sichtbar), nimmt aus Ma
   const seek = exchange.create(b, { kind: 'suche', bezeichnung: 'Amoxicillin dringend gesucht' });
   // Vor Reservierung: beide sehen 1 Match
   assert.equal(exchange.mine(a).find(e => e.id === offer.id).match_count, 1);
-  assert.equal(exchange.list(b, { kind: 'suche' })[0].match_count, 1);
+  assert.equal(exchange.list(b, { kind: 'suche' }).eintraege[0].match_count, 1);
   // A reserviert sein Angebot
   const res = exchange.setReserved(a, offer.id, true);
   assert.equal(res.reserved, true);
   // Eintrag bleibt in der offenen Liste sichtbar (nur gekennzeichnet), Status weiter offen
-  const inList = exchange.list(b, { kind: 'biete' }).find(e => e.id === offer.id);
+  const inList = exchange.list(b, { kind: 'biete' }).eintraege.find(e => e.id === offer.id);
   assert.ok(inList, 'reservierter Eintrag bleibt sichtbar');
   assert.equal(inList.status, 'offen');
   assert.equal(inList.reserved, true);
   // Aus dem aktiven Matchmaking genommen: reserviertes Angebot zählt für Bs Gesuch nicht mehr
-  assert.equal(exchange.list(b, { kind: 'suche' })[0].match_count, 0, 'reserviertes Angebot nicht mehr als Match');
+  assert.equal(exchange.list(b, { kind: 'suche' }).eintraege[0].match_count, 0, 'reserviertes Angebot nicht mehr als Match');
   // ...und das reservierte Angebot selbst zeigt keine Matches
   assert.equal(exchange.mine(a).find(e => e.id === offer.id).match_count, 0);
   // Freigeben stellt das Matching wieder her
   exchange.setReserved(a, offer.id, false);
-  assert.equal(exchange.list(b, { kind: 'suche' })[0].match_count, 1);
+  assert.equal(exchange.list(b, { kind: 'suche' }).eintraege[0].match_count, 1);
   // Nur der Ersteller darf reservieren
   assert.throws(() => exchange.setReserved(b, offer.id, true), /Ersteller/);
   // Erledigte Einträge lassen sich nicht reservieren; markResolved setzt reserved zurück
@@ -111,7 +122,9 @@ test('byAuthor: offene Biete/Suche einer Apotheke fürs Profil; nur offene, nur 
   exchange.markResolved(a, done.id); // erledigt -> NICHT im Profil
   exchange.create(b, { kind: 'biete', bezeichnung: 'Pantoprazol 40 mg' }); // andere Apotheke -> NICHT
 
-  const forA = exchange.byAuthor(a, { status: 'offen' });
+  // `viewerUserId` ist seit der Fachkreis-Schranke Pflicht. Realistisch ist
+  // genau das: Die Profilansicht hat immer einen angemeldeten Betrachter.
+  const forA = exchange.byAuthor(a, { status: 'offen', viewerUserId: b }).eintraege;
   assert.equal(forA.length, 2, 'nur die zwei offenen Einträge von A');
   assert.ok(forA.every(e => e.author && e.author.handle === 'anna'), 'alle mit Autor-Profil A');
   assert.ok(!forA.some(e => e.id === done.id), 'erledigter Eintrag ausgeschlossen');
@@ -119,12 +132,19 @@ test('byAuthor: offene Biete/Suche einer Apotheke fürs Profil; nur offene, nur 
   // wird hier nicht geprüft, um Zeitstempel-Gleichstände im Testlauf nicht flaky zu machen).
   assert.deepEqual(forA.map(e => e.bezeichnung).sort(), ['Amoxicillin 1000 mg', 'Salbutamol Spray']);
   // Für B nur der eigene Eintrag.
-  const forB = exchange.byAuthor(b, { status: 'offen' });
+  const forB = exchange.byAuthor(b, { status: 'offen', viewerUserId: a }).eintraege;
   assert.equal(forB.length, 1);
   assert.equal(forB[0].bezeichnung, 'Pantoprazol 40 mg');
   // Limit greift; unbekannte/leere ID -> leer.
-  assert.equal(exchange.byAuthor(a, { limit: 1 }).length, 1);
-  assert.deepEqual(exchange.byAuthor(null), []);
+  assert.equal(exchange.byAuthor(a, { limit: 1, viewerUserId: b }).eintraege.length, 1);
+  assert.deepEqual(exchange.byAuthor(null).eintraege, []);
+  // OHNE Betrachter bleibt das Profil leer — das war das zweite Leck neben
+  // `list()`: Die Rx-Angebote einer Apotheke standen in ihrem Profil fuer
+  // jeden offen, auch wenn die Liste geschuetzt war.
+  const ohne = exchange.byAuthor(a, { status: 'offen' });
+  assert.deepEqual(ohne.eintraege, []);
+  assert.equal(ohne.verborgen, 2);
+  assert.equal(ohne.grund, 'anmeldung');
 });
 
 test('Verfallsdatum: gültig gespeichert + Rest-Tage berechnet; ungültig abgelehnt; änderbar', () => {
@@ -152,7 +172,7 @@ test('Sortierung „bald ablaufend": frühestes Verfallsdatum zuerst, ohne Datum
   exchange.create(a, { kind: 'biete', bezeichnung: 'Bald ablaufend', ablauf: d(3) });
   exchange.create(a, { kind: 'biete', bezeichnung: 'Ohne Datum' });
   exchange.create(a, { kind: 'biete', bezeichnung: 'Mittel', ablauf: d(15) });
-  const sorted = exchange.list(a, { kind: 'biete', sort: 'ablauf' }).map(e => e.bezeichnung);
+  const sorted = exchange.list(a, { kind: 'biete', sort: 'ablauf' }).eintraege.map(e => e.bezeichnung);
   assert.deepEqual(sorted.slice(0, 3), ['Bald ablaufend', 'Mittel', 'Spät ablaufend']);
   assert.equal(sorted[3], 'Ohne Datum', 'ohne Verfallsdatum zuletzt');
 });
@@ -219,9 +239,9 @@ test('Liste zeigt nur offene, nach Art filterbar', () => {
   const { exchange, a, b } = setup();
   exchange.create(a, { kind: 'biete', bezeichnung: 'Metformin 850' });
   exchange.create(b, { kind: 'suche', bezeichnung: 'Salbutamol Spray' });
-  assert.equal(exchange.list(a).length, 2);
-  assert.equal(exchange.list(a, { kind: 'suche' }).length, 1);
-  assert.equal(exchange.list(a, { kind: 'biete' })[0].bezeichnung, 'Metformin 850');
+  assert.equal(exchange.list(a).eintraege.length, 2);
+  assert.equal(exchange.list(a, { kind: 'suche' }).eintraege.length, 1);
+  assert.equal(exchange.list(a, { kind: 'biete' }).eintraege[0].bezeichnung, 'Metformin 850');
 });
 
 test('Als erledigt markieren: nur Ersteller, danach nicht mehr in offener Liste', () => {
@@ -229,8 +249,8 @@ test('Als erledigt markieren: nur Ersteller, danach nicht mehr in offener Liste'
   const e = exchange.create(a, { kind: 'biete', bezeichnung: 'Ibuprofen 400' });
   assert.throws(() => exchange.markResolved(b, e.id), /Nur der Ersteller/);
   exchange.markResolved(a, e.id);
-  assert.equal(exchange.list(a).length, 0);
-  assert.equal(exchange.list(a, { status: 'erledigt' }).length, 1);
+  assert.equal(exchange.list(a).eintraege.length, 0);
+  assert.equal(exchange.list(a, { status: 'erledigt' }).eintraege.length, 1);
 });
 
 test('Text-Filter (q) findet Einträge nach Präparat', () => {
@@ -238,8 +258,8 @@ test('Text-Filter (q) findet Einträge nach Präparat', () => {
   exchange.create(a, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg' });
   exchange.create(b, { kind: 'suche', bezeichnung: 'Amoxicillin 500 mg' });
   exchange.create(a, { kind: 'biete', bezeichnung: 'Metformin 850' });
-  assert.equal(exchange.list(a, { q: 'amoxicillin' }).length, 2);
-  assert.equal(exchange.list(a, { q: 'metformin' }).length, 1);
+  assert.equal(exchange.list(a, { q: 'amoxicillin' }).eintraege.length, 2);
+  assert.equal(exchange.list(a, { q: 'metformin' }).eintraege.length, 1);
 });
 
 test('Ungültige Art und leere Bezeichnung werden abgelehnt', () => {
@@ -275,12 +295,12 @@ test('Meine Einträge + Wieder öffnen', () => {
   const e = exchange.create(a, { kind: 'biete', bezeichnung: 'Ibuprofen 400' });
   exchange.markResolved(a, e.id);
   // in der offenen Liste weg, in "meine" (alle Status) da
-  assert.equal(exchange.list(a).length, 0);
+  assert.equal(exchange.list(a).eintraege.length, 0);
   assert.equal(exchange.mine(a).length, 1);
   assert.equal(exchange.mine(a, { status: 'erledigt' }).length, 1);
   // wieder öffnen -> erscheint wieder in offener Liste
   exchange.reopen(a, e.id);
-  assert.equal(exchange.list(a).length, 1);
+  assert.equal(exchange.list(a).eintraege.length, 1);
   assert.equal(exchange.mine(a, { status: 'offen' }).length, 1);
 });
 
@@ -288,9 +308,9 @@ test('Bundesland-Filter: nur Einträge aus dem gewählten Bundesland', () => {
   const { exchange, a, b } = setup();
   exchange.create(a, { kind: 'biete', bezeichnung: 'Amoxicillin', bundesland: 'Wien' });
   exchange.create(b, { kind: 'biete', bezeichnung: 'Amoxicillin', bundesland: 'Tirol' });
-  assert.equal(exchange.list(a, { bundesland: 'Wien' }).length, 1);
-  assert.equal(exchange.list(a, { bundesland: 'Wien' })[0].bundesland, 'Wien');
-  assert.equal(exchange.list(a, { bundesland: 'Tirol' }).length, 1);
+  assert.equal(exchange.list(a, { bundesland: 'Wien' }).eintraege.length, 1);
+  assert.equal(exchange.list(a, { bundesland: 'Wien' }).eintraege[0].bundesland, 'Wien');
+  assert.equal(exchange.list(a, { bundesland: 'Tirol' }).eintraege.length, 1);
 });
 
 test('Ungültiges Bundesland wird abgelehnt', () => {

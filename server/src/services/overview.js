@@ -9,7 +9,7 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
       const kritisch = sh.filter(s => s.status === 'kritisch');
       // Aktive Antibiotika-Engpässe (nicht "wieder verfügbar") — für die AMR-Kachel.
       const antibiotika = amr ? sh.filter(s => s.status !== 'verfuegbar' && amr.isAntibiotic(s.wirkstoff)).length : 0;
-      const ex = exchange.list(userId, {}); // offene Einträge
+      const ex = exchange.list(userId, {}).eintraege; // offene Einträge (Fachkreis-gefiltert)
       const topRabatte = rabatte.top10(userId);
       const topR = topRabatte[0] || null;
       const expiringSoon = topRabatte.filter(r => r.expiring_soon);
@@ -40,7 +40,7 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
       // Bezugsquellen zu beobachteten Wirkstoffen: offene "Biete"-Einträge, deren
       // Bezeichnung einen beobachteten Wirkstoff enthält — hilft beim Beschaffen
       // während eines Engpasses. Nur wo es Angebote gibt.
-      const openBiete = exchange.list(userId, { kind: 'biete', status: 'offen' });
+      const openBiete = exchange.list(userId, { kind: 'biete', status: 'offen' }).eintraege;
       const watchOffers = watchlist.map(w => {
         const key = w.wirkstoff.trim().toLowerCase();
         const offers_count = openBiete.filter(e => (e.bezeichnung || '').toLowerCase().includes(key)).length;

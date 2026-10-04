@@ -657,7 +657,7 @@ function countryOptionsHtml(selected) {
     .join('');
 }
 // Kontotyp: übersetztes Label je Schlüssel (Register-Reihenfolge aus /api/account-types).
-const ACCT_I18N = { pharmacy:'at_pharmacy', pharma:'at_pharma', authority:'at_authority', private:'at_private' };
+const ACCT_I18N = { pharmacy:'at_pharmacy', pharma:'at_pharma', wholesale:'at_wholesale', logistics:'at_logistics', authority:'at_authority', private:'at_private' };
 function acctLabel(key) { return ACCT_I18N[key] ? t(ACCT_I18N[key]) : (key || ''); }
 // „Offen für"-Optionen (Schlüssel = Backend OPEN_TO_KEYS); Label übersetzt.
 const OPEN_TO = ['kooperation', 'einkauf', 'vertretung', 'austausch', 'mentoring', 'jobs'];
@@ -3352,6 +3352,15 @@ async function loadExchange() {
     </div>
     <select id="ex_bl" data-i18n-aria="ex_bl_ph" aria-label="${esc(t('ex_bl_ph'))}" style="margin-top:6px"><option value="">${esc(t('ex_bl_ph'))}</option>${blOptions((me&&me.bundesland)||'')}</select>
     <input id="ex_note" placeholder="${esc(t('ex_note_ph'))}" style="margin-top:6px">
+    <div style="margin-top:8px">
+      <label for="ex_rx" style="font-size:13px;margin:0;display:block">${esc(t('ex_rx_label'))}</label>
+      <select id="ex_rx" aria-label="${esc(t('ex_rx_label'))}" style="margin-top:4px">
+        <option value="unbestimmt">${esc(t('ex_rx_unknown'))}</option>
+        <option value="rx">${esc(t('ex_rx_rx'))}</option>
+        <option value="otc">${esc(t('ex_rx_otc'))}</option>
+      </select>
+      <div class="muted" style="font-size:12px;margin-top:4px">${esc(t('ex_rx_hint'))}</div>
+    </div>
     <div class="row" style="margin-top:6px;align-items:center;gap:6px"><label style="font-size:13px;margin:0" for="ex_ablauf">⏳ ${esc(t('ex_expiry'))}</label><input id="ex_ablauf" type="date" aria-label="${esc(t('ex_expiry'))}"></div>
     <div class="row" style="margin-top:6px">
       <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px">${esc(t('ex_photo'))}<input type="file" id="ex_img" accept="image/*" style="display:none"></label>
@@ -3384,7 +3393,7 @@ async function loadExchange() {
   exImgclear.onclick = clearEx;
   document.getElementById('ex_go').onclick = async () => {
     try {
-      const created = await api('POST','/api/exchange',{ kind:v('ex_kind'), bezeichnung:v('ex_bez'), menge:v('ex_menge'), ort:v('ex_ort'), bundesland:v('ex_bl'), note:v('ex_note'), image:exImage, ablauf: document.getElementById('ex_ablauf').value || null });
+      const created = await api('POST','/api/exchange',{ kind:v('ex_kind'), bezeichnung:v('ex_bez'), menge:v('ex_menge'), ort:v('ex_ort'), bundesland:v('ex_bl'), note:v('ex_note'), image:exImage, ablauf: document.getElementById('ex_ablauf').value || null, rx: v('ex_rx') });
       // Genau im Moment der Absicht: wenn es passende Gegenstücke gibt, direkt dorthin filtern + Hinweis.
       if (created && created.match_count >= 1) {
         const key = (String(created.bezeichnung).toLowerCase().match(/[a-zäöüß0-9]{4,}/g) || [])[0] || created.bezeichnung;
@@ -3462,6 +3471,23 @@ async function loadExchange() {
       // verschiedene Länder gleichzeitig.
       params.set('country', viewCountry());
       d = await api('GET','/api/exchange'+(params.toString()?'?'+params.toString():''));
+      // ── Verborgene Rx-Angebote offen benennen ─────────────────────────────
+      //  Eine kuerzere Liste ohne Hinweis sieht aus wie „hier ist nichts" —
+      //  dabei ist etwas da, nur nicht fuer diese Person. Der Unterschied
+      //  gehoert ausgesprochen, sonst sucht die Nutzerin den Fehler bei sich.
+      //  Steht VOR der Leer-Behandlung, damit er auch bei null sichtbaren
+      //  Eintraegen erscheint — genau dann ist er am wichtigsten.
+      if (d.rx_hidden > 0) {
+        const grund = t('ex_rx_why_' + (d.rx_reason || 'unverifiziert'));
+        const karte = el(`<div class="card" style="background:var(--info-bg);border-color:var(--info-bd);color:var(--info-fg)">
+          <b>🔒 ${esc(ti('ex_rx_hidden', { n: d.rx_hidden }))}</b>
+          <div style="margin-top:6px;font-size:14px">${esc(grund)}</div>
+          ${d.rx_reason === 'unverifiziert' ? `<div style="margin-top:10px"><button class="small" data-verify>${esc(t('ex_rx_verify_cta'))}</button></div>` : ''}
+        </div>`);
+        const vb = karte.querySelector('[data-verify]');
+        if (vb) vb.onclick = () => { mainScreen().then(() => me && openProfile(me.handle)); };
+        feed.appendChild(karte);
+      }
       if (!d.entries.length) {
         // „Gefiltert leer" ehrlich von „Netzwerk leer" trennen: liegt ein Filter an
         // (Suche/Art/Bundesland), ist nicht das ganze Netz leer — dann einen sichtbaren

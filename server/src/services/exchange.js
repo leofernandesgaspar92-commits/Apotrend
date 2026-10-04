@@ -4,6 +4,7 @@
 import { ForbiddenError } from './orgAuth.js';
 import { cleanImage } from '../domain/media.js';
 import { AppError } from '../domain/errors.js';
+import { filterRx, normalizeRx, verificationStatusFor } from '../domain/jurisdiction.js';
 
 const KINDS = ['biete', 'suche'];
 // Echtes Kalenderdatum (YYYY-MM-DD), kein Überlauf (z.B. 2026-02-31 ungültig).
@@ -103,6 +104,34 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
     return query.split(/\s+/).filter(Boolean).every((w) => heu.includes(w));
   }
 
+  /**
+   * Betrachter fuer die Rx-Schranke beschreiben.
+   *
+   * Leitet die Verifizierungsstufe aus dem ab, was die Anwendung HEUTE fuehrt
+   * (Kontotyp + von der Moderation bestaetigtes `verified`). Das neue
+   * Vokabular ist damit von echten Daten gedeckt und nicht von einem leeren
+   * Feld, das niemand fuellt (domain/jurisdiction.js).
+   */
+  function betrachterFuerRx(userId) {
+    if (!userId) return null;
+    const prof = social.getProfile ? social.getProfile(userId) : null;
+    if (!prof) return { userId };
+    const v = (social.getVerification && social.getVerification(userId)) || null;
+    return {
+      userId,
+      jurisdiction: String(prof.country || '').toUpperCase(),
+      verificationStatus: verificationStatusFor({
+        accountType: prof.account_type,
+        verified: !!prof.verified,
+        verificationPending: !!(v && v.status === 'offen'),
+      }),
+      // `isRxAllowed` kennt die Anwendung noch nicht als eigenes Feld (es steht
+      // im Schema bereit). `undefined` heisst „kein Entzug" — nur ein
+      // ausdruecklicher `false`-Wert sperrt.
+      isRxAllowed: prof.is_rx_allowed,
+    };
+  }
+
   function decorate(e) {
     const prof = social.getProfile ? social.getProfile(e.author_user_id) : null;
     return {
@@ -115,7 +144,7 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
   }
 
   return {
-    create(actorUserId, { kind, bezeichnung, menge, ort, bundesland, note, image, ablauf }) {
+    create(actorUserId, { kind, bezeichnung, menge, ort, bundesland, note, image, ablauf, rx }) {
       requireUser(actorUserId);
       // Bestandsaustausch ist professioneller B2B-Vorgang (Apotheken tauschen Bestand) —
       // Privatnutzer:innen können Einträge lesen, aber keine anlegen.
@@ -144,6 +173,10 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
         ablauf: abl,
         note: (note ?? '').toString().trim() || null,
         image: cleanImage(image),
+        // Rx-Kennzeichnung. `normalizeRx` laesst nur ein AUSDRUECKLICHES „otc"
+        // zu false werden; alles andere — auch ein Tippfehler im Formular —
+        // bleibt geschuetzt (domain/jurisdiction.js, FAIL CLOSED).
+        rx: normalizeRx(rx),
       });
       notifyMatches(created); // aktives Matching Biete<->Suche
       // Beobachter:innen benachrichtigen, wenn jemand ihren Wirkstoff anbietet.
@@ -178,18 +211,38 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
           return av.localeCompare(bv);
         });
       }
-      return out;
+      // ── Fachkreis-Schranke ───────────────────────────────────────────────
+      //  ZULETZT, nach allen anderen Filtern — und mit ZAEHLER. Die Zahl ist
+      //  der Punkt: Nur mit ihr kann die Oberflaeche „3 Angebote nur fuer
+      //  verifizierte Fachkreise" sagen, statt stillschweigend eine kuerzere
+      //  Liste zu zeigen. Eine Schranke ohne Erklaerung sieht aus wie ein
+      //  leerer Bereich, und das Signal waere falsch: Es ist etwas da, nur
+      //  nicht fuer diese Person.
+      return filterRx(out, betrachterFuerRx(viewerUserId));
     },
     // Offene Einträge einer bestimmten Apotheke — für deren öffentliches Profil (Biete/Suche
-    // auf einen Blick; Kontakt läuft wie üblich per DM). Öffentlich lesbar wie die Liste,
-    // daher kein Owner-Zwang. Neueste zuerst, begrenzt.
-    byAuthor(authorUserId, { status = 'offen', limit = 12 } = {}) {
-      if (!authorUserId) return [];
+    // auf einen Blick; Kontakt läuft wie üblich per DM). Neueste zuerst, begrenzt.
+    //
+    // ⚠️ `viewerUserId` ist PFLICHT, auch wenn die Ansicht „oeffentlich lesbar"
+    //    ist. Hier stand vorher kein Betrachter — und das war das zweite Leck
+    //    neben `list()`: Wer das Profil einer Apotheke oeffnete, sah deren
+    //    Rx-Angebote vollstaendig, ganz gleich ob verifiziert oder nicht. Die
+    //    Liste war geschuetzt, die Hintertuer ueber das Profil nicht.
+    //
+    //    Die Begrenzung auf `limit` kommt NACH der Schranke. Andersherum waere
+    //    das Profil mit lauter verborgenen Eintraegen gefuellt und zeigte
+    //    weniger als die zwoelf, die es zeigen koennte.
+    byAuthor(authorUserId, { status = 'offen', limit = 12, viewerUserId = null } = {}) {
+      if (!authorUserId) return { eintraege: [], verborgen: 0, grund: null };
       const out = exchangeRepo.list()
         .filter(e => e.author_user_id === authorUserId && (!status || e.status === status))
         .map(decorate)
         .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
-      return limit ? out.slice(0, limit) : out;
+      const gefiltert = filterRx(out, betrachterFuerRx(viewerUserId));
+      return {
+        ...gefiltert,
+        eintraege: limit ? gefiltert.eintraege.slice(0, limit) : gefiltert.eintraege,
+      };
     },
     // Eigene Einträge (alle Status), neueste zuerst — für „Meine Einträge"/Historie.
     mine(actorUserId, { status = null } = {}) {

@@ -1226,7 +1226,11 @@ const routes = [
     const dealsBlocked = isFeatureBlocked(home, 'deals');
     const exBlocked = isFeatureBlocked(home, 'stock_exchange');
     const priceBlocked = isFeatureBlocked(home, 'price_compare');
-    const ex = exBlocked ? [] : exchange.list(userId, { q: name });
+    // `.eintraege`: Die Liste ist seit der Fachkreis-Schranke ein Objekt mit
+    // Zaehler. Nur `.eintraege` zu nehmen und den Zaehler zu verwerfen ist hier
+    // richtig — die Wirkstoff-Seite zeigt eine Zusammenfassung, der Hinweis auf
+    // verborgene Angebote steht im Austausch-Reiter.
+    const ex = exBlocked ? [] : exchange.list(userId, { q: name }).eintraege;
     return {
       wirkstoff: name,
       amr: amr.forWirkstoff(name),
@@ -1488,8 +1492,17 @@ const routes = [
     // Offene Biete/Suche der Apotheke — Rechts-Gate am Heimatland des Betrachters (wie die
     // Austausch-Reiter): wo der Bestandsaustausch gesperrt ist, keine Einträge zeigen.
     const exBlocked = isFeatureBlocked(userCountry(userId), 'stock_exchange');
-    const exchange_entries = exBlocked ? [] : exchange.byAuthor(d.profile.user_id, { status: 'offen' });
-    return { ...d, posts: enrichPosts(d.posts, userId), exchange_entries };
+    // `viewerUserId` ist hier PFLICHT: Ohne ihn zeigte das Profil einer
+    // Apotheke ihre Rx-Angebote jeder angemeldeten Person — die Hintertuer
+    // neben der geschuetzten Liste (siehe exchange.byAuthor).
+    const ex = exBlocked
+      ? { eintraege: [], verborgen: 0, grund: null }
+      : exchange.byAuthor(d.profile.user_id, { status: 'offen', viewerUserId: userId });
+    return {
+      ...d, posts: enrichPosts(d.posts, userId),
+      exchange_entries: ex.eintraege,
+      exchange_rx_hidden: ex.verborgen, exchange_rx_reason: ex.grund,
+    };
   }],
   ['GET', /^\/api\/profiles\/([^/]+)$/, true, async ({ params }) => ({ profile: social.getProfile(params[0]) })],
   ['POST', /^\/api\/profiles\/([^/]+)\/endorse$/, true, async ({ userId, params, body }) => social.endorseSkill(userId, params[0], body.skill)],
@@ -1635,12 +1648,18 @@ const routes = [
   ['POST', /^\/api\/rabatte\/([^/]+)\/post$/, true, async ({ userId, params, body, query }) => { ensureFeatureAllowed('deals', userId); return rabatte.postAbout(userId, params[0], { body: body.body, visibility: body.visibility }); }],
 
   // ── Bestandsaustausch (Biete/Suche) — in Ländern ohne zulässige P2P-Abgabe gesperrt ──
-  ['GET', /^\/api\/exchange$/, true, async ({ userId, query }) => { ensureFeatureAllowed('stock_exchange', userId); return { entries: exchange.list(userId, { kind: query.get('kind') || null, status: query.get('status') || 'offen', q: query.get('q') || null, bundesland: query.get('bundesland') || null, sort: query.get('sort') || null,
+  ['GET', /^\/api\/exchange$/, true, async ({ userId, query }) => { ensureFeatureAllowed('stock_exchange', userId); const r = exchange.list(userId, { kind: query.get('kind') || null, status: query.get('status') || 'offen', q: query.get('q') || null, bundesland: query.get('bundesland') || null, sort: query.get('sort') || null,
       // Rechtsraum: Eine Wiener Apotheke soll keine brasilianischen Angebote
       // sehen — Arzneimittelhandel ueber Grenzen hinweg ist genehmigungs-
       // pflichtig (AMG Paragraf 48, Einfuhrlizenzen je Land).
-      country: activeCountry(userId, query) }) }; }],
-  ['POST', /^\/api\/exchange$/, true, async ({ userId, body, query }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.create(userId, { kind: body.kind, bezeichnung: body.bezeichnung, menge: body.menge, ort: body.ort, bundesland: body.bundesland, note: body.note, image: body.image, ablauf: body.ablauf }); }],
+      country: activeCountry(userId, query) }); return {
+        entries: r.eintraege,
+        // Offen benennen, was verborgen ist UND warum. Eine kuerzere Liste
+        // ohne Hinweis sieht aus wie „hier ist nichts" — dabei ist etwas da,
+        // nur nicht fuer diese Person (domain/jurisdiction.js).
+        rx_hidden: r.verborgen, rx_reason: r.grund,
+      }; }],
+  ['POST', /^\/api\/exchange$/, true, async ({ userId, body, query }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.create(userId, { kind: body.kind, bezeichnung: body.bezeichnung, menge: body.menge, ort: body.ort, bundesland: body.bundesland, note: body.note, image: body.image, ablauf: body.ablauf, rx: body.rx }); }],
   ['GET', /^\/api\/exchange\/mine$/, true, async ({ userId, query }) => { ensureFeatureAllowed('stock_exchange', userId); return { entries: exchange.mine(userId, { status: query.get('status') || null }) }; }],
   ['POST', /^\/api\/exchange\/([^/]+)\/resolve$/, true, async ({ userId, params, query }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.markResolved(userId, params[0]); }],
   ['POST', /^\/api\/exchange\/([^/]+)\/reopen$/, true, async ({ userId, params, query }) => { ensureFeatureAllowed('stock_exchange', userId); return exchange.reopen(userId, params[0]); }],
