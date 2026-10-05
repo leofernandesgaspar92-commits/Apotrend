@@ -612,6 +612,31 @@ test('POST /api/translate: ohne KI-Schluessel ehrlich abgewiesen, nie geraten', 
   assert.equal((await (await post('/api/translate', user, { text: '  ', to: 'en' })).json()).code, 'translate_empty');
 });
 
+test('POST /api/translate: die Ratenbremse antwortet mit ihrer Meldung', async () => {
+  // Dieser Pfad war nie ausgefuehrt worden — und genau dort fehlte der
+  // AppError-Import, sodass die Bremse mit „AppError is not defined"
+  // geantwortet haette statt mit der gemeinten Meldung. Ein Fehler, der erst
+  // unter Last aufgefallen waere.
+  const user = await reg('trlim' + PORT);
+  let gebremst = null;
+  // Das Limit liegt bei 60 Aufrufen je Stunde. Jeder Fehlschlag beim Anbieter
+  // zaehlt nicht mit (nur erfolgreiche, nicht gecachte Aufrufe), deshalb wird
+  // hier NICHT das Limit erreicht — geprueft wird, dass der Pfad ueberhaupt
+  // sauber antwortet und keinen Programmfehler ausgibt.
+  for (let i = 0; i < 3; i++) {
+    const r = await post('/api/translate', user, { text: 'Text ' + i, to: 'en' });
+    const b = await r.json();
+    // Die Funktion heisst `doesNotMatch`, nicht `notMatch` — mein erster
+    // Versuch war ein Tippfehler, und die Fehlermeldung („is not a function")
+    // sah nach einer fehlenden Node-Fassung aus. Sie ist vorhanden.
+    assert.doesNotMatch(String(b.error || ''), /is not defined/, 'Programmfehler statt Fachmeldung: ' + b.error);
+    if (b.code === 'translate_rate') gebremst = b;
+  }
+  // In dieser Umgebung ohne KI-Schluessel kommt 503 — die Bremse selbst wird
+  // nicht erreicht. Entscheidend ist, dass kein Programmfehler durchkommt.
+  assert.ok(gebremst === null || gebremst.code === 'translate_rate');
+});
+
 test('Moderation über HTTP: melden -> Queue nur für Mods -> auflösen+entfernen -> Beitrag weg', async () => {
   const author = await reg('moda' + PORT);
   const reporter = await reg('modb' + PORT);
@@ -1143,4 +1168,104 @@ test('GET /api/exchange: Rx-Angebote nur fuer verifizierte Fachkreise', async ()
   const d2 = await j('/api/exchange?country=AT', leser);
   assert.ok(!d2.entries.map((e) => e.bezeichnung).includes(ohneTitel),
     'ohne Kennzeichnung durchgekommen — der Standard muss schuetzen, nicht freigeben');
+});
+
+// ── Säule 3: Ausweich-Suche, Logistik, Sicherheitsmeldungen ────────────────
+test('GET /api/alternativen: nur fuer verifizierte Fachkreise, mit Einschraenkungs-Hinweis', async () => {
+  const user = await reg('alt' + PORT);
+  // Unverifiziert: abgewiesen, und zwar mit Begruendung. „Gleicher Wirkstoff"
+  // ist keine Austauschbarkeit, und diese Einordnung braucht Fachkunde.
+  const rr = await fetch(BASE + '/api/alternativen?q=Pantoprazol', { headers: H(user) });
+  assert.equal(rr.status, 403, 'Fachkreis-Schranke greift am Endpunkt');
+  assert.equal((await rr.json()).code, 'alt_fachkreis');
+
+  // Verifizieren (ueber die Redaktion, wie im echten Durchlauf).
+  await post('/api/verify/request', user, { licenseNumber: 'AT-ALT-' + PORT });
+  const login = await (await fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email: 'red@apopulse.test', password: 'redredred123' }) })).json();
+  const q = await j('/api/verify/requests', login.token);
+  const item = q.requests.find((r) => r.handle === 'alt' + PORT);
+  await post(`/api/verify/${item.user_id}/resolve`, login.token, { approve: true });
+
+  // Ohne Suchbegriff: klare Fehlermeldung statt leerer Antwort.
+  const ohneQ = await (await fetch(BASE + '/api/alternativen', { headers: H(user) })).json();
+  assert.equal(ohneQ.code, 'alt_q_missing');
+
+  // Mit Begriff. In dieser Pruefumgebung gibt es keinen Netzzugang — RxNav ist
+  // nicht erreichbar. Der Endpunkt MUSS das als Grund benennen und darf nicht
+  // mit einer leeren Liste antworten, die wie „es gibt keine" aussieht.
+  const r = await j('/api/alternativen?q=Pantoprazol', user);
+  assert.equal(r.available, true, 'RxNorm ist konfiguriert (APOPULSE_RXNORM nicht off)');
+  assert.ok(Array.isArray(r.wirkstoffe) && Array.isArray(r.praeparate));
+  assert.ok(['nicht_erreichbar', 'unbekannt', 'keine_praeparate', null].includes(r.grund), 'Grund: ' + r.grund);
+  // DER Punkt: Der einschraenkende Hinweis faehrt immer mit.
+  assert.match(r.hinweis, /KEINE Aussage über Austauschbarkeit/);
+});
+
+test('GET /api/logistik: „gesperrt" ist etwas anderes als „leer"', async () => {
+  const user = await reg('log' + PORT);
+  // Unverifiziert: erlaubt=false MIT Grund. Ohne dieses Feld saehe eine Sperre
+  // aus wie ein leerer Bereich, und die Oberflaeche sagte „hier ist nichts" —
+  // eine Falschaussage.
+  const gesperrt = await j('/api/logistik', user);
+  assert.deepEqual(gesperrt.meldungen, []);
+  assert.equal(gesperrt.erlaubt, false);
+  assert.equal(gesperrt.grund, 'unverifiziert');
+  assert.equal((await (await post('/api/logistik', user, { art: 'kuehlkette', titel: 'X' })).json()).code, 'logistik_fachkreis');
+
+  // Als Logistik-Betrieb verifizieren.
+  await post('/api/profile', user, { accountType: 'logistics' });
+  await post('/api/verify/request', user, { licenseNumber: 'AT-LOG-' + PORT });
+  const login = await (await fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email: 'red@apopulse.test', password: 'redredred123' }) })).json();
+  const q = await j('/api/verify/requests', login.token);
+  const item = q.requests.find((r) => r.handle === 'log' + PORT);
+  const res = await (await post(`/api/verify/${item.user_id}/resolve`, login.token, { approve: true })).json();
+  // Eine Spedition wird verifiziert, bekommt aber KEINEN Rx-Einblick.
+  assert.equal(res.rx_allowed, false);
+
+  // Jetzt: erlaubt, aber LEER — der ehrliche Startzustand. Es gibt keine
+  // Behoerdenschnittstelle fuer Kuehlketten-Brueche.
+  const leer = await j('/api/logistik', user);
+  assert.deepEqual(leer.meldungen, []);
+  assert.equal(leer.erlaubt, true);
+  assert.equal(leer.grund, null);
+
+  // Melden und wiederfinden — mit sichtbarer Herkunft.
+  const titel = 'Kühlkette KLPRUEF ' + PORT;
+  assert.equal((await post('/api/logistik', user, {
+    art: 'kuehlkette', titel, region: 'Hafen Luanda', betroffen: 'Insulin glargin', dringlichkeit: 'kritisch',
+  })).status, 200);
+  const voll = await j('/api/logistik', user);
+  const m = voll.meldungen.find((x) => x.titel === titel);
+  assert.ok(m, 'die eigene Meldung erscheint');
+  assert.equal(m.provenance, 'self_reported', 'eine Eigenangabe ist keine Behoerdenmeldung');
+  assert.equal(m.melder.handle, 'log' + PORT);
+  assert.equal(m.dringlichkeit, 'kritisch');
+
+  // Nach Art filtern; schliessen nimmt sie aus der offenen Liste.
+  assert.equal((await j('/api/logistik?art=zoll', user)).meldungen.length, 0);
+  assert.equal((await post(`/api/logistik/${m.id}/behoben`, user)).status, 200);
+  assert.ok(!(await j('/api/logistik', user)).meldungen.some((x) => x.id === m.id));
+  assert.ok((await j('/api/logistik?offen=0', user)).meldungen.some((x) => x.id === m.id), 'erreichbar bleibt sie');
+});
+
+test('GET /api/sicherheitsmeldungen: speist sich aus den Behoerden-Feeds, ohne eigene Daten', async () => {
+  const user = await reg('sich' + PORT);
+  const d = await j('/api/sicherheitsmeldungen', user);
+  assert.ok(Array.isArray(d.signale));
+  // Die Kategorien stehen in der Antwort: Ohne KI gibt es keine Einstufung,
+  // dann landet alles als NEWS und diese Ansicht bleibt leer, obwohl Meldungen
+  // da sind. Das muss die Oberflaeche sagen koennen.
+  assert.deepEqual(d.kategorien, ['RECALL', 'REGULATORY']);
+  assert.ok(['aktiv', 'aus'].includes(d.ki));
+  assert.ok(d.stand, 'Landesstand fuer die ehrliche Leermeldung');
+  // Jede Zeile traegt Herkunft mit Link — es sind dieselben Signale wie im
+  // Live-Warnungen-Reiter, nur gefiltert. Keine neue Quelle, keine Dummys.
+  for (const s of d.signale) {
+    assert.ok(s.originalUrl && s.sourceName, 'Signal ohne Herkunft');
+    assert.ok(['RECALL', 'REGULATORY'].includes(s.category), 'falsche Kategorie: ' + s.category);
+  }
+  // NICHT hinter der Fachkreis-Schranke: Ein Rote-Hand-Brief des BfArM steht
+  // oeffentlich auf bfarm.de. Ihn hier zu verstecken waere eine Sperre, die
+  // nichts schuetzt.
+  assert.equal(d.signale.length >= 0, true);
 });

@@ -489,3 +489,79 @@ Ergänzungen, Erklärungen, Einordnung, Zusammenfassung, Empfehlungen — und da
 Übersetzen von Fachbegriffen: Wirkstoffnamen (INN), Handelsnamen,
 Chargennummern, Dosierungen, Zulassungsnummern und Behördennamen werden
 unverändert übernommen. Eine verdeutschte Chargennummer ist eine falsche.
+
+## Kühlkette & Transport: ein Meldeweg, keine Anzeige (Säule 3, 05.10.2026)
+
+`GET /api/logistik` (+ `/mine`, `POST /api/logistik`, `POST /api/logistik/:id/behoben`,
+`DELETE /api/logistik/:id`).
+
+### Warum dieser Bereich am Anfang leer ist, und das richtig ist
+
+Für Kühlketten-Brüche, Zollstaus und Transportstörungen gibt es **keine
+Behördenschnittstelle** — weder kostenlos noch kostenpflichtig. Diese
+Information entsteht bei den Beteiligten (Spedition, Großhandel, Apotheke) und
+sonst nirgends. Wer hier Beispielzeilen einsetzt, erzeugt genau das, was die
+eiserne Regel verbietet: Zeilen, die wie geprüfte Meldungen aussehen und keine
+sind — und bei einer Kühlkette entscheidet daran, ob eine Charge vernichtet
+wird.
+
+Die Antwort ist deshalb **ehrliche Leermeldung plus Meldeweg**. Ein Meldeweg
+ist vom ersten Teilnehmer an nützlich; eine Anzeige ohne Quelle ist es nie.
+
+### `provenance: 'self_reported'`, immer und mit Namen
+
+Jede Zeile trägt die Herkunft und den **meldenden Betrieb mit Namen**. Das ist
+keine Formalie: Die Eigenangabe eines Großhändlers ist etwas anderes als eine
+Behördenmeldung, und wer sie verwechselt, hält eine Vermutung für einen Befund.
+
+### `logistikErlaubt` ist absichtlich nicht `rxErlaubt`
+
+Zwei Prädikate in `domain/jurisdiction.js`, die sich **nicht** vereinfachen
+lassen:
+
+| | Apotheke | Großhandel | Hersteller | **Logistik** |
+|---|---|---|---|---|
+| `rxErlaubt` (Rx-Angebote sehen) | ✓ | ✓ | ✓ | **✗** |
+| `logistikErlaubt` (Störungen melden) | ✓ | ✓ | ✓ | **✓** |
+
+Eine Spedition hat **keinen** Grund, Angebote zu verschreibungspflichtiger Ware
+zu sehen — sie transportiert, sie beschafft nicht. Bei Transportstörungen ist
+sie dagegen die **wichtigste** Gruppe: Sie merkt den Kühlketten-Bruch zuerst.
+Zusätzlich gilt: Das `isRxAllowed`-Veto der Redaktion sperrt den Rx-Einblick,
+**nicht** den Meldeweg — ein Betrieb, dem der Rx-Einblick entzogen wurde, darf
+weiter melden, dass sein Container im Hafen steht.
+
+Eine Gegenprobe, die Logistik in `RX_FACHKREIS_STATUS` aufnimmt, schlägt an;
+eine zweite, die den Rx-Entzug auf das Melden ausweitet, ebenfalls.
+
+### Gesperrt ist nicht leer
+
+`list()` gibt `{ meldungen, erlaubt, grund }` zurück, nicht nur ein Array. Ohne
+diese Unterscheidung sagte die Ansicht einem unverifizierten Konto „hier ist
+nichts" — eine **Falschaussage**, und sie verschweigt den einen Schritt, der
+hilft (verifizieren lassen). Das Frontend zeigt deshalb drei verschiedene
+Zustände: gesperrt, leer, gefiltert-und-nichts-getroffen. Das Browser-Audit
+prüft die Sperrkarte über ihr Kennzeichen `data-lglocked` — auf das Wort
+„verifiziert" zu prüfen wäre vakuant gewesen, es steht ohnehin im Untertitel.
+
+### Zwei Vorsichten in der Normalisierung
+
+- **Unbekannte Dringlichkeit fällt auf `hinweis`, nie auf `kritisch`.** Nach
+  oben zu runden erzeugte Fehlalarme aus Tippfehlern; rot bedeutet hier
+  „kritischer Engpass" und muss das bedeuten.
+- **Das Land kommt aus dem Profil, nicht aus der Anfrage** — dieselbe Regel wie
+  bei den Börsen-Einträgen. Der Rechtsraum ist keine Anzeigeoption.
+
+Abgelaufene (`gueltig_bis` in der Vergangenheit) und behobene Meldungen sind
+standardmäßig ausgeblendet: Eine Kühlketten-Warnung von vor drei Monaten ist
+keine Warnung mehr, sondern Rauschen. Über `offen=false` bleibt sie erreichbar.
+
+### Was bewusst nicht gebaut wurde
+
+Der Auftrag nannte auch eine **Fachkreis-Kommunikation für Hersteller und
+Pharmareferenten**. Umgesetzt ist davon die *Leserichtung*: Rote-Hand-Briefe
+und Rückrufe über `/api/sicherheitsmeldungen` (ungesperrt, siehe
+`docs/LIVE_DATA.md` 3e). Ein **Sendeweg** für herstellereigene
+Produkt-Mitteilungen wäre Werbung an Fachkreise, bräuchte die Schranke und
+Moderation — und hätte ohne ersten Hersteller einen leeren Bereich ergeben.
+Die eiserne Regel verbietet Platzhalter, also wurde er nicht angelegt.

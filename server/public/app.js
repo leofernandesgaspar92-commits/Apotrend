@@ -1113,7 +1113,7 @@ async function loadOverview() {
     <div class="row" style="flex-wrap:wrap;gap:10px">
       ${tiles.join('')}
     </div>
-    <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px"><button class="ghost small" id="ov_signals">${esc(t('nav_signals'))}</button><button class="ghost small" id="ov_bm">${esc(t('ov_bookmarks'))}</button><button class="ghost small" id="ov_promos">${esc(t('wb_nav'))}</button><button class="ghost small" id="ov_live">${esc(t('lv_nav'))}</button><button class="ghost small" id="ov_dir">${esc(t('dir_nav'))}</button><button class="ghost small" id="ov_team">${esc(t('th_nav'))}</button></div>
+    <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px"><button class="ghost small" id="ov_signals">${esc(t('nav_signals'))}</button><button class="ghost small" id="ov_logistik">${esc(t('lg_nav'))}</button><button class="ghost small" id="ov_bm">${esc(t('ov_bookmarks'))}</button><button class="ghost small" id="ov_promos">${esc(t('wb_nav'))}</button><button class="ghost small" id="ov_live">${esc(t('lv_nav'))}</button><button class="ghost small" id="ov_dir">${esc(t('dir_nav'))}</button><button class="ghost small" id="ov_team">${esc(t('th_nav'))}</button></div>
   </div>`);
   head.querySelectorAll('.ovtile[data-go]').forEach(t => { if (t.dataset.go) t.onclick = () => { if (t.dataset.go === 'live') { openLive(); return; } if (t.dataset.filter) shortageFilter = t.dataset.filter; goTab(t.dataset.go); }; });
   head.querySelectorAll('.ovtile').forEach(t => { if (!t.dataset.go) t.onclick = () => document.getElementById('btnNotif').click(); });
@@ -1127,6 +1127,10 @@ async function loadOverview() {
   // Owner-Vorgabe. Sobald es einen Gesehen-Stand gibt, wird daraus eine Kachel
   // mit „neu seit deinem letzten Besuch".
   head.querySelector('#ov_signals').onclick = () => goTab('signals');
+  // Kuehlketten/Transport: ein Knopf, kein Reiter. Der Bereich ist fuer
+  // Grosshandel und Logistik, und fuer Apotheken meist leer — eine Kachel mit
+  // „0" waere ein Zaehler ohne Aussage.
+  { const lb = head.querySelector('#ov_logistik'); if (lb) lb.onclick = () => openLogistik(); }
   head.querySelector('#ov_bm').onclick = openBookmarks;
   head.querySelector('#ov_promos').onclick = () => openPromotions();
   head.querySelector('#ov_live').onclick = () => openLive();
@@ -2370,16 +2374,47 @@ async function loadSignals() {
     };
     machen(null, t('sig_kat_alle'));
     for (const k of SIGNAL_KATEGORIEN) machen(k, t('sig_kat_' + k.toLowerCase()));
+    // ── Sicherheitsmeldungen (Rote-Hand-Briefe, Rueckrufe) ──────────────────
+    //  Ein eigener Knopf und KEIN eigener Reiter: Es sind dieselben Signale,
+    //  nur auf RECALL + REGULATORY gefiltert. Ein zehnter Reiter fuer einen
+    //  Filter waere Gedraenge ohne Gewinn — und die Leiste ist auf dem Handy
+    //  schon voll.
+    //
+    //  Nicht hinter der Fachkreis-Schranke: Ein Rote-Hand-Brief des BfArM
+    //  steht oeffentlich auf bfarm.de. Ihn zu verstecken waere eine Sperre,
+    //  die nichts schuetzt.
+    {
+      const aktiv = kategorie === '__sicherheit';
+      const b2 = el(`<button class="${aktiv ? '' : 'ghost '}small" aria-pressed="${aktiv}" style="min-height:40px;font-weight:700">⚠️ ${esc(t('sig_safety'))}</button>`);
+      b2.onclick = () => { kategorie = '__sicherheit'; malKnoepfe(); laden(); };
+      katBox.appendChild(b2);
+    }
   };
 
   const laden = async () => {
     liste.innerHTML = '<div class="loading">…</div>';
+    const sicherheit = kategorie === '__sicherheit';
     const p = new URLSearchParams({ country: land, limit: '100' });
-    if (kategorie) p.set('category', kategorie);
+    if (kategorie && !sicherheit) p.set('category', kategorie);
     if (suche) p.set('wirkstoff', suche);
     let d;
-    try { d = await api('GET', '/api/signals?' + p.toString()); }
+    try {
+      // Der Sicherheits-Endpunkt bündelt RECALL und REGULATORY serverseitig —
+      // zwei Abfragen im Frontend zu verschmelzen hiesse, die Sortierung
+      // zweimal unterschiedlich zu machen.
+      d = sicherheit
+        ? await api('GET', '/api/sicherheitsmeldungen?country=' + encodeURIComponent(land))
+        : await api('GET', '/api/signals?' + p.toString());
+    }
     catch (e) { liste.innerHTML = ''; liste.appendChild(errorState(e.message, laden)); return; }
+    // Die Wirkstoff-Suche filtert bei den Sicherheitsmeldungen im Frontend:
+    // Der Endpunkt kennt sie nicht, und sie serverseitig nachzurüsten hiesse,
+    // die Bündelung aufzubrechen.
+    if (sicherheit && suche) {
+      const w = suche.toLowerCase();
+      d = { ...d, signale: (d.signale || []).filter((x) =>
+        [x.wirkstoff, x.handelsname, x.title].some((f) => f && String(f).toLowerCase().includes(w))) };
+    }
 
     liste.innerHTML = '';
     zaehler.textContent = ti('sig_count', { n: d.signale.length });
@@ -2404,7 +2439,7 @@ async function loadSignals() {
       // Läuft die KI? Ohne sie kommen Meldungen ohne Wirkstoff und Schweregrad
       // an — die Ansicht funktioniert, zeigt aber weniger. Das offen sagen,
       // statt es als leeren Inhalt aussehen zu lassen.
-      if (d.ki !== 'aktiv') liste.appendChild(el(`<div class="card muted" style="font-size:13px">${esc(t('sig_ki_aus'))}</div>`));
+      if (d.ki !== 'aktiv') liste.appendChild(el(`<div class="card muted" style="font-size:13px">${esc(sicherheit ? t('sig_safety_noai') : t('sig_ki_aus'))}</div>`));
       return;
     }
     d.signale.forEach(s => liste.appendChild(signalCard(s)));
@@ -4094,7 +4129,7 @@ async function openCart(flash) {
     // Am Ende jeder Lieferantengruppe die Zwischensumme ausgeben (nur wenn mehr als eine
     // Gruppe existiert — bei nur einem Lieferant genügt die Gesamtsumme oben).
     const next = bySupplier[idx + 1];
-    const nextSup = next ? (next.supplier || '').trim() : ' end';
+    const nextSup = next ? (next.supplier || '').trim() : '\u0000end';
     if (nextSup !== sup && !(idx === bySupplier.length - 1 && subEls.size === 0)) {
       const subEl = el(`<div class="cart-subline"></div>`);
       subEls.set(sup, subEl);
@@ -4116,7 +4151,7 @@ function printCart(d) {
   // Bestellungen gehen je Großhandel raus -> nach Lieferant gruppieren, je Gruppe eine Zwischensumme.
   const groups = new Map();
   for (const i of d.items) {
-    const key = (i.supplier || '').trim() || ' '; // ohne Lieferant zuletzt
+    const key = (i.supplier || '').trim() || '\u0000'; // ohne Lieferant zuletzt
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(i);
   }
@@ -4126,7 +4161,7 @@ function printCart(d) {
   });
   const section = (key) => {
     const items = groups.get(key);
-    const label = key === ' ' ? t('cart_supplier_none') : key;
+    const label = key === '\u0000' ? t('cart_supplier_none') : key;
     const sub = items.reduce((s, i) => s + (Number(i.aktionspreis) || 0) * (Number(i.menge) || 0), 0);
     const rows = items.map(i => `<tr><td>${esc(i.bezeichnung)}</td><td>${esc(i.wirkstoff||'')}</td><td class="r">${i.menge}</td><td class="r">${i.aktionspreis!=null?'€ '+printMoney(i.aktionspreis):'—'}</td><td class="r">${i.aktionspreis!=null?'€ '+printMoney(i.aktionspreis*i.menge):'—'}</td><td>${esc(i.gueltig_bis||'')}</td>${i.note?`<td>${esc(i.note)}</td>`:'<td></td>'}</tr>`).join('');
     return `<h3>🏢 ${esc(label)}</h3>
@@ -6643,6 +6678,12 @@ async function openWirkstoff(name) {
   section(t('wk_prices_t'), d.prices.length, t('wk_prices_e'), body => d.prices.forEach(g => body.appendChild(priceGroup(g))));
   // Rabatte
   section(t('wk_deals_t'), d.rabatte.length, t('wk_deals_e'), body => d.rabatte.forEach(r => { r.rank = r.rank || 1; body.appendChild(rabattCard(r)); }));
+  // ── Ausweich-Suche ───────────────────────────────────────────────────────
+  //  Genau hier steht die Apothekerin, wenn ein Praeparat nicht lieferbar ist.
+  //  Die Karte ist EINGEKLAPPT: Sie fragt RxNav im Netz, und ein Aufruf, den
+  //  niemand angefordert hat, belastet eine fremde Schnittstelle.
+  renderAusweich(feed, d.wirkstoff);
+
   // Diskussion & Fragen (öffentliche Beiträge, die den Wirkstoff erwähnen) + Compose
   const posts = d.posts || [];
   const dcard = el(`<div class="card"><div class="row"><b>${esc(t('wk_disc_t'))}</b><span class="sp" style="flex:1"></span>
@@ -6669,6 +6710,266 @@ async function openWirkstoff(name) {
     } catch(e){ werr.textContent = e.message; }
   };
   feed.appendChild(dcard);
+}
+
+/**
+ * Ausweich-Suche: Praeparate mit demselben Wirkstoff.
+ *
+ * ══════════════════════════════════════════════════════════════════════════
+ *  DIE WICHTIGSTE ZEILE DIESER FUNKTION IST DER HINWEIS
+ * ══════════════════════════════════════════════════════════════════════════
+ *  „Gleicher Wirkstoff" ist KEINE Austauschbarkeit — sie haengt an
+ *  Darreichungsform, Staerke, Hilfsstoffen und nationaler Zulassung. Der
+ *  Server schickt den einschraenkenden Satz in JEDER Antwort mit, und er wird
+ *  hier VOR der Liste angezeigt, nicht als Fussnote darunter. Wer die Liste
+ *  liest, muss die Einordnung schon gelesen haben.
+ *
+ *  Der Server weist die Anfrage ausserdem fuer unverifizierte Konten ab. Diese
+ *  Ansicht faengt das ab und sagt warum, statt eine rohe Fehlermeldung zu
+ *  zeigen.
+ */
+async function renderAusweich(feed, wirkstoff) {
+  const card = el(`<div class="card">
+    <button class="ghost small" data-open aria-expanded="false" style="width:100%;text-align:left;display:flex;align-items:center;gap:8px;min-height:44px">
+      <b>🔄 ${esc(t('aw_title'))}</b><span class="sp" style="flex:1"></span><span data-chev aria-hidden="true">▸</span>
+    </button>
+    <div class="muted" style="font-size:13px;margin-top:4px">${esc(t('aw_sub'))}</div>
+    <div class="hidden" data-awbody style="margin-top:10px"></div>
+  </div>`);
+  const body = card.querySelector('[data-awbody]');
+  const chev = card.querySelector('[data-chev]');
+  const btn = card.querySelector('[data-open]');
+  let geladen = false;
+
+  btn.onclick = async () => {
+    const offen = body.classList.toggle('hidden') === false;
+    btn.setAttribute('aria-expanded', String(offen));
+    chev.textContent = offen ? '▾' : '▸';
+    if (!offen || geladen) return;
+    geladen = true;
+    body.innerHTML = `<div class="loading">…</div>`;
+    let d;
+    try { d = await api('GET', '/api/alternativen?q=' + encodeURIComponent(wirkstoff)); }
+    catch (e) {
+      body.innerHTML = '';
+      // Die Fachkreis-Schranke benennen statt eine rohe Fehlermeldung zu zeigen.
+      body.appendChild(el(`<div class="card muted" style="margin:0">${esc(e.message)}</div>`));
+      geladen = false;
+      return;
+    }
+    body.innerHTML = '';
+
+    // DER HINWEIS ZUERST. Nicht als Fussnote.
+    if (d.hinweis) {
+      body.appendChild(el(`<div style="background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-fg);border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.5">
+        ⚠️ ${esc(d.hinweis)}</div>`));
+    }
+    if (d.available === false) {
+      body.appendChild(el(`<div class="muted" style="margin-top:10px">${esc(t('aw_off'))}</div>`));
+      return;
+    }
+
+    const wirkstoffe = d.wirkstoffe || [];
+    const praeparate = d.praeparate || [];
+    if (!wirkstoffe.length && !praeparate.length) {
+      // Drei Gruende, die NICHT gleich aussehen duerfen.
+      const key = d.grund === 'unbekannt' ? 'aw_unknown'
+        : d.grund === 'nicht_erreichbar' ? 'aw_unreachable'
+          : d.grund === 'zu_kurz' ? 'aw_short' : 'aw_none';
+      body.appendChild(el(`<div class="muted" style="margin-top:10px">${esc(t(key))}</div>`));
+      return;
+    }
+
+    if (wirkstoffe.length) {
+      // Der WIRKSTOFF ist der nuetzliche Teil: Der INN ist international, mit
+      // ihm laesst sich in unseren eigenen Daten weitersuchen.
+      const wbox = el(`<div style="margin-top:10px"><div class="muted" style="font-size:13px">${esc(t('aw_inn'))}</div>
+        <div class="row" data-innlist style="gap:6px;flex-wrap:wrap;margin-top:4px"></div></div>`);
+      const list = wbox.querySelector('[data-innlist]');
+      wirkstoffe.forEach((w) => {
+        const b2 = el(`<button class="small" style="min-height:40px">${esc(w.name)}</button>`);
+        b2.onclick = () => openWirkstoff(w.name);
+        list.appendChild(b2);
+      });
+      body.appendChild(wbox);
+    }
+
+    if ((d.eigene_engpaesse || []).length) {
+      // Was in UNSEREN Daten dazu liegt — damit kann eine Apotheke etwas
+      // anfangen. Ein US-Produkt kann sie nicht bestellen.
+      const ebox = el(`<div style="margin-top:12px"><div class="muted" style="font-size:13px">${esc(t('aw_own'))}</div>
+        <div data-ownlist style="margin-top:4px"></div></div>`);
+      const ol = ebox.querySelector('[data-ownlist]');
+      d.eigene_engpaesse.forEach((sh) => {
+        const z = el(`<div class="comment clickable" style="font-size:14px">${esc(sh.bezeichnung || sh.wirkstoff)} — ${esc(sh.status)}</div>`);
+        z.onclick = () => openWirkstoff(sh.wirkstoff);
+        ol.appendChild(z);
+      });
+      body.appendChild(ebox);
+    }
+
+    if (praeparate.length) {
+      // US-Bestand, ausdruecklich gekennzeichnet: Ein oesterreichischer
+      // Handelsname steht in RxNorm haeufig nicht drin, und ein US-Produkt
+      // kann eine Wiener Apotheke nicht bestellen.
+      const pbox = el(`<div style="margin-top:12px"><div class="muted" style="font-size:13px">${esc(ti('aw_products', { n: praeparate.length }))}</div>
+        <div data-plist style="margin-top:4px;display:grid;gap:4px"></div></div>`);
+      const pl = pbox.querySelector('[data-plist]');
+      praeparate.forEach((pr) => {
+        pl.appendChild(el(`<div style="font-size:14px">${esc(pr.name)}
+          ${pr.quelle ? `<a class="linklike small" href="${esc(pr.quelle)}" target="_blank" rel="noopener noreferrer" style="margin-left:6px">${esc(t('aw_lookup'))}</a>` : ''}</div>`));
+      });
+      body.appendChild(pbox);
+    }
+  };
+  feed.appendChild(card);
+}
+
+/**
+ * Kuehlketten- und Transportmeldungen.
+ *
+ * Der Bereich ist am Anfang LEER, und das ist richtig: Es gibt keine
+ * Behoerdenschnittstelle fuer Kuehlketten-Brueche. Die Ansicht unterscheidet
+ * deshalb drei Zustaende, die NICHT gleich aussehen duerfen:
+ *   · gesperrt (nicht verifiziert) -> sagen, was zu tun ist
+ *   · erlaubt und leer             -> Meldeweg anbieten
+ *   · erlaubt mit Meldungen        -> Liste, jede mit Herkunft
+ */
+async function openLogistik() {
+  setDocTitle(t('lg_title'));
+  app.innerHTML = '';
+  const back = el(`<div class="row" style="margin-bottom:8px"><button class="ghost small" id="lgBack">${esc(t('gen_back'))}</button></div>`);
+  app.appendChild(back);
+  back.querySelector('#lgBack').onclick = () => mainScreen();
+
+  const kopf = el(`<div class="card">
+    <h1 style="margin:0 0 2px">🚚 ${esc(t('lg_title'))}</h1>
+    <div class="muted">${esc(t('lg_sub'))}</div>
+    <div class="row" data-lgart style="gap:6px;flex-wrap:wrap;margin-top:10px"></div>
+  </div>`);
+  app.appendChild(kopf);
+  const liste = el('<div data-lglist></div>');
+  app.appendChild(liste);
+
+  let art = null;
+  const ARTEN = ['kuehlkette', 'zoll', 'transport'];
+  const malKnoepfe = () => {
+    const box = kopf.querySelector('[data-lgart]');
+    box.innerHTML = '';
+    const machen = (wert, label) => {
+      const aktiv = art === wert;
+      const b = el(`<button class="${aktiv ? '' : 'ghost '}small" aria-pressed="${aktiv}" style="min-height:40px">${esc(label)}</button>`);
+      b.onclick = () => { art = wert; malKnoepfe(); laden(); };
+      box.appendChild(b);
+    };
+    machen(null, t('lg_all'));
+    for (const a2 of ARTEN) machen(a2, t('lg_art_' + a2));
+  };
+
+  const laden = async () => {
+    liste.innerHTML = '<div class="loading">…</div>';
+    let d;
+    try { d = await api('GET', '/api/logistik' + (art ? '?art=' + encodeURIComponent(art) : '')); }
+    catch (e) { liste.innerHTML = ''; liste.appendChild(errorState(e.message, laden)); return; }
+    liste.innerHTML = '';
+
+    if (!d.erlaubt) {
+      // GESPERRT ist nicht LEER. Ohne diese Unterscheidung sagte die Ansicht
+      // „hier ist nichts" — eine Falschaussage.
+      const c = el(`<div class="card" data-lglocked><b>🔒 ${esc(t('lg_locked_t'))}</b>
+        <div class="muted" style="margin-top:6px">${esc(t('lg_locked_s'))}</div>
+        <div style="margin-top:10px"><button class="small" data-verify>${esc(t('ex_rx_verify_cta'))}</button></div></div>`);
+      c.querySelector('[data-verify]').onclick = () => { mainScreen().then(() => me && openProfile(me.handle)); };
+      liste.appendChild(c);
+      return;
+    }
+
+    liste.appendChild(formular());
+
+    if (!d.meldungen.length) {
+      liste.appendChild(el(`<div class="card"><div class="muted">${esc(art ? t('lg_empty_filter') : t('lg_empty'))}</div></div>`));
+      return;
+    }
+    d.meldungen.forEach((m) => liste.appendChild(karte(m)));
+  };
+
+  const FARBE = { kritisch: 'var(--crit-fg)', hinweis: 'var(--warn-fg)', behoben: 'var(--ok-fg)' };
+  const karte = (m) => {
+    const c = el(`<div class="card" style="border-left:4px solid ${FARBE[m.dringlichkeit] || 'var(--line)'}">
+      <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
+        <span style="font-weight:700">${esc(t('lg_art_' + m.art))}</span>
+        <span style="background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:13px;color:${FARBE[m.dringlichkeit] || ''}">${esc(t('lg_d_' + m.dringlichkeit))}</span>
+        ${m.region ? `<span class="muted" style="font-size:13px">📍 ${esc(m.region)}</span>` : ''}
+      </div>
+      <div style="font-weight:800;margin-top:6px;line-height:1.35">${esc(m.titel)}</div>
+      ${m.beschreibung ? `<div style="margin-top:6px;line-height:1.5">${esc(m.beschreibung)}</div>` : ''}
+      ${m.betroffen ? `<div style="margin-top:6px;font-size:14px"><span class="muted">${esc(t('lg_affected'))}:</span> <b>${esc(m.betroffen)}</b></div>` : ''}
+      ${m.gueltig_bis ? `<div class="muted" style="margin-top:4px;font-size:13px">${esc(ti('lg_until', { d: dayLabel(m.gueltig_bis) }))}</div>` : ''}
+      <div class="muted" style="margin-top:8px;font-size:12px">
+        ${esc(ti('lg_reported_by', { who: (m.melder && m.melder.display_name) || '—' }))} · ${esc(t('lg_selfreported'))}
+      </div>
+      ${me && m.melder && m.melder.handle === me.handle && m.dringlichkeit !== 'behoben'
+        ? `<div class="row" style="margin-top:8px"><button class="ghost small" data-done>${esc(t('lg_mark_done'))}</button></div>` : ''}
+    </div>`);
+    const db = c.querySelector('[data-done]');
+    if (db) db.onclick = async () => {
+      try { await api('POST', `/api/logistik/${encodeURIComponent(m.id)}/behoben`); laden(); }
+      catch (e) { alert(e.message); }
+    };
+    return c;
+  };
+
+  const formular = () => {
+    const f = el(`<div class="card">
+      <button class="ghost small" data-open aria-expanded="false" style="width:100%;text-align:left;display:flex;align-items:center;gap:8px;min-height:44px">
+        <b>${esc(t('lg_new'))}</b><span class="sp" style="flex:1"></span><span data-chev aria-hidden="true">▸</span>
+      </button>
+      <div class="hidden" data-form style="margin-top:8px">
+        <select data-art aria-label="${esc(t('lg_art_label'))}">${ARTEN.map(a2 => `<option value="${a2}">${esc(t('lg_art_' + a2))}</option>`).join('')}</select>
+        <input data-titel placeholder="${esc(t('lg_titel_ph'))}" aria-label="${esc(t('lg_titel_ph'))}" style="margin-top:6px">
+        <textarea data-besch placeholder="${esc(t('lg_besch_ph'))}" style="margin-top:6px"></textarea>
+        <input data-region placeholder="${esc(t('lg_region_ph'))}" aria-label="${esc(t('lg_region_ph'))}" style="margin-top:6px">
+        <input data-betroffen placeholder="${esc(t('lg_affected_ph'))}" aria-label="${esc(t('lg_affected_ph'))}" style="margin-top:6px">
+        <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap">
+          <select data-dring aria-label="${esc(t('lg_d_label'))}">
+            <option value="kritisch">${esc(t('lg_d_kritisch'))}</option>
+            <option value="hinweis" selected>${esc(t('lg_d_hinweis'))}</option>
+          </select>
+          <input data-bis type="date" aria-label="${esc(t('lg_until_label'))}">
+        </div>
+        <div class="muted" style="font-size:12px;margin-top:6px">${esc(t('lg_selfreported_hint'))}</div>
+        <div class="row" style="margin-top:8px"><button data-send>${esc(t('lg_send'))}</button><span class="err" data-err style="margin-left:8px"></span></div>
+      </div>
+    </div>`);
+    const form = f.querySelector('[data-form]');
+    const chev = f.querySelector('[data-chev]');
+    const ob = f.querySelector('[data-open]');
+    ob.onclick = () => {
+      const offen = form.classList.toggle('hidden') === false;
+      ob.setAttribute('aria-expanded', String(offen));
+      chev.textContent = offen ? '▾' : '▸';
+      if (offen) f.querySelector('[data-titel]').focus();
+    };
+    f.querySelector('[data-send]').onclick = async () => {
+      const err = f.querySelector('[data-err]'); err.textContent = '';
+      try {
+        await api('POST', '/api/logistik', {
+          art: f.querySelector('[data-art]').value,
+          titel: f.querySelector('[data-titel]').value,
+          beschreibung: f.querySelector('[data-besch]').value,
+          region: f.querySelector('[data-region]').value,
+          betroffen: f.querySelector('[data-betroffen]').value,
+          dringlichkeit: f.querySelector('[data-dring]').value,
+          gueltigBis: f.querySelector('[data-bis]').value || null,
+        });
+        laden();
+      } catch (e) { err.textContent = e.message; }
+    };
+    return f;
+  };
+
+  malKnoepfe();
+  await laden();
 }
 
 /**

@@ -592,6 +592,125 @@ async function main() {
     await ctx2.close();
   }
 
+  // ── Säule 3: Ausweich-Suche, Logistik, Sicherheitsmeldungen ──────────────
+  //  Drei Ansichten, drei Zusicherungen, die kein Unit-Test sagt:
+  //
+  //   1. AUSWEICH-SUCHE: Der einschraenkende Hinweis („keine Aussage ueber
+  //      Austauschbarkeit") muss VOR der Liste stehen, nicht als Fussnote.
+  //      Wer die Liste liest, muss die Einordnung schon gelesen haben.
+  //   2. LOGISTIK: „gesperrt" darf nicht wie „leer" aussehen.
+  //   3. SICHERHEITSMELDUNGEN: Der Knopf muss den anderen Endpunkt abfragen.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+
+    const HINWEIS = 'Gleicher Wirkstoff laut RxNorm (US-Vokabular der National Library of Medicine). '
+      + 'Das ist KEINE Aussage über Austauschbarkeit: Sie hängt an Darreichungsform, Stärke, Hilfsstoffen und '
+      + 'nationaler Zulassung und ist hier nicht geprüft. Die Abgabeentscheidung bleibt bei der Apotheke.';
+    await page.route('**/api/alternativen*', (route) => route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({
+        available: true, begriff: 'Amoxicillin', rxcui: '723',
+        wirkstoffe: [{ name: 'AWPRUEF-WIRKSTOFF', tty: 'IN', rxcui: '723', quelle: 'https://mor.nlm.nih.gov/RxNav/search?searchBy=RXCUI&searchTerm=723' }],
+        praeparate: [{ name: 'AWPRUEF-PRAEPARAT', tty: 'SBD', rxcui: '9', quelle: 'https://mor.nlm.nih.gov/RxNav/search?searchBy=RXCUI&searchTerm=9' }],
+        grund: null, hinweis: HINWEIS, eigene_engpaesse: [],
+      }),
+    }));
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
+    await page.goto(BASE, { waitUntil: 'networkidle' });
+
+    // ── 1. Ausweich-Suche auf der Wirkstoff-Seite ──
+    await page.evaluate(() => window.openWirkstoff && window.openWirkstoff('Amoxicillin'));
+    await page.waitForTimeout(900);
+    const awKnopf = page.locator('[data-open]:has-text("Ausweichpräparate")').first();
+    if (await awKnopf.count() === 0) {
+      findings.push('Ausweich-Suche: Karte fehlt auf der Wirkstoff-Seite');
+    } else {
+      // Eingeklappt: NOCH KEINE Abfrage. Ein Netzaufruf, den niemand
+      // angefordert hat, belastet eine fremde Schnittstelle.
+      const vorKlick = await page.locator('[data-awbody]').innerText().catch(() => '');
+      if (/AWPRUEF/.test(vorKlick)) findings.push('Ausweich-Suche: fragt RxNav schon vor dem Aufklappen ab');
+
+      await awKnopf.click();
+      await page.waitForTimeout(600);
+      const text = await page.locator('[data-awbody]').innerText().catch(() => '');
+      if (!/KEINE Aussage über Austauschbarkeit/.test(text)) {
+        findings.push('Ausweich-Suche: der einschraenkende Hinweis fehlt');
+      }
+      if (!/AWPRUEF-WIRKSTOFF/.test(text)) findings.push('Ausweich-Suche: der Wirkstoff fehlt');
+      if (!/AWPRUEF-PRAEPARAT/.test(text)) findings.push('Ausweich-Suche: die Praeparate fehlen');
+      // Der Hinweis muss VOR der Liste stehen.
+      if (text.indexOf('Austauschbarkeit') > text.indexOf('AWPRUEF-PRAEPARAT')) {
+        findings.push('Ausweich-Suche: der Hinweis steht NACH der Liste — wer die Liste liest, hat die Einordnung dann nicht gelesen');
+      } else {
+        console.log('✓ Ausweich-Suche: Hinweis vor der Liste, Wirkstoff und Praeparate da, keine Abfrage vor dem Klick');
+      }
+    }
+
+    // ── 2. Logistik: gesperrt ist nicht leer ──
+    await page.route('**/api/logistik*', (route) => route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ meldungen: [], erlaubt: false, grund: 'unverifiziert' }),
+    }));
+    await page.evaluate(() => window.openLogistik && window.openLogistik());
+    await page.waitForTimeout(700);
+    const lgText = await page.locator('#app').innerText().catch(() => '');
+    // Auf die SPERRKARTE pruefen, nicht auf das Wort „verifiziert" irgendwo im
+    // Text: Der Untertitel der Seite („von verifizierten Betrieben gemeldet")
+    // enthaelt es ohnehin, in EN/PT sogar wortgleich zur Sperrmeldung. Ein
+    // Textfund haette die Pruefung also auch dann bestanden, wenn die
+    // Sperrkarte fehlt — sie waere nur auf Deutsch zufaellig scharf gewesen.
+    const lgSperre = await page.locator('[data-lglocked]').count();
+    if (!lgSperre) {
+      findings.push(`Logistik: „gesperrt" wird nicht benannt — sieht aus wie ein leerer Bereich (${lgText.slice(0, 120).replace(/\s+/g, ' ')})`);
+    } else if (!/verifizierte Betriebe|Verified businesses|estabelecimentos verificados/i.test(lgText)) {
+      findings.push('Logistik: Sperrkarte da, benennt aber die geforderte Stufe nicht');
+    } else {
+      console.log('✓ Logistik: gesperrt wird als gesperrt benannt, nicht als leer');
+    }
+
+    // ── 3. Sicherheitsmeldungen: eigener Endpunkt ──
+    const sichAufrufe = [];
+    await page.route('**/api/sicherheitsmeldungen*', (route) => {
+      sichAufrufe.push(route.request().url());
+      return route.fulfill({
+        status: 200, contentType: 'application/json',
+        body: JSON.stringify({
+          signale: [{
+            dedupeKey: 'bfarm:1', title: 'SICHPRUEF Rueckruf', summary: null, summaryDe: null,
+            originalUrl: 'https://www.bfarm.de/s/1', sourceName: 'BfArM', sourceId: 'bfarm_news',
+            country: 'AT', language: 'de', category: 'RECALL', wirkstoff: null, handelsname: null,
+            schweregrad: 'kritisch', ursache: null, gueltigVon: null, gueltigBis: null,
+            confidenceScore: 0, verifiedAt: new Date().toISOString(), publishedAt: null,
+          }],
+          stand: { land: 'AT', signale: 1, letzte: new Date().toISOString() },
+          ki: 'aktiv', kategorien: ['RECALL', 'REGULATORY'],
+        }),
+      });
+    });
+    await page.goto(BASE, { waitUntil: 'networkidle' });
+    await page.click('.tabs button[data-tab="signals"]').catch(() => {});
+    await page.waitForTimeout(700);
+    const sichKnopf = page.locator('[data-sigkat] button:has-text("Sicherheitsmeldungen")').first();
+    if (await sichKnopf.count() === 0) {
+      findings.push('Sicherheitsmeldungen: Knopf fehlt in der Kategorie-Leiste');
+    } else {
+      await sichKnopf.click();
+      await page.waitForTimeout(700);
+      if (!sichAufrufe.length) {
+        findings.push('Sicherheitsmeldungen: der eigene Endpunkt wurde nicht abgefragt — der Knopf filtert nur lokal');
+      } else if (!/SICHPRUEF/.test(await page.locator('[data-siglist]').innerText().catch(() => ''))) {
+        findings.push('Sicherheitsmeldungen: die Meldung erscheint nicht');
+      } else {
+        console.log('✓ Sicherheitsmeldungen: eigener Endpunkt, Meldung erscheint');
+      }
+    }
+    if (errors.length) findings.push(`Säule 3: JS-Fehler — ${errors.slice(0, 2).join(' | ')}`);
+    await ctx.close();
+  }
+
   // ── Warnung vor nicht dauerhafter Speicherung ─────────────────────────────
   //  Eigener Kontext OHNE Anmeldung: Die übrige Prüfung meldet sich mit einem
   //  Token an und bekommt den Registrierungs-Bildschirm deshalb nie zu sehen —

@@ -1331,3 +1331,79 @@ an.
 
 **Offen:** RxNorm-Anbindung (Säule 1), Säule 3 (B2B-Bereiche — jetzt möglich,
 weil Verifizierung funktioniert), `watchersForText` auf Wortgrenzen.
+
+### Cycle · Säule 3: Ausweichpräparate, Kühlkette, Sicherheitsmeldungen (2026-10-05)
+
+**GATHER.** Die Verifizierungsstufen stehen seit dem letzten Zyklus — damit war
+Säule 3 erst möglich: B2B-Bereiche brauchen ein Konto, das nachweislich ein
+Betrieb ist. Der Auftrag nannte drei Teile: Wirkstoff-Alternativen über RxNorm,
+eine Kühlketten-/Zoll-Statusanzeige für Großhandel und Logistik, und
+Fachkreis-Kommunikation für Hersteller.
+
+**WORK — Teil 1: Ausweichpräparate.** Der Auftrag sagte „baugleich". **Genau
+diese Aussage macht der Dienst nicht**, und das ist die Hauptarbeit dieses
+Teils: RxNorm sagt „gleicher Wirkstoff" und nichts weiter. Austauschbarkeit
+hängt an Darreichungsform, Stärke, Hilfsstoffen und nationaler Zulassung —
+keines davon steht in RxNorm. `SUBSTITUTIONS_HINWEIS` fährt in jeder Antwort
+mit, die Oberfläche zeigt ihn **vor** der Liste, und „bioäquivalent" kommt
+nirgends vor. Wer die Liste liest, hat die Einordnung dann schon gelesen.
+
+Der nützliche Teil ist der **INN**, nicht das Präparat: Ein US-Handelsname aus
+RxNorm ist für eine Apotheke in Wien nicht bestellbar. Also stehen die
+Wirkstoffe oben, sind klickbar, und `eigene_engpaesse` reicht nach, was zu dem
+Wirkstoff in **unseren** Daten liegt. Fünf Gründe (`zu_kurz`, `unbekannt`,
+`kein_wirkstoff`, `keine_praeparate`, `nicht_erreichbar`) sehen unterschiedlich
+aus — „RxNorm kennt den Begriff nicht" ist ein Ergebnis, „RxNav antwortet
+nicht" ein Ausfall, und letzterer wird nicht zwischengespeichert.
+
+**WORK — Teil 2: Kühlkette & Zoll.** Hier gibt es **keine
+Behördenschnittstelle**, für kein Geld. Diese Information entsteht bei
+Spedition, Großhandel und Apotheke und sonst nirgends. Also: ehrliche
+Leermeldung **plus Meldeweg**, jede Zeile `provenance: 'self_reported'` mit dem
+Namen des Betriebs. Beispielzeilen wären hier besonders schädlich — an einer
+Kühlketten-Meldung entscheidet, ob eine Charge vernichtet wird.
+
+`logistikErlaubt` ist dabei **absichtlich ein anderes Prädikat** als
+`rxErlaubt`: Eine Spedition hat keinen Grund, Rx-Angebote zu sehen (sie
+transportiert, sie beschafft nicht), ist beim Kühlketten-Bruch aber die
+wichtigste Gruppe — sie merkt ihn zuerst. Und das `isRxAllowed`-Veto der
+Redaktion sperrt den Rx-Einblick, nicht den Meldeweg.
+
+`list()` gibt `{ meldungen, erlaubt, grund }` zurück: **gesperrt ist nicht
+leer**. „Hier ist nichts" wäre einem unverifizierten Konto gegenüber eine
+Falschaussage und verschweigt den einen Schritt, der hilft.
+
+**WORK — Teil 3: Fachkreis-Kommunikation.** Umgesetzt ist die *Leserichtung* —
+`/api/sicherheitsmeldungen` bündelt Rückrufe und Rote-Hand-Briefe serverseitig.
+**Bewusst ohne Fachkreis-Schranke:** Ein Rote-Hand-Brief des BfArM steht
+öffentlich auf bfarm.de; ihn zu verstecken wäre eine Sperre, die nichts
+schützt. Die Schranke gilt für *Angebote* zu Rx-Ware, nicht für *Warnungen*
+über sie. Ein **Sendeweg** für herstellereigene Mitteilungen wäre Werbung an
+Fachkreise, bräuchte Schranke und Moderation — und hätte ohne ersten Hersteller
+einen leeren Bereich ergeben. Nicht angelegt; die eiserne Regel verbietet
+Platzhalter, und fünf leere Kacheln sind fünf Platzhalter.
+
+**Ein eigener Prüffehler, gefunden beim Gegenprobieren:** Mein Browser-Check
+für die Logistik-Sperre suchte das Wort „verifizierte Betriebe" im Seitentext.
+Auf Deutsch war er zufällig scharf (der Untertitel sagt „verifizier**ten**
+Betrie**ben**" — andere Deklination), auf Englisch und Portugiesisch aber
+**vakuant**: dort steht die Wendung wortgleich im Untertitel, der Check wäre
+also auch ohne Sperrkarte grün gewesen. Jetzt prüft er das Kennzeichen
+`data-lglocked` **und** die genannte Stufe. Nebenbei: `public/app.js` enthielt
+drei **literale NUL-Bytes** (Sortier-Sentinel im Warenkorb), weshalb `grep` die
+größte Frontend-Datei als Binärdatei behandelte und jede Suche darin
+fehlschlug — jetzt `'\u0000'`, derselbe Wert, lesbar.
+
+**CHECK.** 977 Tests grün (+43: `test/logistik.test.js`,
+`test/rxnorm-alternativen.test.js`, HTTP-Tests), i18n-Parität 1497/1497/1497.
+Elf Wächter einmal absichtlich gebrochen — acht im Dienst (Hinweis aus der
+leeren Antwort entfernen, `unbekannt` als „keine" melden, Netzfehler
+zwischenspeichern, PIN statt IN führen lassen, Logistik in den Rx-Fachkreis
+aufnehmen, Rx-Entzug auf das Melden ausweiten, „gesperrt" als leer ausgeben,
+unbekannte Dringlichkeit auf `kritisch` hochrunden) und drei im Browser
+(Hinweis unter die Liste, Sperrkarte weg, Sicherheits-Knopf filtert nur lokal)
+— jeder schlägt an.
+
+**Offen:** `watchersForText` auf Wortgrenzen (gleiche Fehlerklasse wie im
+Wirkstoff-Alarm, dort behoben); Gelesen-Zustand für den Warnungs-Feed; der
+Sendeweg für Hersteller-Mitteilungen, sobald ein Hersteller verifiziert ist.

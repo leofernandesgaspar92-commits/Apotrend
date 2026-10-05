@@ -40,6 +40,17 @@
 
 export const RXNAV_BASE = 'https://rxnav.nlm.nih.gov/REST';
 
+/**
+ * Der Satz, der an JEDER Ausweich-Liste stehen muss.
+ *
+ * Als Konstante und als Teil der Antwort, nicht als Bitte an die Oberflaeche:
+ * Ein Hinweis, den das Frontend vergessen kann, ist kein Hinweis. Ein Test
+ * prueft, dass er in jeder Antwort steckt — auch in der leeren.
+ */
+export const SUBSTITUTIONS_HINWEIS = 'Gleicher Wirkstoff laut RxNorm (US-Vokabular der National Library of Medicine). '
+  + 'Das ist KEINE Aussage über Austauschbarkeit: Sie hängt an Darreichungsform, Stärke, Hilfsstoffen und '
+  + 'nationaler Zulassung und ist hier nicht geprüft. Die Abgabeentscheidung bleibt bei der Apotheke.';
+
 /** Zeitlimit im Anfragepfad. Kurz gehalten — siehe Grenze 3 oben. */
 export const LOOKUP_TIMEOUT_MS = 1500;
 /** Wie lange ein Ergebnis gilt. Namen aendern sich nicht stuendlich. */
@@ -79,6 +90,43 @@ export function parseNames(json, { kinds = ['IN', 'BN', 'PIN'] } = {}) {
   }
   return [...out];
 }
+
+/**
+ * Antwort von /rxcui/<id>/related.json?tty=… auswerten.
+ *
+ * Gibt Begriffe MIT ihrer Art und ihrer Kennung zurueck — anders als
+ * `parseNames`, das nur Namen fuer die Textsuche sammelt. Fuer die
+ * Ausweich-Suche braucht es die Kennung, weil der naechste Schritt darauf
+ * aufsetzt.
+ */
+export function parseRelated(json, { kinds = null } = {}) {
+  const gruppen = (json && json.relatedGroup && json.relatedGroup.conceptGroup) || [];
+  const out = [];
+  const gesehen = new Set();
+  for (const g of gruppen) {
+    if (kinds && !kinds.includes(g.tty)) continue;
+    for (const c of g.conceptProperties || []) {
+      const name = String(c.name || '').trim();
+      const rxcui = String(c.rxcui || '').trim();
+      if (!name) continue;
+      const key = `${g.tty}:${name.toLowerCase()}`;
+      if (gesehen.has(key)) continue;
+      gesehen.add(key);
+      out.push({ name, tty: g.tty, rxcui: rxcui || null });
+    }
+  }
+  return out;
+}
+
+/**
+ * Nachschlag-Adresse bei RxNav fuer einen Begriff.
+ *
+ * Gehoert an JEDE Zeile, die aus RxNorm kommt — dieselbe Regel wie bei den
+ * Behoerdenmeldungen: Eine Angabe ohne Rueckverweis ist eine Behauptung
+ * (CLAUDE.md). Hier ist sie besonders wichtig, weil der Bestand US-amerikanisch
+ * ist und eine Apothekerin pruefen koennen muss, was dort wirklich steht.
+ */
+export const rxnavLink = (rxcui) => `https://mor.nlm.nih.gov/RxNav/search?searchBy=RXCUI&searchTerm=${encodeURIComponent(rxcui)}`;
 
 /** Kleiner Zwischenspeicher mit Verfallszeit. Aeltestes zuerst vergessen. */
 function createCache({ max = CACHE_MAX, ttlMs = CACHE_TTL_MS, now = Date.now } = {}) {
@@ -168,6 +216,111 @@ export function createRxNormService({
         // Begriff einen Tag lang schlechter, ohne Grund.
         log.warn?.(`ApoPulse RxNorm: "${begriff}" nicht nachschlagbar — ${(e && e.message) || e}`);
         return [];
+      }
+    },
+
+    /**
+     * Wirkstoff und Praeparate mit demselben Wirkstoff.
+     *
+     * ══════════════════════════════════════════════════════════════════════
+     *  DAS HEISST NICHT „AUSTAUSCHBAR" — UND DARF ES NIE HEISSEN
+     * ══════════════════════════════════════════════════════════════════════
+     *  Der Auftrag nannte das „baugleiche Ausweichpraeparate". Genau diese
+     *  Aussage macht dieser Dienst NICHT, und der Dateikopf oben verbietet sie
+     *  ausdruecklich: Austauschbarkeit haengt an Darreichungsform, Staerke,
+     *  Hilfsstoffen und nationaler Zulassung. RxNorm kennt davon nur den
+     *  Wirkstoff.
+     *
+     *  Wer „bioaequivalent" an diese Liste schreibt, verwandelt eine
+     *  Namensauskunft in eine Abgabeempfehlung. Danach wird in einer Apotheke
+     *  gehandelt. Deshalb gibt die Antwort ein Feld `hinweis` zurueck, das die
+     *  Oberflaeche anzeigen MUSS, und ein Test prueft, dass es da ist.
+     *
+     *  ──────────────────────────────────────────────────────────────────────
+     *  WAS WIRKLICH NUETZT
+     *  ──────────────────────────────────────────────────────────────────────
+     *  Der WIRKSTOFF (INN) ist international — mit ihm laesst sich in unseren
+     *  eigenen Daten weitersuchen (Engpaesse, Boerse, Preise). Die
+     *  PRAEPARATE-Liste ist US-amerikanisch und als Referenz gekennzeichnet:
+     *  Ein oesterreichischer Handelsname steht in RxNorm haeufig nicht drin,
+     *  und ein US-Produkt kann eine Wiener Apotheke nicht bestellen.
+     *
+     *  Gibt IMMER ein Ergebnis zurueck, auch ein leeres — mit `grund`, damit
+     *  die Oberflaeche „nichts gefunden" von „RxNorm kennt den Namen nicht"
+     *  unterscheiden kann. Das ist der Unterschied zwischen einem Defekt und
+     *  einer Eigenschaft des Bestands.
+     */
+    async alternativen(term, { maxPraeparate = 25 } = {}) {
+      const begriff = String(term || '').trim();
+      const leer = (grund) => ({
+        begriff, wirkstoffe: [], praeparate: [], grund,
+        hinweis: SUBSTITUTIONS_HINWEIS,
+      });
+      if (begriff.length < 3) return leer('zu_kurz');
+
+      const key = 'alt:' + begriff.toLowerCase();
+      const gecacht = cache.get(key);
+      if (gecacht !== undefined) { stats.cached++; return gecacht; }
+
+      stats.lookups++;
+      let ergebnis;
+      try {
+        const rxcui = parseRxcui(await holen(`/rxcui.json?name=${encodeURIComponent(begriff)}`));
+        if (!rxcui) {
+          stats.misses++;
+          // `unbekannt` und nicht `keine`: RxNorm kennt den NAMEN nicht. Das
+          // ist die haeufigste Antwort fuer deutsche und oesterreichische
+          // Handelsnamen und keine Aussage ueber den Wirkstoff.
+          ergebnis = leer('unbekannt');
+          cache.set(key, ergebnis);
+          return ergebnis;
+        }
+
+        // Schritt 1: Wirkstoff(e). IN = Wirkstoff, PIN = praezisiert (Salz).
+        const wirkstoffe = parseRelated(
+          await holen(`/rxcui/${encodeURIComponent(rxcui)}/related.json?tty=IN+PIN`),
+          { kinds: ['IN', 'PIN'] },
+        );
+        if (!wirkstoffe.length) {
+          stats.misses++;
+          ergebnis = { ...leer('kein_wirkstoff'), rxcui, quelle: rxnavLink(rxcui) };
+          cache.set(key, ergebnis);
+          return ergebnis;
+        }
+
+        // Schritt 2: Praeparate mit demselben Wirkstoff. SBD = Markenpraeparat,
+        // SCD = Generikum-Bezeichnung. Der ERSTE Wirkstoff fuehrt — bei einem
+        // Kombinationspraeparat waere die Vereinigung aller Wirkstoffe eine
+        // Liste, in der kein Eintrag dasselbe enthaelt wie das Original.
+        const fuehrend = wirkstoffe.find((w) => w.tty === 'IN') || wirkstoffe[0];
+        let praeparate = [];
+        if (fuehrend.rxcui) {
+          praeparate = parseRelated(
+            await holen(`/rxcui/${encodeURIComponent(fuehrend.rxcui)}/related.json?tty=SBD+SCD`),
+            { kinds: ['SBD', 'SCD'] },
+          )
+            // Das Original selbst ist kein Ausweichpraeparat.
+            .filter((pr) => pr.name.toLowerCase() !== begriff.toLowerCase())
+            .slice(0, maxPraeparate);
+        }
+
+        stats.hits++;
+        ergebnis = {
+          begriff, rxcui,
+          wirkstoffe: wirkstoffe.map((w) => ({ ...w, quelle: w.rxcui ? rxnavLink(w.rxcui) : null })),
+          praeparate: praeparate.map((pr) => ({ ...pr, quelle: pr.rxcui ? rxnavLink(pr.rxcui) : null })),
+          grund: praeparate.length ? null : 'keine_praeparate',
+          quelle: rxnavLink(rxcui),
+          hinweis: SUBSTITUTIONS_HINWEIS,
+        };
+        cache.set(key, ergebnis);
+        return ergebnis;
+      } catch (e) {
+        stats.errors++;
+        // NICHT zwischenspeichern: Ein Netzausfall ist keine Aussage darueber,
+        // was RxNorm kennt.
+        log.warn?.(`ApoPulse RxNorm: Ausweich-Suche "${begriff}" fehlgeschlagen — ${(e && e.message) || e}`);
+        return leer('nicht_erreichbar');
       }
     },
 

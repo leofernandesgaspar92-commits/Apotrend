@@ -642,6 +642,68 @@ eine EMA-Meldung ist dort keine Behördenaussage. Sichtbar bleibt sie über den
 Länder-Umschalter — ein unaufgeforderter Alarm aus einer fremden Jurisdiktion
 ist etwas anderes als eine Ansicht, die man selbst öffnet.
 
+## 3d. RxNorm-Ausweichpräparate (`GET /api/alternativen?q=…`)
+
+Quelle ist **RxNav/RxNorm** der US National Library of Medicine — kostenlos,
+ohne Schlüssel, ohne Anmeldung. Zwei Schritte: `rxcui` zum Suchbegriff holen,
+dann über `/related` die Wirkstoffe (`tty=IN`, `PIN`) und die Präparate
+(`tty=SBD`, `SCD`) zum führenden Wirkstoff.
+
+### Der Hinweis ist der eigentliche Inhalt
+
+Der Auftrag lautete „baugleiche Ausweichpräparate". **Diese Aussage macht der
+Dienst bewusst nicht.** RxNorm sagt *„gleicher Wirkstoff"* und sonst nichts.
+Austauschbarkeit hängt an Darreichungsform, Stärke, Hilfsstoffen und
+**nationaler Zulassung** — keines davon steht in RxNorm, und nichts davon wird
+hier geprüft. Deshalb:
+
+- `SUBSTITUTIONS_HINWEIS` fährt in **jeder** Antwort mit (auch in der leeren),
+- die Oberfläche zeigt ihn **vor** der Liste, nicht als Fußnote darunter,
+- die Wörter „bioäquivalent" und „austauschbar" kommen nicht vor.
+
+Eine Gegenprobe im Browser-Audit vertauscht die Reihenfolge und muss anschlagen:
+wer die Liste liest, soll die Einordnung schon gelesen haben.
+
+### Ein US-Vokabular für europäische Apotheken
+
+Ein `SBD` aus RxNorm ist ein **US-Handelsname**; bestellen kann eine Apotheke
+in Wien ihn nicht. Nützlich ist der **INN** — der ist international. Darum:
+
+- die Wirkstoffe stehen **über** den Präparaten und sind klickbar (sie führen
+  in unsere eigene Wirkstoff-Ansicht),
+- `eigene_engpaesse` reicht nach, was zu diesem Wirkstoff in **unseren**
+  Engpassdaten liegt. Das ist der Teil, mit dem man handeln kann.
+
+### Vier Gründe, die nicht gleich aussehen dürfen
+
+`grund` ist `zu_kurz` | `unbekannt` | `kein_wirkstoff` | `keine_praeparate` |
+`nicht_erreichbar`. „RxNorm kennt den Begriff nicht" und „RxNav war nicht
+erreichbar" sind verschiedene Aussagen; die erste ist ein Ergebnis, die zweite
+ein Ausfall. Eine Gegenprobe, die `unbekannt` als „keine gefunden" ausgibt,
+schlägt an. Eine **Netzstörung wird nicht zwischengespeichert** — sonst wäre
+ein einmaliger Ausfall dauerhaft als Befund verbucht.
+
+### Hinter der Fachkreis-Schranke
+
+Der Endpunkt verlangt einen verifizierten Fachkreis-Betrieb (`rxErlaubt`). Es
+geht um die Abgabeentscheidung zu verschreibungspflichtiger Ware; sie gehört
+nicht in die offene Suche. **Die Abgabeentscheidung bleibt bei der Apotheke** —
+dieser Satz steht im Hinweis, weil der Dienst sonst wie eine Empfehlung wirkt.
+
+## 3e. Sicherheitsmeldungen (`GET /api/sicherheitsmeldungen?country=…`)
+
+Bündelt `RECALL` und `REGULATORY` aus den verifizierten Signalen serverseitig —
+Rückrufe und Rote-Hand-Briefe in einer Liste, nach Zeit sortiert.
+
+**Bewusst nicht hinter der Fachkreis-Schranke.** Ein Rote-Hand-Brief des BfArM
+steht öffentlich auf bfarm.de. Ihn hier zu verstecken wäre eine Sperre, die
+nichts schützt und Sicherheitsinformation zurückhält. Die Schranke gilt für
+*Angebote* zu Rx-Ware, nicht für *Warnungen* über sie.
+
+Die Bündelung passiert am Server, nicht im Frontend: zwei Abfragen zu
+verschmelzen hieße, die Sortierung zweimal unterschiedlich zu machen. Eine
+Gegenprobe, die den Knopf nur lokal filtern lässt, schlägt im Browser-Audit an.
+
 ## 4. Preise (zweiter Datentyp, gleiche Logik)
 
 Analog zu Engpässen: Umgebungsvariable `APOPULSE_LIVE_PRICES_<CC>` setzen.

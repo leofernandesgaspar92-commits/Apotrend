@@ -30,6 +30,13 @@ import { createRabatteService } from '../services/rabatte.js';
 import { createExchangeService } from '../services/exchange.js';
 import { createSearchService } from '../services/search.js';
 import { createRxNormService } from '../services/rxnorm.js';
+import { createLogistikRepo } from '../repo/logistikRepo.js';
+import { createLogistikService } from '../services/logistik.js';
+// AppError wird in drei Routen geworfen (Ausweich-Suche, Uebersetzungs-Bremse).
+// Der Import fehlte: Die Routen antworteten mit „AppError is not defined" statt
+// mit der gemeinten Meldung — bei der Ratenbremse ein Fehler, der erst unter
+// Last aufgefallen waere.
+import { AppError } from '../domain/errors.js';
 import { createOverviewService } from '../services/overview.js';
 import { createOAuthService, buildProvidersFromEnv } from '../services/oauth.js';
 import { createPaymentsService, buildPaymentProvidersFromEnv } from '../services/payments.js';
@@ -64,6 +71,7 @@ import { createSignalStore, baueSignal } from '../services/signals.js';
 import { benachrichtigeZuSignal } from '../services/signalAlerts.js';
 import { extractSignal, aiKonfiguration, KATEGORIEN as SIGNAL_KATEGORIEN } from '../services/aiExtract.js';
 import { createTranslateService, MAX_ZEICHEN as TRANSLATE_MAX } from '../services/aiTranslate.js';
+import { rxErlaubt, verificationStatusFor } from '../domain/jurisdiction.js';
 
 // Login-Brute-Force-Schutz: max. 5 Fehlversuche je (IP+E-Mail) in 15 Minuten.
 const loginLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
@@ -166,6 +174,7 @@ const payments = createPaymentsService({
 function applySnapshot(snap) {
   repo.__load(snap.foundation);
   socialRepo.__load(snap.social);
+  logistikRepo.__load(snap.logistik);
   shortagesRepo.__load(snap.shortages);
   pricesRepo.__load(snap.prices);
   rabatteRepo.__load(snap.rabatte);
@@ -217,6 +226,11 @@ function collectSnapshot() {
     foundation: repo.__dump(), social: socialRepo.__dump(),
     shortages: shortagesRepo.__dump(), prices: pricesRepo.__dump(), rabatte: rabatteRepo.__dump(),
     exchange: exchangeRepo.__dump(), newsSeen: newsSeen.__dump(),
+    // MUSS hier stehen. Bei den VerifiedSignals fehlte genau diese Zeile, und
+    // deshalb war der gesammelte Bestand nach jedem Deploy weg — gefunden erst
+    // Wochen spaeter. Ein neuer Speicher ohne Snapshot-Eintrag ist kein
+    // Speicher, sondern ein Zwischenpuffer mit laengerer Lebensdauer.
+    logistik: logistikRepo.__dump(),
   };
 }
 let saveTimer = null;
@@ -576,6 +590,35 @@ const signalStore = createSignalStore({ mirror: db });
 // `verfuegbar()` false und die Oberflaeche zeigt den Knopf gar nicht — besser
 // als ein Knopf, der eine Fehlermeldung produziert.
 const translate = createTranslateService();
+
+/**
+ * Betrachter fuer die Fachkreis-Pruefung am HTTP-Rand.
+ *
+ * Dieselbe Ableitung wie in services/exchange.js — bewusst NICHT dort
+ * importiert, weil der Zahlungs- und Boersen-Dienst seine eigene Sicht auf den
+ * Betrachter hat. Zwei kurze Ableitungen aus denselben Profilfeldern sind
+ * leichter zu lesen als eine geteilte Abstraktion, die beide Aufrufer
+ * verbiegt.
+ */
+const logistikRepo = createLogistikRepo();
+
+function rxBetrachter(userId) {
+  if (!userId) return null;
+  const prof = social.getProfile(userId);
+  if (!prof) return { userId };
+  return {
+    userId,
+    jurisdiction: String(prof.country || '').toUpperCase(),
+    verificationStatus: verificationStatusFor({ accountType: prof.account_type, verified: !!prof.verified }),
+    isRxAllowed: prof.is_rx_allowed,
+  };
+}
+
+// Kuehlketten- und Transportmeldungen (services/logistik.js). Der Bereich ist
+// am Anfang LEER — es gibt keine Behoerdenschnittstelle fuer Kuehlketten-
+// Brueche, die Information entsteht bei den Beteiligten. Eine ehrliche
+// Leermeldung plus Meldeweg ist deshalb der richtige Startzustand.
+const logistik = createLogistikService({ repo: logistikRepo, social, betrachterVon: rxBetrachter });
 
 async function runNewsIngest() {
   const editor = social.getProfile('apopulse');
@@ -1385,6 +1428,10 @@ const routes = [
     socialRepo.purgeUser(userId);
     exchangeRepo.purgeUser(userId);
     shortagesRepo.purgeUser(userId);
+    // DSGVO-Loeschung: Auch die eigenen Logistikmeldungen gehen mit. Ein neuer
+    // Speicher, der hier fehlt, laesst personenbezogene Daten zurueck, obwohl
+    // die Loeschung „ok" meldet — die teuerste Art von halber Arbeit.
+    logistikRepo.purgeUser(userId);
     repo.deleteUser(userId);
     return { ok: true };
   }],
@@ -1403,6 +1450,102 @@ const routes = [
   // Der Hebel fuer eine erloschene Betriebserlaubnis (domain/jurisdiction.js).
   ['POST', /^\/api\/verify\/([^/]+)\/rx$/, true, async ({ userId, params, body }) =>
     social.setRxAllowed(userId, params[0], body.allowed !== false)],
+
+  // ── Kühlketten- und Transportmeldungen (B2B) ──────────────────────────────
+  //  Keine Behörde meldet eine unterbrochene Kühlkette. Diese Information
+  //  entsteht bei Spedition, Großhandel und Apotheke — und sonst nirgends.
+  //  Deshalb ein MELDEWEG mit ehrlicher Leermeldung, keine Anzeige mit
+  //  erfundenen Zeilen: Bei einer Kühlkette entscheidet daran, ob eine Charge
+  //  vernichtet wird.
+  //
+  //  `logistikErlaubt` und NICHT `rxErlaubt`: Logistik ist hier die wichtigste
+  //  Gruppe, beim Rx-Einblick ist sie ausgeschlossen.
+  ['GET', /^\/api\/logistik$/, true, async ({ userId, query }) => logistik.list(userId, {
+    art: query.get('art') || null,
+    country: activeCountry(userId, query),
+    offen: query.get('offen') !== '0',
+  })],
+  ['GET', /^\/api\/logistik\/mine$/, true, async ({ userId }) => ({ meldungen: logistik.mine(userId) })],
+  ['POST', /^\/api\/logistik$/, true, async ({ userId, body }) => logistik.create(userId, {
+    art: body.art, titel: body.titel, beschreibung: body.beschreibung,
+    region: body.region, betroffen: body.betroffen,
+    dringlichkeit: body.dringlichkeit, gueltigBis: body.gueltigBis,
+  })],
+  ['POST', /^\/api\/logistik\/([^/]+)\/behoben$/, true, async ({ userId, params }) => logistik.behoben(userId, params[0])],
+  ['POST', /^\/api\/logistik\/([^/]+)\/delete$/, true, async ({ userId, params }) => logistik.remove(userId, params[0])],
+
+  // ── Sicherheitsmeldungen (Rote-Hand-Briefe, Rückrufe) ─────────────────────
+  //  Gespeist AUSSCHLIESSLICH aus den bereits angebundenen Behörden-Feeds
+  //  (BfArM, PEI, EMA, FDA, …) über den Signal-Bestand. Keine neue Quelle,
+  //  keine neuen Daten, kein Platzhalter — ein FILTER auf das, was ohnehin
+  //  hereinkommt, für die Gruppe, die ihn am dringendsten braucht.
+  //
+  //  NICHT HINTER DER FACHKREIS-SCHRANKE, und das ist eine Entscheidung:
+  //  Ein Rote-Hand-Brief des BfArM steht öffentlich auf bfarm.de. Ihn hier
+  //  hinter eine Verifizierung zu legen, würde öffentliche Sicherheits-
+  //  information verstecken — und eine Sperre, die nichts schützt, ist
+  //  Theater. Die Schranke gilt für Rx-ANGEBOTE (Werbung/Handel, HWG § 10),
+  //  nicht für amtliche Warnungen.
+  //
+  //  Was SEHR WOHL die Schranke bräuchte: von Herstellern selbst eingestellte
+  //  Produkt-Updates. Die gibt es hier noch nicht, und solange es sie nicht
+  //  gibt, wird auch kein leerer Bereich dafür angelegt.
+  ['GET', /^\/api\/sicherheitsmeldungen$/, true, async ({ userId, query }) => {
+    const land = activeCountry(userId, query);
+    // RECALL ist der Kern (Rückruf, Chargensperre, Sicherheitswarnung).
+    // REGULATORY kommt dazu, weil Rote-Hand-Briefe je nach Einstufung der KI
+    // dort landen — und ein Brief, der wegen einer Kategorie-Entscheidung
+    // unsichtbar bleibt, ist schlimmer als einer zu viel in der Liste.
+    const kategorien = ['RECALL', 'REGULATORY'];
+    const signale = kategorien
+      .flatMap((k) => signalStore.list({ country: land, category: k, limit: 100 }))
+      .sort((a, b) => String(b.verifiedAt).localeCompare(String(a.verifiedAt)))
+      .slice(0, 100);
+    return {
+      signale,
+      stand: signalStore.landStand(land),
+      ki: aiKonfiguration() ? 'aktiv' : 'aus',
+      // Ohne KI gibt es keine Kategorie — dann landet alles als NEWS und diese
+      // Ansicht bleibt leer, obwohl Meldungen da sind. Das muss die Oberfläche
+      // sagen können, sonst sieht es wie ein Defekt aus.
+      kategorien,
+    };
+  }],
+
+  // ── Ausweich-Suche bei Lieferabriss ───────────────────────────────────────
+  //  Die Frage, mit der eine Apotheke bei einem Engpass dasteht: „Was kann ich
+  //  stattdessen bestellen?" RxNorm liefert dazu den WIRKSTOFF (international
+  //  brauchbar) und Praeparate mit demselben Wirkstoff (US-Bestand, als
+  //  Referenz).
+  //
+  //  NUR FUER DEN FACHKREIS, und zwar nicht aus Rechtsgruenden, sondern weil
+  //  die Antwort fachliche Einordnung braucht: „gleicher Wirkstoff" ist keine
+  //  Austauschbarkeit. Wer das ohne Fachkunde liest, zieht den falschen
+  //  Schluss — und genau diesen Schluss verbietet der Dienst ausdruecklich
+  //  (SUBSTITUTIONS_HINWEIS, der in jeder Antwort mitfaehrt).
+  //
+  //  Ohne RxNorm (APOPULSE_RXNORM=off) antwortet der Endpunkt mit
+  //  `available: false` statt zu schweigen.
+  ['GET', /^\/api\/alternativen$/, true, async ({ userId, query }) => {
+    const nutzer = rxBetrachter(userId);
+    if (!rxErlaubt(nutzer)) {
+      throw new AppError('alt_fachkreis',
+        'Die Ausweich-Suche ist verifizierten Fachkreisen vorbehalten: „Gleicher Wirkstoff" ist keine '
+        + 'Aussage über Austauschbarkeit, und diese Einordnung braucht Fachkunde.', 403);
+    }
+    const begriff = String(query.get('q') || '').trim();
+    if (!begriff) throw new AppError('alt_q_missing', 'Bitte ein Präparat oder einen Wirkstoff angeben.', 400);
+    if (!rxnorm) return { available: false, begriff, wirkstoffe: [], praeparate: [], grund: 'abgeschaltet' };
+    const r = await rxnorm.alternativen(begriff);
+    // Was in UNSEREN Daten zu den gefundenen Wirkstoffen liegt — das ist der
+    // Teil, mit dem eine Apotheke etwas anfangen kann. Ein US-Produkt kann sie
+    // nicht bestellen, einen Engpass im eigenen Land sehr wohl.
+    const inn = (r.wirkstoffe || []).map((w) => w.name);
+    const eigene = inn.length
+      ? shortages.list().filter((sh) => inn.some((n) => String(sh.wirkstoff || '').toLowerCase().includes(n.toLowerCase())))
+      : [];
+    return { available: true, ...r, eigene_engpaesse: eigene.slice(0, 10) };
+  }],
 
   // ── Uebersetzen auf Zuruf ─────────────────────────────────────────────────
   //  NUR TEXT geht hinein. Keine Adresse, kein Behoerdenname, keine Kennung —

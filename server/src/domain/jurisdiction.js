@@ -78,6 +78,41 @@ export function istRxFachkreis(s) {
 }
 
 /**
+ * Alle bestaetigten Betriebsstufen — Rx-Fachkreis PLUS Logistik.
+ *
+ * ZWEI PRUEFUNGEN, UND DIE VERWECHSLUNG WAERE TEUER IN BEIDE RICHTUNGEN:
+ *
+ *  · `istRxFachkreis` entscheidet ueber Rx-ANGEBOTE. Logistik gehoert nicht
+ *    dazu: Ein Transportunternehmen befoerdert Arzneimittel, es erwirbt sie
+ *    nicht.
+ *  · `istVerifizierterBetrieb` entscheidet ueber B2B-Funktionen, bei denen
+ *    Logistik die WICHTIGSTE Gruppe ist — Kuehlketten-Unterbrechungen und
+ *    Zollverzoegerungen weiss zuerst die Spedition.
+ *
+ * Mit nur einer Pruefung waere entweder die Logistik vom Kuehlketten-Modul
+ * ausgeschlossen (absurd) oder sie haette Rx-Einblick (falsch).
+ */
+export const VERIFIZIERTE_BETRIEBE = Object.freeze([...RX_FACHKREIS_STATUS, 'VERIFIED_LOGISTICS']);
+
+export function istVerifizierterBetrieb(s) {
+  return VERIFIZIERTE_BETRIEBE.includes(String(s || '').toUpperCase());
+}
+
+/**
+ * Darf diese Person B2B-Logistikmeldungen sehen und einstellen?
+ *
+ * Wie `rxErlaubt`: bestaetigte Stufe plus brauchbarer Ländercode. Der
+ * `isRxAllowed`-Entzug gilt hier NICHT — er betrifft die
+ * Erwerbsberechtigung fuer Rx, nicht die Frage, ob jemand eine unterbrochene
+ * Kuehlkette melden darf.
+ */
+export function logistikErlaubt(nutzer) {
+  if (!nutzer) return false;
+  if (!istVerifizierterBetrieb(nutzer.verificationStatus)) return false;
+  return /^[A-Z]{2}$/.test(String(nutzer.jurisdiction || '').toUpperCase());
+}
+
+/**
  * Verifizierungsstufe aus dem Zustand der laufenden Anwendung ableiten.
  *
  * Die Anwendung führt heute zwei Angaben: `account_type` (Selbstauskunft) und
