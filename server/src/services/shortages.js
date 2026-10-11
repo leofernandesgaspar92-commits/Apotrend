@@ -3,6 +3,7 @@
 // sie referenzieren ("X Apotheker haben dazu gepostet").
 import { cleanSourceUrl } from '../domain/media.js';
 import { AppError } from '../domain/errors.js';
+import { gehoertZuLand } from '../domain/land.js';
 
 const STATUS_LABEL = { kritisch: 'Kritischer Engpass', eingeschraenkt: 'Eingeschränkt lieferbar', verfuegbar: 'Wieder verfügbar' };
 const VALID_STATUS = Object.keys(STATUS_LABEL);
@@ -83,6 +84,18 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
   // Sicherheitsrelevante Engpass-Aktionen (melden/bestätigen) sind Fachkreisen vorbehalten.
   // Privatnutzer:innen dürfen Engpässe lesen, aber nicht selbst mitmelden — direkt aus dem
   // Owner-Prinzip: „Sicherheitsrelevante Aussagen … nur mit Quelle" (Quelle = Fachperson).
+  // Beobachter:innen eines Wirkstoffs, deren HEIMATLAND zum Engpass passt.
+  //
+  // Vorher ging jede Engpass-Benachrichtigung an ALLE, die den Wirkstoff
+  // beobachten — eine portugiesische Apotheke bekam „Amoxicillin · kritisch"
+  // für eine Meldung aus Wien. Eine Push-Meldung meint den eigenen Markt
+  // (domain/land.js). Länderlose Einträge gelten wie in der Liste überall.
+  const heimatVon = (uid) => { const p = social.getProfile ? social.getProfile(uid) : null; return p && p.country; };
+  function beobachterImLand(wirkstoff, land) {
+    return shortagesRepo.usersWatching(wirkstoff)
+      .filter((uid) => gehoertZuLand({ country: land }, heimatVon(uid)));
+  }
+
   function requireProfessional(userId) {
     const prof = social.getProfile(userId);
     if (prof && prof.account_type === 'private') {
@@ -157,7 +170,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       });
       // Beobachter:innen dieses Wirkstoffs informieren (ausser Melder selbst).
       const label = `${w} · ${STATUS_LABEL[status]} (Community-Meldung)`;
-      for (const uid of shortagesRepo.usersWatching(w)) {
+      for (const uid of beobachterImLand(w, created.country)) {
         social.pushNotification({ userId: uid, type: 'watch_alert', actorUserId: userId, refType: 'shortage', refId: created.id, label });
       }
       return decorate(created, userId);
@@ -199,7 +212,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       const today = new Date().toISOString().slice(0, 10);
       const updated = shortagesRepo.setStatus(id, { status: 'verfuegbar', gemeldet_am: today });
       // Beobachter:innen UND Bestätiger:innen informieren (ausser Auslöser).
-      const targets = new Set([...shortagesRepo.usersWatching(s.wirkstoff), ...(s.confirmations || [])]);
+      const targets = new Set([...beobachterImLand(s.wirkstoff, s.country), ...(s.confirmations || [])]);
       const label = `${s.wirkstoff} · Wieder verfügbar`;
       for (const uid of targets) {
         social.pushNotification({ userId: uid, type: 'watch_alert', actorUserId: userId, refType: 'shortage', refId: id, label });
@@ -228,7 +241,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       }
       if ((s.voraussichtlich_bis || null) === vb) return decorate(s, userId); // keine Änderung
       const updated = shortagesRepo.setExpectedDate(id, vb);
-      const targets = new Set([...shortagesRepo.usersWatching(s.wirkstoff), ...(s.confirmations || [])]);
+      const targets = new Set([...beobachterImLand(s.wirkstoff, s.country), ...(s.confirmations || [])]);
       targets.delete(userId);
       const label = vb ? `${s.wirkstoff} · Termin ${vb}` : `${s.wirkstoff} · Termin offen`;
       for (const uid of targets) {
@@ -267,7 +280,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       let updated = s;
       if (Object.keys(patch).length) updated = shortagesRepo.setStatus(id, patch);
       if (statusChanged) {
-        const targets = new Set([...shortagesRepo.usersWatching(s.wirkstoff), ...(s.confirmations || [])]);
+        const targets = new Set([...beobachterImLand(s.wirkstoff, s.country), ...(s.confirmations || [])]);
         targets.delete(userId);
         const label = `${s.wirkstoff} · ${STATUS_LABEL[newStatus]} (aktualisiert)`;
         for (const uid of targets) {
@@ -295,7 +308,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       // Nur bei tatsächlicher Änderung die Beobachter:innen informieren.
       if (before.status !== status) {
         const label = `${updated.wirkstoff} · ${STATUS_LABEL[status]}`;
-        for (const uid of shortagesRepo.usersWatching(updated.wirkstoff)) {
+        for (const uid of beobachterImLand(updated.wirkstoff, updated.country)) {
           social.pushNotification({ userId: uid, type: 'watch_alert', actorUserId, refType: 'shortage', refId: id, label });
         }
       }
@@ -364,8 +377,11 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
 
     // Beobachtete Wirkstoffe mit aktuellem Engpass-Status (rot = kritisch).
     // Kein passender Engpass-Eintrag => Status 'unauffaellig' (derzeit keine Meldung).
-    myWatchlist(userId) {
-      const all = shortagesRepo.list(); // nach Kritikalität sortiert
+    // Status je beobachtetem Wirkstoff — aus EINEM Land: dem angesehenen, sonst
+    // dem Heimatland. Vorher der kritischste Engpass aus irgendeinem Land: Eine
+    // deutsche Apotheke sah „Amoxicillin: kritisch" wegen eines Wiener Eintrags.
+    myWatchlist(userId, { country = null } = {}) {
+      const all = shortagesRepo.list({ country: country || heimatVon(userId) || null }); // nach Kritikalität sortiert
       const byWirkstoff = new Map();
       for (const s of all) {
         const k = s.wirkstoff.trim().toLowerCase();

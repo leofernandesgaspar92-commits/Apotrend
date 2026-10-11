@@ -6,16 +6,27 @@
 import { praeparatTreffer } from '../domain/wirkstoffTreffer.js';
 export function createOverviewService({ shortages, exchange, social, rabatte, prices, amr = null }) {
   return {
+    /**
+     * `opts.country` — das ANGESEHENE Land: bestimmt alles, was angezeigt wird.
+     * `opts.home`    — das HEIMATLAND: bestimmt die Rabatt-Alarme.
+     *
+     * Vorher fragte die Übersicht die Dienste ganz ohne Land ab, und „ohne
+     * Land" heißt dort „alle Länder": Wer auf Portugal umschaltete, sah
+     * österreichische Engpässe als „kritisch" und eine österreichische Aktion
+     * als Top-Rabatt (domain/land.js, test/laender-trennung.test.js).
+     */
     forUser(userId, opts = {}) {
-      const sh = shortages.listWithCounts(userId);
+      const country = opts.country || null;
+      const home = opts.home || country;
+      const sh = shortages.listWithCounts(userId, { country });
       const kritisch = sh.filter(s => s.status === 'kritisch');
       // Aktive Antibiotika-Engpässe (nicht "wieder verfügbar") — für die AMR-Kachel.
       const antibiotika = amr ? sh.filter(s => s.status !== 'verfuegbar' && amr.isAntibiotic(s.wirkstoff)).length : 0;
-      const ex = exchange.list(userId, {}).eintraege; // offene Einträge (Fachkreis-gefiltert)
-      const topRabatte = rabatte.top10(userId);
+      const ex = exchange.list(userId, { country }).eintraege; // offene Einträge (Fachkreis-gefiltert)
+      const topRabatte = rabatte.top10(userId, { country });
       const topR = topRabatte[0] || null;
       const expiringSoon = topRabatte.filter(r => r.expiring_soon);
-      const watchlist = shortages.myWatchlist(userId);
+      const watchlist = shortages.myWatchlist(userId, { country });
 
       // Realisierte Beschaffungs-Ersparnis (aus den erfassten Bestellungen, ggü. Listenpreis).
       // Macht den konkreten Euro-Nutzen der Plattform schon auf der Startseite sichtbar —
@@ -47,7 +58,7 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
       // sonst widersprechen sich Kachel und Glocke: Mit `includes` zaehlte die
       // Kachel zu „ASS" jede „Kassenpackung", die die Glocke laengst nicht mehr
       // meldete (domain/wirkstoffTreffer.js).
-      const openBiete = exchange.list(userId, { kind: 'biete', status: 'offen' }).eintraege;
+      const openBiete = exchange.list(userId, { kind: 'biete', status: 'offen', country }).eintraege;
       const watchOffers = watchlist.map(w => {
         const key = w.wirkstoff.trim();
         const offers_count = key ? openBiete.filter(e => praeparatTreffer(e.bezeichnung, key)).length : 0;
@@ -94,7 +105,8 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
       // Engpass-Daten vertrauenswürdig — direkt aus dem Owner-Prinzip „sicherheitsrelevante
       // Aussagen (Engpass) aktuell halten". Nur eigene Community-Meldungen, nie fremde.
       const STALE_REPORT_DAYS = 14;
-      const myStaleReports = sh
+      // Eigene Meldungen sind persönlich, keine Länderansicht: alle Länder.
+      const myStaleReports = shortages.listWithCounts(userId)
         .filter(s => s.provenance === 'community' && s.is_reporter && s.status !== 'verfuegbar' && (s.days_reported || 0) >= STALE_REPORT_DAYS)
         .map(s => ({ id: s.id, wirkstoff: s.wirkstoff, bezeichnung: s.bezeichnung, status: s.status, days_reported: s.days_reported, confirm_count: s.confirm_count || 0 }))
         .sort((a, b) => (b.days_reported || 0) - (a.days_reported || 0));
@@ -117,8 +129,24 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
       // bei jedem Übersichts-Aufruf; sobald Live-Daten angeschlossen sind, greift es automatisch.
       // Rechts-Gate: In Ländern mit Rabatt-/Werbeverbot (deals gesperrt) dürfen auch keine
       // Rabatt-Push-Meldungen ausgelöst werden — sonst umgeht die Benachrichtigung die Sperre.
+      //
+      // HEIMATLAND, nicht das angesehene: Der Alarm sagt „bei deinem Großhandel
+      // gibt es −22 %". Vorher kamen die Aktionen aus ALLEN Ländern — eine
+      // Schweizer Apotheke bekam Alarme für österreichische Aktionen, und ein
+      // blosses Umschalten auf ein anderes Land konnte Alarme auslösen.
       if (social.pushNotification && shortages.wasAlerted && !opts.dealsBlocked) {
-        for (const wd of watchDeals) {
+        const heimDeals = new Map();
+        for (const r of rabatte.top10(userId, { country: home })) {
+          const k = (r.wirkstoff || '').trim().toLowerCase();
+          if (!k) continue;
+          const cur = heimDeals.get(k);
+          if (!cur || r.rabatt_pct > cur.rabatt_pct) heimDeals.set(k, r);
+        }
+        const heimAlarme = shortages.myWatchlist(userId, { country: home })
+          .map(w => ({ w, deal: heimDeals.get(w.wirkstoff.trim().toLowerCase()) }))
+          .filter(x => x.deal)
+          .map(({ w, deal }) => ({ wirkstoff: w.wirkstoff, alert_pct: w.alert_pct || null, rabatt_pct: deal.rabatt_pct, gueltig_bis: deal.gueltig_bis }));
+        for (const wd of heimAlarme) {
           if (!wd.alert_pct || wd.rabatt_pct < wd.alert_pct) continue;
           const dealKey = `${wd.wirkstoff.trim().toLowerCase()}|${wd.gueltig_bis}|${wd.rabatt_pct}`;
           if (shortages.wasAlerted(userId, dealKey)) continue;
@@ -128,6 +156,7 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
       }
 
       return {
+        country, // das Land, das diese Übersicht zeigt — die Oberfläche benennt es
         shortages: { kritisch: kritisch.length, total: sh.length, antibiotika, top: kritisch.slice(0, 3) },
         watchlist: { total: watchlist.length, items: watchlist, alerts: watchlist.filter(w => w.status === 'kritisch' || w.status === 'eingeschraenkt').length },
         week_review: weekReview,

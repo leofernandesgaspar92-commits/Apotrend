@@ -30,6 +30,8 @@ import { createRabatteService } from '../services/rabatte.js';
 import { createExchangeService } from '../services/exchange.js';
 import { createSearchService } from '../services/search.js';
 import { createRxNormService } from '../services/rxnorm.js';
+import { createPresseDienst } from '../services/presse.js';
+import { createLagebildDienst } from '../services/lagebild.js';
 import { createLogistikRepo } from '../repo/logistikRepo.js';
 import { createLogistikService } from '../services/logistik.js';
 // AppError wird in drei Routen geworfen (Ausweich-Suche, Uebersetzungs-Bremse).
@@ -82,6 +84,9 @@ const resetLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
 // geht gegen die Abrechnung des Owners. Antworten aus dem Zwischenspeicher
 // zaehlen bewusst nicht mit: Sie kosten nichts.
 const translateLimiter = createRateLimiter({ max: 60, windowMs: 60 * 60 * 1000 });
+// Lagebild: jeder neue Belegstand ist ein Anbieter-Aufruf. Zwischengespeicherte
+// Antworten zaehlen nicht (siehe Route).
+const lagebildLimiter = createRateLimiter({ max: 30, windowMs: 60 * 60 * 1000 });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, '..', '..', 'public');
@@ -590,6 +595,15 @@ const signalStore = createSignalStore({ mirror: db });
 // `verfuegbar()` false und die Oberflaeche zeigt den Knopf gar nicht — besser
 // als ein Knopf, der eine Fehlermeldung produziert.
 const translate = createTranslateService();
+// Presse je Land und das KI-Lagebild darauf (services/presse.js, lagebild.js).
+// Presse bleibt GETRENNT von Behörden-Feed und VerifiedSignal-Speicher.
+const presseDienst = createPresseDienst();
+const lagebildDienst = createLagebildDienst({
+  presse: presseDienst,
+  // Behördenmeldungen des Landes; EU-Meldungen zieht belegeSammeln() selbst
+  // für EU-Länder hinzu.
+  signale: (land) => [...signalStore.list({ country: land, limit: 40 }), ...signalStore.list({ country: 'EU', limit: 20 })],
+});
 
 /**
  * Betrachter fuer die Fachkreis-Pruefung am HTTP-Rand.
@@ -1241,7 +1255,8 @@ const routes = [
   ['GET', /^\/api\/overview$/, true, async ({ userId, query }) => {
     const home = userCountry(userId);
     const dealsBlocked = isFeatureBlocked(home, 'deals');
-    const ov = overview.forUser(userId, { dealsBlocked });
+    // Anzeige: angesehenes Land. Rabatt-Alarme: Heimatland (domain/land.js).
+    const ov = overview.forUser(userId, { dealsBlocked, country: activeCountry(userId, query), home });
     // Rechts-Gate (Heimatland): gesperrte Module aus der Übersicht nehmen.
     if (dealsBlocked) { ov.top_rabatt = null; ov.rabatte_expiring = { count: 0, soonest: null }; ov.watch_deals = []; }
     if (isFeatureBlocked(home, 'stock_exchange')) { ov.exchange = { biete: 0, suche: 0, recent: [] }; ov.my_seeks = { open: 0, with_matches: 0, items: [] }; ov.watch_offers = []; ov.expiring_offers = { count: 0, items: [] }; }
@@ -1271,7 +1286,7 @@ const routes = [
   }],
   // Wirkstoff-Detailseite: alles zu einem Wirkstoff gebündelt (Engpass, Austausch,
   // Preise, Aktionen) — komponiert aus bereits getesteten Diensten.
-  ['GET', /^\/api\/wirkstoff\/([^/]+)$/, true, async ({ userId, params }) => {
+  ['GET', /^\/api\/wirkstoff\/([^/]+)$/, true, async ({ userId, params, query }) => {
     const name = decodeURIComponent(params[0]).trim();
     const low = name.toLowerCase();
     const eq = (v) => String(v || '').trim().toLowerCase() === low;
@@ -1284,7 +1299,10 @@ const routes = [
     // Zaehler. Nur `.eintraege` zu nehmen und den Zaehler zu verwerfen ist hier
     // richtig — die Wirkstoff-Seite zeigt eine Zusammenfassung, der Hinweis auf
     // verborgene Angebote steht im Austausch-Reiter.
-    const ex = exBlocked ? [] : exchange.list(userId, { q: name }).eintraege;
+    // Angesehenes Land — wie die Listen-Reiter. Vorher ohne Land, also „alle":
+    // Amoxicillin in Portugal zeigte den Wiener Engpass und die Wiener Aktion.
+    const land = activeCountry(userId, query);
+    const ex = exBlocked ? [] : exchange.list(userId, { q: name, country: land }).eintraege;
     return {
       wirkstoff: name,
       amr: amr.forWirkstoff(name),
@@ -1293,9 +1311,10 @@ const routes = [
       premium: payments.hasFeature(userId, 'premium'),
       note: shortagesRepo.getWatchNote(userId, name),
       also_watching: shortagesRepo.usersWatching(name).filter(id => id !== userId).length,
-      shortages: shortages.listWithCounts(userId).filter(s => eq(s.wirkstoff)),
-      prices: priceBlocked ? [] : prices.comparisons(userId).filter(g => eq(g.wirkstoff)),
-      rabatte: dealsBlocked ? [] : rabatte.top10(userId).filter(r => eq(r.wirkstoff)),
+      country: land,
+      shortages: shortages.listWithCounts(userId, { country: land }).filter(s => eq(s.wirkstoff)),
+      prices: priceBlocked ? [] : prices.comparisons(userId, { country: land }).filter(g => eq(g.wirkstoff)),
+      rabatte: dealsBlocked ? [] : rabatte.top10(userId, { country: land }).filter(r => eq(r.wirkstoff)),
       exchange: { biete: ex.filter(e => e.kind === 'biete'), suche: ex.filter(e => e.kind === 'suche') },
       posts: enrichPosts(social.searchPosts(userId, name).slice(0, 10), userId),
     };
@@ -1571,6 +1590,27 @@ const routes = [
     return r;
   }],
 
+  // ── Presse je Land ───────────────────────────────────────────────────────
+  //  Was Medien DES angesehenen Landes über Arzneimittel berichten. Getrennt
+  //  vom Behörden-Feed; jeder Artikel trägt `herkunft: 'presse'`.
+  ['GET', /^\/api\/presse$/, true, async ({ userId, query }) => presseDienst.fuerLand(activeCountry(userId, query))],
+
+  // ── Lagebild je Land (KI) ────────────────────────────────────────────────
+  //  Zusammenfassung aus Behördenmeldungen und Presse; jeder Punkt mit
+  //  Belegen, unbelegte Punkte verwirft der Server (services/lagebild.js).
+  ['GET', /^\/api\/lagebild$/, true, async ({ userId, query }) => {
+    const key = 'lb:' + userId;
+    if (lagebildLimiter.check(key).blocked) {
+      throw new AppError('lagebild_rate', 'Zu viele Lagebild-Abfragen in kurzer Zeit. Bitte kurz warten.', 429);
+    }
+    const sprache = String(query.get('lang') || '').toLowerCase();
+    const r = await lagebildDienst.fuerLand(activeCountry(userId, query), { sprache });
+    // Nur ein echter Anbieter-Aufruf zaehlt gegen das Limit.
+    const gefragt = !r.zwischengespeichert && !['ki_aus', 'zu_wenig_quellen'].includes(r.grund);
+    if (gefragt) lagebildLimiter.fail(key);
+    return r;
+  }],
+
   ['GET', /^\/api\/feed\/home$/, true, async ({ userId }) => ({ posts: enrichPosts(social.homeFeed(userId), userId) })],
   ['GET', /^\/api\/feed\/public$/, true, async ({ userId, query }) => ({ country: activeCountry(userId, query), posts: enrichPosts(social.publicFeed(userId, { sort: query.get('sort') || 'neu', filter: query.get('filter') || 'all', country: activeCountry(userId, query) }), userId) })],
 
@@ -1790,7 +1830,7 @@ const routes = [
   ['POST', /^\/api\/shortages\/([^/]+)\/report-update$/, true, async ({ userId, params, body }) => shortages.updateShortageReport(userId, params[0], { status: body.status, grund: body.grund })],
 
   // ── Beobachtungsliste (Wirkstoffe im Blick behalten) ──
-  ['GET', /^\/api\/watchlist$/, true, async ({ userId }) => ({ items: shortages.myWatchlist(userId) })],
+  ['GET', /^\/api\/watchlist$/, true, async ({ userId, query }) => ({ items: shortages.myWatchlist(userId, { country: activeCountry(userId, query) }) })],
   ['POST', /^\/api\/watchlist$/, true, async ({ userId, body }) => ({ items: shortages.watch(userId, body.wirkstoff) })],
   ['POST', /^\/api\/watchlist\/bulk$/, true, async ({ userId, body }) => ({ items: shortages.watchMany(userId, body.wirkstoffe) })],
   ['POST', /^\/api\/watchlist\/alert-all$/, true, async ({ userId, body }) => shortages.setWatchAlertAll(userId, body.pct)],
@@ -1853,7 +1893,7 @@ const routes = [
 
   // ── Übergreifende Suche (Priorität 7) ── gesperrte Module aus den Treffern nehmen.
   ['GET', /^\/api\/search$/, true, async ({ userId, query }) => {
-    const r = await search.search(userId, query.get('q') || '');
+    const r = await search.search(userId, query.get('q') || '', { country: activeCountry(userId, query) });
     const home = userCountry(userId);
     const rabatteHits = isFeatureBlocked(home, 'deals') ? [] : r.rabatte;
     const exchangeHits = isFeatureBlocked(home, 'stock_exchange') ? [] : r.exchange;

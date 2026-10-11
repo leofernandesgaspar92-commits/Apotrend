@@ -1566,3 +1566,61 @@ nur offen, wo `APOPULSE_FEATURE_TAUSCHBOERSE=an` gesetzt ist. Das hatte ich
 beim Melden nicht dazugesagt.
 
 **Offen:** Gelesen-Zustand für den Warnungs-Feed.
+
+### Cycle · Jedes Land seine eigene Lage: Trennung, Presse, KI-Lagebild (2026-10-11)
+
+**Anlass (Owner):** Nach dem Wechsel auf Portugal erschienen weiter Infos von
+Herba Chemosan. Gewünscht: Jedes Land zeigt seine eigene Realität — Angola
+anklicken und alles zu Angola sehen, Nigeria und warum es Engpässe hat, Schweiz
+und was Roche Neues hat, Kanada und wie Hormus die Produktion trifft — „via KI".
+
+**GATHER.** Zwei getrennte Ursachen:
+1. **„Herba Chemosan" steht in der Live-App gar nicht** — nur in der ALTEN App
+   (`frontend/index.html`, fest eingebaut, samt erfundener Ansprechperson und
+   Telefonnummer bei einer echten Firma). Die liefert GitHub Pages weiter aus:
+   `pages.yml` veröffentlicht `frontend/` bei jedem Push auf `main`.
+2. **Die Live-App trennte Länder nur in den Listen-Reitern.** Übersicht,
+   Wirkstoff-Seite und Suche fragten ohne Land ab („alle Länder"),
+   Beobachtungsliste und alle fünf Engpass-Alarmwege ebenso, Rabatt-Alarme
+   kamen aus allen Ländern. Und ein Hinweis auf jeder Seite sagte „die Zahlen
+   stammen aus Österreich".
+
+**Erst bewiesen:** sechs HTTP-Tests, alle rot gegen den alten Code — jeder an
+seiner Leck-Aussage, jede Gegenprobe („in Österreich vorhanden") grün.
+
+**WORK.**
+- **Trennung:** Anzeige folgt dem angesehenen Land, Benachrichtigung dem
+  Heimatland (`domain/land.js`). Der Österreich-Hinweis ist entfernt — er war
+  nach der Behebung falsch.
+- **Pages:** `pages.yml` veröffentlicht nur noch eine Weiterleitung (`pages/`,
+  inkl. 404 für alte Pfade). **Wirkt erst auf `main`** — Entscheidung des Owners.
+- **Presse je Land** über GDELT, getrennt von Behörden-Feed und Signalen, als
+  Presse gekennzeichnet. Ungeprüft gegen das echte GDELT (kein Netz hier);
+  daher je Land per Umgebungsvariable ersetzbar.
+- **KI-Lagebild** je Land: nur aus nummerierten Belegen, Server verwirft
+  unbelegte Punkte, Quellen unter jedem Punkt, Hinweis davor.
+
+**Zwei eigene Fehler, beide von Prüfungen gefunden:**
+- Die neuen Sprachschlüssel `pr_title`/`pr_empty` gab es schon (Premium-Titel,
+  Preis-Leermeldung). Ein doppelter Schlüssel überschreibt still; die
+  Paritätsprüfung sieht das nicht. Umbenannt und **neuer Test** gegen doppelte
+  Schlüssel je Sprache — mit Gegenprobe.
+- Ein Presse-Test („kein `javascript:`-Link") war **vakuant**: Gleiche Titel
+  ließen die Dublettenprüfung den gültigen Artikel entfernen, die Zahl blieb 1.
+  Erst die Gegenprobe zeigte es; der Test prüft jetzt, WELCHER Artikel bleibt.
+  Eine Frontend-Gegenprobe war falsch gebaut (Hinweis zusätzlich statt
+  verschoben) und wurde neu gebaut.
+
+**CHECK.** 1056 Tests grün (+34), i18n 1511/1511/1511, `npm run verify`
+komplett. 19 Gegenproben (7 Trennung, 8 Presse/Lagebild-Dienst, 3 Oberfläche
+Lagebild, 1 doppelte Schlüssel) — jede schlägt an, zwei davon erst nach
+Nachbesserung (s. o.).
+
+**Für den Owner:** `APOPULSE_AI_API_KEY` setzen (ohne ihn kein Lagebild);
+`/api/presse?country=NG` einmal aufrufen und melden, ob Artikel kommen oder
+welcher `fehler`; Pages-Weiterleitung auf `main` bringen oder Pages abschalten.
+Preise und Rabatte je Land gibt es nur, wo eine Quelle angebunden ist — für
+Großhandelspreise existiert keine freie Quelle; ohne Quelle bleibt der Bereich
+leer, statt österreichische Zahlen zu zeigen.
+
+**Offen:** Gelesen-Zustand für den Warnungs-Feed.

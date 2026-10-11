@@ -1,4 +1,11 @@
-# Deployt frontend/ automatisch auf GitHub Pages bei jedem Push auf main.
+# Veröffentlicht auf GitHub Pages NUR NOCH eine Weiterleitung zur Live-App.
+#
+# Vorher lag hier die ALTE App (frontend/) mit fest eingebauten Beispieldaten —
+# darunter ein österreichischer Großhändler samt erfundener Ansprechperson, der
+# in JEDEM Land erschien, auch nach dem Wechsel auf Portugal. Wer die
+# Pages-Adresse als Lesezeichen hatte, hielt das für die App. pages/ enthält
+# nur index.html und 404.html (fängt alte Unterpfade wie /frontend/ ab).
+#
 # Einmalig nötig: Repo → Settings → Pages → Source: "GitHub Actions"
 name: Deploy Frontend to GitHub Pages
 
@@ -6,7 +13,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'frontend/**'
+      - 'pages/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -30,6 +37,6 @@ jobs:
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: frontend/
+          path: pages/
       - id: deployment
         uses: actions/deploy-pages@v4

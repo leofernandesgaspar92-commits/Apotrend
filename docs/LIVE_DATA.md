@@ -765,6 +765,57 @@ Die Bündelung passiert am Server, nicht im Frontend: zwei Abfragen zu
 verschmelzen hieße, die Sortierung zweimal unterschiedlich zu machen. Eine
 Gegenprobe, die den Knopf nur lokal filtern lässt, schlägt im Browser-Audit an.
 
+## 3f. Länder-Trennung: angesehenes Land vs. Heimatland (`domain/land.js`)
+
+Die Listen-Reiter folgten dem Länder-Umschalter schon; die **Sammelansichten
+nicht**. Start-Übersicht, Wirkstoff-Seite und Suche fragten die Dienste ohne
+Land ab — und „ohne Land" heißt dort „alle Länder". Wer auf Portugal
+umschaltete, sah österreichische Engpässe als „kritisch" und eine
+österreichische Aktion als Top-Rabatt. Dazu stand auf jeder Seite der Hinweis
+„die unten gezeigten Zahlen stammen aus Österreich" — der Notbehelf für genau
+diese Lücke, nach der Behebung falsch und deshalb entfernt.
+
+Zwei Länder, die sich **nicht** vertauschen dürfen:
+
+| | bestimmt | Beispiel |
+|---|---|---|
+| **angesehenes Land** (`?country=`) | jede **Anzeige**: Übersicht, Wirkstoff-Seite, Suche, Beobachtungsliste | Klick auf Angola → nur Angola |
+| **Heimatland** (Profil) | **Benachrichtigungen** und Rechts-Gates | Rabatt-Alarm nur für Aktionen, die man kaufen kann; Engpass-Alarm nur für den eigenen Markt |
+
+Vorher gingen Engpass-Alarme an **alle** Beobachter:innen eines Wirkstoffs, egal
+in welchem Land der Engpass lag, und die Beobachtungsliste zeigte den
+kritischsten Engpass aus **irgendeinem** Land. Sechs HTTP-Tests
+(`test/laender-trennung.test.js`) prüfen jede Ansicht mit einer Gegenprobe
+„in Österreich vorhanden" — sonst wäre „leer in Portugal" auch ohne Daten grün.
+
+## 3g. Presse je Land und KI-Lagebild (`services/presse.js`, `services/lagebild.js`)
+
+**Presse** (`GET /api/presse?country=`): Artikel aus Medien **des** Landes über
+Arzneimittel, über GDELT DOC 2.0 (frei, ohne Schlüssel, `sourcecountry:`
+filtert nach dem Sitz des Mediums). Suchwörter in der Sprache des Landes.
+Presse bleibt **getrennt** vom Behörden-Feed und vom VerifiedSignal-Speicher und
+ist als „Presse — keine Behördenmeldung" gekennzeichnet. Von hier aus **nicht
+geprüft** (kein Netz in der Bauumgebung); deshalb je Land ohne Deploy
+ersetzbar (`APOPULSE_PRESSE_QUERY_<CC>`), abschaltbar (`APOPULSE_PRESSE=aus`),
+und ein Fehlschlag nennt seinen Grund (`fehler`).
+
+**Lagebild** (`GET /api/lagebild?country=&lang=`): Die KI fasst Behördenmeldungen
+und Presse des Landes in höchstens sechs Punkten zusammen.
+
+- Das Modell bekommt **nur** nummerierte Meldungen mit Herkunft (Behörde/Presse).
+- Jeder Punkt muss Belegnummern nennen; **der Server verwirft** Punkte ohne
+  gültige Nummer und entfernt Links aus dem Text.
+- Unter jedem Punkt stehen seine Quellen als Link; der Hinweis „maßgeblich sind
+  die Quellen" steht **vor** den Punkten.
+- Unter zwei Quellen: kein Lagebild (`zu_wenig_quellen`). Ohne KI-Schlüssel:
+  keine Karte. Nichts Belegbares: `keine_belegte_aussage`.
+- Zwischengespeichert je Land + Sprache + Belegstand (6 h); 30 Anbieter-Aufrufe
+  je Stunde und Konto.
+
+**Was das nicht garantiert:** dass das Modell eine Quelle inhaltlich richtig
+wiedergibt — das lässt sich maschinell nicht prüfen. Darum steht die Quelle
+einen Klick entfernt unter jedem Punkt.
+
 ## 4. Preise (zweiter Datentyp, gleiche Logik)
 
 Analog zu Engpässen: Umgebungsvariable `APOPULSE_LIVE_PRICES_<CC>` setzen.

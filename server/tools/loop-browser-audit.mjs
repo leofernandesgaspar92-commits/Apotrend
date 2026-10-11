@@ -756,6 +756,84 @@ async function main() {
       }
     }
 
+    // ── 5. Länder-Umschalter: die Startseite folgt ──────────────────────────
+    //  Die Listen-Reiter folgten dem Umschalter, die Startseite nicht: Sie
+    //  fragte ohne Land ab und zeigte nach „Portugal" weiter österreichische
+    //  Engpässe als kritisch. Geprüft wird die tatsächliche Anfrage.
+    const ovLaender = [];
+    page.on('request', (req) => {
+      const u = new URL(req.url());
+      if (u.pathname === '/api/overview') ovLaender.push(u.searchParams.get('country'));
+    });
+    await page.goto(BASE, { waitUntil: 'networkidle' });
+    await page.click('.tabs button[data-tab="overview"]').catch(() => {});
+    await page.waitForTimeout(500);
+    await page.selectOption('#countrySwitch', 'PT').catch(() => {});
+    await page.waitForTimeout(900);
+    if (!ovLaender.length) {
+      findings.push('Länder-Umschalter: die Startseite wurde gar nicht abgefragt — Prüfung nicht aussagekräftig');
+    } else if (ovLaender[ovLaender.length - 1] !== 'PT') {
+      findings.push(`Länder-Umschalter: Startseite fragt nach dem Wechsel auf Portugal mit country=${ovLaender[ovLaender.length - 1]} ab`);
+    } else {
+      console.log('✓ Länder-Umschalter: die Startseite fragt nach dem Wechsel das gewählte Land ab');
+    }
+
+    // ── 6. Lagebild + Presse im News-Reiter ─────────────────────────────────
+    //  Zusicherungen: Hinweis VOR den Punkten; jeder Punkt mit Quellen-Links
+    //  samt Herkunft; ein `javascript:`-Link aus einer Quelle wird NIE
+    //  klickbar; Presse ist als Presse gekennzeichnet; ohne KI keine Karte.
+    let lbAntwort = {
+      land: 'NG', sprache: 'de', verfuegbar: true, grund: null, quellen_gesamt: 3,
+      hinweis: 'KI-Zusammenfassung der verlinkten Meldungen. LBHINWEIS',
+      punkte: [{ text: 'LBPUNKT Naira-Verfall verteuert Importe.', quellen: [
+        { nr: 1, herkunft: 'behoerde', titel: 'NAFDAC', url: 'https://nafdac.gov.ng/1', quelle: 'NAFDAC' },
+        { nr: 2, herkunft: 'presse', titel: 'Punch', url: 'javascript:alert(1)', quelle: 'punchng.com' },
+      ] }],
+    };
+    await page.route('**/api/lagebild*', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(lbAntwort) }));
+    await page.route('**/api/presse*', (route) => route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ land: 'NG', quelle: 'GDELT', grund: null, artikel: [
+        { herkunft: 'presse', titel: 'PRARTIKEL Drug prices soar', url: 'https://punchng.com/x', quelle: 'punchng.com', datum: '2026-10-10T00:00:00.000Z' },
+      ] }),
+    }));
+    await page.goto(BASE, { waitUntil: 'networkidle' });
+    await page.click('.tabs button[data-tab="news"]').catch(() => {});
+    await page.waitForTimeout(900);
+    const lbKarte = page.locator('[data-lagebild]').first();
+    if (await lbKarte.count() === 0) {
+      findings.push('Lagebild: Karte fehlt im News-Reiter');
+    } else {
+      const lbText = await lbKarte.innerText();
+      const hrefs = await lbKarte.locator('a').evaluateAll((as) => as.map((a) => a.getAttribute('href')));
+      if (lbText.indexOf('LBHINWEIS') === -1 || lbText.indexOf('LBHINWEIS') > lbText.indexOf('LBPUNKT')) {
+        findings.push('Lagebild: der Hinweis steht nicht VOR den Punkten');
+      } else if (!hrefs.includes('https://nafdac.gov.ng/1')) {
+        findings.push('Lagebild: der Punkt verlinkt seine Quelle nicht');
+      } else if (hrefs.some((h) => /^javascript:/i.test(String(h)))) {
+        findings.push('Lagebild: ein javascript:-Link aus einer Quelle ist klickbar');
+      } else if (!/Behörde/.test(lbText)) {
+        findings.push('Lagebild: die Herkunft der Quelle (Behörde/Presse) steht nicht dran');
+      } else {
+        console.log('✓ Lagebild: Hinweis vor den Punkten, Quellen verlinkt mit Herkunft, kein javascript:-Link');
+      }
+    }
+    const prText = await page.locator('[data-presse]').first().innerText().catch(() => '');
+    if (!/PRARTIKEL/.test(prText) || !/keine Behördenmeldungen/.test(prText)) {
+      findings.push('Presse: Artikel fehlt oder ist nicht als Presse (keine Behördenmeldung) gekennzeichnet');
+    } else {
+      console.log('✓ Presse: Artikel aus dem Land, als Presse gekennzeichnet');
+    }
+    lbAntwort = { land: 'NG', verfuegbar: false, grund: 'ki_aus', punkte: [], quellen_gesamt: 0 };
+    await page.click('.tabs button[data-tab="overview"]').catch(() => {});
+    await page.click('.tabs button[data-tab="news"]').catch(() => {});
+    await page.waitForTimeout(800);
+    if (await page.locator('[data-lagebild]').count() > 0) {
+      findings.push('Lagebild: ohne KI-Schlüssel erscheint trotzdem eine Karte');
+    } else {
+      console.log('✓ Lagebild: ohne KI keine Karte');
+    }
+
     if (errors.length) findings.push(`Säule 3: JS-Fehler — ${errors.slice(0, 2).join(' | ')}`);
     await ctx.close();
   }

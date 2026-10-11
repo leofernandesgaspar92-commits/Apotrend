@@ -3,20 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ApoPulse – wird geladen …</title>
-  <!-- GitHub Pages liefert im klassischen Branch-Modus die Repo-Root aus.
-       Die eigentliche App liegt in frontend/index.html — daher hier eine
-       Weiterleitung, damit /ApoPulse/ direkt die App öffnet. -->
-  <meta http-equiv="refresh" content="0; url=./frontend/" />
-  <link rel="canonical" href="./frontend/" />
-  <script>location.replace('./frontend/' + location.search + location.hash);</script>
+  <title>ApoPulse</title>
+  <!-- Hier lief frueher die ALTE App (Ordner frontend/) mit fest eingebauten
+       Beispieldaten — darunter ein oesterreichischer Grosshaendler, der in
+       jedem Land erschien. Die aktuelle App laeuft als eigener Dienst; diese
+       Seite leitet nur noch dorthin weiter (.github/workflows/pages.yml). -->
+  <meta http-equiv="refresh" content="0; url=https://www.apopulse.com/" />
+  <link rel="canonical" href="https://www.apopulse.com/" />
+  <script>location.replace('https://www.apopulse.com/');</script>
   <style>
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background:#0a0a0a; color:#e8e8e8;
-           display:flex; align-items:center; justify-content:center; height:100vh; margin:0; }
-    a { color:#00ff88; }
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; margin: 0; min-height: 100vh;
+           display: flex; align-items: center; justify-content: center; background: #f2f6f4; color: #1a2b22; padding: 16px; }
+    a { color: #0a7a45; font-weight: 700; font-size: 18px; }
   </style>
 </head>
 <body>
-  <p>ApoPulse wird geladen … falls nicht, <a href="./frontend/">hier zur App</a>.</p>
+  <p>ApoPulse ist umgezogen: <a href="https://www.apopulse.com/">www.apopulse.com öffnen</a></p>
 </body>
 </html>

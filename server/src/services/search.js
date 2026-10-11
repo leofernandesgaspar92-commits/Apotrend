@@ -2,6 +2,8 @@
 // allen Modulen: Personen, Beiträge, Engpässe, Preise, Rabatte. Sichtbarkeit von
 // Beiträgen wird über die Social-Schicht (visibleTo) erzwungen. Marktdaten sind
 // nicht personenbezogen und daher frei durchsuchbar.
+import { gehoertZuLand } from '../domain/land.js';
+
 export function createSearchService({ social, shortagesRepo, pricesRepo, rabatteRepo, exchange = null, rxnorm = null }) {
   const norm = (v) => String(v ?? '').toLowerCase();
 
@@ -17,7 +19,9 @@ export function createSearchService({ social, shortagesRepo, pricesRepo, rabatte
      * Bewusst asynchron: Der Nachschlag geht ueber das Netz. Die uebrigen
      * Treffer entstehen weiterhin rein im Speicher.
      */
-    async search(viewerUserId, query, { limit = 10, expand = true } = {}) {
+    // `country`: angesehenes Land. Engpässe, Preise, Rabatte und Börse kommen
+    // nur aus diesem Land (domain/land.js) — vorher aus allen.
+    async search(viewerUserId, query, { limit = 10, expand = true, country = null } = {}) {
       const q = norm(query).trim();
       if (!q) return { query: '', people: [], posts: [], shortages: [], prices: [], rabatte: [], exchange: [], total: 0, synonyms: [] };
 
@@ -39,17 +43,17 @@ export function createSearchService({ social, shortagesRepo, pricesRepo, rabatte
 
       const posts = social.searchPosts(viewerUserId, q).slice(0, limit);
 
-      const shortages = shortagesRepo.list()
+      const shortages = shortagesRepo.list({ country })
         .filter(s => match(s.wirkstoff, s.bezeichnung, s.grund))
         .slice(0, limit);
 
       const prices = pricesRepo.listFlat()
-        .filter(p => match(p.bezeichnung, p.wirkstoff, p.supplier))
+        .filter(p => gehoertZuLand(p, country) && match(p.bezeichnung, p.wirkstoff, p.supplier))
         .sort((a, b) => a.aep - b.aep)
         .slice(0, limit);
 
       const rabatte = rabatteRepo.listFlat()
-        .filter(r => match(r.bezeichnung, r.wirkstoff, r.supplier))
+        .filter(r => gehoertZuLand(r, country) && match(r.bezeichnung, r.wirkstoff, r.supplier))
         .sort((a, b) => b.rabatt_pct - a.rabatt_pct)
         .slice(0, limit);
 
@@ -58,7 +62,7 @@ export function createSearchService({ social, shortagesRepo, pricesRepo, rabatte
       // die ungefilterte Liste gelandet, haette die uebergreifende Suche
       // Rx-Angebote ausgegeben, die der Austausch-Reiter verbirgt — eine
       // Hintertuer, die niemand sucht und jeder findet.
-      const exchangeHits = exchange ? exchange.list(viewerUserId, { q }).eintraege.slice(0, limit) : [];
+      const exchangeHits = exchange ? exchange.list(viewerUserId, { q, country }).eintraege.slice(0, limit) : [];
 
       const total = people.length + posts.length + shortages.length + prices.length + rabatte.length + exchangeHits.length;
       // `synonyms` gehoert in die Antwort: Die Oberflaeche kann damit sagen,

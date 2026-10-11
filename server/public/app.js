@@ -1055,7 +1055,10 @@ async function loadOverview() {
   try {
     // Live-Sessions + Aufgaben parallel laden (Fehler dort dürfen die Übersicht nicht blockieren).
     [d, liveData, tasksData] = await Promise.all([
-      api('GET','/api/overview'),
+      // Land der ANSICHT mitschicken — wie Börse und Rabatte. Ohne Parameter
+      // zeigte die Startseite nach dem Umschalten weiter das Heimatland (bzw.
+      // alle Länder gemischt), während die Reiter schon Portugal zeigten.
+      api('GET','/api/overview?country=' + encodeURIComponent(viewCountry())),
       // Live-Sessions ruhen (Bereich `termine`). Ohne diese Wache quittiert
       // der Server mit 404, und das steht als roter Fehler in der Konsole.
       featureAn('termine') ? api('GET','/api/live').catch(() => null) : null,
@@ -1074,7 +1077,6 @@ async function loadOverview() {
   // zuerst der Wert auf einen Blick — Begrüßung + Kennzahlen-Kacheln — und das
   // Zeitkritische (Live). Danach erst Referenz-/Hinweis-Karten (Behörde, Profil,
   // Umrechner). Nur die kleine Daten-Ehrlichkeits-Notiz bleibt ganz oben.
-  { const n = countryDataNotice(); if (n) feed.appendChild(n); }
   const hello = me ? (me.display_name || '@'+me.handle) : '';
   const firstName = hello ? (hello.split(/\s+/).find(w => !/\.$/.test(w)) || hello) : '';
   // Kennzahlen-Kacheln
@@ -2484,7 +2486,11 @@ async function loadNews() {
       <div style="margin-top:8px"><button id="ngo">${esc(t('nb_share'))}</button></div>
       <div class="err" id="nerr"></div>
     </div>
-  </div><div id="newslist"></div>`));
+  </div><div id="lagebild"></div><div id="presse"></div><div id="newslist"></div>`));
+  // Lagebild und Presse des ANGESEHENEN Landes — über den Behördenmeldungen,
+  // weil sie die Frage „was ist dort los, und warum?" beantworten.
+  renderLagebild(document.getElementById('lagebild'));
+  renderPresse(document.getElementById('presse'));
   { const tgl = document.querySelector('[data-ntoggle]'), cmp = document.querySelector('[data-ncompose]'), chev = document.querySelector('[data-nchev]');
     tgl.onclick = () => { const open = cmp.classList.toggle('hidden') === false; tgl.setAttribute('aria-expanded', String(open)); chev.textContent = open ? '▾' : '▸'; if (open) document.getElementById('nb').focus(); }; }
   let newsImage = null;
@@ -2524,6 +2530,100 @@ async function loadNews() {
   } catch(e){ list.innerHTML = ''; list.appendChild(errorState(e.message, loadTab)); }
 }
 
+// Nur http(s)-Adressen werden zu Links. Was der Server liefert, ist schon
+// geprüft — hier zählt es trotzdem: Ein `javascript:`-Link in einer Quelle
+// wäre ein Klick, der Code ausführt.
+const sichererLink = (u) => (/^https?:\/\//i.test(String(u || '')) ? String(u) : null);
+const landLabel = (cc) => { const c = (COUNTRIES_CACHE || []).find(x => x.code === cc); return c ? `${c.flag} ${c.name}` : cc; };
+
+/**
+ * Lagebild des angesehenen Landes (KI-Zusammenfassung mit Belegen).
+ *
+ * Drei Regeln, dieselben wie bei der Ausweich-Suche:
+ *  · Der einschränkende Hinweis steht VOR den Punkten, nicht darunter.
+ *  · Jeder Punkt zeigt seine Quellen als Links — mit Herkunft (Behörde/Presse).
+ *  · Ohne KI-Schlüssel erscheint die Karte gar nicht (wie der Übersetzen-Knopf);
+ *    „zu wenige Quellen" und „nichts Belegbares" werden benannt, nicht versteckt.
+ */
+async function renderLagebild(box) {
+  const cc = viewCountry();
+  box.innerHTML = `<div class="card muted">${esc(t('lb_loading'))}</div>`;
+  let d;
+  try { d = await api('GET', '/api/lagebild?country=' + encodeURIComponent(cc) + '&lang=' + encodeURIComponent(LOCALE)); }
+  catch { box.innerHTML = ''; box.appendChild(el(`<div class="card muted">${esc(t('lb_error'))}</div>`)); return; }
+  box.innerHTML = '';
+  if (d.grund === 'ki_aus') return;
+  const kopf = `<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
+      <b style="font-size:17px">🧭 ${esc(ti('lb_title', { land: landLabel(cc) }))}</b>
+      <span style="background:var(--info-bg);color:var(--info-fg);border:1px solid var(--info-bd);border-radius:999px;padding:2px 10px;font-size:13px;font-weight:700">${esc(t('lb_badge'))}</span>
+    </div>`;
+  if (!d.verfuegbar) {
+    const text = d.grund === 'zu_wenig_quellen' ? ti('lb_none_sources', { land: landLabel(cc), n: d.quellen_gesamt || 0 })
+      : d.grund === 'keine_belegte_aussage' ? t('lb_none_claims') : t('lb_error');
+    box.appendChild(el(`<div class="card" data-lagebild>${kopf}<div class="muted" style="margin-top:8px">${esc(text)}</div></div>`));
+    return;
+  }
+  const card = el(`<div class="card" data-lagebild>${kopf}
+    <div data-lbhint style="margin-top:10px;background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-fg);border-radius:8px;padding:10px 12px;font-size:14px;line-height:1.5">ℹ️ ${esc(d.hinweis)}</div>
+    <ol data-lbpunkte style="margin:12px 0 0;padding-left:22px;line-height:1.55"></ol>
+    <div class="muted" style="font-size:13px;margin-top:8px">${esc(ti('lb_from', { n: d.quellen_gesamt }))}</div>
+  </div>`);
+  const ol = card.querySelector('[data-lbpunkte]');
+  for (const p of d.punkte) {
+    const li = el(`<li style="margin-bottom:10px"><div>${esc(p.text)}</div><div class="row" style="gap:6px;flex-wrap:wrap;margin-top:4px"></div></li>`);
+    const chips = li.querySelector('.row');
+    for (const q of p.quellen) {
+      const href = sichererLink(q.url);
+      if (!href) continue;
+      const art = q.herkunft === 'behoerde' ? t('lb_authority') : t('lb_press');
+      chips.appendChild(el(`<a href="${esc(href)}" target="_blank" rel="noopener noreferrer" data-lbquelle="${esc(q.herkunft)}"
+        style="font-size:13px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;text-decoration:none;min-height:32px;display:inline-flex;align-items:center"
+        title="${esc(q.titel || '')}">[${q.nr}] ${esc(art)}${q.quelle ? ' · ' + esc(q.quelle) : ''} ↗</a>`));
+    }
+    ol.appendChild(li);
+  }
+  box.appendChild(card);
+}
+
+/**
+ * Presse aus dem angesehenen Land. Klar als Presse gekennzeichnet — keine
+ * Behördenmeldung. Fünf Artikel sichtbar, der Rest auf Klick.
+ */
+async function renderPresse(box) {
+  const cc = viewCountry();
+  let d;
+  try { d = await api('GET', '/api/presse?country=' + encodeURIComponent(cc)); }
+  catch { box.innerHTML = ''; return; }
+  if (d.grund === 'abgeschaltet') { box.innerHTML = ''; return; }
+  const card = el(`<div class="card" data-presse>
+    <b style="font-size:17px">📰 ${esc(ti('presse_title', { land: landLabel(cc) }))}</b>
+    <div class="muted" style="font-size:13px;margin-top:2px">${esc(ti('presse_hint', { land: landLabel(cc) }))}</div>
+    <div data-prliste style="margin-top:8px"></div>
+  </div>`);
+  const liste = card.querySelector('[data-prliste]');
+  const artikel = (d.artikel || []).filter(a => sichererLink(a.url));
+  if (!artikel.length) {
+    const key = d.grund === 'nicht_erreichbar' ? 'presse_unreach' : d.grund === 'land_nicht_abgedeckt' ? 'presse_uncovered' : 'presse_empty';
+    liste.appendChild(el(`<div class="muted">${esc(ti(key, { land: landLabel(cc) }))}</div>`));
+    box.innerHTML = ''; box.appendChild(card); return;
+  }
+  const zeile = (a) => el(`<div style="padding:8px 0;border-top:1px solid var(--line)">
+    <a href="${esc(sichererLink(a.url))}" target="_blank" rel="noopener noreferrer" style="font-weight:600;text-decoration:none">${esc(a.titel)} ↗</a>
+    <div class="muted" style="font-size:13px;margin-top:2px">${esc(a.quelle || '')}${a.datum ? ' · ' + esc(fmtDateDe(String(a.datum).slice(0, 10))) : ''}</div>
+  </div>`);
+  const SICHTBAR = 5;
+  artikel.slice(0, SICHTBAR).forEach(a => liste.appendChild(zeile(a)));
+  if (artikel.length > SICHTBAR) {
+    const rest = el('<div class="hidden"></div>');
+    artikel.slice(SICHTBAR).forEach(a => rest.appendChild(zeile(a)));
+    liste.appendChild(rest);
+    const mehr = el(`<button class="ghost small" style="margin-top:8px;min-height:40px">${esc(ti('presse_more', { n: artikel.length }))}</button>`);
+    mehr.onclick = () => { const zu = rest.classList.toggle('hidden'); mehr.textContent = zu ? ti('presse_more', { n: artikel.length }) : t('presse_less'); };
+    liste.appendChild(mehr);
+  }
+  box.innerHTML = ''; box.appendChild(card);
+}
+
 // Status-Kurzlabel (übersetzt) + feste Farbe (Farb-Semantik bleibt sprachunabhängig).
 const STATUS_COLORS = { kritisch:'#c0392b', eingeschraenkt:'#c77700', verfuegbar:'#0b7f28' };
 const STATUS_I18N = { kritisch:'st_krit_short', eingeschraenkt:'st_eing_short', verfuegbar:'st_verf_short' };
@@ -2536,20 +2636,11 @@ function provLabel(key) { return PROV_I18N[key] ? t(PROV_I18N[key]) : (key || ''
 const GRUND_I18N = { 'Erhöhte Nachfrage':'gr_demand', 'Herstellungsproblem':'gr_manuf', 'Kontingentierung':'gr_ration', 'Produktionsverzögerung':'gr_delay', 'Wirkstoffknappheit':'gr_api' };
 function grundLabel(g) { return g ? (GRUND_I18N[g] ? t(GRUND_I18N[g]) : g) : ''; }
 
-// Ehrlicher Länder-Hinweis: Die Live-Regulierungsdaten (Engpässe/Preise/Rabatte)
-// stammen derzeit aus Österreich. Für andere Länder das offen ausweisen, statt
-// AT-Daten stillschweigend als Landesdaten zu zeigen (Sicherheits-/Quellenpflicht,
-// CLAUDE.md). Gibt null zurück, wenn das aktive Land Österreich ist.
-function countryDataNotice() {
-  const cc = (me && me.country) || 'AT';
-  if (cc === 'AT') return null;
-  const c = (COUNTRIES_CACHE || []).find(x => x.code === cc);
-  const land = c ? `${c.flag} ${c.name}` : cc;
-  return el(`<div class="card" style="border-color:var(--info-bd);background:var(--info-bg);color:var(--info-fg)">
-    <b>${esc(ti('data_notice_title', { land }))}</b>
-    <div style="margin-top:6px;font-size:14px;line-height:1.5">${esc(ti('data_notice_body', { land }))}</div>
-  </div>`);
-}
+// (Entfernt: countryDataNotice — „die unten gezeigten Zahlen stammen aus
+// Österreich". Das war der Notbehelf für die fehlende Länder-Trennung und ist
+// seit dieser behoben ist FALSCH: Jede Ansicht zeigt nur noch das angesehene
+// Land oder eine ehrliche Leermeldung (domain/land.js). Wo für ein Land keine
+// Quelle angebunden ist, sagt das die Abdeckungs-Karte je Bereich.)
 
 // Offizielle Arzneimittelbehörde des aktiven Landes als belegte Quelle (echter Link).
 // Ohne verifizierten Link kein Link — nur den Behördennamen nennen (Quellenpflicht, CLAUDE.md).
@@ -2661,7 +2752,6 @@ async function loadShortages() {
     // Wie bei den News: das ANGESEHENE Land, nicht das eigene.
     const d = await api('GET','/api/shortages?country=' + viewCountry());
     feed.innerHTML = '';
-    { const n = countryDataNotice(); if (n) feed.appendChild(n); }
     feed.appendChild(provenanceLegend());
     feed.appendChild(reportShortageCard(d.shortages));
     const bar = shortageFilterBar();
@@ -3088,7 +3178,6 @@ async function loadPrices() {
   try {
     const d = await api('GET','/api/prices?country=' + viewCountry());
     feed.innerHTML = '';
-    { const n = countryDataNotice(); if (n) feed.appendChild(n); }
     { const ln = legalNotice('price_compare'); if (ln) feed.appendChild(ln); }
     feed.appendChild(provenanceLegend());
     if (d.savings && d.savings.count) {
@@ -3768,7 +3857,6 @@ async function loadRabatte() {
     try { const wl = await api('GET','/api/watchlist'); watched = new Set((wl.items||[]).map(i => (i.wirkstoff||'').toLowerCase())); } catch { /* ohne Filter weiter */ }
     if (!watched.size) rabattWatchedOnly = false; // ohne beobachtete Wirkstoffe keinen leeren Filter erzwingen
     feed.innerHTML = '';
-    { const n = countryDataNotice(); if (n) feed.appendChild(n); }
     { const ln = legalNotice('deals'); if (ln) feed.appendChild(ln); }
     feed.appendChild(provenanceLegend());
     feed.appendChild(el(`<div class="card muted" style="margin-bottom:10px">${t('rb_header')} ${esc(t('prov_reference'))}</div>`));
@@ -5753,7 +5841,7 @@ async function renderSearch(q) {
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">…</div>';
   try {
-    const d = await api('GET','/api/search?q='+encodeURIComponent(q));
+    const d = await api('GET','/api/search?q='+encodeURIComponent(q)+'&country='+encodeURIComponent(viewCountry()));
     feed.innerHTML = '';
     const head = el(`<div class="card"><div class="row"><b tabindex="-1" data-stitle>${esc(ti('search_results_for',{q:d.query}))}</b><span class="sp" style="flex:1"></span><span class="muted">${esc(ti('search_hits',{n:d.total}))}</span><button class="ghost small" data-back style="margin-left:10px">${esc(t('search_back'))}</button></div></div>`);
     head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
@@ -6489,7 +6577,7 @@ async function openWirkstoff(name) {
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">…</div>';
   let d;
-  try { d = await api('GET','/api/wirkstoff/'+encodeURIComponent(name)); }
+  try { d = await api('GET','/api/wirkstoff/'+encodeURIComponent(name)+'?country='+encodeURIComponent(viewCountry())); }
   catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   recordRecentWirkstoff(d.wirkstoff);
   feed.innerHTML = '';
