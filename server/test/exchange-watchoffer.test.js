@@ -8,6 +8,11 @@ import { createOrgAuthService } from '../src/services/orgAuth.js';
 import { createSocialService } from '../src/services/social.js';
 import { createExchangeService } from '../src/services/exchange.js';
 
+// Alle Eintraege hier sind ausdruecklich OTC. Gegenstand dieser Datei ist die
+// VERGLEICHSREGEL, nicht die Fachkreis-Schranke (die steht in
+// rx-seitenkanaele.test.js). Ohne Rx-Angabe gilt ein Eintrag als geschuetzt —
+// dann blockierte die Schranke jede Glocke, und die Negativ-Tests („ASS trifft
+// keine Kassenpackung") waeren gruen geblieben, ohne etwas zu pruefen.
 function setup() {
   const repo = createMemoryRepo();
   const orgAuth = createOrgAuthService(repo);
@@ -21,7 +26,7 @@ function setup() {
 test('watch_offer: Beobachter:in wird bei passendem Biete-Angebot benachrichtigt', () => {
   const { social, exchange, shortagesRepo, watcher, offerer } = setup();
   shortagesRepo.addWatch(watcher, 'Amoxicillin');
-  exchange.create(offerer, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg Filmtabletten' });
+  exchange.create(offerer, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg Filmtabletten', rx: 'otc' });
   const n = social.notifications(watcher).find(x => x.type === 'watch_offer');
   assert.ok(n, 'watch_offer Benachrichtigung');
   assert.equal(n.label, 'Amoxicillin');
@@ -30,21 +35,21 @@ test('watch_offer: Beobachter:in wird bei passendem Biete-Angebot benachrichtigt
 test('watch_offer: keine Benachrichtigung bei "suche" (nur biete)', () => {
   const { social, exchange, shortagesRepo, watcher, offerer } = setup();
   shortagesRepo.addWatch(watcher, 'Amoxicillin');
-  exchange.create(offerer, { kind: 'suche', bezeichnung: 'Amoxicillin 1000 mg' });
+  exchange.create(offerer, { kind: 'suche', bezeichnung: 'Amoxicillin 1000 mg', rx: 'otc' });
   assert.equal(social.notifications(watcher).filter(x => x.type === 'watch_offer').length, 0);
 });
 
 test('watch_offer: nicht an den/die Anbietende:n selbst', () => {
   const { social, exchange, shortagesRepo, offerer } = setup();
   shortagesRepo.addWatch(offerer, 'Amoxicillin'); // Anbieter beobachtet selbst
-  exchange.create(offerer, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg' });
+  exchange.create(offerer, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg', rx: 'otc' });
   assert.equal(social.notifications(offerer).filter(x => x.type === 'watch_offer').length, 0);
 });
 
 test('watch_offer: kein Treffer, wenn Wirkstoff nicht in der Bezeichnung', () => {
   const { social, exchange, shortagesRepo, watcher, offerer } = setup();
   shortagesRepo.addWatch(watcher, 'Metformin');
-  exchange.create(offerer, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg' });
+  exchange.create(offerer, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg', rx: 'otc' });
   assert.equal(social.notifications(watcher).filter(x => x.type === 'watch_offer').length, 0);
 });
 
@@ -52,7 +57,7 @@ test('watch_offer: ein Treffer je Nutzer, auch bei mehreren beobachteten Treffer
   const { social, exchange, shortagesRepo, watcher, offerer } = setup();
   shortagesRepo.addWatch(watcher, 'Amoxicillin');
   shortagesRepo.addWatch(watcher, '1000'); // beide würden matchen
-  exchange.create(offerer, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg' });
+  exchange.create(offerer, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg', rx: 'otc' });
   assert.equal(social.notifications(watcher).filter(x => x.type === 'watch_offer').length, 1);
 });
 
@@ -66,7 +71,7 @@ test('watch_offer: „ASS" trifft NICHT mitten im Wort (Kassenpackung, Massage, 
   for (const bez of ['Kassenpackung Vitamin D', 'Massagecreme 100 ml', 'Glassplitter-Rückruf Behälter', 'Was passiert ist']) {
     const { social, exchange, shortagesRepo, watcher, offerer } = setup();
     shortagesRepo.addWatch(watcher, 'ASS');
-    exchange.create(offerer, { kind: 'biete', bezeichnung: bez });
+    exchange.create(offerer, { kind: 'biete', bezeichnung: bez, rx: 'otc' });
     assert.equal(
       social.notifications(watcher).filter(x => x.type === 'watch_offer').length, 0,
       `„ASS" hat in „${bez}" getroffen`,
@@ -81,7 +86,7 @@ test('watch_offer: „ASS100 Hexal" trifft — eine Ziffer direkt dahinter ist k
   for (const bez of ['ASS100 Hexal 100 Stk', 'Hexal-ASS100', 'ASS 100 mg TAH']) {
     const { social, exchange, shortagesRepo, watcher, offerer } = setup();
     shortagesRepo.addWatch(watcher, 'ASS');
-    exchange.create(offerer, { kind: 'biete', bezeichnung: bez });
+    exchange.create(offerer, { kind: 'biete', bezeichnung: bez, rx: 'otc' });
     assert.equal(
       social.notifications(watcher).filter(x => x.type === 'watch_offer').length, 1,
       `„ASS" hat in „${bez}" NICHT getroffen`,
@@ -96,7 +101,7 @@ test('watch_offer: Wirkstoff als Wortanfang eines Kompositums trifft', () => {
   for (const [w, bez] of [['Ibuprofen', 'Ibuprofenlysinat 400 mg'], ['Eisen', 'Eisentabletten 50 Stk']]) {
     const { social, exchange, shortagesRepo, watcher, offerer } = setup();
     shortagesRepo.addWatch(watcher, w);
-    exchange.create(offerer, { kind: 'biete', bezeichnung: bez });
+    exchange.create(offerer, { kind: 'biete', bezeichnung: bez, rx: 'otc' });
     assert.equal(
       social.notifications(watcher).filter(x => x.type === 'watch_offer').length, 1,
       `„${w}" hat in „${bez}" NICHT getroffen`,
@@ -109,13 +114,13 @@ test('watch_offer: Umlaut neben dem Treffer — die Grenze ist Unicode, nicht AS
   // und „Ibuprofenähnlich" einer. Dieselbe Falle wie im Wirkstoff-Alarm.
   const a = setup();
   a.shortagesRepo.addWatch(a.watcher, 'Östrogen');
-  a.exchange.create(a.offerer, { kind: 'biete', bezeichnung: 'Östrogen-Pflaster 8 Stk' });
+  a.exchange.create(a.offerer, { kind: 'biete', bezeichnung: 'Östrogen-Pflaster 8 Stk', rx: 'otc' });
   assert.equal(a.social.notifications(a.watcher).filter(x => x.type === 'watch_offer').length, 1,
     'Treffer am Textanfang mit Umlaut');
 
   const b = setup();
   b.shortagesRepo.addWatch(b.watcher, 'Strogen');
-  b.exchange.create(b.offerer, { kind: 'biete', bezeichnung: 'Östrogen-Pflaster 8 Stk' });
+  b.exchange.create(b.offerer, { kind: 'biete', bezeichnung: 'Östrogen-Pflaster 8 Stk', rx: 'otc' });
   assert.equal(b.social.notifications(b.watcher).filter(x => x.type === 'watch_offer').length, 0,
     'der Umlaut davor ist eine Buchstabengrenze, kein Wortanfang');
 });
@@ -124,6 +129,6 @@ test('watch_offer: Sonderzeichen im Wirkstoffnamen sprengen die Suche nicht', ()
   // Wirkstoffnamen enthalten „(", „+", „." — unescaped wäre das ein Regex.
   const { social, exchange, shortagesRepo, watcher, offerer } = setup();
   shortagesRepo.addWatch(watcher, 'Amoxicillin + Clavulansäure (2:1)');
-  exchange.create(offerer, { kind: 'biete', bezeichnung: 'Amoxicillin + Clavulansäure (2:1) 500 mg' });
+  exchange.create(offerer, { kind: 'biete', bezeichnung: 'Amoxicillin + Clavulansäure (2:1) 500 mg', rx: 'otc' });
   assert.equal(social.notifications(watcher).filter(x => x.type === 'watch_offer').length, 1);
 });

@@ -379,6 +379,35 @@ erloschen ist, lässt sich sperren, ohne die Verifizierung zurückzunehmen — u
 ohne die Historie zu verlieren, warum er einmal verifiziert war. Standard
 `false`: Ein neues Konto sieht kein Rx, bis es bestätigt ist.
 
+### Nachtrag 11.10.2026: Die Glocke ist auch eine Anzeige
+
+Die Schranke filterte `list()` und `byAuthor()`. Das **Matching** lief an ihr
+vorbei — auf drei Wegen, alle mit einem Test bewiesen, bevor sie geschlossen
+wurden:
+
+| Weg | Was durchsickerte |
+|---|---|
+| `exchange_offer` / `exchange_want` | der **Name** des Rx-Angebots, an unverifizierte Konten und über die Landesgrenze |
+| `watch_offer` | **dass** und **von wem** ein beobachtetes Rx-Präparat angeboten wird, mit Verweis auf den Eintrag |
+| `match_count` | „3 passende Angebote" am eigenen Gesuch — ein Klick, und die Liste war leer |
+
+Alle drei prüfen jetzt mit **demselben Prädikat wie die Liste** (`rxSichtbar`),
+damit Liste und Glocke nie auseinanderlaufen können. Die Prüfung sitzt in
+`notifyMatches` selbst und nicht in `create`, weil das Matching auch beim
+**Umbenennen** und **Wiederöffnen** auslöst — sonst wäre Umbenennen der Weg
+um die Schranke herum. Eine eigene Gegenprobe (Schranke nur beim Anlegen)
+schlägt genau an diesem Test an.
+
+**Was das im Betrieb bedeutet:** Ein Eintrag **ohne** Rx-Angabe gilt als
+geschützt (fail closed). Solange kein Betrieb verifiziert ist, lösen solche
+Einträge also **keine** Tausch-Benachrichtigung mehr aus — nur ausdrücklich als
+OTC markierte. Das ist kein neues Verhalten der Schranke, sondern dasselbe, das
+die Liste seit dem 04.10. zeigt; neu ist nur, dass die Glocke es nicht mehr
+unterläuft.
+
+Bereits **zugestellte** Benachrichtigungen aus der Zeit davor wurden nicht
+nachträglich entfernt.
+
 ## Der Verifizierungs-Durchlauf (04.10.2026)
 
 Ohne ihn war die Fachkreis-Schranke eine geschlossene Tür ohne Schlüssel: Die

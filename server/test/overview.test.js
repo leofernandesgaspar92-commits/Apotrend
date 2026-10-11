@@ -133,7 +133,10 @@ test('my_seeks: eigenes offenes Gesuch mit passendem Angebot einer anderen Apoth
   assert.equal(o.my_seeks.items.length, 0);
 
   // Andere Apotheke bietet passenden Bestand -> Treffer taucht auf.
-  exchange.create(b, { kind: 'biete', bezeichnung: 'Salbutamol Spray 100 mcg' });
+  // OTC ausdruecklich: Ohne Rx-Angabe gilt ein Angebot als geschuetzt, und Anna
+  // ist nicht verifiziert — dann zaehlt es fuer sie zu Recht nicht mit
+  // (rx-seitenkanaele.test.js). Hier geht es um die Zaehlung, nicht die Schranke.
+  exchange.create(b, { kind: 'biete', bezeichnung: 'Salbutamol Spray 100 mcg', rx: 'otc' });
   o = overview.forUser(a);
   assert.equal(o.my_seeks.with_matches, 1);
   assert.equal(o.my_seeks.items[0].bezeichnung, 'Salbutamol Dosieraerosol');
@@ -236,4 +239,16 @@ test('Rabatt-Alarm: einmalige Benachrichtigung ab Schwelle, kein Duplikat; Valid
   // Erneuter Aufruf -> kein Duplikat (Dedup)
   overview.forUser(a);
   assert.equal(social.notifications(a).filter(n => n.type === 'price_alert').length, 1);
+});
+
+test('watch_offers: Kachel und Glocke vergleichen gleich — „ASS" zählt keine Kassenpackung', () => {
+  // Vorher `includes`: Die Glocke (watchersForText) meldete die Kassenpackung
+  // nicht mehr, die Kachel zählte sie weiter. Zwei Aussagen zum selben Angebot.
+  const { overview, exchange, shortages, a } = setup();
+  shortages.watch(a, 'ASS');
+  exchange.create(a, { kind: 'biete', bezeichnung: 'Kassenpackung Vitamin D' });
+  exchange.create(a, { kind: 'biete', bezeichnung: 'ASS100 Hexal 100 Stk' });
+  const wo = overview.forUser(a).watch_offers.find(x => x.wirkstoff === 'ASS');
+  assert.ok(wo, 'ASS100 muss als Bezugsquelle zählen');
+  assert.equal(wo.offers_count, 1, 'die Kassenpackung wurde mitgezählt');
 });

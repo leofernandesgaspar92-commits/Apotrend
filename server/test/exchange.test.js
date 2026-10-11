@@ -278,8 +278,8 @@ test('Aktives Matching: neues Angebot benachrichtigt die passende Suche', () => 
   const B = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'B' }, owner: { name: 'Ben', email: 'b@b.at', password: 'geheim123' } });
   social.createProfile(B.user.id, { handle: 'ben', displayName: 'Ben' });
 
-  exchange.create(A.user.id, { kind: 'suche', bezeichnung: 'Amoxicillin 500 mg' });   // Anna sucht
-  exchange.create(B.user.id, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg' });    // Ben bietet -> Match
+  exchange.create(A.user.id, { kind: 'suche', bezeichnung: 'Amoxicillin 500 mg', rx: 'otc' });   // Anna sucht
+  exchange.create(B.user.id, { kind: 'biete', bezeichnung: 'Amoxicillin 1000 mg', rx: 'otc' });    // Ben bietet -> Match
 
   const n = social.notifications(A.user.id).find(x => x.type === 'exchange_offer');
   assert.ok(n, 'Anna wird über das passende Angebot benachrichtigt');

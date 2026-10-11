@@ -1454,3 +1454,61 @@ notiert statt mitgeändert.
 **Offen:** Gelesen-Zustand für den Warnungs-Feed; Sendeweg für
 Hersteller-Mitteilungen, sobald ein Hersteller verifiziert ist; das
 Token-Muster in `notifyMatches` auf `\p{L}` umstellen.
+
+### Cycle · Die Glocke lief an der Fachkreis-Schranke vorbei (2026-10-11)
+
+**GATHER.** Geplant war ein kleiner Fix am Token-Muster von
+`exchange.notifyMatches` (kennt nur deutsche Umlaute). Beim Lesen der Funktion
+fiel Wichtigeres auf: Sie iteriert `exchangeRepo.list()` **roh** — ohne
+Länderfilter, ohne Rx-Schranke — und schreibt die Bezeichnung des Eintrags in
+die Benachrichtigung. Die Schranke vom 04.10. sitzt in `list()` und
+`byAuthor()`; die Glocke war ein dritter Ausgang, den niemand bewacht hat.
+
+**Erst bewiesen, dann geändert.** 12 Tests geschrieben, gegen den alten Code
+laufen lassen: **7 rot**, und zwar genau die Leck-Fälle; die fünf
+„muss weiter funktionieren"-Fälle grün. Drei Wege:
+
+- `exchange_offer`/`exchange_want`: Name des Rx-Angebots an unverifizierte
+  Konten und über die Landesgrenze.
+- `watch_offer`: dass und von wem ein Rx-Präparat angeboten wird.
+- `match_count`: „3 passende Angebote" am Gesuch, Klick, leere Liste — die Zahl
+  verriet, was die Liste verbarg, und sah dabei aus wie ein Fehler.
+
+**WORK.** Alle drei mit `rxSichtbar` — demselben Prädikat wie die Liste, damit
+beide nicht auseinanderlaufen können. `decorate` kennt jetzt die Betrachterin
+(ohne Betrachterin: fail closed). Die Prüfung sitzt **in** `notifyMatches`,
+nicht in `create`: Das Matching löst auch bei Umbenennen und Wiederöffnen aus,
+und sonst wäre Umbenennen der Weg drumherum.
+
+Nebenbei die Dashboard-Kachel `watch_offers` auf `praeparatTreffer` gestellt:
+Sie zählte mit `includes` weiter jede Kassenpackung zu „ASS", die die Glocke
+seit dem letzten Zyklus nicht mehr meldete — zwei Aussagen zum selben Angebot.
+
+**Acht ältere Tests liefen danach rot** — sie legten Einträge ohne Rx-Angabe von
+unverifizierten Konten an und erwarteten Glocke und Zählung. Ohne Rx-Angabe ist
+ein Eintrag geschützt, die Liste verbarg ihn diesen Konten längst; nur Glocke
+und Zahl hatten es noch nicht gewusst. Die Fixtures sagen jetzt ausdrücklich
+`rx: 'otc'` — **und das war nicht kosmetisch**: In `exchange-watchoffer.test.js`
+liefen die Negativ-Tests („ASS trifft keine Kassenpackung") nach dem Fix weiter
+**grün, aber vakuant** — die Schranke blockierte ohnehin jede Glocke. Erst mit
+OTC-Fixtures prüfen sie wieder die Vergleichsregel; eine Gegenprobe
+(`includes` zurück) bestätigt es.
+
+**CHECK.** 996 Tests grün (+14), `npm run verify` komplett. Sechs Gegenproben.
+**Eine eigene Fehlmessung dabei:** Die ersten drei Gegenproben meldeten
+„fail 0" — nicht weil die Tests versagten, sondern weil der Bruch nie
+angewandt wurde (`\n` kam als Backslash-n an, die Ersetzung fand nichts). Ein
+„grün" aus einer Gegenprobe ist nur etwas wert, wenn feststeht, dass der Bruch
+stattgefunden hat. Die Wiederholung lief mit einer Bestätigung je Bruch
+(„Bruch angewandt") — das war ein Sitzungs-Hilfsskript, nicht Teil des Repos. Eine vierte
+Gegenprobe war falsch gebaut (sie schaltete die Schranke überall ab statt nur
+beim Umbenennen) und wurde neu gebaut — jetzt schlägt genau der eine Test an,
+den sie prüfen soll.
+
+**Für den Owner:** Solange kein Betrieb verifiziert ist, lösen Einträge ohne
+Rx-Angabe keine Tausch-Glocke mehr aus. Das ist dieselbe Regel, die die Liste
+seit dem 04.10. zeigt. Der erste verifizierte Betrieb ändert das.
+
+**Offen:** Token-Muster in `notifyMatches`/`countMatches` und im Frontend
+(`[a-zäöüß0-9]`) auf Unicode — der ursprüngliche Plan dieses Zyklus;
+Gelesen-Zustand für den Warnungs-Feed.

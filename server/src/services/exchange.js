@@ -4,7 +4,7 @@
 import { ForbiddenError } from './orgAuth.js';
 import { cleanImage } from '../domain/media.js';
 import { AppError } from '../domain/errors.js';
-import { filterRx, normalizeRx, verificationStatusFor } from '../domain/jurisdiction.js';
+import { filterRx, normalizeRx, rxSichtbar, verificationStatusFor } from '../domain/jurisdiction.js';
 
 const KINDS = ['biete', 'suche'];
 // Echtes Kalenderdatum (YYYY-MM-DD), kein Überlauf (z.B. 2026-02-31 ungültig).
@@ -47,6 +47,16 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
   }
   function shareWord(a, b) { for (const w of a) if (b.has(w)) return true; return false; }
   // Nach dem Anlegen: passende Gegen-Einträge finden und deren Autor:innen benachrichtigen.
+  //
+  // ⚠️ FACHKREIS-SCHRANKE GILT AUCH HIER. Eine Benachrichtigung ist eine
+  //    Anzeige: Sie traegt die Bezeichnung des Eintrags und verweist auf ihn.
+  //    Vorher lief das Matching an der Schranke vorbei — wer ein passendes
+  //    Gesuch hatte, bekam den Namen des Rx-Angebots in die Glocke, verifiziert
+  //    oder nicht, und ueber die Landesgrenze. Die Liste war geschuetzt, die
+  //    Glocke nicht. Geprueft wird mit DEMSELBEN Praedikat wie in der Liste
+  //    (`rxSichtbar`), damit beide nie auseinanderlaufen koennen.
+  //
+  //    Gilt fuer alle drei Ausloeser: anlegen, umbenennen, wieder oeffnen.
   function notifyMatches(entry) {
     if (entry.reserved) return; // reservierte Einträge lösen kein Matchmaking aus (auch nicht beim Umbenennen)
     const opposite = entry.kind === 'biete' ? 'suche' : 'biete';
@@ -58,6 +68,7 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       if (other.status !== 'offen' || other.reserved || other.kind !== opposite || other.id === entry.id) continue;
       if (other.author_user_id === entry.author_user_id || seen.has(other.author_user_id)) continue;
       if (!shareWord(mine, words(other.bezeichnung))) continue;
+      if (!rxSichtbar(entry, betrachterFuerRx(other.author_user_id))) continue;
       seen.add(other.author_user_id);
       social.pushNotification({ userId: other.author_user_id, type, actorUserId: entry.author_user_id, refType: 'exchange', refId: entry.id, label: entry.bezeichnung });
     }
@@ -65,7 +76,12 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
 
   // Anzahl passender offener Gegen-Einträge (nach Autor:in eindeutig) — für ein sichtbares
   // Matchmaking-Signal am Eintrag: „N passende Angebote/Gesuche". Nur für offene Einträge.
-  function countMatches(entry) {
+  //
+  // Gezaehlt wird nur, was die BETRACHTERIN sehen darf. Vorher stand am Gesuch
+  // „3 passende Angebote" — ein Klick, und die Liste war leer, weil alle drei
+  // Rx-Angebote hinter der Schranke lagen. Die Zahl verriet, was die Liste
+  // verbarg, und sah dabei aus wie ein Fehler.
+  function countMatches(entry, betrachter) {
     if (entry.status !== 'offen' || entry.reserved) return 0; // reservierte sind vergeben – kein aktives Matchmaking
     const opposite = entry.kind === 'biete' ? 'suche' : 'biete';
     const mine = words(entry.bezeichnung);
@@ -75,6 +91,7 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       if (other.status !== 'offen' || other.reserved || other.kind !== opposite || other.id === entry.id) continue;
       if (other.author_user_id === entry.author_user_id) continue;
       if (!shareWord(mine, words(other.bezeichnung))) continue;
+      if (!rxSichtbar(other, betrachter)) continue;
       authors.add(other.author_user_id);
     }
     return authors.size;
@@ -132,13 +149,15 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
     };
   }
 
-  function decorate(e) {
+  // `betrachter` bestimmt `match_count` (siehe countMatches). Ohne Betrachter
+  // zaehlt nur, was ohnehin jeder sehen darf — fail closed.
+  function decorate(e, betrachter = null) {
     const prof = social.getProfile ? social.getProfile(e.author_user_id) : null;
     return {
       ...e,
       country: countryOf(e, prof),
       author: prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified } : null,
-      match_count: countMatches(e),
+      match_count: countMatches(e, betrachter),
       days_until_expiry: daysUntil(e.ablauf), // null wenn kein Verfallsdatum
     };
   }
@@ -182,10 +201,13 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       // Beobachter:innen benachrichtigen, wenn jemand ihren Wirkstoff anbietet.
       if (created.kind === 'biete' && shortagesRepo && shortagesRepo.watchersForText) {
         for (const { userId, wirkstoff } of shortagesRepo.watchersForText(created.bezeichnung)) {
+          // Dieselbe Schranke wie oben: Die Glocke verraet sonst, DASS und VON
+          // WEM ein Rx-Praeparat angeboten wird — mit Verweis auf den Eintrag.
+          if (!rxSichtbar(created, betrachterFuerRx(userId))) continue;
           social.pushNotification({ userId, type: 'watch_offer', actorUserId: created.author_user_id, refType: 'exchange', refId: created.id, label: wirkstoff });
         }
       }
-      return decorate(created);
+      return decorate(created, betrachterFuerRx(actorUserId));
     },
     // Offene Einträge (Standard), optional nach Art + Text (Präparat) + Bundesland gefiltert.
     // sort='ablauf' -> bald ablaufende zuerst (ohne Verfallsdatum ans Ende).
@@ -195,8 +217,9 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       const cc = country ? String(country).toUpperCase() : null;
       // Erst dekorieren, dann filtern: Das Land steht erst nach decorate() fest
       // (Altbestand leitet es aus dem Profil ab).
+      const betrachter = betrachterFuerRx(viewerUserId);
       const out = exchangeRepo.list()
-        .map(decorate)
+        .map((e) => decorate(e, betrachter))
         .filter(e => (!status || e.status === status) && (!kind || e.kind === kind)
           // Freitext ueber Bezeichnung UND Notiz: Der Wirkstoff steht bei
           // Boersen-Eintraegen oft nur in der Notiz („INN: Pantoprazol"),
@@ -218,7 +241,7 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       //  Liste zu zeigen. Eine Schranke ohne Erklaerung sieht aus wie ein
       //  leerer Bereich, und das Signal waere falsch: Es ist etwas da, nur
       //  nicht fuer diese Person.
-      return filterRx(out, betrachterFuerRx(viewerUserId));
+      return filterRx(out, betrachter);
     },
     // Offene Einträge einer bestimmten Apotheke — für deren öffentliches Profil (Biete/Suche
     // auf einen Blick; Kontakt läuft wie üblich per DM). Neueste zuerst, begrenzt.
@@ -234,11 +257,12 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
     //    weniger als die zwoelf, die es zeigen koennte.
     byAuthor(authorUserId, { status = 'offen', limit = 12, viewerUserId = null } = {}) {
       if (!authorUserId) return { eintraege: [], verborgen: 0, grund: null };
+      const betrachter = betrachterFuerRx(viewerUserId);
       const out = exchangeRepo.list()
         .filter(e => e.author_user_id === authorUserId && (!status || e.status === status))
-        .map(decorate)
+        .map((e) => decorate(e, betrachter))
         .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
-      const gefiltert = filterRx(out, betrachterFuerRx(viewerUserId));
+      const gefiltert = filterRx(out, betrachter);
       return {
         ...gefiltert,
         eintraege: limit ? gefiltert.eintraege.slice(0, limit) : gefiltert.eintraege,
@@ -247,9 +271,10 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
     // Eigene Einträge (alle Status), neueste zuerst — für „Meine Einträge"/Historie.
     mine(actorUserId, { status = null } = {}) {
       requireUser(actorUserId);
+      const betrachter = betrachterFuerRx(actorUserId);
       return exchangeRepo.list()
         .filter(e => e.author_user_id === actorUserId && (!status || e.status === status))
-        .map(decorate);
+        .map((e) => decorate(e, betrachter));
     },
     // Noch gültigen, aber alten Eintrag auffrischen (nur Ersteller, nur offen): setzt das
     // Erstelldatum auf jetzt, damit er wieder oben in der Liste steht und der „veraltet"-Hinweis
@@ -259,7 +284,7 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       if (!e) throw new AppError('exchange_not_found', 'Eintrag nicht gefunden.', 404);
       if (e.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Ersteller darf das.');
       if (e.status !== 'offen') throw new AppError('exchange_not_open', 'Nur offene Einträge lassen sich auffrischen.', 400);
-      return decorate(exchangeRepo.update(id, { created_at: new Date().toISOString() }));
+      return decorate(exchangeRepo.update(id, { created_at: new Date().toISOString() }), betrachterFuerRx(actorUserId));
     },
     // Erledigten Eintrag wieder öffnen (nur Ersteller) — löst erneut Matching aus.
     reopen(actorUserId, id) {
@@ -268,13 +293,13 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       if (e.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Ersteller darf das.');
       const updated = exchangeRepo.update(id, { status: 'offen', resolved_at: null });
       notifyMatches(updated);
-      return decorate(updated);
+      return decorate(updated, betrachterFuerRx(actorUserId));
     },
     markResolved(actorUserId, id) {
       const e = exchangeRepo.get(id);
       if (!e) throw new Error('Eintrag nicht gefunden.');
       if (e.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Ersteller darf das.');
-      return decorate(exchangeRepo.update(id, { status: 'erledigt', reserved: false, resolved_at: new Date().toISOString() }));
+      return decorate(exchangeRepo.update(id, { status: 'erledigt', reserved: false, resolved_at: new Date().toISOString() }), betrachterFuerRx(actorUserId));
     },
     // Eintrag als „reserviert" markieren/freigeben (nur Ersteller, nur bei offenen Einträgen).
     // Reserviert = ein Tausch ist per Direktnachricht in Absprache; der Eintrag bleibt für alle
@@ -285,7 +310,7 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       if (!e) throw new AppError('exchange_not_found', 'Eintrag nicht gefunden.', 404);
       if (e.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Ersteller darf das.');
       if (e.status !== 'offen') throw new AppError('exchange_not_open', 'Nur offene Einträge lassen sich reservieren.', 400);
-      return decorate(exchangeRepo.update(id, { reserved: !!reserved }));
+      return decorate(exchangeRepo.update(id, { reserved: !!reserved }), betrachterFuerRx(actorUserId));
     },
     remove(actorUserId, id) {
       const e = exchangeRepo.get(id);
@@ -323,7 +348,7 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       const updated = exchangeRepo.update(id, patch);
       // Bei geänderter Bezeichnung (und noch offenem Eintrag) erneut passende Gegenstücke suchen.
       if (patch.bezeichnung !== undefined && updated.status === 'offen') notifyMatches(updated);
-      return decorate(updated);
+      return decorate(updated, betrachterFuerRx(actorUserId));
     },
   };
 }

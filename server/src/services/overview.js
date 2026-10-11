@@ -2,6 +2,8 @@
 // Apothekerin/einen Apotheker gerade zählt — kritische Engpässe, offene Angebote/
 // Gesuche, ungelesene Benachrichtigungen/Nachrichten, Top-Rabatt. Reine Komposition
 // bereits getesteter Dienste.
+
+import { praeparatTreffer } from '../domain/wirkstoffTreffer.js';
 export function createOverviewService({ shortages, exchange, social, rabatte, prices, amr = null }) {
   return {
     forUser(userId, opts = {}) {
@@ -40,10 +42,15 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
       // Bezugsquellen zu beobachteten Wirkstoffen: offene "Biete"-Einträge, deren
       // Bezeichnung einen beobachteten Wirkstoff enthält — hilft beim Beschaffen
       // während eines Engpasses. Nur wo es Angebote gibt.
+      //
+      // Dieselbe Vergleichsregel wie die Benachrichtigung (`watchersForText`),
+      // sonst widersprechen sich Kachel und Glocke: Mit `includes` zaehlte die
+      // Kachel zu „ASS" jede „Kassenpackung", die die Glocke laengst nicht mehr
+      // meldete (domain/wirkstoffTreffer.js).
       const openBiete = exchange.list(userId, { kind: 'biete', status: 'offen' }).eintraege;
       const watchOffers = watchlist.map(w => {
-        const key = w.wirkstoff.trim().toLowerCase();
-        const offers_count = openBiete.filter(e => (e.bezeichnung || '').toLowerCase().includes(key)).length;
+        const key = w.wirkstoff.trim();
+        const offers_count = key ? openBiete.filter(e => praeparatTreffer(e.bezeichnung, key)).length : 0;
         return { wirkstoff: w.wirkstoff, status: w.status, offers_count };
       }).filter(x => x.offers_count > 0);
 
