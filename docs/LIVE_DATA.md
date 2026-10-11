@@ -660,6 +660,38 @@ Benachrichtigung ist abgeschaltet — dann fehlt auch der echte.
 > einen Umlaut direkt am Treffer hatte. Erst die fehlgeschlagene Gegenprobe hat
 > das gezeigt.
 
+### Tauschbörse: Biete ↔ Suche in drei Sprachen (`domain/bezeichnung.js`)
+
+Zwei Einträge passen, wenn sie ein **bedeutungstragendes** Wort teilen. Was
+das ist, war nur für Deutsch definiert — und dort lückenhaft. Gemessen an
+12 realistischen Paaren über den echten Dienst: **10 falsch.**
+
+| Paar | vorher |
+|---|---|
+| „Comprimidos de Metformina" ↔ „Comprimidos de Amoxicilina" | Glocke (PT-Formwort) |
+| „Solução oral …" ↔ „Solução oral …" | Glocke („solução" zerfiel zu „solu") |
+| „Metformin tablets" ↔ „Amoxicillin tablets" | Glocke (EN-Formwort) |
+| „Dexamethason Augentropfen" ↔ „Ofloxacin Augentropfen" | Glocke (DE-Kompositum) |
+| „… Lösung zum Einnehmen" ↔ „… Lösung zum Einnehmen" | Glocke (DE-Füllwort) |
+| „Ácido acetilsalicílico" ↔ „Acido acetilsalicilico" | **still** (Akzent trennte) |
+
+Vier Regeln: **Falten** (Akzente weg — ein fehlender Akzent ist ein Tippweg,
+kein anderer Wirkstoff), **Unicode** statt deutschem Alphabet, **Formwörter**
+in DE/PT/EN plus Komposita über die Wortendung („Augen*tropfen*"), und
+**Stärken** („500mg") zählen nicht. Die Kompositum-Regel ist ein Verdacht über
+Wortenden; ein Test prüft sie gegen rund 300 verbreitete Wirkstoffnamen —
+keiner wird verschluckt.
+
+**Zahl und Klick sagen jetzt dasselbe.** Neben `match_count` liefert der
+Server `match_key`: das Wort, über das die meisten Gegenstücke gefunden
+wurden. „Passende anzeigen" setzt es als Suchbegriff. Vorher riet das
+Frontend das Wort selbst (eigenes, nur deutsches Muster, ohne Formwort-Filter
+— bei „Lösung zum Einnehmen Metformin" filterte es nach „lösung"), und die
+Dashboard-Kachel setzte die **ganze** Bezeichnung ein: „Salbutamol
+Dosieraerosol — 1 passendes Angebot" führte auf eine leere Liste, weil
+„Dosieraerosol" im Angebot nicht steht. Die Suche faltet ebenfalls Akzente,
+sonst träfe der Schlüssel „acetilsalicílico" das Angebot ohne Akzent nicht.
+
 ### Land
 
 Eine Meldung erreicht das **Heimatland** der Person (nicht das gerade

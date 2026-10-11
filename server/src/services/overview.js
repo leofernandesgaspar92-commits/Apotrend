@@ -105,7 +105,11 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
       const mySeeks = exchange.mine(userId, { status: 'offen' }).filter(e => e.kind === 'suche');
       const seeksWithMatches = mySeeks
         .filter(e => (e.match_count || 0) > 0)
-        .map(e => ({ id: e.id, bezeichnung: e.bezeichnung, match_count: e.match_count }))
+        // match_key: das Wort, über das die Treffer gefunden wurden — die Kachel
+        // setzt es als Suchbegriff ein. Die ganze Bezeichnung zu setzen hiess:
+        // Jedes ihrer Woerter musste im Angebot stehen, und „1 passendes
+        // Angebot" fuehrte auf eine leere Liste.
+        .map(e => ({ id: e.id, bezeichnung: e.bezeichnung, match_count: e.match_count, match_key: e.match_key }))
         .sort((a, b) => b.match_count - a.match_count);
 
       // Rabatt-Alarm: wenn die aktuelle beste Aktion die gesetzte Schwelle erreicht und diese

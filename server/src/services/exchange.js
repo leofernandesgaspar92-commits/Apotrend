@@ -5,6 +5,7 @@ import { ForbiddenError } from './orgAuth.js';
 import { cleanImage } from '../domain/media.js';
 import { AppError } from '../domain/errors.js';
 import { filterRx, normalizeRx, rxSichtbar, verificationStatusFor } from '../domain/jurisdiction.js';
+import { bedeutungsWoerter, falten } from '../domain/bezeichnung.js';
 
 const KINDS = ['biete', 'suche'];
 // Echtes Kalenderdatum (YYYY-MM-DD), kein Überlauf (z.B. 2026-02-31 ungültig).
@@ -22,30 +23,16 @@ function daysUntil(dateStr) {
 }
 export const BUNDESLAENDER = ['Wien', 'Niederösterreich', 'Oberösterreich', 'Steiermark', 'Tirol', 'Kärnten', 'Salzburg', 'Vorarlberg', 'Burgenland'];
 
-// Darreichungsform-/Füll-/Einheitenwörter, die keine Substanz kennzeichnen — beim
-// Matching Biete<->Suche ignoriert, damit gemeinsame Formwörter keine Fehltreffer erzeugen.
-const FORM_STOPWORDS = new Set([
-  'tablette', 'tabletten', 'filmtablette', 'filmtabletten', 'brausetablette', 'brausetabletten',
-  'kapsel', 'kapseln', 'hartkapseln', 'weichkapseln', 'dragee', 'dragees', 'retard', 'retardtabletten',
-  'saft', 'sirup', 'tropfen', 'creme', 'salbe', 'lösung', 'loesung', 'losung', 'spray', 'granulat', 'pulver',
-  'ampulle', 'ampullen', 'injektion', 'injektionslösung', 'zäpfchen', 'zaepfchen', 'suppositorien', 'pflaster',
-  'packung', 'packungen', 'stück', 'stueck', 'flasche', 'flaschen', 'beutel', 'gramm', 'milligramm',
-  'milliliter', 'liter', 'dosis', 'dosierung', 'stärke', 'staerke',
-]);
-
 export function createExchangeService(exchangeRepo, social, foundationRepo, shortagesRepo = null) {
   function requireUser(userId) {
     if (!foundationRepo.getUserById(userId)) throw new Error('Unbekannter Nutzer.');
   }
-  // Bedeutungstragende Wörter (>=4 Zeichen) für das Matching Biete<->Suche. Reine
-  // Darreichungsform-/Füllwörter und bloße Zahlen (Dosierung/Menge) fallen raus, damit
-  // z.B. „Aspirin Tabletten" nicht auf „Metformin Tabletten" und „Amoxicillin 1000 mg"
-  // nicht auf „Metformin 1000 mg" matcht (sonst Fehl-Benachrichtigungen).
-  function words(text) {
-    const raw = String(text).toLowerCase().match(/[a-zäöüß0-9]{4,}/g) || [];
-    return new Set(raw.filter(w => !/^\d+$/.test(w) && !FORM_STOPWORDS.has(w)));
-  }
-  function shareWord(a, b) { for (const w of a) if (b.has(w)) return true; return false; }
+  // Bedeutungstragende Wörter fuer das Matching Biete<->Suche: Darreichungs-,
+  // Füll- und Stärkewörter fallen raus, in DE/PT/EN, Akzente gefaltet
+  // (domain/bezeichnung.js — dort auch, was vorher alles falsch zusammenfand).
+  // Gibt eine Map gefaltet -> Schreibweise zurück.
+  const words = bedeutungsWoerter;
+  function sharedWords(a, b) { const out = []; for (const w of a.keys()) if (b.has(w)) out.push(w); return out; }
   // Nach dem Anlegen: passende Gegen-Einträge finden und deren Autor:innen benachrichtigen.
   //
   // ⚠️ FACHKREIS-SCHRANKE GILT AUCH HIER. Eine Benachrichtigung ist eine
@@ -67,34 +54,56 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
     for (const other of exchangeRepo.list()) {
       if (other.status !== 'offen' || other.reserved || other.kind !== opposite || other.id === entry.id) continue;
       if (other.author_user_id === entry.author_user_id || seen.has(other.author_user_id)) continue;
-      if (!shareWord(mine, words(other.bezeichnung))) continue;
+      if (!sharedWords(mine, words(other.bezeichnung)).length) continue;
       if (!rxSichtbar(entry, betrachterFuerRx(other.author_user_id))) continue;
       seen.add(other.author_user_id);
       social.pushNotification({ userId: other.author_user_id, type, actorUserId: entry.author_user_id, refType: 'exchange', refId: entry.id, label: entry.bezeichnung });
     }
   }
 
-  // Anzahl passender offener Gegen-Einträge (nach Autor:in eindeutig) — für ein sichtbares
+  // Passende offene Gegen-Einträge (nach Autor:in eindeutig) — für ein sichtbares
   // Matchmaking-Signal am Eintrag: „N passende Angebote/Gesuche". Nur für offene Einträge.
   //
   // Gezaehlt wird nur, was die BETRACHTERIN sehen darf. Vorher stand am Gesuch
   // „3 passende Angebote" — ein Klick, und die Liste war leer, weil alle drei
   // Rx-Angebote hinter der Schranke lagen. Die Zahl verriet, was die Liste
   // verbarg, und sah dabei aus wie ein Fehler.
-  function countMatches(entry, betrachter) {
-    if (entry.status !== 'offen' || entry.reserved) return 0; // reservierte sind vergeben – kein aktives Matchmaking
+  //
+  // Liefert neben der Zahl den SCHLUESSEL: das Wort, über das die meisten
+  // Gegenstücke gefunden wurden, in der Schreibweise des Eintrags. Die
+  // Oberfläche setzt es als Suchbegriff ein, wenn jemand auf „passende
+  // anzeigen" klickt. Vorher riet sie das Wort selbst — mit einem eigenen,
+  // nur deutschen Muster und ohne Formwort-Filter. Bei „Lösung zum Einnehmen
+  // Metformin" filterte sie nach „lösung", und die Kachel „1 passendes
+  // Angebot" setzte die GANZE Bezeichnung ein, deren Wörter das Angebot nie
+  // alle enthielt: Zahl und Klick sagten Verschiedenes.
+  function passende(entry, betrachter) {
+    const leer = { anzahl: 0, schluessel: null };
+    if (entry.status !== 'offen' || entry.reserved) return leer; // reservierte sind vergeben – kein aktives Matchmaking
     const opposite = entry.kind === 'biete' ? 'suche' : 'biete';
     const mine = words(entry.bezeichnung);
-    if (!mine.size) return 0;
+    if (!mine.size) return leer;
     const authors = new Set();
+    const jeWort = new Map(); // gefaltetes Wort -> Autor:innen
     for (const other of exchangeRepo.list()) {
       if (other.status !== 'offen' || other.reserved || other.kind !== opposite || other.id === entry.id) continue;
       if (other.author_user_id === entry.author_user_id) continue;
-      if (!shareWord(mine, words(other.bezeichnung))) continue;
+      const geteilt = sharedWords(mine, words(other.bezeichnung));
+      if (!geteilt.length) continue;
       if (!rxSichtbar(other, betrachter)) continue;
       authors.add(other.author_user_id);
+      for (const w of geteilt) {
+        if (!jeWort.has(w)) jeWort.set(w, new Set());
+        jeWort.get(w).add(other.author_user_id);
+      }
     }
-    return authors.size;
+    // Meiste Gegenstücke gewinnt; bei Gleichstand das frühere Wort im Eintrag.
+    let best = null;
+    for (const w of mine.keys()) {
+      const n = jeWort.has(w) ? jeWort.get(w).size : 0;
+      if (n && (!best || n > jeWort.get(best).size)) best = w;
+    }
+    return { anzahl: authors.size, schluessel: best ? mine.get(best) : null };
   }
 
   /**
@@ -116,9 +125,13 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
    * soll die 40-mg-Packung finden und nicht jede Zeile, in der irgendwo eine 40
    * steht. Reihenfolge egal — „40 pantoprazol" findet dasselbe.
    */
+  //
+  // Akzente gefaltet, auf beiden Seiten: „acido" findet „Ácido", „losung"
+  // findet „Lösung". Der Schlüssel aus `passende()` muss hier treffen, sonst
+  // zeigt „passende anzeigen" eine leere Liste.
   function matchesQuery(e, query) {
-    const heu = `${e.bezeichnung || ''} ${e.note || ''}`.toLowerCase();
-    return query.split(/\s+/).filter(Boolean).every((w) => heu.includes(w));
+    const heu = falten(`${e.bezeichnung || ''} ${e.note || ''}`);
+    return falten(query).split(/\s+/).filter(Boolean).every((w) => heu.includes(w));
   }
 
   /**
@@ -149,15 +162,17 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
     };
   }
 
-  // `betrachter` bestimmt `match_count` (siehe countMatches). Ohne Betrachter
-  // zaehlt nur, was ohnehin jeder sehen darf — fail closed.
+  // `betrachter` bestimmt `match_count` und `match_key` (siehe passende()).
+  // Ohne Betrachter zaehlt nur, was ohnehin jeder sehen darf — fail closed.
   function decorate(e, betrachter = null) {
     const prof = social.getProfile ? social.getProfile(e.author_user_id) : null;
+    const treffer = passende(e, betrachter);
     return {
       ...e,
       country: countryOf(e, prof),
       author: prof ? { handle: prof.handle, display_name: prof.display_name, verified: prof.verified } : null,
-      match_count: countMatches(e, betrachter),
+      match_count: treffer.anzahl,
+      match_key: treffer.schluessel, // Suchbegriff für „passende anzeigen"; null ohne Treffer
       days_until_expiry: daysUntil(e.ablauf), // null wenn kein Verfallsdatum
     };
   }

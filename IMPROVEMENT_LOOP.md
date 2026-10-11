@@ -1512,3 +1512,57 @@ seit dem 04.10. zeigt. Der erste verifizierte Betrieb ändert das.
 **Offen:** Token-Muster in `notifyMatches`/`countMatches` und im Frontend
 (`[a-zäöüß0-9]`) auf Unicode — der ursprüngliche Plan dieses Zyklus;
 Gelesen-Zustand für den Warnungs-Feed.
+
+### Cycle · Tausch-Matching in drei Sprachen; Zahl und Klick stimmen überein (2026-10-11)
+
+**GATHER — erst gemessen.** 12 realistische Biete/Suche-Paare durch den echten
+Dienst: **10 falsch.** Nicht nur Portugiesisch/Englisch („Comprimidos",
+„tablets", „Solução" zerfiel zu „solu"), sondern auch **Deutsch**:
+„Augentropfen", „Nasenspray", „Lösung zum Einnehmen" verbanden fremde
+Wirkstoffe. Und „Ácido acetilsalicílico" fand „Acido acetilsalicilico" nicht.
+
+Beim Lesen der Klickwege ein zweiter Fehler derselben Wurzel: **Zahl und
+Klick widersprachen sich.** Das Frontend riet den Suchbegriff für „passende
+anzeigen" selbst (erstes Wort, eigenes deutsches Muster, ohne Formwörter —
+bei „Lösung zum Einnehmen Metformin" also „lösung"), und die Dashboard-Kachel
+setzte die **ganze** Bezeichnung ein: „Salbutamol Dosieraerosol — 1 passendes
+Angebot" führte auf eine leere Liste, weil „Dosieraerosol" im Angebot nicht
+steht. Ein Test belegt den alten Fehler ausdrücklich.
+
+**WORK.** `domain/bezeichnung.js`: Falten (Akzente weg), Unicode-Wörter,
+Formwörter DE/PT/EN plus Komposita über die Wortendung, Stärken („500mg")
+zählen nicht. Die Kompositum-Regel ist ein Verdacht über Wortenden — ein Test
+prüft sie gegen rund 300 verbreitete Wirkstoffnamen; keiner wird verschluckt.
+Der Server liefert zur Zahl den **Schlüssel** (`match_key`: das Wort mit den
+meisten sichtbaren Gegenstücken, in der Schreibweise des Eintrags); alle drei
+Klickwege nutzen ihn, das Frontend rät nicht mehr. Die Suche faltet Akzente,
+sonst träfe der Schlüssel das Angebot ohne Akzent nicht. **Ehrliche Grenze:**
+Kommen Treffer über verschiedene Wörter, zeigt der Klick die größte Gruppe,
+nicht alle — ein Suchbegriff ist ein Wort. Steht so im Test.
+
+**Ein wackliger Test, unterwegs.** Ein Suite-Lauf meldete 5 Fehler in
+`reference-data.test.js` — einzeln grün, im nächsten Lauf grün. Fünf weitere
+Läufe: grün; **die Ursache ließ sich nicht reproduzieren.** Zwei Kandidaten,
+beide belegt vorhanden: (1) Die Portbereiche von `features-http` (4600–4899)
+und `reference-data` (4800–5099) **überschneiden sich**, `node --test` läuft
+parallel, und `listen()` hatte keinen `'error'`-Handler — eine Kollision
+brach die ganze Datei ab. (2) Der Start wartete nur 30 × 50 ms. Beides an der
+Wurzel behoben statt einen Bereich zu verschieben: Port 0 (das
+Betriebssystem vergibt) in den beiden Dateien, Warten auf das
+`listening`-Ereignis in allen drei. `http-integration` behält seinen Bereich
+— es nutzt `PORT` 143-mal als Handle-Suffix (max. 30 Zeichen). Eine
+erzwungene Kollision meldet jetzt `Testserver startet nicht: EADDRINUSE`
+statt abzustürzen; vorher hing derselbe Versuch.
+
+**CHECK.** 1022 Tests grün (+26), `npm run verify` komplett, neuer
+Browser-Prüfpunkt (liest die tatsächliche Anfrage mit). Sieben Gegenproben,
+jede mit Bestätigung, dass der Bruch angewandt wurde: alter Tokenizer, Suche
+ohne Faltung, Kompositum-Regel aus, Schlüssel = erstes Wort, Schlüssel ohne
+Schranke, Kompositum-Schwelle 3, Frontend rät wieder — jede schlägt an.
+
+**Korrektur zum letzten Zyklus:** Die Tauschbörse **ruht** in der
+Voreinstellung. Das Rx-Leck über die Glocke war im Code real, im Betrieb aber
+nur offen, wo `APOPULSE_FEATURE_TAUSCHBOERSE=an` gesetzt ist. Das hatte ich
+beim Melden nicht dazugesagt.
+
+**Offen:** Gelesen-Zustand für den Warnungs-Feed.

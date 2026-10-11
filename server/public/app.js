@@ -1256,10 +1256,12 @@ async function loadOverview() {
   if (d.my_seeks && d.my_seeks.with_matches > 0) {
     const c = el(`<div class="card"><div class="row"><b>${esc(t('ms_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>${esc(t('sp_exch_go'))}</button></div>
       <div class="muted" style="font-size:13px;margin:2px 0 6px">${esc(t('ms_sub'))}</div>
-      ${d.my_seeks.items.map(s=>`<div class="comment clickable" data-b="${esc(s.bezeichnung)}">🔎 <b>${esc(s.bezeichnung)}</b> — <span style="color:var(--ok-fg);font-weight:700">${s.match_count} ${esc(s.match_count>1?t('ms_matches_pl'):t('ms_matches_sg'))}</span> <span class="ovtile-go" aria-hidden="true">›</span></div>`).join('')}</div>`);
+      ${d.my_seeks.items.map(s=>`<div class="comment clickable" data-b="${esc(s.bezeichnung)}" data-k="${esc(s.match_key || '')}">🔎 <b>${esc(s.bezeichnung)}</b> — <span style="color:var(--ok-fg);font-weight:700">${s.match_count} ${esc(s.match_count>1?t('ms_matches_pl'):t('ms_matches_sg'))}</span> <span class="ovtile-go" aria-hidden="true">›</span></div>`).join('')}</div>`);
     c.querySelector('[data-all]').onclick = () => { exchangeMine=true; goTab('exchange'); };
     c.querySelectorAll('[data-b]').forEach(row => row.onclick = () => {
-      exchangeQuery = row.dataset.b; exchangeFilter = 'biete'; exchangeBL = ''; exchangeMine = false;
+      // Das Wort, über das der Server die Treffer gefunden hat — nicht die ganze
+      // Bezeichnung: Deren Wörter stehen selten alle im Angebot.
+      exchangeQuery = row.dataset.k || row.dataset.b; exchangeFilter = 'biete'; exchangeBL = ''; exchangeMine = false;
       goTab('exchange');
     });
     feed.appendChild(c);
@@ -3538,7 +3540,9 @@ async function loadExchange() {
       const created = await api('POST','/api/exchange',{ kind:v('ex_kind'), bezeichnung:v('ex_bez'), menge:v('ex_menge'), ort:v('ex_ort'), bundesland:v('ex_bl'), note:v('ex_note'), image:exImage, ablauf: document.getElementById('ex_ablauf').value || null, rx: v('ex_rx') });
       // Genau im Moment der Absicht: wenn es passende Gegenstücke gibt, direkt dorthin filtern + Hinweis.
       if (created && created.match_count >= 1) {
-        const key = (String(created.bezeichnung).toLowerCase().match(/[a-zäöüß0-9]{4,}/g) || [])[0] || created.bezeichnung;
+        // Suchbegriff vom Server (das Wort, über das die Treffer gefunden wurden),
+        // nicht selbst geraten — siehe exchange.passende().
+        const key = created.match_key || created.bezeichnung;
         exchangeMine = false; exchangeFilter = created.kind === 'biete' ? 'suche' : 'biete'; exchangeQuery = key;
         exchangeFlash = { count: created.match_count, kind: created.kind };
       } else if (created) {
@@ -3704,8 +3708,11 @@ function exchangeCard(e) {
   card.querySelectorAll('[data-openprofile]').forEach(el => { if (el.dataset.openprofile) el.onclick = () => openProfile(el.dataset.openprofile); });
   const matchBtn = card.querySelector('[data-match]');
   if (matchBtn) matchBtn.onclick = () => {
-    // Zeigt die passenden Gegen-Einträge: gegenteilige Art + erstes bedeutungstragendes Wort als Filter.
-    const key = (String(e.bezeichnung).toLowerCase().match(/[a-zäöüß0-9]{4,}/g) || [])[0] || e.bezeichnung;
+    // Zeigt die passenden Gegen-Einträge: gegenteilige Art + das Wort, über das
+    // der Server sie gefunden hat. Vorher riet das Frontend das Wort selbst, mit
+    // einem nur deutschen Muster und ohne Formwort-Filter — bei „Lösung zum
+    // Einnehmen Metformin" filterte es nach „lösung".
+    const key = e.match_key || e.bezeichnung;
     exchangeMine = false; exchangeFilter = isBiete ? 'suche' : 'biete'; exchangeQuery = key; loadExchange();
   };
   const contact = card.querySelector('[data-contact]');

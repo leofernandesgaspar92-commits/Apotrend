@@ -141,6 +141,13 @@ test('my_seeks: eigenes offenes Gesuch mit passendem Angebot einer anderen Apoth
   assert.equal(o.my_seeks.with_matches, 1);
   assert.equal(o.my_seeks.items[0].bezeichnung, 'Salbutamol Dosieraerosol');
   assert.equal(o.my_seeks.items[0].match_count, 1);
+  // Die Kachel setzt match_key als Suchbegriff. Vorher setzte sie die ganze
+  // Bezeichnung „Salbutamol Dosieraerosol" — „Dosieraerosol" steht im Angebot
+  // nicht, und „1 passendes Angebot" führte auf eine leere Liste.
+  assert.equal(o.my_seeks.items[0].match_key, 'salbutamol');
+  assert.equal(exchange.list(a, { kind: 'biete', q: o.my_seeks.items[0].match_key }).eintraege.length, 1);
+  assert.equal(exchange.list(a, { kind: 'biete', q: 'Salbutamol Dosieraerosol' }).eintraege.length, 0,
+    'Beleg für den alten Fehler: mit der ganzen Bezeichnung bleibt die Liste leer');
   // Für die andere Apotheke (kein eigenes Gesuch) leer.
   assert.equal(overview.forUser(b).my_seeks.with_matches, 0);
 });

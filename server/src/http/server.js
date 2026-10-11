@@ -1970,7 +1970,8 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`ApoPulse Feed-Server läuft auf http://localhost:${PORT}`);
+  // Tatsaechlicher Port: Bei PORT=0 (Tests) vergibt ihn das Betriebssystem.
+  console.log(`ApoPulse Feed-Server läuft auf http://localhost:${server.address().port}`);
   // Persistenz-Status deutlich anzeigen: Ein Produktiv-Deploy OHNE APOPULSE_DATA_FILE
   // läuft rein im Speicher — bei jedem Neustart sind ALLE Daten weg. Das darf nicht
   // unbemerkt passieren, darum eine laute Warnung (nicht in der Testumgebung).

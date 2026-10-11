@@ -14,8 +14,10 @@ import assert from 'node:assert/strict';
 
 import { featureListe, featureEnvKey, KRYPTO_PFADE } from '../src/data/features.js';
 
-const PORT = 4600 + Math.floor(Math.random() * 300);
-process.env.PORT = String(PORT);
+// Port 0: Das Betriebssystem vergibt einen freien. Vorher zog diese Datei
+// aus einem Zufallsbereich, der sich mit einer anderen Testdatei
+// UEBERSCHNITT (4600–4899 / 4800–5099) — und node --test laeuft parallel.
+process.env.PORT = '0';
 process.env.APOPULSE_ADMIN_EMAIL = 'red@apopulse.test';
 process.env.APOPULSE_ADMIN_PASSWORD = 'redredred123';
 delete process.env.APOPULSE_DATA_FILE;
@@ -30,16 +32,22 @@ for (const f of featureListe({})) delete process.env[featureEnvKey(f.id)];
 process.env.APOPULSE_REFERENCE_DATA = 'an';
 
 
-const BASE = `http://localhost:${PORT}`;
+let BASE; // gesetzt, sobald der Server lauscht
 
 let httpServer;
 before(async () => {
   ({ httpServer } = await import('../src/http/server.js'));
-  for (let i = 0; i < 30; i++) {
-    try { const r = await fetch(BASE + '/api/health'); if (r.ok) return; } catch { /* noch nicht bereit */ }
-    await new Promise((r) => setTimeout(r, 50));
+  // Auf das Ereignis warten statt zu pollen. Vorher: 30 × 50 ms Health-Abfragen
+  // — unter der Last der parallelen Testdateien knapp. Und ein belegter Port
+  // warf ohne 'error'-Handler eine unbehandelte Ausnahme, die die ganze Datei
+  // abbrach; jetzt steht die Ursache in der Meldung.
+  if (!httpServer.listening) {
+    await new Promise((ok, fail) => {
+      httpServer.once('listening', ok);
+      httpServer.once('error', (e) => fail(new Error(`Testserver startet nicht: ${e.code || e.message}`)));
+    });
   }
-  throw new Error('Server nicht rechtzeitig gestartet');
+  BASE = `http://localhost:${httpServer.address().port}`;
 });
 after(() => new Promise((res) => httpServer.close(res)));
 

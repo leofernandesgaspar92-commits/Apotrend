@@ -47,11 +47,16 @@ const H = (t) => ({ 'content-type': 'application/json', ...(t ? { authorization:
 let httpServer;
 before(async () => {
   ({ httpServer } = await import('../src/http/server.js'));
-  for (let i = 0; i < 30; i++) {
-    try { const r = await fetch(BASE + '/api/health'); if (r.ok) return; } catch { /* noch nicht bereit */ }
-    await new Promise(r => setTimeout(r, 50));
+  // Auf das Ereignis warten statt zu pollen. Vorher: 30 × 50 ms Health-Abfragen
+  // — unter der Last der parallelen Testdateien knapp. Und ein belegter Port
+  // warf ohne 'error'-Handler eine unbehandelte Ausnahme, die die ganze Datei
+  // abbrach; jetzt steht die Ursache in der Meldung.
+  if (!httpServer.listening) {
+    await new Promise((ok, fail) => {
+      httpServer.once('listening', ok);
+      httpServer.once('error', (e) => fail(new Error(`Testserver startet nicht: ${e.code || e.message}`)));
+    });
   }
-  throw new Error('Server nicht rechtzeitig gestartet');
 });
 after(() => new Promise(res => httpServer.close(res)));
 

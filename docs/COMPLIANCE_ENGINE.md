@@ -408,6 +408,12 @@ unterläuft.
 Bereits **zugestellte** Benachrichtigungen aus der Zeit davor wurden nicht
 nachträglich entfernt.
 
+**Wie weit das im Betrieb offen stand:** Die Tauschbörse **ruht** in der
+Voreinstellung (`src/data/features.js`, `zustand: 'ruht'`) — ihre API ist dann
+gesperrt, es entstehen keine Einträge und keine Benachrichtigungen. Das Leck
+war also nur dort offen, wo `APOPULSE_FEATURE_TAUSCHBOERSE=an` gesetzt ist. Im
+Code bestand es unabhängig davon und hätte beim Einschalten sofort gegriffen.
+
 ## Der Verifizierungs-Durchlauf (04.10.2026)
 
 Ohne ihn war die Fachkreis-Schranke eine geschlossene Tür ohne Schlüssel: Die

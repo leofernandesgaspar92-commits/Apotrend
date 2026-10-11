@@ -707,6 +707,55 @@ async function main() {
         console.log('✓ Sicherheitsmeldungen: eigener Endpunkt, Meldung erscheint');
       }
     }
+    // ── 4. Tauschbörse: „passende anzeigen" sucht mit dem Server-Schlüssel ──
+    //  Vorher riet das Frontend den Suchbegriff selbst (erstes Wort, nur
+    //  deutsches Muster, ohne Formwort-Filter) — hier wäre das „lösung"
+    //  gewesen, und die Liste hätte jede Lösung gezeigt statt der zwei
+    //  gezählten Gegenstücke. Geprüft wird die TATSÄCHLICHE Anfrage.
+    //  Die Tauschbörse RUHT in der Voreinstellung (src/data/features.js) —
+    //  ohne Reiter gäbe es nichts zu prüfen. Für DIESE Seite wird sie in der
+    //  echten /api/features-Antwort eingeschaltet; die Börse selbst ist unten
+    //  ohnehin nachgebildet, der Server bleibt unverändert.
+    await page.route('**/api/features', async (route) => {
+      const echt = await (await route.fetch()).json();
+      for (const f of (echt.features || [])) if (f.id === 'tauschboerse') f.zustand = 'aktiv';
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(echt) });
+    });
+    const exAufrufe = [];
+    await page.route('**/api/exchange?*', (route) => {
+      const url = new URL(route.request().url());
+      exAufrufe.push(url.searchParams.get('q'));
+      const gefiltert = url.searchParams.has('q');
+      return route.fulfill({
+        status: 200, contentType: 'application/json',
+        body: JSON.stringify({
+          entries: gefiltert ? [] : [{
+            id: 'kp1', kind: 'suche', status: 'offen', reserved: false, rx: false, country: 'AT',
+            bezeichnung: 'Lösung zum Einnehmen Keypruefwort', created_at: new Date().toISOString(),
+            author: { handle: 'jemand', display_name: 'Jemand', verified: true },
+            match_count: 2, match_key: 'Keypruefwort', days_until_expiry: null,
+          }],
+          rx_hidden: 0, rx_reason: null,
+        }),
+      });
+    });
+    await page.goto(BASE, { waitUntil: 'networkidle' });
+    await page.click('.tabs button[data-tab="exchange"]').catch(() => {});
+    await page.waitForTimeout(700);
+    const passendKnopf = page.locator('[data-match]').first();
+    if (await passendKnopf.count() === 0) {
+      findings.push('Tauschbörse: „passende anzeigen" fehlt trotz match_count 2');
+    } else {
+      await passendKnopf.click();
+      await page.waitForTimeout(700);
+      const q = exAufrufe.filter(Boolean).pop();
+      if (q !== 'Keypruefwort') {
+        findings.push(`Tauschbörse: „passende anzeigen" sucht nach „${q}" statt nach dem Server-Schlüssel „Keypruefwort"`);
+      } else {
+        console.log('✓ Tauschbörse: „passende anzeigen" sucht mit dem Schlüssel des Servers, nicht mit einem geratenen Wort');
+      }
+    }
+
     if (errors.length) findings.push(`Säule 3: JS-Fehler — ${errors.slice(0, 2).join(' | ')}`);
     await ctx.close();
   }
