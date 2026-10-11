@@ -37,37 +37,21 @@
 //  Eine Meldung mit Link ist überprüfbar, ein geratener Statuswert nicht.
 // ============================================================================
 
+import { wortTreffer } from '../domain/wirkstoffTreffer.js';
+
 /** Mindestlänge für die Suche in Fließtext. Kürzeres trifft zu oft falsch. */
 export const MIN_TITEL_LAENGE = 4;
 
-/** Regex-Sonderzeichen entschärfen — Wirkstoffnamen enthalten „(", „+", „." */
-const escape = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
 /**
- * Kommt `nadel` als eigenes Wort in `heuhaufen` vor?
+ * Die Vergleichsregel liegt in `domain/wirkstoffTreffer.js`, zusammen mit der
+ * weicheren Regel für Präparat-Bezeichnungen — der Unterschied zwischen einem
+ * Behördensatz und einer Packungsaufschrift ist dort begründet. Hier gilt die
+ * strengere: beidseitig abgegrenzt.
  *
- * Bewusst NICHT `includes`: Damit träfe ein beobachtetes „ASS" in „KLASSE",
- * „PASSIERT" und „GLASSPLITTER". Genau diese Klasse von Fehlalarm bringt
- * Leute dazu, die Kategorie abzuschalten.
- *
- * Und bewusst nicht `\b`: Das ist in JavaScript ASCII-basiert und zieht
- * mitten durch „Paracetamolhaltige" und „Acetylsalicylsäure". Die Grenze wird
- * deshalb über Unicode-Buchstaben und -Zahlen gebildet — ein Bindestrich,
- * Leerzeichen, Komma oder Klammerende gilt als Grenze, ein Umlaut nicht.
+ * Weiterhin von hier exportiert, weil der Alarm die Regel benennt, die er
+ * anwendet; wer `signalAlerts` liest, soll nicht raten müssen.
  */
-export function wortTreffer(heuhaufen, nadel) {
-  const hay = String(heuhaufen || '');
-  const n = String(nadel || '').trim();
-  if (!hay || !n) return false;
-  try {
-    const re = new RegExp(`(?<![\\p{L}\\p{N}])${escape(n)}(?![\\p{L}\\p{N}])`, 'iu');
-    return re.test(hay);
-  } catch {
-    // Sollte nicht vorkommen (escape oben), aber ein kaputter Wirkstoffname
-    // darf keinen Abruf abbrechen. Dann lieber kein Treffer als ein Absturz.
-    return false;
-  }
-}
+export { wortTreffer };
 
 /**
  * Woher stammt der Treffer? Das steht später an der Benachrichtigung.

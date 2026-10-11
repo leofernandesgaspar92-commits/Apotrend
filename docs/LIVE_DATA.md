@@ -626,6 +626,35 @@ geht in beide Richtungen schief:
 
 Deshalb `(?<![\p{L}\p{N}])…(?![\p{L}\p{N}])` mit `u`-Flag.
 
+### Zwei Regeln, weil es zwei Textsorten gibt
+
+Dieselbe Frage („kommt der beobachtete Wirkstoff hier vor?") stellen zwei
+Oberflächen, und sie brauchen **nicht** dieselbe Antwort. Beide Regeln stehen
+in `domain/wirkstoffTreffer.js`:
+
+| | Behördenmeldung (`wortTreffer`) | Tauschangebot (`praeparatTreffer`) |
+|---|---|---|
+| Grenze | links **und** rechts | nur **links** |
+| „Rückruf ASS 100 mg" | ✓ | ✓ |
+| „ASS100 Hexal" | ✗ | ✓ |
+| „Ibuprofenlysinat 400" | ✗ | ✓ |
+| „Paracetamolhaltige Präparate" | ✗ | ✓ |
+| „Kassenpackung", „Massagecreme" | ✗ | ✗ |
+
+Eine Behörde schreibt in **Sätzen** — dort steht der Wirkstoff als eigenes
+Wort, und „Paracetamolhaltige Präparate" ist bewusst kein Treffer: Das ist eine
+Wirkstoffklasse, keine Meldung zum beobachteten Präparat.
+
+Eine Packungsaufschrift ist **kein Satz**, sondern ein zusammengesetzter Name.
+`ASS100 Hexal` ist in einer deutschen Apotheke die Regel, nicht die Ausnahme —
+mit der beidseitigen Grenze wäre genau der häufigste Fall verpasst worden. Die
+linke Grenze allein hält die gefährlichen Fälle draußen, denn dort steht der
+Treffer immer **mitten** im Wort: „K-assenpackung", „M-assage", „Gl-assplitter".
+
+Vorher verglich die Tauschbörse mit `includes`, also ohne jede Grenze: Ein
+beobachtetes „ASS" meldete jede Kassenpackung. Zwei Fehlalarme, und die
+Benachrichtigung ist abgeschaltet — dann fehlt auch der echte.
+
 > **Ehrliche Notiz zur Prüfung:** Die erste Fassung des Umlaut-Tests war
 > **vakuant** — der Tausch gegen `\b` ließ alle Tests grün, weil kein Fall
 > einen Umlaut direkt am Treffer hatte. Erst die fehlgeschlagene Gegenprobe hat

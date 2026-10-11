@@ -3,6 +3,7 @@
 // engpass.js) liefert LIVE-Daten mit provenance='verified'. Hier: kuratierte
 // Referenzdaten (provenance='reference'), damit die Herkunft ehrlich sichtbar ist.
 import crypto from 'node:crypto';
+import { praeparatTreffer } from '../domain/wirkstoffTreffer.js';
 
 // Kuratierte AT-Referenzdaten (NICHT live) — klar als 'reference' gekennzeichnet.
 // Die Referenzdaten sind OESTERREICHISCH (BASG-Faelle, AT-Praeparatenamen).
@@ -219,12 +220,11 @@ export function createShortagesRepo({ seed = true, today = null } = {}) {
     // Alle Beobachtungslisten auf einmal — fuer den Wirkstoff-Alarm zu
     // Behoerdenmeldungen (services/signalAlerts.js).
     //
-    // Warum nicht `watchersForText` darunter: Dieses Modul entscheidet selbst,
-    // WIE verglichen wird. `watchersForText` prueft mit `includes`, also ohne
-    // Wortgrenzen — fuer eine kurze Austausch-Bezeichnung tragbar, fuer eine
-    // Behoerdenueberschrift nicht: Ein beobachtetes „ASS" traefe dort in
-    // „KLASSE" und „PASSIERT". Der Alarm bringt seine eigene, strengere Regel
-    // mit, und dafuer braucht er die rohen Listen.
+    // Warum nicht `watchersForText` darunter: Der Alarm vergleicht STRENGER.
+    // Eine Behoerdenmeldung ist ein Satz, dort steht der Wirkstoff als eigenes
+    // Wort; eine Praeparat-Bezeichnung ist ein zusammengesetzter Name
+    // („ASS100 Hexal"). Beide Regeln stehen in domain/wirkstoffTreffer.js,
+    // mit Begruendung. Der Alarm braucht dafuer die rohen Listen.
     //
     // Gibt den ANZEIGENAMEN zurueck, nicht den Normschluessel: Was die Person
     // eingetragen hat, steht spaeter in ihrer Benachrichtigung.
@@ -236,15 +236,21 @@ export function createShortagesRepo({ seed = true, today = null } = {}) {
       }
       return out;
     },
-    // Beobachter:innen, deren Wirkstoff im Freitext vorkommt (z.B. Austausch-Bezeichnung).
-    // Ein Treffer je Nutzer (erster passender Wirkstoff als Label).
+    // Beobachter:innen, deren Wirkstoff in einer Praeparat-Bezeichnung vorkommt
+    // (Tauschangebot). Ein Treffer je Nutzer (erster passender Wirkstoff als Label).
+    //
+    // `praeparatTreffer` statt `includes`: Mit `includes` meldete ein
+    // beobachtetes „ASS" jede „Kassenpackung" und jede „Massagecreme" — und wer
+    // zwei Fehlalarme bekommt, schaltet die Benachrichtigung ab. Die Regel
+    // grenzt links ab und laesst rechts ein Kompositum zu, damit „ASS100 Hexal"
+    // und „Ibuprofenlysinat" weiter treffen (domain/wirkstoffTreffer.js).
     watchersForText(text) {
-      const hay = String(text || '').toLowerCase();
+      const hay = String(text || '');
       if (!hay) return [];
       const out = [];
       for (const [userId, m] of watch) {
         for (const [key, display] of m) {
-          if (key && hay.includes(key)) { out.push({ userId, wirkstoff: display }); break; }
+          if (key && praeparatTreffer(hay, key)) { out.push({ userId, wirkstoff: display }); break; }
         }
       }
       return out;

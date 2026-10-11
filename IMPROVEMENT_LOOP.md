@@ -1407,3 +1407,50 @@ unbekannte Dringlichkeit auf `kritisch` hochrunden) und drei im Browser
 **Offen:** `watchersForText` auf Wortgrenzen (gleiche Fehlerklasse wie im
 Wirkstoff-Alarm, dort behoben); Gelesen-Zustand für den Warnungs-Feed; der
 Sendeweg für Hersteller-Mitteilungen, sobald ein Hersteller verifiziert ist.
+
+### Cycle · Wortgrenzen auch in der Tauschbörse (2026-10-11)
+
+**GATHER.** Seit dem Wirkstoff-Alarm stand ein Befund offen, den ich selbst
+notiert hatte: `shortagesRepo.watchersForText()` verglich mit `includes`, also
+ohne jede Wortgrenze. Mein damaliger Kommentar nannte das „für eine kurze
+Austausch-Bezeichnung tragbar". Das war die falsche Einschätzung — nachgesehen,
+was dort tatsächlich hereinkommt: eine frei getippte Packungsaufschrift. Ein
+beobachtetes **„ASS"** (Acetylsalicylsäure, eine der häufigsten Beobachtungen
+in einer deutschen Apotheke) meldete damit jede **„Kassenpackung"** und jede
+**„Massagecreme"**. Zwei Fehlalarme, und die Benachrichtigung ist abgeschaltet
+— dann fehlt auch der echte Hinweis.
+
+**WORK.** Nicht einfach `wortTreffer` aus dem Behörden-Alarm übernommen: Dessen
+beidseitige Grenze hätte hier den **häufigsten** Fall verpasst. „ASS100 Hexal"
+ist keine Nachlässigkeit, so steht es auf der Packung; „Ibuprofenlysinat" und
+„Eisentabletten" sind Komposita mit dem Wirkstoff als Wortanfang. Mit
+`(?![\p{L}\p{N}])` auf der rechten Seite wäre keines davon ein Treffer.
+
+Deshalb **zwei Regeln** in einer neuen Datei `domain/wirkstoffTreffer.js`, mit
+dem Unterschied als Kommentar statt als Zufall:
+
+- `wortTreffer` (Behördenmeldung = Satz) grenzt **links und rechts** ab.
+  „Paracetamolhaltige Präparate" ist dort bewusst kein Treffer: eine
+  Wirkstoffklasse, keine Meldung zum beobachteten Präparat.
+- `praeparatTreffer` (Packungsaufschrift = zusammengesetzter Name) grenzt nur
+  **links** ab. Die gefährlichen Fälle liegen alle rechts vom Wortanfang:
+  „K-assenpackung", „M-assage", „Gl-assplitter" — die linke Grenze allein hält
+  sie draußen.
+
+`signalAlerts.js` exportiert `wortTreffer` weiter, weil der Alarm die Regel
+benennen soll, die er anwendet; die Definition liegt jetzt aber an einer Stelle.
+
+**CHECK.** 982 Tests grün (+5), `npm run verify` komplett. Drei Gegenproben,
+jede schlägt an: zurück auf `includes` (Kassenpackung trifft), beidseitige
+Grenze (ASS100 und Ibuprofenlysinat treffen nicht mehr), `\b` statt Unicode
+(Östrogen am Textanfang trifft nicht mehr — dieselbe Falle wie im Alarm).
+
+**Nebenbei geklärt:** `exchange.notifyMatches` hat diese Fehlerklasse **nicht**
+— es tokenisiert in ganze Wörter und filtert Füllwörter. Dort ist dafür etwas
+anderes auffällig: Das Token-Muster `[a-zäöüß0-9]{4,}` kennt nur deutsche
+Umlaute, portugiesische Namen („Solução") zerfallen daran. Eigene Baustelle,
+notiert statt mitgeändert.
+
+**Offen:** Gelesen-Zustand für den Warnungs-Feed; Sendeweg für
+Hersteller-Mitteilungen, sobald ein Hersteller verifiziert ist; das
+Token-Muster in `notifyMatches` auf `\p{L}` umstellen.
