@@ -769,7 +769,7 @@ async function mainScreen() {
   await ladeFeatures();
   document.getElementById('btnLogout').classList.remove('hidden');
   document.getElementById('btnNotif').classList.remove('hidden');
-  if (featureAn('direktnachrichten')) document.getElementById('btnDm').classList.remove('hidden');
+  if (featureAn('direktnachrichten')) document.getElementById('btnDm')?.classList.remove('hidden');
   const btnMod = document.getElementById('btnMod');
   btnMod.classList.toggle('hidden', !iAmModerator);
   btnMod.onclick = showModeration;
@@ -778,10 +778,14 @@ async function mainScreen() {
   btnHelp.onclick = () => showWelcome(true);
   document.getElementById('btnLogout').onclick = () => { localStorage.removeItem('apo_token'); location.reload(); };
   document.getElementById('btnNotif').onclick = showNotifications;
-  document.getElementById('btnDm').onclick = showDmInbox;
+  // Knöpfe ruhender Bereiche entfernt wendeFeaturesAn() aus der Seite. Beim
+  // ZWEITEN mainScreen()-Aufruf (z. B. Klick auf eine Benachrichtigung) gab es
+  // sie nicht mehr, und `null.onclick` brach den Aufruf ab — 22 Wege ins Leere.
+  const btnDm = document.getElementById('btnDm');
+  if (btnDm) btnDm.onclick = showDmInbox;
   const btnCart = document.getElementById('btnCart');
-  if (featureAn('bestellung')) btnCart.classList.remove('hidden');
-  btnCart.onclick = () => openCart(); // ohne Argument: sonst landet das Klick-Event als „flash"-Text in der Liste
+  if (btnCart && featureAn('bestellung')) btnCart.classList.remove('hidden');
+  if (btnCart) btnCart.onclick = () => openCart(); // ohne Argument: sonst landet das Klick-Event als „flash"-Text in der Liste
   refreshNotifCount();
   // Ruhende Bereiche werden gar nicht erst abgefragt: Ihre 404 landen sonst
   // als rote Fehler in der Browser-Konsole und sehen aus wie ein Defekt.
@@ -1196,6 +1200,9 @@ async function loadOverview() {
 
   // Wochenrückblick: was sich bei beobachteten Wirkstoffen zuletzt geändert hat (7 Tage)
   renderWeekReview(feed, d.week_review);
+
+  // Frühwarnung: beobachtete Wirkstoffe, die im Ausland knapp sind, hier nicht.
+  if (d.fruehwarnung && d.fruehwarnung.length) feed.appendChild(fruehwarnKarte(d.fruehwarnung, !!d.premium));
 
   // Meine beobachteten Wirkstoffe (mit Schnell-Vorschlägen aus kritischen Engpässen)
   renderWatchlistCard(feed, (d.watchlist && d.watchlist.items) || [], d.shortages.top || [], !!d.premium);
@@ -6670,6 +6677,27 @@ function recordRecentWirkstoff(name) {
 }
 
 // Wirkstoff-Detailseite: alles zu einem Wirkstoff auf einen Blick.
+// Eine Zeile „🇺🇸 USA · seit 4 Tagen · Kritisch · FDA" (services/fruehwarnung.js).
+function auslandZeile(a) {
+  return `<div style="font-size:14px;padding:3px 0">${esc(landLabel(a.land))} · ${esc(ti('fw_since', { n: a.dauer_tage }))} · <span style="color:${statusFg(a.schwerster_status)};font-weight:700">${statusShort(a.schwerster_status)[0]}</span>${a.quelle ? ` <span class="muted">· ${esc(a.quelle)}</span>` : ''}</div>`;
+}
+// Frühwarn-Karte der Übersicht: beobachtete Wirkstoffe, die anderswo laut
+// Behörde knapp sind, im angesehenen Land aber nicht. Eine Tatsache, keine
+// Prognose — so steht es auch auf der Karte.
+function fruehwarnKarte(liste, premium) {
+  const zeilen = liste.map((f) => `<div style="padding:6px 0;border-top:1px solid var(--line)">
+    <button class="linklike" data-fwwk="${esc(f.wirkstoff)}" style="font-weight:800;font-size:15px">${esc(f.wirkstoff)} ›</button>
+    ${f.laender.map(auslandZeile).join('')}</div>`).join('');
+  const fuss = premium
+    ? `<div class="muted" style="font-size:13px;margin-top:6px">🔔 ${esc(t('fw_push_on'))}</div>`
+    : `<div class="row" style="align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap"><span style="font-size:14px;flex:1 1 220px">🔒 ${esc(t('fw_push_premium'))}</span><button class="small" data-gopremium>${esc(t('wb_go_premium'))}</button></div>`;
+  const c = el(`<div class="card" data-fruehwarnung><b>${esc(t('fw_title'))}</b>
+    <div class="muted" style="font-size:14px;margin:2px 0 6px">${esc(t('fw_sub'))}</div>${zeilen}${fuss}</div>`);
+  c.querySelectorAll('[data-fwwk]').forEach((b) => { b.onclick = () => openWirkstoff(b.dataset.fwwk); });
+  const gp = c.querySelector('[data-gopremium]'); if (gp) gp.onclick = () => openPremium();
+  return c;
+}
+
 // Engpass-Chronik (services/chronik.js): wie oft und wie lange dieser
 // Wirkstoff im angesehenen Land schon knapp war — seit Aufzeichnungsbeginn,
 // nur aus Behördendaten. `null` heißt: Dieses Land wurde nie erfolgreich
@@ -6918,6 +6946,11 @@ async function openWirkstoff(name) {
   feed.appendChild(scard);
   const chk = chronikKarte(d.chronik, d.wirkstoff);
   if (chk) feed.appendChild(chk);
+  if (d.ausland && d.ausland.length) {
+    feed.appendChild(el(`<div class="card" data-ausland><b>${esc(t('fw_wk_title'))}</b>
+      <div style="margin-top:6px">${d.ausland.map(auslandZeile).join('')}</div>
+      <div class="muted" style="font-size:13px;margin-top:6px">${esc(t('fw_note'))}</div></div>`));
+  }
   // Bezugsquellen (biete) — mit Schnell-Aktion „Angebot einstellen"
   section(t('wk_offers_t'), d.exchange.biete.length, t('wk_offers_e'), body => d.exchange.biete.forEach(e => body.appendChild(exchangeCard(e))),
     canExchange ? { label: t('wk_offer_cta'), onClick: () => startExchange('biete') } : null);
@@ -7627,14 +7660,14 @@ async function refreshNotifCount() {
   } catch {}
 }
 // Engpass-/Beschaffungs-relevante Benachrichtigungstypen (für den Meldungs-Filter).
-const NOTIF_PROCUREMENT = new Set(['watch_alert','shortage_confirm','watch_offer','exchange_offer','exchange_want','signal_alert']);
+const NOTIF_PROCUREMENT = new Set(['shortage_abroad','watch_alert','shortage_confirm','watch_offer','exchange_offer','exchange_want','signal_alert']);
 let notifFilter = 'all'; // 'all' | 'procurement' | 'social'
 let notifUnreadOnly = false; // Zusatzfilter: nur ungelesene zeigen
 async function showNotifications() {
   setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', shortage_abroad:'🌍', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️' };
   app.innerHTML = '';
   const procCount = d.notifications.filter(n => NOTIF_PROCUREMENT.has(n.type)).length;
   const showFilter = d.notifications.length >= 5 && procCount > 0 && procCount < d.notifications.length;
@@ -7666,14 +7699,14 @@ async function showNotifications() {
     const who = n.actor ? n.actor.display_name : t('notif_someone');
     // Systemmeldungen ohne handelnde Person: Hier hat niemand etwas getan,
     // eine Behoerde hat gemeldet. „Jemand hat …" waere schlicht falsch.
-    const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'payment_confirmed' || n.type === 'payment_rejected';
+    const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'payment_confirmed' || n.type === 'payment_rejected';
     // Profilbild der handelnden Person (wer) + Typ-Emoji (was) — auf einen Blick erkennbar,
     // konsistent zu Feed/Verzeichnis/Suche. Ohne Person (System-Meldung) nur das Emoji.
     const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:var(--ok-bg)'}">
       <div class="row" style="align-items:center">
         ${n.actor ? avatarHtml(n.actor, 34, false) : ''}
         <span${n.actor?' style="font-size:16px"':''}>${icons[n.type]||'🔔'}</span>
-        <span style="margin-left:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' „'+esc(n.label)+'"':''}${n.read?'':'</b>'}</span>
+        <span style="margin-left:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' „'+esc(n.type==='shortage_abroad'?n.label.replace(/ · ([A-Z]{2})$/, (m, cc) => ' · ' + landLabel(cc)):n.label)+'"':''}${n.read?'':'</b>'}</span>
         <span class="sp" style="flex:1"></span>
         <span class="muted" style="font-size:12px">${relTime(n.created_at)}</span>
       </div></div>`);
@@ -7686,6 +7719,7 @@ async function showNotifications() {
           document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
           const tb=document.querySelector('.tabs button[data-tab="exchange"]'); if(tb) tb.classList.add('active'); loadTab(); });
       }
+      else if (n.type === 'shortage_abroad') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
       else if (n.type === 'watch_alert') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
       // Der Klick fuehrt in die Live-Warnungen, auf den Wirkstoff gefiltert —
       // dort steht die Meldung mit Herkunfts-Link. NICHT auf die

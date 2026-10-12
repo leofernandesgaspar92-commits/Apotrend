@@ -76,6 +76,7 @@ import { createTranslateService, MAX_ZEICHEN as TRANSLATE_MAX } from '../service
 import { rxErlaubt, verificationStatusFor } from '../domain/jurisdiction.js';
 import { erfundeneStartmeldungenEntfernen } from '../services/startbereinigung.js';
 import { createChronik, chronikFuerBetrachter } from '../services/chronik.js';
+import { createFruehwarnung } from '../services/fruehwarnung.js';
 
 // Login-Brute-Force-Schutz: max. 5 Fehlversuche je (IP+E-Mail) in 15 Minuten.
 const loginLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
@@ -151,6 +152,11 @@ const exchangeRepo = createExchangeRepo();
 const logistikRepo = createLogistikRepo();
 // Engpass-Chronik: ebenfalls vor applySnapshot() — sie wird mit wiederhergestellt.
 const chronik = createChronik();
+const fruehwarnung = createFruehwarnung({
+  chronik, shortagesRepo, social,
+  istPremium: (uid) => payments.hasFeature(uid, 'premium'),
+  heimatVon: (uid) => { const p = social.getProfile(uid); return p && p.country; },
+});
 const exchange = createExchangeService(exchangeRepo, social, repo, shortagesRepo);
 // RxNorm ergaenzt die Suche um Namensvarianten (Wirkstoff <-> Handelsname).
 // Abschaltbar ueber APOPULSE_RXNORM=off — der Dienst geht ins Netz, und wer
@@ -858,6 +864,7 @@ async function runShortageIngest() {
   // Chronik fortschreiben (services/chronik.js) — nur für Länder mit Lieferung.
   try {
     summary.chronik = chronik.beobachte({ zeilen: shortagesRepo.list(), laender: [...gelieferteLaender] });
+    summary.fruehwarnung = { gesendet: fruehwarnung.melde(summary.chronik.neue) };
     if (summary.chronik.neu || summary.chronik.geschlossen) saveSoon();
   } catch (e) {
     summary.chronik = { error: (e && e.message) || String(e) };
@@ -1295,7 +1302,9 @@ const routes = [
     if (dealsBlocked) { ov.top_rabatt = null; ov.rabatte_expiring = { count: 0, soonest: null }; ov.watch_deals = []; }
     if (isFeatureBlocked(home, 'stock_exchange')) { ov.exchange = { biete: 0, suche: 0, recent: [] }; ov.my_seeks = { open: 0, with_matches: 0, items: [] }; ov.watch_offers = []; ov.expiring_offers = { count: 0, items: [] }; }
     if (isFeatureBlocked(home, 'price_compare')) { ov.savings = null; }
-    return { ...ov, premium: payments.hasFeature(userId, 'premium'), data_live: isLive(activeCountry(userId, query)) };
+    return { ...ov, premium: payments.hasFeature(userId, 'premium'), data_live: isLive(activeCountry(userId, query)),
+      // Beobachtete Wirkstoffe, die im Ausland knapp sind, hier aber nicht.
+      fruehwarnung: fruehwarnung.fuerBeobachtungsliste(userId, activeCountry(userId, query)) };
   }],
   // Meine Aktivität an einem Ort: eigene Fragen, Engpass-Meldungen, Austausch-Einträge.
   ['GET', /^\/api\/me\/activity$/, true, async ({ userId }) => {
@@ -1349,6 +1358,8 @@ const routes = [
       shortages: shortages.listWithCounts(userId, { country: land }).filter(s => eq(s.wirkstoff)),
       // Verlauf dieses Wirkstoffs im angesehenen Land (null: Land nie beobachtet).
       chronik: chronikFuerBetrachter(chronik.fuer(name, land), { premium: payments.hasFeature(userId, 'premium') }),
+      // Wo ist dieser Wirkstoff gerade knapp, außer im angesehenen Land?
+      ausland: fruehwarnung.imAusland(name, land),
       prices: priceBlocked ? [] : prices.comparisons(userId, { country: land }).filter(g => eq(g.wirkstoff)),
       rabatte: dealsBlocked ? [] : rabatte.top10(userId, { country: land }).filter(r => eq(r.wirkstoff)),
       exchange: { biete: ex.filter(e => e.kind === 'biete'), suche: ex.filter(e => e.kind === 'suche') },

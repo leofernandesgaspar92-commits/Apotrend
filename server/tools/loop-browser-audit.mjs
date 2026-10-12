@@ -1125,6 +1125,48 @@ async function main() {
         else console.log('✓ CSV-Export: Formeln entschärft, Zahlen und Text unverändert');
       }
 
+      // ── Frühwarnung aus dem Ausland ──────────────────────────────────────
+      //  Tatsache mit Land, Dauer und Quelle — und der Satz „keine Prognose".
+      //  Ohne Premium: Hinweis auf die Sofort-Benachrichtigung; leer: keine Karte.
+      const fwEintrag = [{ wirkstoff: 'Cefuroxim', laender: [{ land: 'US', beginn: '2026-10-08', beginn_art: 'beobachtet', dauer_tage: 4, schwerster_status: 'kritisch', quelle: 'FDA' }] }];
+      const uebersicht = async (fw, premium) => {
+        await page.unroute('**/api/overview*').catch(() => {});
+        await page.route('**/api/overview*', async (route) => { const r = await route.fetch(); const j = await r.json(); j.fruehwarnung = fw; j.premium = premium; return route.fulfill({ response: r, json: j }); });
+        await page.goto(BASE, { waitUntil: 'networkidle' });
+        await page.waitForTimeout(600);
+        const k = page.locator('[data-fruehwarnung]');
+        return (await k.count()) ? { text: await k.first().innerText(), knopf: await k.locator('[data-gopremium]').count() } : null;
+      };
+      const fwFrei = await uebersicht(fwEintrag, false);
+      const fwPrem = await uebersicht(fwEintrag, true);
+      const fwLeer = await uebersicht([], false);
+      await page.unroute('**/api/overview*').catch(() => {});
+      chronikAntwort = voll;
+      await page.unroute('**/api/wirkstoff/**').catch(() => {});
+      await page.route('**/api/wirkstoff/**', async (route) => { const r = await route.fetch(); const j = await r.json(); j.chronik = voll; j.ausland = fwEintrag[0].laender; return route.fulfill({ response: r, json: j }); });
+      const wkAusland = await (async () => { await wkSeite(voll); const a = page.locator('[data-ausland]'); return (await a.count()) ? await a.innerText() : null; })();
+      if (!fwFrei || !/Cefuroxim/.test(fwFrei.text) || !/seit 4 Tagen/.test(fwFrei.text) || !/FDA/.test(fwFrei.text) || !/\(noch\) nicht/.test(fwFrei.text)) findings.push(`Frühwarnung: Karte unvollständig (${fwFrei && fwFrei.text.slice(0, 160)})`);
+      else if (/ US /.test(' ' + fwFrei.text + ' ') && !/USA|Vereinigte Staaten|United States/.test(fwFrei.text)) findings.push('Frühwarnung: Land als Kürzel statt Name');
+      else if (fwFrei.knopf !== 1 || !fwPrem || fwPrem.knopf !== 0 || !/sofort benachrichtigt/.test(fwPrem.text)) findings.push(`Frühwarnung: Premium-Hinweis falsch (frei ${fwFrei.knopf}, premium ${fwPrem && fwPrem.knopf})`);
+      else if (fwLeer !== null) findings.push('Frühwarnung: leere Karte erscheint');
+      else if (!wkAusland || !/seit 4 Tagen/.test(wkAusland) || !/keine Prognose/.test(wkAusland)) findings.push(`Frühwarnung: Wirkstoff-Seite ohne „im Ausland knapp" (${wkAusland})`);
+      else console.log('✓ Frühwarnung: Land, Dauer, Quelle, „keine Prognose"; Premium-Hinweis nur ohne Premium; keine leere Karte');
+
+      // Benachrichtigung: Text, Landesname statt Kürzel, Klick öffnet den Wirkstoff.
+      await page.route('**/api/notifications', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ notifications: [
+        { id: 'n1', type: 'shortage_abroad', label: 'Cefuroxim · US', read: true, created_at: new Date().toISOString(), actor: null },
+      ] }) }));
+      await page.click('#btnNotif').catch(() => {});
+      await page.waitForTimeout(700);
+      const nText = await page.locator('.comment.clickable').filter({ hasText: 'Cefuroxim' }).first().innerText().catch(() => '');
+      await page.locator('.comment.clickable').filter({ hasText: 'Cefuroxim' }).first().click().catch(() => {});
+      await page.waitForTimeout(900);
+      const nZiel = await page.locator('[data-ausland], [data-chronik]').count();
+      await page.unroute('**/api/notifications').catch(() => {});
+      if (!/Frühwarnung/.test(nText) || /· US"/.test(nText) || /Jemand/.test(nText)) findings.push(`Frühwarnung: Benachrichtigungstext falsch („${nText}")`);
+      else if (!nZiel) findings.push('Frühwarnung: Klick auf die Benachrichtigung öffnet den Wirkstoff nicht');
+      else console.log('✓ Frühwarnung: Benachrichtigung mit Landesname, Klick öffnet den Wirkstoff');
+
       await page.unroute('**/api/shortages?*').catch(() => {});
       await page.unroute('**/api/wirkstoff/**').catch(() => {});
     }

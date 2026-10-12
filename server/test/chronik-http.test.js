@@ -17,13 +17,15 @@ const SERVER = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'http'
 
 test('Abruf füllt die Chronik; der nächste Abruf ohne die Zeile beendet die Episode', { timeout: 60000 }, async () => {
   // Nachgestellte Behördenliste — veränderbar zwischen zwei Abrufen.
+  let fda = [{ generic_name: 'Lisinopril', status: 'Currently in Shortage' }];
   let liste = [
     { wirkstoff: 'Amoxicillin', bezeichnung: 'Amoxicillin 1000 mg', status: 'nicht lieferbar', meldedatum: '2026-09-01' },
     { wirkstoff: 'Ibuprofen', bezeichnung: 'Ibuprofen 400 mg', status: 'eingeschränkt lieferbar' },
   ];
   const behoerde = http.createServer((req, res) => {
     res.writeHead(200, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ items: liste }));
+    // Zwei Behörden: BASG (AT) und FDA (US, openFDA-Form mit `results`).
+    res.end(JSON.stringify(req.url.startsWith('/fda') ? { results: fda } : { items: liste }));
   });
   await new Promise((ok) => behoerde.listen(0, ok));
   const feed = `http://localhost:${behoerde.address().port}/basg.json`;
@@ -34,7 +36,7 @@ test('Abruf füllt die Chronik; der nächste Abruf ohne die Zeile beendet die Ep
       APOPULSE_ADMIN_EMAIL: 'red@chronik.test', APOPULSE_ADMIN_PASSWORD: 'chronik-test-123',
       APOPULSE_DATA_FILE: '', APOPULSE_PRESSE: 'aus', APOPULSE_REFERENCE_DATA: '',
       APOPULSE_SOURCE_BASG_SHORTAGES_URL: feed,
-      APOPULSE_SOURCE_OPENFDA_SHORTAGES_URL: '', // abgeschaltet: kein Netz im Test
+      APOPULSE_SOURCE_OPENFDA_SHORTAGES_URL: `http://localhost:${behoerde.address().port}/fda.json`,
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -87,8 +89,20 @@ test('Abruf füllt die Chronik; der nächste Abruf ohne die Zeile beendet die Ep
     assert.ok(ex.episoden.some((e) => e.wirkstoff === 'Amoxicillin'));
 
     // Zweiter Abruf: Amoxicillin ist von der Liste.
+    // Frühwarnung: Die Kundin (Premium, Österreich) beobachtet Cefuroxim.
+    // Im zweiten Abruf meldet die FDA es neu — in Österreich ist es nicht knapp.
+    await fetch(B + '/api/watchlist', { method: 'POST', headers: J(kunde), body: JSON.stringify({ wirkstoff: 'Cefuroxim' }) });
+    fda = [...fda, { generic_name: 'Cefuroxim', status: 'Currently in Shortage' }];
     liste = liste.filter((z) => z.wirkstoff !== 'Amoxicillin');
     await abruf();
+    const glocke = (await (await fetch(B + '/api/notifications', { headers: J(kunde) })).json()).notifications.filter((n) => n.type === 'shortage_abroad');
+    assert.deepEqual(glocke.map((n) => n.label), ['Cefuroxim · US'], 'Frühwarnung kam nicht an');
+    const ov = await (await fetch(B + '/api/overview?country=AT', { headers: J(kunde) })).json();
+    assert.deepEqual(ov.fruehwarnung.map((f) => [f.wirkstoff, f.laender[0].land]), [['Cefuroxim', 'US']]);
+    const wk = await (await fetch(B + '/api/wirkstoff/Cefuroxim?country=AT', { headers: J(kunde) })).json();
+    assert.deepEqual(wk.ausland.map((a) => a.land), ['US']);
+    // Lisinopril lief schon beim ersten US-Abruf: kein Alarm für Altfälle.
+    assert.ok(!glocke.some((n) => /Lisinopril/.test(n.label)));
     const w2 = await (await fetch(B + '/api/wirkstoff/Amoxicillin?country=AT', { headers: J(kunde) })).json();
     assert.equal(w2.chronik.offen, null, 'Episode blieb offen, obwohl die Behörde den Engpass nicht mehr führt');
     assert.equal(w2.chronik.anzahl, 1);

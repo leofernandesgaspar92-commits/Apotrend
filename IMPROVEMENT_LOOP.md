@@ -1820,3 +1820,30 @@ Test rot („Episodenliste ging ohne Premium über die Leitung"); Export ohne Pr
 Sperre → Audit „gesperrte Ansicht falsch". Ende-zu-Ende jetzt mit echtem Premium-Weg
 (Krypto-Zahlung melden, Redaktion bestätigt). **CHECK:** 1093 Tests grün, Smoke 19/19, Audit ohne Befund.
 
+### Cycle · Frühwarnung aus dem Ausland — und 22 tote Klickwege (2026-10-12)
+
+**Anlass.** Owner: Datenbank eingetragen (Chronik überlebt Deploys), „weiter mit dem nächsten
+Schritt". Nächster Informationsvorsprung auf der Chronik: Engpässe wandern zwischen Märkten.
+Wer weiß, dass ein beobachteter Wirkstoff in den USA neu knapp ist, kann vorher einkaufen.
+
+**WORK.** `services/fruehwarnung.js`: Wirkstoff-Seite „im Ausland gerade knapp", Übersicht
+„🌍 Frühwarnung" (beobachtet, anderswo knapp, hier nicht), Push `shortage_abroad` für Premium.
+Chronik meldet neue Episoden mit Kennzeichen „erster Lauf des Landes".
+
+**Gegenproben:** fünf von sechs Regel-Brüchen schlugen an. Der sechste („nicht fürs eigene
+Land") blieb stumm — die Prüfung war **doppelt**: Eine neue Episode im Heimatland ist ein
+heimischer Engpass, das fängt schon „nicht, wenn es bei dir knapp ist". Entfernt statt
+Test verbogen. Verdrahtung Ende-zu-Ende mit zwei nachgestellten Behörden (BASG + FDA):
+Altfall beim ersten Lauf → kein Alarm; Neuzugang → genau ein Alarm. Oberfläche: vier Brüche
+(Premium-Hinweis, leere Karte, Landeskürzel, Absturz), alle gemeldet.
+
+**Dabei gefunden — schwerer Altfehler:** Ein Klick auf eine Benachrichtigung („Neuer Status
+bei deinem beobachteten Wirkstoff", jetzt auch die Frühwarnung) öffnete NICHTS und warf einen
+JS-Fehler. Ursache: Ruhende Bereiche entfernen ihre Kopf-Knöpfe (Direktnachrichten,
+Einkaufsliste) aus der Seite; beim zweiten `mainScreen()` griff der Code auf den fehlenden
+Knopf zu (`null.onclick`). 22 Aufrufwege hängen an `mainScreen()`. Seit der Ruhend-Schaltung
+im Live-Betrieb, von keinem Test gesehen — der Audit klickte nie eine Benachrichtigung an.
+Jetzt tut er es.
+
+**CHECK.** 1101 Tests grün (+8), Smoke 19/19, Browser-Audit ohne Befund, `npm run verify` komplett.
+

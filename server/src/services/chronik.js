@@ -72,7 +72,7 @@ export function createChronik({ jetzt = () => Date.now(), log = console } = {}) 
      */
     beobachte({ zeilen = [], laender = [] } = {}) {
       const heute = isoTag(jetzt());
-      const bericht = { neu: 0, fortgesetzt: 0, geschlossen: 0, zurueckgehalten: [] };
+      const bericht = { neu: 0, fortgesetzt: 0, geschlossen: 0, zurueckgehalten: [], neue: [] };
       for (const roh of laender) {
         const land = String(roh || '').toUpperCase();
         if (!land) continue;
@@ -81,7 +81,11 @@ export function createChronik({ jetzt = () => Date.now(), log = console } = {}) 
         // Regel 2: Liegt für das Land gar keine Behördenzeile vor, wurde es in
         // diesem Lauf nicht wirklich beobachtet — egal, was der Aufrufer meint.
         if (!behoerde.length) continue;
-        if (!seit.has(land)) seit.set(land, heute);
+        // Erster Lauf eines Landes: JEDE Zeile ist für uns „neu", obwohl die
+        // meisten Engpässe längst laufen. Wer darauf Meldungen verschickt,
+        // flutet alle Beobachter:innen mit Altfällen — deshalb markiert.
+        const ersterLauf = !seit.has(land);
+        if (ersterLauf) seit.set(land, heute);
 
         const aktuell = new Map();
         for (const z of behoerde) {
@@ -119,6 +123,7 @@ export function createChronik({ jetzt = () => Date.now(), log = console } = {}) 
             };
             liste.push(e);
             bericht.neu++;
+            bericht.neue.push({ land, wirkstoff: e.wirkstoff, beginn: e.beginn, schwerster_status: e.schwerster_status, erster_lauf: ersterLauf });
           } else {
             bericht.fortgesetzt++;
           }
@@ -153,6 +158,33 @@ export function createChronik({ jetzt = () => Date.now(), log = console } = {}) 
         laengste_tage: liste.length ? Math.max(...liste.map((e) => e.dauer_tage)) : null,
         episoden: liste.reverse(), // neueste zuerst
       };
+    },
+
+    /** Ist der Wirkstoff in diesem Land gerade (laut Chronik) knapp? */
+    offenIn(wirkstoff, land) {
+      const liste = episoden.get(schluessel(String(land || '').toUpperCase(), wirkstoff)) || [];
+      const e = liste[liste.length - 1];
+      return !!(e && !e.ende);
+    },
+
+    /**
+     * Offene Episoden desselben Wirkstoffs in ANDEREN Ländern.
+     * Abgleich über den gefalteten Namen — „Amoxicillin" (AT) trifft
+     * „amoxicillin" (US), aber nicht „Amoxicilina" (PT): Ohne INN-Abgleich
+     * wird nichts geraten.
+     */
+    offenAnderswo(wirkstoff, ausser) {
+      const cc = String(ausser || '').toUpperCase();
+      const name = falten(String(wirkstoff || '').trim());
+      const heute = isoTag(jetzt());
+      const out = [];
+      for (const [k, liste] of episoden) {
+        const [land, w] = k.split('|');
+        if (land === cc || w !== name) continue;
+        const e = liste[liste.length - 1];
+        if (e && !e.ende) out.push({ land, beginn: e.beginn, beginn_art: e.beginn_art, dauer_tage: tageZwischen(e.beginn, heute), schwerster_status: e.schwerster_status, quelle: e.quelle });
+      }
+      return out.sort((a, b) => a.dauer_tage - b.dauer_tage);
     },
 
     /** Kurzform je Wirkstoff für Listen: { anzahl, offen_seit_tagen, durchschnitt_tage } */

@@ -45,6 +45,8 @@ export function createSocialService(social, foundationRepo, options = {}) {
     // will auch diesen nicht — und eine zwoelfte Kategorie in den Einstellungen
     // hilft niemandem, der nur „weniger Meldungen" moechte.
     signal_alert: 'watch',
+    // Frühwarnung: beobachteter Wirkstoff im Ausland neu knapp (services/fruehwarnung.js).
+    shortage_abroad: 'watch',
     exchange_offer: 'watch', exchange_want: 'watch',
     live_start: 'live',
     promo_like: 'promos', promo_comment: 'promos',

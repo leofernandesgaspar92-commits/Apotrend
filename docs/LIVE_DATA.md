@@ -844,6 +844,26 @@ Chronik schreibt bei jedem Abruf mit und hält **Episoden je Land und Wirkstoff*
   (`APOPULSE_LIVE_SHORTAGES_<CC>`) schreibt das Land an jede Zeile (vorher `null` = „überall");
   jede Zeile behält ihre eigene Quelle; Status mit Umlaut („eingeschränkt lieferbar") wird erkannt.
 
+## 3i. Frühwarnung aus dem Ausland (`services/fruehwarnung.js`)
+
+Engpässe wandern zwischen Märkten (gemeinsame Hersteller und Wirkstoff-Lieferanten). Aus der
+Chronik mehrerer Länder entsteht eine Auskunft, die keine einzelne Behördenliste hat:
+„Cefuroxim ist in den USA seit 4 Tagen knapp — bei dir nicht."
+
+- **Anzeige (frei):** Wirkstoff-Seite „🌍 Im Ausland gerade knapp" (`ausland` in
+  `/api/wirkstoff`), Übersicht „🌍 Frühwarnung" für beobachtete Wirkstoffe, die im angesehenen
+  Land NICHT knapp sind (`fruehwarnung` in `/api/overview`).
+- **Benachrichtigung `shortage_abroad` (Premium):** sobald ein beobachteter Wirkstoff im
+  Ausland neu knapp wird. Kategorie „watch" (abschaltbar wie die übrigen Beschaffungs-Hinweise).
+- **Regeln:** keine Prognose, nur Tatsache mit Land, Dauer und Quelle · kein Alarm beim ersten
+  Abruf eines Landes (sonst Flut von Altfällen) · kein Alarm, wenn es im Heimatland schon knapp
+  ist (daraus folgt: nie fürs eigene Land) · Namen gefaltet, nicht übersetzt („Amoxicilina"
+  trifft „Amoxicillin" nicht — eine INN-Zuordnung wäre der nächste Schritt) · kurze Lücke
+  (≤ 7 Tage) erzeugt keinen zweiten Alarm.
+- **Grenze heute:** Wirkt nur zwischen Ländern mit laufender Engpass-Quelle (eingebaut: AT/BASG,
+  US/FDA). Jede weitere Quelle (`APOPULSE_SOURCE_<ID>_URL`, `APOPULSE_LIVE_SHORTAGES_<CC>`)
+  vergrößert das Netz.
+
 ## 4. Preise (zweiter Datentyp, gleiche Logik)
 
 Analog zu Engpässen: Umgebungsvariable `APOPULSE_LIVE_PRICES_<CC>` setzen.
