@@ -36,7 +36,11 @@ services:
   - type: web
     name: apotrend-feed
     runtime: node
-    plan: free
+    # Bezahlter Tarif (seit 10/2026, im Dashboard „0.5c-512mb"). Auf „free"
+    # schlief der Dienst nach ~15 Min. ohne Besucher ein — dann liefen weder
+    # News- noch Engpass-Abrufe, und die Engpass-Chronik bekam Löcher. Steht
+    # hier wieder „free", stuft ein Blueprint-Abgleich den Dienst zurück.
+    plan: starter
     # ⚠️ REGION — nachtraeglich NICHT aenderbar, und die haeufigste stille Falle.
     #
     # Render kann die Region eines bestehenden Dienstes nicht umziehen. Steht

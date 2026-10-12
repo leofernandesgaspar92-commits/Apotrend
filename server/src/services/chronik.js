@@ -167,6 +167,18 @@ export function createChronik({ jetzt = () => Date.now(), log = console } = {}) 
       };
     },
 
+    /** Alle Episoden eines Landes (für den Export), älteste zuerst. */
+    alle(land) {
+      const cc = String(land || '').toUpperCase();
+      const heute = isoTag(jetzt());
+      const out = [];
+      for (const [k, liste] of episoden) {
+        if (!k.startsWith(cc + '|')) continue;
+        for (const e of liste) out.push({ ...e, praeparate: [...e.praeparate], dauer_tage: tageZwischen(e.beginn, e.ende || heute) });
+      }
+      return out.sort((a, b) => (a.beginn < b.beginn ? -1 : a.beginn > b.beginn ? 1 : a.wirkstoff.localeCompare(b.wirkstoff)));
+    },
+
     aufzeichnungSeit(land) { return seit.get(String(land || '').toUpperCase()) || null; },
 
     __dump() { return { episoden: [...episoden], seit: [...seit] }; },
@@ -177,4 +189,20 @@ export function createChronik({ jetzt = () => Date.now(), log = console } = {}) 
       for (const [k, v] of d.seit || []) seit.set(k, v);
     },
   };
+}
+
+/**
+ * Premium-Schnitt (Owner-Freigabe 12.10.2026): Die ZUSAMMENFASSUNG ist frei —
+ * wie oft, wie lange im Schnitt, läuft gerade. Das ist die Information, die
+ * bei einer Umbestellung hilft, und sie gehört nicht hinter eine Bezahlschranke.
+ * Die EPISODENLISTE (jeder Zeitraum mit Präparaten und Quelle) und der Export
+ * sind das Analysewerkzeug — das ist Premium.
+ *
+ * Die Schranke sitzt hier auf dem Server: Eine Oberfläche, die die Liste nur
+ * ausblendet, hätte sie trotzdem an jeden ausgeliefert.
+ */
+export function chronikFuerBetrachter(f, { premium }) {
+  if (!f || premium) return f ? { ...f, episoden_gesperrt: false } : f;
+  const { episoden, ...rest } = f;
+  return { ...rest, episoden: [], episoden_gesperrt: episoden.length > 0 };
 }

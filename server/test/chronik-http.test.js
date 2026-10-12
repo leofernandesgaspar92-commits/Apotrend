@@ -67,16 +67,35 @@ test('Abruf füllt die Chronik; der nächste Abruf ohne die Zeile beendet die Ep
     assert.equal(w1.chronik.offen.beginn, '2026-09-01', 'Meldedatum der Behörde als Beginn');
     assert.equal(w1.chronik.offen.beginn_art, 'gemeldet');
 
+    // Premium-Schnitt AUF DEM SERVER: ohne Premium Zusammenfassung ja,
+    // Episodenliste nein — und der Export antwortet 403.
+    const kunde = (await (await fetch(B + '/api/register', { method: 'POST', headers: J(''), body: JSON.stringify({ name: 'K', email: 'k@chronik.test', password: 'Passwort123!', handle: 'k_chronik', country: 'AT', accountType: 'pharmacy' }) })).json()).token;
+    const frei = await (await fetch(B + '/api/wirkstoff/Amoxicillin?country=AT', { headers: J(kunde) })).json();
+    assert.equal(frei.chronik.anzahl, 1, 'Zusammenfassung ist frei');
+    assert.deepEqual(frei.chronik.episoden, [], 'Episodenliste ging ohne Premium über die Leitung');
+    assert.equal(frei.chronik.episoden_gesperrt, true);
+    assert.equal((await fetch(B + '/api/chronik?country=AT', { headers: J(kunde) })).status, 403);
+
+    // Premium über den echten Weg: Krypto-Zahlung melden, Redaktion bestätigt.
+    const start = await (await fetch(B + '/api/payments/crypto/start', { method: 'POST', headers: J(kunde), body: JSON.stringify({ productId: 'premium_monthly', coin: 'btc' }) })).json();
+    const tx = Array.from({ length: 64 }, (_, i) => '0123456789abcdef'[(i * 7 + 3) % 16]).join('');
+    assert.equal((await fetch(B + `/api/payments/crypto/${start.payment_id}/claim`, { method: 'POST', headers: J(kunde), body: JSON.stringify({ txRef: tx }) })).status, 200);
+    assert.equal((await fetch(B + `/api/payments/${start.payment_id}/confirm`, { method: 'POST', headers: J(mod), body: '{}' })).status, 200);
+    const voll = await (await fetch(B + '/api/wirkstoff/Amoxicillin?country=AT', { headers: J(kunde) })).json();
+    assert.equal(voll.chronik.episoden.length, 1, 'mit Premium fehlt die Episodenliste');
+    const ex = await (await fetch(B + '/api/chronik?country=AT', { headers: J(kunde) })).json();
+    assert.ok(ex.episoden.some((e) => e.wirkstoff === 'Amoxicillin'));
+
     // Zweiter Abruf: Amoxicillin ist von der Liste.
     liste = liste.filter((z) => z.wirkstoff !== 'Amoxicillin');
     await abruf();
-    const w2 = await (await fetch(B + '/api/wirkstoff/Amoxicillin?country=AT', { headers: J(mod) })).json();
+    const w2 = await (await fetch(B + '/api/wirkstoff/Amoxicillin?country=AT', { headers: J(kunde) })).json();
     assert.equal(w2.chronik.offen, null, 'Episode blieb offen, obwohl die Behörde den Engpass nicht mehr führt');
     assert.equal(w2.chronik.anzahl, 1);
     assert.ok(w2.chronik.episoden[0].ende);
 
     // Ein Land, das nie beobachtet wurde: keine erfundene „0× knapp"-Aussage.
-    const pt = await (await fetch(B + '/api/wirkstoff/Amoxicillin?country=PT', { headers: J(mod) })).json();
+    const pt = await (await fetch(B + '/api/wirkstoff/Amoxicillin?country=PT', { headers: J(kunde) })).json();
     assert.equal(pt.chronik, null);
   } finally {
     await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });

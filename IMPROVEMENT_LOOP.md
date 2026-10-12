@@ -1795,3 +1795,28 @@ aber nur, wenn der Dienst durchläuft (Render „Starter" oder Uptime-Ping). Sie
 naheliegende Kern eines Bezahlangebots (Verlauf, Muster, Export) — das ist eine
 Produktentscheidung; im Moment ist sie für alle sichtbar.
 
+### Cycle · Chronik als Premium-Kern; CSV-Formelschutz für alle Exporte (2026-10-12)
+
+**Anlass.** Owner: bezahlter Render-Tarif aktiv (Screenshot: 0.5c-512mb, Live auf d2ca055) und
+„mach das, was du für richtig hältst" zur Frage, ob die Chronik Premium wird.
+
+**Entscheidung.** Zusammenfassung frei, Episodenliste und Export Premium. Begründung: „Wie oft
+und wie lange war das knapp, läuft es gerade?" hilft bei einer Umbestellung — das gehört
+nicht hinter eine Bezahlschranke (Sicherheitsbezug). Die vollständige Liste mit Zeiträumen,
+Präparaten, Quellen und der Excel-Export sind das Analysewerkzeug für Einkauf und Großhandel.
+Schranke auf dem Server (`chronikFuerBetrachter`, `GET /api/chronik` → 403 ohne Premium).
+
+**Beim Bau gefunden:** `downloadCsv` (alle Exporte der App) hatte keinen Formelschutz.
+Präparatnamen und Gründe kommen auch aus Community-Meldungen; ein „=HYPERLINK(…)" wäre
+beim Öffnen in Excel ausgeführt worden. Jetzt werden Zellen mit = + @ (und - vor einem
+Nicht-Ziffer-Zeichen) mit ' entschärft; „-1,50" bleibt eine Zahl.
+
+**`render.yaml`:** `plan: free` → `plan: starter` (der echte Tarif), damit ein Blueprint-Abgleich
+den Dienst nicht zurückstuft.
+
+**Gegenproben (Bruch angewandt, jede schlägt an):** Server gibt allen Premium → Ende-zu-Ende-
+Test rot („Episodenliste ging ohne Premium über die Leitung"); Export ohne Premium-Prüfung →
+200 statt 403; Formelschutz entfernt → Audit „Formel nicht entschärft"; Export-Knopf trotz
+Sperre → Audit „gesperrte Ansicht falsch". Ende-zu-Ende jetzt mit echtem Premium-Weg
+(Krypto-Zahlung melden, Redaktion bestätigt). **CHECK:** 1093 Tests grün, Smoke 19/19, Audit ohne Befund.
+

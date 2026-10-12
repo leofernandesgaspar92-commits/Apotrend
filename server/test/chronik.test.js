@@ -5,7 +5,7 @@
 // hier einen eigenen Test.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createChronik } from '../src/services/chronik.js';
+import { createChronik, chronikFuerBetrachter } from '../src/services/chronik.js';
 import { createShortagesRepo } from '../src/repo/shortagesRepo.js';
 import { refreshShortages } from '../src/services/liveData.js';
 
@@ -176,4 +176,21 @@ test('Status mit Umlaut wird erkannt („eingeschränkt lieferbar")', async () =
   assert.equal(normalizeStatus('eingeschraenkt lieferbar'), 'eingeschraenkt');
   assert.equal(normalizeStatus('Eingeschränkt  lieferbar'), 'eingeschraenkt', 'die Behördenzeile fiel an einem Umlaut weg');
   assert.equal(normalizeStatus('frei erfunden'), null, 'Unbekanntes bleibt unbekannt');
+});
+
+test('Premium-Schnitt: Zusammenfassung frei, Episodenliste nur mit Premium', () => {
+  const u = uhr(); const c = createChronik({ jetzt: u.jetzt, log: still });
+  c.beobachte({ zeilen: [z('A')], laender: ['AT'] });
+  const f = c.fuer('A', 'AT');
+  const frei = chronikFuerBetrachter(f, { premium: false });
+  assert.equal(frei.anzahl, 1);
+  assert.ok(frei.offen, 'ob gerade knapp: keine Bezahlschranke vor einer Umbestell-Information');
+  assert.deepEqual(frei.episoden, []);
+  assert.equal(frei.episoden_gesperrt, true);
+  assert.equal(chronikFuerBetrachter(f, { premium: true }).episoden.length, 1);
+  assert.equal(chronikFuerBetrachter(null, { premium: false }), null);
+  const leer = chronikFuerBetrachter(c.fuer('B', 'AT'), { premium: false });
+  assert.equal(leer.episoden_gesperrt, false, 'nichts zu sperren -> kein Premium-Hinweis');
+  assert.equal(c.alle('AT').length, 1);
+  assert.equal(c.alle('DE').length, 0);
 });

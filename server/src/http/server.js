@@ -75,7 +75,7 @@ import { extractSignal, aiKonfiguration, KATEGORIEN as SIGNAL_KATEGORIEN } from 
 import { createTranslateService, MAX_ZEICHEN as TRANSLATE_MAX } from '../services/aiTranslate.js';
 import { rxErlaubt, verificationStatusFor } from '../domain/jurisdiction.js';
 import { erfundeneStartmeldungenEntfernen } from '../services/startbereinigung.js';
-import { createChronik } from '../services/chronik.js';
+import { createChronik, chronikFuerBetrachter } from '../services/chronik.js';
 
 // Login-Brute-Force-Schutz: max. 5 Fehlversuche je (IP+E-Mail) in 15 Minuten.
 const loginLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
@@ -1348,7 +1348,7 @@ const routes = [
       country: land,
       shortages: shortages.listWithCounts(userId, { country: land }).filter(s => eq(s.wirkstoff)),
       // Verlauf dieses Wirkstoffs im angesehenen Land (null: Land nie beobachtet).
-      chronik: chronik.fuer(name, land),
+      chronik: chronikFuerBetrachter(chronik.fuer(name, land), { premium: payments.hasFeature(userId, 'premium') }),
       prices: priceBlocked ? [] : prices.comparisons(userId, { country: land }).filter(g => eq(g.wirkstoff)),
       rabatte: dealsBlocked ? [] : rabatte.top10(userId, { country: land }).filter(r => eq(r.wirkstoff)),
       exchange: { biete: ex.filter(e => e.kind === 'biete'), suche: ex.filter(e => e.kind === 'suche') },
@@ -1852,6 +1852,16 @@ const routes = [
       chronik_seit: chronik.aufzeichnungSeit(land),
       shortages: shortages.listWithCounts(userId, { country: land }).map(s => ({ ...s, is_antibiotic: amr.isAntibiotic(s.wirkstoff), price_alternatives: altCount(s), chronik: chronik.kurz(s.wirkstoff, s.country || land) })),
     };
+  }],
+  // Chronik-Export (Premium): alle Episoden des angesehenen Landes. Die
+  // Zusammenfassung je Wirkstoff ist frei (/api/shortages, /api/wirkstoff);
+  // die vollständige Liste ist das Analysewerkzeug.
+  ['GET', /^\/api\/chronik$/, true, async ({ userId, query }) => {
+    if (!payments.hasFeature(userId, 'premium')) {
+      const e = new Error('Der vollständige Engpass-Verlauf ist eine Premium-Funktion.'); e.code = 'premium_required'; e.status = 403; throw e;
+    }
+    const land = activeCountry(userId, query);
+    return { land, aufzeichnung_seit: chronik.aufzeichnungSeit(land), episoden: chronik.alle(land) };
   }],
   ['GET', /^\/api\/shortages\/([^/]+)$/, true, async ({ userId, params }) => {
     const d = shortages.withActivity(userId, params[0]);

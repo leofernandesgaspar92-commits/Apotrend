@@ -323,6 +323,8 @@ const fmtDateDe = (ymd) => {
 // Für den Browser-Audit erreichbar machen: Der Test soll die ECHTE Funktion
 // prüfen, nicht eine Nachbildung — sonst prüft er seine eigene Kopie.
 window.__fmtDateDe = (ymd) => fmtDateDe(ymd);
+// Ebenso für den CSV-Formel-Schutz: geprüft wird die echte Zellfunktion.
+window.__csvZeilen = (header, rows) => { let out = null; const orig = URL.createObjectURL; URL.createObjectURL = (b) => { out = b; return 'blob:x'; }; try { downloadCsv('x', header, rows); } finally { URL.createObjectURL = orig; } return out ? out.text() : null; };
 // Uhrzeit (HH:MM) eines ISO-Zeitstempels in der aktiven Sprache; ungültig -> leer.
 const fmtClock = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString(bcp47(), { hour:'2-digit', minute:'2-digit' }); };
 // Tages-Trenner für Nachrichtenverläufe: „Heute"/„Gestern" oder das Datum.
@@ -3331,7 +3333,12 @@ function csvYesNo(b) { return b ? t('csv_yes') : t('csv_no'); }
 function downloadCsv(baseName, header, rows) {
   const sep = csvSep();
   const needsQuote = new RegExp('["' + (sep === ';' ? ';' : ',') + '\\n]');
-  const cell = (v) => { const s = String(v ?? ''); return needsQuote.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  // Formel-Schutz: Beginnt eine Zelle mit = + @ (oder - vor einem Nicht-Ziffer-
+  // Zeichen), führt Excel sie als Formel aus. Präparatnamen und Gründe kommen
+  // auch aus Community-Meldungen — „=HYPERLINK(…)" darf beim Öffnen nichts tun.
+  // Negative Zahlen („-1,50") bleiben Zahlen.
+  const entschaerft = (s) => (/^[=+@\t\r]/.test(s) || /^-[^\d]/.test(s) ? "'" + s : s);
+  const cell = (v) => { const s = entschaerft(String(v ?? '')); return needsQuote.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   const csv = '﻿' + [header, ...rows].map(r => r.map(cell).join(sep)).join('\r\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -6682,6 +6689,14 @@ function chronikKarte(c, wirkstoff) {
     c.durchschnitt_tage != null ? esc(ti('ch_avg', { n: c.durchschnitt_tage })) : '',
     c.laengste_tage != null && c.anzahl > 1 ? esc(ti('ch_longest', { n: c.laengste_tage })) : '',
   ].filter(Boolean).join(' · ');
+  // Premium-Schnitt (Server entscheidet, siehe services/chronik.js): ohne
+  // Premium kommt die Episodenliste gar nicht erst an — hier nur der Hinweis.
+  const sperre = c.episoden_gesperrt
+    ? `<div class="row" data-chroniksperre style="align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;padding:10px;border:1px dashed var(--line);border-radius:10px"><span style="font-size:14px;flex:1 1 220px">🔒 ${esc(t('ch_locked'))}</span><button class="small" data-gopremium>${esc(t('wb_go_premium'))}</button></div>`
+    : '';
+  const export_ = !c.episoden_gesperrt && c.episoden.length
+    ? `<div style="margin-top:8px"><button class="ghost small" data-chronikcsv>⬇️ ${esc(ti('ch_export', { land }))}</button></div>`
+    : '';
   const zeilen = c.episoden.map((e) => {
     const [sl] = statusShort(e.schwerster_status); const sc = statusFg(e.schwerster_status);
     const bis = e.ende ? esc(ti('ch_until', { date: fmtDateDe(e.ende) })) : esc(t('ch_open'));
@@ -6693,7 +6708,19 @@ function chronikKarte(c, wirkstoff) {
       <div style="font-size:14px"><span style="color:${sc};font-weight:700">${sl}</span> · ${esc(ti('ch_days', { n: e.dauer_tage }))}</div>
       <div class="muted" style="font-size:13px">${esc(beginn)}${e.praeparate.length ? ' · ' + esc(ti('ch_products', { n: e.praeparate.length })) : ''}${e.quelle ? ' · ' + esc(e.quelle) : ''}</div></div>`;
   }).join('');
-  return el(`<div class="card" data-chronik>${kopf}<div style="margin-top:6px">${zahlen}</div><div style="margin-top:8px">${zeilen}</div>${fuss}</div>`);
+  const karte = el(`<div class="card" data-chronik>${kopf}<div style="margin-top:6px">${zahlen}</div>${zeilen ? `<div style="margin-top:8px">${zeilen}</div>` : ''}${sperre}${export_}${fuss}</div>`);
+  const gp = karte.querySelector('[data-gopremium]');
+  if (gp) gp.onclick = () => openPremium();
+  const ex = karte.querySelector('[data-chronikcsv]');
+  if (ex) ex.onclick = async () => {
+    try {
+      const d = await api('GET', '/api/chronik?country=' + encodeURIComponent(c.land));
+      downloadCsv('apopulse-engpass-chronik-' + c.land, t('ch_csv_cols').split('|'),
+        d.episoden.map((e) => [e.land, e.wirkstoff, e.beginn, e.beginn_art === 'gemeldet' ? t('ch_beg_reported') : t('ch_beg_seen'),
+          e.ende || t('ch_open'), e.dauer_tage, statusShort(e.schwerster_status)[0], e.praeparate.join(', '), e.quelle || '']));
+    } catch (err) { alert(err.message); }
+  };
+  return karte;
 }
 
 async function openWirkstoff(name) {

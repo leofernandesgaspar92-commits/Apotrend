@@ -831,6 +831,11 @@ Chronik schreibt bei jedem Abruf mit und hält **Episoden je Land und Wirkstoff*
   Antwort, Warnung im Log) · Lücke ≤ 7 Tage = derselbe Engpass · Beginn = Meldedatum der
   Behörde (ISO, nicht in der Zukunft), sonst „erstmals gesehen" · Ende = erster Abruf ohne
   Eintrag („spätestens") · jede Zahl steht unter dem Aufzeichnungsbeginn des Landes.
+- **Premium-Schnitt (Owner-Freigabe 12.10.2026):** Zusammenfassung je Wirkstoff frei (wie oft,
+  Ø Dauer, läuft gerade) — sie hilft bei der Umbestellung und gehört nicht hinter eine Schranke.
+  Episodenliste und Export (`GET /api/chronik?country=…`, CSV im Browser) nur mit Premium.
+  Die Schranke sitzt auf dem Server (`chronikFuerBetrachter`): ohne Premium geht die Liste
+  gar nicht erst über die Leitung.
 - **Speicherung:** im Zustands-Snapshot (Datei und Datenbank) — überlebt Deploys nur mit
   `DATABASE_URL` oder dauerhafter Platte. **Die Chronik wächst nur, solange der Dienst läuft:**
   Auf dem schlafenden Gratis-Tarif fehlen Abrufe; Episoden werden dann zu grob.

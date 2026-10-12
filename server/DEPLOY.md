@@ -38,6 +38,10 @@ Health-Check läuft gegen `/api/health`. PORT setzt Render selbst.
 > Kostenloser Tarif: Der Dienst „schläft" nach Inaktivität ein und braucht beim
 > ersten Aufruf ~30 s zum Aufwachen — normal, kein Fehler.
 
+> ✅ **Stand 12.10.2026:** Der Dienst läuft auf einem bezahlten Tarif (0.5c-512mb, in
+> `render.yaml` als `plan: starter`) und schläft nicht mehr ein. Der folgende Hinweis gilt,
+> falls er je wieder auf „free" gestellt wird.
+>
 > ⚠️ **Wichtig für aktuelle Daten:** Solange der Dienst schläft (ca. 15 Min. ohne
 > Besucher), laufen **keine Abrufe** — weder News (alle 5 Min.) noch Engpässe (alle
 > 4 Std.). Die Daten werden dann still alt. Die App sagt das ehrlich („Letzter Abruf

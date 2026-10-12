@@ -1102,6 +1102,29 @@ async function main() {
       else if (nie !== null) findings.push('Chronik: Karte erscheint für ein nie abgerufenes Land');
       else if (!null0 || !/nicht auf der Engpassliste/.test(null0) || !/01\.09\.2026/.test(null0)) findings.push(`Chronik: „nie knapp" ohne Zeitraum (${null0})`);
       else console.log('✓ Chronik: Zahl immer mit Aufzeichnungsbeginn, „wiederkehrend" erst ab zwei Episoden, Schweigen ohne Grundlage');
+      // Premium-Schnitt in der Oberfläche: gesperrt -> Hinweis mit Knopf,
+      // keine Episodenzeilen, kein Export; frei -> Export-Knopf.
+      const gesperrt = await wkSeite({ ...voll, episoden: [], episoden_gesperrt: true });
+      const sperrHinweis = await page.locator('[data-chroniksperre] [data-gopremium]').count();
+      const exportGesperrt = await page.locator('[data-chronikcsv]').count();
+      await wkSeite(voll);
+      const exportFrei = await page.locator('[data-chronikcsv]').count();
+      if (!gesperrt || !/3× knapp/.test(gesperrt) || sperrHinweis !== 1 || exportGesperrt !== 0 || /spätestens 30\.09/.test(gesperrt)) findings.push(`Chronik: gesperrte Ansicht falsch (Hinweis ${sperrHinweis}, Export ${exportGesperrt}): ${String(gesperrt).slice(0, 160)}`);
+      else if (exportFrei !== 1) findings.push('Chronik: Premium sieht keinen Export-Knopf');
+      else console.log('✓ Chronik: ohne Premium Zusammenfassung + Hinweis, mit Premium Episoden + Export');
+
+      // CSV-Formel-Schutz (alle Exporte): „=HYPERLINK(…)" aus einer
+      // Community-Meldung darf in Excel nichts ausführen; Zahlen bleiben Zahlen.
+      const csv = await page.evaluate(() => window.__csvZeilen ? window.__csvZeilen(['a'], [['=HYPERLINK("http://x","y")'], ['@SUM(A1)'], ['+1+1'], ['-1,50'], ['-A1'], ['Amoxicillin']]) : null);
+      if (!csv) findings.push('CSV-Schutz nicht prüfbar — window.__csvZeilen fehlt');
+      else {
+        const z = csv.replace(/^\ufeff/, '').split('\r\n');
+        const roh = z.map((x) => x.replace(/^"|"$/g, ''));
+        if (!roh[1].startsWith("'=") || !roh[2].startsWith("'@") || !roh[3].startsWith("'+") || !roh[5].startsWith("'-")) findings.push(`CSV: Formel nicht entschärft (${JSON.stringify(roh.slice(1, 6))})`);
+        else if (roh[4] !== '-1,50' || roh[6] !== 'Amoxicillin') findings.push(`CSV: normale Werte verändert (${roh[4]}, ${roh[6]})`);
+        else console.log('✓ CSV-Export: Formeln entschärft, Zahlen und Text unverändert');
+      }
+
       await page.unroute('**/api/shortages?*').catch(() => {});
       await page.unroute('**/api/wirkstoff/**').catch(() => {});
     }
