@@ -82,6 +82,54 @@ async function main() {
       await page.waitForTimeout(450);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
       if (overflow) findings.push(`Querscroll: ${label || tab} [${theme}]`);
+      // ── Kontrast (WCAG AA), in BEIDEN Themen ──────────────────────────────
+      //  Vorher prüfte dieses Audit Beschriftungen und Tastatur, aber keinen
+      //  Kontrast — und meldete „keine a11y-Lücken (hell + dunkel)", während
+      //  im dunklen Modus weiße Schrift auf hellgrünen Knöpfen bei 2,1:1 lag.
+      //  Gemessen wird jede sichtbare Textstelle gegen ihren TATSÄCHLICHEN
+      //  Hintergrund (durchsichtige Ebenen werden verrechnet); Hintergrund-
+      //  bilder gelten als nicht messbar und werden übersprungen.
+      const kontrast = await page.evaluate(() => {
+        const rgba = (s) => { const m = String(s).match(/rgba?\(([^)]+)\)/); if (!m) return null; const p = m[1].split(',').map((x) => parseFloat(x)); return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 }; };
+        const ueber = (o, u) => ({ r: o.r * o.a + u.r * (1 - o.a), g: o.g * o.a + u.g * (1 - o.a), b: o.b * o.a + u.b * (1 - o.a), a: 1 });
+        const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b); };
+        const hex = (c) => '#' + [c.r, c.g, c.b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+        const hintergrund = (el) => {
+          const ebenen = [];
+          for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+            const cs = getComputedStyle(n);
+            if (cs.backgroundImage && cs.backgroundImage !== 'none') return null; // nicht messbar
+            const c = rgba(cs.backgroundColor);
+            if (c && c.a > 0) { ebenen.push(c); if (c.a >= 0.99) break; }
+          }
+          let basis = { r: 255, g: 255, b: 255, a: 1 };
+          for (let i = ebenen.length - 1; i >= 0; i--) basis = ueber(ebenen[i], basis);
+          return basis;
+        };
+        const schlecht = [];
+        let geprueft = 0;
+        for (const el of document.querySelectorAll('body *')) {
+          if (!el.getClientRects().length || el.closest('[aria-hidden="true"],.hidden,script,style,noscript')) continue;
+          const text = [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('').trim();
+          if (!/[\p{L}\p{N}]/u.test(text)) continue;
+          const cs = getComputedStyle(el);
+          if (cs.visibility === 'hidden' || parseFloat(cs.opacity) < 0.1 || el.disabled) continue;
+          const bg = hintergrund(el); const fg0 = rgba(cs.color);
+          if (!bg || !fg0) continue;
+          const fg = ueber(fg0, bg);
+          const [l1, l2] = [lum(fg), lum(bg)].sort((a, b) => b - a);
+          const r = (l1 + 0.05) / (l2 + 0.05);
+          const groesse = parseFloat(cs.fontSize); const fett = parseInt(cs.fontWeight, 10) >= 700;
+          const grenze = (groesse >= 24 || (fett && groesse >= 18.66)) ? 3 : 4.5;
+          geprueft++;
+          if (r < grenze) schlecht.push({ text: text.slice(0, 28), r: Math.round(r * 10) / 10, fg: hex(fg), bg: hex(bg) });
+        }
+        return { geprueft, schlecht };
+      });
+      if (kontrast.schlecht.length) {
+        const bsp = kontrast.schlecht.slice(0, 3).map((x) => `„${x.text}" ${x.r}:1 (${x.fg} auf ${x.bg})`).join(' · ');
+        findings.push(`Kontrast: ${kontrast.schlecht.length} Textstelle(n) unter WCAG AA [${label || tab} · ${theme}] — z. B. ${bsp}`);
+      }
       // A11y (nur einmal — DOM-Struktur ist themen-unabhängig): Formularelemente ohne
       // zugänglichen Namen (aria-label/Placeholder/title/<label>) + Bilder ohne alt.
       // Fängt die Klasse aus Cycle #39 (unbenannte Selects, Vorschau-Bilder ohne alt).
@@ -233,14 +281,27 @@ async function main() {
       await page.waitForTimeout(500);
     };
 
-    // 1. Amtsbegriff: dieselbe Sprache, anderer Begriff.
-    await wechsle('AT');
-    const at = await page.locator('[data-tab="shortages"]').innerText();
-    await wechsle('DE');
-    const de = await page.locator('[data-tab="shortages"]').innerText();
-    if (!/Vertriebseinschränkung/i.test(at)) findings.push(`AT-Begriff fehlt im Reiter: "${at}"`);
-    if (!/Lieferengpass|Lieferengpässe/i.test(de)) findings.push(`DE-Begriff fehlt im Reiter: "${de}"`);
-    if (at === de) findings.push('AT und DE zeigen denselben Begriff — die Übersteuerung greift nicht');
+    // 1. Amtsbegriff: dieselbe Sprache, anderer Begriff. Er steht als
+    //    Überschrift der Engpass-Seite und als Tooltip am Reiter; der Reiter
+    //    selbst trägt das kurze Alltagswort (der 24-Zeichen-Amtsbegriff
+    //    zerbrach auf dem Handy mitten im Wort).
+    const amt = async (cc) => {
+      await wechsle(cc);
+      await page.click('[data-tab="shortages"]');
+      await page.waitForSelector('[data-shead]', { timeout: 5000 }).catch(() => {});
+      return {
+        kopf: (await page.locator('[data-shead]').first().innerText().catch(() => '')) || '',
+        tip: (await page.locator('[data-tab="shortages"]').getAttribute('title')) || '',
+        reiter: await page.locator('[data-tab="shortages"]').innerText(),
+      };
+    };
+    const at = await amt('AT');
+    const de = await amt('DE');
+    if (!/Vertriebseinschränkung/i.test(at.kopf)) findings.push(`AT-Begriff fehlt als Überschrift der Engpass-Seite: "${at.kopf}"`);
+    if (!/Vertriebseinschränkung/i.test(at.tip)) findings.push(`AT-Begriff fehlt im Tooltip des Reiters: "${at.tip}"`);
+    if (!/Lieferengpass|Lieferengpässe/i.test(de.kopf)) findings.push(`DE-Begriff fehlt als Überschrift: "${de.kopf}"`);
+    if (at.kopf === de.kopf) findings.push('AT und DE zeigen denselben Begriff — die Übersteuerung greift nicht');
+    if (!/^\S*\s*Engpässe$/.test(at.reiter.replace(/\s+/g, ' ').trim())) findings.push(`Reiter trägt nicht das kurze Alltagswort: "${at.reiter}"`);
 
     // 2. Datumsformat: 03/04 heißt in den USA März, in Grossbritannien April.
     //    Ein Engpass-Meldedatum falsch zu lesen ist keine Kosmetik.
@@ -262,6 +323,49 @@ async function main() {
       findings.push('Datumsformat nicht prüfbar — window.__fmtDateDe fehlt');
     }
     await ctx.close();
+  }
+
+  // ── Navigation lesbar: kein Wort zerbrochen, kein Wort abgeschnitten ─────
+  //  Vorher am Handy: „Vertriebse|inschränk|ungen", „Live-Warnung|en", und im
+  //  Kopf nur 🌙 A ❓ 🔔 🚪 ohne Wort. Der Querscroll-Check sah davon nichts —
+  //  ein mitten im Wort umbrochenes Label ragt nirgends hinaus. Geprüft wird
+  //  jedes Wort einzeln: liegt es auf mehr als einer Zeile, ist es zerbrochen
+  //  (Bindestrich und Schrägstrich sind erlaubte Trennstellen). Dazu die
+  //  Kopf-Werkzeuge in der Moderations-Ausstattung (acht statt fünf Knöpfe).
+  {
+    for (const w of [360, 390, 1024]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: 800 }, colorScheme: 'light' });
+      const page = await ctx.newPage();
+      await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
+      await page.goto(BASE, { waitUntil: 'networkidle' });
+      for (const cc of ['AT', 'GB', 'PT']) {
+        await page.selectOption('#countrySwitch', cc).catch(() => {});
+        await page.waitForTimeout(400);
+        const r = await page.evaluate(() => {
+          ['btnMod', 'btnCart', 'btnDm', 'btnNotif', 'btnHelp', 'btnLogout'].forEach((id) => document.getElementById(id)?.classList.remove('hidden'));
+          const f = [];
+          const els = [...document.querySelectorAll('.tabs [data-tab], header button')].filter((el) => el.offsetParent);
+          for (const el of els) {
+            const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+            let n;
+            while ((n = walker.nextNode())) {
+              const re = /[^\s\-\/]+/gu; let m;
+              while ((m = re.exec(n.data))) {
+                const rg = document.createRange(); rg.setStart(n, m.index); rg.setEnd(n, m.index + m[0].length);
+                if (new Set([...rg.getClientRects()].map((x) => Math.round(x.top))).size > 1) f.push(`zerbrochen „${m[0]}"`);
+              }
+            }
+          }
+          document.querySelectorAll('header .hlabel').forEach((el) => {
+            if (!el.offsetParent) f.push(`Kopf-Werkzeug ohne sichtbares Wort: „${el.textContent}"`);
+            else if (el.scrollWidth > el.clientWidth + 1) f.push(`abgeschnitten „${el.textContent}"`);
+          });
+          return f;
+        });
+        for (const x of r) findings.push(`Navigation ${w}px ${cc}: ${x}`);
+      }
+      await ctx.close();
+    }
   }
 
   // ── Ruhende Bereiche haben keine Bedienelemente ───────────────────────────
@@ -897,6 +1001,58 @@ async function main() {
     } else {
       console.log('✓ Premium-Seite: gemeldete Zahlung erscheint als „wird geprüft — nicht erneut zahlen"');
     }
+
+    // ── 8. Datenquellen-Seite (Redaktion) ──────────────────────────────────
+    //  Zusicherungen: Fehlerhafte Quellen stehen ZUERST, ihr Fehlertext ist
+    //  sichtbar, und der kopierte Bericht enthält ihn im Klartext.
+    const jetztIso = new Date().toISOString();
+    await page.route('**/api/live/status', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+      jobs: [{ name: 'news', intervalMs: 300000, lastRunAt: jetztIso, lastOk: true }, { name: 'shortages', intervalMs: 14400000, lastRunAt: jetztIso, lastOk: true }],
+      sources: [
+        { id: 'basg_news', kind: 'news', country: 'AT', label: 'BASG News', url: 'https://www.basg.gv.at/rss' },
+        { id: 'nafdac_news', kind: 'news', country: 'NG', label: 'NAFDAC News', url: 'https://nafdac.gov.ng/feed/' },
+        { id: 'ppb_news', kind: 'news', country: 'KE', label: 'PPB Kenya', url: 'https://ppb.example/feed/' },
+      ],
+      coverage: { gemessen: {
+        'news:AT': { ok: true, stand: jetztIso, quellen: [{ id: 'basg_news', ok: true, fehler: null, meldungen: 7 }] },
+        'news:NG': { ok: false, stand: jetztIso, quellen: [{ id: 'nafdac_news', ok: false, fehler: 'DQFEHLER HTTP 404', meldungen: 0 }] },
+      } },
+      signals: { ki: 'aus' }, database: null,
+    }) }));
+    await page.goto(BASE, { waitUntil: 'networkidle' });
+    await page.evaluate(() => {
+      window.__kopie = null;
+      try { Object.defineProperty(navigator, 'clipboard', { value: { writeText: async (t) => { window.__kopie = t; } }, configurable: true }); } catch { /* bleibt beim Textfeld-Rückfall */ }
+    });
+    await page.evaluate(() => window.openDatenquellen && window.openDatenquellen());
+    await page.waitForTimeout(800);
+    const dqReihenfolge = await page.locator('[data-dqquelle]').evaluateAll((els) => els.map((e) => e.getAttribute('data-dqquelle')));
+    const dqText = await page.locator('#app').innerText().catch(() => '');
+    await page.locator('[data-dqcopy]').click().catch(() => {});
+    await page.waitForTimeout(300);
+    const kopie = await page.evaluate(() => window.__kopie || (document.querySelector('textarea[readonly]') || {}).value || '');
+    if (!dqReihenfolge.length) findings.push('Datenquellen: Seite zeigt keine Quellen');
+    else if (dqReihenfolge[0] !== 'nafdac_news') findings.push(`Datenquellen: die fehlerhafte Quelle steht nicht zuerst (${dqReihenfolge.join(', ')})`);
+    else if (!/DQFEHLER HTTP 404/.test(dqText)) findings.push('Datenquellen: der Fehlertext der Quelle ist nicht sichtbar');
+    else if (!/✗ nafdac_news .*DQFEHLER HTTP 404/.test(kopie)) findings.push('Datenquellen: der kopierte Bericht enthält den Fehler nicht');
+    else console.log('✓ Datenquellen: Fehler zuerst, mit Grund, und im kopierten Bericht als Klartext');
+
+    // ── 9. Aktualitäts-Zeile: frisch und alt sehen verschieden aus ──────────
+    const standFuer = async (antwort) => {
+      await page.unroute('**/api/coverage/**').catch(() => {});
+      await page.route('**/api/coverage/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(antwort) }));
+      await page.goto(BASE, { waitUntil: 'networkidle' }); // neu laden: frischer Zwischenspeicher
+      await page.click('.tabs button[data-tab="news"]').catch(() => {});
+      await page.waitForTimeout(900);
+      const z = page.locator('[data-datenstand]').first();
+      return (await z.count()) ? { ton: await z.getAttribute('data-datenstand'), text: await z.innerText() } : null;
+    };
+    const frisch = await standFuer({ land: 'AT', zustand: 'liefert', quellen: 1, abruf: { zuletzt: new Date(Date.now() - 3 * 60000).toISOString(), intervall_ms: 300000, aktuell: true } });
+    const alt = await standFuer({ land: 'AT', zustand: 'liefert', quellen: 1, abruf: { zuletzt: new Date(Date.now() - 3 * 3600000).toISOString(), intervall_ms: 300000, aktuell: false } });
+    if (!frisch || frisch.ton !== 'ok' || !/Live/.test(frisch.text)) findings.push(`Aktualität: frische Daten werden nicht als „Live" gezeigt (${frisch && frisch.text})`);
+    else if (!alt || alt.ton !== 'warn' || /Live/.test(alt.text)) findings.push(`Aktualität: alte Daten sehen aus wie frische (${alt && alt.text})`);
+    else console.log('✓ Aktualität: „Live, vor 3 Min." bei frischen Daten, Warnung bei altem Abruf');
+    await page.unroute('**/api/coverage/**').catch(() => {});
 
     if (errors.length) findings.push(`Säule 3: JS-Fehler — ${errors.slice(0, 2).join(' | ')}`);
     await ctx.close();

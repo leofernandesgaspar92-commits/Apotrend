@@ -64,6 +64,20 @@ test('keine erfundenen Preise und Rabatte im Normalzustand', async () => {
   assert.equal(r.rabatte.length, 0);
 });
 
+test('keine erfundenen Behördenmeldungen im News-Livestream nach dem Start', async () => {
+  // Bis 10/2026 legte der Frischstart sechs „News" an, z. B. „BASG:
+  // Aktualisierte Engpassliste veröffentlicht — mehrere Antibiotika betroffen"
+  // mit der Behörden-Startseite als Quelle. Keine davon war echt, und nach
+  // jedem Neustart ohne Datenbank standen sie wieder als „vor 9 Minuten" da.
+  const H = await konto();
+  for (const land of ['AT', 'DE', 'BR']) {
+    const d = await (await fetch(BASE + '/api/news?country=' + land, { headers: H })).json();
+    const posts = d.posts || [];
+    assert.equal(posts.length, 0,
+      `${land}: News-Livestream nach dem Start nicht leer: ${posts.map((p) => p.body).join(' | ')}`);
+  }
+});
+
 test('„Großhandel A/B/C" taucht nirgends mehr in einer Antwort auf', async () => {
   // Die neutralen Namen waren der Ersatz fuer echte Firmennamen. Jetzt ist
   // auch der Ersatz weg — es gibt schlicht keine Lieferantenzeile ohne Quelle.

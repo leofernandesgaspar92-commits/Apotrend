@@ -69,6 +69,14 @@ const post = (path, tok, body) => fetch(BASE + path, { method: 'POST', headers: 
 
 test('Newsfeed ist länder-gescopt: AT-Nutzer sieht AT-News, ?country=DE die DE-News', async () => {
   const a = await reg('cf' + PORT); // Standard AT
+  // Je Land eine News anlegen. Bis 10/2026 stützte sich dieser Test auf sechs
+  // beim Start angelegte „News" — die waren erfunden und sind entfernt (siehe
+  // reference-data.test.js). Der Test legt seine Beiträge jetzt selbst an.
+  const r = await reg('cfr' + PORT);
+  for (const [land, text] of [['AT', 'BASG-Testmeldung'], ['DE', 'BfArM-Testmeldung'], ['BR', 'ANVISA-Testmeldung']]) {
+    await post('/api/profile', r, { country: land });
+    assert.equal((await post('/api/posts', r, { body: text + ' ' + PORT, kind: 'news', visibility: 'public' })).status, 200);
+  }
   // News des aktiven Landes (AT) enthält BASG, nicht BfArM/ANVISA
   const atNews = await j('/api/news', a);
   assert.equal(atNews.country, 'AT');

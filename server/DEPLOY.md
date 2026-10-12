@@ -38,6 +38,20 @@ Health-Check läuft gegen `/api/health`. PORT setzt Render selbst.
 > Kostenloser Tarif: Der Dienst „schläft" nach Inaktivität ein und braucht beim
 > ersten Aufruf ~30 s zum Aufwachen — normal, kein Fehler.
 
+> ⚠️ **Wichtig für aktuelle Daten:** Solange der Dienst schläft (ca. 15 Min. ohne
+> Besucher), laufen **keine Abrufe** — weder News (alle 5 Min.) noch Engpässe (alle
+> 4 Std.). Die Daten werden dann still alt. Die App sagt das ehrlich („Letzter Abruf
+> vor 3 Std."), aber wer Informationen verkaufen will, braucht einen Dienst, der
+> durchläuft. Zwei Wege:
+> 1. **Render „Starter"** (bezahlt, schläft nie) — in Render unter *Settings → Instance
+>    Type*. Der saubere Weg.
+> 2. **Uptime-Ping** (kostenlos, Notlösung): ein Dienst wie UptimeRobot ruft alle
+>    5–10 Min. `https://<deine-url>/api/health` auf und hält den Dienst wach. Das
+>    Kontingent des kostenlosen Tarifs reicht für einen Dienst rund um die Uhr knapp.
+>
+> Ob die Abrufe laufen, zeigt das Redaktions-Dashboard unter **📡 Datenquellen**
+> (Bericht kopierbar).
+
 ---
 
 ## Option B — Railway.app (auch sehr einfach)

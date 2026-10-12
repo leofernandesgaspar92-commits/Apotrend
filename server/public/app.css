@@ -1,11 +1,15 @@
   :root { --green:#0b7f28; --green-d:#086420; --bg:#f4f6f5; --card:#fff; --line:#dbe0dd; --text:#1a2420; --muted:#4c5d55;
     --chip-bg:#eef3f0;
+    /* Schrift AUF Grün (Knöpfe, aktiver Reiter). Eigenes Token, weil Grün im
+       dunklen Modus hell ist: Weiß darauf lag bei 2,1:1 (WCAG verlangt 4,5:1). */
+    --on-green:#ffffff;
+    --handle:#0a66a8;
     /* Karten hell: randlos, sanfter Schatten hebt sie ruhig von der Fläche ab (Social-Feed-Optik). */
     --card-bd:transparent;
     --shadow:0 1px 2px rgba(20,40,30,.06), 0 3px 10px rgba(20,40,30,.06);
     --shadow-hover:0 3px 12px rgba(20,40,30,.12);
     --ok-bg:#e6f7ef; --ok-fg:#0b7f28; --ok-bd:#b6e6cf;
-    --warn-bg:#fff4e6; --warn-fg:#b26a00; --warn-bd:#ffd9a8;
+    --warn-bg:#fff4e6; --warn-fg:#945900; --warn-bd:#ffd9a8;
     --crit-bg:#fdece9; --crit-fg:#c0392b; --crit-bd:#f2c6bf;
     --info-bg:#e6ecfb; --info-fg:#2952cc; --info-bd:#c9d6f7;
     /* Design-System: einheitliche Radien & Abstandsraster (Social-Feed-Ruhe). */
@@ -13,6 +17,8 @@
     --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; }
   body.dark { --green:#22cc5c; --green-d:#1aa749; --bg:#14181a; --card:#1e2427; --line:#38443f; --text:#e7ece9; --muted:#a6b6ae;
     --chip-bg:#2a352f;
+    --on-green:#04170a; /* 8,7:1 auf #22cc5c, 5,9:1 auf der Hover-Farbe */
+    --handle:#6cbcf5;
     /* Karten dunkel: feiner Rand nötig — Schatten sind auf Dunkel kaum sichtbar. */
     --card-bd:var(--line);
     --shadow:0 1px 2px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.28);
@@ -90,7 +96,7 @@
   textarea { resize:vertical; min-height:70px; }
   /* Aktives Eingabefeld klar erkennbar (grüner Rahmen) — moderne Formular-Optik, ergänzt
      den Tastatur-Fokusring, ohne ihn zu ersetzen. */
-  input:focus, textarea:focus, select:focus { border-color:var(--green); }  button { background:var(--green); color:#fff; border:none; border-radius:var(--radius-sm); padding:12px 16px; font-size:0.95em; font-weight:600; cursor:pointer; min-height:44px; transition:background .13s ease, border-color .13s ease, color .13s ease, box-shadow .13s ease, transform .04s ease; }
+  input:focus, textarea:focus, select:focus { border-color:var(--green); }  button { background:var(--green); color:var(--on-green); border:none; border-radius:var(--radius-sm); padding:12px 16px; font-size:0.95em; font-weight:600; cursor:pointer; min-height:44px; transition:background .13s ease, border-color .13s ease, color .13s ease, box-shadow .13s ease, transform .04s ease; }
   button:hover { background:var(--green-d); }
   /* Tasthaftes Drücken: jeder Button gibt beim Klick sichtbar nach (klare Affordanz für
      nicht-technische Nutzer:innen). @media reduced-motion respektiert Bewegungsstopp. */
@@ -116,7 +122,7 @@
      auf einer Karte klar als antippbare Schalter erkennbar sind — nicht als flacher Text. */
   button.sortbtn { background:var(--chip-bg); color:var(--text); border:1px solid var(--line); font-weight:600; }
   button.sortbtn:hover { border-color:var(--green); background:var(--chip-bg); }
-  button.sortbtn.active { background:var(--green); color:#fff; border-color:var(--green); }
+  button.sortbtn.active { background:var(--green); color:var(--on-green); border-color:var(--green); }
   button.sortbtn.active:hover { background:var(--green-d); }
   .row { display:flex; gap:8px; align-items:center; }
   /* Kopfzeilen mit Abstandshalter (Titel · Spacer · Aktion) dürfen umbrechen: ein langer
@@ -132,12 +138,12 @@
   .tabs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
   /* Reiter im selben ruhigen Karten-System wie der Inhalt: hell randlos mit sanftem
      Schatten, dunkel feiner Rand (--card-bd). Wirkt wie eine zusammengehörige Pill-Nav. */
-  .tabs button { flex:1 1 140px; background:var(--card); color:var(--text); border:1px solid var(--card-bd); box-shadow:var(--shadow); font-weight:600; }
+  .tabs button { display:flex; align-items:center; justify-content:center; gap:6px; flex:1 1 140px; background:var(--card); color:var(--text); border:1px solid var(--card-bd); box-shadow:var(--shadow); font-weight:600; }
   /* Klares Hover-Feedback (grüner Rand + Text) — Nav fühlt sich lebendig an, bleibt eindeutig klickbar. */
   .tabs button:not(.active):hover { border-color:var(--green); color:var(--green); }
   /* Aktiver Reiter deutlich hervorgehoben: grün + kräftiger + dezenter grüner Schein
      (segmentierte Pill-Nav à la X/Instagram), damit „wo bin ich" sofort klar ist. */
-  .tabs button.active { background:var(--green); color:#fff; border-color:var(--green); font-weight:800; box-shadow:0 2px 8px rgba(11,127,40,.28); }
+  .tabs button.active { background:var(--green); color:var(--on-green); border-color:var(--green); font-weight:800; box-shadow:0 2px 8px rgba(11,127,40,.28); }
   /* Mobil: 8 Tabs passen nicht in eine Zeile (Horizontal-Scroll, halbe Tabs
      unsichtbar). Als 4-Spalten-Grid umbrechen -> alle Tabs sichtbar, kein Overflow. */
   @media (max-width: 640px) {
@@ -145,8 +151,13 @@
        app-typische Navigation am Handy. Hintergrund deckt durchscrollende Karten ab. */
     /* minmax(0,1fr): Spalten dürfen unter ihre Inhaltsbreite schrumpfen — sonst ragte das
        Raster bei großer Schrift über den Rand (Querscroll). overflow-wrap bricht lange Wörter. */
-    .tabs { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); position:sticky; top:var(--header-h, 58px); z-index:4; background:var(--bg); padding:8px 0; margin-bottom:8px; box-shadow:0 6px 6px -6px rgba(0,0,0,.14); }
-    .tabs button { flex:none; padding-left:4px; padding-right:4px; overflow-wrap:anywhere; }
+    .tabs { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px; position:sticky; top:0; z-index:4; background:var(--bg); padding:8px 0; margin-bottom:8px; box-shadow:0 6px 6px -6px rgba(0,0,0,.14); }
+    /* Symbol über dem Wort: kompakter (zwei Reihen statt zwei hoher Kacheln) und
+       das Wort hat die ganze Kachelbreite. Umbruch NUR an Wortgrenzen und
+       Bindestrichen („Live-|Warnungen") — nie mitten im Wort wie früher
+       „Vertriebse|inschränk|ungen" (overflow-wrap:anywhere). */
+    .tabs button { flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; min-height:58px; padding:6px 3px; font-size:14px; line-height:1.15; overflow-wrap:normal; word-break:normal; }
+    .tabs .tab-ic { font-size:19px; line-height:1; }
     /* Sehr große Schrift: 3 Spalten geben den längeren Beschriftungen genug Platz. */
     body[data-fontscale="2"] .tabs { grid-template-columns:repeat(3, minmax(0, 1fr)); }
   }
@@ -161,7 +172,7 @@
   .handle { color:var(--muted); font-weight:400; font-size:0.9em; }
   .verified { color:var(--green); font-size:13px; }
   .editorial { background:var(--info-bg); color:var(--info-fg); font-size:12px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid var(--info-bd); }
-  .rank { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:30px; padding:0 6px; border-radius:999px; background:var(--green); color:#fff; font-weight:800; font-size:15px; margin-right:8px; }
+  .rank { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:30px; padding:0 6px; border-radius:999px; background:var(--green); color:var(--on-green); font-weight:800; font-size:15px; margin-right:8px; }
   .rabatt-badge { background:var(--ok-bg); color:var(--ok-fg); font-weight:800; font-size:16px; padding:4px 12px; border-radius:999px; border:1px solid var(--ok-bd); white-space:nowrap; } /* Rabatt-Prozentwert nie mitten in der Zahl umbrechen (z. B. „−29.8%") */
   .mention { color:var(--green); font-weight:600; }
   .mention-ac { border:1px solid var(--line); border-radius:8px; background:var(--card); margin-top:4px; overflow:hidden; }
@@ -184,23 +195,23 @@
   .crypto-pay { border:1px solid var(--line); border-radius:10px; padding:12px; margin-top:10px; background:var(--bg); }
   .crypto-addr { margin-top:8px; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
   .crypto-addr code { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.92em; word-break:break-all; }
-  a.btn-link { display:inline-flex; align-items:center; justify-content:center; background:var(--green); color:#fff; border-radius:var(--radius-sm); padding:10px 14px; font-weight:600; font-size:0.9em; text-decoration:none; min-height:40px; }
+  a.btn-link { display:inline-flex; align-items:center; justify-content:center; background:var(--green); color:var(--on-green); border-radius:var(--radius-sm); padding:10px 14px; font-weight:600; font-size:0.9em; text-decoration:none; min-height:40px; }
   a.btn-link:hover { background:var(--green-d); }
   .ok-box { background:var(--ok-bg); color:var(--ok-fg); border-radius:8px; }
   /* Premium-Abzeichen: sichtbarer Vorteil für zahlende Mitglieder (gold, gut lesbar). */
-  .premium-badge { font-size:12px; font-weight:700; color:#8a6d00; background:#fff3c4; border:1px solid #f0d98a; border-radius:6px; padding:1px 7px; white-space:nowrap; }
+  .premium-badge { font-size:12px; font-weight:700; color:#6f5700; background:#fff3c4; border:1px solid #f0d98a; border-radius:6px; padding:1px 7px; white-space:nowrap; }
   body.dark .premium-badge { color:#ffd95e; background:#3a3200; border-color:#5c4f00; }
   /* „Beobachtet"-Zustand am Such-Chip: klar als aktiv erkennbar (grün). */
   .watched-on { color:var(--green); border-color:var(--green); font-weight:700; }
   /* Daten-Herkunfts-Pille: grün = live, gelb = Referenz/Aufbau. Gut lesbar in hell/dunkel. */
   .data-pill { font-size:12px; font-weight:700; border-radius:999px; padding:2px 9px; white-space:nowrap; border:1px solid transparent; }
   .data-pill.live { color:#0b6b2e; background:#dff3e6; border-color:#a9dcbd; }
-  .data-pill.ref  { color:#8a6d00; background:#fff3c4; border-color:#f0d98a; }
+  .data-pill.ref  { color:#6f5700; background:#fff3c4; border-color:#f0d98a; }
   body.dark .data-pill.live { color:#7ee2a3; background:#0f3320; border-color:#1f5c39; }
   body.dark .data-pill.ref  { color:#ffd95e; background:#3a3200; border-color:#5c4f00; }
   /* „Nach oben"-Button: erscheint beim Scrollen auf langen Listen (v.a. mobil). */
   .backtotop { position:fixed; right:max(16px, env(safe-area-inset-right)); bottom:max(16px, env(safe-area-inset-bottom)); z-index:40; width:44px; height:44px; border-radius:50%;
-    border:none; background:var(--green); color:#fff; font-size:20px; line-height:44px; text-align:center; cursor:pointer;
+    border:none; background:var(--green); color:var(--on-green); font-size:20px; line-height:44px; text-align:center; cursor:pointer;
     box-shadow:0 2px 8px rgba(0,0,0,.25); opacity:0; transform:translateY(8px); transition:opacity .18s, transform .18s; pointer-events:none; }
   .backtotop.show { opacity:1; transform:none; pointer-events:auto; }
   .backtotop:hover { background:var(--green-d); }
@@ -208,7 +219,7 @@
   /* Weicher Zeichenzähler an Textfeldern: dezent, wird bei Überschreitung rot. */
   .char-counter { font-size:12px; text-align:right; margin-top:2px; min-height:14px; }
   .char-counter.over { color:var(--crit-fg); font-weight:700; }
-  .avatar { display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:50%; background:var(--green); color:#fff; font-weight:800; font-size:19px; flex:0 0 auto; box-shadow:0 0 0 1px var(--line); }
+  .avatar { display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:50%; background:var(--green); color:var(--on-green); font-weight:800; font-size:19px; flex:0 0 auto; box-shadow:0 0 0 1px var(--line); }
   .profile-cover { width:100%; height:140px; border-radius:var(--radius); background:var(--chip-bg); background-size:cover; background-position:center; border:1px solid var(--line); }
   /* Jedes Profil bekommt ein „Banner" (Social-Optik): ohne Bild ein dezenter grüner Verlauf. */
   .profile-cover-ph { background:linear-gradient(120deg, var(--green), var(--green-d)); border-color:transparent; }
@@ -261,7 +272,7 @@
   .nr-card.nr-new { border-color:var(--ok-bd); background:var(--ok-bg); }
   .nr-src { display:flex; align-items:center; gap:6px; font-size:14px; font-weight:700; margin-bottom:7px; }
   .nr-x { font-weight:900; }
-  .nr-handle { color:#1d9bf0; }
+  .nr-handle { color:var(--handle); }
   .nr-newtag { color:var(--ok-fg); font-weight:800; font-size:11px; letter-spacing:.03em; }
   .nr-time { margin-left:auto; color:var(--muted); font-weight:600; }
   .nr-body { font-size:15px; line-height:1.5; overflow-wrap:anywhere; }
@@ -306,8 +317,8 @@
   .reacts { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
   .reacts button { background:var(--chip-bg); color:var(--text); border:1px solid var(--line); padding:8px 12px; font-size:0.85em; font-weight:500; min-height:40px; }
   .reacts button:not(.reacted):hover { border-color:var(--green); color:var(--green); }
-  .reacts button.reacted { background:var(--green); color:#fff; border-color:var(--green); font-weight:700; } /* eigene Reaktion sichtbar markiert (nochmal klicken = entfernen) */
-  body.dark .reacts button.reacted { background:var(--green); color:#fff; }
+  .reacts button.reacted { background:var(--green); color:var(--on-green); border-color:var(--green); font-weight:700; } /* eigene Reaktion sichtbar markiert (nochmal klicken = entfernen) */
+  body.dark .reacts button.reacted { background:var(--green); color:var(--on-green); }
   .muted { color:var(--muted); font-size:14px; }
   .err { color:var(--crit-fg); font-size:14px; margin-top:8px; }
   /* Einheitlicher, freundlicher Leerzustand (Icon + Titel + Text + optionale Aktion).
@@ -332,13 +343,30 @@
      vergrößert, braucht gerade die Klartext-Labels (besser als Icon-only). Statt Querscroll
      wird die Zeile mehrzeilig. flex-wrap greift hier nur bei großer Schrift. */
   body[data-fontscale="1"] header, body[data-fontscale="2"] header { flex-wrap:wrap; }
-  /* Kopf-Beschriftungen nur zeigen, wenn die volle Reihe sicher passt (≥~1180px).
-     Darunter Icon-only (mit aria-label/Tooltip) — sonst ragte die Reihe über die Seite
-     hinaus (Querscroll). */
-  @media (max-width: 1180px) { .hlabel { display:none; } header button { min-width:42px; } }
-  /* Passt selbst die Icon-Reihe nicht mehr (≤~980px: Tablet, kleines/geteiltes Fenster),
-     bricht die Kopfzeile sauber um statt Querscroll. */
-  @media (max-width: 980px) { header { flex-wrap:wrap; } }
+  /* Unter ~1180px passt die Reihe „Symbol + Wort" nicht mehr neben Logo und Land.
+     Früher fiel dann das Wort weg — übrig blieben 🌙 A ❓ 🔔 🚪, und wer nicht weiß,
+     dass die Tür „Abmelden" heißt, rät. Jetzt: die Werkzeuge bekommen eine eigene
+     zweite Zeile (.hbreak erzwingt den Umbruch), das Wort steht UNTER dem Symbol. */
+  .hbreak { display:none; }
+  @media (max-width: 1180px) {
+    header { flex-wrap:wrap; row-gap:8px; }
+    .hbreak { display:block; flex:0 0 100%; height:0; }
+    header button { display:inline-flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-width:72px; padding:5px 8px; line-height:1.1; }
+    header { justify-content:flex-end; } /* Zeile 2: Werkzeuge rechtsbündig (Zeile 1 füllt .sp) */
+    .hlabel { margin-left:0; font-size:13px; white-space:nowrap; }
+    /* Kopfzeile ist jetzt zweizeilig — angeheftet fräße sie am Tablet ein Sechstel
+       des Bildschirms. Sie scrollt mit; angeheftet bleibt am Handy die Reiterleiste. */
+    header { position:relative; }
+  }
+  @media (max-width: 640px) {
+    /* Handy: die Werkzeuge teilen sich die volle Breite, jedes Feld gleich groß. */
+    /* flex-basis 64px: fünf passen in eine Reihe; wer mehr hat (Moderation,
+       Nachrichten, Einkaufsliste), bekommt eine zweite statt abgeschnittener Wörter. */
+    header button { flex:1 1 64px; min-width:0; padding:5px 1px; }
+    .hlabel { font-size:12.5px; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+  }
+  /* 360px-Handys (viele Android-Geräte): „Meldungen" passte um 2px nicht. */
+  @media (max-width: 380px) { .hlabel { font-size:12px; letter-spacing:-.15px; } header { padding-left:6px; padding-right:6px; } }
   .comments { border-top:1px solid var(--line); margin-top:10px; padding-top:10px; }
   .comment { font-size:0.9em; padding:6px 0; border-bottom:1px solid var(--line); }
   .comment:last-child { border-bottom:none; }
@@ -371,7 +399,7 @@
   .poll-you { color:var(--ok-fg); font-weight:700; font-size:.82em; margin-left:4px; }
   .poll-total { font-size:13px; margin-top:2px; }
   @media (prefers-reduced-motion:reduce){ .poll-bar { transition:none; } }
-  .skiplink { position:absolute; left:-9999px; top:0; z-index:20; background:var(--green); color:#fff; padding:10px 14px; border-radius:0 0 8px 0; font-weight:700; }
+  .skiplink { position:absolute; left:-9999px; top:0; z-index:20; background:var(--green); color:var(--on-green); padding:10px 14px; border-radius:0 0 8px 0; font-weight:700; }
   .skiplink:focus { left:0; }
   #printhead { display:none; }
   @media print {
@@ -382,3 +410,18 @@
     /* nur die Engpass-Info drucken: Melde-Formular, Legende & Filter ausblenden */
     #feed > .card:has([data-report]), #feed > .card:has([data-tgl]), #feed > .card:has([data-q]) { display:none !important; }
   }
+  /* Zähler/Nebentext in einem aktiven oder gefüllten Knopf: Knopfschrift übernehmen.
+     Vorher blieb er grau (--muted) auf Grün — 1,4:1, unlesbar. */
+  button:not(.ghost) .muted, button.active .muted, .tabs button.active .muted { color:inherit; }
+
+  /* Breitere Inhaltsspalte, wo Platz ist. Die Seitenleisten (News links ab 1300px,
+     Schnellzugriff rechts ab 1240px) legen sich NEBEN die Spalte; 720px passen ohne
+     Überlappung erst ab 1460px ((1460-720)/2 = 370px > 316px News-Leiste). Ohne
+     Seitenleisten (unter 1240px) ist der Platz frei. 640px waren für Preis- und
+     Engpasstabellen mit Mengen, Lieferant und Quelle zu eng. */
+  @media (min-width:780px) and (max-width:1239px) { .wrap { max-width:720px; } }
+  @media (min-width:1460px) { .wrap { max-width:720px; } }
+  /* Seitenüberschrift eines Reiters (z. B. Amtsbegriff auf der Engpass-Seite). */
+  /* Amtsbegriffe sind lange Einzelwörter („Vertriebseinschränkungen"): bei großer
+     Schrift am Handy breiter als der Schirm. Lieber getrennt (hyphens) als Querscroll. */
+  .page-h { font-size:1.3em; margin:2px 2px 10px; line-height:1.25; overflow-wrap:break-word; hyphens:auto; }

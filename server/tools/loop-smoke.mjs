@@ -87,7 +87,7 @@ async function main() {
   await page.goto(BASE, { waitUntil: 'networkidle' });
 
   // 1) Öffentlicher Feed lädt
-  await page.getByText('🌍 Öffentlich', { exact: false }).first().click().catch(() => {});
+  await page.click('[data-tab="public"]').catch(() => {}); // Kennung statt Text: Symbol und Wort stehen getrennt
   await page.waitForTimeout(600);
   step('Öffentlicher Feed lädt', await page.$('#pb') != null);
 
@@ -192,7 +192,7 @@ async function main() {
   step('Kommentarbereich öffnet', commentBox);
 
   // 6) Logo (grüner Punkt) führt eingeloggt zurück zur Übersicht (Startseite) + scrollt nach oben.
-  await page.getByText('Preise', { exact: false }).first().click().catch(() => {});
+  await page.click('[data-tab="prices"]').catch(() => {});
   await page.waitForTimeout(400);
   await page.evaluate(() => window.scrollTo(0, 400));
   await page.click('#logoHome').catch(() => {});

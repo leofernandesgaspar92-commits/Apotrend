@@ -140,7 +140,10 @@ export function createCoverageStore({ now = () => Date.now() } = {}) {
     alle() {
       return Object.fromEntries([...proLand.entries()].map(([k, e]) => [k, {
         ok: e.ok, stand: e.stand,
-        quellen: e.quellen.map((q) => ({ id: q.id, ok: q.ok, fehler: q.fehler })),
+        // `meldungen`: wie viele Einträge die Quelle im letzten Lauf lieferte.
+        // Für die Datenquellen-Seite der Redaktion — „antwortet, aber leer" ist
+        // etwas anderes als „liefert 12 Meldungen".
+        quellen: e.quellen.map((q) => ({ id: q.id, ok: q.ok, fehler: q.fehler, meldungen: q.meldungen ?? null })),
       }]));
     },
 
@@ -168,6 +171,26 @@ export function createCoverageStore({ now = () => Date.now() } = {}) {
  *   'unbekannt' — noch kein Durchlauf seit dem Start (KEIN Fehler!)
  *   'keine'     — für dieses Land ist gar keine Quelle eingetragen
  */
+/**
+ * Wann lief der Abruf zuletzt, und ist das noch aktuell?
+ *
+ * „Aktuell" = innerhalb von DREI Takten. Ein verpasster Takt ist normal (die
+ * Behörde war langsam); drei sind es nicht. Typischer Grund auf dem
+ * kostenlosen Render-Tarif: Der Dienst schläft ohne Besucher ein, und
+ * währenddessen läuft kein Abruf — die Daten werden still alt.
+ */
+export function abrufStand(job, { intervallMs, jetzt = Date.now() } = {}) {
+  const zuletzt = job && job.lastRunAt ? job.lastRunAt : null;
+  const intervall = (job && job.intervalMs) || intervallMs || null;
+  const alter = zuletzt ? jetzt - Date.parse(zuletzt) : null;
+  return {
+    zuletzt,
+    intervall_ms: intervall,
+    ok: job ? (job.lastOk ?? null) : null,
+    aktuell: !!(zuletzt && intervall && Number.isFinite(alter) && alter <= 3 * intervall),
+  };
+}
+
 export function landStatus(land, { store, quellen, art = 'news' }) {
   const cc = String(land || '').toUpperCase();
   const eingetragen = (quellen || []).filter((s) => s.country === cc);

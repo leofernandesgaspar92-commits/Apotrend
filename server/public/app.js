@@ -135,12 +135,32 @@ function shortagePostsLabel(n) {
 function nlabel(n, oneKey, manyKey) {
   return n === 1 ? ti(oneKey, { n }) : ti(manyKey, { n });
 }
+// Reiter-Beschriftung: Symbol und Wort getrennt, damit das Handy das Symbol
+// über das Wort setzen kann. Der Reiter zeigt das KURZE Alltagswort
+// („Engpässe") — der Amtsbegriff („Vertriebseinschränkungen") ist ein
+// einziges 24-Zeichen-Wort und zerbrach auf dem Handy mitten im Wort zu
+// „Vertriebse|inschränk|ungen". Er steht stattdessen als Überschrift auf der
+// Engpass-Seite und als Tooltip am Reiter: dort, wo man ihn zum Nachschlagen
+// im Register braucht.
+function navTabLabel(n, k) {
+  const s = t(k);
+  const m = s.match(/^(\S+)\s+(.+)$/);
+  const icon = m && !/\p{L}/u.test(m[1]) ? m[1] : '';
+  const wort = icon ? m[2] : s;
+  n.innerHTML = (icon ? '<span class="tab-ic" aria-hidden="true">' + esc(icon) + '</span>' : '') + '<span class="tab-tx">' + esc(wort) + '</span>';
+  const amt = tc(k);
+  if (amt !== s) n.title = amt.replace(/^\S+\s+/, ''); else n.removeAttribute('title');
+}
 function applyI18n(root) {
   const scope = root || document;
   // tc() statt t(): landesüblicher Amtsbegriff, wo es einen gibt (AT
   // „Vertriebseinschränkung" vs. DE „Lieferengpass"). Ohne Übersteuerung ist
   // tc() identisch mit t(), die übrigen 1375 Schlüssel bleiben unberührt.
-  scope.querySelectorAll('[data-i18n]').forEach(n => { n.textContent = tc(n.getAttribute('data-i18n')); });
+  scope.querySelectorAll('[data-i18n]').forEach(n => {
+    const k = n.getAttribute('data-i18n');
+    if (n.hasAttribute('data-navtab')) return navTabLabel(n, k);
+    n.textContent = tc(k);
+  });
   scope.querySelectorAll('[data-i18n-ph]').forEach(n => { n.setAttribute('placeholder', t(n.getAttribute('data-i18n-ph'))); });
   scope.querySelectorAll('[data-i18n-title]').forEach(n => { n.setAttribute('title', t(n.getAttribute('data-i18n-title'))); });
   // aria-label mehrsprachig: Icon-Buttons (auf Mobil ohne sichtbares Label) für Screenreader
@@ -773,18 +793,18 @@ async function mainScreen() {
   app.classList.remove('auth-mode'); // Haupt-App in Standardbreite
   app.appendChild(el(`
     <div class="card" style="padding:10px 12px">
-      <div class="row"><input id="sq" data-i18n-ph="search_ph" data-i18n-aria="search_go" placeholder="🔎 Suchen: Wirkstoff, Kolleg:in (@handle), Beitrag, Engpass, Preis…" aria-label="Suche"><button class="small" id="sgo" data-i18n="search_go">Suchen</button></div>
+      <div class="row"><input id="sq" data-i18n-ph="search_ph" data-i18n-aria="search_go" placeholder="🔎 Wirkstoff, Präparat, Kolleg:in…" aria-label="Suche"><button class="small" id="sgo" data-i18n="search_go">Suchen</button></div>
     </div>
     <div class="tabs">
-      <button data-tab="overview" class="active" data-i18n="nav_overview">✨ Für dich</button>
-      <button data-tab="public" data-i18n="nav_public">🌍 Öffentlich</button>
-      <button data-tab="home" data-i18n="nav_home">🏠 Mein Feed</button>
-      <button data-tab="shortages" data-i18n="nav_shortages">📦 Engpässe</button>
-      <button data-tab="signals" data-i18n="nav_signals">⚠️ Live-Warnungen</button>
-      <button data-tab="prices" data-i18n="nav_prices">💶 Preise</button>
-      <button data-tab="rabatte" data-i18n="nav_rabatte">🏷️ Top-Rabatte</button>
-      <button data-tab="exchange" data-i18n="nav_exchange">🔄 Biete/Suche</button>
-      <button data-tab="news" data-i18n="nav_news">📰 News</button>
+      <button data-tab="overview" class="active" data-navtab data-i18n="nav_overview">✨ Für dich</button>
+      <button data-tab="signals" data-navtab data-i18n="nav_signals">⚠️ Live-Warnungen</button>
+      <button data-tab="shortages" data-navtab data-i18n="nav_shortages">📦 Engpässe</button>
+      <button data-tab="news" data-navtab data-i18n="nav_news">📰 News</button>
+      <button data-tab="prices" data-navtab data-i18n="nav_prices">💶 Preise</button>
+      <button data-tab="rabatte" data-navtab data-i18n="nav_rabatte">🏷️ Top-Rabatte</button>
+      <button data-tab="exchange" data-navtab data-i18n="nav_exchange">🔄 Biete/Suche</button>
+      <button data-tab="public" data-navtab data-i18n="nav_public">🌍 Öffentlich</button>
+      <button data-tab="home" data-navtab data-i18n="nav_home">🏠 Mein Feed</button>
     </div>
     <div id="socialCompose" style="display:none">
       <div class="card">
@@ -1069,6 +1089,7 @@ async function loadOverview() {
   }
   catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   feed.innerHTML = '';
+  zeigeDatenstand(feed, 'news');
   const liveNow = (liveData && liveData.sessions || []).filter(s => s.status === 'live');
   // „Demnächst": nur künftige geplante Sessions (lokale Wall-Clock, lexikografisch vergleichbar).
   const localNow = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,16);
@@ -1112,7 +1133,7 @@ async function loadOverview() {
   const head = el(`<div class="card">
     <h1 style="margin:0 0 2px">✨ ${esc(t('ov_hello'))}${firstName?', '+esc(firstName):''}</h1>
     <div class="muted" style="margin-bottom:12px">${esc(t('ov_sub'))}</div>
-    <div class="row" style="flex-wrap:wrap;gap:10px">
+    <div class="row" style="flex-wrap:wrap;gap:10px;align-items:stretch">
       ${tiles.join('')}
     </div>
     <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px"><button class="ghost small" id="ov_signals">${esc(t('nav_signals'))}</button><button class="ghost small" id="ov_logistik">${esc(t('lg_nav'))}</button><button class="ghost small" id="ov_bm">${esc(t('ov_bookmarks'))}</button><button class="ghost small" id="ov_promos">${esc(t('wb_nav'))}</button><button class="ghost small" id="ov_live">${esc(t('lv_nav'))}</button><button class="ghost small" id="ov_dir">${esc(t('dir_nav'))}</button><button class="ghost small" id="ov_team">${esc(t('th_nav'))}</button></div>
@@ -1813,17 +1834,60 @@ function emptyState({ icon = '🗒️', title, text = '', cta = null }) {
 //  anderen BASG-Schnittstelle. Ohne die Trennung erklaerte sich die leere
 //  Engpass-Liste mit der Gesundheit des Newsfeeds — also womoeglich mit
 //  „laeuft alles", waehrend nichts ankommt.
+// Mit Ablaufzeit (2 Minuten). Vorher ohne: Ein einmal geladener Zustand
+// blieb die ganze Sitzung stehen — nach einem Neustart sah man „noch
+// unbekannt", obwohl die Quelle längst lieferte. Für eine Aktualitäts-Anzeige
+// ist ein ewiger Zwischenspeicher eine Falschaussage mit Verzögerung.
 const coverageCache = new Map();
+const COVERAGE_TTL_MS = 2 * 60 * 1000;
 async function ladeCoverage(land, art = 'news') {
   if (!land) return null;
   const key = art + ':' + land;
-  if (coverageCache.has(key)) return coverageCache.get(key);
+  const gemerkt = coverageCache.get(key);
+  if (gemerkt && Date.now() - gemerkt.zeit < COVERAGE_TTL_MS) return gemerkt.st;
   let st = null;
   try {
     st = await (await fetch(`/api/coverage/${encodeURIComponent(land)}?art=${encodeURIComponent(art)}`)).json();
   } catch { st = null; }
-  coverageCache.set(key, st);
+  coverageCache.set(key, { st, zeit: Date.now() });
   return st;
+}
+
+/**
+ * Aktualitäts-Zeile: Wann wurden die Daten dieses Landes zuletzt geholt?
+ *
+ * Das ist das Verkaufsargument einer Informations-Plattform — und es lässt
+ * sich nur ehrlich zeigen: „Live, vor 3 Min." stimmt oder stimmt nicht.
+ * Darum vier Zustände, die NICHT gleich aussehen dürfen, jeweils mit Symbol
+ * und Text (nie nur Farbe):
+ *   🟢 liefert und frisch · 🟡 liefert, aber letzter Abruf alt
+ *   🔴 Quelle antwortet nicht · ⏳ erster Abruf läuft noch
+ */
+function datenstandZeile(st, land) {
+  if (!st || st.zustand === 'keine') return null;
+  const abruf = st.abruf || {};
+  const wann = abruf.zuletzt ? vorZeit(abruf.zuletzt) : null;
+  const name = landLabel(land);
+  let symbol, text, ton;
+  if (st.zustand === 'unbekannt' || !abruf.zuletzt) { symbol = '⏳'; text = ti('stand_first', { land: name }); ton = 'info'; }
+  else if (st.zustand === 'stumm') { symbol = '🔴'; text = ti('stand_silent', { land: name, wann }); ton = 'crit'; }
+  else if (!abruf.aktuell) { symbol = '🟡'; text = ti('stand_stale', { wann }); ton = 'warn'; }
+  else { symbol = '🟢'; text = ti('stand_live', { land: name, wann }); ton = 'ok'; }
+  return el(`<div data-datenstand="${ton}" role="status" style="display:flex;gap:8px;align-items:flex-start;background:var(--${ton}-bg);border:1px solid var(--${ton}-bd);color:var(--${ton}-fg);border-radius:10px;padding:8px 12px;margin:0 0 10px;font-size:14px;font-weight:600;line-height:1.45">
+    <span aria-hidden="true">${symbol}</span><span>${esc(text)}</span></div>`);
+}
+// Platz SOFORT reservieren, später füllen: Alle Reiter teilen sich #feed.
+// Würde erst nach dem Abruf eingefügt, könnte die Zeile im inzwischen
+// geöffneten anderen Reiter landen. So wird der Platzhalter beim Reiterwechsel
+// mit abgeräumt, und das Füllen eines abgelösten Platzhalters bewirkt nichts.
+async function zeigeDatenstand(ziel, art = 'news') {
+  if (!ziel) return;
+  const platz = el('<div data-dsslot></div>');
+  ziel.prepend(platz);
+  const land = viewCountry();
+  const z = datenstandZeile(await ladeCoverage(land, art), land);
+  if (!platz.isConnected) return;
+  if (z) platz.replaceWith(z); else platz.remove();
 }
 
 /**
@@ -2460,6 +2524,7 @@ async function loadSignals() {
   feed.innerHTML = '';
   feed.appendChild(kopf);
   feed.appendChild(liste);
+  zeigeDatenstand(feed, 'news');
   malKnoepfe();
   await laden();
 }
@@ -2489,6 +2554,7 @@ async function loadNews() {
   </div><div id="lagebild"></div><div id="presse"></div><div id="newslist"></div>`));
   // Lagebild und Presse des ANGESEHENEN Landes — über den Behördenmeldungen,
   // weil sie die Frage „was ist dort los, und warum?" beantworten.
+  zeigeDatenstand(feed, 'news');
   renderLagebild(document.getElementById('lagebild'));
   renderPresse(document.getElementById('presse'));
   { const tgl = document.querySelector('[data-ntoggle]'), cmp = document.querySelector('[data-ncompose]'), chev = document.querySelector('[data-nchev]');
@@ -2752,6 +2818,11 @@ async function loadShortages() {
     // Wie bei den News: das ANGESEHENE Land, nicht das eigene.
     const d = await api('GET','/api/shortages?country=' + viewCountry());
     feed.innerHTML = '';
+    // Seitenüberschrift mit dem landesüblichen Amtsbegriff (AT „Vertriebs-
+    // einschränkungen", PT „Ruturas de abastecimento"): Der Reiter trägt das
+    // kurze Alltagswort, hier steht der Begriff, unter dem die Behörde führt.
+    feed.appendChild(el(`<h2 class="page-h" data-shead>${esc(tc('nav_shortages'))}</h2>`));
+    zeigeDatenstand(feed, 'shortages');
     feed.appendChild(provenanceLegend());
     feed.appendChild(reportShortageCard(d.shortages));
     const bar = shortageFilterBar();
@@ -7704,6 +7775,121 @@ function kryptoPruefKarte(z) {
   return card;
 }
 
+const vorZeit = (iso) => {
+  if (!iso) return null;
+  const min = Math.round((Date.now() - Date.parse(iso)) / 60000);
+  if (!Number.isFinite(min)) return null;
+  if (min < 1) return t('dq_just_now');
+  if (min < 60) return ti('dq_min_ago', { n: min });
+  const h = Math.round(min / 60);
+  return h < 48 ? ti('dq_h_ago', { n: h }) : ti('dq_d_ago', { n: Math.round(h / 24) });
+};
+
+/**
+ * Datenquellen — lesbar statt JSON.
+ *
+ * Die Messung gab es längst (`/api/live/status`), aber nur als Rohdaten unter
+ * einer Adresse, die man von Hand aufrufen muss. Wer Informationen verkauft,
+ * muss auf einen Blick sehen, welche Quelle liefert und welche schweigt — und
+ * WARUM. Probleme stehen oben. Der Bericht lässt sich als Klartext kopieren,
+ * damit eine Störung ohne Screenshot weitergegeben werden kann.
+ */
+async function openDatenquellen() {
+  setDocTitle(t('dq_title'));
+  app.innerHTML = '<div class="loading">…</div>';
+  let d;
+  try { d = await api('GET', '/api/live/status'); }
+  catch (e) { app.innerHTML = ''; app.appendChild(errorState(e.message, openDatenquellen)); return; }
+  app.innerHTML = '';
+  const jobs = Object.fromEntries((d.jobs || []).map(j => [j.name, j]));
+  const gemessen = (d.coverage && d.coverage.gemessen) || {};
+  const ergebnis = (q) => {
+    const art = q.kind === 'shortages' ? 'shortages' : 'news';
+    const e = gemessen[`${art}:${q.country}`];
+    const r = e && (e.quellen || []).find(x => x.id === q.id);
+    return r ? { ...r, stand: e.stand } : null;
+  };
+  const zeilen = (d.sources || []).map(q => ({ q, r: ergebnis(q) }));
+  // Rang: Fehler zuerst, dann „noch nicht abgefragt", dann „liefert".
+  const rang = (z) => (z.r && !z.r.ok ? 0 : !z.r ? 1 : 2);
+  const kaputt = zeilen.filter(z => z.r && !z.r.ok).length;
+  const offen = zeilen.filter(z => !z.r).length;
+  const gut = zeilen.length - kaputt - offen;
+
+  const jobZeile = (name, label) => {
+    const j = jobs[name];
+    if (!j) return `<div>${esc(label)}: <span class="muted">${esc(t('dq_job_none'))}</span></div>`;
+    const wann = vorZeit(j.lastRunAt);
+    return `<div>${esc(label)}: <b>${esc(wann || t('dq_never'))}</b>${j.lastOk === false ? ` · <span style="color:var(--crit-fg);font-weight:700">${esc(t('dq_failed'))}: ${esc(j.lastError || '')}</span>` : ''}
+      <span class="muted"> · ${esc(ti('dq_every', { n: Math.round((j.intervalMs || 0) / 60000) }))}</span></div>`;
+  };
+
+  const kopf = el(`<div class="card">
+    <div class="row" style="gap:8px;flex-wrap:wrap"><h1 style="flex:1;margin:0">📡 ${esc(t('dq_title'))}</h1>
+      <button class="small" data-dqcopy style="min-height:44px">📋 ${esc(t('dq_copy'))}</button>
+      <button class="ghost small" data-dqback style="min-height:44px">${esc(t('gen_back'))}</button></div>
+    <div class="muted" style="margin-top:4px">${esc(t('dq_sub'))}</div>
+    <div class="row" style="gap:10px;flex-wrap:wrap;margin-top:12px" data-dqsumme>
+      <div style="flex:1;min-width:110px;border:1px solid var(--crit-bd);background:var(--crit-bg);border-radius:12px;padding:10px 12px"><div style="font-size:24px;font-weight:800;color:var(--crit-fg)">✗ ${kaputt}</div><div style="font-size:14px">${esc(t('dq_sum_bad'))}</div></div>
+      <div style="flex:1;min-width:110px;border:1px solid var(--line);border-radius:12px;padding:10px 12px"><div style="font-size:24px;font-weight:800">? ${offen}</div><div style="font-size:14px">${esc(t('dq_sum_open'))}</div></div>
+      <div style="flex:1;min-width:110px;border:1px solid var(--ok-bd);background:var(--ok-bg);border-radius:12px;padding:10px 12px"><div style="font-size:24px;font-weight:800;color:var(--ok-fg)">✓ ${gut}</div><div style="font-size:14px">${esc(t('dq_sum_ok'))}</div></div>
+    </div>
+    <div style="margin-top:12px;font-size:15px;line-height:1.7">
+      ${jobZeile('news', t('dq_job_news'))}
+      ${jobZeile('shortages', t('dq_job_shortages'))}
+      <div>${esc(t('dq_ai'))}: <b>${esc(d.signals && d.signals.ki === 'aktiv' ? t('dq_on') : t('dq_off'))}</b> · ${esc(t('dq_db'))}: <b>${esc(d.database ? t('dq_on') : t('dq_off'))}</b></div>
+    </div>
+    <div class="err" data-dqmsg></div>
+  </div>`);
+  kopf.querySelector('[data-dqback]').onclick = showModeration;
+  app.appendChild(kopf);
+
+  // Nach Land gruppiert, Länder mit Problemen zuerst.
+  const proLand = new Map();
+  for (const z of zeilen) { if (!proLand.has(z.q.country)) proLand.set(z.q.country, []); proLand.get(z.q.country).push(z); }
+  const laender = [...proLand.entries()].sort((a, b) =>
+    Math.min(...a[1].map(rang)) - Math.min(...b[1].map(rang)) || String(a[0]).localeCompare(String(b[0])));
+  for (const [cc, liste] of laender) {
+    const name = cc === 'EU' ? '🇪🇺 EU' : landLabel(cc);
+    const karte = el(`<div class="card" data-dqland="${esc(cc)}"><b style="font-size:16px">${esc(name)}</b><div data-dqrows></div></div>`);
+    const rows = karte.querySelector('[data-dqrows]');
+    for (const z of liste.sort((a, b) => rang(a) - rang(b))) {
+      const { q, r } = z;
+      const status = !r ? `<span style="font-weight:700">? ${esc(t('dq_st_open'))}</span>`
+        : r.ok ? `<span style="color:var(--ok-fg);font-weight:700">✓ ${esc(ti('dq_st_ok', { n: r.meldungen ?? 0 }))}</span>`
+          : `<span style="color:var(--crit-fg);font-weight:700">✗ ${esc(t('dq_st_bad'))}</span>`;
+      const href = sichererLink(q.url);
+      rows.appendChild(el(`<div data-dqquelle="${esc(q.id)}" style="padding:10px 0;border-top:1px solid var(--line)">
+        <div class="row" style="gap:8px;flex-wrap:wrap;align-items:baseline"><span style="flex:1;min-width:180px;font-weight:600">${esc(q.label || q.id)}</span>${status}</div>
+        <div class="muted" style="font-size:13px;margin-top:2px">${esc(q.kind === 'shortages' ? t('dq_kind_shortages') : t('dq_kind_news'))}${r && r.stand ? ' · ' + esc(vorZeit(r.stand) || '') : ''}</div>
+        ${r && !r.ok && r.fehler ? `<div style="font-size:14px;margin-top:4px;color:var(--crit-fg)">${esc(r.fehler)}</div>` : ''}
+        ${href ? `<div style="font-size:12px;margin-top:2px;word-break:break-all"><a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(href)}</a></div>` : ''}
+      </div>`));
+    }
+    app.appendChild(karte);
+  }
+
+  // Klartext-Bericht — zum Weiterschicken, ohne JSON und ohne Screenshot.
+  kopf.querySelector('[data-dqcopy]').onclick = async () => {
+    const msg = kopf.querySelector('[data-dqmsg]');
+    const zeit = new Date().toISOString().slice(0, 16).replace('T', ' ');
+    const text = [`ApoPulse Datenquellen — ${zeit} UTC`,
+      `Nachrichten-Abruf: ${(jobs.news && jobs.news.lastRunAt) || 'nie'}${jobs.news && jobs.news.lastError ? ' — FEHLER: ' + jobs.news.lastError : ''}`,
+      `Engpass-Abruf: ${(jobs.shortages && jobs.shortages.lastRunAt) || 'nie'}${jobs.shortages && jobs.shortages.lastError ? ' — FEHLER: ' + jobs.shortages.lastError : ''}`,
+      `KI: ${(d.signals && d.signals.ki) || '?'} · Datenbank: ${d.database ? 'verbunden' : 'aus'}`,
+      `Gesamt: ${kaputt} mit Fehler, ${offen} noch nicht abgefragt, ${gut} liefern`, '',
+      ...zeilen.sort((a, b) => rang(a) - rang(b)).map(({ q, r }) =>
+        `${!r ? '?' : r.ok ? '✓' : '✗'} ${q.id} (${q.country}, ${q.kind})${r && r.ok ? ` — ${r.meldungen ?? 0} Meldungen` : ''}${r && !r.ok ? ` — ${r.fehler || 'Fehler'}` : ''} — ${q.url || ''}`),
+    ].join('\n');
+    try { await navigator.clipboard.writeText(text); msg.style.color = 'var(--ok-fg)'; msg.textContent = t('dq_copied'); }
+    catch {
+      // Ohne Zwischenablage (z. B. ohne HTTPS) den Text zum Markieren zeigen.
+      const ta = el(`<textarea readonly style="width:100%;min-height:200px;margin-top:8px;font-size:12px"></textarea>`);
+      ta.value = text; kopf.appendChild(ta); ta.select(); msg.textContent = '';
+    }
+  };
+}
+
 async function showModeration() {
   setDocTitle(t('md_doc'));
   app.innerHTML = '<div class="loading">…</div>';
@@ -7718,7 +7904,8 @@ async function showModeration() {
   const comm = (sh.shortages||[]).filter(s => s.provenance === 'community').length;
   const mtile = (icon, num, label, col) => `<div style="flex:1;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px">
     <div style="font-size:24px;font-weight:800;color:${col}">${icon} ${num}</div><div class="muted" style="font-size:13px;margin-top:2px">${esc(label)}</div></div>`;
-  const head = el(`<div class="card"><div class="row"><h1 style="flex:1">${esc(t('md_title'))}</h1>
+  const head = el(`<div class="card"><div class="row" style="gap:8px;flex-wrap:wrap"><h1 style="flex:1">${esc(t('md_title'))}</h1>
+    <button class="small" id="dqOpen" style="min-height:44px">📡 ${esc(t('dq_open'))}</button>
     <button class="ghost small" id="back">${esc(t('gen_back'))}</button></div>
     <div class="muted" style="margin-bottom:10px">${esc(t('md_sub'))}</div>
     <div class="row" style="flex-wrap:wrap;gap:10px">
@@ -7729,6 +7916,7 @@ async function showModeration() {
       ${mtile('👥', comm, t('md_community'), 'var(--warn-fg)')}
     </div></div>`);
   head.querySelector('#back').onclick = mainScreen;
+  head.querySelector('#dqOpen').onclick = openDatenquellen;
   app.appendChild(head);
   // Krypto-Zahlungen ZUERST: Hier wartet eine zahlende Kundin auf ihre Freischaltung.
   if (kz === null) app.appendChild(el(`<div class="card" style="border-color:var(--crit-bd)">${esc(t('kp_load_err'))}</div>`));
@@ -7876,7 +8064,7 @@ async function showDmInbox() {
       const row = el(`<div class="comment clickable" style="cursor:pointer${unread?';background:rgba(11,127,40,.06);border-radius:8px':''}">
         <div class="row" style="align-items:center">${avatarHtml(o, 38, false)}<div style="flex:1;min-width:0">
         <div class="row"><b style="${unread?'font-weight:800':''}">${esc(o.display_name||t('ex_unknown'))}</b> <span class="handle">@${esc(o.handle||'?')}</span>
-        <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:12px;margin-right:6px">${when}</span>`:''}${unread?`<span style="background:var(--green);color:#fff;border-radius:999px;font-size:12px;font-weight:700;padding:1px 8px;min-width:20px;text-align:center;margin-right:6px">${th.unread}</span>`:''}<button class="ghost small" data-archive title="${esc(t('dm_archive'))}" aria-label="${esc(t('dm_archive'))}">🗂</button></div>
+        <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:12px;margin-right:6px">${when}</span>`:''}${unread?`<span style="background:var(--green);color:var(--on-green);border-radius:999px;font-size:12px;font-weight:700;padding:1px 8px;min-width:20px;text-align:center;margin-right:6px">${th.unread}</span>`:''}<button class="ghost small" data-archive title="${esc(t('dm_archive'))}" aria-label="${esc(t('dm_archive'))}">🗂</button></div>
         <div class="muted" style="margin-top:2px${unread?';color:inherit;font-weight:600':''}">${esc((th.last_message?.body||'').slice(0,60))}</div></div></div></div>`);
       row.onclick = () => openDmThread(th.thread_id);
       row.querySelector('[data-archive]').onclick = async (e) => {
@@ -7933,7 +8121,7 @@ async function openDmThread(threadId, prefill) {
         ? `<div style="font-size:11px;margin-top:2px;font-weight:600;color:${m.read_at ? 'var(--ok-fg)' : 'var(--muted)'}">${m.read_at ? '✓✓ ' + esc(t('dm_read')) : '✓ ' + esc(t('dm_delivered'))}</div>`
         : '';
       msgs.appendChild(el(`<div style="display:flex;flex-direction:column;margin:4px 0;${mine?'align-items:flex-end':'align-items:flex-start'}">
-        <div style="max-width:75%;padding:8px 12px;border-radius:12px;background:${mine?'var(--green)':'var(--chip-bg)'};color:${mine?'#fff':'inherit'}">${esc(m.body)}</div>
+        <div style="max-width:75%;padding:8px 12px;border-radius:12px;background:${mine?'var(--green)':'var(--chip-bg)'};color:${mine?'var(--on-green)':'inherit'}">${esc(m.body)}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">${esc(fmtClock(m.created_at))}</div>
         ${receipt}
       </div>`));

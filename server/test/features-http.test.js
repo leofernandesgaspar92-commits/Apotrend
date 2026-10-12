@@ -110,6 +110,13 @@ test('GET /api/coverage/:land antwortet ohne Anmeldung und ehrlich', async () =>
   assert.equal(d.land, 'NG');
   assert.ok(['unbekannt', 'liefert', 'stumm'].includes(d.zustand), `unerwartet: ${d.zustand}`);
   assert.ok(d.quellen >= 1, 'fuer Nigeria ist eine Quelle eingetragen');
+  // Aktualitaet: In Tests laeuft keine Automatik — dann ehrlich „nicht
+  // aktuell" ohne erfundenen Zeitpunkt, nicht „Live".
+  assert.equal(d.abruf.zuletzt, null);
+  assert.equal(d.abruf.aktuell, false);
+  assert.equal(d.abruf.intervall_ms, 5 * 60 * 1000);
+  const e = await (await fetch(BASE + '/api/coverage/NG?art=shortages')).json();
+  assert.equal(e.abruf.intervall_ms, 4 * 60 * 60 * 1000, 'Engpaesse haben ihren eigenen Takt');
 });
 
 test('ein Land ohne Quelle wird als solches benannt', async () => {

@@ -1668,3 +1668,85 @@ deutsches Zahlenformat nachgezogen. Außerdem in `docs/PAYMENTS.md` die veraltet
 **Für den Owner:** Tron-Adresse als `APOPULSE_WALLET_TRON` in Render eintragen. Krypto-
 Einnahmen steuerlich erfassen lassen. Die Prüfung bleibt Handarbeit — das ist bei festen
 Wallet-Adressen der ehrliche Stand; automatisch ginge es nur über einen Zahlungsdienstleister.
+
+### Cycle · Aktuelle Daten zeigen, ehrlich sagen wie alt — und eine lesbare Navigation (2026-10-12)
+
+**Owner-Auftrag:** „Das Wichtigste ist, dass die Seite jetzt schon reale Infos gibt und immer
+auf dem neuesten Stand ist — ich will Informationen verkaufen … und arbeite am Webdesign:
+Farbe, Tools, Größe."
+
+**GATHER — Aktualität.** Die Abrufe laufen im Takt (News 5 Min., Engpässe 4 Std.), aber auf
+dem kostenlosen Render-Tarif schläft der Dienst ohne Besucher ein — dann läuft nichts, und
+die Daten werden still alt. Niemand sah das: weder die Nutzerin noch die Redaktion.
+
+**WORK — Aktualität.**
+- `abrufStand()` (coverage.js): „aktuell" heißt innerhalb von drei Takten. `/api/coverage/:land`
+  liefert den Stand mit; jede Datenansicht zeigt oben „Live, vor 3 Min." oder warnt bei
+  altem Abruf. Ein verpasster Takt ist normal, drei sind es nicht.
+- **Datenquellen-Seite** im Redaktions-Dashboard: jede Quelle je Land, Probleme zuerst, mit
+  Grund und Meldungszahl; „Bericht kopieren" als Klartext für den Owner.
+- **Erfundene Startmeldungen entfernt.** Beim Frischstart legte der Server sechs „News" an
+  (AT/DE/BR), z. B. „BASG: Aktualisierte Engpassliste veröffentlicht — mehrere Antibiotika
+  betroffen", mit der Behörden-Startseite als „Quelle". Keine davon war echt; nach jedem
+  Neustart ohne Datenbank standen sie im News-Livestream als „vor 9 Minuten". Aufgefallen
+  erst im Desktop-Screenshot dieses Zyklus. Ein Test (reference-data) hält den Livestream
+  nach dem Start leer; der Länder-Trennungstest legt seine Beiträge jetzt selbst an.
+- **Auch aus gesicherten Beständen:** Wer die sechs Meldungen schon in Datei oder Datenbank
+  hat, trüge sie weiter. `services/startbereinigung.js` entfernt beim Wiederherstellen genau
+  diese sechs Texte — nur Art „news", nur von Redaktionskonten (Test + 2 Gegenproben).
+  Durchgespielt: alter Server schreibt Datei mit Meldungen → neuer Server lädt sie →
+  „6 erfundene Startmeldung(en) entfernt", News AT/DE/BR leer, Konto noch da.
+- **Dabei gefunden — Absturz beim Neustart mit Datei.** Der Durchlauf oben brach zuerst ab:
+  „Cannot access 'logistikRepo' before initialization". Seit Säule 3 (3a434d2) wurde der
+  Logistik-Bestand in `applySnapshot()` geladen, aber erst ~400 Zeilen tiefer angelegt.
+  Jeder Start mit gespeicherter Datei stürzte ab; kein Test sah es, weil alle frisch
+  starten. Getroffen hätte es genau den Betrieb mit dauerhafter Platte — den Bezahltarif,
+  den dieser Zyklus empfiehlt. Behoben (Anlage vor dem Wiederherstellen) und mit
+  `test/neustart-mit-datei.test.js` abgesichert: zwei echte Prozesse auf derselben Datei.
+  Gegenprobe (alte Stelle) → Test rot mit genau dieser Meldung.
+- `DEPLOY.md`: Warnung, dass im Schlaf keine Abrufe laufen, mit beiden Auswegen.
+
+**GATHER — Design (Screenshots 390/1024/1280/1500, hell und dunkel).**
+- Handy: Reiter brachen mitten im Wort („Vertriebse|inschränk|ungen", „Live-Warnung|en"),
+  zwei hohe Kachelreihen, dazu die Kopfzeile angeheftet — zusammen ~300 px fester Kopf.
+- Kopf-Werkzeuge unter 1180 px nur als Symbol (🌙 A ❓ 🔔 🚪) — wer nicht weiß, dass die
+  Tür „Abmelden" heißt, rät.
+- Dunkelmodus: Weiß auf Grün 2,1 : 1 (WCAG verlangt 4,5). Der Audit prüfte Kontrast gar nicht.
+- Desktop: drei ungleich lange Reiterreihen; Spalte 640 px auch dort, wo Platz für mehr war.
+
+**WORK — Design.**
+- Reiter-Reihenfolge nach Informationswert: Für dich, Live-Warnungen, Engpässe, News, Preise,
+  Top-Rabatte, (Biete/Suche), Öffentlich, Mein Feed.
+- Reiter tragen das kurze Alltagswort („Engpässe"); der Amtsbegriff („Vertriebs-
+  einschränkungen", „Ruturas de abastecimento") steht als Überschrift der Engpass-Seite und
+  als Tooltip — dort, wo man ihn zum Nachschlagen im Register braucht.
+- Handy: Symbol über dem Wort, Umbruch nur an Wortgrenzen; Kopfzeile scrollt mit, angeheftet
+  bleibt nur die Reiterleiste (158 statt ~300 px).
+- Kopf-Werkzeuge mit Wort unter dem Symbol auf eigener Zeile; bei acht Knöpfen (Moderation)
+  eine zweite Reihe statt abgeschnittener Wörter; 360-px-Handys eigens geprüft.
+- Kontrast: `--on-green` (dunkel #04170a), `--handle`, `--warn-fg` und Badge-Gelb angehoben;
+  zehn feste `color:#fff` auf das Token umgestellt. Audit prüft jetzt Kontrast je Reiter in
+  beiden Themen.
+- Spalte 720 px, wo die Seitenleisten es zulassen (unter 1240 px und ab 1460 px).
+- Kleinigkeiten: Kennzahl-Kacheln gleich hoch, „neue Meldungen" statt „neue Benachrichtigun|gen",
+  kürzerer Such-Platzhalter (wurde am Handy abgeschnitten).
+
+**Neuer Audit-Prüfpunkt „Navigation lesbar"** (360/390/1024 px × AT/GB/PT, volle Knopf-
+ausstattung): jedes Wort einzeln vermessen — liegt es auf zwei Zeilen, ist es zerbrochen; dazu
+abgeschnittene oder unsichtbare Werkzeug-Wörter. Der Querscroll-Check sah davon nichts, denn
+ein mitten im Wort umbrochenes Label ragt nirgends hinaus.
+
+**Gegenproben (Bruch angewandt, jeweils geprüft):** Amtsbegriff wieder in den Reiter plus
+`overflow-wrap:anywhere` → 6 × „zerbrochen" + „Reiter trägt nicht das Alltagswort"; Werkzeug-
+Wörter versteckt → „ohne sichtbares Wort" je Sprache; Überschrift ohne Amtsbegriff → AT-Befund;
+alte server.js mit Startmeldungen → reference-data-Test rot mit den drei erfundenen Texten.
+Kontrast-Gegenprobe (Weiß auf Grün zurück) schlägt an. Ein Folgefund der Gegenproben: Die
+Überschrift „📦 Vertriebseinschränkungen" erzeugte bei großer Schrift Querscroll → `hyphens`.
+
+**CHECK.** 1076 Tests grün (+10), Smoke 19/19 (Reiter jetzt über `data-tab` statt Text
+angesteuert — Symbol und Wort stehen getrennt), Browser-Audit ohne Befund, `npm run verify` komplett.
+
+**Für den Owner:** Render auf „Starter" umstellen oder einen Uptime-Ping einrichten (DEPLOY.md),
+sonst sind die Daten nach jeder ruhigen Viertelstunde nicht mehr aktuell. Danach im
+Redaktions-Dashboard „📡 Datenquellen → Bericht kopieren" und mir den Bericht schicken.
+

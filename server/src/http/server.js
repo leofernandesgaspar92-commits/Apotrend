@@ -67,13 +67,14 @@ import { createRateLimiter } from '../domain/rateLimiter.js';
 import { dienstKennung } from './serviceIdentity.js';
 import { assetlinksDokument, assetlinksStatus } from './assetlinks.js';
 import { featureListe, ruhenderBereichFuer } from '../data/features.js';
-import { createCoverageStore, landStatus } from '../services/coverage.js';
+import { createCoverageStore, landStatus, abrufStand } from '../services/coverage.js';
 import { suchProtokoll } from '../services/feedDiscovery.js';
 import { createSignalStore, baueSignal } from '../services/signals.js';
 import { benachrichtigeZuSignal } from '../services/signalAlerts.js';
 import { extractSignal, aiKonfiguration, KATEGORIEN as SIGNAL_KATEGORIEN } from '../services/aiExtract.js';
 import { createTranslateService, MAX_ZEICHEN as TRANSLATE_MAX } from '../services/aiTranslate.js';
 import { rxErlaubt, verificationStatusFor } from '../domain/jurisdiction.js';
+import { erfundeneStartmeldungenEntfernen } from '../services/startbereinigung.js';
 
 // Login-Brute-Force-Schutz: max. 5 Fehlversuche je (IP+E-Mail) in 15 Minuten.
 const loginLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
@@ -142,6 +143,11 @@ const rabatteRepo = createRabatteRepo({ seed: seedMarkt });
 const prices = createPricesService(pricesRepo, social, rabatteRepo);
 const rabatte = createRabatteService(rabatteRepo, social);
 const exchangeRepo = createExchangeRepo();
+// Muss VOR applySnapshot() stehen: Das Wiederherstellen lädt auch diesen
+// Bestand. Stand er weiter unten (wie bis 10/2026), brach jeder Start mit
+// gespeicherter Datei ab — „Cannot access 'logistikRepo' before
+// initialization". Ein Frischstart ohne Datei merkte davon nichts.
+const logistikRepo = createLogistikRepo();
 const exchange = createExchangeService(exchangeRepo, social, repo, shortagesRepo);
 // RxNorm ergaenzt die Suche um Namensvarianten (Wirkstoff <-> Handelsname).
 // Abschaltbar ueber APOPULSE_RXNORM=off — der Dienst geht ins Netz, und wer
@@ -190,13 +196,15 @@ function applySnapshot(snap) {
   rabatteRepo.__load(snap.rabatte);
   exchangeRepo.__load(snap.exchange);
   newsSeen.__load(snap.newsSeen);
+  const weg = erfundeneStartmeldungenEntfernen(socialRepo);
+  if (weg) console.log(`ApoPulse: ${weg} erfundene Startmeldung(en) aus dem gesicherten Bestand entfernt.`);
 }
 
 if (restoring) {
   applySnapshot(snapshot);
   console.log(`ApoPulse: Daten aus ${persistence.filePath} wiederhergestellt.`);
 } else {
-  // Redaktions-/Admin-Account (zugleich Moderation) + kuratierte News — nur beim
+  // Redaktions-/Admin-Account (zugleich Moderation) — nur beim
   // Frischstart. Zugangsdaten über ENV steuerbar; sonst zufälliges Passwort, das
   // beim Start einmalig geloggt wird, damit sich die Redaktion anmelden kann.
   const adminEmail = process.env.APOPULSE_ADMIN_EMAIL || 'redaktion@apopulse.at';
@@ -204,30 +212,19 @@ if (restoring) {
   const red = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'ApoPulse' }, owner: { name: 'ApoPulse-Redaktion', email: adminEmail, password: adminPassword } });
   social.createProfile(red.user.id, { handle: 'apopulse', displayName: 'ApoPulse-Redaktion', isEditorial: true });
   if (!process.env.APOPULSE_ADMIN_PASSWORD) console.log(`ℹ️  Redaktions-/Moderations-Login: ${adminEmail} / ${adminPassword}`);
-  [
-    { body: 'Kammer-Mitteilung: Neue Regelung zur E-Medikation tritt am 01.08.2026 in Kraft.', sourceUrl: 'https://www.apothekerkammer.at/' },
-    { body: 'BASG: Aktualisierte Engpassliste veröffentlicht — mehrere Antibiotika betroffen.', sourceUrl: 'https://www.basg.gv.at/' },
-    { body: 'Gehaltskasse: Anpassung der Großhandelskonditionen zum Quartalswechsel.', sourceUrl: 'https://www.gehaltskasse.at/' },
-  ].forEach(({ body, sourceUrl }) => social.createPost(red.user.id, { body, kind: 'news', sourceUrl }));
+  // Früher legte der Frischstart hier sechs „News"-Beiträge an (AT/DE/BR), z. B.
+  // „BASG: Aktualisierte Engpassliste veröffentlicht — mehrere Antibiotika
+  // betroffen" — mit der Startseite der Behörde als „Quelle". Keiner davon war
+  // eine echte Meldung; im News-Livestream standen sie als „vor 9 Minuten" da,
+  // nach JEDEM Neustart ohne Datenbank wieder. Erfundene Behördenmeldungen
+  // sind genau das, was diese Plattform nicht sein darf (eiserne Regel: keine
+  // Beispieldaten). Echte News kommen aus den Abrufen (liveData, presse) und
+  // von Menschen; eine leere Ansicht erklärt sich selbst.
   // Starter-Beitrag fürs Stewardship-Fachforum (setzt Ton & Regeln, quellenbelegt).
   social.createPost(red.user.id, {
     body: 'Willkommen im Stewardship-Fachforum 🧫 — anonymisierte Fachdiskussion zum verantwortungsvollen Antibiotikaeinsatz. Bitte keine personenbezogenen Patientendaten posten, sicherheitsrelevante Aussagen nur mit Quelle. Grundlage zur österreichischen Resistenzlage: AURES. #stewardship',
     kind: 'post', sourceUrl: 'https://www.ages.at/mensch/arzneimittel-medizinprodukte/antibiotika-resistenzen',
   });
-  // Länder-Redaktionen (DE/BR) + je ein News-Beitrag im jeweiligen Land, damit der
-  // Länder-Switch echte, getrennte Inhalte zeigt. Beiträge erben das Land des Autors.
-  const seedCountryEditor = (country, handle, name, posts) => {
-    const u = orgAuth.registerPharmacyWithOwner({ pharmacy: { name }, owner: { name, email: handle + '@apopulse.example', password: crypto.randomUUID() } });
-    social.createProfile(u.user.id, { handle, displayName: name, isEditorial: true, country });
-    posts.forEach(({ body, sourceUrl }) => social.createPost(u.user.id, { body, kind: 'news', sourceUrl }));
-  };
-  seedCountryEditor('DE', 'apopulse_de', 'ApoPulse-Redaktion DE', [
-    { body: 'BfArM: Aktualisierte Liste von Lieferengpässen veröffentlicht — mehrere Wirkstoffe betroffen.', sourceUrl: 'https://www.bfarm.de/' },
-    { body: 'E-Rezept: bundesweite Nutzung weiter verpflichtend — Hinweise für Apotheken aktualisiert.', sourceUrl: 'https://www.bfarm.de/' },
-  ]);
-  seedCountryEditor('BR', 'apopulse_br', 'ApoPulse-Redação BR', [
-    { body: 'ANVISA: publicada atualização sobre desabastecimento de medicamentos.', sourceUrl: 'https://www.gov.br/anvisa/' },
-  ]);
 }
 
 // ── Snapshot sammeln + gedrosselt/atomar auf Platte schreiben ──
@@ -619,7 +616,6 @@ const lagebildDienst = createLagebildDienst({
  * leichter zu lesen als eine geteilte Abstraktion, die beide Aufrufer
  * verbiegt.
  */
-const logistikRepo = createLogistikRepo();
 
 function rxBetrachter(userId) {
   if (!userId) return null;
@@ -945,7 +941,16 @@ const routes = [
     // `query` ist URLSearchParams, kein Objekt — query.art waere immer
     // undefined und die Auskunft stillschweigend immer „news".
     const art = query && query.get('art') === 'shortages' ? 'shortages' : 'news';
-    return landStatus(params[0], { store: coverage, quellen: sourcesByKind(art), art });
+    // `abruf`: Wann lief die Automatik zuletzt, und ist das noch aktuell?
+    // „Aktuell" heisst: innerhalb von drei Takten. Auf dem kostenlosen
+    // Render-Tarif schlaeft der Dienst ohne Besucher ein — dann laeuft kein
+    // Abruf, und die Daten werden still alt. Das muss die Oberflaeche sagen
+    // koennen, statt alte Meldungen wie frische zu zeigen.
+    const job = scheduler.status().find((j) => j.name === art) || null;
+    return {
+      ...landStatus(params[0], { store: coverage, quellen: sourcesByKind(art), art }),
+      abruf: abrufStand(job, { intervallMs: art === 'shortages' ? INTERVALS.shortages : INTERVALS.news }),
+    };
   }],
 
   ['GET', /^\/api\/health$/, false, async () => ({
