@@ -834,6 +834,70 @@ async function main() {
       console.log('✓ Lagebild: ohne KI keine Karte');
     }
 
+    // ── 7. Krypto-Prüfung: Moderations-Karte + Prüfstand der Kundin ─────────
+    //  Vorher gab es keine Prüfliste in der App: Die Kundin meldete ihre
+    //  Transaktion, und niemand sah sie. Zusicherungen: Prüfanleitung VOR dem
+    //  Bestätigen-Knopf; Explorer-Link nur aus geprüfter ID; Ablehnen ohne Grund
+    //  schickt nichts ab; die Premium-Seite sagt „wird geprüft".
+    const kpAntwort = { payments: [
+      { id: 'kp1', status: 'pending_review', coin: 'bitcoin', amount_cents: 999, currency: 'EUR', product_name: 'ApoPulse Premium (Monat)',
+        network: 'Bitcoin (Mainnet)', address: 'bc1qtest', provider_ref: 'a'.repeat(64), expected_crypto: 0.0002,
+        created_at: new Date().toISOString(), claimed_at: new Date().toISOString(), tx_format_ok: true,
+        explorer_url: 'https://mempool.space/tx/' + 'a'.repeat(64), kunde: { handle: 'apo_lagos', display_name: 'KPKUNDIN Lagos', country: 'NG' } },
+      { id: 'kp2', status: 'pending_review', coin: 'solana', amount_cents: 999, currency: 'EUR', product_name: 'ApoPulse Premium (Monat)',
+        network: 'Solana (Mainnet)', address: 'Sol111', provider_ref: 'kaputt', expected_crypto: null,
+        created_at: new Date().toISOString(), claimed_at: new Date().toISOString(), tx_format_ok: false,
+        explorer_url: 'javascript:alert(1)', kunde: { handle: 'apo_x', display_name: 'X', country: 'KE' } },
+    ] };
+    const kpAblehnungen = [];
+    await page.route('**/api/payments/pending', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(kpAntwort) }));
+    await page.route('**/api/reports', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ reports: [] }) }));
+    await page.route('**/api/verify/requests', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ requests: [] }) }));
+    await page.route('**/api/payments/*/reject', (route) => { kpAblehnungen.push(route.request().postData()); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }); });
+    await page.goto(BASE, { waitUntil: 'networkidle' });
+    await page.evaluate(() => window.showModeration && window.showModeration());
+    await page.waitForTimeout(800);
+    const kp1 = page.locator('[data-kp="kp1"]');
+    if (await kp1.count() === 0) {
+      findings.push('Krypto-Prüfung: Karte fehlt in der Moderation');
+    } else {
+      const reihenfolge = await kp1.evaluate((k) => {
+        const h = k.querySelector('[data-kphint]'), b = k.querySelector('[data-kpok]');
+        return !!(h && b && (h.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING));
+      });
+      const href = await kp1.locator('[data-kpexplorer]').getAttribute('href').catch(() => null);
+      const kp2Links = await page.locator('[data-kp="kp2"] a').evaluateAll((as) => as.map((a) => a.getAttribute('href')));
+      const kp2Text = await page.locator('[data-kp="kp2"]').innerText();
+      await kp1.locator('[data-kpno]').click();
+      await kp1.locator('[data-kpsend]').click();
+      await page.waitForTimeout(300);
+      const ohneGrund = kpAblehnungen.length;
+      // Nur weiter, wenn ohne Grund NICHTS abging. Sonst hat die Liste schon
+      // neu gezeichnet, das Eingabefeld ist weg — und der nächste Schritt liefe
+      // in eine Zeitüberschreitung statt in den eigentlichen Befund.
+      if (ohneGrund === 0) {
+        await kp1.locator('[data-kpgrundin]').fill('KPGRUND Betrag zu niedrig');
+        await kp1.locator('[data-kpsend]').click();
+        await page.waitForTimeout(500);
+      }
+      if (!reihenfolge) findings.push('Krypto-Prüfung: die Prüfanleitung steht nicht VOR dem Bestätigen-Knopf');
+      else if (href !== 'https://mempool.space/tx/' + 'a'.repeat(64)) findings.push(`Krypto-Prüfung: Explorer-Link fehlt oder falsch (${href})`);
+      else if (kp2Links.some((h) => /^javascript:/i.test(String(h)))) findings.push('Krypto-Prüfung: ein javascript:-Link ist klickbar');
+      else if (!/Format/.test(kp2Text)) findings.push('Krypto-Prüfung: eine ID im falschen Format wird nicht als verdächtig benannt');
+      else if (ohneGrund !== 0) findings.push('Krypto-Prüfung: Ablehnen ohne Grund wurde abgeschickt');
+      else if (!kpAblehnungen.some((b) => /KPGRUND/.test(String(b)))) findings.push('Krypto-Prüfung: der Ablehnungsgrund kommt nicht beim Server an');
+      else console.log('✓ Krypto-Prüfung: Anleitung vor dem Knopf, Explorer-Link nur aus geprüfter ID, Ablehnen nur mit Grund');
+    }
+    await page.route('**/api/payments/mine', (route) => route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ payments: [{ id: 'kp9', method: 'crypto_direct', status: 'pending_review', created_at: new Date().toISOString(), claimed_at: new Date().toISOString() }] }) }));
+    await page.evaluate(() => window.openPremium && window.openPremium());
+    await page.waitForTimeout(900);
+    if (await page.locator('[data-prstand="review"]').count() === 0) {
+      findings.push('Premium-Seite: eine gemeldete Zahlung wird nicht als „wird geprüft" angezeigt — Kundin könnte doppelt zahlen');
+    } else {
+      console.log('✓ Premium-Seite: gemeldete Zahlung erscheint als „wird geprüft — nicht erneut zahlen"');
+    }
+
     if (errors.length) findings.push(`Säule 3: JS-Fehler — ${errors.slice(0, 2).join(' | ')}`);
     await ctx.close();
   }

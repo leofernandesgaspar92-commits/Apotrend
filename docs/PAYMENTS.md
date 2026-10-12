@@ -140,9 +140,11 @@ rohen Bodys), Event `charge:confirmed`.
 Zusätzlich zum Prozessor-Weg gibt es den **einfachen Direkt-Weg**: Kund:innen zahlen direkt
 an die **eigenen** öffentlichen Empfangsadressen des Betreibers.
 
-- **Adressen:** `src/data/cryptoWallets.js` (BTC + ETH vorbelegt, per `APOPULSE_WALLET_BTC/ETH`
-  überschreibbar). **Solana** ist bewusst leer — es wurden zwei verschiedene SOL-Adressen
-  genannt; erst nach Klärung über `APOPULSE_WALLET_SOL` setzen (falsche Adresse = Geldverlust).
+- **Adressen:** `src/data/cryptoWallets.js` — BTC, ETH und zwei Solana-Wallets (Seeker
+  „leokennedy.skr" und Phantom), je per `APOPULSE_WALLET_BTC/ETH/SOL_SEEKER/SOL_PHANTOM`
+  überschreibbar (leer = Wallet abgeschaltet). **Tron (USDT TRC-20) ist ohne
+  `APOPULSE_WALLET_TRON` abgeschaltet** — eine erfundene Adresse wäre Geldverlust. Für die
+  Afrika-Märkte ist das der meistgenannte günstige Stablecoin-Weg; Adresse eintragen.
 - **Kurse:** `src/services/cryptoRates.js` holt EUR→Coin von CoinGecko (öffentlich, lesend,
   5-min-Cache, `fetch` injizierbar). Fällt der Abruf aus, wird nur der **€-Betrag** gezeigt —
   die Zahlung (Adresse + „In Wallet-App öffnen") funktioniert **immer**.
@@ -157,6 +159,35 @@ an die **eigenen** öffentlichen Empfangsadressen des Betreibers.
   Feature frei. Damit gibt es einen sauberen Datensatz und eine bewusste Freigabe.
 - **Wichtig:** Auch der Direkt-Weg entbindet nicht von **Steuer/Buchführung** (Krypto-Eingänge
   sind zu erfassen) und ggf. gewerbe-/aufsichtsrechtlichen Pflichten.
+
+### Die Prüfung in der App (12.10.2026)
+
+Vorher endete der Direkt-Weg im Leeren: Die Kundin meldete ihre Transaktions-ID und las
+„wird nach Prüfung freigeschaltet" — aber **niemand erfuhr davon**. Es gab keine
+Benachrichtigung und keine Prüfliste in der App; bestätigen ging nur per API-Aufruf.
+
+Jetzt:
+
+| Schritt | Was passiert |
+|---|---|
+| Kundin meldet Tx-ID | Formprüfung je Kette (Tippfehler fällt sofort auf); **alle Redaktionskonten bekommen eine Benachrichtigung** `payment_review` |
+| Redaktions-Dashboard | Abschnitt „Krypto-Zahlungen prüfen" **ganz oben**: Kundin, Betrag, Kette, Empfangsadresse, **erwarteter Betrag zum Kurs beim Start**, **Start- und Meldezeit**, Tx-ID, Link zum Block-Explorer |
+| Bestätigen | Premium frei, Kundin bekommt `payment_confirmed` |
+| Ablehnen | **nur mit Grund**; Kundin bekommt `payment_rejected` samt Grund |
+| Premium-Seite der Kundin | zeigt „wird geprüft — bitte nicht erneut zahlen" bzw. „abgelehnt: Grund" |
+
+Die Benachrichtigungen sind **Systemmeldungen** — nicht in den Einstellungen abschaltbar,
+weil eine Zahlungsbestätigung an keiner Einstellung scheitern darf.
+
+**Warum Start- und Meldezeit in der Prüfliste stehen:** Transaktions-IDs sind öffentlich.
+Jede Zahlung an unsere Adresse steht im Explorer. Wer eine fremde, echte Zahlung abschreibt
+und als eigene meldet, bestünde die Prüfung „gibt es die Transaktion, geht sie an unsere
+Adresse?". Sie scheitert erst daran, dass die Transaktion **vor** dem Start der eigenen Zahlung
+liegt. Zusätzlich lässt sich eine ID nur **einmal** melden, solange die Meldung offen oder
+bezahlt ist; eine abgelehnte sperrt nicht mehr, damit die echte Zahlerin danach melden kann.
+
+Explorer-Links (mempool.space, etherscan.io, solscan.io, tronscan.org) werden nur aus einer
+**geprüften** ID gebaut (`src/domain/kryptoTx.js`), nie aus der freien Eingabe.
 
 ## 6b. PayPal direkt und Klarna (FIAT-Ausbau, 04.10.2026)
 

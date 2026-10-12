@@ -158,21 +158,26 @@ test('cryptoOptions: alle Wallets (inkl. 2× SOL) mit Adresse + Betrag + Wallet-
   await assert.rejects(() => svc.cryptoOptions('gibtsnicht'), e => e.code === 'product_unknown');
 });
 
+const SOL_TX = '5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUW';
+
 test('Direkt-Krypto: start → claim(Tx) → Moderation bestätigt → Premium frei', async () => {
   const repo = createMemoryRepo();
   const cust = repo.createUser({ email: 'c@c.at', name: 'C', passwordHash: 'x' });
   const mod = repo.createUser({ email: 'm@m.at', name: 'M', passwordHash: 'x' });
   const svc = createPaymentsService({ repo, wallets: () => cryptoWallets({}), isModerator: (id) => id === mod.id });
-  const start = svc.startCryptoPayment(cust.id, 'premium_monthly', 'sol_phantom');
+  // Start ist asynchron: Der erwartete Betrag wird zum Kurs dieses Moments festgehalten.
+  const start = await svc.startCryptoPayment(cust.id, 'premium_monthly', 'sol_phantom');
   assert.equal(start.address, 'EMSJTkRGnnExNwaCkte9PDCN4Tm3BNSZKdXqcEpamWFM');
   assert.equal(start.coin, 'solana');
   assert.equal(repo.getPayment(start.payment_id).status, 'pending');
   assert.equal(repo.getPayment(start.payment_id).wallet_id, 'sol_phantom', 'Wallet am Datensatz für die Zuordnung');
   // unbekannte Wallet
-  assert.throws(() => svc.startCryptoPayment(cust.id, 'premium_monthly', 'dogecoin'), e => e.code === 'coin_unavailable');
+  await assert.rejects(() => svc.startCryptoPayment(cust.id, 'premium_monthly', 'dogecoin'), e => e.code === 'coin_unavailable');
   // Tx-ID einreichen
   assert.throws(() => svc.claimCryptoPayment(cust.id, start.payment_id, 'x'), e => e.code === 'tx_ref_missing');
-  svc.claimCryptoPayment(cust.id, start.payment_id, 'abcdef123456txhash');
+  // Echte Form einer Solana-Signatur (Base58, 88 Zeichen). „abcdef123456txhash" war
+  // vorher gültig — die Formprüfung beim Melden weist so etwas jetzt ab.
+  svc.claimCryptoPayment(cust.id, start.payment_id, SOL_TX);
   assert.equal(repo.getPayment(start.payment_id).status, 'pending_review');
   assert.equal(svc.listPendingReview(mod.id).length, 1);
   // fremder Nutzer kann nicht claimen

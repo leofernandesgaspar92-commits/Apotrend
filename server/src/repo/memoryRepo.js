@@ -134,6 +134,15 @@ export function createMemoryRepo() {
     getPayment(id) { const p = payments.get(id); return p ? { ...p } : null; },
     getPaymentByRef(provider, ref) { const id = paymentsByRef.get(`${provider}:${ref}`); return id ? { ...payments.get(id) } : null; },
     setPaymentRef(id, ref) { const p = payments.get(id); if (!p) return null; p.provider_ref = ref; paymentsByRef.set(`${p.provider}:${ref}`, id); return { ...p }; },
+    // Felder der manuellen Krypto-Prüfung (erwarteter Betrag, Meldezeitpunkt,
+    // Prüfvermerk). Nur benannte Felder — kein freies Überschreiben des Datensatzes.
+    updatePaymentReview(id, patch) {
+      const p = payments.get(id); if (!p) return null;
+      for (const k of ['expected_crypto', 'rate_eur', 'claimed_at', 'reviewed_by', 'reviewed_at', 'review_note']) {
+        if (k in patch) p[k] = patch[k];
+      }
+      return { ...p };
+    },
     setPaymentStatus(id, status) { const p = payments.get(id); if (!p) return null; p.status = status; if (status === 'paid' && !p.paid_at) p.paid_at = now(); return { ...p }; },
     listPaymentsByUser(userId) { return [...payments.values()].filter(p => p.user_id === userId).map(p => ({ ...p })); },
     listAllPayments() { return [...payments.values()].map(p => ({ ...p })); },

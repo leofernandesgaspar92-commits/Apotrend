@@ -5422,8 +5422,22 @@ async function openPremium() {
   try {
     const mine = await api('GET', '/api/me/premium').catch(() => ({ premium: false }));
     if (mine.premium) { body.innerHTML = `<div class="ok-box" style="padding:10px 12px">${esc(t('pr_have'))}</div>`; return; }
+    // Eigener Prüfstand ZUERST: Wer schon gezahlt hat, soll nicht ein zweites
+    // Mal zahlen, nur weil die Seite nach dem Neuladen nichts davon weiß.
+    const eigene = ((await api('GET', '/api/payments/mine').catch(() => ({ payments: [] }))).payments || [])
+      .filter(x => x.method === 'crypto_direct');
+    const letzte = eigene.find(x => x.status === 'pending_review' || x.status === 'failed');
+    let stand = null;
+    if (letzte && letzte.status === 'pending_review') {
+      stand = el(`<div data-prstand="review" style="background:var(--info-bg);border:1px solid var(--info-bd);color:var(--info-fg);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:15px;line-height:1.5">
+        ⏳ <b>${esc(ti('pr_review_t', { d: fmtZeit(letzte.claimed_at || letzte.created_at) }))}</b><div style="margin-top:4px">${esc(t('pr_review_s'))}</div></div>`);
+    } else if (letzte && letzte.status === 'failed') {
+      stand = el(`<div data-prstand="failed" style="background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-fg);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:15px;line-height:1.5">
+        ⚠️ <b>${esc(t('pr_rejected_t'))}</b>${letzte.review_note ? `<div style="margin-top:4px">${esc(t('pr_rejected_why'))}: „${esc(letzte.review_note)}“</div>` : ''}<div style="margin-top:4px">${esc(t('pr_rejected_s'))}</div></div>`);
+    }
     const opt = await api('GET', `/api/payments/crypto?product=premium_monthly&country=${encodeURIComponent(viewCountry())}`);
     body.innerHTML = '';
+    if (stand) body.appendChild(stand);
     // Nutzen zuerst zeigen (Warum Premium?) — sonst zahlt niemand. Klar, scannbar, ehrlich
     // (nur tatsächlich freigeschaltete Funktionen).
     body.appendChild(el(`<div class="ok-box" style="padding:12px 14px;margin-bottom:12px">
@@ -7479,7 +7493,7 @@ async function showNotifications() {
   setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️' };
   app.innerHTML = '';
   const procCount = d.notifications.filter(n => NOTIF_PROCUREMENT.has(n.type)).length;
   const showFilter = d.notifications.length >= 5 && procCount > 0 && procCount < d.notifications.length;
@@ -7511,7 +7525,7 @@ async function showNotifications() {
     const who = n.actor ? n.actor.display_name : t('notif_someone');
     // Systemmeldungen ohne handelnde Person: Hier hat niemand etwas getan,
     // eine Behoerde hat gemeldet. „Jemand hat …" waere schlicht falsch.
-    const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert';
+    const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'payment_confirmed' || n.type === 'payment_rejected';
     // Profilbild der handelnden Person (wer) + Typ-Emoji (was) — auf einen Blick erkennbar,
     // konsistent zu Feed/Verzeichnis/Suche. Ohne Person (System-Meldung) nur das Emoji.
     const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:var(--ok-bg)'}">
@@ -7539,6 +7553,8 @@ async function showNotifications() {
       else if (n.type === 'signal_alert') { signalPreset = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=>goTab('signals')); }
       else if (n.type === 'price_alert') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('rabatte')); }
       else if (n.type === 'shortage_confirm') { mainScreen().then(()=>goTab('shortages')); }
+      else if (n.type === 'payment_review') { showModeration(); }
+      else if (n.type === 'payment_confirmed' || n.type === 'payment_rejected') { openPremium(); }
       else if (n.type === 'appt_request' || n.type === 'appt_confirmed' || n.type === 'appt_declined' || n.type === 'appt_cancelled') { mainScreen().then(()=>openAppointments()); }
       else if (n.type === 'promo_like' || n.type === 'promo_comment') { mainScreen().then(()=> n.ref_id ? openPromotionDetail(n.ref_id) : openPromotions()); }
       else if (n.type === 'live_start') { mainScreen().then(()=>openLive()); }
@@ -7629,12 +7645,74 @@ async function openPost(postId) {
   } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
 
+const fmtZeit = (iso) => { const d = new Date(iso); return iso && !Number.isNaN(d.getTime()) ? d.toLocaleString(bcp47(), { dateStyle: 'medium', timeStyle: 'short' }) : '—'; };
+
+/**
+ * Eine gemeldete Krypto-Zahlung zur Prüfung.
+ *
+ * Die PRÜFANLEITUNG steht VOR den Knöpfen, nicht darunter: Transaktions-IDs
+ * sind öffentlich. Eine abgeschriebene fremde Zahlung besteht „gibt es, geht an
+ * unsere Adresse" — sie scheitert erst am Zeitpunkt (liegt vor dem Start) und
+ * am Betrag. Wer bestätigt, soll genau das geprüft haben.
+ */
+function kryptoPruefKarte(z) {
+  const k = z.kunde || {};
+  const land = (COUNTRIES_CACHE || []).find(c => c.code === k.country);
+  const erwartet = z.expected_crypto != null
+    ? ti('kp_expected', { n: Number(z.expected_crypto).toLocaleString(bcp47(), { maximumFractionDigits: 8 }), coin: z.symbol || (z.coin || '').toUpperCase() })
+    : t('kp_expected_none');
+  const link = sichererLink(z.explorer_url);
+  const card = el(`<div class="card" data-kp="${esc(z.id)}">
+    <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
+      <b style="font-size:16px">${esc(k.display_name || '?')}</b> <span class="handle">@${esc(k.handle || '?')}</span>
+      <span class="muted">${esc((land && land.flag + ' ' + land.name) || k.country || '')}</span>
+    </div>
+    <div style="margin-top:6px;font-size:15px"><b>${esc(fmtMoney(z.amount_cents / 100))} ${esc(z.currency)}</b> · ${esc(z.product_name || '')}</div>
+    <div class="muted" style="font-size:14px;margin-top:2px">${esc(z.network || z.coin || '')}${z.wallet_label ? ' · ' + esc(z.wallet_label) : ''}</div>
+    <div style="font-size:14px;margin-top:6px">${esc(erwartet)}</div>
+    <div style="font-size:14px;margin-top:2px">${esc(t('kp_started'))}: <b>${esc(fmtZeit(z.created_at))}</b> · ${esc(t('kp_claimed'))}: ${esc(fmtZeit(z.claimed_at))}</div>
+    <div style="font-size:13px;margin-top:6px"><span class="muted">${esc(t('kp_address'))}:</span> <code style="word-break:break-all">${esc(z.address || '')}</code></div>
+    <div style="font-size:13px;margin-top:2px"><span class="muted">${esc(t('kp_tx'))}:</span> <code style="word-break:break-all" data-kptx>${esc(z.provider_ref || '')}</code></div>
+    ${link ? `<div style="margin-top:8px"><a class="btn-link small" href="${esc(link)}" target="_blank" rel="noopener noreferrer" data-kpexplorer style="min-height:40px;display:inline-flex;align-items:center">🔎 ${esc(t('kp_explorer'))} ↗</a></div>`
+           : `<div style="margin-top:8px;color:var(--crit-fg);font-weight:700">⚠️ ${esc(t('kp_bad_format'))}</div>`}
+    <div data-kphint style="margin-top:10px;background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-fg);border-radius:8px;padding:10px 12px;font-size:14px;line-height:1.5">
+      <b>${esc(t('kp_check_t'))}</b><ol style="margin:6px 0 0;padding-left:20px"><li>${esc(t('kp_check_1'))}</li><li>${esc(t('kp_check_2'))}</li><li>${esc(t('kp_check_3'))}</li></ol>
+    </div>
+    <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">
+      <button class="small" data-kpok style="min-height:44px">✓ ${esc(t('kp_confirm'))}</button>
+      <button class="ghost small" data-kpno style="min-height:44px">${esc(t('kp_reject'))}</button>
+    </div>
+    <div class="hidden" data-kpgrund style="margin-top:8px">
+      <label style="font-size:14px">${esc(t('kp_reason'))}</label>
+      <input data-kpgrundin maxlength="300" placeholder="${esc(t('kp_reason_ph'))}">
+      <div class="row" style="margin-top:6px"><button class="small" data-kpsend style="min-height:44px">${esc(t('kp_reject_send'))}</button></div>
+    </div>
+    <div class="err" data-kperr></div>
+  </div>`);
+  const err = card.querySelector('[data-kperr]');
+  card.querySelector('[data-kpok]').onclick = async () => {
+    err.textContent = '';
+    try { await api('POST', `/api/payments/${encodeURIComponent(z.id)}/confirm`); showModeration(); } catch (e) { err.textContent = e.message; }
+  };
+  card.querySelector('[data-kpno]').onclick = () => { card.querySelector('[data-kpgrund]').classList.remove('hidden'); card.querySelector('[data-kpgrundin]').focus(); };
+  card.querySelector('[data-kpsend]').onclick = async () => {
+    err.textContent = '';
+    const grund = card.querySelector('[data-kpgrundin]').value.trim();
+    if (!grund) { err.textContent = t('kp_reason_need'); return; }
+    try { await api('POST', `/api/payments/${encodeURIComponent(z.id)}/reject`, { grund }); showModeration(); } catch (e) { err.textContent = e.message; }
+  };
+  return card;
+}
+
 async function showModeration() {
   setDocTitle(t('md_doc'));
   app.innerHTML = '<div class="loading">…</div>';
-  let d, vq, sh;
+  let d, vq, sh, kz;
   try { d = await api('GET','/api/reports'); vq = await api('GET','/api/verify/requests'); sh = await api('GET','/api/shortages'); }
   catch(e){ app.innerHTML = ''; app.appendChild(errorState(e.message, showModeration)); return; }
+  // Krypto-Prüfliste eigenständig laden: Ein Fehler dort darf die übrige
+  // Moderation nicht blockieren — aber er wird benannt, nicht verschluckt.
+  try { kz = (await api('GET','/api/payments/pending')).payments || []; } catch (e) { kz = null; }
   app.innerHTML = '';
   const krit = (sh.shortages||[]).filter(s => s.status === 'kritisch').length;
   const comm = (sh.shortages||[]).filter(s => s.provenance === 'community').length;
@@ -7645,12 +7723,19 @@ async function showModeration() {
     <div class="muted" style="margin-bottom:10px">${esc(t('md_sub'))}</div>
     <div class="row" style="flex-wrap:wrap;gap:10px">
       ${mtile('🚩', d.reports.length, t('md_reports'), 'var(--crit-fg)')}
+      ${mtile('💰', kz ? kz.length : '?', t('kp_tile'), 'var(--ok-fg)')}
       ${mtile('✔', vq.requests.length, t('md_verifs'), 'var(--info-fg)')}
       ${mtile('🔴', krit, t('ov_t_crit'), 'var(--crit-fg)')}
       ${mtile('👥', comm, t('md_community'), 'var(--warn-fg)')}
     </div></div>`);
   head.querySelector('#back').onclick = mainScreen;
   app.appendChild(head);
+  // Krypto-Zahlungen ZUERST: Hier wartet eine zahlende Kundin auf ihre Freischaltung.
+  if (kz === null) app.appendChild(el(`<div class="card" style="border-color:var(--crit-bd)">${esc(t('kp_load_err'))}</div>`));
+  else if (kz.length) {
+    app.appendChild(el(`<div class="muted" style="margin:6px 2px;font-weight:700">${esc(t('kp_sec'))}</div>`));
+    kz.forEach(z => app.appendChild(kryptoPruefKarte(z)));
+  }
   // Verifizierungs-Anträge
   if (vq.requests.length) {
     app.appendChild(el(`<div class="muted" style="margin:6px 2px;font-weight:700">${esc(t('md_verif_sec'))}</div>`));
@@ -7682,7 +7767,7 @@ async function showModeration() {
     });
   }
   if (d.reports.length) app.appendChild(el(`<div class="muted" style="margin:10px 2px 6px;font-weight:700">${esc(t('md_reported_sec'))}</div>`));
-  else if (!vq.requests.length) { app.appendChild(el(`<div class="card muted">${esc(t('md_empty'))}</div>`)); return; }
+  else if (!vq.requests.length && !(kz && kz.length)) { app.appendChild(el(`<div class="card muted">${esc(t('md_empty'))}</div>`)); return; }
   d.reports.forEach(r => {
     const post = r.post;
     const card = el(`<div class="card">

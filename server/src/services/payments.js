@@ -11,6 +11,7 @@ import crypto from 'node:crypto';
 import { getProduct } from '../data/products.js';
 import { walletUri } from '../data/cryptoWallets.js';
 import { AppError } from '../domain/errors.js';
+import { pruefeTx } from '../domain/kryptoTx.js';
 
 // ── Wer bedient eine Methode, wenn zwei Anbieter sie können? ────────────────
 //  „paypal" kann Stripe (als Zahlungsart im gehosteten Checkout) UND PayPal
@@ -24,7 +25,13 @@ import { AppError } from '../domain/errors.js';
 //  hinterlegt sind.
 const PROVIDER_VORRANG = { paypal: ['paypal', 'stripe'] };
 
-export function createPaymentsService({ repo, providers = {}, onPaid = null, wallets = () => ({}), rates = null, fx = null, isModerator = () => false, mirror = null }) {
+export function createPaymentsService({
+  repo, providers = {}, onPaid = null, wallets = () => ({}), rates = null, fx = null, isModerator = () => false, mirror = null,
+  // Benachrichtigungen der manuellen Krypto-Prüfung. Optional, damit die
+  // Tests ohne Social-Schicht laufen. `moderatoren()` liefert User-IDs.
+  benachrichtige = null, moderatoren = () => [],
+}) {
+  const melde = (o) => { if (typeof benachrichtige === 'function') { try { benachrichtige(o); } catch { /* eine Glocke darf keine Zahlung aufhalten */ } } };
   const pick = (method) => {
     const kandidaten = Object.values(providers).filter(p => (p.methods || []).includes(method));
     if (!kandidaten.length) return null;
@@ -90,23 +97,61 @@ export function createPaymentsService({ repo, providers = {}, onPaid = null, wal
       return { product: product.id, product_name: product.name, currency: product.currency, amount: eur, amount_eur: eur, local, coins };
     },
     // Kund:in wählt eine konkrete Wallet -> pending-Datensatz (zur späteren manuellen Zuordnung).
-    startCryptoPayment(userId, productId, walletId) {
+    //
+    // Der ERWARTETE Betrag wird beim Start festgehalten (Kurs dieses Moments).
+    // Die Moderation braucht ihn für die Prüfung — siehe claimCryptoPayment.
+    async startCryptoPayment(userId, productId, walletId) {
       const product = getProduct(productId);
       if (!product) throw new AppError('product_unknown', 'Unbekanntes Produkt.');
       const w = wallets().find(x => x.id === walletId);
       if (!w) throw new AppError('coin_unavailable', 'Wallet nicht verfügbar.');
+      let rate = null;
+      try { rate = rates ? ((await rates.ratesEur([w.coin])) || {})[w.coin] || null : null; } catch { rate = null; }
+      const eur = product.amount_cents / 100;
       const payment = repo.createPayment({ userId, productId, amountCents: product.amount_cents, currency: product.currency, method: 'crypto_direct', provider: 'direct', coin: w.coin, walletId: w.id, address: w.address, status: 'pending' });
-      spiegeln(payment);
+      const mitBetrag = repo.updatePaymentReview
+        ? repo.updatePaymentReview(payment.id, { rate_eur: rate, expected_crypto: rate ? Number((eur / rate).toFixed(8)) : null })
+        : payment;
+      spiegeln(mitBetrag || payment);
       return { payment_id: payment.id, coin: w.coin, address: w.address, network: w.network, label: w.label };
     },
     // Kund:in reicht die Transaktions-ID ein -> „pending_review" (du prüfst in deiner Wallet).
+    //
+    // ⚠️ TRANSAKTIONS-IDs SIND ÖFFENTLICH. Jede Zahlung an unsere Adresse steht
+    //    im Block-Explorer. Wer eine fremde, echte Zahlung abschreibt und als
+    //    eigene meldet, bestünde eine Prüfung „gibt es die Transaktion, geht
+    //    sie an unsere Adresse?" — und bekäme Premium umsonst. Darum:
+    //     · Eine ID lässt sich nur EINMAL melden (offene oder bezahlte Meldung).
+    //     · Der Startzeitpunkt und der erwartete Betrag stehen in der Prüfliste:
+    //       Eine abgeschriebene Zahlung liegt zeitlich VOR dem Start der
+    //       Betrügerin — genau das sieht die Moderation.
+    //     · Gesperrt wird nur durch eine OFFENE oder BEZAHLTE Meldung. Eine
+    //       abgelehnte zählt nicht mehr — wer zuerst eine fremde ID meldet und
+    //       abgelehnt wird, sperrt die echte Zahlerin damit nicht aus.
     claimCryptoPayment(userId, paymentId, txRef) {
       const p = repo.getPayment(paymentId);
       if (!p || p.user_id !== userId) throw new AppError('payment_not_found', 'Zahlung nicht gefunden.');
-      const ref = String(txRef || '').trim();
-      if (ref.length < 6) throw new AppError('tx_ref_missing', 'Bitte die Transaktions-ID angeben.');
+      const roh = String(txRef || '').trim();
+      if (roh.length < 6) throw new AppError('tx_ref_missing', 'Bitte die Transaktions-ID angeben.');
+      if (p.status === 'paid') throw new AppError('payment_already_paid', 'Diese Zahlung ist bereits bestätigt.', 409);
+      const tx = pruefeTx(p.coin, roh);
+      if (!tx.ok && tx.format) {
+        // Tippfehler JETZT melden, nicht nach Tagen bei der Prüfung.
+        throw new AppError('tx_format', `Das sieht nicht wie eine ${tx.kette}-Transaktions-ID aus (erwartet: ${tx.format}). Bitte aus der Wallet kopieren.`, 400);
+      }
+      const ref = tx.ok ? tx.id : roh;
+      const schon = repo.getPaymentByRef(p.provider, ref);
+      if (schon && schon.id !== p.id && ['pending_review', 'paid'].includes(schon.status)) {
+        throw new AppError('tx_already_claimed', 'Diese Transaktion wurde bereits gemeldet. Wenn es Ihre Zahlung ist, wenden Sie sich bitte an den Support.', 409);
+      }
       repo.setPaymentRef(paymentId, ref);
+      if (repo.updatePaymentReview) repo.updatePaymentReview(paymentId, { claimed_at: new Date().toISOString() });
       spiegeln(repo.setPaymentStatus(paymentId, 'pending_review'));
+      // Ohne diese Meldung erfuhr niemand von der Zahlung: Die Kundin las
+      // „wird nach Prüfung freigeschaltet", und es prüfte niemand.
+      for (const mod of (moderatoren() || [])) {
+        melde({ userId: mod, type: 'payment_review', actorUserId: userId, refType: 'payment', refId: paymentId, label: `${p.coin} · ${(p.amount_cents / 100).toFixed(2)} ${p.currency}` });
+      }
       return { ok: true };
     },
     // Betreiber/Moderation bestätigt manuell (nach Blick in die Wallet) -> Feature frei.
@@ -115,11 +160,54 @@ export function createPaymentsService({ repo, providers = {}, onPaid = null, wal
       const p = repo.getPayment(paymentId);
       if (!p) throw new AppError('payment_not_found', 'Zahlung nicht gefunden.');
       if (p.status === 'paid') return { ok: true, already: true };
-      return freischalten(p);
+      const r = await freischalten(p);
+      if (repo.updatePaymentReview) repo.updatePaymentReview(paymentId, { reviewed_by: moderatorUserId, reviewed_at: new Date().toISOString() });
+      melde({ userId: p.user_id, type: 'payment_confirmed', actorUserId: moderatorUserId, refType: 'payment', refId: paymentId, label: getProduct(p.product_id)?.name || null });
+      return r;
     },
-    listPendingReview(moderatorUserId) {
+    // Ablehnen: Betrag falsch, Transaktion nicht gefunden, oder zeitlich vor dem
+    // Start (abgeschriebene fremde Zahlung). Die Kundin erfährt es MIT Grund —
+    // sonst wartet sie weiter auf eine Freischaltung, die nicht kommt.
+    rejectPayment(moderatorUserId, paymentId, grund) {
       if (!isModerator(moderatorUserId)) throw new AppError('forbidden', 'Nur Moderation.');
-      return repo.listAllPayments().filter(p => p.status === 'pending_review');
+      const p = repo.getPayment(paymentId);
+      if (!p) throw new AppError('payment_not_found', 'Zahlung nicht gefunden.');
+      if (p.status !== 'pending_review') throw new AppError('payment_not_in_review', 'Nur gemeldete, offene Zahlungen lassen sich ablehnen.', 409);
+      const g = String(grund || '').trim().slice(0, 300);
+      if (!g) throw new AppError('reject_reason_missing', 'Bitte einen Grund angeben — die Kundin bekommt ihn mitgeteilt.', 400);
+      if (repo.updatePaymentReview) repo.updatePaymentReview(paymentId, { reviewed_by: moderatorUserId, reviewed_at: new Date().toISOString(), review_note: g });
+      spiegeln(repo.setPaymentStatus(paymentId, 'failed'));
+      melde({ userId: p.user_id, type: 'payment_rejected', actorUserId: moderatorUserId, refType: 'payment', refId: paymentId, label: g });
+      return { ok: true };
+    },
+    // Prüfliste: alles, was die Moderation für die Entscheidung braucht.
+    listPendingReview(moderatorUserId, { kunde = () => null } = {}) {
+      if (!isModerator(moderatorUserId)) throw new AppError('forbidden', 'Nur Moderation.');
+      return repo.listAllPayments()
+        .filter(p => p.status === 'pending_review')
+        .sort((a, b) => String(a.claimed_at || a.created_at).localeCompare(String(b.claimed_at || b.created_at)))
+        .map((p) => {
+          const tx = pruefeTx(p.coin, p.provider_ref);
+          const w = wallets().find(x => x.id === p.wallet_id);
+          return {
+            ...p,
+            kunde: kunde(p.user_id),
+            product_name: getProduct(p.product_id)?.name || p.product_id,
+            network: w ? w.network : null,
+            symbol: w ? w.symbol : null, // „SOL", nicht „solana"
+            wallet_label: w ? w.label : null,
+            tx_format_ok: tx.ok,
+            explorer_url: tx.ok ? tx.explorer : null,
+          };
+        });
+    },
+    // Eigene Zahlungen — damit die Premium-Seite „wird geprüft" oder „abgelehnt:
+    // Grund" zeigen kann, statt dieselbe Zahlung ein zweites Mal anzubieten.
+    myPayments(userId) {
+      return repo.listPaymentsByUser(userId)
+        .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+        .map(({ id, product_id, amount_cents, currency, method, coin, status, created_at, claimed_at, paid_at, reviewed_at, review_note }) =>
+          ({ id, product_id, amount_cents, currency, method, coin, status, created_at, claimed_at, paid_at, reviewed_at, review_note }));
     },
 
     // Verfügbare Methoden (leer, solange kein Anbieter konfiguriert ist).

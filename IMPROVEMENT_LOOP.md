@@ -1624,3 +1624,47 @@ Großhandelspreise existiert keine freie Quelle; ohne Quelle bleibt der Bereich
 leer, statt österreichische Zahlen zu zeigen.
 
 **Offen:** Gelesen-Zustand für den Warnungs-Feed.
+
+### Cycle · Krypto-Zahlung Afrika: Die Meldung kam bei niemandem an (2026-10-12)
+
+**Owner-Frage:** „Funktioniert das Krypto-Zahlsystem für unsere Kunden in Afrika?"
+
+**GATHER — im Code nachgesehen, nicht aus dem Gedächtnis.** Der Geldweg funktioniert
+(Premium-Seite → Coin/Wallet → Betrag zum Tageskurs → Zahlung direkt in die eigene Wallet →
+Transaktions-ID melden). Die Freischaltung nicht: Nach der Meldung stand bei der Kundin
+„wird nach Prüfung freigeschaltet" — **aber niemand erfuhr davon**. Keine Benachrichtigung,
+keine Prüfliste in der App; Bestätigen ging nur per API-Aufruf, den die Oberfläche nirgends
+machte. Eine Apotheke in Lagos hätte gezahlt und ewig gewartet. Dazu: USDT über Tron (der
+günstige Weg in NG/KE/GH) ist ohne Adresse abgeschaltet.
+
+**WORK.** Meldung an alle Redaktionskonten; Prüfliste ganz oben im Redaktions-Dashboard;
+Bestätigen und Ablehnen (nur mit Grund), beides mit Benachrichtigung an die Kundin;
+Premium-Seite zeigt den eigenen Prüfstand („nicht erneut zahlen").
+
+**Eine Lücke, die erst beim Bauen auffiel:** Transaktions-IDs sind öffentlich. Eine
+abgeschriebene fremde Zahlung bestünde „gibt es, geht an unsere Adresse". Darum hält der
+Start den erwarteten Betrag zum Kurs dieses Moments fest, die Prüfliste zeigt Start- und
+Meldezeit mit einer Prüfanleitung VOR dem Bestätigen-Knopf, und eine ID lässt sich nur
+einmal melden. Formprüfung je Kette schon beim Melden; Explorer-Link nur aus geprüfter ID.
+
+**Drei Gegenproben, die NICHT anschlugen — alle drei lehrreich:**
+- „Ablehnung gibt Tx-ID frei" blieb grün, weil der Mechanismus **redundant** war: Die
+  Dublettenprüfung zählt ohnehin nur offene oder bezahlte Meldungen. Statt den Test zu
+  verschärfen, die überflüssige Freigabe entfernt und den Kommentar berichtigt — Code, der
+  wie ein Schutz aussieht und keiner ist, ist schlimmer als keiner.
+- Zwei Browser-Gegenproben waren **falsch gebaut** (`order:-1` in einem Nicht-Flex-Container
+  verschiebt nichts; die Anleitung zusätzlich statt verschoben). Neu gebaut, beide schlagen an.
+- Eine weitere (Ablehnen ohne Grund) ließ das Audit **abstürzen** statt melden: Die Liste
+  zeichnete neu, der nächste Schritt lief in eine Zeitüberschreitung. `verify` wäre rot
+  gewesen, aber mit falscher Ursache. Prüfpunkt umgebaut: Er meldet jetzt den Befund.
+
+**Kleiner Fund im Screenshot:** „≈ 0.0666 SOLANA" statt „≈ 0,0666 SOL" — Kürzel und
+deutsches Zahlenformat nachgezogen. Außerdem in `docs/PAYMENTS.md` die veraltete Aussage
+„Solana ist bewusst leer" berichtigt (zwei Solana-Wallets sind seit Längerem aktiv).
+
+**CHECK.** 1066 Tests grün (+10), i18n 1540/1540/1540, `npm run verify` komplett.
+12 Gegenproben (8 Dienst, 4 Oberfläche), jede schlägt an — drei davon erst nach Nachbesserung.
+
+**Für den Owner:** Tron-Adresse als `APOPULSE_WALLET_TRON` in Render eintragen. Krypto-
+Einnahmen steuerlich erfassen lassen. Die Prüfung bleibt Handarbeit — das ist bei festen
+Wallet-Adressen der ehrliche Stand; automatisch ginge es nur über einen Zahlungsdienstleister.

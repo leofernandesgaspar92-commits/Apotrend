@@ -168,6 +168,11 @@ const payments = createPaymentsService({
   rates: cryptoRates,
   fx: fxRates, // für die Näherung des Preises in der Landeswährung
   isModerator: (userId) => social.isModerator(userId),
+  // Manuelle Krypto-Prüfung: Meldung an die Moderation, Antwort an die Kundin.
+  // Systemmeldungen (keine abschaltbare Kategorie): Eine Zahlungsbestätigung
+  // darf nicht an einer Benachrichtigungs-Einstellung scheitern.
+  benachrichtige: (o) => social.pushNotification(o),
+  moderatoren: () => socialRepo.listProfiles().filter((p) => p.is_editorial).map((p) => p.user_id),
   // Buchungszeile nach PostgreSQL. `db` ist null ohne DATABASE_URL — dann
   // laufen Zahlungen wie bisher nur über Repo + Snapshot. Der Spiegel schaltet
   // NICHTS frei; er schreibt mit (siehe `spiegeln` in services/payments.js).
@@ -1213,8 +1218,16 @@ const routes = [
   }],
   ['POST', /^\/api\/payments\/crypto\/start$/, true, async ({ userId, body }) => payments.startCryptoPayment(userId, body.productId, body.walletId ?? body.coin)],
   ['POST', /^\/api\/payments\/crypto\/([^/]+)\/claim$/, true, async ({ userId, params, body }) => payments.claimCryptoPayment(userId, params[0], body.txRef)],
-  ['GET', /^\/api\/payments\/pending$/, true, async ({ userId }) => ({ payments: payments.listPendingReview(userId) })],
+  ['GET', /^\/api\/payments\/pending$/, true, async ({ userId }) => ({
+    payments: payments.listPendingReview(userId, {
+      // Wer gezahlt hat — Name, Handle, Land. Keine E-Mail: Rückfragen laufen
+      // über die Plattform, nicht über eine Adresse in der Prüfliste.
+      kunde: (uid) => { const pr = social.getProfile(uid); return pr ? { handle: pr.handle, display_name: pr.display_name, country: pr.country || null } : null; },
+    }),
+  })],
   ['POST', /^\/api\/payments\/([^/]+)\/confirm$/, true, async ({ userId, params }) => payments.confirmPayment(userId, params[0])],
+  ['POST', /^\/api\/payments\/([^/]+)\/reject$/, true, async ({ userId, params, body }) => payments.rejectPayment(userId, params[0], body.grund)],
+  ['GET', /^\/api\/payments\/mine$/, true, async ({ userId }) => ({ payments: payments.myPayments(userId) })],
   // Der Webhook (POST /api/payments/webhook/:provider) braucht den ROHEN Body für die
   // Signaturprüfung und wird deshalb VOR dem JSON-Router gesondert behandelt (siehe unten).
 

@@ -992,8 +992,15 @@ test('Direkt-Krypto über HTTP: Adressen anzeigen, Zahlung starten + Tx melden, 
   // Zahlung starten + Tx-ID melden
   const start = await (await post('/api/payments/crypto/start', cust, { productId: 'premium_monthly', coin: 'btc' })).json();
   assert.ok(start.payment_id && start.address.startsWith('bc1q'));
-  const claim = await post(`/api/payments/crypto/${start.payment_id}/claim`, cust, { txRef: 'txhash1234567890' });
+  // Echte Form einer Bitcoin-Transaktions-ID (64 Hex). „txhash1234567890" war
+  // vorher gültig — die Formprüfung beim Melden weist so etwas jetzt ab.
+  const falsch = await post(`/api/payments/crypto/${start.payment_id}/claim`, cust, { txRef: 'txhash1234567890' });
+  assert.equal((await falsch.json()).code, 'tx_format');
+  const btcTx = Array.from({ length: 64 }, () => '0123456789abcdef'[Math.floor(Math.random() * 16)]).join('');
+  const claim = await post(`/api/payments/crypto/${start.payment_id}/claim`, cust, { txRef: btcTx });
   assert.equal(claim.status, 200);
+  // Die Kundin sieht ihren Prüfstand (Premium-Seite: „wird geprüft — nicht erneut zahlen").
+  assert.equal((await j('/api/payments/mine', cust)).payments.find(p => p.id === start.payment_id).status, 'pending_review');
   // Kunde ist NICHT Moderator -> darf nicht bestätigen; Premium noch nicht frei
   const forbid = await post(`/api/payments/${start.payment_id}/confirm`, cust, {});
   assert.equal(forbid.status, 400);
@@ -1002,12 +1009,22 @@ test('Direkt-Krypto über HTTP: Adressen anzeigen, Zahlung starten + Tx melden, 
   // Admin (Redaktion) meldet sich an, sieht die offene Zahlung, bestätigt -> Premium frei
   const adminLogin = await (await fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email: 'red@apopulse.test', password: 'redredred123' }) })).json();
   const admin = adminLogin.token;
+  // Die Redaktion WIRD benachrichtigt — vorher erfuhr niemand von der Meldung.
+  const modGlocke = (await j('/api/notifications', admin)).notifications.filter(n => n.type === 'payment_review' && n.ref_id === start.payment_id);
+  assert.equal(modGlocke.length, 1, 'Moderation bekommt die Meldung');
   const pending = await j('/api/payments/pending', admin);
-  assert.ok(pending.payments.some(p => p.id === start.payment_id));
+  const offen = pending.payments.find(p => p.id === start.payment_id);
+  assert.ok(offen, 'Zahlung in der Prüfliste');
+  assert.equal(offen.explorer_url, `https://mempool.space/tx/${btcTx}`);
+  assert.ok(offen.kunde && offen.kunde.handle, 'wer gezahlt hat');
+  assert.equal(offen.kunde.email, undefined, 'keine E-Mail in der Prüfliste');
+  assert.equal((await post(`/api/payments/${start.payment_id}/reject`, cust, { grund: 'x' })).status, 400, 'Kundin darf nicht ablehnen');
   const conf = await post(`/api/payments/${start.payment_id}/confirm`, admin, {});
   assert.equal(conf.status, 200);
   assert.equal((await conf.json()).granted, true);
   assert.equal((await j('/api/me/premium', cust)).premium, true, 'Premium nach Bestätigung frei');
+  const kundinGlocke = (await j('/api/notifications', cust)).notifications.filter(n => n.type === 'payment_confirmed');
+  assert.equal(kundinGlocke.length, 1, 'Kundin erfährt, dass freigeschaltet ist');
 });
 
 test('Statische Assets: gzip-Komprimierung + ETag/304-Revalidierung', async () => {
