@@ -75,6 +75,7 @@ import { extractSignal, aiKonfiguration, KATEGORIEN as SIGNAL_KATEGORIEN } from 
 import { createTranslateService, MAX_ZEICHEN as TRANSLATE_MAX } from '../services/aiTranslate.js';
 import { rxErlaubt, verificationStatusFor } from '../domain/jurisdiction.js';
 import { erfundeneStartmeldungenEntfernen } from '../services/startbereinigung.js';
+import { createChronik } from '../services/chronik.js';
 
 // Login-Brute-Force-Schutz: max. 5 Fehlversuche je (IP+E-Mail) in 15 Minuten.
 const loginLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
@@ -148,6 +149,8 @@ const exchangeRepo = createExchangeRepo();
 // gespeicherter Datei ab — „Cannot access 'logistikRepo' before
 // initialization". Ein Frischstart ohne Datei merkte davon nichts.
 const logistikRepo = createLogistikRepo();
+// Engpass-Chronik: ebenfalls vor applySnapshot() — sie wird mit wiederhergestellt.
+const chronik = createChronik();
 const exchange = createExchangeService(exchangeRepo, social, repo, shortagesRepo);
 // RxNorm ergaenzt die Suche um Namensvarianten (Wirkstoff <-> Handelsname).
 // Abschaltbar ueber APOPULSE_RXNORM=off — der Dienst geht ins Netz, und wer
@@ -196,6 +199,7 @@ function applySnapshot(snap) {
   rabatteRepo.__load(snap.rabatte);
   exchangeRepo.__load(snap.exchange);
   newsSeen.__load(snap.newsSeen);
+  chronik.__load(snap.chronik);
   const weg = erfundeneStartmeldungenEntfernen(socialRepo);
   if (weg) console.log(`ApoPulse: ${weg} erfundene Startmeldung(en) aus dem gesicherten Bestand entfernt.`);
 }
@@ -238,6 +242,7 @@ function collectSnapshot() {
     // Wochen spaeter. Ein neuer Speicher ohne Snapshot-Eintrag ist kein
     // Speicher, sondern ein Zwischenpuffer mit laengerer Lebensdauer.
     logistik: logistikRepo.__dump(),
+    chronik: chronik.__dump(),
   };
 }
 let saveTimer = null;
@@ -805,12 +810,16 @@ async function runShortageIngest() {
   }
 
   // Strukturierte Engpass-Exporte (CSV und JSON). ERST alle einsammeln, DANN
-  // einmal ersetzen: `replaceFeed` löscht den gesamten Nicht-Community-Bestand.
+  // einmal ersetzen: `replaceFeed` löscht den Nicht-Community-Bestand der
+  // betroffenen Länder.
   // Bei zwei Quellen nacheinander aufgerufen, würde die zweite die Zeilen der
   // ersten wieder wegräumen — und der Bestand hinge davon ab, wer zuletzt
   // geantwortet hat.
   const gesammelt = [];
   const quellen = [];
+  // Länder, deren Behörde in DIESEM Lauf Zeilen lieferte. Nur deren Bestand wird
+  // ersetzt, und nur dort darf die Chronik Episoden schließen.
+  const gelieferteLaender = new Set(summary.countries.filter((c) => c.ok && c.count > 0).map((c) => c.country));
   for (const source of sourcesByKind('shortages', process.env)) {
     if (source.format !== 'csv' && source.format !== 'json') continue;
     try {
@@ -825,8 +834,8 @@ async function runShortageIngest() {
       // Oesterreich, eine openFDA-Zeile fuer die USA. Ohne diese Zuordnung
       // landeten beide in jedem Land — genau der Fehler, den die
       // Referenzdaten hatten.
-      gesammelt.push(...rows.map((r) => ({ ...r, country: r.country || source.country })));
-      if (rows.length) quellen.push(source.label || source.id);
+      gesammelt.push(...rows.map((r) => ({ ...r, country: r.country || source.country, quelle: source.label || source.id })));
+      if (rows.length) { quellen.push(source.label || source.id); if (source.country) gelieferteLaender.add(String(source.country).toUpperCase()); }
       summary.csv.push({ id: source.id, format: source.format, count: rows.length, rejected: rejected.length });
       summary.rejected += rejected.length;
       // Verworfene Zeilen sichtbar machen: Ändert eine Behörde ihre Feldnamen,
@@ -846,6 +855,14 @@ async function runShortageIngest() {
     summary.structured = { sources: quellen.length, rows: clean.length };
   }
 
+  // Chronik fortschreiben (services/chronik.js) — nur für Länder mit Lieferung.
+  try {
+    summary.chronik = chronik.beobachte({ zeilen: shortagesRepo.list(), laender: [...gelieferteLaender] });
+    if (summary.chronik.neu || summary.chronik.geschlossen) saveSoon();
+  } catch (e) {
+    summary.chronik = { error: (e && e.message) || String(e) };
+  }
+
   // Gemessenen Engpass-Zustand je Land festhalten — wie bei den Nachrichten,
   // aber getrennt: Es sind andere Server, die unabhaengig ausfallen.
   coverage.ausShortageSummary(summary, sourcesByKind('shortages'));
@@ -861,11 +878,10 @@ async function runShortageIngest() {
   // Der @@unique-Schlüssel (Präparat + Land) macht daraus ein Update statt
   // einer Kopie, deshalb ist das wiederholbar.
   //
-  // Zum Land: Der In-Memory-Bestand führt KEIN Länderfeld — `replaceFeed`
-  // ersetzt bei jedem Lauf den gesamten Nicht-Community-Bestand, der Speicher
-  // ist also faktisch einländrig. Ist genau ein Engpass-Feed angeschlossen,
-  // ist dessen Land das richtige; sonst bleibt es beim Standardland. Geraten
-  // wird hier nichts — bei mehreren Feeds steht die Annahme im Bericht.
+  // Zum Land: Jede Zeile trägt ihr eigenes Land (seit 09/2026), und
+  // saveShortages nimmt es. `country` unten ist nur der Rückfall für Zeilen
+  // ohne Land. Ist genau ein Engpass-Feed angeschlossen, ist dessen Land das
+  // richtige; sonst bleibt es beim Standardland — die Annahme steht im Bericht.
   if (db) {
     try {
       const feeds = Object.keys(liveSources());
@@ -1331,6 +1347,8 @@ const routes = [
       also_watching: shortagesRepo.usersWatching(name).filter(id => id !== userId).length,
       country: land,
       shortages: shortages.listWithCounts(userId, { country: land }).filter(s => eq(s.wirkstoff)),
+      // Verlauf dieses Wirkstoffs im angesehenen Land (null: Land nie beobachtet).
+      chronik: chronik.fuer(name, land),
       prices: priceBlocked ? [] : prices.comparisons(userId, { country: land }).filter(g => eq(g.wirkstoff)),
       rabatte: dealsBlocked ? [] : rabatte.top10(userId, { country: land }).filter(r => eq(r.wirkstoff)),
       exchange: { biete: ex.filter(e => e.kind === 'biete'), suche: ex.filter(e => e.kind === 'suche') },
@@ -1828,7 +1846,12 @@ const routes = [
       const self = String(s.bezeichnung || '').trim().toLowerCase();
       return [...set].filter(b => b && b !== self).length;
     };
-    return { shortages: shortages.listWithCounts(userId, { country: land }).map(s => ({ ...s, is_antibiotic: amr.isAntibiotic(s.wirkstoff), price_alternatives: altCount(s) })) };
+    // `chronik`: Wie oft war dieser Wirkstoff in diesem Land schon knapp —
+    // seit Aufzeichnungsbeginn, nur aus Behördendaten (services/chronik.js).
+    return {
+      chronik_seit: chronik.aufzeichnungSeit(land),
+      shortages: shortages.listWithCounts(userId, { country: land }).map(s => ({ ...s, is_antibiotic: amr.isAntibiotic(s.wirkstoff), price_alternatives: altCount(s), chronik: chronik.kurz(s.wirkstoff, s.country || land) })),
+    };
   }],
   ['GET', /^\/api\/shortages\/([^/]+)$/, true, async ({ userId, params }) => {
     const d = shortages.withActivity(userId, params[0]);

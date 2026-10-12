@@ -1750,3 +1750,48 @@ angesteuert — Symbol und Wort stehen getrennt), Browser-Audit ohne Befund, `np
 sonst sind die Daten nach jeder ruhigen Viertelstunde nicht mehr aktuell. Danach im
 Redaktions-Dashboard „📡 Datenquellen → Bericht kopieren" und mir den Bericht schicken.
 
+### Cycle · Engpass-Chronik: das Gedächtnis, das keine Behördenliste hat (2026-10-12)
+
+**Warum.** Owner-Ziel: Informationen verkaufen, dafür ein Informationsvorsprung. Behörden-
+listen zeigen nur das Heute — ein beendeter Engpass verschwindet samt der Tatsache, dass es
+ihn gab. ApoPulse machte es genauso (`replaceFeed` ersetzt bei jedem Abruf). Was niemand
+sonst hat: die Geschichte. „Amoxicillin war seit September dreimal knapp, im Schnitt 20 Tage."
+
+**WORK.** `services/chronik.js` schreibt bei jedem Engpass-Abruf Episoden je Land und
+Wirkstoff mit; `/api/shortages` (Kurzform je Zeile) und `/api/wirkstoff` (alle Episoden).
+Oberfläche: Karte „📈 Engpass-Verlauf" auf der Wirkstoff-Seite; in der Engpassliste
+„🔁 Wiederkehrend: seit … schon 3× knapp" ab der zweiten Episode. Gesichert im Snapshot.
+
+**Sechs Ehrlichkeitsregeln**, jede mit eigenem Test und Gegenprobe: nur Behördendaten; nur
+Länder mit Lieferung (ein Ausfall ist kein Ende); Verdacht auf abgeschnittene Antwort hält
+Schließungen zurück; Lücke ≤ 7 Tage = derselbe Engpass; Beginn mit Herkunft (Behörde/
+beobachtet), Ende als „spätestens"; jede Zahl unter dem Aufzeichnungsbeginn, und für ein
+nie abgerufenes Land gar keine Aussage statt „0× knapp".
+
+**Beim Bau gefunden — vier Fehler im bestehenden Abruf:**
+- `replaceFeed` löschte ALLE Länder: Lieferte nur die US-Quelle, verschwand der letzte
+  österreichische Stand — entgegen der Anzeige „angezeigt wird der letzte bekannte Stand".
+- Der Länder-Feed schrieb Zeilen mit `country: null` („gilt überall"): eine deutsche Meldung
+  erschien in Österreich. Dieselbe Fehlerklasse wie der Länder-Leck-Befund des Owners.
+- Bei zwei Behörden in einem Lauf stand an jeder Zeile „BASG, openFDA" statt der einen Quelle.
+- „eingeschränkt lieferbar" (mit Umlaut) wurde verworfen, „eingeschraenkt lieferbar" nicht —
+  eine echte Behördenzeile verschwand an einem Umlaut.
+
+**Design-Nachtrag.** Status-Farben als Schrift: Rot auf dunkler Karte 2,9 : 1 → Tokens
+(`statusFg`), jetzt 5,4 (hell) / 6,2 (dunkel). Pille „eingeschränkt": Weiß auf #c77700 3,5 : 1
+→ #945900, 5,7 : 1. Episoden am Handy in drei kurzen Zeilen statt einer umbrechenden;
+Meldedatum der Engpass-Karte im Landesformat statt „2026-10-05".
+
+**Gegenproben (alle mit „Bruch angewandt" geprüft, jede schlägt an):** 6 Regeln + 3 Abruf-
+Fehler + Umlaut (Unit), 3 Verdrahtungen (Ende-zu-Ende: zwei echte Abrufe gegen einen
+nachgestellten BASG-Feed), 4 Oberfläche (Schwelle „wiederkehrend", Zahl ohne Zeitraum,
+Karte für nie abgerufenes Land, Herkunft des Beginns).
+
+**CHECK.** 1092 Tests grün (+16), Smoke 19/19, Browser-Audit ohne Befund (neuer Prüfpunkt
+„Chronik"), `npm run verify` komplett.
+
+**Für den Owner:** Die Chronik beginnt heute bei null und wird mit jedem Tag wertvoller —
+aber nur, wenn der Dienst durchläuft (Render „Starter" oder Uptime-Ping). Sie ist der
+naheliegende Kern eines Bezahlangebots (Verlauf, Muster, Export) — das ist eine
+Produktentscheidung; im Moment ist sie für alle sichtbar.
+

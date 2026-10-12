@@ -2691,9 +2691,16 @@ async function renderPresse(box) {
 }
 
 // Status-Kurzlabel (übersetzt) + feste Farbe (Farb-Semantik bleibt sprachunabhängig).
-const STATUS_COLORS = { kritisch:'#c0392b', eingeschraenkt:'#c77700', verfuegbar:'#0b7f28' };
+// Die feste Farbe ist der HINTERGRUND der Status-Pille (weiße Schrift darauf).
+// „eingeschränkt" war #c77700: Weiß darauf 3,5 : 1 — unter WCAG AA (4,5).
+// #945900 (wie --warn-fg hell) kommt auf 5,7 : 1.
+const STATUS_COLORS = { kritisch:'#c0392b', eingeschraenkt:'#945900', verfuegbar:'#0b7f28' };
 const STATUS_I18N = { kritisch:'st_krit_short', eingeschraenkt:'st_eing_short', verfuegbar:'st_verf_short' };
 function statusShort(key) { return [ STATUS_I18N[key] ? t(STATUS_I18N[key]) : '?', STATUS_COLORS[key] || '#666' ]; }
+// Als SCHRIFTfarbe taugt die feste Farbe nicht: #c0392b auf der dunklen Karte
+// sind 2,9 : 1. Die Tokens sind je Thema auf Lesbarkeit abgestimmt.
+const STATUS_FG = { kritisch:'var(--crit-fg)', eingeschraenkt:'var(--warn-fg)', verfuegbar:'var(--ok-fg)' };
+const statusFg = (key) => STATUS_FG[key] || 'var(--muted)';
 // Herkunfts-Label (übersetzt) je Datenquelle.
 const PROV_I18N = { verified:'prov_verified', reference:'prov_reference', simulated:'prov_simulated', editorial:'prov_editorial', community:'prov_community' };
 function provLabel(key) { return PROV_I18N[key] ? t(PROV_I18N[key]) : (key || ''); }
@@ -3046,8 +3053,9 @@ function shortageCard(s) {
       <span class="vis" title="${esc(t('pl_open'))}">${esc(provLabel(s.provenance))}</span>
     </div>
     <div class="post-body">${esc(s.bezeichnung)}</div>
-    <div class="muted">${s.grund?esc(grundLabel(s.grund))+' · ':''}${esc(t('sc_reported'))} ${esc(s.gemeldet_am||'—')}${s.days_reported>0&&s.status!=='verfuegbar'?` · ${esc(nlabel(s.days_reported,'sc_age_one','sc_age_many'))}`:''}${s.quelle&&/^https?:\/\//i.test(s.quelle)?` · <a href="${esc(s.quelle)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(t('wk_hist_src'))}${srcDomSuffix(s.quelle)}</a>`:''}</div>
+    <div class="muted">${s.grund?esc(grundLabel(s.grund))+' · ':''}${esc(t('sc_reported'))} ${esc(s.gemeldet_am?fmtDateDe(s.gemeldet_am):'—')}${s.days_reported>0&&s.status!=='verfuegbar'?` · ${esc(nlabel(s.days_reported,'sc_age_one','sc_age_many'))}`:''}${s.quelle&&/^https?:\/\//i.test(s.quelle)?` · <a href="${esc(s.quelle)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(t('wk_hist_src'))}${srcDomSuffix(s.quelle)}</a>`:''}</div>
     ${s.voraussichtlich_bis&&s.status!=='verfuegbar'?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sc_until'))} <b>${esc(fmtDateDe(s.voraussichtlich_bis))}</b>${shortageCountdown(s)}</div>`:''}
+    ${s.chronik&&s.chronik.anzahl>1?`<div style="margin-top:6px;font-size:14px" data-chronikzeile><span style="color:var(--warn-fg);font-weight:700">${esc(ti('ch_line',{n:s.chronik.anzahl,seit:fmtDateDe(s.chronik.aufzeichnung_seit)}))}</span>${s.chronik.durchschnitt_tage!=null?` <span class="muted">· ${esc(ti('ch_avg',{n:s.chronik.durchschnitt_tage}))}</span>`:''}</div>`:''}
     ${s.is_antibiotic?`<div style="margin-top:6px;font-size:13px"><span style="color:var(--ok-fg);font-weight:600">${esc(t('sc_abx'))}</span> — <span class="clickable" data-amr style="color:var(--ok-fg);text-decoration:underline">${esc(t('sc_abx_link'))}</span> <span class="muted">${esc(t('sc_abx_note'))}</span></div>`:''}
     ${s.price_alternatives>0&&s.status!=='verfuegbar'?`<div style="margin-top:6px"><button class="linklike small" data-alts style="color:var(--ok-fg);font-weight:700">${esc(ti('sc_alts',{n:s.price_alternatives}))}</button> <span class="muted" style="font-size:12px">${esc(t('sc_alts_note'))}</span></div>`:''}
     ${s.provenance==='community'&&s.reporter?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sc_reported_by'))} <b>@${esc(s.reporter.handle)}</b>${s.reporter.verified?' <span class="verified">✔</span>':''}${s.confirm_count?` · <b style="color:var(--crit-fg)">${s.confirm_count}</b> ${esc(s.confirm_count>1?t('sc_conf_many'):t('sc_conf_one'))}`:''}</div>`:''}
@@ -6655,6 +6663,39 @@ function recordRecentWirkstoff(name) {
 }
 
 // Wirkstoff-Detailseite: alles zu einem Wirkstoff auf einen Blick.
+// Engpass-Chronik (services/chronik.js): wie oft und wie lange dieser
+// Wirkstoff im angesehenen Land schon knapp war — seit Aufzeichnungsbeginn,
+// nur aus Behördendaten. `null` heißt: Dieses Land wurde nie erfolgreich
+// abgerufen; dann sagen wir nichts statt „0× knapp".
+function chronikKarte(c, wirkstoff) {
+  if (!c) return null;
+  const seit = fmtDateDe(c.aufzeichnung_seit);
+  const land = landLabel(c.land);
+  const kopf = `<div class="row"><b>${esc(t('ch_title'))}</b></div>`;
+  const fuss = `<div class="muted" style="font-size:13px;margin-top:8px">${esc(t('ch_note'))}</div>`;
+  if (!c.anzahl) {
+    return el(`<div class="card" data-chronik>${kopf}<div style="margin-top:6px">${esc(ti('ch_none', { wk: wirkstoff, land, seit }))}</div>${fuss}</div>`);
+  }
+  const zahlen = [
+    `<b>${esc(ti(c.anzahl === 1 ? 'ch_count_one' : 'ch_count_many', { n: c.anzahl, land, seit }))}</b>`,
+    c.offen ? esc(ti('ch_running', { n: c.offen.dauer_tage })) : '',
+    c.durchschnitt_tage != null ? esc(ti('ch_avg', { n: c.durchschnitt_tage })) : '',
+    c.laengste_tage != null && c.anzahl > 1 ? esc(ti('ch_longest', { n: c.laengste_tage })) : '',
+  ].filter(Boolean).join(' · ');
+  const zeilen = c.episoden.map((e) => {
+    const [sl] = statusShort(e.schwerster_status); const sc = statusFg(e.schwerster_status);
+    const bis = e.ende ? esc(ti('ch_until', { date: fmtDateDe(e.ende) })) : esc(t('ch_open'));
+    const beginn = e.beginn_art === 'gemeldet' ? t('ch_beg_reported') : t('ch_beg_seen');
+    // Drei kurze Zeilen statt einer umbrechenden (am Handy brach sie mitten
+    // durch): Zeitraum, dann Status und Dauer, dann die Herkunft.
+    return `<div style="padding:6px 0;border-top:1px solid var(--line)">
+      <div style="font-size:15px"><b>${esc(fmtDateDe(e.beginn))} – ${bis}</b></div>
+      <div style="font-size:14px"><span style="color:${sc};font-weight:700">${sl}</span> · ${esc(ti('ch_days', { n: e.dauer_tage }))}</div>
+      <div class="muted" style="font-size:13px">${esc(beginn)}${e.praeparate.length ? ' · ' + esc(ti('ch_products', { n: e.praeparate.length })) : ''}${e.quelle ? ' · ' + esc(e.quelle) : ''}</div></div>`;
+  }).join('');
+  return el(`<div class="card" data-chronik>${kopf}<div style="margin-top:6px">${zahlen}</div><div style="margin-top:8px">${zeilen}</div>${fuss}</div>`);
+}
+
 async function openWirkstoff(name) {
   setDocTitle('💊 ' + name);
   if (!name) return;
@@ -6828,7 +6869,7 @@ async function openWirkstoff(name) {
       // Neueste Änderung zuerst — konsistent mit dem „Verlauf" auf der Engpass-Karte
       // (dort [...history].reverse()); so lesen beide Ansichten die gleiche Reihenfolge.
       [...hist].reverse().forEach(h => {
-        const [hl,hc] = statusShort(h.status);
+        const [hl] = statusShort(h.status); const hc = statusFg(h.status);
         const q = h.quelle && /^https?:\/\//i.test(h.quelle)
           ? ` · <a href="${esc(h.quelle)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(t('wk_hist_src'))}${srcDomSuffix(h.quelle)}</a>` : '';
         tl.appendChild(el(`<div style="display:flex;gap:8px;font-size:13px;padding:2px 0;flex-wrap:wrap"><span class="muted" style="min-width:84px">${esc(fmtDateDe(h.am))}</span><span style="color:${hc};font-weight:700">${hl}</span><span class="muted">${q}</span></div>`));
@@ -6848,6 +6889,8 @@ async function openWirkstoff(name) {
     } catch(e){ err.textContent = e.message; }
   };
   feed.appendChild(scard);
+  const chk = chronikKarte(d.chronik, d.wirkstoff);
+  if (chk) feed.appendChild(chk);
   // Bezugsquellen (biete) — mit Schnell-Aktion „Angebot einstellen"
   section(t('wk_offers_t'), d.exchange.biete.length, t('wk_offers_e'), body => d.exchange.biete.forEach(e => body.appendChild(exchangeCard(e))),
     canExchange ? { label: t('wk_offer_cta'), onClick: () => startExchange('biete') } : null);

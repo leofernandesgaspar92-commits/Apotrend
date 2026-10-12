@@ -79,7 +79,10 @@ export async function refreshShortages(country, { fetchJson, shortagesRepo, env 
   const v = validateShortagePayload(payload);
   if (!v.ok) return { ok: false, country: cc, error: 'ungültige Daten — Bestand unverändert', errors: v.errors };
   const source = (payload && typeof payload.source === 'string' && payload.source) || (COUNTRIES[cc] && COUNTRIES[cc].regulator) || 'Live';
-  const count = shortagesRepo.replaceFeed(v.rows, { provenance: 'verified', quelle: source });
+  // Land der QUELLE an jede Zeile. Ohne es landete die Zeile mit `country: null`
+  // („gilt überall") im Bestand und erschien in jedem Land.
+  const rows = v.rows.map((r) => ({ ...r, country: cc }));
+  const count = shortagesRepo.replaceFeed(rows, { provenance: 'verified', quelle: source, laender: [cc] });
   return { ok: true, country: cc, count, source, fetched_at: (payload && payload.fetched_at) || null };
 }
 

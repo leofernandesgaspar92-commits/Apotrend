@@ -816,6 +816,29 @@ und Presse des Landes in höchstens sechs Punkten zusammen.
 wiedergibt — das lässt sich maschinell nicht prüfen. Darum steht die Quelle
 einen Klick entfernt unter jedem Punkt.
 
+## 3h. Engpass-Chronik (`services/chronik.js`)
+
+Behördenlisten zeigen nur den heutigen Stand; ein beendeter Engpass fällt heraus. Die
+Chronik schreibt bei jedem Abruf mit und hält **Episoden je Land und Wirkstoff** fest
+(Beginn, zuletzt gesehen, Ende, schwerster Status, Präparate, Quelle). Daraus:
+„3× knapp in Österreich seit 01.09.2026 · im Schnitt 20 Tage".
+
+- **API:** `/api/shortages` liefert je Zeile `chronik` (Kurzform) und `chronik_seit`;
+  `/api/wirkstoff/:name` liefert `chronik` mit allen Episoden. `null` = Land nie abgerufen.
+- **Regeln** (je ein Test in `test/chronik.test.js`, Gegenproben dokumentiert):
+  nur Behördendaten · nur Länder, deren Abruf in diesem Lauf Zeilen lieferte · verschwindet
+  mehr als die Hälfte (≥ 10) auf einmal, wird nichts geschlossen (Verdacht auf abgeschnittene
+  Antwort, Warnung im Log) · Lücke ≤ 7 Tage = derselbe Engpass · Beginn = Meldedatum der
+  Behörde (ISO, nicht in der Zukunft), sonst „erstmals gesehen" · Ende = erster Abruf ohne
+  Eintrag („spätestens") · jede Zahl steht unter dem Aufzeichnungsbeginn des Landes.
+- **Speicherung:** im Zustands-Snapshot (Datei und Datenbank) — überlebt Deploys nur mit
+  `DATABASE_URL` oder dauerhafter Platte. **Die Chronik wächst nur, solange der Dienst läuft:**
+  Auf dem schlafenden Gratis-Tarif fehlen Abrufe; Episoden werden dann zu grob.
+- **Nebenbei behoben:** `replaceFeed` ersetzt nur noch die Länder, die geliefert haben
+  (vorher löschte ein US-Abruf den letzten österreichischen Stand); der Länder-Feed
+  (`APOPULSE_LIVE_SHORTAGES_<CC>`) schreibt das Land an jede Zeile (vorher `null` = „überall");
+  jede Zeile behält ihre eigene Quelle; Status mit Umlaut („eingeschränkt lieferbar") wird erkannt.
+
 ## 4. Preise (zweiter Datentyp, gleiche Logik)
 
 Analog zu Engpässen: Umgebungsvariable `APOPULSE_LIVE_PRICES_<CC>` setzen.

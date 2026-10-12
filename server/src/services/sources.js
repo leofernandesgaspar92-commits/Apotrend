@@ -1069,9 +1069,13 @@ const STATUS_MAP = {
   behoben: 'verfuegbar', resolved: 'verfuegbar',
 };
 
+// Umlaute falten: „eingeschränkt lieferbar" fiel sonst durch, obwohl
+// „eingeschraenkt lieferbar" bekannt war — und ein unbekannter Status heißt
+// hier „Zeile weg". Eine echte Behördenmeldung verschwand an einem Umlaut.
+const umlautFrei = (s) => s.replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue');
 export function normalizeStatus(value) {
-  const key = String(value || '').trim().toLowerCase();
-  return STATUS_MAP[key] || null;
+  const key = String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  return STATUS_MAP[key] || STATUS_MAP[umlautFrei(key)] || null;
 }
 
 /**

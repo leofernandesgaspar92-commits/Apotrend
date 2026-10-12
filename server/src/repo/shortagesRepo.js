@@ -101,13 +101,24 @@ export function createShortagesRepo({ seed = true, today = null } = {}) {
 
   return {
     upsert,
-    // Live-/Referenz-Feed ersetzen: entfernt alle NICHT von Nutzer:innen gemeldeten Einträge
-    // (Seed/Live) und setzt die übergebenen Zeilen neu. Community-Meldungen (reporter_user_id
-    // gesetzt) bleiben unangetastet. Gibt die Anzahl der übernommenen Einträge zurück.
-    replaceFeed(rows, { provenance = 'verified', quelle = null } = {}) {
-      for (const [id, s] of shortages) if (!s.reporter_user_id) shortages.delete(id);
+    // Live-/Referenz-Feed ersetzen: entfernt die NICHT von Nutzer:innen gemeldeten Einträge
+    // (Seed/Live) DER BETROFFENEN LÄNDER und setzt die übergebenen Zeilen neu.
+    // Community-Meldungen (reporter_user_id gesetzt) bleiben unangetastet. Gibt die Anzahl
+    // der übernommenen Einträge zurück.
+    //
+    // Nur die betroffenen Länder (seit 10/2026): Vorher räumte jeder Aufruf ALLE Länder ab.
+    // Lieferte die US-Quelle und die österreichische fiel aus, verschwand der letzte
+    // bekannte österreichische Stand — obwohl die Ansicht „angezeigt wird der letzte
+    // bekannte Stand" versprach. `laender` nennt sie ausdrücklich (nötig, wenn eine
+    // Behörde eine LEERE Liste meldet); sonst gelten die Länder der Zeilen.
+    replaceFeed(rows, { provenance = 'verified', quelle = null, laender = null } = {}) {
+      const betroffen = new Set((laender || (rows || []).map((r) => r.country))
+        .map((c) => (c ? String(c).toUpperCase() : null)));
+      for (const [id, s] of shortages) if (!s.reporter_user_id && betroffen.has(s.country ?? null)) shortages.delete(id);
       let n = 0;
-      for (const r of (rows || [])) { upsert({ ...r, provenance, quelle }); n++; }
+      // Eigene Quelle der Zeile vor der Sammelangabe: Bei mehreren Behörden in einem
+      // Lauf stand sonst an jeder Zeile „BASG, openFDA" statt der einen, die sie meldete.
+      for (const r of (rows || [])) { upsert({ ...r, provenance, quelle: r.quelle || quelle }); n++; }
       return n;
     },
     // Status (+ Quelle/Herkunft) eines bestehenden Engpasses ändern, andere Felder erhalten.

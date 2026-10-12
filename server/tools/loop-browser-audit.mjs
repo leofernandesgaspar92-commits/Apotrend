@@ -1054,6 +1054,58 @@ async function main() {
     else console.log('✓ Aktualität: „Live, vor 3 Min." bei frischen Daten, Warnung bei altem Abruf');
     await page.unroute('**/api/coverage/**').catch(() => {});
 
+    // ── 10. Engpass-Chronik: Zahlen mit Zeitraum, nie ohne Grundlage ─────────
+    //  Die Chronik ist das, was ApoPulse über die Behördenliste hinaus weiß.
+    //  Geprüft wird, was kein Unit-Test sagt: Steht die Zahl IMMER mit dem
+    //  Aufzeichnungsbeginn da? Kommt der Hinweis „wiederkehrend" nur ab zwei
+    //  Episoden? Und schweigt die Seite, wenn das Land nie abgerufen wurde,
+    //  statt „0× knapp" zu behaupten?
+    {
+      const seit = '2026-09-01';
+      const ep = (beginn, ende, tage, art = 'gemeldet') => ({ land: 'AT', wirkstoff: 'Amoxicillin', beginn, beginn_art: art, ende, dauer_tage: tage, schwerster_status: 'kritisch', praeparate: ['Amoxicillin 1000 mg'], quelle: 'BASG' });
+      const voll = { land: 'AT', aufzeichnung_seit: seit, anzahl: 3, durchschnitt_tage: 20, laengste_tage: 30,
+        offen: ep('2026-10-05', null, 7), episoden: [ep('2026-10-05', null, 7), ep('2026-09-20', '2026-09-30', 10, 'beobachtet'), ep('2026-09-01', '2026-10-01', 30)] };
+      const zeile = (wk, ch) => ({ id: 'ch-' + wk, wirkstoff: wk, bezeichnung: wk + ' 500 mg', status: 'kritisch', provenance: 'verified', quelle: 'BASG', history: [], chronik: ch });
+      await page.route('**/api/shortages?*', async (route) => {
+        const r = await route.fetch(); const j = await r.json();
+        j.shortages = [zeile('Amoxicillin', { anzahl: 3, durchschnitt_tage: 20, aufzeichnung_seit: seit, offen_seit_tagen: 7 }), zeile('Ibuprofen', { anzahl: 1, durchschnitt_tage: null, aufzeichnung_seit: seit, offen_seit_tagen: 4 })];
+        return route.fulfill({ response: r, json: j });
+      });
+      let chronikAntwort = voll;
+      await page.route('**/api/wirkstoff/**', async (route) => {
+        const r = await route.fetch(); const j = await r.json();
+        j.chronik = chronikAntwort;
+        return route.fulfill({ response: r, json: j });
+      });
+      await page.goto(BASE, { waitUntil: 'networkidle' });
+      await page.click('.tabs button[data-tab="shortages"]').catch(() => {});
+      await page.waitForSelector('[data-wirkstoff="Amoxicillin"]', { timeout: 6000 }).catch(() => {});
+      const zeilen = await page.locator('[data-chronikzeile]').allInnerTexts();
+      const wkSeite = async (antwort) => {
+        chronikAntwort = antwort;
+        await page.evaluate(() => { const b = document.querySelector('.tabs button[data-tab="shortages"]'); if (b) b.click(); });
+        await page.waitForSelector('[data-wirkstoff="Amoxicillin"]', { timeout: 6000 }).catch(() => {});
+        await page.click('[data-wirkstoff="Amoxicillin"]').catch(() => {});
+        await page.waitForTimeout(900);
+        const k = page.locator('[data-chronik]');
+        return (await k.count()) ? await k.first().innerText() : null;
+      };
+      const mit = await wkSeite(voll);
+      const nie = await wkSeite(null);
+      const null0 = await wkSeite({ land: 'AT', aufzeichnung_seit: seit, anzahl: 0, offen: null, durchschnitt_tage: null, laengste_tage: null, episoden: [] });
+      if (zeilen.length !== 1 || !/3×/.test(zeilen[0]) || !/01\.09\.2026/.test(zeilen[0])) findings.push(`Chronik: „wiederkehrend" fehlt, steht ohne Zeitraum oder schon bei einer Episode (${JSON.stringify(zeilen)})`);
+      else if (!mit) findings.push('Chronik: keine Verlaufskarte auf der Wirkstoff-Seite');
+      else if (!/3× knapp in .* seit 01\.09\.2026/.test(mit)) findings.push(`Chronik: Zahl ohne Aufzeichnungsbeginn (${mit.slice(0, 120)})`);
+      else if (!/im Schnitt 20 Tage/.test(mit) || !/läuft noch/.test(mit) || !/spätestens 30\.09\.2026/.test(mit)) findings.push(`Chronik: Durchschnitt, laufende oder beendete Episode fehlt (${mit.slice(0, 200)})`);
+      else if (!/Beginn laut Behörde/.test(mit) || !/erstmals auf der Liste gesehen/.test(mit)) findings.push('Chronik: Herkunft des Beginns (Behörde/beobachtet) nicht benannt');
+      else if (!/Nur Behördendaten/.test(mit)) findings.push('Chronik: Hinweis auf die Grundlage fehlt');
+      else if (nie !== null) findings.push('Chronik: Karte erscheint für ein nie abgerufenes Land');
+      else if (!null0 || !/nicht auf der Engpassliste/.test(null0) || !/01\.09\.2026/.test(null0)) findings.push(`Chronik: „nie knapp" ohne Zeitraum (${null0})`);
+      else console.log('✓ Chronik: Zahl immer mit Aufzeichnungsbeginn, „wiederkehrend" erst ab zwei Episoden, Schweigen ohne Grundlage');
+      await page.unroute('**/api/shortages?*').catch(() => {});
+      await page.unroute('**/api/wirkstoff/**').catch(() => {});
+    }
+
     if (errors.length) findings.push(`Säule 3: JS-Fehler — ${errors.slice(0, 2).join(' | ')}`);
     await ctx.close();
   }
