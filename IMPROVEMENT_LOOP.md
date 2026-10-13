@@ -2279,3 +2279,41 @@ Kaliumchlorid bleibt.
 **Gegenprobe (Bruch angewandt):** Lautregel wieder nach dem Zusammensetzen → neuer Test rot.
 (Mein Test rief zuerst eine Funktion unter falschem Namen auf und war damit IMMER rot — das hätte
 eine Gegenprobe vorgetäuscht. Vor dem Bruch muss der Test grün sein; erst dann zählt Rot.)
+
+### Cycle · Anzeigen für Pharma, Großhandel und Logistik — ein Geschäftsfeld, kein Banner (2026-10-13)
+
+**Auftrag (Owner):** Einnahmen aus Werbung von Pharma-Konzernen, Großhändlern und Logistikern —
+„alles Nötige einbauen, damit es realistisch wird".
+
+**Was „realistisch" in dieser Branche heißt:** Ein Konzern bucht nur, wenn (1) er sieht, wen er
+erreicht und was es kostet, (2) er selbst buchen und per Rechnung zahlen kann, (3) er Zahlen
+bekommt, und (4) die Plattform ihn nicht in rechtliche Risiken zieht (Rx-Publikumswerbung,
+fehlende Pflichtangaben, Werbung neben Rückrufen).
+
+**WORK.**
+- `services/anzeigen.js`: Werbekunde (Firma/Rechnung), Kampagne Entwurf → Prüfung → Freigabe →
+  Zahlung → läuft; Preis = Platz × Länder × Wochen (`data/werbeplaetze.js`, per Umgebung setzbar);
+  Rx nur verifizierte Fachkreise, Pflichtangaben Pflicht, https-Ziele; Auslieferung nach Land und
+  Berufsgruppe mit fairer Rotation, max. 3/Tag je Person; Klicks nur mit HMAC-Zeichen; Ausblenden,
+  Melden, Notbremse; Rechnung `AP-<Jahr>-<Nr>` nur mit vollständigen Betreiberangaben; Sicherung.
+- Zahlung: Krypto über die bestehende Strecke (neu: freier Betrag + `beiBezahlt`-Haken; der
+  Premium-Ablauf ist unverändert) oder Rechnung/Überweisung (Redaktion verbucht).
+- Oberfläche: Mediadaten (öffentlich, echte Kontenzahlen, „unter 10" bei kleinen Zahlen), Buchung
+  mit Live-Preis, Cockpit mit Einblendungen/Klicks/Klickrate/Tagen/Berufsgruppen, druckbare
+  Rechnung, Redaktions-Prüfung mit Checkliste, Anzeige-Karte mit „Anzeige · von Firma",
+  „Warum sehe ich das?", Pflichtangaben aufklappbar, Ausblenden/Melden. Plätze: Startseite,
+  News-Feed (nicht neben Engpass/Rückruf), rechte Spalte. Nie auf Engpass/Warnungen/Wirkstoff.
+- Bereich `anzeigen` (aktiv). Der alte Bereich `werbung` ruht weiter; sein Einwand
+  („Werbung neben einer Engpassmeldung verkauft das Vertrauen") ist hier eingebaut.
+- `docs/WERBUNG.md` (Regeln, Rechtsrahmen — kein Rechtsrat —, Einrichtung), `DEPLOY.md`,
+  `render.yaml`.
+
+**Tests.** `anzeigen.test.js` (11 Regeln), `anzeigen-http.test.js` (echter Server: Mediadaten,
+Buchung, Prüfung, Rechnung, Krypto mit Bestätigung, Auslieferung, 302-Klick, Statistik,
+fremde Statistik 404), Browser-Audit „Anzeigen".
+
+**Gegenproben (Bruch angewandt, jede schlägt an):** Rx-Schranke weg → rot; Zahlung vor der
+Prüfung möglich → rot; Frequenzgrenze weg → rot; Klick ohne gültiges Zeichen zählt → rot; kleine
+Kontenzahlen offengelegt → Ende-zu-Ende rot; Anzeige auf der Engpass-Seite → Audit-Befund;
+Kennzeichnung entfernt → Audit-Befund. (Der Audit selbst hatte zuerst einen Fehler: Er suchte
+„Anzeige", das Label steht per CSS in Großbuchstaben — jetzt ohne Groß-/Kleinschreibung.)

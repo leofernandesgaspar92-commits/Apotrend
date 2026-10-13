@@ -160,7 +160,7 @@ export function createMemoryRepo({ jetzt = () => Date.now() } = {}) {
     // Prüfvermerk). Nur benannte Felder — kein freies Überschreiben des Datensatzes.
     updatePaymentReview(id, patch) {
       const p = payments.get(id); if (!p) return null;
-      for (const k of ['expected_crypto', 'rate_eur', 'claimed_at', 'reviewed_by', 'reviewed_at', 'review_note']) {
+      for (const k of ['expected_crypto', 'rate_eur', 'claimed_at', 'reviewed_by', 'reviewed_at', 'review_note', 'bezeichnung']) {
         if (k in patch) p[k] = patch[k];
       }
       return { ...p };

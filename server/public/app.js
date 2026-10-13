@@ -477,7 +477,7 @@ let myBookmarks = new Set();
 
 // ── Auth-Flow: ERST Land wählen, DANN anmelden, dann länderspezifische Inhalte ──
 function hideHeaderForAuth() {
-  ['btnLogout','btnNotif','btnDm','btnCart','btnMod','btnHelp'].forEach(id => { const b = document.getElementById(id); if (b) b.classList.add('hidden'); });
+  ['btnLogout','btnNotif','btnDm','btnCart','btnMod','btnHelp','btnWerben'].forEach(id => { const b = document.getElementById(id); if (b) b.classList.add('hidden'); });
   const cs = document.getElementById('countrySwitch'); if (cs) cs.classList.add('hidden');
   document.getElementById('whoami').textContent = '';
   document.getElementById('whoami').classList.remove('clickable');
@@ -622,6 +622,8 @@ function authScreen() {
   // Code aus der gespeicherten Wahl, nicht aus `ac`: Die Länderliste ist beim
   // ersten Aufbau oft noch nicht geladen, `ac` dann leer.
   zeigeLage(app.querySelector('[data-lage]'), (ac && ac.code) || (localStorage.getItem('apo_country') || '').toUpperCase());
+  // Für Unternehmen: Mediadaten ohne Anmeldung ansehen.
+  { const hero = app.querySelector('.auth-hero'); if (hero) { const l = el(`<button class="linklike" data-wbfirmen style="margin-top:14px">${esc(t('wb2_fuer_firmen'))}</button>`); l.onclick = () => openWerbung(); hero.appendChild(l); } }
   // Woher die Daten kommen — wer sich registrieren soll, will das vorher wissen.
   fetch('/api/abdeckung').then((r) => r.json()).then((abd) => {
     const tx = abdeckungText(abd); const hero = app.querySelector('.auth-hero');
@@ -914,6 +916,9 @@ async function mainScreen() {
   const btnHelp = document.getElementById('btnHelp');
   btnHelp.classList.remove('hidden');
   btnHelp.onclick = () => showWelcome(true);
+  // Werben auf ApoPulse (Bereich `anzeigen`): Mediadaten, Buchung, Cockpit.
+  const btnWerben = document.getElementById('btnWerben');
+  if (btnWerben) { btnWerben.classList.toggle('hidden', !featureAn('anzeigen')); btnWerben.onclick = () => openWerbung(); }
   document.getElementById('btnLogout').onclick = () => { localStorage.removeItem('apo_token'); location.reload(); };
   document.getElementById('btnNotif').onclick = showNotifications;
   // Knöpfe ruhender Bereiche entfernt wendeFeaturesAn() aus der Seite. Beim
@@ -1098,6 +1103,7 @@ async function mainScreen() {
   initCountrySwitcher(); // Länder-/Sprach-Umschalter in der Kopfzeile aktivieren
   startNewsRail();      // News-Livestream links starten (nur auf breiten Bildschirmen sichtbar)
   renderQuickRail();    // Schnellzugriff-Rail rechts (nur auf Laptop/Desktop sichtbar)
+  { const sp = document.getElementById('anzeigeSeite'); if (sp) { sp.innerHTML = ''; zeigeAnzeige('seite', sp); } } // rechte Spalte (Desktop)
   renderAdSlot();       // Anzeigen-Fläche rechts unter dem Schnellzugriff (Monetarisierung)
   setHeaderHeightVar(); // Kopfhöhe für die klebrige mobile Reiter-Leiste
   loadTab();
@@ -1376,6 +1382,7 @@ async function loadOverview() {
   for (const [id, , , , fn] of schnell) if (fn) head.querySelector('#' + id).onclick = fn;
   feed.appendChild(head);
   renderVorratsRadar(feed); // im Ausland knapp, bei dir nicht — direkt unter dem Überblick
+  zeigeAnzeige('start', feed); // Anzeige (gekennzeichnet) nach Überblick und Radar
   renderLiveOverview(feed, liveNow, liveSoon); // zeitkritisch: laufende/kommende Live-Sessions ganz oben
   renderMyTasksOverview(feed, (tasksData && tasksData.tasks) || []); // deine offenen Aufgaben
   renderTeamOverdueOverview(feed, (tasksData && tasksData.tasks) || [], !!(tasksData && tasksData.can_assign)); // Manager: Team-Überfälligkeiten
@@ -2834,6 +2841,7 @@ async function loadNews() {
       return;
     }
     d.posts.forEach(p => list.appendChild(postCard(p)));
+    anzeigeImFeed(list); // nach dem 5. Beitrag, nie direkt neben Engpass/Rückruf
   } catch(e){ list.innerHTML = ''; list.appendChild(errorState(e.message, loadTab)); }
 }
 
@@ -3588,6 +3596,320 @@ function downloadCsv(baseName, header, rows) {
 
 // „seit heute" / „seit 1 Tag" / „seit 12 Tagen" — statt „seit 0 Tagen".
 function seitTage(n) { return n <= 0 ? t('zeit_seit_heute') : n === 1 ? t('zeit_seit_1') : ti('fw_since', { n }); }
+
+// ══ Anzeigen für Unternehmen ══════════════════════════════════════════════════
+// Server: services/anzeigen.js (Regeln), docs/WERBUNG.md (rechtlicher Rahmen).
+// Plätze: Startseite, News-Feed, rechte Spalte. NIE auf Engpass-, Live-Warnungs-
+// oder Wirkstoff-Seiten — dort darf nichts wie eine gekaufte Empfehlung wirken.
+const eur = (cents) => fmtCurrency(cents / 100, 'EUR');
+const WB_GRUPPEN = ['pharmacy', 'pharma', 'wholesale', 'logistics', 'authority', 'private'];
+const gruppeName = (g) => ohneSymbol(t('at_' + g));
+
+/** Eine ausgelieferte Anzeige als Karte: Kennzeichnung, „Warum?", Ausblenden, Melden. */
+function anzeigeKarte(a) {
+  const ziel = a.klick ? sichererLinkRel(a.klick) : null;
+  const karte = el(`<div class="card anz-karte" data-anzeige="${esc(a.id)}">
+    <div class="anz-kopf"><span class="anz-label">${esc(t('anz_label'))}</span><span class="muted anz-von">${esc(ti('anz_von', { firma: a.firma || '—' }))}</span>
+      <span class="sp" style="flex:1"></span><button class="ghost small anz-mehr" data-anzwarum aria-expanded="false">${esc(t('anz_warum'))}</button></div>
+    ${a.bild ? `<img class="anz-bild" src="${esc(a.bild)}" alt="">` : ''}
+    <div class="anz-titel">${esc(a.titel)}</div>
+    <div class="anz-text">${esc(a.text)}</div>
+    <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">
+      ${ziel ? `<a class="btn-link" href="${esc(ziel)}" target="_blank" rel="sponsored noopener noreferrer">${esc(a.cta || t('anz_cta'))}</a>` : ''}
+      ${a.pflichtangaben ? `<button class="ghost small" data-anzpfl aria-expanded="false">${esc(t('anz_pflicht_zeigen'))}</button>` : ''}
+    </div>
+    ${a.pflichtangaben ? `<div class="anz-pflicht" data-anzpfltext hidden>${esc(a.pflichtangaben)}</div>` : ''}
+    <div class="anz-warum" data-anzwarumtext hidden>
+      <div>${esc(ti('anz_warum_bezahlt', { firma: a.warum.bezahlt_von || '—' }))}</div>
+      <div>${esc(ti('anz_warum_merkmale', { laender: a.warum.laender.map(landAnzeige).join(', '), gruppen: a.warum.zielgruppen.map(gruppeName).join(', ') }))}</div>
+      ${a.warum.nur_fachkreise ? `<div>${esc(t('anz_warum_fachkreise'))}</div>` : ''}
+      <div class="muted" style="font-size:13px">${esc(t('anz_warum_keine_daten'))}</div>
+      <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap"><button class="ghost small" data-anzweg>${esc(t('anz_ausblenden'))}</button><button class="ghost small" data-anzmelden>${esc(t('anz_melden'))}</button></div>
+    </div>
+  </div>`);
+  const toggle = (knopf, ziel2) => { const auf = ziel2.hidden; ziel2.hidden = !auf; knopf.setAttribute('aria-expanded', String(auf)); };
+  karte.querySelector('[data-anzwarum]').onclick = (e) => toggle(e.currentTarget, karte.querySelector('[data-anzwarumtext]'));
+  const pf = karte.querySelector('[data-anzpfl]'); if (pf) pf.onclick = () => toggle(pf, karte.querySelector('[data-anzpfltext]'));
+  karte.querySelector('[data-anzweg]').onclick = async () => { try { await api('POST', `/api/anzeigen/${a.id}/ausblenden`); karte.replaceWith(el(`<div class="muted anz-weg">${esc(t('anz_ausgeblendet'))}</div>`)); } catch (e) { alert(e.message); } };
+  karte.querySelector('[data-anzmelden]').onclick = async () => {
+    const grund = prompt(t('anz_melden_grund')); if (grund === null) return;
+    try { await api('POST', `/api/anzeigen/${a.id}/melden`, { grund }); karte.replaceWith(el(`<div class="muted anz-weg">${esc(t('anz_gemeldet'))}</div>`)); } catch (e) { alert(e.message); }
+  };
+  return karte;
+}
+// Nur relative Klick-Adressen unseres Servers (die Zielseite liegt dahinter).
+const sichererLinkRel = (u) => (/^\/api\/anzeigen\/[a-z0-9]+\/klick\?z=/.test(String(u || '')) ? String(u) : null);
+
+/** Anzeige für einen Platz holen und an `ziel` hängen (oder vor `vor` einsetzen). */
+async function zeigeAnzeige(platz, ziel, vor = null) {
+  if (!featureAn('anzeigen') || !ziel) return;
+  const halter = el('<div data-anzplatz></div>');
+  if (vor) ziel.insertBefore(halter, vor); else ziel.appendChild(halter);
+  let d; try { d = await api('GET', '/api/anzeigen/platz/' + platz); } catch { halter.remove(); return; }
+  if (!d || !d.anzeige || !halter.isConnected) { halter.remove(); return; }
+  halter.replaceWith(anzeigeKarte(d.anzeige));
+}
+// Feed: nach dem 5. Beitrag — aber nicht direkt neben einer Engpass- oder
+// Rückrufmeldung. Dann eine Stelle weiter; gibt es keine, keine Anzeige.
+const SICHERHEITS_WORTE = /engpass|knapp|rückruf|rueckruf|lieferunf|recall|shortage|rutura|retirada|warn/i;
+function anzeigeImFeed(list) {
+  const karten = [...list.children];
+  for (let i = 5; i < karten.length; i++) {
+    const davor = karten[i - 1].textContent || ''; const danach = karten[i].textContent || '';
+    if (!SICHERHEITS_WORTE.test(davor) && !SICHERHEITS_WORTE.test(danach)) return zeigeAnzeige('feed', list, karten[i]);
+  }
+}
+
+// ── Werben auf ApoPulse: Mediadaten, Buchung, Cockpit ─────────────────────────
+let wbMedia = null;
+async function openWerbung() {
+  setDocTitle(t('wb2_title'));
+  app.innerHTML = '<div class="loading">…</div>';
+  try { wbMedia = await (await fetch('/api/werbung/mediadaten')).json(); } catch { wbMedia = null; }
+  let meine = { kampagnen: [] }; let firma = null;
+  if (me) {
+    try { meine = await api('GET', '/api/werbung/kampagnen'); } catch { /* ohne Kampagnen */ }
+    try { firma = (await api('GET', '/api/werbung/firma')).firma; } catch { /* ohne Firma */ }
+  }
+  app.innerHTML = '';
+  app.appendChild(el(`<div class="row" style="margin-bottom:8px"><button class="ghost small" data-wbzurueck>${esc(t('gen_back'))}</button></div>`));
+  app.querySelector('[data-wbzurueck]').onclick = () => (me ? mainScreen() : authScreen());
+  if (meine.kampagnen.length) app.appendChild(werbeCockpit(meine));
+  app.appendChild(mediadatenKarte(wbMedia, !!me));
+  const neu = app.querySelector('[data-wbneu]');
+  if (neu) neu.onclick = () => buchungsKarte(firma, null);
+}
+
+function mediadatenKarte(md, angemeldet) {
+  const reich = (z) => (z.anzahl != null ? String(z.anzahl) : z.unter_10 ? t('wb2_unter10') : '0');
+  const laender = md ? md.laender.filter((l) => l.konten.anzahl || l.konten.unter_10) : [];
+  const typ = me && me.account_type;
+  const darfWerben = angemeldet && ['pharma', 'wholesale', 'logistics', 'pharmacy'].includes(typ);
+  const c = el(`<div class="card" data-mediadaten>
+    <h1 style="margin:0 0 6px">${esc(t('wb2_title'))}</h1>
+    <div style="font-size:17px;margin-bottom:12px">${esc(t('wb2_sub'))}</div>
+    <div class="pv-nutzen">
+      ${['zielgruppe', 'moment', 'vertrauen'].map((k, i) => `<div class="pv-nutzen-zeile"><span class="karte-ic" aria-hidden="true">${ico(['users', 'clock', 'shield'][i], 20)}</span><div><b>${esc(t('wb2_w_' + k))}</b><div class="muted" style="font-size:15px">${esc(t('wb2_w_' + k + '_text'))}</div></div></div>`).join('')}
+    </div>
+    <h2 style="margin:18px 0 8px">${esc(t('wb2_plaetze'))}</h2>
+    <div class="wb-plaetze">${(md ? md.plaetze : []).map((p) => `<div class="wb-platz"><b>${esc(t('wb2_platz_' + p.id))}</b><div class="muted" style="font-size:14px;margin:4px 0 8px">${esc(t('wb2_platz_' + p.id + '_text'))}</div><div class="wb-preis">${esc(eur(p.preis_woche_cents))}</div><div class="muted" style="font-size:13px">${esc(t('wb2_je_land_woche'))}</div></div>`).join('')}</div>
+    <h2 style="margin:18px 0 8px">${esc(t('wb2_reichweite'))}</h2>
+    ${laender.length ? `<div class="pv-tabelle"><div class="pv-kopf wb-reich"><span>${esc(t('wb2_land'))}</span><span>${esc(t('wb2_konten'))}</span><span>${esc(t('wb2_verifiziert'))}</span></div>
+      ${laender.map((l) => `<div class="pv-zeile wb-reich"><span>${esc(landAnzeige(l.land))}</span><span>${esc(reich(l.konten))}</span><span>${esc(reich(l.verifiziert))}</span></div>`).join('')}</div>` : `<div class="muted">${esc(t('wb2_noch_keine'))}</div>`}
+    <div class="muted" style="font-size:13px;margin-top:6px">${esc(t('wb2_reich_hinweis'))}</div>
+    <h2 style="margin:18px 0 8px">${esc(t('wb2_regeln'))}</h2>
+    <ul class="auth-hero-list" style="margin-top:0">${['kennzeichnung', 'pruefung', 'rx', 'sicherheit', 'zahlen'].map((k) => `<li><span class="auth-hero-ok" aria-hidden="true">${ico('check', 18)}</span><span style="font-weight:500">${esc(t('wb2_r_' + k))}</span></li>`).join('')}</ul>
+    <h2 style="margin:18px 0 8px">${esc(t('wb2_ablauf'))}</h2>
+    <ol class="wb-ablauf">${['buchen', 'pruefen', 'zahlen', 'laeuft'].map((k) => `<li>${esc(t('wb2_a_' + k))}</li>`).join('')}</ol>
+    <div class="muted" style="font-size:14px;margin:8px 0 14px">${esc(t('wb2_zahlwege'))}: ${esc([md && md.zahlung.krypto ? t('wb2_krypto') : null, md && md.zahlung.rechnung ? t('wb2_rechnung') : null].filter(Boolean).join(' · ') || '—')}</div>
+    ${darfWerben ? `<button class="auth-gross" data-wbneu style="width:auto;padding:0 28px">${esc(t('wb2_buchen'))}</button>`
+      : angemeldet ? `<div class="srt-sperre">${esc(t('wb2_nur_firmen'))}</div>`
+      : `<button class="auth-gross" data-wbkonto style="width:auto;padding:0 28px">${esc(t('wb2_konto'))}</button>`}
+  </div>`);
+  const k = c.querySelector('[data-wbkonto]'); if (k) k.onclick = () => authScreen();
+  return c;
+}
+
+function wbStatusText(k) {
+  if (k.zustand === 'abgelehnt') return ti('wb2_s_abgelehnt', { grund: (k.pruefung && k.pruefung.grund) || '' });
+  return t('wb2_s_' + k.zustand);
+}
+function werbeCockpit(d) {
+  const c = el(`<div class="card" data-wbcockpit><div class="row" style="align-items:center;gap:10px;flex-wrap:wrap"><h1 style="margin:0;flex:1">${esc(t('wb2_cockpit'))}</h1><button data-wbneu>${esc(t('wb2_neu'))}</button></div>
+    <div data-wbliste style="margin-top:10px"></div></div>`);
+  const liste = c.querySelector('[data-wbliste]');
+  d.kampagnen.forEach((k) => {
+    const ctr = k.impressionen ? (100 * k.klicks / k.impressionen).toFixed(1).replace('.', LOCALE === 'en' ? '.' : ',') + ' %' : '—';
+    const z = el(`<div class="wb-kampagne" data-wbk="${esc(k.id)}">
+      <div class="row" style="gap:8px;align-items:flex-start;flex-wrap:wrap"><div style="flex:1;min-width:200px"><b>${esc(k.titel)}</b>
+        <div class="muted" style="font-size:14px">${esc(t('wb2_platz_' + k.platz))} · ${esc(k.laender.map(landAnzeige).join(', '))} · ${esc(fmtDateDe(k.start))}–${esc(fmtDateDe(k.ende))} · ${esc(eur(k.preis_cents))}</div></div>
+        <span class="wb-status wb-status-${esc(k.zustand)}">${esc(wbStatusText(k))}</span></div>
+      <div class="wb-zahlen"><span><b>${k.impressionen}</b> ${esc(t('wb2_impr'))}</span><span><b>${k.klicks}</b> ${esc(t('wb2_klicks'))}</span><span><b>${esc(ctr)}</b> ${esc(t('wb2_ctr'))}</span></div>
+      <div class="row" style="gap:8px;flex-wrap:wrap" data-wbaktionen></div>
+      <div data-wbmehr></div>
+    </div>`);
+    const akt = z.querySelector('[data-wbaktionen]'); const mehr = z.querySelector('[data-wbmehr]');
+    const knopf = (txt, fn, ghost = true) => { const b = el(`<button class="${ghost ? 'ghost ' : ''}small">${esc(txt)}</button>`); b.onclick = fn; akt.appendChild(b); };
+    if (['entwurf', 'abgelehnt'].includes(k.zustand)) {
+      knopf(t('wb2_bearbeiten'), async () => buchungsKarte((await api('GET', '/api/werbung/firma')).firma, k));
+      knopf(t('wb2_einreichen'), async () => { try { await api('POST', `/api/werbung/kampagnen/${k.id}/einreichen`); openWerbung(); } catch (e) { alert(e.message); } }, false);
+    }
+    if (k.zustand === 'freigegeben') knopf(t('wb2_bezahlen'), () => zahlungKampagne(k, mehr, d.rechnung_moeglich), false);
+    if (['laeuft', 'geplant'].includes(k.zustand)) knopf(t('wb2_pausieren'), async () => { await api('POST', `/api/werbung/kampagnen/${k.id}/pause`, { an: true }); openWerbung(); });
+    if (k.zustand === 'pausiert') knopf(t('wb2_fortsetzen'), async () => { await api('POST', `/api/werbung/kampagnen/${k.id}/pause`, { an: false }); openWerbung(); });
+    if (k.impressionen) knopf(t('wb2_statistik'), async () => {
+      const s = await api('GET', `/api/werbung/kampagnen/${k.id}/statistik`);
+      mehr.innerHTML = `<div class="pv-tabelle" style="margin-top:8px"><div class="pv-kopf"><span>${esc(t('wb2_tag'))}</span><span>${esc(t('wb2_impr'))}</span><span>${esc(t('wb2_klicks'))}</span></div>${s.tage.map((x) => `<div class="pv-zeile"><span>${esc(fmtDateDe(x.tag))}</span><span>${x.impressionen}</span><span>${x.klicks}</span></div>`).join('')}</div>
+        <div class="muted" style="font-size:14px;margin-top:6px">${esc(t('wb2_je_gruppe'))}: ${esc(Object.entries(s.je_gruppe).map(([g, n]) => `${gruppeName(g)} ${n}`).join(' · '))}</div>`;
+    });
+    if (k.rechnung) knopf(t('wb2_rechnung_zeigen'), () => zeigeRechnung(k.id));
+    liste.appendChild(z);
+  });
+  return c;
+}
+
+/** Bezahlen: Krypto (wie Premium) oder Rechnung/Überweisung. */
+async function zahlungKampagne(k, box, rechnungMoeglich) {
+  box.innerHTML = `<div class="wb-zahlung"><div style="font-weight:700;margin-bottom:6px">${esc(ti('wb2_zahlen_betrag', { betrag: eur(k.preis_cents) }))}</div><div class="row" style="gap:8px;flex-wrap:wrap" data-wbwege></div><div data-wbweg></div></div>`;
+  const wege = box.querySelector('[data-wbwege]'); const weg = box.querySelector('[data-wbweg]');
+  if (rechnungMoeglich) {
+    const b = el(`<button class="small">${esc(t('wb2_per_rechnung'))}</button>`);
+    b.onclick = async () => { try { await api('POST', `/api/werbung/kampagnen/${k.id}/rechnung`); zeigeRechnung(k.id); } catch (e) { alert(e.message); } };
+    wege.appendChild(b);
+  }
+  const kr = el(`<button class="small ghost">${esc(t('wb2_per_krypto'))}</button>`);
+  kr.onclick = async () => {
+    weg.innerHTML = '<div class="loading">…</div>';
+    let opt; try { opt = await api('GET', `/api/werbung/kampagnen/${k.id}/krypto`); } catch (e) { weg.innerHTML = ''; weg.appendChild(el(`<div class="err">${esc(e.message)}</div>`)); return; }
+    weg.innerHTML = '';
+    opt.coins.forEach((c) => {
+      const zeile = el(`<div class="crypto-pay"><b>${esc(c.symbol || c.coin)}</b> <span class="muted">${esc(c.network || '')}</span>
+        <div>${c.amount_crypto != null ? esc(`${c.amount_crypto} ${c.symbol || ''}`) : esc(t('wb2_kurs_fehlt'))} · ${esc(eur(k.preis_cents))}</div>
+        <div class="crypto-addr"><code>${esc(c.address)}</code></div>
+        <div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap"><input data-tx placeholder="${esc(t('wb2_tx_ph'))}" style="flex:1;min-width:180px"><button class="small" data-melden>${esc(t('wb2_tx_melden'))}</button></div>
+        <div class="err" data-txerr></div></div>`);
+      zeile.querySelector('[data-melden]').onclick = async () => {
+        try {
+          const st = await api('POST', `/api/werbung/kampagnen/${k.id}/krypto/start`, { walletId: c.id });
+          await api('POST', `/api/payments/crypto/${st.payment_id}/claim`, { txRef: zeile.querySelector('[data-tx]').value });
+          zeile.replaceWith(el(`<div class="ok-box" style="padding:10px 12px">${esc(t('wb2_tx_ok'))}</div>`));
+        } catch (e) { zeile.querySelector('[data-txerr]').textContent = e.message; }
+      };
+      weg.appendChild(zeile);
+    });
+  };
+  wege.appendChild(kr);
+}
+
+async function zeigeRechnung(id) {
+  let r; try { r = (await api('GET', `/api/werbung/kampagnen/${id}/rechnung`)).rechnung; } catch (e) { alert(e.message); return; }
+  const e2 = r.empfaenger || {}; const a = r.aussteller || {};
+  app.innerHTML = '';
+  const c = el(`<div class="card wb-rechnung" data-wbrechnung>
+    <div class="row" style="gap:8px;flex-wrap:wrap"><button class="ghost small" data-zurueck>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span><button class="small" data-drucken>${esc(t('wb2_drucken'))}</button></div>
+    <div class="row" style="justify-content:space-between;align-items:flex-start;margin-top:14px;flex-wrap:wrap;gap:12px">
+      <div><b>${esc(a.firma || '')}</b><div>${esc(a.anschrift || '')}</div>${a.ust_id ? `<div>${esc(t('wb2_uid'))}: ${esc(a.ust_id)}</div>` : ''}</div>
+      <div style="text-align:right"><h1 style="margin:0">${esc(t('wb2_rechnung'))}</h1><div>${esc(t('wb2_nr'))} ${esc(r.nummer)}</div><div>${esc(t('wb2_datum'))} ${esc(fmtDateDe(r.datum))}</div></div>
+    </div>
+    <div style="margin-top:16px"><b>${esc(e2.firma || '')}</b><div>${esc(e2.strasse || '')}</div><div>${esc((e2.plz || '') + ' ' + (e2.ort || ''))}</div><div>${esc(e2.land || '')}</div>${e2.ust_id ? `<div>${esc(t('wb2_uid'))}: ${esc(e2.ust_id)}</div>` : ''}</div>
+    <div class="pv-tabelle" style="margin-top:16px"><div class="pv-zeile"><span>${esc(ti('wb2_leistung', { platz: t('wb2_platz_' + r.leistung.platz), titel: r.leistung.titel }))}<div class="muted" style="font-size:13px">${esc(r.leistung.laender.map(landAnzeige).join(', '))} · ${esc(fmtDateDe(r.leistung.start))}–${esc(fmtDateDe(r.leistung.ende))} · ${r.leistung.wochen} ${esc(t('wb2_wochen'))}</div></span><span></span><span>${esc(eur(r.netto_cents))}</span></div>
+      <div class="pv-zeile"><span>${esc(t('wb2_netto'))}</span><span></span><span>${esc(eur(r.netto_cents))}</span></div>
+      ${r.ust_satz ? `<div class="pv-zeile"><span>${esc(ti('wb2_ust', { satz: r.ust_satz }))}</span><span></span><span>${esc(eur(r.ust_cents))}</span></div>` : ''}
+      <div class="pv-zeile"><b>${esc(t('wb2_gesamt'))}</b><span></span><b>${esc(eur(r.brutto_cents))}</b></div></div>
+    <div style="margin-top:14px">${esc(t('wb2_bitte_ueberweisen'))}<div><b>${esc(a.inhaber || '')}</b> · IBAN ${esc(a.iban || '')}${a.bic ? ` · BIC ${esc(a.bic)}` : ''}</div><div>${esc(t('wb2_verwendung'))}: ${esc(r.nummer)}</div></div>
+    ${r.bezahlt ? `<div class="ok-box" style="padding:8px 12px;margin-top:12px">${esc(t('wb2_bezahlt'))}</div>` : `<div class="muted" style="font-size:14px;margin-top:12px">${esc(t('wb2_start_nach_eingang'))}</div>`}
+  </div>`);
+  app.appendChild(c);
+  c.querySelector('[data-zurueck]').onclick = () => openWerbung();
+  c.querySelector('[data-drucken]').onclick = () => window.print();
+}
+
+/** Buchung (neu oder bearbeiten). Preis wird live gerechnet; der Server rechnet verbindlich. */
+function buchungsKarte(firma, alt) {
+  const md = wbMedia || { plaetze: [] };
+  const heute = new Date().toISOString().slice(0, 10);
+  const v0 = alt || { platz: 'start', laender: [viewCountry()], zielgruppen: ['pharmacy'], wochen: 2, start: heute, art: 'unternehmen' };
+  app.innerHTML = '';
+  const c = el(`<div class="card" data-wbbuchung>
+    <div><button class="ghost small" data-zurueck>${esc(t('gen_back'))}</button></div>
+    <h1 style="margin:10px 0 4px">${esc(alt ? t('wb2_bearbeiten') : t('wb2_buchen'))}</h1>
+    <div class="muted" style="margin-bottom:8px">${esc(t('wb2_buchen_sub'))}</div>
+    ${firma ? '' : `<h2 class="wb-schritt">1 · ${esc(t('wb2_firma'))}</h2>
+      <div class="wb-raster">${['firma', 'ansprechpartner', 'strasse', 'plz', 'ort', 'land', 'ust_id', 'email'].map((f) => `<label>${esc(t('wb2_f_' + f))}<input data-firma="${f}" ${f === 'land' ? `value="${esc(viewCountry())}" maxlength="2"` : ''}></label>`).join('')}</div>`}
+    <h2 class="wb-schritt">${firma ? 1 : 2} · ${esc(t('wb2_anzeige'))}</h2>
+    <label>${esc(t('wb2_titel'))}<input data-f="titel" maxlength="70" value="${esc(v0.titel || '')}"></label>
+    <label>${esc(t('wb2_text'))}<textarea data-f="text" maxlength="280" rows="3">${esc(v0.text || '')}</textarea></label>
+    <label>${esc(t('wb2_link'))}<input data-f="link" placeholder="https://" value="${esc(v0.link || '')}"></label>
+    <label>${esc(t('wb2_cta'))}<input data-f="cta" maxlength="24" placeholder="${esc(t('anz_cta'))}" value="${esc(v0.cta || '')}"></label>
+    <label>${esc(t('wb2_bild'))}<input type="file" accept="image/*" data-bild></label>
+    <h2 class="wb-schritt">${firma ? 2 : 3} · ${esc(t('wb2_art'))}</h2>
+    <div class="wb-wahl"><label><input type="radio" name="wbart" value="unternehmen" ${v0.art !== 'arzneimittel' ? 'checked' : ''}> ${esc(t('wb2_art_unternehmen'))}</label>
+      <label><input type="radio" name="wbart" value="arzneimittel" ${v0.art === 'arzneimittel' ? 'checked' : ''}> ${esc(t('wb2_art_arzneimittel'))}</label></div>
+    <div class="wb-unter" data-wbarznei ${v0.art === 'arzneimittel' ? '' : 'hidden'}>
+      <div class="wb-wahl"><label><input type="radio" name="wbrx" value="rx" ${v0.rx !== false ? 'checked' : ''}> ${esc(t('wb2_rx'))}</label><label><input type="radio" name="wbrx" value="otc" ${v0.rx === false ? 'checked' : ''}> ${esc(t('wb2_otc'))}</label></div>
+      <label>${esc(t('wb2_pflicht'))}<textarea data-f="pflichtangaben" rows="5">${esc(v0.pflichtangaben || '')}</textarea></label>
+      <div class="muted" style="font-size:13px">${esc(t('wb2_pflicht_hinweis'))}</div>
+    </div>
+    <h2 class="wb-schritt">${firma ? 3 : 4} · ${esc(t('wb2_wo_wer'))}</h2>
+    <div class="wb-wahl">${md.plaetze.map((p) => `<label><input type="radio" name="wbplatz" value="${esc(p.id)}" ${v0.platz === p.id ? 'checked' : ''}> ${esc(t('wb2_platz_' + p.id))} — ${esc(eur(p.preis_woche_cents))} ${esc(t('wb2_je_land_woche'))}</label>`).join('')}</div>
+    <div style="font-weight:700;margin-top:10px">${esc(t('wb2_laender'))}</div>
+    <div class="wb-wahl wb-mehrspaltig">${(COUNTRIES_CACHE || []).map((l) => `<label><input type="checkbox" data-land="${esc(l.code)}" ${v0.laender.includes(l.code) ? 'checked' : ''}> ${esc(landAnzeige(l.code))}</label>`).join('')}</div>
+    <div style="font-weight:700;margin-top:10px">${esc(t('wb2_gruppen'))}</div>
+    <div class="wb-wahl wb-mehrspaltig">${WB_GRUPPEN.map((g) => `<label><input type="checkbox" data-gruppe="${g}" ${v0.zielgruppen.includes(g) ? 'checked' : ''}> ${esc(gruppeName(g))}</label>`).join('')}</div>
+    <div class="row" style="gap:12px;flex-wrap:wrap;margin-top:10px"><label style="flex:1;min-width:150px">${esc(t('wb2_start'))}<input type="date" data-f="start" min="${heute}" value="${esc(v0.start)}"></label>
+      <label style="flex:1;min-width:150px">${esc(t('wb2_wochen'))}<input type="number" data-f="wochen" min="1" max="52" value="${esc(String(v0.wochen))}"></label></div>
+    <div class="wb-summe" data-wbsumme></div>
+    <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:12px"><button class="ghost" data-speichern>${esc(t('wb2_entwurf'))}</button><button data-einreichen>${esc(t('wb2_einreichen'))}</button></div>
+    <div class="err" data-err></div>
+  </div>`);
+  app.appendChild(c);
+  let bild = (alt && alt.bild) || null;
+  c.querySelector('[data-zurueck]').onclick = () => openWerbung();
+  c.querySelector('[data-bild]').onchange = async (e) => { const f = e.target.files[0]; if (!f) return; try { bild = await fileToDataUrl(f); } catch (er) { c.querySelector('[data-err]').textContent = er.message; } };
+  const wert = (f) => (c.querySelector(`[data-f="${f}"]`) || {}).value || '';
+  const daten = () => ({
+    titel: wert('titel'), text: wert('text'), link: wert('link'), cta: wert('cta'), bild,
+    art: (c.querySelector('input[name="wbart"]:checked') || {}).value || 'unternehmen',
+    rx: ((c.querySelector('input[name="wbrx"]:checked') || {}).value || 'rx') === 'rx',
+    pflichtangaben: wert('pflichtangaben'),
+    platz: (c.querySelector('input[name="wbplatz"]:checked') || {}).value,
+    laender: [...c.querySelectorAll('[data-land]:checked')].map((x) => x.dataset.land),
+    zielgruppen: [...c.querySelectorAll('[data-gruppe]:checked')].map((x) => x.dataset.gruppe),
+    start: wert('start'), wochen: Number(wert('wochen')),
+  });
+  const summe = () => {
+    const d = daten(); const p = md.plaetze.find((x) => x.id === d.platz);
+    // Rx-Werbung erreicht nie Privatpersonen: Häkchen sperren statt Fehler nach dem Absenden.
+    const rxSperre = d.art === 'arzneimittel' && d.rx;
+    const priv = c.querySelector('[data-gruppe="private"]'); priv.disabled = rxSperre; if (rxSperre) priv.checked = false;
+    c.querySelector('[data-wbarznei]').hidden = d.art !== 'arzneimittel';
+    c.querySelector('[data-wbsumme]').textContent = p && d.laender.length && d.wochen > 0
+      ? ti('wb2_summe', { preis: eur(p.preis_woche_cents), laender: nlabel(d.laender.length, 'wb2_n_land_1', 'wb2_n_land'), wochen: nlabel(d.wochen, 'wb2_n_woche_1', 'wb2_n_woche'), summe: eur(p.preis_woche_cents * d.laender.length * d.wochen) }) : '';
+  };
+  c.addEventListener('change', summe); c.addEventListener('input', summe); summe();
+  const sichern = async (einreichen) => {
+    const err = c.querySelector('[data-err]'); err.textContent = '';
+    try {
+      if (!firma) {
+        const f = Object.fromEntries([...c.querySelectorAll('[data-firma]')].map((x) => [x.dataset.firma, x.value]));
+        firma = (await api('POST', '/api/werbung/firma', f)).firma;
+      }
+      const k = alt ? (await api('POST', `/api/werbung/kampagnen/${alt.id}`, daten())).kampagne : (await api('POST', '/api/werbung/kampagnen', daten())).kampagne;
+      alt = k;
+      if (einreichen) await api('POST', `/api/werbung/kampagnen/${k.id}/einreichen`);
+      openWerbung();
+    } catch (e) { err.textContent = e.message; }
+  };
+  c.querySelector('[data-speichern]').onclick = () => sichern(false);
+  c.querySelector('[data-einreichen]').onclick = () => sichern(true);
+}
+
+/** Redaktion: Anzeigen prüfen, Überweisungen verbuchen, Notbremse. */
+async function anzeigenPruefung(ziel) {
+  let d; try { d = await api('GET', '/api/werbung/pruefung'); } catch { return; }
+  const c = el(`<div class="card" data-anzpruefung><h2 style="margin:0 0 6px">${esc(t('wb2_pruefung'))}</h2>
+    <div class="muted" style="font-size:14px;margin-bottom:8px">${esc(t('wb2_pruef_liste'))}</div><div data-offen></div><h3 style="margin:14px 0 6px">${esc(t('wb2_aktiv'))}</h3><div data-aktiv></div></div>`);
+  const offen = c.querySelector('[data-offen]'); const aktiv = c.querySelector('[data-aktiv]');
+  if (!d.offen.length) offen.appendChild(el(`<div class="muted">${esc(t('wb2_nichts_offen'))}</div>`));
+  d.offen.forEach((k) => {
+    const z = el(`<div class="wb-kampagne"><b>${esc(k.titel)}</b> <span class="muted">${esc((k.firma && k.firma.firma) || '')}</span>
+      <div style="margin:4px 0">${esc(k.text)}</div><div class="muted" style="font-size:14px">${esc(k.link)} · ${esc(t('wb2_platz_' + k.platz))} · ${esc(k.laender.join(', '))} · ${esc(k.zielgruppen.map(gruppeName).join(', '))} · ${esc(eur(k.preis_cents))}</div>
+      ${k.art === 'arzneimittel' ? `<div class="srt-sperre" style="margin-top:6px"><b>${esc(k.rx === false ? t('wb2_otc') : t('wb2_rx'))}</b><div style="white-space:pre-wrap;font-size:14px;margin-top:4px">${esc(k.pflichtangaben || '')}</div></div>` : ''}
+      <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap"><button class="small" data-frei>${esc(t('wb2_freigeben'))}</button><button class="ghost small" data-ab>${esc(t('wb2_ablehnen'))}</button></div></div>`);
+    z.querySelector('[data-frei]').onclick = async () => { await api('POST', `/api/werbung/kampagnen/${k.id}/freigeben`); showModeration(); };
+    z.querySelector('[data-ab]').onclick = async () => { const g = prompt(t('wb2_ablehnen_grund')); if (!g) return; try { await api('POST', `/api/werbung/kampagnen/${k.id}/ablehnen`, { grund: g }); showModeration(); } catch (e) { alert(e.message); } };
+    offen.appendChild(z);
+  });
+  d.aktiv.forEach((k) => {
+    const z = el(`<div class="wb-kampagne"><b>${esc(k.titel)}</b> <span class="muted">${esc((k.firma && k.firma.firma) || '')} · ${esc(wbStatusText(k))} · ${k.impressionen} ${esc(t('wb2_impr'))}</span><div class="row" style="gap:8px;margin-top:6px;flex-wrap:wrap" data-akt></div></div>`);
+    const akt = z.querySelector('[data-akt]');
+    if (k.zustand === 'freigegeben' && k.rechnung) { const b = el(`<button class="small">${esc(ti('wb2_verbuchen', { nr: k.rechnung.nummer }))}</button>`); b.onclick = async () => { await api('POST', `/api/werbung/kampagnen/${k.id}/ueberweisung-verbucht`); showModeration(); }; akt.appendChild(b); }
+    if (['laeuft', 'geplant'].includes(k.zustand)) { const b = el(`<button class="ghost small">${esc(t('wb2_notbremse'))}</button>`); b.onclick = async () => { await api('POST', `/api/werbung/kampagnen/${k.id}/pause`, { an: true }); showModeration(); }; akt.appendChild(b); }
+    aktiv.appendChild(z);
+  });
+  if (!d.aktiv.length) aktiv.appendChild(el(`<div class="muted">—</div>`));
+  ziel.appendChild(c);
+}
 
 // ── Vorrats-Radar (Startseite) ───────────────────────────────────────────────
 // Was im Ausland amtlich knapp ist, bei dir aber nicht. Keine Prognose — die
@@ -8226,7 +8548,7 @@ async function showNotifications() {
     const who = n.actor ? n.actor.display_name : t('notif_someone');
     // Systemmeldungen ohne handelnde Person: Hier hat niemand etwas getan,
     // eine Behoerde hat gemeldet. „Jemand hat …" waere schlicht falsch.
-    const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'shortage_home' || n.type === 'shortage_ended' || n.type === 'premium_ablauf' || n.type === 'payment_confirmed' || n.type === 'payment_rejected';
+    const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'shortage_home' || n.type === 'shortage_ended' || /^anzeige_/.test(n.type) || n.type === 'premium_ablauf' || n.type === 'payment_confirmed' || n.type === 'payment_rejected';
     // Profilbild der handelnden Person (wer) + Typ-Emoji (was) — auf einen Blick erkennbar,
     // konsistent zu Feed/Verzeichnis/Suche. Ohne Person (System-Meldung) nur das Emoji.
     const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:var(--ok-bg)'}">
@@ -8247,6 +8569,8 @@ async function showNotifications() {
           const tb=document.querySelector('.tabs button[data-tab="exchange"]'); if(tb) tb.classList.add('active'); loadTab(); });
       }
       else if (n.type === 'premium_ablauf') { mainScreen().then(() => openPremium()); }
+      else if (n.type === 'anzeige_pruefen' || n.type === 'anzeige_gemeldet') { showModeration(); }
+      else if (/^anzeige_/.test(n.type)) { openWerbung(); }
       else if (/^shortage_(abroad|home|ended)$/.test(n.type)) { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
       else if (n.type === 'watch_alert') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
       // Der Klick fuehrt in die Live-Warnungen, auf den Wirkstoff gefiltert —
@@ -8615,6 +8939,7 @@ async function showModeration() {
       ${mtile('🔴', krit, t('ov_t_crit'), 'var(--crit-fg)')}
       ${mtile('👥', comm, t('md_community'), 'var(--warn-fg)')}
     </div></div>`);
+  anzeigenPruefung(app); // Anzeigen prüfen (lädt selbst; erscheint unter dem Kopf)
   head.querySelector('#back').onclick = mainScreen;
   head.querySelector('#dqOpen').onclick = openDatenquellen;
   app.appendChild(head);

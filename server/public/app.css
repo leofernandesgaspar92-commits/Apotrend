@@ -504,3 +504,43 @@
 
   /* Laufzeit-Wahl: zwei Zeilen Text je Knopf — darf umbrechen (sonst Querscroll am Handy). */
   [data-prplan] button { white-space:normal; flex-shrink:1; border-radius:var(--radius); min-width:0; }
+
+  /* ── Anzeigen (gekennzeichnet) ── */
+  .anz-karte { border-color:var(--line); }
+  .anz-kopf { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+  .anz-label { font-size:12px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); border:1px solid var(--line); border-radius:6px; padding:2px 8px; }
+  .anz-von { font-size:14px; }
+  .anz-mehr { min-height:36px; padding:4px 12px; font-size:13px; }
+  .anz-bild { width:100%; max-height:240px; object-fit:cover; border-radius:var(--radius-sm); margin-bottom:8px; display:block; }
+  .anz-titel { font-weight:800; font-size:17px; line-height:1.3; }
+  .anz-text { margin-top:4px; font-size:15px; }
+  .anz-pflicht { margin-top:10px; padding:10px 12px; background:var(--chip-bg); border-radius:var(--radius-sm); font-size:13px; white-space:pre-wrap; }
+  .anz-warum { margin-top:10px; padding:10px 12px; border:1px solid var(--line); border-radius:var(--radius-sm); font-size:14px; display:grid; gap:4px; }
+  .anz-warum[hidden], .anz-pflicht[hidden] { display:none; }
+  .anz-weg { padding:8px 4px 16px; font-size:14px; }
+  #anzeigeSeite .anz-karte { margin-bottom:14px; }
+  /* ── Werben auf ApoPulse ── */
+  .wb-plaetze { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:10px; }
+  .wb-platz { border:1px solid var(--line); border-radius:var(--radius); padding:12px 14px; }
+  .wb-preis { font-size:22px; font-weight:800; color:var(--green); }
+  .wb-reich { grid-template-columns:minmax(0, 1fr) 6em 8em; }
+  .wb-ablauf { margin:0; padding-left:22px; display:grid; gap:6px; }
+  .wb-kampagne { border-top:1px solid var(--line); padding:12px 0; display:grid; gap:8px; }
+  .wb-kampagne:first-child { border-top:0; }
+  .wb-zahlen { display:flex; gap:16px; flex-wrap:wrap; font-size:14px; color:var(--muted); }
+  .wb-zahlen b { color:var(--text); font-size:16px; }
+  .wb-status { font-size:13px; font-weight:700; padding:3px 10px; border-radius:999px; background:var(--chip-bg); color:var(--text); white-space:nowrap; }
+  .wb-status-laeuft { background:var(--ok-bg); color:var(--ok-fg); }
+  .wb-status-freigegeben { background:var(--warn-bg); color:var(--warn-fg); }
+  .wb-status-abgelehnt { background:var(--crit-bg); color:var(--crit-fg); white-space:normal; }
+  .wb-zahlung { margin-top:8px; padding:12px; border:1px solid var(--line); border-radius:var(--radius); }
+  .wb-schritt { margin:18px 0 4px; font-size:1.1em; }
+  .wb-raster { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:0 12px; }
+  .wb-wahl { display:grid; gap:6px; margin:6px 0; }
+  .wb-wahl label { display:flex; align-items:center; gap:8px; color:var(--text); font-size:15px; margin:0; }
+  .wb-wahl input { width:auto; min-height:0; }
+  .wb-mehrspaltig { grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); }
+  .wb-summe { margin-top:12px; font-weight:800; font-size:17px; color:var(--green); }
+  @media print { .wb-rechnung { border:0; } }
+  .wb-unter { margin:2px 0 8px 28px; padding-left:12px; border-left:3px solid var(--line); }
+  .wb-unter[hidden] { display:none; }

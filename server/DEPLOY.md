@@ -103,6 +103,15 @@ Einrichtung (einmalig, ca. 15 Minuten):
 4. Speichern (Render startet neu). Ob der Versand an ist, zeigt `GET /api/live/status` → `mail`.
    Sofort testen: Redaktions-Konto, `POST /api/live/run/wochenbericht`.
 
+## Anzeigen für Unternehmen (Einnahmen)
+
+Pharma, Großhandel und Logistik buchen Anzeigen selbst („Menü → Werben auf ApoPulse"). Damit
+sie **per Rechnung** zahlen können, in Render → Environment setzen:
+`APOPULSE_FIRMA_NAME`, `APOPULSE_FIRMA_ANSCHRIFT`, `APOPULSE_BANK_IBAN` (Pflicht),
+optional `APOPULSE_FIRMA_UST_ID`, `APOPULSE_BANK_BIC`, `APOPULSE_UST_SATZ` (mit der Steuerberatung
+klären) und `APOPULSE_WERBEPREISE` (z. B. `start:490,feed:290,seite:190`). Ohne diese Angaben
+geht nur Krypto. Regeln und Rechtsrahmen: `docs/WERBUNG.md`.
+
 ## Datenspeicherung (Persistenz)
 
 Der Server kann seinen kompletten Zustand als **JSON-Snapshot** auf die Platte

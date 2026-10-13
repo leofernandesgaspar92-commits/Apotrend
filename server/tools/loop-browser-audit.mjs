@@ -1509,6 +1509,50 @@ async function main() {
     await ctx.close();
   }
 
+  // ── Anzeigen: gekennzeichnet, erklärbar — und nie bei Engpass/Rückruf ────
+  //  Nachgebildete Anzeige (die Prüfumgebung hat keine gebuchte). Geprüft
+  //  wird die Kennzeichnung UND, dass auf Engpass-, Live-Warnungs- und
+  //  Wirkstoff-Seiten keine Anzeige auch nur angefragt wird.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    const anfragen = [];
+    await page.route('**/api/anzeigen/platz/**', (route) => {
+      anfragen.push(new URL(route.request().url()).pathname);
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ anzeige: {
+        id: 'kprobe', platz: 'start', titel: 'PRUEFANZEIGE Kühllogistik', text: 'Temperaturgeführte Zustellung.', bild: null, cta: null, firma: 'Prüf GmbH',
+        pflichtangaben: null, art: 'unternehmen', rx: null, klick: '/api/anzeigen/kprobe/klick?z=abc',
+        warum: { firma: 'Prüf GmbH', bezahlt_von: 'Prüf GmbH', laender: ['AT'], zielgruppen: ['pharmacy'], nur_fachkreise: false } } }) });
+    });
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(900);
+    const karte = page.locator('.anz-karte').first();
+    if (!(await karte.count())) findings.push('Anzeigen: Startseite zeigt die (nachgebildete) Anzeige nicht');
+    else {
+      const txt = await karte.innerText();
+      if (!/anzeige/i.test(txt) || !/Prüf GmbH/.test(txt)) findings.push(`Anzeigen: Kennzeichnung oder Firma fehlt (${txt.slice(0, 80)})`);
+      const a = karte.locator('a.btn-link');
+      const rel = (await a.count()) ? await a.getAttribute('rel') : '';
+      if (!/sponsored/.test(rel || '')) findings.push('Anzeigen: Ziel-Link ohne rel="sponsored"');
+      await karte.locator('[data-anzwarum]').click();
+      const warum = await karte.locator('[data-anzwarumtext]').innerText().catch(() => '');
+      if (!/bezahlt/.test(warum) || !/Österreich/.test(warum)) findings.push(`Anzeigen: „Warum sehe ich das?" nennt Zahler oder Merkmale nicht (${warum.slice(0, 80)})`);
+    }
+    // Sicherheitsrelevante Seiten: keine Anfrage.
+    const vorher = anfragen.length;
+    for (const tab of ['shortages', 'signals']) { await reiterOeffnen(page, tab); await page.waitForTimeout(800); }
+    await page.evaluate(() => openWirkstoff('Amoxicillin')); await page.waitForTimeout(900);
+    const seitVorher = anfragen.slice(vorher).filter((p) => !p.endsWith('/seite'));
+    if (seitVorher.length) findings.push(`Anzeigen: auf Engpass-/Warnungs-/Wirkstoff-Seiten angefragt (${seitVorher.join(', ')})`);
+    // Mediadaten und Buchung öffnen ohne Fehler.
+    await page.evaluate(() => openWerbung()); await page.waitForTimeout(900);
+    if (!(await page.locator('[data-mediadaten]').count())) findings.push('Anzeigen: Mediadaten-Seite fehlt');
+    for (const f of fehler) findings.push('Anzeigen: JS-Fehler ' + f);
+    if (!findings.some((f) => f.startsWith('Anzeigen'))) console.log('✓ Anzeigen: gekennzeichnet mit Firma, rel=sponsored, „Warum?" nennt Zahler und Merkmale; nie auf Engpass/Warnungen/Wirkstoff; Mediadaten öffnen');
+    await ctx.close();
+  }
+
   // ── Registrierung im Browser: kurz, und ein Fehler verbrennt nichts ──────
   //  Bis 10/2026: sechs Felder (Pflicht-@Handle, Land doppelt), zwei Formulare
   //  untereinander — und ein vergebener Handle machte die E-Mail unbrauchbar.

@@ -42,6 +42,9 @@ export function createPaymentsService({
   // Tests ohne Social-Schicht laufen. `moderatoren()` liefert User-IDs.
   benachrichtige = null, moderatoren = () => [],
   jetzt = () => Date.now(),
+  // Für Zahlungen ohne Katalogprodukt (Anzeigen-Kampagnen): wird nach jeder
+  // bestätigten Zahlung aufgerufen. Fehler darin halten die Zahlung nicht auf.
+  beiBezahlt = null,
 }) {
   const melde = (o) => { if (typeof benachrichtige === 'function') { try { benachrichtige(o); } catch { /* eine Glocke darf keine Zahlung aufhalten */ } } };
   const pick = (method) => {
@@ -89,10 +92,44 @@ export function createPaymentsService({
       if (onPaid) { try { await onPaid({ payment, product }); } catch { /* Mailversand darf die Freischaltung nicht blockieren */ } }
     }
     spiegeln({ ...aktuell, feature: product && product.feature });
+    if (typeof beiBezahlt === 'function') { try { await beiBezahlt(aktuell); } catch { /* darf die Zahlung nicht aufhalten */ } }
     return { ok: true, granted: !!product };
   }
 
+  /** Coins mit Betrag zum aktuellen Kurs — gemeinsam für Produkte und freie Beträge. */
+  async function kryptoAngebot(eur) {
+    const ws = wallets();
+    const rateMap = rates ? await rates.ratesEur([...new Set(ws.map(w => w.coin))]) : {};
+    return ws.map(w => {
+      const rate = rateMap[w.coin];
+      const amount = rate ? Number((eur / rate).toFixed(8)) : null;
+      return { id: w.id, coin: w.coin, symbol: w.symbol, label: w.label, address: w.address, network: w.network, amount_eur: eur, amount_crypto: amount, uri: walletUri(w, amount) };
+    });
+  }
+
   return {
+    // ── Freier Betrag (Anzeigen-Kampagne): dieselbe Krypto-Strecke wie Premium,
+    //    nur ohne Katalogprodukt. `ref` (z. B. „anzeige:<id>") steht als
+    //    product_id in der Zahlung; freischalten() ruft dafür `beiBezahlt`.
+    async cryptoOptionsBetrag({ amountCents, currency = 'EUR', name = null }) {
+      const eur = Number(amountCents) / 100;
+      if (!(eur > 0)) throw new AppError('betrag_ungueltig', 'Ungültiger Betrag.');
+      return { product: null, product_name: name, currency, amount: eur, amount_eur: eur, local: null, coins: await kryptoAngebot(eur) };
+    },
+    async startCryptoPaymentBetrag(userId, { ref, amountCents, currency = 'EUR', walletId, name = null }) {
+      if (!/^anzeige:[a-z0-9]+$/.test(String(ref || ''))) throw new AppError('zahlung_ref', 'Unbekannter Zahlungszweck.');
+      const w = wallets().find(x => x.id === walletId);
+      if (!w) throw new AppError('coin_unavailable', 'Wallet nicht verfügbar.');
+      let rate = null;
+      try { rate = rates ? ((await rates.ratesEur([w.coin])) || {})[w.coin] || null : null; } catch { rate = null; }
+      const eur = Number(amountCents) / 100;
+      const payment = repo.createPayment({ userId, productId: ref, amountCents: Number(amountCents), currency, method: 'crypto_direct', provider: 'direct', coin: w.coin, walletId: w.id, address: w.address, status: 'pending' });
+      const mitBetrag = repo.updatePaymentReview
+        ? repo.updatePaymentReview(payment.id, { rate_eur: rate, expected_crypto: rate ? Number((eur / rate).toFixed(8)) : null, bezeichnung: name })
+        : payment;
+      spiegeln(mitBetrag || payment);
+      return { payment_id: payment.id, coin: w.coin, address: w.address, network: w.network, label: w.label };
+    },
     // ── Direkt-in-Wallet Krypto (deine eigenen Adressen). BEWUSST OHNE automatische
     //    Chain-Verifizierung: statische Adressen erlauben keine zuverlässige Zuordnung
     //    „welche:r Kund:in hat gezahlt". Ablauf: anzeigen → Kund:in nennt Tx-ID → du
@@ -215,7 +252,7 @@ export function createPaymentsService({
           return {
             ...p,
             kunde: kunde(p.user_id),
-            product_name: getProduct(p.product_id)?.name || p.product_id,
+            product_name: getProduct(p.product_id)?.name || p.bezeichnung || p.product_id,
             network: w ? w.network : null,
             symbol: w ? w.symbol : null, // „SOL", nicht „solana"
             wallet_label: w ? w.label : null,

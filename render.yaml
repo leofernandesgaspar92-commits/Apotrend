@@ -104,6 +104,19 @@ services:
         sync: false
       - key: APOPULSE_MAIL_FROM
         sync: false
+      # Anzeigen: Rechnungssteller und Bank (ohne sie nur Krypto). docs/WERBUNG.md
+      - key: APOPULSE_FIRMA_NAME
+        sync: false
+      - key: APOPULSE_FIRMA_ANSCHRIFT
+        sync: false
+      - key: APOPULSE_FIRMA_UST_ID
+        sync: false
+      - key: APOPULSE_BANK_IBAN
+        sync: false
+      - key: APOPULSE_UST_SATZ
+        sync: false
+      - key: APOPULSE_WERBEPREISE
+        sync: false
       # PORT wird von Render automatisch gesetzt — der Server liest process.env.PORT.
     # Dauerhafte Platte (nur Bezahltarif). Zum Aktivieren einkommentieren:
     # disk:

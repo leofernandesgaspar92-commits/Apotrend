@@ -180,6 +180,17 @@ export const FEATURES = [
     api: [/^\/api\/dm/],
   },
   {
+    // Anzeigen von Unternehmen der Branche (Pharma, Großhandel, Logistik) —
+    // vom Owner 10/2026 gewünscht. Der Einwand gegen `werbung` unten gilt
+    // weiter und ist hier eingebaut: Anzeigen erscheinen NIE neben Engpass-,
+    // Rückruf- oder Wirkstoff-Informationen, sind gekennzeichnet, von der
+    // Redaktion geprüft und Rx-Werbung erreicht nur verifizierte Fachkreise.
+    id: 'anzeigen', zustand: 'aktiv',
+    titel: 'Anzeigen für Unternehmen',
+    grund: 'Einnahmequelle; Regeln in services/anzeigen.js und docs/WERBUNG.md.',
+    api: [/^\/api\/(werbung|anzeigen)\//],
+  },
+  {
     id: 'werbung', zustand: 'ruht',
     titel: 'Anzeigenfläche',
     grund: 'Werbung neben einer Engpassmeldung verkauft genau das Vertrauen, '

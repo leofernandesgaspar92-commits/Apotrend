@@ -42,6 +42,8 @@ import { AppError } from '../domain/errors.js';
 import { HANDLE_RE, normalizeHandle, freierHandle } from '../domain/handle.js';
 import { createSortiment } from '../services/sortiment.js';
 import { vorratsRadar } from '../services/radar.js';
+import { createAnzeigen } from '../services/anzeigen.js';
+import { werbeplaetzeAusUmgebung, ZIELGRUPPEN } from '../data/werbeplaetze.js';
 import { createOverviewService } from '../services/overview.js';
 import { createOAuthService, buildProvidersFromEnv } from '../services/oauth.js';
 import { createPaymentsService, buildPaymentProvidersFromEnv } from '../services/payments.js';
@@ -165,6 +167,28 @@ const fruehwarnung = createFruehwarnung({
   istPremium: (uid) => payments.hasFeature(uid, 'premium'),
   heimatVon: (uid) => { const p = social.getProfile(uid); return p && p.country; },
 });
+// Anzeigen für Unternehmen der Branche (services/anzeigen.js, docs/WERBUNG.md).
+// Rechnungssteller: ohne vollständige Angaben gibt es keine Zahlung per Rechnung.
+const betreiber = {
+  firma: process.env.APOPULSE_FIRMA_NAME || '', anschrift: process.env.APOPULSE_FIRMA_ANSCHRIFT || '',
+  ust_id: process.env.APOPULSE_FIRMA_UST_ID || '', iban: process.env.APOPULSE_BANK_IBAN || '',
+  bic: process.env.APOPULSE_BANK_BIC || '', inhaber: process.env.APOPULSE_BANK_INHABER || '',
+  ust_satz: Number(process.env.APOPULSE_UST_SATZ) || 0,
+};
+const anzeigen = createAnzeigen({
+  plaetze: werbeplaetzeAusUmgebung(process.env),
+  profilVon: (uid) => social.getProfile(uid),
+  rxErlaubtFuer: (uid) => rxErlaubt(rxBetrachter(uid)),
+  istModerator: (uid) => social.isModerator(uid),
+  moderatoren: () => socialRepo.listProfiles().filter((p) => social.isModerator(p.user_id)).map((p) => p.user_id),
+  benachrichtige: (n) => social.pushNotification(n),
+  betreiber,
+  // Klick-Zeichen: HMAC mit eigenem Zweck — taugt nie als Anmeldung.
+  klickZeichen: {
+    ausstellen: (uid, id, tag) => issueZweckToken('anzeige_klick', `${uid}|${id}|${tag}`),
+    pruefen: (z, id) => { const v = verifyZweckToken('anzeige_klick', z); if (!v) return null; const [uid, kid, tag] = v.split('|'); return kid === id ? { uid, tag } : null; },
+  },
+});
 // Sortiments-Check: eigene Liste gegen die Behördenlisten (services/sortiment.js).
 const sortiment = createSortiment({ chronik, shortagesRepo, istPremium: (uid) => payments.hasFeature(uid, 'premium') });
 // Wochenbericht per E-Mail (Premium). Ebenfalls VOR applySnapshot(): Wer ihn
@@ -215,6 +239,8 @@ const oauth = createOAuthService({ repo, social, providers: buildProvidersFromEn
 const cryptoRates = createCryptoRates();
 const fxRates = createFxRates();
 const payments = createPaymentsService({
+  // Krypto-Zahlung einer Anzeigen-Kampagne bestätigt -> Kampagne läuft.
+  beiBezahlt: (p) => { if (String(p.product_id || '').startsWith('anzeige:')) anzeigen.bezahlt(p.product_id.slice(8), { methode: 'krypto', payment_id: p.id }); },
   repo,
   providers: buildPaymentProvidersFromEnv(),
   wallets: cryptoWallets, // Direkt-in-Wallet: eigene, öffentliche Empfangsadressen (ENV-überschreibbar)
@@ -246,6 +272,7 @@ function applySnapshot(snap) {
   chronik.__load(snap.chronik);
   eigeneQuellen.__load(snap.eigeneQuellen);
   wochenbericht.__load(snap.wochenbericht);
+  anzeigen.__load(snap.anzeigen);
   // Alte, unbefristete Premium-Freischaltungen aus bezahlten Monats-/Jahres-
   // käufen bekommen ihr Ablaufdatum (services/payments.js, laufzeitenUmstellen).
   const umgestellt = payments.laufzeitenUmstellen();
@@ -295,6 +322,7 @@ function collectSnapshot() {
     chronik: chronik.__dump(),
     eigeneQuellen: eigeneQuellen.__dump(),
     wochenbericht: wochenbericht.__dump(),
+    anzeigen: anzeigen.__dump(),
   };
 }
 let saveTimer = null;
@@ -2065,6 +2093,59 @@ const routes = [
   ['POST', /^\/api\/shortages\/([^/]+)\/report-update$/, true, async ({ userId, params, body }) => shortages.updateShortageReport(userId, params[0], { status: body.status, grund: body.grund })],
 
   // ── Beobachtungsliste (Wirkstoffe im Blick behalten) ──
+  // ── Anzeigen für Unternehmen (services/anzeigen.js, docs/WERBUNG.md) ──────
+  // Mediadaten (öffentlich): Plätze, Preise und ECHTE Reichweite — registrierte
+  // Konten je Land und Berufsgruppe. Kleine Zahlen (1–9) werden nicht genannt,
+  // damit sich niemand einzelnen Betrieben zuordnen lässt.
+  ['GET', /^\/api\/werbung\/mediadaten$/, false, async () => {
+    const zahl = (n) => (n >= 10 ? { anzahl: n } : { anzahl: null, unter_10: n > 0 });
+    const profile = socialRepo.listProfiles().filter((p) => !p.is_editorial);
+    const laender = Object.values(COUNTRIES).map((c) => {
+      const hier = profile.filter((p) => String(p.country || '').toUpperCase() === c.code);
+      return {
+        land: c.code, konten: zahl(hier.length),
+        verifiziert: zahl(hier.filter((p) => p.verified).length),
+        je_gruppe: Object.fromEntries(ZIELGRUPPEN.map((g) => [g, zahl(hier.filter((p) => p.account_type === g).length)])),
+      };
+    });
+    return {
+      plaetze: anzeigen.plaetze(), laender,
+      gesamt: zahl(profile.length), verifiziert: zahl(profile.filter((p) => p.verified).length),
+      zahlung: { krypto: cryptoWallets().length > 0, rechnung: anzeigen.ueberweisungMoeglich() },
+    };
+  }],
+  ['GET', /^\/api\/werbung\/firma$/, true, async ({ userId }) => ({ firma: anzeigen.firma(userId) })],
+  ['POST', /^\/api\/werbung\/firma$/, true, async ({ userId, body }) => ({ firma: anzeigen.firmaSetzen(userId, body) })],
+  ['GET', /^\/api\/werbung\/kampagnen$/, true, async ({ userId }) => ({ kampagnen: anzeigen.meine(userId), rechnung_moeglich: anzeigen.ueberweisungMoeglich() })],
+  ['POST', /^\/api\/werbung\/kampagnen$/, true, async ({ userId, body }) => ({ kampagne: anzeigen.anlegen(userId, body) })],
+  ['POST', /^\/api\/werbung\/kampagnen\/([a-z0-9]+)$/, true, async ({ userId, params, body }) => ({ kampagne: anzeigen.bearbeiten(userId, params[0], body) })],
+  ['POST', /^\/api\/werbung\/kampagnen\/([a-z0-9]+)\/einreichen$/, true, async ({ userId, params }) => ({ kampagne: anzeigen.einreichen(userId, params[0]) })],
+  ['POST', /^\/api\/werbung\/kampagnen\/([a-z0-9]+)\/pause$/, true, async ({ userId, params, body }) => ({ kampagne: anzeigen.pausieren(userId, params[0], body.an !== false) })],
+  ['GET', /^\/api\/werbung\/kampagnen\/([a-z0-9]+)\/statistik$/, true, async ({ userId, params }) => anzeigen.statistik(userId, params[0])],
+  ['GET', /^\/api\/werbung\/kampagnen\/([a-z0-9]+)\/krypto$/, true, async ({ userId, params }) => {
+    const z = anzeigen.kampagneFuerZahlung(userId, params[0]);
+    return payments.cryptoOptionsBetrag({ amountCents: z.betrag_cents, currency: z.waehrung, name: z.name });
+  }],
+  ['POST', /^\/api\/werbung\/kampagnen\/([a-z0-9]+)\/krypto\/start$/, true, async ({ userId, params, body }) => {
+    const z = anzeigen.kampagneFuerZahlung(userId, params[0]);
+    return payments.startCryptoPaymentBetrag(userId, { ref: 'anzeige:' + z.id, amountCents: z.betrag_cents, currency: z.waehrung, walletId: body.walletId, name: z.name });
+  }],
+  ['POST', /^\/api\/werbung\/kampagnen\/([a-z0-9]+)\/rechnung$/, true, async ({ userId, params }) => anzeigen.rechnungAusstellen(userId, params[0])],
+  ['GET', /^\/api\/werbung\/kampagnen\/([a-z0-9]+)\/rechnung$/, true, async ({ userId, params }) => ({ rechnung: anzeigen.rechnung(userId, params[0]) })],
+  // Redaktion: prüfen, freigeben, ablehnen, Überweisung verbuchen, Notbremse.
+  ['GET', /^\/api\/werbung\/pruefung$/, true, async ({ userId }) => ({ offen: anzeigen.zurPruefung(userId), aktiv: anzeigen.alleLaufenden(userId) })],
+  ['POST', /^\/api\/werbung\/kampagnen\/([a-z0-9]+)\/freigeben$/, true, async ({ userId, params }) => ({ kampagne: anzeigen.freigeben(userId, params[0]) })],
+  ['POST', /^\/api\/werbung\/kampagnen\/([a-z0-9]+)\/ablehnen$/, true, async ({ userId, params, body }) => ({ kampagne: anzeigen.ablehnen(userId, params[0], body.grund) })],
+  ['POST', /^\/api\/werbung\/kampagnen\/([a-z0-9]+)\/ueberweisung-verbucht$/, true, async ({ userId, params }) => ({ kampagne: anzeigen.ueberweisungVerbuchen(userId, params[0]) })],
+  // Auslieferung (zählt die Einblendung) und Klick (zählt mit Zeichen, leitet weiter).
+  ['GET', /^\/api\/anzeigen\/platz\/(start|feed|seite)$/, true, async ({ userId, params }) => ({ anzeige: anzeigen.ausliefern(userId, params[0]), __sichern: true })],
+  ['GET', /^\/api\/anzeigen\/([a-z0-9]+)\/klick$/, false, async ({ params, query }) => {
+    const ziel = anzeigen.klick(params[0], query.get('z'));
+    if (!ziel) { const e = new Error('Anzeige nicht gefunden.'); e.status = 404; throw e; }
+    return { __weiterleitung: ziel };
+  }],
+  ['POST', /^\/api\/anzeigen\/([a-z0-9]+)\/ausblenden$/, true, async ({ userId, params }) => anzeigen.ausblenden(userId, params[0])],
+  ['POST', /^\/api\/anzeigen\/([a-z0-9]+)\/melden$/, true, async ({ userId, params, body }) => anzeigen.melden(userId, params[0], body.grund)],
   // Vorrats-Radar: im Ausland amtlich knapp, hier nicht (services/radar.js).
   // Premium-Schnitt auf dem Server: gratis die ersten Einträge und die Zahl.
   ['GET', /^\/api\/radar$/, true, async ({ userId, query }) => vorratsRadar({
@@ -2195,7 +2276,14 @@ const server = http.createServer(async (req, res) => {
       // Client-IP (hinter dem Render-Proxy steht die echte IP in x-forwarded-for).
       const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
       const result = await handler({ userId, body, params, query: url.searchParams, ip });
-      if (req.method !== 'GET') saveSoon(); // Zustand nach jeder erfolgreichen Schreiboperation sichern (POST/DELETE)
+      // Weiterleitung (Anzeigen-Klick): gezählt ist schon, jetzt zum Ziel.
+      if (result && result.__weiterleitung) {
+        saveSoon();
+        res.writeHead(302, { Location: result.__weiterleitung, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
+        return res.end();
+      }
+      if (req.method !== 'GET' || (result && result.__sichern)) saveSoon(); // Zustand nach jeder erfolgreichen Schreiboperation sichern (POST/DELETE)
+      if (result && result.__sichern) delete result.__sichern;
       return json(req, res, 200, result ?? { ok: true });
     } catch (e) {
       const code = e instanceof ForbiddenError ? 403 : (e.status || 400);
