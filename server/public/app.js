@@ -579,26 +579,34 @@ function authScreen() {
       <ul class="auth-hero-list" data-herolist>${heroListe()}</ul>
     </div>
     <div class="auth-forms">
-      <div class="card">
-        <h2 class="auth-form-h">${esc(t('au_login'))}</h2>
-        <label for="li_email">${esc(t('au_email'))}</label><input id="li_email" type="email" placeholder="${esc(t('au_email_ph'))}">
-        <label for="li_pw">${esc(t('au_pw'))}</label><input id="li_pw" type="password" placeholder="${esc(t('au_pw'))}">
-        <div style="margin-top:12px"><button id="li_go">${esc(t('au_login'))}</button></div>
+      <div class="card auth-karte">
+      <!-- Ein Formular zur Zeit, umschaltbar (wie bei LinkedIn/X) — statt zwei
+           langer Formulare untereinander (am Handy ~1700px). -->
+      <div class="auth-switch" role="tablist">
+        <button type="button" role="tab" data-auth="login">${esc(t('au_login'))}</button>
+        <button type="button" role="tab" data-auth="register">${esc(t('au_create'))}</button>
+      </div>
+      <div data-authpane="login">
+        <h2 class="sr-only">${esc(t('au_login'))}</h2>
+        <label for="li_email">${esc(t('au_email'))}</label><input id="li_email" type="email" autocomplete="email" placeholder="${esc(t('au_email_ph'))}">
+        <label for="li_pw">${esc(t('au_pw'))}</label><input id="li_pw" type="password" autocomplete="current-password" placeholder="${esc(t('au_pw'))}">
+        <div style="margin-top:14px"><button id="li_go" class="auth-gross">${esc(t('au_login'))}</button></div>
         <div style="margin-top:8px"><button class="linklike small" id="li_forgot">${esc(t('au_forgot'))}</button></div>
         <div id="oauthBtns"></div>
         <div class="err" id="li_err"></div>
       </div>
-      <div class="card">
-        <h2 class="auth-form-h">${esc(t('au_register'))}</h2>
+      <div data-authpane="register">
+        <h2 class="sr-only">${esc(t('au_register'))}</h2>
         <div id="rg_durability" class="err" hidden></div>
-        <label for="rg_name">${esc(t('au_name'))}</label><input id="rg_name" placeholder="Dr. Anna Huber">
-        <label for="rg_handle">${esc(t('au_handle'))}</label><input id="rg_handle" placeholder="anna_huber">
-        <label for="rg_email">${esc(t('au_email'))}</label><input id="rg_email" type="email" placeholder="${esc(t('au_email_ph'))}">
-        <label for="rg_pw">${esc(t('au_pw8'))}</label><input id="rg_pw" type="password">
-        <label for="rg_country">${esc(t('au_country'))}</label><select id="rg_country"></select>
+        <!-- Nur, was wirklich gebraucht wird: Land steht schon fest (Schritt 1),
+             der @Handle entsteht aus dem Namen. -->
+        <label for="rg_name">${esc(t('au_name'))}</label><input id="rg_name" autocomplete="name" placeholder="Dr. Anna Huber">
+        <label for="rg_email">${esc(t('au_email'))}</label><input id="rg_email" type="email" autocomplete="email" placeholder="${esc(t('au_email_ph'))}">
+        <label for="rg_pw">${esc(t('au_pw8'))}</label><input id="rg_pw" type="password" autocomplete="new-password">
         <label for="rg_accounttype">${esc(t('at_label'))}</label><select id="rg_accounttype"></select>
-        <div style="margin-top:12px"><button id="rg_go">${esc(t('au_create'))}</button></div>
+        <div style="margin-top:14px"><button id="rg_go" class="auth-gross">${esc(t('au_create'))}</button></div>
         <div class="err" id="rg_err"></div>
+      </div>
       </div>
     </div>
   </div>`));
@@ -642,23 +650,30 @@ function authScreen() {
   };
   document.getElementById('rg_go').onclick = async () => {
     try {
-      const d = await api('POST','/api/register',{ name:v('rg_name'), handle:v('rg_handle'), email:v('rg_email'), password:v('rg_pw'), country:v('rg_country'), accountType:v('rg_accounttype') });
+      const d = await api('POST','/api/register',{ name:v('rg_name'), email:v('rg_email'), password:v('rg_pw'), country:(localStorage.getItem('apo_country') || 'AT'), locale:LOCALE, accountType:v('rg_accounttype') });
       // Wiederherstellungscodes einmalig zeigen (zum Sichern), dann in die App.
       if (Array.isArray(d.recovery_codes) && d.recovery_codes.length) recoveryCodesScreen(d.recovery_codes, () => afterAuth(d));
       else afterAuth(d);
-    } catch(e){ document.getElementById('rg_err').textContent = e.message; }
+    } catch(e){
+      document.getElementById('rg_err').textContent = e.message;
+      // Schon registriert: direkt zur Anmeldung, E-Mail übernommen.
+      if (e.code === 'email_taken') { document.getElementById('li_email').value = v('rg_email'); zeigeAuth('login'); document.getElementById('li_err').textContent = e.message; document.getElementById('li_pw').focus(); }
+    }
   };
   const forgot = document.getElementById('li_forgot');
   if (forgot) forgot.onclick = () => resetScreen();
   // Social-Login-Buttons nur zeigen, wenn ein Anbieter serverseitig konfiguriert ist
   // (sonst bleibt der Bereich leer — kein toter „Anmelden mit …"-Button).
   renderOAuthButtons();
-  // Länderauswahl bei der Registrierung: das in Schritt 1 gewählte Land ist vorausgewählt
-  // (Feed-Inhalte + Sprache folgen dem Land). Änderbar, falls doch ein anderes Land gewünscht.
-  ensureCountries().then(() => {
-    const sel = document.getElementById('rg_country');
-    if (sel) sel.innerHTML = countryOptionsHtml((localStorage.getItem('apo_country') || (me && me.country) || 'AT'));
-  });
+  // Anmelden oder Konto erstellen: Wer hier schon einmal angemeldet war, sieht
+  // zuerst „Anmelden", alle anderen „Konto erstellen".
+  const zeigeAuth = (welche) => {
+    app.querySelectorAll('[data-authpane]').forEach((p) => { p.hidden = p.dataset.authpane !== welche; });
+    app.querySelectorAll('[data-auth]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.auth === welche)));
+  };
+  app.querySelectorAll('[data-auth]').forEach((b) => { b.onclick = () => zeigeAuth(b.dataset.auth); });
+  let kontoBekannt = false; try { kontoBekannt = !!localStorage.getItem('apo_konto_bekannt'); } catch { /* ohne Speicher: Registrierung zuerst */ }
+  zeigeAuth(kontoBekannt ? 'login' : 'register');
   // Kontotyp-Auswahl befüllen (Apotheke als Vorauswahl).
   ensureAccountTypes().then(() => {
     const sel = document.getElementById('rg_accounttype');
@@ -669,6 +684,7 @@ const v = (id) => document.getElementById(id).value.trim();
 
 function afterAuth(d) {
   localStorage.setItem('apo_token', d.token);
+  try { localStorage.setItem('apo_konto_bekannt', '1'); } catch { /* nur Komfort */ }
   me = d.profile || d.user;
   mainScreen();
 }
@@ -870,7 +886,12 @@ window.addEventListener('orientationchange', setHeaderHeightVar);
 
 // ── Haupt-Screen (Feed) ──
 async function mainScreen() {
-  const meData = await api('GET','/api/me');
+  let meData = await api('GET','/api/me');
+  // Konto ohne Profil (bis 10/2026 möglich, wenn die Registrierung am Handle
+  // scheiterte): Profil nachholen statt einer halb kaputten Anwendung.
+  if (!meData.profile) {
+    try { await api('POST', '/api/profil/nachholen', { country: localStorage.getItem('apo_country') || 'AT', locale: LOCALE }); meData = await api('GET','/api/me'); } catch { /* weiter wie bisher */ }
+  }
   me = meData.profile;
   iAmModerator = !!meData.is_moderator;
   // Sprache folgt dem Land des Profils (Owner-Vorgabe: länderbasierte Plattform).

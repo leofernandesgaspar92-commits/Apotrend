@@ -39,6 +39,7 @@ import { createLogistikService } from '../services/logistik.js';
 // mit der gemeinten Meldung — bei der Ratenbremse ein Fehler, der erst unter
 // Last aufgefallen waere.
 import { AppError } from '../domain/errors.js';
+import { HANDLE_RE, normalizeHandle, freierHandle } from '../domain/handle.js';
 import { createOverviewService } from '../services/overview.js';
 import { createOAuthService, buildProvidersFromEnv } from '../services/oauth.js';
 import { createPaymentsService, buildPaymentProvidersFromEnv } from '../services/payments.js';
@@ -1035,7 +1036,19 @@ const routes = [
   })],
 
   ['POST', /^\/api\/register$/, false, async ({ body }) => {
-    const { name, email, password, handle, displayName, pharmacyName } = body;
+    const { email, password, displayName, pharmacyName } = body;
+    const name = String(body.name || '').trim();
+    // ERST alles prüfen, DANN anlegen. Bis 10/2026 entstanden Organisation und
+    // Konto vor der Handle-Prüfung: Ein zu kurzer oder vergebener Handle ließ
+    // ein Konto ohne Profil zurück, und die E-Mail war für immer „vergeben".
+    if (!name && !displayName) throw new AppError('display_name_required', 'Anzeigename erforderlich.');
+    const wunsch = normalizeHandle(body.handle);
+    if (wunsch && !HANDLE_RE.test(wunsch)) throw new AppError('profile_handle_format', 'Handle: 3–30 Zeichen, nur a–z 0–9 _.');
+    if (wunsch && social.getProfile(wunsch)) throw new AppError('handle_taken', 'Handle ist bereits vergeben.');
+    if (repo.getUserByEmail(String(email || '').trim())) throw new AppError('email_taken', 'E-Mail ist bereits vergeben.');
+    if (String(password || '').length < 8) throw new AppError('pw_too_short', 'Passwort muss mindestens 8 Zeichen haben.');
+    // Ohne Wunsch: Handle aus dem Namen („Jürgen Müller" -> juergen_mueller).
+    const handle = wunsch || freierHandle(displayName || name, (h) => !!social.getProfile(h));
     const reg = orgAuth.registerPharmacyWithOwner({
       pharmacy: { name: pharmacyName || `${name || 'Meine'} Apotheke` },
       owner: { name, email, password },
@@ -1347,6 +1360,19 @@ const routes = [
     return { token: issueToken(r.user.id), user: r.user, profile: social.getProfile(r.user.id) };
   }],
 
+  // Konten ohne Profil reparieren — entstanden bis 10/2026, wenn die
+  // Registrierung am Handle scheiterte (siehe /api/register). Ohne Profil
+  // war die Anwendung für sie nicht benutzbar. Idempotent.
+  ['POST', /^\/api\/profil\/nachholen$/, true, async ({ userId, body }) => {
+    const da = social.getProfile(userId);
+    if (da) return { profile: da, angelegt: false };
+    const user = repo.getUserById(userId);
+    const country = normalizeCountry(body.country);
+    const handle = freierHandle(user && user.name, (h) => !!social.getProfile(h));
+    const org = repo.getMembershipsForUser(userId)[0];
+    const profile = social.createProfile(userId, { handle, displayName: (user && user.name) || handle, pharmacyOrgId: org ? org.organization_id : null, country, locale: normalizeLocale(body.locale, country) });
+    return { profile, angelegt: true };
+  }],
   ['GET', /^\/api\/me$/, true, async ({ userId }) => ({ user: safeUser(repo.getUserById(userId)), profile: social.getProfile(userId), is_moderator: social.isModerator(userId) })],
   ['GET', /^\/api\/overview$/, true, async ({ userId, query }) => {
     const home = userCountry(userId);

@@ -2118,3 +2118,40 @@ Navigation.
 verschwindet auf der Meldungen-Seite" (390 + 1280); Wache in `loadTab()` aus → „Logo führt
 nicht zurück" + JS-Fehler `null.innerHTML`; Regel `.kopf-btn.hidden` aus → „btnNotif sichtbar,
 obwohl niemand angemeldet ist".
+
+### Cycle · Registrierung: Tippfehler sperrte das Konto für immer (2026-10-13)
+
+**GATHER.** Frage des Owners: „Wie kann man die Website verbessern?" Der Weg vom ersten Besuch
+zum Konto entscheidet über alles Weitere — also nachgemessen. Am Handy zwei Formulare
+untereinander (~1700px), sechs Felder, davon ein Pflicht-@Handle, den Fachleute nicht kennen,
+und das Land ein zweites Mal (in Schritt 1 schon gewählt).
+
+**Gefunden (echter Fehler, per curl nachgestellt):** `/api/register` legte Organisation und
+Konto an und prüfte den Handle erst danach. Ein zu kurzer oder vergebener Handle (der
+Platzhalter schlug „anna_huber" vor) hinterließ ein Konto OHNE Profil; jeder weitere Versuch
+endete mit „E-Mail ist bereits vergeben". Anmelden ging, aber mit `profile: null` war die
+Anwendung kaputt. Dazu: jede abgelehnte Registrierung hinterließ eine Organisation.
+
+**WORK.**
+- Server prüft zuerst (Name, Handle-Format, Handle frei, E-Mail frei, Passwortlänge) und
+  legt erst dann an. Ohne Wunsch entsteht der Handle aus dem Namen (`domain/handle.js`:
+  „Jürgen Müller" → `juergen_mueller`, Gleichnamige `_2`, `_3`).
+- `POST /api/profil/nachholen` repariert Altbestand (Konto ohne Profil); die App ruft es beim
+  Start, wenn `/api/me` kein Profil liefert. Idempotent, nur angemeldet.
+- Formular: „Anmelden | Konto erstellen" als Umschalter, Neue sehen zuerst „Konto erstellen",
+  wer schon einmal angemeldet war „Anmelden". Vier Felder (Name, E-Mail, Passwort, Kontotyp),
+  großer Knopf, `autocomplete` für Passwort-Manager. Bekannte E-Mail → Wechsel zur Anmeldung,
+  Adresse übernommen.
+- `e_email_taken` sagt jetzt, was zu tun ist („bitte oben auf „Anmelden" tippen", de/en/pt).
+  (Meine erste Annahme, die Übersetzungen fehlten, war falsch — der Test gegen doppelte
+  Schlüssel hat die doppelt angelegten Texte sofort gemeldet.) Status bleibt 400 wie bisher.
+
+**Tests.** `test/registrierung.test.js` (7): Handle aus Namen, freier Handle, ungültiger und
+vergebener Handle verbrennen die E-Mail nicht, Fehler legen keine Organisation an, Altbestand
+wird repariert (echter Neustart auf Datei mit entferntem Profil). Browser-Audit: Felderzahl,
+nur ein Formular sichtbar, Registrierung per Klick mit Handle aus dem Namen, bekannte E-Mail
+führt zur Anmeldung.
+
+**Gegenproben (Bruch angewandt, jede schlägt an):** Format-Prüfung aus → 2 Tests rot;
+E-Mail-Vorprüfung aus → „hinterließ Organisationen"; Handle-frei-Prüfung aus → „vergebener
+Handle verbrennt die E-Mail" rot.

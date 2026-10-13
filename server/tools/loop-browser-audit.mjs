@@ -1469,6 +1469,37 @@ async function main() {
     else console.log('✓ Startseite: „Lage jetzt" mit Zahl, Quelle, Stand — ohne Daten nichts; nur laufende Versprechen');
   }
 
+  // ── Registrierung im Browser: kurz, und ein Fehler verbrennt nichts ──────
+  //  Bis 10/2026: sechs Felder (Pflicht-@Handle, Land doppelt), zwei Formulare
+  //  untereinander — und ein vergebener Handle machte die E-Mail unbrauchbar.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    await page.addInitScript(() => { if (!sessionStorage.getItem('x')) { localStorage.clear(); sessionStorage.setItem('x', '1'); } localStorage.setItem('apo_country', 'AT'); localStorage.setItem('apo_welcome_seen', '1'); });
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
+    const felder = await page.$$eval('[data-authpane="register"] input, [data-authpane="register"] select', (els) => els.filter((e) => e.offsetParent).map((e) => e.id));
+    if (!(await page.locator('#rg_name').isVisible())) findings.push('Registrierung: Neue Besucher sehen nicht zuerst „Konto erstellen"');
+    if (await page.locator('#li_email').isVisible()) findings.push('Registrierung: Anmelde- und Registrierformular gleichzeitig sichtbar');
+    if (felder.length > 4) findings.push(`Registrierung: ${felder.length} Felder (${felder.join(', ')}) — Land und Handle gehören nicht hinein`);
+    const mail = `ui_${Date.now().toString(36)}@reg.test`;
+    await page.fill('#rg_name', 'Jürgen Müller'); await page.fill('#rg_email', mail); await page.fill('#rg_pw', 'Passwort123!');
+    await page.click('#rg_go'); await page.waitForTimeout(1200);
+    if (await page.locator('#rc_done').count()) { await page.click('#rc_done'); await page.waitForTimeout(1000); }
+    const drin = await page.evaluate(() => fetch('/api/me', { headers: { authorization: 'Bearer ' + localStorage.getItem('apo_token') } }).then((r) => r.json()).catch(() => ({})));
+    if (!drin.profile || !/^juergen_mueller/.test(drin.profile.handle)) findings.push(`Registrierung im Browser: kein Profil oder Handle nicht aus dem Namen (${drin.profile && drin.profile.handle})`);
+    // Gleiche E-Mail noch einmal: führt zur Anmeldung, E-Mail übernommen.
+    await page.evaluate(() => { localStorage.removeItem('apo_token'); localStorage.removeItem('apo_konto_bekannt'); });
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
+    await page.fill('#rg_name', 'Jürgen Müller'); await page.fill('#rg_email', mail); await page.fill('#rg_pw', 'Passwort123!');
+    await page.click('#rg_go'); await page.waitForTimeout(800);
+    const umgeleitet = await page.evaluate((m) => document.getElementById('li_email')?.offsetParent && document.getElementById('li_email').value === m, mail);
+    if (!umgeleitet) findings.push('Registrierung: bei bekannter E-Mail kein Wechsel zur Anmeldung mit übernommener Adresse');
+    for (const f of fehler) findings.push('Registrierung: JS-Fehler ' + f);
+    if (!findings.some((f) => f.startsWith('Registrierung'))) console.log(`✓ Registrierung: ${felder.length} Felder, Handle aus dem Namen (${drin.profile.handle}), bekannte E-Mail führt zur Anmeldung`);
+    await ctx.close();
+  }
+
   // ── Warnung vor nicht dauerhafter Speicherung ─────────────────────────────
   //  Eigener Kontext OHNE Anmeldung: Die übrige Prüfung meldet sich mit einem
   //  Token an und bekommt den Registrierungs-Bildschirm deshalb nie zu sehen —
