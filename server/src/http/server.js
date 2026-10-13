@@ -65,6 +65,7 @@ import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js'
 import { issueToken, verifyToken, issueZweckToken, verifyZweckToken } from './token.js';
 import { createMailer } from '../services/mailer.js';
 import { createWochenbericht } from '../services/wochenbericht.js';
+import { createEigeneQuellen } from '../services/eigeneQuellen.js';
 import { createRateLimiter } from '../domain/rateLimiter.js';
 import { dienstKennung } from './serviceIdentity.js';
 import { assetlinksDokument, assetlinksStatus } from './assetlinks.js';
@@ -169,6 +170,25 @@ const wochenbericht = createWochenbericht({
   appUrl: String(process.env.APOPULSE_PUBLIC_URL || 'https://www.apopulse.com').replace(/\/+$/, ''),
   zweckToken: (uid) => issueZweckToken('wb_abmelden', uid),
 });
+// Eigene Engpass-Quellen der Redaktion (services/eigeneQuellen.js) — auch sie
+// werden mit gesichert, also VOR applySnapshot() anlegen.
+const eigeneQuellen = createEigeneQuellen({ istLand: (cc) => !!COUNTRIES[cc], lokalErlaubt: process.env.APOPULSE_QUELLEN_LOKAL_ERLAUBT === '1' });
+// Alle Engpass-Quellen: eingebaute + Umgebung + von der Redaktion eingetragene.
+const engpassQuellen = () => [...sourcesByKind('shortages', process.env), ...eigeneQuellen.liste()];
+
+/**
+ * Eine Engpass-Quelle abrufen und lesen — EIN Weg für den Abruf im Takt und
+ * für den Probe-Abruf der Redaktion. Zwei Wege hätten auseinanderlaufen
+ * können, und dann zeigte „Jetzt testen" etwas anderes als der echte Lauf.
+ */
+async function holeEngpassQuelle(source) {
+  const { raw } = await fetchSourceAlleSeiten(source);
+  // Spaltenzuordnung der Quelle (eigene Quellen) und aus der Umgebung.
+  const columns = { ...(source.columns || {}), ...sourceColumns(source.id) };
+  return source.format === 'json'
+    ? shortagesFromJson(raw, { columns })
+    : shortagesFromCsv(raw, { columns, standardStatus: source.standardStatus || null });
+}
 const exchange = createExchangeService(exchangeRepo, social, repo, shortagesRepo);
 // RxNorm ergaenzt die Suche um Namensvarianten (Wirkstoff <-> Handelsname).
 // Abschaltbar ueber APOPULSE_RXNORM=off — der Dienst geht ins Netz, und wer
@@ -218,6 +238,7 @@ function applySnapshot(snap) {
   exchangeRepo.__load(snap.exchange);
   newsSeen.__load(snap.newsSeen);
   chronik.__load(snap.chronik);
+  eigeneQuellen.__load(snap.eigeneQuellen);
   wochenbericht.__load(snap.wochenbericht);
   const weg = erfundeneStartmeldungenEntfernen(socialRepo);
   if (weg) console.log(`ApoPulse: ${weg} erfundene Startmeldung(en) aus dem gesicherten Bestand entfernt.`);
@@ -262,6 +283,7 @@ function collectSnapshot() {
     // Speicher, sondern ein Zwischenpuffer mit laengerer Lebensdauer.
     logistik: logistikRepo.__dump(),
     chronik: chronik.__dump(),
+    eigeneQuellen: eigeneQuellen.__dump(),
     wochenbericht: wochenbericht.__dump(),
   };
 }
@@ -840,16 +862,12 @@ async function runShortageIngest() {
   // Länder, deren Behörde in DIESEM Lauf Zeilen lieferte. Nur deren Bestand wird
   // ersetzt, und nur dort darf die Chronik Episoden schließen.
   const gelieferteLaender = new Set(summary.countries.filter((c) => c.ok && c.count > 0).map((c) => c.country));
-  for (const source of sourcesByKind('shortages', process.env)) {
+  for (const source of engpassQuellen()) {
     if (source.format !== 'csv' && source.format !== 'json') continue;
     try {
       // Wie bei den News: wiederholen bei vorübergehenden Störungen,
       // ausweichen bei dauerhaften.
-      const { raw } = await fetchSourceAlleSeiten(source);
-      const columns = sourceColumns(source.id);
-      const { rows, rejected } = source.format === 'json'
-        ? shortagesFromJson(raw, { columns })
-        : shortagesFromCsv(raw, { columns, standardStatus: source.standardStatus || null });
+      const { rows, rejected } = await holeEngpassQuelle(source);
       // Jede Zeile traegt das Land ihrer QUELLE: Eine BASG-Zeile gilt fuer
       // Oesterreich, eine openFDA-Zeile fuer die USA. Ohne diese Zuordnung
       // landeten beide in jedem Land — genau der Fehler, den die
@@ -886,7 +904,7 @@ async function runShortageIngest() {
 
   // Gemessenen Engpass-Zustand je Land festhalten — wie bei den Nachrichten,
   // aber getrennt: Es sind andere Server, die unabhaengig ausfallen.
-  coverage.ausShortageSummary(summary, sourcesByKind('shortages'));
+  coverage.ausShortageSummary(summary, engpassQuellen());
 
   const änderungen = [...summary.countries, ...summary.prices, ...summary.rabatte].some((c) => c.ok)
     || summary.csv.some((c) => c.count);
@@ -985,7 +1003,7 @@ const routes = [
     // koennen, statt alte Meldungen wie frische zu zeigen.
     const job = scheduler.status().find((j) => j.name === art) || null;
     return {
-      ...landStatus(params[0], { store: coverage, quellen: sourcesByKind(art), art }),
+      ...landStatus(params[0], { store: coverage, quellen: art === 'shortages' ? engpassQuellen() : sourcesByKind(art), art }),
       abruf: abrufStand(job, { intervallMs: art === 'shortages' ? INTERVALS.shortages : INTERVALS.news }),
     };
   }],
@@ -1034,17 +1052,17 @@ const routes = [
     jobs: scheduler.status(),
     // E-Mail-Versand: an oder aus, und warum — nie der Schlüssel.
     mail: { aktiv: mailer.aktiv, anbieter: mailer.anbieter, grund: mailer.grund },
-    sources: activeSources().map(({ id, kind, country, format, url, official, configured, label, fallbacks, verified }) =>
+    sources: [...activeSources(), ...eigeneQuellen.liste()].map(({ id, kind, country, format, url, official, configured, label, fallbacks, verified, eigen }) =>
       // Die URL gehört dazu: Nur so lässt sich prüfen, ob die Voreinstellung
       // noch stimmt oder eine Behörde ihren Feed verschoben hat.
       // `verified: false` heißt: in der Bauumgebung nicht abrufbar gewesen.
-      ({ id, kind, country, format, url, official, configured, label, verified, fallbacks: (fallbacks || []).length })),
+      ({ id, kind, country, format, url, official, configured, label, verified, eigen: !!eigen, fallbacks: (fallbacks || []).length })),
     // Länderabdeckung auf einen Blick: Für welches der 16 Länder gibt es
     // überhaupt eine Quelle? Ohne diese Zeile fällt ein Land, das durchs
     // Raster gefallen ist, erst auf, wenn jemand dort eine leere Ansicht sieht.
     coverage: (() => {
       const proLand = {};
-      for (const s of activeSources()) (proLand[s.country] ||= []).push(s.id);
+      for (const s of [...activeSources(), ...eigeneQuellen.liste()]) (proLand[s.country] ||= []).push(s.id);
       const laender = listCountries().map((c) => c.code);
       return {
         countries: laender.length,
@@ -1882,6 +1900,41 @@ const routes = [
       shortages: shortages.listWithCounts(userId, { country: land }).map(s => ({ ...s, is_antibiotic: amr.isAntibiotic(s.wirkstoff), price_alternatives: altCount(s), chronik: chronik.kurz(s.wirkstoff, s.country || land) })),
     };
   }],
+  // ── Quellen testen und eintragen (Moderation) ─────────────────────────────
+  //  Probe-Abruf: derselbe Weg wie der echte Lauf (holeEngpassQuelle), aber
+  //  ohne den Bestand zu verändern. Zeigt die ersten erkannten Zeilen und die
+  //  Gründe für verworfene — so sieht die Redaktion in Sekunden, ob eine
+  //  Behörde wirklich liefert, ohne auf den nächsten 4-Stunden-Takt zu warten.
+  ['POST', /^\/api\/quellen\/probe$/, true, async ({ userId, body }) => {
+    if (!social.isModerator(userId)) { const e = new Error('Nur Moderation.'); e.status = 403; e.code = 'forbidden'; throw e; }
+    const q = body && body.id
+      ? engpassQuellen().find((x) => x.id === body.id)
+      : eigeneQuellen.entwurf(body || {});
+    if (!q) { const e = new Error('Quelle nicht gefunden.'); e.status = 404; throw e; }
+    const start = Date.now();
+    try {
+      const { rows, rejected, spalten } = await holeEngpassQuelle(q);
+      return {
+        ok: rows.length > 0, id: q.id, land: q.country, ms: Date.now() - start, spalten: (spalten || []).slice(0, 40),
+        zeilen: rows.length, verworfen: rejected.length, gruende: rejected.slice(0, 5),
+        beispiele: rows.slice(0, 5).map((r) => ({ wirkstoff: r.wirkstoff, bezeichnung: r.bezeichnung, status: r.status, gemeldet_am: r.gemeldet_am })),
+      };
+    } catch (err) {
+      return { ok: false, id: q.id, land: q.country, ms: Date.now() - start, fehler: (err && err.message) || String(err) };
+    }
+  }],
+  ['POST', /^\/api\/quellen$/, true, async ({ userId, body }) => {
+    if (!social.isModerator(userId)) { const e = new Error('Nur Moderation.'); e.status = 403; e.code = 'forbidden'; throw e; }
+    const q = eigeneQuellen.hinzufuegen(body || {});
+    saveSoon();
+    return { quelle: q };
+  }],
+  ['DELETE', /^\/api\/quellen\/([a-z0-9_]+)$/, true, async ({ userId, params }) => {
+    if (!social.isModerator(userId)) { const e = new Error('Nur Moderation.'); e.status = 403; e.code = 'forbidden'; throw e; }
+    const weg = eigeneQuellen.entfernen(params[0]);
+    if (weg) saveSoon();
+    return { entfernt: weg };
+  }],
   // Wochenbericht: Vorschau (jede:r sieht den eigenen), Ein/Aus, Abmelden
   // per Link aus der Mail (Zweck-Token, ohne Anmeldung).
   ['GET', /^\/api\/wochenbericht\/vorschau$/, true, async ({ userId }) => ({ ...wochenbericht.vorschau(userId), premium: payments.hasFeature(userId, 'premium') })],
@@ -2176,7 +2229,7 @@ server.listen(PORT, () => {
 
     const newsCount = sourcesByKind('news', process.env).length;
     const shortageCount = Object.keys(liveSources()).length + Object.keys(livePriceSources()).length
-      + Object.keys(liveRabatteSources()).length + sourcesByKind('shortages', process.env).length;
+      + Object.keys(liveRabatteSources()).length + engpassQuellen().length;
     console.log(
       `ApoPulse: Automatik aktiv — News alle ${INTERVALS.news / 60000} min aus ${newsCount} Quelle(n), ` +
       `Engpässe alle ${INTERVALS.shortages / 3600000} h aus ${shortageCount} Quelle(n). ` +

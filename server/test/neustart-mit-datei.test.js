@@ -21,7 +21,7 @@ const SERVER = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'http'
 function starte(datei) {
   const kind = spawn(process.execPath, [SERVER], {
     env: { ...process.env, PORT: '0', APOPULSE_TOKEN_SECRET: 'neustart-test', APOPULSE_DATA_FILE: datei,
-      APOPULSE_ADMIN_PASSWORD: 'neustart-test-123', APOPULSE_PRESSE: 'aus' },
+      APOPULSE_ADMIN_EMAIL: 'red@neustart.test', APOPULSE_ADMIN_PASSWORD: 'neustart-test-123', APOPULSE_PRESSE: 'aus' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   let log = '';
@@ -53,6 +53,11 @@ test('Neustart mit gespeicherter Datei: Server kommt hoch, Konto ist noch da', {
       body: JSON.stringify({ name: 'N', email: 'neustart@x.at', password: 'Passwort123!', handle: 'neustart', country: 'AT', accountType: 'pharmacy' }),
     });
     assert.equal(r.status, 200);
+    // Eine eigene Engpass-Quelle der Redaktion — muss den Neustart überleben.
+    const red = (await (await fetch(`http://localhost:${portA}/api/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'red@neustart.test', password: 'neustart-test-123' }) })).json()).token;
+    const q = await fetch(`http://localhost:${portA}/api/quellen`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + red },
+      body: JSON.stringify({ country: 'AU', format: 'csv', url: 'https://www.tga.gov.au/beispiel.csv', label: 'TGA' }) });
+    assert.equal(q.status, 200, await q.text());
     for (let i = 0; i < 40 && !existsSync(datei); i++) await new Promise((ok) => setTimeout(ok, 100));
     await new Promise((ok) => setTimeout(ok, 600)); // gedrosseltes Schreiben (400 ms) abwarten
     await stopp(a.kind);
@@ -68,6 +73,8 @@ test('Neustart mit gespeicherter Datei: Server kommt hoch, Konto ist noch da', {
         body: JSON.stringify({ email: 'neustart@x.at', password: 'Passwort123!' }),
       });
       assert.equal(login.status, 200, 'Konto hat den Neustart nicht überlebt');
+      const st = await (await fetch(`http://localhost:${portB}/api/live/status`)).json();
+      assert.ok(st.sources.some((x) => x.id === 'eigen_au_1' && x.eigen), 'eigene Quelle hat den Neustart nicht überlebt');
     } finally {
       await stopp(b.kind);
     }

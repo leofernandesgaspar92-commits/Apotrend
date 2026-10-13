@@ -25,6 +25,11 @@ test('Abruf füllt die Chronik; der nächste Abruf ohne die Zeile beendet die Ep
   const behoerde = http.createServer((req, res) => {
     // Drei Behörden. BfArM (DE): CSV in Windows-1252, ohne Statusspalte —
     // wie die echte Datei.
+    // TGA (AU) als EIGENE Quelle der Redaktion — CSV ohne Statusspalte.
+    if (req.url.startsWith('/tga')) {
+      res.writeHead(200, { 'content-type': 'text/csv' });
+      return res.end('Active ingredients,Trade name,Shortage start\r\nCefalexin,Keflex 500 mg,2026-09-20');
+    }
     if (req.url.startsWith('/bfarm')) {
       const csv = 'PZN;Beginn;Ende;Arzneimittlbezeichnung;Wirkstoffe;Grund\r\n01234567;01.09.2026;31.12.2099;Ibuprofen 400 mg Filmtabletten;Ibuprofen;Erhöhte Nachfrage';
       res.writeHead(200, { 'content-type': 'text/csv' });
@@ -51,6 +56,7 @@ test('Abruf füllt die Chronik; der nächste Abruf ohne die Zeile beendet die Ep
       APOPULSE_SOURCE_BASG_SHORTAGES_URL: feed,
       APOPULSE_SOURCE_OPENFDA_SHORTAGES_URL: `http://localhost:${behoerde.address().port}/fda.json`,
       APOPULSE_SOURCE_BFARM_SHORTAGES_URL: `http://localhost:${behoerde.address().port}/bfarm.csv`,
+      APOPULSE_QUELLEN_LOKAL_ERLAUBT: '1', // nur damit die nachgestellte TGA-Liste lokal laufen darf
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -111,6 +117,28 @@ test('Abruf füllt die Chronik; der nächste Abruf ohne die Zeile beendet die Ep
     assert.ok(ex.episoden.some((e) => e.wirkstoff === 'Amoxicillin'));
 
     // Zweiter Abruf: Amoxicillin ist von der Liste.
+    // Quellen testen (Redaktion): derselbe Weg wie der echte Abruf.
+    const probe = await (await fetch(B + '/api/quellen/probe', { method: 'POST', headers: J(mod), body: JSON.stringify({ id: 'bfarm_shortages' }) })).json();
+    assert.equal(probe.ok, true, JSON.stringify(probe));
+    assert.deepEqual([probe.zeilen, probe.beispiele[0].wirkstoff, probe.beispiele[0].status], [1, 'Ibuprofen', 'eingeschraenkt']);
+    assert.equal((await fetch(B + '/api/quellen/probe', { method: 'POST', headers: J(kunde), body: JSON.stringify({ id: 'bfarm_shortages' }) })).status, 403, 'Nicht-Redaktion darf den Server nichts abrufen lassen');
+    // Eigene Quelle: erst als Entwurf testen, dann speichern — der nächste Abruf nimmt sie mit.
+    const tga = { country: 'AU', format: 'csv', url: `http://localhost:${behoerde.address().port}/tga.csv`, label: 'TGA (eigene Quelle)', standardStatus: 'eingeschraenkt' };
+    // Erster Test: Die Spalten heißen anders — der Probe-Abruf sagt warum und nennt die Spalten.
+    const ohne = await (await fetch(B + '/api/quellen/probe', { method: 'POST', headers: J(mod), body: JSON.stringify(tga) })).json();
+    assert.equal(ohne.ok, false);
+    assert.match(ohne.gruende[0], /Bezeichnung fehlt/);
+    assert.deepEqual(ohne.spalten, ['Active ingredients', 'Trade name', 'Shortage start']);
+    // Mit Zuordnung klappt es.
+    tga.columns = { bezeichnung: 'Trade name', wirkstoff: 'Active ingredients', gemeldet_am: 'Shortage start' };
+    const entwurf = await (await fetch(B + '/api/quellen/probe', { method: 'POST', headers: J(mod), body: JSON.stringify(tga) })).json();
+    assert.equal(entwurf.ok, true, JSON.stringify(entwurf));
+    assert.deepEqual([entwurf.beispiele[0].wirkstoff, entwurf.beispiele[0].gemeldet_am], ['Cefalexin', '2026-09-20']);
+    const neu = await (await fetch(B + '/api/quellen', { method: 'POST', headers: J(mod), body: JSON.stringify(tga) })).json();
+    assert.equal(neu.quelle.id, 'eigen_au_1');
+    const status = await (await fetch(B + '/api/live/status')).json();
+    assert.ok(status.sources.some((q) => q.id === 'eigen_au_1' && q.eigen), 'eigene Quelle fehlt auf der Datenquellen-Seite');
+
     // Frühwarnung: Die Kundin (Premium, Österreich) beobachtet Cefuroxim.
     // Im zweiten Abruf meldet die FDA es neu — in Österreich ist es nicht knapp.
     await fetch(B + '/api/watchlist', { method: 'POST', headers: J(kunde), body: JSON.stringify({ wirkstoff: 'Cefuroxim' }) });
@@ -123,6 +151,9 @@ test('Abruf füllt die Chronik; der nächste Abruf ohne die Zeile beendet die Ep
     assert.deepEqual(ov.fruehwarnung.map((f) => [f.wirkstoff, f.laender[0].land]), [['Cefuroxim', 'US']]);
     const wk = await (await fetch(B + '/api/wirkstoff/Cefuroxim?country=AT', { headers: J(kunde) })).json();
     assert.deepEqual(wk.ausland.map((a) => a.land), ['US']);
+    // Die eigene TGA-Quelle wurde im Takt mit abgerufen.
+    const au = (await (await fetch(B + '/api/shortages?country=AU', { headers: J(mod) })).json()).shortages;
+    assert.ok(au.some((z) => z.wirkstoff === 'Cefalexin' && z.quelle === 'TGA (eigene Quelle)'), 'eigene Quelle wurde nicht abgerufen: ' + JSON.stringify(au.map((z) => z.wirkstoff)));
     // Lisinopril lief schon beim ersten US-Abruf: kein Alarm für Altfälle.
     assert.ok(!glocke.some((n) => /Lisinopril/.test(n.label)));
     const w2 = await (await fetch(B + '/api/wirkstoff/Amoxicillin?country=AT', { headers: J(kunde) })).json();

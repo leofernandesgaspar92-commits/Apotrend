@@ -1942,3 +1942,30 @@ Vorschau ohne Sandbox, Abmelde-Link nicht verarbeitet (Browser).
 **Für den Owner:** Resend oder Postmark einrichten (DEPLOY.md, ~15 Min.). Bis dahin zeigt die
 Premium-Seite „Versand startet, sobald der E-Mail-Dienst eingerichtet ist".
 
+### Cycle · Quellen testen und eintragen — die Redaktion braucht mich nicht mehr dafür (2026-10-13)
+
+**Warum.** Mein blinder Fleck: Die Bauumgebung erreicht keine Behörde. Ob BfArM und FDA live
+liefern, sehe ich nicht; Exporte wie der der TGA haben eine Adresse, die nur auf deren Seite
+steht. Render erreicht sie. Also gehört der Test dorthin — in die Hand der Redaktion.
+
+**WORK.** „🔍 Jetzt testen" je Engpass-Quelle (derselbe Weg wie der Takt — ein gemeinsamer
+`holeEngpassQuelle`, damit Test und Lauf nicht auseinanderlaufen), mit Beispielen, Gründen
+und gefundenen Spalten. „➕ Engpass-Quelle hinzufügen" mit Spaltenzuordnung, gesichert im
+Snapshot, im Takt mit abgerufen, auf der Datenquellen-Seite und in der Länderabdeckung.
+
+**Sicherheit zuerst.** Eine frei eingetragene Adresse lässt den Server Dinge abrufen — die
+klassische Umlenkung auf interne Dienste (Cloud-Metadaten 169.254.169.254). Nur https, keine
+privaten Hosts, keine IP-Literale, nur Moderation. **Beim Testen gefunden:** IPv4 in IPv6
+verpackt (`[::ffff:127.0.0.1]`) kam zunächst durch → IPv6-Literale ganz gesperrt.
+
+**Gegenproben (Bruch angewandt, jede schlägt an):** Probe ohne Rollenprüfung, Takt ohne eigene
+Quellen, Spaltenzuordnung ignoriert, Privat-IP-Prüfung weg, eigene Quellen nicht gesichert
+(Neustart-Test mit zwei echten Prozessen); Oberfläche: Test-Knopf auch bei News-Quellen,
+Spalten nicht angezeigt, „Entfernen" bei eingebauten Quellen.
+
+**CHECK.** 1168 Tests grün (+4), Smoke 19/19, Audit ohne Befund.
+
+**Für den Owner:** Redaktions-Dashboard → 📡 Datenquellen → bei „BfArM" und „FDA" auf „Jetzt
+testen" — das Ergebnis zeigt sofort, ob die echten Dateien ankommen. Für Australien: den
+TGA-Exportlink eintragen und testen (Anleitung in docs/LIVE_DATA.md, 3l).
+

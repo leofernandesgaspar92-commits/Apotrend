@@ -1040,6 +1040,45 @@ async function main() {
     else if (!/✗ nafdac_news .*DQFEHLER HTTP 404/.test(kopie)) findings.push('Datenquellen: der kopierte Bericht enthält den Fehler nicht');
     else console.log('✓ Datenquellen: Fehler zuerst, mit Grund, und im kopierten Bericht als Klartext');
 
+    // ── 8b. Quellen testen und eintragen ──────────────────────────────────
+    //  „Jetzt testen" nur bei Engpass-Quellen; das Ergebnis zeigt erkannte
+    //  Zeilen bzw. Gründe UND die gefundenen Spalten (sonst kann niemand eine
+    //  abweichende Benennung zuordnen). „Entfernen" nur bei eigenen Quellen.
+    await page.unroute('**/api/live/status').catch(() => {});
+    await page.route('**/api/live/status', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+      jobs: [], coverage: { gemessen: {} }, signals: { ki: 'aus' }, database: null,
+      sources: [
+        { id: 'bfarm_shortages', kind: 'shortages', country: 'DE', label: 'BfArM', url: 'https://anwendungen.pharmnet-bund.de/x' },
+        { id: 'eigen_au_1', kind: 'shortages', country: 'AU', label: 'TGA', url: 'https://www.tga.gov.au/x.csv', eigen: true },
+        { id: 'basg_news', kind: 'news', country: 'AT', label: 'BASG News', url: 'https://www.basg.gv.at/rss' },
+      ],
+    }) }));
+    await page.route('**/api/quellen/probe', (route) => {
+      const b = JSON.parse(route.request().postData() || '{}');
+      const antwort = b.id
+        ? { ok: true, id: b.id, ms: 812, zeilen: 2, verworfen: 0, gruende: [], spalten: ['PZN', 'Wirkstoffe'], beispiele: [{ wirkstoff: 'PRUEFWIRKSTOFF', bezeichnung: 'Pruef 500 mg', status: 'eingeschraenkt', gemeldet_am: '2026-09-01' }] }
+        : { ok: false, id: 'entwurf', ms: 300, zeilen: 0, verworfen: 1, gruende: ['Zeile 2: Bezeichnung fehlt'], spalten: ['Active ingredients', 'Trade name'], beispiele: [] };
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(antwort) });
+    });
+    await page.evaluate(() => window.openDatenquellen && window.openDatenquellen());
+    await page.waitForSelector('[data-dqprobe]', { timeout: 6000 }).catch(() => {});
+    const probeKnoepfe = await page.locator('[data-dqprobe]').evaluateAll((els) => els.map((e) => e.getAttribute('data-dqprobe')).sort());
+    const wegKnoepfe = await page.locator('[data-dqweg]').evaluateAll((els) => els.map((e) => e.getAttribute('data-dqweg')));
+    await page.click('[data-dqprobe="bfarm_shortages"]').catch(() => {});
+    await page.waitForSelector('[data-dqquelle="bfarm_shortages"] [data-dqprobeok]', { timeout: 6000 }).catch(() => {});
+    const probeText = await page.locator('[data-dqquelle="bfarm_shortages"] [data-dqprobeerg]').innerText().catch(() => '');
+    await page.fill('[data-dqneu] [data-dqurl]', 'https://www.tga.gov.au/export.csv').catch(() => {});
+    await page.click('[data-dqneu] [data-dqtest]').catch(() => {});
+    await page.waitForSelector('[data-dqneu] [data-dqprobeok]', { timeout: 6000 }).catch(() => {});
+    const neuText = await page.locator('[data-dqneu] [data-dqneuerg]').innerText().catch(() => '');
+    await page.unroute('**/api/quellen/probe').catch(() => {});
+    await page.unroute('**/api/live/status').catch(() => {});
+    if (JSON.stringify(probeKnoepfe) !== JSON.stringify(['bfarm_shortages', 'eigen_au_1'])) findings.push(`Quellen-Test: Knöpfe falsch verteilt (${probeKnoepfe.join(', ')})`);
+    else if (JSON.stringify(wegKnoepfe) !== JSON.stringify(['eigen_au_1'])) findings.push(`Quellen-Test: „Entfernen" bei eingebauten Quellen (${wegKnoepfe.join(', ')})`);
+    else if (!/2 Zeilen erkannt/.test(probeText) || !/PRUEFWIRKSTOFF/.test(probeText) || !/01\.09\.2026/.test(probeText)) findings.push(`Quellen-Test: Ergebnis unvollständig (${probeText})`);
+    else if (!/Bezeichnung fehlt/.test(neuText) || !/Active ingredients \| Trade name/.test(neuText)) findings.push(`Quellen-Test: Entwurf ohne Gründe oder Spalten (${neuText})`);
+    else console.log('✓ Quellen testen: nur Engpass-Quellen, Ergebnis mit Beispielen, Gründen und Spalten; Entfernen nur bei eigenen');
+
     // ── 9. Aktualitäts-Zeile: frisch und alt sehen verschieden aus ──────────
     const standFuer = async (antwort) => {
       await page.unroute('**/api/coverage/**').catch(() => {});

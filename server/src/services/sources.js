@@ -1214,7 +1214,7 @@ const hatSpalte = (row, candidates) => Object.keys(row).some((k) => candidates.i
  * Ist das gemeldete Ende schon vorbei, gilt die Zeile als wieder verfügbar.
  */
 export function shortagesFromCsv(raw, { columns = {}, standardStatus = null, heute = new Date().toISOString().slice(0, 10) } = {}) {
-  const { rows } = parseCsv(raw);
+  const { header, rows } = parseCsv(raw);
   const map = { ...DEFAULT_COLUMNS };
   for (const [field, name] of Object.entries(columns)) {
     if (name) map[field] = [String(name).toLowerCase(), ...(map[field] || [])];
@@ -1245,7 +1245,9 @@ export function shortagesFromCsv(raw, { columns = {}, standardStatus = null, heu
       voraussichtlich_bis: bis,
     });
   }
-  return { rows: out, rejected };
+  // `spalten`: die gefundenen Spaltennamen — zeigt der Probe-Abruf, damit die
+  // Redaktion eine abweichende Benennung zuordnen kann.
+  return { rows: out, rejected, spalten: (header || []).map((h) => String(h).trim()).filter(Boolean) };
 }
 
 /**
@@ -1320,7 +1322,7 @@ export function shortagesFromJson(raw, { columns = {} } = {}) {
       voraussichtlich_bis: String(pickColumn(row, map.voraussichtlich_bis) ?? '').trim() || null,
     });
   }
-  return { rows: out, rejected };
+  return { rows: out, rejected, spalten: Object.keys((list.find((r) => r && typeof r === 'object') || {})) };
 }
 
 /** Duplikate innerhalb eines Abrufs zusammenführen (Bezeichnung + Wirkstoff). */

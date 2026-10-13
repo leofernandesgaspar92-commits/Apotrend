@@ -7964,6 +7964,58 @@ const vorZeit = (iso) => {
  * WARUM. Probleme stehen oben. Der Bericht lässt sich als Klartext kopieren,
  * damit eine Störung ohne Screenshot weitergegeben werden kann.
  */
+// Ergebnis eines Probe-Abrufs (POST /api/quellen/probe): was ankommt, was
+// verworfen wird und warum — und die gefundenen Spalten, damit sich eine
+// abweichende Benennung zuordnen lässt.
+function probeErgebnis(r) {
+  const ok = r.ok;
+  const box = el(`<div data-dqprobeok="${ok ? '1' : '0'}" style="margin-top:8px;padding:10px 12px;border-radius:10px;border:1px solid ${ok ? 'var(--ok-bd)' : 'var(--crit-bd)'};background:${ok ? 'var(--ok-bg)' : 'var(--crit-bg)'};font-size:14px;line-height:1.5"></div>`);
+  const kopf = ok ? `✓ ${ti('dq_probe_ok', { n: r.zeilen, ms: r.ms })}` : `✗ ${r.fehler || t('dq_probe_none')}`;
+  box.innerHTML = `<b style="color:${ok ? 'var(--ok-fg)' : 'var(--crit-fg)'}">${esc(kopf)}</b>`
+    + (r.beispiele && r.beispiele.length ? `<div style="margin-top:6px">${r.beispiele.map((z) => `<div>• <b>${esc(z.wirkstoff)}</b> — ${esc(z.bezeichnung)} · ${esc(statusShort(z.status)[0])}${z.gemeldet_am ? ' · ' + esc(fmtDateDe(z.gemeldet_am)) : ''}</div>`).join('')}</div>` : '')
+    + (r.verworfen ? `<div style="margin-top:6px">${esc(ti('dq_probe_rejected', { n: r.verworfen }))}${(r.gruende || []).map((g) => `<div class="muted">· ${esc(g)}</div>`).join('')}</div>` : '')
+    + (r.spalten && r.spalten.length ? `<div class="muted" style="margin-top:6px;word-break:break-word">${esc(t('dq_probe_cols'))}: ${esc(r.spalten.join(' | '))}</div>` : '');
+  return box;
+}
+
+// Eigene Engpass-Quelle eintragen: erst testen, dann speichern.
+function quelleHinzufuegenKarte() {
+  const laender = (COUNTRIES_CACHE || []).map((c) => `<option value="${esc(c.code)}">${esc(c.flag + ' ' + c.name)}</option>`).join('');
+  const feld = (k, label) => `<label style="font-size:14px">${esc(label)}<input data-dqcol="${k}" style="margin-top:2px"></label>`;
+  const c = el(`<div class="card" data-dqneu><b style="font-size:16px">➕ ${esc(t('dq_add_title'))}</b>
+    <div class="muted" style="font-size:14px;margin:4px 0 10px">${esc(t('dq_add_sub'))}</div>
+    <div style="display:grid;gap:8px">
+      <label style="font-size:14px">${esc(t('dq_add_country'))}<select data-dqland style="margin-top:2px">${laender}</select></label>
+      <label style="font-size:14px">${esc(t('dq_add_format'))}<select data-dqformat style="margin-top:2px"><option value="csv">CSV</option><option value="json">JSON</option></select></label>
+      <label style="font-size:14px">${esc(t('dq_add_url'))}<input data-dqurl placeholder="https://…" style="margin-top:2px"></label>
+      <label style="font-size:14px">${esc(t('dq_add_label'))}<input data-dqlabel maxlength="80" style="margin-top:2px"></label>
+      <label style="font-size:14px;display:flex;gap:8px;align-items:flex-start"><input type="checkbox" data-dqstd style="width:auto;margin-top:3px"> <span>${esc(t('dq_add_nostatus'))}</span></label>
+      <details><summary style="cursor:pointer;font-size:14px">${esc(t('dq_add_cols'))}</summary>
+        <div style="display:grid;gap:6px;margin-top:6px">${feld('bezeichnung', t('dq_col_name'))}${feld('wirkstoff', t('dq_col_substance'))}${feld('status', t('dq_col_status'))}${feld('gemeldet_am', t('dq_col_start'))}${feld('voraussichtlich_bis', t('dq_col_end'))}</div></details>
+    </div>
+    <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><button class="ghost" data-dqtest>🔍 ${esc(t('dq_probe'))}</button><button data-dqsave>${esc(t('dq_add_save'))}</button></div>
+    <div class="err" data-dqneuerr></div><div data-dqneuerg></div></div>`);
+  const daten = () => {
+    const columns = {};
+    c.querySelectorAll('[data-dqcol]').forEach((i) => { if (i.value.trim()) columns[i.dataset.dqcol] = i.value.trim(); });
+    return { country: c.querySelector('[data-dqland]').value, format: c.querySelector('[data-dqformat]').value, url: c.querySelector('[data-dqurl]').value.trim(),
+      label: c.querySelector('[data-dqlabel]').value.trim(), standardStatus: c.querySelector('[data-dqstd]').checked ? 'eingeschraenkt' : null, columns };
+  };
+  const err = c.querySelector('[data-dqneuerr]');
+  const erg = c.querySelector('[data-dqneuerg]');
+  c.querySelector('[data-dqtest]').onclick = async () => {
+    err.textContent = ''; erg.innerHTML = '<div class="loading">…</div>';
+    try { erg.innerHTML = ''; erg.appendChild(probeErgebnis(await api('POST', '/api/quellen/probe', daten()))); }
+    catch (e) { erg.innerHTML = ''; err.textContent = e.message; }
+  };
+  c.querySelector('[data-dqsave]').onclick = async () => {
+    err.textContent = '';
+    try { await api('POST', '/api/quellen', daten()); openDatenquellen(); }
+    catch (e) { err.textContent = e.message; }
+  };
+  return c;
+}
+
 async function openDatenquellen() {
   setDocTitle(t('dq_title'));
   app.innerHTML = '<div class="loading">…</div>';
@@ -8034,10 +8086,26 @@ async function openDatenquellen() {
         <div class="muted" style="font-size:13px;margin-top:2px">${esc(q.kind === 'shortages' ? t('dq_kind_shortages') : t('dq_kind_news'))}${r && r.stand ? ' · ' + esc(vorZeit(r.stand) || '') : ''}</div>
         ${r && !r.ok && r.fehler ? `<div style="font-size:14px;margin-top:4px;color:var(--crit-fg)">${esc(r.fehler)}</div>` : ''}
         ${href ? `<div style="font-size:12px;margin-top:2px;word-break:break-all"><a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(href)}</a></div>` : ''}
+        ${q.kind === 'shortages' ? `<div class="row" style="gap:8px;margin-top:6px;flex-wrap:wrap"><button class="ghost small" data-dqprobe="${esc(q.id)}">🔍 ${esc(t('dq_probe'))}</button>${q.eigen ? `<span class="muted" style="font-size:13px">${esc(t('dq_own'))}</span><button class="ghost small" data-dqweg="${esc(q.id)}">${esc(t('dq_remove'))}</button>` : ''}</div><div data-dqprobeerg></div>` : ''}
       </div>`));
     }
     app.appendChild(karte);
   }
+  // „Jetzt testen": Render ruft die Quelle sofort ab (derselbe Weg wie im Takt)
+  // und zeigt, was ankommt — ohne den Bestand zu verändern.
+  app.querySelectorAll('[data-dqprobe]').forEach((b) => {
+    b.onclick = async () => {
+      const box = b.closest('[data-dqquelle]').querySelector('[data-dqprobeerg]');
+      b.disabled = true; box.innerHTML = '<div class="loading">…</div>';
+      try { box.innerHTML = ''; box.appendChild(probeErgebnis(await api('POST', '/api/quellen/probe', { id: b.dataset.dqprobe }))); }
+      catch (e) { box.textContent = e.message; }
+      b.disabled = false;
+    };
+  });
+  app.querySelectorAll('[data-dqweg]').forEach((b) => {
+    b.onclick = async () => { if (!confirm(t('dq_remove_confirm'))) return; await api('DELETE', '/api/quellen/' + encodeURIComponent(b.dataset.dqweg)); openDatenquellen(); };
+  });
+  app.appendChild(quelleHinzufuegenKarte());
 
   // Klartext-Bericht — zum Weiterschicken, ohne JSON und ohne Screenshot.
   kopf.querySelector('[data-dqcopy]').onclick = async () => {

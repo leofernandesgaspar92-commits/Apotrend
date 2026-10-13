@@ -897,6 +897,23 @@ Schlüssel statt wörtlich: „Amoxicillin-Trihydrat" (BfArM) = „Amoxicillin" 
   überlappende Episoden verschmelzen — sonst gälte jeder laufende Engpass als „neu" und die
   Frühwarnung alarmierte für Altfälle.
 
+## 3l. Quellen testen und eigene Quellen eintragen (Redaktion)
+
+Datenquellen-Seite (Redaktions-Dashboard):
+- **„🔍 Jetzt testen"** an jeder Engpass-Quelle: `POST /api/quellen/probe {id}` ruft sofort ab —
+  über DENSELBEN Weg wie der Takt (`holeEngpassQuelle`) — und zeigt erkannte Zeilen (5 Beispiele),
+  verworfene mit Gründen und die gefundenen Spaltennamen. Der Bestand bleibt unverändert.
+- **„➕ Engpass-Quelle hinzufügen"**: Land, CSV/JSON, https-Adresse, Bezeichnung, „keine
+  Statusspalte" (→ Standardstatus eingeschränkt), optionale Spaltenzuordnung. Erst testen
+  (`POST /api/quellen/probe` mit Entwurf), dann speichern (`POST /api/quellen`); entfernen
+  (`DELETE /api/quellen/:id`). Gespeichert im Zustands-Snapshot, im Takt mit abgerufen.
+- **Sicherheit (SSRF):** nur https, keine Zugangsdaten in der Adresse, keine lokalen/privaten
+  Hosts oder IP-Literale (auch nicht `[::ffff:127.0.0.1]`, `0x7f000001`, `127.1`), nur Moderation.
+  Restlücke: ein Hostname, der auf eine private IP auflöst — daher die Rollenbeschränkung.
+- **Typischer Fall Australien:** Auf tga.gov.au im „Medicine Shortage Reports Database" den Link
+  „Export active shortage reports" kopieren, eintragen, testen; bei abweichenden Spaltennamen
+  zeigt der Test sie an → zuordnen → erneut testen → speichern.
+
 ## 4. Preise (zweiter Datentyp, gleiche Logik)
 
 Analog zu Engpässen: Umgebungsvariable `APOPULSE_LIVE_PRICES_<CC>` setzen.
