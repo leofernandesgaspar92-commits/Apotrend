@@ -423,6 +423,11 @@ async function main() {
         if (!lage.links) findings.push(`Design v2 ${w}px: Navigation steht nicht links neben dem Inhalt`);
         if (!lage.rechts) findings.push(`Design v2 ${w}px: rechte Spalte (News) fehlt`);
       }
+      // Premium-Seite ohne Querscroll (der Laufzeit-Knopf ragte am Handy 65px hinaus).
+      await page.evaluate(() => openPremium()); await page.waitForTimeout(1200);
+      const prBreit = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      if (prBreit > 1) findings.push(`Design v2 ${w}px: Premium-Seite ${prBreit}px breiter als der Bildschirm`);
+      await page.click('.tabs button[data-tab="overview"]').catch(() => {}); await page.waitForTimeout(800);
       // Kopf-Menü: auf, Escape zu, Fokus zurück auf den Knopf.
       await page.click('#btnMenue');
       const auf = await page.evaluate(() => !document.getElementById('kopfMenue').hidden && document.getElementById('btnMenue').getAttribute('aria-expanded') === 'true');
@@ -1345,6 +1350,10 @@ async function main() {
       await page.evaluate(() => openPremium());
       await page.waitForSelector('[data-wbkarte]', { timeout: 6000 }).catch(() => {});
       const prText = await page.locator('#prBody').innerText().catch(() => '');
+      // VOR dem Seitenwechsel unten lesen — danach ist die Tabelle weg und die
+      // Prüfung läse leeren Text (so in der ersten Gegenprobe geschehen).
+      const pvText = await page.locator('[data-pvtabelle]').innerText().catch(() => '');
+      const mailAn = await page.evaluate(() => fetch('/api/abdeckung').then((r) => r.json()).then((a) => a.mail)).catch(() => null);
       await page.click('[data-wbvorschau]').catch(() => {});
       await page.waitForSelector('[data-wbframe] iframe', { timeout: 6000 }).catch(() => {});
       const fr = page.locator('[data-wbframe] iframe');
@@ -1356,7 +1365,10 @@ async function main() {
       const banner = await page.locator('[data-wbabgemeldet]').innerText().catch(() => '');
       const url = page.url();
       if (/Eigene Angebote bewerben|Videosprechstunden anbieten|Live-Sessions hosten/.test(prText)) findings.push('Premium: wirbt mit Funktionen aus ruhenden Bereichen');
-      else if (!/Engpass-Verlauf/.test(prText) || !/Wochenbericht per E-Mail/.test(prText)) findings.push(`Premium: Informationsvorteile fehlen (${prText.slice(0, 160)})`);
+      else if (!/Engpass-Verlauf/.test(prText) || !/Sortiments-Check/.test(prText) || !/Vorrats-Radar/.test(prText)) findings.push(`Premium: Informationsvorteile fehlen (${prText.slice(0, 160)})`);
+      // Wochenbericht nur im Vergleich, wenn der E-Mail-Versand läuft (hier: nicht eingerichtet).
+      else if (!pvText) findings.push('Premium: Vergleichstabelle fehlt');
+      else if (mailAn === false && /Wochenbericht per E-Mail/.test(pvText)) findings.push('Premium: Wochenbericht im Vergleich, obwohl kein E-Mail-Versand eingerichtet ist');
       else if (sandbox !== '') findings.push(`Wochenbericht: Vorschau nicht abgeschottet (sandbox=${sandbox})`);
       else if (!/ApoPulse/.test(srcdoc || '') || !/wb_abmelden=/.test(srcdoc || '')) findings.push('Wochenbericht: Vorschau leer oder ohne Abmelde-Link');
       else if (!/Premium/.test(stand)) findings.push(`Wochenbericht: Stand ohne Premium-Hinweis (${stand})`);

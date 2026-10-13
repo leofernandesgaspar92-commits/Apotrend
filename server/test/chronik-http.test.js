@@ -123,6 +123,14 @@ test('Abruf füllt die Chronik; der nächste Abruf ohne die Zeile beendet die Ep
     assert.ok(!JSON.stringify(lage).includes('Ibuprofen'), 'Wirkstoffnamen gehören nicht in die öffentliche Zahl');
     assert.equal((await (await fetch(B + '/api/lage/PT')).json()).daten, false, 'ohne Behördendaten keine Zahl');
     assert.equal((await fetch(B + '/api/lage/XX')).status, 404);
+    // Datenabdeckung für Kundschaft: ohne Anmeldung, nur Zustände und Zahlen.
+    const abd = await (await fetch(B + '/api/abdeckung')).json();
+    const at = abd.laender.find((l) => l.land === 'AT');
+    assert.deepEqual([at.zustand, at.behoerde, at.offen > 0], ['liefert', 'BASG', true], JSON.stringify(at));
+    assert.equal(abd.laender.find((l) => l.land === 'DE').zustand, 'liefert');
+    assert.equal(abd.laender.length, 16);
+    assert.ok(!/Amoxicillin|Ibuprofen/.test(JSON.stringify(abd)), 'Wirkstoffnamen gehören nicht in die öffentliche Auskunft');
+    assert.equal(abd.mail, false, 'ohne Mail-Dienst darf niemand einen Wochenbericht versprochen bekommen');
 
     // Quellen testen (Redaktion): derselbe Weg wie der echte Abruf.
     const probe = await (await fetch(B + '/api/quellen/probe', { method: 'POST', headers: J(mod), body: JSON.stringify({ id: 'bfarm_shortages' }) })).json();

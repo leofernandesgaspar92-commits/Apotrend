@@ -2229,3 +2229,38 @@ vergessen — der Test hatte recht.
 
 **Gegenproben (Bruch angewandt, jede schlägt an):** auch daheim knappe Wirkstoffe im Radar →
 Ende-zu-Ende + 2 Unit rot; Gratis-Grenze aus → rot; Rangfolge aus → rot.
+
+### Cycle · Mehrwert sichtbar machen — und nichts verkaufen, was nicht ankommt (2026-10-13)
+
+**GATHER.** Die Premium-Seite zählte vier Punkte auf; der eigentliche Nutzen (Heimat-Alarm,
+Sortiments-Check, Radar) stand nirgends. Den Wochenbericht bot sie an, obwohl kein E-Mail-Dienst
+eingerichtet ist — gekauft hätte man etwas, das nie ankommt. Und niemand sah vor dem Kauf, aus
+welchen Ländern überhaupt Behördendaten kommen.
+
+**WORK.**
+- `GET /api/abdeckung` (öffentlich): je Land Behörde, Zustand (liefert / stumm / angebunden,
+  noch kein Abruf / keine Quelle), Zahl offener Engpässe, ob E-Mail-Versand läuft. Keine
+  Wirkstoffnamen.
+- Premium-Seite: Vergleich „Gratis | Premium" (Engpasslisten und Heimat-Alarm gratis;
+  Sortiments-Check 15 vs. 500 Zeilen + Tabelle; Radar Top 3 vs. vollständig; Auslands-Hinweis,
+  vollständiger Verlauf + Export, Notizen). Wochenbericht nur, wenn Mail läuft; die
+  Wochenbericht-Karte sagt sonst vor dem Kauf „noch kein Versand". Darunter der Nutzen je
+  Kundentyp (Apotheke, Großhandel/Einkauf, Ärzt:innen) — ohne erfundene Zahlen — und
+  „Woher die Daten kommen".
+- Startseite: „Behördendaten aus N Ländern: …" unter der Liste; neuer Punkt „Ganze
+  Bestellliste auf einmal prüfen".
+- Ländernamen im Fließtext in der Sprache der Oberfläche („Vereinigte Staaten" statt „United
+  States"); die Länderauswahl zeigt weiter die Landesnamen.
+
+**Dabei gefunden:** Die Premium-Seite war am Handy 65px breiter als der Bildschirm — der
+Laufzeit-Knopf („12 Monate … spart € 20,88 gegenüber 12 Einzelmonaten") durfte nicht
+umbrechen. Der Querscroll-Audit prüfte nur die Reiter, nie die Premium-Seite. Jetzt schon.
+
+**Tests.** Ende-zu-Ende: Abdeckung nach echtem Abruf (AT/DE liefern, 16 Länder, keine
+Wirkstoffnamen, `mail: false`). Audit: Vergleich nennt Sortiments-Check und Radar, kein
+Wochenbericht ohne Mail, Premium-Seite ohne Querscroll.
+
+**Gegenproben (Bruch angewandt):** Laufzeit-Knopf ohne Umbruch → „Premium-Seite 65px breiter
+als der Bildschirm" ✓. Wochenbericht immer im Vergleich → blieb in der ersten Gegenprobe
+UNBEMERKT: Die Prüfung las die Tabelle erst nach einem Seitenwechsel, also leeren Text. Jetzt
+wird sie vorher gelesen (und fehlt sie, ist das ein eigener Befund) → schlägt an ✓.

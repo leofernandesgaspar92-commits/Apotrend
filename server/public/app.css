@@ -489,3 +489,18 @@
   .srt-aktion { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; align-items:center; }
   .srt-beob { display:inline-flex; align-items:center; gap:4px; color:var(--ok-fg); font-weight:600; font-size:14px; }
   @media (max-width:560px){ .srt-zeile { flex-wrap:wrap; } .srt-aktion { width:100%; justify-content:flex-start; padding-left:48px; } }
+
+  /* ── Premium: Vergleich Gratis | Premium ── */
+  .pv-tabelle { border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; margin:4px 0 12px; }
+  .pv-kopf, .pv-zeile { display:grid; grid-template-columns:minmax(0, 1fr) 7.5em 9em; gap:8px; align-items:center; padding:11px 14px; }
+  .pv-kopf { background:var(--chip-bg); font-weight:800; }
+  .pv-zeile { border-top:1px solid var(--line); font-size:15px; }
+  .pv-zeile > span:not(:first-child), .pv-kopf > span:not(:first-child) { text-align:center; justify-self:center; }
+  .pv-prem { color:var(--green); font-weight:700; }
+  .pv-ja { display:inline-flex; color:var(--ok-fg); }
+  .pv-nein { color:var(--muted); }
+  .pv-nutzen-zeile { display:flex; gap:12px; align-items:flex-start; padding:8px 0; }
+  @media (max-width:560px){ .pv-kopf, .pv-zeile { grid-template-columns:minmax(0, 1fr) 4.8em 6.4em; padding:10px; font-size:14px; } }
+
+  /* Laufzeit-Wahl: zwei Zeilen Text je Knopf — darf umbrechen (sonst Querscroll am Handy). */
+  [data-prplan] button { white-space:normal; flex-shrink:1; border-radius:var(--radius); min-width:0; }

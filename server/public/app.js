@@ -527,7 +527,7 @@ async function countryScreen() {
 // Informationsvorteile (Frühwarnung, Verlauf) fehlten dagegen ganz.
 const heroListe = () => heroPunkte().map((k) => `<li><span class="auth-hero-ok" aria-hidden="true">${ico('check', 18)}</span><span>${esc(t(k))}</span></li>`).join('');
 function heroPunkte() {
-  return ['au_hero_1', 'au_hero_fw', 'au_hero_chronik',
+  return ['au_hero_1', 'au_hero_sortiment', 'au_hero_fw', 'au_hero_chronik',
     ...(featureAn('preise') || featureAn('rabatte') ? ['au_hero_2'] : []),
     ...(featureAn('tauschboerse') ? ['au_hero_3'] : []),
     ...(featureAn('social') ? ['au_hero_4'] : [])];
@@ -535,14 +535,15 @@ function heroPunkte() {
 
 // Land als „🇦🇹 Österreich" auch dann, wenn die Länderliste noch nicht geladen
 // ist (Startseite vor der Anmeldung): Name vom Browser, Flagge aus dem Code.
+// Im Fließtext in der Sprache der Oberfläche („Vereinigte Staaten", nicht
+// „United States"); die Länderliste selbst zeigt bewusst die Landesnamen.
 function landAnzeige(cc) {
   const c = String(cc || '').toUpperCase();
-  const hit = (COUNTRIES_CACHE || []).find((x) => x.code === c);
-  if (hit) return `${hit.flag} ${hit.name}`;
   if (!/^[A-Z]{2}$/.test(c)) return c;
-  const flagge = String.fromCodePoint(...[...c].map((b) => 0x1F1E6 + b.charCodeAt(0) - 65));
-  let name = c;
-  try { name = new Intl.DisplayNames([LOCALE], { type: 'region' }).of(c) || c; } catch { /* ohne Intl: Code */ }
+  const hit = (COUNTRIES_CACHE || []).find((x) => x.code === c);
+  const flagge = hit ? hit.flag : String.fromCodePoint(...[...c].map((b) => 0x1F1E6 + b.charCodeAt(0) - 65));
+  let name = hit ? hit.name : c;
+  try { name = new Intl.DisplayNames([LOCALE], { type: 'region' }).of(c) || name; } catch { /* ohne Intl: Landesname */ }
   return `${flagge} ${name}`;
 }
 
@@ -621,6 +622,11 @@ function authScreen() {
   // Code aus der gespeicherten Wahl, nicht aus `ac`: Die Länderliste ist beim
   // ersten Aufbau oft noch nicht geladen, `ac` dann leer.
   zeigeLage(app.querySelector('[data-lage]'), (ac && ac.code) || (localStorage.getItem('apo_country') || '').toUpperCase());
+  // Woher die Daten kommen — wer sich registrieren soll, will das vorher wissen.
+  fetch('/api/abdeckung').then((r) => r.json()).then((abd) => {
+    const tx = abdeckungText(abd); const hero = app.querySelector('.auth-hero');
+    if (tx && hero) hero.appendChild(el(`<div class="muted" data-abdeckung style="font-size:15px;margin-top:16px">${esc(tx)}</div>`));
+  }).catch(() => {});
 
   // Warnung, wenn dieser Server Konten nicht dauerhaft speichert.
   //
@@ -5903,10 +5909,40 @@ async function renderSuggestions(feed) {
 // Werbung, Videosprechstunden und Live-Sessions — alle drei in ruhenden
 // Bereichen. Wer zahlt, hätte drei von vier Versprechen nicht nutzen können.
 // Informationsvorteile zuerst; die übrigen nur, solange ihr Bereich läuft.
-function premiumVorteile() {
-  return ['pr_b_chronik', 'pr_b_fw', 'pr_b_wb', 'pr_b4',
-    ...(featureAn('werbung') ? ['pr_b1'] : []),
-    ...(featureAn('termine') ? ['pr_b2', 'pr_b3'] : [])];
+// Vergleichstabelle Gratis | Premium. Nur, was läuft (ruhende Bereiche fehlen).
+function premiumVergleich(abd) {
+  const ja = `<span class="pv-ja" aria-label="${esc(t('pv_ja'))}">${ico('check', 20)}</span>`;
+  const nein = `<span class="pv-nein" aria-label="${esc(t('pv_nein'))}">—</span>`;
+  const zeilen = [
+    ['pv_r_listen', ja, ja], ['pv_r_heimat', ja, ja],
+    ['pv_r_sortiment', esc(t('pv_sortiment_frei')), esc(t('pv_sortiment_prem'))],
+    ['pv_r_radar', esc(t('pv_radar_frei')), esc(t('pv_radar_prem'))],
+    ['pv_r_ausland', nein, ja],
+    ['pv_r_chronik', esc(t('pv_chronik_frei')), esc(t('pv_chronik_prem'))],
+    ...(abd && abd.mail ? [['pv_r_wb', nein, ja]] : []),
+    ['pv_r_notizen', nein, ja],
+    ...(featureAn('werbung') ? [['pr_b1', nein, ja]] : []),
+    ...(featureAn('termine') ? [['pr_b2', nein, ja], ['pr_b3', nein, ja]] : []),
+  ];
+  return el(`<div class="pv-tabelle" data-pvtabelle role="table" aria-label="${esc(t('pv_titel'))}">
+    <div class="pv-kopf" role="row"><span role="columnheader"></span><span role="columnheader">${esc(t('pv_gratis'))}</span><span role="columnheader" class="pv-prem">${esc(t('pv_premium'))}</span></div>
+    ${zeilen.map(([k, f, p]) => `<div class="pv-zeile" role="row"><span role="cell">${esc(t(k))}</span><span role="cell">${f}</span><span role="cell" class="pv-prem">${p}</span></div>`).join('')}
+  </div>`);
+}
+// Was Premium einem Betrieb bringt — je Kundentyp, ohne erfundene Zahlen.
+function premiumNutzen() {
+  const typen = [['pharmacy', 'home'], ['wholesale', 'truck'], ['doctor', 'users']];
+  return el(`<div class="pv-nutzen"><div style="font-weight:800;margin:14px 0 8px">${esc(t('pv_nutzen_titel'))}</div>
+    ${typen.map(([k, ic]) => `<div class="pv-nutzen-zeile"><span class="karte-ic" aria-hidden="true">${ico(ic, 20)}</span><div><b>${esc(t('pv_n_' + k))}</b><div class="muted" style="font-size:15px">${esc(t('pv_n_' + k + '_text'))}</div></div></div>`).join('')}
+  </div>`);
+}
+// Woher die Daten kommen: Länder, deren Behördenliste ankommt — und ehrlich
+// die, bei denen (noch) nichts ankommt. Für Startseite und Premium-Seite.
+function abdeckungText(abd) {
+  if (!abd || !abd.laender) return null;
+  const liefert = abd.laender.filter((l) => l.zustand === 'liefert' || (l.zustand !== 'stumm' && l.aufzeichnung_seit));
+  if (!liefert.length) return null;
+  return ti('ab_live', { n: liefert.length, laender: liefert.map((l) => landAnzeige(l.land) + (l.behoerde ? ` (${l.behoerde})` : '')).join(', ') });
 }
 
 // Wochenbericht per E-Mail (services/wochenbericht.js): Schalter für Premium,
@@ -5925,7 +5961,8 @@ function wochenberichtKarte(premium) {
   let abbestellt = false;
   const zeige = (d) => {
     abbestellt = !!d.abbestellt;
-    stand.textContent = !premium ? t('wbr_only_premium')
+    // Ohne E-Mail-Dienst kommt kein Bericht an — das muss VOR dem Kauf dastehen.
+    stand.textContent = !premium ? t('wbr_only_premium') + (d.mail_aktiv ? '' : ' ' + t('wbr_noch_kein_versand'))
       : abbestellt ? t('wbr_off')
       : d.mail_aktiv ? t('wbr_on') : t('wbr_on_pending');
     if (schalter) schalter.textContent = abbestellt ? t('wbr_turn_on') : t('wbr_turn_off');
@@ -6005,12 +6042,13 @@ async function openPremium() {
     if (stand) body.appendChild(stand);
     // Nutzen zuerst zeigen (Warum Premium?) — sonst zahlt niemand. Klar, scannbar, ehrlich
     // (nur tatsächlich freigeschaltete Funktionen).
-    body.appendChild(el(`<div class="ok-box" style="padding:12px 14px;margin-bottom:12px">
-      <b>${esc(t('pr_benefits_lead'))}</b>
-      <ul style="margin:8px 0 0;padding-left:18px;display:grid;gap:6px">
-        ${premiumVorteile().map((k) => `<li>${esc(t(k))}</li>`).join('')}
-      </ul>
-    </div>`));
+    // Vergleich statt Aufzählung: Was ist gratis, was bringt Premium dazu? Der
+    // Wochenbericht steht nur drin, wenn der E-Mail-Versand wirklich läuft —
+    // sonst verkauften wir etwas, das nie ankommt.
+    const abd = await api('GET', '/api/abdeckung').catch(() => null);
+    body.appendChild(premiumVergleich(abd));
+    body.appendChild(premiumNutzen());
+    { const tx = abdeckungText(abd); if (tx) body.appendChild(el(`<div class="lage-box" data-prabdeckung><div class="lage-kopf"><span class="nr-live" aria-hidden="true"></span>${esc(t('ab_titel'))}</div><div style="font-size:15px">${esc(tx)}</div></div>`)); }
     // Vorschau des Wochenberichts für alle: Sie zeigt, was Premium liefert.
     app.appendChild(wochenberichtKarte(!!mine.premium));
     // Laufzeit wählen. Das Jahr stand im Code (99 €), wurde aber nirgends

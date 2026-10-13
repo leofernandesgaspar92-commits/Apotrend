@@ -1018,6 +1018,27 @@ const routes = [
     const job = scheduler.status().find((j) => j.name === 'shortages') || null;
     return { land: cc, daten: true, offen: b.offen, neu: b.neu.length, beendet: b.beendet.length, aufzeichnung_seit: b.aufzeichnung_seit, quellen, stand: (job && job.lastRunAt) || null };
   }],
+  // Datenabdeckung für Kundschaft (öffentlich): Aus welchen Ländern kommen
+  // wirklich Behördendaten? Wer zahlen soll, muss wissen, wofür — und wo
+  // (noch) nichts ankommt. Nur Zustände und Zahlen, keine Wirkstoffnamen.
+  ['GET', /^\/api\/abdeckung$/, false, async () => {
+    const quellen = engpassQuellen();
+    const job = scheduler.status().find((j) => j.name === 'shortages') || null;
+    const laender = Object.values(COUNTRIES).map((c) => {
+      const st = landStatus(c.code, { store: coverage, quellen, art: 'shortages' });
+      const b = chronik.wochenbilanz(c.code);
+      return {
+        land: c.code, behoerde: c.regulator || null,
+        // keine = keine Behördenquelle angebunden · unbekannt = angebunden, noch kein Abruf
+        // liefert = letzter Abruf erfolgreich · stumm = letzter Abruf gescheitert
+        zustand: st.zustand,
+        quellen: quellen.filter((q) => q.country === c.code).map((q) => q.label || q.id),
+        offen: b ? b.offen : null,
+        aufzeichnung_seit: b ? b.aufzeichnung_seit : null,
+      };
+    });
+    return { laender, stand: (job && job.lastRunAt) || null, mail: !!mailer.aktiv };
+  }],
   ['GET', /^\/api\/coverage\/([A-Za-z]{2})$/, false, async ({ params, query }) => {
     // `query` ist URLSearchParams, kein Objekt — query.art waere immer
     // undefined und die Auskunft stillschweigend immer „news".
