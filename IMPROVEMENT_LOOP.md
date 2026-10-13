@@ -1884,3 +1884,27 @@ sie den alten Zustand festschrieben (Quellenzahl 22; Deutschland als „Land ohn
 „openfda_shortages" Zeilen liefern oder verwerfen — die Gründe stehen dort. Den Bericht bitte
 schicken; dann ziehe ich Spaltennamen oder Statuswerte nach, falls die Wirklichkeit abweicht.
 
+### Cycle · Ein Wirkstoff, viele Namen — ohne Verschiedenes gleichzusetzen (2026-10-13)
+
+**Warum.** Mit drei Ländern (AT, DE, US) traf die Frühwarnung kaum: Die BfArM schreibt
+„Amoxicillin-Trihydrat", die BASG „Amoxicillin", die FDA „Albuterol Sulfate" statt
+„Salbutamol". Wörtlich verglichen sind das verschiedene Wirkstoffe.
+
+**WORK.** `domain/inn.js` bildet einen Vergleichsschlüssel (Salz/Hydrat weg, Schreib-
+varianten gefaltet, belegte US/INN-Synonyme, Kombinationen sortiert). Genutzt von Chronik,
+Frühwarnung (Beobachter:innen über den Schlüssel, Label mit dem beobachteten Namen) und den
+Engpässen der Wirkstoff-Seite. Gespeicherte Chronik-Bestände werden beim Laden umgerechnet
+und überlappende Episoden verschmolzen.
+
+**Die Gegenrichtung zuerst.** Eine falsche Gleichsetzung wäre eine falsche Engpass-Warnung.
+Deshalb neben 24 „gleich"-Paaren 14 „verschieden"-Paare (Kaliumchlorid/-citrat, Prednison/
+Prednisolon, Salbutamol/Levosalbutamol …) und ein Breitentest über 256 gängige Wirkstoffe. **CHECK:** 1155 Tests grün (+42), Smoke 19/19, Audit ohne Befund.
+
+**Gegenproben (Bruch angewandt):** Kation-Schutz weg → Kalium-Salze verschmelzen; Synonyme
+weg → vier US-Namen fallen durch; Präfix-Vergleich → Prednison = Prednisolon (Breitentest
+schlägt an); alte Schlüssel übernommen / nicht verschmolzen / alter Faltschlüssel → Migrations-
+test rot; wörtlicher Beobachter-Abgleich → Frühwarnung verfehlt „Albuterol"; Wirkstoff-Seite
+wörtlich → Ende-zu-Ende „Salzform fand den Engpass nicht". **Eine Gegenprobe war keine:**
+„alle Vokale streichen" blieb grün — Konsonantengerüste sind eindeutig genug, das war keine
+echte Schwächung. Ersetzt durch den Präfix-Vergleich, der anschlägt.
+

@@ -879,6 +879,24 @@ der erste Lauf auf der Datenquellen-Seite (verworfene Zeilen mit Gründen).
 **Zeichensatz:** `fetchTextDefault` dekodiert nach `charset` im Kopf, sonst strenges UTF-8,
 sonst Windows-1252 — vorher machte `res.text()` aus „Erhöhte" ein „Erhhte".
 
+## 3k. Wirkstoff-Schlüssel über Sprachen (`domain/inn.js`)
+
+Chronik, Frühwarnung und die Engpässe der Wirkstoff-Seite vergleichen Namen über einen
+Schlüssel statt wörtlich: „Amoxicillin-Trihydrat" (BfArM) = „Amoxicillin" (BASG) =
+„Amoxicilina" (PT); „Albuterol Sulfate" (FDA) = „Salbutamol".
+
+- Salz-/Hydratzusätze fallen weg — nur, wenn danach ein Wirkstoff bleibt, der selbst kein
+  Kation ist (Kaliumchlorid ≠ Kaliumcitrat ≠ Natriumchlorid).
+- Schreibvarianten (Akzente, ph/f, th/t, y/i, k/c, Doppelbuchstaben, Endvokal), auf beide
+  Seiten gleich angewandt; Stärken und Einheiten zählen nicht.
+- Synonyme nur für belegte US/INN-Unterschiede (Acetaminophen, Albuterol, Epinephrine …).
+- Kombinationen bleiben Kombinationen (Amoxicillin ≠ Amoxicillin/Clavulansäure).
+- `test/inn.test.js`: Paare in beiden Richtungen und ein Breitentest über ~250 gängige,
+  verschiedene Wirkstoffe ohne eine einzige Kollision.
+- Gespeicherte Chronik-Bestände werden beim Laden auf den neuen Schlüssel umgerechnet;
+  überlappende Episoden verschmelzen — sonst gälte jeder laufende Engpass als „neu" und die
+  Frühwarnung alarmierte für Altfälle.
+
 ## 4. Preise (zweiter Datentyp, gleiche Logik)
 
 Analog zu Engpässen: Umgebungsvariable `APOPULSE_LIVE_PRICES_<CC>` setzen.

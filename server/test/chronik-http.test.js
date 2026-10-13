@@ -77,6 +77,9 @@ test('Abruf füllt die Chronik; der nächste Abruf ohne die Zeile beendet die Ep
     const ibu = de.find((z) => z.wirkstoff === 'Ibuprofen');
     assert.ok(ibu, 'BfArM-Zeile kam nicht an: ' + JSON.stringify(de.map((z) => z.wirkstoff)));
     assert.deepEqual([ibu.status, ibu.grund, ibu.gemeldet_am, ibu.country], ['eingeschraenkt', 'Erhöhte Nachfrage', '2026-09-01', 'DE']);
+    // Die Wirkstoff-Seite findet die BfArM-Zeile auch unter anderer Schreibweise.
+    const ibuSeite = await (await fetch(B + '/api/wirkstoff/Ibuprofen-Lysinat?country=DE', { headers: J(mod) })).json();
+    assert.ok(ibuSeite.shortages.some((z) => z.wirkstoff === 'Ibuprofen'), 'Salzform fand den Engpass nicht');
     const d = await (await fetch(B + '/api/shortages?country=AT', { headers: J(mod) })).json();
     assert.ok(d.chronik_seit, 'Aufzeichnungsbeginn fehlt');
     const amox = d.shortages.find((s) => s.wirkstoff === 'Amoxicillin');

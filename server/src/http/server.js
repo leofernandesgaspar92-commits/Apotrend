@@ -77,6 +77,7 @@ import { rxErlaubt, verificationStatusFor } from '../domain/jurisdiction.js';
 import { erfundeneStartmeldungenEntfernen } from '../services/startbereinigung.js';
 import { createChronik, chronikFuerBetrachter } from '../services/chronik.js';
 import { createFruehwarnung } from '../services/fruehwarnung.js';
+import { gleicherWirkstoff } from '../domain/inn.js';
 
 // Login-Brute-Force-Schutz: max. 5 Fehlversuche je (IP+E-Mail) in 15 Minuten.
 const loginLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
@@ -1355,7 +1356,9 @@ const routes = [
       note: shortagesRepo.getWatchNote(userId, name),
       also_watching: shortagesRepo.usersWatching(name).filter(id => id !== userId).length,
       country: land,
-      shortages: shortages.listWithCounts(userId, { country: land }).filter(s => eq(s.wirkstoff)),
+      // Engpässe über den Wirkstoff-Schlüssel (domain/inn.js): Die BfArM-Zeile
+      // „Amoxicillin-Trihydrat" gehört auf die Seite „Amoxicillin".
+      shortages: shortages.listWithCounts(userId, { country: land }).filter(s => eq(s.wirkstoff) || gleicherWirkstoff(s.wirkstoff, name)),
       // Verlauf dieses Wirkstoffs im angesehenen Land (null: Land nie beobachtet).
       chronik: chronikFuerBetrachter(chronik.fuer(name, land), { premium: payments.hasFeature(userId, 'premium') }),
       // Wo ist dieser Wirkstoff gerade knapp, außer im angesehenen Land?

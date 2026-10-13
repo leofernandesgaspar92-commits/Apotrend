@@ -64,14 +64,23 @@ test('nur Premium bekommt die Push-Benachrichtigung', () => {
   assert.deepEqual(a.glocke.map((g) => g.userId), ['pt1'], 'auch ein nie abgerufenes Heimatland (PT) bekommt die Warnung');
 });
 
-test('Regel 5: Namen gefaltet, nicht übersetzt', () => {
+test('Regel 5: Namen über den Wirkstoff-Schlüssel — Sprache und Salz egal, Verschiedenes nie', () => {
   const a = aufbau();
-  a.repo.addWatch('at1', 'cefuroxim');
-  a.repo.addWatch('pt1', 'Cefuroxima');
+  a.repo.addWatch('at1', 'Salbutamol');
+  a.repo.addWatch('pt1', 'Salbutamol');
+  a.repo.addWatch('de1', 'Levosalbutamol');
   a.lauf([z('Rest', 'US')], ['US']);
   a.weiter(1);
-  a.lauf([z('Rest', 'US'), z('CEFUROXIM', 'US')], ['US']);
-  assert.deepEqual(a.glocke.map((g) => g.userId), ['at1']);
+  a.lauf([z('Rest', 'US'), z('Albuterol Sulfate', 'US')], ['US']);
+  assert.deepEqual(a.glocke.map((g) => g.userId).sort(), ['at1', 'pt1'], 'Levosalbutamol ist ein anderer Wirkstoff');
+  assert.equal(a.glocke[0].label, 'Salbutamol · US', 'Label mit dem Namen, den die Person beobachtet');
+});
+
+test('Wirkstoff-Seite: „im Ausland" findet die BfArM-Schreibweise', () => {
+  const a = aufbau();
+  a.lauf([z('Amoxicillin-Trihydrat', 'DE'), z('Rest', 'AT')], ['DE', 'AT']);
+  assert.deepEqual(a.fw.imAusland('Amoxicillin', 'AT').map((x) => x.land), ['DE']);
+  assert.deepEqual(a.fw.imAusland('Amoxicilina', 'PT').map((x) => x.land), ['DE']);
 });
 
 test('Wiederaufnahme nach kurzer Lücke alarmiert nicht erneut', () => {

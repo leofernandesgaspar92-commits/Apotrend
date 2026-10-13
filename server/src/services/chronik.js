@@ -33,6 +33,7 @@
 //      in zwei Jahren.
 // ============================================================================
 import { falten } from '../domain/bezeichnung.js';
+import { wirkstoffSchluessel } from '../domain/inn.js';
 
 const AKTIV = new Set(['kritisch', 'eingeschraenkt']);
 const RANG = { eingeschraenkt: 1, kritisch: 2 };
@@ -40,7 +41,10 @@ const LUECKE_TAGE = 7;
 const MAX_PRAEPARATE = 20;
 const TAG = 86400000;
 
-const schluessel = (land, wirkstoff) => `${land}|${falten(String(wirkstoff || '').trim())}`;
+// Schlüssel über Sprachen hinweg (domain/inn.js): „Amoxicillin-Trihydrat" (BfArM),
+// „Amoxicillin" (BASG) und „Amoxicilina" fallen zusammen — Verschiedenes nie.
+const wkKey = (wirkstoff) => wirkstoffSchluessel(wirkstoff) || falten(String(wirkstoff || '').trim());
+const schluessel = (land, wirkstoff) => `${land}|${wkKey(wirkstoff)}`;
 const isoTag = (d) => new Date(d).toISOString().slice(0, 10);
 const tageZwischen = (a, b) => Math.max(0, Math.round((Date.parse(b) - Date.parse(a)) / TAG));
 const gueltigesDatum = (s, heute) => {
@@ -175,7 +179,7 @@ export function createChronik({ jetzt = () => Date.now(), log = console } = {}) 
      */
     offenAnderswo(wirkstoff, ausser) {
       const cc = String(ausser || '').toUpperCase();
-      const name = falten(String(wirkstoff || '').trim());
+      const name = wkKey(wirkstoff);
       const heute = isoTag(jetzt());
       const out = [];
       for (const [k, liste] of episoden) {
@@ -217,7 +221,31 @@ export function createChronik({ jetzt = () => Date.now(), log = console } = {}) 
     __load(d) {
       episoden.clear(); seit.clear();
       if (!d) return;
-      for (const [k, v] of d.episoden || []) episoden.set(k, v);
+      // Schlüssel NEU berechnen statt übernehmen: Gespeicherte Bestände tragen
+      // ggf. den alten Schlüssel (nur Akzente/Großschreibung gefaltet). Ohne
+      // Umrechnung fände der nächste Abruf die laufende Episode nicht, legte
+      // eine „neue" an — und die Frühwarnung alarmierte für einen Altfall.
+      // Fallen zwei alte Schlüssel zusammen, werden ihre Episoden zeitlich
+      // zusammengeführt; überlappende offene Episoden verschmelzen zu einer.
+      for (const [k, v] of d.episoden || []) {
+        const land = String(k).split('|')[0];
+        const neu = schluessel(land, (v[0] && v[0].wirkstoff) || String(k).split('|')[1]);
+        episoden.set(neu, [...(episoden.get(neu) || []), ...v]);
+      }
+      for (const [k, liste] of episoden) {
+        liste.sort((a, b) => (a.beginn < b.beginn ? -1 : a.beginn > b.beginn ? 1 : 0));
+        const zusammen = [];
+        for (const e of liste) {
+          const letzte = zusammen[zusammen.length - 1];
+          if (letzte && (!letzte.ende || letzte.ende >= e.beginn)) {
+            if (!e.ende || (letzte.ende && e.ende > letzte.ende)) letzte.ende = e.ende;
+            if (e.zuletzt_gesehen > letzte.zuletzt_gesehen) letzte.zuletzt_gesehen = e.zuletzt_gesehen;
+            if ((RANG[e.schwerster_status] || 0) > (RANG[letzte.schwerster_status] || 0)) letzte.schwerster_status = e.schwerster_status;
+            for (const p of e.praeparate || []) if (!letzte.praeparate.includes(p) && letzte.praeparate.length < MAX_PRAEPARATE) letzte.praeparate.push(p);
+          } else zusammen.push(e);
+        }
+        episoden.set(k, zusammen);
+      }
       for (const [k, v] of d.seit || []) seit.set(k, v);
     },
   };

@@ -194,3 +194,21 @@ test('Premium-Schnitt: Zusammenfassung frei, Episodenliste nur mit Premium', () 
   assert.equal(c.alle('AT').length, 1);
   assert.equal(c.alle('DE').length, 0);
 });
+
+test('gespeicherter Bestand mit altem Schlüssel: umgerechnet, nicht als neu gezählt', () => {
+  let t = Date.parse('2026-10-01T09:00:00Z');
+  const alt = { seit: [['DE', '2026-09-01']], episoden: [
+    ['DE|amoxicillin-trihydrat', [{ land: 'DE', wirkstoff: 'Amoxicillin-Trihydrat', beginn: '2026-09-01', beginn_art: 'beobachtet', erstmals_gesehen: '2026-09-01', zuletzt_gesehen: '2026-09-30', ende: null, schwerster_status: 'eingeschraenkt', praeparate: ['A'], quelle: 'BfArM' }]],
+    ['DE|amoxicillin', [{ land: 'DE', wirkstoff: 'Amoxicillin', beginn: '2026-09-10', beginn_art: 'beobachtet', erstmals_gesehen: '2026-09-10', zuletzt_gesehen: '2026-09-30', ende: null, schwerster_status: 'kritisch', praeparate: ['B'], quelle: 'BfArM' }]],
+  ] };
+  const c = createChronik({ jetzt: () => t, log: still });
+  c.__load(alt);
+  const f = c.fuer('Amoxicillin', 'DE');
+  assert.equal(f.anzahl, 1, 'zwei Schreibweisen derselben laufenden Episode wurden nicht verschmolzen');
+  assert.equal(f.episoden[0].beginn, '2026-09-01');
+  assert.equal(f.episoden[0].schwerster_status, 'kritisch');
+  assert.deepEqual(f.episoden[0].praeparate.sort(), ['A', 'B']);
+  // Der nächste Abruf setzt fort — keine „neue" Episode, also kein Fehlalarm.
+  const r = c.beobachte({ zeilen: [z('Amoxicillin-Trihydrat', { country: 'DE' })], laender: ['DE'] });
+  assert.deepEqual([r.neu, r.fortgesetzt], [0, 1]);
+});

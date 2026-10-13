@@ -17,14 +17,17 @@
 //      mehr, und die heimische Meldung kam schon über den normalen Weg.
 //   4. NUR AUSLAND. Das eigene Land meldet der bestehende Engpass-Alarm.
 //      (Folgt aus Regel 3: Neu im Heimatland heißt, dort ist es knapp.)
-//   5. Namen werden gefaltet verglichen, nicht übersetzt — „Amoxicilina"
-//      trifft „Amoxicillin" NICHT. Lieber eine Warnung zu wenig als eine
-//      falsche Gleichsetzung.
+//   5. Namen über den Wirkstoff-Schlüssel (domain/inn.js): Salz- und Hydrat-
+//      zusätze, Schreibvarianten und belegte US/INN-Namen fallen zusammen
+//      („Amoxicilina" = „Amoxicillin", „Albuterol" = „Salbutamol"), Verschiedenes
+//      nie (Prednison ≠ Prednisolon). Lieber eine Warnung zu wenig als eine falsche.
 //
 //  Anzeige auf der Wirkstoff-Seite und in der Übersicht: frei (Behörden-
 //  tatsachen). Die Push-Benachrichtigung: Premium — bezahlt wird die
 //  Rechtzeitigkeit, nicht die Information selbst.
 // ============================================================================
+
+import { wirkstoffSchluessel } from '../domain/inn.js';
 
 export function createFruehwarnung({ chronik, shortagesRepo, social, istPremium, heimatVon }) {
   return {
@@ -52,14 +55,21 @@ export function createFruehwarnung({ chronik, shortagesRepo, social, istPremium,
       let gesendet = 0;
       for (const n of neue) {
         if (n.erster_lauf) continue; // Regel 2
-        for (const uid of shortagesRepo.usersWatching(n.wirkstoff)) {
+        // Beobachter:innen über den Wirkstoff-SCHLÜSSEL finden (domain/inn.js):
+        // Wer „Salbutamol" beobachtet, meint auch „Albuterol Sulfate" der FDA.
+        const key = wirkstoffSchluessel(n.wirkstoff);
+        const beobachter = shortagesRepo.listWatchers()
+          .filter((b) => b.wirkstoffe.some((w) => key && wirkstoffSchluessel(w) === key))
+          .map((b) => ({ uid: b.userId, name: b.wirkstoffe.find((w) => wirkstoffSchluessel(w) === key) }));
+        for (const { uid, name } of beobachter) {
           const heimat = String(heimatVon(uid) || '').toUpperCase();
           // Regel 3 — und damit auch Regel 4: Eine neue Episode im Heimatland
           // IST ein heimischer Engpass, offenIn() ist dann schon wahr. Eine eigene
           // Prüfung „heimat === n.land" wäre doppelt (Gegenprobe: blieb stumm).
           if (heimat && chronik.offenIn(n.wirkstoff, heimat)) continue;
           if (!istPremium(uid)) continue;
-          const r = social.pushNotification({ userId: uid, type: 'shortage_abroad', refType: 'wirkstoff', refId: n.wirkstoff, label: `${n.wirkstoff} · ${n.land}` });
+          // Im Label der Name, den die Person beobachtet — den kennt sie.
+          const r = social.pushNotification({ userId: uid, type: 'shortage_abroad', refType: 'wirkstoff', refId: name, label: `${name} · ${n.land}` });
           if (r) gesendet++;
         }
       }
