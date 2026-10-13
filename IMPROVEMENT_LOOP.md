@@ -2044,3 +2044,49 @@ liefert — mit Name und Grund.
 (Browser); Einnahmen ohne 30-Tage-Grenze und mit unbezahlten; „ausgelaufen" ohne Zeitgrenze
 (Unit); Cockpit ohne Rollenprüfung (HTTP).
 
+
+### Cycle · Design v2 — sieht nicht mehr aus wie ein Baukasten (2026-10-13)
+
+**GATHER.** Owner: „sieht noch stark danach aus, als wäre es von KI gemacht". Am Bildschirm
+nachgesehen, woran das liegt: 313 von 1667 Beschriftungen begannen mit einem Emoji (🔴 📦 💶
+🖨️ 👥 …), acht umrandete Pillen-Reiter über dem Inhalt, ein Kopf mit sieben umrandeten
+Knöpfen in zwei Zeilen, weich beschattete Karten, Chip-Wolken.
+
+**WORK** (Vorbilder X, LinkedIn, Instagram):
+- Ein Linien-Symbol-Set (`ICONS`/`ico()`, 24er-Raster, `currentColor`) statt Emojis in
+  Navigation, Kopf, Kennzahlen, Daten-Stand-Zeile und Behördenkarte.
+- Führende Emojis werden beim Laden der Texte entfernt (`ohneEmojiAnfang`), außer bei
+  Reaktionen (👍 ist dort der Inhalt). „← Zurück" bleibt.
+- Handy: Leiste unten mit fünf Zielen (Für dich, Live-Warnungen, Engpässe, News, Mehr); „Mehr"
+  öffnet die übrigen Reiter als Liste darüber und ist markiert, wenn dort der aktive Reiter
+  liegt. Desktop ab 1000px: Navigation links; ab 1280px drei Spalten (220 · 640 · 280) mit
+  News rechts.
+- Kopf: Logo, Land, „Meldungen", „Menü" (Symbol über dem Wort). Moderation, Nachrichten,
+  Einkaufsliste, Hell/Dunkel, Schrift, Hilfe, Abmelden stehen im Menü; ein Punkt am
+  Menü-Knopf zeigt Ungelesenes darin. Escape schließt und gibt den Fokus zurück.
+- Flache Karten mit feiner Linie, Knöpfe als Pillen, Zweitaktionen neutral statt grün,
+  Suche als Pille mit Lupe; neue, ruhigere Farbtöne (dunkel: #0f1419 / #16202a).
+- Startseite: Kennzahlen mit Symbol im getönten Kreis; die Knopf-Wolke darunter wird eine
+  Liste (Symbol · Wort · Pfeil).
+
+**Dabei gefunden (echte Fehler):** Die Startseite bot Lesezeichen, Angebote, Live,
+Verzeichnis und Team auch an, wenn der Bereich ruhte, dazu den ruhenden Währungsrechner —
+Klick führte zu 404. Der Schnellzugriff band „Angebote" an `rabatte` statt an `werbung`.
+Preise, Rabatte und die Startseite boten „In die Einkaufsliste" an, obwohl `bestellung` ruht
+(Klick → /api/cart → 404). Alle jetzt an ihren Bereich gebunden; der Audit prüft die
+Startseiten-Links und die Warenkorb-Knöpfe mit.
+
+**Audit.** `reiterOeffnen` öffnet „Mehr", wenn der Reiter dort liegt (sonst lief der Klick
+still in die Zeitüberschreitung, der Reiter blieb ungeprüft). Lesbarkeits-Check klappt Menü
+und „Mehr" auf. Neuer Prüfpunkt Design v2: Leiste unten mit genau fünf Zielen (390px), links
+plus rechte Spalte (1280px), keine Emojis in Navigation/Kopf/Startseiten-Liste, Menü auf/zu
+mit Escape und Fokus, „Mehr" schließt nach der Wahl und markiert sich.
+
+**Gegenproben (Bruch angewandt, jede schlägt an):** Startseiten-Liste ohne Bereichs-Filter →
+fünf Befunde „Startseiten-Link … sichtbar, obwohl … ruht"; „Mehr" nie markiert → Befund;
+Emoji-Entfernung aus → „Beschriftung beginnt mit Emoji" (390 + 1280); Warenkorb-Knopf in
+Rabatten ungeschaltet → Befund. Diese letzte Gegenprobe war zuerst KEINE: Die Prüfumgebung
+hat keine Rabatte, die Prüfung lief grün ins Leere. Jetzt mit nachgebildetem Eintrag und
+eigenem Befund, wenn keine Karte erscheint. Ebenso aufgefallen: Der Tauschbörsen-Prüfpunkt
+klickte einen Reiter, der jetzt im „Mehr"-Blatt liegt — alle Reiter-Klicks des Audits laufen
+deshalb über `reiterOeffnen`.

@@ -1,34 +1,35 @@
-  :root { --green:#0b7f28; --green-d:#086420; --bg:#f4f6f5; --card:#fff; --line:#dbe0dd; --text:#1a2420; --muted:#4c5d55;
-    --chip-bg:#eef3f0;
+  :root { --green:#0b7f28; --green-d:#086420; --bg:#f3f4f6; --card:#fff; --line:#e1e5e8; --text:#0f1419; --muted:#536471;
+    --chip-bg:#eff3f4;
     /* Schrift AUF Grün (Knöpfe, aktiver Reiter). Eigenes Token, weil Grün im
        dunklen Modus hell ist: Weiß darauf lag bei 2,1:1 (WCAG verlangt 4,5:1). */
     --on-green:#ffffff;
     --handle:#0a66a8;
-    /* Karten hell: randlos, sanfter Schatten hebt sie ruhig von der Fläche ab (Social-Feed-Optik). */
-    --card-bd:transparent;
-    --shadow:0 1px 2px rgba(20,40,30,.06), 0 3px 10px rgba(20,40,30,.06);
-    --shadow-hover:0 3px 12px rgba(20,40,30,.12);
+    /* Karten: flach mit feiner Linie statt weichem Schatten (wie LinkedIn/X).
+       Der Verlaufs-Schatten auf jeder Karte war eines der „Baukasten"-Signale. */
+    --card-bd:var(--line);
+    --shadow:none;
+    --shadow-hover:0 2px 10px rgba(15,20,25,.08);
     --ok-bg:#e6f7ef; --ok-fg:#0b7f28; --ok-bd:#b6e6cf;
     --warn-bg:#fff4e6; --warn-fg:#945900; --warn-bd:#ffd9a8;
     --crit-bg:#fdece9; --crit-fg:#c0392b; --crit-bd:#f2c6bf;
     --info-bg:#e6ecfb; --info-fg:#2952cc; --info-bd:#c9d6f7;
     /* Design-System: einheitliche Radien & Abstandsraster (Social-Feed-Ruhe). */
-    --radius:14px; --radius-sm:10px;
+    --radius:12px; --radius-sm:10px; --radius-btn:999px;
     --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; }
-  body.dark { --green:#22cc5c; --green-d:#1aa749; --bg:#14181a; --card:#1e2427; --line:#38443f; --text:#e7ece9; --muted:#a6b6ae;
-    --chip-bg:#2a352f;
+  body.dark { --green:#22cc5c; --green-d:#1aa749; --bg:#0f1419; --card:#16202a; --line:#2f3b45; --text:#e7e9ea; --muted:#9aa8b4;
+    --chip-bg:#1f2b36;
     --on-green:#04170a; /* 8,7:1 auf #22cc5c, 5,9:1 auf der Hover-Farbe */
     --handle:#6cbcf5;
     /* Karten dunkel: feiner Rand nötig — Schatten sind auf Dunkel kaum sichtbar. */
     --card-bd:var(--line);
-    --shadow:0 1px 2px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.28);
+    --shadow:none;
     --shadow-hover:0 4px 14px rgba(0,0,0,.45);
     --ok-bg:#12331e; --ok-fg:#46d67a; --ok-bd:#205834;
     --warn-bg:#33280f; --warn-fg:#e2ac44; --warn-bd:#5a4620;
     --crit-bg:#3a1c18; --crit-fg:#f0857a; --crit-bd:#5e2b25;
     --info-bg:#1a2338; --info-fg:#8aa4f7; --info-bd:#33436f; }
-  body.dark .reacts button, body.dark .spec { background:#2a3330; }
-  body.dark input, body.dark textarea, body.dark select { background:#161b1d; }
+  body.dark .reacts button, body.dark .spec { background:var(--chip-bg); }
+  body.dark input, body.dark textarea, body.dark select { background:#0f1419; }
   body.dark .editorial { background:#1e2f5a; color:#bcd0ff; border-color:#2e4680; }
   * { box-sizing:border-box; }
   /* Handy: Textgröße nicht automatisch aufblähen (Rotation), sauberes Antippen ohne grauen
@@ -67,23 +68,12 @@
   .auth-hero-list { list-style:none; padding:0; margin:16px 0 0; display:grid; gap:10px; }
   .auth-hero-list li { font-size:1.02em; font-weight:600; line-height:1.4; }
   header .sp { flex:1; }
-  /* Kopf-Aktionen auf neutraler Fläche: klar erkennbarer Rahmen (Owner-Prinzip:
-     Buttons müssen als solche erkennbar sein), Text in Vordergrundfarbe. */
-  header button { background:transparent; color:var(--text); border:1px solid var(--line); border-radius:var(--radius-sm); min-height:42px; min-width:42px; }
-  header button:hover { background:var(--bg); border-color:var(--muted); }
   /* Länder-/Sprach-Umschalter in der Kopfzeile: klar erkennbar, lesbar (Karten-
      Hintergrund statt Weiß-auf-Grün), kompakt genug fürs Handy. */
   header #countrySwitch { width:auto; max-width:240px; min-height:42px; padding:8px 10px; font-size:0.92em; font-weight:600; background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:8px; cursor:pointer; }
   /* Handy: nur die Flagge zeigen (der volle Ländername erscheint beim Aufklappen);
      spart Platz, damit die Kopfzeile in eine Zeile passt (kein Horizontal-Scroll). */
   @media (max-width:560px){ header #countrySwitch { max-width:52px; padding:8px 4px; font-size:1.05em; } }
-  /* Mobil: Header muss in eine Zeile passen (sonst Horizontal-Scroll, Logout
-     abgeschnitten). MUSS nach den Basisregeln stehen (gleiche Spezifität). */
-  /* Handy: 8 Kopf-Bedienelemente passen bei sehr schmalen Geräten (≤390px) nicht
-     in eine Zeile. Statt alles auf Winzig-Größe zu quetschen (schlecht bedienbar),
-     lassen wir die Zeile umbrechen – jedes Element bleibt komfortabel antippbar,
-     kein Horizontal-Scroll. Logo oben, Aktionen darunter. */
-  @media (max-width:560px){ #whoami { display:none; } header { gap:4px; padding:9px 8px; flex-wrap:wrap; } header .logo { font-size:0.96em; letter-spacing:0; } header button { min-width:0; min-height:40px; padding:8px 7px; } }
   .wrap { max-width:640px; margin:0 auto; padding:16px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
   .card { background:var(--card); border:1px solid var(--card-bd); border-radius:var(--radius); padding:16px; margin-bottom:18px; overflow-wrap:anywhere; box-shadow:var(--shadow); }
   /* Typografie-Skala: selbstbewusste, klar gestufte Überschriften (engeres Tracking
@@ -132,35 +122,6 @@
   /* Überschrift in einer Kopfzeile hält ihre Inhaltsbreite (flex-basis:auto statt 0),
      damit auf Mobil der Button umbricht statt die Überschrift mitten im Wort zu zerreißen. */
   .row > h1 { flex:1 1 auto !important; }
-  /* Reiter füllen die 640px-Spalte, aber die 8 Labels passen nicht in EINE Zeile —
-     ohne Umbruch ragten sie bisher rechts über alle Karten hinaus. Jetzt sauberer
-     Umbruch in zwei Reihen zu je vier (bündig mit dem Inhalt). */
-  .tabs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
-  /* Reiter im selben ruhigen Karten-System wie der Inhalt: hell randlos mit sanftem
-     Schatten, dunkel feiner Rand (--card-bd). Wirkt wie eine zusammengehörige Pill-Nav. */
-  .tabs button { display:flex; align-items:center; justify-content:center; gap:6px; flex:1 1 140px; background:var(--card); color:var(--text); border:1px solid var(--card-bd); box-shadow:var(--shadow); font-weight:600; }
-  /* Klares Hover-Feedback (grüner Rand + Text) — Nav fühlt sich lebendig an, bleibt eindeutig klickbar. */
-  .tabs button:not(.active):hover { border-color:var(--green); color:var(--green); }
-  /* Aktiver Reiter deutlich hervorgehoben: grün + kräftiger + dezenter grüner Schein
-     (segmentierte Pill-Nav à la X/Instagram), damit „wo bin ich" sofort klar ist. */
-  .tabs button.active { background:var(--green); color:var(--on-green); border-color:var(--green); font-weight:800; box-shadow:0 2px 8px rgba(11,127,40,.28); }
-  /* Mobil: 8 Tabs passen nicht in eine Zeile (Horizontal-Scroll, halbe Tabs
-     unsichtbar). Als 4-Spalten-Grid umbrechen -> alle Tabs sichtbar, kein Overflow. */
-  @media (max-width: 640px) {
-    /* Reiter-Leiste bleibt beim Scrollen erreichbar (klebt direkt unter der Kopfzeile) —
-       app-typische Navigation am Handy. Hintergrund deckt durchscrollende Karten ab. */
-    /* minmax(0,1fr): Spalten dürfen unter ihre Inhaltsbreite schrumpfen — sonst ragte das
-       Raster bei großer Schrift über den Rand (Querscroll). overflow-wrap bricht lange Wörter. */
-    .tabs { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px; position:sticky; top:0; z-index:4; background:var(--bg); padding:8px 0; margin-bottom:8px; box-shadow:0 6px 6px -6px rgba(0,0,0,.14); }
-    /* Symbol über dem Wort: kompakter (zwei Reihen statt zwei hoher Kacheln) und
-       das Wort hat die ganze Kachelbreite. Umbruch NUR an Wortgrenzen und
-       Bindestrichen („Live-|Warnungen") — nie mitten im Wort wie früher
-       „Vertriebse|inschränk|ungen" (overflow-wrap:anywhere). */
-    .tabs button { flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; min-height:58px; padding:6px 3px; font-size:14px; line-height:1.15; overflow-wrap:normal; word-break:normal; }
-    .tabs .tab-ic { font-size:19px; line-height:1; }
-    /* Sehr große Schrift: 3 Spalten geben den längeren Beschriftungen genug Platz. */
-    body[data-fontscale="2"] .tabs { grid-template-columns:repeat(3, minmax(0, 1fr)); }
-  }
   .post-author { font-weight:700; }
   /* Social-Header: Avatar links, daneben Name (fett) über „@handle · Zeit" — die vertraute
      Feed-Optik von X/LinkedIn, aber mit gut lesbarer Größe (keine Winzig-Schrift). */
@@ -257,12 +218,10 @@
   .opento-badge-hi { outline:2px solid var(--ok-fg); outline-offset:1px; }
   .ot-check { display:inline-flex; align-items:center; gap:6px; margin:2px 12px 2px 0; font-size:14px; cursor:pointer; }
   .ot-check input { width:auto; min-height:0; }
-  /* News-Livestream links, im Euronews-Stil (gestapelte 𝕏-Karten), im freien linken Rand
-     neben der zentrierten 640px-Spalte. Ab 1300px passt die 300px-Leiste sicher neben
-     den Inhalt (linker Inhaltsrand = (1300-640)/2 = 330px > Leisten-Rechtskante 316px),
-     damit auch übliche Laptops (1366px) den News-Livestream als Ebene sehen. */
-  .news-rail { display:none; box-sizing:border-box; position:fixed; left:16px; top:64px; width:300px; max-height:calc(100vh - 84px); overflow-y:auto; z-index:20; }
-  @media (min-width:1300px){ .news-rail.on { display:block; } }
+  /* News-Livestream und Schnellzugriff stehen in der rechten Spalte (.rechte-spalte,
+     siehe Layout-Block am Ende) — wie „Was gerade passiert" bei X. */
+  .news-rail, .quick-rail { display:none; }
+  .news-rail.on, .quick-rail.on { display:block; }
   .nr-head { display:flex; align-items:center; gap:8px; font-weight:800; font-size:16px; margin-bottom:12px; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:11px 15px; box-shadow:0 2px 10px rgba(0,0,0,.06); }
   .nr-clock { margin-left:auto; font-variant-numeric:tabular-nums; color:var(--muted); font-weight:700; }
   .nr-live { width:9px; height:9px; border-radius:50%; background:#c0392b; flex:0 0 auto; animation:nr-pulse 1.7s ease-in-out infinite; }
@@ -279,12 +238,7 @@
   /* Inline-News (Handy): leichtere Karten, blendet aus, sobald die Seitenleiste erscheint. */
   .news-inline .nr-card { box-shadow:none; background:var(--chip-bg); }
   .news-inline .nr-card:last-child { margin-bottom:0; }
-  @media (min-width:1300px){ .news-inline { display:none; } }
-  /* Laptop/Desktop: der leere rechte Rand neben der zentrierten Spalte wird zum
-     Schnellzugriff-Rail (analog zum News-Rail links) — sekundäre Bereiche griffbereit,
-     ohne den Feed anzufassen. Erst ab 1240px, damit es die Spalte nicht überlappt. */
-  .quick-rail { display:none; box-sizing:border-box; position:fixed; right:24px; top:76px; width:250px; max-height:calc(100vh - 96px); overflow-y:auto; z-index:20; }
-  @media (min-width:1240px){ .quick-rail.on { display:block; } }
+  @media (min-width:1280px){ body.mit-nav .news-inline { display:none; } }
   .qr-card { padding:12px; }
   .qr-title { font-weight:800; font-size:13px; letter-spacing:.02em; color:var(--muted); text-transform:uppercase; margin:2px 2px 8px; }
   .qr-link { display:block; width:100%; text-align:left; background:transparent; color:var(--text); border:1px solid transparent; border-radius:var(--radius-sm); padding:11px 12px; font-weight:600; font-size:15px; margin-bottom:4px; }
@@ -336,37 +290,6 @@
   @media (prefers-reduced-motion: reduce) { .loading::before { animation:none; } .loading { animation:none; } }
   .bell { position:relative; }
   .badge { position:absolute; top:-6px; right:-6px; background:#e02a2a; color:#fff; border-radius:10px; font-size:11px; padding:1px 6px; }
-  /* Klartext-Beschriftung der Header-Aktionen (Zielgruppe: nicht-technisch). Auf
-     schmalen Screens Icon-only, damit die Kopfzeile nicht umbricht. */
-  .hlabel { margin-left:6px; font-size:0.84em; font-weight:600; }
-  /* Große Schrift: Kopfzeile darf umbrechen und BEHÄLT die Beschriftungen — wer die Schrift
-     vergrößert, braucht gerade die Klartext-Labels (besser als Icon-only). Statt Querscroll
-     wird die Zeile mehrzeilig. flex-wrap greift hier nur bei großer Schrift. */
-  body[data-fontscale="1"] header, body[data-fontscale="2"] header { flex-wrap:wrap; }
-  /* Unter ~1180px passt die Reihe „Symbol + Wort" nicht mehr neben Logo und Land.
-     Früher fiel dann das Wort weg — übrig blieben 🌙 A ❓ 🔔 🚪, und wer nicht weiß,
-     dass die Tür „Abmelden" heißt, rät. Jetzt: die Werkzeuge bekommen eine eigene
-     zweite Zeile (.hbreak erzwingt den Umbruch), das Wort steht UNTER dem Symbol. */
-  .hbreak { display:none; }
-  @media (max-width: 1180px) {
-    header { flex-wrap:wrap; row-gap:8px; }
-    .hbreak { display:block; flex:0 0 100%; height:0; }
-    header button { display:inline-flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-width:72px; padding:5px 8px; line-height:1.1; }
-    header { justify-content:flex-end; } /* Zeile 2: Werkzeuge rechtsbündig (Zeile 1 füllt .sp) */
-    .hlabel { margin-left:0; font-size:13px; white-space:nowrap; }
-    /* Kopfzeile ist jetzt zweizeilig — angeheftet fräße sie am Tablet ein Sechstel
-       des Bildschirms. Sie scrollt mit; angeheftet bleibt am Handy die Reiterleiste. */
-    header { position:relative; }
-  }
-  @media (max-width: 640px) {
-    /* Handy: die Werkzeuge teilen sich die volle Breite, jedes Feld gleich groß. */
-    /* flex-basis 64px: fünf passen in eine Reihe; wer mehr hat (Moderation,
-       Nachrichten, Einkaufsliste), bekommt eine zweite statt abgeschnittener Wörter. */
-    header button { flex:1 1 64px; min-width:0; padding:5px 1px; }
-    .hlabel { font-size:12.5px; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
-  }
-  /* 360px-Handys (viele Android-Geräte): „Meldungen" passte um 2px nicht. */
-  @media (max-width: 380px) { .hlabel { font-size:12px; letter-spacing:-.15px; } header { padding-left:6px; padding-right:6px; } }
   .comments { border-top:1px solid var(--line); margin-top:10px; padding-top:10px; }
   .comment { font-size:0.9em; padding:6px 0; border-bottom:1px solid var(--line); }
   .comment:last-child { border-bottom:none; }
@@ -414,14 +337,124 @@
      Vorher blieb er grau (--muted) auf Grün — 1,4:1, unlesbar. */
   button:not(.ghost) .muted, button.active .muted, .tabs button.active .muted { color:inherit; }
 
-  /* Breitere Inhaltsspalte, wo Platz ist. Die Seitenleisten (News links ab 1300px,
-     Schnellzugriff rechts ab 1240px) legen sich NEBEN die Spalte; 720px passen ohne
-     Überlappung erst ab 1460px ((1460-720)/2 = 370px > 316px News-Leiste). Ohne
-     Seitenleisten (unter 1240px) ist der Platz frei. 640px waren für Preis- und
-     Engpasstabellen mit Mengen, Lieferant und Quelle zu eng. */
-  @media (min-width:780px) and (max-width:1239px) { .wrap { max-width:720px; } }
-  @media (min-width:1460px) { .wrap { max-width:720px; } }
   /* Seitenüberschrift eines Reiters (z. B. Amtsbegriff auf der Engpass-Seite). */
   /* Amtsbegriffe sind lange Einzelwörter („Vertriebseinschränkungen"): bei großer
      Schrift am Handy breiter als der Schirm. Lieber getrennt (hyphens) als Querscroll. */
   .page-h { font-size:1.3em; margin:2px 2px 10px; line-height:1.25; overflow-wrap:break-word; hyphens:auto; }
+
+  /* ══ Design v2: Aufbau wie bei sozialen Netzwerken ═════════════════════════
+     Vorbilder: X und LinkedIn am Desktop (Navigation links, Inhalt Mitte,
+     „Was gerade passiert" rechts), Instagram/LinkedIn am Handy (fünf Ziele
+     in einer Leiste unten, wo der Daumen ist). Vorher: acht umrandete Pillen
+     über dem Inhalt und ein Kopf mit sieben Knöpfen in zwei Zeilen. */
+
+  /* Knöpfe: Pillenform, Zweitaktionen neutral umrandet statt grün. */
+  button, a.btn-link { border-radius:var(--radius-btn); }
+  button.ghost { color:var(--text); border-color:var(--line); }
+  button.ghost:hover { background:var(--chip-bg); border-color:var(--muted); color:var(--text); }
+  button.small { padding:8px 14px; }
+  .svg-ic { display:block; flex:none; }
+  /* Suche als Pille wie bei X — das Feld, nicht ein Formular. */
+  .suchleiste { margin-bottom:14px; }
+  .suche-feld { position:relative; flex:1; min-width:0; display:block; }
+  .suche-ic { position:absolute; left:16px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none; }
+  #sq { border-radius:var(--radius-btn); background:var(--card); border-color:var(--line); padding-left:46px; }
+  #sq:focus { background:var(--card); border-color:var(--green); }
+
+  /* ── Kopf ── */
+  header { box-shadow:none; gap:8px; padding-top:max(8px, env(safe-area-inset-top)); padding-bottom:8px; }
+  header #countrySwitch { border-radius:var(--radius-btn); }
+  .rechte-spalte { display:none; }
+  @media (max-width:560px){ #whoami, #whoami.clickable { display:none; } header #countrySwitch { max-width:58px; padding:8px 6px; } header .logo { font-size:1.1em; letter-spacing:0; } }
+  /* Symbol über dem Wort, ohne Rahmen — wie die Kopfleiste von LinkedIn.
+     Das Wort bleibt (Owner-Vorgabe: Klartext statt erratener Symbole). */
+  .kopf-btn { position:relative; display:inline-flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    background:transparent; color:var(--muted); border:0; border-radius:var(--radius-sm); min-width:64px; min-height:48px; padding:4px 8px; line-height:1.1; }
+  .kopf-btn:hover, .kopf-btn[aria-expanded="true"] { background:var(--chip-bg); color:var(--text); }
+  .kopf-btn .hlabel { font-size:13px; font-weight:600; white-space:nowrap; }
+  .kopf-btn .badge { top:0; right:12px; }
+  .badge.punkt { width:10px; height:10px; padding:0; border-radius:50%; top:4px; right:18px; }
+  /* Menü: Liste mit Symbol und Wort, rechts unter dem Knopf. */
+  .kopf-menue { position:absolute; right:max(12px, env(safe-area-inset-right)); top:calc(100% + 4px); z-index:50; min-width:250px;
+    display:flex; flex-direction:column; gap:2px; padding:6px; background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:0 8px 28px rgba(15,20,25,.16); }
+  .kopf-menue[hidden] { display:none; }
+  .kopf-menue button { display:flex; align-items:center; gap:14px; width:100%; text-align:left; background:transparent; color:var(--text);
+    border:0; border-radius:var(--radius-sm); padding:12px 14px; font-size:16px; font-weight:600; min-height:48px; position:relative; }
+  .kopf-menue button.hidden { display:none; }
+  .kopf-menue button:hover { background:var(--chip-bg); }
+  .kopf-menue .badge { position:static; margin-left:auto; font-size:12px; padding:2px 8px; }
+  .ic-text { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; font-weight:800; font-size:18px; line-height:1; }
+  body.dark .kopf-menue { box-shadow:0 8px 28px rgba(0,0,0,.55); }
+
+  /* ── Navigation: Grundform (Reiter als Liste) ── */
+  .tabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .tabs button { display:flex; align-items:center; gap:14px; background:transparent; color:var(--text); border:0; box-shadow:none;
+    font-weight:600; border-radius:var(--radius-btn); }
+  .tabs button:hover { background:var(--chip-bg); }
+  .tabs button.active { color:var(--green); font-weight:800; }
+  .tabs .tab-tx { overflow-wrap:normal; word-break:normal; hyphens:manual; }
+  .tabs .tab-mehr { display:none; }
+  body.dark .tabs button.active { color:var(--green); }
+
+  /* ── Desktop ab 1000px: Navigation als feste Leiste links ── */
+  @media (min-width:1000px) {
+    body.mit-nav .tabs { position:fixed; top:calc(var(--header-h, 64px) + 12px); left:16px; width:220px; z-index:10;
+      flex-direction:column; flex-wrap:nowrap; gap:2px; margin:0; max-height:calc(100vh - var(--header-h, 64px) - 24px); overflow-y:auto; }
+    body.mit-nav .tabs button { justify-content:flex-start; width:100%; min-height:50px; padding:10px 16px; font-size:17px; }
+    body.mit-nav .tabs button.active { background:var(--chip-bg); }
+    body.mit-nav .tabs .tab-ic { color:inherit; }
+    body.mit-nav .wrap { max-width:752px; margin-left:252px; margin-right:auto; }
+  }
+  /* Ab 1280px: drei Spalten wie bei X — 220 Navigation · 640 Inhalt · 280 rechts. */
+  @media (min-width:1280px) {
+    body.mit-nav header { padding-left:max(16px, calc(50% - 599px)); padding-right:max(16px, calc(50% - 599px)); }
+    body.mit-nav header .kopf-menue { right:max(12px, calc(50% - 599px)); }
+    body.mit-nav .tabs { left:max(16px, calc(50% - 599px)); width:230px; }
+    body.mit-nav .wrap { max-width:672px; margin-left:calc(50% - 361px); }
+    body.mit-nav .rechte-spalte { display:block; position:fixed; top:calc(var(--header-h, 64px) + 16px); left:calc(50% + 319px); width:280px;
+      max-height:calc(100vh - var(--header-h, 64px) - 32px); overflow-y:auto; z-index:10; }
+    .rechte-spalte .qr-card { margin-bottom:14px; }
+  }
+
+  /* ── Handy/Tablet unter 1000px: fünf Ziele unten, Rest unter „Mehr" ── */
+  @media (max-width:999.98px) {
+    body.mit-nav { padding-bottom:calc(76px + env(safe-area-inset-bottom)); }
+    body.mit-nav .tabs { position:fixed; left:0; right:0; bottom:0; z-index:30; margin:0; gap:0;
+      display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); background:var(--card); border-top:1px solid var(--line);
+      padding:4px max(4px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left)); }
+    body.mit-nav .tabs button { flex-direction:column; justify-content:center; gap:3px; min-height:60px; padding:6px 2px; border-radius:var(--radius-sm);
+      font-size:13px; line-height:1.15; color:var(--muted); text-align:center; }
+    body.mit-nav .tabs button.active { color:var(--green); background:transparent; }
+    body.mit-nav .tabs .tab-mehr { display:flex; }
+    body.mit-nav .tabs .tab-neben { display:none; }
+    /* „Mehr" offen: die übrigen Reiter als Liste über der Leiste. */
+    body.mit-nav .tabs.mehr-offen { box-shadow:0 -10px 30px rgba(15,20,25,.18); border-radius:16px 16px 0 0; padding-top:8px; }
+    body.mit-nav .tabs.mehr-offen .tab-neben { display:flex; grid-column:1 / -1; order:-1; flex-direction:row; justify-content:flex-start; gap:16px;
+      min-height:54px; padding:10px 18px; font-size:16px; color:var(--text); text-align:left; }
+    body.mit-nav .tabs.mehr-offen .tab-neben.active { color:var(--green); background:var(--chip-bg); }
+    body.mit-nav .backtotop { bottom:calc(84px + env(safe-area-inset-bottom)); }
+    /* Große Schrift: Wörter dürfen in zwei Zeilen, die Leiste wächst mit. */
+    body.mit-nav[data-fontscale="2"] .tabs button { font-size:12.5px; }
+  }
+  body.dark .tabs.mehr-offen { box-shadow:0 -10px 30px rgba(0,0,0,.6); }
+
+  /* ── Startseite: Kennzahlen und weitere Bereiche ── */
+  .ovtiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:10px; }
+  .ovtile { border:1px solid var(--line); border-left-width:1px; border-radius:var(--radius); box-shadow:none; padding:12px 14px; display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .ovtile.clickable:hover, .ovtile.clickable:focus-visible { box-shadow:var(--shadow-hover); transform:none; border-left-color:var(--tile-accent, var(--green)); border-color:var(--tile-accent, var(--green)); }
+  .ovtile-ic { display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:50%; color:var(--tile-accent);
+    background:var(--chip-bg); background:color-mix(in srgb, var(--tile-accent) 14%, transparent); margin-bottom:6px; }
+  .ovtile-num { font-size:26px; font-weight:800; line-height:1.15; color:var(--tile-accent); white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .ovtile-lbl { font-size:14px; color:var(--muted); font-weight:600; }
+  .ov-links { margin-top:14px; border-top:1px solid var(--line); display:flex; flex-direction:column; }
+  .ov-link { display:flex; align-items:center; gap:14px; width:100%; text-align:left; background:transparent; color:var(--text); border:0; border-bottom:1px solid var(--line);
+    border-radius:0; padding:12px 4px; min-height:52px; font-size:16px; font-weight:600; }
+  .ov-link:last-child { border-bottom:0; padding-bottom:2px; }
+  .ov-link span { flex:1; }
+  .ov-link .svg-ic:first-child { color:var(--green); }
+  .ov-link .svg-ic:last-child { color:var(--muted); }
+  .ov-link:hover { background:transparent; color:var(--green); }
+  .ov-link:hover .svg-ic:last-child { color:var(--green); }
+  /* Symbol vor einer Karten-Überschrift: getönter Kreis wie bei den Kennzahlen. */
+  .karte-ic { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:50%; background:var(--chip-bg); color:var(--green); flex:none; }

@@ -1,3 +1,51 @@
+// ── Symbole ─────────────────────────────────────────────────────────────────
+// Ein einheitliches Linien-Set statt Emojis. Emojis sahen je Gerät anders aus,
+// mischten Stile (🔴 📦 💶 🌍) und waren das deutlichste „von KI gebaut"-Signal
+// der Oberfläche. Eigene, schlichte 24er-Pfade, Strichstärke 2, `currentColor`
+// — die Farbe kommt aus dem Text, Hell/Dunkel geht von selbst.
+const ICONS = {
+  home: '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+  sparkle: '<path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z"/>',
+  alert: '<path d="M10.3 4.2L2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z"/><path d="M12 9v5"/><path d="M12 17.5h.01"/>',
+  package: '<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/>',
+  news: '<path d="M4 5h12v14H6a2 2 0 0 1-2-2z"/><path d="M16 9h4v8a2 2 0 0 1-2 2h-2"/><path d="M8 9h4M8 13h4M8 16h2"/>',
+  euro: '<path d="M18 6.5a7 7 0 1 0 0 11"/><path d="M4 10h9M4 14h9"/>',
+  tag: '<path d="M3 12V4h8l10 10-8 8z"/><path d="M7.5 7.5h.01"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/>',
+  swap: '<path d="M7 7h13l-3-3"/><path d="M17 17H4l3 3"/>',
+  bell: '<path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 8 2.5 8h-17S6 15 6 9z"/><path d="M10 21a2 2 0 0 0 4 0"/>',
+  menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  moon: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.7.4-1.1 1-1.1 1.8v.5"/><path d="M12 17h.01"/>',
+  logout: '<path d="M15 4h4v16h-4"/><path d="M10 8l-4 4 4 4"/><path d="M6 12h10"/>',
+  shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  cart: '<path d="M3 4h2l2.4 11h10.2l2-8H6.2"/><circle cx="9" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/>',
+  more: '<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+  chevron: '<path d="M9 6l6 6-6 6"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  flask: '<path d="M9 3h6"/><path d="M10 3v6L4.5 18.5A1.7 1.7 0 0 0 6 21h12a1.7 1.7 0 0 0 1.5-2.5L14 9V3"/><path d="M7 15h10"/>',
+  truck: '<path d="M3 6h11v10H3z"/><path d="M14 9h4l3 3v4h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/>',
+  bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/>',
+  users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14a6.5 6.5 0 0 1 3 6"/>',
+  radio: '<circle cx="12" cy="12" r="2"/><path d="M8 8a5.6 5.6 0 0 0 0 8M16 8a5.6 5.6 0 0 1 0 8M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14"/>',
+  chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  landmark: '<path d="M3 21h18M4 10h16M12 3l9 5H3z"/><path d="M6 10v8M10 10v8M14 10v8M18 10v8"/>',
+  download: '<path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/>',
+  star: '<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',
+};
+function ico(name, size = 24) {
+  const p = ICONS[name];
+  if (!p) return '';
+  return `<svg class="svg-ic" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${p}</svg>`;
+}
+/** Platzhalter `<span data-ic="bell">` mit dem Symbol füllen. */
+function fuelleIcons(root = document) {
+  root.querySelectorAll('[data-ic]').forEach((n) => { n.innerHTML = ico(n.dataset.ic, Number(n.dataset.icSize) || 24); });
+}
+
 // ── Schriftgröße (Barrierefreiheit): Normal / Groß / Sehr groß, gespeichert ──
 const FONT_STEPS = [16, 19, 22];
 const FONT_LABELS = ['A', 'A⁺', 'A⁺⁺'];
@@ -22,10 +70,10 @@ function applyTheme() {
   const btn = document.getElementById('btnTheme');
   const ic = document.getElementById('themeIcon');
   const lbl = document.getElementById('themeLabel');
-  if (ic) ic.textContent = dark ? '☀️' : '🌙';
+  if (ic) { ic.dataset.ic = dark ? 'sun' : 'moon'; ic.innerHTML = ico(ic.dataset.ic); }
   if (lbl) lbl.textContent = dark ? t('theme_light') : t('theme_dark');
   if (btn) btn.title = dark ? t('theme_to_light') : t('theme_to_dark');
-  const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.setAttribute('content', dark ? '#14181a' : '#0b7f28');
+  const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.setAttribute('content', dark ? '#16202a' : '#ffffff');
 }
 // Die Sprachtexte stehen in public/i18n.js — dort auch die Begründung.
 // Sie wird in index.html VOR dieser Datei geladen; `I18N` ist dadurch hier
@@ -35,6 +83,18 @@ let LOCALE = (() => { const s = localStorage.getItem('apo_locale'); return SUPPO
 // <html lang> beim Laden mit der aktiven Sprache synchronisieren (statisch „de"),
 // damit Screenreader engl./pt. Inhalte nicht deutsch aussprechen.
 document.documentElement.setAttribute('lang', LOCALE);
+// Führende Emojis aus den Beschriftungen nehmen. 313 von 1667 Texten begannen
+// mit einem („🔴 Nur kritisch", „Drucken", „👥 Community") — das war das
+// deutlichste Zeichen einer generierten Oberfläche, und jedes Gerät zeichnet
+// sie anders. Bedeutung tragen Farbe, Wort und die Linien-Symbole.
+// Ausnahme Reaktionen (👍 Hilfreich): Dort IST das Zeichen der Inhalt.
+// Nur am Anfang und nur mit folgendem Leerzeichen — „← Zurück" und Texte, die
+// nur aus einem Zeichen bestehen, bleiben, wie sie sind.
+const SYMBOL_ANFANG = /^\p{Extended_Pictographic}[️‍\p{Extended_Pictographic}\p{Emoji_Modifier}]*\s+/u;
+function ohneEmojiAnfang(s) { return typeof s === 'string' ? s.replace(SYMBOL_ANFANG, '') : s; }
+for (const sprache of Object.keys(I18N)) {
+  for (const k of Object.keys(I18N[sprache])) if (!k.startsWith('react_')) I18N[sprache][k] = ohneEmojiAnfang(I18N[sprache][k]);
+}
 const t = (key) => (I18N[LOCALE] && I18N[LOCALE][key]) || I18N.de[key] || key;
 function setLocale(l) {
   LOCALE = SUPPORTED_LOCALES.includes(l) ? l : 'de';
@@ -89,7 +149,7 @@ const COUNTRY_TERMS = {
 // Wie t(), aber mit landesüblichem Begriff, wenn es einen gibt.
 function tc(key) {
   const c = COUNTRY_TERMS[typeof viewCountry === 'function' ? viewCountry() : 'AT'];
-  if (c && c.lang === LOCALE && c.terms[key] != null) return c.terms[key];
+  if (c && c.lang === LOCALE && c.terms[key] != null) return ohneEmojiAnfang(c.terms[key]);
   return t(key);
 }
 
@@ -142,15 +202,20 @@ function nlabel(n, oneKey, manyKey) {
 // „Vertriebse|inschränk|ungen". Er steht stattdessen als Überschrift auf der
 // Engpass-Seite und als Tooltip am Reiter: dort, wo man ihn zum Nachschlagen
 // im Register braucht.
+// Symbol je Reiter aus dem Linien-Set (statt des Emojis im Übersetzungstext).
+const TAB_ICON = { overview: 'sparkle', signals: 'alert', shortages: 'package', news: 'news', prices: 'euro', rabatte: 'tag', exchange: 'swap', public: 'globe', home: 'home' };
 function navTabLabel(n, k) {
   const s = t(k);
   const m = s.match(/^(\S+)\s+(.+)$/);
-  const icon = m && !/\p{L}/u.test(m[1]) ? m[1] : '';
-  const wort = icon ? m[2] : s;
-  n.innerHTML = (icon ? '<span class="tab-ic" aria-hidden="true">' + esc(icon) + '</span>' : '') + '<span class="tab-tx">' + esc(wort) + '</span>';
+  const emoji = m && !/\p{L}/u.test(m[1]) ? m[1] : '';
+  const wort = emoji ? m[2] : s;
+  const svg = ico(TAB_ICON[n.dataset.tab] || '');
+  n.innerHTML = (svg ? '<span class="tab-ic">' + svg + '</span>' : emoji ? '<span class="tab-ic" aria-hidden="true">' + esc(emoji) + '</span>' : '') + '<span class="tab-tx">' + esc(wort) + '</span>';
   const amt = tc(k);
-  if (amt !== s) n.title = amt.replace(/^\S+\s+/, ''); else n.removeAttribute('title');
+  if (amt !== s) n.title = amt; else n.removeAttribute('title');
 }
+// Führendes Emoji aus einem Übersetzungstext entfernen, wo ein Linien-Symbol davor steht.
+function ohneSymbol(s) { const m = String(s).match(/^(\S+)\s+(.+)$/); return m && !/\p{L}/u.test(m[1]) ? m[2] : String(s); }
 function applyI18n(root) {
   const scope = root || document;
   // tc() statt t(): landesüblicher Amtsbegriff, wo es einen gibt (AT
@@ -384,7 +449,7 @@ function legalNotice(featureId) {
   const msg = reason ? ti('legal_' + reason, { country: COUNTRY_NAME || t('legal_your_country') }) : '';
   const blocked = status === 'blocked';
   return el(`<div class="card" style="border-left:4px solid ${blocked ? 'var(--crit-fg)' : 'var(--warn-fg)'};background:${blocked ? 'var(--crit-bg)' : 'var(--warn-bg)'}">
-    <div class="row"><b>⚖️ ${esc(blocked ? ti('legal_blocked_title', { country: COUNTRY_NAME }) : t('legal_notice_title'))}</b></div>
+    <div class="row"><b>${esc(blocked ? ti('legal_blocked_title', { country: COUNTRY_NAME }) : t('legal_notice_title'))}</b></div>
     <div style="font-size:14px;margin-top:4px">${esc(msg)}</div>
     <div class="muted" style="font-size:12px;margin-top:6px">${esc(t('legal_disclaimer'))}</div>
   </div>`);
@@ -416,6 +481,7 @@ function hideHeaderForAuth() {
   document.getElementById('whoami').classList.remove('clickable');
   stopNewsRail();
   stopQuickRail();
+  document.body.classList.remove('mit-nav'); // keine Seitenleiste/untere Leiste vor dem Login
   app.classList.remove('auth-mode'); // Standardbreite; authScreen setzt sie danach gezielt wieder
 }
 function currentAuthCountry() {
@@ -839,20 +905,22 @@ async function mainScreen() {
 
   app.innerHTML = '';
   app.classList.remove('auth-mode'); // Haupt-App in Standardbreite
+  document.body.classList.add('mit-nav'); // Reiter als Seitenleiste (Desktop) bzw. untere Leiste (Handy)
   app.appendChild(el(`
-    <div class="card" style="padding:10px 12px">
-      <div class="row"><input id="sq" data-i18n-ph="search_ph" data-i18n-aria="search_go" placeholder="🔎 Wirkstoff, Präparat, Kolleg:in…" aria-label="Suche"><button class="small" id="sgo" data-i18n="search_go">Suchen</button></div>
+    <div class="suchleiste">
+      <div class="row"><span class="suche-feld"><span class="suche-ic" data-ic="search" data-ic-size="20"></span><input id="sq" data-i18n-ph="search_ph" data-i18n-aria="search_go" placeholder="Wirkstoff, Präparat, Kolleg:in…" aria-label="Suche"></span><button class="small" id="sgo" data-i18n="search_go">Suchen</button></div>
     </div>
     <div class="tabs">
       <button data-tab="overview" class="active" data-navtab data-i18n="nav_overview">✨ Für dich</button>
       <button data-tab="signals" data-navtab data-i18n="nav_signals">⚠️ Live-Warnungen</button>
       <button data-tab="shortages" data-navtab data-i18n="nav_shortages">📦 Engpässe</button>
       <button data-tab="news" data-navtab data-i18n="nav_news">📰 News</button>
-      <button data-tab="prices" data-navtab data-i18n="nav_prices">💶 Preise</button>
-      <button data-tab="rabatte" data-navtab data-i18n="nav_rabatte">🏷️ Top-Rabatte</button>
-      <button data-tab="exchange" data-navtab data-i18n="nav_exchange">🔄 Biete/Suche</button>
-      <button data-tab="public" data-navtab data-i18n="nav_public">🌍 Öffentlich</button>
-      <button data-tab="home" data-navtab data-i18n="nav_home">🏠 Mein Feed</button>
+      <button data-tab="prices" class="tab-neben" data-navtab data-i18n="nav_prices">💶 Preise</button>
+      <button data-tab="rabatte" class="tab-neben" data-navtab data-i18n="nav_rabatte">🏷️ Top-Rabatte</button>
+      <button data-tab="exchange" class="tab-neben" data-navtab data-i18n="nav_exchange">🔄 Biete/Suche</button>
+      <button data-tab="public" class="tab-neben" data-navtab data-i18n="nav_public">🌍 Öffentlich</button>
+      <button data-tab="home" class="tab-neben" data-navtab data-i18n="nav_home">🏠 Mein Feed</button>
+      <button type="button" class="tab-mehr" data-mehr aria-expanded="false"><span class="tab-ic" data-ic="more"></span><span class="tab-tx" data-i18n="nav_more">Mehr</span></button>
     </div>
     <div id="socialCompose" style="display:none">
       <div class="card">
@@ -969,10 +1037,24 @@ async function mainScreen() {
   // Ruhende Bereiche verschwinden, BEVOR Klick-Handler gesetzt werden —
   // sonst haengt ein Handler an einem Element, das gleich entfernt wird.
   wendeFeaturesAn();
-  app.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+  app.querySelectorAll('.tabs button[data-tab]').forEach(b => b.onclick = () => {
     app.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
     b.classList.add('active'); tab = b.dataset.tab; loadTab();
   });
+  // „Mehr" (nur Handy): die seltener gebrauchten Reiter als Blatt über der
+  // unteren Leiste. Fünf Ziele unten sind das, was Daumen sicher treffen.
+  fuelleIcons(app.querySelector('.suchleiste'));
+  const mehr = app.querySelector('.tabs .tab-mehr');
+  if (mehr) {
+    fuelleIcons(mehr);
+    mehr.onclick = (e) => {
+      e.stopPropagation();
+      const leiste = mehr.closest('.tabs');
+      const offen = !leiste.classList.contains('mehr-offen');
+      leiste.classList.toggle('mehr-offen', offen);
+      mehr.setAttribute('aria-expanded', String(offen));
+    };
+  }
   await applyCountryGating(); // rechtlich gesperrte Reiter fürs Heimatland ausblenden
   applyI18n();          // Navigation/Suche in aktueller Sprache beschriften
   applyTheme();         // Theme-Label (Hell/Dunkel) in aktueller Sprache
@@ -1188,40 +1270,54 @@ async function loadOverview() {
   // Kennzahlen-Kacheln
   // Kacheln sind Navigations-Buttons (alle klickbar): .clickable macht sie zusätzlich
   // tastaturbedienbar (tabindex+role via zentralem a11y-Mechanismus) und zeigt Hover-Affordanz.
-  const tile = (icon, num, label, col, go, filter) => `<div class="ovtile clickable" data-go="${go||''}" data-filter="${filter||''}" style="flex:1;min-width:120px;padding:12px;--tile-accent:${col}">
-    <div style="font-size:26px;font-weight:800;color:${col}">${icon} <span style="white-space:nowrap">${num}</span></div>
-    <div class="muted" style="font-size:13px;margin-top:2px">${esc(label)} <span class="ovtile-go" aria-hidden="true">›</span></div></div>`;
+  // Symbol im getönten Kreis statt Emoji (gleiches Linien-Set wie die Navigation).
+  const tile = (icon, num, label, col, go, filter) => `<div class="ovtile clickable" data-go="${go||''}" data-filter="${filter||''}" style="--tile-accent:${col}">
+    <span class="ovtile-ic" aria-hidden="true">${ico(icon, 20)}</span>
+    <div class="ovtile-num">${num}</div>
+    <div class="ovtile-lbl">${esc(label)} <span class="ovtile-go" aria-hidden="true">›</span></div></div>`;
   const tiles = [
-    tile('🔴', d.shortages.kritisch, t('ov_t_crit'), 'var(--crit-fg)', 'shortages'),
+    tile('alert', d.shortages.kritisch, t('ov_t_crit'), 'var(--crit-fg)', 'shortages'),
   ];
   // Antibiotika-Engpässe: neutral-informativ (blau), NICHT grün — grün stünde für
   // „gut/ok", ein Engpass-Zähler ist aber nichts Positives (Owner-Prinzip: konsistente
   // Farb-Semantik). Rot bleibt der „kritisch"-Kachel vorbehalten.
-  if (d.shortages.antibiotika) tiles.push(tile('🧫', d.shortages.antibiotika, t('ov_t_abx'), 'var(--info-fg)', 'shortages', 'antibiotika'));
+  if (d.shortages.antibiotika) tiles.push(tile('flask', d.shortages.antibiotika, t('ov_t_abx'), 'var(--info-fg)', 'shortages', 'antibiotika'));
   // Tauschboersen-Kacheln nur, wenn der Bereich laeuft. Sie zeigten sonst
   // „0 Angebote ›" und fuehrten beim Klick auf einen Reiter, den es nicht mehr
   // gibt. Dieselbe Klasse wie die Schnellzugriff-Leiste — und wieder erst
   // aufgefallen, als eine Browser-Pruefung den Ueberblick im Klartext ausgab.
   if (featureAn('tauschboerse')) {
     tiles.push(
-      tile('📦', d.exchange.biete, t('ov_t_offer'), 'var(--ok-fg)', 'exchange'),
-      tile('🔎', d.exchange.suche, t('ov_t_seek'), 'var(--warn-fg)', 'exchange'),
+      tile('package', d.exchange.biete, t('ov_t_offer'), 'var(--ok-fg)', 'exchange'),
+      tile('search', d.exchange.suche, t('ov_t_seek'), 'var(--warn-fg)', 'exchange'),
     );
   }
   // Beobachtete Wirkstoffe mit überschrittenem Liefertermin — starkes „nachfassen"-Signal.
   const overdueWatched = ((d.watchlist && d.watchlist.items) || []).filter(w => w.overdue).length;
-  if (overdueWatched) tiles.push(tile('⚠️', overdueWatched, t('ov_t_overdue'), 'var(--crit-fg)', 'shortages', 'watched'));
-  if (d.savings && d.savings.count) tiles.push(tile('💶', '€ ' + fmtMoney(d.savings.total_abs), t('ov_t_savings'), 'var(--ok-fg)', 'prices'));
-  if (d.rabatte_expiring && d.rabatte_expiring.count) tiles.push(tile('⏳', d.rabatte_expiring.count, t('ov_t_expiring'), 'var(--warn-fg)', 'rabatte'));
-  if (liveNow.length) tiles.push(tile('🔴', liveNow.length, t('lv_ov_now'), 'var(--crit-fg)', 'live'));
-  tiles.push(tile('🔔', d.notifications.unread, t('ov_t_notif'), 'var(--info-fg)', ''));
+  if (overdueWatched) tiles.push(tile('clock', overdueWatched, t('ov_t_overdue'), 'var(--crit-fg)', 'shortages', 'watched'));
+  if (d.savings && d.savings.count) tiles.push(tile('euro', '€ ' + fmtMoney(d.savings.total_abs), t('ov_t_savings'), 'var(--ok-fg)', 'prices'));
+  if (d.rabatte_expiring && d.rabatte_expiring.count) tiles.push(tile('tag', d.rabatte_expiring.count, t('ov_t_expiring'), 'var(--warn-fg)', 'rabatte'));
+  if (liveNow.length) tiles.push(tile('radio', liveNow.length, t('lv_ov_now'), 'var(--crit-fg)', 'live'));
+  tiles.push(tile('bell', d.notifications.unread, t('ov_t_notif'), 'var(--info-fg)', ''));
+  // Weitere Bereiche als Liste (Symbol · Wort · Pfeil) statt einer Knopf-Wolke.
+  // Nur, was läuft: Lesezeichen, Angebote, Live, Verzeichnis und Team standen
+  // hier auch dann, wenn ihr Bereich ruhte — Klick führte ins Leere.
+  const schnell = [
+    ['ov_signals', 'alert', 'nav_signals', null],
+    ['ov_logistik', 'truck', 'lg_nav', null],
+    ['ov_bm', 'bookmark', 'ov_bookmarks', 'social', openBookmarks],
+    ['ov_promos', 'tag', 'wb_nav', 'werbung', () => openPromotions()],
+    ['ov_live', 'radio', 'lv_nav', 'termine', () => openLive()],
+    ['ov_dir', 'users', 'dir_nav', 'verzeichnis', () => openDirectory()],
+    ['ov_team', 'users', 'th_nav', 'zusammenarbeit', () => openTeamHub()],
+  ].filter(([, , , bereich]) => !bereich || featureAn(bereich));
   const head = el(`<div class="card">
-    <h1 style="margin:0 0 2px">✨ ${esc(t('ov_hello'))}${firstName?', '+esc(firstName):''}</h1>
+    <h1 style="margin:0 0 2px">${esc(t('ov_hello'))}${firstName?', '+esc(firstName):''}</h1>
     <div class="muted" style="margin-bottom:12px">${esc(t('ov_sub'))}</div>
-    <div class="row" style="flex-wrap:wrap;gap:10px;align-items:stretch">
+    <div class="ovtiles">
       ${tiles.join('')}
     </div>
-    <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px"><button class="ghost small" id="ov_signals">${esc(t('nav_signals'))}</button><button class="ghost small" id="ov_logistik">${esc(t('lg_nav'))}</button><button class="ghost small" id="ov_bm">${esc(t('ov_bookmarks'))}</button><button class="ghost small" id="ov_promos">${esc(t('wb_nav'))}</button><button class="ghost small" id="ov_live">${esc(t('lv_nav'))}</button><button class="ghost small" id="ov_dir">${esc(t('dir_nav'))}</button><button class="ghost small" id="ov_team">${esc(t('th_nav'))}</button></div>
+    <div class="ov-links">${schnell.map(([id, icon, label]) => `<button class="ov-link" id="${id}">${ico(icon, 22)}<span>${esc(ohneSymbol(t(label)))}</span>${ico('chevron', 18)}</button>`).join('')}</div>
   </div>`);
   head.querySelectorAll('.ovtile[data-go]').forEach(t => { if (t.dataset.go) t.onclick = () => { if (t.dataset.go === 'live') { openLive(); return; } if (t.dataset.filter) shortageFilter = t.dataset.filter; goTab(t.dataset.go); }; });
   head.querySelectorAll('.ovtile').forEach(t => { if (!t.dataset.go) t.onclick = () => document.getElementById('btnNotif').click(); });
@@ -1239,11 +1335,7 @@ async function loadOverview() {
   // Grosshandel und Logistik, und fuer Apotheken meist leer — eine Kachel mit
   // „0" waere ein Zaehler ohne Aussage.
   { const lb = head.querySelector('#ov_logistik'); if (lb) lb.onclick = () => openLogistik(); }
-  head.querySelector('#ov_bm').onclick = openBookmarks;
-  head.querySelector('#ov_promos').onclick = () => openPromotions();
-  head.querySelector('#ov_live').onclick = () => openLive();
-  head.querySelector('#ov_dir').onclick = () => openDirectory();
-  head.querySelector('#ov_team').onclick = () => openTeamHub();
+  for (const [id, , , bereich, fn] of schnell) if (bereich) head.querySelector('#' + id).onclick = fn;
   feed.appendChild(head);
   renderLiveOverview(feed, liveNow, liveSoon); // zeitkritisch: laufende/kommende Live-Sessions ganz oben
   renderMyTasksOverview(feed, (tasksData && tasksData.tasks) || []); // deine offenen Aufgaben
@@ -1264,7 +1356,9 @@ async function loadOverview() {
   { const r = countryRegulatorCard(!!d.data_live); if (r) feed.appendChild(r); } // offizielle Behörde/Quelle
   renderNewsInline(feed);    // News-Karten fürs Handy (nur wenn die Seitenleiste fehlt)
   renderProfileNudge(feed);  // Hinweis, das eigene Profil zu vervollständigen (nur wenn unfertig)
-  renderCurrencyConverter(feed);
+  // Der Rechner ruht (Bereich `waehrungsrechner`): ohne diese Wache stand er
+  // weiter auf der Startseite und lieferte beim Öffnen 404.
+  if (featureAn('waehrungsrechner')) renderCurrencyConverter(feed);
 
   // Zuletzt angesehene Wirkstoffe (nur lokal) — schneller Wiedereinstieg.
   const recent = getRecentWirkstoff();
@@ -1288,7 +1382,7 @@ async function loadOverview() {
 
   // Aktionen zu beobachteten Wirkstoffen (Beobachtungsliste ↔ Rabatte)
   if (d.watch_deals && d.watch_deals.length) {
-    const c = el(`<div class="card"><div class="row" style="flex-wrap:wrap;gap:6px"><b style="flex:1">${esc(t('wd_title'))}</b>${d.watch_deals.length>1?`<button class="ghost small" data-addall>🛒 ${esc(t('wd_add_all'))}</button>`:''}<button class="ghost small" data-all>${esc(t('wd_all'))}</button></div>
+    const c = el(`<div class="card"><div class="row" style="flex-wrap:wrap;gap:6px"><b style="flex:1">${esc(t('wd_title'))}</b>${d.watch_deals.length>1&&featureAn('bestellung')?`<button class="ghost small" data-addall>${esc(t('wd_add_all'))}</button>`:''}<button class="ghost small" data-all>${esc(t('wd_all'))}</button></div>
       <div class="muted" style="font-size:13px;margin:2px 0 6px">${esc(t('wd_sub'))}</div><div data-wd></div></div>`);
     const box = c.querySelector('[data-wd]');
     const addAll = c.querySelector('[data-addall]');
@@ -1305,9 +1399,10 @@ async function loadOverview() {
     d.watch_deals.forEach(w => {
       const row = el(`<div class="comment"><div class="row" style="align-items:baseline">
         <span style="flex:1">🏷️ <b>${esc(w.wirkstoff)}</b> — ${esc(w.supplier)} <span style="color:var(--ok-fg);font-weight:700">−${w.rabatt_pct}%</span> (€ ${fmtMoney(w.aktionspreis)})${w.ersparnis>0?` · <span style="color:var(--ok-fg);font-weight:700">${esc(ti('wd_saving',{x:fmtMoney(w.ersparnis)}))}</span>`:''}${w.expiring_soon?` · <b style="color:${w.days_left<=3?'var(--crit-fg)':'var(--warn-fg)'}">${esc(w.days_left<=0?t('pg_only_today'):ti('pg_only_days',{d:w.days_left}))}</b>`:''}</span>
-        <button class="ghost small" data-addcart title="${esc(t('cart_add'))}" aria-label="${esc(t('cart_add'))}" style="margin-left:6px">🛒</button>
+        ${featureAn('bestellung')?`<button class="ghost small" data-addcart title="${esc(t('cart_add'))}" aria-label="${esc(t('cart_add'))}" style="margin-left:6px">${ico('cart', 18)}</button>`:''}
       </div></div>`);
-      row.querySelector('[data-addcart]').onclick = (ev) => cartAdd({
+      const wdCart = row.querySelector('[data-addcart]');
+      if (wdCart) wdCart.onclick = (ev) => cartAdd({
         bezeichnung: w.bezeichnung || w.wirkstoff, wirkstoff: w.wirkstoff, supplier: w.supplier,
         aktionspreis: w.aktionspreis, listenpreis: (w.aktionspreis!=null && w.ersparnis!=null) ? Number(w.aktionspreis)+Number(w.ersparnis) : undefined, rabattPct: w.rabatt_pct, gueltigBis: w.gueltig_bis,
         menge: w.min_menge || 1, sourceKind: 'rabatt',
@@ -1554,7 +1649,7 @@ function renderWeekReview(feed, wr) {
   };
   const blocks = sections.map(s => `<div style="margin-top:8px"><div class="muted" style="font-size:13px;font-weight:700;margin-bottom:4px">${esc(head[s.key])} <span style="opacity:.7">(${s.items.length})</span></div>${s.items.map(rowHtml).join('')}</div>`).join('');
   const c = el(`<div class="card" style="border-left:4px solid var(--info-fg)">
-    <div class="row" style="flex-wrap:wrap;gap:6px"><b style="flex:1">${esc(t('wr_title'))}</b><button class="ghost small" data-wr-print title="${esc(t('wr_print_title'))}">🖨️ ${esc(t('wr_print'))}</button></div>
+    <div class="row" style="flex-wrap:wrap;gap:6px"><b style="flex:1">${esc(t('wr_title'))}</b><button class="ghost small" data-wr-print title="${esc(t('wr_print_title'))}">${esc(t('wr_print'))}</button></div>
     <div class="muted" style="font-size:13px;margin:2px 0 2px">${esc(t('wr_sub'))}</div>
     ${blocks}</div>`);
   c.querySelectorAll('[data-wk]').forEach(row => row.onclick = () => openWirkstoff(row.dataset.wk));
@@ -1593,8 +1688,8 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
   const card = el(`<div class="card">
     <div class="row" style="flex-wrap:wrap;gap:6px 8px;align-items:center"><b>${esc(t('wl_title'))}</b>
       ${alerts?`<span style="background:#c0392b;color:#fff;border-radius:999px;font-size:12px;font-weight:700;padding:2px 8px">${alerts} ${esc(alerts>1?t('wl_alerts_pl'):t('wl_alerts_sg'))}</span>`:''}
-      ${items.length?`<button class="ghost small" data-wl-csv title="${esc(t('wl_csv_title'))}">⬇️ CSV</button>`:''}
-      ${premium?`<button class="ghost small" data-wl-print title="${esc(t('wl_print_title'))}">🖨️ ${esc(t('wl_print'))}</button>`:''}
+      ${items.length?`<button class="ghost small" data-wl-csv title="${esc(t('wl_csv_title'))}">CSV</button>`:''}
+      ${premium?`<button class="ghost small" data-wl-print title="${esc(t('wl_print_title'))}">${esc(t('wl_print'))}</button>`:''}
     </div>
     <div class="muted" style="font-size:13px;margin:2px 0 8px">${esc(t('wl_sub'))}</div>
     ${items.length>=2?`<div class="row" data-bulkalert style="flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;background:var(--chip-bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px">
@@ -1661,7 +1756,7 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
     const wrap = el(`<div style="margin-top:8px"><div class="muted" style="font-size:12px">${esc(t('wl_quick'))}</div><div class="row" data-chips style="flex-wrap:wrap;gap:6px;margin-top:4px"></div></div>`);
     const chips = wrap.querySelector('[data-chips]');
     open.slice(0, 6).forEach(s => {
-      const chip = el(`<button class="small sortbtn">🔴 ${esc(s.wirkstoff)} +</button>`);
+      const chip = el(`<button class="small sortbtn">${esc(s.wirkstoff)} +</button>`);
       chip.onclick = async () => {
         chip.disabled = true;
         try { const r = await api('POST','/api/watchlist',{ wirkstoff: s.wirkstoff }); draw(r.items); }
@@ -1957,12 +2052,12 @@ function datenstandZeile(st, land) {
   const wann = abruf.zuletzt ? vorZeit(abruf.zuletzt) : null;
   const name = landLabel(land);
   let symbol, text, ton;
-  if (st.zustand === 'unbekannt' || !abruf.zuletzt) { symbol = '⏳'; text = ti('stand_first', { land: name }); ton = 'info'; }
-  else if (st.zustand === 'stumm') { symbol = '🔴'; text = ti('stand_silent', { land: name, wann }); ton = 'crit'; }
-  else if (!abruf.aktuell) { symbol = '🟡'; text = ti('stand_stale', { wann }); ton = 'warn'; }
-  else { symbol = '🟢'; text = ti('stand_live', { land: name, wann }); ton = 'ok'; }
+  if (st.zustand === 'unbekannt' || !abruf.zuletzt) { symbol = 'clock'; text = ti('stand_first', { land: name }); ton = 'info'; }
+  else if (st.zustand === 'stumm') { symbol = 'alert'; text = ti('stand_silent', { land: name, wann }); ton = 'crit'; }
+  else if (!abruf.aktuell) { symbol = 'clock'; text = ti('stand_stale', { wann }); ton = 'warn'; }
+  else { symbol = 'radio'; text = ti('stand_live', { land: name, wann }); ton = 'ok'; }
   return el(`<div data-datenstand="${ton}" role="status" style="display:flex;gap:8px;align-items:flex-start;background:var(--${ton}-bg);border:1px solid var(--${ton}-bd);color:var(--${ton}-fg);border-radius:10px;padding:8px 12px;margin:0 0 10px;font-size:14px;font-weight:600;line-height:1.45">
-    <span aria-hidden="true">${symbol}</span><span>${esc(text)}</span></div>`);
+    <span aria-hidden="true" style="padding-top:1px">${ico(symbol, 18)}</span><span>${esc(text)}</span></div>`);
 }
 // Platz SOFORT reservieren, später füllen: Alle Reiter teilen sich #feed.
 // Würde erst nach dem Abruf eingefügt, könnte die Zeile im inzwischen
@@ -2044,10 +2139,25 @@ function filteredEmptyCard(msgKey, active, onReset) {
 // aria-current an der aktiven Registerkarte spiegeln (Aktiv-Zustand nicht nur
 // über Farbe, sondern auch für Screenreader/Tastatur erkennbar).
 function setTabAria() {
-  document.querySelectorAll('.tabs button').forEach(x => {
+  document.querySelectorAll('.tabs button[data-tab]').forEach(x => {
     if (x.classList.contains('active')) x.setAttribute('aria-current', 'page');
     else x.removeAttribute('aria-current');
   });
+  // Liegt der aktive Reiter im „Mehr"-Blatt, trägt „Mehr" die Markierung —
+  // sonst wäre unten auf dem Handy gar nichts als aktiv erkennbar.
+  // Jede Navigation läuft hier durch, also schließt sich das Blatt auch hier.
+  const mehr = document.querySelector('.tabs .tab-mehr');
+  if (mehr) {
+    mehr.classList.toggle('active', !!document.querySelector('.tabs button.tab-neben.active'));
+    mehr.setAttribute('aria-expanded', 'false');
+    mehr.closest('.tabs').classList.remove('mehr-offen');
+  }
+}
+function mehrSchliessen() {
+  const leiste = document.querySelector('.tabs.mehr-offen');
+  if (!leiste) return;
+  leiste.classList.remove('mehr-offen');
+  const m = leiste.querySelector('.tab-mehr'); if (m) m.setAttribute('aria-expanded', 'false');
 }
 // Browsertab-Titel je Ansicht setzen (Orientierung, History, Screenreader).
 const BASE_TITLE = 'ApoPulse';
@@ -2129,7 +2239,7 @@ function renderProfileNudge(feed) {
 // News-Karten inline in „Für dich" — nur auf schmalen Screens (Handy), wo die feste
 // Seitenleiste nicht sichtbar ist. Gleiche 𝕏-Karten-Optik wie der Livestream links.
 async function renderNewsInline(feed) {
-  if (window.matchMedia('(min-width:1300px)').matches) return; // breit: Seitenleiste zeigt News
+  if (window.matchMedia('(min-width:1280px)').matches) return; // breit: rechte Spalte zeigt News
   let d;
   try { d = await api('GET', '/api/news?country=' + viewCountry()); } catch { return; }
   const top = ((d && d.posts) || []).slice(0, 3);
@@ -2177,7 +2287,7 @@ async function refreshNewsRail() {
   rail.querySelectorAll('[data-openpost]').forEach(b => b.onclick = () => openPost(b.dataset.openpost));
 }
 // Schnellzugriff-Rail (Laptop/Desktop): füllt den leeren rechten Rand mit den sekundären
-// Bereichen, die nicht in der Reiter-Leiste stehen. Per CSS nur ab 1240px sichtbar.
+// Bereichen, die nicht in der Reiter-Leiste stehen. Per CSS nur ab 1280px sichtbar (rechte Spalte).
 function renderQuickRail() {
   const rail = document.getElementById('quickRail');
   if (!rail) return;
@@ -2192,7 +2302,7 @@ function renderQuickRail() {
     ['verzeichnis', t('dir_nav'), () => openDirectory()],
     ['zusammenarbeit', t('th_nav'), () => openTeamHub()],
     ['termine', t('lv_nav'), () => openLive()],
-    ['rabatte', t('wb_nav'), () => openPromotions()],
+    ['werbung', t('wb_nav'), () => openPromotions()], // Angebote gehören zu „werbung“, nicht zu „rabatte“
     ['bestellung', t('ord_title'), () => openOrders()],
   ].filter(([bereich]) => featureAn(bereich)).map(([, label, fn]) => [label, fn]);
   // Bleibt nichts uebrig, gehoert die Leiste ganz weg — eine leere Karte mit
@@ -2541,7 +2651,7 @@ async function loadSignals() {
     //  die nichts schuetzt.
     {
       const aktiv = kategorie === '__sicherheit';
-      const b2 = el(`<button class="${aktiv ? '' : 'ghost '}small" aria-pressed="${aktiv}" style="min-height:40px;font-weight:700">⚠️ ${esc(t('sig_safety'))}</button>`);
+      const b2 = el(`<button class="${aktiv ? '' : 'ghost '}small" aria-pressed="${aktiv}" style="min-height:40px;font-weight:700">${esc(t('sig_safety'))}</button>`);
       b2.onclick = () => { kategorie = '__sicherheit'; malKnoepfe(); laden(); };
       katBox.appendChild(b2);
     }
@@ -2809,15 +2919,15 @@ function countryRegulatorCard(live = false) {
   const c = (COUNTRIES_CACHE || []).find(x => x.code === viewCountry());
   if (!c || !c.regulator) return null;
   const link = c.regulator_url
-    ? `<a href="${esc(c.regulator_url)}" target="_blank" rel="noopener noreferrer" class="btn-link small">${esc(ti('reg_open', { reg: c.regulator }))}</a>`
+    ? `<a href="${esc(c.regulator_url)}" target="_blank" rel="noopener noreferrer" class="btn-link small">${esc(ohneSymbol(ti('reg_open', { reg: c.regulator })))}</a>`
     : `<span class="muted" style="font-size:13px">${esc(t('reg_no_link'))}</span>`;
   // Ehrliches Daten-Herkunfts-Signal: grün = echte Live-Daten angeschlossen, gelb = kuratierte
   // Referenzdaten (im Aufbau). Schafft Vertrauen und macht die Quellenlage transparent (CLAUDE.md).
   const pill = live
-    ? `<span class="data-pill live" title="${esc(t('ds_live_title'))}">🟢 ${esc(t('ds_live'))}</span>`
-    : `<span class="data-pill ref" title="${esc(t('ds_ref_title'))}">🟡 ${esc(t('ds_ref'))}</span>`;
+    ? `<span class="data-pill live" title="${esc(t('ds_live_title'))}">${esc(t('ds_live'))}</span>`
+    : `<span class="data-pill ref" title="${esc(t('ds_ref_title'))}">${esc(t('ds_ref'))}</span>`;
   return el(`<div class="card"><div class="row" style="align-items:center;gap:10px;flex-wrap:wrap">
-    <span style="font-size:20px">🏛️</span>
+    <span class="karte-ic" aria-hidden="true">${ico('landmark', 22)}</span>
     <div style="flex:1;min-width:180px">
       <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><span style="font-weight:700">${esc(ti('reg_title', { reg: c.regulator }))}</span>${pill}</div>
       <div class="muted" style="font-size:13px">${esc(ti('reg_sub', { land: c.flag + ' ' + c.name }))}</div>
@@ -2991,7 +3101,7 @@ function renderShortlist(listBox, bar, all) {
   renderShortlist._ctx = { listBox, bar, all };
   renderShortlist._filtered = list;
   const csvBtn = bar.querySelector('[data-scsv]');
-  if (csvBtn) csvBtn.textContent = `⬇️ CSV (${list.length})`;
+  if (csvBtn) csvBtn.textContent = `CSV (${list.length})`;
 }
 
 // Filter- und Suchleiste für den Engpässe-Reiter.
@@ -3003,7 +3113,7 @@ function shortageFilterBar() {
       ${chips.map(([v,l])=>`<button class="small sortbtn${shortageFilter===v?' active':''}" data-f="${v}" aria-pressed="${shortageFilter===v}">${esc(l)} <span class="muted" data-fc></span></button>`).join('')}
       <span class="sp" style="flex:1"></span>
       <button class="ghost small" data-sprint title="${esc(t('sh_print_t'))}">${esc(t('sh_print'))}</button>
-      <button class="ghost small" data-scsv title="${esc(t('sh_csv_t'))}">⬇️ CSV</button>
+      <button class="ghost small" data-scsv title="${esc(t('sh_csv_t'))}">CSV</button>
     </div>
     <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center">
       <span class="muted" style="font-size:13px">${esc(t('sh_sort'))}</span>
@@ -3359,7 +3469,7 @@ async function loadPrices() {
     }
     // CSV-Export für Einkauf/Großhandel (Excel-tauglich)
     let shownPrices = d.comparisons; // aktuell gefilterte Auswahl für Export/Druck
-    const exp = el(`<div class="card"><div class="row" style="flex-wrap:wrap;gap:6px"><b>${esc(t('pr_csv_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-print>🖨️ ${esc(t('pr_print_btn'))}</button><button class="ghost small" data-csv>${esc(t('pr_csv_btn'))}</button></div><div class="muted" style="font-size:13px;margin-top:2px">${esc(t('pr_csv_sub'))}</div></div>`);
+    const exp = el(`<div class="card"><div class="row" style="flex-wrap:wrap;gap:6px"><b>${esc(t('pr_csv_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-print>${esc(t('pr_print_btn'))}</button><button class="ghost small" data-csv>${esc(t('pr_csv_btn'))}</button></div><div class="muted" style="font-size:13px;margin-top:2px">${esc(t('pr_csv_sub'))}</div></div>`);
     exp.querySelector('[data-csv]').onclick = () => exportPricesCsv(shownPrices);
     exp.querySelector('[data-print]').onclick = () => printPrices(shownPrices);
     feed.appendChild(exp);
@@ -3637,7 +3747,7 @@ function priceGroup(g, watchedSet, onWatchChange) {
       <div style="font-weight:700;color:var(--ok-fg);font-size:14px">${esc(t('pg_act_title'))}</div>
       <div style="font-size:13px;margin-top:2px">${esc(g.action.supplier)}: <b>€ ${fmtMoney(g.action.aktionspreis)}</b> ${esc(t('pg_instead'))} € ${fmtMoney(g.best_aep)} ${esc(t('pg_aep'))} — <b>−€ ${fmtMoney(g.action.unter_aep_abs)} ${esc(t('pg_per_pack'))}</b> · −${g.action.rabatt_pct}%</div>
       <div class="muted" style="font-size:12px;margin-top:2px">${esc(ti('pg_from',{n:g.action.min_menge}))}${g.action.expiring_soon?` · <b style="color:${g.action.days_left<=3?'var(--crit-fg)':'var(--warn-fg)'}">${esc(g.action.days_left<=0?t('pg_only_today'):ti('pg_only_days',{d:g.action.days_left}))}</b>`:` · ${esc(t('pg_valid'))} ${esc(g.action.gueltig_bis)}`} · ${esc(t('prov_reference'))}</div>
-      <div style="margin-top:6px"><button class="ghost small" data-actcart>🛒 ${esc(t('cart_add'))}</button></div>
+      ${featureAn('bestellung')?`<div style="margin-top:6px"><button class="ghost small" data-actcart>${esc(t('cart_add'))}</button></div>`:''}
     </div>`:''}
     <div data-offers></div>
     ${cheapest&&cheapest.aep!=null?`<div class="row" style="margin-top:8px;align-items:center;gap:6px;flex-wrap:wrap"><label style="font-size:13px">🧮 ${esc(t('pg_calc_qty'))}</label><input type="number" min="1" step="1" value="1" data-pqty style="width:88px" aria-label="${esc(t('pg_calc_qty'))}"><span data-pcalc style="font-size:13px;font-weight:700;color:var(--ok-fg)"></span></div>`:''}
@@ -3682,7 +3792,7 @@ function priceGroup(g, watchedSet, onWatchChange) {
       <div class="row" style="margin-top:4px">
         <span class="muted">${esc(nlabel(o.post_count||0,'pg_posts_one','pg_posts'))}</span>
         <span class="sp" style="flex:1"></span>
-        <button class="ghost small" data-addcart>🛒 ${esc(t('cart_add'))}</button>
+        ${featureAn('bestellung')?`<button class="ghost small" data-addcart>${esc(t('cart_add'))}</button>`:''}
         <button class="ghost small" data-pp>${esc(t('sc_post_about'))}</button>
       </div>
       <div class="hidden" data-ppbox style="margin-top:6px">
@@ -3690,7 +3800,8 @@ function priceGroup(g, watchedSet, onWatchChange) {
         <div style="margin-top:4px"><button class="small" data-ppsend>${esc(t('sc_post_send'))}</button></div>
       </div>
     </div>`);
-    row.querySelector('[data-addcart]').onclick = (ev) => cartAdd({
+    const pCart = row.querySelector('[data-addcart]');
+    if (pCart) pCart.onclick = (ev) => cartAdd({
       bezeichnung: g.bezeichnung, wirkstoff: g.wirkstoff, supplier: o.supplier,
       aktionspreis: o.aep, menge: 1, sourceKind: 'price',
     }, ev.target);
@@ -3911,7 +4022,7 @@ async function loadExchange() {
       }
     }
     // CSV-Export der aktuellen Auswahl — Netzwerk-Überblick zu Angebot/Nachfrage für den Einkauf.
-    const expCard = el(`<div class="card" style="padding:8px 12px"><div class="row"><span class="muted" style="font-size:13px;flex:1">${esc(ti('ex_csv_sub',{n:d.entries.length}))}</span><button class="ghost small" data-exprint>🖨️ ${esc(t('pr_print_btn'))}</button><button class="ghost small" data-excsv>⬇️ CSV</button></div></div>`);
+    const expCard = el(`<div class="card" style="padding:8px 12px"><div class="row"><span class="muted" style="font-size:13px;flex:1">${esc(ti('ex_csv_sub',{n:d.entries.length}))}</span><button class="ghost small" data-exprint>${esc(t('pr_print_btn'))}</button><button class="ghost small" data-excsv>CSV</button></div></div>`);
     expCard.querySelector('[data-excsv]').onclick = () => exportExchangeCsv(d.entries);
     expCard.querySelector('[data-exprint]').onclick = () => printExchange(d.entries);
     feed.appendChild(expCard);
@@ -4041,12 +4152,12 @@ async function loadRabatte() {
         ${watched.size?`<button class="small sortbtn${rabattWatchedOnly?' active':''}" data-watchedonly aria-pressed="${rabattWatchedOnly}">${esc(t('rb_watched_only'))}</button>`:''}
         <select class="small" data-sort data-i18n-aria="rb_sort_aria" aria-label="${esc(t('rb_sort_aria'))}"><option value="pct"${rabattSort==='pct'?' selected':''}>${esc(t('rb_sort_pct'))}</option><option value="saving"${rabattSort==='saving'?' selected':''}>${esc(t('rb_sort_saving'))}</option></select>
         <span class="sp" style="flex:1"></span>
-        <button class="ghost small" data-cart>🛒 ${esc(t('cart_title'))}${cartN?` (${cartN})`:''}</button>
-        <button class="ghost small" data-rprint title="${esc(t('rb_print_t'))}">🖨️ ${esc(t('pr_print_btn'))}</button>
-        <button class="ghost small" data-rcsv title="${esc(t('rb_csv_t'))}">⬇️ CSV</button>
+        ${featureAn('bestellung')?`<button class="ghost small" data-cart>${esc(t('cart_title'))}${cartN?` (${cartN})`:''}</button>`:''}
+        <button class="ghost small" data-rprint title="${esc(t('rb_print_t'))}">${esc(t('pr_print_btn'))}</button>
+        <button class="ghost small" data-rcsv title="${esc(t('rb_csv_t'))}">CSV</button>
       </div></div>`);
     feed.appendChild(bar);
-    bar.querySelector('[data-cart]').onclick = () => openCart();
+    const rCart = bar.querySelector('[data-cart]'); if (rCart) rCart.onclick = () => openCart();
     const listBox = el('<div data-rlist></div>');
     feed.appendChild(listBox);
     let shown = [];
@@ -4067,7 +4178,7 @@ async function loadRabatte() {
       bar.querySelectorAll('[data-exp]').forEach(b => { const on = (b.dataset.exp==='1')===rabattExpiring; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
       { const wb = bar.querySelector('[data-watchedonly]'); if (wb) { wb.classList.toggle('active', rabattWatchedOnly); wb.setAttribute('aria-pressed', String(rabattWatchedOnly)); } }
       shown = list;
-      const csvBtn = bar.querySelector('[data-rcsv]'); if (csvBtn) csvBtn.textContent = `⬇️ CSV (${list.length})`;
+      const csvBtn = bar.querySelector('[data-rcsv]'); if (csvBtn) csvBtn.textContent = `CSV (${list.length})`;
       listBox.innerHTML = '';
       if (!list.length) listBox.appendChild(filteredEmptyCard('rb_none', !!(q || rabattExpiring || rabattWatchedOnly), () => {
         rabattQuery = ''; rabattExpiring = false; rabattWatchedOnly = false;
@@ -4112,7 +4223,7 @@ function rabattCard(r, watchedSet, onWatchChange) {
     <div class="row" style="margin-top:8px">
       <span class="muted">${esc(nlabel(r.post_count||0,'pg_posts_one','pg_posts'))}</span>
       <span class="sp" style="flex:1"></span>
-      <button class="ghost small" data-addcart>🛒 ${esc(t('cart_add'))}</button>
+      ${featureAn('bestellung')?`<button class="ghost small" data-addcart>${esc(t('cart_add'))}</button>`:''}
       <button class="ghost small" data-pp>${esc(t('sc_post_about'))}</button>
     </div>
     <div class="hidden" data-ppbox style="margin-top:6px">
@@ -4159,7 +4270,8 @@ function rabattCard(r, watchedSet, onWatchChange) {
     } catch(e){ alert(e.message); }
     wwatch.disabled = false;
   };
-  card.querySelector('[data-addcart]').onclick = (ev) => cartAdd({
+  const rbCart = card.querySelector('[data-addcart]');
+  if (rbCart) rbCart.onclick = (ev) => cartAdd({
     bezeichnung: r.bezeichnung, wirkstoff: r.wirkstoff, supplier: r.supplier,
     aktionspreis: r.aktionspreis, listenpreis: r.listenpreis, rabattPct: r.rabatt_pct, gueltigBis: r.gueltig_bis,
     // Menge aus dem Mengenrechner übernehmen (die gerade berechnete Menge = die Bestellmenge).
@@ -4208,7 +4320,7 @@ async function openCart(flash) {
   const head = el(`<div class="card">
     <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span>
       <button class="ghost small" data-corders>${esc(t('cart_orders'))}</button>
-      ${d.items.length?`<button class="ghost small" data-ccsv>⬇️ CSV</button><button class="ghost small" data-cprint>🖨️ ${esc(t('pr_print_btn'))}</button>`:''}
+      ${d.items.length?`<button class="ghost small" data-ccsv>CSV</button><button class="ghost small" data-cprint>${esc(t('pr_print_btn'))}</button>`:''}
     </div>
     <h1 style="margin:8px 0 0">🛒 ${esc(t('cart_title'))}</h1>
     <div class="muted" data-grandtotal>${esc(ti('cart_summary',{ n:d.total_positions, sum:fmtMoney(d.total_price) }))}</div>
@@ -5394,7 +5506,7 @@ async function openOrders(flash) {
       const od = taskToday();
       const open = list.filter(o => !o.received_at).length;
       const overdue = list.filter(o => !o.received_at && o.expected_delivery && o.expected_delivery < od).length;
-      statsCard.innerHTML = `<div class="row"><b style="flex:1">📊 ${esc(t('os_title'))}</b><button class="ghost small" data-repprint title="${esc(t('os_report_t'))}">🖨️ ${esc(t('os_report'))}</button></div>
+      statsCard.innerHTML = `<div class="row"><b style="flex:1">📊 ${esc(t('os_title'))}</b><button class="ghost small" data-repprint title="${esc(t('os_report_t'))}">${esc(t('os_report'))}</button></div>
         <div class="reacts" style="margin-top:6px;flex-wrap:wrap;gap:6px">${PERIODS.map(([v,l])=>`<button class="small sortbtn${orderStatsPeriod===v?' active':''}" data-period="${v}" aria-pressed="${orderStatsPeriod===v}">${esc(l)}</button>`).join('')}</div>
         ${list.length ? `<div class="row" style="flex-wrap:wrap;gap:12px;margin-top:8px">
           ${stat(String(list.length), t('os_orders'), 'var(--text)')}
@@ -5437,8 +5549,8 @@ async function openOrders(flash) {
       <div class="reacts" style="margin-top:8px">
         <button class="${o.received_at?'ghost ':''}small" data-otoggle>${o.received_at?esc(t('ord_mark_open')):esc(t('ord_mark_received'))}</button>
         <button class="small" data-reorder>${esc(t('ord_reorder'))}</button>
-        <button class="ghost small" data-oprint>🖨️ ${esc(t('pr_print_btn'))}</button>
-        <button class="ghost small" data-ocsv>⬇️ CSV</button>
+        <button class="ghost small" data-oprint>${esc(t('pr_print_btn'))}</button>
+        <button class="ghost small" data-ocsv>CSV</button>
         <button class="ghost small" data-odel>${esc(t('ord_delete'))}</button>
       </div></div>`);
     // Bestellung als Dokument (Druck/CSV) — dieselbe Aufbereitung wie die Einkaufsliste.
@@ -6936,7 +7048,7 @@ async function openWirkstoff(name) {
     <h1 tabindex="-1" style="margin:8px 0 2px">💊 ${esc(d.wirkstoff)}</h1>
     <div class="muted">${esc(t('wk_sub'))}</div>
     ${d.also_watching >= 1 ? `<div class="muted" style="font-size:13px;margin-top:4px">${esc(d.also_watching === 1 ? t('wk_also_1') : ti('wk_also_n', { n: d.also_watching }))}</div>` : ''}
-    <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap"><button class="${d.watched?'':'ghost '}small" data-watch aria-pressed="${!!d.watched}">${d.watched?esc(t('sc_watched')):esc(t('sc_watch'))}</button><button class="ghost small" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button><button class="ghost small" data-wkprint title="${esc(t('wk_print_t'))}">🖨️ ${esc(t('pr_print_btn'))}</button><button class="ghost small" data-wktask title="${esc(t('tk_as_task'))}">${esc(t('tk_as_task'))}</button></div></div>`);
+    <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap"><button class="${d.watched?'':'ghost '}small" data-watch aria-pressed="${!!d.watched}">${d.watched?esc(t('sc_watched')):esc(t('sc_watch'))}</button><button class="ghost small" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button><button class="ghost small" data-wkprint title="${esc(t('wk_print_t'))}">${esc(t('pr_print_btn'))}</button><button class="ghost small" data-wktask title="${esc(t('tk_as_task'))}">${esc(t('tk_as_task'))}</button></div></div>`);
   head.querySelector('[data-wkprint]').onclick = () => printWirkstoff(d);
   head.querySelector('[data-wktask]').onclick = () => { taskPrefill = { title: ti('tk_from_shortage', { w: d.wirkstoff }) }; openTasks(); };
   head.querySelector('[data-back]').onclick = () => goTab('overview');
@@ -8327,9 +8439,17 @@ async function refreshDmCount() {
   try {
     const d = await api('GET','/api/dm');
     const badge = document.getElementById('dmBadge');
+    if (!badge) return;
     if (d.unread > 0) { badge.textContent = d.unread; badge.classList.remove('hidden'); }
     else badge.classList.add('hidden');
+    menuePunkt();
   } catch {}
+}
+// Zähler im Menü wären bei geschlossenem Menü unsichtbar — darum ein Punkt am
+// Menü-Knopf, sobald darin etwas Ungelesenes steht.
+function menuePunkt() {
+  const p = document.getElementById('menuBadge');
+  if (p) p.classList.toggle('hidden', !document.querySelector('#kopfMenue .badge:not(.hidden)'));
 }
 
 // Einkaufslisten-Zähler in der Kopfzeile aktualisieren (jederzeit erreichbar).
@@ -8340,6 +8460,7 @@ async function refreshCartCount() {
     if (!badge) return;
     if (d.count > 0) { badge.textContent = d.count; badge.classList.remove('hidden'); }
     else badge.classList.add('hidden');
+    menuePunkt();
   } catch {}
 }
 
@@ -8563,8 +8684,37 @@ document.addEventListener('keydown', e => {
 makeClickableAccessible(document);
 
 // Start
+fuelleIcons();
 applyFontScale();
 applyTheme();
+// Kopf-Menü: ein Knopf statt sieben. Schließt bei Klick daneben, mit Escape
+// und nach der Wahl — außer bei Hell/Dunkel und Schrift, deren Wirkung man
+// direkt sehen und gleich noch einmal umschalten will.
+(function kopfMenue() {
+  const knopf = document.getElementById('btnMenue');
+  const menue = document.getElementById('kopfMenue');
+  if (!knopf || !menue) return;
+  const zu = (fokus) => {
+    if (menue.hidden) return;
+    menue.hidden = true; knopf.setAttribute('aria-expanded', 'false');
+    if (fokus) knopf.focus();
+  };
+  knopf.onclick = (e) => {
+    e.stopPropagation();
+    const auf = menue.hidden;
+    menue.hidden = !auf; knopf.setAttribute('aria-expanded', String(auf));
+    if (auf) { const erster = menue.querySelector('button:not(.hidden)'); if (erster) erster.focus(); }
+  };
+  menue.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (b && b.id !== 'btnTheme' && b.id !== 'btnFont') zu(false);
+  });
+  document.addEventListener('click', (e) => {
+    if (!menue.contains(e.target) && e.target !== knopf) zu(false);
+    if (!e.target.closest || !e.target.closest('.tabs')) mehrSchliessen();
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { zu(true); mehrSchliessen(); } });
+})();
 document.getElementById('btnFont').onclick = () => {
   const lvl = (parseInt(localStorage.getItem('apo_fontscale') || '0', 10) + 1) % 3;
   localStorage.setItem('apo_fontscale', String(lvl));

@@ -43,7 +43,12 @@ async function reiterLesen(page, findings, wo) {
 
 /** Einen Reiter oeffnen. Ueber data-tab, damit die Sprache keine Rolle spielt. */
 async function reiterOeffnen(page, tab) {
-  await page.click(`.tabs button[data-tab="${tab}"]`).catch(() => {});
+  // Am Handy stehen seltene Reiter im „Mehr"-Blatt (Design v2). Ohne diesen
+  // Schritt wartete der Klick auf ein unsichtbares Element, lief in die
+  // Zeitüberschreitung und wurde still verschluckt — der Reiter blieb ungeprüft.
+  const knopf = page.locator(`.tabs button[data-tab="${tab}"]`);
+  if (!(await knopf.isVisible().catch(() => false))) await page.click('.tabs .tab-mehr', { timeout: 2000 }).catch(() => {});
+  await knopf.click({ timeout: 5000 }).catch(() => {});
 }
 
 async function api(path, opts = {}) {
@@ -343,8 +348,12 @@ async function main() {
         await page.waitForTimeout(400);
         const r = await page.evaluate(() => {
           ['btnMod', 'btnCart', 'btnDm', 'btnNotif', 'btnHelp', 'btnLogout'].forEach((id) => document.getElementById(id)?.classList.remove('hidden'));
+          // Design v2: Werkzeuge im Kopf-Menü, seltene Reiter im „Mehr"-Blatt —
+          // beides aufklappen, sonst wären ihre Wörter hier unsichtbar und ungeprüft.
+          const menue = document.getElementById('kopfMenue'); if (menue) menue.hidden = false;
+          document.querySelector('.tabs')?.classList.add('mehr-offen');
           const f = [];
-          const els = [...document.querySelectorAll('.tabs [data-tab], header button')].filter((el) => el.offsetParent);
+          const els = [...document.querySelectorAll('.tabs button, header button')].filter((el) => el.offsetParent);
           for (const el of els) {
             const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
             let n;
@@ -368,6 +377,65 @@ async function main() {
     }
   }
 
+  // ── Design v2: Navigation wie in sozialen Apps ───────────────────────────
+  //  Handy: Leiste unten, fünf Ziele, Rest im „Mehr"-Blatt. Desktop: Leiste
+  //  links, rechte Spalte ab 1280px. Kopf: Meldungen + Menü. Keine Emojis in
+  //  Navigation, Kopf und Startseiten-Liste. Geprüft wird das VERHALTEN
+  //  (öffnen, schließen, Markierung), nicht nur das Aussehen.
+  {
+    const EMOJI = /\p{Extended_Pictographic}/u;
+    for (const w of [390, 1280]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: 860 } });
+      const page = await ctx.newPage();
+      const fehler = [];
+      page.on('pageerror', (e) => fehler.push(e.message));
+      await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
+      await page.goto(BASE, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(600);
+      const lage = await page.evaluate(() => {
+        const r = document.querySelector('.tabs').getBoundingClientRect();
+        const app = document.getElementById('app').getBoundingClientRect();
+        const rs = document.getElementById('rechteSpalte');
+        const texte = [...document.querySelectorAll('.tabs button, header button, .ov-links')].map((e) => e.textContent).join(' ');
+        // Beschriftungen der Startseite: kein Emoji am Anfang (zentral in
+        // ohneEmojiAnfang entfernt — dieser Teil fällt auf, wenn das wegfällt).
+        const anfang = [...document.querySelectorAll('#app h1, #app h2, #app h3, #app button, #app b')]
+          .filter((e) => e.offsetParent && !e.closest('.reacts')).map((e) => e.textContent.trim())
+          .filter((x) => /^\p{Extended_Pictographic}/u.test(x));
+        return { anfang, unten: Math.round(innerHeight - r.bottom), links: r.right <= app.left + 20, rechts: !!(rs && rs.getClientRects().length && getComputedStyle(rs).display !== 'none'), texte,
+          sichtbar: [...document.querySelectorAll('.tabs button')].filter((b) => b.offsetParent).length };
+      });
+      if (EMOJI.test(lage.texte)) findings.push(`Design v2 ${w}px: Emoji in Navigation/Kopf/Startseiten-Liste: ${lage.texte.match(/\p{Extended_Pictographic}/gu).join(' ')}`);
+      if (lage.anfang.length) findings.push(`Design v2 ${w}px: Beschriftung beginnt mit Emoji: ${lage.anfang.slice(0, 4).join(' | ')}`);
+      if (w < 1000) {
+        if (lage.unten > 2) findings.push(`Design v2 ${w}px: Reiterleiste steht nicht unten (Abstand ${lage.unten}px)`);
+        if (lage.sichtbar !== 5) findings.push(`Design v2 ${w}px: ${lage.sichtbar} statt 5 Ziele in der unteren Leiste`);
+        // „Mehr" öffnen, Preise wählen: Blatt zu, „Mehr" als aktiv markiert.
+        await page.click('.tabs .tab-mehr');
+        const offen = await page.locator('.tabs button[data-tab="prices"]').isVisible();
+        await reiterOeffnen(page, 'prices');
+        await page.waitForTimeout(400);
+        const nachher = await page.evaluate(() => ({ zu: !document.querySelector('.tabs.mehr-offen'), aktiv: document.querySelector('.tabs .tab-mehr').classList.contains('active') }));
+        if (!offen) findings.push(`Design v2 ${w}px: „Mehr" zeigt die übrigen Reiter nicht`);
+        if (!nachher.zu) findings.push(`Design v2 ${w}px: „Mehr"-Blatt bleibt nach der Wahl offen`);
+        if (!nachher.aktiv) findings.push(`Design v2 ${w}px: aktiver Reiter liegt im „Mehr"-Blatt, „Mehr" ist aber nicht markiert`);
+      } else {
+        if (!lage.links) findings.push(`Design v2 ${w}px: Navigation steht nicht links neben dem Inhalt`);
+        if (!lage.rechts) findings.push(`Design v2 ${w}px: rechte Spalte (News) fehlt`);
+      }
+      // Kopf-Menü: auf, Escape zu, Fokus zurück auf den Knopf.
+      await page.click('#btnMenue');
+      const auf = await page.evaluate(() => !document.getElementById('kopfMenue').hidden && document.getElementById('btnMenue').getAttribute('aria-expanded') === 'true');
+      await page.keyboard.press('Escape');
+      const zu = await page.evaluate(() => document.getElementById('kopfMenue').hidden && document.activeElement && document.activeElement.id === 'btnMenue');
+      if (!auf) findings.push(`Design v2 ${w}px: Menü öffnet nicht (oder aria-expanded fehlt)`);
+      if (!zu) findings.push(`Design v2 ${w}px: Escape schließt das Menü nicht oder Fokus geht verloren`);
+      for (const f of fehler) findings.push(`Design v2 ${w}px: JS-Fehler ${f}`);
+      await ctx.close();
+    }
+    console.log('✓ Design v2: Leiste unten (Handy) / links + rechte Spalte (Desktop), Menü und „Mehr" bedienbar, keine Emojis in der Navigation');
+  }
+
   // ── Ruhende Bereiche haben keine Bedienelemente ───────────────────────────
   //  Nach dem Audit vom 06.09.2026 ruhen mehrere Bereiche (src/data/features.js).
   //  Ein Reiter, der beim Klick 404 liefert, ist schlimmer als kein Reiter: Er
@@ -388,6 +456,14 @@ async function main() {
       ['tauschboerse', '.tabs button[data-tab="exchange"]', 'Reiter „Biete/Suche"'],
       ['direktnachrichten', '#btnDm', 'Nachrichten-Knopf'],
       ['bestellung', '#btnCart', 'Warenkorb-Knopf'],
+      // Startseite: Bereichs-Liste und Rechner (bis Design v2 standen sie
+      // dort auch bei ruhendem Bereich — Klick führte zu 404).
+      ['social', '#ov_bm', 'Startseiten-Link „Lesezeichen"'],
+      ['werbung', '#ov_promos', 'Startseiten-Link „Angebote"'],
+      ['termine', '#ov_live', 'Startseiten-Link „Live"'],
+      ['verzeichnis', '#ov_dir', 'Startseiten-Link „Verzeichnis"'],
+      ['zusammenarbeit', '#ov_team', 'Startseiten-Link „Team"'],
+      ['waehrungsrechner', '[data-cc-toggle]', 'Währungsrechner'],
     ];
     let geprueft = 0;
     for (const [id, sel, name] of erwartet) {
@@ -395,6 +471,28 @@ async function main() {
       geprueft++;
       const da = await page.locator(sel).count();
       if (da > 0) findings.push(`${name} ist sichtbar, obwohl "${id}" ruht`);
+    }
+    // Warenkorb-Knöpfe in Preisen und Rabatten: „In die Einkaufsliste" rief bei
+    // ruhender Bestellung /api/cart und lief in 404 — bis Design v2 gefunden.
+    //  Die Prüfumgebung hat ohne Referenzdaten keine Rabatte — ohne Eintrag gäbe
+    //  es keinen Knopf, und die Prüfung wäre grün, ohne etwas zu prüfen (so
+    //  geschehen in der ersten Gegenprobe). Darum ein nachgebildeter Eintrag,
+    //  und ohne gerenderte Karte gilt die Prüfung als nicht erbracht.
+    if (ruht.has('bestellung')) {
+      geprueft++;
+      await page.route('**/api/rabatte?*', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ rabatte: [{
+        id: 'r1', rank: 1, bezeichnung: 'Pruefpraeparat 10 mg', wirkstoff: 'Pruefwirkstoff', supplier: 'Grosshandel A', rabatt_pct: 20,
+        listenpreis: 10, aktionspreis: 8, ersparnis: 2, min_menge: 1, gueltig_bis: '2099-12-31', post_count: 0 }] }) }));
+      for (const tab of ['overview', 'prices', 'rabatte']) {
+        await reiterOeffnen(page, tab);
+        await page.waitForTimeout(800);
+        const n = await page.locator('#app [data-addcart], #app [data-actcart], #app [data-cart], #app [data-addall]').count();
+        if (n) findings.push(`${n} Warenkorb-Knopf/Knöpfe auf „${tab}", obwohl "bestellung" ruht`);
+      }
+      if (await page.locator('#app [data-pp]').count() === 0) findings.push('Warenkorb-Prüfung leer: keine Rabatt-Karte gerendert — die Prüfung belegt nichts');
+      await page.unroute('**/api/rabatte?*');
+      await reiterOeffnen(page, 'overview');
+      await page.waitForTimeout(700);
     }
     // Systematisch statt Einzelfall: JEDE Kachel und JEDER Schnellzugriff, der
     // auf einen ruhenden Reiter zeigt, ist ein Klick ins Leere. Die
@@ -454,7 +552,7 @@ async function main() {
       ['news', 'News', '#newslist'],
       ['shortages', 'Engpässe', '[data-shortlist]'],
     ]) {
-      await page.click(`.tabs button[data-tab="${tab}"]`).catch(() => {});
+      await reiterOeffnen(page, tab);
       await page.waitForTimeout(900);
       const text = await page.locator(sel).innerText().catch(() => '');
       if (!text) { findings.push(`${name}: Ansicht nicht lesbar (${sel} fehlt) — die Pruefung belegt hier nichts`); continue; }
@@ -530,7 +628,7 @@ async function main() {
     }));
     await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
     await page.goto(BASE, { waitUntil: 'networkidle' });
-    await page.click('.tabs button[data-tab="signals"]').catch(() => {});
+    await reiterOeffnen(page, 'signals');
     await page.waitForTimeout(900);
 
     const text = await page.locator('[data-siglist]').innerText().catch(() => '');
@@ -576,7 +674,7 @@ async function main() {
       }); });
       await page.selectOption('#countrySwitch', 'KE').catch(() => {});
       await page.waitForTimeout(400);
-      await page.click('.tabs button[data-tab="signals"]').catch(() => {});
+      await reiterOeffnen(page, 'signals');
       await page.waitForTimeout(800);
       if (!abfragen.length) findings.push('Live-Warnungen: nach dem Laenderwechsel wurde nichts neu abgefragt');
       else if (!abfragen.some((u) => /country=KE/.test(u))) {
@@ -626,7 +724,7 @@ async function main() {
     // ── 1. Ohne Schluessel: kein Knopf ──
     await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
     await page.goto(BASE, { waitUntil: 'networkidle' });
-    await page.click('.tabs button[data-tab="signals"]').catch(() => {});
+    await reiterOeffnen(page, 'signals');
     await page.waitForTimeout(800);
     const ohne = await page.locator('[data-siglist] [data-translate]').count();
     if (ohne !== 0) {
@@ -658,7 +756,7 @@ async function main() {
     }));
     await page2.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
     await page2.goto(BASE, { waitUntil: 'networkidle' });
-    await page2.click('.tabs button[data-tab="signals"]').catch(() => {});
+    await reiterOeffnen(page2, 'signals');
     await page2.waitForTimeout(800);
 
     const knopf = page2.locator('[data-siglist] [data-translate]').first();
@@ -798,7 +896,7 @@ async function main() {
       });
     });
     await page.goto(BASE, { waitUntil: 'networkidle' });
-    await page.click('.tabs button[data-tab="signals"]').catch(() => {});
+    await reiterOeffnen(page, 'signals');
     await page.waitForTimeout(700);
     const sichKnopf = page.locator('[data-sigkat] button:has-text("Sicherheitsmeldungen")').first();
     if (await sichKnopf.count() === 0) {
@@ -847,7 +945,7 @@ async function main() {
       });
     });
     await page.goto(BASE, { waitUntil: 'networkidle' });
-    await page.click('.tabs button[data-tab="exchange"]').catch(() => {});
+    await reiterOeffnen(page, 'exchange');
     await page.waitForTimeout(700);
     const passendKnopf = page.locator('[data-match]').first();
     if (await passendKnopf.count() === 0) {
@@ -873,7 +971,7 @@ async function main() {
       if (u.pathname === '/api/overview') ovLaender.push(u.searchParams.get('country'));
     });
     await page.goto(BASE, { waitUntil: 'networkidle' });
-    await page.click('.tabs button[data-tab="overview"]').catch(() => {});
+    await reiterOeffnen(page, 'overview');
     await page.waitForTimeout(500);
     await page.selectOption('#countrySwitch', 'PT').catch(() => {});
     await page.waitForTimeout(900);
@@ -905,7 +1003,7 @@ async function main() {
       ] }),
     }));
     await page.goto(BASE, { waitUntil: 'networkidle' });
-    await page.click('.tabs button[data-tab="news"]').catch(() => {});
+    await reiterOeffnen(page, 'news');
     await page.waitForTimeout(900);
     const lbKarte = page.locator('[data-lagebild]').first();
     if (await lbKarte.count() === 0) {
@@ -932,8 +1030,8 @@ async function main() {
       console.log('✓ Presse: Artikel aus dem Land, als Presse gekennzeichnet');
     }
     lbAntwort = { land: 'NG', verfuegbar: false, grund: 'ki_aus', punkte: [], quellen_gesamt: 0 };
-    await page.click('.tabs button[data-tab="overview"]').catch(() => {});
-    await page.click('.tabs button[data-tab="news"]').catch(() => {});
+    await reiterOeffnen(page, 'overview');
+    await reiterOeffnen(page, 'news');
     await page.waitForTimeout(800);
     if (await page.locator('[data-lagebild]').count() > 0) {
       findings.push('Lagebild: ohne KI-Schlüssel erscheint trotzdem eine Karte');
@@ -1084,7 +1182,7 @@ async function main() {
       await page.unroute('**/api/coverage/**').catch(() => {});
       await page.route('**/api/coverage/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(antwort) }));
       await page.goto(BASE, { waitUntil: 'networkidle' }); // neu laden: frischer Zwischenspeicher
-      await page.click('.tabs button[data-tab="news"]').catch(() => {});
+      await reiterOeffnen(page, 'news');
       await page.waitForTimeout(900);
       const z = page.locator('[data-datenstand]').first();
       return (await z.count()) ? { ton: await z.getAttribute('data-datenstand'), text: await z.innerText() } : null;
@@ -1120,7 +1218,7 @@ async function main() {
         return route.fulfill({ response: r, json: j });
       });
       await page.goto(BASE, { waitUntil: 'networkidle' });
-      await page.click('.tabs button[data-tab="shortages"]').catch(() => {});
+      await reiterOeffnen(page, 'shortages');
       await page.waitForSelector('[data-wirkstoff="Amoxicillin"]', { timeout: 6000 }).catch(() => {});
       const zeilen = await page.locator('[data-chronikzeile]').allInnerTexts();
       const wkSeite = async (antwort) => {
