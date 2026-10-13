@@ -23,9 +23,22 @@ test('Abruf füllt die Chronik; der nächste Abruf ohne die Zeile beendet die Ep
     { wirkstoff: 'Ibuprofen', bezeichnung: 'Ibuprofen 400 mg', status: 'eingeschränkt lieferbar' },
   ];
   const behoerde = http.createServer((req, res) => {
+    // Drei Behörden. BfArM (DE): CSV in Windows-1252, ohne Statusspalte —
+    // wie die echte Datei.
+    if (req.url.startsWith('/bfarm')) {
+      const csv = 'PZN;Beginn;Ende;Arzneimittlbezeichnung;Wirkstoffe;Grund\r\n01234567;01.09.2026;31.12.2099;Ibuprofen 400 mg Filmtabletten;Ibuprofen;Erhöhte Nachfrage';
+      res.writeHead(200, { 'content-type': 'text/csv' });
+      return res.end(Buffer.from(csv, 'latin1'));
+    }
     res.writeHead(200, { 'content-type': 'application/json' });
-    // Zwei Behörden: BASG (AT) und FDA (US, openFDA-Form mit `results`).
-    res.end(JSON.stringify(req.url.startsWith('/fda') ? { results: fda } : { items: liste }));
+    // FDA (US) seitenweise wie openFDA, aber mit EINEM Eintrag je Seite: Liest
+    // der Server nur die erste Seite, fehlt Cefuroxim — und die Frühwarnung
+    // bleibt aus. Alles andere: BASG (AT).
+    if (req.url.startsWith('/fda')) {
+      const skip = Number(new URL(req.url, 'http://x').searchParams.get('skip') || 0);
+      return res.end(JSON.stringify({ meta: { results: { skip, limit: 1, total: fda.length } }, results: fda.slice(skip, skip + 1) }));
+    }
+    res.end(JSON.stringify({ items: liste }));
   });
   await new Promise((ok) => behoerde.listen(0, ok));
   const feed = `http://localhost:${behoerde.address().port}/basg.json`;
@@ -37,6 +50,7 @@ test('Abruf füllt die Chronik; der nächste Abruf ohne die Zeile beendet die Ep
       APOPULSE_DATA_FILE: '', APOPULSE_PRESSE: 'aus', APOPULSE_REFERENCE_DATA: '',
       APOPULSE_SOURCE_BASG_SHORTAGES_URL: feed,
       APOPULSE_SOURCE_OPENFDA_SHORTAGES_URL: `http://localhost:${behoerde.address().port}/fda.json`,
+      APOPULSE_SOURCE_BFARM_SHORTAGES_URL: `http://localhost:${behoerde.address().port}/bfarm.csv`,
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -58,6 +72,11 @@ test('Abruf füllt die Chronik; der nächste Abruf ohne die Zeile beendet die Ep
     };
 
     await abruf();
+    // Deutschland aus der BfArM-CSV: Standardstatus, Umlaut heil, Datum in ISO.
+    const de = (await (await fetch(B + '/api/shortages?country=DE', { headers: J(mod) })).json()).shortages;
+    const ibu = de.find((z) => z.wirkstoff === 'Ibuprofen');
+    assert.ok(ibu, 'BfArM-Zeile kam nicht an: ' + JSON.stringify(de.map((z) => z.wirkstoff)));
+    assert.deepEqual([ibu.status, ibu.grund, ibu.gemeldet_am, ibu.country], ['eingeschraenkt', 'Erhöhte Nachfrage', '2026-09-01', 'DE']);
     const d = await (await fetch(B + '/api/shortages?country=AT', { headers: J(mod) })).json();
     assert.ok(d.chronik_seit, 'Aufzeichnungsbeginn fehlt');
     const amox = d.shortages.find((s) => s.wirkstoff === 'Amoxicillin');

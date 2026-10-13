@@ -1847,3 +1847,40 @@ Jetzt tut er es.
 
 **CHECK.** 1101 Tests grün (+8), Smoke 19/19, Browser-Audit ohne Befund, `npm run verify` komplett.
 
+### Cycle · Mehr Quellen: Deutschland dazu, die USA endlich vollständig (2026-10-13)
+
+**Anlass.** Owner: „ja mach weiter" — nächster Schritt war mehr Behördenquellen.
+
+**GATHER — ohne direkten Zugang.** Die Bauumgebung erreicht die Behörden nicht (Proxy 403).
+Formate deshalb über Websuche nachgelesen, statt aus dem Gedächtnis angenommen. Ergebnis:
+drei Fehler an der US-Quelle, die seit ihrem Anschluss bestanden.
+
+1. **Nur 1000 von ~1700 US-Einträgen** (`limit=1000`, keine Folgeseiten). Schlimmer als die
+   Lücke: Ohne zugesicherte Reihenfolge rutschen Einträge zwischen Abrufen aus dem Fenster —
+   die Chronik hätte daraus Enden und Neuanfänge gemacht, die Frühwarnung falsche Alarme.
+   → alle Seiten; eine ausgefallene Folgeseite lässt den GANZEN Abruf ausfallen.
+2. **„Current" unbekannt.** Laut mehreren unabhängigen Abnehmern ist das der Rohstatus
+   laufender Engpässe. Jeder laufende US-Engpass wäre als „Status unbekannt" verworfen
+   worden; durch kamen nur auslaufende Präparate.
+3. **Hersteller als Präparat:** Ohne Handelsnamen griff `company_name` als Bezeichnung.
+
+**Deutschland (BfArM):** öffentliche CSV, vom BfArM selbst als automatisch abrufbar genannt.
+Sie hat KEINE Statusspalte (jede Zeile ist ein Engpass) — ohne Anpassung wäre jede Zeile
+verworfen worden. Dazu Windows-1252 statt UTF-8, deutsche Datumsangaben und die Spalte
+„Arzneimittlbezeichnung" mit Tippfehler der Behörde. Alles abgebildet; „eingeschränkt" als
+Standard (BfArM-Engpass = Unterbrechung der üblichen Auslieferung, nicht zwingend „nicht
+lieferbar"), Ende vorbei → verfügbar.
+
+**Gegenproben (Bruch angewandt):** 5 openFDA (Seiten, Teilbestand, Deckel, Status, Hersteller),
+1 Verdrahtung (Server ohne Seitenlogik → Ende-zu-Ende „Frühwarnung kam nicht an"),
+5 BfArM (Standardstatus nicht durchgereicht, Kodierung, Datum, Statusspalte vorhanden aber
+unbekannt, Ende vorbei) — jede von mindestens einem Test erkannt; die Kodierung nur vom
+Ende-zu-Ende-Test, weil nur er den echten Abrufweg geht.
+
+**CHECK.** 1113 Tests grün (+12), Smoke 19/19, Audit ohne Befund. Zwei Alt-Tests angepasst, weil
+sie den alten Zustand festschrieben (Quellenzahl 22; Deutschland als „Land ohne Engpass-Quelle").
+
+**Für den Owner:** Nach dem Deploy auf der Datenquellen-Seite prüfen, ob „bfarm_shortages" und
+„openfda_shortages" Zeilen liefern oder verwerfen — die Gründe stehen dort. Den Bericht bitte
+schicken; dann ziehe ich Spaltennamen oder Statuswerte nach, falls die Wirklichkeit abweicht.
+

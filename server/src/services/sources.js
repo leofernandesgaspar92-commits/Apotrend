@@ -381,6 +381,8 @@ const BUILTIN = [
     // amtlich gepruefte Einzelfallauskunft. Die Herkunft faehrt bei jeder
     // Zeile mit (provenance) und die Quelle steht am Datensatz.
     url: 'https://api.fda.gov/drug/shortages.json?limit=1000',
+    // Alle Seiten holen (fetchSourceAlleSeiten): ~1700 Einträge, 1000 je Seite.
+    paging: 'openfda',
     official: true, verified: false,
   },
   {
@@ -472,6 +474,22 @@ const BUILTIN = [
     // Quelle. Beide Eintraege brauchen ihn deshalb, sonst bremst nur einer von
     // zweien und die Begrenzung greift weiter (siehe ema_news).
     minHostGapMs: 2_000,
+    official: true, verified: false,
+  },
+  {
+    id: 'bfarm_shortages', kind: 'shortages', country: 'DE', format: 'csv',
+    label: 'BfArM — Lieferengpassmeldungen',
+    // Vom BfArM selbst als automatisch abrufbare Gesamtliste genannt
+    // (Seite „Veröffentlichte Lieferengpassmeldungen"). Semikolon, Windows-1252.
+    url: 'https://anwendungen.pharmnet-bund.de/lieferengpassmeldungen/public/csv',
+    // Die Liste hat KEINE Statusspalte: Jede Zeile ist ein gemeldeter
+    // Lieferengpass. „Eingeschränkt" statt „kritisch", weil ein Engpass nach
+    // BfArM-Definition eine Unterbrechung der üblichen Auslieferung ist, nicht
+    // zwingend „nicht lieferbar". Gemeldetes Ende vorbei -> wieder verfügbar.
+    standardStatus: 'eingeschraenkt',
+    // ⚠️ Spaltennamen aus dem öffentlich sichtbaren Kopf übernommen (10/2026),
+    // hier NICHT gegen die echte Datei geprüft (Bauumgebung ohne Zugang).
+    // Liefert sie nur verworfene Zeilen, nennt der Lauf die ersten Gründe.
     official: true, verified: false,
   },
   {
@@ -698,7 +716,20 @@ export async function fetchTextDefault(url, {
     if (ra) e.retryAfterMs = retryAfterMs(ra);
     throw e;
   }
-  return res.text();
+  // Nicht blind UTF-8: Die BfArM-CSV kommt als Windows-1252, und `res.text()`
+  // machte aus „Erhöhte" ein „Erhhte". Erst der Zeichensatz aus dem Kopf, dann
+  // strenges UTF-8, sonst Windows-1252 (das europäische Excel-Format).
+  if (typeof res.arrayBuffer !== 'function') return res.text();
+  const ct = res.headers && typeof res.headers.get === 'function' ? res.headers.get('content-type') : '';
+  return textDekodieren(new Uint8Array(await res.arrayBuffer()), ct);
+}
+
+export function textDekodieren(bytes, contentType = '') {
+  const cs = /charset=["']?([\w-]+)/i.exec(contentType || '');
+  if (cs) {
+    try { return new TextDecoder(cs[1].toLowerCase()).decode(bytes); } catch { /* unbekannter Zeichensatz: weiter unten */ }
+  }
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes); } catch { return new TextDecoder('windows-1252').decode(bytes); }
 }
 
 // --- Wiederholen und Ausweichen ---------------------------------------------
@@ -795,6 +826,48 @@ export const __discoveryCache = {
   clear: () => gefundeneAdressen.clear(),
   size: () => gefundeneAdressen.size,
 };
+
+/**
+ * Wie fetchSource, aber holt bei seitenweise ausliefernden Schnittstellen ALLE
+ * Seiten (Quelle mit `paging: 'openfda'`).
+ *
+ * Anlass: openFDA liefert höchstens 1000 Einträge je Anfrage; die Engpassliste
+ * hat rund 1700. Mit nur der ersten Seite fehlten ~40 % — und weil die
+ * Reihenfolge nicht zugesichert ist, hätten Einträge zwischen zwei Abrufen aus
+ * dem Fenster rutschen können. Die Chronik hätte daraus beendete und neue
+ * Engpässe gemacht, die Frühwarnung falsche Alarme.
+ *
+ * Fällt eine Folgeseite aus, fällt der GANZE Abruf aus. Ein Teilbestand sähe
+ * aus wie ein vollständiger, und alles Fehlende gälte als „vorbei".
+ */
+export async function fetchSourceAlleSeiten(source, opts = {}) {
+  const erste = await fetchSource(source, opts);
+  if (source.paging !== 'openfda') return erste;
+  const seite = (raw) => {
+    const j = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const meta = (j && j.meta && j.meta.results) || {};
+    return { results: Array.isArray(j && j.results) ? j.results : [], total: Number(meta.total) || null, limit: Number(meta.limit) || null, meta: j && j.meta };
+  };
+  const p1 = seite(erste.raw);
+  const groesse = p1.limit || p1.results.length;
+  if (!p1.total || !groesse || p1.results.length >= p1.total) return erste;
+  const maxSeiten = source.maxSeiten || 10;
+  const alle = [...p1.results];
+  let n = 1;
+  for (; alle.length < p1.total; n++) {
+    if (n >= maxSeiten) throw new Error(`${source.id}: mehr als ${maxSeiten} Seiten (${p1.total} Einträge) — abgebrochen statt Teilbestand`);
+    const u = new URL(erste.url);
+    u.searchParams.set('limit', String(groesse));
+    u.searchParams.set('skip', String(n * groesse));
+    // Eigene Kennung: Folgeseiten sollen weder gemerkte Ausweichadressen noch
+    // die Feed-Suche der Quelle benutzen.
+    const r = await fetchSource({ ...source, id: source.id + '#seite' + n, url: u.toString(), fallbacks: [] }, { ...opts, discover: async () => null });
+    const pn = seite(r.raw);
+    if (!pn.results.length) throw new Error(`${source.id}: Seite ${n + 1} leer, obwohl ${p1.total} Einträge gemeldet — abgebrochen statt Teilbestand`);
+    alle.push(...pn.results);
+  }
+  return { ...erste, raw: JSON.stringify({ meta: p1.meta, results: alle }), seiten: n };
+}
 
 export async function fetchSource(source, opts = {}) {
   const { discover = discoverFeed, log = null } = opts;
@@ -1058,6 +1131,13 @@ const STATUS_MAP = {
   //  ankommt, zeigt der erste Lauf: Liefert die Quelle nur verworfene
   //  Zeilen, meldet der Lauf das mit den ersten Gruenden.
   'currently in shortage': 'kritisch',
+  // Der Rohwert der Schnittstelle ist laut mehreren unabhängigen Abnehmern
+  // schlicht „Current" (Filter: Current / Resolved / To Be Discontinued /
+  // Discontinued). Ohne diese Zeile fiel JEDER laufende US-Engpass als
+  // „Status unbekannt" heraus — durch kamen nur auslaufende Präparate.
+  // Gleiche Einstufung wie „currently in shortage" (Stand 10/2026, live
+  // noch nicht gegengeprüft: Die Bauumgebung erreicht api.fda.gov nicht).
+  current: 'kritisch',
   'to be discontinued': 'eingeschraenkt',
   'no longer available': 'kritisch',
   discontinued: 'kritisch',
@@ -1085,10 +1165,17 @@ export function normalizeStatus(value) {
  */
 export const DEFAULT_COLUMNS = {
   wirkstoff: ['wirkstoff', 'substance', 'active_substance', 'wirkstoffe', 'generic_name'],
-  bezeichnung: ['bezeichnung', 'arzneispezialität', 'arzneispezialitaet', 'praeparat', 'präparat', 'name', 'product', 'proprietary_name', 'company_name'],
+  // Kein `company_name`: Bei US-Generika ohne Handelsnamen stand sonst der
+  // HERSTELLER als Präparat da („Hikma Pharmaceuticals USA Inc."). Fehlt der
+  // Handelsname, beschreibt `presentation` (Form + Stärke) das Präparat; fehlt
+  // auch das, tritt der Wirkstoff ein (shortagesFromJson).
+  bezeichnung: ['bezeichnung', 'arzneispezialität', 'arzneispezialitaet', 'praeparat', 'präparat', 'name', 'product', 'proprietary_name', 'brand_name', 'presentation',
+    // BfArM-CSV: Die Spalte heißt wirklich „Arzneimittlbezeichnung" (Tippfehler
+    // der Behörde). Die richtige Schreibweise steht daneben, falls sie ihn behebt.
+    'arzneimittlbezeichnung', 'arzneimittelbezeichnung'],
   status: ['status', 'vertriebsstatus', 'availability'],
   grund: ['grund', 'reason', 'ursache', 'reason_for_shortage'],
-  gemeldet_am: ['gemeldet_am', 'meldedatum', 'von', 'start', 'reported', 'initial_posting_date'],
+  gemeldet_am: ['gemeldet_am', 'meldedatum', 'von', 'start', 'reported', 'initial_posting_date', 'beginn', 'datum der erstmeldung'],
   voraussichtlich_bis: ['voraussichtlich_bis', 'bis', 'ende', 'expected_end', 'end', 'estimated_shortage_duration'],
 };
 
@@ -1108,7 +1195,25 @@ function pickColumn(row, candidates) {
  * unbekannt ist — und zählt das mit. Lieber zehn belastbare Zeilen als
  * hundert, von denen dreißig geraten sind.
  */
-export function shortagesFromCsv(raw, { columns = {} } = {}) {
+// Deutsches Datum („03.04.2026") in ISO wandeln — eindeutig, anders als
+// „03/04/2026" (in den USA März, in Grossbritannien April), das bleibt roh.
+// Ohne ISO kann die Chronik ein Meldedatum nicht als Beginn übernehmen.
+export function isoDatum(s) {
+  const t = String(s || '').trim();
+  const m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\b|$)/.exec(t);
+  if (!m) return t || null;
+  const iso = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  return Number.isNaN(Date.parse(iso)) ? t : iso;
+}
+const hatSpalte = (row, candidates) => Object.keys(row).some((k) => candidates.includes(k.trim().toLowerCase()));
+
+/**
+ * `standardStatus`: für Register OHNE Statusspalte, in denen jede Zeile per
+ * Definition ein gemeldeter Engpass ist (BfArM). Greift NUR, wenn die Spalte
+ * fehlt — ein vorhandener, aber unbekannter Status bleibt ein Verwerfungsgrund.
+ * Ist das gemeldete Ende schon vorbei, gilt die Zeile als wieder verfügbar.
+ */
+export function shortagesFromCsv(raw, { columns = {}, standardStatus = null, heute = new Date().toISOString().slice(0, 10) } = {}) {
   const { rows } = parseCsv(raw);
   const map = { ...DEFAULT_COLUMNS };
   for (const [field, name] of Object.entries(columns)) {
@@ -1120,7 +1225,11 @@ export function shortagesFromCsv(raw, { columns = {} } = {}) {
   for (const [i, row] of rows.entries()) {
     const wirkstoff = String(pickColumn(row, map.wirkstoff) || '').trim();
     const bezeichnung = String(pickColumn(row, map.bezeichnung) || '').trim();
-    const status = normalizeStatus(pickColumn(row, map.status));
+    const bis = isoDatum(pickColumn(row, map.voraussichtlich_bis));
+    let status = normalizeStatus(pickColumn(row, map.status));
+    if (!status && standardStatus && !hatSpalte(row, map.status)) {
+      status = /^\d{4}-\d{2}-\d{2}$/.test(bis || '') && bis < heute ? 'verfuegbar' : standardStatus;
+    }
 
     if (!bezeichnung) { rejected.push(`Zeile ${i + 2}: Bezeichnung fehlt`); continue; }
     if (!status) { rejected.push(`Zeile ${i + 2}: Status unbekannt (${pickColumn(row, map.status) || 'leer'})`); continue; }
@@ -1132,8 +1241,8 @@ export function shortagesFromCsv(raw, { columns = {} } = {}) {
       bezeichnung,
       status,
       grund: String(pickColumn(row, map.grund) || '').trim() || null,
-      gemeldet_am: String(pickColumn(row, map.gemeldet_am) || '').trim() || null,
-      voraussichtlich_bis: String(pickColumn(row, map.voraussichtlich_bis) || '').trim() || null,
+      gemeldet_am: isoDatum(pickColumn(row, map.gemeldet_am)),
+      voraussichtlich_bis: bis,
     });
   }
   return { rows: out, rejected };

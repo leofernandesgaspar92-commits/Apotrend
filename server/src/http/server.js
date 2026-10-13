@@ -58,7 +58,7 @@ import { plansForCountry, priceFor } from '../data/plans.js';
 import { isLive, isPriceLive, isRabatteLive, liveSources, livePriceSources, liveRabatteSources, refreshShortages, refreshPrices, refreshRabatte, fetchJsonDefault } from '../services/liveData.js';
 import { createScheduler, INTERVALS } from '../services/scheduler.js';
 import { createNewsSeenStore, ingestNews } from '../services/newsIngest.js';
-import { activeSources, sourcesByKind, shortagesFromCsv, shortagesFromJson, dedupeShortages, fetchTextDefault, fetchSource, newsKey } from '../services/sources.js';
+import { activeSources, sourcesByKind, shortagesFromCsv, shortagesFromJson, dedupeShortages, fetchTextDefault, fetchSourceAlleSeiten, newsKey } from '../services/sources.js';
 import { createDealsService, seedDemoDealsIfNoneRunning } from '../services/deals.js';
 import { createPrismaStore } from '../repo/prismaStore.js';
 import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
@@ -831,11 +831,11 @@ async function runShortageIngest() {
     try {
       // Wie bei den News: wiederholen bei vorübergehenden Störungen,
       // ausweichen bei dauerhaften.
-      const { raw } = await fetchSource(source);
+      const { raw } = await fetchSourceAlleSeiten(source);
       const columns = sourceColumns(source.id);
       const { rows, rejected } = source.format === 'json'
         ? shortagesFromJson(raw, { columns })
-        : shortagesFromCsv(raw, { columns });
+        : shortagesFromCsv(raw, { columns, standardStatus: source.standardStatus || null });
       // Jede Zeile traegt das Land ihrer QUELLE: Eine BASG-Zeile gilt fuer
       // Oesterreich, eine openFDA-Zeile fuer die USA. Ohne diese Zuordnung
       // landeten beide in jedem Land — genau der Fehler, den die

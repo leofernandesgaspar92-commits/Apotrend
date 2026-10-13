@@ -122,6 +122,8 @@ test('GET /api/coverage/:land antwortet ohne Anmeldung und ehrlich', async () =>
 test('ein Land ohne Quelle wird als solches benannt', async () => {
   const d = await (await fetch(BASE + '/api/coverage/JP')).json();
   assert.equal(d.zustand, 'keine');
+  const de = await (await fetch(BASE + '/api/coverage/DE?art=shortages')).json();
+  assert.notEqual(de.zustand, 'keine', 'BfArM-Liste ist für Deutschland eingetragen');
 });
 
 test('/api/coverage unterscheidet Nachrichten und Engpaesse', async () => {
@@ -138,9 +140,10 @@ test('/api/coverage unterscheidet Nachrichten und Engpaesse', async () => {
 });
 
 test('ein Land ohne Engpass-Quelle wird als solches benannt', async () => {
-  // Deutschland hat Nachrichten (BfArM), aber keine strukturierte
-  // Engpass-Schnittstelle. Genau dieser Unterschied war vorher unsichtbar.
-  const d = await (await fetch(BASE + '/api/coverage/DE?art=shortages')).json();
+  // Portugal hat (noch) keine strukturierte Engpass-Schnittstelle. Genau
+  // dieser Unterschied war vorher unsichtbar. (Bis 10/2026 stand hier
+  // Deutschland — seitdem ist die BfArM-Liste angeschlossen.)
+  const d = await (await fetch(BASE + '/api/coverage/PT?art=shortages')).json();
   assert.equal(d.zustand, 'keine');
 });
 

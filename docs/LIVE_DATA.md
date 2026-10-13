@@ -864,6 +864,21 @@ Chronik mehrerer Länder entsteht eine Auskunft, die keine einzelne Behördenlis
   US/FDA). Jede weitere Quelle (`APOPULSE_SOURCE_<ID>_URL`, `APOPULSE_LIVE_SHORTAGES_<CC>`)
   vergrößert das Netz.
 
+## 3j. Engpass-Quellen: FDA vollständig, BfArM neu (10/2026)
+
+| Land | Quelle | Format | Besonderheit |
+|---|---|---|---|
+| AT | BASG Vertriebseinschränkungen | JSON | — |
+| US | openFDA Drug Shortages | JSON, seitenweise | `paging: 'openfda'`: alle Seiten (≈1700 Einträge, 1000 je Seite); fällt eine Seite aus, fällt der ganze Abruf aus (kein Teilbestand). Rohstatus „Current" → kritisch, „Resolved" → verfügbar. Ohne Handelsnamen: `presentation` bzw. Wirkstoff, nie der Hersteller. |
+| DE | BfArM Lieferengpassmeldungen | CSV (`;`, Windows-1252) | Keine Statusspalte → `standardStatus: 'eingeschraenkt'`; gemeldetes Ende vorbei → verfügbar. Spalte heißt „Arzneimittlbezeichnung" (Tippfehler der Behörde). Deutsche Daten werden in ISO gewandelt. |
+
+**Nicht live gegengeprüft** (die Bauumgebung erreicht die Behörden nicht): FDA-Statuswerte und
+BfArM-Spalten stammen aus öffentlich sichtbaren Beschreibungen. Was wirklich ankommt, zeigt
+der erste Lauf auf der Datenquellen-Seite (verworfene Zeilen mit Gründen).
+
+**Zeichensatz:** `fetchTextDefault` dekodiert nach `charset` im Kopf, sonst strenges UTF-8,
+sonst Windows-1252 — vorher machte `res.text()` aus „Erhöhte" ein „Erhhte".
+
 ## 4. Preise (zweiter Datentyp, gleiche Logik)
 
 Analog zu Engpässen: Umgebungsvariable `APOPULSE_LIVE_PRICES_<CC>` setzen.
