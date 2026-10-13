@@ -215,6 +215,32 @@ export function createChronik({ jetzt = () => Date.now(), log = console } = {}) 
       return out.sort((a, b) => (a.beginn < b.beginn ? -1 : a.beginn > b.beginn ? 1 : a.wirkstoff.localeCompare(b.wirkstoff)));
     },
 
+    /**
+     * Was hat sich in den letzten `tage` Tagen in einem Land getan?
+     * „Neu" zählt nur, was NACH dem ersten Abruf des Landes auftauchte —
+     * beim ersten Lauf ist alles „neu", obwohl es längst läuft.
+     */
+    wochenbilanz(land, { tage = 7 } = {}) {
+      const cc = String(land || '').toUpperCase();
+      if (!seit.has(cc)) return null;
+      const heute = isoTag(jetzt());
+      const grenze = isoTag(jetzt() - tage * TAG);
+      const start = seit.get(cc);
+      const neu = []; const beendet = []; let offen = 0;
+      for (const [k, liste] of episoden) {
+        if (!k.startsWith(cc + '|')) continue;
+        for (const e of liste) {
+          if (!e.ende) offen++;
+          if (e.erstmals_gesehen >= grenze && e.erstmals_gesehen > start) neu.push({ wirkstoff: e.wirkstoff, beginn: e.beginn, schwerster_status: e.schwerster_status, quelle: e.quelle, offen: !e.ende });
+          if (e.ende && e.ende >= grenze) beendet.push({ wirkstoff: e.wirkstoff, ende: e.ende, dauer_tage: tageZwischen(e.beginn, e.ende), quelle: e.quelle });
+        }
+      }
+      const rang = (x) => RANG[x.schwerster_status] || 0;
+      neu.sort((a, b) => rang(b) - rang(a) || a.wirkstoff.localeCompare(b.wirkstoff));
+      beendet.sort((a, b) => a.wirkstoff.localeCompare(b.wirkstoff));
+      return { land: cc, aufzeichnung_seit: start, heute, offen, neu, beendet };
+    },
+
     aufzeichnungSeit(land) { return seit.get(String(land || '').toUpperCase()) || null; },
 
     __dump() { return { episoden: [...episoden], seit: [...seit] }; },

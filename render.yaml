@@ -94,6 +94,16 @@ services:
       # Details und Grenzen: docs/DATENBANK.md.
       - key: DATABASE_URL
         sync: false
+      # Wochenbericht per E-Mail (Premium, services/wochenbericht.js). Ohne die
+      # drei Werte bleibt der Versand AUS — die App sagt das, statt still
+      # nichts zu tun. Anbieter: resend oder postmark. Absender-Domain muss
+      # beim Anbieter bestätigt sein (DNS-Einträge, die er vorgibt).
+      - key: APOPULSE_MAIL_PROVIDER
+        sync: false
+      - key: APOPULSE_MAIL_API_KEY
+        sync: false
+      - key: APOPULSE_MAIL_FROM
+        sync: false
       # PORT wird von Render automatisch gesetzt — der Server liest process.env.PORT.
     # Dauerhafte Platte (nur Bezahltarif). Zum Aktivieren einkommentieren:
     # disk:

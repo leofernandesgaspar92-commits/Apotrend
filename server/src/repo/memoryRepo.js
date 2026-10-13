@@ -116,6 +116,8 @@ export function createMemoryRepo() {
     },
     hasEntitlement(userId, feature) { const set = entitlements.get(userId); return !!(set && set.has(feature)); },
     listEntitlements(userId) { const set = entitlements.get(userId); return set ? [...set] : []; },
+    // Alle Konten mit einer Berechtigung (z. B. Wochenbericht an Premium).
+    listUsersWithEntitlement(feature) { return [...entitlements].filter(([, set]) => set.has(feature)).map(([uid]) => uid); },
 
     // ── Zahlungen (Audit-Spur). Es werden NIE Karten- oder Wallet-Rohdaten gespeichert,
     //    nur Metadaten + die Referenz des lizenzierten Zahlungsanbieters. ──

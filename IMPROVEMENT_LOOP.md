@@ -1908,3 +1908,37 @@ wörtlich → Ende-zu-Ende „Salzform fand den Engpass nicht". **Eine Gegenprob
 „alle Vokale streichen" blieb grün — Konsonantengerüste sind eindeutig genug, das war keine
 echte Schwächung. Ersetzt durch den Präfix-Vergleich, der anschlägt.
 
+### Cycle · Wochenbericht per E-Mail — und ein Premium-Angebot, das hält, was es verspricht (2026-10-13)
+
+**Warum.** Informationen verkaufen heißt: Die Lage kommt zur Kundin, sie muss nicht nachsehen.
+
+**WORK.** `services/mailer.js` (Resend/Postmark per HTTP, aus ohne Schlüssel, Schlüssel nie in
+Fehlermeldungen); `services/wochenbericht.js` (beobachtete Wirkstoffe mit Stand im Heimatland,
+Frühwarnungen, neue/beendete Engpässe der Woche; de/en/pt; Ländernamen in der Sprache des
+Berichts; montags ab 05:00 UTC, höchstens einmal je ISO-Woche, gemerkt im gesicherten Zustand;
+Fehlversuch wird NICHT als gesendet gemerkt). Abmelden per Link mit Zweck-Token (eigener,
+abgeleiteter Schlüssel — taugt nie als Sitzung) und per Schalter. Premium-Seite: Abschnitt
+mit Vorschau in einer rechtlosen Box (`sandbox=""`), für alle sichtbar.
+
+**Beim Bau gefunden:**
+- **Die Premium-Seite verkaufte ruhende Funktionen.** Drei von vier Vorteilen (Werbung,
+  Videosprechstunden, Live-Sessions) liegen in abgeschalteten Bereichen. Jetzt stehen dort die
+  Informationsvorteile (Verlauf + Export, Frühwarnung, Wochenbericht, Notizen); die übrigen nur,
+  solange ihr Bereich läuft.
+- `wb_title`/`wb_sub` gab es schon (Werbung) — der Test gegen doppelte Sprachschlüssel schlug
+  an, bevor die Werbe-Überschrift überschrieben wurde. Umbenannt in `wbr_*`.
+- Im deutschen Bericht stand „United States" (die Länderliste führt Namen gemischt) → Ländernamen
+  über `Intl.DisplayNames` in der Berichtssprache.
+- Die Wochenbericht-Karte fehlte für Nicht-Premium — ausgerechnet dort, wo die Vorschau
+  verkaufen soll. Der neue Audit-Prüfpunkt fand es.
+
+**Gegenproben (Bruch angewandt, jede schlägt an):** Escaping aus, doppelter Versand, Fehlversuch
+als gesendet, Abbestellung ignoriert, Zweck-Token = Sitzungs-Schlüssel, Altfälle als „neu", „keine
+Daten" als ruhige Woche (Unit); Sitzungs-Token als Abmelde-Link (HTTP); ruhende Vorteile beworben,
+Vorschau ohne Sandbox, Abmelde-Link nicht verarbeitet (Browser).
+
+**CHECK.** 1164 Tests grün (+9), Smoke 19/19, Audit ohne Befund.
+
+**Für den Owner:** Resend oder Postmark einrichten (DEPLOY.md, ~15 Min.). Bis dahin zeigt die
+Premium-Seite „Versand startet, sobald der E-Mail-Dienst eingerichtet ist".
+

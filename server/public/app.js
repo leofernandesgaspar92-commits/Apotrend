@@ -5501,6 +5501,70 @@ async function renderSuggestions(feed) {
 // ⭐ Premium: einfacher Direkt-Weg per Krypto (Coin → Adresse + „in Wallet öffnen" + Betrag).
 // Karte/PayPal erscheinen nur, wenn ein Zahlungsanbieter konfiguriert ist. Freischaltung
 // erfolgt nach manueller Prüfung der gemeldeten Transaktion (ehrlich, kein Fake-Auto).
+// Premium-Vorteile: nur, was tatsächlich läuft. Bis 10/2026 standen hier
+// Werbung, Videosprechstunden und Live-Sessions — alle drei in ruhenden
+// Bereichen. Wer zahlt, hätte drei von vier Versprechen nicht nutzen können.
+// Informationsvorteile zuerst; die übrigen nur, solange ihr Bereich läuft.
+function premiumVorteile() {
+  return ['pr_b_chronik', 'pr_b_fw', 'pr_b_wb', 'pr_b4',
+    ...(featureAn('werbung') ? ['pr_b1'] : []),
+    ...(featureAn('termine') ? ['pr_b2', 'pr_b3'] : [])];
+}
+
+// Wochenbericht per E-Mail (services/wochenbericht.js): Schalter für Premium,
+// Vorschau für alle — die Vorschau IST das Verkaufsargument.
+function wochenberichtKarte(premium) {
+  const c = el(`<div class="card" data-wbkarte><b>${esc(t('wbr_title'))}</b>
+    <div class="muted" style="font-size:14px;margin:4px 0 8px">${esc(t('wbr_sub'))}</div>
+    <div data-wbstand class="muted" style="font-size:14px;margin-bottom:8px"></div>
+    <div class="row" style="gap:8px;flex-wrap:wrap">
+      <button class="ghost small" data-wbvorschau>👁️ ${esc(t('wbr_preview'))}</button>
+      ${premium ? `<button class="small" data-wbschalter></button>` : ''}
+    </div>
+    <div data-wbframe style="margin-top:10px"></div></div>`);
+  const stand = c.querySelector('[data-wbstand]');
+  const schalter = c.querySelector('[data-wbschalter]');
+  let abbestellt = false;
+  const zeige = (d) => {
+    abbestellt = !!d.abbestellt;
+    stand.textContent = !premium ? t('wbr_only_premium')
+      : abbestellt ? t('wbr_off')
+      : d.mail_aktiv ? t('wbr_on') : t('wbr_on_pending');
+    if (schalter) schalter.textContent = abbestellt ? t('wbr_turn_on') : t('wbr_turn_off');
+  };
+  api('GET', '/api/wochenbericht/vorschau').then(zeige).catch(() => {});
+  c.querySelector('[data-wbvorschau]').onclick = async () => {
+    const d = await api('GET', '/api/wochenbericht/vorschau');
+    zeige(d);
+    // sandbox ohne Rechte: Die Mail enthält Behördentexte — in der Vorschau
+    // darf darin nichts ausgeführt werden, Links öffnen nicht im App-Fenster.
+    const f = document.createElement('iframe');
+    f.setAttribute('sandbox', '');
+    f.setAttribute('title', d.betreff);
+    f.style.cssText = 'width:100%;height:520px;border:1px solid var(--line);border-radius:8px;background:#fff';
+    f.srcdoc = d.html;
+    const box = c.querySelector('[data-wbframe]');
+    box.innerHTML = `<div style="font-size:14px;margin-bottom:6px"><b>${esc(t('wbr_subject'))}:</b> ${esc(d.betreff)}</div>`;
+    box.appendChild(f);
+  };
+  if (schalter) schalter.onclick = async () => { zeige(await api('POST', '/api/wochenbericht/einstellung', { an: abbestellt })); };
+  return c;
+}
+
+// Abmelde-Link aus der Mail: /?wb_abmelden=TOKEN — funktioniert ohne Anmeldung.
+async function handleWbAbmelden() {
+  const tok = new URLSearchParams(location.search).get('wb_abmelden');
+  if (!tok) return;
+  history.replaceState(null, '', location.pathname);
+  let text;
+  try { await api('POST', '/api/wochenbericht/abmelden', { t: tok }); text = t('wbr_unsubscribed'); }
+  catch (e) { text = e.message; }
+  const b = el(`<div role="status" data-wbabgemeldet style="position:fixed;left:50%;transform:translateX(-50%);top:12px;z-index:50;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px;padding:12px 16px;font-size:15px;max-width:92vw"></div>`);
+  b.textContent = text;
+  document.body.appendChild(b);
+  setTimeout(() => b.remove(), 9000);
+}
+
 async function openPremium() {
   setDocTitle(t('pr_title'));
   app.innerHTML = '';
@@ -5514,7 +5578,7 @@ async function openPremium() {
   const body = card.querySelector('#prBody');
   try {
     const mine = await api('GET', '/api/me/premium').catch(() => ({ premium: false }));
-    if (mine.premium) { body.innerHTML = `<div class="ok-box" style="padding:10px 12px">${esc(t('pr_have'))}</div>`; return; }
+    if (mine.premium) { body.innerHTML = `<div class="ok-box" style="padding:10px 12px">${esc(t('pr_have'))}</div>`; app.appendChild(wochenberichtKarte(true)); return; }
     // Eigener Prüfstand ZUERST: Wer schon gezahlt hat, soll nicht ein zweites
     // Mal zahlen, nur weil die Seite nach dem Neuladen nichts davon weiß.
     const eigene = ((await api('GET', '/api/payments/mine').catch(() => ({ payments: [] }))).payments || [])
@@ -5536,9 +5600,11 @@ async function openPremium() {
     body.appendChild(el(`<div class="ok-box" style="padding:12px 14px;margin-bottom:12px">
       <b>${esc(t('pr_benefits_lead'))}</b>
       <ul style="margin:8px 0 0;padding-left:18px;display:grid;gap:6px">
-        <li>${esc(t('pr_b1'))}</li><li>${esc(t('pr_b2'))}</li><li>${esc(t('pr_b3'))}</li><li>${esc(t('pr_b4'))}</li>
+        ${premiumVorteile().map((k) => `<li>${esc(t(k))}</li>`).join('')}
       </ul>
     </div>`));
+    // Vorschau des Wochenberichts für alle: Sie zeigt, was Premium liefert.
+    app.appendChild(wochenberichtKarte(false));
     const priceMain = fmtCurrency(opt.amount, opt.currency || 'EUR');
     body.appendChild(el(`<div style="font-weight:800;font-size:1.15em;margin-bottom:4px">${esc(opt.product_name)} — <span style="color:var(--green)">${esc(priceMain)}</span></div>`));
     // Näherung in der Landeswährung, damit niemand selbst umrechnen muss.
@@ -8366,6 +8432,7 @@ if (_logo) _logo.onclick = goHome;
 const _hasCountry = () => !!localStorage.getItem('apo_country');
 (async () => {
   // Zuerst eine mögliche OAuth-Rückleitung abfangen (Social-Login), sonst normaler Start.
+  handleWbAbmelden();
   if (await handleOAuthCallback()) return;
   if (localStorage.getItem('apo_token')) mainScreen().catch(() => (_hasCountry() ? authScreen() : countryScreen()));
   else if (_hasCountry()) authScreen();

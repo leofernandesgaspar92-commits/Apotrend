@@ -1299,3 +1299,28 @@ test('GET /api/sicherheitsmeldungen: speist sich aus den Behoerden-Feeds, ohne e
   // nichts schuetzt.
   assert.equal(d.signale.length >= 0, true);
 });
+
+test('Wochenbericht: Vorschau, Schalter, Abmelden per Link (ohne Anmeldung, gefälscht abgewiesen)', async () => {
+  const { issueZweckToken } = await import('../src/http/token.js');
+  const a = await reg('wb' + PORT);
+  const v = await j('/api/wochenbericht/vorschau', a);
+  assert.match(v.betreff, /Wochenbericht/);
+  assert.match(v.html, /<!doctype html>/i);
+  assert.equal(v.mail_aktiv, false, 'ohne Schlüssel ist der Versand aus');
+  assert.equal(v.abbestellt, false);
+  // Abmelden per Link — ohne Sitzung, aber nur mit gültigem Zweck-Token.
+  const falsch = await fetch(BASE + '/api/wochenbericht/abmelden', { method: 'POST', headers: H(), body: JSON.stringify({ t: 'abc.def' }) });
+  assert.equal(falsch.status, 400);
+  // Ein SITZUNGS-Token darf hier nicht wirken (und ein Abmelde-Token nirgends als Sitzung).
+  assert.equal((await fetch(BASE + '/api/wochenbericht/abmelden', { method: 'POST', headers: H(), body: JSON.stringify({ t: a }) })).status, 400);
+  const me = await j('/api/me', a);
+  const uid = me.user ? me.user.id : me.id;
+  const tok = issueZweckToken('wb_abmelden', uid);
+  assert.equal((await fetch(BASE + '/api/me', { headers: H(tok) })).status, 401, 'Abmelde-Link taugte als Anmeldung');
+  const ok = await fetch(BASE + '/api/wochenbericht/abmelden', { method: 'POST', headers: H(), body: JSON.stringify({ t: tok }) });
+  assert.equal(ok.status, 200);
+  assert.equal((await j('/api/wochenbericht/vorschau', a)).abbestellt, true);
+  // Wieder bestellen per Schalter.
+  const s = await (await post('/api/wochenbericht/einstellung', a, { an: true })).json();
+  assert.equal(s.abbestellt, false);
+});

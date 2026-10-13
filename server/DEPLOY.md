@@ -85,6 +85,24 @@ Für Fly.io: `fly launch` im Ordner `server/` (nutzt das Dockerfile), dann `fly 
 
 ---
 
+## Wochenbericht per E-Mail (Premium)
+
+Jeden Montag früh bekommen Premium-Kund:innen einen Bericht: beobachtete Wirkstoffe,
+Frühwarnungen aus dem Ausland, neue Engpässe im Heimatland — mit Quelle. Höchstens einmal pro
+Woche (auch über Neustarts), abbestellbar per Link und Schalter. Ohne Einrichtung ist der
+Versand **aus**; die Vorschau auf der Premium-Seite funktioniert trotzdem.
+
+Einrichtung (einmalig, ca. 15 Minuten):
+1. Konto bei **Resend** (resend.com) oder **Postmark** (postmarkapp.com) anlegen.
+2. Dort die Absender-Domain (z. B. `apopulse.com`) hinzufügen und die angezeigten DNS-Einträge
+   beim Domain-Anbieter eintragen. Erst nach der Bestätigung kommen Mails an.
+3. In Render → Environment eintragen:
+   - `APOPULSE_MAIL_PROVIDER` = `resend` oder `postmark`
+   - `APOPULSE_MAIL_API_KEY` = der API-Schlüssel des Anbieters
+   - `APOPULSE_MAIL_FROM` = z. B. `ApoPulse <bericht@apopulse.com>`
+4. Speichern (Render startet neu). Ob der Versand an ist, zeigt `GET /api/live/status` → `mail`.
+   Sofort testen: Redaktions-Konto, `POST /api/live/run/wochenbericht`.
+
 ## Datenspeicherung (Persistenz)
 
 Der Server kann seinen kompletten Zustand als **JSON-Snapshot** auf die Platte

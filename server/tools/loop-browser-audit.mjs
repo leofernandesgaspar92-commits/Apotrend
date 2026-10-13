@@ -722,7 +722,10 @@ async function main() {
         grund: null, hinweis: HINWEIS, eigene_engpaesse: [],
       }),
     }));
-    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
+    // try: Das Startskript läuft in JEDEM Frame — auch in der rechtlosen
+    // Wochenbericht-Vorschau (sandbox=""), in der localStorage gesperrt ist.
+    // Dort darf es scheitern; das ist die Abschottung, kein Fehler der App.
+    await page.addInitScript((t) => { try { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); } catch { /* rechtloser Frame */ } }, token);
     await page.goto(BASE, { waitUntil: 'networkidle' });
 
     // ── 1. Ausweich-Suche auf der Wirkstoff-Seite ──
@@ -1169,6 +1172,34 @@ async function main() {
 
       await page.unroute('**/api/shortages?*').catch(() => {});
       await page.unroute('**/api/wirkstoff/**').catch(() => {});
+    }
+
+    // ── 11. Premium verspricht nur, was läuft; Wochenbericht-Vorschau ───────
+    //  Bis 10/2026 warb die Seite mit Werbung, Videosprechstunden und Live-
+    //  Sessions — alle drei in ruhenden Bereichen. Und die Vorschau zeigt eine
+    //  Mail mit Behördentexten: Sie gehört in eine Box OHNE Rechte.
+    {
+      await page.goto(BASE, { waitUntil: 'networkidle' });
+      await page.evaluate(() => openPremium());
+      await page.waitForSelector('[data-wbkarte]', { timeout: 6000 }).catch(() => {});
+      const prText = await page.locator('#prBody').innerText().catch(() => '');
+      await page.click('[data-wbvorschau]').catch(() => {});
+      await page.waitForSelector('[data-wbframe] iframe', { timeout: 6000 }).catch(() => {});
+      const fr = page.locator('[data-wbframe] iframe');
+      const sandbox = (await fr.count()) ? await fr.getAttribute('sandbox') : null;
+      const srcdoc = (await fr.count()) ? await fr.getAttribute('srcdoc') : '';
+      const stand = await page.locator('[data-wbstand]').innerText().catch(() => '');
+      await page.goto(BASE + '/?wb_abmelden=abc.def', { waitUntil: 'networkidle' });
+      await page.waitForSelector('[data-wbabgemeldet]', { timeout: 6000 }).catch(() => {});
+      const banner = await page.locator('[data-wbabgemeldet]').innerText().catch(() => '');
+      const url = page.url();
+      if (/Eigene Angebote bewerben|Videosprechstunden anbieten|Live-Sessions hosten/.test(prText)) findings.push('Premium: wirbt mit Funktionen aus ruhenden Bereichen');
+      else if (!/Engpass-Verlauf/.test(prText) || !/Wochenbericht per E-Mail/.test(prText)) findings.push(`Premium: Informationsvorteile fehlen (${prText.slice(0, 160)})`);
+      else if (sandbox !== '') findings.push(`Wochenbericht: Vorschau nicht abgeschottet (sandbox=${sandbox})`);
+      else if (!/ApoPulse/.test(srcdoc || '') || !/wb_abmelden=/.test(srcdoc || '')) findings.push('Wochenbericht: Vorschau leer oder ohne Abmelde-Link');
+      else if (!/Premium/.test(stand)) findings.push(`Wochenbericht: Stand ohne Premium-Hinweis (${stand})`);
+      else if (!/ungültig/.test(banner) || /wb_abmelden/.test(url)) findings.push(`Wochenbericht: gefälschter Abmelde-Link nicht abgewiesen oder Token bleibt in der Adresse (${banner} · ${url})`);
+      else console.log('✓ Premium: nur laufende Vorteile; Wochenbericht-Vorschau abgeschottet; gefälschter Abmelde-Link abgewiesen');
     }
 
     if (errors.length) findings.push(`Säule 3: JS-Fehler — ${errors.slice(0, 2).join(' | ')}`);

@@ -62,7 +62,9 @@ import { activeSources, sourcesByKind, shortagesFromCsv, shortagesFromJson, dedu
 import { createDealsService, seedDemoDealsIfNoneRunning } from '../services/deals.js';
 import { createPrismaStore } from '../repo/prismaStore.js';
 import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
-import { issueToken, verifyToken } from './token.js';
+import { issueToken, verifyToken, issueZweckToken, verifyZweckToken } from './token.js';
+import { createMailer } from '../services/mailer.js';
+import { createWochenbericht } from '../services/wochenbericht.js';
 import { createRateLimiter } from '../domain/rateLimiter.js';
 import { dienstKennung } from './serviceIdentity.js';
 import { assetlinksDokument, assetlinksStatus } from './assetlinks.js';
@@ -158,6 +160,15 @@ const fruehwarnung = createFruehwarnung({
   istPremium: (uid) => payments.hasFeature(uid, 'premium'),
   heimatVon: (uid) => { const p = social.getProfile(uid); return p && p.country; },
 });
+// Wochenbericht per E-Mail (Premium). Ebenfalls VOR applySnapshot(): Wer ihn
+// diese Woche schon bekam und wer ihn abbestellt hat, wird mit gesichert.
+const mailer = createMailer();
+const wochenbericht = createWochenbericht({
+  repo, social, chronik, fruehwarnung, shortagesRepo, mailer, laender: COUNTRIES,
+  istPremium: (uid) => payments.hasFeature(uid, 'premium'),
+  appUrl: String(process.env.APOPULSE_PUBLIC_URL || 'https://www.apopulse.com').replace(/\/+$/, ''),
+  zweckToken: (uid) => issueZweckToken('wb_abmelden', uid),
+});
 const exchange = createExchangeService(exchangeRepo, social, repo, shortagesRepo);
 // RxNorm ergaenzt die Suche um Namensvarianten (Wirkstoff <-> Handelsname).
 // Abschaltbar ueber APOPULSE_RXNORM=off — der Dienst geht ins Netz, und wer
@@ -207,6 +218,7 @@ function applySnapshot(snap) {
   exchangeRepo.__load(snap.exchange);
   newsSeen.__load(snap.newsSeen);
   chronik.__load(snap.chronik);
+  wochenbericht.__load(snap.wochenbericht);
   const weg = erfundeneStartmeldungenEntfernen(socialRepo);
   if (weg) console.log(`ApoPulse: ${weg} erfundene Startmeldung(en) aus dem gesicherten Bestand entfernt.`);
 }
@@ -250,6 +262,7 @@ function collectSnapshot() {
     // Speicher, sondern ein Zwischenpuffer mit laengerer Lebensdauer.
     logistik: logistikRepo.__dump(),
     chronik: chronik.__dump(),
+    wochenbericht: wochenbericht.__dump(),
   };
 }
 let saveTimer = null;
@@ -1019,6 +1032,8 @@ const routes = [
   // eine Automatik, deren Zustand man nicht sehen kann, ist keine.
   ['GET', /^\/api\/live\/status$/, false, async () => ({
     jobs: scheduler.status(),
+    // E-Mail-Versand: an oder aus, und warum — nie der Schlüssel.
+    mail: { aktiv: mailer.aktiv, anbieter: mailer.anbieter, grund: mailer.grund },
     sources: activeSources().map(({ id, kind, country, format, url, official, configured, label, fallbacks, verified }) =>
       // Die URL gehört dazu: Nur so lässt sich prüfen, ob die Voreinstellung
       // noch stimmt oder eine Behörde ihren Feed verschoben hat.
@@ -1118,7 +1133,7 @@ const routes = [
 
   // Durchlauf von Hand anstoßen (Moderation) — für den Test nach dem Deploy,
   // ohne fünf Minuten auf den nächsten Takt zu warten.
-  ['POST', /^\/api\/live\/run\/(news|shortages)$/, true, async ({ userId, params }) => {
+  ['POST', /^\/api\/live\/run\/(news|shortages|wochenbericht)$/, true, async ({ userId, params }) => {
     if (!social.isModerator(userId)) {
       const e = new Error('Nur Moderation.'); e.status = 403; e.code = 'forbidden'; throw e;
     }
@@ -1867,6 +1882,21 @@ const routes = [
       shortages: shortages.listWithCounts(userId, { country: land }).map(s => ({ ...s, is_antibiotic: amr.isAntibiotic(s.wirkstoff), price_alternatives: altCount(s), chronik: chronik.kurz(s.wirkstoff, s.country || land) })),
     };
   }],
+  // Wochenbericht: Vorschau (jede:r sieht den eigenen), Ein/Aus, Abmelden
+  // per Link aus der Mail (Zweck-Token, ohne Anmeldung).
+  ['GET', /^\/api\/wochenbericht\/vorschau$/, true, async ({ userId }) => ({ ...wochenbericht.vorschau(userId), premium: payments.hasFeature(userId, 'premium') })],
+  ['POST', /^\/api\/wochenbericht\/einstellung$/, true, async ({ userId, body }) => {
+    if (body && body.an === false) wochenbericht.abbestellen(userId); else wochenbericht.bestellen(userId);
+    saveSoon();
+    return { abbestellt: wochenbericht.istAbbestellt(userId) };
+  }],
+  ['POST', /^\/api\/wochenbericht\/abmelden$/, false, async ({ body }) => {
+    const uid = verifyZweckToken('wb_abmelden', body && body.t);
+    if (!uid || !repo.getUserById(uid)) { const e = new Error('Der Abmelde-Link ist ungültig.'); e.status = 400; e.code = 'link_invalid'; throw e; }
+    wochenbericht.abbestellen(uid);
+    saveSoon();
+    return { abbestellt: true };
+  }],
   // Chronik-Export (Premium): alle Episoden des angesehenen Landes. Die
   // Zusammenfassung je Wirkstoff ist frei (/api/shortages, /api/wirkstoff);
   // die vollständige Liste ist das Analysewerkzeug.
@@ -2130,6 +2160,13 @@ server.listen(PORT, () => {
       run: runNewsIngest,
       intervalMs: INTERVALS.news,
       startDelayMs: 8_000,   // erst antworten können, dann Daten holen
+    });
+    // Wochenbericht: stündlich nachsehen, ob für diese Woche noch etwas fehlt
+    // (montags ab 05:00 UTC; fiel der Montag aus, holt der nächste Lauf nach).
+    scheduler.add('wochenbericht', {
+      run: async () => { const r = await wochenbericht.lauf(); if (r.gesendet) saveSoon(); return r; },
+      intervalMs: 3_600_000,
+      startDelayMs: 90_000,
     });
     scheduler.add('shortages', {
       run: runShortageIngest,
