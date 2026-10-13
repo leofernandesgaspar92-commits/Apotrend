@@ -66,6 +66,7 @@ import { issueToken, verifyToken, issueZweckToken, verifyZweckToken } from './to
 import { createMailer } from '../services/mailer.js';
 import { createWochenbericht } from '../services/wochenbericht.js';
 import { createEigeneQuellen } from '../services/eigeneQuellen.js';
+import { betriebsZahlen } from '../services/betrieb.js';
 import { createRateLimiter } from '../domain/rateLimiter.js';
 import { dienstKennung } from './serviceIdentity.js';
 import { assetlinksDokument, assetlinksStatus } from './assetlinks.js';
@@ -1918,6 +1919,21 @@ const routes = [
     return {
       chronik_seit: chronik.aufzeichnungSeit(land),
       shortages: shortages.listWithCounts(userId, { country: land }).map(s => ({ ...s, is_antibiotic: amr.isAntibiotic(s.wirkstoff), price_alternatives: altCount(s), chronik: chronik.kurz(s.wirkstoff, s.country || land) })),
+    };
+  }],
+  // Betriebs-Cockpit (services/betrieb.js): nur Summen, nur Moderation.
+  ['GET', /^\/api\/betrieb$/, true, async ({ userId }) => {
+    if (!social.isModerator(userId)) { const e = new Error('Nur Moderation.'); e.status = 403; e.code = 'forbidden'; throw e; }
+    const job = scheduler.status().find((j) => j.name === 'shortages') || null;
+    return {
+      ...betriebsZahlen({
+        konten: repo.listUsers(), grants: repo.listEntitlementGrants('premium'),
+        aktiv: (uid) => payments.hasFeature(uid, 'premium'), zahlungen: repo.listAllPayments(),
+        quellen: engpassQuellen(), gemessen: coverage.alle(),
+      }),
+      abruf: { zuletzt: (job && job.lastRunAt) || null, ok: job ? job.lastOk ?? null : null },
+      mail: { aktiv: mailer.aktiv, grund: mailer.grund },
+      ki: aiKonfiguration() ? 'aktiv' : 'aus',
     };
   }],
   // ── Quellen testen und eintragen (Moderation) ─────────────────────────────

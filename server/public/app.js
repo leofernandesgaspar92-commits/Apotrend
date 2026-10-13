@@ -1116,6 +1116,40 @@ function renderLiveOverview(feed, liveNow, liveSoon) {
   feed.appendChild(card);
 }
 
+async function quellenHinweis(feed) {
+  let b;
+  try { b = await api('GET', '/api/betrieb'); } catch { return; }
+  if (!b || !b.quellen || !b.quellen.fehler) return;
+  const namen = b.quellen.fehlerhaft.slice(0, 3).map((q) => `${q.label}${q.fehler ? ' (' + q.fehler + ')' : ''}`).join(' · ');
+  const box = el(`<div class="card" data-quellenhinweis style="border-color:var(--crit-bd);background:var(--crit-bg)">
+    <b style="color:var(--crit-fg)">⚠️ ${esc(ti(b.quellen.fehler === 1 ? 'bt_hint_1' : 'bt_hint_n', { n: b.quellen.fehler }))}</b>
+    <div style="font-size:14px;margin-top:4px">${esc(namen)}</div>
+    <div style="margin-top:8px"><button class="small" data-dq>📡 ${esc(t('dq_open'))}</button></div></div>`);
+  box.querySelector('[data-dq]').onclick = openDatenquellen;
+  const erstes = feed.querySelector('.card');
+  if (erstes) feed.insertBefore(box, erstes); else feed.appendChild(box);
+}
+
+// Betriebs-Cockpit oben im Redaktions-Dashboard (GET /api/betrieb): nur Summen.
+function betriebsKarte(b) {
+  const geld = (b.einnahmen.summen || []).map((x) => fmtCurrency(x.cents / 100, x.currency)).join(' + ') || fmtCurrency(0, 'EUR');
+  const kachel = (icon, wert, label, sub, col, attr = '') => `<div ${attr} style="flex:1;min-width:140px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px">
+    <div style="font-size:22px;font-weight:800;color:${col}">${icon} ${esc(String(wert))}</div><div style="font-size:14px;margin-top:2px">${esc(label)}</div>${sub ? `<div class="muted" style="font-size:13px">${esc(sub)}</div>` : ''}</div>`;
+  const q = b.quellen;
+  const c = el(`<div class="card" data-betrieb><b style="font-size:16px">📊 ${esc(t('bt_title'))}</b>
+    <div class="row" style="flex-wrap:wrap;gap:10px;margin-top:10px">
+      ${kachel('👤', b.konten.gesamt, t('bt_accounts'), ti('bt_new7', { n: b.konten.neu_7 }), 'var(--info-fg)')}
+      ${kachel('⭐', b.premium.aktiv, t('bt_premium'), ti('bt_expiring', { n: b.premium.laeuft_ab_7 }) + (b.premium.abgelaufen_30 ? ' · ' + ti('bt_lapsed', { n: b.premium.abgelaufen_30 }) : ''), 'var(--ok-fg)')}
+      ${kachel('💶', geld, ti('bt_revenue', { n: b.einnahmen.tage }), ti('bt_payments', { n: b.einnahmen.anzahl }) + (b.einnahmen.offen_pruefung ? ' · ' + ti('bt_pending', { n: b.einnahmen.offen_pruefung }) : ''), 'var(--green)')}
+      ${kachel(q.fehler ? '✗' : '✓', `${q.liefern}/${q.gesamt}`, t('bt_sources'), q.fehler ? ti('bt_sources_bad', { n: q.fehler }) : (q.offen ? ti('bt_sources_open', { n: q.offen }) : t('bt_sources_ok')), q.fehler ? 'var(--crit-fg)' : 'var(--ok-fg)', 'data-btquellen role="button" tabindex="0" class="clickable"')}
+    </div>
+    <div class="muted" style="font-size:14px;margin-top:8px">${esc(t('bt_fetch'))}: ${esc(b.abruf.zuletzt ? vorZeit(b.abruf.zuletzt) || '' : t('dq_never'))} · ${esc(t('bt_mail'))}: ${esc(b.mail.aktiv ? t('dq_on') : t('dq_off'))} · ${esc(t('dq_ai'))}: ${esc(b.ki === 'aktiv' ? t('dq_on') : t('dq_off'))}</div></div>`);
+  const qk = c.querySelector('[data-btquellen]');
+  qk.onclick = openDatenquellen;
+  qk.onkeydown = (e) => { if (e.key === 'Enter') openDatenquellen(); };
+  return c;
+}
+
 async function loadOverview() {
   const feed = document.getElementById('feed');
   feed.innerHTML = '<div class="loading">…</div>';
@@ -1138,6 +1172,9 @@ async function loadOverview() {
   catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   feed.innerHTML = '';
   zeigeDatenstand(feed, 'news');
+  // Redaktion: Hinweis, sobald eine Engpass-Quelle nicht liefert — ohne dass
+  // jemand aktiv auf der Datenquellen-Seite nachsehen muss.
+  if (iAmModerator) quellenHinweis(feed);
   const liveNow = (liveData && liveData.sessions || []).filter(s => s.status === 'live');
   // „Demnächst": nur künftige geplante Sessions (lokale Wall-Clock, lexikografisch vergleichbar).
   const localNow = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,16);
@@ -8224,6 +8261,8 @@ async function showModeration() {
   head.querySelector('#back').onclick = mainScreen;
   head.querySelector('#dqOpen').onclick = openDatenquellen;
   app.appendChild(head);
+  // Betriebs-Cockpit direkt unter dem Kopf: Geschäft und Datenlage auf einen Blick.
+  api('GET', '/api/betrieb').then((b) => { if (b) head.after(betriebsKarte(b)); }).catch(() => {});
   // Krypto-Zahlungen ZUERST: Hier wartet eine zahlende Kundin auf ihre Freischaltung.
   if (kz === null) app.appendChild(el(`<div class="card" style="border-color:var(--crit-bd)">${esc(t('kp_load_err'))}</div>`));
   else if (kz.length) {

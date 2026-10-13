@@ -2026,3 +2026,21 @@ liefert „0" statt „keine Daten" → Ende-zu-Ende; Kasten mit Null-Zahlen ohn
 Eine Gegenprobe war zuerst keine: Der Bruch stürzte selbst ab (fehlende Quellenliste), so
 dass gar nichts erschien und der Test zufällig grün blieb — neu gebaut, schlägt an.
 
+### Cycle · Betriebs-Cockpit — Geschäft und Datenlage auf einen Blick (2026-10-13)
+
+**Warum.** Zwei Dinge sah der Owner nur, wenn er aktiv suchte: ob die Behördendaten liefern
+(Datenquellen-Seite) und wie das Geschäft läuft (gar nicht). Beides entscheidet über
+„Informationen verkaufen".
+
+**WORK.** `services/betrieb.js` (reine Funktion, nur Summen — keine Namen, keine E-Mails):
+Konten (gesamt, neu in 7 Tagen), Premium (aktiv, unbefristet, läuft in 7 Tagen ab, in 30
+Tagen ausgelaufen), Einnahmen 30 Tage je Währung, offene Prüfungen, Engpass-Quellen (liefern /
+Fehler mit Grund / noch nicht abgefragt), letzter Abruf, Mail und KI an/aus. `GET /api/betrieb`
+nur Moderation. Karte oben im Dashboard; Klick auf „Quellen" öffnet die Datenquellen-Seite.
+Auf „Für dich" sieht die Redaktion einen roten Hinweis, sobald eine Engpass-Quelle nicht
+liefert — mit Name und Grund.
+
+**Gegenproben (Bruch angewandt, jede schlägt an):** Hinweis nicht aufgerufen; Klick ohne Ziel
+(Browser); Einnahmen ohne 30-Tage-Grenze und mit unbezahlten; „ausgelaufen" ohne Zeitgrenze
+(Unit); Cockpit ohne Rollenprüfung (HTTP).
+

@@ -79,6 +79,8 @@ export function createMemoryRepo({ jetzt = () => Date.now() } = {}) {
       return id ? { ...users.get(id) } : null;
     },
 
+    // Für das Betriebs-Cockpit: nur Kennung und Anlagedatum, keine Kontaktdaten.
+    listUsers() { return [...users.values()].map((u) => ({ id: u.id, created_at: u.created_at })); },
     getUserById(id) {
       const u = users.get(id);
       return u ? { ...u } : null;

@@ -1289,6 +1289,37 @@ async function main() {
       else console.log('✓ Premium: Monat und Jahr wählbar, Ersparnis gerechnet, gewähltes Produkt kommt beim Kauf an');
     }
 
+    // ── 14. Betriebs-Cockpit und Quellen-Hinweis (Redaktion) ────────────────
+    {
+      const betrieb = {
+        konten: { gesamt: 128, neu_7: 9 }, premium: { aktiv: 14, unbefristet: 1, laeuft_ab_7: 2, abgelaufen_30: 1 },
+        einnahmen: { tage: 30, anzahl: 6, summen: [{ currency: 'EUR', cents: 15894 }], offen_pruefung: 1 },
+        quellen: { gesamt: 3, liefern: 2, offen: 0, fehler: 1, fehlerhaft: [{ id: 'openfda_shortages', land: 'US', label: 'FDA', fehler: 'HTTP 403' }] },
+        abruf: { zuletzt: new Date(Date.now() - 3600000).toISOString(), ok: true }, mail: { aktiv: false, grund: 'kein_anbieter' }, ki: 'aus',
+      };
+      const leer = (pfad, body) => page.route(pfad, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) }));
+      await leer('**/api/betrieb', betrieb);
+      await leer('**/api/reports', { reports: [] });
+      await leer('**/api/verify/requests', { requests: [] });
+      await leer('**/api/payments/pending', { payments: [] });
+      await page.goto(BASE, { waitUntil: 'networkidle' });
+      await page.evaluate(() => { iAmModerator = true; return loadOverview(); });
+      await page.waitForSelector('[data-quellenhinweis]', { timeout: 6000 }).catch(() => {});
+      const hinweis = await page.locator('[data-quellenhinweis]').innerText().catch(() => '');
+      await page.evaluate(() => showModeration());
+      await page.waitForSelector('[data-betrieb]', { timeout: 6000 }).catch(() => {});
+      const cockpit = await page.locator('[data-betrieb]').innerText().catch(() => '');
+      await page.click('[data-btquellen]').catch(() => {});
+      await page.waitForTimeout(600);
+      const aufDq = await page.locator('[data-dqneu]').count();
+      for (const p of ['**/api/betrieb', '**/api/reports', '**/api/verify/requests', '**/api/payments/pending']) await page.unroute(p).catch(() => {});
+      await page.evaluate(() => { iAmModerator = false; });
+      if (!/1 Engpass-Quelle liefert nicht/.test(hinweis) || !/FDA \(HTTP 403\)/.test(hinweis)) findings.push(`Redaktion: Quellen-Hinweis fehlt oder ohne Grund (${hinweis})`);
+      else if (!/128/.test(cockpit) || !/9 neu in 7 Tagen/.test(cockpit) || !/14/.test(cockpit) || !/2 laufen in 7 Tagen ab/.test(cockpit) || !/158,94/.test(cockpit) || !/2\/3/.test(cockpit)) findings.push(`Cockpit: Zahlen fehlen (${cockpit.replace(/\s+/g, ' ').slice(0, 200)})`);
+      else if (!aufDq) findings.push('Cockpit: Klick auf „Quellen" öffnet die Datenquellen-Seite nicht');
+      else console.log('✓ Redaktion: Quellen-Hinweis mit Grund; Cockpit mit Konten, Premium, Einnahmen, Quellen — Klick führt zu den Datenquellen');
+    }
+
     if (errors.length) findings.push(`Säule 3: JS-Fehler — ${errors.slice(0, 2).join(' | ')}`);
     await ctx.close();
   }

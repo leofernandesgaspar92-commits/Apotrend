@@ -1324,3 +1324,14 @@ test('Wochenbericht: Vorschau, Schalter, Abmelden per Link (ohne Anmeldung, gefÃ
   const s = await (await post('/api/wochenbericht/einstellung', a, { an: true })).json();
   assert.equal(s.abbestellt, false);
 });
+
+test('Betriebs-Cockpit: nur Moderation, nur Summen (keine E-Mail-Adressen)', async () => {
+  const a = await reg('bt' + PORT);
+  const r = await fetch(BASE + '/api/betrieb', { headers: H(a) });
+  assert.ok([400, 403].includes(r.status), 'Nicht-Moderation sah das Cockpit: ' + r.status);
+  const admin = (await (await fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email: 'red@apopulse.test', password: 'redredred123' }) })).json()).token;
+  const d = await j('/api/betrieb', admin);
+  assert.ok(d.konten.gesamt >= 2);
+  assert.ok('premium' in d && 'einnahmen' in d && 'quellen' in d && 'mail' in d);
+  assert.ok(!JSON.stringify(d).includes('@'), 'Kontaktdaten im Cockpit');
+});
