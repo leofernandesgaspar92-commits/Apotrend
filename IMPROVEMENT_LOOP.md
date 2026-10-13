@@ -1993,3 +1993,18 @@ Altbestand in der gespeicherten Datei); Premium-Seite ohne Verlängern (Browser)
 **Für den Owner:** Bestehende Premium-Kund:innen behalten Premium bis Zahlungsdatum + gekaufte
 Laufzeit, mindestens 7 Tage ab diesem Deploy, und werden 3 Tage vor Ablauf erinnert.
 
+### Cycle · Das Jahresabo war nicht kaufbar (2026-10-13)
+
+**GATHER.** `premium_yearly` (99 €) stand seit Langem im Code — die Premium-Seite fragte aber
+fest `premium_monthly` ab, an drei Stellen (Betrag, Karte/PayPal, Krypto). Das Jahr war für
+niemanden erreichbar. Für die Kundin günstiger (99 € statt 119,88 €), für den Betrieb Geld im
+Voraus und ein Jahr Bindung.
+
+**WORK.** Laufzeitwahl vor dem Preis („1 Monat" / „12 Monate", Ersparnis aus den Produkt-
+preisen gerechnet: 20,88 €, ≈ 8,25 €/Monat); alle drei Kaufwege nehmen die gewählte Laufzeit.
+Die Laufzeit selbst (12 Monate, Verlängerung ab altem Ablauf) war schon getestet.
+
+**Gegenproben (Bruch angewandt, jede schlägt an):** Krypto-Kauf mit fest „Monat" → Audit
+„gewähltes Jahr kam beim Kauf nicht an"; Ersparnis falsch gerechnet → Audit; Preisabfrage
+fest „Monat" → Audit „Jahr gewählt, aber Preis zeigt Monat".
+

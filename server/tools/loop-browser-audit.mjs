@@ -1261,6 +1261,34 @@ async function main() {
       else console.log('✓ Premium: Ablaufdatum mit Verlängern; unbefristet ohne Kaufangebot');
     }
 
+    // ── 13. Laufzeit wählen: Monat UND Jahr, Ersparnis gerechnet, gewähltes
+    //  Produkt kommt beim Kauf an (vorher war das Jahr nirgends erreichbar).
+    {
+      await page.unroute('**/api/payments/mine').catch(() => {});
+      let gestartet = null;
+      await page.route('**/api/payments/crypto/start', (route) => { gestartet = JSON.parse(route.request().postData() || '{}'); return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ error: 'Prüfabbruch', code: 'pruef' }) }); });
+      await page.goto(BASE, { waitUntil: 'networkidle' });
+      await page.evaluate(() => openPremium());
+      await page.waitForSelector('[data-prplan]', { timeout: 6000 }).catch(() => {});
+      const plaene = await page.locator('[data-plan]').evaluateAll((els) => els.map((e) => e.dataset.plan));
+      await page.click('[data-plan="premium_yearly"]').catch(() => {});
+      await page.waitForTimeout(900);
+      const preis = await page.locator('[data-prpreis]').innerText().catch(() => '');
+      const wahlText = await page.locator('[data-prplan]').innerText().catch(() => '');
+      const coin = page.locator('.crypto-pay').first();
+      if (await coin.count()) {
+        await coin.locator('.tx-in').fill('abc');
+        await coin.locator('[data-report]').click();
+        await page.waitForTimeout(500);
+      }
+      await page.unroute('**/api/payments/crypto/start').catch(() => {});
+      if (JSON.stringify(plaene) !== JSON.stringify(['premium_monthly', 'premium_yearly'])) findings.push(`Premium: Laufzeiten fehlen (${plaene.join(', ')})`);
+      else if (!/Jahr/.test(preis) || !/99,00/.test(preis)) findings.push(`Premium: Jahr gewählt, aber Preis zeigt ${preis}`);
+      else if (!/spart € ?20,88/.test(wahlText.replace(/\s+/g, ' '))) findings.push(`Premium: Ersparnis falsch oder fehlt (${wahlText})`);
+      else if (!gestartet || gestartet.productId !== 'premium_yearly') findings.push(`Premium: gewähltes Jahr kam beim Kauf nicht an (${JSON.stringify(gestartet)})`);
+      else console.log('✓ Premium: Monat und Jahr wählbar, Ersparnis gerechnet, gewähltes Produkt kommt beim Kauf an');
+    }
+
     if (errors.length) findings.push(`Säule 3: JS-Fehler — ${errors.slice(0, 2).join(' | ')}`);
     await ctx.close();
   }

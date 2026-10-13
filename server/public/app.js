@@ -5565,6 +5565,8 @@ async function handleWbAbmelden() {
   setTimeout(() => b.remove(), 9000);
 }
 
+// Gewählte Laufzeit auf der Premium-Seite (Monat oder Jahr).
+let prPlan = 'premium_monthly';
 async function openPremium() {
   setDocTitle(t('pr_title'));
   app.innerHTML = '';
@@ -5598,7 +5600,8 @@ async function openPremium() {
       stand = el(`<div data-prstand="failed" style="background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-fg);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:15px;line-height:1.5">
         ⚠️ <b>${esc(t('pr_rejected_t'))}</b>${letzte.review_note ? `<div style="margin-top:4px">${esc(t('pr_rejected_why'))}: „${esc(letzte.review_note)}“</div>` : ''}<div style="margin-top:4px">${esc(t('pr_rejected_s'))}</div></div>`);
     }
-    const opt = await api('GET', `/api/payments/crypto?product=premium_monthly&country=${encodeURIComponent(viewCountry())}`);
+    const opt = await api('GET', `/api/payments/crypto?product=${encodeURIComponent(prPlan)}&country=${encodeURIComponent(viewCountry())}`);
+    const produkte = ((await api('GET', '/api/payments/products').catch(() => ({ products: [] }))).products) || [];
     body.innerHTML = '';
     if (premiumKopf) body.appendChild(premiumKopf);
     if (stand) body.appendChild(stand);
@@ -5612,8 +5615,23 @@ async function openPremium() {
     </div>`));
     // Vorschau des Wochenberichts für alle: Sie zeigt, was Premium liefert.
     app.appendChild(wochenberichtKarte(!!mine.premium));
+    // Laufzeit wählen. Das Jahr stand im Code (99 €), wurde aber nirgends
+    // angeboten — die Seite kannte nur den Monat. Die Ersparnis wird aus den
+    // Produktpreisen gerechnet, nicht in einen Text geschrieben.
+    const monat = produkte.find((p) => p.id === 'premium_monthly');
+    const jahr = produkte.find((p) => p.id === 'premium_yearly');
+    if (monat && jahr) {
+      const ersparnis = monat.amount_cents * 12 - jahr.amount_cents;
+      const wahl = el(`<div data-prplan style="margin:0 0 12px"><div style="font-weight:700;margin-bottom:6px">${esc(t('pr_plan_title'))}</div>
+        <div class="row" style="gap:8px;flex-wrap:wrap">
+          <button class="${prPlan === 'premium_monthly' ? '' : 'ghost '}" data-plan="premium_monthly" aria-pressed="${prPlan === 'premium_monthly'}" style="flex:1 1 150px;min-height:56px;text-align:left">${esc(t('pr_plan_month'))}<br><b>${esc(fmtCurrency(monat.amount_cents / 100, monat.currency))}</b></button>
+          <button class="${prPlan === 'premium_yearly' ? '' : 'ghost '}" data-plan="premium_yearly" aria-pressed="${prPlan === 'premium_yearly'}" style="flex:1 1 150px;min-height:56px;text-align:left">${esc(t('pr_plan_year'))}<br><b>${esc(fmtCurrency(jahr.amount_cents / 100, jahr.currency))}</b>${ersparnis > 0 ? `<br><span style="font-size:13px">${esc(ti('pr_plan_save', { s: fmtCurrency(ersparnis / 100, jahr.currency), m: fmtCurrency(jahr.amount_cents / 1200, jahr.currency) }))}</span>` : ''}</button>
+        </div></div>`);
+      wahl.querySelectorAll('[data-plan]').forEach((b) => { b.onclick = () => { prPlan = b.dataset.plan; openPremium(); }; });
+      body.appendChild(wahl);
+    }
     const priceMain = fmtCurrency(opt.amount, opt.currency || 'EUR');
-    body.appendChild(el(`<div style="font-weight:800;font-size:1.15em;margin-bottom:4px">${esc(opt.product_name)} — <span style="color:var(--green)">${esc(priceMain)}</span></div>`));
+    body.appendChild(el(`<div data-prpreis style="font-weight:800;font-size:1.15em;margin-bottom:4px">${esc(opt.product_name)} — <span style="color:var(--green)">${esc(priceMain)}</span></div>`));
     // Näherung in der Landeswährung, damit niemand selbst umrechnen muss.
     // Erscheint NUR mit echtem Kurs — fehlt er, steht hier bewusst nichts.
     if (opt.local) {
@@ -5658,7 +5676,7 @@ async function openPremium() {
           fmsg.style.color = ''; fmsg.textContent = t('pr_fiat_wait');
           try {
             const r = await api('POST', '/api/payments/checkout', {
-              productId: 'premium_monthly', method: m.method,
+              productId: prPlan, method: m.method,
               successUrl: location.origin + '/?zahlung=ok',
               cancelUrl: location.origin + '/?zahlung=abbruch',
             });
@@ -5697,7 +5715,7 @@ async function openPremium() {
       cc.querySelector('[data-report]').onclick = async () => {
         const inp = cc.querySelector('.tx-in'); const msg = cc.querySelector('.tx-msg');
         try {
-          const s = await api('POST', '/api/payments/crypto/start', { productId: 'premium_monthly', walletId: c.id });
+          const s = await api('POST', '/api/payments/crypto/start', { productId: prPlan, walletId: c.id });
           await api('POST', `/api/payments/crypto/${encodeURIComponent(s.payment_id)}/claim`, { txRef: inp.value });
           msg.style.color = 'var(--green)'; msg.textContent = t('pr_reported'); inp.value = '';
         } catch (e) { msg.style.color = 'var(--crit-fg)'; msg.textContent = e.message; }
