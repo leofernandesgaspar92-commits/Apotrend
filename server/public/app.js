@@ -453,6 +453,42 @@ async function countryScreen() {
   });
 }
 // Schritt 2: Login/Registrierung — für das in Schritt 1 gewählte Land (Sprache folgt).
+// Startseiten-Versprechen: nur, was läuft. Bis 10/2026 standen hier
+// „Bestände tauschen" und „Fachnetzwerk" — beide Bereiche ruhen. Die
+// Informationsvorteile (Frühwarnung, Verlauf) fehlten dagegen ganz.
+function heroPunkte() {
+  return ['au_hero_1', 'au_hero_fw', 'au_hero_chronik',
+    ...(featureAn('preise') || featureAn('rabatte') ? ['au_hero_2'] : []),
+    ...(featureAn('tauschboerse') ? ['au_hero_3'] : []),
+    ...(featureAn('social') ? ['au_hero_4'] : [])];
+}
+
+// Land als „🇦🇹 Österreich" auch dann, wenn die Länderliste noch nicht geladen
+// ist (Startseite vor der Anmeldung): Name vom Browser, Flagge aus dem Code.
+function landAnzeige(cc) {
+  const c = String(cc || '').toUpperCase();
+  const hit = (COUNTRIES_CACHE || []).find((x) => x.code === c);
+  if (hit) return `${hit.flag} ${hit.name}`;
+  if (!/^[A-Z]{2}$/.test(c)) return c;
+  const flagge = String.fromCodePoint(...[...c].map((b) => 0x1F1E6 + b.charCodeAt(0) - 65));
+  let name = c;
+  try { name = new Intl.DisplayNames([LOCALE], { type: 'region' }).of(c) || c; } catch { /* ohne Intl: Code */ }
+  return `${flagge} ${name}`;
+}
+
+// „Lage jetzt" auf der Startseite: echte Zahlen aus der Chronik, mit Quelle
+// und Stand. Ohne Behördendaten erscheint nichts (keine erfundene Zahl).
+async function zeigeLage(box, land) {
+  if (!box || !land) return;
+  let d;
+  try { d = await (await fetch('/api/lage/' + encodeURIComponent(land))).json(); } catch { return; }
+  if (!d || !d.daten) return;
+  box.innerHTML = `<div data-lagebox style="margin:12px 0 4px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.35);line-height:1.5">
+    <div style="font-weight:800">${esc(ti('au_lage_title', { land: landAnzeige(land) }))}</div>
+    <div style="font-size:1.05em"><b>${esc(ti(d.offen === 1 ? 'au_lage_offen_1' : 'au_lage_offen', { n: d.offen }))}</b> · ${esc(ti('au_lage_neu', { n: d.neu }))}</div>
+    <div style="font-size:14px;opacity:.95">${esc(t('au_lage_quelle'))}: ${esc(d.quellen.join(', ') || '—')}${d.stand ? ' · ' + esc(ti('au_lage_stand', { z: vorZeit(d.stand) || '' })) : ''}</div></div>`;
+}
+
 function authScreen() {
   setDocTitle('');
   hideHeaderForAuth();
@@ -462,7 +498,7 @@ function authScreen() {
   // Gewähltes Land oben + „Land ändern" (zurück zu Schritt 1).
   app.appendChild(el(`
   <div class="row" style="justify-content:center;gap:10px;margin-bottom:6px;align-items:center">
-    <span>${ac ? `<span aria-hidden="true" style="font-size:1.2em">${esc(ac.flag)}</span> <b>${esc(ac.name)}</b>` : ''}</span>
+    <span>${ac ? `<span aria-hidden="true" style="font-size:1.2em">${esc(ac.flag)}</span> <b>${esc(ac.name)}</b>` : localStorage.getItem('apo_country') ? `<b>${esc(landAnzeige(localStorage.getItem('apo_country')))}</b>` : ''}</span>
     <button class="ghost small" id="changeCountry">${esc(t('cs_change'))}</button>
   </div>`));
   app.appendChild(el(`
@@ -471,12 +507,8 @@ function authScreen() {
       <div class="auth-hero-brand">➕ ApoPulse</div>
       <div class="auth-hero-title">${esc(t('au_hero_title'))}</div>
       <div class="auth-hero-sub">${esc(t('au_hero_sub'))}</div>
-      <ul class="auth-hero-list">
-        <li>${esc(t('au_hero_1'))}</li>
-        <li>${esc(t('au_hero_2'))}</li>
-        <li>${esc(t('au_hero_3'))}</li>
-        <li>${esc(t('au_hero_4'))}</li>
-      </ul>
+      <div data-lage></div>
+      <ul class="auth-hero-list" data-herolist>${heroPunkte().map((k) => `<li>${esc(t(k))}</li>`).join('')}</ul>
     </div>
     <div class="auth-forms">
       <div class="card">
@@ -502,6 +534,16 @@ function authScreen() {
       </div>
     </div>
   </div>`));
+
+  // Bereiche erst nach der Abfrage kennen (vor der Anmeldung noch nicht
+  // geladen), dann die Liste neu setzen; „Lage jetzt" mit echten Zahlen.
+  ladeFeatures().then(() => {
+    const ul = app.querySelector('[data-herolist]');
+    if (ul) ul.innerHTML = heroPunkte().map((k) => `<li>${esc(t(k))}</li>`).join('');
+  });
+  // Code aus der gespeicherten Wahl, nicht aus `ac`: Die Länderliste ist beim
+  // ersten Aufbau oft noch nicht geladen, `ac` dann leer.
+  zeigeLage(app.querySelector('[data-lage]'), (ac && ac.code) || (localStorage.getItem('apo_country') || '').toUpperCase());
 
   // Warnung, wenn dieser Server Konten nicht dauerhaft speichert.
   //

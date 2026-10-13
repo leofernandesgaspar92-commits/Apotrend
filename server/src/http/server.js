@@ -996,6 +996,22 @@ const routes = [
   // und Engpaesse aus einer anderen BASG-Schnittstelle. Ohne die Trennung
   // erklaerte sich die leere Engpass-Liste mit der Gesundheit des Newsfeeds —
   // also womoeglich mit „laeuft alles", waehrend nichts ankommt.
+  // Öffentliche Lage je Land für die Startseite (ohne Anmeldung): NUR
+  // Zahlen — wie viele Wirkstoffe auf der Behördenliste stehen, wie viele
+  // in 7 Tagen dazukamen, welche Behörde, wie frisch. Die Namen und der
+  // Verlauf sind das, wofür man sich anmeldet. Ohne Behördendaten: `daten:
+  // false` — die Startseite zeigt dann nichts statt einer erfundenen Zahl.
+  ['GET', /^\/api\/lage\/([A-Za-z]{2})$/, false, async ({ params }) => {
+    const cc = params[0].toUpperCase();
+    if (!COUNTRIES[cc]) { const e = new Error('Unbekanntes Land.'); e.status = 404; throw e; }
+    const b = chronik.wochenbilanz(cc);
+    if (!b) return { land: cc, daten: false };
+    const quellen = [...new Set(shortagesRepo.list({ country: cc })
+      .filter((z) => z.provenance === 'verified' && !z.reporter_user_id && String(z.country || '').toUpperCase() === cc)
+      .map((z) => z.quelle).filter(Boolean))].slice(0, 3);
+    const job = scheduler.status().find((j) => j.name === 'shortages') || null;
+    return { land: cc, daten: true, offen: b.offen, neu: b.neu.length, beendet: b.beendet.length, aufzeichnung_seit: b.aufzeichnung_seit, quellen, stand: (job && job.lastRunAt) || null };
+  }],
   ['GET', /^\/api\/coverage\/([A-Za-z]{2})$/, false, async ({ params, query }) => {
     // `query` ist URLSearchParams, kein Objekt — query.art waere immer
     // undefined und die Auskunft stillschweigend immer „news".

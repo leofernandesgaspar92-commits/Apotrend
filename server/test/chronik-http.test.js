@@ -117,6 +117,13 @@ test('Abruf füllt die Chronik; der nächste Abruf ohne die Zeile beendet die Ep
     assert.ok(ex.episoden.some((e) => e.wirkstoff === 'Amoxicillin'));
 
     // Zweiter Abruf: Amoxicillin ist von der Liste.
+    // Öffentliche Lage für die Startseite: nur Zahlen, ohne Anmeldung.
+    const lage = await (await fetch(B + '/api/lage/DE')).json();
+    assert.deepEqual([lage.daten, lage.offen, lage.quellen], [true, 1, ['BfArM — Lieferengpassmeldungen']]);
+    assert.ok(!JSON.stringify(lage).includes('Ibuprofen'), 'Wirkstoffnamen gehören nicht in die öffentliche Zahl');
+    assert.equal((await (await fetch(B + '/api/lage/PT')).json()).daten, false, 'ohne Behördendaten keine Zahl');
+    assert.equal((await fetch(B + '/api/lage/XX')).status, 404);
+
     // Quellen testen (Redaktion): derselbe Weg wie der echte Abruf.
     const probe = await (await fetch(B + '/api/quellen/probe', { method: 'POST', headers: J(mod), body: JSON.stringify({ id: 'bfarm_shortages' }) })).json();
     assert.equal(probe.ok, true, JSON.stringify(probe));

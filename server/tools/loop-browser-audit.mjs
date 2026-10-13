@@ -1293,6 +1293,28 @@ async function main() {
     await ctx.close();
   }
 
+  // ── Startseite: „Lage jetzt" nur mit echten Zahlen; keine ruhenden Versprechen
+  {
+    const startseite = async (lage) => {
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+      const page = await ctx.newPage();
+      await page.addInitScript(() => { try { localStorage.setItem('apo_country', 'AT'); } catch { /* */ } });
+      await page.route('**/api/lage/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(lage) }));
+      await page.goto(BASE, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(700);
+      const r = { box: await page.locator('[data-lagebox]').innerText().catch(() => null), liste: await page.locator('[data-herolist]').innerText().catch(() => '') };
+      await ctx.close();
+      return r;
+    };
+    const mit = await startseite({ land: 'AT', daten: true, offen: 37, neu: 5, beendet: 2, quellen: ['BASG'], stand: new Date(Date.now() - 2 * 3600000).toISOString() });
+    const ohne = await startseite({ land: 'AT', daten: false });
+    if (!mit.box || !/37 Wirkstoffe auf der Engpassliste/.test(mit.box) || !/Österreich/.test(mit.box) || !/5 neu in 7 Tagen/.test(mit.box) || !/Quelle: BASG/.test(mit.box)) findings.push(`Startseite: „Lage jetzt" fehlt oder ohne Quelle (${mit.box})`);
+    else if (ohne.box !== null) findings.push('Startseite: „Lage jetzt" erscheint ohne Behördendaten');
+    else if (/Bestände tauschen|Fachnetzwerk/.test(mit.liste)) findings.push('Startseite: verspricht ruhende Bereiche (Tauschbörse/Fachnetzwerk)');
+    else if (!/Frühwarnung/.test(mit.liste)) findings.push('Startseite: Informationsvorteile fehlen in der Liste');
+    else console.log('✓ Startseite: „Lage jetzt" mit Zahl, Quelle, Stand — ohne Daten nichts; nur laufende Versprechen');
+  }
+
   // ── Warnung vor nicht dauerhafter Speicherung ─────────────────────────────
   //  Eigener Kontext OHNE Anmeldung: Die übrige Prüfung meldet sich mit einem
   //  Token an und bekommt den Registrierungs-Bildschirm deshalb nie zu sehen —

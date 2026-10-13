@@ -2008,3 +2008,21 @@ Die Laufzeit selbst (12 Monate, Verlängerung ab altem Ablauf) war schon geteste
 „gewähltes Jahr kam beim Kauf nicht an"; Ersparnis falsch gerechnet → Audit; Preisabfrage
 fest „Monat" → Audit „Jahr gewählt, aber Preis zeigt Monat".
 
+### Cycle · Startseite zeigt die Lage — und verspricht nur, was läuft (2026-10-13)
+
+**GATHER.** Wer apopulse.com öffnet, sah vier Versprechen — zwei davon aus ruhenden Bereichen
+(„Bestände tauschen", „Fachnetzwerk") — und nichts von dem, was die Plattform wirklich hat:
+aktuelle Behördendaten. Dazu fehlte oben der Ländername (Länderliste vor der Anmeldung nicht
+geladen).
+
+**WORK.** Kasten „Lage jetzt in 🇦🇹 Österreich: 37 Wirkstoffe auf der Engpassliste · 5 neu in
+7 Tagen · Quelle BASG · Stand vor 2 Std." aus `GET /api/lage/:land` (öffentlich, NUR Zahlen —
+Namen und Verlauf gibt es nach der Anmeldung). Ohne Behördendaten erscheint der Kasten nicht.
+Vorteile-Liste nach laufenden Bereichen (Frühwarnung und Verlauf neu). Ländername über
+`Intl.DisplayNames` + Flagge aus dem Code, wenn die Liste noch fehlt.
+
+**Gegenproben (Bruch angewandt):** ruhende Versprechen wieder in der Liste → Audit; Server
+liefert „0" statt „keine Daten" → Ende-zu-Ende; Kasten mit Null-Zahlen ohne Daten → Audit.
+Eine Gegenprobe war zuerst keine: Der Bruch stürzte selbst ab (fehlende Quellenliste), so
+dass gar nichts erschien und der Test zufällig grün blieb — neu gebaut, schlägt an.
+
