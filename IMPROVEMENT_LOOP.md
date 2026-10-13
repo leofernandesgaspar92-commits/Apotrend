@@ -2090,3 +2090,31 @@ hat keine Rabatte, die Prüfung lief grün ins Leere. Jetzt mit nachgebildetem E
 eigenem Befund, wenn keine Karte erscheint. Ebenso aufgefallen: Der Tauschbörsen-Prüfpunkt
 klickte einen Reiter, der jetzt im „Mehr"-Blatt liegt — alle Reiter-Klicks des Audits laufen
 deshalb über `reiterOeffnen`.
+
+### Cycle · Design v2, Teil 2 — Navigation bleibt, Startseite ohne Verlaufsblock (2026-10-13)
+
+**GATHER.** Die restlichen Seiten am Bildschirm durchgesehen (ausgeloggt, Meldungen, Profil,
+Live-Warnungen, Öffentlich, News — Handy und Desktop).
+
+**Gefunden und behoben:**
+- Ausgeloggt stand „Meldungen" im Kopf: `.kopf-btn { display:inline-flex }` überstimmte
+  `.hidden`.
+- Auf Unterseiten, die `#app` leeren (Meldungen, Nachrichten, Premium, Moderation,
+  Datenquellen, Logistik), verschwand die Navigation — zurück ging es nur über „Zurück". Sie
+  steht jetzt als `<nav id="hauptnav">` außerhalb von `#app` und bleibt auf jeder Seite.
+- Dabei aufgefallen: Logo, „Zurück"-Knöpfe und Kachel-Links riefen `loadTab()` auch dann,
+  wenn kein `#feed` mehr da war → `null.innerHTML`. `loadTab()` baut in dem Fall die
+  Hauptansicht neu auf.
+- Startseite: grüner Verlaufsblock mit „➕ ApoPulse" ersetzt durch große Aussage auf ruhiger
+  Fläche, Häkchen-Liste, „Lage jetzt" als normale Karte (wie LinkedIn). Formular-Überschriften
+  sind jetzt h2 (eine h1 je Seite); der Smoke-Test sucht „Anmelden" in h1 und h2.
+- Letztes Emoji in einer Überschrift (News: „📰 Presse aus …") entfernt.
+
+**Audit.** Neu im Prüfpunkt Design v2: Navigation sichtbar auf der Meldungen-Seite, Reiter-Klick
+von dort baut die Ansicht auf, Logo führt zurück; ausgeloggt kein „Meldungen" und keine
+Navigation.
+
+**Gegenproben (Bruch angewandt, jede schlägt an):** Navigation wieder in `#app` → „Navigation
+verschwindet auf der Meldungen-Seite" (390 + 1280); Wache in `loadTab()` aus → „Logo führt
+nicht zurück" + JS-Fehler `null.innerHTML`; Regel `.kopf-btn.hidden` aus → „btnNotif sichtbar,
+obwohl niemand angemeldet ist".

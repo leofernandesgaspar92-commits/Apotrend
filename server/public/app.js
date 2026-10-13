@@ -34,6 +34,7 @@ const ICONS = {
   chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
   landmark: '<path d="M3 21h18M4 10h16M12 3l9 5H3z"/><path d="M6 10v8M10 10v8M14 10v8M18 10v8"/>',
   download: '<path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
   star: '<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',
 };
 function ico(name, size = 24) {
@@ -482,6 +483,7 @@ function hideHeaderForAuth() {
   stopNewsRail();
   stopQuickRail();
   document.body.classList.remove('mit-nav'); // keine Seitenleiste/untere Leiste vor dem Login
+  document.getElementById('hauptnav')?.remove();
   app.classList.remove('auth-mode'); // Standardbreite; authScreen setzt sie danach gezielt wieder
 }
 function currentAuthCountry() {
@@ -522,6 +524,7 @@ async function countryScreen() {
 // Startseiten-Versprechen: nur, was läuft. Bis 10/2026 standen hier
 // „Bestände tauschen" und „Fachnetzwerk" — beide Bereiche ruhen. Die
 // Informationsvorteile (Frühwarnung, Verlauf) fehlten dagegen ganz.
+const heroListe = () => heroPunkte().map((k) => `<li><span class="auth-hero-ok" aria-hidden="true">${ico('check', 18)}</span><span>${esc(t(k))}</span></li>`).join('');
 function heroPunkte() {
   return ['au_hero_1', 'au_hero_fw', 'au_hero_chronik',
     ...(featureAn('preise') || featureAn('rabatte') ? ['au_hero_2'] : []),
@@ -549,10 +552,10 @@ async function zeigeLage(box, land) {
   let d;
   try { d = await (await fetch('/api/lage/' + encodeURIComponent(land))).json(); } catch { return; }
   if (!d || !d.daten) return;
-  box.innerHTML = `<div data-lagebox style="margin:12px 0 4px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.35);line-height:1.5">
-    <div style="font-weight:800">${esc(ti('au_lage_title', { land: landAnzeige(land) }))}</div>
+  box.innerHTML = `<div data-lagebox class="lage-box">
+    <div class="lage-kopf"><span class="nr-live" aria-hidden="true"></span>${esc(ti('au_lage_title', { land: landAnzeige(land) }))}</div>
     <div style="font-size:1.05em"><b>${esc(ti(d.offen === 1 ? 'au_lage_offen_1' : 'au_lage_offen', { n: d.offen }))}</b> · ${esc(ti('au_lage_neu', { n: d.neu }))}</div>
-    <div style="font-size:14px;opacity:.95">${esc(t('au_lage_quelle'))}: ${esc(d.quellen.join(', ') || '—')}${d.stand ? ' · ' + esc(ti('au_lage_stand', { z: vorZeit(d.stand) || '' })) : ''}</div></div>`;
+    <div class="muted" style="font-size:14px">${esc(t('au_lage_quelle'))}: ${esc(d.quellen.join(', ') || '—')}${d.stand ? ' · ' + esc(ti('au_lage_stand', { z: vorZeit(d.stand) || '' })) : ''}</div></div>`;
 }
 
 function authScreen() {
@@ -569,16 +572,15 @@ function authScreen() {
   </div>`));
   app.appendChild(el(`
   <div class="auth-grid">
-    <div class="card auth-hero">
-      <div class="auth-hero-brand">➕ ApoPulse</div>
-      <div class="auth-hero-title">${esc(t('au_hero_title'))}</div>
+    <div class="auth-hero">
+      <h1 class="auth-hero-title">${esc(t('au_hero_title'))}</h1>
       <div class="auth-hero-sub">${esc(t('au_hero_sub'))}</div>
       <div data-lage></div>
-      <ul class="auth-hero-list" data-herolist>${heroPunkte().map((k) => `<li>${esc(t(k))}</li>`).join('')}</ul>
+      <ul class="auth-hero-list" data-herolist>${heroListe()}</ul>
     </div>
     <div class="auth-forms">
       <div class="card">
-        <h1>${esc(t('au_login'))}</h1>
+        <h2 class="auth-form-h">${esc(t('au_login'))}</h2>
         <label for="li_email">${esc(t('au_email'))}</label><input id="li_email" type="email" placeholder="${esc(t('au_email_ph'))}">
         <label for="li_pw">${esc(t('au_pw'))}</label><input id="li_pw" type="password" placeholder="${esc(t('au_pw'))}">
         <div style="margin-top:12px"><button id="li_go">${esc(t('au_login'))}</button></div>
@@ -587,7 +589,7 @@ function authScreen() {
         <div class="err" id="li_err"></div>
       </div>
       <div class="card">
-        <h1>${esc(t('au_register'))}</h1>
+        <h2 class="auth-form-h">${esc(t('au_register'))}</h2>
         <div id="rg_durability" class="err" hidden></div>
         <label for="rg_name">${esc(t('au_name'))}</label><input id="rg_name" placeholder="Dr. Anna Huber">
         <label for="rg_handle">${esc(t('au_handle'))}</label><input id="rg_handle" placeholder="anna_huber">
@@ -605,7 +607,7 @@ function authScreen() {
   // geladen), dann die Liste neu setzen; „Lage jetzt" mit echten Zahlen.
   ladeFeatures().then(() => {
     const ul = app.querySelector('[data-herolist]');
-    if (ul) ul.innerHTML = heroPunkte().map((k) => `<li>${esc(t(k))}</li>`).join('');
+    if (ul) ul.innerHTML = heroListe();
   });
   // Code aus der gespeicherten Wahl, nicht aus `ac`: Die Länderliste ist beim
   // ersten Aufbau oft noch nicht geladen, `ac` dann leer.
@@ -850,9 +852,9 @@ function updateViewContext() {
 
 // Reiter programmatisch wechseln (z.B. aus dem News-Livestream heraus).
 function switchTab(name) {
-  const b = app.querySelector('.tabs button[data-tab="' + name + '"]');
+  const b = document.querySelector('.tabs button[data-tab="' + name + '"]');
   if (!b) return;
-  app.querySelectorAll('.tabs button').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('active'));
   b.classList.add('active'); setTabAria(); tab = name; loadTab();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -906,12 +908,13 @@ async function mainScreen() {
   app.innerHTML = '';
   app.classList.remove('auth-mode'); // Haupt-App in Standardbreite
   document.body.classList.add('mit-nav'); // Reiter als Seitenleiste (Desktop) bzw. untere Leiste (Handy)
+  document.getElementById('hauptnav')?.remove(); // vom vorigen Aufbau
   app.appendChild(el(`
     <div class="suchleiste">
       <div class="row"><span class="suche-feld"><span class="suche-ic" data-ic="search" data-ic-size="20"></span><input id="sq" data-i18n-ph="search_ph" data-i18n-aria="search_go" placeholder="Wirkstoff, Präparat, Kolleg:in…" aria-label="Suche"></span><button class="small" id="sgo" data-i18n="search_go">Suchen</button></div>
     </div>
-    <div class="tabs">
-      <button data-tab="overview" class="active" data-navtab data-i18n="nav_overview">✨ Für dich</button>
+    <nav class="tabs" id="hauptnav" data-i18n-aria="nav_main" aria-label="Hauptnavigation">
+      <button data-tab="overview" data-navtab data-i18n="nav_overview">✨ Für dich</button>
       <button data-tab="signals" data-navtab data-i18n="nav_signals">⚠️ Live-Warnungen</button>
       <button data-tab="shortages" data-navtab data-i18n="nav_shortages">📦 Engpässe</button>
       <button data-tab="news" data-navtab data-i18n="nav_news">📰 News</button>
@@ -921,7 +924,7 @@ async function mainScreen() {
       <button data-tab="public" class="tab-neben" data-navtab data-i18n="nav_public">🌍 Öffentlich</button>
       <button data-tab="home" class="tab-neben" data-navtab data-i18n="nav_home">🏠 Mein Feed</button>
       <button type="button" class="tab-mehr" data-mehr aria-expanded="false"><span class="tab-ic" data-ic="more"></span><span class="tab-tx" data-i18n="nav_more">Mehr</span></button>
-    </div>
+    </nav>
     <div id="socialCompose" style="display:none">
       <div class="card">
         <label data-i18n="co_label">Was gibt's Neues? (kurzer Fachbeitrag)</label>
@@ -959,6 +962,12 @@ async function mainScreen() {
     <div id="feed"></div>
   `));
 
+  // Die Navigation steht AUSSERHALB von #app: Unterseiten wie Meldungen,
+  // Nachrichten oder Premium leeren #app — vorher verschwand damit die
+  // Leiste unten bzw. links, und zurück ging es nur über „Zurück".
+  { const nav = app.querySelector('#hauptnav'); app.parentNode.insertBefore(nav, app);
+    const aktiv = nav.querySelector('button[data-tab="' + tab + '"]') || nav.querySelector('button[data-tab="overview"]');
+    if (aktiv) { aktiv.classList.add('active'); tab = aktiv.dataset.tab; } }
   let composeImage = null;
   const pimg = document.getElementById('pimg'), pimgprev = document.getElementById('pimgprev');
   const pimgname = document.getElementById('pimgname'), pimgclear = document.getElementById('pimgclear');
@@ -1037,14 +1046,14 @@ async function mainScreen() {
   // Ruhende Bereiche verschwinden, BEVOR Klick-Handler gesetzt werden —
   // sonst haengt ein Handler an einem Element, das gleich entfernt wird.
   wendeFeaturesAn();
-  app.querySelectorAll('.tabs button[data-tab]').forEach(b => b.onclick = () => {
-    app.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tabs button[data-tab]').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
     b.classList.add('active'); tab = b.dataset.tab; loadTab();
   });
   // „Mehr" (nur Handy): die seltener gebrauchten Reiter als Blatt über der
   // unteren Leiste. Fünf Ziele unten sind das, was Daumen sicher treffen.
   fuelleIcons(app.querySelector('.suchleiste'));
-  const mehr = app.querySelector('.tabs .tab-mehr');
+  const mehr = document.querySelector('.tabs .tab-mehr');
   if (mehr) {
     fuelleIcons(mehr);
     mehr.onclick = (e) => {
@@ -2178,12 +2187,16 @@ async function applyCountryGating() {
     });
   } catch { COUNTRY_FEAT = {}; }
   Object.entries(FEATURE_TAB).forEach(([feat, tabName]) => {
-    const b = app.querySelector('.tabs button[data-tab="' + tabName + '"]');
+    const b = document.querySelector('.tabs button[data-tab="' + tabName + '"]');
     if (b) b.style.display = featBlocked(feat) ? 'none' : '';
   });
 }
 
 function loadTab() {
+  // Unterseiten (Meldungen, Nachrichten, Premium …) leeren #app samt Feed.
+  // Die Navigation bleibt aber stehen — ein Klick darauf baut die
+  // Hauptansicht neu auf, statt ins Leere (`null.innerHTML`) zu laufen.
+  if (!document.getElementById('feed')) { if (me) mainScreen(); return; }
   // Reiterwechsel beginnt oben: Ohne das behält das Fenster die alte Scroll-Position,
   // sodass man nach dem Wechsel (z. B. von einer langen Engpass-Liste zu „Preise")
   // mitten im neuen Inhalt landet. Nur echte Navigation läuft über loadTab() —
@@ -2860,7 +2873,7 @@ async function renderPresse(box) {
   catch { box.innerHTML = ''; return; }
   if (d.grund === 'abgeschaltet') { box.innerHTML = ''; return; }
   const card = el(`<div class="card" data-presse>
-    <b style="font-size:17px">📰 ${esc(ti('presse_title', { land: landLabel(cc) }))}</b>
+    <b style="font-size:17px">${esc(ti('presse_title', { land: landLabel(cc) }))}</b>
     <div class="muted" style="font-size:13px;margin-top:2px">${esc(ti('presse_hint', { land: landLabel(cc) }))}</div>
     <div data-prliste style="margin-top:8px"></div>
   </div>`);

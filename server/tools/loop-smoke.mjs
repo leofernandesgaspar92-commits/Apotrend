@@ -62,7 +62,7 @@ async function main() {
     const countryCount = await op.evaluate(() => document.querySelectorAll('[data-country]').length);
     step('Länderauswahl erscheint als erster Schritt', countryCount === expectedCountries && countryCount >= 16, `${countryCount}/${expectedCountries} Länder`);
     // Land bestimmt Sprache: AT -> „Anmelden", GB -> „Log in".
-    const loginHead = async () => op.evaluate(() => [...document.querySelectorAll('h1')].map(h => h.textContent.trim()).find(t => /Anmelden|Log in|Entrar/.test(t)) || '');
+    const loginHead = async () => op.evaluate(() => [...document.querySelectorAll('h1, h2')].map(h => h.textContent.trim()).find(t => /Anmelden|Log in|Entrar/.test(t)) || '');
     await op.click('[data-country="AT"]').catch(() => {}); await op.waitForTimeout(300);
     const de = await loginHead();
     await op.click('#changeCountry').catch(() => {}); await op.waitForTimeout(250);

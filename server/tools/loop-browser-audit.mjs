@@ -430,7 +430,32 @@ async function main() {
       const zu = await page.evaluate(() => document.getElementById('kopfMenue').hidden && document.activeElement && document.activeElement.id === 'btnMenue');
       if (!auf) findings.push(`Design v2 ${w}px: Menü öffnet nicht (oder aria-expanded fehlt)`);
       if (!zu) findings.push(`Design v2 ${w}px: Escape schließt das Menü nicht oder Fokus geht verloren`);
+      // Navigation bleibt auf Unterseiten: Meldungen leeren #app. Vorher
+      // verschwand die Leiste mit, und ein Klick aufs Logo lief in null.innerHTML.
+      await page.click('#btnNotif'); await page.waitForTimeout(600);
+      const navDa = await page.locator('.tabs button[data-tab="shortages"]').isVisible().catch(() => false);
+      if (!navDa) findings.push(`Design v2 ${w}px: Navigation verschwindet auf der Meldungen-Seite`);
+      else {
+        await page.click('.tabs button[data-tab="shortages"]'); await page.waitForTimeout(1200);
+        const ok = await page.evaluate(() => !!document.getElementById('feed') && document.querySelector('.tabs button.active')?.dataset.tab === 'shortages');
+        if (!ok) findings.push(`Design v2 ${w}px: Reiter-Klick von der Meldungen-Seite baut die Ansicht nicht auf`);
+      }
+      await page.click('#btnNotif'); await page.waitForTimeout(600);
+      await page.click('#logoHome'); await page.waitForTimeout(1200);
+      if (!(await page.evaluate(() => !!document.getElementById('feed')))) findings.push(`Design v2 ${w}px: Logo führt von der Meldungen-Seite nicht zurück`);
       for (const f of fehler) findings.push(`Design v2 ${w}px: JS-Fehler ${f}`);
+      await ctx.close();
+    }
+    // Ausgeloggt: keine Knöpfe, die eine Anmeldung brauchen.
+    {
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+      const page = await ctx.newPage();
+      await page.addInitScript(() => { localStorage.setItem('apo_country', 'AT'); });
+      await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(600);
+      for (const id of ['btnNotif', 'btnLogout', 'btnHelp']) {
+        if (await page.locator('#' + id).isVisible().catch(() => false)) findings.push(`Design v2: „${id}" sichtbar, obwohl niemand angemeldet ist`);
+      }
+      if (await page.locator('.tabs').count()) findings.push('Design v2: Navigation steht auf der Anmeldeseite');
       await ctx.close();
     }
     console.log('✓ Design v2: Leiste unten (Handy) / links + rechte Spalte (Desktop), Menü und „Mehr" bedienbar, keine Emojis in der Navigation');

@@ -61,12 +61,18 @@
   #app.auth-mode { max-width:920px; }
   .auth-grid { display:grid; grid-template-columns:1fr; gap:16px; align-items:start; }
   @media (min-width:820px){ .auth-grid { grid-template-columns:1.05fr .95fr; } }
-  .card.auth-hero { background:linear-gradient(150deg, var(--green), var(--green-d)); color:#fff; border-color:transparent; box-shadow:0 6px 20px rgba(11,127,40,.25); }
-  .auth-hero-brand { font-weight:800; letter-spacing:.5px; font-size:1.15em; opacity:.95; }
-  .auth-hero-title { font-size:1.5em; font-weight:800; line-height:1.22; margin:10px 0 6px; letter-spacing:-0.01em; }
-  .auth-hero-sub { opacity:.92; font-size:1.02em; }
-  .auth-hero-list { list-style:none; padding:0; margin:16px 0 0; display:grid; gap:10px; }
-  .auth-hero-list li { font-size:1.02em; font-weight:600; line-height:1.4; }
+  /* Startseite wie LinkedIn: große Aussage auf ruhiger Fläche statt grünem
+     Verlaufsblock, Häkchen statt Emojis, Anmeldung daneben. */
+  .auth-hero { padding:8px 4px 16px; }
+  .auth-hero-title { font-size:2.1em; font-weight:800; line-height:1.15; margin:6px 0 10px; letter-spacing:-0.02em; color:var(--text); }
+  .auth-hero-sub { color:var(--muted); font-size:1.1em; }
+  .auth-hero-list { list-style:none; padding:0; margin:20px 0 0; display:grid; gap:12px; }
+  .auth-hero-list li { display:flex; gap:12px; align-items:flex-start; font-size:1.05em; font-weight:600; line-height:1.4; }
+  .auth-hero-ok { flex:none; display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; background:var(--ok-bg); color:var(--ok-fg); }
+  .lage-box { margin:18px 0 4px; padding:12px 14px; border-radius:var(--radius); background:var(--card); border:1px solid var(--line); line-height:1.5; }
+  .lage-kopf { display:flex; align-items:center; gap:8px; font-weight:800; }
+  .auth-form-h { font-size:1.4em; margin-bottom:6px; }
+  @media (max-width:560px){ .auth-hero-title { font-size:1.7em; } }
   header .sp { flex:1; }
   /* Länder-/Sprach-Umschalter in der Kopfzeile: klar erkennbar, lesbar (Karten-
      Hintergrund statt Weiß-auf-Grün), kompakt genug fürs Handy. */
@@ -370,6 +376,7 @@
      Das Wort bleibt (Owner-Vorgabe: Klartext statt erratener Symbole). */
   .kopf-btn { position:relative; display:inline-flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
     background:transparent; color:var(--muted); border:0; border-radius:var(--radius-sm); min-width:64px; min-height:48px; padding:4px 8px; line-height:1.1; }
+  .kopf-btn.hidden { display:none; } /* sonst überstimmt display:inline-flex das „hidden“ (ausgeloggt stand „Meldungen“ da) */
   .kopf-btn:hover, .kopf-btn[aria-expanded="true"] { background:var(--chip-bg); color:var(--text); }
   .kopf-btn .hlabel { font-size:13px; font-weight:600; white-space:nowrap; }
   .kopf-btn .badge { top:0; right:12px; }
