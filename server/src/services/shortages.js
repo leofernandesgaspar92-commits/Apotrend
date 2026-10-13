@@ -4,6 +4,7 @@
 import { cleanSourceUrl } from '../domain/media.js';
 import { AppError } from '../domain/errors.js';
 import { gehoertZuLand } from '../domain/land.js';
+import { wirkstoffSchluessel } from '../domain/inn.js';
 
 const STATUS_LABEL = { kritisch: 'Kritischer Engpass', eingeschraenkt: 'Eingeschränkt lieferbar', verfuegbar: 'Wieder verfügbar' };
 const VALID_STATUS = Object.keys(STATUS_LABEL);
@@ -91,8 +92,15 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
   // für eine Meldung aus Wien. Eine Push-Meldung meint den eigenen Markt
   // (domain/land.js). Länderlose Einträge gelten wie in der Liste überall.
   const heimatVon = (uid) => { const p = social.getProfile ? social.getProfile(uid) : null; return p && p.country; };
+  // Über den Wirkstoff-SCHLÜSSEL (domain/inn.js), nicht über den Wortlaut:
+  // Wer „Amoxicillin" beobachtet, meint auch das „Amoxicillin-Trihydrat" des
+  // BfArM. Vorher galt nur die exakte Schreibweise — der Alarm blieb stumm.
+  const wkKey = (w) => wirkstoffSchluessel(w) || String(w || '').trim().toLowerCase();
   function beobachterImLand(wirkstoff, land) {
-    return shortagesRepo.usersWatching(wirkstoff)
+    const key = wkKey(wirkstoff);
+    return shortagesRepo.listWatchers()
+      .filter((b) => b.wirkstoffe.some((w) => wkKey(w) === key))
+      .map((b) => b.userId)
       .filter((uid) => gehoertZuLand({ country: land }, heimatVon(uid)));
   }
 
@@ -384,12 +392,12 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       const all = shortagesRepo.list({ country: country || heimatVon(userId) || null }); // nach Kritikalität sortiert
       const byWirkstoff = new Map();
       for (const s of all) {
-        const k = s.wirkstoff.trim().toLowerCase();
+        const k = wkKey(s.wirkstoff);
         if (!byWirkstoff.has(k)) byWirkstoff.set(k, s); // erster Treffer = kritischster
       }
       const t0 = today();
       return shortagesRepo.listWatch(userId).map(w => {
-        const s = byWirkstoff.get(w.trim().toLowerCase());
+        const s = byWirkstoff.get(wkKey(w));
         const aging = s ? shortageAging(s.gemeldet_am, s.voraussichtlich_bis, s.status, t0) : { days_reported: null, days_until: null, overdue: false };
         return {
           wirkstoff: w,

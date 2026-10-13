@@ -40,6 +40,7 @@ import { createLogistikService } from '../services/logistik.js';
 // Last aufgefallen waere.
 import { AppError } from '../domain/errors.js';
 import { HANDLE_RE, normalizeHandle, freierHandle } from '../domain/handle.js';
+import { createSortiment } from '../services/sortiment.js';
 import { createOverviewService } from '../services/overview.js';
 import { createOAuthService, buildProvidersFromEnv } from '../services/oauth.js';
 import { createPaymentsService, buildPaymentProvidersFromEnv } from '../services/payments.js';
@@ -163,6 +164,8 @@ const fruehwarnung = createFruehwarnung({
   istPremium: (uid) => payments.hasFeature(uid, 'premium'),
   heimatVon: (uid) => { const p = social.getProfile(uid); return p && p.country; },
 });
+// Sortiments-Check: eigene Liste gegen die Behördenlisten (services/sortiment.js).
+const sortiment = createSortiment({ chronik, shortagesRepo, istPremium: (uid) => payments.hasFeature(uid, 'premium') });
 // Wochenbericht per E-Mail (Premium). Ebenfalls VOR applySnapshot(): Wer ihn
 // diese Woche schon bekam und wer ihn abbestellt hat, wird mit gesichert.
 const mailer = createMailer();
@@ -902,7 +905,7 @@ async function runShortageIngest() {
   // Chronik fortschreiben (services/chronik.js) — nur für Länder mit Lieferung.
   try {
     summary.chronik = chronik.beobachte({ zeilen: shortagesRepo.list(), laender: [...gelieferteLaender] });
-    summary.fruehwarnung = { gesendet: fruehwarnung.melde(summary.chronik.neue) };
+    summary.fruehwarnung = { gesendet: fruehwarnung.melde(summary.chronik.neue), heimat: fruehwarnung.meldeHeimat(summary.chronik.neue, summary.chronik.beendete) };
     if (summary.chronik.neu || summary.chronik.geschlossen) saveSoon();
   } catch (e) {
     summary.chronik = { error: (e && e.message) || String(e) };
@@ -2040,6 +2043,11 @@ const routes = [
   ['POST', /^\/api\/shortages\/([^/]+)\/report-update$/, true, async ({ userId, params, body }) => shortages.updateShortageReport(userId, params[0], { status: body.status, grund: body.grund })],
 
   // ── Beobachtungsliste (Wirkstoffe im Blick behalten) ──
+  // Sortiments-Check (Premium-Grenze im Dienst: gratis die ersten 15 Zeilen).
+  ['POST', /^\/api\/sortiment\/pruefen$/, true, async ({ userId, body, query }) => {
+    if (!String(body.text || '').trim()) throw new AppError('sortiment_leer', 'Bitte eine Liste einfügen (ein Wirkstoff oder Präparat je Zeile).');
+    return sortiment.pruefen(userId, body.text, body.country ? normalizeCountry(body.country) : activeCountry(userId, query));
+  }],
   ['GET', /^\/api\/watchlist$/, true, async ({ userId, query }) => ({ items: shortages.myWatchlist(userId, { country: activeCountry(userId, query) }) })],
   ['POST', /^\/api\/watchlist$/, true, async ({ userId, body }) => ({ items: shortages.watch(userId, body.wirkstoff) })],
   ['POST', /^\/api\/watchlist\/bulk$/, true, async ({ userId, body }) => ({ items: shortages.watchMany(userId, body.wirkstoffe) })],

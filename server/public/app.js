@@ -35,6 +35,7 @@ const ICONS = {
   landmark: '<path d="M3 21h18M4 10h16M12 3l9 5H3z"/><path d="M6 10v8M10 10v8M14 10v8M18 10v8"/>',
   download: '<path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+  list: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/>',
   star: '<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',
 };
 function ico(name, size = 24) {
@@ -1333,6 +1334,7 @@ async function loadOverview() {
   // Nur, was läuft: Lesezeichen, Angebote, Live, Verzeichnis und Team standen
   // hier auch dann, wenn ihr Bereich ruhte — Klick führte ins Leere.
   const schnell = [
+    ['ov_sortiment', 'list', 'srt_nav', null, () => openSortiment()],
     ['ov_signals', 'alert', 'nav_signals', null],
     ['ov_logistik', 'truck', 'lg_nav', null],
     ['ov_bm', 'bookmark', 'ov_bookmarks', 'social', openBookmarks],
@@ -1365,7 +1367,7 @@ async function loadOverview() {
   // Grosshandel und Logistik, und fuer Apotheken meist leer — eine Kachel mit
   // „0" waere ein Zaehler ohne Aussage.
   { const lb = head.querySelector('#ov_logistik'); if (lb) lb.onclick = () => openLogistik(); }
-  for (const [id, , , bereich, fn] of schnell) if (bereich) head.querySelector('#' + id).onclick = fn;
+  for (const [id, , , , fn] of schnell) if (fn) head.querySelector('#' + id).onclick = fn;
   feed.appendChild(head);
   renderLiveOverview(feed, liveNow, liveSoon); // zeitkritisch: laufende/kommende Live-Sessions ganz oben
   renderMyTasksOverview(feed, (tasksData && tasksData.tasks) || []); // deine offenen Aufgaben
@@ -3575,6 +3577,131 @@ function downloadCsv(baseName, header, rows) {
   const a = document.createElement('a');
   a.href = url; a.download = baseName + '-' + new Date().toISOString().slice(0, 10) + '.csv';
   a.click(); URL.revokeObjectURL(url);
+}
+
+// ── Sortiments-Check ─────────────────────────────────────────────────────────
+// Die eigene Liste (aus der Warenwirtschaft kopiert oder als CSV) gegen die
+// Behördenlisten prüfen. Server: services/sortiment.js — dort die Regeln.
+const SRT_FARBE = { knapp: 'var(--crit-fg)', ausland: 'var(--warn-fg)', wiederholt: 'var(--info-fg)', ruhig: 'var(--ok-fg)', unbekannt: 'var(--muted)' };
+const SRT_SYMBOL = { knapp: 'alert', ausland: 'globe', wiederholt: 'clock', ruhig: 'check', unbekannt: 'help' };
+let srtLetzterText = '';
+async function openSortiment() {
+  setDocTitle(t('srt_title'));
+  const feed = document.getElementById('feed');
+  if (!feed) return;
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('active')); setTabAria();
+  window.scrollTo({ top: 0 });
+  feed.innerHTML = '';
+  const card = el(`<div class="card">
+    <div><button class="ghost small" data-back>${esc(t('search_back'))}</button></div>
+    <h1 style="margin:10px 0 4px">${esc(t('srt_title'))}</h1>
+    <div class="muted" style="font-size:15px">${esc(t('srt_sub'))}</div>
+    <label for="srtText" style="margin-top:12px">${esc(t('srt_label'))}</label>
+    <textarea id="srtText" rows="8" placeholder="${esc(t('srt_ph'))}" style="font-family:inherit"></textarea>
+    <div class="row" style="margin-top:10px;flex-wrap:wrap;gap:8px">
+      <label class="srt-datei">${ico('download', 18)}<span>${esc(t('srt_file'))}</span><input type="file" id="srtDatei" accept=".csv,.txt,text/csv,text/plain" hidden></label>
+      <span class="sp" style="flex:1"></span>
+      <button id="srtGo" class="auth-gross" style="width:auto;padding:0 28px">${esc(t('srt_go'))}</button>
+    </div>
+    <div class="muted" style="font-size:13px;margin-top:8px">${esc(t('srt_hinweis'))}</div>
+    <div class="err" id="srtErr"></div>
+  </div>`);
+  feed.appendChild(card);
+  const box = el('<div data-srtergebnis></div>');
+  feed.appendChild(box);
+  const ta = card.querySelector('#srtText');
+  ta.value = srtLetzterText;
+  card.querySelector('[data-back]').onclick = () => goTab('overview');
+  card.querySelector('#srtDatei').onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    if (f.size > 2_000_000) { card.querySelector('#srtErr').textContent = t('srt_zu_gross'); return; }
+    ta.value = await f.text();
+  };
+  card.querySelector('#srtGo').onclick = async () => {
+    const err = card.querySelector('#srtErr'); err.textContent = '';
+    srtLetzterText = ta.value;
+    box.innerHTML = '<div class="loading">…</div>';
+    let d;
+    try { d = await api('POST', '/api/sortiment/pruefen', { text: ta.value, country: viewCountry() }); }
+    catch (e2) { box.innerHTML = ''; err.textContent = e2.message; return; }
+    zeigeSortiment(box, d);
+    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+}
+
+function srtZeileText(e) {
+  if (e.einstufung === 'knapp') {
+    const teile = [ti('srt_r_knapp', { land: landAnzeige(srtLand) })];
+    if (e.seit_tagen != null) teile.push(ti('fw_since', { n: e.seit_tagen }));
+    if (e.voraussichtlich_bis) teile.push(ti('srt_bis', { d: fmtDateDe(e.voraussichtlich_bis) }));
+    // Herkunft immer nennen: Behörde, Redaktion, Apotheken-Meldung oder Referenzdaten.
+    if (e.herkunft === 'community') teile.push(t('srt_community'));
+    else if (e.herkunft === 'reference') teile.push(t('prov_reference'));
+    else if (e.quelle) teile.push(t('srt_quelle') + ' ' + e.quelle);
+    return teile.join(' · ');
+  }
+  if (e.einstufung === 'ausland') return ti('srt_r_ausland', { laender: e.ausland.map((a) => `${landAnzeige(a.land)} (${ti('fw_since', { n: a.seit_tagen })})`).join(', ') });
+  if (e.einstufung === 'wiederholt') return ti('srt_r_wiederholt', { n: e.verlauf.anzahl }) + (e.verlauf.durchschnitt_tage != null ? ' · ' + ti('srt_r_schnitt', { n: e.verlauf.durchschnitt_tage }) : '');
+  if (e.einstufung === 'ruhig') return t('srt_r_ruhig');
+  return t('srt_r_unbekannt');
+}
+let srtLand = '';
+function zeigeSortiment(box, d) {
+  srtLand = d.land;
+  box.innerHTML = '';
+  const z = d.zusammenfassung;
+  const kachel = (k) => `<div class="ovtile" style="--tile-accent:${SRT_FARBE[k]}"><span class="ovtile-ic" aria-hidden="true">${ico(SRT_SYMBOL[k], 20)}</span><div class="ovtile-num">${z[k]}</div><div class="ovtile-lbl">${esc(t('srt_k_' + k))}</div></div>`;
+  const laender = d.laender.length
+    ? d.laender.map((l) => landAnzeige(l.land)).join(', ')
+    : '';
+  const betroffen = d.ergebnisse.filter((e) => ['knapp', 'ausland', 'wiederholt'].includes(e.einstufung) && !e.beobachtet).map((e) => e.wirkstoff);
+  const kopf = el(`<div class="card">
+    <h2 style="margin:0 0 4px">${esc(ti('srt_ergebnis', { n: d.geprueft, land: landAnzeige(d.land) }))}</h2>
+    <div class="muted" style="font-size:14px;margin-bottom:12px">${laender ? esc(ti('srt_gegen', { laender })) : esc(t('srt_keine_daten'))}</div>
+    <div class="ovtiles">${['knapp', 'ausland', 'wiederholt', 'ruhig', 'unbekannt'].map(kachel).join('')}</div>
+    ${d.gesperrt ? `<div class="srt-sperre"><b>${esc(ti('srt_gesperrt', { n: d.gesperrt, frei: d.grenze }))}</b><div class="muted" style="font-size:14px;margin:4px 0 8px">${esc(t('srt_gesperrt_sub'))}</div><button data-srtpremium>${esc(t('srt_premium_cta'))}</button></div>` : ''}
+    <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px">
+      ${betroffen.length ? `<button data-srtwatch>${esc(ti('srt_alle_beobachten', { n: betroffen.length }))}</button>` : ''}
+      ${d.premium ? `<button class="ghost" data-srtcsv>${esc(t('srt_csv'))}</button>` : ''}
+    </div>
+    <div class="err" data-srterr></div>
+  </div>`);
+  box.appendChild(kopf);
+  const p = kopf.querySelector('[data-srtpremium]'); if (p) p.onclick = () => openPremium();
+  const w = kopf.querySelector('[data-srtwatch]');
+  if (w) w.onclick = async () => {
+    try {
+      await api('POST', '/api/watchlist/bulk', { wirkstoffe: betroffen });
+      d.ergebnisse.forEach((e) => { if (betroffen.includes(e.wirkstoff)) e.beobachtet = true; });
+      zeigeSortiment(box, d);
+      box.querySelector('[data-srterr]').textContent = ti('srt_beobachtet_ok', { n: betroffen.length });
+    } catch (e2) { kopf.querySelector('[data-srterr]').textContent = e2.message; }
+  };
+  const c = kopf.querySelector('[data-srtcsv]');
+  if (c) c.onclick = () => downloadCsv('sortiment-check', [t('srt_csv_eingabe'), t('srt_csv_wirkstoff'), t('srt_csv_einstufung'), t('srt_csv_details')],
+    d.ergebnisse.map((e) => [e.eingabe, e.wirkstoff || '', t('srt_k_' + e.einstufung), srtZeileText(e)]));
+  const liste = el('<div class="card srt-liste"></div>');
+  d.ergebnisse.forEach((e) => {
+    const zeile = el(`<div class="srt-zeile" style="--srt-farbe:${SRT_FARBE[e.einstufung]}">
+      <span class="srt-ic" aria-hidden="true">${ico(SRT_SYMBOL[e.einstufung], 20)}</span>
+      <div class="srt-text">
+        <div class="srt-name">${esc(e.wirkstoff || e.eingabe)}${e.wirkstoff && e.eingabe.toLowerCase() !== e.wirkstoff.toLowerCase() ? ` <span class="muted srt-eingabe">${esc(e.eingabe)}</span>` : ''}</div>
+        <div class="srt-status">${esc(srtZeileText(e))}</div>
+      </div>
+      ${e.wirkstoff ? `<div class="srt-aktion">
+        <button class="ghost small" data-details>${esc(t('srt_details'))}</button>
+        ${e.beobachtet ? `<span class="srt-beob">${ico('check', 16)}${esc(t('srt_beobachtet'))}</span>` : `<button class="ghost small" data-watch>${esc(t('wl_add').replace(/^\+\s*/, ''))}</button>`}
+      </div>` : ''}
+    </div>`);
+    const det = zeile.querySelector('[data-details]'); if (det) det.onclick = () => openWirkstoff(e.wirkstoff);
+    const wb = zeile.querySelector('[data-watch]');
+    if (wb) wb.onclick = async () => {
+      try { await api('POST', '/api/watchlist', { wirkstoff: e.wirkstoff }); e.beobachtet = true; zeigeSortiment(box, d); }
+      catch (e2) { kopf.querySelector('[data-srterr]').textContent = e2.message; }
+    };
+    liste.appendChild(zeile);
+  });
+  if (d.ergebnisse.length) box.appendChild(liste);
 }
 
 // Wirkstoff-Dossier: alles Kaufentscheidungs-Relevante zu einem Wirkstoff auf einer Seite
@@ -7976,14 +8103,14 @@ async function refreshNotifCount() {
   } catch {}
 }
 // Engpass-/Beschaffungs-relevante Benachrichtigungstypen (für den Meldungs-Filter).
-const NOTIF_PROCUREMENT = new Set(['shortage_abroad','watch_alert','shortage_confirm','watch_offer','exchange_offer','exchange_want','signal_alert']);
+const NOTIF_PROCUREMENT = new Set(['shortage_home','shortage_ended','shortage_abroad','watch_alert','shortage_confirm','watch_offer','exchange_offer','exchange_want','signal_alert']);
 let notifFilter = 'all'; // 'all' | 'procurement' | 'social'
 let notifUnreadOnly = false; // Zusatzfilter: nur ungelesene zeigen
 async function showNotifications() {
   setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', shortage_abroad:'🌍', premium_ablauf:'⏳', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_home:'🔴', shortage_ended:'✅', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', shortage_abroad:'🌍', premium_ablauf:'⏳', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️' };
   app.innerHTML = '';
   const procCount = d.notifications.filter(n => NOTIF_PROCUREMENT.has(n.type)).length;
   const showFilter = d.notifications.length >= 5 && procCount > 0 && procCount < d.notifications.length;
@@ -8015,14 +8142,14 @@ async function showNotifications() {
     const who = n.actor ? n.actor.display_name : t('notif_someone');
     // Systemmeldungen ohne handelnde Person: Hier hat niemand etwas getan,
     // eine Behoerde hat gemeldet. „Jemand hat …" waere schlicht falsch.
-    const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'premium_ablauf' || n.type === 'payment_confirmed' || n.type === 'payment_rejected';
+    const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'shortage_home' || n.type === 'shortage_ended' || n.type === 'premium_ablauf' || n.type === 'payment_confirmed' || n.type === 'payment_rejected';
     // Profilbild der handelnden Person (wer) + Typ-Emoji (was) — auf einen Blick erkennbar,
     // konsistent zu Feed/Verzeichnis/Suche. Ohne Person (System-Meldung) nur das Emoji.
     const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:var(--ok-bg)'}">
       <div class="row" style="align-items:center">
         ${n.actor ? avatarHtml(n.actor, 34, false) : ''}
         <span${n.actor?' style="font-size:16px"':''}>${icons[n.type]||'🔔'}</span>
-        <span style="margin-left:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' „'+esc(n.type==='shortage_abroad'?n.label.replace(/ · ([A-Z]{2})$/, (m, cc) => ' · ' + landLabel(cc)):n.type==='premium_ablauf'?fmtDateDe(n.label):n.label)+'"':''}${n.read?'':'</b>'}</span>
+        <span style="margin-left:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' „'+esc(/^shortage_(abroad|home|ended)$/.test(n.type)?n.label.replace(/ · ([A-Z]{2})$/, (m, cc) => ' · ' + landLabel(cc)):n.type==='premium_ablauf'?fmtDateDe(n.label):n.label)+'"':''}${n.read?'':'</b>'}</span>
         <span class="sp" style="flex:1"></span>
         <span class="muted" style="font-size:12px">${relTime(n.created_at)}</span>
       </div></div>`);
@@ -8036,7 +8163,7 @@ async function showNotifications() {
           const tb=document.querySelector('.tabs button[data-tab="exchange"]'); if(tb) tb.classList.add('active'); loadTab(); });
       }
       else if (n.type === 'premium_ablauf') { mainScreen().then(() => openPremium()); }
-      else if (n.type === 'shortage_abroad') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
+      else if (/^shortage_(abroad|home|ended)$/.test(n.type)) { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
       else if (n.type === 'watch_alert') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
       // Der Klick fuehrt in die Live-Warnungen, auf den Wirkstoff gefiltert —
       // dort steht die Meldung mit Herkunfts-Link. NICHT auf die

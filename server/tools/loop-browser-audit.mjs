@@ -1469,6 +1469,34 @@ async function main() {
     else console.log('✓ Startseite: „Lage jetzt" mit Zahl, Quelle, Stand — ohne Daten nichts; nur laufende Versprechen');
   }
 
+  // ── Sortiments-Check: Liste einfügen, Einstufung je Zeile ───────────────
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(600);
+    if (!(await page.locator('#ov_sortiment').isVisible().catch(() => false))) findings.push('Sortiments-Check: Eintrag auf „Für dich" fehlt');
+    else {
+      await page.click('#ov_sortiment'); await page.waitForTimeout(300);
+      await page.fill('#srtText', 'Amoxicillin 1000 mg\nIbuprofen 400 mg\nXyzabc Tropfen\n' + Array.from({ length: 20 }, (_, i) => 'Zeile' + i).join('\n'));
+      await page.click('#srtGo'); await page.waitForTimeout(1200);
+      const r = await page.evaluate(() => ({
+        kacheln: document.querySelectorAll('[data-srtergebnis] .ovtile').length,
+        zeilen: document.querySelectorAll('.srt-zeile').length,
+        sperre: !!document.querySelector('.srt-sperre'),
+        unbekannt: [...document.querySelectorAll('.srt-zeile')].some((z) => /Xyzabc/.test(z.textContent)),
+      }));
+      if (r.kacheln !== 5) findings.push(`Sortiments-Check: ${r.kacheln} statt 5 Zusammenfassungs-Kacheln`);
+      if (r.zeilen !== 15) findings.push(`Sortiments-Check: ${r.zeilen} Zeilen geprüft, gratis erwartet 15`);
+      if (!r.sperre) findings.push('Sortiments-Check: Hinweis auf nicht geprüfte Zeilen (Premium) fehlt');
+      if (!r.unbekannt) findings.push('Sortiments-Check: unbekannte Zeile verschwindet statt „keine Meldung"');
+      if (!findings.some((f) => f.startsWith('Sortiments-Check'))) console.log('✓ Sortiments-Check: 5 Kacheln, 15 Gratis-Zeilen, Premium-Hinweis, unbekannte Zeile sichtbar');
+    }
+    for (const f of fehler) findings.push('Sortiments-Check: JS-Fehler ' + f);
+    await ctx.close();
+  }
+
   // ── Registrierung im Browser: kurz, und ein Fehler verbrennt nichts ──────
   //  Bis 10/2026: sechs Felder (Pflicht-@Handle, Land doppelt), zwei Formulare
   //  untereinander — und ein vergebener Handle machte die E-Mail unbrauchbar.

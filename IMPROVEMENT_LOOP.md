@@ -2155,3 +2155,48 @@ führt zur Anmeldung.
 **Gegenproben (Bruch angewandt, jede schlägt an):** Format-Prüfung aus → 2 Tests rot;
 E-Mail-Vorprüfung aus → „hinterließ Organisationen"; Handle-frei-Prüfung aus → „vergebener
 Handle verbrennt die E-Mail" rot.
+
+### Cycle · Aus Kundensicht: Heimat-Alarm und Sortiments-Check (2026-10-13)
+
+**GATHER (Owner: „versetz dich in den Kunden — wofür würde ich zahlen?").** Eine Apotheke will
+drei Dinge: (1) sofort wissen, wenn IHR Wirkstoff amtlich knapp wird, (2) ihre ganze Liste auf
+einmal prüfen statt Wirkstoff für Wirkstoff zu suchen, (3) vorher wissen, was kommt. Beim
+Nachsehen, ob (1) funktioniert, kam der wichtigste Befund dieses Zyklus:
+
+**Befund 1 — der Kern-Alarm fehlte.** Führt die Behörde des EIGENEN Landes einen beobachteten
+Wirkstoff neu als knapp, kam kein Hinweis. Die Frühwarnung übersprang das Heimatland bewusst
+(„das meldet der normale Alarm"), der normale Alarm (`watch_alert`) feuerte aber nur bei
+Community- und Redaktionsmeldungen — nie beim Abruf der Behördenliste. „Wieder lieferbar" gab
+es gar nicht.
+
+**Befund 2 — Schreibweisen.** Beobachtungsliste und Alarm verglichen Namen wortgenau: Wer
+„Amoxicillin" beobachtet, sah das „Amoxicillin-Trihydrat" des BfArM nicht.
+
+**WORK.**
+- `chronik.beobachte()` liefert neben `neue` jetzt `beendete`; `fruehwarnung.meldeHeimat()`
+  schickt `shortage_home` („Die Behörde meldet einen Engpass bei deinem Wirkstoff") und
+  `shortage_ended` („Wieder lieferbar laut Behörde") an Beobachter:innen im jeweiligen Land.
+  GRATIS (sicherheitsrelevant), nicht am ersten Lauf (Altfälle), kein „lieferbar" bei
+  zurückgehaltener (abgeschnittener) Antwort.
+- Beobachtungsliste und `beobachterImLand` über den Wirkstoff-Schlüssel (`domain/inn.js`).
+- **Sortiments-Check** (`services/sortiment.js`, `POST /api/sortiment/pruefen`, Seite
+  „Sortiment prüfen" oben auf „Für dich"): Liste einfügen oder CSV aus der Warenwirtschaft
+  laden; je Zeile knapp / im Ausland knapp / früher schon knapp / unauffällig / keine Meldung,
+  mit Land, Dauer, Quelle bzw. Herkunft (Behörde, Apotheken-Meldung, Referenzdaten).
+  „Alle betroffenen beobachten" mit einem Klick. Gratis 15 Zeilen, Premium 500 + CSV.
+  Die Antwort nennt die Länder, gegen deren Listen geprüft wurde.
+
+**Dabei gefunden:** Kombinationen. „Amoxicillin + Clavulansäure 875/125 mg Filmtabletten"
+wäre als reines Amoxicillin eingestuft worden. Erkennung: ganze Zeile, Text vor der Stärke,
+dann Wortgruppen — längste zuerst. Eine Vereinfachung (Text vor der Stärke weg) sah in der
+ersten Gegenprobe harmlos aus; erst ein schärferer Test zeigte, dass sie genau diesen Fall
+braucht.
+
+**Tests.** `heimat-alarm.test.js` (5), `sortiment.test.js` (6), `chronik-http.test.js`
+erweitert (echter Abruf: Apotheke ohne Premium bekommt „knapp" und „wieder lieferbar"),
+Browser-Audit „Sortiments-Check".
+
+**Gegenproben (Bruch angewandt, jede schlägt an):** Verdrahtung im Server weg → Ende-zu-Ende
+rot; Beobachtungsliste wieder wortgenau → rot; Altfälle am ersten Lauf → 2 rot; Gratis-Grenze
+aus → rot; Doppelte nicht zusammengefasst → rot; Text vor der Stärke weg → Kombi-Test rot;
+kürzeste Wortgruppe zuerst → Kombi-Test rot.

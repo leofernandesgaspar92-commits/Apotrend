@@ -76,7 +76,7 @@ export function createChronik({ jetzt = () => Date.now(), log = console } = {}) 
      */
     beobachte({ zeilen = [], laender = [] } = {}) {
       const heute = isoTag(jetzt());
-      const bericht = { neu: 0, fortgesetzt: 0, geschlossen: 0, zurueckgehalten: [], neue: [] };
+      const bericht = { neu: 0, fortgesetzt: 0, geschlossen: 0, zurueckgehalten: [], neue: [], beendete: [] };
       for (const roh of laender) {
         const land = String(roh || '').toUpperCase();
         if (!land) continue;
@@ -108,7 +108,11 @@ export function createChronik({ jetzt = () => Date.now(), log = console } = {}) 
           log.warn?.(`ApoPulse Chronik: ${land} — ${verschwinden.length} von ${offen.length} offenen Engpässen `
             + 'fehlen auf einmal. Verdacht auf unvollständige Antwort; nichts geschlossen.');
         } else {
-          for (const e of verschwinden) { e.ende = heute; bericht.geschlossen++; }
+          for (const e of verschwinden) {
+            e.ende = heute; bericht.geschlossen++;
+            // Für „wieder lieferbar"-Hinweise (fruehwarnung.meldeHeimat).
+            bericht.beendete.push({ land, wirkstoff: e.wirkstoff, beginn: e.beginn, ende: heute, dauer_tage: tageZwischen(e.beginn, heute), quelle: e.quelle });
+          }
         }
 
         for (const [k, gruppe] of aktuell) {
@@ -242,6 +246,16 @@ export function createChronik({ jetzt = () => Date.now(), log = console } = {}) 
     },
 
     aufzeichnungSeit(land) { return seit.get(String(land || '').toUpperCase()) || null; },
+
+    /** Länder, deren Behördenliste mitgeschrieben wird: [{ land, seit }]. */
+    beobachteteLaender() { return [...seit].map(([land, ab]) => ({ land, seit: ab })).sort((a, b) => a.land.localeCompare(b.land)); },
+
+    /** Jeder Wirkstoffname, der je in einer Behördenliste stand: [{ land, wirkstoff }]. */
+    bekannteWirkstoffe() {
+      const out = [];
+      for (const liste of episoden.values()) if (liste.length) out.push({ land: liste[0].land, wirkstoff: liste[liste.length - 1].wirkstoff });
+      return out;
+    },
 
     __dump() { return { episoden: [...episoden], seit: [...seit] }; },
     __load(d) {

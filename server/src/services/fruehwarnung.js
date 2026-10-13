@@ -50,6 +50,44 @@ export function createFruehwarnung({ chronik, shortagesRepo, social, istPremium,
       return out.sort((a, b) => a.laender[0].dauer_tage - b.laender[0].dauer_tage);
     },
 
+    /**
+     * Heimat-Alarm: Die Behörde DEINES Landes führt einen beobachteten
+     * Wirkstoff neu als knapp — oder nicht mehr.
+     *
+     * Bis 10/2026 gab es diesen Hinweis nicht. melde() überspringt das
+     * Heimatland bewusst (Regel 3/4: „das meldet der bestehende Alarm") —
+     * aber der bestehende Alarm (watch_alert) feuerte nur bei Community- und
+     * Redaktionsmeldungen, nie beim Abruf der Behördenliste. Genau der Fall,
+     * für den man einen Wirkstoff beobachtet, blieb stumm.
+     *
+     * GRATIS: Was im eigenen Land amtlich knapp ist, ist sicherheitsrelevant.
+     * Bezahlt wird der Vorsprung (Ausland, Wochenbericht, Sortiment).
+     * Nicht am ersten Lauf eines Landes (Altfälle, Regel 2).
+     */
+    meldeHeimat(neue = [], beendete = []) {
+      let gesendet = 0;
+      const beobachterIn = (wirkstoff, land) => {
+        const key = wirkstoffSchluessel(wirkstoff);
+        if (!key) return [];
+        return shortagesRepo.listWatchers()
+          .filter((b) => String(heimatVon(b.userId) || '').toUpperCase() === land)
+          .map((b) => ({ uid: b.userId, name: b.wirkstoffe.find((w) => wirkstoffSchluessel(w) === key) }))
+          .filter((x) => x.name);
+      };
+      for (const n of neue) {
+        if (n.erster_lauf) continue;
+        for (const { uid, name } of beobachterIn(n.wirkstoff, n.land)) {
+          if (social.pushNotification({ userId: uid, type: 'shortage_home', refType: 'wirkstoff', refId: name, label: `${name} · ${n.land}` })) gesendet++;
+        }
+      }
+      for (const b of beendete) {
+        for (const { uid, name } of beobachterIn(b.wirkstoff, b.land)) {
+          if (social.pushNotification({ userId: uid, type: 'shortage_ended', refType: 'wirkstoff', refId: name, label: `${name} · ${b.land}` })) gesendet++;
+        }
+      }
+      return gesendet;
+    },
+
     /** Neue Episoden eines Abrufs (chronik.beobachte().neue) melden. */
     melde(neue = []) {
       let gesendet = 0;

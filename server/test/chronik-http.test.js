@@ -149,9 +149,17 @@ test('Abruf füllt die Chronik; der nächste Abruf ohne die Zeile beendet die Ep
     // Frühwarnung: Die Kundin (Premium, Österreich) beobachtet Cefuroxim.
     // Im zweiten Abruf meldet die FDA es neu — in Österreich ist es nicht knapp.
     await fetch(B + '/api/watchlist', { method: 'POST', headers: J(kunde), body: JSON.stringify({ wirkstoff: 'Cefuroxim' }) });
+    // Heimat-Alarm (gratis): Eine Apotheke OHNE Premium in Österreich beobachtet
+    // Amoxicillin (läuft schon) und Paracetamol (noch nicht knapp).
+    const frei2 = (await (await fetch(B + '/api/register', { method: 'POST', headers: J(''), body: JSON.stringify({ name: 'Frei', email: 'frei@chronik.test', password: 'Passwort123!', country: 'AT', accountType: 'pharmacy' }) })).json()).token;
+    await fetch(B + '/api/watchlist', { method: 'POST', headers: J(frei2), body: JSON.stringify({ wirkstoff: 'Amoxicillin' }) });
+    await fetch(B + '/api/watchlist', { method: 'POST', headers: J(frei2), body: JSON.stringify({ wirkstoff: 'Paracetamol' }) });
     fda = [...fda, { generic_name: 'Cefuroxim', status: 'Currently in Shortage' }];
-    liste = liste.filter((z) => z.wirkstoff !== 'Amoxicillin');
+    liste = [...liste.filter((z) => z.wirkstoff !== 'Amoxicillin'), { wirkstoff: 'Paracetamol', bezeichnung: 'Paracetamol 500 mg', status: 'nicht lieferbar' }];
     await abruf();
+    const heim = (await (await fetch(B + '/api/notifications', { headers: J(frei2) })).json()).notifications
+      .filter((n) => n.type === 'shortage_home' || n.type === 'shortage_ended').map((n) => [n.type, n.label]).sort();
+    assert.deepEqual(heim, [['shortage_ended', 'Amoxicillin · AT'], ['shortage_home', 'Paracetamol · AT']], 'Behördenabruf im Heimatland löste keinen Hinweis aus');
     const glocke = (await (await fetch(B + '/api/notifications', { headers: J(kunde) })).json()).notifications.filter((n) => n.type === 'shortage_abroad');
     assert.deepEqual(glocke.map((n) => n.label), ['Cefuroxim · US'], 'Frühwarnung kam nicht an');
     const ov = await (await fetch(B + '/api/overview?country=AT', { headers: J(kunde) })).json();
