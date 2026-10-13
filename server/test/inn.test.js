@@ -110,3 +110,11 @@ test('Breitentest: keine zwei verschiedenen Wirkstoffe teilen einen Schlüssel',
   assert.deepEqual(doppelt, [], 'falsche Gleichsetzung');
   assert.ok(namen.length >= 150, `nur ${namen.length} Namen`);
 });
+
+test('mehrteilige Namen: Endvokal je Wort („Cefuroxime Axetil" = „Cefuroxim-Axetil")', () => {
+  // Vorher fiel der Endvokal nur am Ende des ganzen Namens weg: FDA und BfArM
+  // bekamen für dieselbe Substanz verschiedene Schlüssel.
+  assert.equal(gleich('Cefuroxime Axetil', 'Cefuroxim-Axetil'), true);
+  assert.equal(gleich('Cefuroxim-Axetil', 'Cefuroxim'), false, 'Ester-Form (Tablette) bleibt getrennt von Cefuroxim');
+  assert.equal(gleich('Mycophenolate Mofetil', 'Mycophenolat-Mofetil'), true);
+});

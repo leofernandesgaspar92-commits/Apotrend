@@ -2264,3 +2264,18 @@ Wochenbericht ohne Mail, Premium-Seite ohne Querscroll.
 als der Bildschirm" ✓. Wochenbericht immer im Vergleich → blieb in der ersten Gegenprobe
 UNBEMERKT: Die Prüfung las die Tabelle erst nach einem Seitenwechsel, also leeren Text. Jetzt
 wird sie vorher gelesen (und fehlt sie, ist das ein eigener Befund) → schlägt an ✓.
+
+### Cycle · Wirkstoff-Abgleich: mehrteilige Namen (2026-10-13)
+
+**Gefunden in der Demo:** Der Radar führte „Cefuroxime Axetil" (FDA) und „Cefuroxim-Axetil"
+(BfArM) als zwei Wirkstoffe. Ursache in `domain/inn.js`: Die Lautregeln (u. a. englischer
+Endvokal „-e") liefen erst auf dem zusammengesetzten Namen — der Endvokal fiel nur am Ende des
+GANZEN Namens weg, nicht am ersten Wort. Jetzt je Wort, Doppelbuchstaben an der Wortgrenze wie
+bisher zusammengezogen; Synonyme werden gleich berechnet. Gespeicherte Chronik-Schlüssel werden
+beim Start ohnehin neu berechnet (`chronik.__load`), überlappende Episoden verschmelzen.
+Gegenrichtung unverändert: Cefuroxim ≠ Cefuroxim-Axetil, Prednison ≠ Prednisolon,
+Kaliumchlorid bleibt.
+
+**Gegenprobe (Bruch angewandt):** Lautregel wieder nach dem Zusammensetzen → neuer Test rot.
+(Mein Test rief zuerst eine Funktion unter falschem Namen auf und war damit IMMER rot — das hätte
+eine Gegenprobe vorgetäuscht. Vor dem Bruch muss der Test grün sein; erst dann zählt Rot.)

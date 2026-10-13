@@ -84,12 +84,19 @@ function bestandteil(roh) {
     }
     return w;
   });
-  let k = laut(woerter.join(''));
+  let k = lautWoerter(woerter);
   if (SYN.has(k)) k = SYN.get(k);
   return k;
 }
 
-const SYN = new Map(Object.entries(SYNONYME).map(([a, b]) => [laut(falten(a)), laut(falten(b))]));
+// Lautregeln JE WORT, dann zusammensetzen. Vorher erst nach dem Zusammensetzen:
+// Der Endvokal fiel nur am Ende des ganzen Namens weg, „Cefuroxime Axetil" (FDA)
+// und „Cefuroxim-Axetil" (BfArM) bekamen verschiedene Schlüssel — derselbe
+// Engpass zählte als zwei Wirkstoffe. Doppelbuchstaben an der Wortgrenze
+// werden wie bisher zusammengezogen.
+function lautWoerter(woerter) { return woerter.map(laut).join('').replace(/(.)\1+/g, '$1'); }
+
+const SYN = new Map(Object.entries(SYNONYME).map(([a, b]) => [lautWoerter(falten(a).split(/[\s\-_.()]+/).filter(Boolean)), lautWoerter(falten(b).split(/[\s\-_.()]+/).filter(Boolean))]));
 
 /** Vergleichsschlüssel eines Wirkstoffnamens; '' wenn nichts Verwertbares. */
 export function wirkstoffSchluessel(name) {
