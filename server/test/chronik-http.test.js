@@ -160,6 +160,12 @@ test('Abruf füllt die Chronik; der nächste Abruf ohne die Zeile beendet die Ep
     const heim = (await (await fetch(B + '/api/notifications', { headers: J(frei2) })).json()).notifications
       .filter((n) => n.type === 'shortage_home' || n.type === 'shortage_ended').map((n) => [n.type, n.label]).sort();
     assert.deepEqual(heim, [['shortage_ended', 'Amoxicillin · AT'], ['shortage_home', 'Paracetamol · AT']], 'Behördenabruf im Heimatland löste keinen Hinweis aus');
+    // Vorrats-Radar: im Ausland knapp, in AT nicht. Ibuprofen ist auch in AT knapp -> nicht drin.
+    const radar = await (await fetch(B + '/api/radar?country=AT', { headers: J(kunde) })).json();
+    const rn = radar.eintraege.map((e) => e.wirkstoff).sort();
+    assert.deepEqual(rn, ['Cefalexin', 'Cefuroxim', 'Lisinopril'], 'Radar: ' + JSON.stringify(rn)); // Cefalexin: eigene TGA-Quelle (AU)
+    assert.equal(radar.eintraege.find((e) => e.wirkstoff === 'Cefuroxim').beobachtet, true);
+    assert.equal(radar.heimat_beobachtet, true);
     const glocke = (await (await fetch(B + '/api/notifications', { headers: J(kunde) })).json()).notifications.filter((n) => n.type === 'shortage_abroad');
     assert.deepEqual(glocke.map((n) => n.label), ['Cefuroxim · US'], 'Frühwarnung kam nicht an');
     const ov = await (await fetch(B + '/api/overview?country=AT', { headers: J(kunde) })).json();

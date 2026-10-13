@@ -41,6 +41,7 @@ import { createLogistikService } from '../services/logistik.js';
 import { AppError } from '../domain/errors.js';
 import { HANDLE_RE, normalizeHandle, freierHandle } from '../domain/handle.js';
 import { createSortiment } from '../services/sortiment.js';
+import { vorratsRadar } from '../services/radar.js';
 import { createOverviewService } from '../services/overview.js';
 import { createOAuthService, buildProvidersFromEnv } from '../services/oauth.js';
 import { createPaymentsService, buildPaymentProvidersFromEnv } from '../services/payments.js';
@@ -2043,6 +2044,12 @@ const routes = [
   ['POST', /^\/api\/shortages\/([^/]+)\/report-update$/, true, async ({ userId, params, body }) => shortages.updateShortageReport(userId, params[0], { status: body.status, grund: body.grund })],
 
   // ── Beobachtungsliste (Wirkstoffe im Blick behalten) ──
+  // Vorrats-Radar: im Ausland amtlich knapp, hier nicht (services/radar.js).
+  // Premium-Schnitt auf dem Server: gratis die ersten Einträge und die Zahl.
+  ['GET', /^\/api\/radar$/, true, async ({ userId, query }) => vorratsRadar({
+    chronik, land: activeCountry(userId, query), premium: payments.hasFeature(userId, 'premium'),
+    beobachtet: shortagesRepo.listWatch(userId),
+  })],
   // Sortiments-Check (Premium-Grenze im Dienst: gratis die ersten 15 Zeilen).
   ['POST', /^\/api\/sortiment\/pruefen$/, true, async ({ userId, body, query }) => {
     if (!String(body.text || '').trim()) throw new AppError('sortiment_leer', 'Bitte eine Liste einfügen (ein Wirkstoff oder Präparat je Zeile).');

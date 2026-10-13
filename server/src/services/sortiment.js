@@ -25,6 +25,7 @@
 // ============================================================================
 
 import { wirkstoffSchluessel } from '../domain/inn.js';
+import { anzeigeName } from '../domain/anzeigename.js';
 
 export const FREI_ZEILEN = 15;
 export const MAX_ZEILEN = 500;
@@ -45,22 +46,60 @@ export function zeilenAusText(text) {
   const spalte = kopf.findIndex((k) => /wirkstoff|substan|active|ingredient|\binn\b|princ[ií]pio/i.test(k));
   const zellen = (z) => z.split(trenner).map((c) => c.trim().replace(/^"|"$/g, ''));
   if (spalte >= 0) return zeilen.slice(1).map((z) => zellen(z)[spalte] || '').filter(Boolean);
-  // Ohne erkennbare Spalte: ganze Zeile (die Erkennung sucht den Wirkstoff darin).
-  return zeilen.map((z) => zellen(z).join(' '));
+  // Export aus der Warenwirtschaft: „PZN;Artikel;Menge" — dann die Artikel-Spalte.
+  const artikel = kopf.findIndex((k) => /artikel|bezeichnung|produkt|pr[aä]parat|arzneimittel|^name$|description|product|designa/i.test(k));
+  if (artikel >= 0) return zeilen.slice(1).map((z) => zellen(z)[artikel] || '').filter(Boolean);
+  // Ohne erkennbare Spalte: ganze Zeile ohne reine Zahlenfelder (PZN, Menge);
+  // eine Kopfzeile ohne Ziffern fällt weg, wenn die übrigen Zeilen Ziffern haben.
+  const ohneZahlen = (z) => zellen(z).filter((c) => !/^[\d.,\s]+$/.test(c)).join(' ');
+  const kopfzeile = !/\d/.test(zeilen[0]) && zeilen.slice(1).filter((z) => /\d/.test(z)).length >= (zeilen.length - 1) / 2;
+  return (kopfzeile ? zeilen.slice(1) : zeilen).map(ohneZahlen).filter(Boolean);
 }
 
 export function createSortiment({ shortagesRepo, chronik, istPremium }) {
   /** Schlüssel -> angezeigter Name. Schreibweise des eigenen Landes bevorzugt. */
   function verzeichnis(land) {
-    const v = new Map();
-    const nimm = (name, eigenes) => {
-      const k = wirkstoffSchluessel(name);
+    const namen = new Map(); // Schlüssel -> [{ land, wirkstoff }]
+    const nimm = (wirkstoff, l) => {
+      const k = wirkstoffSchluessel(wirkstoff);
       if (!k) return;
-      if (!v.has(k) || eigenes) v.set(k, String(name).trim());
+      if (!namen.has(k)) namen.set(k, []);
+      namen.get(k).push({ land: String(l || '').toUpperCase(), wirkstoff: String(wirkstoff).trim() });
     };
-    for (const e of chronik.bekannteWirkstoffe()) nimm(e.wirkstoff, e.land === land);
-    for (const z of shortagesRepo.list()) if (z.wirkstoff) nimm(z.wirkstoff, z.country === land);
+    for (const e of chronik.bekannteWirkstoffe()) nimm(e.wirkstoff, e.land);
+    for (const z of shortagesRepo.list()) if (z.wirkstoff) nimm(z.wirkstoff, z.country);
+    const v = new Map();
+    for (const [k, liste] of namen) v.set(k, anzeigeName(liste, land));
     return v;
+  }
+
+  /**
+   * Für nicht zugeordnete Zeilen: Behördeneinträge, deren Name ein Wort der
+   * Zeile als Bestandteil enthält („Cefuroxim" -> „Cefuroxim-Axetil").
+   * NUR als Hinweis, nie als Einstufung: Cefuroxim-Axetil (Tablette) ist
+   * nicht Cefuroxim-Natrium (Infusion) — domain/inn.js setzt sie bewusst
+   * nicht gleich. „Keine Meldung" ohne diesen Hinweis wäre aber irreführend.
+   */
+  function aehnliche(zeile, v) {
+    const teile = new Map();
+    for (const name of v.values()) {
+      for (const teil of name.split(/[\s/+,-]+/)) {
+        const k = teil.length >= 5 && wirkstoffSchluessel(teil);
+        if (!k) continue;
+        if (!teile.has(k)) teile.set(k, new Set());
+        teile.get(k).add(name);
+      }
+    }
+    const treffer = new Set();
+    for (const wort of zeile.split(/[^\p{L}]+/u)) {
+      const k = wort.length >= 5 && wirkstoffSchluessel(wort);
+      for (const n of (k && teile.get(k)) || []) treffer.add(n);
+    }
+    // „Cefuroxime Axetil" (FDA) und „Cefuroxim-Axetil" (BfArM) nur einmal nennen.
+    const gleich = (n) => n.toLowerCase().split(/[^a-zäöüß]+/).map((w) => w.replace(/e$/, '')).filter(Boolean).join(' ');
+    const einmal = new Map();
+    for (const n of treffer) if (!einmal.has(gleich(n))) einmal.set(gleich(n), n);
+    return [...einmal.values()].slice(0, 3);
   }
 
   /**
@@ -101,7 +140,7 @@ export function createSortiment({ shortagesRepo, chronik, istPremium }) {
         const k = erkenne(zeile, v);
         if (k && gesehen.has(k)) continue; // dieselbe Substanz zweimal in der Liste
         if (k) gesehen.add(k);
-        if (!k) { ergebnisse.push({ eingabe: zeile, einstufung: 'unbekannt' }); continue; }
+        if (!k) { ergebnisse.push({ eingabe: zeile, einstufung: 'unbekannt', aehnlich: aehnliche(zeile, v) }); continue; }
         const name = v.get(k);
         const meldungen = hier.filter((z) => wirkstoffSchluessel(z.wirkstoff) === k)
           .sort((a, b) => (RANG[b.status] || 0) - (RANG[a.status] || 0));

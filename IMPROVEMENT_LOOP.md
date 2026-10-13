@@ -2200,3 +2200,32 @@ Browser-Audit „Sortiments-Check".
 rot; Beobachtungsliste wieder wortgenau → rot; Altfälle am ersten Lauf → 2 rot; Gratis-Grenze
 aus → rot; Doppelte nicht zusammengefasst → rot; Text vor der Stärke weg → Kombi-Test rot;
 kürzeste Wortgruppe zuerst → Kombi-Test rot.
+
+### Cycle · Vorrats-Radar und was eine echte Demo zeigte (2026-10-13)
+
+**WORK.** `services/radar.js`, `GET /api/radar`, Karte „Vorrats-Radar" auf „Für dich": was im
+Ausland amtlich knapp ist, im eigenen Land aber nicht — mit Ländern, Dauer und „war bei dir
+schon N× knapp". Rangfolge erklärbar (mehr Länder, dann eigener Verlauf, dann frischeste
+Meldung), keine Prognose, kein Risikowert. Gratis die ersten drei, Premium alles. Ohne
+Behördenliste fürs eigene Land sagt die Karte genau das.
+
+**Demo mit nachgestellten Behördenlisten (AT/DE/US, zwei Abrufe) — fünf Befunde:**
+1. Englische FDA-Namen („Methylphenidate Hydrochloride") für eine Wiener Apotheke. Jetzt:
+   Schreibweise des eigenen Landes, sonst eines Landes gleicher Sprache (`domain/anzeigename.js`),
+   in Radar und Sortiments-Check.
+2. „seit 0 Tagen", „seit 1 Tagen", „2 Land/Ländern" → „seit heute", „seit 1 Tag", Einzahl/Mehrzahl.
+3. CSV aus der Warenwirtschaft („PZN;Artikel;Menge"): Kopfzeile wurde als Artikel geprüft, PZN
+   und Menge standen im Namen. Jetzt Artikel-Spalte; sonst fallen Kopfzeile und Zahlenfelder weg.
+4. „Cefuroxim Sandoz" → „keine Meldung, nie als knapp gemeldet", obwohl „Cefuroxim-Axetil" in DE
+   und US knapp ist. Gleichsetzen bleibt verboten (Axetil-Tablette ≠ Natrium-Infusion), aber die
+   Zeile nennt jetzt „ähnlicher Eintrag in Behördenlisten: …" mit Link — sonst wäre „nie gemeldet"
+   irreführend.
+5. „Alle 1 betroffenen beobachten" → Einzahl.
+
+**Tests.** `radar.test.js` (5), Sortiment um Sprache/Ähnlich/CSV erweitert, Ende-zu-Ende: Radar
+nach echtem Abruf (Cefalexin aus der eigenen TGA-Quelle, Cefuroxim und Lisinopril aus den USA;
+Ibuprofen ist auch in AT knapp und fehlt zu Recht). Meine erste Erwartung hatte Cefalexin
+vergessen — der Test hatte recht.
+
+**Gegenproben (Bruch angewandt, jede schlägt an):** auch daheim knappe Wirkstoffe im Radar →
+Ende-zu-Ende + 2 Unit rot; Gratis-Grenze aus → rot; Rangfolge aus → rot.

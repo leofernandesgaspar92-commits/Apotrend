@@ -27,7 +27,9 @@ test('Zeilen aus Text: Liste, Kommaliste, CSV mit Wirkstoff-Spalte, CSV ohne', (
   assert.deepEqual(zeilenAusText('Amoxicillin\r\n\r\n Ibuprofen \n'), ['Amoxicillin', 'Ibuprofen']);
   assert.deepEqual(zeilenAusText('Amoxicillin, Ibuprofen; Cefuroxim'), ['Amoxicillin', 'Ibuprofen', 'Cefuroxim']);
   assert.deepEqual(zeilenAusText('﻿PZN;Artikel;Wirkstoff;Menge\n0123;Amoxi 1A 1000;Amoxicillin;20\n0456;Ibu Hexal;Ibuprofen;5'), ['Amoxicillin', 'Ibuprofen']);
-  assert.deepEqual(zeilenAusText('PZN;Artikel\n0123;Amoxi 1000 mg\n0456;Ibu 400'), ['PZN Artikel', '0123 Amoxi 1000 mg', '0456 Ibu 400']);
+  // Warenwirtschaft: Artikel-Spalte statt ganzer Zeile; ohne benannte Spalte fallen Kopfzeile und Zahlenfelder weg.
+  assert.deepEqual(zeilenAusText('PZN;Artikel;Menge\n0123;Amoxi 1000 mg;20\n0456;Ibu 400;5'), ['Amoxi 1000 mg', 'Ibu 400']);
+  assert.deepEqual(zeilenAusText('Nr;X;Stk\n0123;Amoxicillin 1000 mg;20\n0456;Ibuprofen 400;5'), ['Amoxicillin 1000 mg', 'Ibuprofen 400']);
 });
 
 test('Einstufung: knapp / ausland / wiederholt / ruhig / unbekannt — knapp zuerst', () => {
@@ -75,4 +77,21 @@ test('beobachtet: auch unter anderer Schreibweise erkannt', () => {
   repo.addWatch('u', 'Amoxicilina');
   const r = s.pruefen('u', 'Amoxicillin', 'AT');
   assert.equal(r.ergebnisse[0].beobachtet, true);
+});
+
+test('Anzeige in der eigenen Sprache; „ähnlich" nur als Hinweis', () => {
+  let t = Date.parse('2026-09-01T09:00:00Z');
+  const chronik = createChronik({ jetzt: () => t, log: { warn() {} } });
+  const repo = createShortagesRepo({ seed: false });
+  const zeilen = [z('Methylphenidate Hydrochloride', 'US'), z('Methylphenidathydrochlorid', 'DE'), z('Cefuroxim-Axetil', 'DE'), z('Cefuroxime Axetil', 'US'), z('Rest', 'AT')];
+  repo.replaceFeed(zeilen, { provenance: 'verified', quelle: 'x', laender: ['US', 'DE', 'AT'] });
+  chronik.beobachte({ zeilen: repo.list(), laender: ['US', 'DE', 'AT'] });
+  const s = createSortiment({ shortagesRepo: repo, chronik, istPremium: () => false });
+  const r = s.pruefen('u', 'Methylphenidat Hexal 10 mg\nCefuroxim Sandoz 500 mg', 'AT');
+  const mph = r.ergebnisse.find((e) => e.einstufung === 'ausland');
+  assert.equal(mph.wirkstoff, 'Methylphenidathydrochlorid', 'österreichische Apotheke sieht den deutschen Namen, nicht den der FDA');
+  const cef = r.ergebnisse.find((e) => /Cefuroxim/.test(e.eingabe));
+  assert.equal(cef.einstufung, 'unbekannt', 'Cefuroxim ist nicht Cefuroxim-Axetil — keine Gleichsetzung');
+  assert.equal(cef.aehnlich.length, 1, 'ein Hinweis statt „nie gemeldet" — beide Schreibweisen nur einmal: ' + JSON.stringify(cef.aehnlich));
+  assert.match(cef.aehnlich[0], /Cefuroxim/);
 });

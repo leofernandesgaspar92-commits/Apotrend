@@ -1369,6 +1369,7 @@ async function loadOverview() {
   { const lb = head.querySelector('#ov_logistik'); if (lb) lb.onclick = () => openLogistik(); }
   for (const [id, , , , fn] of schnell) if (fn) head.querySelector('#' + id).onclick = fn;
   feed.appendChild(head);
+  renderVorratsRadar(feed); // im Ausland knapp, bei dir nicht — direkt unter dem Überblick
   renderLiveOverview(feed, liveNow, liveSoon); // zeitkritisch: laufende/kommende Live-Sessions ganz oben
   renderMyTasksOverview(feed, (tasksData && tasksData.tasks) || []); // deine offenen Aufgaben
   renderTeamOverdueOverview(feed, (tasksData && tasksData.tasks) || [], !!(tasksData && tasksData.can_assign)); // Manager: Team-Überfälligkeiten
@@ -3579,6 +3580,48 @@ function downloadCsv(baseName, header, rows) {
   a.click(); URL.revokeObjectURL(url);
 }
 
+// „seit heute" / „seit 1 Tag" / „seit 12 Tagen" — statt „seit 0 Tagen".
+function seitTage(n) { return n <= 0 ? t('zeit_seit_heute') : n === 1 ? t('zeit_seit_1') : ti('fw_since', { n }); }
+
+// ── Vorrats-Radar (Startseite) ───────────────────────────────────────────────
+// Was im Ausland amtlich knapp ist, bei dir aber nicht. Keine Prognose — die
+// Zeile nennt Länder, Dauer und ob es bei dir schon einmal knapp war.
+// Platzhalter sofort einsetzen, damit die Karte an ihrer Stelle erscheint,
+// auch wenn die Antwort nach den übrigen Karten kommt.
+async function renderVorratsRadar(feed) {
+  const platz = el('<div data-radar></div>');
+  feed.appendChild(platz);
+  let d;
+  try { d = await api('GET', '/api/radar?country=' + encodeURIComponent(viewCountry())); } catch { platz.remove(); return; }
+  if (!platz.isConnected || !d || !d.gesamt) { platz.remove(); return; }
+  const zeile = (e) => {
+    const wo = e.laender.slice(0, 4).map((l) => `${landAnzeige(l.land)} (${seitTage(l.seit_tagen)})`).join(', ') + (e.laender.length > 4 ? ' …' : '');
+    const hier = e.verlauf_hier && e.verlauf_hier.anzahl ? ti('rad_hier', { n: e.verlauf_hier.anzahl }) : '';
+    return `<div class="srt-zeile" style="--srt-farbe:var(--warn-fg)">
+      <span class="srt-ic" aria-hidden="true">${ico('globe', 20)}</span>
+      <div class="srt-text"><div class="srt-name">${esc(e.wirkstoff)}</div>
+        <div class="srt-status">${esc(ti(e.laender.length === 1 ? 'rad_wo_1' : 'rad_wo', { n: e.laender.length, laender: wo }))}</div>
+        ${hier ? `<div class="muted" style="font-size:14px;margin-top:2px">${esc(hier)}</div>` : ''}</div>
+      <div class="srt-aktion"><button class="ghost small" data-rdet="${esc(e.wirkstoff)}">${esc(t('srt_details'))}</button>
+        ${e.beobachtet ? `<span class="srt-beob">${ico('check', 16)}${esc(t('srt_beobachtet'))}</span>` : `<button class="ghost small" data-rwatch="${esc(e.wirkstoff)}">${esc(t('wl_add').replace(/^\+\s*/, ''))}</button>`}</div>
+    </div>`;
+  };
+  const karte = el(`<div class="card">
+    <div class="row" style="align-items:center;gap:10px"><span class="karte-ic" aria-hidden="true">${ico('globe', 22)}</span>
+      <div style="flex:1"><h2 style="margin:0">${esc(t('rad_title'))}</h2><div class="muted" style="font-size:14px">${esc(ti('rad_sub', { land: landAnzeige(d.land) }))}</div></div></div>
+    ${d.heimat_beobachtet ? '' : `<div class="srt-sperre" style="margin-top:10px">${esc(ti('rad_ohne_heimat', { land: landAnzeige(d.land) }))}</div>`}
+    <div style="margin-top:6px">${d.eintraege.map(zeile).join('')}</div>
+    ${d.gesperrt ? `<div class="srt-sperre"><b>${esc(ti('rad_gesperrt', { n: d.gesperrt }))}</b><div style="margin-top:8px"><button data-radprem>${esc(t('srt_premium_cta'))}</button></div></div>` : ''}
+    <div class="muted" style="font-size:13px;margin-top:10px">${esc(t('rad_hinweis'))}</div>
+  </div>`);
+  platz.replaceWith(karte);
+  karte.querySelectorAll('[data-rdet]').forEach((b) => { b.onclick = () => openWirkstoff(b.dataset.rdet); });
+  karte.querySelectorAll('[data-rwatch]').forEach((b) => { b.onclick = async () => {
+    try { await api('POST', '/api/watchlist', { wirkstoff: b.dataset.rwatch }); b.outerHTML = `<span class="srt-beob">${ico('check', 16)}${esc(t('srt_beobachtet'))}</span>`; } catch (e) { alert(e.message); }
+  }; });
+  const pr = karte.querySelector('[data-radprem]'); if (pr) pr.onclick = () => openPremium();
+}
+
 // ── Sortiments-Check ─────────────────────────────────────────────────────────
 // Die eigene Liste (aus der Warenwirtschaft kopiert oder als CSV) gegen die
 // Behördenlisten prüfen. Server: services/sortiment.js — dort die Regeln.
@@ -3632,7 +3675,7 @@ async function openSortiment() {
 function srtZeileText(e) {
   if (e.einstufung === 'knapp') {
     const teile = [ti('srt_r_knapp', { land: landAnzeige(srtLand) })];
-    if (e.seit_tagen != null) teile.push(ti('fw_since', { n: e.seit_tagen }));
+    if (e.seit_tagen != null) teile.push(seitTage(e.seit_tagen));
     if (e.voraussichtlich_bis) teile.push(ti('srt_bis', { d: fmtDateDe(e.voraussichtlich_bis) }));
     // Herkunft immer nennen: Behörde, Redaktion, Apotheken-Meldung oder Referenzdaten.
     if (e.herkunft === 'community') teile.push(t('srt_community'));
@@ -3640,9 +3683,10 @@ function srtZeileText(e) {
     else if (e.quelle) teile.push(t('srt_quelle') + ' ' + e.quelle);
     return teile.join(' · ');
   }
-  if (e.einstufung === 'ausland') return ti('srt_r_ausland', { laender: e.ausland.map((a) => `${landAnzeige(a.land)} (${ti('fw_since', { n: a.seit_tagen })})`).join(', ') });
+  if (e.einstufung === 'ausland') return ti('srt_r_ausland', { laender: e.ausland.map((a) => `${landAnzeige(a.land)} (${seitTage(a.seit_tagen)})`).join(', ') });
   if (e.einstufung === 'wiederholt') return ti('srt_r_wiederholt', { n: e.verlauf.anzahl }) + (e.verlauf.durchschnitt_tage != null ? ' · ' + ti('srt_r_schnitt', { n: e.verlauf.durchschnitt_tage }) : '');
   if (e.einstufung === 'ruhig') return t('srt_r_ruhig');
+  if (e.aehnlich && e.aehnlich.length) return ti('srt_r_aehnlich', { namen: e.aehnlich.join(', ') });
   return t('srt_r_unbekannt');
 }
 let srtLand = '';
@@ -3661,7 +3705,7 @@ function zeigeSortiment(box, d) {
     <div class="ovtiles">${['knapp', 'ausland', 'wiederholt', 'ruhig', 'unbekannt'].map(kachel).join('')}</div>
     ${d.gesperrt ? `<div class="srt-sperre"><b>${esc(ti('srt_gesperrt', { n: d.gesperrt, frei: d.grenze }))}</b><div class="muted" style="font-size:14px;margin:4px 0 8px">${esc(t('srt_gesperrt_sub'))}</div><button data-srtpremium>${esc(t('srt_premium_cta'))}</button></div>` : ''}
     <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px">
-      ${betroffen.length ? `<button data-srtwatch>${esc(ti('srt_alle_beobachten', { n: betroffen.length }))}</button>` : ''}
+      ${betroffen.length ? `<button data-srtwatch>${esc(betroffen.length === 1 ? t('srt_alle_beobachten_1') : ti('srt_alle_beobachten', { n: betroffen.length }))}</button>` : ''}
       ${d.premium ? `<button class="ghost" data-srtcsv>${esc(t('srt_csv'))}</button>` : ''}
     </div>
     <div class="err" data-srterr></div>
@@ -3688,12 +3732,14 @@ function zeigeSortiment(box, d) {
         <div class="srt-name">${esc(e.wirkstoff || e.eingabe)}${e.wirkstoff && e.eingabe.toLowerCase() !== e.wirkstoff.toLowerCase() ? ` <span class="muted srt-eingabe">${esc(e.eingabe)}</span>` : ''}</div>
         <div class="srt-status">${esc(srtZeileText(e))}</div>
       </div>
+      ${!e.wirkstoff && e.aehnlich && e.aehnlich.length ? `<div class="srt-aktion"><button class="ghost small" data-aehnlich>${esc(t('srt_ansehen'))}</button></div>` : ''}
       ${e.wirkstoff ? `<div class="srt-aktion">
         <button class="ghost small" data-details>${esc(t('srt_details'))}</button>
         ${e.beobachtet ? `<span class="srt-beob">${ico('check', 16)}${esc(t('srt_beobachtet'))}</span>` : `<button class="ghost small" data-watch>${esc(t('wl_add').replace(/^\+\s*/, ''))}</button>`}
       </div>` : ''}
     </div>`);
     const det = zeile.querySelector('[data-details]'); if (det) det.onclick = () => openWirkstoff(e.wirkstoff);
+    const ae = zeile.querySelector('[data-aehnlich]'); if (ae) ae.onclick = () => openWirkstoff(e.aehnlich[0]);
     const wb = zeile.querySelector('[data-watch]');
     if (wb) wb.onclick = async () => {
       try { await api('POST', '/api/watchlist', { wirkstoff: e.wirkstoff }); e.beobachtet = true; zeigeSortiment(box, d); }
@@ -7122,7 +7168,7 @@ function recordRecentWirkstoff(name) {
 // Wirkstoff-Detailseite: alles zu einem Wirkstoff auf einen Blick.
 // Eine Zeile „🇺🇸 USA · seit 4 Tagen · Kritisch · FDA" (services/fruehwarnung.js).
 function auslandZeile(a) {
-  return `<div style="font-size:14px;padding:3px 0">${esc(landLabel(a.land))} · ${esc(ti('fw_since', { n: a.dauer_tage }))} · <span style="color:${statusFg(a.schwerster_status)};font-weight:700">${statusShort(a.schwerster_status)[0]}</span>${a.quelle ? ` <span class="muted">· ${esc(a.quelle)}</span>` : ''}</div>`;
+  return `<div style="font-size:14px;padding:3px 0">${esc(landLabel(a.land))} · ${esc(seitTage(a.dauer_tage))} · <span style="color:${statusFg(a.schwerster_status)};font-weight:700">${statusShort(a.schwerster_status)[0]}</span>${a.quelle ? ` <span class="muted">· ${esc(a.quelle)}</span>` : ''}</div>`;
 }
 // Frühwarn-Karte der Übersicht: beobachtete Wirkstoffe, die anderswo laut
 // Behörde knapp sind, im angesehenen Land aber nicht. Eine Tatsache, keine
