@@ -3,8 +3,10 @@
 // Zahlung als Entitlement freigeschaltet. Bewusst schlank + zentral — später
 // leicht erweiterbar oder aus einer DB ladbar.
 export const PRODUCTS = {
-  premium_monthly: { id: 'premium_monthly', feature: 'premium', amount_cents: 999, currency: 'EUR', name: 'ApoPulse Premium (Monat)' },
-  premium_yearly: { id: 'premium_yearly', feature: 'premium', amount_cents: 9900, currency: 'EUR', name: 'ApoPulse Premium (Jahr)' },
+  // `monate`: Laufzeit je Zahlung. Ohne sie lief „Premium (Monat)" nie ab —
+  // eine Zahlung schaltete Premium für immer frei (bis 10/2026).
+  premium_monthly: { id: 'premium_monthly', feature: 'premium', amount_cents: 999, currency: 'EUR', name: 'ApoPulse Premium (Monat)', monate: 1 },
+  premium_yearly: { id: 'premium_yearly', feature: 'premium', amount_cents: 9900, currency: 'EUR', name: 'ApoPulse Premium (Jahr)', monate: 12 },
 };
 
 export function getProduct(id) { return PRODUCTS[id] || null; }

@@ -5578,7 +5578,13 @@ async function openPremium() {
   const body = card.querySelector('#prBody');
   try {
     const mine = await api('GET', '/api/me/premium').catch(() => ({ premium: false }));
-    if (mine.premium) { body.innerHTML = `<div class="ok-box" style="padding:10px 12px">${esc(t('pr_have'))}</div>`; app.appendChild(wochenberichtKarte(true)); return; }
+    // Premium mit Ablaufdatum: Stand zeigen UND verlängern lassen (die Zahlung
+    // verlängert ab dem bisherigen Ablauf). Unbefristet (Redaktion): nur Stand.
+    let premiumKopf = null;
+    if (mine.premium) {
+      premiumKopf = el(`<div class="ok-box" data-prbis="${esc(mine.bis || '')}" style="padding:10px 12px;margin-bottom:12px"><b>${esc(t('pr_have'))}</b>${mine.bis ? `<div style="margin-top:4px">${esc(ti('pr_until', { d: fmtDateDe(mine.bis.slice(0, 10)) }))}</div><div class="muted" style="font-size:14px;margin-top:4px">${esc(t('pr_renew_hint'))}</div>` : ''}</div>`);
+      if (!mine.bis) { body.innerHTML = ''; body.appendChild(premiumKopf); app.appendChild(wochenberichtKarte(true)); return; }
+    }
     // Eigener Prüfstand ZUERST: Wer schon gezahlt hat, soll nicht ein zweites
     // Mal zahlen, nur weil die Seite nach dem Neuladen nichts davon weiß.
     const eigene = ((await api('GET', '/api/payments/mine').catch(() => ({ payments: [] }))).payments || [])
@@ -5594,6 +5600,7 @@ async function openPremium() {
     }
     const opt = await api('GET', `/api/payments/crypto?product=premium_monthly&country=${encodeURIComponent(viewCountry())}`);
     body.innerHTML = '';
+    if (premiumKopf) body.appendChild(premiumKopf);
     if (stand) body.appendChild(stand);
     // Nutzen zuerst zeigen (Warum Premium?) — sonst zahlt niemand. Klar, scannbar, ehrlich
     // (nur tatsächlich freigeschaltete Funktionen).
@@ -5604,7 +5611,7 @@ async function openPremium() {
       </ul>
     </div>`));
     // Vorschau des Wochenberichts für alle: Sie zeigt, was Premium liefert.
-    app.appendChild(wochenberichtKarte(false));
+    app.appendChild(wochenberichtKarte(!!mine.premium));
     const priceMain = fmtCurrency(opt.amount, opt.currency || 'EUR');
     body.appendChild(el(`<div style="font-weight:800;font-size:1.15em;margin-bottom:4px">${esc(opt.product_name)} — <span style="color:var(--green)">${esc(priceMain)}</span></div>`));
     // Näherung in der Landeswährung, damit niemand selbst umrechnen muss.
@@ -7733,7 +7740,7 @@ async function showNotifications() {
   setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', shortage_abroad:'🌍', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', shortage_abroad:'🌍', premium_ablauf:'⏳', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️' };
   app.innerHTML = '';
   const procCount = d.notifications.filter(n => NOTIF_PROCUREMENT.has(n.type)).length;
   const showFilter = d.notifications.length >= 5 && procCount > 0 && procCount < d.notifications.length;
@@ -7765,14 +7772,14 @@ async function showNotifications() {
     const who = n.actor ? n.actor.display_name : t('notif_someone');
     // Systemmeldungen ohne handelnde Person: Hier hat niemand etwas getan,
     // eine Behoerde hat gemeldet. „Jemand hat …" waere schlicht falsch.
-    const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'payment_confirmed' || n.type === 'payment_rejected';
+    const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'premium_ablauf' || n.type === 'payment_confirmed' || n.type === 'payment_rejected';
     // Profilbild der handelnden Person (wer) + Typ-Emoji (was) — auf einen Blick erkennbar,
     // konsistent zu Feed/Verzeichnis/Suche. Ohne Person (System-Meldung) nur das Emoji.
     const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:var(--ok-bg)'}">
       <div class="row" style="align-items:center">
         ${n.actor ? avatarHtml(n.actor, 34, false) : ''}
         <span${n.actor?' style="font-size:16px"':''}>${icons[n.type]||'🔔'}</span>
-        <span style="margin-left:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' „'+esc(n.type==='shortage_abroad'?n.label.replace(/ · ([A-Z]{2})$/, (m, cc) => ' · ' + landLabel(cc)):n.label)+'"':''}${n.read?'':'</b>'}</span>
+        <span style="margin-left:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' „'+esc(n.type==='shortage_abroad'?n.label.replace(/ · ([A-Z]{2})$/, (m, cc) => ' · ' + landLabel(cc)):n.type==='premium_ablauf'?fmtDateDe(n.label):n.label)+'"':''}${n.read?'':'</b>'}</span>
         <span class="sp" style="flex:1"></span>
         <span class="muted" style="font-size:12px">${relTime(n.created_at)}</span>
       </div></div>`);
@@ -7785,6 +7792,7 @@ async function showNotifications() {
           document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
           const tb=document.querySelector('.tabs button[data-tab="exchange"]'); if(tb) tb.classList.add('active'); loadTab(); });
       }
+      else if (n.type === 'premium_ablauf') { mainScreen().then(() => openPremium()); }
       else if (n.type === 'shortage_abroad') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
       else if (n.type === 'watch_alert') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
       // Der Klick fuehrt in die Live-Warnungen, auf den Wirkstoff gefiltert —

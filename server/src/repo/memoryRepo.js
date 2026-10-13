@@ -13,13 +13,17 @@
 //   listUsersForOrganization(orgId) -> user[]
 import crypto from 'node:crypto';
 
-export function createMemoryRepo() {
+export function createMemoryRepo({ jetzt = () => Date.now() } = {}) {
   const organizations = new Map();
   const users = new Map();
   const usersByEmail = new Map(); // lower(email) -> userId
   const memberships = new Map();
   const identities = new Map(); // `${provider}:${providerUserId}` -> userId (Social-Login-Verknüpfung)
   const entitlements = new Map(); // userId -> Set(feature) — freigeschaltete Premium-Funktionen
+  // Laufzeit je Freischaltung: `${userId}|${feature}` -> ISO-Zeitpunkt. Fehlt der
+  // Eintrag, gilt die Freischaltung unbefristet (z. B. von der Redaktion vergeben).
+  const entitlementBis = new Map();
+  const erinnert = new Set(); // `${userId}|${feature}|${bis}` — Ablauf-Erinnerung schon verschickt
   const payments = new Map();     // paymentId -> Zahlungsdatensatz (Audit-Spur, KEINE Karten-/Wallet-Daten)
   const paymentsByRef = new Map();// `${provider}:${providerRef}` -> paymentId (Webhook-Idempotenz)
   // collab-Modul
@@ -36,7 +40,7 @@ export function createMemoryRepo() {
   const directMessages = new Map();
 
   const uuid = () => crypto.randomUUID();
-  const now = () => new Date().toISOString();
+  const now = () => new Date(jetzt()).toISOString(); // dieselbe Uhr wie die Laufzeitprüfung
 
   return {
     createOrganization(data) {
@@ -110,14 +114,28 @@ export function createMemoryRepo() {
       return out;
     },
     // ── Entitlements (freigeschaltete Premium-Funktionen) ──
-    grantEntitlement(userId, feature) {
+    // `bis` (ISO) befristet die Freischaltung; ohne `bis` bleibt eine bestehende
+    // Frist unverändert bzw. eine neue Freischaltung unbefristet.
+    grantEntitlement(userId, feature, { bis } = {}) {
       let set = entitlements.get(userId); if (!set) { set = new Set(); entitlements.set(userId, set); }
-      set.add(feature); return true;
+      set.add(feature);
+      if (bis) entitlementBis.set(`${userId}|${feature}`, bis);
+      return true;
     },
-    hasEntitlement(userId, feature) { const set = entitlements.get(userId); return !!(set && set.has(feature)); },
-    listEntitlements(userId) { const set = entitlements.get(userId); return set ? [...set] : []; },
-    // Alle Konten mit einer Berechtigung (z. B. Wochenbericht an Premium).
-    listUsersWithEntitlement(feature) { return [...entitlements].filter(([, set]) => set.has(feature)).map(([uid]) => uid); },
+    entitlementBis(userId, feature) { return entitlementBis.get(`${userId}|${feature}`) || null; },
+    hasEntitlement(userId, feature) {
+      const set = entitlements.get(userId);
+      if (!set || !set.has(feature)) return false;
+      const bis = entitlementBis.get(`${userId}|${feature}`);
+      return !bis || Date.parse(bis) > jetzt();
+    },
+    listEntitlements(userId) { const set = entitlements.get(userId); return set ? [...set].filter((f) => this.hasEntitlement(userId, f)) : []; },
+    // Alle Konten mit einer GÜLTIGEN Berechtigung (z. B. Wochenbericht an Premium).
+    listUsersWithEntitlement(feature) { return [...entitlements].filter(([uid, set]) => set.has(feature) && this.hasEntitlement(uid, feature)).map(([uid]) => uid); },
+    // Alle Freischaltungen mit Frist (für Erinnerung und Umstellung).
+    listEntitlementGrants(feature) { return [...entitlements].filter(([, set]) => set.has(feature)).map(([uid]) => ({ userId: uid, bis: entitlementBis.get(`${uid}|${feature}`) || null })); },
+    wasReminded(key) { return erinnert.has(key); },
+    markReminded(key) { erinnert.add(key); },
 
     // ── Zahlungen (Audit-Spur). Es werden NIE Karten- oder Wallet-Rohdaten gespeichert,
     //    nur Metadaten + die Referenz des lizenzierten Zahlungsanbieters. ──
@@ -325,6 +343,7 @@ export function createMemoryRepo() {
         organizations: [...organizations], users: [...users], usersByEmail: [...usersByEmail],
         memberships: [...memberships], identities: [...identities],
         entitlements: [...entitlements].map(([k, s]) => [k, [...s]]),
+        entitlementBis: [...entitlementBis], erinnert: [...erinnert],
         payments: [...payments], paymentsByRef: [...paymentsByRef],
         channels: [...channels],
         channelMembers: [...channelMembers].map(([k, s]) => [k, [...s]]),
@@ -339,6 +358,7 @@ export function createMemoryRepo() {
       fill(organizations, d.organizations); fill(users, d.users); fill(usersByEmail, d.usersByEmail);
       fill(memberships, d.memberships); fill(identities, d.identities);
       entitlements.clear(); for (const [k, arr] of d.entitlements || []) entitlements.set(k, new Set(arr));
+      fill(entitlementBis, d.entitlementBis); erinnert.clear(); for (const k of d.erinnert || []) erinnert.add(k);
       fill(payments, d.payments); fill(paymentsByRef, d.paymentsByRef);
       fill(channels, d.channels);
       channelMembers.clear(); for (const [k, arr] of d.channelMembers || []) channelMembers.set(k, new Set(arr));

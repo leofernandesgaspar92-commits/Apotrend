@@ -25,11 +25,23 @@ import { pruefeTx } from '../domain/kryptoTx.js';
 //  hinterlegt sind.
 const PROVIDER_VORRANG = { paypal: ['paypal', 'stripe'] };
 
+/** Kalendermonate addieren; 31.01. + 1 Monat = 28./29.02., nicht 03.03. */
+export function plusMonate(ms, n) {
+  const d = new Date(ms);
+  const tag = d.getUTCDate();
+  d.setUTCDate(1);
+  d.setUTCMonth(d.getUTCMonth() + n);
+  const letzter = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+  d.setUTCDate(Math.min(tag, letzter));
+  return d.getTime();
+}
+
 export function createPaymentsService({
   repo, providers = {}, onPaid = null, wallets = () => ({}), rates = null, fx = null, isModerator = () => false, mirror = null,
   // Benachrichtigungen der manuellen Krypto-Prüfung. Optional, damit die
   // Tests ohne Social-Schicht laufen. `moderatoren()` liefert User-IDs.
   benachrichtige = null, moderatoren = () => [],
+  jetzt = () => Date.now(),
 }) {
   const melde = (o) => { if (typeof benachrichtige === 'function') { try { benachrichtige(o); } catch { /* eine Glocke darf keine Zahlung aufhalten */ } } };
   const pick = (method) => {
@@ -62,7 +74,18 @@ export function createPaymentsService({
     const aktuell = repo.setPaymentStatus(payment.id, 'paid') || payment;
     const product = getProduct(payment.product_id);
     if (product) {
-      repo.grantEntitlement(payment.user_id, product.feature);
+      // Laufzeit: ab dem bisherigen Ablauf, wenn der noch in der Zukunft liegt —
+      // wer früh verlängert, verliert keinen Tag. Unbefristetes bleibt unbefristet.
+      let bis;
+      if (product.monate) {
+        const alt = repo.entitlementBis ? repo.entitlementBis(payment.user_id, product.feature) : null;
+        const hatUnbefristet = repo.hasEntitlement(payment.user_id, product.feature) && !alt;
+        if (!hatUnbefristet) {
+          const start = alt && Date.parse(alt) > jetzt() ? Date.parse(alt) : jetzt();
+          bis = new Date(plusMonate(start, product.monate)).toISOString();
+        }
+      }
+      repo.grantEntitlement(payment.user_id, product.feature, bis ? { bis } : {});
       if (onPaid) { try { await onPaid({ payment, product }); } catch { /* Mailversand darf die Freischaltung nicht blockieren */ } }
     }
     spiegeln({ ...aktuell, feature: product && product.feature });
@@ -302,6 +325,50 @@ export function createPaymentsService({
     },
 
     hasFeature(userId, feature) { return repo.hasEntitlement(userId, feature); },
+    featureBis(userId, feature) { return repo.entitlementBis ? repo.entitlementBis(userId, feature) : null; },
+
+    /**
+     * Umstellung alter, unbefristeter Freischaltungen aus BEZAHLTEN Laufzeit-
+     * Produkten: Ablauf = Zahlungsdatum + Laufzeit. Läge der schon in der
+     * Vergangenheit, gibt es 7 Tage Kulanz ab heute — niemand wird ohne
+     * Vorwarnung abgeschnitten. Ohne passende Zahlung (von der Redaktion
+     * vergeben) bleibt die Freischaltung unbefristet. Mehrfach aufrufbar.
+     */
+    laufzeitenUmstellen() {
+      let n = 0;
+      for (const { userId, bis } of repo.listEntitlementGrants ? repo.listEntitlementGrants('premium') : []) {
+        if (bis) continue;
+        const bezahlt = repo.listPaymentsByUser(userId)
+          .filter((p) => p.status === 'paid' && getProduct(p.product_id) && getProduct(p.product_id).monate)
+          .sort((a, b) => String(a.paid_at || a.created_at).localeCompare(String(b.paid_at || b.created_at)));
+        if (!bezahlt.length) continue;
+        let ende = 0;
+        for (const p of bezahlt) {
+          const ab = Math.max(Date.parse(p.paid_at || p.created_at) || 0, ende);
+          ende = plusMonate(ab, getProduct(p.product_id).monate);
+        }
+        const kulanz = jetzt() + 7 * 86400000;
+        repo.grantEntitlement(userId, 'premium', { bis: new Date(Math.max(ende, kulanz)).toISOString() });
+        n++;
+      }
+      return n;
+    },
+
+    /** Erinnerung 3 Tage vor Ablauf — einmal je Ablaufdatum. */
+    ablaufErinnern() {
+      let n = 0;
+      for (const { userId, bis } of repo.listEntitlementGrants ? repo.listEntitlementGrants('premium') : []) {
+        if (!bis) continue;
+        const rest = Date.parse(bis) - jetzt();
+        if (rest <= 0 || rest > 3 * 86400000) continue;
+        const key = `${userId}|premium|${bis}`;
+        if (repo.wasReminded(key)) continue;
+        repo.markReminded(key);
+        melde({ userId, type: 'premium_ablauf', refType: 'premium', refId: bis, label: bis.slice(0, 10) });
+        n++;
+      }
+      return n;
+    },
     myEntitlements(userId) { return repo.listEntitlements(userId); },
   };
 }

@@ -11,7 +11,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtempSync, rmSync, existsSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -62,6 +62,14 @@ test('Neustart mit gespeicherter Datei: Server kommt hoch, Konto ist noch da', {
     await new Promise((ok) => setTimeout(ok, 600)); // gedrosseltes Schreiben (400 ms) abwarten
     await stopp(a.kind);
     assert.ok(existsSync(datei), 'erster Start hat keine Datei geschrieben');
+    // Altbestand nachstellen: bezahltes Monats-Premium OHNE Frist — so speicherte
+    // der Code bis 10/2026. Der nächste Start muss es auf Laufzeit umstellen.
+    const stand = JSON.parse(readFileSync(datei, 'utf8'));
+    const uid = stand.foundation.users.find(([, u]) => u.email === 'neustart@x.at')[0];
+    stand.foundation.entitlements = [[uid, ['premium']]];
+    stand.foundation.entitlementBis = [];
+    stand.foundation.payments = [...(stand.foundation.payments || []), ['alt1', { id: 'alt1', user_id: uid, product_id: 'premium_monthly', status: 'paid', method: 'crypto_direct', provider: 'crypto_direct', amount_cents: 999, currency: 'EUR', created_at: '2026-01-01T10:00:00.000Z', paid_at: '2026-01-01T10:00:00.000Z' }]];
+    writeFileSync(datei, JSON.stringify(stand));
 
     // 2. Zweiter Start auf derselben Datei.
     const b = starte(datei);
@@ -73,6 +81,12 @@ test('Neustart mit gespeicherter Datei: Server kommt hoch, Konto ist noch da', {
         body: JSON.stringify({ email: 'neustart@x.at', password: 'Passwort123!' }),
       });
       assert.equal(login.status, 200, 'Konto hat den Neustart nicht überlebt');
+      const tok = (await login.json()).token;
+      const prem = await (await fetch(`http://localhost:${portB}/api/me/premium`, { headers: { authorization: 'Bearer ' + tok } })).json();
+      assert.equal(prem.premium, true, 'Kulanz: Altbestand darf nicht sofort abgeschnitten werden');
+      const tage = (Date.parse(prem.bis) - Date.now()) / 86400000;
+      assert.ok(tage > 6 && tage <= 7.01, `Altbestand nicht umgestellt (bis ${prem.bis})`);
+      assert.match(b.log(), /Premium-Freischaltung\(en\) auf Laufzeit umgestellt/);
       const st = await (await fetch(`http://localhost:${portB}/api/live/status`)).json();
       assert.ok(st.sources.some((x) => x.id === 'eigen_au_1' && x.eigen), 'eigene Quelle hat den Neustart nicht überlebt');
     } finally {

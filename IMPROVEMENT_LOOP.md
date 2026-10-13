@@ -1969,3 +1969,27 @@ Spalten nicht angezeigt, „Entfernen" bei eingebauten Quellen.
 testen" — das Ergebnis zeigt sofort, ob die echten Dateien ankommen. Für Australien: den
 TGA-Exportlink eintragen und testen (Anleitung in docs/LIVE_DATA.md, 3l).
 
+### Cycle · „Premium (Monat)" lief nie ab (2026-10-13)
+
+**GATHER.** Seit Chronik, Export, Frühwarnung und Wochenbericht an Premium hängen, ist Premium
+das Produkt. Nachgesehen, ob es ABLÄUFT: nein. `grantEntitlement` kannte keine Frist; wer einmal
+9,99 € zahlte, hatte Premium für immer. Jede Folgezahlung wäre ausgeblieben.
+
+**WORK.** Frist je Freischaltung (`entitlementBis`), geprüft in `hasEntitlement` — damit gilt sie
+überall, wo Premium abgefragt wird (Wochenbericht, Frühwarnung, Export, Social). Verlängern ab
+altem Ablauf; Redaktions-Freischaltungen unbefristet; Umstellung des Altbestands mit 7 Tagen
+Kulanz; Erinnerung 3 Tage vorher; Premium-Seite mit „Aktiv bis" und Verlängern.
+
+**Beim Testen gefunden:** Das Repository stempelte Zahlungen mit der echten Uhr statt der
+eingespeisten — Laufzeiten wären in Tests nicht prüfbar gewesen. Jetzt eine Uhr für beides.
+
+**Gegenproben (Bruch angewandt, jede schlägt an):** Frist ignoriert; Verlängerung ab heute statt
+ab Ablauf; Umstellung ohne Kulanz; Erinnerung ohne Dedup; Wochenbericht-Empfänger ohne
+Fristprüfung; Umstellung beim Laden nicht aufgerufen (Neustart-Test mit nachgestelltem
+Altbestand in der gespeicherten Datei); Premium-Seite ohne Verlängern (Browser).
+
+**CHECK.** 1175 Tests grün (+7), Smoke 19/19, Audit ohne Befund.
+
+**Für den Owner:** Bestehende Premium-Kund:innen behalten Premium bis Zahlungsdatum + gekaufte
+Laufzeit, mindestens 7 Tage ab diesem Deploy, und werden 3 Tage vor Ablauf erinnert.
+

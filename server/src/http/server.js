@@ -240,6 +240,10 @@ function applySnapshot(snap) {
   chronik.__load(snap.chronik);
   eigeneQuellen.__load(snap.eigeneQuellen);
   wochenbericht.__load(snap.wochenbericht);
+  // Alte, unbefristete Premium-Freischaltungen aus bezahlten Monats-/Jahres-
+  // käufen bekommen ihr Ablaufdatum (services/payments.js, laufzeitenUmstellen).
+  const umgestellt = payments.laufzeitenUmstellen();
+  if (umgestellt) console.log(`ApoPulse: ${umgestellt} Premium-Freischaltung(en) auf Laufzeit umgestellt.`);
   const weg = erfundeneStartmeldungenEntfernen(socialRepo);
   if (weg) console.log(`ApoPulse: ${weg} erfundene Startmeldung(en) aus dem gesicherten Bestand entfernt.`);
 }
@@ -1268,7 +1272,7 @@ const routes = [
   }],
   ['POST', /^\/api\/payments\/checkout$/, true, async ({ userId, body }) =>
     payments.createCheckout(userId, { productId: body.productId, method: body.method, successUrl: body.successUrl, cancelUrl: body.cancelUrl })],
-  ['GET', /^\/api\/me\/premium$/, true, async ({ userId }) => ({ premium: payments.hasFeature(userId, 'premium'), features: payments.myEntitlements(userId) })],
+  ['GET', /^\/api\/me\/premium$/, true, async ({ userId }) => ({ premium: payments.hasFeature(userId, 'premium'), features: payments.myEntitlements(userId), bis: payments.featureBis(userId, 'premium') })],
   // Direkt-in-Wallet Krypto: Anzeige (Adresse + „in Wallet öffnen"-URI + Live-Betrag),
   // Start (pending), Tx-ID einreichen (pending_review), Moderation bestätigt manuell.
   // `country` steuert nur die ANZEIGE-Währung (Näherung). Abgerechnet wird in
@@ -2216,6 +2220,12 @@ server.listen(PORT, () => {
     });
     // Wochenbericht: stündlich nachsehen, ob für diese Woche noch etwas fehlt
     // (montags ab 05:00 UTC; fiel der Montag aus, holt der nächste Lauf nach).
+    // Premium-Ablauf: 3 Tage vorher erinnern (einmal je Ablaufdatum).
+    scheduler.add('premium', {
+      run: async () => { const n = payments.ablaufErinnern(); if (n) saveSoon(); return { erinnert: n }; },
+      intervalMs: 6 * 3_600_000,
+      startDelayMs: 120_000,
+    });
     scheduler.add('wochenbericht', {
       run: async () => { const r = await wochenbericht.lauf(); if (r.gesendet) saveSoon(); return r; },
       intervalMs: 3_600_000,

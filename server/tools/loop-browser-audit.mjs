@@ -1241,6 +1241,26 @@ async function main() {
       else console.log('✓ Premium: nur laufende Vorteile; Wochenbericht-Vorschau abgeschottet; gefälschter Abmelde-Link abgewiesen');
     }
 
+    // ── 12. Premium mit Ablaufdatum: Stand + Verlängern; unbefristet: nur Stand
+    {
+      const premiumSeite = async (antwort) => {
+        await page.unroute('**/api/me/premium').catch(() => {});
+        await page.route('**/api/me/premium', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(antwort) }));
+        await page.goto(BASE, { waitUntil: 'networkidle' });
+        await page.evaluate(() => openPremium());
+        await page.waitForSelector('[data-prbis]', { timeout: 6000 }).catch(() => {});
+        await page.waitForTimeout(600);
+        return page.locator('#prBody').innerText().catch(() => '');
+      };
+      const befristet = await premiumSeite({ premium: true, features: ['premium'], bis: '2026-11-13T10:00:00.000Z' });
+      const unbefristet = await premiumSeite({ premium: true, features: ['premium'], bis: null });
+      await page.unroute('**/api/me/premium').catch(() => {});
+      if (!/Aktiv bis 13\.11\.2026/.test(befristet) || !/keinen Tag/.test(befristet)) findings.push(`Premium: Ablaufdatum fehlt (${befristet.slice(0, 160)})`);
+      else if (!/Premium \(Monat\)/.test(befristet)) findings.push('Premium: mit Ablaufdatum kein Weg zum Verlängern');
+      else if (/Aktiv bis|Premium \(Monat\)/.test(unbefristet)) findings.push('Premium: unbefristetes Premium soll weder Datum noch Kaufangebot zeigen');
+      else console.log('✓ Premium: Ablaufdatum mit Verlängern; unbefristet ohne Kaufangebot');
+    }
+
     if (errors.length) findings.push(`Säule 3: JS-Fehler — ${errors.slice(0, 2).join(' | ')}`);
     await ctx.close();
   }

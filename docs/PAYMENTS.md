@@ -297,3 +297,20 @@ Bezahlweg zu verbuchen wäre schlimmer als eine Lücke.
 - **Eigene Kursabfrage (CoinGecko/Binance):** unnötig — der Krypto-Prozessor rechnet live um.
 - **Bestätigungs-Mail:** der Haken (`onPaid`) ist vorhanden; der Versand braucht einen eigenen
   Mail-Anbieter (z. B. Postmark/SES) und wird angebunden, sobald einer gewählt ist.
+
+## Laufzeit (seit 10/2026)
+
+Bis 10/2026 lief „Premium (Monat)" **nie ab** — eine Zahlung schaltete Premium für immer frei.
+Jetzt trägt jedes Laufzeit-Produkt `monate` (Monat 1, Jahr 12) und die Freischaltung ein Ablaufdatum:
+
+- **Verlängern** zählt ab dem bisherigen Ablauf, wenn der noch in der Zukunft liegt (kein Tag
+  geht verloren), sonst ab dem Zahltag. Kalendermonate: 31.01. + 1 Monat = 28./29.02.
+- **Unbefristet** bleibt, was die Redaktion ohne Zahlung vergibt — auch wenn später gezahlt wird.
+- **Umstellung beim Start** (`laufzeitenUmstellen`): alte, unbefristete Freischaltungen MIT
+  bezahlter Laufzeit-Zahlung bekommen Ablauf = Zahlungsdaten + Laufzeiten; liegt der in der
+  Vergangenheit, 7 Tage Kulanz ab Umstellung. Läuft bei jedem Laden des gesicherten Stands,
+  ändert beim zweiten Mal nichts.
+- **Erinnerung** 3 Tage vor Ablauf (`premium_ablauf`, einmal je Ablaufdatum, Job alle 6 Std.).
+- Abgelaufen: keine Premium-Funktionen, kein Wochenbericht. `/api/me/premium` liefert `bis`;
+  die Premium-Seite zeigt „Aktiv bis …" und den Weg zum Verlängern.
+
