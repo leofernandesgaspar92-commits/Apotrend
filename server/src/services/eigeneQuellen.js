@@ -67,11 +67,11 @@ export function createEigeneQuellen({ istLand, lokalErlaubt = false } = {}) {
     pruefe,
     /** Ungespeicherte Quelle für einen Probe-Abruf bauen (wirft bei Fehler). */
     entwurf(e) {
-      const f = pruefe(e); if (f) { const err = new Error(f); err.status = 400; err.code = 'quelle_ungueltig'; throw err; }
+      const f = pruefe(e); if (f) { const err = new Error(f); err.status = 400; err.code = 'quelle_ungueltig'; err.params = { detail: f }; throw err; }
       return bauen('entwurf', e);
     },
     hinzufuegen(e) {
-      const f = pruefe(e); if (f) { const err = new Error(f); err.status = 400; err.code = 'quelle_ungueltig'; throw err; }
+      const f = pruefe(e); if (f) { const err = new Error(f); err.status = 400; err.code = 'quelle_ungueltig'; err.params = { detail: f }; throw err; }
       const id = `eigen_${String(e.country).toLowerCase()}_${++zaehler}`;
       const q = bauen(id, e);
       quellen.set(id, q);

@@ -2802,3 +2802,29 @@ internationale Wörter. Feste deutsche Texte im Code gesucht.
 **Tests.** `benachrichtigung-sprache.test.js` (Push je Inhalt; echte `notifLabel` per vm; Bausteine
 des Servers abgeglichen). Browser-Audit „Erster Eindruck": CSV-Kopf. **Gegenproben:** Push ohne
 Inhaltsweiche; CSV-Kopf deutsch — beide rot.
+
+### Cycle · Fehlermeldungen in der Sprache der Oberfläche (2026-10-14)
+
+**Befund.** Die App übersetzt Fehler über `e_<code>`. 134 von 167 Codes hatten keine Übersetzung —
+in Uganda erschienen sie deutsch („Wieder lieferbar melden kann, wer …"). Dynamische Meldungen
+(Format der Transaktions-ID) verloren beim Übersetzen ihre Werte.
+
+**WORK.** Alle 134 Codes in de/en/pt. Server schickt `params` mit (tx_format: Kette + Format,
+api_limit/api_zu_viele: Zahl); die App füllt `{…}` und nimmt sonst lieber die Server-Meldung als
+einen Text mit offenem Platzhalter. Neuer Fallback `e_unbekannt` statt „Fehler 400".
+`shortages.js` (Melden, Bestätigen, Status — Kern für Afrika): alle Fehler mit Code statt
+`new Error('…')`; sechs neue Codes übersetzt.
+
+**Offen.** Etwa 170 weitere `new Error('…')` ohne Code in anderen Diensten (social, network, collab …)
+— bleiben deutsch, bis sie Codes bekommen.
+
+**Tests.** `fehler-sprache.test.js`: jeder Code des Servers in de/en/pt (schützt vor Rückfall);
+tx_format über HTTP mit `params`. Browser-Audit „Erster Eindruck": Fehler beim Melden einer
+Krypto-Zahlung erscheint englisch mit erwartetem Format. **Gegenproben:** ohne `params`;
+Übersetzung entfernt; e_tx_format entfernt → jeweils rot.
+
+**Nachtrag (Lehre).** 11 Codes hatten keine direkt auslesbare Meldung; ihre Bedeutung habe ich zuerst
+aus dem Code-Namen geraten. Bei `link_invalid` falsch („gültigen Link angeben" statt „Abmelde-Link
+ungültig") — der Browser-Audit „Wochenbericht" fing es. Danach alle 11 an der Fundstelle
+abgeglichen; `quelle_ungueltig` reicht die genaue Begründung jetzt als `{detail}` durch. Regel:
+Übersetzungen nur aus der Meldung an der Fundstelle, nie aus dem Code-Namen.

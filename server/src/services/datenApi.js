@@ -37,7 +37,7 @@ export function createDatenApi({ uhr = () => Date.now() } = {}) {
     /** Neuen Schlüssel anlegen. Der Klartext steht NUR in dieser Antwort. */
     anlegen(userId, name) {
       const aktiv = [...schluessel.values()].filter((k) => k.user_id === userId && !k.widerrufen);
-      if (aktiv.length >= MAX_SCHLUESSEL) throw new AppError('api_zu_viele', `Höchstens ${MAX_SCHLUESSEL} Schlüssel. Bitte zuerst einen nicht mehr benötigten löschen.`);
+      if (aktiv.length >= MAX_SCHLUESSEL) throw Object.assign(new AppError('api_zu_viele', `Höchstens ${MAX_SCHLUESSEL} Schlüssel. Bitte zuerst einen nicht mehr benötigten löschen.`), { params: { n: MAX_SCHLUESSEL } });
       const bez = String(name || '').trim().slice(0, 60) || 'Schlüssel';
       const roh = PRAEFIX + crypto.randomBytes(24).toString('base64url');
       const id = crypto.randomBytes(6).toString('hex');
@@ -72,6 +72,7 @@ export function createDatenApi({ uhr = () => Date.now() } = {}) {
       const f = (fenster.get(k.id) || []).filter((x) => x > t - 60000);
       if (f.length >= ANFRAGEN_JE_MINUTE) {
         const e = new AppError('api_limit', `Zu viele Anfragen (höchstens ${ANFRAGEN_JE_MINUTE} je Minute).`, 429);
+        e.params = { n: ANFRAGEN_JE_MINUTE };
         e.retryAfterS = Math.ceil((f[0] + 60000 - t) / 1000);
         throw e;
       }

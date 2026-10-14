@@ -200,7 +200,7 @@ export function createPaymentsService({
       const tx = pruefeTx(p.coin, roh);
       if (!tx.ok && tx.format) {
         // Tippfehler JETZT melden, nicht nach Tagen bei der Prüfung.
-        throw new AppError('tx_format', `Das sieht nicht wie eine ${tx.kette}-Transaktions-ID aus (erwartet: ${tx.format}). Bitte aus der Wallet kopieren.`, 400);
+        throw Object.assign(new AppError('tx_format', `Das sieht nicht wie eine ${tx.kette}-Transaktions-ID aus (erwartet: ${tx.format}). Bitte aus der Wallet kopieren.`, 400), { params: { kette: tx.kette, format: tx.format } });
       }
       const ref = tx.ok ? tx.id : roh;
       const schon = repo.getPaymentByRef(p.provider, ref);

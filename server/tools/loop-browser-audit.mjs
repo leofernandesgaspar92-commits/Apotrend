@@ -2261,6 +2261,19 @@ async function main() {
     await page.evaluate(() => openPremium()); await page.waitForSelector('[data-prpreis]', { timeout: 8000 }).catch(() => {});
     const preisZeile = await page.locator('[data-prpreis]').innerText().catch(() => '');
     if (!/\(1 month\)/.test(preisZeile) || /Monat/.test(preisZeile)) findings.push(`Erster Eindruck: Produktname auf der Premium-Seite nicht übersetzt (${preisZeile.slice(0, 60)})`);
+    // Fehlermeldung beim Melden einer Krypto-Zahlung: übersetzt UND mit erwartetem Format
+    // (vorher deutsch: „Das sieht nicht wie eine Bitcoin-Transaktions-ID aus …").
+    {
+      const box = page.locator('.crypto-pay').first();
+      if (await box.count()) {
+        let dialogText = '';
+        page.once('dialog', (d) => { dialogText = d.message(); d.accept().catch(() => {}); });
+        await box.locator('.tx-in').fill('keine-gueltige-id');
+        await box.locator('[data-report]').click(); await page.waitForTimeout(1200);
+        const gezeigt = dialogText + ' ' + (await box.innerText().catch(() => ''));
+        if (!/does not look like a .+ transaction ID \(expected: /.test(gezeigt) || /Transaktions-ID|\{\w+\}/.test(gezeigt)) findings.push(`Erster Eindruck: Fehler beim Zahlung-Melden nicht übersetzt (${gezeigt.replace(/\s+/g, ' ').slice(0, 120)})`);
+      }
+    }
     for (const f of fehler) findings.push('Erster Eindruck: JS-Fehler ' + f);
     if (!findings.some((f) => f.startsWith('Erster Eindruck'))) console.log('✓ Erster Eindruck (Liberia): Länderwahl auf Englisch mit Vorschlag aus der Zeitzone, Afrika zuerst und alphabetisch; keine leeren Preis-Versprechen; Codes ohne Umbruch; leere Liste fordert zum Melden auf; Premium auf Englisch');
     await ctx.close();

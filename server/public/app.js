@@ -282,8 +282,15 @@ const api = async (method, path, body) => {
     }
     // Fehler-Code (falls vorhanden) übersetzen — sonst die (deutsche) Server-message.
     // So werden alle e.message-Anzeigestellen automatisch mehrsprachig.
-    const translated = data.code && I18N[LOCALE] && I18N[LOCALE]['e_'+data.code];
-    const err = new Error(translated || data.error || ('Fehler '+r.status));
+    let translated = data.code && I18N[LOCALE] && I18N[LOCALE]['e_'+data.code];
+    // Platzhalter ({kette}, {format} …) aus den mitgeschickten Werten füllen. Fehlt ein
+    // Wert, lieber die (deutsche) Server-Meldung als ein Text mit „{format}" darin.
+    if (translated && /\{\w+\}/.test(translated)) {
+      const p = data.params || {};
+      translated = translated.replace(/\{(\w+)\}/g, (m, k) => (p[k] != null ? String(p[k]) : m));
+      if (/\{\w+\}/.test(translated)) translated = null;
+    }
+    const err = new Error(translated || data.error || t('e_unbekannt'));
     err.code = data.code;
     throw err;
   }

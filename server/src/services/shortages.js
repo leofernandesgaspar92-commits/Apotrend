@@ -238,7 +238,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
     // Aus einem Engpass heraus in den Feed posten (Beitrag referenziert den Engpass).
     postAbout(actorUserId, id, { body, visibility = 'public' }) {
       const shortage = shortagesRepo.get(id);
-      if (!shortage) throw new Error('Engpass nicht gefunden.');
+      if (!shortage) throw new AppError('shortage_not_found', 'Engpass nicht gefunden.', 404);
       return social.createPost(actorUserId, { body, visibility, refType: 'shortage', refId: id });
     },
 
@@ -264,15 +264,15 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       requireProfessional(userId);
       const w = String(wirkstoff || '').trim();
       if (!w) throw new AppError('shortage_wirkstoff_missing', 'Wirkstoff fehlt.');
-      if (w.length > 120) throw new Error('Wirkstoff zu lang.');
+      if (w.length > 120) throw new AppError('wirkstoff_zu_lang', 'Wirkstoff zu lang.');
       const bez = String(bezeichnung || '').trim() || w;
-      if (bez.length > 200) throw new Error('Bezeichnung zu lang.');
-      if (!VALID_STATUS.includes(status)) throw new Error('Unbekannter Status.');
+      if (bez.length > 200) throw new AppError('bezeichnung_zu_lang', 'Bezeichnung zu lang.');
+      if (!VALID_STATUS.includes(status)) throw new AppError('status_unbekannt', 'Unbekannter Status.');
       // Optionales "voraussichtlich lieferbar bis"-Datum (Kalendertag, ISO YYYY-MM-DD).
       let voraussichtlich_bis = null;
       const vb = String(voraussichtlichBis || '').trim();
       if (vb) {
-        if (!isValidCalendarDay(vb)) throw new Error('Ungültiges Datum (voraussichtlich bis).');
+        if (!isValidCalendarDay(vb)) throw new AppError('shortage_bad_date', 'Ungültiges Datum (voraussichtlich bis).');
         voraussichtlich_bis = vb;
       }
       // Doppel-/Fehlklick-Schutz: dieselbe Apotheke soll denselben Wirkstoff nicht
@@ -301,7 +301,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
     confirmShortage(userId, id) {
       requireProfessional(userId);
       const before = shortagesRepo.get(id);
-      if (!before) { const e = new Error('Engpass nicht gefunden.'); e.status = 404; throw e; }
+      if (!before) throw new AppError('shortage_not_found', 'Engpass nicht gefunden.', 404);
       const updated = shortagesRepo.confirm(id, userId, today());
       // Melder:in über Bestätigung informieren (soziales Feedback) — aber nur EINMAL je Apotheke,
       // sonst würde ein confirm/unconfirm/confirm-Toggle die Melder:in mit Meldungen fluten.
@@ -320,17 +320,17 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
     unconfirmShortage(userId, id) {
       requireProfessional(userId);
       const s = shortagesRepo.get(id);
-      if (!s) { const e = new Error('Engpass nicht gefunden.'); e.status = 404; throw e; }
+      if (!s) throw new AppError('shortage_not_found', 'Engpass nicht gefunden.', 404);
       return decorate(shortagesRepo.unconfirm(id, userId), userId);
     },
 
     // Melder:in (oder Moderation) meldet die eigene Community-Meldung als wieder lieferbar.
     resolveShortage(userId, id) {
       const s = shortagesRepo.get(id);
-      if (!s) { const e = new Error('Engpass nicht gefunden.'); e.status = 404; throw e; }
-      if (s.provenance !== 'community') throw new Error('Nur Community-Meldungen können so aufgelöst werden.');
+      if (!s) throw new AppError('shortage_not_found', 'Engpass nicht gefunden.', 404);
+      if (s.provenance !== 'community') throw new AppError('shortage_not_community', 'Nur Community-Meldungen können so aufgelöst werden.');
       if (s.reporter_user_id !== userId && !social.isModerator(userId)) {
-        const e = new Error('Nur die meldende Apotheke kann das auflösen.');
+        const e = new AppError('shortage_nur_meldende', 'Nur die meldende Apotheke kann das auflösen.');
         e.status = 403; throw e;
       }
       if (s.status === 'verfuegbar') return decorate(s, userId);
@@ -350,10 +350,10 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
     // Leerer Wert entfernt den Termin. Beobachter:innen + Bestätiger:innen werden informiert.
     updateExpectedDate(userId, id, voraussichtlichBis) {
       const s = shortagesRepo.get(id);
-      if (!s) { const e = new Error('Engpass nicht gefunden.'); e.status = 404; throw e; }
+      if (!s) throw new AppError('shortage_not_found', 'Engpass nicht gefunden.', 404);
       if (s.provenance !== 'community') throw new AppError('shortage_not_community', 'Nur Community-Meldungen können so geändert werden.', 400);
       if (s.reporter_user_id !== userId && !social.isModerator(userId)) {
-        const e = new Error('Nur die meldende Apotheke kann den Termin ändern.');
+        const e = new AppError('shortage_nur_meldende', 'Nur die meldende Apotheke kann den Termin ändern.');
         e.status = 403; throw e;
       }
       let vb = null;
@@ -384,10 +384,10 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
     updateShortageReport(userId, id, { status, grund } = {}) {
       requireProfessional(userId);
       const s = shortagesRepo.get(id);
-      if (!s) { const e = new Error('Engpass nicht gefunden.'); e.status = 404; throw e; }
+      if (!s) throw new AppError('shortage_not_found', 'Engpass nicht gefunden.', 404);
       if (s.provenance !== 'community') throw new AppError('shortage_not_community', 'Nur Community-Meldungen können bearbeitet werden.', 400);
       if (s.reporter_user_id !== userId && !social.isModerator(userId)) {
-        const e = new Error('Nur die meldende Apotheke kann die Meldung bearbeiten.');
+        const e = new AppError('shortage_nur_meldende', 'Nur die meldende Apotheke kann die Meldung bearbeiten.');
         e.status = 403; throw e;
       }
       // Validierung vorab, damit nichts halb angewendet wird.
@@ -419,14 +419,14 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
     // Sicherheitsrelevante Aussage => Quelle (http[s]-Link) ist Pflicht (CLAUDE.md).
     updateStatus(actorUserId, id, { status, sourceUrl }) {
       if (!social.isModerator(actorUserId)) {
-        const e = new Error('Nur Redaktion/Moderation darf den Status ändern.');
+        const e = new AppError('forbidden', 'Nur Redaktion/Moderation darf den Status ändern.');
         e.status = 403; throw e;
       }
-      if (!VALID_STATUS.includes(status)) throw new Error('Unbekannter Status.');
+      if (!VALID_STATUS.includes(status)) throw new AppError('status_unbekannt', 'Unbekannter Status.');
       const quelle = cleanSourceUrl(sourceUrl); // wirft ohne gültigen Link
-      if (!quelle) throw new Error('Quelle (Link) ist erforderlich.');
+      if (!quelle) throw new AppError('quelle_fehlt', 'Quelle (Link) ist erforderlich.');
       const before = shortagesRepo.get(id);
-      if (!before) { const e = new Error('Engpass nicht gefunden.'); e.status = 404; throw e; }
+      if (!before) throw new AppError('shortage_not_found', 'Engpass nicht gefunden.', 404);
       const today = new Date().toISOString().slice(0, 10);
       const updated = shortagesRepo.setStatus(id, { status, quelle, provenance: 'editorial', gemeldet_am: today });
 
@@ -446,7 +446,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
     nochAktuell(userId, id) {
       requireProfessional(userId);
       const s = shortagesRepo.get(id);
-      if (!s) { const e = new Error('Engpass nicht gefunden.'); e.status = 404; throw e; }
+      if (!s) throw new AppError('shortage_not_found', 'Engpass nicht gefunden.', 404);
       if (s.provenance !== 'community' || !['kritisch', 'eingeschraenkt'].includes(s.status)) throw new AppError('shortage_not_community', 'Nur offene Meldungen aus Apotheken lassen sich auffrischen.', 409);
       return decorate(shortagesRepo.nochAktuell(id, userId, today()), userId);
     },
@@ -454,7 +454,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
     wiederLieferbar(userId, id) {
       requireProfessional(userId);
       const s = shortagesRepo.get(id);
-      if (!s) { const e = new Error('Engpass nicht gefunden.'); e.status = 404; throw e; }
+      if (!s) throw new AppError('shortage_not_found', 'Engpass nicht gefunden.', 404);
       if (s.provenance !== 'community') throw new AppError('shortage_not_community', 'Amtliche Einträge ändert nur die Behördenliste.', 409);
       const beteiligt = s.reporter_user_id === userId || (s.confirmations || []).includes(userId) || social.isModerator(userId);
       if (!beteiligt) throw new AppError('shortage_not_involved', 'Wieder lieferbar melden kann, wer den Engpass gemeldet oder bestätigt hat.', 403);
@@ -516,8 +516,8 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
     // ── Beobachtungsliste: Wirkstoffe, die ein:e Apotheker:in im Blick behalten will ──
     watch(userId, wirkstoff) {
       const w = String(wirkstoff || '').trim();
-      if (!w) throw new Error('Wirkstoff fehlt.');
-      if (w.length > 120) throw new Error('Wirkstoff zu lang.');
+      if (!w) throw new AppError('shortage_wirkstoff_missing', 'Wirkstoff fehlt.');
+      if (w.length > 120) throw new AppError('wirkstoff_zu_lang', 'Wirkstoff zu lang.');
       shortagesRepo.addWatch(userId, w);
       return this.myWatchlist(userId);
     },

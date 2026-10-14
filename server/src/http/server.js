@@ -2632,6 +2632,8 @@ const server = http.createServer(async (req, res) => {
       const code = e instanceof ForbiddenError ? 403 : (e.status || 400);
       // e.code (falls gesetzt) erlaubt dem Frontend, die Meldung zu übersetzen.
       const payload = e.code ? { error: e.message, code: e.code } : { error: e.message };
+      // Werte für Platzhalter der übersetzten Meldung (z. B. erwartetes Format der Transaktions-ID).
+      if (e.code && e.params && typeof e.params === 'object') payload.params = e.params;
       if (e.retryAfterS != null) payload.retry_after_s = e.retryAfterS; // 429: Wartezeit fürs Frontend
       return json(req, res, code, payload);
     }
