@@ -513,11 +513,34 @@ function currentAuthCountry() {
   const c = (localStorage.getItem('apo_country') || '').toUpperCase();
   return (COUNTRIES_CACHE || []).find(x => x.code === c) || null;
 }
-// Wert eines Schlüssels in den ANDEREN beiden Sprachen — für den Länderauswahl-Screen,
-// der VOR der Sprachwahl steht und daher mehrsprachig einladen soll.
-function csOtherLangs(key) {
-  return SUPPORTED_LOCALES.filter(l => l !== LOCALE).map(l => (I18N[l] || {})[key]).filter(Boolean).join(' · ');
+// ── Erster Bildschirm für Besucher:innen aus aller Welt ───────────────────
+// Bis 10/2026 stand hier für JEDEN „Wähle dein Land" auf Deutsch und eine
+// Liste mit 28 Ländern; Uganda kam an 17. Stelle. Für den Start in Afrika der
+// schlechteste erste Eindruck. Jetzt: Sprache des Browsers für diesen einen
+// Bildschirm (die App-Sprache folgt danach wie bisher dem gewählten Land),
+// ein Vorschlag oben (Zeitzone + Browser-Sprache) und die Liste nach Regionen.
+function browserSprache() {
+  for (const l of (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ''])) {
+    const b = String(l || '').slice(0, 2).toLowerCase();
+    if (SUPPORTED_LOCALES.includes(b)) return b;
+  }
+  return 'en'; // unbekannte Sprache (z. B. Suaheli, Französisch): Englisch statt Deutsch
 }
+function vorgeschlageneLaender(countries) {
+  const codes = [];
+  let tz = '';
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch { /* egal */ }
+  for (const c of countries) if (c.timezone && c.timezone === tz) codes.push(c.code);
+  // Die Zeitzone ist das stärkere Signal: In Uganda steht der Browser oft auf
+  // US-Englisch — „United States" daneben wäre nur Rauschen.
+  if (codes.length) return codes.map((c) => countries.find((x) => x.code === c)).filter(Boolean).slice(0, 3);
+  for (const l of (navigator.languages || [navigator.language || ''])) {
+    const m = String(l || '').match(/^[a-z]{2,3}-([A-Z]{2})\b/i);
+    if (m) codes.push(m[1].toUpperCase());
+  }
+  return [...new Set(codes)].map((c) => countries.find((x) => x.code === c)).filter(Boolean).slice(0, 3);
+}
+const REGION_FOLGE = ['EUROPE', 'AFRICA', 'AMERICAS', 'OCEANIA'];
 // Schritt 1: Länderauswahl. Setzt Land + Sprache (folgt dem Land) und geht zum Login.
 async function countryScreen() {
   setDocTitle('');
@@ -525,14 +548,26 @@ async function countryScreen() {
   app.innerHTML = '';
   await ensureCountries();
   const countries = COUNTRIES_CACHE || [];
-  const card = el(`<div class="card" style="text-align:center">
+  // Texte dieses Bildschirms in der Sprache des Browsers — ohne die App-Sprache umzustellen.
+  const bl = localStorage.getItem('apo_locale') && SUPPORTED_LOCALES.includes(localStorage.getItem('apo_locale')) ? LOCALE : browserSprache();
+  const tb = (k) => (I18N[bl] && I18N[bl][k]) || t(k);
+  const andere = SUPPORTED_LOCALES.filter((l) => l !== bl).map((l) => (I18N[l] || {}).cs_title).filter(Boolean).join(' · ');
+  const vorschlag = vorgeschlageneLaender(countries);
+  // Auch der Kopf („Menü") spricht hier schon die Sprache des Browsers; nach der Wahl setzt applyI18n zurück.
+  document.querySelectorAll('header [data-i18n]').forEach((e) => { const k = e.dataset.i18n; if (I18N[bl] && I18N[bl][k]) e.textContent = I18N[bl][k]; });
+  const knopf = (c) => `<button class="country-pick" data-country="${esc(c.code)}" lang="${esc(c.locale_default)}"><span class="flag" aria-hidden="true">${esc(c.flag)}</span> ${esc(c.name)}</button>`;
+  const folge = [...new Set([...(vorschlag[0] && vorschlag[0].region ? [vorschlag[0].region] : []), ...REGION_FOLGE, ...countries.map((c) => c.region)])].filter(Boolean);
+  const nachName = (a, b) => String(a.name).localeCompare(String(b.name), bl);
+  const gruppen = folge.map((r) => ({ r, laender: countries.filter((c) => c.region === r).sort(nachName) })).filter((g) => g.laender.length);
+  const ohneRegion = countries.filter((c) => !c.region);
+  const card = el(`<div class="card" style="text-align:center" lang="${esc(bl)}" data-laenderwahl>
     <div style="display:flex;justify-content:center;margin-bottom:8px"><svg width="54" height="54" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="7" fill="var(--green)"/><path d="M13 6.2v13.6M6.2 13h13.6" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/></svg></div>
-    <h1 style="margin:.2em 0">${esc(t('cs_title'))}</h1>
-    <div class="muted" style="font-size:.95em">${esc(csOtherLangs('cs_title'))}</div>
-    <div class="muted" style="margin-top:6px">${esc(t('cs_sub'))}</div>
-    <div class="country-grid">
-      ${countries.map(c => `<button class="country-pick" data-country="${esc(c.code)}" lang="${esc(c.locale_default)}"><span class="flag" aria-hidden="true">${esc(c.flag)}</span> ${esc(c.name)}</button>`).join('')}
-    </div>
+    <h1 style="margin:.2em 0">${esc(tb('cs_title'))}</h1>
+    <div class="muted" style="font-size:.95em">${esc(andere)}</div>
+    <div class="muted" style="margin-top:6px">${esc(tb('cs_sub'))}</div>
+    ${vorschlag.length ? `<div class="cs-vorschlag" data-vorschlag><div class="cs-region">${esc(tb('cs_vorschlag'))}</div><div class="country-grid">${vorschlag.map(knopf).join('')}</div></div>` : ''}
+    ${gruppen.map((g) => `<div class="cs-gruppe" data-region="${esc(g.r)}"><div class="cs-region">${esc(tb('cs_region_' + g.r))}</div><div class="country-grid">${g.laender.map(knopf).join('')}</div></div>`).join('')}
+    ${ohneRegion.length ? `<div class="country-grid">${ohneRegion.map(knopf).join('')}</div>` : ''}
   </div>`);
   app.appendChild(card);
   app.querySelectorAll('[data-country]').forEach(btn => btn.onclick = () => {
@@ -548,9 +583,15 @@ async function countryScreen() {
 // „Bestände tauschen" und „Fachnetzwerk" — beide Bereiche ruhen. Die
 // Informationsvorteile (Frühwarnung, Verlauf) fehlten dagegen ganz.
 const heroListe = () => heroPunkte().map((k) => `<li><span class="auth-hero-ok" aria-hidden="true">${ico('check', 18)}</span><span>${esc(t(k))}</span></li>`).join('');
+// Preisvergleiche gibt es nicht überall (z. B. Uganda): dann nichts versprechen.
+// Unbekannt (Länderliste noch nicht da) -> wie bisher anzeigen.
+function landHatPreise(code = null) {
+  const c = code ? (COUNTRIES_CACHE || []).find((x) => x.code === code) : currentAuthCountry();
+  return !c || c.preise !== false;
+}
 function heroPunkte() {
   return ['au_hero_1', 'au_hero_sortiment', 'au_hero_fw', 'au_hero_chronik',
-    ...(featureAn('preise') || featureAn('rabatte') ? ['au_hero_2'] : []),
+    ...((featureAn('preise') || featureAn('rabatte')) && landHatPreise() ? ['au_hero_2'] : []),
     ...(featureAn('tauschboerse') ? ['au_hero_3'] : []),
     ...(featureAn('social') ? ['au_hero_4'] : [])];
 }
@@ -1859,6 +1900,8 @@ function printWeekReview(wr) {
 
 async function renderWatchlistCard(feed, items, suggestions = [], premium = false) {
   const alerts = items.filter(i => i.status === 'kritisch' || i.status === 'eingeschraenkt').length;
+  // Rabatt-Alarme nur, wo es Preise/Angebote gibt (z. B. nicht in Uganda) — sonst Bedienelemente ins Leere.
+  const rabattAlarm = landHatPreise(viewCountry()) && !featBlocked('deals');
   const card = el(`<div class="card">
     <div class="row" style="flex-wrap:wrap;gap:6px 8px;align-items:center"><b>${esc(t('wl_title'))}</b>
       ${alerts?`<span style="background:#c0392b;color:#fff;border-radius:999px;font-size:12px;font-weight:700;padding:2px 8px">${alerts} ${esc(alerts>1?t('wl_alerts_pl'):t('wl_alerts_sg'))}</span>`:''}
@@ -1866,7 +1909,7 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
       ${premium?`<button class="ghost small" data-wl-print title="${esc(t('wl_print_title'))}">${esc(t('wl_print'))}</button>`:''}
     </div>
     <div class="muted" style="font-size:13px;margin:2px 0 8px">${esc(t('wl_sub'))}</div>
-    ${items.length>=2?`<div class="row" data-bulkalert style="flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;background:var(--chip-bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px">
+    ${items.length>=2&&rabattAlarm?`<div class="row" data-bulkalert style="flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;background:var(--chip-bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px">
       <span aria-hidden="true">🔔</span><span style="font-size:13px">${esc(t('wl_alert_all_label'))}</span>
       <input type="number" min="1" max="99" data-baval placeholder="${esc(t('wk_alert_ph'))}" style="width:74px" aria-label="${esc(t('wl_alert_all_aria'))}"><span>%</span>
       <button class="small" data-baset>${esc(t('wl_alert_all_set'))}</button>
@@ -1979,7 +2022,9 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
       // Wirkstoff-Detailseite) — benachrichtigt, sobald es eine Aktion ab X % gibt.
       {
         const aw = row.querySelector('[data-alert-wrap]');
+        if (!rabattAlarm && aw) aw.remove();
         const renderAlert = () => {
+          if (!rabattAlarm) return;
           aw.innerHTML = '';
           if (it.alert_pct) {
             const view = el(`<div class="row" style="gap:6px;align-items:center"><span style="display:inline-block;font-size:12px;font-weight:700;color:var(--ok-fg);background:var(--ok-bg);border:1px solid var(--ok-bd);padding:2px 8px;border-radius:999px">${esc(ti('wl_alert_on',{n:it.alert_pct}))}</span><button class="linklike small" data-aedit>${esc(t('wl_alert_edit'))}</button></div>`);
@@ -3367,7 +3412,23 @@ function renderShortlist(listBox, bar, all) {
         else if (k) listBox.appendChild(k);
       });
     }
-    listBox.appendChild(filteredEmptyCard('sh_empty', !!(shortageFilter || q), () => {
+    // Ganz leer UND kein Filter: Es gibt nichts „zurückzusetzen" — bis 10/2026
+    // stand hier trotzdem „Filter zurücksetzen". In Ländern ohne Behördenliste
+    // (Uganda …) ist die richtige Antwort: selbst melden.
+    if (!base.length && !shortageFilter && !q) {
+      const darf = !(me && me.account_type === 'private');
+      const k = el(`<div class="card" data-leermelden><div style="font-size:16px">${esc(ti('sh_leer_land', { land: landAnzeige(viewCountry()) }))}</div>
+        ${darf ? `<div style="margin-top:10px"><button data-leerknopf style="min-height:48px">${esc(t('sh_leer_knopf'))}</button></div>` : ''}</div>`);
+      const b = k.querySelector('[data-leerknopf]');
+      if (b) b.onclick = () => {
+        const mk = document.querySelector('[data-meldekarte]');
+        if (!mk) return;
+        const tg = mk.querySelector('[data-toggle]');
+        if (tg && mk.querySelector('.hidden')) tg.click();
+        mk.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+      listBox.appendChild(k);
+    } else listBox.appendChild(filteredEmptyCard('sh_empty', !!(shortageFilter || q), () => {
       shortageFilter = ''; shortageQuery = '';
       const qin = bar.querySelector('[data-q]'); if (qin) qin.value = '';
       renderShortlist(listBox, bar, all);
@@ -3419,7 +3480,7 @@ function reportShortageCard(existing = []) {
     return el(`<div class="card"><div class="row"><b>${esc(t('sh_rep_title'))}</b></div>
       <div class="muted" style="font-size:13px;margin-top:6px">${esc(t('sh_rep_private'))}</div></div>`);
   }
-  const card = el(`<div class="card">
+  const card = el(`<div class="card" data-meldekarte>
     <div class="row"><b>${esc(t('sh_rep_title'))}</b>
       <span class="sp" style="flex:1"></span>
       <button class="ghost small" data-toggle>${esc(t('sh_rep_open'))}</button>

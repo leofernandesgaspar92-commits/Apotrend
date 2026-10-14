@@ -56,6 +56,8 @@
   @media (max-width:460px){ .country-grid { grid-template-columns:1fr; } }
   .country-pick:hover { border-color:var(--green); background:transparent; }
   .country-pick .flag { font-size:1.5em; line-height:1; }
+  .cs-region { text-align:left; font-weight:800; font-size:1.05em; margin:20px 2px -4px; color:var(--text); }
+  .cs-vorschlag .country-pick { border:2px solid var(--green); }
   /* Start-/Anmelde-Landing: breiter, klar in Ebenen — links der Wert (was ist ApoPulse),
      rechts die Formulare. Neue Besucher:innen verstehen sofort, worum es geht. */
   #app.auth-mode { max-width:920px; }
@@ -112,7 +114,9 @@
   button.linklike:hover { background:transparent; color:var(--green-d); }
   /* Wiederherstellungscodes: gut lesbar, monospace, klare Kästchen zum Abschreiben. */
   ol.recovery-codes { list-style:decimal inside; padding:0; margin:0; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-  ol.recovery-codes li { background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
+  ol.recovery-codes li { background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px 10px; white-space:nowrap; }
+  /* Ein Code darf nie umbrechen („G96DD-" / „EZFW5" auf zwei Zeilen wird falsch abgeschrieben). */
+  @media (max-width:420px){ ol.recovery-codes { grid-template-columns:1fr; } }
   ol.recovery-codes code { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:1.05em; letter-spacing:1px; }
   /* Repost: das eingebettete Original klar abgesetzt (Rahmen + leichter Hintergrund). */
   .repost-embed { border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-top:8px; background:var(--bg); }

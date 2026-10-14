@@ -59,14 +59,15 @@ async function main() {
     // Schritt 1: Länderauswahl erscheint zuerst (kein Token, kein Land).
     // Erwartete Anzahl kommt aus dem Register (API) — neue Länder brechen den Smoke-Test nicht.
     const expectedCountries = ((await api('/api/countries')) || {}).countries?.length || 0;
-    const countryCount = await op.evaluate(() => document.querySelectorAll('[data-country]').length);
+    // Eindeutige Länder: Der Vorschlag oben (Zeitzone/Browser-Sprache) wiederholt eins davon.
+    const countryCount = await op.evaluate(() => new Set([...document.querySelectorAll('[data-country]')].map((b) => b.dataset.country)).size);
     step('Länderauswahl erscheint als erster Schritt', countryCount === expectedCountries && countryCount >= 16, `${countryCount}/${expectedCountries} Länder`);
     // Land bestimmt Sprache: AT -> „Anmelden", GB -> „Log in".
     const loginHead = async () => op.evaluate(() => [...document.querySelectorAll('h1, h2')].map(h => h.textContent.trim()).find(t => /Anmelden|Log in|Entrar/.test(t)) || '');
-    await op.click('[data-country="AT"]').catch(() => {}); await op.waitForTimeout(300);
+    await op.click('[data-region] [data-country="AT"]').catch(() => {}); await op.waitForTimeout(300);
     const de = await loginHead();
     await op.click('#changeCountry').catch(() => {}); await op.waitForTimeout(250);
-    await op.click('[data-country="GB"]').catch(() => {}); await op.waitForTimeout(300);
+    await op.click('[data-region] [data-country="GB"]').catch(() => {}); await op.waitForTimeout(300);
     const en = await loginHead();
     step('Land bestimmt Sprache (AT→Anmelden, GB→Log in)', de === 'Anmelden' && en === 'Log in', `${de}/${en}`);
     // <html lang> folgt der Sprache (a11y — Screenreader-Aussprache).
@@ -74,7 +75,7 @@ async function main() {
     step('<html lang> folgt der Sprache (GB→en)', htmlLang === 'en', `lang=${htmlLang}`);
     // Logo (grüner Punkt) führt ausgeloggt zurück zur Länderauswahl.
     await op.click('#logoHome').catch(() => {}); await op.waitForTimeout(300);
-    const backToCountry = await op.evaluate(() => document.querySelectorAll('[data-country]').length);
+    const backToCountry = await op.evaluate(() => new Set([...document.querySelectorAll('[data-country]')].map((b) => b.dataset.country)).size);
     step('Logo führt ausgeloggt zurück zur Länderauswahl', backToCountry === expectedCountries, `${backToCountry} Länder`);
     await octx.close();
   }

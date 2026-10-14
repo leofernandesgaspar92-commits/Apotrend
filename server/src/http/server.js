@@ -2028,7 +2028,12 @@ const routes = [
   // Mehrsprachige Patienten-Infokarten (Antibiotika) — für Aufklärung bei der Abgabe.
   ['GET', /^\/api\/patient-info$/, true, async ({ query }) => patientInfo.cards(query.get('lang') || 'de')],
   // Länder-Register (öffentlich): für Länderauswahl bei Registrierung + Umschalter.
-  ['GET', /^\/api\/countries$/, false, async () => ({ countries: listCountries() })],
+  // `preise`: Gibt es für das Land überhaupt Preisvergleiche? Die Startseite verspricht
+  // „Preise vergleichen" nur dort, wo es etwas zu vergleichen gibt (bis 10/2026 auch in Uganda).
+  ['GET', /^\/api\/countries$/, false, async () => {
+    const mitAngebot = new Set(rabatteRepo.listFlat().map((r) => String(r.country || '').toUpperCase()));
+    return { countries: listCountries().map((c) => ({ ...c, preise: mitAngebot.has(c.code) || pricesRepo.listComparisons({ country: c.code }).length > 0 })) };
+  }],
   // Live-Daten-Status je Land: ist eine echte Quelle „angeschlossen"? (Bis dahin Referenzdaten.)
   ['GET', /^\/api\/data-status$/, true, async ({ userId, query }) => {
     const c = activeCountry(userId, query);

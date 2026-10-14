@@ -227,3 +227,21 @@ Bisher reichten zwei frisch angelegte Schein-Apotheken, um jede Meldung so ersch
   Geprüft durch `server/test/meldungs-pruefung.test.js` und den Browser-Audit-Block „Meldungsprüfung".
 
 Geprüft durch `server/test/schein-konten.test.js` (mit Uhr).
+
+## Erster Eindruck
+
+- **Länderwahl in der Sprache des Browsers:** Englisch, Deutsch oder Portugiesisch, bei anderen
+  Sprachen (z. B. Suaheli) Englisch. Die App-Sprache folgt danach wie bisher dem gewählten Land.
+- **Vorschlag oben:** Er kommt aus der **Zeitzone** des Geräts (z. B. Africa/Kampala → Uganda) und
+  ersatzweise aus der Browser-Sprache. Die Zeitzone hat Vorrang, weil Browser in Afrika oft auf
+  US-Englisch stehen.
+- **Liste nach Regionen,** die Region des Vorschlags zuerst, darin alphabetisch.
+- **Keine leeren Versprechen:** „Preise vergleichen" auf der Startseite und Rabatt-Alarme an der
+  Beobachtungsliste erscheinen nur in Ländern mit Preisvergleichen oder Angeboten (`/api/countries`
+  → `preise`). Ohne Beispieldaten ist das im Live-Betrieb derzeit nirgends der Fall.
+- **Leere Engpassliste ohne Filter:** Statt „Filter zurücksetzen" steht dort „No shortage has been
+  reported for … yet. Is something short at your pharmacy? Report it", mit Knopf zum Formular.
+- **Wiederherstellungscodes** brechen nicht mehr um und stehen auf dem Handy einspaltig.
+
+Geprüft durch den Browser-Audit-Block „Erster Eindruck" (Liberia, Zeitzone Africa/Monrovia, US-
+Englisch, plus Gegenprobe Österreich) und `server/test/laenderwahl.test.js`.

@@ -2181,6 +2181,65 @@ async function main() {
     if (!findings.some((f) => f.startsWith('Einladen'))) console.log('✓ Einladen: „Ask colleagues to confirm" → WhatsApp-Link mit Code → Teilseite „Confirm … in ApoPulse" → Konto → direkt bei der Meldung bestätigt; Einladende sieht 1 neue Kollegin');
   }
 
+  // ── Erster Eindruck aus Afrika: Länderwahl → Konto → erste Schritte → leere Engpassliste ──
+  //  Bis 10/2026: „Wähle dein Land" auf Deutsch für alle, Uganda an 17. Stelle,
+  //  „Preise vergleichen" versprochen, wo es keine gibt, Codes umgebrochen und
+  //  „Filter zurücksetzen" ohne Filter. Liberia: Kein anderer Block meldet dort.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-US', timezoneId: 'Africa/Monrovia' });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
+    const lw = await page.evaluate(() => {
+      const k = document.querySelector('[data-laenderwahl]'); if (!k) return null;
+      // Nur der Name (ohne Flaggen-Emoji davor).
+      const afrika = [...k.querySelectorAll('[data-region="AFRICA"] [data-country]')].map((b) => [...b.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('').trim());
+      return { titel: k.querySelector('h1').textContent, vorschlag: [...k.querySelectorAll('[data-vorschlag] [data-country]')].map((b) => b.dataset.country),
+        ersteRegion: (k.querySelector('[data-region]') || {}).dataset?.region, afrika, sortiert: afrika.join('|') === [...afrika].sort((a, b) => a.localeCompare(b, 'en')).join('|'),
+        menue: [...document.querySelectorAll('header [data-i18n]')].map((e) => e.textContent.trim()).join(' ') };
+    });
+    if (!lw) findings.push('Erster Eindruck: Länderwahl erscheint nicht');
+    else {
+      if (lw.titel !== 'Choose your country') findings.push(`Erster Eindruck: Länderwahl nicht auf Englisch („${lw.titel}")`);
+      if (lw.vorschlag.join() !== 'LR') findings.push(`Erster Eindruck: Vorschlag aus der Zeitzone fehlt (${lw.vorschlag.join()})`);
+      if (lw.ersteRegion !== 'AFRICA') findings.push(`Erster Eindruck: Afrika steht nicht zuerst (${lw.ersteRegion})`);
+      if (!lw.sortiert) findings.push('Erster Eindruck: Afrika nicht alphabetisch');
+      if (/Menü/.test(lw.menue)) findings.push('Erster Eindruck: Kopf noch Deutsch („Menü")');
+    }
+    {
+      const de = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'de-AT', timezoneId: 'Europe/Vienna' });
+      const p2 = await de.newPage(); await p2.goto(BASE, { waitUntil: 'networkidle' }); await p2.waitForTimeout(400);
+      const r = await p2.evaluate(() => ({ h: document.querySelector('[data-laenderwahl] h1')?.textContent, v: [...document.querySelectorAll('[data-vorschlag] [data-country]')].map((b) => b.dataset.country).join() }));
+      if (r.h !== 'Wähle dein Land' || r.v !== 'AT') findings.push(`Erster Eindruck: Österreich bekommt nicht Deutsch + AT-Vorschlag (${r.h} / ${r.v})`);
+      await de.close();
+    }
+    await page.click('[data-vorschlag] [data-country="LR"]').catch(() => {}); await page.waitForTimeout(600);
+    if (/Compare prices/.test(await page.locator('.auth-hero').innerText().catch(() => ''))) findings.push('Erster Eindruck: „Compare prices" versprochen, obwohl es in Liberia keine Preise gibt');
+    await page.fill('#rg_name', 'Monrovia Pharmacy'); await page.fill('#rg_email', `lr_${Date.now().toString(36)}@ex.com`); await page.fill('#rg_pw', 'Passwort123!');
+    await page.click('#rg_go'); await page.waitForTimeout(1200);
+    if (await page.locator('#rc_done').count()) {
+      const zeilen = await page.$$eval('ol.recovery-codes code', (els) => els.map((e) => e.getClientRects().length));
+      if (!zeilen.length || zeilen.some((n) => n !== 1)) findings.push(`Erster Eindruck: Wiederherstellungscode bricht um (${zeilen.join(',')})`);
+      await page.click('#rc_done'); await page.waitForTimeout(900);
+    }
+    for (const w of ['Oxytocin', 'Amoxicillin']) await page.locator('#app button', { hasText: w }).first().click().catch(() => {});
+    for (let k = 0; k < 3; k++) { const b = page.locator('#app button:visible', { hasText: /^(Watch|Continue|Go to)/ }).first(); if (!(await b.count())) break; await b.click().catch(() => {}); await page.waitForTimeout(800); }
+    await page.waitForTimeout(800);
+    if (await page.locator('[data-bulkalert], [data-aset]').count()) findings.push('Erster Eindruck: Rabatt-Alarme in einem Land ohne Preise');
+    await reiterOeffnen(page, 'shortages'); await page.waitForTimeout(1500);
+    const leer = page.locator('[data-leermelden]');
+    if (!(await leer.count())) findings.push('Erster Eindruck: leere Engpassliste ohne Aufforderung zu melden');
+    if (/Reset the filter/.test(await page.locator('[data-shortlist]').innerText().catch(() => ''))) findings.push('Erster Eindruck: „Reset the filter" ohne gesetzten Filter');
+    if (await leer.count()) {
+      await leer.locator('[data-leerknopf]').click(); await page.waitForTimeout(700);
+      const offen = await page.evaluate(() => { const mk = document.querySelector('[data-meldekarte]'); return !!mk && ![...mk.querySelectorAll('input, select')].every((e) => !e.offsetParent); });
+      if (!offen) findings.push('Erster Eindruck: „Report a shortage" öffnet das Formular nicht');
+    }
+    for (const f of fehler) findings.push('Erster Eindruck: JS-Fehler ' + f);
+    if (!findings.some((f) => f.startsWith('Erster Eindruck'))) console.log('✓ Erster Eindruck (Liberia): Länderwahl auf Englisch mit Vorschlag aus der Zeitzone, Afrika zuerst und alphabetisch; keine leeren Preis-Versprechen; Codes ohne Umbruch; leere Liste fordert zum Melden auf');
+    await ctx.close();
+  }
+
   // ── Registrierung im Browser: kurz, und ein Fehler verbrennt nichts ──────
   //  Bis 10/2026: sechs Felder (Pflicht-@Handle, Land doppelt), zwei Formulare
   //  untereinander — und ein vergebener Handle machte die E-Mail unbrauchbar.

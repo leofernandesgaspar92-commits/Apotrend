@@ -2736,3 +2736,20 @@ Interne Merker (`pruef_gemeldet`, `bestaetigt_gemeldet`) gehen nicht mehr in API
 **Tests.** `meldungs-pruefung.test.js` erweitert (genau ein Hinweis, kein Doppel nach
 Zurücknehmen/Neu-Bestätigen; Startklar 0 → fehlt, ungesetzt/48 → nichts). **Gegenproben:** ohne
 Hinweis; ohne Einmal-Sperre; Startklar stumm — jede schlägt an.
+
+### Cycle · Rundgang „neue Apotheke in Uganda" — erster Eindruck (2026-10-14)
+
+**Methode.** Kompletter Weg im Browser (390 px, en-US, Africa/Kampala) mit Bildschirmfotos.
+
+**Befunde → WORK.**
+1. Länderwahl für alle auf Deutsch, Uganda an 17. Stelle → Sprache des Browsers, Vorschlag aus der
+   Zeitzone (Vorrang vor Sprach-Region), Gruppen nach Region, alphabetisch.
+2. „Compare prices & deals" versprochen ohne Preisdaten (live: nirgends) → `/api/countries.preise`,
+   `landHatPreise()`.
+3. Rabatt-Alarme an der Beobachtungsliste ohne Preise → ausgeblendet.
+4. Wiederherstellungscodes umgebrochen („G96DD-" / „EZFW5") → `nowrap`, einspaltig unter 420 px.
+5. Leere Engpassliste ohne Filter zeigte „Reset the filter" → Aufforderung zu melden + Knopf.
+
+**Tests.** Browser-Audit „Erster Eindruck" (Liberia; Gegenprobe Österreich auf Deutsch).
+`laenderwahl.test.js` (mit/ohne Beispieldaten). **Gegenproben:** Preise immer an, Sprache fest,
+Zeitzone ohne Vorrang → fünf Befunde, wie erwartet.
