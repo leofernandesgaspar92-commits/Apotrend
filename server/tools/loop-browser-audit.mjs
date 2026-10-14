@@ -1943,6 +1943,29 @@ async function main() {
     await ctx.close();
   }
 
+  // ── Warnungen: Filter „Nur Warnungen" schaltet und erklärt leere Ergebnisse ──
+  {
+    const neu = await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Warn Apo', email: `wn_${Date.now().toString(36)}@ex.com`, password: 'Passwort123!', accountType: 'pharmacy', country: 'NG' }) });
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); localStorage.removeItem('apo_news_warnungen'); }, neu && neu.token);
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(600);
+    await reiterOeffnen(page, 'news'); await page.waitForTimeout(800);
+    const f = page.locator('[data-nurwarnungen]');
+    if (!(await f.count())) findings.push('Warnungen: Filter-Knopf fehlt');
+    else {
+      if (!/falsified medicines and recalls/.test(await f.innerText())) findings.push('Warnungen: Filter nicht in Klartext');
+      await f.click(); await page.waitForTimeout(900);
+      const an = await page.locator('[data-nurwarnungen]').getAttribute('aria-pressed');
+      if (an !== 'true') findings.push('Warnungen: Filter schaltet nicht ein');
+      if (!(await page.locator('[data-warnleer], [data-warnung]').count())) findings.push('Warnungen: weder Treffer noch erklärender Leer-Hinweis');
+    }
+    for (const e of fehler) findings.push('Warnungen: JS-Fehler ' + e);
+    if (!findings.some((x) => x.startsWith('Warnungen'))) console.log('✓ Warnungen: Filter „Warnings only" in Klartext, schaltet, erklärt leere Ergebnisse');
+    await ctx.close();
+  }
+
   // ── Registrierung im Browser: kurz, und ein Fehler verbrennt nichts ──────
   //  Bis 10/2026: sechs Felder (Pflicht-@Handle, Land doppelt), zwei Formulare
   //  untereinander — und ein vergebener Handle machte die E-Mail unbrauchbar.

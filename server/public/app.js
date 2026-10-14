@@ -2902,6 +2902,11 @@ async function loadNews() {
     </div>
   </div><div id="newsebene"></div><div id="lagebild"></div><div id="presse"></div><div id="newslist"></div>`));
   ebenenUmschalter(document.getElementById('newsebene'), 'news', () => loadNews());
+  // Filter „Nur Warnungen" (Fälschung/Rückruf, per Stichwort in der Behördenmeldung).
+  { const nurW = (() => { try { return localStorage.getItem('apo_news_warnungen') === '1'; } catch { return false; } })();
+    const f = el(`<button type="button" class="${nurW ? '' : 'ghost '}warn-filter" data-nurwarnungen aria-pressed="${nurW}">⚠️ ${esc(t('wn_filter'))}</button>`);
+    f.onclick = () => { try { localStorage.setItem('apo_news_warnungen', nurW ? '0' : '1'); } catch { /* egal */ } loadNews(); };
+    document.getElementById('newsebene').appendChild(f); }
   // Lagebild und Presse des ANGESEHENEN Landes — über den Behördenmeldungen,
   // weil sie die Frage „was ist dort los, und warum?" beantworten.
   zeigeDatenstand(feed, 'news');
@@ -2931,8 +2936,10 @@ async function loadNews() {
   list.innerHTML = '<div class="loading">…</div>';
   try {
     const ebene = aktuelleEbene('news');
-    const d = await api('GET', `/api/news?country=${encodeURIComponent(viewCountry())}&ebene=${ebene}&sprache=${encodeURIComponent(LOCALE)}`);
+    const nurWarnungen = (() => { try { return localStorage.getItem('apo_news_warnungen') === '1'; } catch { return false; } })();
+    const d = await api('GET', `/api/news?country=${encodeURIComponent(viewCountry())}&ebene=${ebene}&sprache=${encodeURIComponent(LOCALE)}${nurWarnungen ? '&nur=warnungen' : ''}`);
     list.innerHTML = '';
+    if (!d.posts.length && nurWarnungen) { list.appendChild(el(`<div class="card muted" data-warnleer>${esc(t('wn_leer'))}</div>`)); return; }
     if (ebene !== 'land') { document.getElementById('lagebild')?.replaceChildren(); document.getElementById('presse')?.replaceChildren(); }
     if (!d.posts.length && ebene !== 'land') { list.appendChild(el(`<div class="card muted" data-ebeneleer>${esc(t('eb_leer'))}</div>`)); return; }
     if (!d.posts.length) {
@@ -2949,6 +2956,7 @@ async function loadNews() {
       const c = postCard(p);
       // Region/Welt: Herkunft an jeder Meldung — sonst liest sich eine NAFDAC-
       // Warnung in Uganda wie eine ugandische.
+      if (p.warnung) c.prepend(el(`<div class="warn-etikett ${esc(p.warnung)}" data-warnung="${esc(p.warnung)}"><b>${esc(t(p.warnung === 'faelschung' ? 'wn_faelschung' : 'wn_rueckruf'))}</b> <span>· ${esc(t('wn_auto'))}</span></div>`));
       if (ebene !== 'land') c.prepend(el(`<div class="news-herkunft" data-herkunft="${esc(p.country || '')}">${esc(herkunftLabel(p.country))}</div>`));
       list.appendChild(c);
     });

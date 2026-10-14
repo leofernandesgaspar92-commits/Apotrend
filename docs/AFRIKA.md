@@ -104,3 +104,22 @@ Eine Meldung von vor zwei Monaten darf nicht wie eine von heute aussehen:
 - **Still short** (jede Fachperson im Land) frischt die Meldung auf und zählt als Bestätigung.
 - **Available again** dürfen nur Meldende, Bestätigende oder die Redaktion — alle, die den Wirkstoff
   im Land beobachten, werden informiert.
+
+## Fälschungs- und Rückrufwarnungen
+
+Behördenmeldungen, die gefälschte/minderwertige Arzneimittel oder Rückrufe betreffen, tragen ein
+Etikett — rot „Falsified medicine warning", gelb „Recall" — mit dem Zusatz „detected automatically
+— details in the source". Oben in News: Schalter **„Warnings only: falsified medicines and
+recalls"** (gilt für Land, Afrika und Welt).
+
+Erkennung per Stichwort im Text der Behördenmeldung (`server/src/domain/warnung.js`, en/de/pt),
+keine eigene Aussage; mehrdeutige Wörter wie „fake" zählen nur in fester Wendung („fake drugs"),
+nicht in „fake news".
+
+## Erste Schritte in Afrika
+
+Neukunden in afrikanischen Ländern bekommen afrikatypische Vorschläge (Orientierung an der
+WHO-Liste unentbehrlicher Arzneimittel): Artemether/Lumefantrin, Amoxicillin, Oxytocin, Orale
+Rehydratationssalze, Zinksulfat, Paracetamol, Ceftriaxon, Metformin, Insulin, Salbutamol,
+Magnesiumsulfat, Rifampicin, Tenofovir/Lamivudin/Dolutegravir, Gentamicin — ohne Status, solange
+keine Quelle etwas als knapp meldet.

@@ -14,9 +14,17 @@ const HAEUFIG = {
   en: ['Amoxicillin', 'Ibuprofen', 'Paracetamol', 'Salbutamol', 'Metformin', 'Amlodipine', 'Cefalexin', 'Azithromycin', 'Prednisolone', 'Levothyroxine', 'Insulin', 'Clarithromycin'],
   pt: ['Amoxicilina', 'Ibuprofeno', 'Paracetamol', 'Salbutamol', 'Metformina', 'Amlodipina', 'Cefalexina', 'Azitromicina', 'Prednisolona', 'Levotiroxina', 'Insulina', 'Claritromicina'],
 };
+// Afrika: was dort am häufigsten fehlt und am meisten zählt — Malaria
+// (Artemether/Lumefantrin), Mutter-Kind (Oxytocin, Magnesiumsulfat),
+// Kinder (Orale Rehydratationssalze, Zink), Infektionen, HIV, Tuberkulose.
+// Orientierung an der WHO-Liste unentbehrlicher Arzneimittel.
+const HAEUFIG_AFRIKA = {
+  en: ['Artemether/Lumefantrine', 'Amoxicillin', 'Oxytocin', 'Oral rehydration salts', 'Zinc sulfate', 'Paracetamol', 'Ceftriaxone', 'Metformin', 'Insulin', 'Salbutamol', 'Magnesium sulfate', 'Rifampicin', 'Tenofovir/Lamivudine/Dolutegravir', 'Gentamicin'],
+  pt: ['Artemeter/Lumefantrina', 'Amoxicilina', 'Ocitocina', 'Sais de reidratação oral', 'Sulfato de zinco', 'Paracetamol', 'Ceftriaxona', 'Metformina', 'Insulina', 'Salbutamol', 'Sulfato de magnésio', 'Rifampicina', 'Tenofovir/Lamivudina/Dolutegravir', 'Gentamicina'],
+};
 const MAX = 12;
 
-export function ersteSchritte({ shortagesRepo, land, sprache = 'de', beobachtet = [] }) {
+export function ersteSchritte({ shortagesRepo, land, sprache = 'de', region = null, beobachtet = [] }) {
   const cc = String(land || '').toUpperCase();
   const schon = new Set(beobachtet.map((w) => wirkstoffSchluessel(w) || String(w).toLowerCase()));
   const gesehen = new Set();
@@ -32,7 +40,8 @@ export function ersteSchritte({ shortagesRepo, land, sprache = 'de', beobachtet 
     if (vorschlaege.length >= MAX) break;
   }
   const anzahlAmtlich = vorschlaege.length;
-  for (const w of HAEUFIG[sprache] || HAEUFIG.de) {
+  const liste = region === 'AFRICA' ? (HAEUFIG_AFRIKA[sprache] || HAEUFIG_AFRIKA.en) : (HAEUFIG[sprache] || HAEUFIG.de);
+  for (const w of liste) {
     if (vorschlaege.length >= MAX) break;
     const k = wirkstoffSchluessel(w) || w.toLowerCase();
     if (gesehen.has(k)) continue;

@@ -585,3 +585,9 @@ span.vt-ok { color:var(--ok-fg); }
 /* Aktualität von Apotheken-Meldungen */
 .vt-alt { margin-top:6px; font-size:14px; font-weight:700; color:var(--warn-fg); }
 .vt-alt.vt-veraltet { color:var(--muted); font-weight:600; }
+
+/* Warnungen in Behördenmeldungen (Fälschung / Rückruf) */
+.warn-filter { width:100%; min-height:44px; margin:0 0 12px; }
+.warn-etikett { font-size:14px; padding:6px 10px; border-radius:8px; margin-bottom:8px; background:var(--warn-bg); color:var(--warn-fg); border:1px solid var(--warn-bd); }
+.warn-etikett.faelschung { background:var(--crit-bg); color:var(--crit-fg); border-color:var(--crit-bd); }
+.warn-etikett span { font-weight:400; }

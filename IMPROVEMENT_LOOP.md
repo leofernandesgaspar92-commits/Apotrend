@@ -2600,3 +2600,17 @@ Engpasslage; Wieder lieferbar nur Beteiligte, Beobachter:innen informiert). Brow
 
 **Gegenproben (jede schlägt an):** Erinnerung ohne Merker; veraltet bleibt bestätigt; Lage
 zählt veraltete; jeder darf „wieder lieferbar".
+
+### Cycle · Afrika-Relevanz: Fälschungswarnungen und afrikatypische erste Schritte (2026-10-14)
+
+**WORK.** `domain/warnung.js`: Stichwort-Erkennung „Fälschung" (Vorrang) und „Rückruf" in
+Behördenmeldungen (en/de/pt; „fake" nur in fester Wendung). `/api/news` liefert `warnung`,
+`nur=warnungen` filtert. Oberfläche: rotes/gelbes Etikett mit „automatisch erkannt — Einzelheiten
+in der Quelle", Schalter „Nur Warnungen". Erste Schritte: afrikatypische Liste (Malaria,
+Mutter-Kind, Kinder, Infektionen, HIV, TB) für Länder der Region Afrika (en/pt).
+
+**Tests.** `warnungen.test.js` (Erkennung inkl. Fehlalarm-Fällen; Afrika-Liste vs. Europa; echter
+Server: NAFDAC-Feed mit Warnung + Workshop → Filter zeigt nur die Warnung, Uganda bekommt
+Artemether/Lumefantrin zuerst). Browser-Audit „Warnungen".
+
+**Gegenproben (jede schlägt an):** „fake" allein; Filter ignoriert; Region nicht durchgereicht.

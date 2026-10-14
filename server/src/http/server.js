@@ -45,6 +45,7 @@ import { vorratsRadar } from '../services/radar.js';
 import { teilseite } from './teilseite.js';
 import { createAnzeigen } from '../services/anzeigen.js';
 import { regionLage } from '../services/regionLage.js';
+import { warnTyp } from '../domain/warnung.js';
 import { ersteSchritte } from '../services/ersteSchritte.js';
 import { startklar } from '../services/startklar.js';
 import { createOeffentlicheSeiten } from '../services/oeffentlicheSeiten.js';
@@ -1764,7 +1765,7 @@ const routes = [
   // Erste Schritte (services/ersteSchritte.js): Wirkstoffe zum Antippen.
   ['GET', /^\/api\/erste-schritte$/, true, async ({ userId, query }) => {
     const land = activeCountry(userId, query);
-    return ersteSchritte({ shortagesRepo, land, sprache: (COUNTRIES[land] && COUNTRIES[land].locale_default) || 'de', beobachtet: shortagesRepo.listWatch(userId) });
+    return ersteSchritte({ shortagesRepo, land, sprache: (COUNTRIES[land] && COUNTRIES[land].locale_default) || 'de', region: regionVon(land), beobachtet: shortagesRepo.listWatch(userId) });
   }],
   // ── Web-Push (services/webPush.js) ──
   ['GET', /^\/api\/push$/, true, async ({ userId }) => ({ schluessel: webPush.oeffentlicherSchluessel(), geraete: webPush.geraete(userId) })],
@@ -1972,7 +1973,10 @@ const routes = [
       const sp = ['de', 'en', 'pt'].includes(query.get('sprache')) ? query.get('sprache') : ((COUNTRIES[land] && COUNTRIES[land].locale_default) || 'en');
       herkunft = ['INT', 'EU', 'AFR', ...Object.values(COUNTRIES).filter((c) => c.locales.includes(sp)).map((c) => c.code)];
     }
-    return { country: land, ebene, region, posts: enrichPosts(social.newsFeed(userId, { country: land, herkunft }), userId) };
+    // Warnungen (Fälschung/Rückruf) per Stichwort in der Behördenmeldung — `nur=warnungen` filtert.
+    let posts = enrichPosts(social.newsFeed(userId, { country: land, herkunft }), userId).map((p) => ({ ...p, warnung: warnTyp(p.body) }));
+    if (query.get('nur') === 'warnungen') posts = posts.filter((p) => p.warnung);
+    return { country: land, ebene, region, posts };
   }],
   ['GET', /^\/api\/hashtag\/([^/]+)$/, true, async ({ userId, params }) => ({ tag: decodeURIComponent(params[0]), posts: enrichPosts(social.postsByHashtag(userId, decodeURIComponent(params[0])), userId) })],
   ['GET', /^\/api\/trending\/hashtags$/, true, async ({ userId }) => ({ hashtags: social.trendingHashtags(userId) })],
