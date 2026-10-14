@@ -117,6 +117,9 @@ services:
         sync: false
       - key: APOPULSE_WERBEPREISE
         sync: false
+      # Business-Tarif mit Daten-Schnittstelle, z. B. "monat:99,jahr:990" (EUR). Leer = Startpreise.
+      - key: APOPULSE_PREISE_BUSINESS
+        sync: false
       # PORT wird von Render automatisch gesetzt — der Server liest process.env.PORT.
     # Dauerhafte Platte (nur Bezahltarif). Zum Aktivieren einkommentieren:
     # disk:

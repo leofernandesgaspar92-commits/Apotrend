@@ -1601,6 +1601,58 @@ async function main() {
     await ctx2.close();
   }
 
+  // ── Daten-Schnittstelle (Business): verständlich, Schlüssel nur einmal ────
+  //  Ohne Business: Preis und Buchen-Knopf, der auf die Zahlung mit dem
+  //  Business-Tarif führt. Mit Business (nachgebildet): neuer Schlüssel
+  //  einmal sichtbar und in der Excel-Adresse eingesetzt. Kein Querscrollen
+  //  am Handy trotz langer Adressen.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(600);
+    const quer = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    if (!(await page.locator('#btnDatenApi').count())) findings.push('Daten-Schnittstelle: Menüeintrag fehlt');
+    await page.evaluate(() => openDatenApi()); await page.waitForTimeout(800);
+    const buchen = page.locator('[data-dabuchen]');
+    if (!(await buchen.count())) findings.push('Daten-Schnittstelle: ohne Business kein Preis/Buchen-Knopf');
+    else {
+      const txt = await buchen.innerText();
+      if (!/990/.test(txt)) findings.push(`Daten-Schnittstelle: Preis fehlt (${txt.slice(0, 80)})`);
+      if ((await quer()) > 0) findings.push(`Daten-Schnittstelle: ${await quer()} px Querscrollen am Handy`);
+      await buchen.locator('[data-dago]').click(); await page.waitForTimeout(1200);
+      const preis = await page.locator('[data-prpreis]').innerText().catch(() => '');
+      if (!/Business/.test(preis)) findings.push(`Daten-Schnittstelle: Buchen führt nicht zur Business-Zahlung (${preis.slice(0, 80)})`);
+      const krypto = await page.locator('.crypto-pay').count();
+      if (!krypto) findings.push('Daten-Schnittstelle: Business ohne Krypto-Zahlung');
+    }
+    // Mit Business (nachgebildet): Schlüssel anlegen.
+    const roh = 'apk_PRUEF' + 'x'.repeat(27);
+    let liste = [];
+    await page.route('**/api/daten-api/schluessel', (route) => {
+      if (route.request().method() === 'POST') {
+        liste = [{ id: 'abc123', name: 'Excel', anzeige: 'apk_PRUE…xxxx', angelegt: new Date().toISOString(), zuletzt: null, anfragen: 0 }];
+        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ schluessel: { ...liste[0], schluessel: roh } }) });
+      }
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ berechtigt: true, bis: '2027-10-14T00:00:00.000Z', schluessel: liste }) });
+    });
+    await page.evaluate(() => openDatenApi()); await page.waitForTimeout(600);
+    await page.fill('#daName', 'Excel'); await page.click('#daNeu'); await page.waitForTimeout(800);
+    const gezeigt = await page.locator('[data-daschluessel]').innerText().catch(() => '');
+    if (gezeigt !== roh) findings.push('Daten-Schnittstelle: neuer Schlüssel wird nicht angezeigt');
+    const excel = await page.locator('[data-daexcel]').innerText().catch(() => '');
+    if (!excel.includes('key=' + roh) || !/format=csv/.test(excel)) findings.push(`Daten-Schnittstelle: Excel-Adresse ohne Schlüssel (${excel.slice(0, 90)})`);
+    if ((await quer()) > 0) findings.push(`Daten-Schnittstelle: ${await quer()} px Querscrollen mit Schlüssel`);
+    // Nach dem Verlassen ist der Klartext weg.
+    await page.locator('[data-back]').first().click(); await page.waitForTimeout(500);
+    await page.evaluate(() => openDatenApi()); await page.waitForTimeout(600);
+    if (await page.locator('[data-daschluessel]').count()) findings.push('Daten-Schnittstelle: Klartext-Schlüssel bleibt nach dem Verlassen sichtbar');
+    for (const f of fehler) findings.push('Daten-Schnittstelle: JS-Fehler ' + f);
+    if (!findings.some((f) => f.startsWith('Daten-Schnittstelle'))) console.log('✓ Daten-Schnittstelle: Preis + Buchen → Business-Zahlung mit Krypto; Schlüssel einmal sichtbar und in der Excel-Adresse; kein Querscrollen');
+    await ctx.close();
+  }
+
   // ── Registrierung im Browser: kurz, und ein Fehler verbrennt nichts ──────
   //  Bis 10/2026: sechs Felder (Pflicht-@Handle, Land doppelt), zwei Formulare
   //  untereinander — und ein vergebener Handle machte die E-Mail unbrauchbar.

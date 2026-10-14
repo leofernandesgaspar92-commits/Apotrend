@@ -79,16 +79,19 @@ export function createPaymentsService({
     if (product) {
       // Laufzeit: ab dem bisherigen Ablauf, wenn der noch in der Zukunft liegt —
       // wer früh verlängert, verliert keinen Tag. Unbefristetes bleibt unbefristet.
-      let bis;
-      if (product.monate) {
-        const alt = repo.entitlementBis ? repo.entitlementBis(payment.user_id, product.feature) : null;
-        const hatUnbefristet = repo.hasEntitlement(payment.user_id, product.feature) && !alt;
-        if (!hatUnbefristet) {
+      // `zusatz` (Business): weitere Funktionen für dieselbe Laufzeit, je
+      // Funktion ab ihrem eigenen bisherigen Ablauf gerechnet.
+      for (const feature of [product.feature, ...(product.zusatz || [])]) {
+        let bis;
+        if (product.monate) {
+          const alt = repo.entitlementBis ? repo.entitlementBis(payment.user_id, feature) : null;
+          const hatUnbefristet = repo.hasEntitlement(payment.user_id, feature) && !alt;
+          if (hatUnbefristet) continue;
           const start = alt && Date.parse(alt) > jetzt() ? Date.parse(alt) : jetzt();
           bis = new Date(plusMonate(start, product.monate)).toISOString();
         }
+        repo.grantEntitlement(payment.user_id, feature, bis ? { bis } : {});
       }
-      repo.grantEntitlement(payment.user_id, product.feature, bis ? { bis } : {});
       if (onPaid) { try { await onPaid({ payment, product }); } catch { /* Mailversand darf die Freischaltung nicht blockieren */ } }
     }
     spiegeln({ ...aktuell, feature: product && product.feature });

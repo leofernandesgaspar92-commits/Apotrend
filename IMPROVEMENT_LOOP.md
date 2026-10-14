@@ -2346,3 +2346,36 @@ Konto → Wirkstoff beobachtet, Absicht danach gelöscht).
 
 **Gegenproben (jede schlägt an):** Escaping weg → rot; „keine Liste" als „nicht knapp" → rot;
 Protokoll ungeprüft übernommen → rot; Absicht nicht verarbeitet → zwei Audit-Befunde.
+
+### Cycle · Business-Tarif: Daten-Schnittstelle für Warenwirtschaft und Excel (2026-10-14)
+
+**Kundensicht:** Ein Großhändler oder Ketten-Einkauf zahlt nicht 9,99 € für eine Webseite, die
+jemand täglich öffnen muss. Er zahlt dafür, dass seine Warenwirtschaft selbst fragt „Welche
+Wirkstoffe meiner Bestellung sind knapp — laut wem?" und eine Excel-Tabelle sich selbst
+aktualisiert. Das ist der direkteste Weg, den Informationsvorsprung zu verkaufen.
+
+**WORK.**
+- `services/datenApi.js`: Schlüssel `apk_…` (einmal Klartext, gespeichert als SHA-256), höchstens
+  5 je Konto, 120 Anfragen/Minute, Nutzungszähler, Widerruf, Löschung mit dem Konto, Sicherung.
+- `/api/v1/engpaesse`, `/api/v1/pruefen` (GET/POST, bis 500 Zeilen, nutzt den Sortiments-Check),
+  `/api/v1/status`; JSON oder CSV (Semikolon, BOM, Formel-Schutz). Nur echte Herkunft
+  (Behörde / Apotheken-Meldung), **nie Beispieldaten**; Tarif abgelaufen → 402 mit Datum.
+- Tarif `business_monthly` (99 €) / `business_yearly` (990 €), per Umgebung änderbar; schaltet
+  Premium für dieselbe Laufzeit mit frei (`zusatz`). Zahlung über die bestehende Strecke inkl.
+  Krypto.
+- Oberfläche „Daten-Schnittstelle" (Menü + Premium-Seite): Nutzen in Klartext, Preis, Buchen,
+  Schlüssel anlegen/löschen, Excel-Anleitung in drei Schritten mit fertiger Adresse, IT-Teil
+  aufklappbar. Bereich `daten_api` (aktiv). Doku `docs/DATEN_API.md`.
+
+**Tests.** `daten-api.test.js` (Schlüssel/Hash/Sicherung, Grenzen, 402 bei Ablauf, CSV, Produkt;
+echter Server: Krypto-Kauf → Premium mit frei → Schlüssel → vor dem Abruf 0 Zeilen trotz
+Beispieldaten → nach dem Abruf Amoxicillin laut BASG → CSV mit BOM → Listenprüfung →
+Widerruf → Kontolöschung). Browser-Audit „Daten-Schnittstelle" (Preis, Buchen → Business-Zahlung
+mit Krypto, Schlüssel einmal sichtbar und in der Excel-Adresse, kein Querscrollen am Handy).
+
+**Gegenproben (jede schlägt an):** Herkunftsfilter Engpässe weg; Herkunftsfilter Prüfung weg;
+Tarifprüfung weg; Klartext statt Hash gespeichert; Schlüssel aus der Adresse auch bei POST;
+Kontolöschung vergisst Schlüssel; Formel-Schutz weg; Schlüssel bleibt nach dem Verlassen
+sichtbar. **Befund dabei:** Die ersten beiden Gegenproben blieben zunächst grün — der Testserver
+lief ohne Beispieldaten, der Filter wurde also gar nicht geprüft. Jetzt laufen Beispieldaten im
+Test mit, und ein Gegencheck stellt sicher, dass sie in der App wirklich da sind.

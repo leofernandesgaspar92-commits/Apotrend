@@ -124,14 +124,15 @@ export function createSortiment({ shortagesRepo, chronik, istPremium }) {
   }
 
   return {
-    pruefen(userId, text, land) {
+    // `zeilenFilter` (Daten-Schnittstelle): nur Engpasszeilen echter Herkunft.
+    pruefen(userId, text, land, { zeilenFilter = null } = {}) {
       const cc = String(land || '').toUpperCase();
       const premium = !!istPremium(userId);
       const alle = zeilenAusText(text);
       const grenze = premium ? MAX_ZEILEN : FREI_ZEILEN;
       const zuPruefen = alle.slice(0, grenze);
       const v = verzeichnis(cc);
-      const hier = shortagesRepo.list({ country: cc }).filter((z) => AKTIV.has(z.status) && z.wirkstoff);
+      const hier = shortagesRepo.list({ country: cc }).filter((z) => AKTIV.has(z.status) && z.wirkstoff && (!zeilenFilter || zeilenFilter(z)));
       const beobachtet = new Set(shortagesRepo.listWatch(userId).map((w) => wirkstoffSchluessel(w) || w.toLowerCase()));
 
       const gesehen = new Set();

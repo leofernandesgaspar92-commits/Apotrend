@@ -112,6 +112,13 @@ optional `APOPULSE_FIRMA_UST_ID`, `APOPULSE_BANK_BIC`, `APOPULSE_UST_SATZ` (mit 
 klären) und `APOPULSE_WERBEPREISE` (z. B. `start:490,feed:290,seite:190`). Ohne diese Angaben
 geht nur Krypto. Regeln und Rechtsrahmen: `docs/WERBUNG.md`.
 
+## Business-Tarif mit Daten-Schnittstelle (Einnahmen)
+
+Großhandel, Ketten und Einkauf holen Engpassdaten per Schlüssel direkt in Warenwirtschaft oder
+Excel („Menü → Daten-Schnittstelle"). Nichts einzurichten: Der Tarif nutzt die Zahlungswege von
+Premium (Krypto bleibt). Preise optional über `APOPULSE_PREISE_BUSINESS` (z. B.
+`monat:99,jahr:990`). Endpunkte, Felder und Regeln: `docs/DATEN_API.md`.
+
 ## Datenspeicherung (Persistenz)
 
 Der Server kann seinen kompletten Zustand als **JSON-Snapshot** auf die Platte

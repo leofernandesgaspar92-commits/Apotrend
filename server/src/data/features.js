@@ -191,6 +191,14 @@ export const FEATURES = [
     api: [/^\/api\/(werbung|anzeigen)\//],
   },
   {
+    // Business-Tarif: Engpassdaten per Schlüssel direkt in Warenwirtschaft
+    // und Excel (services/datenApi.js, docs/DATEN_API.md).
+    id: 'daten_api', zustand: 'aktiv',
+    titel: 'Daten-Schnittstelle (Business)',
+    grund: 'Zahlende Kundschaft aus Großhandel und Einkauf; Daten nur mit Herkunft.',
+    api: [/^\/api\/(v1|daten-api)\//],
+  },
+  {
     id: 'werbung', zustand: 'ruht',
     titel: 'Anzeigenfläche',
     grund: 'Werbung neben einer Engpassmeldung verkauft genau das Vertrauen, '

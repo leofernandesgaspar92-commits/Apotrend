@@ -44,6 +44,7 @@ import { createSortiment } from '../services/sortiment.js';
 import { vorratsRadar } from '../services/radar.js';
 import { teilseite } from './teilseite.js';
 import { createAnzeigen } from '../services/anzeigen.js';
+import { createDatenApi, zugangPruefen, engpassZeile, fuerSchnittstelle, alsCsv } from '../services/datenApi.js';
 import { werbeplaetzeAusUmgebung, ZIELGRUPPEN } from '../data/werbeplaetze.js';
 import { createOverviewService } from '../services/overview.js';
 import { createOAuthService, buildProvidersFromEnv } from '../services/oauth.js';
@@ -87,7 +88,7 @@ import { rxErlaubt, verificationStatusFor } from '../domain/jurisdiction.js';
 import { erfundeneStartmeldungenEntfernen } from '../services/startbereinigung.js';
 import { createChronik, chronikFuerBetrachter } from '../services/chronik.js';
 import { createFruehwarnung } from '../services/fruehwarnung.js';
-import { gleicherWirkstoff } from '../domain/inn.js';
+import { gleicherWirkstoff, wirkstoffSchluessel } from '../domain/inn.js';
 
 // Login-Brute-Force-Schutz: max. 5 Fehlversuche je (IP+E-Mail) in 15 Minuten.
 const loginLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
@@ -176,6 +177,7 @@ const betreiber = {
   bic: process.env.APOPULSE_BANK_BIC || '', inhaber: process.env.APOPULSE_BANK_INHABER || '',
   ust_satz: Number(process.env.APOPULSE_UST_SATZ) || 0,
 };
+const datenApi = createDatenApi();
 const anzeigen = createAnzeigen({
   plaetze: werbeplaetzeAusUmgebung(process.env),
   profilVon: (uid) => social.getProfile(uid),
@@ -274,6 +276,7 @@ function applySnapshot(snap) {
   eigeneQuellen.__load(snap.eigeneQuellen);
   wochenbericht.__load(snap.wochenbericht);
   anzeigen.__load(snap.anzeigen);
+  datenApi.__load(snap.datenApi);
   // Alte, unbefristete Premium-Freischaltungen aus bezahlten Monats-/Jahres-
   // käufen bekommen ihr Ablaufdatum (services/payments.js, laufzeitenUmstellen).
   const umgestellt = payments.laufzeitenUmstellen();
@@ -324,6 +327,7 @@ function collectSnapshot() {
     eigeneQuellen: eigeneQuellen.__dump(),
     wochenbericht: wochenbericht.__dump(),
     anzeigen: anzeigen.__dump(),
+    datenApi: datenApi.__dump(),
   };
 }
 let saveTimer = null;
@@ -1664,9 +1668,21 @@ const routes = [
     // Speicher, der hier fehlt, laesst personenbezogene Daten zurueck, obwohl
     // die Loeschung „ok" meldet — die teuerste Art von halber Arbeit.
     logistikRepo.purgeUser(userId);
+    datenApi.nutzerEntfernen(userId); // Schnittstellen-Schlüssel gelten sonst weiter
     repo.deleteUser(userId);
     return { ok: true };
   }],
+
+  // ── Daten-Schnittstelle (Business): Schlüssel verwalten ──
+  ['GET', /^\/api\/daten-api\/schluessel$/, true, async ({ userId }) => ({
+    berechtigt: payments.hasFeature(userId, 'api'), bis: payments.featureBis(userId, 'api'),
+    schluessel: datenApi.liste(userId),
+  })],
+  ['POST', /^\/api\/daten-api\/schluessel$/, true, async ({ userId, body }) => {
+    if (!payments.hasFeature(userId, 'api')) throw new AppError('api_tarif', 'Die Daten-Schnittstelle gehört zum Business-Tarif.', 402);
+    return { schluessel: datenApi.anlegen(userId, body.name) };
+  }],
+  ['DELETE', /^\/api\/daten-api\/schluessel\/([a-f0-9]{1,24})$/, true, async ({ userId, params }) => datenApi.widerrufen(userId, params[0])],
 
   // ── Moderation (nur Redaktions-/Admin-Konten) ──
   ['GET', /^\/api\/reports$/, true, async ({ userId }) => ({ reports: social.moderationQueue(userId) })],
@@ -2263,6 +2279,80 @@ const routes = [
   }],
 ];
 
+// ── Daten-Schnittstelle: Abfragen mit Schlüssel ─────────────────────────────
+const V1_ENGPASS_SPALTEN = ['wirkstoff', 'wirkstoff_schluessel', 'bezeichnung', 'land', 'status', 'grund', 'gemeldet_am', 'voraussichtlich_bis', 'herkunft', 'quelle'];
+const V1_PRUEF_SPALTEN = ['eingabe', 'wirkstoff', 'einstufung', 'status', 'voraussichtlich_bis', 'seit_tagen', 'herkunft', 'quelle', 'ausland'];
+function v1Stand() {
+  const job = scheduler.status().find((j) => j.name === 'shortages') || null;
+  return (job && job.lastRunAt) || null;
+}
+function v1Laender(q) {
+  const roh = String(q || '').toUpperCase().split(/[,;\s]+/).filter(Boolean);
+  for (const c of roh) if (!COUNTRIES[c]) throw new AppError('api_land', `Unbekanntes Land: ${c.slice(0, 5)}`);
+  return roh;
+}
+async function datenSchnittstelle(req, res, url) {
+  const antwort = (code, obj, extra = {}) => {
+    res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...extra });
+    res.end(JSON.stringify(obj));
+  };
+  const csv = (text, name) => {
+    res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Disposition': `inline; filename="${name}"` });
+    res.end(text);
+  };
+  try {
+    if (ruhenderBereichFuer(url.pathname)) return antwort(404, { error: 'Nicht gefunden' });
+    const auth = String(req.headers.authorization || '');
+    // `?key=` nur für GET: Excel („Daten aus dem Web") kann keine Kopfzeilen setzen.
+    const roh = (auth.match(/^Bearer\s+(apk_\S+)$/) || [])[1] || req.headers['x-api-key'] || (req.method === 'GET' ? url.searchParams.get('key') : null);
+    const userId = zugangPruefen(roh, { api: datenApi, hatTarif: (uid) => payments.hasFeature(uid, 'api'), tarifBis: (uid) => payments.featureBis(uid, 'api') });
+    const q = url.searchParams;
+    const format = q.get('format') === 'csv' ? 'csv' : 'json';
+    const stand = v1Stand();
+    const hinweis = 'Herkunft je Zeile: behoerde = amtliche Liste, apotheken_meldung = gemeldet aus Apotheken (nicht amtlich). Keine Therapie- oder Austauschempfehlung.';
+
+    if (req.method === 'GET' && url.pathname === '/api/v1/status') {
+      return antwort(200, { ok: true, tarif_bis: payments.featureBis(userId, 'api'), stand, laender_mit_behoerdenliste: chronik.beobachteteLaender(), hinweis });
+    }
+    if (req.method === 'GET' && url.pathname === '/api/v1/engpaesse') {
+      const laender = v1Laender(q.get('land'));
+      const nurBehoerde = q.get('herkunft') === 'behoerde';
+      const status = q.get('status');
+      const zeilen = shortagesRepo.list()
+        .filter(fuerSchnittstelle)
+        .filter((z) => z.status === 'kritisch' || z.status === 'eingeschraenkt')
+        .filter((z) => !laender.length || laender.includes(String(z.country || '').toUpperCase()))
+        .filter((z) => !nurBehoerde || z.provenance === 'verified')
+        .filter((z) => !status || z.status === status)
+        .map((z) => engpassZeile(z, wirkstoffSchluessel));
+      if (format === 'csv') return csv(alsCsv(zeilen, V1_ENGPASS_SPALTEN), 'apopulse-engpaesse.csv');
+      return antwort(200, { stand, anzahl: zeilen.length, engpaesse: zeilen, hinweis });
+    }
+    if (url.pathname === '/api/v1/pruefen' && (req.method === 'GET' || req.method === 'POST')) {
+      const body = req.method === 'POST' ? await readBody(req) : {};
+      const land = v1Laender(body.land || q.get('land'))[0];
+      if (!land) throw new AppError('api_land', 'Bitte ein Land angeben (land=AT).');
+      const liste = Array.isArray(body.wirkstoffe) ? body.wirkstoffe.map(String).join('\n')
+        : body.text ? String(body.text) : String(q.get('wirkstoffe') || '').split(/[;|]/).join('\n');
+      if (!liste.trim()) throw new AppError('api_leer', 'Bitte Wirkstoffe angeben: wirkstoffe=Amoxicillin;Ibuprofen (GET) oder {"wirkstoffe": [...]} (POST).');
+      const r = sortiment.pruefen(userId, liste, land, { zeilenFilter: fuerSchnittstelle });
+      const ergebnisse = r.ergebnisse.map((e) => ({
+        eingabe: e.eingabe, wirkstoff: e.wirkstoff || null, einstufung: e.einstufung, status: e.status || null,
+        voraussichtlich_bis: e.voraussichtlich_bis || null, seit_tagen: e.seit_tagen ?? null,
+        herkunft: e.herkunft === 'verified' ? 'behoerde' : e.herkunft === 'community' ? 'apotheken_meldung' : null,
+        quelle: e.quelle || null,
+        ausland: (e.ausland || []).map((a) => a.land),
+      }));
+      if (format === 'csv') return csv(alsCsv(ergebnisse, V1_PRUEF_SPALTEN), 'apopulse-pruefung.csv');
+      return antwort(200, { land, stand, geprueft: r.geprueft, nicht_geprueft: r.gesperrt, zusammenfassung: r.zusammenfassung, ergebnisse, laender_mit_behoerdenliste: r.laender, hinweis });
+    }
+    return antwort(404, { error: 'Unbekannter Endpunkt. Verfügbar: /api/v1/status, /api/v1/engpaesse, /api/v1/pruefen' });
+  } catch (e) {
+    const code = e.status || 400;
+    return antwort(code, e.code ? { error: e.message, code: e.code } : { error: e.message }, e.retryAfterS != null ? { 'Retry-After': String(e.retryAfterS) } : {});
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const pathname = url.pathname;
@@ -2284,6 +2374,11 @@ const server = http.createServer(async (req, res) => {
     });
     return;
   }
+
+  // ── Daten-Schnittstelle /api/v1 (services/datenApi.js) ──
+  //  Eigener Weg vor dem Router: Angemeldet wird mit einem Schnittstellen-
+  //  Schlüssel, nicht mit dem Sitzungs-Token der App.
+  if (pathname.startsWith('/api/v1/')) return datenSchnittstelle(req, res, url);
 
   // ── API ──
   if (pathname.startsWith('/api/')) {

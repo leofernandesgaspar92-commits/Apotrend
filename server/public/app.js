@@ -477,7 +477,7 @@ let myBookmarks = new Set();
 
 // ── Auth-Flow: ERST Land wählen, DANN anmelden, dann länderspezifische Inhalte ──
 function hideHeaderForAuth() {
-  ['btnLogout','btnNotif','btnDm','btnCart','btnMod','btnHelp','btnWerben'].forEach(id => { const b = document.getElementById(id); if (b) b.classList.add('hidden'); });
+  ['btnLogout','btnNotif','btnDm','btnCart','btnMod','btnHelp','btnWerben','btnDatenApi'].forEach(id => { const b = document.getElementById(id); if (b) b.classList.add('hidden'); });
   const cs = document.getElementById('countrySwitch'); if (cs) cs.classList.add('hidden');
   document.getElementById('whoami').textContent = '';
   document.getElementById('whoami').classList.remove('clickable');
@@ -920,6 +920,8 @@ async function mainScreen() {
   // Werben auf ApoPulse (Bereich `anzeigen`): Mediadaten, Buchung, Cockpit.
   const btnWerben = document.getElementById('btnWerben');
   if (btnWerben) { btnWerben.classList.toggle('hidden', !featureAn('anzeigen')); btnWerben.onclick = () => openWerbung(); }
+  const btnDatenApi = document.getElementById('btnDatenApi');
+  if (btnDatenApi) { btnDatenApi.classList.toggle('hidden', !featureAn('daten_api')); btnDatenApi.onclick = () => openDatenApi(); }
   document.getElementById('btnLogout').onclick = () => { localStorage.removeItem('apo_token'); location.reload(); };
   document.getElementById('btnNotif').onclick = showNotifications;
   // Knöpfe ruhender Bereiche entfernt wendeFeaturesAn() aus der Seite. Beim
@@ -3648,6 +3650,93 @@ function merkeLinkAbsicht() {
   history.replaceState(null, '', location.pathname);
 }
 function leseAbsicht() { try { return JSON.parse(localStorage.getItem('apo_absicht') || 'null'); } catch { return null; } }
+
+// ══ Daten-Schnittstelle (Business) ═══════════════════════════════════════════
+// Für Großhandel, Ketten und Einkauf: Warenwirtschaft oder Excel holen die
+// Engpässe selbst ab (server/src/services/datenApi.js). Erklärt ohne
+// Fachjargon — die Person, die bucht, ist meist nicht die IT.
+let daNeuerSchluessel = null; // nur direkt nach dem Anlegen bekannt, nie gespeichert
+async function openDatenApi() {
+  // Klartext genau EINMAL zeigen: Wer die Seite verlässt (egal wie), sieht ihn nicht wieder.
+  const neuerSchluessel = daNeuerSchluessel; daNeuerSchluessel = null;
+  setDocTitle(t('da_titel'));
+  app.innerHTML = '';
+  const back = el(`<div class="row" style="margin-bottom:8px"><button class="ghost small" data-back>${esc(t('gen_back'))}</button></div>`);
+  back.querySelector('[data-back]').onclick = () => mainScreen();
+  app.appendChild(back);
+  const land = viewCountry();
+  const card = el(`<div class="card" data-datenapi><h1 style="margin:0 0 4px">${esc(t('da_titel'))}</h1>
+    <div class="muted" style="font-size:16px;margin-bottom:12px">${esc(t('da_sub'))}</div>
+    <div class="pv-nutzen">${[['list', 'da_n1'], ['download', 'da_n2'], ['shield', 'da_n3']].map(([ic, k]) => `<div class="pv-nutzen-zeile"><span class="karte-ic" aria-hidden="true">${ico(ic, 20)}</span><div><b>${esc(t(k))}</b><div class="muted" style="font-size:15px">${esc(t(k + '_text'))}</div></div></div>`).join('')}</div>
+    <div data-dabody style="margin-top:14px"><div class="loading">…</div></div></div>`);
+  app.appendChild(card);
+  const body = card.querySelector('[data-dabody]');
+  let st;
+  try { st = await api('GET', '/api/daten-api/schluessel'); } catch (e) { body.textContent = e.message; return; }
+  body.innerHTML = '';
+  if (!st.berechtigt) {
+    const produkte = ((await api('GET', '/api/payments/products').catch(() => ({ products: [] }))).products) || [];
+    const m = produkte.find((p) => p.id === 'business_monthly'); const j = produkte.find((p) => p.id === 'business_yearly');
+    const preis = m && j ? ti('da_preis', { j: fmtCurrency(j.amount_cents / 100, j.currency), m: fmtCurrency(m.amount_cents / 100, m.currency) }) : '';
+    const box = el(`<div class="ok-box" data-dabuchen style="padding:14px"><b style="font-size:17px">${esc(t('da_business'))}</b>
+      <div style="margin:4px 0 10px">${esc(preis)}</div><div class="muted" style="font-size:14px;margin-bottom:10px">${esc(t('da_business_inkl'))}</div>
+      <button data-dago style="min-height:48px;font-weight:700">${esc(t('da_buchen'))}</button></div>`);
+    box.querySelector('[data-dago]').onclick = () => { prPlan = 'business_yearly'; openPremium(); };
+    body.appendChild(box);
+  } else {
+    body.appendChild(el(`<div class="ok-box" style="padding:10px 12px;margin-bottom:12px"><b>${esc(st.bis ? ti('da_aktiv_bis', { d: fmtDateDe(String(st.bis).slice(0, 10)) }) : t('da_aktiv'))}</b></div>`));
+    if (neuerSchluessel) {
+      const nk = el(`<div class="lage-box" data-daneu style="margin-bottom:12px"><div class="lage-kopf">${ico('check', 18)}${esc(t('da_neu_titel'))}</div>
+        <div style="font-size:15px;margin-bottom:8px">${esc(t('da_neu_text'))}</div>
+        <div class="crypto-addr"><code data-daschluessel>${esc(neuerSchluessel)}</code></div>
+        <button class="small" data-dakopie style="margin-top:8px">${esc(t('da_kopieren'))}</button></div>`);
+      const k = neuerSchluessel;
+      nk.querySelector('[data-dakopie]').onclick = async (e) => { try { await navigator.clipboard.writeText(k); e.currentTarget.textContent = t('teilen_kopiert'); } catch { prompt(t('copy_link_fb'), k); } };
+      body.appendChild(nk);
+    }
+    const liste = el(`<div data-daliste style="margin-bottom:12px"><div style="font-weight:700;margin-bottom:6px">${esc(t('da_schluessel'))}</div></div>`);
+    if (!st.schluessel.length) liste.appendChild(el(`<div class="muted">${esc(t('da_keine'))}</div>`));
+    st.schluessel.forEach((k) => {
+      const z = el(`<div class="row" data-dazeile style="gap:8px;align-items:center;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--line)">
+        <div style="flex:1 1 220px"><b>${esc(k.name)}</b> <code style="font-size:14px">${esc(k.anzeige)}</code>
+          <div class="muted" style="font-size:14px">${esc(ti('da_genutzt', { n: k.anfragen, d: k.zuletzt ? fmtZeit(k.zuletzt) : t('da_nie') }))}</div></div>
+        <button class="ghost small" data-daweg>${esc(t('da_loeschen'))}</button></div>`);
+      z.querySelector('[data-daweg]').onclick = async () => {
+        if (!confirm(ti('da_loeschen_frage', { n: k.name }))) return;
+        try { await api('DELETE', '/api/daten-api/schluessel/' + encodeURIComponent(k.id)); openDatenApi(); } catch (e) { alert(e.message); }
+      };
+      liste.appendChild(z);
+    });
+    body.appendChild(liste);
+    const neu = el(`<div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:14px"><label class="sr-only" for="daName">${esc(t('da_name'))}</label>
+      <input id="daName" maxlength="60" placeholder="${esc(t('da_name_ph'))}" style="flex:1 1 200px">
+      <button id="daNeu" style="min-height:44px;font-weight:700">${esc(t('da_anlegen'))}</button></div>`);
+    neu.querySelector('#daNeu').onclick = async () => {
+      try { const r = await api('POST', '/api/daten-api/schluessel', { name: neu.querySelector('#daName').value }); daNeuerSchluessel = r.schluessel.schluessel; openDatenApi(); } catch (e) { alert(e.message); }
+    };
+    body.appendChild(neu);
+  }
+  // Anleitung — auch vor dem Kauf sichtbar: Die IT soll prüfen können, was sie bekommt.
+  const sch = neuerSchluessel || t('da_platzhalter');
+  const excel = `${location.origin}/api/v1/engpaesse?land=${encodeURIComponent(land)}&format=csv&key=${sch}`;
+  const curl = `curl -H "Authorization: Bearer ${sch}" "${location.origin}/api/v1/pruefen?land=${encodeURIComponent(land)}&wirkstoffe=Amoxicillin;Ibuprofen"`;
+  const anl = el(`<div data-daanleitung>
+    <div style="font-weight:800;margin:6px 0 6px">${esc(t('da_excel_titel'))}</div>
+    <ol style="margin:0 0 8px 20px;padding:0;font-size:15px;line-height:1.6"><li>${esc(t('da_excel_1'))}</li><li>${esc(t('da_excel_2'))}</li><li>${esc(t('da_excel_3'))}</li></ol>
+    <div class="crypto-addr"><code data-daexcel>${esc(excel)}</code></div>
+    <div class="muted" style="font-size:14px;margin:6px 0 14px">${esc(t('da_excel_hinweis'))}</div>
+    <details><summary style="font-weight:700;cursor:pointer;min-height:44px;display:flex;align-items:center">${esc(t('da_it_titel'))}</summary>
+      <div style="font-size:15px;margin:6px 0">${esc(t('da_it_text'))}</div>
+      <div class="crypto-addr"><code>${esc(curl)}</code></div>
+      <ul style="margin:8px 0 0 20px;padding:0;font-size:14px;line-height:1.6">
+        <li><code>GET /api/v1/engpaesse?land=${esc(land)}</code> — ${esc(t('da_ep_engpaesse'))}</li>
+        <li><code>GET|POST /api/v1/pruefen</code> — ${esc(t('da_ep_pruefen'))}</li>
+        <li><code>GET /api/v1/status</code> — ${esc(t('da_ep_status'))}</li>
+      </ul>
+      <div class="muted" style="font-size:14px;margin-top:6px">${esc(t('da_herkunft'))}</div>
+    </details></div>`);
+  body.appendChild(anl);
+}
 
 // ══ Anzeigen für Unternehmen ══════════════════════════════════════════════════
 // Server: services/anzeigen.js (Regeln), docs/WERBUNG.md (rechtlicher Rahmen).
@@ -6422,20 +6511,31 @@ async function openPremium() {
     const abd = await api('GET', '/api/abdeckung').catch(() => null);
     body.appendChild(premiumVergleich(abd));
     body.appendChild(premiumNutzen());
+    // Für Großhandel, Ketten, Einkauf: der Weg zur Daten-Schnittstelle.
+    if (featureAn('daten_api')) {
+      const bz = el(`<div class="lage-box" data-prbusiness style="margin:12px 0"><div class="lage-kopf">${ico('download', 18)}${esc(t('da_pr_titel'))}</div>
+        <div style="font-size:15px;margin-bottom:8px">${esc(t('da_pr_text'))}</div>
+        <button class="ghost" data-prbusinessgo>${esc(t('da_pr_go'))}</button></div>`);
+      bz.querySelector('[data-prbusinessgo]').onclick = () => openDatenApi();
+      body.appendChild(bz);
+    }
     { const tx = abdeckungText(abd); if (tx) body.appendChild(el(`<div class="lage-box" data-prabdeckung><div class="lage-kopf"><span class="nr-live" aria-hidden="true"></span>${esc(t('ab_titel'))}</div><div style="font-size:15px">${esc(tx)}</div></div>`)); }
     // Vorschau des Wochenberichts für alle: Sie zeigt, was Premium liefert.
     app.appendChild(wochenberichtKarte(!!mine.premium));
     // Laufzeit wählen. Das Jahr stand im Code (99 €), wurde aber nirgends
     // angeboten — die Seite kannte nur den Monat. Die Ersparnis wird aus den
     // Produktpreisen gerechnet, nicht in einen Text geschrieben.
-    const monat = produkte.find((p) => p.id === 'premium_monthly');
-    const jahr = produkte.find((p) => p.id === 'premium_yearly');
+    // Business (Daten-Schnittstelle) nutzt dieselbe Seite und Zahlung; die
+    // Laufzeit-Wahl zeigt dann die Business-Preise.
+    const business = prPlan.startsWith('business_');
+    const monat = produkte.find((p) => p.id === (business ? 'business_monthly' : 'premium_monthly'));
+    const jahr = produkte.find((p) => p.id === (business ? 'business_yearly' : 'premium_yearly'));
     if (monat && jahr) {
       const ersparnis = monat.amount_cents * 12 - jahr.amount_cents;
       const wahl = el(`<div data-prplan style="margin:0 0 12px"><div style="font-weight:700;margin-bottom:6px">${esc(t('pr_plan_title'))}</div>
         <div class="row" style="gap:8px;flex-wrap:wrap">
-          <button class="${prPlan === 'premium_monthly' ? '' : 'ghost '}" data-plan="premium_monthly" aria-pressed="${prPlan === 'premium_monthly'}" style="flex:1 1 150px;min-height:56px;text-align:left">${esc(t('pr_plan_month'))}<br><b>${esc(fmtCurrency(monat.amount_cents / 100, monat.currency))}</b></button>
-          <button class="${prPlan === 'premium_yearly' ? '' : 'ghost '}" data-plan="premium_yearly" aria-pressed="${prPlan === 'premium_yearly'}" style="flex:1 1 150px;min-height:56px;text-align:left">${esc(t('pr_plan_year'))}<br><b>${esc(fmtCurrency(jahr.amount_cents / 100, jahr.currency))}</b>${ersparnis > 0 ? `<br><span style="font-size:13px">${esc(ti('pr_plan_save', { s: fmtCurrency(ersparnis / 100, jahr.currency), m: fmtCurrency(jahr.amount_cents / 1200, jahr.currency) }))}</span>` : ''}</button>
+          <button class="${prPlan === monat.id ? '' : 'ghost '}" data-plan="${esc(monat.id)}" aria-pressed="${prPlan === monat.id}" style="flex:1 1 150px;min-height:56px;text-align:left">${esc(t('pr_plan_month'))}<br><b>${esc(fmtCurrency(monat.amount_cents / 100, monat.currency))}</b></button>
+          <button class="${prPlan === jahr.id ? '' : 'ghost '}" data-plan="${esc(jahr.id)}" aria-pressed="${prPlan === jahr.id}" style="flex:1 1 150px;min-height:56px;text-align:left">${esc(t('pr_plan_year'))}<br><b>${esc(fmtCurrency(jahr.amount_cents / 100, jahr.currency))}</b>${ersparnis > 0 ? `<br><span style="font-size:13px">${esc(ti('pr_plan_save', { s: fmtCurrency(ersparnis / 100, jahr.currency), m: fmtCurrency(jahr.amount_cents / 1200, jahr.currency) }))}</span>` : ''}</button>
         </div></div>`);
       wahl.querySelectorAll('[data-plan]').forEach((b) => { b.onclick = () => { prPlan = b.dataset.plan; openPremium(); }; });
       body.appendChild(wahl);
