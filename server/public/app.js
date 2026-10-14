@@ -1393,6 +1393,7 @@ async function loadOverview() {
   for (const [id, , , , fn] of schnell) if (fn) head.querySelector('#' + id).onclick = fn;
   head.querySelector('[data-lageteilen]').onclick = () => teileLage();
   feed.appendChild(head);
+  pushHinweis(feed); // Sofort-Alarm aufs Handy anbieten (nur wenn noch nicht an, abweisbar)
   renderVorratsRadar(feed); // im Ausland knapp, bei dir nicht — direkt unter dem Überblick
   zeigeAnzeige('start', feed); // Anzeige (gekennzeichnet) nach Überblick und Radar
   renderLiveOverview(feed, liveNow, liveSoon); // zeitkritisch: laufende/kommende Live-Sessions ganz oben
@@ -3650,6 +3651,70 @@ function merkeLinkAbsicht() {
   history.replaceState(null, '', location.pathname);
 }
 function leseAbsicht() { try { return JSON.parse(localStorage.getItem('apo_absicht') || 'null'); } catch { return null; } }
+
+// ══ Sofort-Alarm aufs Handy (Web-Push, server/src/services/webPush.js) ═══════
+// Ohne Push kommt ein Engpass-Alarm erst beim nächsten Öffnen an. Mit Push
+// klingelt das Handy, sobald die Behörde einen beobachteten Wirkstoff meldet.
+const pushMoeglich = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const istIphoneOhneApp = () => /iPhone|iPad|iPod/.test(navigator.userAgent) && !(window.navigator.standalone || matchMedia('(display-mode: standalone)').matches);
+const b64uBytes = (s) => { const r = atob(String(s).replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(s.length / 4) * 4, '=')); return Uint8Array.from(r, (c) => c.charCodeAt(0)); };
+async function pushAboHier() {
+  if (!pushMoeglich()) return null;
+  try { const reg = await navigator.serviceWorker.ready; return await reg.pushManager.getSubscription(); } catch { return null; }
+}
+async function pushEinschalten() {
+  const erlaubt = await Notification.requestPermission();
+  if (erlaubt !== 'granted') throw new Error(t('push_blockiert'));
+  const { schluessel } = await api('GET', '/api/push');
+  const reg = await navigator.serviceWorker.ready;
+  const abo = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uBytes(schluessel) });
+  return api('POST', '/api/push/abo', { abo: abo.toJSON ? abo.toJSON() : abo });
+}
+async function pushAusschalten() {
+  const abo = await pushAboHier();
+  if (abo) { await api('POST', '/api/push/abbestellen', { endpoint: abo.endpoint }).catch(() => {}); try { await abo.unsubscribe(); } catch { /* egal */ } }
+}
+function pushKarte() {
+  const c = el(`<div class="card" data-pushkarte><div class="row" style="gap:10px;align-items:flex-start"><span class="karte-ic" aria-hidden="true">${ico('bell', 22)}</span>
+    <div style="flex:1"><b style="font-size:17px">${esc(t('push_titel'))}</b><div class="muted" style="font-size:15px;margin-top:2px">${esc(t('push_sub'))}</div><div data-pushinhalt style="margin-top:10px"></div></div></div></div>`);
+  const inhalt = c.querySelector('[data-pushinhalt]');
+  const zeichne = async () => {
+    inhalt.innerHTML = '';
+    if (!pushMoeglich()) { inhalt.appendChild(el(`<div class="lage-box" data-pushiphone style="margin:0">${esc(istIphoneOhneApp() ? t('push_iphone') : t('push_geht_nicht'))}</div>`)); return; }
+    if (Notification.permission === 'denied') { inhalt.appendChild(el(`<div class="lage-box" data-pushblockiert style="margin:0">${esc(t('push_blockiert'))}</div>`)); return; }
+    const abo = await pushAboHier();
+    if (abo && Notification.permission === 'granted') {
+      const box = el(`<div><div class="ok-box" data-pushan style="padding:8px 12px;margin-bottom:8px">${esc(t('push_an'))}</div>
+        <div class="row" style="gap:8px;flex-wrap:wrap"><button class="small" data-pushtest style="min-height:44px">${esc(t('push_test'))}</button><button class="ghost small" data-pushaus style="min-height:44px">${esc(t('push_aus'))}</button></div><div data-pushmsg style="margin-top:6px;font-size:15px"></div></div>`);
+      const msg = box.querySelector('[data-pushmsg]');
+      box.querySelector('[data-pushtest]').onclick = async () => {
+        msg.textContent = '…';
+        try { const r = await api('POST', '/api/push/test'); msg.textContent = r.ok ? t('push_test_ok') : t('push_test_fehler'); } catch (e) { msg.textContent = e.message; }
+      };
+      box.querySelector('[data-pushaus]').onclick = async () => { await pushAusschalten(); zeichne(); };
+      inhalt.appendChild(box);
+      return;
+    }
+    const knopf = el(`<div><button data-pushan-knopf style="min-height:48px;font-weight:700">${esc(t('push_einschalten'))}</button><div class="err" data-pusherr></div></div>`);
+    knopf.querySelector('[data-pushan-knopf]').onclick = async () => {
+      try { await pushEinschalten(); zeichne(); } catch (e) { knopf.querySelector('[data-pusherr]').textContent = e.message || t('push_geht_nicht'); }
+    };
+    inhalt.appendChild(knopf);
+  };
+  zeichne();
+  return c;
+}
+// Startseite: einmal anbieten, solange auf diesem Gerät noch nicht eingeschaltet.
+async function pushHinweis(feed) {
+  try { if (localStorage.getItem('apo_push_spaeter')) return; } catch { /* ohne Speicher: anbieten */ }
+  if (pushMoeglich() && Notification.permission === 'denied') return;
+  if (pushMoeglich() && (await pushAboHier()) && Notification.permission === 'granted') return;
+  const k = pushKarte();
+  k.querySelector('[data-pushinhalt]').after(el(`<button class="linklike small" data-pushspaeter style="margin-top:8px">${esc(t('push_spaeter'))}</button>`));
+  k.querySelector('[data-pushspaeter]').onclick = () => { try { localStorage.setItem('apo_push_spaeter', '1'); } catch { /* egal */ } k.remove(); };
+  const anker = feed.querySelector('.card');
+  if (anker) anker.after(k); else feed.appendChild(k);
+}
 
 // ══ Rechnungen für Tarife (server/src/services/rechnungen.js) ════════════════
 // Firmen brauchen eine Rechnung — auch nach Krypto-Zahlung — und zahlen oft
@@ -8778,6 +8843,7 @@ async function showNotifications() {
     <div id="notiflist" style="margin-top:8px"></div>
     <div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap"><button class="small" id="readall">${esc(t('notif_readall'))}</button>${d.notifications.some(n=>n.read)?`<button class="ghost small" id="clearread">${esc(t('notif_clearread'))}</button>`:''}<button class="ghost small" id="notifsettings">${esc(t('np_open'))}</button></div></div>`);
   app.appendChild(head);
+  head.after(pushKarte()); // Sofort-Alarm aufs Handy: Einschalten, Test, Ausschalten
   const list = head.querySelector('#notiflist');
   if (!showFilter) notifFilter = 'all';
   const matchesCat = (n) => notifFilter === 'all' || (notifFilter === 'procurement' ? NOTIF_PROCUREMENT.has(n.type) : !NOTIF_PROCUREMENT.has(n.type));

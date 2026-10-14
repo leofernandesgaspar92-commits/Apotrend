@@ -127,6 +127,15 @@ bekommen Kund:innen nach jeder Zahlung — auch Krypto — eine Rechnung. Mit zu
 verbucht den Eingang in der Prüfliste. Umsatzsteuer über `APOPULSE_UST_SATZ` (mit der
 Steuerberatung festlegen). Einzelheiten: `docs/RECHNUNGEN.md`.
 
+## Sofort-Alarm aufs Handy (Web-Push)
+
+Funktioniert ohne Einrichtung. **Empfohlen:** einmal feste Schlüssel erzeugen
+(`npm run vapid-schluessel`) und `APOPULSE_VAPID_PUBLIC_KEY` / `APOPULSE_VAPID_PRIVATE_KEY`
+in Render setzen (privater Schlüssel = wie ein Passwort). Ohne feste Schlüssel erzeugt der
+Server selbst welche und sichert sie mit dem Datenstand — gehen die Daten verloren, müssen alle
+Geräte den Alarm neu einschalten. iPhone: nur als App vom Home-Bildschirm (iOS 16.4+).
+Einzelheiten: `docs/PUSH.md`.
+
 ## Datenspeicherung (Persistenz)
 
 Der Server kann seinen kompletten Zustand als **JSON-Snapshot** auf die Platte

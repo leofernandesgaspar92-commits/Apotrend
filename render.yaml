@@ -120,6 +120,11 @@ services:
       # Business-Tarif mit Daten-Schnittstelle, z. B. "monat:99,jahr:990" (EUR). Leer = Startpreise.
       - key: APOPULSE_PREISE_BUSINESS
         sync: false
+      # Web-Push (Engpass-Alarm aufs Handy). Erzeugen mit: npm run vapid-schluessel
+      - key: APOPULSE_VAPID_PUBLIC_KEY
+        sync: false
+      - key: APOPULSE_VAPID_PRIVATE_KEY
+        sync: false
       # PORT wird von Render automatisch gesetzt — der Server liest process.env.PORT.
     # Dauerhafte Platte (nur Bezahltarif). Zum Aktivieren einkommentieren:
     # disk:

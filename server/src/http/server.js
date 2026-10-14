@@ -44,6 +44,7 @@ import { createSortiment } from '../services/sortiment.js';
 import { vorratsRadar } from '../services/radar.js';
 import { teilseite } from './teilseite.js';
 import { createAnzeigen } from '../services/anzeigen.js';
+import { createWebPush, pushNachricht, testNachricht, PUSH_TYPEN } from '../services/webPush.js';
 import { createRechnungsnummern } from '../services/rechnungsnummern.js';
 import { createRechnungen } from '../services/rechnungen.js';
 import { createDatenApi, zugangPruefen, engpassZeile, fuerSchnittstelle, alsCsv } from '../services/datenApi.js';
@@ -132,7 +133,32 @@ const socialRepo = createSocialRepo();
 // Moderatoren = Redaktions-/Admin-Konten (Profil-Flag is_editorial).
 const social = createSocialService(socialRepo, repo, {
   isModerator: (userId) => { const p = socialRepo.getProfileByUserId(userId); return !!(p && p.is_editorial); },
+  // Engpass-Meldungen zusätzlich als Push aufs Handy (services/webPush.js).
+  nachBenachrichtigung: (n) => { if (PUSH_TYPEN.has(n.type)) pushAn(n.userId, n); },
 });
+// ── Web-Push (Engpass-Alarm aufs Handy) ─────────────────────────────────────
+//  Schlüssel fest aus der Umgebung (empfohlen) — sonst einmal erzeugt und mit
+//  der Sicherung gespeichert. Wechselt der Schlüssel, sind alle Abos wertlos.
+const vapidAusUmgebung = !!(process.env.APOPULSE_VAPID_PUBLIC_KEY && process.env.APOPULSE_VAPID_PRIVATE_KEY);
+const webPush = createWebPush({
+  ...(vapidAusUmgebung ? { schluessel: { publicKey: process.env.APOPULSE_VAPID_PUBLIC_KEY.trim(), privateKey: process.env.APOPULSE_VAPID_PRIVATE_KEY.trim() } } : {}),
+  ausUmgebung: vapidAusUmgebung,
+  subject: String(process.env.APOPULSE_PUBLIC_URL || 'https://www.apopulse.com').replace(/\/+$/, ''),
+  // Nur für Tests: lokaler nachgestellter Push-Dienst.
+  lokalErlaubt: process.env.APOPULSE_PUSH_LOKAL_ERLAUBT === '1',
+});
+function pushSprache(userId) {
+  const p = social.getProfile(userId);
+  const cc = String((p && p.country) || '').toUpperCase();
+  return (COUNTRIES[cc] && COUNTRIES[cc].locale_default) || 'de';
+}
+function pushAn(userId, n) {
+  if (!webPush.geraete(userId)) return;
+  const sprache = pushSprache(userId);
+  const landName = (c) => { try { return new Intl.DisplayNames([sprache], { type: 'region' }).of(c) || c; } catch { return c; } };
+  const msg = pushNachricht(n, { sprache, landName });
+  if (msg) webPush.senden(userId, msg).then(() => saveSoon()).catch(() => {});
+}
 // ── Referenzdaten: standardmaessig AUS ──────────────────────────────────────
 //  Owner-Entscheidung vom 04.10.2026: „Keine Beispieldaten." Die kuratierten
 //  Referenzdaten (Engpaesse, Preise, Rabatte) erscheinen deshalb nicht mehr im
@@ -286,6 +312,7 @@ function applySnapshot(snap) {
   eigeneQuellen.__load(snap.eigeneQuellen);
   wochenbericht.__load(snap.wochenbericht);
   rechnungsnummern.__load(snap.rechnungsnummern);
+  webPush.__load(snap.webPush);
   anzeigen.__load(snap.anzeigen);
   rechnungen.__load(snap.rechnungen);
   datenApi.__load(snap.datenApi);
@@ -340,6 +367,7 @@ function collectSnapshot() {
     wochenbericht: wochenbericht.__dump(),
     anzeigen: anzeigen.__dump(),
     rechnungsnummern: rechnungsnummern.__dump(),
+    webPush: webPush.__dump(),
     rechnungen: rechnungen.__dump(),
     datenApi: datenApi.__dump(),
   };
@@ -1683,9 +1711,19 @@ const routes = [
     // die Loeschung „ok" meldet — die teuerste Art von halber Arbeit.
     logistikRepo.purgeUser(userId);
     datenApi.nutzerEntfernen(userId); // Schnittstellen-Schlüssel gelten sonst weiter
+    webPush.nutzerEntfernen(userId); // keine Alarme mehr an Geräte eines gelöschten Kontos
     rechnungen.nutzerEntfernen(userId); // Angaben weg; ausgestellte Rechnungen bleiben (Aufbewahrungspflicht)
     repo.deleteUser(userId);
     return { ok: true };
+  }],
+
+  // ── Web-Push (services/webPush.js) ──
+  ['GET', /^\/api\/push$/, true, async ({ userId }) => ({ schluessel: webPush.oeffentlicherSchluessel(), geraete: webPush.geraete(userId) })],
+  ['POST', /^\/api\/push\/abo$/, true, async ({ userId, body }) => webPush.abonnieren(userId, body.abo)],
+  ['POST', /^\/api\/push\/abbestellen$/, true, async ({ userId, body }) => webPush.abbestellen(userId, body.endpoint)],
+  ['POST', /^\/api\/push\/test$/, true, async ({ userId }) => {
+    if (!webPush.geraete(userId)) throw new AppError('push_kein_geraet', 'Auf diesem Konto ist noch kein Gerät für Benachrichtigungen eingerichtet.', 409);
+    return { ...(await webPush.senden(userId, testNachricht(pushSprache(userId)))), geraete: webPush.geraete(userId), __sichern: true };
   }],
 
   // ── Rechnungen für Tarife (services/rechnungen.js) ──
@@ -2086,6 +2124,7 @@ const routes = [
       ki: aiKonfiguration() ? 'aktiv' : 'aus',
       // Wachstum und Werbung auf einen Blick: Aufrufe geteilter Links, Anzeigen.
       teilen: { aufrufe_7: teilAufrufeLetzte(7) },
+      push: webPush.stand(),
       anzeigen: { laufend: anzeigen.alleLaufenden(userId).filter((k) => k.zustand === 'laeuft').length, zur_pruefung: anzeigen.zurPruefung(userId).length },
     };
   }],

@@ -22,6 +22,9 @@ export function createSocialService(social, foundationRepo, options = {}) {
   // Wer darf moderieren (Reports bearbeiten, fremde Inhalte entfernen)? Bewusst
   // injiziert — eine echte Plattform-Moderator-Rolle ist noch nicht modelliert.
   const isModerator = options.isModerator || (() => false);
+  // Haken nach einer neuen Benachrichtigung (z. B. Web-Push aufs Handy).
+  // Fehler darin halten die Benachrichtigung in der App nicht auf.
+  const nachBenachrichtigung = options.nachBenachrichtigung || null;
 
   function requireUser(userId) {
     const u = foundationRepo.getUserById(userId);
@@ -813,7 +816,9 @@ export function createSocialService(social, foundationRepo, options = {}) {
     pushNotification({ userId, type, actorUserId = null, refType = null, refId = null, label = null }) {
       if (!userId || userId === actorUserId) return null;
       if (!notifAllowed(userId, type)) return null; // vom Empfänger deaktivierte Kategorie
-      return social.createNotification({ userId, type, actorUserId, refType, refId, label });
+      const n = social.createNotification({ userId, type, actorUserId, refType, refId, label });
+      if (n && nachBenachrichtigung) { try { nachBenachrichtigung({ userId, type, refType, refId, label }); } catch { /* Push darf nichts aufhalten */ } }
+      return n;
     },
     // ── Benachrichtigungs-Einstellungen ──
     notifCategories() { return NOTIF_CATEGORIES.slice(); },

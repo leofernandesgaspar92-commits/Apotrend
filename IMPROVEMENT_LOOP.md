@@ -2406,3 +2406,32 @@ Browser-Audit „Rechnungen".
 
 **Gegenproben (jede schlägt an):** getrennte Zähler; Empfänger nicht festgeschrieben; Beleg ohne
 bestätigte Zahlung; Nummernreihe nicht gesichert; Anzeigen-Krypto wieder netto.
+
+### Cycle · Sofort-Alarm aufs Handy (Web-Push) (2026-10-14)
+
+**Kundensicht:** Der Alarm „Amoxicillin ist laut BASG knapp" war nur so schnell wie das nächste
+Öffnen der App. Der Informationsvorsprung — vor allen anderen nachbestellen — braucht ein Handy,
+das sich meldet, auch wenn ApoPulse zu ist.
+
+**WORK.**
+- `services/webPush.js` nur mit Node-Bordmitteln: VAPID (RFC 8292, ES256), Verschlüsselung
+  RFC 8291 (aes128gcm), Abos mit Prüfung (nur https + bekannte Push-Dienste, gültige Schlüssel),
+  Löschen bei 404/410, höchstens 10 Geräte, Gerät wandert beim Kontowechsel, Sicherung der
+  Schlüssel (oder fest aus der Umgebung), Texte in der Sprache der Person.
+- Haken `nachBenachrichtigung` in `social.js`: nur `shortage_home`, `shortage_ended`,
+  `shortage_abroad`, `watch_alert` gehen als Push; abgeschaltete Kategorien bleiben still.
+- Service Worker: `push` (Anzeige) und `notificationclick` (nur eigene Seite öffnen).
+- Oberfläche: Karte „Sofort-Alarm aufs Handy" auf der Startseite (abweisbar) und unter Meldungen
+  (Test senden, Ausschalten); iPhone ohne Home-Bildschirm-App bekommt die Anleitung statt eines
+  Knopfs. `npm run vapid-schluessel`, `docs/PUSH.md`, Render-Variablen.
+
+**Tests.** `web-push.test.js`: Verschlüsselung **gleich dem Prüfvektor aus RFC 8291**, Entschlüsselung
+durch ein nachgebildetes Gerät, VAPID-Signatur mit dem öffentlichen Schlüssel geprüft, Abo-Regeln
+(auch `https://evil.example/fcm.googleapis.com` und Metadaten-Adresse abgelehnt), Versand/410/
+Gerätewechsel/Sicherung; echter Server mit nachgestelltem Push-Dienst: Test-Push, neuer
+BASG-Engpass → verschlüsselter Push „Engpass: Amoxicillin … Österreich", 410 → Gerät entfernt.
+Browser-Audit „Push".
+
+**Gegenproben (jede schlägt an):** Dienst-Liste weg; abgelaufene Abos bleiben; Haken nicht
+verdrahtet; falscher Info-Text der Verschlüsselung; Schlüssel nicht gesichert; iPhone ohne
+Anleitung.

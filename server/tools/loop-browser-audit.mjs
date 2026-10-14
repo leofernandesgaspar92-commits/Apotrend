@@ -1698,6 +1698,63 @@ async function main() {
     await ctx.close();
   }
 
+  // ── Sofort-Alarm aufs Handy (Web-Push) ────────────────────────────────────
+  //  Ein echtes Abo legt der Prüf-Browser nicht an (kein Push-Dienst) — die
+  //  Browser-Schnittstelle wird nachgebildet, der Server prüft das Abo echt.
+  //  Dazu: iPhone ohne Home-Bildschirm-App bekommt die Anleitung statt eines
+  //  Knopfs, der nichts tut.
+  {
+    const { createECDH, randomBytes } = await import('node:crypto');
+    const ua = createECDH('prime256v1'); ua.generateKeys();
+    const abo = { endpoint: 'https://fcm.googleapis.com/fcm/send/audit-' + Date.now(), keys: { p256dh: ua.getPublicKey().toString('base64url'), auth: randomBytes(16).toString('base64url') } };
+    const neu = await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Push Audit', email: `push_${Date.now().toString(36)}@ex.com`, password: 'Passwort123!', accountType: 'pharmacy', country: 'AT' }) });
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    await page.addInitScript(([t, a]) => {
+      localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1');
+      let erlaubnis = 'default'; let aktiv = null;
+      Object.defineProperty(Notification, 'permission', { get: () => erlaubnis, configurable: true });
+      Notification.requestPermission = async () => { erlaubnis = 'granted'; return erlaubnis; };
+      PushManager.prototype.subscribe = async function () { aktiv = { ...a, toJSON: () => a, unsubscribe: async () => { aktiv = null; return true; } }; return aktiv; };
+      PushManager.prototype.getSubscription = async function () { return aktiv; };
+    }, [neu && neu.token, abo]);
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(900);
+    if (!(await page.locator('#feed [data-pushkarte] [data-pushan-knopf]').count())) findings.push('Push: Startseite bietet den Sofort-Alarm nicht an');
+    await page.evaluate(() => showNotifications()); await page.waitForTimeout(800);
+    const knopf = page.locator('[data-pushkarte] [data-pushan-knopf]');
+    if (!(await knopf.count())) findings.push('Push: Meldungen-Seite ohne Einschalten-Knopf');
+    else {
+      await knopf.click(); await page.waitForTimeout(800);
+      if (!(await page.locator('[data-pushkarte] [data-pushan]').count())) findings.push('Push: nach dem Einschalten kein „Eingeschaltet"');
+      const st = await page.evaluate(() => fetch('/api/push', { headers: { authorization: 'Bearer ' + localStorage.getItem('apo_token') } }).then((r) => r.json()));
+      if (st.geraete !== 1) findings.push(`Push: Server kennt das Gerät nicht (${st.geraete})`);
+      await page.click('[data-pushkarte] [data-pushaus]'); await page.waitForTimeout(800);
+      const st2 = await page.evaluate(() => fetch('/api/push', { headers: { authorization: 'Bearer ' + localStorage.getItem('apo_token') } }).then((r) => r.json()));
+      if (st2.geraete !== 0) findings.push('Push: Ausschalten meldet das Gerät nicht ab');
+    }
+    // „Nicht jetzt" auf der Startseite wirkt dauerhaft.
+    await page.evaluate(() => mainScreen()); await page.waitForTimeout(900);
+    const spaeter = page.locator('#feed [data-pushspaeter]');
+    if (await spaeter.count()) {
+      await spaeter.click(); await page.reload({ waitUntil: 'networkidle' }); await page.waitForTimeout(900);
+      if (await page.locator('#feed [data-pushkarte]').count()) findings.push('Push: „Nicht jetzt" wirkt nicht — Karte kommt wieder');
+    } else findings.push('Push: „Nicht jetzt" fehlt auf der Startseite');
+    for (const f of fehler) findings.push('Push: JS-Fehler ' + f);
+    await ctx.close();
+
+    const iphone = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1' });
+    const ip = await iphone.newPage();
+    await ip.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); delete window.PushManager; }, neu && neu.token);
+    await ip.goto(BASE, { waitUntil: 'networkidle' }); await ip.waitForTimeout(600);
+    await ip.evaluate(() => showNotifications()); await ip.waitForTimeout(700);
+    const hinweis = await ip.locator('[data-pushkarte] [data-pushiphone]').innerText().catch(() => '');
+    if (!/Home-Bildschirm/.test(hinweis)) findings.push(`Push: iPhone ohne App bekommt keine Anleitung (${hinweis.slice(0, 60)})`);
+    if (await ip.locator('[data-pushkarte] [data-pushan-knopf]').count()) findings.push('Push: iPhone ohne App sieht einen Knopf, der nicht gehen kann');
+    await iphone.close();
+    if (!findings.some((f) => f.startsWith('Push'))) console.log('✓ Push: Startseite bietet an, Einschalten → Server kennt Gerät → Ausschalten meldet ab; „Nicht jetzt" bleibt; iPhone bekommt Anleitung');
+  }
+
   // ── Registrierung im Browser: kurz, und ein Fehler verbrennt nichts ──────
   //  Bis 10/2026: sechs Felder (Pflicht-@Handle, Land doppelt), zwei Formulare
   //  untereinander — und ein vergebener Handle machte die E-Mail unbrauchbar.

@@ -18,7 +18,8 @@
     "check:checkout": "node tools/build-checkout-demo.mjs --check && node tools/check-checkout-demo.mjs",
     "verify:qr": "node tools/verify-qr.mjs",
     "db:setup": "node tools/db-setup.mjs",
-    "db:studio": "prisma studio --schema prisma/schema.prisma"
+    "db:studio": "prisma studio --schema prisma/schema.prisma",
+    "vapid-schluessel": "node tools/vapid-schluessel.mjs"
   },
   "dependencies": {
     "@prisma/client": "6.19.3"

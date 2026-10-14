@@ -50,3 +50,27 @@ self.addEventListener('fetch', (e) => {
     }
   })());
 });
+
+// ── Web-Push: Engpass-Alarm, auch wenn ApoPulse geschlossen ist ──────────────
+//  Der Server (services/webPush.js) schickt verschlüsselt; der Browser
+//  entschlüsselt, hier wird nur angezeigt. Nur Meldungen mit Quelle
+//  (Engpass, wieder lieferbar, Frühwarnung, Meldung aus Apotheken).
+self.addEventListener('push', (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch { d = { titel: 'ApoPulse', text: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.titel || 'ApoPulse', {
+    body: d.text || '', tag: d.tag || undefined, renotify: !!d.tag,
+    icon: '/icon-192.png', badge: '/icon-192.png', data: { url: d.url || '/' },
+  }));
+});
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  // Nur Ziele der eigenen Seite öffnen.
+  const ziel = new URL((e.notification.data && e.notification.data.url) || '/', self.location.origin);
+  const url = ziel.origin === self.location.origin ? ziel.href : self.location.origin + '/';
+  e.waitUntil((async () => {
+    const fenster = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const f of fenster) { if ('focus' in f) { await f.focus(); if ('navigate' in f) return f.navigate(url); return; } }
+    return self.clients.openWindow(url);
+  })());
+});
