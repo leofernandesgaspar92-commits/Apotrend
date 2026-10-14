@@ -167,3 +167,12 @@ Jetzt (`server/src/domain/bilder.js`):
 - Der **Datenexport** enthält weiterhin die Bilder selbst, keine Verweise auf diesen Server.
 
 Geprüft durch `server/test/bilder.test.js` und den Browser-Audit-Block „Bilder".
+
+## Datumsformat
+
+Datumsangaben folgen dem Land der Ansicht (`REGIONAL_TAGS` in `server/public/app.js`), z. B. `en-UG`,
+`en-TZ`, `en-ZM`. **Äthiopien nutzt `en-GB`:** `en-ET` kennt die Datums-Bibliothek der Browser nicht,
+sie fällt still auf US-Englisch zurück (Monat vor Tag). Allgemein gilt: Löst der Browser eine
+Kennung nicht genau auf, nimmt die App das Standardformat der Sprache (en-GB, pt-PT, de-AT) statt
+eines vertauschten Datums. Geprüft durch `server/test/datumsformat.test.js`: Jedes Land muss in
+der Tabelle stehen, und außer den USA bekommt kein Land Monat vor Tag.

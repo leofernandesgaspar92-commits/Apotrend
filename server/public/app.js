@@ -112,13 +112,32 @@ const REGIONAL_TAGS = {
   AT:'de-AT', DE:'de-DE', CH:'de-CH', LI:'de-CH',
   GB:'en-GB', US:'en-US', CA:'en-CA', AU:'en-AU', ZA:'en-ZA', NG:'en-NG', KE:'en-KE', GH:'en-GH',
   PT:'pt-PT', BR:'pt-BR', AO:'pt-AO', MZ:'pt-MZ',
+  UG:'en-UG', TZ:'en-TZ', ZM:'en-ZM', ZW:'en-ZW', RW:'en-RW', BW:'en-BW', NA:'en-NA', MW:'en-MW',
+  SL:'en-SL', LR:'en-LR', GM:'en-GM',
+  // Äthiopien: „en-ET" gibt es in der Datums-Bibliothek der Browser nicht —
+  // sie fällt still auf „en" (USA) zurück, aus dem 4. März würde 03/04.
+  // In Äthiopien schreibt man Tag/Monat (gregorianisch) wie in Großbritannien.
+  ET:'en-GB',
 };
+// Kennt der Browser eine Kennung nicht, fällt Intl STILL auf die bloße Sprache
+// zurück — bei Englisch also aufs US-Format (Monat/Tag). supportedLocalesOf
+// meldet solche Kennungen trotzdem als „unterstützt"; verlässlich ist nur,
+// welche Kennung tatsächlich aufgelöst wird. Dann lieber das Sprach-Standard-
+// format (en-GB, pt-PT, de-AT) als ein vertauschtes Datum.
+const _tagAufgeloest = {};
+function tagBekannt(tag) {
+  if (!(tag in _tagAufgeloest)) {
+    try { _tagAufgeloest[tag] = new Intl.DateTimeFormat(tag).resolvedOptions().locale.toLowerCase() === tag.toLowerCase(); }
+    catch { _tagAufgeloest[tag] = false; }
+  }
+  return _tagAufgeloest[tag];
+}
 // Wichtig: nur übernehmen, wenn die Kennung zur AKTIVEN SPRACHE passt. Wer
 // bewusst auf Deutsch bleibt und die US-Ansicht öffnet, will weiterhin
 // deutsche Datums- und Zahlenschreibweise sehen — nicht plötzlich 12/31/2026.
 function bcp47() {
   const tag = REGIONAL_TAGS[typeof viewCountry === 'function' ? viewCountry() : 'AT'];
-  return (tag && tag.indexOf(LOCALE + '-') === 0) ? tag : t('_bcp47');
+  return (tag && tag.indexOf(LOCALE + '-') === 0 && tagBekannt(tag)) ? tag : t('_bcp47');
 }
 
 // ── Landesübliche Fachbegriffe ──────────────────────────────────────────────
@@ -2390,12 +2409,24 @@ function renderProfileNudge(feed) {
   feed.appendChild(card);
 }
 
+// Kurz geteilte Nachrichten-Abfrage: Inline-Karten und Seitenleiste fragten
+// beim Start dieselbe Liste zweimal ab — doppelte Daten im Mobilnetz.
+let _newsKurz = null;
+function newsKurz() {
+  const land = viewCountry();
+  if (!_newsKurz || _newsKurz.land !== land || Date.now() - _newsKurz.zeit > 10000) {
+    const p = api('GET', '/api/news?country=' + land);
+    _newsKurz = { land, zeit: Date.now(), p };
+    p.catch(() => { if (_newsKurz && _newsKurz.p === p) _newsKurz = null; });
+  }
+  return _newsKurz.p;
+}
 // News-Karten inline in „Für dich" — nur auf schmalen Screens (Handy), wo die feste
 // Seitenleiste nicht sichtbar ist. Gleiche 𝕏-Karten-Optik wie der Livestream links.
 async function renderNewsInline(feed) {
   if (window.matchMedia('(min-width:1280px)').matches) return; // breit: rechte Spalte zeigt News
   let d;
-  try { d = await api('GET', '/api/news?country=' + viewCountry()); } catch { return; }
+  try { d = await newsKurz(); } catch { return; }
   const top = ((d && d.posts) || []).slice(0, 3);
   if (!top.length) return;
   const card = el(`<div class="card news-inline">
@@ -2419,7 +2450,7 @@ async function refreshNewsRail() {
   const rail = document.getElementById('newsRail');
   if (!rail || !rail.classList.contains('on')) return;
   let posts = [];
-  try { const d = await api('GET', '/api/news?country=' + viewCountry()); posts = (d && d.posts) || []; }
+  try { const d = await newsKurz(); posts = (d && d.posts) || []; }
   catch { return; } // still: bestehende Liste stehen lassen
   const top = posts.slice(0, 8);
   const firstLoad = newsRailSeen === null;
@@ -2436,7 +2467,7 @@ async function refreshNewsRail() {
   }).join('');
   newsRailSeen = new Set(top.map(p => p.id));
   rail.innerHTML = `
-    <div class="nr-head"><span class="nr-live" aria-hidden="true"></span>${esc(t('nr_title'))}<span class="nr-clock">${esc(new Date().toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' }))}</span></div>
+    <div class="nr-head"><span class="nr-live" aria-hidden="true"></span>${esc(t('nr_title'))}<span class="nr-clock">${esc(new Date().toLocaleTimeString(bcp47(), { hour: '2-digit', minute: '2-digit' }))}</span></div>
     ${items || `<div class="muted" style="font-size:13px;padding:8px 4px">${esc(t('nw_empty'))}</div>`}`;
   rail.querySelectorAll('[data-openpost]').forEach(b => b.onclick = () => openPost(b.dataset.openpost));
 }
@@ -3175,7 +3206,7 @@ async function buildCurrencyConverter(box) {
       <button class="ghost small" data-swap title="${esc(t('cc_swap'))}" aria-label="${esc(t('cc_swap'))}">⇅</button>
     </div>
     <div data-res style="font-weight:700;font-size:18px;margin-top:8px"></div>
-    <div class="muted" style="font-size:12px;margin-top:2px">${esc(ti('cc_updated', { date: data.updated_at ? new Date(data.updated_at).toLocaleDateString() : '—' }))} · open.er-api.com</div>`;
+    <div class="muted" style="font-size:12px;margin-top:2px">${esc(ti('cc_updated', { date: data.updated_at ? new Date(data.updated_at).toLocaleDateString(bcp47()) : '—' }))} · open.er-api.com</div>`;
   const amt = box.querySelector('[data-amt]'), from = box.querySelector('[data-from]'), to = box.querySelector('[data-to]'), res = box.querySelector('[data-res]');
   const fmt = (n) => n.toLocaleString(LOCALE === 'en' ? 'en-GB' : LOCALE === 'pt' ? 'pt-PT' : 'de-AT', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
   const recompute = () => {

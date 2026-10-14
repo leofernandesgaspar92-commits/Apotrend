@@ -2652,3 +2652,19 @@ echter Server: Feed ohne data:image und < 30 KB, Bild 200 + immutable + 304, Pro
 zurück speichern, Export mit Bild). Browser-Audit „Bilder" (Bild per Adresse sichtbar, lazy).
 
 **Gegenproben (jede schlägt an):** ohne Ersetzer; Export ersetzt; keine Auflösung in `cleanImage`.
+
+### Cycle · Datumsformat in Afrika + Datenmessung (2026-10-14)
+
+**Messung.** Erster Besuch 306 KB (app.js 181, i18n.js 102 gzip), erneutes Öffnen 4 KB
+(Service Worker + ETag). Bild-Uploads werden schon auf dem Gerät verkleinert. Nachrichten wurden
+beim Start zweimal geladen → gemeinsame Abfrage (`newsKurz`, 10 s).
+
+**Befund.** Die 12 neuen Länder fehlten in `REGIONAL_TAGS`. Schwerer: `en-ET` löst in ICU auf `en`
+(USA) auf. Ein Eintrag „ET:'en-ET'" hätte Äthiopien Monat-vor-Tag gezeigt, und
+`supportedLocalesOf` meldet die Kennung trotzdem als unterstützt.
+
+**WORK.** Tabelle ergänzt (ET → en-GB). `bcp47()` nimmt eine Länderkennung nur, wenn
+`resolvedOptions().locale` sie genau so auflöst. Zwei Stellen ohne Landesformat korrigiert.
+
+**Tests.** `datumsformat.test.js` führt die echte `bcp47()` per vm aus: jedes Land in der Tabelle,
+nur die USA mit Monat vor Tag. **Gegenproben:** ET='en-ET' ohne Sicherung → rot; GM vergessen → rot.
