@@ -31,6 +31,7 @@ const TEXTE = {
     lage_apo_beschr: (b) => `davon ${b} von mehreren Apotheken bestätigt · nicht amtlich`,
     quelle: 'Quelle', community: 'gemeldet aus Apotheken, nicht amtlich', referenz: 'Referenzdaten', stand: 'Stand',
     cta_w: (w) => `Kostenlos benachrichtigt werden, wenn sich bei ${w} etwas ändert`,
+    cta_bestaetigen: (w) => `Bei Ihnen auch knapp? ${w} in ApoPulse bestätigen — kostenlos`,
     cta_lage: 'Alle Engpässe mit Quelle ansehen — kostenlos', mehr: 'In ApoPulse: Verlauf, Lage im Ausland, eigene Liste prüfen.',
     marke: 'ApoPulse — Lieferengpässe mit Quelle',
   },
@@ -49,6 +50,7 @@ const TEXTE = {
     lage_apo_beschr: (b) => `${b} of them confirmed by several pharmacies · not official`,
     quelle: 'Source', community: 'reported by pharmacies, not official', referenz: 'reference data', stand: 'As of',
     cta_w: (w) => `Get notified for free when anything changes for ${w}`,
+    cta_bestaetigen: (w) => `Short at your pharmacy too? Confirm ${w} in ApoPulse — free`,
     cta_lage: 'See all shortages with sources — free', mehr: 'In ApoPulse: history, situation abroad, check your own list.',
     marke: 'ApoPulse — medicine shortages with sources',
   },
@@ -67,6 +69,7 @@ const TEXTE = {
     lage_apo_beschr: (b) => `${b} delas confirmadas por várias farmácias · não oficial`,
     quelle: 'Fonte', community: 'comunicado por farmácias, não oficial', referenz: 'dados de referência', stand: 'Atualizado',
     cta_w: (w) => `Receber aviso grátis quando algo mudar em ${w}`,
+    cta_bestaetigen: (w) => `Também em rutura na sua farmácia? Confirme ${w} no ApoPulse — grátis`,
     cta_lage: 'Ver todas as ruturas com fonte — grátis', mehr: 'No ApoPulse: histórico, situação no estrangeiro, verificar a sua lista.',
     marke: 'ApoPulse — ruturas de medicamentos com fonte',
   },
@@ -113,10 +116,15 @@ export function teilseite(d, { basis }) {
     const herkunft = apo || d.herkunft === 'community' ? T.community : d.herkunft === 'reference' ? T.referenz : d.quelle ? `${T.quelle}: ${d.quelle}` : null;
     beschr = [herkunft, d.stand ? `${T.stand}: ${datum(d.stand, d.sprache)}` : null].filter(Boolean).join(' · ') || T.mehr;
     ziel = `/?land=${encodeURIComponent(d.land)}&beobachten=${encodeURIComponent(w)}`;
+    // Noch nicht bestätigte Apotheken-Meldung: Der Knopf bittet um Bestätigung
+    // und führt nach der Anmeldung direkt zur Meldung (dort „Bestätigen").
+    if (apo && d.apotheken < BESTAETIGT_AB_APOTHEKEN) { d.bitte = true; ziel += '&bestaetigen=1'; }
   }
+  // Persönlicher Einladungs-Code (services/einladungen.js) — vom Server geprüft.
+  if (d.einladung) ziel += `&e=${encodeURIComponent(d.einladung)}`;
   const url = `${basis}${d.pfad}`;
   const bild = `${basis}/og-bild.png`;
-  const cta = d.art === 'lage' ? T.cta_lage : T.cta_w(d.wirkstoff);
+  const cta = d.art === 'lage' ? T.cta_lage : d.bitte ? T.cta_bestaetigen(d.wirkstoff) : T.cta_w(d.wirkstoff);
   return `<!DOCTYPE html>
 <html lang="${esc(d.sprache)}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(titel)} · ApoPulse</title>

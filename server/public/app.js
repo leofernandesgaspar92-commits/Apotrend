@@ -499,7 +499,7 @@ let myBookmarks = new Set();
 
 // ── Auth-Flow: ERST Land wählen, DANN anmelden, dann länderspezifische Inhalte ──
 function hideHeaderForAuth() {
-  ['btnLogout','btnNotif','btnDm','btnCart','btnMod','btnHelp','btnWerben','btnDatenApi'].forEach(id => { const b = document.getElementById(id); if (b) b.classList.add('hidden'); });
+  ['btnLogout','btnNotif','btnDm','btnCart','btnMod','btnHelp','btnWerben','btnDatenApi','btnEinladen'].forEach(id => { const b = document.getElementById(id); if (b) b.classList.add('hidden'); });
   const cs = document.getElementById('countrySwitch'); if (cs) cs.classList.add('hidden');
   document.getElementById('whoami').textContent = '';
   document.getElementById('whoami').classList.remove('clickable');
@@ -684,7 +684,8 @@ function authScreen() {
   };
   document.getElementById('rg_go').onclick = async () => {
     try {
-      const d = await api('POST','/api/register',{ name:v('rg_name'), email:v('rg_email'), password:v('rg_pw'), country:(localStorage.getItem('apo_country') || 'AT'), locale:LOCALE, accountType:v('rg_accounttype') });
+      const d = await api('POST','/api/register',{ name:v('rg_name'), email:v('rg_email'), password:v('rg_pw'), country:(localStorage.getItem('apo_country') || 'AT'), locale:LOCALE, accountType:v('rg_accounttype'), einladung: leseEinladung() });
+      try { localStorage.removeItem('apo_einladung'); } catch { /* egal */ }
       // Wiederherstellungscodes einmalig zeigen (zum Sichern), dann in die App.
       if (Array.isArray(d.recovery_codes) && d.recovery_codes.length) recoveryCodesScreen(d.recovery_codes, () => afterAuth(d));
       else afterAuth(d);
@@ -946,6 +947,8 @@ async function mainScreen() {
   if (btnWerben) { btnWerben.classList.toggle('hidden', !featureAn('anzeigen')); btnWerben.onclick = () => openWerbung(); }
   const btnDatenApi = document.getElementById('btnDatenApi');
   if (btnDatenApi) { btnDatenApi.classList.toggle('hidden', !featureAn('daten_api')); btnDatenApi.onclick = () => openDatenApi(); }
+  const btnEinladen = document.getElementById('btnEinladen');
+  if (btnEinladen) { btnEinladen.classList.toggle('hidden', !!(me && me.account_type === 'private')); btnEinladen.onclick = () => openEinladen(); }
   document.getElementById('btnLogout').onclick = async () => { localStorage.removeItem('apo_token'); await offlineSpeicherLeeren(); location.reload(); };
   document.getElementById('btnNotif').onclick = showNotifications;
   // Knöpfe ruhender Bereiche entfernt wendeFeaturesAn() aus der Seite. Beim
@@ -1147,6 +1150,8 @@ async function mainScreen() {
   if (absicht && absicht.beobachten) {
     try { localStorage.removeItem('apo_absicht'); } catch { /* egal */ }
     try { await api('POST', '/api/watchlist', { wirkstoff: absicht.beobachten }); } catch { /* Seite öffnet trotzdem */ }
+    // Gebeten, eine Apotheken-Meldung zu bestätigen: gleich zur Meldung (mit „Bestätigen").
+    if (absicht.bestaetigen) { shortageQuery = absicht.beobachten; goTab('shortages'); return; }
     openWirkstoff(absicht.beobachten);
     return;
   }
@@ -3534,6 +3539,7 @@ function shortageCard(s) {
     ${s.provenance==='community'&&s.status!=='verfuegbar'&&!(me&&me.account_type==='private')?`<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px" data-aktknoepfe>
       ${s.aktualitaet&&s.aktualitaet!=='aktuell'?`<button class="small" data-nochaktuell style="min-height:44px">${esc(t('ak_noch_knapp'))}</button>`:''}
       ${s.is_reporter||s.i_confirmed?`<button class="ghost small" data-wiederlieferbar style="min-height:44px">${esc(t('ak_wieder'))}</button>`:''}</div>`:''}
+    ${s.provenance==='community'&&s.status!=='verfuegbar'&&!s.bestaetigt&&s.aktualitaet!=='veraltet'&&(s.is_reporter||s.i_confirmed)?`<div style="margin-top:8px"><button class="small" data-bestaetigenbitten style="min-height:44px;display:inline-flex;align-items:center;gap:8px">${ico('users', 18)}<span>${esc(t('ei_bitte_btn'))}</span></button><div class="muted" style="font-size:14px;margin-top:4px">${esc(Math.max(1, 3 - (s.apotheken || 1)) === 1 ? t('ei_bitte_hinweis_1') : ti('ei_bitte_hinweis', { n: Math.max(1, 3 - (s.apotheken || 1)) }))}</div></div>`:''}
     <div class="reacts">
       <button data-about>${esc(shortagePostsLabel(s.post_count||0))}</button>
       <button class="ghost" data-postbtn>${esc(t('sc_post_about'))}</button>
@@ -3544,7 +3550,7 @@ function shortageCard(s) {
       ${s.provenance==='community'&&!s.is_reporter&&!(me&&me.account_type==='private')?(s.i_confirmed
         ? `<span style="display:inline-flex;align-items:center;font-weight:700;color:var(--ok-fg)">${esc(t('sc_confd_btn'))}</span><button class="ghost" data-unconfirm>${esc(t('sc_unconfirm_btn'))}</button>`
         : `<button class="ghost" data-confirm>${esc(t('sc_conf_btn'))}</button>`):''}
-      ${s.provenance==='community'&&s.is_reporter&&s.status!=='verfuegbar'?`<button class="ghost" data-resolve>${esc(t('sc_resolve'))}</button>`:''}
+      ${/* „Wieder lieferbar" für Meldende steht schon oben (data-wiederlieferbar) — hier doppelt war verwirrend. */''}
       ${s.provenance==='community'&&s.is_reporter&&s.status!=='verfuegbar'?`<button class="ghost" data-datebtn>${esc(t('sc_setdate'))}</button>`:''}
       ${s.provenance==='community'&&s.is_reporter&&s.status!=='verfuegbar'?`<button class="ghost" data-repstatusbtn>${esc(t('sc_repstatus'))}</button>`:''}
       ${(s.history||[]).length>1?`<button class="ghost" data-hist aria-expanded="false">${esc(t('sc_history'))} (${s.history.length})</button>`:''}
@@ -3710,6 +3716,8 @@ function shortageCard(s) {
     watchBtn.disabled = false;
   };
   // Engpass direkt aus der Liste teilen (Deep-Link zum Wirkstoff) — z.B. an Kolleg:innen.
+  const bitteBtn = card.querySelector('[data-bestaetigenbitten]');
+  if (bitteBtn) bitteBtn.onclick = () => bestaetigungErbitten(s).catch((e) => alert(e.message));
   const shBtn = card.querySelector('[data-share]');
   shBtn.onclick = () => teileWirkstoff(s.wirkstoff); // Teilseite mit Vorschau
   const aboutbox = card.querySelector('[data-aboutbox]');
@@ -3858,14 +3866,55 @@ function merkeLinkAbsicht() {
   const q = new URLSearchParams(location.search);
   const land = (q.get('land') || '').toUpperCase();
   const w = (q.get('beobachten') || '').trim().slice(0, 80);
-  if (!land && !w) return;
+  const e = q.get('e') || '';
+  if (!land && !w && !e) return;
   try {
     if (/^[A-Z]{2}$/.test(land) && !localStorage.getItem('apo_country')) localStorage.setItem('apo_country', land);
-    if (w) localStorage.setItem('apo_absicht', JSON.stringify({ beobachten: w }));
+    // bestaetigen=1: Link aus „Kolleg:innen um Bestätigung bitten" — nach der Anmeldung zur Meldung.
+    if (w) localStorage.setItem('apo_absicht', JSON.stringify({ beobachten: w, bestaetigen: q.get('bestaetigen') === '1' }));
+    // Einladungs-Code (services/einladungen.js) bis zur Registrierung merken.
+    if (/^[A-Za-z0-9_-]{8}$/.test(e) && !localStorage.getItem('apo_token')) localStorage.setItem('apo_einladung', e);
   } catch { /* ohne Speicher: kein Nachholen */ }
   history.replaceState(null, '', location.pathname);
 }
 function leseAbsicht() { try { return JSON.parse(localStorage.getItem('apo_absicht') || 'null'); } catch { return null; } }
+function leseEinladung() { try { return localStorage.getItem('apo_einladung') || null; } catch { return null; } }
+
+// ══ Kolleg:innen einladen (server/src/services/einladungen.js) ═══════════════
+// Ohne Behördenliste (große Teile Afrikas) entsteht die Lage aus Meldungen von
+// Apotheken — „bestätigt" erst ab 3. Eine Apotheke allein bleibt sonst allein.
+// Bewusst ohne Belohnung: Sonst lohnten sich Schein-Apotheken, und die
+// könnten Meldungen „bestätigen".
+let _einladung = null;
+async function meineEinladung(neu = false) {
+  if (!_einladung || neu) _einladung = await api('GET', '/api/einladung');
+  return _einladung;
+}
+const mitEinladung = (url, code) => url + (url.includes('?') ? '&' : '?') + 'e=' + encodeURIComponent(code);
+async function bestaetigungErbitten(s) {
+  const { code } = await meineEinladung();
+  const land = s.country || viewCountry();
+  return teilen({ titel: 'ApoPulse', text: ti('ei_bitte_text', { w: s.wirkstoff, land: landAnzeige(land) }), url: mitEinladung(teilLinkWirkstoff(s.wirkstoff, land), code) });
+}
+async function openEinladen() {
+  setDocTitle(t('ei_titel'));
+  app.innerHTML = '';
+  const back = el(`<div class="row" style="margin-bottom:8px"><button class="ghost small" data-back>${esc(t('gen_back'))}</button></div>`);
+  back.querySelector('[data-back]').onclick = () => mainScreen();
+  app.appendChild(back);
+  const card = el(`<div class="card" data-einladen><h1 style="margin:0 0 4px">${esc(t('ei_titel'))}</h1>
+    <div class="muted" style="font-size:16px;margin-bottom:12px">${esc(t('ei_sub'))}</div>
+    <div data-eibody><div class="loading">…</div></div></div>`);
+  app.appendChild(card);
+  const body = card.querySelector('[data-eibody]');
+  let d;
+  try { d = await meineEinladung(true); } catch (e) { body.innerHTML = ''; body.appendChild(errorState(e.message, openEinladen)); return; }
+  const land = viewCountry();
+  body.innerHTML = `<div class="pv-nutzen">${[['users', 'ei_n1'], ['check', 'ei_n2'], ['shield', 'ei_n3']].map(([ic, k]) => `<div class="pv-nutzen-zeile"><span class="karte-ic" aria-hidden="true">${ico(ic, 20)}</span><div>${esc(t(k))}</div></div>`).join('')}</div>
+    <div style="font-size:17px;margin:14px 0" data-eianzahl><b>${esc(d.beigetreten === 1 ? t('ei_beigetreten_1') : d.beigetreten ? ti('ei_beigetreten', { n: d.beigetreten }) : t('ei_beigetreten_0'))}</b></div>
+    <button data-eiteilen style="width:100%;min-height:52px;font-size:17px">${esc(t('ei_knopf'))}</button>`;
+  body.querySelector('[data-eiteilen]').onclick = () => teilen({ titel: 'ApoPulse', text: ti('ei_text', { land: landAnzeige(land) }), url: mitEinladung(teilLinkLage(land), d.code) });
+}
 
 // ══ Sofort-Alarm aufs Handy (Web-Push, server/src/services/webPush.js) ═══════
 // Ohne Push kommt ein Engpass-Alarm erst beim nächsten Öffnen an. Mit Push
@@ -9046,7 +9095,7 @@ async function showNotifications() {
   setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_home:'🔴', shortage_ended:'✅', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', shortage_abroad:'🌍', shortage_bestaetigt:'🤝', shortage_noch_aktuell:'⏰', premium_ablauf:'⏳', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_home:'🔴', shortage_ended:'✅', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', shortage_abroad:'🌍', shortage_bestaetigt:'🤝', shortage_noch_aktuell:'⏰', einladung:'👥', premium_ablauf:'⏳', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️' };
   app.innerHTML = '';
   const procCount = d.notifications.filter(n => NOTIF_PROCUREMENT.has(n.type)).length;
   const showFilter = d.notifications.length >= 5 && procCount > 0 && procCount < d.notifications.length;
@@ -9092,7 +9141,7 @@ async function showNotifications() {
       </div></div>`);
     row.onclick = () => {
       if (!n.read) { api('POST',`/api/notifications/${n.id}/read`).then(refreshNotifCount).catch(()=>{}); }
-      if (n.type === 'follow' && n.actor) { mainScreen().then(()=>openProfile(n.actor.handle)); }
+      if ((n.type === 'follow' || n.type === 'einladung') && n.actor) { mainScreen().then(()=>openProfile(n.actor.handle)); }
       else if (n.type === 'dm' && n.ref_id) { openDmThread(n.ref_id); }
       else if (n.type === 'exchange_offer' || n.type === 'exchange_want' || n.type === 'watch_offer') {
         mainScreen().then(()=>{ exchangeQuery = (n.label||'').split(/\s+/)[0]; exchangeFilter = n.type==='watch_offer'?'biete':''; exchangeBL=''; tab='exchange';

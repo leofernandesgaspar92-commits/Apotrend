@@ -176,3 +176,24 @@ sie fällt still auf US-Englisch zurück (Monat vor Tag). Allgemein gilt: Löst 
 Kennung nicht genau auf, nimmt die App das Standardformat der Sprache (en-GB, pt-PT, de-AT) statt
 eines vertauschten Datums. Geprüft durch `server/test/datumsformat.test.js`: Jedes Land muss in
 der Tabelle stehen, und außer den USA bekommt kein Land Monat vor Tag.
+
+## Kolleg:innen einladen und um Bestätigung bitten
+
+Ohne Behördenliste entsteht die Lage aus Meldungen von Apotheken. „Bestätigt" ist eine Meldung
+erst ab 3 Apotheken. Eine einzelne Apotheke bleibt sonst allein mit ihrer Meldung.
+
+- **An der eigenen, noch nicht bestätigten Meldung:** Knopf „Ask colleagues to confirm". Er teilt
+  (meist per WhatsApp) die Teilseite der Meldung mit dem persönlichen Einladungs-Code (`?e=…`).
+- **Die Teilseite** bittet in dem Fall ausdrücklich um Bestätigung („Short at your pharmacy too?
+  Confirm … in ApoPulse"). Nach der Registrierung landet die Kollegin direkt bei der Meldung mit
+  „Bestätigen". Ist die Meldung schon bestätigt, entfällt die Bitte.
+- **Menü → „Invite colleagues":** persönlicher Link zur Lage im eigenen Land, mit Zähler, wie viele
+  darüber dazugekommen sind. Die Einladende wird benachrichtigt (Kategorie „Folgen").
+- **Bewusst ohne Belohnung:** Sonst lohnten sich Schein-Apotheken, und die könnten Meldungen
+  „bestätigen". Eine Einladung zählt nicht in der Vertrauensstufe.
+- **Speicherung:** Codes sind zufällig (8 Zeichen), gespeichert und überstehen Neustarts. Sie werden
+  nicht aus dem Token-Geheimnis abgeleitet, damit geteilte Links auch nach einem Schlüsselwechsel
+  gelten. Die Teilseite übernimmt nur einen Code, den der Server kennt. Beim Löschen eines Kontos
+  werden Code und Zuordnungen entfernt.
+
+Geprüft durch `server/test/einladungen.test.js` und den Browser-Audit-Block „Einladen".

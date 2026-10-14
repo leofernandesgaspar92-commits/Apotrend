@@ -2077,6 +2077,73 @@ async function main() {
     await ctx.close();
   }
 
+  // ── Einladen & um Bestätigung bitten: Meldung → WhatsApp-Link → neue Kollegin → „Bestätigen" ──
+  //  Ohne Behördenliste (große Teile Afrikas) zählt jede Apotheke. Geprüft wird
+  //  der ganze Weg, den eine einzelne Meldung bis zur Bestätigung braucht.
+  {
+    const u = Date.now().toString(36);
+    const W = `Oxytocin ${u}`;
+    const regA = await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Kampala Apo', email: `eia_${u}@ex.com`, password: 'Passwort123!', accountType: 'pharmacy', country: 'UG' }) });
+    await api('/api/shortages/report', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + regA.token }, body: JSON.stringify({ wirkstoff: W, bezeichnung: W + ' 10 IU', status: 'kritisch', country: 'UG' }) });
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); localStorage.setItem('apo_ebene_engpaesse', 'land'); }, regA.token);
+    await page.goto(BASE, { waitUntil: 'networkidle' });
+    await reiterOeffnen(page, 'shortages'); await page.waitForTimeout(1500);
+    const knopf = page.locator('[data-bestaetigenbitten]').first();
+    let link = '';
+    if (!(await knopf.count())) findings.push('Einladen: Meldende sieht keinen Knopf „Ask colleagues to confirm"');
+    else {
+      if (!/Ask colleagues to confirm/.test(await knopf.innerText())) findings.push('Einladen: Knopf nicht in Klartext');
+      if ((await knopf.boundingBox()).height < 44) findings.push('Einladen: Knopf kleiner als 44 px');
+      await knopf.click(); await page.waitForTimeout(700);
+      const wa = await page.locator('#teilBlatt a[href^="https://wa.me/"]').getAttribute('href').catch(() => null);
+      if (!wa) findings.push('Einladen: kein WhatsApp-Weg im Teilen-Blatt');
+      else {
+        const text = decodeURIComponent(wa.split('text=')[1] || '');
+        if (!/confirm it on ApoPulse/.test(text)) findings.push('Einladen: Nachricht bittet nicht um Bestätigung');
+        link = (text.match(/https?:\/\/\S+/) || [''])[0];
+        if (!/\/teilen\/w\/UG\/.+[?&]e=[A-Za-z0-9_-]{8}$/.test(link)) findings.push(`Einladen: Link ohne Einladungs-Code (${link.slice(0, 80)})`);
+      }
+    }
+    // Menüpunkt mit Zähler
+    await page.evaluate(() => openEinladen()); await page.waitForTimeout(800);
+    if (!/Nobody has joined through your link yet/.test(await page.locator('[data-einladen]').innerText().catch(() => ''))) findings.push('Einladen: Seite zeigt den Zähler nicht');
+    await ctx.close();
+    if (link) {
+      // Die Kollegin öffnet den Link aus WhatsApp: Teilseite → Knopf → App → Konto anlegen.
+      const ctxB = await browser.newContext({ viewport: { width: 390, height: 844 } });
+      const pb = await ctxB.newPage();
+      pb.on('pageerror', (e) => fehler.push('B: ' + e.message));
+      await pb.addInitScript(() => { localStorage.setItem('apo_welcome_seen', '1'); });
+      await pb.goto(link.replace(/^https?:\/\/[^/]+/, BASE), { waitUntil: 'networkidle' });
+      const cta = pb.locator('a.b');
+      if (!/Confirm .* in ApoPulse/.test(await cta.innerText().catch(() => ''))) findings.push('Einladen: Teilseite bittet nicht um Bestätigung');
+      await cta.click(); await pb.waitForLoadState('networkidle'); await pb.waitForTimeout(600);
+      if (!(await pb.evaluate(() => localStorage.getItem('apo_einladung')))) findings.push('Einladen: App merkt sich den Einladungs-Code nicht');
+      await pb.fill('#rg_name', 'Entebbe Pharmacy'); await pb.fill('#rg_email', `eib_${u}@ex.com`); await pb.fill('#rg_pw', 'Passwort123!');
+      await pb.click('#rg_go'); await pb.waitForTimeout(1400);
+      if (await pb.locator('#rc_done').count()) { await pb.click('#rc_done'); await pb.waitForTimeout(1500); }
+      const karte = pb.locator('[data-shortlist] .card', { hasText: W }).first();
+      if (!(await karte.count())) findings.push('Einladen: Nach der Registrierung nicht bei der Meldung gelandet');
+      else if (!(await karte.locator('[data-confirm]').count())) findings.push('Einladen: Bei der Meldung fehlt „Bestätigen"');
+      else {
+        await karte.locator('[data-confirm]').click(); await pb.waitForTimeout(900);
+        const st = await api('/api/shortages?country=UG', { headers: { authorization: 'Bearer ' + regA.token } });
+        const m = ((st && st.shortages) || []).find((x) => x.wirkstoff === W);
+        if (!m || m.apotheken !== 2) findings.push(`Einladen: Bestätigung kam nicht an (${m && m.apotheken} Apotheken)`);
+      }
+      const ei = await api('/api/einladung', { headers: { authorization: 'Bearer ' + regA.token } });
+      if (!ei || ei.beigetreten !== 1) findings.push(`Einladen: Konto nicht der Einladenden zugeordnet (${ei && ei.beigetreten})`);
+      const nf = await api('/api/notifications', { headers: { authorization: 'Bearer ' + regA.token } });
+      if (!((nf && nf.notifications) || []).some((n) => n.type === 'einladung')) findings.push('Einladen: Einladende wird nicht benachrichtigt');
+      await ctxB.close();
+    }
+    for (const f of fehler) findings.push('Einladen: JS-Fehler ' + f);
+    if (!findings.some((f) => f.startsWith('Einladen'))) console.log('✓ Einladen: „Ask colleagues to confirm" → WhatsApp-Link mit Code → Teilseite „Confirm … in ApoPulse" → Konto → direkt bei der Meldung bestätigt; Einladende sieht 1 neue Kollegin');
+  }
+
   // ── Registrierung im Browser: kurz, und ein Fehler verbrennt nichts ──────
   //  Bis 10/2026: sechs Felder (Pflicht-@Handle, Land doppelt), zwei Formulare
   //  untereinander — und ein vergebener Handle machte die E-Mail unbrauchbar.

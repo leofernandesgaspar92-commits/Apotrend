@@ -54,6 +54,7 @@ import { createWebPush, pushNachricht, testNachricht, PUSH_TYPEN } from '../serv
 import { createRechnungsnummern } from '../services/rechnungsnummern.js';
 import { BESTAETIGT_AB_APOTHEKEN, aktualitaet } from '../services/shortages.js';
 import { createRechnungen } from '../services/rechnungen.js';
+import { createEinladungen, CODE_RE as EINLADUNG_RE } from '../services/einladungen.js';
 import { createDatenApi, zugangPruefen, engpassZeile, fuerSchnittstelle, alsCsv } from '../services/datenApi.js';
 import { werbeplaetzeAusUmgebung, ZIELGRUPPEN } from '../data/werbeplaetze.js';
 import { createOverviewService } from '../services/overview.js';
@@ -213,6 +214,7 @@ const betreiber = {
   ust_satz: Number(process.env.APOPULSE_UST_SATZ) || 0,
 };
 const datenApi = createDatenApi();
+const einladungen = createEinladungen();
 // Eine Rechnungsnummern-Reihe für Anzeigen UND Tarife (lückenlos, eindeutig).
 const rechnungsnummern = createRechnungsnummern();
 const anzeigen = createAnzeigen({
@@ -323,6 +325,7 @@ function applySnapshot(snap) {
   anzeigen.__load(snap.anzeigen);
   rechnungen.__load(snap.rechnungen);
   datenApi.__load(snap.datenApi);
+  einladungen.__load(snap.einladungen);
   // Alte, unbefristete Premium-Freischaltungen aus bezahlten Monats-/Jahres-
   // käufen bekommen ihr Ablaufdatum (services/payments.js, laufzeitenUmstellen).
   const umgestellt = payments.laufzeitenUmstellen();
@@ -377,6 +380,7 @@ function collectSnapshot() {
     webPush: webPush.__dump(),
     rechnungen: rechnungen.__dump(),
     datenApi: datenApi.__dump(),
+    einladungen: einladungen.__dump(),
   };
 }
 let saveTimer = null;
@@ -1207,6 +1211,8 @@ const routes = [
     durability: durabilityReport().level,
   })],
 
+  // Eigener Einladungs-Link (services/einladungen.js). __sichern: Der erste Abruf legt den Code an.
+  ['GET', /^\/api\/einladung$/, true, async ({ userId }) => ({ code: einladungen.code(userId), beigetreten: einladungen.anzahl(userId), __sichern: true })],
   ['POST', /^\/api\/register$/, false, async ({ body }) => {
     const { email, password, displayName, pharmacyName } = body;
     const name = String(body.name || '').trim();
@@ -1231,6 +1237,9 @@ const routes = [
     // Kontotyp bei der Registrierung (Apotheke/Pharma/Behörde/Privat); Fallback Apotheke.
     const accountType = normalizeAccountType(body.accountType);
     const profile = social.createProfile(reg.user.id, { handle, displayName: displayName || name, pharmacyOrgId: reg.organization.id, country, locale, accountType });
+    // Über einen Einladungs-Link gekommen (services/einladungen.js): zuordnen, einladende Person benachrichtigen.
+    const eingeladenVon = einladungen.zuordnen(reg.user.id, body.einladung);
+    if (eingeladenVon) social.einladungAngenommen(eingeladenVon, reg.user.id);
     // recoveryCodes einmalig mitschicken, damit das Frontend sie zum Sichern anzeigen kann.
     return { token: issueToken(reg.user.id), user: reg.user, profile, recovery_codes: reg.recoveryCodes };
   }],
@@ -1754,6 +1763,7 @@ const routes = [
     // die Loeschung „ok" meldet — die teuerste Art von halber Arbeit.
     logistikRepo.purgeUser(userId);
     datenApi.nutzerEntfernen(userId); // Schnittstellen-Schlüssel gelten sonst weiter
+    einladungen.nutzerEntfernen(userId);
     webPush.nutzerEntfernen(userId); // keine Alarme mehr an Geräte eines gelöschten Kontos
     rechnungen.nutzerEntfernen(userId); // Angaben weg; ausgestellte Rechnungen bleiben (Aufbewahrungspflicht)
     repo.deleteUser(userId);
@@ -2625,7 +2635,10 @@ const server = http.createServer(async (req, res) => {
       const tag = new Date().toISOString().slice(0, 10);
       teilAufrufe.set(tag, (teilAufrufe.get(tag) || 0) + 1);
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300' });
-      return res.end(teilseite({ ...d, land: cc, sprache, pfad: pathname }, { basis }));
+      // Einladungs-Code am Link (?e=…) wandert in den Knopf — nur ein bekannter.
+      const e = url.searchParams.get('e');
+      const einladung = e && EINLADUNG_RE.test(e) && einladungen.aufloesen(e) ? e : null;
+      return res.end(teilseite({ ...d, land: cc, sprache, pfad: pathname, einladung }, { basis }));
     }
   }
 

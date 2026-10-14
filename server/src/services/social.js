@@ -38,7 +38,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
   // TRANSAKTIONALE, selbst angestoßene Ereignisse ('appt_*' Videosprechstunde-
   // Status) — die soll niemand versehentlich mit-abschalten.
   const NOTIF_CATEGORY = {
-    follow: 'follows',
+    follow: 'follows', einladung: 'follows',
     comment: 'community', reaction: 'community', mention: 'community', repost: 'community',
     poll_vote: 'community', answer_accepted: 'community', endorsement: 'community', recommendation: 'community',
     dm: 'dm',
@@ -818,6 +818,12 @@ export function createSocialService(social, foundationRepo, options = {}) {
       return posts;
     },
 
+    // ── Benachrichtigungen ──
+    /** Über den eigenen Einladungs-Link ist ein Konto dazugekommen (services/einladungen.js). */
+    einladungAngenommen(vonUserId, neuUserId) {
+      const prof = social.getProfileByUserId(neuUserId);
+      notify(vonUserId, 'einladung', neuUserId, 'profile', prof ? prof.handle : null);
+    },
     // ── Benachrichtigungen ──
     // Öffentliche Benachrichtigung (z.B. vom Austausch-Modul für Matching genutzt).
     pushNotification({ userId, type, actorUserId = null, refType = null, refId = null, label = null }) {

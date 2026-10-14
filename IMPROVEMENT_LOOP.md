@@ -2668,3 +2668,22 @@ beim Start zweimal geladen → gemeinsame Abfrage (`newsKurz`, 10 s).
 
 **Tests.** `datumsformat.test.js` führt die echte `bcp47()` per vm aus: jedes Land in der Tabelle,
 nur die USA mit Monat vor Tag. **Gegenproben:** ET='en-ET' ohne Sicherung → rot; GM vergessen → rot.
+
+### Cycle · Kolleg:innen einladen und um Bestätigung bitten (2026-10-14)
+
+**Warum.** In Afrika gibt es meist keine Behördenliste. „Bestätigt" braucht 3 Apotheken, und es gab
+keinen Weg, Kolleg:innen gezielt dazuzuholen.
+
+**WORK.** `services/einladungen.js`: zufällige, gespeicherte Codes; Zuordnung einmal, nie sich
+selbst; ohne Belohnung. `GET /api/einladung`; Registrierung mit `einladung`; Benachrichtigung
+„einladung". Teilseite: Code in den Knopf (nur bekannte), bei unbestätigter Apotheken-Meldung „Confirm
+… in ApoPulse" + `bestaetigen=1`. App: Knopf „Ask colleagues to confirm" an eigener/bestätigter,
+noch nicht bestätigter Meldung; Menüpunkt mit Zähler; nach der Registrierung direkt zur Meldung.
+Nebenbei: doppelter „Available again"-Knopf für Meldende entfernt (`resolve` = `wieder-lieferbar`).
+
+**Tests.** `einladungen.test.js` (Codes, Zuordnung, Löschen, Speichern; echter Server: Teilseite →
+Registrierung → Benachrichtigung → nach 3 Apotheken keine Bitte mehr → Neustart behält Code).
+Browser-Audit „Einladen": ganzer Weg bis zur Bestätigung.
+
+**Gegenproben (jede schlägt an):** nicht gespeichert; keine Benachrichtigung; Bitte auch bei
+bestätigter Meldung; fremder Code durchgereicht.
