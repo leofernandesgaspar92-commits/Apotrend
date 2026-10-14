@@ -2405,7 +2405,7 @@ const routes = [
 ];
 
 // ── Daten-Schnittstelle: Abfragen mit Schlüssel ─────────────────────────────
-const V1_ENGPASS_SPALTEN = ['wirkstoff', 'wirkstoff_schluessel', 'bezeichnung', 'land', 'status', 'grund', 'gemeldet_am', 'voraussichtlich_bis', 'herkunft', 'quelle'];
+const V1_ENGPASS_SPALTEN = ['wirkstoff', 'wirkstoff_schluessel', 'bezeichnung', 'land', 'status', 'grund', 'gemeldet_am', 'voraussichtlich_bis', 'herkunft', 'quelle', 'bestaetigt_von'];
 const V1_PRUEF_SPALTEN = ['eingabe', 'wirkstoff', 'einstufung', 'status', 'voraussichtlich_bis', 'seit_tagen', 'herkunft', 'quelle', 'ausland'];
 function v1Stand() {
   const job = scheduler.status().find((j) => j.name === 'shortages') || null;

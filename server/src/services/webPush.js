@@ -146,6 +146,7 @@ const TEXTE = {
     shortage_home: (w, l) => [`Engpass: ${w}`, `${w} ist laut Behörde in ${l} knapp. Tippen für Quelle und Verlauf.`],
     shortage_ended: (w, l) => [`Wieder lieferbar: ${w}`, `${w} steht in ${l} nicht mehr auf der Engpassliste.`],
     shortage_abroad: (w, l) => [`Frühwarnung: ${w}`, `${w} ist in ${l} knapp — bei Ihnen noch nicht. Vorrat prüfen.`],
+    shortage_bestaetigt: (w, l, n) => [`Bestätigt: ${w}`, `${n} Apotheken in ${l} melden ${w} als knapp (nicht amtlich).`],
     watch_alert: (w) => [`Meldung aus Apotheken: ${w}`, `Eine Apotheke meldet ${w} als knapp (nicht amtlich).`],
     test: () => ['ApoPulse: Benachrichtigung funktioniert', 'So kommt ein Engpass-Alarm an, auch wenn die App geschlossen ist.'],
   },
@@ -153,6 +154,7 @@ const TEXTE = {
     shortage_home: (w, l) => [`Shortage: ${w}`, `${w} is short in ${l} according to the authority. Tap for source and history.`],
     shortage_ended: (w, l) => [`Available again: ${w}`, `${w} is no longer on the shortage list in ${l}.`],
     shortage_abroad: (w, l) => [`Early warning: ${w}`, `${w} is short in ${l} — not yet in your country. Check your stock.`],
+    shortage_bestaetigt: (w, l, n) => [`Confirmed: ${w}`, `${n} pharmacies in ${l} report ${w} as short (not official).`],
     watch_alert: (w) => [`Pharmacy report: ${w}`, `A pharmacy reports ${w} as short (not official).`],
     test: () => ['ApoPulse: notifications work', 'This is how a shortage alert arrives, even when the app is closed.'],
   },
@@ -160,11 +162,12 @@ const TEXTE = {
     shortage_home: (w, l) => [`Rutura: ${w}`, `${w} está em rutura em ${l} segundo a autoridade. Toque para ver fonte e histórico.`],
     shortage_ended: (w, l) => [`Novamente disponível: ${w}`, `${w} já não consta da lista de ruturas em ${l}.`],
     shortage_abroad: (w, l) => [`Alerta precoce: ${w}`, `${w} está em rutura em ${l} — no seu país ainda não. Verifique o stock.`],
+    shortage_bestaetigt: (w, l, n) => [`Confirmado: ${w}`, `${n} farmácias em ${l} comunicam ${w} em rutura (não oficial).`],
     watch_alert: (w) => [`Comunicação de farmácias: ${w}`, `Uma farmácia comunica ${w} em rutura (não oficial).`],
     test: () => ['ApoPulse: notificações a funcionar', 'É assim que chega um alerta de rutura, mesmo com a app fechada.'],
   },
 };
-export const PUSH_TYPEN = new Set(['shortage_home', 'shortage_ended', 'shortage_abroad', 'watch_alert']);
+export const PUSH_TYPEN = new Set(['shortage_home', 'shortage_ended', 'shortage_abroad', 'watch_alert', 'shortage_bestaetigt']);
 
 /** Benachrichtigung -> Push-Nachricht in der Sprache der Person. */
 export function pushNachricht(n, { sprache = 'de', landName = (c) => c } = {}) {
@@ -174,7 +177,7 @@ export function pushNachricht(n, { sprache = 'de', landName = (c) => c } = {}) {
   const teile = String(n.label || '').split(' · ');
   const wirkstoff = n.ref_type === 'wirkstoff' || n.refType === 'wirkstoff' ? (n.ref_id || n.refId || teile[0]) : teile[0];
   const land = teile[1] && /^[A-Z]{2}$/.test(teile[1]) ? landName(teile[1]) : (teile[1] || '');
-  const [titel, text] = f(wirkstoff, land);
+  const [titel, text] = f(wirkstoff, land, teile[2] || '');
   const url = n.type === 'watch_alert' ? '/?tab=shortages' : `/?wirkstoff=${encodeURIComponent(wirkstoff)}`;
   return { titel, text, url, tag: `${n.type}:${wirkstoff}` };
 }

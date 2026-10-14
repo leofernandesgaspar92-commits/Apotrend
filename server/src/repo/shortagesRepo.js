@@ -177,6 +177,8 @@ export function createShortagesRepo({ seed = true, today = null } = {}) {
     // Dedup der Melder-Benachrichtigung: je (Engpass, Apotheke) nur EINMAL benachrichtigen —
     // auch bei wiederholtem confirm/unconfirm. Wird bei unconfirm bewusst NICHT zurückgesetzt.
     wasConfirmNotified(id, userId) { const s = shortages.get(id); return !!(s && Array.isArray(s.notified_confirmers) && s.notified_confirmers.includes(userId)); },
+    wasBestaetigtGemeldet(id) { const s = shortages.get(id); return !!(s && s.bestaetigt_gemeldet); },
+    markBestaetigtGemeldet(id) { const s = shortages.get(id); if (s) s.bestaetigt_gemeldet = true; },
     markConfirmNotified(id, userId) { const s = shortages.get(id); if (!s) return; if (!Array.isArray(s.notified_confirmers)) s.notified_confirmers = []; if (!s.notified_confirmers.includes(userId)) s.notified_confirmers.push(userId); },
 
     // ── Beobachtungsliste (Wirkstoffe je Nutzer) ──

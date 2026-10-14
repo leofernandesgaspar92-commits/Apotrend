@@ -15,6 +15,7 @@
 //     Behörden je Land als Quelle.
 // ============================================================================
 import { wirkstoffSchluessel } from '../domain/inn.js';
+import { BESTAETIGT_AB_APOTHEKEN } from './shortages.js';
 
 const AKTIV = new Set(['kritisch', 'eingeschraenkt']);
 
@@ -35,11 +36,16 @@ export function regionLage({ shortagesRepo, chronik, laender, codes }) {
       const vorher = e.get(cc);
       if (!vorher || (z.status === 'kritisch' && vorher.status !== 'kritisch')) e.set(cc, { status: z.status, quelle: z.quelle || laender[cc]?.regulator || null });
     }
-    for (const z of apotheken) apoW.add(wirkstoffSchluessel(z.wirkstoff) || z.wirkstoff.toLowerCase());
+    const apoBest = new Set();
+    for (const z of apotheken) {
+      const k = wirkstoffSchluessel(z.wirkstoff) || z.wirkstoff.toLowerCase();
+      apoW.add(k);
+      if (1 + (z.confirmations || []).length >= BESTAETIGT_AB_APOTHEKEN) apoBest.add(k);
+    }
     proLand.push({
       land: cc, behoerde: laender[cc]?.regulator || null,
       behoerdenliste: !!chronik.aufzeichnungSeit(cc),
-      amtlich: amtlichW.size, apotheken: apoW.size,
+      amtlich: amtlichW.size, apotheken: apoW.size, apotheken_bestaetigt: apoBest.size,
       kritisch: new Set(amtlich.filter((z) => z.status === 'kritisch').map((z) => wirkstoffSchluessel(z.wirkstoff) || z.wirkstoff.toLowerCase())).size,
     });
   }

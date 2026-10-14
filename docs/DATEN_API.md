@@ -44,7 +44,8 @@ dem Web") kann keine Kopfzeilen setzen. Wer das nutzt, behandelt die Adresse wie
 
 Felder einer Engpass-Zeile: `wirkstoff`, `wirkstoff_schluessel` (sprachübergreifend, z. B. für
 „Cefuroxim-Axetil" = „Cefuroxime Axetil"), `bezeichnung`, `land`, `status` (`kritisch` |
-`eingeschraenkt`), `grund`, `gemeldet_am`, `voraussichtlich_bis`, `herkunft`, `quelle`.
+`eingeschraenkt`), `grund`, `gemeldet_am`, `voraussichtlich_bis`, `herkunft`, `quelle`,
+`bestaetigt_von` (nur Apotheken-Meldungen: wie viele Apotheken sie tragen; ab 3 gilt sie als bestätigt).
 
 Prüf-Ergebnis je Zeile: `einstufung` = `knapp` (im Land gemeldet) | `ausland` (anderswo knapp,
 hier nicht) | `wiederholt` (früher schon knapp) | `ruhig` | `unbekannt` (kein Treffer), dazu

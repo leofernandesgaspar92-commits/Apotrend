@@ -60,6 +60,9 @@ export function weeklyChange(s, today, windowDays = 7) {
   return within(daysLast) ? { kind: 'status', am: last.am, days_ago: daysLast, status: s.status } : null;
 }
 
+/** Ab so vielen Apotheken (Meldende eingeschlossen) gilt eine Meldung als bestätigt. */
+export const BESTAETIGT_AB_APOTHEKEN = 3;
+
 export function createShortagesService(shortagesRepo, social, options = {}) {
   // Heutiger Kalendertag (injizierbar für Tests) — Grundlage der Alters-/Fristsignale.
   const today = () => (options.today ? options.today() : new Date().toISOString().slice(0, 10));
@@ -68,12 +71,17 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
   // Engpass-Zeile für die Anzeige anreichern: Melder-Profil + Bestätigungen.
   function decorate(s, viewerUserId) {
     const confirmations = s.confirmations || [];
+    const apotheken = s.provenance === 'community' ? 1 + confirmations.length : 0;
     const reporter = s.reporter_user_id ? social.getProfile(s.reporter_user_id) : null;
     return {
       ...s,
       confirmations: undefined, // rohe User-IDs nicht nach außen geben
       notified_confirmers: undefined, // interne Dedup-Liste nicht nach außen geben
       confirm_count: confirmations.length,
+      // Vertrauensstufe einer Apotheken-Meldung (nicht amtlich): ab drei
+      // Apotheken (Meldende + zwei Bestätigungen) „bestätigt". In Ländern ohne
+      // amtliche Liste (große Teile Afrikas) ist das die beste verfügbare Aussage.
+      apotheken, bestaetigt: apotheken >= BESTAETIGT_AB_APOTHEKEN,
       i_confirmed: !!viewerUserId && confirmations.includes(viewerUserId),
       reporter: reporter ? { handle: reporter.handle, display_name: reporter.display_name, verified: !!reporter.verified } : null,
       is_reporter: !!viewerUserId && s.reporter_user_id === viewerUserId,
@@ -196,6 +204,17 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       if (before.reporter_user_id && grew && !shortagesRepo.wasConfirmNotified(id, userId)) {
         shortagesRepo.markConfirmNotified(id, userId);
         social.pushNotification({ userId: before.reporter_user_id, type: 'shortage_confirm', actorUserId: userId, refType: 'shortage', refId: id, label: before.wirkstoff });
+      }
+      // Schwelle „bestätigt" erreicht (einmal je Meldung): Beobachter:innen im
+      // Land erfahren, dass aus einem Hinweis ein von mehreren Apotheken
+      // bestätigter Engpass wurde — klar als nicht amtlich gekennzeichnet.
+      const n = 1 + (updated.confirmations || []).length;
+      if (before.provenance === 'community' && grew && n >= BESTAETIGT_AB_APOTHEKEN && !shortagesRepo.wasBestaetigtGemeldet(id)) {
+        shortagesRepo.markBestaetigtGemeldet(id);
+        const empf = new Set([...beobachterImLand(before.wirkstoff, before.country), before.reporter_user_id].filter(Boolean));
+        for (const uid of empf) {
+          social.pushNotification({ userId: uid, type: 'shortage_bestaetigt', actorUserId: userId, refType: 'wirkstoff', refId: before.wirkstoff, label: `${before.wirkstoff} · ${before.country || ''} · ${n}` });
+        }
       }
       return decorate(updated, userId);
     },

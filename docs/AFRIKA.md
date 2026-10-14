@@ -59,3 +59,21 @@ App gekennzeichnet, bestätigbar durch weitere Apotheken) und den **kontinentale
 Quellen**. Wer eine strukturierte Liste einer afrikanischen Behörde kennt (CSV/JSON), kann sie als
 eigene Quelle eintragen — dann füllen sich Liste, Alarme, Radar, Daten-Schnittstelle und
 Google-Seiten automatisch.
+
+## Meldungen aus Apotheken: Vertrauensstufen
+
+Wo es keine amtliche Liste gibt, sind Meldungen aus Apotheken die schnellste Information. Damit
+man ihnen richtig traut:
+
+| Stufe | Anzeige | Bedeutung |
+|---|---|---|
+| einzeln | gelb: „1 Apotheke meldet — noch nicht bestätigt" / „2 Apotheken melden — ab 3 gilt es als bestätigt" | Hinweis |
+| bestätigt | grün: „Von 3 Apotheken bestätigt (nicht amtlich)" | mehrere unabhängige Apotheken im Land |
+
+- Sobald die dritte Apotheke bestätigt, bekommen alle, die den Wirkstoff **im selben Land**
+  beobachten (und die Meldende), **einmalig** den Alarm „Bestätigt: Salbutamol — 3 Apotheken in
+  Uganda melden Salbutamol als knapp (nicht amtlich)" — in der App und per Handy-Push.
+- Zurücknehmen und erneut bestätigen löst keinen zweiten Alarm aus.
+- Engpasslage Afrika zählt bestätigte Meldungen getrennt; die Daten-Schnittstelle liefert
+  `bestaetigt_von` (Anzahl Apotheken) je Apotheken-Meldung.
+- Amtlich wird eine Apotheken-Meldung dadurch nie — sie bleibt überall so gekennzeichnet.

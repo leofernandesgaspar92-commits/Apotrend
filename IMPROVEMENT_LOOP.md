@@ -2538,3 +2538,25 @@ Apotheken-Meldungen als amtlich; Mehrländer ohne Wirkstoff-Schlüssel.
 
 **Ehrliche Lage:** „0 von 18 afrikanischen Ländern liefern eine amtliche Engpassliste" — die
 Daten kommen dort aus Behördenmeldungen, Apotheken-Meldungen und kontinentalen Quellen.
+
+### Cycle · Vertrauensstufen für Apotheken-Meldungen (2026-10-14)
+
+**Warum:** Im englischsprachigen Afrika liefert keine Behörde eine auslesbare Engpassliste —
+Meldungen aus Apotheken sind dort die schnellste Information. Eine einzelne Meldung und eine von
+mehreren Apotheken getragene sahen aber fast gleich aus, und niemand erfuhr, wann aus einem
+Hinweis ein bestätigter Engpass wurde.
+
+**WORK.** `BESTAETIGT_AB_APOTHEKEN = 3` (Meldende + 2 Bestätigungen). `decorate` liefert
+`apotheken` und `bestaetigt`; Schwelle erreicht → einmalig `shortage_bestaetigt` an
+Beobachter:innen im selben Land und die Meldende (Kategorie „watch", Handy-Push mit Text in der
+Landessprache, „nicht amtlich"). Karte zeigt gelb „noch nicht bestätigt" bzw. grün „Von 3
+Apotheken bestätigt (nicht amtlich)". Engpasslage zählt `apotheken_bestaetigt`, Daten-Schnittstelle
+liefert `bestaetigt_von`. Audit-Prüfpunkt Daten-Schnittstelle wartet jetzt gezielt statt fester
+1,2 s (war ein Ausreißer).
+
+**Tests.** `vertrauen.test.js` (Push-Text; echter Server: 1 → 2 → 3 Apotheken, Alarm genau einmal,
+nur im Land, nicht für Kenia, Zurücknehmen/Neubestätigen ohne zweiten Alarm, Engpasslage zählt
+getrennt). Browser-Audit „Vertrauen".
+
+**Gegenproben (jede schlägt an):** Schwelle 2; ohne Einmal-Schutz; Alarm an alle Länder;
+Bestätigte nicht getrennt gezählt.

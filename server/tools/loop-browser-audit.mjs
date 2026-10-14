@@ -1622,7 +1622,10 @@ async function main() {
       const txt = await buchen.innerText();
       if (!/990/.test(txt)) findings.push(`Daten-Schnittstelle: Preis fehlt (${txt.slice(0, 80)})`);
       if ((await quer()) > 0) findings.push(`Daten-Schnittstelle: ${await quer()} px Querscrollen am Handy`);
-      await buchen.locator('[data-dago]').click(); await page.waitForTimeout(1200);
+      await buchen.locator('[data-dago]').click();
+      // Gezielt warten statt fester Pause: Die Premium-Seite lädt Kurse und Zahlwege (war ein Ausreißer bei 1,2 s).
+      await page.waitForSelector('[data-prpreis]', { timeout: 8000 }).catch(() => {});
+      await page.waitForSelector('.crypto-pay', { timeout: 8000 }).catch(() => {});
       const preis = await page.locator('[data-prpreis]').innerText().catch(() => '');
       if (!/Business/.test(preis)) findings.push(`Daten-Schnittstelle: Buchen führt nicht zur Business-Zahlung (${preis.slice(0, 80)})`);
       const krypto = await page.locator('.crypto-pay').count();
@@ -1885,6 +1888,30 @@ async function main() {
     }
     for (const f of fehler) findings.push('Afrika: JS-Fehler ' + f);
     if (!findings.some((f) => f.startsWith('Afrika'))) console.log('✓ Afrika: Uganda auf Englisch; neue Länder wählbar; News „Uganda / Africa / World"; Engpasslage Afrika mit 18 Ländern, „keine Liste" ehrlich, Land antippen öffnet es');
+    await ctx.close();
+  }
+
+  // ── Vertrauensstufen: Apotheken-Meldung „noch nicht bestätigt" / „bestätigt" ──
+  {
+    const u = Date.now().toString(36);
+    const reg = async (n) => (await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'VT ' + n, email: `vt${n}_${u}@ex.com`, password: 'Passwort123!', accountType: 'pharmacy', country: 'TZ' }) })).token;
+    const [a, b2, c2] = [await reg('a'), await reg('b'), await reg('c')];
+    const auth = (t) => ({ 'content-type': 'application/json', authorization: 'Bearer ' + t }); // api() ersetzt headers ganz
+    const m1 = await api('/api/shortages/report', { method: 'POST', headers: auth(a), body: JSON.stringify({ wirkstoff: 'Oxytocin', bezeichnung: 'Oxytocin 10 IU', status: 'kritisch', country: 'TZ' }) });
+    const m2 = await api('/api/shortages/report', { method: 'POST', headers: auth(a), body: JSON.stringify({ wirkstoff: 'Artemether', bezeichnung: 'Artemether/Lumefantrin', status: 'eingeschraenkt', country: 'TZ' }) });
+    for (const t of [b2, c2]) await api(`/api/shortages/${m2.id}/confirm`, { method: 'POST', headers: auth(t) });
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); localStorage.setItem('apo_ebene_engpaesse', 'land'); }, b2);
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(600);
+    await reiterOeffnen(page, 'shortages'); await page.waitForTimeout(1000);
+    const einzeln = await page.locator('[data-vertrauen="einzeln"]').first().innerText().catch(() => '');
+    const best = await page.locator('[data-vertrauen="bestaetigt"]').first().innerText().catch(() => '');
+    if (!m1 || !/not yet confirmed/.test(einzeln)) findings.push(`Vertrauen: einzelne Meldung ohne „not yet confirmed" (${einzeln})`);
+    if (!m2 || !/Confirmed by 3 pharmacies/.test(best)) findings.push(`Vertrauen: bestätigte Meldung ohne „Confirmed by 3 pharmacies" (${best})`);
+    for (const f of fehler) findings.push('Vertrauen: JS-Fehler ' + f);
+    if (!findings.some((f) => f.startsWith('Vertrauen'))) console.log('✓ Vertrauen: „1 pharmacy reports — not yet confirmed" und „Confirmed by 3 pharmacies (not official)" sichtbar');
     await ctx.close();
   }
 

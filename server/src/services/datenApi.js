@@ -119,6 +119,8 @@ export function engpassZeile(z, wirkstoffSchluessel) {
     gemeldet_am: z.gemeldet_am || null,
     voraussichtlich_bis: z.voraussichtlich_bis || null,
     herkunft: z.provenance === 'verified' ? 'behoerde' : 'apotheken_meldung',
+    // Apotheken-Meldung: wie viele Apotheken sie tragen (Meldende + Bestätigungen).
+    bestaetigt_von: z.provenance === 'community' ? 1 + (z.confirmations || []).length : null,
     quelle: z.quelle || null,
   };
 }
