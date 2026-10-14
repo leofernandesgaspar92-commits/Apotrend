@@ -25,7 +25,7 @@ export const BUNDESLAENDER = ['Wien', 'Niederösterreich', 'Oberösterreich', 'S
 
 export function createExchangeService(exchangeRepo, social, foundationRepo, shortagesRepo = null) {
   function requireUser(userId) {
-    if (!foundationRepo.getUserById(userId)) throw new Error('Unbekannter Nutzer.');
+    if (!foundationRepo.getUserById(userId)) throw Object.assign(new Error('Unbekannter Nutzer.'), { code: 'user_unknown' });
   }
   // Bedeutungstragende Wörter fuer das Matching Biete<->Suche: Darreichungs-,
   // Füll- und Stärkewörter fallen raus, in DE/PT/EN, Akzente gefaltet
@@ -186,12 +186,12 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       if (prof && prof.account_type === 'private') {
         throw new AppError('exchange_pro_only', 'Der Bestandsaustausch (Biete/Suche) ist Apotheken und Fachkreisen vorbehalten. Als Privatnutzer:in kannst du Einträge lesen, aber keine anlegen.', 403);
       }
-      if (!KINDS.includes(kind)) throw new Error('Art muss "biete" oder "suche" sein.');
+      if (!KINDS.includes(kind)) throw Object.assign(new Error('Art muss "biete" oder "suche" sein.'), { code: 'exchange_kind_invalid' });
       const b = String(bezeichnung ?? '').trim();
       if (!b) throw new AppError('exchange_name_required', 'Präparat/Wirkstoff erforderlich.');
-      if (b.length > 200) throw new Error('Bezeichnung zu lang.');
+      if (b.length > 200) throw Object.assign(new Error('Bezeichnung zu lang.'), { code: 'bezeichnung_zu_lang' });
       const bl = bundesland ? String(bundesland).trim() : null;
-      if (bl && !BUNDESLAENDER.includes(bl)) throw new Error('Ungültiges Bundesland.');
+      if (bl && !BUNDESLAENDER.includes(bl)) throw Object.assign(new Error('Ungültiges Bundesland.'), { code: 'region_invalid' });
       const abl = ablauf ? String(ablauf).trim() : null;
       if (abl && !isValidCalendarDay(abl)) throw new AppError('exchange_bad_date', 'Ungültiges Verfallsdatum.', 400);
       const created = exchangeRepo.create({
@@ -304,7 +304,7 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
     // Erledigten Eintrag wieder öffnen (nur Ersteller) — löst erneut Matching aus.
     reopen(actorUserId, id) {
       const e = exchangeRepo.get(id);
-      if (!e) throw new Error('Eintrag nicht gefunden.');
+      if (!e) throw Object.assign(new Error('Eintrag nicht gefunden.'), { code: 'exchange_not_found' });
       if (e.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Ersteller darf das.');
       const updated = exchangeRepo.update(id, { status: 'offen', resolved_at: null });
       notifyMatches(updated);
@@ -312,7 +312,7 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
     },
     markResolved(actorUserId, id) {
       const e = exchangeRepo.get(id);
-      if (!e) throw new Error('Eintrag nicht gefunden.');
+      if (!e) throw Object.assign(new Error('Eintrag nicht gefunden.'), { code: 'exchange_not_found' });
       if (e.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Ersteller darf das.');
       return decorate(exchangeRepo.update(id, { status: 'erledigt', reserved: false, resolved_at: new Date().toISOString() }), betrachterFuerRx(actorUserId));
     },
@@ -329,7 +329,7 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
     },
     remove(actorUserId, id) {
       const e = exchangeRepo.get(id);
-      if (!e) throw new Error('Eintrag nicht gefunden.');
+      if (!e) throw Object.assign(new Error('Eintrag nicht gefunden.'), { code: 'exchange_not_found' });
       if (e.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Ersteller darf loeschen.');
       exchangeRepo.remove(id);
       return { ok: true };
@@ -344,14 +344,14 @@ export function createExchangeService(exchangeRepo, social, foundationRepo, shor
       if (bezeichnung !== undefined) {
         const b = String(bezeichnung ?? '').trim();
         if (!b) throw new AppError('exchange_name_required', 'Präparat/Wirkstoff erforderlich.');
-        if (b.length > 200) throw new Error('Bezeichnung zu lang.');
+        if (b.length > 200) throw Object.assign(new Error('Bezeichnung zu lang.'), { code: 'bezeichnung_zu_lang' });
         patch.bezeichnung = b;
       }
       if (menge !== undefined) patch.menge = (menge ?? '').toString().trim() || null;
       if (ort !== undefined) patch.ort = (ort ?? '').toString().trim() || null;
       if (bundesland !== undefined) {
         const bl = bundesland ? String(bundesland).trim() : null;
-        if (bl && !BUNDESLAENDER.includes(bl)) throw new Error('Ungültiges Bundesland.');
+        if (bl && !BUNDESLAENDER.includes(bl)) throw Object.assign(new Error('Ungültiges Bundesland.'), { code: 'region_invalid' });
         patch.bundesland = bl;
       }
       if (note !== undefined) patch.note = (note ?? '').toString().trim() || null;

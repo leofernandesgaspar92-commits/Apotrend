@@ -67,3 +67,21 @@ test('Platzhalter: tx_format nennt Kette und Format auch auf Englisch', { timeou
     await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
   }
 });
+
+// Riegel gegen Rückfall: Neue Fehler sollen einen Code bekommen (sonst erscheinen
+// sie in Uganda deutsch). 33 = Stand 10/2026: interne Fehler (Datenbank-Treiber,
+// Kursabruf, Quellen-Parser) und Meldungen mit eingesetzten Werten. Die Zahl darf
+// sinken, nicht steigen.
+test('Keine neuen Fehler ohne Code', () => {
+  const dateien = []; (function lauf(d) { for (const f of readdirSync(d)) { const p = join(d, f); if (statSync(p).isDirectory()) lauf(p); else if (p.endsWith('.js')) dateien.push(p); } })(join(ROOT, 'src'));
+  let n = 0; const beispiele = [];
+  for (const f of dateien) {
+    const s = readFileSync(f, 'utf8');
+    for (const m of s.matchAll(/new Error\(['`]/g)) {
+      if (/Object\.assign\($/.test(s.slice(Math.max(0, m.index - 16), m.index))) continue;
+      if (/\.code\s*=/.test(s.slice(m.index, m.index + 200))) continue;
+      n += 1; if (beispiele.length < 5) beispiele.push(f.replace(ROOT, '') + ': ' + s.slice(m.index, m.index + 70));
+    }
+  }
+  assert.ok(n <= 33, `${n} Fehler ohne Code (höchstens 33) — z. B.\n${beispiele.join('\n')}`);
+});

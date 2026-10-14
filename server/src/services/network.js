@@ -46,14 +46,14 @@ export function createNetworkService(repo, orgAuth) {
     // ── Kontakte ────────────────────────────────────────────────────────────
     requestConnection(actorUserId, fromOrgId, toOrgId) {
       requireCap(actorUserId, fromOrgId, 'manage_network');
-      if (fromOrgId === toOrgId) throw new Error('Selbstverbindung nicht moeglich.');
-      if (!repo.getOrganization(toOrgId)) throw new Error('Zielorganisation unbekannt.');
+      if (fromOrgId === toOrgId) throw Object.assign(new Error('Selbstverbindung nicht moeglich.'), { code: 'connect_self' });
+      if (!repo.getOrganization(toOrgId)) throw Object.assign(new Error('Zielorganisation unbekannt.'), { code: 'org_target_unknown' });
       return repo.findConnection(fromOrgId, toOrgId) || repo.createConnection({ requesterOrgId: fromOrgId, addresseeOrgId: toOrgId });
     },
     respondConnection(actorUserId, orgId, connectionId, accept) {
       requireCap(actorUserId, orgId, 'manage_network');
       const c = repo.getConnection(connectionId);
-      if (!c) throw new Error('Verbindung nicht gefunden.');
+      if (!c) throw Object.assign(new Error('Verbindung nicht gefunden.'), { code: 'connection_not_found' });
       if (c.addressee_org_id !== orgId) throw new ForbiddenError('Nur die angefragte Organisation darf antworten.');
       return repo.updateConnection(connectionId, { status: accept ? 'accepted' : 'blocked', responded_at: new Date().toISOString() });
     },
@@ -66,9 +66,9 @@ export function createNetworkService(repo, orgAuth) {
     // ── Feed ────────────────────────────────────────────────────────────────
     createPost(actorUserId, orgId, { kind, title = null, body, visibility = 'network' }) {
       requireCap(actorUserId, orgId, 'network_post');
-      if (!body || !String(body).trim()) throw new Error('Beitrag braucht Inhalt.');
-      if (!['frage', 'bestand_angebot', 'bestand_gesucht', 'news_geteilt', 'ankuendigung'].includes(kind)) throw new Error('Ungueltige Beitragsart.');
-      if (!['network', 'contacts_only'].includes(visibility)) throw new Error('Ungueltige Sichtbarkeit.');
+      if (!body || !String(body).trim()) throw Object.assign(new Error('Beitrag braucht Inhalt.'), { code: 'post_empty' });
+      if (!['frage', 'bestand_angebot', 'bestand_gesucht', 'news_geteilt', 'ankuendigung'].includes(kind)) throw Object.assign(new Error('Ungueltige Beitragsart.'), { code: 'post_kind_invalid' });
+      if (!['network', 'contacts_only'].includes(visibility)) throw Object.assign(new Error('Ungueltige Sichtbarkeit.'), { code: 'visibility_invalid' });
       return repo.createFeedPost({ authorOrgId: orgId, authorUserId: actorUserId, kind, title, body, visibility });
     },
     // Feed aus Sicht einer Organisation: eigene + oeffentliche + (nur-Kontakte, wenn verbunden).
@@ -80,15 +80,15 @@ export function createNetworkService(repo, orgAuth) {
     respondToPost(actorUserId, orgId, postId, body) {
       requireCap(actorUserId, orgId, 'network_post');
       const post = repo.getFeedPost(postId);
-      if (!post) throw new Error('Beitrag nicht gefunden.');
+      if (!post) throw Object.assign(new Error('Beitrag nicht gefunden.'), { code: 'post_not_found' });
       if (!postVisibleTo(post, orgId)) throw new ForbiddenError('Beitrag nicht sichtbar.');
-      if (!body || !String(body).trim()) throw new Error('Leere Antwort.');
+      if (!body || !String(body).trim()) throw Object.assign(new Error('Leere Antwort.'), { code: 'reply_empty' });
       return repo.createPostResponse({ postId, authorOrgId: orgId, authorUserId: actorUserId, body });
     },
     listResponses(viewerUserId, viewerOrgId, postId) {
       requireMember(viewerUserId, viewerOrgId);
       const post = repo.getFeedPost(postId);
-      if (!post) throw new Error('Beitrag nicht gefunden.');
+      if (!post) throw Object.assign(new Error('Beitrag nicht gefunden.'), { code: 'post_not_found' });
       if (!postVisibleTo(post, viewerOrgId)) throw new ForbiddenError('Beitrag nicht sichtbar.');
       return repo.listPostResponses(postId);
     },
@@ -96,22 +96,22 @@ export function createNetworkService(repo, orgAuth) {
     // ── Direktnachrichten (1:1 zwischen Organisationen) ──────────────────────
     startThread(actorUserId, fromOrgId, otherOrgId) {
       requireCap(actorUserId, fromOrgId, 'network_dm');
-      if (fromOrgId === otherOrgId) throw new Error('Kein Thread mit sich selbst.');
-      if (!repo.getOrganization(otherOrgId)) throw new Error('Zielorganisation unbekannt.');
+      if (fromOrgId === otherOrgId) throw Object.assign(new Error('Kein Thread mit sich selbst.'), { code: 'dm_self' });
+      if (!repo.getOrganization(otherOrgId)) throw Object.assign(new Error('Zielorganisation unbekannt.'), { code: 'org_target_unknown' });
       return repo.findThread(fromOrgId, otherOrgId) || repo.createThread({ orgAId: fromOrgId, orgBId: otherOrgId });
     },
     sendMessage(actorUserId, orgId, threadId, body) {
       requireCap(actorUserId, orgId, 'network_dm');
       const t = repo.getThread(threadId);
-      if (!t) throw new Error('Thread nicht gefunden.');
+      if (!t) throw Object.assign(new Error('Thread nicht gefunden.'), { code: 'thread_not_found' });
       if (t.org_a_id !== orgId && t.org_b_id !== orgId) throw new ForbiddenError('Nicht Teil dieser Konversation.');
-      if (!body || !String(body).trim()) throw new Error('Leere Nachricht.');
+      if (!body || !String(body).trim()) throw Object.assign(new Error('Leere Nachricht.'), { code: 'message_empty' });
       return repo.createDirectMessage({ threadId, senderOrgId: orgId, senderUserId: actorUserId, body });
     },
     listMessages(viewerUserId, orgId, threadId) {
       requireMember(viewerUserId, orgId);
       const t = repo.getThread(threadId);
-      if (!t) throw new Error('Thread nicht gefunden.');
+      if (!t) throw Object.assign(new Error('Thread nicht gefunden.'), { code: 'thread_not_found' });
       if (t.org_a_id !== orgId && t.org_b_id !== orgId) throw new ForbiddenError('Nicht Teil dieser Konversation.');
       return repo.listDirectMessages(threadId);
     },

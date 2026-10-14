@@ -25,6 +25,6 @@ export function cleanImage(image) {
 export function cleanSourceUrl(url) {
   if (url == null || url === '') return null;
   const s = String(url).trim();
-  if (!/^https?:\/\/[^\s]{3,500}$/i.test(s)) throw new Error('Quelle muss ein http(s)-Link sein.');
+  if (!/^https?:\/\/[^\s]{3,500}$/i.test(s)) throw Object.assign(new Error('Quelle muss ein http(s)-Link sein.'), { code: 'source_url_invalid' });
   return s;
 }

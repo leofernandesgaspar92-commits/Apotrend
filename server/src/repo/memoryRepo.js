@@ -44,8 +44,8 @@ export function createMemoryRepo({ jetzt = () => Date.now() } = {}) {
 
   return {
     createOrganization(data) {
-      if (!data?.name) throw new Error('Organisation braucht einen Namen.');
-      if (!['pharmacy', 'supplier'].includes(data.type)) throw new Error('Ungueltiger Org-Typ.');
+      if (!data?.name) throw Object.assign(new Error('Organisation braucht einen Namen.'), { code: 'org_name_required' });
+      if (!['pharmacy', 'supplier'].includes(data.type)) throw Object.assign(new Error('Ungueltiger Org-Typ.'), { code: 'org_type_invalid' });
       const org = {
         id: uuid(), type: data.type, name: data.name,
         ort: data.ort ?? null, plz: data.plz ?? null, bundesland: data.bundesland ?? null,
@@ -184,11 +184,11 @@ export function createMemoryRepo({ jetzt = () => Date.now() } = {}) {
     },
 
     createMembership({ userId, organizationId, role }) {
-      if (!users.has(userId)) throw new Error('Unbekannter User.');
-      if (!organizations.has(organizationId)) throw new Error('Unbekannte Organisation.');
+      if (!users.has(userId)) throw Object.assign(new Error('Unbekannter User.'), { code: 'user_unknown' });
+      if (!organizations.has(organizationId)) throw Object.assign(new Error('Unbekannte Organisation.'), { code: 'org_unknown' });
       for (const m of memberships.values()) {
         if (m.user_id === userId && m.organization_id === organizationId) {
-          throw new Error('User ist bereits Mitglied dieser Organisation.');
+          throw Object.assign(new Error('User ist bereits Mitglied dieser Organisation.'), { code: 'org_already_member' });
         }
       }
       const m = { id: uuid(), user_id: userId, organization_id: organizationId, role, created_at: now() };

@@ -2828,3 +2828,17 @@ aus dem Code-Namen geraten. Bei `link_invalid` falsch („gültigen Link angeben
 ungültig") — der Browser-Audit „Wochenbericht" fing es. Danach alle 11 an der Fundstelle
 abgeglichen; `quelle_ungueltig` reicht die genaue Begründung jetzt als `{detail}` durch. Regel:
 Übersetzungen nur aus der Meldung an der Fundstelle, nie aus dem Code-Namen.
+
+### Cycle · Fehler ohne Code: 103 Fundstellen nachgerüstet (2026-10-14)
+
+**WORK.** Alle wörtlichen `new Error('…')` ohne Code gesammelt (67 verschiedene Meldungen). Code je
+Meldung anhand des Meldungstexts zugeordnet, bestehende Codes gleicher Bedeutung wiederverwendet,
+39 neue Codes in de/en/pt. Code per `Object.assign(new Error('…'), { code })` angehängt —
+Meldungstext und Statuscode unverändert. 103 Fundstellen in 11 Dateien (social, network, collab,
+exchange, orgAuth, server …). `bezeichnung_zu_lang` ohne Zahl (Austausch nutzt ihn mit anderer Grenze).
+
+**Bleibt ohne Code (33).** Intern (Datenbank-Treiber, Kursabruf, Quellen-Parser, Signal-Pflichtfelder)
+und Meldungen mit eingesetzten Werten.
+
+**Tests.** `fehler-sprache.test.js` erkennt die neuen Codes und verlangt Übersetzungen; neuer Riegel:
+höchstens 33 Fehler ohne Code (Gegenprobe: ein Code entfernt → rot).

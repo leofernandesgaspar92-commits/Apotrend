@@ -15,7 +15,7 @@ export function createCollabService(repo, orgAuth) {
 
   function requireChannel(id) {
     const c = repo.getChannel(id);
-    if (!c) throw new Error('Kanal nicht gefunden.');
+    if (!c) throw Object.assign(new Error('Kanal nicht gefunden.'), { code: 'channel_not_found' });
     return c;
   }
 
@@ -58,7 +58,7 @@ export function createCollabService(repo, orgAuth) {
     postMessage(actorUserId, channelId, body) {
       const ch = requireChannel(channelId);
       assertChannelAccess(actorUserId, ch);
-      if (!body || !String(body).trim()) throw new Error('Leere Nachricht.');
+      if (!body || !String(body).trim()) throw Object.assign(new Error('Leere Nachricht.'), { code: 'message_empty' });
       return repo.createMessage({ channelId, authorUserId: actorUserId, body: String(body) });
     },
 
@@ -72,13 +72,13 @@ export function createCollabService(repo, orgAuth) {
       const role = orgRole(actorUserId, organizationId);
       if (!canParticipate(role)) throw new ForbiddenError('Rolle darf keine Notizen anlegen.');
       if (channelId) assertChannelAccess(actorUserId, requireChannel(channelId));
-      if (!title) throw new Error('Notiz braucht einen Titel.');
+      if (!title) throw Object.assign(new Error('Notiz braucht einen Titel.'), { code: 'note_title' });
       return repo.createNote({ organizationId, channelId, title, body, docUrl, pinned, createdBy: actorUserId });
     },
 
     setNotePinned(actorUserId, noteId, pinned) {
       const n = repo.getNote(noteId);
-      if (!n) throw new Error('Notiz nicht gefunden.');
+      if (!n) throw Object.assign(new Error('Notiz nicht gefunden.'), { code: 'note_not_found' });
       const role = orgRole(actorUserId, n.organization_id);
       if (!can(role, 'collab')) throw new ForbiddenError('Rolle darf nicht anheften.');
       return repo.setNotePinned(noteId, !!pinned);
@@ -93,14 +93,14 @@ export function createCollabService(repo, orgAuth) {
     // Nur übergebene Felder werden geändert (title/body/docUrl); Titel darf nicht leeren.
     updateNote(actorUserId, noteId, { title, body, docUrl } = {}) {
       const n = repo.getNote(noteId);
-      if (!n) throw new Error('Notiz nicht gefunden.');
+      if (!n) throw Object.assign(new Error('Notiz nicht gefunden.'), { code: 'note_not_found' });
       const role = orgRole(actorUserId, n.organization_id); // Isolation
       if (n.created_by !== actorUserId && !can(role, 'collab')) {
         throw new ForbiddenError('Nur Ersteller:in oder eine berechtigte Rolle darf bearbeiten.');
       }
       const fields = {};
       if (title !== undefined) {
-        if (!title || !String(title).trim()) throw new Error('Notiz braucht einen Titel.');
+        if (!title || !String(title).trim()) throw Object.assign(new Error('Notiz braucht einen Titel.'), { code: 'note_title' });
         fields.title = String(title);
       }
       if (body !== undefined) fields.body = body;
@@ -111,7 +111,7 @@ export function createCollabService(repo, orgAuth) {
     // Notiz löschen: Ersteller:in ODER eine Rolle mit 'collab' (Admin/Apotheker:in/PTA).
     deleteNote(actorUserId, noteId) {
       const n = repo.getNote(noteId);
-      if (!n) throw new Error('Notiz nicht gefunden.');
+      if (!n) throw Object.assign(new Error('Notiz nicht gefunden.'), { code: 'note_not_found' });
       const role = orgRole(actorUserId, n.organization_id); // Isolation
       if (n.created_by !== actorUserId && !can(role, 'collab')) {
         throw new ForbiddenError('Nur Ersteller:in oder eine berechtigte Rolle darf löschen.');
@@ -126,26 +126,26 @@ export function createCollabService(repo, orgAuth) {
       if (assigneeUserId && !orgAuth.membershipOf(assigneeUserId, organizationId)) {
         throw new ForbiddenError('Zugewiesene Person gehoert nicht zur Organisation.');
       }
-      if (!title) throw new Error('Aufgabe braucht einen Titel.');
+      if (!title) throw Object.assign(new Error('Aufgabe braucht einen Titel.'), { code: 'task_title' });
       return repo.createTask({ organizationId, title, description, assigneeUserId, dueDate, channelId, createdBy: actorUserId });
     },
 
     updateTaskStatus(actorUserId, taskId, status) {
       const t = repo.getTask(taskId);
-      if (!t) throw new Error('Aufgabe nicht gefunden.');
+      if (!t) throw Object.assign(new Error('Aufgabe nicht gefunden.'), { code: 'task_not_found' });
       const role = orgRole(actorUserId, t.organization_id); // Isolation
       const isAssignee = t.assignee_user_id === actorUserId;
       if (!can(role, 'assign_tasks') && !isAssignee) {
         throw new ForbiddenError('Nur die zugewiesene Person oder eine berechtigte Rolle darf den Status aendern.');
       }
-      if (!['offen', 'in_arbeit', 'erledigt'].includes(status)) throw new Error('Ungueltiger Status.');
+      if (!['offen', 'in_arbeit', 'erledigt'].includes(status)) throw Object.assign(new Error('Ungueltiger Status.'), { code: 'status_unbekannt' });
       return repo.updateTask(taskId, { status });
     },
 
     // Aufgabe neu zuweisen (oder Zuweisung entfernen mit null) — nur berechtigte Rolle.
     reassignTask(actorUserId, taskId, assigneeUserId) {
       const t = repo.getTask(taskId);
-      if (!t) throw new Error('Aufgabe nicht gefunden.');
+      if (!t) throw Object.assign(new Error('Aufgabe nicht gefunden.'), { code: 'task_not_found' });
       const role = orgRole(actorUserId, t.organization_id); // Isolation
       if (!can(role, 'assign_tasks')) throw new ForbiddenError('Diese Rolle darf Aufgaben nicht zuweisen.');
       const newAssignee = assigneeUserId || null;
@@ -159,12 +159,12 @@ export function createCollabService(repo, orgAuth) {
     // Nur übergebene Felder werden geändert; Titel darf nicht geleert werden.
     editTask(actorUserId, taskId, { title, description, dueDate } = {}) {
       const t = repo.getTask(taskId);
-      if (!t) throw new Error('Aufgabe nicht gefunden.');
+      if (!t) throw Object.assign(new Error('Aufgabe nicht gefunden.'), { code: 'task_not_found' });
       const role = orgRole(actorUserId, t.organization_id); // Isolation
       if (!can(role, 'assign_tasks')) throw new ForbiddenError('Diese Rolle darf Aufgaben nicht bearbeiten.');
       const fields = {};
       if (title !== undefined) {
-        if (!title || !String(title).trim()) throw new Error('Aufgabe braucht einen Titel.');
+        if (!title || !String(title).trim()) throw Object.assign(new Error('Aufgabe braucht einen Titel.'), { code: 'task_title' });
         fields.title = String(title).trim();
       }
       if (description !== undefined) fields.description = description;

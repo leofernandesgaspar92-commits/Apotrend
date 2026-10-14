@@ -28,7 +28,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
 
   function requireUser(userId) {
     const u = foundationRepo.getUserById(userId);
-    if (!u) throw new Error('Unbekannter Nutzer.');
+    if (!u) throw Object.assign(new Error('Unbekannter Nutzer.'), { code: 'user_unknown' });
     return u;
   }
 
@@ -148,7 +148,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     updateProfile(actorUserId, { displayName, title, bio, specializations, experience, education, openTo, avatarUrl, coverUrl, website, publicEmail, phone, visibility, bundesland, country, locale, accountType }) {
       requireUser(actorUserId);
       const current = social.getProfileByUserId(actorUserId);
-      if (!current) throw new Error('Profil nicht gefunden.');
+      if (!current) throw Object.assign(new Error('Profil nicht gefunden.'), { code: 'profile_not_found' });
       const patch = {};
       // Profilbild: leerer String entfernt es (null), data:image-URL wird validiert.
       if (avatarUrl !== undefined) patch.avatar_url = avatarUrl ? cleanImage(avatarUrl) : null;
@@ -210,17 +210,17 @@ export function createSocialService(social, foundationRepo, options = {}) {
         patch.open_to = [...new Set(arr.map(x => String(x)).filter(x => OPEN_TO_KEYS.includes(x)))];
       }
       if (visibility !== undefined) {
-        if (!['network', 'public'].includes(visibility)) throw new Error('Ungueltige Profil-Sichtbarkeit.');
+        if (!['network', 'public'].includes(visibility)) throw Object.assign(new Error('Ungueltige Profil-Sichtbarkeit.'), { code: 'visibility_invalid' });
         patch.visibility = visibility;
       }
       if (bundesland !== undefined) {
         const bl = String(bundesland).trim();
-        if (bl && !BUNDESLAENDER.includes(bl)) throw new Error('Ungültiges Bundesland.');
+        if (bl && !BUNDESLAENDER.includes(bl)) throw Object.assign(new Error('Ungültiges Bundesland.'), { code: 'region_invalid' });
         patch.bundesland = bl || null;
       }
       // Land wechseln (Länder-Switch); Sprache folgt dem Land, außer explizit gesetzt.
       if (country !== undefined) {
-        if (!isValidCountry(country)) throw new Error('Ungültiges Land.');
+        if (!isValidCountry(country)) throw Object.assign(new Error('Ungültiges Land.'), { code: 'unknown_country' });
         patch.country = String(country).toUpperCase();
         // Ohne explizite Sprache folgt die UI-Sprache automatisch dem neuen Land.
         patch.locale = normalizeLocale(locale, patch.country);
@@ -228,7 +228,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
         patch.locale = normalizeLocale(locale, current.country);
       }
       if (accountType !== undefined) {
-        if (!isValidAccountType(accountType)) throw new Error('Ungültiger Kontotyp.');
+        if (!isValidAccountType(accountType)) throw Object.assign(new Error('Ungültiger Kontotyp.'), { code: 'dir_bad_type' });
         patch.account_type = normalizeAccountType(accountType);
       }
       return social.updateProfile(actorUserId, patch);
@@ -524,8 +524,8 @@ export function createSocialService(social, foundationRepo, options = {}) {
       const text = String(body ?? '').trim();
       const img = cleanImage(image);
       const src = cleanSourceUrl(sourceUrl);
-      if (!['public', 'followers'].includes(visibility)) throw new Error('Ungueltige Sichtbarkeit.');
-      if (!['post', 'news', 'frage', 'poll'].includes(kind)) throw new Error('Ungueltige Beitragsart.');
+      if (!['public', 'followers'].includes(visibility)) throw Object.assign(new Error('Ungueltige Sichtbarkeit.'), { code: 'visibility_invalid' });
+      if (!['post', 'news', 'frage', 'poll'].includes(kind)) throw Object.assign(new Error('Ungueltige Beitragsart.'), { code: 'post_kind_invalid' });
       // Umfrage: braucht 2–6 nicht-leere Optionen; die Frage steht im Text.
       let poll = null;
       if (kind === 'poll') {
@@ -537,7 +537,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
         throw new AppError('post_empty', 'Beitrag darf nicht leer sein (Text oder Bild).');
       }
       if (text.length > MAX_BODY) throw new AppError('post_too_long', `Beitrag zu lang (max ${MAX_BODY}).`);
-      if (refType && !['shortage', 'price', 'news', 'rabatt'].includes(refType)) throw new Error('Ungueltiger Referenztyp.');
+      if (refType && !['shortage', 'price', 'news', 'rabatt'].includes(refType)) throw Object.assign(new Error('Ungueltiger Referenztyp.'), { code: 'ref_type_invalid' });
       // Beitrag erbt das Land des Autors (Sichtbarkeits-Scope je Land).
       //
       // `sourceCountry` ist die EINZIGE Ausnahme und bewusst nicht Teil der
@@ -572,7 +572,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (existing) { social.softDeletePost(existing.id); return { reposted: false, post: null }; }
       const text = String(comment ?? '').trim();
       if (text.length > MAX_BODY) throw new AppError('post_too_long', `Beitrag zu lang (max ${MAX_BODY}).`);
-      if (!['public', 'followers'].includes(visibility)) throw new Error('Ungueltige Sichtbarkeit.');
+      if (!['public', 'followers'].includes(visibility)) throw Object.assign(new Error('Ungueltige Sichtbarkeit.'), { code: 'visibility_invalid' });
       const country = normalizeCountry(social.getProfileByUserId(actorUserId)?.country);
       const post = social.createPost({ authorUserId: actorUserId, body: text, visibility, kind: 'repost', country, repostOf: targetId });
       // Original-Autor:in benachrichtigen (nie sich selbst).
@@ -584,7 +584,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     votePoll(actorUserId, postId, optionId) {
       requireUser(actorUserId);
       const p = social.getPost(postId);
-      if (!p || p.deleted_at) throw new Error('Beitrag nicht gefunden.');
+      if (!p || p.deleted_at) throw Object.assign(new Error('Beitrag nicht gefunden.'), { code: 'post_not_found' });
       if (p.kind !== 'poll' || !Array.isArray(p.poll_options)) throw new AppError('poll_not_a_poll', 'Dieser Beitrag ist keine Umfrage.');
       if (optionId != null && !p.poll_options.some(o => o.id === optionId)) throw new AppError('poll_bad_option', 'Unbekannte Antwortmöglichkeit.');
       const hadVote = social.pollTally(postId, actorUserId).my != null; // eigene Stimme vorher?
@@ -595,13 +595,13 @@ export function createSocialService(social, foundationRepo, options = {}) {
     },
     deletePost(actorUserId, postId) {
       const p = social.getPost(postId);
-      if (!p) throw new Error('Beitrag nicht gefunden.');
+      if (!p) throw Object.assign(new Error('Beitrag nicht gefunden.'), { code: 'post_not_found' });
       if (p.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Autor darf loeschen.');
       return social.softDeletePost(postId);
     },
     editPost(actorUserId, postId, body) {
       const p = social.getPost(postId);
-      if (!p || p.deleted_at) throw new Error('Beitrag nicht gefunden.');
+      if (!p || p.deleted_at) throw Object.assign(new Error('Beitrag nicht gefunden.'), { code: 'post_not_found' });
       if (p.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Autor darf bearbeiten.');
       const text = String(body ?? '').trim();
       if (!text) throw new AppError('post_empty', 'Beitrag darf nicht leer sein.');
@@ -619,13 +619,13 @@ export function createSocialService(social, foundationRepo, options = {}) {
     acceptAnswer(actorUserId, postId, commentId) {
       requireUser(actorUserId);
       const p = social.getPost(postId);
-      if (!p || p.deleted_at) throw new Error('Beitrag nicht gefunden.');
-      if (p.kind !== 'frage') throw new Error('Nur Fragen können eine beste Antwort haben.');
+      if (!p || p.deleted_at) throw Object.assign(new Error('Beitrag nicht gefunden.'), { code: 'post_not_found' });
+      if (p.kind !== 'frage') throw Object.assign(new Error('Nur Fragen können eine beste Antwort haben.'), { code: 'answer_only_questions' });
       if (p.author_user_id !== actorUserId) throw new ForbiddenError('Nur der/die Fragesteller:in darf die beste Antwort wählen.');
       let next = null;
       if (p.accepted_comment_id !== commentId) {
         const c = social.getComment(commentId);
-        if (!c || c.deleted_at || c.post_id !== postId) throw new Error('Ungueltige Antwort.');
+        if (!c || c.deleted_at || c.post_id !== postId) throw Object.assign(new Error('Ungueltige Antwort.'), { code: 'answer_invalid' });
         next = commentId;
         if (c.author_user_id !== actorUserId) notify(c.author_user_id, 'answer_accepted', actorUserId, 'post', postId);
       }
@@ -639,7 +639,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (!p || !visibleTo(p, actorUserId)) throw new ForbiddenError('Beitrag nicht sichtbar.');
       if (parentCommentId) {
         const parent = social.getComment(parentCommentId);
-        if (!parent || parent.post_id !== postId) throw new Error('Ungueltiger Eltern-Kommentar.');
+        if (!parent || parent.post_id !== postId) throw Object.assign(new Error('Ungueltiger Eltern-Kommentar.'), { code: 'parent_comment_invalid' });
       }
       const text = String(body ?? '').trim();
       const img = cleanImage(image);
@@ -668,7 +668,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     },
     editComment(actorUserId, commentId, body) {
       const c = social.getComment(commentId);
-      if (!c || c.deleted_at) throw new Error('Kommentar nicht gefunden.');
+      if (!c || c.deleted_at) throw Object.assign(new Error('Kommentar nicht gefunden.'), { code: 'comment_not_found' });
       if (c.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Autor darf bearbeiten.');
       const text = String(body ?? '').trim();
       if (!text) throw new AppError('comment_empty', 'Kommentar darf nicht leer sein (Text oder Bild).');
@@ -677,7 +677,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     },
     deleteComment(actorUserId, commentId) {
       const c = social.getComment(commentId);
-      if (!c || c.deleted_at) throw new Error('Kommentar nicht gefunden.');
+      if (!c || c.deleted_at) throw Object.assign(new Error('Kommentar nicht gefunden.'), { code: 'comment_not_found' });
       if (c.author_user_id !== actorUserId) throw new ForbiddenError('Nur der Autor darf loeschen.');
       return social.softDeleteComment(commentId);
     },
@@ -685,16 +685,16 @@ export function createSocialService(social, foundationRepo, options = {}) {
     // ── Reaktionen (typisiert, kein reines Like) ──
     react(actorUserId, targetType, targetId, type) {
       requireUser(actorUserId);
-      if (!REACTION_TYPES.includes(type)) throw new Error('Ungueltige Reaktionsart.');
+      if (!REACTION_TYPES.includes(type)) throw Object.assign(new Error('Ungueltige Reaktionsart.'), { code: 'reaction_invalid' });
       if (targetType === 'post') {
         const p = social.getPost(targetId);
         if (!p || !visibleTo(p, actorUserId)) throw new ForbiddenError('Ziel nicht sichtbar.');
       } else if (targetType === 'comment') {
         const c = social.getComment(targetId);
-        if (!c) throw new Error('Kommentar nicht gefunden.');
+        if (!c) throw Object.assign(new Error('Kommentar nicht gefunden.'), { code: 'comment_not_found' });
         const p = social.getPost(c.post_id);
         if (!p || !visibleTo(p, actorUserId)) throw new ForbiddenError('Ziel nicht sichtbar.');
-      } else throw new Error('Ungueltiger Zieltyp.');
+      } else throw Object.assign(new Error('Ungueltiger Zieltyp.'), { code: 'target_type_invalid' });
       // Umschalten: dieselbe Reaktion erneut = entfernen (gibt null zurück).
       const existing = social.listReactions(targetType, targetId).find(r => r.user_id === actorUserId);
       if (existing && existing.type === type) {
@@ -714,7 +714,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     // ── Follows (gerichtet, ohne Zustimmung) ──
     follow(actorUserId, followeeUserId) {
       requireUser(actorUserId); requireUser(followeeUserId);
-      if (actorUserId === followeeUserId) throw new Error('Selbst-Follow nicht moeglich.');
+      if (actorUserId === followeeUserId) throw Object.assign(new Error('Selbst-Follow nicht moeglich.'), { code: 'follow_self' });
       social.follow(actorUserId, followeeUserId);
       notify(followeeUserId, 'follow', actorUserId, 'user', actorUserId);
       return { follower: actorUserId, followee: followeeUserId };
@@ -872,12 +872,12 @@ export function createSocialService(social, foundationRepo, options = {}) {
     // ── Direktnachrichten (1:1, privat, getrennt vom Feed) ──
     startDm(actorUserId, otherUserId) {
       requireUser(actorUserId); requireUser(otherUserId);
-      if (actorUserId === otherUserId) throw new Error('Kein DM mit sich selbst.');
+      if (actorUserId === otherUserId) throw Object.assign(new Error('Kein DM mit sich selbst.'), { code: 'dm_self' });
       return social.findDmThread(actorUserId, otherUserId) || social.createDmThread(actorUserId, otherUserId);
     },
     sendDm(actorUserId, threadId, body) {
       const t = social.getDmThread(threadId);
-      if (!t) throw new Error('Thread nicht gefunden.');
+      if (!t) throw Object.assign(new Error('Thread nicht gefunden.'), { code: 'thread_not_found' });
       if (t.user_a_id !== actorUserId && t.user_b_id !== actorUserId) throw new ForbiddenError('Nicht Teil dieser Konversation.');
       const text = String(body ?? '').trim();
       if (!text) throw new AppError('message_empty', 'Leere Nachricht.');
@@ -888,7 +888,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     },
     listDm(viewerUserId, threadId) {
       const t = social.getDmThread(threadId);
-      if (!t) throw new Error('Thread nicht gefunden.');
+      if (!t) throw Object.assign(new Error('Thread nicht gefunden.'), { code: 'thread_not_found' });
       if (t.user_a_id !== viewerUserId && t.user_b_id !== viewerUserId) throw new ForbiddenError('Nicht Teil dieser Konversation.');
       return social.listDmMessages(threadId);
     },
@@ -925,7 +925,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     // Konversation öffnen: Nachrichten + Partner, markiert Eingang als gelesen.
     dmConversation(viewerUserId, threadId) {
       const t = social.getDmThread(threadId);
-      if (!t) throw new Error('Thread nicht gefunden.');
+      if (!t) throw Object.assign(new Error('Thread nicht gefunden.'), { code: 'thread_not_found' });
       if (t.user_a_id !== viewerUserId && t.user_b_id !== viewerUserId) throw new ForbiddenError('Nicht Teil dieser Konversation.');
       social.markDmThreadRead(threadId, viewerUserId);
       return { thread_id: threadId, other: this.dmOther(viewerUserId, t), messages: social.listDmMessages(threadId) };
@@ -944,7 +944,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     // wird der Eingang als gelesen markiert, damit das Badge konsistent bleibt.
     setDmConversationHidden(viewerUserId, threadId, hidden) {
       const t = social.getDmThread(threadId);
-      if (!t) throw new Error('Thread nicht gefunden.');
+      if (!t) throw Object.assign(new Error('Thread nicht gefunden.'), { code: 'thread_not_found' });
       if (t.user_a_id !== viewerUserId && t.user_b_id !== viewerUserId) throw new ForbiddenError('Nicht Teil dieser Konversation.');
       if (hidden) social.markDmThreadRead(threadId, viewerUserId);
       social.setDmThreadHidden(threadId, viewerUserId, !!hidden);
@@ -955,7 +955,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     // Jede angemeldete Person kann melden.
     report(actorUserId, targetType, targetId, reason) {
       requireUser(actorUserId);
-      if (!['post', 'comment', 'profile', 'promotion', 'live'].includes(targetType)) throw new Error('Ungueltiger Zieltyp.');
+      if (!['post', 'comment', 'profile', 'promotion', 'live'].includes(targetType)) throw Object.assign(new Error('Ungueltiger Zieltyp.'), { code: 'target_type_invalid' });
       // Existenz prüfen, damit keine Meldungen auf Geister-IDs entstehen.
       if (targetType === 'promotion' && !social.getPromotion(targetId)) throw new AppError('promo_not_found', 'Angebot nicht gefunden.', 404);
       if (targetType === 'live' && !social.getLiveSession(targetId)) throw new AppError('live_not_found', 'Session nicht gefunden.', 404);
@@ -969,7 +969,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     resolveReport(moderatorUserId, reportId, { remove = false } = {}) {
       if (!isModerator(moderatorUserId)) throw new ForbiddenError('Nur Moderation.');
       const r = social.getReport(reportId);
-      if (!r) throw new Error('Meldung nicht gefunden.');
+      if (!r) throw Object.assign(new Error('Meldung nicht gefunden.'), { code: 'report_not_found' });
       if (remove && r.target_type === 'post') social.softDeletePost(r.target_id);
       if (remove && r.target_type === 'comment') social.softDeleteComment(r.target_id);
       if (remove && r.target_type === 'promotion') purgePromotionData(r.target_id);
@@ -1583,7 +1583,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     requestVerification(actorUserId, { note, licenseNumber } = {}) {
       requireUser(actorUserId);
       const prof = social.getProfileByUserId(actorUserId);
-      if (!prof) throw new Error('Profil nicht gefunden.');
+      if (!prof) throw Object.assign(new Error('Profil nicht gefunden.'), { code: 'profile_not_found' });
       if (prof.verified) throw new AppError('verify_already', 'Profil ist bereits verifiziert.', 400);
       if (prof.account_type === 'private') {
         throw new AppError('verify_private', 'Die Verifizierung weist eine Betriebserlaubnis nach. '
@@ -1712,7 +1712,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     // Soft-Delete verbirgt nur; hier wird der Inhalt tatsaechlich entfernt.
     hardDeletePost(actorUserId, postId) {
       const p = social.getPost(postId);
-      if (!p) throw new Error('Beitrag nicht gefunden.');
+      if (!p) throw Object.assign(new Error('Beitrag nicht gefunden.'), { code: 'post_not_found' });
       if (p.author_user_id !== actorUserId && !isModerator(actorUserId)) {
         throw new ForbiddenError('Nur Autor oder Moderation.');
       }

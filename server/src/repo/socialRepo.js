@@ -39,7 +39,7 @@ export function createSocialRepo() {
     // ── Profile ──
     createProfile(p) {
       const key = String(p.handle).trim().toLowerCase();
-      if (profiles.has(p.userId)) throw new Error('Profil existiert bereits.');
+      if (profiles.has(p.userId)) throw Object.assign(new Error('Profil existiert bereits.'), { code: 'profile_exists' });
       if (profilesByHandle.has(key)) { const e = new Error('Handle ist bereits vergeben.'); e.code = 'handle_taken'; throw e; }
       const prof = {
         user_id: p.userId, handle: key, display_name: p.displayName,

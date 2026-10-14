@@ -30,7 +30,7 @@ export function createOrgAuthService(repo) {
     // Weiteren Nutzer in eine bestehende Organisation aufnehmen (Rolle geprueft).
     addMember({ organizationId, name, email, password, role }) {
       const org = repo.getOrganization(organizationId);
-      if (!org) throw new Error('Unbekannte Organisation.');
+      if (!org) throw Object.assign(new Error('Unbekannte Organisation.'), { code: 'org_unknown' });
       if (!roleAllowedForOrgType(role, org.type)) {
         throw new Error(`Rolle "${role}" ist im Org-Typ "${org.type}" nicht zulaessig.`);
       }
@@ -52,7 +52,7 @@ export function createOrgAuthService(repo) {
     // Passwort ändern (altes prüfen, neues gehasht setzen).
     changePassword(userId, { oldPassword, newPassword }) {
       const user = repo.getUserById(userId);
-      if (!user) throw new Error('Unbekannter Nutzer.');
+      if (!user) throw Object.assign(new Error('Unbekannter Nutzer.'), { code: 'user_unknown' });
       if (!verifyPassword(oldPassword ?? '', user.password_hash)) throw new AppError('current_pw_wrong', 'Aktuelles Passwort ist falsch.');
       if (!newPassword || String(newPassword).length < 8) throw new AppError('new_pw_short', 'Neues Passwort: mindestens 8 Zeichen.');
       repo.setUserPassword(userId, hashPassword(newPassword));
@@ -83,7 +83,7 @@ export function createOrgAuthService(repo) {
     // Neue Codes erzeugen (invalidiert alle alten) — Klartext EINMAL zurückgeben.
     regenerateRecoveryCodes(userId) {
       const user = repo.getUserById(userId);
-      if (!user) throw new Error('Unbekannter Nutzer.');
+      if (!user) throw Object.assign(new Error('Unbekannter Nutzer.'), { code: 'user_unknown' });
       const { codes, hashes } = generateRecoveryCodes();
       repo.setRecoveryHashes(userId, hashes);
       return { codes };

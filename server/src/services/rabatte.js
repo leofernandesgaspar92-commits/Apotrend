@@ -22,7 +22,7 @@ export function createRabatteService(rabatteRepo, social) {
     // Aus einer Aktion heraus posten (Beitrag referenziert die Aktion).
     postAbout(actorUserId, id, { body, visibility = 'public' }) {
       const rabatt = rabatteRepo.get(id);
-      if (!rabatt) throw new Error('Rabatt-Aktion nicht gefunden.');
+      if (!rabatt) throw Object.assign(new Error('Rabatt-Aktion nicht gefunden.'), { code: 'deal_not_found' });
       return social.createPost(actorUserId, { body, visibility, refType: 'rabatt', refId: id });
     },
   };

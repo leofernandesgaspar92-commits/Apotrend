@@ -75,7 +75,7 @@ export function createPricesService(pricesRepo, social, rabatteRepo = null) {
     // Aus einem Preis-Eintrag heraus posten (Beitrag referenziert das Angebot).
     postAbout(actorUserId, id, { body, visibility = 'public' }) {
       const price = pricesRepo.get(id);
-      if (!price) throw new Error('Preis-Eintrag nicht gefunden.');
+      if (!price) throw Object.assign(new Error('Preis-Eintrag nicht gefunden.'), { code: 'price_not_found' });
       return social.createPost(actorUserId, { body, visibility, refType: 'price', refId: id });
     },
   };

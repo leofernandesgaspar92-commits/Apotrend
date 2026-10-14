@@ -1185,7 +1185,7 @@ const routes = [
   // false` — die Startseite zeigt dann nichts statt einer erfundenen Zahl.
   ['GET', /^\/api\/lage\/([A-Za-z]{2})$/, false, async ({ params }) => {
     const cc = params[0].toUpperCase();
-    if (!COUNTRIES[cc]) { const e = new Error('Unbekanntes Land.'); e.status = 404; throw e; }
+    if (!COUNTRIES[cc]) { const e = Object.assign(new Error('Unbekanntes Land.'), { code: 'unknown_country' }); e.status = 404; throw e; }
     return lageDaten(cc);
   }],
   // Datenabdeckung für Kundschaft (öffentlich): Aus welchen Ländern kommen
@@ -1655,7 +1655,7 @@ const routes = [
   }],
   ['GET', /^\/api\/profiles\/([^/]+)\/(followers|following)$/, true, async ({ userId, params }) => {
     const d = social.followList(userId, decodeURIComponent(params[0]), params[1]);
-    if (!d) { const e = new Error('Profil nicht gefunden'); e.status = 404; throw e; }
+    if (!d) { const e = Object.assign(new Error('Profil nicht gefunden'), { code: 'profile_not_found' }); e.status = 404; throw e; }
     return d;
   }],
   ['GET', /^\/api\/suggestions\/follow$/, true, async ({ userId }) => ({ suggestions: social.suggestFollows(userId) })],
@@ -1683,12 +1683,12 @@ const routes = [
   }],
   ['POST', /^\/api\/tasks$/, true, async ({ userId, body }) => {
     const mem = orgAuth.myMembership(userId);
-    if (!mem) { const e = new Error('Keine Organisation.'); e.status = 403; throw e; }
+    if (!mem) { const e = Object.assign(new Error('Keine Organisation.'), { code: 'org_none' }); e.status = 403; throw e; }
     const title = String(body.title || '').trim();
-    if (title.length < 2) { const e = new Error('Aufgabe braucht einen Titel.'); e.status = 400; throw e; }
+    if (title.length < 2) { const e = Object.assign(new Error('Aufgabe braucht einen Titel.'), { code: 'task_title' }); e.status = 400; throw e; }
     if (title.length > MAX_TITLE) { const e = new Error(`Titel zu lang (max ${MAX_TITLE}).`); e.status = 400; throw e; }
     const dueDate = body.dueDate ? String(body.dueDate).trim() : null;
-    if (dueDate && !isValidCalendarDay(dueDate)) { const e = new Error('Ungültiges Fälligkeitsdatum.'); e.status = 400; throw e; }
+    if (dueDate && !isValidCalendarDay(dueDate)) { const e = Object.assign(new Error('Ungültiges Fälligkeitsdatum.'), { code: 'due_date_invalid' }); e.status = 400; throw e; }
     const task = collab.createTask(userId, mem.organization_id, { title, description: body.description ? String(body.description).slice(0, 1000) : null, assigneeUserId: body.assigneeUserId || null, dueDate });
     // Zugewiesene Person benachrichtigen (transaktional; nicht sich selbst). Best-effort:
     // ein Fehler beim Zustellen darf die schon angelegte Aufgabe nicht als 500 erscheinen lassen.
@@ -1721,14 +1721,14 @@ const routes = [
     const fields = {};
     if (body.title !== undefined) {
       const title = String(body.title || '').trim();
-      if (title.length < 2) { const e = new Error('Aufgabe braucht einen Titel.'); e.status = 400; throw e; }
+      if (title.length < 2) { const e = Object.assign(new Error('Aufgabe braucht einen Titel.'), { code: 'task_title' }); e.status = 400; throw e; }
       if (title.length > MAX_TITLE) { const e = new Error(`Titel zu lang (max ${MAX_TITLE}).`); e.status = 400; throw e; }
       fields.title = title;
     }
     if (body.description !== undefined) fields.description = body.description ? String(body.description).slice(0, 1000) : null;
     if (body.dueDate !== undefined) {
       const dueDate = body.dueDate ? String(body.dueDate).trim() : null;
-      if (dueDate && !isValidCalendarDay(dueDate)) { const e = new Error('Ungültiges Fälligkeitsdatum.'); e.status = 400; throw e; }
+      if (dueDate && !isValidCalendarDay(dueDate)) { const e = Object.assign(new Error('Ungültiges Fälligkeitsdatum.'), { code: 'due_date_invalid' }); e.status = 400; throw e; }
       fields.dueDate = dueDate;
     }
     return { task: collab.editTask(userId, params[0], fields) };
@@ -1746,13 +1746,13 @@ const routes = [
   }],
   ['POST', /^\/api\/notes$/, true, async ({ userId, body }) => {
     const mem = orgAuth.myMembership(userId);
-    if (!mem) { const e = new Error('Keine Organisation.'); e.status = 403; throw e; }
+    if (!mem) { const e = Object.assign(new Error('Keine Organisation.'), { code: 'org_none' }); e.status = 403; throw e; }
     const title = String(body.title || '').trim();
-    if (title.length < 2) { const e = new Error('Notiz braucht einen Titel.'); e.status = 400; throw e; }
+    if (title.length < 2) { const e = Object.assign(new Error('Notiz braucht einen Titel.'), { code: 'note_title' }); e.status = 400; throw e; }
     if (title.length > MAX_TITLE) { const e = new Error(`Titel zu lang (max ${MAX_TITLE}).`); e.status = 400; throw e; }
     let docUrl = null;
     if (body.docUrl && String(body.docUrl).trim()) {
-      try { docUrl = cleanSourceUrl(body.docUrl); } catch { const e = new Error('Link muss ein http(s)-Link sein.'); e.status = 400; throw e; }
+      try { docUrl = cleanSourceUrl(body.docUrl); } catch { const e = Object.assign(new Error('Link muss ein http(s)-Link sein.'), { code: 'url_invalid' }); e.status = 400; throw e; }
     }
     return { note: collab.createNote(userId, mem.organization_id, { title, body: body.body ? String(body.body).slice(0, 2000) : null, docUrl }) };
   }],
@@ -1760,7 +1760,7 @@ const routes = [
     const fields = {};
     if (body.title !== undefined) {
       const title = String(body.title || '').trim();
-      if (title.length < 2) { const e = new Error('Notiz braucht einen Titel.'); e.status = 400; throw e; }
+      if (title.length < 2) { const e = Object.assign(new Error('Notiz braucht einen Titel.'), { code: 'note_title' }); e.status = 400; throw e; }
       if (title.length > MAX_TITLE) { const e = new Error(`Titel zu lang (max ${MAX_TITLE}).`); e.status = 400; throw e; }
       fields.title = title;
     }
@@ -1768,7 +1768,7 @@ const routes = [
     if (body.docUrl !== undefined) {
       let docUrl = null;
       if (body.docUrl && String(body.docUrl).trim()) {
-        try { docUrl = cleanSourceUrl(body.docUrl); } catch { const e = new Error('Link muss ein http(s)-Link sein.'); e.status = 400; throw e; }
+        try { docUrl = cleanSourceUrl(body.docUrl); } catch { const e = Object.assign(new Error('Link muss ein http(s)-Link sein.'), { code: 'url_invalid' }); e.status = 400; throw e; }
       }
       fields.docUrl = docUrl;
     }
@@ -1777,7 +1777,7 @@ const routes = [
   ['POST', /^\/api\/notes\/([^/]+)\/pin$/, true, async ({ userId, params, body }) => ({ note: collab.setNotePinned(userId, params[0], !!body.pinned) })],
   ['POST', /^\/api\/notes\/([^/]+)\/delete$/, true, async ({ userId, params }) => collab.deleteNote(userId, params[0])],
   ['POST', /^\/api\/me\/delete$/, true, async ({ userId, body }) => {
-    if (!orgAuth.verifyUserPassword(userId, body.password)) { const e = new Error('Passwort ist falsch.'); e.status = 401; throw e; }
+    if (!orgAuth.verifyUserPassword(userId, body.password)) { const e = Object.assign(new Error('Passwort ist falsch.'), { code: 'password_wrong' }); e.status = 401; throw e; }
     socialRepo.purgeUser(userId);
     exchangeRepo.purgeUser(userId);
     shortagesRepo.purgeUser(userId);
@@ -2051,7 +2051,7 @@ const routes = [
   ['GET', /^\/api\/account-types$/, false, async () => ({ account_types: listAccountTypes() })],
   ['GET', /^\/api\/posts\/([^/]+)$/, true, async ({ userId, params }) => {
     const p = social.getPost(userId, params[0]);
-    if (!p) { const e = new Error('Beitrag nicht gefunden'); e.status = 404; throw e; }
+    if (!p) { const e = Object.assign(new Error('Beitrag nicht gefunden'), { code: 'post_not_found' }); e.status = 404; throw e; }
     return { post: enrichPosts([p], userId)[0] };
   }],
   ['GET', /^\/api\/posts\/([^/]+)\/comments$/, true, async ({ userId, params }) => ({ comments: social.listComments(userId, params[0]) })],
@@ -2090,7 +2090,7 @@ const routes = [
   ['POST', /^\/api\/orders\/([^/]+)\/received$/, true, async ({ userId, params, body }) => ({ order: social.setOrderReceived(userId, params[0], !!(body && body.received)) })],
   ['POST', /^\/api\/orders\/([^/]+)\/expected$/, true, async ({ userId, params, body }) => {
     const exp = body && body.expected ? String(body.expected).trim() : null;
-    if (exp && !isValidCalendarDay(exp)) { const e = new Error('Ungültiges Datum.'); e.status = 400; throw e; }
+    if (exp && !isValidCalendarDay(exp)) { const e = Object.assign(new Error('Ungültiges Datum.'), { code: 'date_invalid' }); e.status = 400; throw e; }
     return { order: social.setOrderExpected(userId, params[0], exp) };
   }],
   // ── Premium: Videosprechstunde (Terminbuchung) ──
@@ -2123,7 +2123,7 @@ const routes = [
   ['GET', /^\/api\/directory\/([^/]+)$/, true, async ({ userId, params, query }) => social.directory(userId, params[0], { q: query.get('q') || null, bundesland: query.get('bundesland') || null, verifiedOnly: query.get('verified') === '1' })],
   ['GET', /^\/api\/profiles\/([^/]+)\/page$/, true, async ({ userId, params }) => {
     const d = social.profilePage(userId, params[0]);
-    if (!d) { const e = new Error('Profil nicht gefunden'); e.status = 404; throw e; }
+    if (!d) { const e = Object.assign(new Error('Profil nicht gefunden'), { code: 'profile_not_found' }); e.status = 404; throw e; }
     // Offene Biete/Suche der Apotheke — Rechts-Gate am Heimatland des Betrachters (wie die
     // Austausch-Reiter): wo der Bestandsaustausch gesperrt ist, keine Einträge zeigen.
     const exBlocked = isFeatureBlocked(userCountry(userId), 'stock_exchange');
@@ -2146,7 +2146,7 @@ const routes = [
   ['POST', /^\/api\/profile$/, true, async ({ userId, body }) => ({ profile: social.updateProfile(userId, body) })],
   ['POST', /^\/api\/follow$/, true, async ({ userId, body }) => {
     const target = social.getProfile(body.handle);
-    if (!target) { const e = new Error('Profil nicht gefunden'); e.status = 404; throw e; }
+    if (!target) { const e = Object.assign(new Error('Profil nicht gefunden'), { code: 'profile_not_found' }); e.status = 404; throw e; }
     return social.follow(userId, target.user_id);
   }],
   ['POST', /^\/api\/unfollow$/, true, async ({ userId, body }) => {
@@ -2170,7 +2170,7 @@ const routes = [
   ['GET', /^\/api\/dm$/, true, async ({ userId }) => ({ threads: social.dmInbox(userId), unread: social.dmUnreadTotal(userId), archived: social.dmArchived(userId) })],
   ['POST', /^\/api\/dm\/start$/, true, async ({ userId, body }) => {
     const target = social.getProfile(body.handle);
-    if (!target) { const e = new Error('Profil nicht gefunden'); e.status = 404; throw e; }
+    if (!target) { const e = Object.assign(new Error('Profil nicht gefunden'), { code: 'profile_not_found' }); e.status = 404; throw e; }
     return { thread: social.startDm(userId, target.user_id) };
   }],
   ['GET', /^\/api\/dm\/([^/]+)$/, true, async ({ userId, params }) => social.dmConversation(userId, params[0])],
@@ -2271,7 +2271,7 @@ const routes = [
     const q = body && body.id
       ? engpassQuellen().find((x) => x.id === body.id)
       : eigeneQuellen.entwurf(body || {});
-    if (!q) { const e = new Error('Quelle nicht gefunden.'); e.status = 404; throw e; }
+    if (!q) { const e = Object.assign(new Error('Quelle nicht gefunden.'), { code: 'source_not_found' }); e.status = 404; throw e; }
     const start = Date.now();
     try {
       const { rows, rejected, spalten } = await holeEngpassQuelle(q);
@@ -2323,7 +2323,7 @@ const routes = [
   }],
   ['GET', /^\/api\/shortages\/([^/]+)$/, true, async ({ userId, params }) => {
     const d = shortages.withActivity(userId, params[0]);
-    if (!d) { const e = new Error('Engpass nicht gefunden'); e.status = 404; throw e; }
+    if (!d) { const e = Object.assign(new Error('Engpass nicht gefunden'), { code: 'shortage_not_found' }); e.status = 404; throw e; }
     return d;
   }],
   ['POST', /^\/api\/shortages\/([^/]+)\/post$/, true, async ({ userId, params, body }) => shortages.postAbout(userId, params[0], { body: body.body, visibility: body.visibility })],
@@ -2390,7 +2390,7 @@ const routes = [
   ['GET', /^\/api\/anzeigen\/platz\/(start|feed|seite)$/, true, async ({ userId, params }) => ({ anzeige: anzeigen.ausliefern(userId, params[0]), __sichern: true })],
   ['GET', /^\/api\/anzeigen\/([a-z0-9]+)\/klick$/, false, async ({ params, query }) => {
     const ziel = anzeigen.klick(params[0], query.get('z'));
-    if (!ziel) { const e = new Error('Anzeige nicht gefunden.'); e.status = 404; throw e; }
+    if (!ziel) { const e = Object.assign(new Error('Anzeige nicht gefunden.'), { code: 'ad_not_found' }); e.status = 404; throw e; }
     return { __weiterleitung: ziel };
   }],
   ['POST', /^\/api\/anzeigen\/([a-z0-9]+)\/ausblenden$/, true, async ({ userId, params }) => anzeigen.ausblenden(userId, params[0])],
@@ -2422,7 +2422,7 @@ const routes = [
   ['GET', /^\/api\/prices\/([^/]+)$/, true, async ({ userId, params }) => {
     ensureFeatureAllowed('price_compare', userId);
     const d = prices.withActivity(userId, params[0]);
-    if (!d) { const e = new Error('Preis nicht gefunden'); e.status = 404; throw e; }
+    if (!d) { const e = Object.assign(new Error('Preis nicht gefunden'), { code: 'price_not_found' }); e.status = 404; throw e; }
     return d;
   }],
   ['POST', /^\/api\/prices\/([^/]+)\/post$/, true, async ({ userId, params, body }) => { ensureFeatureAllowed('price_compare', userId); return prices.postAbout(userId, params[0], { body: body.body, visibility: body.visibility }); }],
@@ -2441,7 +2441,7 @@ const routes = [
   ['GET', /^\/api\/rabatte\/([^/]+)$/, true, async ({ userId, params, query }) => {
     ensureFeatureAllowed('deals', userId);
     const d = rabatte.withActivity(userId, params[0]);
-    if (!d) { const e = new Error('Rabatt-Aktion nicht gefunden'); e.status = 404; throw e; }
+    if (!d) { const e = Object.assign(new Error('Rabatt-Aktion nicht gefunden'), { code: 'deal_not_found' }); e.status = 404; throw e; }
     return d;
   }],
   ['POST', /^\/api\/rabatte\/([^/]+)\/post$/, true, async ({ userId, params, body, query }) => { ensureFeatureAllowed('deals', userId); return rabatte.postAbout(userId, params[0], { body: body.body, visibility: body.visibility }); }],
