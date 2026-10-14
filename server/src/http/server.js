@@ -50,6 +50,7 @@ import { startklar } from '../services/startklar.js';
 import { createOeffentlicheSeiten } from '../services/oeffentlicheSeiten.js';
 import { createWebPush, pushNachricht, testNachricht, PUSH_TYPEN } from '../services/webPush.js';
 import { createRechnungsnummern } from '../services/rechnungsnummern.js';
+import { BESTAETIGT_AB_APOTHEKEN } from '../services/shortages.js';
 import { createRechnungen } from '../services/rechnungen.js';
 import { createDatenApi, zugangPruefen, engpassZeile, fuerSchnittstelle, alsCsv } from '../services/datenApi.js';
 import { werbeplaetzeAusUmgebung, ZIELGRUPPEN } from '../data/werbeplaetze.js';
@@ -756,27 +757,43 @@ const lagebildDienst = createLagebildDienst({
 // Öffentliche Lage eines Landes (Startseite, Teilseite): nur Zahlen und Quelle.
 function lageDaten(cc) {
   const b = chronik.wochenbilanz(cc);
-  if (!b) return { land: cc, daten: false };
+  // Apotheken-Meldungen (nicht amtlich) zählen getrennt — in Ländern ohne
+  // Behördenliste sind sie die einzige Aussage, die eine Teilseite machen kann.
+  const apo = new Map();
+  for (const z of shortagesRepo.list({ country: cc })) {
+    if (z.provenance !== 'community' || !['kritisch', 'eingeschraenkt'].includes(z.status) || !z.wirkstoff || String(z.country || '').toUpperCase() !== cc) continue;
+    const k = z.wirkstoff.trim().toLowerCase();
+    apo.set(k, Math.max(apo.get(k) || 0, 1 + (z.confirmations || []).length));
+  }
+  const apotheken = apo.size;
+  const apotheken_bestaetigt = [...apo.values()].filter((n) => n >= BESTAETIGT_AB_APOTHEKEN).length;
+  if (!b) return { land: cc, daten: false, apotheken, apotheken_bestaetigt };
   const quellen = [...new Set(shortagesRepo.list({ country: cc })
     .filter((z) => z.provenance === 'verified' && !z.reporter_user_id && String(z.country || '').toUpperCase() === cc)
     .map((z) => z.quelle).filter(Boolean))].slice(0, 3);
   const job = scheduler.status().find((j) => j.name === 'shortages') || null;
-  return { land: cc, daten: true, offen: b.offen, neu: b.neu.length, beendet: b.beendet.length, aufzeichnung_seit: b.aufzeichnung_seit, quellen, stand: (job && job.lastRunAt) || null };
+  return { land: cc, daten: true, offen: b.offen, neu: b.neu.length, beendet: b.beendet.length, aufzeichnung_seit: b.aufzeichnung_seit, quellen, stand: (job && job.lastRunAt) || null, apotheken, apotheken_bestaetigt };
 }
 // Ein Wirkstoff in einem Land für die Teilseite: knapp ja/nein, seit wann, laut wem.
 // Dieselbe Quelle wie die Engpass-Liste der App (inkl. Herkunft), nichts Erfundenes.
 function wirkstoffLage(cc, name) {
   const AKTIV = ['kritisch', 'eingeschraenkt'];
-  const treffer = shortagesRepo.list({ country: cc }).filter((z) => AKTIV.includes(z.status) && z.wirkstoff && gleicherWirkstoff(z.wirkstoff, name))
+  const treffer = shortagesRepo.list({ country: cc }).filter((z) => AKTIV.includes(z.status) && z.wirkstoff && gleicherWirkstoff(z.wirkstoff, name));
+  // Amtlich und Apotheken getrennt: Ein einzelner Apotheken-Hinweis darf auf
+  // einer geteilten Vorschau nicht wie „knapp laut Behörde" aussehen. Beispiel-
+  // daten (reference) gehören gar nicht auf eine öffentliche Seite.
+  const amtlich = treffer.filter((z) => z.provenance === 'verified' && !z.reporter_user_id)
     .sort((a, b) => (a.status === 'kritisch' ? -1 : 0) - (b.status === 'kritisch' ? -1 : 0));
-  const m = treffer[0];
-  const wirkstoff = m ? m.wirkstoff : name;
+  const apo = treffer.filter((z) => z.provenance === 'community').sort((a, b) => (b.confirmations || []).length - (a.confirmations || []).length);
+  const m = amtlich[0]; const c = apo[0];
+  const wirkstoff = m ? m.wirkstoff : c ? c.wirkstoff : name;
   const kurz = chronik.kurz(wirkstoff, cc);
   const job = scheduler.status().find((j) => j.name === 'shortages') || null;
   return {
     wirkstoff, knapp: !!m, beobachtet_land: !!chronik.aufzeichnungSeit(cc),
     seit_tagen: kurz && kurz.offen_seit_tagen != null ? kurz.offen_seit_tagen : null,
     herkunft: m ? m.provenance : null, quelle: m ? m.quelle : null,
+    apotheken: c ? 1 + (c.confirmations || []).length : 0,
     stand: job && job.lastRunAt ? String(job.lastRunAt).slice(0, 10) : null,
   };
 }

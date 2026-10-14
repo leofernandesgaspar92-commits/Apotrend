@@ -13,6 +13,8 @@
 //  Alles, was aus der Adresse kommt, wird escaped — die Seite ist öffentlich.
 // ============================================================================
 
+import { BESTAETIGT_AB_APOTHEKEN } from '../services/shortages.js';
+
 const TEXTE = {
   de: {
     lage_titel: (n, land) => `${n} Wirkstoffe auf der Engpassliste in ${land}`,
@@ -23,6 +25,10 @@ const TEXTE = {
     w_seit: (n) => (n <= 0 ? 'seit heute' : n === 1 ? 'seit 1 Tag' : `seit ${n} Tagen`),
     w_nicht: (w, land) => `${w}: in ${land} derzeit nicht als knapp gemeldet`,
     w_unbekannt: (w, land) => `${w}: für ${land} liegt noch keine Behördenliste vor`,
+    w_apo_best: (w, land, n) => `${w}: von ${n} Apotheken in ${land} als knapp gemeldet`,
+    w_apo: (w, land, n) => (n === 1 ? `${w}: 1 Apotheke in ${land} meldet einen Engpass (noch nicht bestätigt)` : `${w}: ${n} Apotheken in ${land} melden einen Engpass (noch nicht bestätigt)`),
+    lage_apo: (n, land) => (n === 1 ? `1 Wirkstoff von Apotheken in ${land} als knapp gemeldet` : `${n} Wirkstoffe von Apotheken in ${land} als knapp gemeldet`),
+    lage_apo_beschr: (b) => `davon ${b} von mehreren Apotheken bestätigt · nicht amtlich`,
     quelle: 'Quelle', community: 'gemeldet aus Apotheken, nicht amtlich', referenz: 'Referenzdaten', stand: 'Stand',
     cta_w: (w) => `Kostenlos benachrichtigt werden, wenn sich bei ${w} etwas ändert`,
     cta_lage: 'Alle Engpässe mit Quelle ansehen — kostenlos', mehr: 'In ApoPulse: Verlauf, Lage im Ausland, eigene Liste prüfen.',
@@ -37,6 +43,10 @@ const TEXTE = {
     w_seit: (n) => (n <= 0 ? 'since today' : n === 1 ? 'for 1 day' : `for ${n} days`),
     w_nicht: (w, land) => `${w}: currently not reported short in ${land}`,
     w_unbekannt: (w, land) => `${w}: no authority list for ${land} yet`,
+    w_apo_best: (w, land, n) => `${w}: reported short by ${n} pharmacies in ${land}`,
+    w_apo: (w, land, n) => (n === 1 ? `${w}: 1 pharmacy in ${land} reports a shortage (not yet confirmed)` : `${w}: ${n} pharmacies in ${land} report a shortage (not yet confirmed)`),
+    lage_apo: (n, land) => (n === 1 ? `1 substance reported short by pharmacies in ${land}` : `${n} substances reported short by pharmacies in ${land}`),
+    lage_apo_beschr: (b) => `${b} of them confirmed by several pharmacies · not official`,
     quelle: 'Source', community: 'reported by pharmacies, not official', referenz: 'reference data', stand: 'As of',
     cta_w: (w) => `Get notified for free when anything changes for ${w}`,
     cta_lage: 'See all shortages with sources — free', mehr: 'In ApoPulse: history, situation abroad, check your own list.',
@@ -51,6 +61,10 @@ const TEXTE = {
     w_seit: (n) => (n <= 0 ? 'desde hoje' : n === 1 ? 'há 1 dia' : `há ${n} dias`),
     w_nicht: (w, land) => `${w}: sem rutura comunicada atualmente em ${land}`,
     w_unbekannt: (w, land) => `${w}: ainda não há lista de autoridade para ${land}`,
+    w_apo_best: (w, land, n) => `${w}: comunicado em rutura por ${n} farmácias em ${land}`,
+    w_apo: (w, land, n) => (n === 1 ? `${w}: 1 farmácia em ${land} comunica uma rutura (ainda não confirmado)` : `${w}: ${n} farmácias em ${land} comunicam uma rutura (ainda não confirmado)`),
+    lage_apo: (n, land) => (n === 1 ? `1 substância comunicada em rutura por farmácias em ${land}` : `${n} substâncias comunicadas em rutura por farmácias em ${land}`),
+    lage_apo_beschr: (b) => `${b} delas confirmadas por várias farmácias · não oficial`,
     quelle: 'Fonte', community: 'comunicado por farmácias, não oficial', referenz: 'dados de referência', stand: 'Atualizado',
     cta_w: (w) => `Receber aviso grátis quando algo mudar em ${w}`,
     cta_lage: 'Ver todas as ruturas com fonte — grátis', mehr: 'No ApoPulse: histórico, situação no estrangeiro, verificar a sua lista.',
@@ -80,15 +94,23 @@ export function teilseite(d, { basis }) {
   const land = landName(d.land, d.sprache, d.land);
   let titel; let beschr; let ziel;
   if (d.art === 'lage') {
-    titel = !d.daten ? T.lage_ohne(land) : d.offen === 1 ? T.lage_titel_1(land) : T.lage_titel(d.offen, land);
-    beschr = d.daten ? T.lage_beschr(d.neu, (d.quellen || []).join(', ') || '—') : T.mehr;
+    if (d.daten) {
+      titel = d.offen === 1 ? T.lage_titel_1(land) : T.lage_titel(d.offen, land);
+      beschr = T.lage_beschr(d.neu, (d.quellen || []).join(', ') || '—');
+    } else if (d.apotheken) {
+      // Ohne Behördenliste (große Teile Afrikas): die Apotheken-Lage, klar als nicht amtlich.
+      titel = T.lage_apo(d.apotheken, land);
+      beschr = T.lage_apo_beschr(d.apotheken_bestaetigt || 0);
+    } else { titel = T.lage_ohne(land); beschr = T.mehr; }
     ziel = `/?land=${encodeURIComponent(d.land)}`;
   } else {
     const w = d.wirkstoff;
-    if (!d.beobachtet_land && !d.knapp) titel = T.w_unbekannt(w, land);
-    else if (d.knapp) titel = `${T.w_knapp(w, land)}${d.seit_tagen != null ? ' ' + T.w_seit(d.seit_tagen) : ''}`;
+    const apo = !d.knapp && d.apotheken > 0;
+    if (d.knapp) titel = `${T.w_knapp(w, land)}${d.seit_tagen != null ? ' ' + T.w_seit(d.seit_tagen) : ''}`;
+    else if (apo) titel = d.apotheken >= BESTAETIGT_AB_APOTHEKEN ? T.w_apo_best(w, land, d.apotheken) : T.w_apo(w, land, d.apotheken);
+    else if (!d.beobachtet_land) titel = T.w_unbekannt(w, land);
     else titel = T.w_nicht(w, land);
-    const herkunft = d.herkunft === 'community' ? T.community : d.herkunft === 'reference' ? T.referenz : d.quelle ? `${T.quelle}: ${d.quelle}` : null;
+    const herkunft = apo || d.herkunft === 'community' ? T.community : d.herkunft === 'reference' ? T.referenz : d.quelle ? `${T.quelle}: ${d.quelle}` : null;
     beschr = [herkunft, d.stand ? `${T.stand}: ${datum(d.stand, d.sprache)}` : null].filter(Boolean).join(' · ') || T.mehr;
     ziel = `/?land=${encodeURIComponent(d.land)}&beobachten=${encodeURIComponent(w)}`;
   }

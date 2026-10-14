@@ -2560,3 +2560,22 @@ getrennt). Browser-Audit „Vertrauen".
 
 **Gegenproben (jede schlägt an):** Schwelle 2; ohne Einmal-Schutz; Alarm an alle Länder;
 Bestätigte nicht getrennt gezählt.
+
+### Cycle · Teilen in Afrika: Apotheken-Lage mit Vertrauensstufe (2026-10-14)
+
+**Warum:** In Ländern ohne Behördenliste zeigte ein geteilter Link nur „noch keine Behördenliste"
+— wertlos für WhatsApp-Gruppen. Und `wirkstoffLage` nahm den ersten Treffer egal welcher
+Herkunft: Ein einzelner Apotheken-Hinweis hätte als „knapp in Uganda" im Titel gestanden
+(Beispieldaten ebenso).
+
+**WORK.** `wirkstoffLage` trennt amtlich (nur `verified`) und Apotheken (stärkste Meldung nach
+Bestätigungen); Beispieldaten fallen weg. `lageDaten` zählt Apotheken-Meldungen und bestätigte
+getrennt. Teilseite: „1 Apotheke meldet einen Engpass (noch nicht bestätigt)" bzw. „von 3
+Apotheken als knapp gemeldet", Beschreibung „gemeldet aus Apotheken, nicht amtlich"; Lage ohne
+Behördenliste mit Apotheken-Zahlen. de/en/pt.
+
+**Tests.** `teilseite.test.js` (+2: Texte je Stufe; echter Server Uganda: keine Liste → Hinweis
+→ bestätigt, Lage des Landes; nie „short in Uganda" für einen Hinweis).
+
+**Gegenproben (jede schlägt an):** Apotheken als amtlich; Schwelle ignoriert; Lage ohne
+Apotheken-Zahlen.

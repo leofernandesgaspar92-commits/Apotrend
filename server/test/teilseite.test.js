@@ -118,3 +118,50 @@ test('Teilseiten über den Server: Behördenliste, unbekanntes Land, Aufrufe im 
     behoerde.close();
   }
 });
+
+test('Ohne Behördenliste (Afrika): Apotheken-Meldungen mit Vertrauensstufe, nie als „laut Behörde"', () => {
+  const basis = 'https://apopulse.example';
+  const einzeln = teilseite({ art: 'wirkstoff', land: 'UG', sprache: 'en', pfad: '/x', wirkstoff: 'Salbutamol', beobachtet_land: false, knapp: false, apotheken: 1 }, { basis });
+  assert.equal(meta(einzeln, 'og:title'), 'Salbutamol: 1 pharmacy in Uganda reports a shortage (not yet confirmed)');
+  assert.match(meta(einzeln, 'og:description'), /not official/);
+  const best = teilseite({ art: 'wirkstoff', land: 'UG', sprache: 'en', pfad: '/x', wirkstoff: 'Salbutamol', beobachtet_land: false, knapp: false, apotheken: 3 }, { basis });
+  assert.equal(meta(best, 'og:title'), 'Salbutamol: reported short by 3 pharmacies in Uganda');
+  const lage = teilseite({ art: 'lage', land: 'UG', sprache: 'en', pfad: '/x', daten: false, apotheken: 2, apotheken_bestaetigt: 1 }, { basis });
+  assert.equal(meta(lage, 'og:title'), '2 substances reported short by pharmacies in Uganda');
+  assert.equal(meta(lage, 'og:description'), '1 of them confirmed by several pharmacies · not official');
+});
+
+test('Über HTTP: geteilter Link aus Uganda — erst Hinweis, dann bestätigt', { timeout: 60000 }, async () => {
+  const kind = spawn(process.execPath, [SERVER], {
+    env: { ...process.env, PORT: '0', APOPULSE_TOKEN_SECRET: 'teil-ug-test', APOPULSE_DATA_FILE: '', APOPULSE_PRESSE: 'aus', APOPULSE_REFERENCE_DATA: '', APOPULSE_PUBLIC_URL: '' },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let log = '';
+  try {
+    const port = await new Promise((ok, fail) => {
+      const zeit = setTimeout(() => fail(new Error('Server kam nicht hoch:\n' + log)), 20000);
+      const lies = (d) => { log += d; const m = log.match(/läuft auf http:\/\/localhost:(\d+)/); if (m) { clearTimeout(zeit); ok(Number(m[1])); } };
+      kind.stdout.on('data', lies); kind.stderr.on('data', lies);
+      kind.on('exit', (c) => { clearTimeout(zeit); fail(new Error(`Server beendet (${c}):\n${log}`)); });
+    });
+    const B = `http://localhost:${port}`;
+    const H = (t) => ({ 'content-type': 'application/json', ...(t ? { authorization: 'Bearer ' + t } : {}) });
+    const reg = async (n) => (await (await fetch(B + '/api/register', { method: 'POST', headers: H(''), body: JSON.stringify({ name: n, email: n.replace(/\W/g, '') + '@ug.test', password: 'Passwort123!', country: 'UG', accountType: 'pharmacy' }) })).json()).token;
+    const a = await reg('Apo A'); const b2 = await reg('Apo B'); const c2 = await reg('Apo C');
+    const titel = async (pfad) => meta(await (await fetch(B + pfad)).text(), 'og:title');
+
+    assert.match(await titel('/teilen/w/UG/Salbutamol'), /no authority list for Uganda/);
+    const m = await (await fetch(B + '/api/shortages/report', { method: 'POST', headers: H(a), body: JSON.stringify({ wirkstoff: 'Salbutamol', bezeichnung: 'Salbutamol Inhaler', status: 'kritisch', country: 'UG' }) })).json();
+    assert.ok(m.id, 'Meldung nicht angelegt');
+    const t1 = await titel('/teilen/w/UG/salbutamol');
+    assert.equal(t1, 'Salbutamol: 1 pharmacy in Uganda reports a shortage (not yet confirmed)');
+    assert.ok(!/: short in Uganda/.test(t1), 'Apotheken-Hinweis wie amtlich formuliert');
+    for (const t of [b2, c2]) await fetch(B + `/api/shortages/${m.id}/confirm`, { method: 'POST', headers: H(t) });
+    assert.equal(await titel('/teilen/w/UG/Salbutamol'), 'Salbutamol: reported short by 3 pharmacies in Uganda');
+    const lage = await (await fetch(B + '/teilen/lage/UG')).text();
+    assert.equal(meta(lage, 'og:title'), '1 substance reported short by pharmacies in Uganda');
+    assert.equal(meta(lage, 'og:description'), '1 of them confirmed by several pharmacies · not official');
+  } finally {
+    await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
+  }
+});

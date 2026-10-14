@@ -77,3 +77,16 @@ man ihnen richtig traut:
 - Engpasslage Afrika zählt bestätigte Meldungen getrennt; die Daten-Schnittstelle liefert
   `bestaetigt_von` (Anzahl Apotheken) je Apotheken-Meldung.
 - Amtlich wird eine Apotheken-Meldung dadurch nie — sie bleibt überall so gekennzeichnet.
+
+## Teilen in Ländern ohne Behördenliste
+
+Geteilte Links (WhatsApp-Vorschau) zeigen in solchen Ländern die Apotheken-Lage mit
+Vertrauensstufe — nie als Behördenaussage:
+
+- „Salbutamol: 1 pharmacy in Uganda reports a shortage (not yet confirmed)"
+- „Salbutamol: reported short by 3 pharmacies in Uganda" — Beschreibung „reported by pharmacies,
+  not official"
+- Lage des Landes: „2 substances reported short by pharmacies in Uganda · 1 of them confirmed by
+  several pharmacies · not official"
+
+Beispieldaten erscheinen auf Teilseiten nicht mehr.
