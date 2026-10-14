@@ -148,6 +148,9 @@ const TEXTE = {
     shortage_abroad: (w, l) => [`Frühwarnung: ${w}`, `${w} ist in ${l} knapp — bei Ihnen noch nicht. Vorrat prüfen.`],
     shortage_bestaetigt: (w, l, n) => [`Bestätigt: ${w}`, `${n} Apotheken in ${l} melden ${w} als knapp (nicht amtlich).`],
     watch_alert: (w) => [`Meldung aus Apotheken: ${w}`, `Eine Apotheke meldet ${w} als knapp (nicht amtlich).`],
+    watch_wieder: (w) => [`Wieder verfügbar: ${w}`, `${w} ist laut Meldung aus Apotheken wieder lieferbar (nicht amtlich).`],
+    watch_eingeschraenkt: (w) => [`Eingeschränkt lieferbar: ${w}`, `Eine Apotheke meldet ${w} als eingeschränkt lieferbar (nicht amtlich).`],
+    watch_termin: (w, d) => [`Neuer Termin: ${w}`, d ? `${w} voraussichtlich wieder lieferbar bis ${d} (Meldung aus Apotheken).` : `Für ${w} gibt es noch keinen Liefertermin (Meldung aus Apotheken).`],
     test: () => ['ApoPulse: Benachrichtigung funktioniert', 'So kommt ein Engpass-Alarm an, auch wenn die App geschlossen ist.'],
   },
   en: {
@@ -156,6 +159,9 @@ const TEXTE = {
     shortage_abroad: (w, l) => [`Early warning: ${w}`, `${w} is short in ${l} — not yet in your country. Check your stock.`],
     shortage_bestaetigt: (w, l, n) => [`Confirmed: ${w}`, `${n} pharmacies in ${l} report ${w} as short (not official).`],
     watch_alert: (w) => [`Pharmacy report: ${w}`, `A pharmacy reports ${w} as short (not official).`],
+    watch_wieder: (w) => [`Available again: ${w}`, `According to a pharmacy report, ${w} is available again (not official).`],
+    watch_eingeschraenkt: (w) => [`Limited availability: ${w}`, `A pharmacy reports limited availability of ${w} (not official).`],
+    watch_termin: (w, d) => [`New date: ${w}`, d ? `${w} expected back in stock by ${d} (pharmacy report).` : `No delivery date for ${w} yet (pharmacy report).`],
     test: () => ['ApoPulse: notifications work', 'This is how a shortage alert arrives, even when the app is closed.'],
   },
   pt: {
@@ -164,6 +170,9 @@ const TEXTE = {
     shortage_abroad: (w, l) => [`Alerta precoce: ${w}`, `${w} está em rutura em ${l} — no seu país ainda não. Verifique o stock.`],
     shortage_bestaetigt: (w, l, n) => [`Confirmado: ${w}`, `${n} farmácias em ${l} comunicam ${w} em rutura (não oficial).`],
     watch_alert: (w) => [`Comunicação de farmácias: ${w}`, `Uma farmácia comunica ${w} em rutura (não oficial).`],
+    watch_wieder: (w) => [`Novamente disponível: ${w}`, `Segundo uma farmácia, ${w} está novamente disponível (não oficial).`],
+    watch_eingeschraenkt: (w) => [`Disponibilidade limitada: ${w}`, `Uma farmácia comunica disponibilidade limitada de ${w} (não oficial).`],
+    watch_termin: (w, d) => [`Nova data: ${w}`, d ? `${w} previsto de novo em stock até ${d} (comunicação de farmácias).` : `Ainda sem data de entrega para ${w} (comunicação de farmácias).`],
     test: () => ['ApoPulse: notificações a funcionar', 'É assim que chega um alerta de rutura, mesmo com a app fechada.'],
   },
 };
@@ -172,12 +181,24 @@ export const PUSH_TYPEN = new Set(['shortage_home', 'shortage_ended', 'shortage_
 /** Benachrichtigung -> Push-Nachricht in der Sprache der Person. */
 export function pushNachricht(n, { sprache = 'de', landName = (c) => c } = {}) {
   const T = TEXTE[sprache] || TEXTE.de;
-  const f = T[n.type];
-  if (!f) return null;
   const teile = String(n.label || '').split(' · ');
+  // watch_alert steht für mehrere Ereignisse — der Inhalt steckt im Label. Vorher
+  // hieß JEDE Push-Nachricht „meldet … als knapp", auch „wieder verfügbar".
+  let typ = n.type;
+  if (typ === 'watch_alert') {
+    const was = teile[1] || '';
+    if (/Wieder verfügbar/.test(was)) typ = 'watch_wieder';
+    else if (/Eingeschränkt lieferbar/.test(was)) typ = 'watch_eingeschraenkt';
+    else if (/^Termin/.test(was)) typ = 'watch_termin';
+  }
+  const f = T[typ];
+  if (!f) return null;
   const wirkstoff = n.ref_type === 'wirkstoff' || n.refType === 'wirkstoff' ? (n.ref_id || n.refId || teile[0]) : teile[0];
   const land = teile[1] && /^[A-Z]{2}$/.test(teile[1]) ? landName(teile[1]) : (teile[1] || '');
-  const [titel, text] = f(wirkstoff, land, teile[2] || '');
+  const termin = typ === 'watch_termin' ? ((teile[1] || '').match(/(\d{4})-(\d{2})-(\d{2})/) || null) : null;
+  const [titel, text] = typ === 'watch_termin'
+    ? f(wirkstoff, termin ? (sprache === 'de' ? `${termin[3]}.${termin[2]}.${termin[1]}` : `${termin[3]}/${termin[2]}/${termin[1]}`) : '')
+    : f(wirkstoff, land, teile[2] || '');
   const url = n.type === 'watch_alert' ? '/?tab=shortages' : `/?wirkstoff=${encodeURIComponent(wirkstoff)}`;
   return { titel, text, url, tag: `${n.type}:${wirkstoff}` };
 }

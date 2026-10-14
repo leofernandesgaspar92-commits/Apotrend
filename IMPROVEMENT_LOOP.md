@@ -2785,3 +2785,20 @@ einen Klartext-Hinweis, die Sicherheits-Ansicht ihre Erklärung ohne „KI". Men
 vor „Advertise".
 
 **Tests.** Browser-Audit „Erster Eindruck" (Wirkstoff-Seite, Live-Warnungen); Gegenprobe → beide rot.
+
+### Cycle · Sprache: CSV-Kopf, Benachrichtigungen, Push-Inhalt (2026-10-14)
+
+**Prüfung.** Schlüssel de/en/pt vollständig (0 fehlend); mutmaßlich unübersetzte Werte nur
+internationale Wörter. Feste deutsche Texte im Code gesucht.
+
+**Befunde → WORK.**
+1. CSV der Beobachtungsliste mit festem Kopf „Wirkstoff;Aktueller Status;Präparat;Notiz" → i18n.
+2. `watch_alert`-Labels vom Server deutsch („… · Kritischer Engpass (Community-Meldung)") → App
+   übersetzt die festen Bausteine (`notifLabel`), auch für schon gespeicherte Benachrichtigungen.
+3. **Inhaltlicher Fehler:** Push zu `watch_alert` sagte immer „meldet … als knapp", auch bei
+   „wieder verfügbar" und bei Terminänderungen. Jetzt nach Inhalt: knapp / eingeschränkt / wieder
+   verfügbar / neuer Termin (de/en/pt).
+
+**Tests.** `benachrichtigung-sprache.test.js` (Push je Inhalt; echte `notifLabel` per vm; Bausteine
+des Servers abgeglichen). Browser-Audit „Erster Eindruck": CSV-Kopf. **Gegenproben:** Push ohne
+Inhaltsweiche; CSV-Kopf deutsch — beide rot.

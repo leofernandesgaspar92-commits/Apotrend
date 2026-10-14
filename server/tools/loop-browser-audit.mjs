@@ -2229,6 +2229,18 @@ async function main() {
     for (let k = 0; k < 3; k++) { const b = page.locator('#app button:visible', { hasText: /^(Watch|Continue|Go to)/ }).first(); if (!(await b.count())) break; await b.click().catch(() => {}); await page.waitForTimeout(800); }
     await page.waitForTimeout(800);
     if (await page.locator('[data-bulkalert], [data-aset]').count()) findings.push('Erster Eindruck: Rabatt-Alarme in einem Land ohne Preise');
+    // CSV der Beobachtungsliste: Spaltenköpfe in der Sprache der Oberfläche (vorher fest „Wirkstoff;Aktueller Status").
+    {
+      const csvKnopf = page.locator('[data-wl-csv]').first();
+      if (!(await csvKnopf.count())) findings.push('Erster Eindruck: CSV-Knopf der Beobachtungsliste fehlt');
+      else {
+        const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 5000 }).catch(() => null), csvKnopf.click()]);
+        const { readFileSync } = await import('node:fs');
+        const inhalt = dl ? readFileSync(await dl.path(), 'utf8') : '';
+        const kopf = inhalt.replace(/^\uFEFF/, '').split(/\r?\n/)[0];
+        if (!/^Substance,Current status,Product/.test(kopf)) findings.push(`Erster Eindruck: CSV-Kopf nicht übersetzt (${kopf.slice(0, 60)})`);
+      }
+    }
     await reiterOeffnen(page, 'shortages'); await page.waitForTimeout(1500);
     const leer = page.locator('[data-leermelden]');
     if (!(await leer.count())) findings.push('Erster Eindruck: leere Engpassliste ohne Aufforderung zu melden');

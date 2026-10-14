@@ -1952,8 +1952,9 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
   if (csvBtn) csvBtn.onclick = () => {
     const cur = renderWatchlistCard._items || items;
     // Premium: private Notizen als zusätzliche Spalte mit exportieren.
-    const header = ['Wirkstoff', 'Aktueller Status', 'Präparat'];
-    if (premium) header.push('Notiz');
+    // Spaltenköpfe in der Sprache der Oberfläche (bis 10/2026 fest deutsch, auch in Uganda).
+    const header = [t('csv_wirkstoff'), t('wl_csv_status'), t('csv_praeparat')];
+    if (premium) header.push(t('wl_csv_notiz'));
     const rows = cur.map(it => {
       const r = [it.wirkstoff, watchStatusMeta(it.status).label, it.bezeichnung || ''];
       if (premium) r.push(it.note || '');
@@ -9171,6 +9172,19 @@ async function refreshNotifCount() {
   } catch {}
 }
 // Engpass-/Beschaffungs-relevante Benachrichtigungstypen (für den Meldungs-Filter).
+// Hinweise zu beobachteten Wirkstoffen baut der Server mit festen deutschen
+// Bausteinen („Oxytocin · Kritischer Engpass (Community-Meldung)"). Hier in die
+// Sprache der Oberfläche — auch für schon gespeicherte Benachrichtigungen.
+function notifLabel(label) {
+  return String(label || '')
+    .replace(/ · Kritischer Engpass/, () => ' · ' + t('nl_kritisch'))
+    .replace(/ · Eingeschränkt lieferbar/, () => ' · ' + t('nl_eingeschraenkt'))
+    .replace(/ · Wieder verfügbar/, () => ' · ' + t('nl_verfuegbar'))
+    .replace(/ · Termin offen$/, () => ' · ' + t('nl_termin_offen'))
+    .replace(/ · Termin (\d{4}-\d{2}-\d{2})$/, (m, d) => ' · ' + ti('nl_termin', { d: fmtDateDe(d) }))
+    .replace(/ \(Community-Meldung\)$/, () => ' (' + t('nl_community') + ')')
+    .replace(/ \(aktualisiert\)$/, () => ' (' + t('nl_aktualisiert') + ')');
+}
 const NOTIF_PROCUREMENT = new Set(['shortage_home','shortage_ended','shortage_abroad','shortage_bestaetigt','watch_alert','shortage_confirm','watch_offer','exchange_offer','exchange_want','signal_alert']);
 let notifFilter = 'all'; // 'all' | 'procurement' | 'social'
 let notifUnreadOnly = false; // Zusatzfilter: nur ungelesene zeigen
@@ -9218,7 +9232,7 @@ async function showNotifications() {
       <div class="row" style="align-items:center">
         ${n.actor ? avatarHtml(n.actor, 34, false) : ''}
         <span${n.actor?' style="font-size:16px"':''}>${icons[n.type]||'🔔'}</span>
-        <span style="margin-left:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' „'+esc(/^shortage_(abroad|home|ended)$/.test(n.type)?n.label.replace(/ · ([A-Z]{2})$/, (m, cc) => ' · ' + landLabel(cc)):n.type==='premium_ablauf'?fmtDateDe(n.label):n.label)+'"':''}${n.read?'':'</b>'}</span>
+        <span style="margin-left:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' „'+esc(/^shortage_(abroad|home|ended)$/.test(n.type)?n.label.replace(/ · ([A-Z]{2})$/, (m, cc) => ' · ' + landLabel(cc)):n.type==='premium_ablauf'?fmtDateDe(n.label):n.type==='watch_alert'?notifLabel(n.label):n.label)+'"':''}${n.read?'':'</b>'}</span>
         <span class="sp" style="flex:1"></span>
         <span class="muted" style="font-size:12px">${relTime(n.created_at)}</span>
       </div></div>`);
