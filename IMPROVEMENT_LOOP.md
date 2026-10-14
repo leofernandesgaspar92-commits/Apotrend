@@ -2687,3 +2687,22 @@ Browser-Audit „Einladen": ganzer Weg bis zur Bestätigung.
 
 **Gegenproben (jede schlägt an):** nicht gespeichert; keine Benachrichtigung; Bitte auch bei
 bestätigter Meldung; fremder Code durchgereicht.
+
+### Cycle · Schein-Konten bremsen + Login-Bremse je Konto (2026-10-14)
+
+**Befund.** (1) Registrierungen sind unbegrenzt, Bestätigungen zählen sofort: zwei Schein-Apotheken
+reichten für „von 3 Apotheken bestätigt". Die Einlade-Funktion macht das wichtiger. (2) Die Client-IP
+kommt aus dem ERSTEN `X-Forwarded-For`-Eintrag (vom Client gesetzt); die Login-/Reset-Bremse
+`ip|email` war mit wechselnder Angabe unbegrenzt umgehbar (Passwort- und Wiederherstellungscode-Raten).
+
+**WORK.** `zaehlendeApotheken`/`istBestaetigt` in `shortages.js`: Konten unter 24 h zählen nicht zur
+Schwelle; eine Stelle für Liste, Teilseite, `lageDaten`, `wirkstoffLage`, `regionLage`, Alarm.
+`erinnern()` holt den „bestätigt"-Alarm nach, wenn Konten gealtert sind. UI: „3 pharmacies report —
+confirmations from new accounts count after 24 hours". Login/Reset zusätzlich je Konto begrenzt.
+IP-Grenze bei Registrierung erwogen und verworfen (Carrier-NAT; Proxy-Kette nicht prüfbar).
+
+**Tests.** `schein-konten.test.js` (Uhr: frische Konten → nicht bestätigt, kein Alarm; +25 h →
+bestätigt, Alarm genau einmal, Lage zählt; HTTP-Voreinstellung; 21 Fehlversuche mit wechselndem
+XFF → 429). Bestehende HTTP-Tests und der Browser-Audit mit `APOPULSE_BESTAETIGUNG_AB_STUNDEN=0`.
+
+**Gegenproben (jede schlägt an):** Alter ignoriert; kein Nachholen; Login nur je IP; Lage zählt alle.

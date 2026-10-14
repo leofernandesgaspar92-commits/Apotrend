@@ -13,7 +13,6 @@
 //  Alles, was aus der Adresse kommt, wird escaped — die Seite ist öffentlich.
 // ============================================================================
 
-import { BESTAETIGT_AB_APOTHEKEN } from '../services/shortages.js';
 
 const TEXTE = {
   de: {
@@ -110,7 +109,7 @@ export function teilseite(d, { basis }) {
     const w = d.wirkstoff;
     const apo = !d.knapp && d.apotheken > 0;
     if (d.knapp) titel = `${T.w_knapp(w, land)}${d.seit_tagen != null ? ' ' + T.w_seit(d.seit_tagen) : ''}`;
-    else if (apo) titel = d.apotheken >= BESTAETIGT_AB_APOTHEKEN ? T.w_apo_best(w, land, d.apotheken) : T.w_apo(w, land, d.apotheken);
+    else if (apo) titel = d.bestaetigt ? T.w_apo_best(w, land, d.apotheken) : T.w_apo(w, land, d.apotheken);
     else if (!d.beobachtet_land) titel = T.w_unbekannt(w, land);
     else titel = T.w_nicht(w, land);
     const herkunft = apo || d.herkunft === 'community' ? T.community : d.herkunft === 'reference' ? T.referenz : d.quelle ? `${T.quelle}: ${d.quelle}` : null;
@@ -118,7 +117,7 @@ export function teilseite(d, { basis }) {
     ziel = `/?land=${encodeURIComponent(d.land)}&beobachten=${encodeURIComponent(w)}`;
     // Noch nicht bestätigte Apotheken-Meldung: Der Knopf bittet um Bestätigung
     // und führt nach der Anmeldung direkt zur Meldung (dort „Bestätigen").
-    if (apo && d.apotheken < BESTAETIGT_AB_APOTHEKEN) { d.bitte = true; ziel += '&bestaetigen=1'; }
+    if (apo && !d.bestaetigt) { d.bitte = true; ziel += '&bestaetigen=1'; }
   }
   // Persönlicher Einladungs-Code (services/einladungen.js) — vom Server geprüft.
   if (d.einladung) ziel += `&e=${encodeURIComponent(d.einladung)}`;

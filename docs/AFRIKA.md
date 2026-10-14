@@ -197,3 +197,23 @@ erst ab 3 Apotheken. Eine einzelne Apotheke bleibt sonst allein mit ihrer Meldun
   werden Code und Zuordnungen entfernt.
 
 Geprüft durch `server/test/einladungen.test.js` und den Browser-Audit-Block „Einladen".
+
+## Schutz vor Schein-Konten
+
+„Bestätigt" (ab 3 Apotheken) ist in Ländern ohne Behördenliste die stärkste Aussage der Plattform.
+Bisher reichten zwei frisch angelegte Schein-Apotheken, um jede Meldung so erscheinen zu lassen.
+
+- **Konten zählen für „bestätigt" erst ab 24 Stunden Alter** (`ZAEHLT_AB_STUNDEN` in
+  `server/src/services/shortages.js`, eine Stelle für Liste, Teilseite, Landes- und Afrika-Lage).
+  Angezeigt wird weiterhin, wie viele Apotheken melden, etwa „3 pharmacies report — confirmations
+  from new accounts count after 24 hours". Echte Kolleg:innen zählen ab dem nächsten Tag von selbst.
+  Der Alarm „bestätigt" kommt dann über den Zeitplan (alle 6 Stunden), genau einmal.
+- **Login und Passwort-Zurücksetzen** haben zusätzlich eine Grenze **je Konto** (20 bzw. 10
+  Fehlversuche in 15 Minuten). Die Grenze je Adresse ließ sich umgehen, weil die Adresse aus dem
+  ersten Eintrag von `X-Forwarded-For` kommt, und den setzt der Client selbst.
+- Bewusst **keine** Grenze für Registrierungen je IP-Adresse: Mobilfunk in Afrika bündelt viele
+  Menschen hinter einer Adresse, und welcher Eintrag hinter Render die echte Adresse ist, ist von
+  hier nicht sicher prüfbar.
+- `APOPULSE_BESTAETIGUNG_AB_STUNDEN` gibt es **nur für Tests** (0). Im Betrieb nicht setzen.
+
+Geprüft durch `server/test/schein-konten.test.js` (mit Uhr).

@@ -62,6 +62,32 @@ export function weeklyChange(s, today, windowDays = 7) {
 
 /** Ab so vielen Apotheken (Meldende eingeschlossen) gilt eine Meldung als bestätigt. */
 export const BESTAETIGT_AB_APOTHEKEN = 3;
+
+// ── Schein-Konten bremsen ───────────────────────────────────────────────────
+//  Eine Registrierung dauert eine Minute. Ohne Bremse konnte eine einzelne
+//  Person zwei Schein-Apotheken anlegen und jede Meldung als „von 3 Apotheken
+//  bestätigt" erscheinen lassen — in Ländern ohne Behördenliste die stärkste
+//  Aussage, die ApoPulse macht. Darum zählen für die Schwelle nur Konten, die
+//  mindestens ZAEHLT_AB_STUNDEN alt sind. Echte Kolleg:innen zählen damit von
+//  selbst ab dem nächsten Tag; wer fälscht, muss warten — und in der Zeit
+//  sehen Moderation und Meldende, was passiert. Angezeigt wird weiter, wie
+//  viele Apotheken melden; nur „bestätigt" wartet.
+//  Unbekanntes Kontoalter (z. B. ohne Konto-Speicher in Tests) zählt.
+export const ZAEHLT_AB_STUNDEN = 24;
+const vertrauen = { kontoSeit: () => null, abStunden: ZAEHLT_AB_STUNDEN, jetzt: () => Date.now() };
+/** Einmal beim Start (server.js): Woher das Kontoalter kommt, ab wann es zählt. */
+export function vertrauenEinstellen(o) { Object.assign(vertrauen, o); }
+/** Wie viele der meldenden/bestätigenden Apotheken für „bestätigt" zählen. */
+export function zaehlendeApotheken(s) {
+  if (!s || s.provenance !== 'community') return 0;
+  const grenze = vertrauen.jetzt() - vertrauen.abStunden * 3600000;
+  const zaehlt = (uid) => { const seit = uid ? vertrauen.kontoSeit(uid) : null; const t = seit ? Date.parse(seit) : NaN; return Number.isNaN(t) || t <= grenze; };
+  return (zaehlt(s.reporter_user_id) ? 1 : 0) + (s.confirmations || []).filter(zaehlt).length;
+}
+/** „Bestätigt": genug zählende Apotheken und nicht veraltet. Eine Stelle für alle Ansichten. */
+export function istBestaetigt(s, heute) {
+  return zaehlendeApotheken(s) >= BESTAETIGT_AB_APOTHEKEN && aktualitaet(s, heute).stufe !== 'veraltet';
+}
 /** Apotheken-Meldung ohne Bestätigung seit … Tagen: „noch aktuell?" bzw. „veraltet". */
 export const PRUEFEN_NACH_TAGEN = 14;
 export const VERALTET_NACH_TAGEN = 30;
@@ -88,6 +114,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
   function decorate(s, viewerUserId) {
     const confirmations = s.confirmations || [];
     const apotheken = s.provenance === 'community' ? 1 + confirmations.length : 0;
+    const zaehlend = zaehlendeApotheken(s);
     const akt = aktualitaet(s, today());
     const reporter = s.reporter_user_id ? social.getProfile(s.reporter_user_id) : null;
     return {
@@ -98,7 +125,9 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       // Vertrauensstufe einer Apotheken-Meldung (nicht amtlich): ab drei
       // Apotheken (Meldende + zwei Bestätigungen) „bestätigt". In Ländern ohne
       // amtliche Liste (große Teile Afrikas) ist das die beste verfügbare Aussage.
-      apotheken, bestaetigt: apotheken >= BESTAETIGT_AB_APOTHEKEN && akt.stufe !== 'veraltet',
+      apotheken, bestaetigt: istBestaetigt(s, today()),
+      // Wie viele davon (noch) nicht zählen, weil das Konto jünger als ZAEHLT_AB_STUNDEN ist.
+      apotheken_neu: s.provenance === 'community' ? apotheken - zaehlend : 0,
       aktualitaet: akt.stufe, tage_ohne_bestaetigung: akt.tage,
       erinnert: undefined,
       i_confirmed: !!viewerUserId && confirmations.includes(viewerUserId),
@@ -129,6 +158,22 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       .filter((b) => b.wirkstoffe.some((w) => wkKey(w) === key))
       .map((b) => b.userId)
       .filter((uid) => gehoertZuLand({ country: land }, heimatVon(uid)));
+  }
+
+  // Schwelle „bestätigt" erreicht (einmal je Meldung): Beobachter:innen im Land
+  // und die Meldende erfahren es. Aufgerufen bei jeder Bestätigung UND im
+  // Zeitplan (erinnern) — eine Bestätigung eines neuen Kontos zählt erst
+  // später, und dann soll der Alarm trotzdem kommen.
+  function bestaetigtMelden(s, actorUserId = null) {
+    if (s.provenance !== 'community' || !istBestaetigt(s, today()) || shortagesRepo.wasBestaetigtGemeldet(s.id)) return false;
+    if (!['kritisch', 'eingeschraenkt'].includes(s.status)) return false;
+    shortagesRepo.markBestaetigtGemeldet(s.id);
+    const n = zaehlendeApotheken(s);
+    const empf = new Set([...beobachterImLand(s.wirkstoff, s.country), s.reporter_user_id].filter(Boolean));
+    for (const uid of empf) {
+      social.pushNotification({ userId: uid, type: 'shortage_bestaetigt', actorUserId, refType: 'wirkstoff', refId: s.wirkstoff, label: `${s.wirkstoff} · ${s.country || ''} · ${n}` });
+    }
+    return true;
   }
 
   function requireProfessional(userId) {
@@ -227,14 +272,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       // Schwelle „bestätigt" erreicht (einmal je Meldung): Beobachter:innen im
       // Land erfahren, dass aus einem Hinweis ein von mehreren Apotheken
       // bestätigter Engpass wurde — klar als nicht amtlich gekennzeichnet.
-      const n = 1 + (updated.confirmations || []).length;
-      if (before.provenance === 'community' && grew && n >= BESTAETIGT_AB_APOTHEKEN && !shortagesRepo.wasBestaetigtGemeldet(id)) {
-        shortagesRepo.markBestaetigtGemeldet(id);
-        const empf = new Set([...beobachterImLand(before.wirkstoff, before.country), before.reporter_user_id].filter(Boolean));
-        for (const uid of empf) {
-          social.pushNotification({ userId: uid, type: 'shortage_bestaetigt', actorUserId: userId, refType: 'wirkstoff', refId: before.wirkstoff, label: `${before.wirkstoff} · ${before.country || ''} · ${n}` });
-        }
-      }
+      if (grew) bestaetigtMelden(updated, userId);
       return decorate(updated, userId);
     },
     // Bestätigung zurücknehmen (Fehlklick/Wieder-lieferbar bei uns) — Gegenstück zu confirmShortage.
@@ -391,6 +429,8 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
     erinnern() {
       let n = 0;
       for (const s of shortagesRepo.list()) {
+        // Bestätigungen neuer Konten zählen erst nach ZAEHLT_AB_STUNDEN — jetzt nachholen.
+        bestaetigtMelden(s);
         if (!s.reporter_user_id || s.erinnert || aktualitaet(s, today()).stufe !== 'pruefen') continue;
         shortagesRepo.markErinnert(s.id);
         if (social.pushNotification({ userId: s.reporter_user_id, type: 'shortage_noch_aktuell', refType: 'shortage', refId: s.id, label: `${s.wirkstoff} · ${s.country || ''}` })) n++;

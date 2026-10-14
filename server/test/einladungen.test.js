@@ -33,7 +33,7 @@ test('Codes: je Konto fest und eindeutig; zuordnen einmal, nie sich selbst; Lös
 });
 
 async function starte(env) {
-  const kind = spawn(process.execPath, [SERVER], { env: { ...process.env, PORT: '0', APOPULSE_PRESSE: 'aus', APOPULSE_TOKEN_SECRET: 'einladung-test-geheimnis', ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
+  const kind = spawn(process.execPath, [SERVER], { env: { ...process.env, PORT: '0', APOPULSE_PRESSE: 'aus', APOPULSE_TOKEN_SECRET: 'einladung-test-geheimnis', APOPULSE_BESTAETIGUNG_AB_STUNDEN: '0', ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
   let log = '';
   const port = await new Promise((ok, fail) => {
     const zeit = setTimeout(() => fail(new Error('Server kam nicht hoch:\n' + log)), 20000);

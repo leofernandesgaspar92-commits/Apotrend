@@ -63,7 +63,9 @@ async function main() {
   // Server sicherstellen (nutzt laufenden ODER startet einen und beendet ihn am Ende).
   let stopServer = () => {};
   // Rechnungssteller gesetzt: sonst gäbe es weder Rechnungen noch „Per Rechnung zahlen" zu prüfen.
-  try { stopServer = await ensureServer(BASE, { APOPULSE_FIRMA_NAME: 'Prüfbetrieb GmbH', APOPULSE_FIRMA_ANSCHRIFT: 'Prüfweg 1, 1010 Wien', APOPULSE_BANK_IBAN: 'AT00 0000 0000 0000 0000', APOPULSE_UST_SATZ: '20' }); }
+  // APOPULSE_BESTAETIGUNG_AB_STUNDEN 0: Die Prüfungen bestätigen mit frisch angelegten Konten.
+  // Die 24-Stunden-Regel selbst prüft test/schein-konten.test.js (mit Uhr).
+  try { stopServer = await ensureServer(BASE, { APOPULSE_BESTAETIGUNG_AB_STUNDEN: '0', APOPULSE_FIRMA_NAME: 'Prüfbetrieb GmbH', APOPULSE_FIRMA_ANSCHRIFT: 'Prüfweg 1, 1010 Wien', APOPULSE_BANK_IBAN: 'AT00 0000 0000 0000 0000', APOPULSE_UST_SATZ: '20' }); }
   catch (e) { console.error(`❌ ${e.message}`); process.exit(2); }
 
   const uniq = Date.now().toString(36);

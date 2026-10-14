@@ -52,7 +52,7 @@ import { startklar } from '../services/startklar.js';
 import { createOeffentlicheSeiten } from '../services/oeffentlicheSeiten.js';
 import { createWebPush, pushNachricht, testNachricht, PUSH_TYPEN } from '../services/webPush.js';
 import { createRechnungsnummern } from '../services/rechnungsnummern.js';
-import { BESTAETIGT_AB_APOTHEKEN, aktualitaet } from '../services/shortages.js';
+import { aktualitaet, zaehlendeApotheken, istBestaetigt, vertrauenEinstellen, ZAEHLT_AB_STUNDEN } from '../services/shortages.js';
 import { createRechnungen } from '../services/rechnungen.js';
 import { createEinladungen, CODE_RE as EINLADUNG_RE } from '../services/einladungen.js';
 import { createDatenApi, zugangPruefen, engpassZeile, fuerSchnittstelle, alsCsv } from '../services/datenApi.js';
@@ -105,6 +105,13 @@ import { gleicherWirkstoff, wirkstoffSchluessel } from '../domain/inn.js';
 const loginLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
 // Passwort-Reset: eng begrenzt, damit Wiederherstellungscodes nicht erraten werden.
 const resetLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
+// Zusätzlich JE E-MAIL, unabhängig von der Adresse: Die IP stammt aus dem
+// ersten Eintrag von X-Forwarded-For — den setzt der Client selbst. Mit
+// wechselnden Angaben dort war die Bremse oben umgehbar (Passwort- bzw.
+// Wiederherstellungscode-Raten ohne Grenze, bis 10/2026). Großzügiger als
+// je Adresse, weil sich so auch ein fremdes Konto kurz sperren lässt.
+const loginJeKonto = createRateLimiter({ max: 20, windowMs: 15 * 60 * 1000 });
+const resetJeKonto = createRateLimiter({ max: 10, windowMs: 15 * 60 * 1000 });
 // Uebersetzungen: 60 Anbieter-Aufrufe je Stunde und Konto. Das ist kein
 // Missbrauchsschutz im engeren Sinn, sondern eine KOSTENBREMSE — jeder Aufruf
 // geht gegen die Abrechnung des Owners. Antworten aus dem Zwischenspeicher
@@ -186,6 +193,12 @@ const referenzDaten = /^(an|on|true)$/i.test(String(process.env.APOPULSE_REFEREN
 const seedMarkt = referenzDaten && !restoring;
 const shortagesRepo = createShortagesRepo({ seed: seedMarkt });
 const shortages = createShortagesService(shortagesRepo, social, { hasPremium: (userId) => payments.hasFeature(userId, 'premium') });
+// „Bestätigt" zählt nur Konten ab ZAEHLT_AB_STUNDEN Alter (services/shortages.js) — gegen Schein-Apotheken.
+// APOPULSE_BESTAETIGUNG_AB_STUNDEN: nur für Tests (0), im Betrieb nicht setzen.
+vertrauenEinstellen({
+  kontoSeit: (uid) => { const u = repo.getUserById(uid); return u ? u.created_at : null; },
+  abStunden: /^\d+$/.test(process.env.APOPULSE_BESTAETIGUNG_AB_STUNDEN || '') ? Number(process.env.APOPULSE_BESTAETIGUNG_AB_STUNDEN) : ZAEHLT_AB_STUNDEN,
+});
 const pricesRepo = createPricesRepo({ seed: seedMarkt });
 const rabatteRepo = createRabatteRepo({ seed: seedMarkt });
 // Rabatte in den Preisvergleich einblenden: eine laufende Aktion kann günstiger
@@ -776,10 +789,10 @@ function lageDaten(cc) {
     if (z.provenance !== 'community' || !['kritisch', 'eingeschraenkt'].includes(z.status) || !z.wirkstoff || String(z.country || '').toUpperCase() !== cc) continue;
     if (aktualitaet(z, new Date().toISOString().slice(0, 10)).stufe === 'veraltet') continue; // 30+ Tage ohne Bestätigung
     const k = z.wirkstoff.trim().toLowerCase();
-    apo.set(k, Math.max(apo.get(k) || 0, 1 + (z.confirmations || []).length));
+    apo.set(k, (apo.get(k) || false) || istBestaetigt(z, new Date().toISOString().slice(0, 10)));
   }
   const apotheken = apo.size;
-  const apotheken_bestaetigt = [...apo.values()].filter((n) => n >= BESTAETIGT_AB_APOTHEKEN).length;
+  const apotheken_bestaetigt = [...apo.values()].filter(Boolean).length;
   if (!b) return { land: cc, daten: false, apotheken, apotheken_bestaetigt };
   const quellen = [...new Set(shortagesRepo.list({ country: cc })
     .filter((z) => z.provenance === 'verified' && !z.reporter_user_id && String(z.country || '').toUpperCase() === cc)
@@ -797,7 +810,7 @@ function wirkstoffLage(cc, name) {
   // daten (reference) gehören gar nicht auf eine öffentliche Seite.
   const amtlich = treffer.filter((z) => z.provenance === 'verified' && !z.reporter_user_id)
     .sort((a, b) => (a.status === 'kritisch' ? -1 : 0) - (b.status === 'kritisch' ? -1 : 0));
-  const apo = treffer.filter((z) => z.provenance === 'community' && aktualitaet(z, new Date().toISOString().slice(0, 10)).stufe !== 'veraltet').sort((a, b) => (b.confirmations || []).length - (a.confirmations || []).length);
+  const apo = treffer.filter((z) => z.provenance === 'community' && aktualitaet(z, new Date().toISOString().slice(0, 10)).stufe !== 'veraltet').sort((a, b) => zaehlendeApotheken(b) - zaehlendeApotheken(a) || (b.confirmations || []).length - (a.confirmations || []).length);
   const m = amtlich[0]; const c = apo[0];
   const wirkstoff = m ? m.wirkstoff : c ? c.wirkstoff : name;
   const kurz = chronik.kurz(wirkstoff, cc);
@@ -807,6 +820,7 @@ function wirkstoffLage(cc, name) {
     seit_tagen: kurz && kurz.offen_seit_tagen != null ? kurz.offen_seit_tagen : null,
     herkunft: m ? m.provenance : null, quelle: m ? m.quelle : null,
     apotheken: c ? 1 + (c.confirmations || []).length : 0,
+    bestaetigt: c ? istBestaetigt(c, new Date().toISOString().slice(0, 10)) : false,
     stand: job && job.lastRunAt ? String(job.lastRunAt).slice(0, 10) : null,
   };
 }
@@ -1246,14 +1260,16 @@ const routes = [
 
   // Passwort per Wiederherstellungscode zurücksetzen (kein E-Mail-Dienst nötig). Rate-limitiert.
   ['POST', /^\/api\/password\/reset$/, false, async ({ body, ip }) => {
-    const key = (ip || 'unknown') + '|' + String(body.email || '').trim().toLowerCase();
-    const st = resetLimiter.check(key);
+    const konto = String(body.email || '').trim().toLowerCase();
+    const key = (ip || 'unknown') + '|' + konto;
+    const st0 = resetLimiter.check(key); const st1 = resetJeKonto.check(konto);
+    const st = st0.blocked ? st0 : st1;
     if (st.blocked) { const e = new Error('Zu viele Versuche. Bitte später erneut.'); e.status = 429; e.code = 'too_many_attempts'; e.retryAfterS = Math.ceil(st.retryAfterMs / 1000); throw e; }
     try {
       const r = orgAuth.resetPassword({ email: body.email, code: body.code, newPassword: body.newPassword });
-      resetLimiter.reset(key); // Erfolg hebt die Bremse auf
+      resetLimiter.reset(key); resetJeKonto.reset(konto); // Erfolg hebt die Bremse auf
       return r;
-    } catch (e) { resetLimiter.fail(key); throw e; } // Fehlversuch zählt gegen das Limit
+    } catch (e) { resetLimiter.fail(key); resetJeKonto.fail(konto); throw e; } // Fehlversuch zählt gegen das Limit
   }],
 
   // Verbleibende Wiederherstellungscodes (eingeloggt) + Neu-Erzeugung.
@@ -1528,16 +1544,18 @@ const routes = [
   ['POST', /^\/api\/auth\/identities\/([a-z0-9_]+)\/unlink$/, true, async ({ userId, params }) => oauth.unlink(userId, params[0])],
 
   ['POST', /^\/api\/login$/, false, async ({ body, ip }) => {
-    const key = (ip || 'unknown') + '|' + String(body.email || '').trim().toLowerCase();
-    const st = loginLimiter.check(key);
+    const konto = String(body.email || '').trim().toLowerCase();
+    const key = (ip || 'unknown') + '|' + konto;
+    const st0 = loginLimiter.check(key); const st1 = loginJeKonto.check(konto);
+    const st = st0.blocked ? st0 : st1;
     if (st.blocked) {
       const e = new Error('Zu viele Fehlversuche. Bitte später erneut versuchen.');
       e.status = 429; e.code = 'too_many_attempts'; e.retryAfterS = Math.ceil(st.retryAfterMs / 1000);
       throw e;
     }
     const r = orgAuth.login({ email: body.email, password: body.password });
-    if (!r.ok) { loginLimiter.fail(key); const e = new Error(r.error); e.status = 401; e.code = 'login_failed'; throw e; }
-    loginLimiter.reset(key); // erfolgreiche Anmeldung setzt den Zähler zurück
+    if (!r.ok) { loginLimiter.fail(key); loginJeKonto.fail(konto); const e = new Error(r.error); e.status = 401; e.code = 'login_failed'; throw e; }
+    loginLimiter.reset(key); loginJeKonto.reset(konto); // erfolgreiche Anmeldung setzt die Zähler zurück
     return { token: issueToken(r.user.id), user: r.user, profile: social.getProfile(r.user.id) };
   }],
 
@@ -2768,7 +2786,8 @@ server.listen(PORT, () => {
     });
     // Apotheken-Meldungen: Meldende erinnern, wenn „noch aktuell?" fällig ist.
     scheduler.add('aktualitaet', {
-      run: async () => { const n = shortages.erinnern(); if (n) saveSoon(); return { erinnert: n }; },
+      // Immer sichern: erinnern() meldet auch nachträglich erreichte „bestätigt"-Schwellen.
+      run: async () => { const n = shortages.erinnern(); saveSoon(); return { erinnert: n }; },
       intervalMs: 6 * 3_600_000,
       startDelayMs: 150_000,
     });

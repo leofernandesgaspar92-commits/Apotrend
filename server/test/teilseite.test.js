@@ -124,7 +124,7 @@ test('Ohne Behördenliste (Afrika): Apotheken-Meldungen mit Vertrauensstufe, nie
   const einzeln = teilseite({ art: 'wirkstoff', land: 'UG', sprache: 'en', pfad: '/x', wirkstoff: 'Salbutamol', beobachtet_land: false, knapp: false, apotheken: 1 }, { basis });
   assert.equal(meta(einzeln, 'og:title'), 'Salbutamol: 1 pharmacy in Uganda reports a shortage (not yet confirmed)');
   assert.match(meta(einzeln, 'og:description'), /not official/);
-  const best = teilseite({ art: 'wirkstoff', land: 'UG', sprache: 'en', pfad: '/x', wirkstoff: 'Salbutamol', beobachtet_land: false, knapp: false, apotheken: 3 }, { basis });
+  const best = teilseite({ art: 'wirkstoff', land: 'UG', sprache: 'en', pfad: '/x', wirkstoff: 'Salbutamol', beobachtet_land: false, knapp: false, apotheken: 3, bestaetigt: true }, { basis });
   assert.equal(meta(best, 'og:title'), 'Salbutamol: reported short by 3 pharmacies in Uganda');
   const lage = teilseite({ art: 'lage', land: 'UG', sprache: 'en', pfad: '/x', daten: false, apotheken: 2, apotheken_bestaetigt: 1 }, { basis });
   assert.equal(meta(lage, 'og:title'), '2 substances reported short by pharmacies in Uganda');
@@ -133,7 +133,7 @@ test('Ohne Behördenliste (Afrika): Apotheken-Meldungen mit Vertrauensstufe, nie
 
 test('Über HTTP: geteilter Link aus Uganda — erst Hinweis, dann bestätigt', { timeout: 60000 }, async () => {
   const kind = spawn(process.execPath, [SERVER], {
-    env: { ...process.env, PORT: '0', APOPULSE_TOKEN_SECRET: 'teil-ug-test', APOPULSE_DATA_FILE: '', APOPULSE_PRESSE: 'aus', APOPULSE_REFERENCE_DATA: '', APOPULSE_PUBLIC_URL: '' },
+    env: { ...process.env, PORT: '0', APOPULSE_TOKEN_SECRET: 'teil-ug-test', APOPULSE_BESTAETIGUNG_AB_STUNDEN: '0', APOPULSE_DATA_FILE: '', APOPULSE_PRESSE: 'aus', APOPULSE_REFERENCE_DATA: '', APOPULSE_PUBLIC_URL: '' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   let log = '';

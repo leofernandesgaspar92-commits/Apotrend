@@ -22,7 +22,7 @@ test('Push-Text: Anzahl Apotheken, Land, „nicht amtlich"', () => {
 
 test('Über HTTP: Meldung -> 2 -> 3 Apotheken; Alarm genau einmal, nur im Land', { timeout: 60000 }, async () => {
   const kind = spawn(process.execPath, [SERVER], {
-    env: { ...process.env, PORT: '0', APOPULSE_TOKEN_SECRET: 'vertrauen-test', APOPULSE_DATA_FILE: '', APOPULSE_PRESSE: 'aus', APOPULSE_REFERENCE_DATA: '' },
+    env: { ...process.env, PORT: '0', APOPULSE_TOKEN_SECRET: 'vertrauen-test', APOPULSE_BESTAETIGUNG_AB_STUNDEN: '0', APOPULSE_DATA_FILE: '', APOPULSE_PRESSE: 'aus', APOPULSE_REFERENCE_DATA: '' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   let log = '';

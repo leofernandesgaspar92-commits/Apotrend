@@ -15,7 +15,7 @@
 //     Behörden je Land als Quelle.
 // ============================================================================
 import { wirkstoffSchluessel } from '../domain/inn.js';
-import { BESTAETIGT_AB_APOTHEKEN, aktualitaet } from './shortages.js';
+import { aktualitaet, istBestaetigt } from './shortages.js';
 
 const AKTIV = new Set(['kritisch', 'eingeschraenkt']);
 
@@ -41,7 +41,7 @@ export function regionLage({ shortagesRepo, chronik, laender, codes, heute = new
     for (const z of apotheken) {
       const k = wirkstoffSchluessel(z.wirkstoff) || z.wirkstoff.toLowerCase();
       apoW.add(k);
-      if (1 + (z.confirmations || []).length >= BESTAETIGT_AB_APOTHEKEN) apoBest.add(k);
+      if (istBestaetigt(z, heute)) apoBest.add(k);
     }
     proLand.push({
       land: cc, behoerde: laender[cc]?.regulator || null,
