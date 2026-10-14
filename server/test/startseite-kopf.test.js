@@ -48,3 +48,17 @@ test('Über HTTP: Kopf je Sprache, absolutes Vorschaubild, eigener ETag, App-Inh
     await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
   }
 });
+
+test('Manifest: Name und Schnellzugriffe in der Sprache des Browsers, kein Schnellzugriff ins Leere', async () => {
+  const { manifestSprache } = await import('../src/http/startseiteKopf.js');
+  const { readFileSync } = await import('node:fs');
+  const roh = readFileSync(new URL('../public/manifest.webmanifest', import.meta.url), 'utf8');
+  const en = JSON.parse(manifestSprache(roh, 'en'));
+  assert.equal(en.lang, 'en');
+  assert.match(en.name, /medicine shortages/);
+  assert.deepEqual(en.shortcuts.map((s) => s.name), ['Shortages', 'For you', 'News']);
+  assert.ok(!en.shortcuts.some((s) => /tab=prices/.test(s.url)), 'Schnellzugriff „Preise" ohne Preisdaten');
+  assert.ok(en.screenshots.every((b) => !/preise/.test(b.src) && !/[äöü]/.test(b.label)));
+  assert.equal(JSON.parse(manifestSprache(roh, 'pt')).shortcuts[0].name, 'Ruturas');
+  assert.equal(manifestSprache('kein json', 'en'), 'kein json');
+});

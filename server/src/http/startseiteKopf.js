@@ -52,3 +52,43 @@ export function startseiteKopf(html, { sp = 'en', basis = '' } = {}) {
     .replace(/<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${esc(K.og)}" />`)
     .replace(/<meta property="og:image" content="\/og-bild\.png" \/>/, `<meta property="og:image" content="${esc(basis)}/og-bild.png" />`);
 }
+
+// ── Manifest (App auf dem Startbildschirm) ───────────────────────────────────
+//  Name, Beschreibung und Schnellzugriffe (langes Drücken auf das App-Symbol)
+//  standen nur deutsch da — auch auf Handys in Uganda.
+const MANIFEST = {
+  de: {
+    name: 'ApoPulse – Lieferengpässe mit Quelle',
+    description: 'Lieferengpässe bei Arzneimitteln mit Quelle: Behördenlisten und Meldungen aus Apotheken, Benachrichtigung bei jeder Änderung.',
+    kurz: { shortages: ['Lieferengpässe', 'Engpässe', 'Aktuelle Engpässe ansehen und melden'], overview: ['Für dich', 'Für dich', 'Deine Startübersicht mit Beobachtungsliste'], news: ['News', 'News', 'Behörden-Meldungen mit Quelle'] },
+    bilder: ['Lieferengpässe mit Quelle und Datum', 'Startübersicht: was heute zählt', 'Behörden-News mit Quellenangabe'],
+  },
+  en: {
+    name: 'ApoPulse – medicine shortages with sources',
+    description: 'Medicine shortages with sources: official lists and reports from pharmacies, an alert on every change.',
+    kurz: { shortages: ['Shortages', 'Shortages', 'See and report current shortages'], overview: ['For you', 'For you', 'Your overview with watched substances'], news: ['News', 'News', 'Authority notices with sources'] },
+    bilder: ['Shortages with source and date', 'Overview: what matters today', 'Authority news with sources'],
+  },
+  pt: {
+    name: 'ApoPulse – ruturas de medicamentos com fonte',
+    description: 'Ruturas de medicamentos com fonte: listas oficiais e comunicações de farmácias, alerta a cada alteração.',
+    kurz: { shortages: ['Ruturas', 'Ruturas', 'Ver e comunicar ruturas atuais'], overview: ['Para si', 'Para si', 'A sua visão geral com substâncias acompanhadas'], news: ['Notícias', 'Notícias', 'Avisos das autoridades com fonte'] },
+    bilder: ['Ruturas com fonte e data', 'Visão geral: o que conta hoje', 'Notícias das autoridades com fonte'],
+  },
+};
+
+/** manifest.webmanifest in der Sprache sp. Unlesbares JSON -> unverändert. */
+export function manifestSprache(text, sp = 'en') {
+  const M = MANIFEST[sp] || MANIFEST.en;
+  let m;
+  try { m = JSON.parse(text); } catch { return text; }
+  m.name = M.name; m.description = M.description; m.lang = sp;
+  // Nur Schnellzugriffe, die überall Inhalt haben (Preise gibt es nicht in jedem Land).
+  m.shortcuts = (m.shortcuts || []).map((s) => {
+    const tab = (String(s.url || '').match(/tab=([a-z]+)/) || [])[1];
+    const k = M.kurz[tab];
+    return k ? { ...s, name: k[0], short_name: k[1], description: k[2] } : null;
+  }).filter(Boolean);
+  m.screenshots = (m.screenshots || []).filter((b) => !/preise/.test(b.src)).map((b, i) => ({ ...b, label: M.bilder[i] || b.label }));
+  return JSON.stringify(m, null, 2);
+}

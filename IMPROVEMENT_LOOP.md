@@ -2867,3 +2867,14 @@ aus Apotheken". ETag je Sprache, `Vary: Accept-Language`. App-Inhalt unveränder
 
 **Tests.** `startseite-kopf.test.js` (Sprachwahl inkl. Suaheli → Englisch; HTTP: Kopf je Sprache,
 absolutes Bild, eigener ETag, 304, Skripte unverändert). Gegenprobe: ohne Umbau → rot.
+
+### Cycle · App-Manifest in der Sprache des Browsers (2026-10-14)
+
+**Befund.** `manifest.webmanifest` nur deutsch („ApoPulse – Apotheker-Netzwerk", Schnellzugriffe
+„Lieferengpässe/Für dich/News/Preise"); „Preise" führt ohne Preisdaten (live: überall) ins Leere.
+
+**WORK.** `manifestSprache()` (http/startseiteKopf.js): Name, Beschreibung, lang, Schnellzugriffe und
+Bildbeschriftungen nach Accept-Language; Schnellzugriff und Screenshot „Preise" entfallen.
+Ausgeliefert wie die Startseite (ETag je Sprache, Vary).
+
+**Tests.** `startseite-kopf.test.js`: Manifest en/pt, keine Preise, unlesbares JSON unverändert.
