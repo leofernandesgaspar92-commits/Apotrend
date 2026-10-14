@@ -1779,6 +1779,31 @@ async function main() {
     await ohneJs.close(); await ctx.close();
   }
 
+  // ── Startklar-Check (Redaktion): offene Punkte oben, aufklappbar, Handy ───
+  {
+    const { startklar } = await import('../src/services/startklar.js');
+    const daten = startklar({ env: { APOPULSE_TOKEN_SECRET: 'x' }, wallets: [{ id: 'btc' }] });
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
+    const r = await page.evaluate((d) => {
+      app.innerHTML = ''; const k = startklarKarte(d); app.appendChild(k);
+      const punkte = [...k.querySelectorAll('[data-skpunkt]')];
+      return { titel: k.querySelector('b').textContent, erste: punkte[0] && punkte[0].dataset.stufe, offenErste: punkte[0] && punkte[0].open,
+        mitAnleitung: punkte.filter((p) => p.dataset.stufe !== 'ok').every((p) => /So geht/.test(p.textContent)),
+        quer: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+    }, daten);
+    if (!/von \d+ erledigt/.test(r.titel)) findings.push(`Startklar: Titel ohne Fortschritt (${r.titel})`);
+    if (r.erste !== 'fehlt' || !r.offenErste) findings.push('Startklar: „fehlt" steht nicht aufgeklappt oben');
+    if (!r.mitAnleitung) findings.push('Startklar: offener Punkt ohne „So geht\'s"');
+    if (r.quer > 0) findings.push(`Startklar: ${r.quer} px Querscrollen am Handy`);
+    for (const f of fehler) findings.push('Startklar: JS-Fehler ' + f);
+    if (!findings.some((f) => f.startsWith('Startklar'))) console.log(`✓ Startklar: ${r.titel}; „fehlt" aufgeklappt oben, jeder offene Punkt mit Anleitung, kein Querscrollen`);
+    await ctx.close();
+  }
+
   // ── Registrierung im Browser: kurz, und ein Fehler verbrennt nichts ──────
   //  Bis 10/2026: sechs Felder (Pflicht-@Handle, Land doppelt), zwei Formulare
   //  untereinander — und ein vergebener Handle machte die E-Mail unbrauchbar.

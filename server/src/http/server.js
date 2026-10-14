@@ -44,6 +44,7 @@ import { createSortiment } from '../services/sortiment.js';
 import { vorratsRadar } from '../services/radar.js';
 import { teilseite } from './teilseite.js';
 import { createAnzeigen } from '../services/anzeigen.js';
+import { startklar } from '../services/startklar.js';
 import { createOeffentlicheSeiten } from '../services/oeffentlicheSeiten.js';
 import { createWebPush, pushNachricht, testNachricht, PUSH_TYPEN } from '../services/webPush.js';
 import { createRechnungsnummern } from '../services/rechnungsnummern.js';
@@ -2142,6 +2143,18 @@ const routes = [
       seiten: { aufrufe_7: [...seitenAufrufe].filter(([t]) => t > new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)).reduce((n, [, z]) => n + z, 0) },
       anzeigen: { laufend: anzeigen.alleLaufenden(userId).filter((k) => k.zustand === 'laeuft').length, zur_pruefung: anzeigen.zurPruefung(userId).length },
     };
+  }],
+  // Startklar-Check (services/startklar.js): was der Betreiber noch einrichten muss.
+  //  Nur OB etwas gesetzt ist — nie ein Wert, nie ein Geheimnis.
+  ['GET', /^\/api\/startklar$/, true, async ({ userId }) => {
+    if (!social.isModerator(userId)) { const e = new Error('Nur Moderation.'); e.status = 403; e.code = 'forbidden'; throw e; }
+    return startklar({
+      env: process.env, dauerhaft: durabilityReport(),
+      quellen: betriebsZahlen({ quellen: engpassQuellen(), gemessen: coverage.alle() }).quellen,
+      mail: { aktiv: mailer.aktiv }, vapidFest: vapidAusUmgebung,
+      wallets: cryptoWallets().map(({ id }) => ({ id })),
+      zahlwege: Object.keys(buildPaymentProvidersFromEnv()).filter((k) => k !== 'coinbase'),
+    });
   }],
   // ── Quellen testen und eintragen (Moderation) ─────────────────────────────
   //  Probe-Abruf: derselbe Weg wie der echte Lauf (holeEngpassQuelle), aber

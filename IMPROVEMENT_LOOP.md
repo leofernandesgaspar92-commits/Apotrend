@@ -2462,3 +2462,25 @@ Gegencheck.
 
 **Gegenproben (jede schlägt an):** Apotheken-Meldungen zugelassen; Länder ohne Behördenliste
 zugelassen; unbekannte Wirkstoffe als Seite; Escaping weg; App-Hülle statt 404.
+
+### Cycle · Startklar-Check für den Betreiber (2026-10-14)
+
+**Warum:** Fast jede neue Funktion hängt still an einer Einstellung in Render (Datenbank,
+Domain, Betreiberangaben, Push-Schlüssel, Tron-Wallet …). Das stand verteilt in vielen
+Dokumenten; der Owner sah nicht, was fehlt — und ein Teil wirkt deshalb live nicht.
+
+**WORK.** `services/startklar.js` (reine Funktion, bekommt nur OB etwas gesetzt ist):
+Datenbank, Anmeldung, Behördenlisten, Domain, E-Mail, Push-Schlüssel, Rechnungen, Überweisung,
+Umsatzsteuer (nur wenn Rechnungen aktiv), Krypto inkl. USDT/Tron, Karte/PayPal — je mit
+„Warum" und „So geht's", „fehlt" zuerst. `GET /api/startklar` nur Redaktion. Karte ganz oben im
+Redaktions-Dashboard (aufklappbar, „fehlt" offen).
+
+**Befund nach dem Screenshot:** „Nur Datei, keine Datenbank" stand zuerst als „empfohlen" — auf
+Render ist die Datei nach dem nächsten Deploy weg. Jetzt „fehlt" mit genau dieser Begründung.
+
+**Tests.** `startklar.test.js` (nichts/alles/teilweise eingerichtet, Reihenfolge, Umsatzsteuer
+nur mit Rechnungen, **kein Geheimnis in der Antwort** — Token, IBAN, Mail-Schlüssel, Datenbank-
+Passwort; echter Server: nur Redaktion, ohne Geheimnisse). Browser-Audit „Startklar".
+
+**Gegenproben (jede schlägt an):** ohne Redaktions-Prüfung; Wert verraten; ohne Sortierung;
+Datenspeicherung immer „ok".

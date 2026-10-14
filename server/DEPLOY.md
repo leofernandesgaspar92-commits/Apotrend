@@ -142,6 +142,14 @@ Einzelheiten: `docs/PUSH.md`.
 Einrichtung. Wichtig: `APOPULSE_PUBLIC_URL` auf die echte Domain setzen und die Sitemap in der
 Google Search Console einreichen. Einzelheiten: `docs/OEFFENTLICHE_SEITEN.md`.
 
+## Startklar-Check (was fehlt noch?)
+
+Im Redaktions-Dashboard ganz oben: **„Startklar: X von Y erledigt"** — Datenbank, Anmeldung,
+Behördenlisten, Domain, E-Mail, Push-Schlüssel, Rechnungen, Überweisung, Umsatzsteuer,
+Krypto (inkl. USDT über Tron für Afrika), Karte/PayPal. Je Punkt „Warum" und „So geht's".
+Die Prüfung sieht nur, OB etwas gesetzt ist — sie zeigt nie einen Wert oder ein Geheimnis
+(`server/src/services/startklar.js`).
+
 ## Datenspeicherung (Persistenz)
 
 Der Server kann seinen kompletten Zustand als **JSON-Snapshot** auf die Platte

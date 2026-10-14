@@ -1268,6 +1268,27 @@ async function quellenHinweis(feed) {
 }
 
 // Betriebs-Cockpit oben im Redaktions-Dashboard (GET /api/betrieb): nur Summen.
+// Startklar-Check (server/src/services/startklar.js): offene Einrichtung zuerst,
+// je Punkt „Warum?" und „So geht's". Texte kommen vom Server (Redaktion = Betreiber).
+function startklarKarte(s) {
+  const farbe = { ok: 'var(--ok-fg)', warnung: 'var(--warn-fg)', fehlt: 'var(--crit-fg)', info: 'var(--info-fg)' };
+  const zeichen = { ok: '✓', warnung: '!', fehlt: '✗', info: 'i' };
+  const offen = s.punkte.filter((x) => x.stufe !== 'ok');
+  const c = el(`<div class="card" data-startklar><b style="font-size:17px">${esc(ti('sk_titel', { n: s.erledigt, g: s.gesamt }))}</b>
+    <div class="muted" style="font-size:15px;margin:2px 0 8px">${esc(offen.length ? t('sk_sub') : t('sk_fertig'))}</div>
+    <div data-skliste></div></div>`);
+  const liste = c.querySelector('[data-skliste]');
+  s.punkte.forEach((x) => {
+    const z = el(`<details data-skpunkt="${esc(x.id)}" data-stufe="${esc(x.stufe)}" style="border-top:1px solid var(--line);padding:8px 0" ${x.stufe === 'fehlt' ? 'open' : ''}>
+      <summary style="cursor:pointer;min-height:40px;display:flex;align-items:center;gap:10px;font-weight:600">
+        <span aria-hidden="true" style="flex:0 0 28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;color:#fff;background:${farbe[x.stufe]}">${zeichen[x.stufe]}</span>
+        <span style="flex:1">${esc(x.titel)}</span><span class="muted" style="font-size:14px;font-weight:400">${esc(t('sk_' + x.stufe))}</span></summary>
+      <div style="padding:4px 0 4px 38px;font-size:15px"><div><b>${esc(t('sk_warum'))}</b> ${esc(x.warum)}</div>${x.tun ? `<div style="margin-top:4px"><b>${esc(t('sk_tun'))}</b> ${esc(x.tun)}</div>` : ''}</div></details>`);
+    liste.appendChild(z);
+  });
+  return c;
+}
+
 function betriebsKarte(b) {
   const geld = (b.einnahmen.summen || []).map((x) => fmtCurrency(x.cents / 100, x.currency)).join(' + ') || fmtCurrency(0, 'EUR');
   const kachel = (icon, wert, label, sub, col, attr = '') => `<div ${attr} style="flex:1;min-width:140px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px">
@@ -9262,6 +9283,8 @@ async function showModeration() {
   app.appendChild(head);
   // Betriebs-Cockpit direkt unter dem Kopf: Geschäft und Datenlage auf einen Blick.
   api('GET', '/api/betrieb').then((b) => { if (b) head.after(betriebsKarte(b)); }).catch(() => {});
+  // Startklar-Check ganz oben: Was fehlt noch, damit alles live wirkt?
+  api('GET', '/api/startklar').then((s) => { if (s) head.after(startklarKarte(s)); }).catch(() => {});
   // Krypto-Zahlungen ZUERST: Hier wartet eine zahlende Kundin auf ihre Freischaltung.
   if (kz === null) app.appendChild(el(`<div class="card" style="border-color:var(--crit-bd)">${esc(t('kp_load_err'))}</div>`));
   else if (kz.length) {
