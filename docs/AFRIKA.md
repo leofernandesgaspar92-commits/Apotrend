@@ -123,3 +123,24 @@ WHO-Liste unentbehrlicher Arzneimittel): Artemether/Lumefantrin, Amoxicillin, Ox
 Rehydratationssalze, Zinksulfat, Paracetamol, Ceftriaxon, Metformin, Insulin, Salbutamol,
 Magnesiumsulfat, Rifampicin, Tenofovir/Lamivudin/Dolutegravir, Gentamicin — ohne Status, solange
 keine Quelle etwas als knapp meldet.
+
+## Offline lesbar (schwaches Netz)
+
+In vielen Zielmärkten fällt das Netz regelmäßig aus. Damit die App dann nicht leer ist, speichert
+der Service Worker (`server/public/sw.js`) den **zuletzt geladenen Stand** einiger Lese-Ansichten:
+Engpässe, Nachrichten, Beobachtungsliste, Übersicht, Lage je Ebene, Wirkstoff-Seite, Konto, Länder.
+
+- **Netz zuerst:** Solange Netz da ist, kommt jede Antwort frisch vom Server. Der gespeicherte
+  Stand wird nur bei Netzausfall gezeigt.
+- **Sichtbar gekennzeichnet:** Oben steht „Offline — gespeicherter Stand von …" mit Uhrzeit. Ein
+  alter Engpass-Stand darf nicht wie ein aktueller aussehen.
+- **Je Konto getrennt:** Der Speicher-Schlüssel enthält einen SHA-256-Hash des Anmelde-Tokens (nie
+  das Token selbst). Auf einem geteilten Apotheken-Rechner sieht ein anderes Konto nichts.
+- **Abmelden und Konto löschen leeren den Speicher.**
+- **Nie gespeichert:** Direktnachrichten, Benachrichtigungen, Rechnungen, Schnittstellen-Schlüssel,
+  Datenexport, Schnittstellen-Antworten (`/api/v1`).
+- **API-Antworten tragen `Cache-Control: no-store`.** Vorher hätte der Browser-HTTP-Cache
+  Antworten eines Kontos auch nach dem Abmelden noch halten können.
+
+Geprüft durch `server/test/offline.test.js` und den Browser-Audit-Block „Offline" (eigener
+Prüfserver, der beendet wird — ein echter Netzausfall).

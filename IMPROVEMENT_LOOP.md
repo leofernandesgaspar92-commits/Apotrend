@@ -2614,3 +2614,24 @@ Server: NAFDAC-Feed mit Warnung + Workshop → Filter zeigt nur die Warnung, Uga
 Artemether/Lumefantrin zuerst). Browser-Audit „Warnungen".
 
 **Gegenproben (jede schlägt an):** „fake" allein; Filter ignoriert; Region nicht durchgereicht.
+
+### Cycle · Offline lesbar für schwache Netze (2026-10-14)
+
+**WORK.** Service Worker: Lese-Ansichten (Engpässe, Nachrichten, Beobachtung, Übersicht, Lage,
+Wirkstoff, Konto, Länder) werden netz-zuerst geladen; bei Netzausfall kommt der letzte Stand mit
+`x-apo-offline` und Zeitpunkt. Speicher-Schlüssel mit SHA-256 des Tokens (je Konto getrennt).
+App: Hinweis „Offline — gespeicherter Stand von …"; Abmelden/Konto löschen/401 leeren den
+Speicher. Server: `Cache-Control: no-store` auf allen API-JSON-Antworten (Befund unterwegs: der
+Browser-HTTP-Cache war bisher nicht ausgeschlossen).
+
+**Audit-Lehre.** Playwright `setOffline`/`route` erreichen Anfragen aus dem Service Worker nicht —
+die erste Fassung der Offline-Prüfung lief gegen das Netz und bewies nichts. Jetzt: eigener
+Prüfserver, der beendet wird. Außerdem laufen alle anderen Audit-Blöcke mit
+`serviceWorkers: 'block'` (sonst umgehen SW-Anfragen die `page.route`-Nachbildungen von
+Chronik/Frühwarnung).
+
+**Tests.** `offline.test.js` (Liste der speicherbaren Pfade gegen private Pfade; Hash statt Token;
+Abmelden leert; `no-store` auf Erfolg und Fehler).
+
+**Gegenproben (jede schlägt an):** `no-store` entfernt; `/api/dm` in die Liste; Abmelden ohne
+Leeren.

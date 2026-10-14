@@ -1,8 +1,10 @@
 // Service Worker für ApoPulse: installierbar UND offline-tauglich für schwache/
 // unterbrochene Verbindungen (Ziel-Märkte mit knappem Netz), OHNE Update-Staus.
 // Strategie: NETWORK-FIRST für die App-Hülle (immer frisch, wenn online; aus dem
-// Cache, wenn offline). API-Aufrufe werden NIE gecacht (keine veralteten Sicherheits-/
-// Engpassdaten) — sie laufen unverändert übers Netz. Nur GET, nur eigene Herkunft.
+// Cache, wenn offline). API-Aufrufe gehen IMMER zuerst übers Netz (keine veralteten
+// Sicherheits-/Engpassdaten, solange Netz da ist). Nur wenn das Netz fehlt, liefern
+// ausgewählte Lese-Ansichten den zuletzt geladenen Stand — sichtbar gekennzeichnet
+// (siehe API_CACHE unten). Nur GET, nur eigene Herkunft.
 // v3: Die Sprachtexte liegen seit dem 06.09.2026 in einer eigenen Datei
 // (/i18n.js). Ohne neuen Cache-Namen behielten bestehende Installationen
 // ihre alte Shell — index.html ohne den neuen <script>-Eintrag — und die
@@ -10,6 +12,39 @@
 // und zwar nur bei Bestandsnutzer:innen. Die Version MUSS mitziehen, wenn
 // sich die Liste unten aendert.
 const CACHE = 'apopulse-shell-v3';
+// Gespeicherte Lese-Antworten für offline. Schlüssel enthält einen Hash des
+// Anmelde-Tokens: Auf einem geteilten Gerät sieht kein Konto die Daten eines
+// anderen. Abmelden löscht den ganzen Speicher (Seite: caches.delete).
+const API_CACHE = 'apopulse-api-v1';
+const OFFLINE_LESBAR = [/^\/api\/shortages$/, /^\/api\/news$/, /^\/api\/watchlist$/, /^\/api\/overview$/, /^\/api\/lage\/ebene$/, /^\/api\/wirkstoff\/[^/]+$/, /^\/api\/me$/, /^\/api\/countries$/];
+async function apiSchluessel(req) {
+  const roh = new TextEncoder().encode(req.headers.get('Authorization') || '');
+  const h = [...new Uint8Array(await crypto.subtle.digest('SHA-256', roh))].map((b) => b.toString(16).padStart(2, '0')).join('');
+  const u = new URL(req.url);
+  u.searchParams.set('__konto', h);
+  return u.href;
+}
+async function netzZuerst(req) {
+  const schluessel = await apiSchluessel(req);
+  try {
+    const res = await fetch(req);
+    if (res.ok) {
+      const kopf = new Headers(res.headers);
+      // Der Körper wird entpackt gespeichert — Kompressions-Angaben passen dann nicht mehr.
+      kopf.delete('content-encoding'); kopf.delete('content-length');
+      kopf.set('x-apo-gespeichert', new Date().toISOString());
+      const koerper = await res.clone().arrayBuffer();
+      caches.open(API_CACHE).then((c) => c.put(schluessel, new Response(koerper, { status: 200, headers: kopf }))).catch(() => {});
+    }
+    return res;
+  } catch (err) {
+    const alt = await caches.match(schluessel, { cacheName: API_CACHE });
+    if (!alt) throw err;
+    const kopf = new Headers(alt.headers);
+    kopf.set('x-apo-offline', '1');
+    return new Response(await alt.arrayBuffer(), { status: 200, headers: kopf });
+  }
+}
 const SHELL = ['/', '/index.html', '/i18n.js', '/app.js', '/app.css', '/manifest.webmanifest',
   '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
 
@@ -25,7 +60,7 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
+    await Promise.all(keys.filter((k) => k !== CACHE && k !== API_CACHE).map((k) => caches.delete(k)));
     await self.clients.claim();
   })());
 });
@@ -35,7 +70,15 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return; // nur GET; alles andere unverändert übers Netz
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // fremde Hosts nicht anfassen
-  if (url.pathname.startsWith('/api/')) return;     // API nie cachen (immer frische Daten)
+  // API: grundsätzlich NICHT aus dem Speicher — Engpassdaten müssen frisch sein.
+  // Einzige Ausnahme: OFFLINE. Dann liefern ausgewählte Lese-Ansichten den
+  // zuletzt geladenen Stand — gekennzeichnet (x-apo-offline + Zeitpunkt), die
+  // App zeigt „Offline — gespeicherter Stand von …". Schwache Netze sind in den
+  // Zielmärkten (Afrika) der Normalfall, eine leere App hilft dort niemandem.
+  if (url.pathname.startsWith('/api/')) {
+    if (OFFLINE_LESBAR.some((rx) => rx.test(url.pathname)) && req.headers.get('Authorization')) e.respondWith(netzZuerst(req));
+    return;
+  }
   // Network-first: online frisch + Cache aktualisieren; offline aus dem Cache (Fallback Hülle).
   e.respondWith((async () => {
     try {

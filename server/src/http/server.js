@@ -544,7 +544,11 @@ function enrichPosts(posts, userId) {
 // ── kleine Helfer ──
 const json = (req, res, code, obj) => {
   const payload = Buffer.from(JSON.stringify(obj));
-  const headers = { 'Content-Type': 'application/json; charset=utf-8' };
+  // no-store: API-Antworten sind persönlich (Konto, Beobachtungsliste, Zahlungen).
+  // Ohne diese Angabe durfte der Browser sie zwischenspeichern — auf einem
+  // geteilten Gerät sah ein zweites Konto offline die Antwort des ersten.
+  // Der gewollte Offline-Stand liegt getrennt je Konto im Service Worker (sw.js).
+  const headers = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' };
   // Größere JSON-Antworten (Feed, Preise) gzip-komprimieren, wenn der Client es kann —
   // spart Bandbreite bei jeder Navigation. Kleine Antworten lohnen die CPU nicht.
   if (payload.length > 512 && /\bgzip\b/.test(req.headers['accept-encoding'] || '')) {

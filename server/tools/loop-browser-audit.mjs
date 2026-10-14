@@ -9,6 +9,9 @@
 // gilt für den Server-Code, nicht für die Loop-Werkzeuge.
 import pkg from '/opt/node22/lib/node_modules/playwright/index.js';
 import { ensureServer } from './_ensure-server.mjs';
+import { spawn } from 'node:child_process';
+import path from 'node:path';
+const SERVER_ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const { chromium } = pkg;
 
 const BASE = process.argv[2] || 'http://127.0.0.1:4000';
@@ -73,6 +76,11 @@ async function main() {
     body: JSON.stringify({ body: `AUDIT-LONG ${'X'.repeat(200)} https://example.com/${'a'.repeat(180)}`, kind: 'post', visibility: 'public' }) });
 
   const browser = await chromium.launch();
+  // Service Worker standardmäßig AUS: Viele Prüfungen bilden API-Antworten mit
+  // page.route nach — Anfragen aus dem Service Worker umgehen das (seit er
+  // Lese-Antworten für offline speichert). Wo der Service Worker selbst geprüft
+  // wird (Push, Offline), steht ausdrücklich serviceWorkers: 'allow'.
+  { const neu = browser.newContext.bind(browser); browser.newContext = (opt = {}) => neu({ serviceWorkers: 'block', ...opt }); }
   const findings = [];
   for (const [theme, scheme] of [['hell', 'light'], ['dunkel', 'dark']]) {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, colorScheme: scheme });
@@ -837,7 +845,12 @@ async function main() {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const page = await ctx.newPage();
     const errors = [];
-    page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+    // Ausnahme, genau eine Meldung: Playwright setzt die Service-Worker-Sperre
+    // (serviceWorkers: 'block') als Startskript in JEDEN Frame — auch in die
+    // rechtlose Wochenbericht-Vorschau (sandbox=""), wo schon der Zugriff auf
+    // navigator.serviceWorker wirft. Die App läuft dort nicht (keine Skripte im
+    // sandbox-Frame); ihre eigenen Zugriffe sind über swVerfuegbar() abgesichert.
+    page.on('pageerror', (e) => { if (!/Service worker is disabled because the context is sandboxed/.test(e.message)) errors.push('pageerror: ' + e.message); });
 
     const HINWEIS = 'Gleicher Wirkstoff laut RxNorm (US-Vokabular der National Library of Medicine). '
       + 'Das ist KEINE Aussage über Austauschbarkeit: Sie hängt an Darreichungsform, Stärke, Hilfsstoffen und '
@@ -1711,7 +1724,7 @@ async function main() {
     const ua = createECDH('prime256v1'); ua.generateKeys();
     const abo = { endpoint: 'https://fcm.googleapis.com/fcm/send/audit-' + Date.now(), keys: { p256dh: ua.getPublicKey().toString('base64url'), auth: randomBytes(16).toString('base64url') } };
     const neu = await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Push Audit', email: `push_${Date.now().toString(36)}@ex.com`, password: 'Passwort123!', accountType: 'pharmacy', country: 'AT' }) });
-    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'allow' });
     const page = await ctx.newPage();
     const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
     await page.addInitScript(([t, a]) => {
@@ -1964,6 +1977,64 @@ async function main() {
     for (const e of fehler) findings.push('Warnungen: JS-Fehler ' + e);
     if (!findings.some((x) => x.startsWith('Warnungen'))) console.log('✓ Warnungen: Filter „Warnings only" in Klartext, schaltet, erklärt leere Ergebnisse');
     await ctx.close();
+  }
+
+  // ── Offline lesbar: letzter Stand mit Zeitpunkt, je Konto getrennt, Abmelden löscht ──
+  //  Eigener Server, der danach BEENDET wird: Das ist ein echter Netzausfall.
+  //  setOffline/route aus Playwright erreichen die Anfragen des Service
+  //  Workers nicht — damit lief die erste Fassung dieser Prüfung gegen das
+  //  laufende Netz und bewies nichts.
+  {
+    const proc = spawn(process.execPath, ['src/http/server.js'], { cwd: SERVER_ROOT, stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, PORT: '0', APOPULSE_DATA_FILE: '', APOPULSE_TOKEN_SECRET: 'offline-audit', APOPULSE_PRESSE: 'aus' } });
+    let log = '';
+    const OB = await new Promise((ok) => {
+      const zeit = setTimeout(() => ok(null), 20000);
+      const lies = (x) => { log += x; const m = log.match(/läuft auf http:\/\/localhost:(\d+)/); if (m) { clearTimeout(zeit); ok(`http://localhost:${m[1]}`); } };
+      proc.stdout.on('data', lies); proc.stderr.on('data', lies);
+    });
+    const ende = () => new Promise((ok) => { if (proc.exitCode !== null) return ok(); proc.once('exit', ok); proc.kill(); });
+    if (!OB) { findings.push('Offline: eigener Prüfserver startet nicht'); await ende(); }
+    else {
+      const oapi = async (pfad, opt = {}) => (await fetch(OB + pfad, { ...opt, headers: { 'content-type': 'application/json', ...(opt.headers || {}) } })).json().catch(() => null);
+      const u = Date.now().toString(36);
+      const regA = await oapi('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Off A', email: `offa_${u}@ex.com`, password: 'Passwort123!', accountType: 'pharmacy', country: 'ZM' }) });
+      const regB = await oapi('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Off B', email: `offb_${u}@ex.com`, password: 'Passwort123!', accountType: 'pharmacy', country: 'ZM' }) });
+      await oapi('/api/shortages/report', { method: 'POST', headers: { authorization: 'Bearer ' + regA.token }, body: JSON.stringify({ wirkstoff: 'Ceftriaxone', bezeichnung: 'Ceftriaxone 1 g', status: 'kritisch', country: 'ZM' }) });
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'allow' });
+      const page = await ctx.newPage();
+      const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+      await page.addInitScript(() => { localStorage.setItem('apo_welcome_seen', '1'); localStorage.setItem('apo_ebene_engpaesse', 'land'); });
+      await page.goto(OB, { waitUntil: 'networkidle' });
+      await page.evaluate((t) => localStorage.setItem('apo_token', t), regA.token);
+      await page.evaluate(() => navigator.serviceWorker && navigator.serviceWorker.ready);
+      await page.reload({ waitUntil: 'networkidle' }); await page.waitForTimeout(600);
+      const kontrolliert = await page.evaluate(() => !!(navigator.serviceWorker && navigator.serviceWorker.controller));
+      if (!kontrolliert) findings.push('Offline: Service Worker übernimmt die Seite nicht');
+      await reiterOeffnen(page, 'shortages'); await page.waitForTimeout(1500);
+      const online = await page.locator('[data-shortlist]').innerText().catch(() => '');
+      if (!/Ceftriaxone/.test(online)) findings.push('Offline: Vorbedingung — Meldung online nicht sichtbar');
+      if (await page.locator('#offlineBanner').isVisible()) findings.push('Offline: Hinweis steht schon, obwohl online');
+      const schluessel = await page.evaluate(async () => (await (await caches.open('apopulse-api-v1')).keys()).map((r) => r.url));
+      if (!schluessel.length || schluessel.some((k) => !/__konto=[0-9a-f]{64}/.test(k))) findings.push('Offline: Speicher-Schlüssel ohne Konto-Hash');
+      if (schluessel.some((k) => k.includes(regA.token))) findings.push('Offline: Anmelde-Token steht im Speicher-Schlüssel');
+      await ende(); // Netz weg.
+      await page.evaluate(() => goTab('shortages')); await page.waitForTimeout(1500);
+      const liste = await page.locator('[data-shortlist]').innerText().catch(() => '');
+      const banner = await page.locator('#offlineBanner').innerText().catch(() => '');
+      if (!/Ceftriaxone/.test(liste)) findings.push('Offline: gespeicherte Engpassliste wird nicht gezeigt');
+      if (!/Offline — saved data from/.test(banner) || !(await page.locator('#offlineBanner').isVisible())) findings.push(`Offline: Hinweis mit Zeitpunkt fehlt (${banner.slice(0, 60)})`);
+      // Anderes Konto auf demselben Gerät: sieht NICHT den Stand von A.
+      await page.evaluate((t) => localStorage.setItem('apo_token', t), regB.token);
+      await page.evaluate(() => goTab('shortages')); await page.waitForTimeout(1200);
+      if (/Ceftriaxone/.test(await page.locator('#feed').innerText().catch(() => ''))) findings.push('Offline: zweites Konto sieht den gespeicherten Stand des ersten');
+      // Abmelden löscht den Speicher (derselbe Weg wie der Abmelde-Knopf).
+      await page.evaluate(() => offlineSpeicherLeeren());
+      if (await page.evaluate(() => caches.has('apopulse-api-v1'))) findings.push('Offline: Abmelden löscht den gespeicherten Stand nicht');
+      for (const f of fehler) findings.push('Offline: JS-Fehler ' + f);
+      if (!findings.some((f) => f.startsWith('Offline'))) console.log('✓ Offline: echter Netzausfall → Liste aus gespeichertem Stand mit „Offline — saved data from …"; Schlüssel je Konto gehasht; anderes Konto sieht nichts; Abmelden löscht');
+      await ctx.close();
+    }
   }
 
   // ── Registrierung im Browser: kurz, und ein Fehler verbrennt nichts ──────

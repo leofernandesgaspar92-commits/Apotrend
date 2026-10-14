@@ -249,12 +249,15 @@ const api = async (method, path, body) => {
     // technischen „Failed to fetch" eine freundliche, lokalisierte Meldung zeigen.
     const err = new Error(t('e_network')); err.code = 'network'; throw err;
   }
+  // Offline-Stand aus dem Service Worker: anzeigen, von wann er ist.
+  if (r.headers.get('x-apo-offline')) zeigeOfflineStand(r.headers.get('x-apo-gespeichert'));
+  else if (method === 'GET' && OFFLINE_STAND && navigator.onLine) zeigeOfflineStand(null);
   const data = await r.json().catch(()=>({}));
   if (!r.ok) {
     // Abgelaufene/ungültige Sitzung: Token verwerfen und sauber zum Login-/Länder-Screen —
     // statt die Nutzer:in mit „Nicht angemeldet"-Fehlern an jeder Aktion hängen zu lassen.
     if (data.code === 'not_authenticated' && localStorage.getItem('apo_token')) {
-      localStorage.removeItem('apo_token');
+      localStorage.removeItem('apo_token'); offlineSpeicherLeeren();
       (_hasCountry() ? authScreen() : countryScreen());
       throw new Error(t('e_network')); // stoppt die weitere Verarbeitung beim Aufrufer
     }
@@ -924,7 +927,7 @@ async function mainScreen() {
   if (btnWerben) { btnWerben.classList.toggle('hidden', !featureAn('anzeigen')); btnWerben.onclick = () => openWerbung(); }
   const btnDatenApi = document.getElementById('btnDatenApi');
   if (btnDatenApi) { btnDatenApi.classList.toggle('hidden', !featureAn('daten_api')); btnDatenApi.onclick = () => openDatenApi(); }
-  document.getElementById('btnLogout').onclick = () => { localStorage.removeItem('apo_token'); location.reload(); };
+  document.getElementById('btnLogout').onclick = async () => { localStorage.removeItem('apo_token'); await offlineSpeicherLeeren(); location.reload(); };
   document.getElementById('btnNotif').onclick = showNotifications;
   // Knöpfe ruhender Bereiche entfernt wendeFeaturesAn() aus der Seite. Beim
   // ZWEITEN mainScreen()-Aufruf (z. B. Klick auf eine Benachrichtigung) gab es
@@ -3836,7 +3839,10 @@ function leseAbsicht() { try { return JSON.parse(localStorage.getItem('apo_absic
 // ══ Sofort-Alarm aufs Handy (Web-Push, server/src/services/webPush.js) ═══════
 // Ohne Push kommt ein Engpass-Alarm erst beim nächsten Öffnen an. Mit Push
 // klingelt das Handy, sobald die Behörde einen beobachteten Wirkstoff meldet.
-const pushMoeglich = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+// navigator.serviceWorker kann beim blossen ZUGRIFF werfen (eingebettete/gesperrte
+// Ansicht, manche Datenschutz-Einstellungen) — 'in' allein reicht nicht.
+const swVerfuegbar = () => { try { return !!navigator.serviceWorker; } catch { return false; } };
+const pushMoeglich = () => swVerfuegbar() && 'PushManager' in window && 'Notification' in window;
 const istIphoneOhneApp = () => /iPhone|iPad|iPod/.test(navigator.userAgent) && !(window.navigator.standalone || matchMedia('(display-mode: standalone)').matches);
 const b64uBytes = (s) => { const r = atob(String(s).replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(s.length / 4) * 4, '=')); return Uint8Array.from(r, (c) => c.charCodeAt(0)); };
 async function pushAboHier() {
@@ -7748,7 +7754,7 @@ async function openProfile(handle) {
         if (!confirm(t('ac_del_confirm'))) return;
         const pwd = prompt(t('ac_del_pw'));
         if (!pwd) return;
-        try { await api('POST','/api/me/delete',{ password: pwd }); alert(t('ac_del_done')); localStorage.removeItem('apo_token'); location.reload(); }
+        try { await api('POST','/api/me/delete',{ password: pwd }); alert(t('ac_del_done')); localStorage.removeItem('apo_token'); await offlineSpeicherLeeren(); location.reload(); }
         catch(e){ alert(e.message); }
       };
       dcard.querySelector('#pw_go').onclick = async () => {
@@ -9687,7 +9693,7 @@ async function openDmThread(threadId, prefill) {
 }
 
 // PWA: Service Worker registrieren (macht die App installierbar).
-if ('serviceWorker' in navigator) {
+if (swVerfuegbar()) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 }
 
@@ -9720,9 +9726,18 @@ document.addEventListener('keydown', (e) => {
 
 // Offline-Hinweis: zeitknappe Nutzer:innen sollen sofort verstehen, warum nichts lädt,
 // statt stiller Fehler. Bernstein-Balken oben, folgt dem Verbindungsstatus.
+// Offline mit gespeichertem Stand (Service Worker): Zeitpunkt nennen und
+// warnen, dass Engpass-Angaben veraltet sein können.
+var OFFLINE_STAND = null; // var: kann vor dieser Zeile gelesen werden (api() beim Start)
+function zeigeOfflineStand(iso) { OFFLINE_STAND = iso || null; updateOfflineBanner(); }
+async function offlineSpeicherLeeren() { OFFLINE_STAND = null; try { if (window.caches) await caches.delete('apopulse-api-v1'); } catch { /* egal */ } }
 function updateOfflineBanner() {
   const el = document.getElementById('offlineBanner');
-  if (el) el.classList.toggle('hidden', navigator.onLine);
+  if (!el) return;
+  const offline = !navigator.onLine || !!OFFLINE_STAND;
+  el.classList.toggle('hidden', !offline);
+  if (OFFLINE_STAND) el.textContent = ti('offline_stand', { z: fmtZeit(OFFLINE_STAND) });
+  else if (offline) el.textContent = t('offline_banner');
 }
 window.addEventListener('online', updateOfflineBanner);
 window.addEventListener('offline', updateOfflineBanner);
