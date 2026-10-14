@@ -119,6 +119,14 @@ Excel („Menü → Daten-Schnittstelle"). Nichts einzurichten: Der Tarif nutzt 
 Premium (Krypto bleibt). Preise optional über `APOPULSE_PREISE_BUSINESS` (z. B.
 `monat:99,jahr:990`). Endpunkte, Felder und Regeln: `docs/DATEN_API.md`.
 
+## Rechnungen für Premium und Business
+
+Mit `APOPULSE_FIRMA_NAME` und `APOPULSE_FIRMA_ANSCHRIFT` (dieselben Angaben wie für Anzeigen)
+bekommen Kund:innen nach jeder Zahlung — auch Krypto — eine Rechnung. Mit zusätzlich
+`APOPULSE_BANK_IBAN` können Firmen **per Rechnung (Überweisung)** zahlen; die Redaktion
+verbucht den Eingang in der Prüfliste. Umsatzsteuer über `APOPULSE_UST_SATZ` (mit der
+Steuerberatung festlegen). Einzelheiten: `docs/RECHNUNGEN.md`.
+
 ## Datenspeicherung (Persistenz)
 
 Der Server kann seinen kompletten Zustand als **JSON-Snapshot** auf die Platte

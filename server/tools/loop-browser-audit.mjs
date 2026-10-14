@@ -59,7 +59,8 @@ async function api(path, opts = {}) {
 async function main() {
   // Server sicherstellen (nutzt laufenden ODER startet einen und beendet ihn am Ende).
   let stopServer = () => {};
-  try { stopServer = await ensureServer(BASE); }
+  // Rechnungssteller gesetzt: sonst gäbe es weder Rechnungen noch „Per Rechnung zahlen" zu prüfen.
+  try { stopServer = await ensureServer(BASE, { APOPULSE_FIRMA_NAME: 'Prüfbetrieb GmbH', APOPULSE_FIRMA_ANSCHRIFT: 'Prüfweg 1, 1010 Wien', APOPULSE_BANK_IBAN: 'AT00 0000 0000 0000 0000', APOPULSE_UST_SATZ: '20' }); }
   catch (e) { console.error(`❌ ${e.message}`); process.exit(2); }
 
   const uniq = Date.now().toString(36);
@@ -1650,6 +1651,50 @@ async function main() {
     if (await page.locator('[data-daschluessel]').count()) findings.push('Daten-Schnittstelle: Klartext-Schlüssel bleibt nach dem Verlassen sichtbar');
     for (const f of fehler) findings.push('Daten-Schnittstelle: JS-Fehler ' + f);
     if (!findings.some((f) => f.startsWith('Daten-Schnittstelle'))) console.log('✓ Daten-Schnittstelle: Preis + Buchen → Business-Zahlung mit Krypto; Schlüssel einmal sichtbar und in der Excel-Adresse; kein Querscrollen');
+    await ctx.close();
+  }
+
+  // ── Rechnungen: per Rechnung zahlen, Rechnung lesbar und druckbar ───────
+  //  Firmen zahlen oft nur per Überweisung und brauchen immer eine Rechnung.
+  //  Ablauf am Handy: Knopf → Rechnungsangaben → Rechnung mit Nummer, IBAN,
+  //  Verwendungszweck; danach in „Ihre Rechnungen" als offen.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    const neu = await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Rechnung Audit', email: `rg_${Date.now().toString(36)}@ex.com`, password: 'Passwort123!', accountType: 'wholesale', country: 'AT' }) });
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, neu && neu.token);
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
+    await page.evaluate(() => { prPlan = 'business_yearly'; openPremium(); }); await page.waitForTimeout(1200);
+    const quer = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    if (!(await page.locator('[data-rgueberweisung]').count())) findings.push('Rechnungen: „Per Rechnung zahlen" fehlt trotz eingerichteter Bankverbindung');
+    else {
+      await page.click('[data-rgbestellen]'); await page.waitForTimeout(300);
+      if (!(await page.locator('[data-rgangaben]').count())) findings.push('Rechnungen: ohne Angaben kein Formular');
+      else {
+        const werte = { firma: 'Audit Großhandel GmbH', strasse: 'Hafen 2', plz: '1020', ort: 'Wien', email: 'rechnung@audit.example' };
+        for (const [k, v] of Object.entries(werte)) await page.fill(`[data-rg="${k}"]`, v);
+        await page.click('[data-rgspeichern]'); await page.waitForTimeout(1200);
+        const txt = await page.locator('[data-rgrechnung]').innerText().catch(() => '');
+        if (!/AP-\d{4}-\d{4}/.test(txt)) findings.push(`Rechnungen: keine Rechnung mit Nummer nach dem Anfordern (${txt.slice(0, 80)})`);
+        if (!/AT00 0000/.test(txt) || !/Audit Großhandel GmbH/.test(txt)) findings.push('Rechnungen: IBAN oder Empfänger fehlen auf der Rechnung');
+        if (!/990/.test(txt) || !/165/.test(txt)) findings.push('Rechnungen: Betrag oder enthaltene Umsatzsteuer fehlen');
+        if ((await quer()) > 0) findings.push(`Rechnungen: ${await quer()} px Querscrollen auf der Rechnung`);
+        if (!(await page.locator('[data-rgrechnung] [data-drucken]').count())) findings.push('Rechnungen: kein Drucken-Knopf');
+        await page.click('[data-rgrechnung] [data-zurueck]'); await page.waitForTimeout(1200);
+        const liste = await page.locator('[data-rgliste]').innerText().catch(() => '');
+        if (!/AP-\d{4}-\d{4}/.test(liste) || !/Offen/.test(liste)) findings.push(`Rechnungen: „Ihre Rechnungen" zeigt die offene Rechnung nicht (${liste.slice(0, 80)})`);
+      }
+    }
+    // Prüfliste der Redaktion: Überweisung ohne Krypto-Felder, klarer Knopf.
+    const karte = await page.evaluate(() => {
+      const k = kryptoPruefKarte({ id: 'x', method: 'invoice', amount_cents: 99000, currency: 'EUR', bezeichnung: 'Rechnung AP-2026-0001', product_name: 'Business', kunde: {}, created_at: new Date().toISOString() });
+      return { ueberweisung: !!k.querySelector('[data-kpueberweisung]'), tx: !!k.querySelector('[data-kptx]'), knopf: k.querySelector('[data-kpok]').textContent, hinweis: (k.querySelector('[data-kphint]') || {}).textContent || '' };
+    });
+    if (!karte.ueberweisung || karte.tx) findings.push('Rechnungen: Prüfliste zeigt Überweisung wie eine Krypto-Zahlung');
+    if (!/Zahlungseingang/.test(karte.knopf) || !/AP-2026-0001/.test(karte.hinweis)) findings.push(`Rechnungen: Prüfkarte ohne klaren Knopf/Verwendungszweck (${karte.knopf})`);
+    for (const f of fehler) findings.push('Rechnungen: JS-Fehler ' + f);
+    if (!findings.some((f) => f.startsWith('Rechnungen'))) console.log('✓ Rechnungen: per Rechnung zahlen → Angaben → Rechnung mit Nummer, IBAN, USt; in „Ihre Rechnungen" offen; Prüfkarte für Überweisung');
     await ctx.close();
   }
 

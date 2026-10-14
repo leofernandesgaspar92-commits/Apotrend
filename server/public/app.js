@@ -3651,6 +3651,94 @@ function merkeLinkAbsicht() {
 }
 function leseAbsicht() { try { return JSON.parse(localStorage.getItem('apo_absicht') || 'null'); } catch { return null; } }
 
+// ══ Rechnungen für Tarife (server/src/services/rechnungen.js) ════════════════
+// Firmen brauchen eine Rechnung — auch nach Krypto-Zahlung — und zahlen oft
+// nur per Überweisung. Rechnungsangaben einmal erfassen, dann ein Klick.
+function rechnungsAngabenFormular(vorher, fertig) {
+  const v = vorher || { land: viewCountry() };
+  const f = el(`<div class="card" data-rgangaben style="border:1px solid var(--line)"><b>${esc(t('rg_angaben_titel'))}</b>
+    <div class="muted" style="font-size:14px;margin:4px 0 8px">${esc(t('rg_angaben_sub'))}</div>
+    <div class="wb-raster">${['firma', 'ansprechpartner', 'strasse', 'plz', 'ort', 'land', 'ust_id', 'email'].map((k) => `<label>${esc(t('wb2_f_' + k))}<input data-rg="${k}" value="${esc(v[k] || '')}" ${k === 'land' ? 'maxlength="2"' : ''}${k === 'email' ? ' type="email"' : ''}></label>`).join('')}</div>
+    <div class="row" style="gap:8px;margin-top:10px"><button data-rgspeichern style="min-height:44px;font-weight:700">${esc(t('rg_speichern'))}</button><button class="ghost" data-rgab>${esc(t('cm_cancel'))}</button></div>
+    <div class="err" data-rgerr></div></div>`);
+  f.querySelector('[data-rgab]').onclick = () => f.remove();
+  f.querySelector('[data-rgspeichern]').onclick = async () => {
+    const d = {}; f.querySelectorAll('[data-rg]').forEach((i) => { d[i.dataset.rg] = i.value; });
+    try { const r = await api('POST', '/api/rechnungen/angaben', d); f.remove(); fertig(r.angaben); } catch (e) { f.querySelector('[data-rgerr]').textContent = e.message; }
+  };
+  return f;
+}
+// Angaben vorhanden? Sonst erst das Formular, dann weiter.
+function mitRechnungsangaben(rg, anker, weiter) {
+  if (rg.angaben) return weiter();
+  anker.after(rechnungsAngabenFormular(null, (a) => { rg.angaben = a; weiter(); }));
+}
+function ueberweisungsBox(rg, plan) {
+  const b = el(`<div class="card" data-rgueberweisung style="padding:12px 14px;margin:0 0 14px;border:1px solid var(--line)">
+    <div style="font-weight:700;margin-bottom:2px">${esc(t('rg_per_rechnung'))}</div>
+    <div class="muted" style="font-size:14px;margin-bottom:10px">${esc(t('rg_per_rechnung_sub'))}</div>
+    <button class="ghost" data-rgbestellen style="min-height:44px;font-weight:700">${esc(t('rg_bestellen'))}</button><div class="err" data-rgerr2></div></div>`);
+  b.querySelector('[data-rgbestellen]').onclick = () => mitRechnungsangaben(rg, b, async () => {
+    try { const r = await api('POST', '/api/rechnungen/ueberweisung', { productId: plan }); zeigeTarifRechnung(r.rechnung.nummer); } catch (e) { b.querySelector('[data-rgerr2]').textContent = e.message; }
+  });
+  return b;
+}
+function rechnungenKarte(rg) {
+  const c = el(`<div class="card" data-rgliste><b>${esc(t('rg_titel'))}</b><div data-rginhalt style="margin-top:6px"></div></div>`);
+  const inhalt = c.querySelector('[data-rginhalt]');
+  if (!rg.rechnungen.length && !rg.ohne_rechnung.length) inhalt.appendChild(el(`<div class="muted">${esc(t('rg_keine'))}</div>`));
+  rg.rechnungen.forEach((r) => {
+    const stand = r.bezahlt ? ti('rg_bezahlt_am', { d: fmtDateDe(String(r.bezahlt_am || r.datum).slice(0, 10)) }) : r.abgelehnt ? t('rg_abgelehnt') : t('rg_offen');
+    const z = el(`<div class="row" data-rgzeile style="gap:8px;align-items:center;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--line)">
+      <div style="flex:1 1 220px"><b>${esc(r.nummer)}</b> · ${esc(r.leistung.name)}<div class="muted" style="font-size:14px">${esc(eur(r.brutto_cents))} · ${esc(stand)}</div></div>
+      <button class="ghost small" data-rgansehen>${esc(t('rg_ansehen'))}</button></div>`);
+    z.querySelector('[data-rgansehen]').onclick = () => zeigeTarifRechnung(r.nummer);
+    inhalt.appendChild(z);
+  });
+  rg.ohne_rechnung.forEach((p) => {
+    const z = el(`<div class="row" data-rgohne style="gap:8px;align-items:center;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--line)">
+      <div style="flex:1 1 220px"><b>${esc(p.produkt)}</b><div class="muted" style="font-size:14px">${esc(eur(p.betrag_cents))} · ${esc(ti('rg_bezahlt_am', { d: fmtDateDe(String(p.bezahlt_am || '').slice(0, 10)) }))}</div></div>
+      <button class="small" data-rgerstellen>${esc(t('rg_erstellen'))}</button></div>`);
+    z.querySelector('[data-rgerstellen]').onclick = () => mitRechnungsangaben(rg, c, async () => {
+      try { const r = await api('POST', '/api/rechnungen/zahlung/' + encodeURIComponent(p.payment_id)); zeigeTarifRechnung(r.rechnung.nummer); } catch (e) { alert(e.message); }
+    });
+    inhalt.appendChild(z);
+  });
+  return c;
+}
+async function zeigeTarifRechnung(nummer) {
+  let r; try { r = (await api('GET', '/api/rechnungen/' + encodeURIComponent(nummer))).rechnung; } catch (e) { alert(e.message); return; }
+  const e2 = r.empfaenger || {}; const a = r.aussteller || {};
+  const za = r.zahlart || {};
+  const zahlText = r.bezahlt
+    ? (za.art === 'krypto' ? ti('rg_zahlart_krypto', { coin: String(za.coin || '').toUpperCase(), d: fmtDateDe(String(r.bezahlt_am).slice(0, 10)) })
+      : za.art === 'ueberweisung' ? ti('rg_zahlart_ueberweisung', { d: fmtDateDe(String(r.bezahlt_am).slice(0, 10)) })
+      : ti('rg_zahlart_online', { d: fmtDateDe(String(r.bezahlt_am).slice(0, 10)) }))
+    : null;
+  setDocTitle(t('wb2_rechnung') + ' ' + r.nummer);
+  app.innerHTML = '';
+  const c = el(`<div class="card wb-rechnung" data-rgrechnung>
+    <div class="row" style="gap:8px;flex-wrap:wrap"><button class="ghost small" data-zurueck>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span><button class="small" data-drucken>${esc(t('wb2_drucken'))}</button></div>
+    <div class="row" style="justify-content:space-between;align-items:flex-start;margin-top:14px;flex-wrap:wrap;gap:12px">
+      <div><b>${esc(a.firma || '')}</b><div>${esc(a.anschrift || '')}</div>${a.ust_id ? `<div>${esc(t('wb2_uid'))}: ${esc(a.ust_id)}</div>` : ''}</div>
+      <div style="text-align:right"><h1 style="margin:0">${esc(t('wb2_rechnung'))}</h1><div>${esc(t('wb2_nr'))} ${esc(r.nummer)}</div><div>${esc(t('wb2_datum'))} ${esc(fmtDateDe(r.datum))}</div></div>
+    </div>
+    <div style="margin-top:16px"><b>${esc(e2.firma || '')}</b>${e2.ansprechpartner ? `<div>${esc(e2.ansprechpartner)}</div>` : ''}<div>${esc(e2.strasse || '')}</div><div>${esc((e2.plz || '') + ' ' + (e2.ort || ''))}</div><div>${esc(e2.land || '')}</div>${e2.ust_id ? `<div>${esc(t('wb2_uid'))}: ${esc(e2.ust_id)}</div>` : ''}</div>
+    <div class="pv-tabelle" style="margin-top:16px">
+      <div class="pv-zeile"><span>${esc(r.leistung.name)}${r.leistung.monate ? `<div class="muted" style="font-size:13px">${esc(ti('rg_laufzeit', { n: r.leistung.monate }))}</div>` : ''}</span><span></span><span>${esc(eur(r.brutto_cents))}</span></div>
+      ${r.ust_satz ? `<div class="pv-zeile"><span>${esc(t('wb2_netto'))}</span><span></span><span>${esc(eur(r.netto_cents))}</span></div>
+      <div class="pv-zeile"><span>${esc(ti('rg_ust_enthalten', { satz: r.ust_satz }))}</span><span></span><span>${esc(eur(r.ust_cents))}</span></div>` : ''}
+      <div class="pv-zeile"><b>${esc(t('wb2_gesamt'))}</b><span></span><b>${esc(eur(r.brutto_cents))}</b></div></div>
+    ${r.bezahlt ? `<div class="ok-box" data-rgbezahlt style="padding:8px 12px;margin-top:12px">${esc(zahlText)}</div>`
+      : r.abgelehnt ? `<div class="muted" style="margin-top:12px">${esc(t('rg_abgelehnt'))}</div>`
+      : `<div style="margin-top:14px" data-rgzahlung>${esc(t('rg_frist'))} ${esc(t('wb2_bitte_ueberweisen'))}<div><b>${esc(a.inhaber || '')}</b> · IBAN ${esc(a.iban || '')}${a.bic ? ` · BIC ${esc(a.bic)}` : ''}</div><div>${esc(t('wb2_verwendung'))}: <b>${esc(r.nummer)}</b></div></div>
+         <div class="muted" style="font-size:14px;margin-top:12px">${esc(t('rg_offen'))}</div>`}
+  </div>`);
+  app.appendChild(c);
+  c.querySelector('[data-zurueck]').onclick = () => openPremium();
+  c.querySelector('[data-drucken]').onclick = () => window.print();
+}
+
 // ══ Daten-Schnittstelle (Business) ═══════════════════════════════════════════
 // Für Großhandel, Ketten und Einkauf: Warenwirtschaft oder Excel holen die
 // Engpässe selbst ab (server/src/services/datenApi.js). Erklärt ohne
@@ -3736,6 +3824,7 @@ async function openDatenApi() {
       <div class="muted" style="font-size:14px;margin-top:6px">${esc(t('da_herkunft'))}</div>
     </details></div>`);
   body.appendChild(anl);
+  if (st.berechtigt) { const rg = await api('GET', '/api/rechnungen').catch(() => null); if (rg && rg.moeglich) app.appendChild(rechnungenKarte(rg)); }
 }
 
 // ══ Anzeigen für Unternehmen ══════════════════════════════════════════════════
@@ -6605,6 +6694,13 @@ async function openPremium() {
       body.appendChild(el(`<div style="font-weight:700;margin:0 0 6px">${esc(t('pr_pay_crypto'))}</div>`));
     }
 
+    // Per Rechnung (Überweisung): für Firmen oft der einzige Weg zu zahlen.
+    const rg = await api('GET', '/api/rechnungen').catch(() => null);
+    if (rg && rg.ueberweisung) {
+      body.appendChild(ueberweisungsBox(rg, prPlan));
+      if (!fiat.length) body.appendChild(el(`<div style="font-weight:700;margin:0 0 6px">${esc(t('pr_pay_crypto'))}</div>`));
+    }
+    if (rg && rg.moeglich) app.appendChild(rechnungenKarte(rg));
     if (!opt.coins.length) { body.appendChild(el(`<div class="muted">${esc(t('pr_none'))}</div>`)); }
     opt.coins.forEach(c => {
       const amountLbl = c.amount_crypto != null ? ti('pr_amount', { n: c.amount_crypto, sym: c.symbol }) : ti('pr_amount_na', { amount: fmtCurrency(opt.amount, opt.currency || 'EUR') });
@@ -8837,12 +8933,17 @@ function kryptoPruefKarte(z) {
     ? ti('kp_expected', { n: Number(z.expected_crypto).toLocaleString(bcp47(), { maximumFractionDigits: 8 }), coin: z.symbol || (z.coin || '').toUpperCase() })
     : t('kp_expected_none');
   const link = sichererLink(z.explorer_url);
+  // Überweisung (Rechnung): kein Coin, keine Transaktions-ID — geprüft wird der Kontoauszug.
+  const ueberweisung = z.method === 'invoice';
   const card = el(`<div class="card" data-kp="${esc(z.id)}">
     <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
       <b style="font-size:16px">${esc(k.display_name || '?')}</b> <span class="handle">@${esc(k.handle || '?')}</span>
       <span class="muted">${esc((land && land.flag + ' ' + land.name) || k.country || '')}</span>
     </div>
     <div style="margin-top:6px;font-size:15px"><b>${esc(fmtMoney(z.amount_cents / 100))} ${esc(z.currency)}</b> · ${esc(z.product_name || '')}</div>
+    ${ueberweisung ? `<div data-kpueberweisung style="margin-top:6px;font-size:15px"><b>${esc(t('kp_ueberweisung'))}</b> · ${esc(z.bezeichnung || '')}</div>
+      <div style="font-size:14px;margin-top:2px">${esc(t('kp_bestellt'))}: <b>${esc(fmtZeit(z.created_at))}</b></div>
+      <div data-kphint style="margin-top:10px;background:var(--info-bg);border:1px solid var(--info-bd);color:var(--info-fg);border-radius:8px;padding:10px 12px;font-size:14px;line-height:1.5">${esc(ti('kp_ueberweisung_hint', { betrag: fmtMoney(z.amount_cents / 100) + ' ' + z.currency, nr: String(z.bezeichnung || '').replace(/^Rechnung /, '') }))}</div>` : `
     <div class="muted" style="font-size:14px;margin-top:2px">${esc(z.network || z.coin || '')}${z.wallet_label ? ' · ' + esc(z.wallet_label) : ''}</div>
     <div style="font-size:14px;margin-top:6px">${esc(erwartet)}</div>
     <div style="font-size:14px;margin-top:2px">${esc(t('kp_started'))}: <b>${esc(fmtZeit(z.created_at))}</b> · ${esc(t('kp_claimed'))}: ${esc(fmtZeit(z.claimed_at))}</div>
@@ -8852,9 +8953,9 @@ function kryptoPruefKarte(z) {
            : `<div style="margin-top:8px;color:var(--crit-fg);font-weight:700">⚠️ ${esc(t('kp_bad_format'))}</div>`}
     <div data-kphint style="margin-top:10px;background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-fg);border-radius:8px;padding:10px 12px;font-size:14px;line-height:1.5">
       <b>${esc(t('kp_check_t'))}</b><ol style="margin:6px 0 0;padding-left:20px"><li>${esc(t('kp_check_1'))}</li><li>${esc(t('kp_check_2'))}</li><li>${esc(t('kp_check_3'))}</li></ol>
-    </div>
+    </div>`}
     <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">
-      <button class="small" data-kpok style="min-height:44px">✓ ${esc(t('kp_confirm'))}</button>
+      <button class="small" data-kpok style="min-height:44px">✓ ${esc(t(ueberweisung ? 'kp_eingang' : 'kp_confirm'))}</button>
       <button class="ghost small" data-kpno style="min-height:44px">${esc(t('kp_reject'))}</button>
     </div>
     <div class="hidden" data-kpgrund style="margin-top:8px">

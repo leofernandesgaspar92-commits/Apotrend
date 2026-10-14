@@ -85,7 +85,8 @@ test('Anzeige: buchen, prüfen, bezahlen, ausliefern, zählen', { timeout: 60000
     await post(`/api/werbung/kampagnen/${k2.id}/einreichen`, pharma);
     await post(`/api/werbung/kampagnen/${k2.id}/freigeben`, red);
     const opt = (await get(`/api/werbung/kampagnen/${k2.id}/krypto`, pharma)).d;
-    assert.equal(opt.amount_eur, 290);
+    // Brutto: 290 € netto + 20 % USt — derselbe Betrag wie auf der Rechnung (bis 10/2026 nur netto).
+    assert.equal(opt.amount_eur, 348);
     const btc = opt.coins.find((c) => c.coin === 'bitcoin');
     assert.ok(btc, 'BTC-Wallet fehlt: ' + JSON.stringify(opt.coins.map((c) => c.coin)));
     const start = (await post(`/api/werbung/kampagnen/${k2.id}/krypto/start`, pharma, { walletId: btc.id })).d;

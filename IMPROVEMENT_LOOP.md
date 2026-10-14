@@ -2379,3 +2379,30 @@ Kontolöschung vergisst Schlüssel; Formel-Schutz weg; Schlüssel bleibt nach de
 sichtbar. **Befund dabei:** Die ersten beiden Gegenproben blieben zunächst grün — der Testserver
 lief ohne Beispieldaten, der Filter wurde also gar nicht geprüft. Jetzt laufen Beispieldaten im
 Test mit, und ein Gegencheck stellt sicher, dass sie in der App wirklich da sind.
+
+### Cycle · Rechnungen für Premium und Business (2026-10-14)
+
+**Kundensicht:** Ein Großhändler zahlt 990 € nicht ohne Rechnung — auch nicht mit Krypto — und
+viele Firmen zahlen nur per Überweisung. Rechnungen gab es bisher nur für Anzeigen.
+
+**WORK.**
+- `services/rechnungen.js`: Rechnungsangaben einmal erfassen; Rechnung zu bezahlter Zahlung
+  (einmal ausgestellt, „bezahlt am … per Krypto (BTC)"); „Per Rechnung zahlen" → Rechnung sofort,
+  Zahlung in der Prüfliste der Redaktion, Freischaltung nach verbuchtem Eingang. Empfänger und
+  Beträge festgeschrieben; enthaltene USt ausgewiesen; Rechnungen bleiben bei Kontolöschung.
+- `services/rechnungsnummern.js`: **eine** Nummernreihe für Anzeigen und Tarife, mitgesichert;
+  alte Sicherungen der Anzeigen heben den Zähler an (keine doppelte Nummer).
+- **Fehler behoben:** Die Krypto-Zahlung einer Anzeige verlangte nur den Nettopreis, die Rechnung
+  aber Netto + USt. Jetzt Brutto.
+- Oberfläche: „Per Rechnung zahlen" auf der Premium-Seite, Formular für Rechnungsangaben,
+  druckbare Rechnung, „Ihre Rechnungen" (Premium- und Schnittstellen-Seite), Prüfkarte der
+  Redaktion für Überweisungen (Kontoauszug-Hinweis mit Betrag und Verwendungszweck, Knopf
+  „Zahlungseingang verbuchen"). `docs/RECHNUNGEN.md`.
+
+**Tests.** `rechnungen.test.js` (gemeinsame Reihe inkl. alter Sicherung, Beträge, Festschreibung,
+Grenzen, ohne Betreiber/IBAN; echter Server: Überweisung → Freischaltung erst nach Verbuchen,
+Krypto-Beleg, Anzeigen-Rechnung in derselben Reihe, Neustart mit Fortsetzung der Reihe).
+Browser-Audit „Rechnungen".
+
+**Gegenproben (jede schlägt an):** getrennte Zähler; Empfänger nicht festgeschrieben; Beleg ohne
+bestätigte Zahlung; Nummernreihe nicht gesichert; Anzeigen-Krypto wieder netto.

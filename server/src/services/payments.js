@@ -264,6 +264,27 @@ export function createPaymentsService({
           };
         });
     },
+    // ── Per Rechnung (Überweisung), services/rechnungen.js ───────────────────
+    //  Angelegt direkt als „pending_review": Es gibt nichts weiter zu melden —
+    //  die Redaktion verbucht den Geldeingang in derselben Prüfliste wie
+    //  Krypto (confirmPayment schaltet frei). Moderation wird benachrichtigt.
+    ueberweisungAnlegen(userId, productId) {
+      const product = getProduct(productId);
+      if (!product) throw new AppError('product_unknown', 'Unbekanntes Produkt.');
+      const p = repo.createPayment({ userId, productId: product.id, amountCents: product.amount_cents, currency: product.currency, method: 'invoice', provider: 'direct', status: 'pending_review' });
+      const mit = repo.updatePaymentReview ? repo.updatePaymentReview(p.id, { claimed_at: new Date().toISOString() }) : p;
+      spiegeln(mit || p);
+      for (const mod of (moderatoren() || [])) {
+        melde({ userId: mod, type: 'payment_review', actorUserId: userId, refType: 'payment', refId: p.id, label: `Überweisung · ${(p.amount_cents / 100).toFixed(2)} ${p.currency}` });
+      }
+      return mit || p;
+    },
+    ueberweisungVermerken(paymentId, nummer) {
+      return repo.updatePaymentReview ? repo.updatePaymentReview(paymentId, { bezeichnung: `Rechnung ${nummer}` }) : null;
+    },
+    zahlung: (id) => repo.getPayment(id),
+    zahlungenVon: (userId) => repo.listPaymentsByUser(userId),
+
     // Eigene Zahlungen — damit die Premium-Seite „wird geprüft" oder „abgelehnt:
     // Grund" zeigen kann, statt dieselbe Zahlung ein zweites Mal anzubieten.
     myPayments(userId) {

@@ -44,6 +44,8 @@ import { createSortiment } from '../services/sortiment.js';
 import { vorratsRadar } from '../services/radar.js';
 import { teilseite } from './teilseite.js';
 import { createAnzeigen } from '../services/anzeigen.js';
+import { createRechnungsnummern } from '../services/rechnungsnummern.js';
+import { createRechnungen } from '../services/rechnungen.js';
 import { createDatenApi, zugangPruefen, engpassZeile, fuerSchnittstelle, alsCsv } from '../services/datenApi.js';
 import { werbeplaetzeAusUmgebung, ZIELGRUPPEN } from '../data/werbeplaetze.js';
 import { createOverviewService } from '../services/overview.js';
@@ -178,7 +180,10 @@ const betreiber = {
   ust_satz: Number(process.env.APOPULSE_UST_SATZ) || 0,
 };
 const datenApi = createDatenApi();
+// Eine Rechnungsnummern-Reihe für Anzeigen UND Tarife (lückenlos, eindeutig).
+const rechnungsnummern = createRechnungsnummern();
 const anzeigen = createAnzeigen({
+  nummern: rechnungsnummern,
   plaetze: werbeplaetzeAusUmgebung(process.env),
   profilVon: (uid) => social.getProfile(uid),
   rxErlaubtFuer: (uid) => rxErlaubt(rxBetrachter(uid)),
@@ -260,7 +265,12 @@ const payments = createPaymentsService({
   // NICHTS frei; er schreibt mit (siehe `spiegeln` in services/payments.js).
   mirror: db,
   onPaid: ({ payment, product }) => { console.log(`✅ Zahlung ${payment.id} bezahlt → Feature „${product.feature}" für User ${payment.user_id} freigeschaltet.`); },
+});// Rechnungen für Tarife (services/rechnungen.js, docs/RECHNUNGEN.md).
+const rechnungen = createRechnungen({
+  betreiber, nummern: rechnungsnummern, payments, produkt: getProduct,
+  istModerator: (uid) => social.isModerator(uid),
 });
+
 
 /** Einen Snapshot in alle Repos einspielen. Eine Stelle, zwei Quellen. */
 function applySnapshot(snap) {
@@ -275,7 +285,9 @@ function applySnapshot(snap) {
   chronik.__load(snap.chronik);
   eigeneQuellen.__load(snap.eigeneQuellen);
   wochenbericht.__load(snap.wochenbericht);
+  rechnungsnummern.__load(snap.rechnungsnummern);
   anzeigen.__load(snap.anzeigen);
+  rechnungen.__load(snap.rechnungen);
   datenApi.__load(snap.datenApi);
   // Alte, unbefristete Premium-Freischaltungen aus bezahlten Monats-/Jahres-
   // käufen bekommen ihr Ablaufdatum (services/payments.js, laufzeitenUmstellen).
@@ -327,6 +339,8 @@ function collectSnapshot() {
     eigeneQuellen: eigeneQuellen.__dump(),
     wochenbericht: wochenbericht.__dump(),
     anzeigen: anzeigen.__dump(),
+    rechnungsnummern: rechnungsnummern.__dump(),
+    rechnungen: rechnungen.__dump(),
     datenApi: datenApi.__dump(),
   };
 }
@@ -1669,9 +1683,20 @@ const routes = [
     // die Loeschung „ok" meldet — die teuerste Art von halber Arbeit.
     logistikRepo.purgeUser(userId);
     datenApi.nutzerEntfernen(userId); // Schnittstellen-Schlüssel gelten sonst weiter
+    rechnungen.nutzerEntfernen(userId); // Angaben weg; ausgestellte Rechnungen bleiben (Aufbewahrungspflicht)
     repo.deleteUser(userId);
     return { ok: true };
   }],
+
+  // ── Rechnungen für Tarife (services/rechnungen.js) ──
+  ['GET', /^\/api\/rechnungen$/, true, async ({ userId }) => ({
+    moeglich: rechnungen.rechnungMoeglich(), ueberweisung: rechnungen.ueberweisungMoeglich(),
+    angaben: rechnungen.angaben(userId), ...rechnungen.meine(userId),
+  })],
+  ['POST', /^\/api\/rechnungen\/angaben$/, true, async ({ userId, body }) => ({ angaben: rechnungen.angabenSetzen(userId, body) })],
+  ['POST', /^\/api\/rechnungen\/ueberweisung$/, true, async ({ userId, body }) => ({ rechnung: rechnungen.perRechnungBestellen(userId, body.productId) })],
+  ['POST', /^\/api\/rechnungen\/zahlung\/([^/]+)$/, true, async ({ userId, params }) => ({ rechnung: rechnungen.fuerZahlung(userId, params[0]) })],
+  ['GET', /^\/api\/rechnungen\/(AP-\d{4}-\d{4,})$/, true, async ({ userId, params }) => ({ rechnung: rechnungen.rechnung(userId, params[0]) })],
 
   // ── Daten-Schnittstelle (Business): Schlüssel verwalten ──
   ['GET', /^\/api\/daten-api\/schluessel$/, true, async ({ userId }) => ({

@@ -72,7 +72,9 @@ Behörde, Privat). Keine Auswahl nach Verhalten oder Gesundheitsdaten.
 | `APOPULSE_UST_SATZ` | Umsatzsteuer in Prozent (leer = keine Zeile). **Mit der Steuerberatung festlegen** — z. B. Reverse Charge bei Kunden im EU-Ausland. |
 
 Ohne Firmenname, Anschrift und IBAN bietet die Seite **keine** Zahlung per Rechnung an — nur
-Krypto. Rechnungsnummern: `AP-<Jahr>-<laufend>`.
+Krypto. Rechnungsnummern: `AP-<Jahr>-<laufend>` — **eine gemeinsame Reihe mit den Tarif-Rechnungen**
+(`docs/RECHNUNGEN.md`). Die Krypto-Zahlung einer Anzeige verlangt den **Bruttobetrag** (Preis + USt),
+wie die Rechnung.
 
 ## Was noch fehlt (bewusst nicht gebaut)
 

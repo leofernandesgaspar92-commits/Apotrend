@@ -51,7 +51,7 @@ export function zielLinkFehler(url) {
 export function createAnzeigen({
   jetzt = () => Date.now(), plaetze, profilVon = () => null, rxErlaubtFuer = () => false,
   istModerator = () => false, moderatoren = () => [], benachrichtige = () => {},
-  betreiber = {}, klickZeichen = null,
+  betreiber = {}, klickZeichen = null, nummern = null,
 } = {}) {
   const kampagnen = new Map();   // id -> Kampagne
   const kunden = new Map();      // userId -> Firmenangaben
@@ -219,8 +219,11 @@ export function createAnzeigen({
       if (k.status !== 'freigegeben') throw fehler('anzeige_status', 'Bezahlen lässt sich eine freigegebene Anzeige.', 409);
       if (!ueberweisungMoeglich()) throw fehler('ueberweisung_aus', 'Zahlung per Rechnung ist noch nicht eingerichtet.', 409);
       if (!k.rechnung) {
-        const jahr = new Date(jetzt()).getUTCFullYear();
-        k.rechnung = { nummer: `AP-${jahr}-${String(++rechnungsNr).padStart(4, '0')}`, datum: heute() };
+        // Gemeinsame Reihe mit den Tarif-Rechnungen (services/rechnungsnummern.js).
+        let nummer;
+        if (nummern) nummer = nummern.naechste();
+        else { const jahr = new Date(jetzt()).getUTCFullYear(); nummer = `AP-${jahr}-${String(++rechnungsNr).padStart(4, '0')}`; }
+        k.rechnung = { nummer, datum: heute() };
       }
       k.zahlung = { methode: 'ueberweisung', offen: true };
       return { ...ausgabe(k), rechnung: this.rechnung(userId, id) };
@@ -257,7 +260,10 @@ export function createAnzeigen({
     kampagneFuerZahlung(userId, id) {
       const k = eigene(userId, id);
       if (k.status !== 'freigegeben') throw fehler('anzeige_status', 'Bezahlen lässt sich eine freigegebene Anzeige.', 409);
-      return { id: k.id, betrag_cents: k.preis_cents, waehrung: k.waehrung, name: `Anzeige „${k.titel}"` };
+      // Brutto: Die Rechnung weist Preis + Umsatzsteuer aus — die Krypto-Zahlung
+      // muss denselben Betrag verlangen (bis 10/2026 nur den Nettopreis).
+      const ust = Math.round(k.preis_cents * (Number(betreiber.ust_satz) || 0) / 100);
+      return { id: k.id, betrag_cents: k.preis_cents + ust, waehrung: k.waehrung, name: `Anzeige „${k.titel}"` };
     },
 
     // ── Auslieferung ──────────────────────────────────────────────────────
@@ -326,6 +332,7 @@ export function createAnzeigen({
       kampagnen.clear(); kunden.clear(); ausgeblendet.clear(); gesehen.clear(); geklickt.clear();
       if (!d) return;
       zaehler = Number(d.zaehler) || 0; rechnungsNr = Number(d.rechnungsNr) || 0;
+      if (nummern) nummern.mindestens(rechnungsNr); // Sicherung aus der Zeit vor der gemeinsamen Reihe
       for (const k of d.kampagnen || []) if (k && k.id) kampagnen.set(k.id, k);
       for (const [u, f] of d.kunden || []) kunden.set(u, f);
       for (const [u, s] of d.ausgeblendet || []) ausgeblendet.set(u, new Set(s));
