@@ -2635,3 +2635,20 @@ Abmelden leert; `no-store` auf Erfolg und Fehler).
 
 **Gegenproben (jede schlägt an):** `no-store` entfernt; `/api/dm` in die Liste; Abmelden ohne
 Leeren.
+
+### Cycle · Datensparsam: Bilder per Adresse statt eingebettet (2026-10-14)
+
+**Befund.** Bilder lagen als data:image-URL in jeder API-Antwort; `author.avatar_url` stand in
+jedem Beitrag. Zehn Beiträge mit 60-KB-Profilfoto ≈ 660 KB je Feed-Laden. Kein Test prüfte das.
+
+**WORK.** `domain/bilder.js`: Ersetzer für `JSON.stringify` (jede data:image → `/api/bild/<sha256>`),
+Ablage hash→Bild (höchstens 5000, älteste zuerst raus; die nächste Antwort legt neu an).
+`GET /api/bild/:hash` mit `private, immutable`, ETag/304, nosniff. `cleanImage` löst eigene
+Adressen auf (Bearbeiten ohne neues Bild). Datenexport bettet weiter ein. App: `istBild()` statt
+`/^data:image/`, `loading="lazy"`.
+
+**Tests.** `bilder.test.js` (Adresse stabil, Bytes stimmen, fremde/unbekannte Adressen abgelehnt;
+echter Server: Feed ohne data:image und < 30 KB, Bild 200 + immutable + 304, Profil mit Adresse
+zurück speichern, Export mit Bild). Browser-Audit „Bilder" (Bild per Adresse sichtbar, lazy).
+
+**Gegenproben (jede schlägt an):** ohne Ersetzer; Export ersetzt; keine Auflösung in `cleanImage`.

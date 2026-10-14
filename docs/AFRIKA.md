@@ -144,3 +144,26 @@ Engpässe, Nachrichten, Beobachtungsliste, Übersicht, Lage je Ebene, Wirkstoff-
 
 Geprüft durch `server/test/offline.test.js` und den Browser-Audit-Block „Offline" (eigener
 Prüfserver, der beendet wird — ein echter Netzausfall).
+
+## Datensparsam: Bilder per Adresse
+
+Mobile Daten sind in den Zielmärkten teuer. Bilder (Beiträge, Kommentare, Profilbilder, Angebote,
+Anzeigen) standen bis 10/2026 als base64 **in jeder API-Antwort**, das Profilbild sogar in jedem
+einzelnen Beitrag der Person. Zehn Beiträge einer Apotheke mit 60-KB-Profilfoto waren rund 660 KB
+je Laden des Feeds, bei jedem Öffnen neu.
+
+Jetzt (`server/src/domain/bilder.js`):
+
+- Die JSON-Ausgabe ersetzt jedes Bild durch `/api/bild/<SHA-256 des Inhalts>`. Derselbe Feed ist
+  unter 30 KB.
+- `GET /api/bild/<hash>` liefert das Bild mit `Cache-Control: private, max-age=31536000, immutable`:
+  Der Browser lädt jedes Bild **einmal** und behält es. `private` heißt: kein Zwischenspeichern in
+  fremden Proxys. `nosniff` ist gesetzt, und erlaubt sind nur png/jpeg/webp/gif, kein SVG.
+- Die Adresse braucht keine Anmeldung, weil `<img>` kein Token mitschickt. Sie ist 256 Bit lang
+  und nur aus einer Antwort bekannt, die das Bild ohnehin zeigen durfte.
+- Die Bilder in der App laden erst beim Hinscrollen (`loading="lazy"`).
+- Beim Bearbeiten mit unverändertem Bild schickt die App die Adresse zurück. Der Server löst nur
+  Adressen auf, die er selbst kennt.
+- Der **Datenexport** enthält weiterhin die Bilder selbst, keine Verweise auf diesen Server.
+
+Geprüft durch `server/test/bilder.test.js` und den Browser-Audit-Block „Bilder".

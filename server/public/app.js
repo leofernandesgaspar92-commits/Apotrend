@@ -2514,7 +2514,7 @@ async function renderAdSlot() {
   const author = p.author ? (p.author.display_name || ('@' + (p.author.handle || ''))) : '';
   const card = el(`<div class="card qr-ad clickable" data-openpromo="${esc(p.id)}" role="link" tabindex="0" aria-label="${esc(t('wb_ad'))}: ${esc(p.titel || '')}">
     <div class="qr-ad-label">${esc(t('wb_ad'))}</div>
-    ${p.image ? `<img class="qr-ad-img" src="${esc(p.image)}" alt="">` : ''}
+    ${p.image ? `<img class="qr-ad-img" loading="lazy" decoding="async" src="${esc(p.image)}" alt="">` : ''}
     <div class="qr-ad-cat">${esc(promoCatLabel(p.kategorie))}</div>
     <div class="qr-ad-title">${esc(p.titel || '')}</div>
     <div class="qr-ad-price">${promoPrice(p)}</div>
@@ -3841,6 +3841,9 @@ function leseAbsicht() { try { return JSON.parse(localStorage.getItem('apo_absic
 // klingelt das Handy, sobald die Behörde einen beobachteten Wirkstoff meldet.
 // navigator.serviceWorker kann beim blossen ZUGRIFF werfen (eingebettete/gesperrte
 // Ansicht, manche Datenschutz-Einstellungen) — 'in' allein reicht nicht.
+// Bilder kommen als Adresse (/api/bild/<hash>, domain/bilder.js) oder — frisch
+// ausgewählt, noch nicht gesendet — als data:image. Nichts anderes wird angezeigt.
+const istBild = (v) => typeof v === 'string' && /^(data:image\/|\/api\/bild\/[0-9a-f]{64}$)/.test(v);
 const swVerfuegbar = () => { try { return !!navigator.serviceWorker; } catch { return false; } };
 const pushMoeglich = () => swVerfuegbar() && 'PushManager' in window && 'Notification' in window;
 const istIphoneOhneApp = () => /iPhone|iPad|iPod/.test(navigator.userAgent) && !(window.navigator.standalone || matchMedia('(display-mode: standalone)').matches);
@@ -5076,7 +5079,7 @@ function exchangeCard(e) {
     ${e.ablauf?(()=>{const lt=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);const du=Math.round((Date.parse(e.ablauf+'T00:00:00Z')-Date.parse(lt+'T00:00:00Z'))/86400000);const expired=du!=null&&du<0;const soon=du!=null&&du>=0&&du<=30;const col=expired?'var(--crit-fg)':(soon?'var(--warn-fg)':'var(--muted)');const bg=expired?'var(--crit-bg)':(soon?'var(--warn-bg)':'var(--chip-bg)');const txt=expired?t('ex_expired'):(du===0?t('ex_exp_today'):(du===1?t('ex_exp_1'):ti('ex_exp_in',{d:du})));return `<div style="display:inline-block;margin-top:6px;font-size:13px;font-weight:700;color:${col};background:${bg};border-radius:999px;padding:2px 10px">⏳ ${esc(t('ex_valid'))} ${esc(fmtDateDe(e.ablauf))} · ${esc(txt)}</div>`;})():''}
     ${mc?`<div style="margin-top:6px"><button class="linklike small" data-match style="color:var(--green);font-weight:700">${esc(matchLabel)}</button></div>`:''}
     ${e.note?`<div class="post-body" style="margin:6px 0">${esc(e.note)}</div>`:''}
-    ${e.image && /^data:image\//.test(e.image) ? `<img data-zoom src="${e.image}" alt="${esc(t('ex_photo_alt'))}" style="max-width:100%;border-radius:10px;margin-top:6px;display:block;cursor:zoom-in" />` : ''}
+    ${istBild(e.image) ? `<img data-zoom loading="lazy" decoding="async" src="${e.image}" alt="${esc(t('ex_photo_alt'))}" style="max-width:100%;border-radius:10px;margin-top:6px;display:block;cursor:zoom-in" />` : ''}
     ${stale?`<div style="font-size:13px;margin-top:6px;background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-fg);border-radius:8px;padding:6px 10px">⏳ ${esc(ti('ex_stale',{d:ageDays}))} <button class="linklike small" data-freshrenew>${esc(t('ex_renew'))}</button> · <button class="linklike small" data-freshdone>${esc(t('ex_stale_done'))}</button></div>`:''}
     <div class="row" style="margin-top:8px;align-items:baseline">
       <span class="handle clickable" data-openprofile="${esc(au.handle||'')}">${esc(t('ex_by'))} ${esc(au.display_name||t('ex_unknown'))} @${esc(au.handle||'?')}</span>
@@ -6085,7 +6088,7 @@ function promoPrice(p) {
 }
 function promoCard(p) {
   const card = el(`<div class="card" style="cursor:pointer" data-open="${esc(p.id)}">
-    ${p.image?`<img data-zoom src="${esc(p.image)}" alt="${esc(p.titel)}" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;margin-bottom:8px;cursor:zoom-in">`:''}
+    ${p.image?`<img data-zoom loading="lazy" decoding="async" src="${esc(p.image)}" alt="${esc(p.titel)}" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;margin-bottom:8px;cursor:zoom-in">`:''}
     <div class="row" style="align-items:baseline;gap:8px">
       <span style="display:inline-block;font-size:12px;font-weight:700;color:var(--info-fg);background:var(--info-bg);padding:2px 8px;border-radius:999px">${esc(promoCatLabel(p.kategorie))}</span>
       <span class="sp" style="flex:1"></span>
@@ -6227,7 +6230,7 @@ async function openPromotionDetail(id) {
   feed.innerHTML = '';
   const head = el(`<div class="card">
     <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span>${d.is_mine?`<button class="ghost small" data-edit>${esc(t('wb_edit'))}</button><button class="ghost small" data-del>${esc(t('wb_delete'))}</button>`:`<button class="ghost small" data-report>${esc(t('pc_report'))}</button>`}</div>
-    ${d.image?`<img data-zoom src="${esc(d.image)}" alt="${esc(d.titel)}" style="width:100%;max-height:320px;object-fit:cover;border-radius:10px;margin:8px 0;cursor:zoom-in">`:''}
+    ${d.image?`<img data-zoom loading="lazy" decoding="async" src="${esc(d.image)}" alt="${esc(d.titel)}" style="width:100%;max-height:320px;object-fit:cover;border-radius:10px;margin:8px 0;cursor:zoom-in">`:''}
     <div class="row" style="align-items:baseline;gap:8px;margin-top:6px">
       <span style="display:inline-block;font-size:12px;font-weight:700;color:var(--info-fg);background:var(--info-bg);padding:2px 8px;border-radius:999px">${esc(promoCatLabel(d.kategorie))}</span>
       <span class="sp" style="flex:1"></span><span style="font-size:11px;font-weight:700;color:var(--muted);border:1px solid var(--line);padding:1px 6px;border-radius:6px">${esc(t('wb_ad'))}</span>
@@ -6610,7 +6613,7 @@ function feedAdCard(p) {
       <span class="qr-ad-label" style="margin:0">${esc(t('wb_ad'))}</span>
       <span class="qr-ad-cat">${esc(promoCatLabel(p.kategorie))}</span>
     </div>
-    ${p.image ? `<img class="feed-ad-img" src="${esc(p.image)}" alt="">` : ''}
+    ${p.image ? `<img class="feed-ad-img" loading="lazy" decoding="async" src="${esc(p.image)}" alt="">` : ''}
     <div class="feed-ad-title">${esc(p.titel || '')}</div>
     <div class="qr-ad-price">${promoPrice(p)}</div>
     ${author ? `<div class="qr-ad-by">${esc(t('wb_by'))} ${esc(author)}</div>` : ''}
@@ -8683,7 +8686,7 @@ function repostEmbedHtml(o) {
   if (!o) return '';
   if (o.deleted) return `<div class="repost-embed muted">${esc(t('rp_deleted'))}</div>`;
   const a = o.author || {};
-  const img = o.image && /^data:image\//.test(o.image) ? `<img data-zoom src="${o.image}" alt="${esc(t('pc_img_alt'))}" style="max-width:100%;border-radius:8px;margin-top:6px;display:block;cursor:zoom-in" />` : '';
+  const img = istBild(o.image) ? `<img data-zoom loading="lazy" decoding="async" src="${o.image}" alt="${esc(t('pc_img_alt'))}" style="max-width:100%;border-radius:8px;margin-top:6px;display:block;cursor:zoom-in" />` : '';
   const pollHint = o.poll ? `<div class="muted" style="font-size:13px;margin-top:4px">${esc(t('rp_poll_hint'))}</div>` : '';
   // Vorschau-Text als reiner Text (kein linkifyMentions): die ganze Einbettung ist EIN
   // anklickbares/tastaturbedienbares Element — verschachtelte Klick-Elemente (Mentions/
@@ -8699,7 +8702,7 @@ function avatarHtml(a, size = 36, link = true) {
   const ini = (a.display_name||'?').split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();
   const st = `width:${size}px;height:${size}px;font-size:${Math.round(size*0.38)}px;margin-right:9px`;
   const attr = link ? ` class="avatar clickable" data-openprofile="${esc(a.handle||'')}"` : ' class="avatar"';
-  if (a.avatar_url) return `<img${attr} alt="" style="object-fit:cover;${st}" src="${esc(a.avatar_url)}">`;
+  if (a.avatar_url) return `<img${attr} alt="" loading="lazy" decoding="async" style="object-fit:cover;${st}" src="${esc(a.avatar_url)}">`;
   return `<span${attr} style="${st}">${esc(ini)}</span>`;
 }
 // Domain einer Quelle (ohne „www.") — für Vertrauen auf einen Blick: eine amtliche
@@ -8745,7 +8748,7 @@ function postCard(p) {
     ${(p.body||'').trim()||!p.repost_of_post?`<div class="post-body" data-body>${linkifyMentions(p.body)}</div>`:'<div class="post-body" data-body hidden></div>'}
     ${p.poll ? pollHtml(p) : ''}
     ${p.repost_of_post ? repostEmbedHtml(p.repost_of_post) : ''}
-    ${p.image && /^data:image\//.test(p.image) ? `<img data-zoom src="${p.image}" alt="${esc(t('pc_img_alt'))}" style="max-width:100%;border-radius:10px;margin-top:8px;display:block;cursor:zoom-in" />` : ''}
+    ${istBild(p.image) ? `<img data-zoom loading="lazy" decoding="async" src="${p.image}" alt="${esc(t('pc_img_alt'))}" style="max-width:100%;border-radius:10px;margin-top:8px;display:block;cursor:zoom-in" />` : ''}
     ${sourceLinkHtml(p.source_url)}
     <div class="vis" data-edited ${p.edited_at?'':'style="display:none"'}>${esc(t('pc_edited'))}</div>
     ${refChip(p.ref_summary)}
@@ -8929,7 +8932,7 @@ function commentRow(postId, c, card, depth = 0) {
       ${mine?'<button class="ghost small" data-ced>✏️</button><button class="ghost small" data-cdel>🗑</button>':''}
     </div>
     <div data-cbody style="margin-top:2px">${linkifyMentions(c.body)}</div>
-    ${c.image && /^data:image\//.test(c.image) ? `<img data-zoom src="${c.image}" alt="${esc(t('cm_img_alt'))}" style="max-width:100%;border-radius:8px;margin-top:6px;display:block;cursor:zoom-in" />` : ''}
+    ${istBild(c.image) ? `<img data-zoom loading="lazy" decoding="async" src="${c.image}" alt="${esc(t('cm_img_alt'))}" style="max-width:100%;border-radius:8px;margin-top:6px;display:block;cursor:zoom-in" />` : ''}
     <div class="reacts" style="margin-top:4px">
       ${REACTS.map(([k,keyLab])=>{const n=c.reaction_counts&&c.reaction_counts[k];const on=c.my_reaction===k;return `<button class="small${on?' reacted':''}" data-creact="${k}" aria-pressed="${on}">${esc(t(keyLab).split(' ')[0])}${n?` ${n}`:''}</button>`;}).join('')}
       <button class="ghost small" data-creply>${esc(t('cm_reply'))}</button>

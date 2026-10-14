@@ -2037,6 +2037,46 @@ async function main() {
     }
   }
 
+  // ── Bilder per Adresse: Feed ohne eingebettete Bilder, Bilder werden trotzdem angezeigt ──
+  //  Vorher stand jedes Bild (und das Profilbild in JEDEM Beitrag) als base64 in
+  //  der Antwort. Geprüft wird, dass der Browser die Adresse wirklich lädt.
+  {
+    const { readFileSync } = await import('node:fs');
+    const png = 'data:image/png;base64,' + readFileSync(path.join(SERVER_ROOT, 'public', 'icon-192.png')).toString('base64');
+    const u = Date.now().toString(36);
+    const reg = await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Bild Apo', email: `bild_${u}@ex.com`, password: 'Passwort123!', accountType: 'pharmacy', country: 'UG' }) });
+    const H = { 'content-type': 'application/json', authorization: 'Bearer ' + reg.token };
+    await api('/api/profile', { method: 'POST', headers: H, body: JSON.stringify({ avatarUrl: png }) });
+    await api('/api/posts', { method: 'POST', headers: H, body: JSON.stringify({ body: `BILDPRUEF ${u}`, visibility: 'public', image: png }) });
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    let feedRoh = '';
+    page.on('response', async (r) => { if (/\/api\/feed\//.test(r.url())) feedRoh += await r.text().catch(() => ''); });
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, reg.token);
+    await page.goto(BASE, { waitUntil: 'networkidle' });
+    await reiterOeffnen(page, 'public'); await page.waitForTimeout(1500);
+    // Die Karte des Prüfbeitrags: der nächste .card um seinen Text.
+    const karte = page.locator('[data-body]', { hasText: `BILDPRUEF ${u}` }).first().locator('xpath=ancestor::div[contains(concat(" ", @class, " "), " card ")][1]');
+    if (!(await karte.count())) findings.push('Bilder: Prüfbeitrag erscheint nicht im Feed');
+    else {
+      await karte.scrollIntoViewIfNeeded(); await page.waitForTimeout(800);
+      // img[src]: die versteckte Vorschau für Kommentarbilder hat noch kein Bild.
+      const bilder = await karte.locator('img[src]').evaluateAll((els) => els.map((e) => ({ src: e.getAttribute('src') || '', ok: e.complete && e.naturalWidth > 0, lazy: e.getAttribute('loading') })));
+      if (bilder.length < 2) findings.push(`Bilder: Beitragsbild oder Profilbild fehlt (${bilder.length} Bilder)`);
+      for (const b of bilder) {
+        if (!/^\/api\/bild\/[0-9a-f]{64}$/.test(b.src)) findings.push(`Bilder: Bild nicht per Adresse (${b.src.slice(0, 30)})`);
+        if (!b.ok) findings.push(`Bilder: Bild wird nicht angezeigt (${b.src.slice(0, 40)})`);
+      }
+      if (!bilder.some((b) => b.lazy === 'lazy')) findings.push('Bilder: Beitragsbild lädt nicht erst beim Hinscrollen');
+    }
+    if (!feedRoh) findings.push('Bilder: Feed-Antwort nicht mitgelesen');
+    else if (feedRoh.includes('data:image')) findings.push('Bilder: Feed-Antwort enthält eingebettete Bilder');
+    for (const f of fehler) findings.push('Bilder: JS-Fehler ' + f);
+    if (!findings.some((f) => f.startsWith('Bilder'))) console.log('✓ Bilder: Feed ohne eingebettete Bilder; Beitragsbild und Profilbild per Adresse geladen und sichtbar, erst beim Hinscrollen');
+    await ctx.close();
+  }
+
   // ── Registrierung im Browser: kurz, und ein Fehler verbrennt nichts ──────
   //  Bis 10/2026: sechs Felder (Pflicht-@Handle, Land doppelt), zwei Formulare
   //  untereinander — und ein vergebener Handle machte die E-Mail unbrauchbar.

@@ -23,6 +23,7 @@ import { createOrgAuthService, ForbiddenError } from '../services/orgAuth.js';
 import { createCollabService } from '../services/collab.js';
 import { can as roleCan } from '../domain/roles.js';
 import { cleanSourceUrl } from '../domain/media.js';
+import { bilderAlsAdresse, bildHolen } from '../domain/bilder.js';
 import { createSocialService } from '../services/social.js';
 import { createShortagesService } from '../services/shortages.js';
 import { createPricesService } from '../services/prices.js';
@@ -542,8 +543,10 @@ function enrichPosts(posts, userId) {
 }
 
 // ── kleine Helfer ──
-const json = (req, res, code, obj) => {
-  const payload = Buffer.from(JSON.stringify(obj));
+// Bilder gehen als Adresse hinaus (domain/bilder.js) — außer im Datenexport:
+// Der soll die eigenen Bilder selbst enthalten, nicht Verweise auf diesen Server.
+const json = (req, res, code, obj, { bilderEinbetten = false } = {}) => {
+  const payload = Buffer.from(bilderEinbetten ? JSON.stringify(obj) : JSON.stringify(obj, bilderAlsAdresse));
   // no-store: API-Antworten sind persönlich (Konto, Beobachtungsliste, Zahlungen).
   // Ohne diese Angabe durfte der Browser sie zwischenspeichern — auf einem
   // geteilten Gerät sah ein zweites Konto offline die Antwort des ersten.
@@ -2534,6 +2537,21 @@ const server = http.createServer(async (req, res) => {
   //  Schlüssel, nicht mit dem Sitzungs-Token der App.
   if (pathname.startsWith('/api/v1/')) return datenSchnittstelle(req, res, url);
 
+  // ── Bilder (domain/bilder.js): einmal laden, dann im Browser behalten ──
+  //  Ohne Anmeldung, weil <img> kein Token mitschickt; die Adresse selbst
+  //  (SHA-256 des Inhalts) ist nur aus einer berechtigten Antwort bekannt.
+  //  private: kein Zwischenspeichern in fremden Proxys. immutable: Der Inhalt
+  //  zur Adresse ändert sich nie.
+  const mBild = req.method === 'GET' && pathname.match(/^\/api\/bild\/([0-9a-f]{64})$/);
+  if (mBild) {
+    const b = bildHolen(mBild[1]);
+    if (!b) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end('Bild nicht gefunden'); }
+    const kopf = { 'Content-Type': b.typ, 'Cache-Control': 'private, max-age=31536000, immutable', ETag: `"${mBild[1]}"`, 'X-Content-Type-Options': 'nosniff' };
+    if ((req.headers['if-none-match'] || '') === kopf.ETag) { res.writeHead(304, kopf); return res.end(); }
+    res.writeHead(200, { ...kopf, 'Content-Length': b.daten.length });
+    return res.end(b.daten);
+  }
+
   // ── API ──
   if (pathname.startsWith('/api/')) {
     // Ruhende Bereiche (data/features.js) antworten, als gaebe es sie nicht.
@@ -2566,7 +2584,7 @@ const server = http.createServer(async (req, res) => {
       }
       if (req.method !== 'GET' || (result && result.__sichern)) saveSoon(); // Zustand nach jeder erfolgreichen Schreiboperation sichern (POST/DELETE)
       if (result && result.__sichern) delete result.__sichern;
-      return json(req, res, 200, result ?? { ok: true });
+      return json(req, res, 200, result ?? { ok: true }, { bilderEinbetten: pathname === '/api/me/export' });
     } catch (e) {
       const code = e instanceof ForbiddenError ? 403 : (e.status || 400);
       // e.code (falls gesetzt) erlaubt dem Frontend, die Meldung zu übersetzen.
