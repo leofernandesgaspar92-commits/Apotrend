@@ -424,6 +424,35 @@ const PROFILES = {
   },
 };
 
+// ── Englischsprachiges Afrika (Start 10/2026): konservative Profile ─────────
+//  Für diese Länder liegt noch KEINE geprüfte Rechtsanalyse vor (anders als für
+//  NG, KE, GH, ZA). Deshalb: nur Software-Lizenzen, keine Marktplatz-Gebühren —
+//  aber mit richtiger Währung und Behörde statt des EUR-Rückfalls. Krypto hängt
+//  wie überall immer an (paymentMethodsFor). Freischalten erst nach Prüfung.
+const AFRIKA_NEU = {
+  UG: ['UGX', 'NDA', ['National Drug Policy and Authority Act']],
+  TZ: ['TZS', 'TMDA', ['Tanzania Medicines and Medical Devices Act']],
+  ZM: ['ZMW', 'ZAMRA', ['Medicines and Allied Substances Act 2013']],
+  ZW: ['USD', 'MCAZ', ['Medicines and Allied Substances Control Act']],
+  RW: ['RWF', 'Rwanda FDA', ['Law establishing Rwanda FDA']],
+  BW: ['BWP', 'BoMRA', ['Medicines and Related Substances Act 2013']],
+  NA: ['NAD', 'NMRC', ['Medicines and Related Substances Control Act 2003']],
+  MW: ['MWK', 'PMRA', ['Pharmacy and Medicines Regulatory Authority Act 2019']],
+  ET: ['ETB', 'EFDA', ['Food and Medicine Administration Proclamation 1112/2019']],
+  SL: ['SLE', 'Pharmacy Board of Sierra Leone', ['Pharmacy and Drugs Act']],
+  LR: ['LRD', 'LMHRA', ['LMHRA Act 2010']],
+  GM: ['GMD', 'MCA', ['Medicines and Related Products Act 2014']],
+};
+for (const [cc, [currency, regulator, legalFramework]] of Object.entries(AFRIKA_NEU)) {
+  PROFILES[cc] = {
+    region: 'AFRICA', currency, commerceMode: SAAS_ONLY, transactionFeeAllowed: false,
+    legalFramework, regulator,
+    fiat: ['card', 'invoice'], fields: ['pharmacy_licence'],
+    monetization: ['saas_flat'],
+    notes: ['Noch kein geprüftes Rechtsprofil: konservativ nur Software-Lizenzen, keine Marktplatz-Gebühren. Krypto-Zahlung ist verfügbar.'],
+  };
+}
+
 /** Land ohne eigenes Profil: konservativer Rückfall (SaaS, keine Gebühren). */
 const FALLBACK_PROFILE = {
   region: 'OTHER', currency: 'EUR', commerceMode: SAAS_ONLY, transactionFeeAllowed: false,
@@ -602,6 +631,8 @@ export function calculateFee(amountMinor, code, purpose = 'saas_license', overri
 const CURRENCY_MINOR_UNITS = {
   EUR: 2, CHF: 2, USD: 2, GBP: 2, CAD: 2, AUD: 2, BRL: 2, ZAR: 2, GHS: 2, MZN: 2,
   AOA: 2, KES: 2, NGN: 2,
+  // ISO 4217: Uganda- und Ruanda-Schilling/Franc haben keine Untereinheit.
+  UGX: 0, RWF: 0, TZS: 2, ZMW: 2, BWP: 2, NAD: 2, MWK: 2, ETB: 2, SLE: 2, LRD: 2, GMD: 2,
 };
 
 export function minorUnits(currency) {
@@ -630,6 +661,8 @@ export function formatAmount(amountMinor, currency, locale = null) {
 const DEFAULT_LOCALE_BY_CURRENCY = {
   EUR: 'de-DE', CHF: 'de-CH', USD: 'en-US', GBP: 'en-GB', CAD: 'en-CA', AUD: 'en-AU',
   BRL: 'pt-BR', AOA: 'pt-AO', MZN: 'pt-MZ', NGN: 'en-NG', KES: 'en-KE', GHS: 'en-GH', ZAR: 'en-ZA',
+  UGX: 'en-UG', TZS: 'en-TZ', ZMW: 'en-ZM', RWF: 'en-RW', BWP: 'en-BW', NAD: 'en-NA', MWK: 'en-MW',
+  ETB: 'en-ET', SLE: 'en-SL', LRD: 'en-LR', GMD: 'en-GM',
 };
 
 // --- Der Zustands-Manager ---------------------------------------------------

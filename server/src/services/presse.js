@@ -42,6 +42,8 @@ export const GDELT_LAND = Object.freeze({
   PT: 'portugal', BR: 'brazil', AO: 'angola', MZ: 'mozambique',
   GB: 'unitedkingdom', US: 'unitedstates', CA: 'canada', AU: 'australia',
   NG: 'nigeria', KE: 'kenya', GH: 'ghana', ZA: 'southafrica',
+  UG: 'uganda', TZ: 'tanzania', ZM: 'zambia', ZW: 'zimbabwe', RW: 'rwanda', BW: 'botswana',
+  NA: 'namibia', MW: 'malawi', ET: 'ethiopia', SL: 'sierraleone', LR: 'liberia', GM: 'gambia',
 });
 
 /**
@@ -60,6 +62,8 @@ const LAND_SPRACHEN = Object.freeze({
   PT: ['pt'], BR: ['pt'], AO: ['pt'], MZ: ['pt', 'en'],
   GB: ['en'], US: ['en'], CA: ['en'], AU: ['en'],
   NG: ['en'], KE: ['en'], GH: ['en'], ZA: ['en'],
+  UG: ['en'], TZ: ['en'], ZM: ['en'], ZW: ['en'], RW: ['en'], BW: ['en'],
+  NA: ['en'], MW: ['en'], ET: ['en'], SL: ['en'], LR: ['en'], GM: ['en'],
 });
 
 export const presseEnv = (land) => `APOPULSE_PRESSE_QUERY_${String(land).toUpperCase()}`;

@@ -239,18 +239,23 @@ test('eine Behörden-Meldung bekommt das Land ihrer QUELLE, nicht des Redaktions
   assert.equal(eigen.country, 'AT', 'ohne Quellenland gilt weiterhin das Konto-Land');
 });
 
-test('ein unbekanntes Quellenland fällt auf das Standardland zurück, statt Unsinn zu speichern', () => {
+test('ein unbekanntes Quellenland fällt auf das Standardland zurück, Quell-Regionen bleiben Regionen', () => {
   const repo = createMemoryRepo();
   const orgAuth = createOrgAuthService(repo);
   const social = createSocialService(createSocialRepo(), repo);
   const red = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'R' }, owner: { name: 'R', email: 'r@x.at', password: 'geheim123' } });
   social.createProfile(red.user.id, { handle: 'red2', displayName: 'R', country: 'AT', accountType: 'authority' });
 
-  // 'EU' ist im Quellenregister erlaubt (EMA), im Länder-Register aber kein
-  // Land. normalizeCountry macht daraus das Standardland — kein Absturz, kein
-  // Phantom-Ländercode in der Datenbank.
+  // Bis 10/2026 machte normalizeCountry aus 'EU' (EMA) das Standardland —
+  // jede EMA-Meldung erschien als österreichische Behördenmeldung. Quell-
+  // Regionen (EU, AFR, INT) sind jetzt ausdrücklich modelliert und bleiben;
+  // ein wirklich unbekannter Code fällt weiter auf das Standardland zurück.
   const p = social.createPost(red.user.id, { body: 'EMA', kind: 'news', sourceUrl: 'https://ema.example/1', sourceCountry: 'EU' });
-  assert.equal(p.country, 'AT');
+  assert.equal(p.country, 'EU');
+  const w = social.createPost(red.user.id, { body: 'WHO', kind: 'news', sourceUrl: 'https://who.example/1', sourceCountry: 'INT' });
+  assert.equal(w.country, 'INT');
+  const x = social.createPost(red.user.id, { body: 'X', kind: 'news', sourceUrl: 'https://x.example/1', sourceCountry: 'XX' });
+  assert.equal(x.country, 'AT', 'Phantom-Ländercode gespeichert');
 });
 
 test('sourceCountry ist ueber die HTTP-Route NICHT erreichbar', () => {

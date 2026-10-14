@@ -119,7 +119,7 @@ test('jede Länderquelle findet ihre Behörde im Länder-Register', () => {
   // Ohne diese Zuordnung stünde am Beitrag keine Quellenangabe — und
   // CLAUDE.md verlangt für sicherheitsrelevante Aussagen genau die.
   for (const s of sourcesByKind('news', {})) {
-    if (s.country === 'EU') continue; // EMA ist keinem Land zugeordnet
+    if (['EU', 'AFR', 'INT'].includes(s.country)) continue; // Quell-Regionen (EMA, Africa CDC, WHO): keinem Land zugeordnet
     assert.ok(regulatorOf(s.country), `Kein Regulator für ${s.country} (${s.id})`);
   }
   assert.equal(regulatorOf('CH'), 'Swissmedic');
@@ -280,7 +280,7 @@ test('fällt alles aus, nennt der Fehler jede versuchte Adresse', async () => {
 
 // ── Länderabdeckung ─────────────────────────────────────────────────────────
 
-test('jedes der 16 Länder des Registers hat eine Quelle', () => {
+test('jedes Land des Registers hat eine Quelle', () => {
   // Der eigentliche Auftrag dieser Runde. Ohne diese Prüfung fällt ein
   // vergessenes Land erst auf, wenn dort jemand eine leere Ansicht sieht.
   const proLand = new Set(activeSources({}).map((s) => s.country));

@@ -6,7 +6,7 @@ import { AppError } from '../domain/errors.js';
 import { rxErlaubt, verificationStatusFor, istRxFachkreis } from '../domain/jurisdiction.js';
 import { cleanImage, cleanSourceUrl } from '../domain/media.js';
 import { BUNDESLAENDER } from './exchange.js';
-import { isValidCountry, normalizeCountry, normalizeLocale } from '../data/countries.js';
+import { isValidCountry, normalizeCountry, normalizeLocale, istQuellRegion } from '../data/countries.js';
 import { isValidAccountType, normalizeAccountType } from '../data/accountTypes.js';
 
 const REACTION_TYPES = ['hilfreich', 'danke', 'bestaetigt', 'interessant'];
@@ -547,8 +547,11 @@ export function createSocialService(social, foundationRepo, options = {}) {
       // koennte jeder einen Beitrag in eine fremde Rechtsordnung stellen —
       // dieselbe Luecke, die bei Boersen-Eintraegen und Aktionen geschlossen
       // wurde. Deshalb erreicht die HTTP-Route /api/posts diesen Weg nicht.
+      // Quell-Regionen (EU = EMA, AFR = Africa CDC/WHO Afrika, INT = WHO) bleiben,
+      // was sie sind. Vorher machte normalizeCountry('EU') daraus „AT" — jede
+      // EMA-Meldung erschien als österreichische Behördenmeldung.
       const country = sourceCountry
-        ? normalizeCountry(sourceCountry)
+        ? (istQuellRegion(sourceCountry) ? String(sourceCountry).toUpperCase() : normalizeCountry(sourceCountry))
         : normalizeCountry(social.getProfileByUserId(actorUserId)?.country);
       const post = social.createPost({ authorUserId: actorUserId, body: text, visibility, refType, refId, kind, image: img, sourceUrl: src, country, pollOptions: poll });
       notifyMentions(text, actorUserId, 'post', post.id);
@@ -772,12 +775,16 @@ export function createSocialService(social, foundationRepo, options = {}) {
     },
     // News-Ansicht: Beiträge der Art 'news' (kuratiert von der Redaktion ODER von
     // Nutzern geteilt) — dasselbe Feed-System, nur gefiltert.
-    newsFeed(viewerUserId, { country = null } = {}) {
+    // `herkunft` (Liste von Länder-/Regionscodes) für die Ebenen Region und Welt;
+    // ohne sie gilt wie bisher genau EIN Land.
+    newsFeed(viewerUserId, { country = null, herkunft = null } = {}) {
       requireUser(viewerUserId);
       const c = country ? normalizeCountry(country) : null;
+      const erlaubt = Array.isArray(herkunft) ? new Set(herkunft) : null;
       const muted = new Set(social.listMuted(viewerUserId));
       return social.listAllPosts()
-        .filter(p => p.kind === 'news' && !muted.has(p.author_user_id) && visibleTo(p, viewerUserId) && (!c || (p.country || 'AT') === c))
+        .filter(p => p.kind === 'news' && !muted.has(p.author_user_id) && visibleTo(p, viewerUserId)
+          && (erlaubt ? erlaubt.has(p.country || 'AT') : (!c || (p.country || 'AT') === c)))
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
         .map(p => decorate(p, viewerUserId));
     },

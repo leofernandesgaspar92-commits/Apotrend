@@ -346,6 +346,118 @@ const BUILTIN = [
     fallbacks: ['https://www.moh.gov.gh/feed/'],
     official: true, verified: false,
   },
+  // --- Englischsprachiges Afrika (Start 10/2026) --------------------------
+  //  Wie oben: begründete Startwerte, in der Bauumgebung NICHT abrufbar
+  //  (kein Netz). Viele Behördenseiten der Region laufen auf WordPress
+  //  (/feed/); wo nicht, findet die Feed-Selbstfindung (feedDiscovery) den
+  //  echten Feed auf der Startseite — oder die Datenquellen-Seite zeigt den
+  //  Fehler. Rückfall: Gesundheitsministerium.
+  {
+    id: 'nda_ug_news', kind: 'news', country: 'UG', format: 'rss',
+    label: 'National Drug Authority Uganda — News',
+    url: 'https://www.nda.or.ug/feed/',
+    fallbacks: ['https://www.health.go.ug/feed/'],
+    official: true, verified: false,
+  },
+  {
+    id: 'tmda_news', kind: 'news', country: 'TZ', format: 'rss',
+    label: 'TMDA Tanzania — News',
+    url: 'https://www.tmda.go.tz/feed/',
+    fallbacks: ['https://www.moh.go.tz/feed/'],
+    official: true, verified: false,
+  },
+  {
+    id: 'zamra_news', kind: 'news', country: 'ZM', format: 'rss',
+    label: 'ZAMRA Zambia — News',
+    url: 'https://www.zamra.co.zm/feed/',
+    fallbacks: ['https://www.moh.gov.zm/feed/'],
+    official: true, verified: false,
+  },
+  {
+    id: 'mcaz_news', kind: 'news', country: 'ZW', format: 'rss',
+    label: 'MCAZ Zimbabwe — News',
+    url: 'https://www.mcaz.co.zw/feed/',
+    fallbacks: ['https://www.mohcc.gov.zw/feed/'],
+    official: true, verified: false,
+  },
+  {
+    id: 'rwandafda_news', kind: 'news', country: 'RW', format: 'rss',
+    label: 'Rwanda FDA — News',
+    url: 'https://www.rwandafda.gov.rw/feed/',
+    fallbacks: ['https://www.moh.gov.rw/feed/'],
+    official: true, verified: false,
+  },
+  {
+    id: 'bomra_news', kind: 'news', country: 'BW', format: 'rss',
+    label: 'BoMRA Botswana — News',
+    url: 'https://www.bomra.co.bw/feed/',
+    fallbacks: ['https://www.moh.gov.bw/feed/'],
+    official: true, verified: false,
+  },
+  {
+    id: 'nmrc_news', kind: 'news', country: 'NA', format: 'rss',
+    label: 'Namibia — Ministry of Health and Social Services',
+    url: 'https://mhss.gov.na/feed/',
+    fallbacks: ['https://www.gov.na/feed/'],
+    official: true, verified: false,
+  },
+  {
+    id: 'pmra_news', kind: 'news', country: 'MW', format: 'rss',
+    label: 'PMRA Malawi — News',
+    url: 'https://www.pmra.mw/feed/',
+    fallbacks: ['https://www.health.gov.mw/feed/'],
+    official: true, verified: false,
+  },
+  {
+    id: 'efda_news', kind: 'news', country: 'ET', format: 'rss',
+    label: 'EFDA Ethiopia — News',
+    url: 'https://www.efda.gov.et/feed/',
+    fallbacks: ['https://www.moh.gov.et/feed/'],
+    official: true, verified: false,
+  },
+  {
+    id: 'pbsl_news', kind: 'news', country: 'SL', format: 'rss',
+    label: 'Pharmacy Board of Sierra Leone — News',
+    url: 'https://pharmacyboard.gov.sl/feed/',
+    fallbacks: ['https://mohs.gov.sl/feed/'],
+    official: true, verified: false,
+  },
+  {
+    id: 'lmhra_news', kind: 'news', country: 'LR', format: 'rss',
+    label: 'LMHRA Liberia — News',
+    url: 'https://www.lmhra.gov.lr/feed/',
+    fallbacks: ['https://moh.gov.lr/feed/'],
+    official: true, verified: false,
+  },
+  {
+    id: 'mca_gm_news', kind: 'news', country: 'GM', format: 'rss',
+    label: 'MCA The Gambia — News',
+    url: 'https://mca.gm/feed/',
+    fallbacks: ['https://moh.gov.gm/feed/'],
+    official: true, verified: false,
+  },
+  // --- Kontinent und Welt (keinem Land zugeordnet) ------------------------
+  //  `AFR` und `INT` sind QUELL-REGIONEN (data/countries.js), keine Länder.
+  //  Ihre Meldungen erscheinen unter „Afrika" bzw. „Welt", nie im Feed eines
+  //  einzelnen Landes.
+  {
+    id: 'africacdc_news', kind: 'news', country: 'AFR', format: 'rss',
+    label: 'Africa CDC — News',
+    url: 'https://africacdc.org/feed/',
+    official: true, verified: false,
+  },
+  {
+    id: 'who_afro_news', kind: 'news', country: 'AFR', format: 'rss',
+    label: 'WHO Regional Office for Africa — News',
+    url: 'https://www.afro.who.int/rss.xml',
+    official: true, verified: false,
+  },
+  {
+    id: 'who_news', kind: 'news', country: 'INT', format: 'rss',
+    label: 'WHO — News',
+    url: 'https://www.who.int/rss-feeds/news-english.xml',
+    official: true, verified: false,
+  },
   // ENTFERNT: ashp_shortages_news
   //
   // Der erste Live-Lauf beantwortete beide hinterlegten Adressen mit 403 —

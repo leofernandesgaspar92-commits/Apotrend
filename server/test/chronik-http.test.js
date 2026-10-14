@@ -8,6 +8,7 @@
 // beim Start gelesen werden.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { COUNTRIES } from '../src/data/countries.js';
 import { spawn } from 'node:child_process';
 import http from 'node:http';
 import { join, dirname } from 'node:path';
@@ -128,7 +129,7 @@ test('Abruf füllt die Chronik; der nächste Abruf ohne die Zeile beendet die Ep
     const at = abd.laender.find((l) => l.land === 'AT');
     assert.deepEqual([at.zustand, at.behoerde, at.offen > 0], ['liefert', 'BASG', true], JSON.stringify(at));
     assert.equal(abd.laender.find((l) => l.land === 'DE').zustand, 'liefert');
-    assert.equal(abd.laender.length, 16);
+    assert.equal(abd.laender.length, Object.keys(COUNTRIES).length);
     assert.ok(!/Amoxicillin|Ibuprofen/.test(JSON.stringify(abd)), 'Wirkstoffnamen gehören nicht in die öffentliche Auskunft');
     assert.equal(abd.mail, false, 'ohne Mail-Dienst darf niemand einen Wochenbericht versprochen bekommen');
 

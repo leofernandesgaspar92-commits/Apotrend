@@ -565,3 +565,14 @@
 .es-punkt.eingeschraenkt { background:var(--warn-fg); }
 .es-chip:hover { background:var(--chip-bg); color:var(--text, inherit); }
 .es-chip[aria-pressed="true"]:hover { background:var(--green-d); border-color:var(--green-d); color:#fff; }
+
+/* Drei Ebenen: Land / Region / Welt — große, eindeutige Umschalter */
+.ebenen { display:flex; gap:8px; margin:0 0 12px; flex-wrap:wrap; }
+.ebenen button { flex:1 1 auto; min-height:48px; font-size:16px; line-height:1.2; }
+.news-herkunft { font-size:14px; font-weight:700; color:var(--muted); margin-bottom:6px; }
+
+.el-land { display:inline-flex; align-items:center; gap:4px; margin-right:10px; white-space:nowrap; }
+.el-landzeile { display:flex; width:100%; justify-content:space-between; align-items:center; gap:10px; text-align:left; background:transparent; color:var(--text); border:none; border-top:1px solid var(--line); border-radius:0; padding:10px 2px; min-height:52px; }
+.el-landzeile:hover { background:var(--chip-bg); }
+
+.el-landzeile > span:last-child { font-weight:400; text-align:right; }

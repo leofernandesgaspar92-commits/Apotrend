@@ -8,7 +8,8 @@ import { COUNTRIES, normalizeCountry } from './countries.js';
 // Sprachgruppen aus der Ziel-Matrix (für gruppenspezifische, geplante Module).
 const DACH = new Set(['AT', 'DE', 'CH', 'LI']);
 const LUSO = new Set(['PT', 'BR', 'AO', 'MZ']);
-// (Alle übrigen Register-Länder sind anglophon: GB, US, NG, KE, GH, CA, AU, ZA.)
+// (Alle übrigen Register-Länder sind anglophon: GB, US, NG, KE, GH, CA, AU, ZA und das
+// englischsprachige Afrika seit 10/2026: UG, TZ, ZM, ZW, RW, BW, NA, MW, ET, SL, LR, GM.)
 
 // ── Rechtliche Länder-Restriktionen (Compliance-Screen, KEINE Rechtsberatung) ──
 // Grundlage: docs/LEGAL_COUNTRY_MATRIX.md (länderweise Analyse). 'blocked' = Funktion
@@ -34,6 +35,10 @@ const FEATURE_RESTRICTIONS = {
   CA: { deals: 'restricted', price_compare: 'restricted', stock_exchange: 'restricted' },
   AU: { deals: 'restricted', price_compare: 'restricted', stock_exchange: 'restricted' },
   ZA: { deals: 'restricted', price_compare: 'restricted', stock_exchange: 'restricted' },
+  // Englischsprachiges Afrika (10/2026): ohne eigene Rechtsanalyse vorsichtig
+  // wie NG/KE/GH — Aktionen und Börse nur mit Hinweis.
+  ...Object.fromEntries(['UG', 'TZ', 'ZM', 'ZW', 'RW', 'BW', 'NA', 'MW', 'ET', 'SL', 'LR', 'GM']
+    .map((cc) => [cc, { deals: 'restricted', stock_exchange: 'restricted' }])),
 };
 
 // Rechtsstatus einer Funktion im Land: 'blocked' | 'restricted' | 'allowed'.

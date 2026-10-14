@@ -1846,6 +1846,48 @@ async function main() {
     await ctx.close();
   }
 
+  // ── Afrika-Start: Uganda auf Englisch, drei Ebenen Land / Afrika / Welt ──
+  {
+    const neu = await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Kampala Pharmacy', email: `ug_${Date.now().toString(36)}@ex.com`, password: 'Passwort123!', accountType: 'pharmacy', country: 'UG' }) });
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); localStorage.removeItem('apo_ebene_news'); localStorage.removeItem('apo_ebene_engpaesse'); }, neu && neu.token);
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(800);
+    const quer = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    const optionen = await page.$$eval('#countrySwitch option', (os) => os.map((o) => o.value)).catch(() => []);
+    for (const cc of ['UG', 'TZ', 'ZM', 'ZW', 'RW', 'ET']) if (!optionen.includes(cc)) findings.push(`Afrika: ${cc} fehlt in der Länderwahl`);
+    const lang = await page.evaluate(() => LOCALE);
+    if (lang !== 'en') findings.push(`Afrika: Uganda nicht auf Englisch (${lang})`);
+    await reiterOeffnen(page, 'news'); await page.waitForTimeout(900);
+    const knoepfe = await page.$$eval('[data-ebenen="news"] [data-ebene]', (bs) => bs.map((b) => b.textContent.trim()));
+    if (knoepfe.length !== 3 || !/Uganda/.test(knoepfe[0]) || !/Africa/.test(knoepfe[1]) || !/World/.test(knoepfe[2])) findings.push(`Afrika: News-Umschalter nicht „Uganda / Africa / World" (${knoepfe.join(' | ')})`);
+    else {
+      await page.click('[data-ebenen="news"] [data-ebene="region"]'); await page.waitForTimeout(900);
+      const aktiv = await page.$eval('[data-ebenen="news"] [aria-selected="true"]', (b) => b.dataset.ebene).catch(() => null);
+      if (aktiv !== 'region') findings.push('Afrika: Umschalter wechselt nicht auf Afrika');
+      if (!(await page.locator('#newslist [data-ebeneleer], #newslist .card').count())) findings.push('Afrika: Afrika-Ebene ohne Inhalt oder Leer-Hinweis');
+      if ((await quer()) > 0) findings.push(`Afrika: ${await quer()} px Querscrollen im News-Umschalter`);
+    }
+    await reiterOeffnen(page, 'shortages'); await page.waitForTimeout(900);
+    const sk = page.locator('[data-ebenen="engpaesse"] [data-ebene="region"]');
+    if (!(await sk.count())) findings.push('Afrika: Engpässe ohne Ebenen-Umschalter');
+    else {
+      await sk.click(); await page.waitForTimeout(900);
+      const zeilen = await page.locator('[data-jeland] [data-elland]').count();
+      if (zeilen < 18) findings.push(`Afrika: Engpasslage Afrika zeigt nur ${zeilen} Länder`);
+      const ug = await page.locator('[data-elland="UG"]').innerText().catch(() => '');
+      if (!/No official shortage list/.test(ug)) findings.push(`Afrika: fehlende Behördenliste nicht ehrlich benannt (${ug.slice(0, 60)})`);
+      if ((await quer()) > 0) findings.push(`Afrika: ${await quer()} px Querscrollen in der Engpasslage`);
+      await page.click('[data-elland="KE"]'); await page.waitForTimeout(1200);
+      const ansicht = await page.evaluate(() => viewCountry());
+      if (ansicht !== 'KE') findings.push(`Afrika: Antippen eines Landes öffnet es nicht (${ansicht})`);
+    }
+    for (const f of fehler) findings.push('Afrika: JS-Fehler ' + f);
+    if (!findings.some((f) => f.startsWith('Afrika'))) console.log('✓ Afrika: Uganda auf Englisch; neue Länder wählbar; News „Uganda / Africa / World"; Engpasslage Afrika mit 18 Ländern, „keine Liste" ehrlich, Land antippen öffnet es');
+    await ctx.close();
+  }
+
   // ── Registrierung im Browser: kurz, und ein Fehler verbrennt nichts ──────
   //  Bis 10/2026: sechs Felder (Pflicht-@Handle, Land doppelt), zwei Formulare
   //  untereinander — und ein vergebener Handle machte die E-Mail unbrauchbar.

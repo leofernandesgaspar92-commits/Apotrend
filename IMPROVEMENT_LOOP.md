@@ -2505,3 +2505,36 @@ Neukunde: Vorschläge antippen + eigener Wirkstoff → Zähler → Alarm → Abs
 
 **Gegenproben (jede schlägt an):** Status ohne Quelle bei häufigen Wirkstoffen; alte Tour statt
 erster Schritte.
+
+### Cycle · Start im englischsprachigen Afrika: drei Ebenen Land / Afrika / Welt (2026-10-14)
+
+**Auftrag (Owner):** Start im englischsprachigen Afrika; Nutzer:innen brauchen nationale,
+afrikanische und weltweite Informationen.
+
+**WORK.**
+- 12 neue Länder (UG, TZ, ZM, ZW, RW, BW, NA, MW, ET, SL, LR, GM): Register mit Region, Behörde,
+  Währung (UGX/RWF ohne Untereinheit, Simbabwe USD), konservative Rechts- und Zahlprofile (nur
+  Software-Lizenzen, Krypto immer), Feature-Hinweise wie NG/KE/GH, Presse-Abfrage, je eine
+  Behördenquelle mit Ministeriums-Rückfall (Startwerte, ungeprüft).
+- Regionen im Datenmodell (`region`, `laenderInRegion`, `regionVon`) und Quell-Regionen `EU`,
+  `AFR` (Africa CDC, WHO Afrika), `INT` (WHO) — neue Quellen.
+- **Fehler behoben:** EMA-Meldungen (`EU`) wurden zu „AT" — erschienen als österreichische
+  Behördenmeldungen. Ein Test schrieb das sogar als gewollt fest; korrigiert.
+- `GET /api/news?ebene=land|region|welt` (Welt: WHO, EMA, Africa CDC + Behörden in der eigenen
+  Sprache) und `GET /api/lage/ebene` (`services/regionLage.js`: je Land amtlich / nicht lieferbar
+  / Apotheken-Meldungen getrennt, „keine amtliche Liste" ausdrücklich, in mehreren Ländern
+  zugleich knapp über den Wirkstoff-Schlüssel mit Quelle je Land).
+- Oberfläche: Umschalter „Land | Region | Welt" in News und Engpässe, Herkunft an jeder Meldung,
+  Engpasslage je Land (antippen öffnet das Land). `docs/AFRIKA.md`.
+
+**Tests.** `afrika-ebenen.test.js` (16 anglophone afrikanische Länder vollständig inkl. Krypto;
+Engpasslage-Regeln; echter Server mit nachgestellten Feeds: Uganda sieht Land leer, Afrika =
+NAFDAC + Africa CDC, Welt = + WHO, EMA, FDA ohne deutschsprachige Meldungen; Österreich ohne
+EMA im Landesfeed; Mehrländer-Signal AT+US mit Quellen). Zählende Tests auf das Register
+umgestellt. Browser-Audit „Afrika" (Uganda auf Englisch, Umschalter, 18 Länder, Land antippen).
+
+**Gegenproben (jede schlägt an):** EMA-Fehler zurück; Region = alles; Welt ohne Sprachfilter;
+Apotheken-Meldungen als amtlich; Mehrländer ohne Wirkstoff-Schlüssel.
+
+**Ehrliche Lage:** „0 von 18 afrikanischen Ländern liefern eine amtliche Engpassliste" — die
+Daten kommen dort aus Behördenmeldungen, Apotheken-Meldungen und kontinentalen Quellen.

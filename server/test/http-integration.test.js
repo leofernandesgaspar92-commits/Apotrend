@@ -1133,7 +1133,7 @@ test('GET /api/live/status: Telemetrie für alle behördlichen Quellen', async (
     assert.equal(typeof s.configured, 'boolean', `${s.id}: configured fehlt`);
     assert.equal(typeof s.verified, 'boolean', `${s.id}: verified fehlt`);
     assert.equal(typeof s.fallbacks, 'number', `${s.id}: fallbacks fehlt`);
-    assert.match(s.country, /^[A-Z]{2}$/, `${s.id}: Land unbrauchbar`);
+    assert.match(s.country, /^([A-Z]{2}|AFR|INT)$/, `${s.id}: Land unbrauchbar`); // AFR/INT: Quell-Regionen
   }
 
   // Länderabdeckung und Selbstfindungs-Protokoll.

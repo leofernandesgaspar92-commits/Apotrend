@@ -39,7 +39,7 @@ werden nie erfundene Daten oder Scheinfunktionen ausgeliefert.
 |--------------|-------------------------------|-------------------------|
 | DACH         | AT, DE, CH, LI                | `pzn_matching`          |
 | Lusophonie   | PT, BR, AO, MZ                | `import_logistics`      |
-| Anglophonie  | GB, US, NG, KE, GH, CA, AU, ZA| `authenticity_check`    |
+| Anglophonie  | GB, US, NG, KE, GH, CA, AU, ZA, UG, TZ, ZM, ZW, RW, BW, NA, MW, ET, SL, LR, GM | `authenticity_check` |
 
 `recall_tracking` ist überall geplant (sicherheitskritisch → nur mit echter
 Quelle). Neue Module werden hier ergänzt und schalten auf `enabled: true`,

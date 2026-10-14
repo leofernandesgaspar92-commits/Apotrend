@@ -44,6 +44,7 @@ import { createSortiment } from '../services/sortiment.js';
 import { vorratsRadar } from '../services/radar.js';
 import { teilseite } from './teilseite.js';
 import { createAnzeigen } from '../services/anzeigen.js';
+import { regionLage } from '../services/regionLage.js';
 import { ersteSchritte } from '../services/ersteSchritte.js';
 import { startklar } from '../services/startklar.js';
 import { createOeffentlicheSeiten } from '../services/oeffentlicheSeiten.js';
@@ -61,7 +62,7 @@ import { cryptoWallets, paymentRoutes } from '../data/cryptoWallets.js';
 import { listProducts, getProduct } from '../data/products.js';
 import { createAmrService } from '../services/amr.js';
 import { createPatientInfoService } from '../services/patientInfo.js';
-import { COUNTRIES, DEFAULT_COUNTRY, isValidCountry, listCountries, normalizeCountry, normalizeLocale } from '../data/countries.js';
+import { COUNTRIES, DEFAULT_COUNTRY, isValidCountry, listCountries, normalizeCountry, normalizeLocale, istQuellRegion, regionVon, laenderInRegion } from '../data/countries.js';
 import { countryConfig, featureStatus, isFeatureBlocked } from '../data/countryFeatures.js';
 import {
   availablePurposes, calculateFee, checkoutFieldsFor, complianceProfile,
@@ -935,7 +936,7 @@ async function runNewsIngest() {
 function countryFilter(value) {
   const raw = String(value || '').trim().toUpperCase();
   if (!raw) return null; // kein Filter = alle Länder
-  if (raw === 'EU' || isValidCountry(raw)) return raw;
+  if (istQuellRegion(raw) || isValidCountry(raw)) return raw;
   const e = new Error(`Unbekannter Ländercode: ${raw}`);
   e.status = 400; e.code = 'unknown_country';
   throw e;
@@ -1733,6 +1734,15 @@ const routes = [
     return { ok: true };
   }],
 
+  // Engpasslage je Region / weltweit (services/regionLage.js).
+  ['GET', /^\/api\/lage\/ebene$/, true, async ({ userId, query }) => {
+    const land = activeCountry(userId, query);
+    const ebene = query.get('ebene') === 'welt' ? 'welt' : 'region';
+    const region = regionVon(land);
+    const codes = ebene === 'welt' ? Object.keys(COUNTRIES) : laenderInRegion(region);
+    const job = scheduler.status().find((j) => j.name === 'shortages');
+    return { ebene, region, land, stand: (job && job.lastRunAt) || null, ...regionLage({ shortagesRepo, chronik, laender: COUNTRIES, codes }) };
+  }],
   // Erste Schritte (services/ersteSchritte.js): Wirkstoffe zum Antippen.
   ['GET', /^\/api\/erste-schritte$/, true, async ({ userId, query }) => {
     const land = activeCountry(userId, query);
@@ -1928,7 +1938,24 @@ const routes = [
   ['GET', /^\/api\/feed\/public$/, true, async ({ userId, query }) => ({ country: activeCountry(userId, query), posts: enrichPosts(social.publicFeed(userId, { sort: query.get('sort') || 'neu', filter: query.get('filter') || 'all', country: activeCountry(userId, query) }), userId) })],
 
   ['POST', /^\/api\/posts$/, true, async ({ userId, body }) => social.createPost(userId, { body: body.body, visibility: body.visibility, kind: body.kind, image: body.image, sourceUrl: body.sourceUrl, pollOptions: body.pollOptions })],
-  ['GET', /^\/api\/news$/, true, async ({ userId, query }) => ({ country: activeCountry(userId, query), posts: enrichPosts(social.newsFeed(userId, { country: activeCountry(userId, query) }), userId) })],
+  // Drei Ebenen (docs/AFRIKA.md): `ebene=land` (Standard) | `region` | `welt`.
+  //  region: alle Länder der Region des angesehenen Landes + die Regionsquelle
+  //          (Afrika: Africa CDC, WHO Afrika; Europa: EMA).
+  //  welt:   WHO + EMA + Africa CDC/WHO Afrika + alle Länder, deren Behörden in der Sprache der Person
+  //          schreiben (`sprache`) — eine englischsprachige Apotheke in Kampala
+  //          braucht FDA, MHRA, TGA und WHO, keine BfArM-Meldungen auf Deutsch.
+  ['GET', /^\/api\/news$/, true, async ({ userId, query }) => {
+    const land = activeCountry(userId, query);
+    const ebene = ['region', 'welt'].includes(query.get('ebene')) ? query.get('ebene') : 'land';
+    let herkunft = null;
+    const region = regionVon(land);
+    if (ebene === 'region') herkunft = [...laenderInRegion(region), ...Object.entries({ AFR: 'AFRICA', EU: 'EUROPE' }).filter(([, r]) => r === region).map(([k]) => k)];
+    if (ebene === 'welt') {
+      const sp = ['de', 'en', 'pt'].includes(query.get('sprache')) ? query.get('sprache') : ((COUNTRIES[land] && COUNTRIES[land].locale_default) || 'en');
+      herkunft = ['INT', 'EU', 'AFR', ...Object.values(COUNTRIES).filter((c) => c.locales.includes(sp)).map((c) => c.code)];
+    }
+    return { country: land, ebene, region, posts: enrichPosts(social.newsFeed(userId, { country: land, herkunft }), userId) };
+  }],
   ['GET', /^\/api\/hashtag\/([^/]+)$/, true, async ({ userId, params }) => ({ tag: decodeURIComponent(params[0]), posts: enrichPosts(social.postsByHashtag(userId, decodeURIComponent(params[0])), userId) })],
   ['GET', /^\/api\/trending\/hashtags$/, true, async ({ userId }) => ({ hashtags: social.trendingHashtags(userId) })],
   // Mehrsprachige Patienten-Infokarten (Antibiotika) — für Aufklärung bei der Abgabe.

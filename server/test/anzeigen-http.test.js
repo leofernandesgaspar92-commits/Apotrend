@@ -3,6 +3,7 @@
 // Rechnungsangaben des Betreibers beim Start aus der Umgebung gelesen werden.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { COUNTRIES } from '../src/data/countries.js';
 import { spawn } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -37,7 +38,7 @@ test('Anzeige: buchen, prüfen, bezahlen, ausliefern, zählen', { timeout: 60000
     // Mediadaten: öffentlich, echte Zahlen, kleine Zahlen nicht genannt.
     const md = (await get('/api/werbung/mediadaten')).d;
     assert.deepEqual(md.plaetze.map((p) => p.id).sort(), ['feed', 'seite', 'start']);
-    assert.equal(md.laender.length, 16);
+    assert.equal(md.laender.length, Object.keys(COUNTRIES).length); // alle Länder des Registers
     const at = md.laender.find((l) => l.land === 'AT');
     assert.deepEqual(at.konten, { anzahl: null, unter_10: true }, 'drei Konten dürfen nicht einzeln erkennbar sein');
     assert.equal(md.zahlung.rechnung, true);

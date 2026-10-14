@@ -2900,7 +2900,8 @@ async function loadNews() {
       <div style="margin-top:8px"><button id="ngo">${esc(t('nb_share'))}</button></div>
       <div class="err" id="nerr"></div>
     </div>
-  </div><div id="lagebild"></div><div id="presse"></div><div id="newslist"></div>`));
+  </div><div id="newsebene"></div><div id="lagebild"></div><div id="presse"></div><div id="newslist"></div>`));
+  ebenenUmschalter(document.getElementById('newsebene'), 'news', () => loadNews());
   // Lagebild und Presse des ANGESEHENEN Landes — über den Behördenmeldungen,
   // weil sie die Frage „was ist dort los, und warum?" beantworten.
   zeigeDatenstand(feed, 'news');
@@ -2929,8 +2930,11 @@ async function loadNews() {
   const list = document.getElementById('newslist');
   list.innerHTML = '<div class="loading">…</div>';
   try {
-    const d = await api('GET','/api/news?country=' + viewCountry());
+    const ebene = aktuelleEbene('news');
+    const d = await api('GET', `/api/news?country=${encodeURIComponent(viewCountry())}&ebene=${ebene}&sprache=${encodeURIComponent(LOCALE)}`);
     list.innerHTML = '';
+    if (ebene !== 'land') { document.getElementById('lagebild')?.replaceChildren(); document.getElementById('presse')?.replaceChildren(); }
+    if (!d.posts.length && ebene !== 'land') { list.appendChild(el(`<div class="card muted" data-ebeneleer>${esc(t('eb_leer'))}</div>`)); return; }
     if (!d.posts.length) {
       // Dieselbe ehrliche Ansage wie bei den Engpaessen — hier mit der
       // NACHRICHTEN-Quelle, denn das sind andere Server. Ohne diese Karte
@@ -2941,7 +2945,13 @@ async function loadNews() {
       list.appendChild(el(`<div class="card muted">${esc(t('nw_empty'))}</div>`));
       return;
     }
-    d.posts.forEach(p => list.appendChild(postCard(p)));
+    d.posts.forEach(p => {
+      const c = postCard(p);
+      // Region/Welt: Herkunft an jeder Meldung — sonst liest sich eine NAFDAC-
+      // Warnung in Uganda wie eine ugandische.
+      if (ebene !== 'land') c.prepend(el(`<div class="news-herkunft" data-herkunft="${esc(p.country || '')}">${esc(herkunftLabel(p.country))}</div>`));
+      list.appendChild(c);
+    });
     anzeigeImFeed(list); // nach dem 5. Beitrag, nie direkt neben Engpass/Rückruf
   } catch(e){ list.innerHTML = ''; list.appendChild(errorState(e.message, loadTab)); }
 }
@@ -2951,6 +2961,25 @@ async function loadNews() {
 // wäre ein Klick, der Code ausführt.
 const sichererLink = (u) => (/^https?:\/\//i.test(String(u || '')) ? String(u) : null);
 const landLabel = (cc) => { const c = (COUNTRIES_CACHE || []).find(x => x.code === cc); return c ? `${c.flag} ${c.name}` : cc; };
+
+// ── Drei Ebenen: Land / Region / Welt ──────────────────────────────────────
+// Region = die des angesehenen Landes (Uganda -> Afrika, Österreich -> Europa).
+const REGION_VON = (cc) => ((COUNTRIES_CACHE || []).find((x) => x.code === cc) || {}).region || null;
+const herkunftLabel = (cc) => (cc === 'AFR' ? '🌍 ' + t('eb_quelle_afr') : cc === 'INT' ? '🌐 ' + t('eb_quelle_int') : cc === 'EU' ? '🇪🇺 ' + t('eb_quelle_eu') : landLabel(cc));
+function aktuelleEbene(bereich) {
+  try { const e = localStorage.getItem('apo_ebene_' + bereich); if (e === 'region' || e === 'welt') return e; } catch { /* egal */ }
+  return 'land';
+}
+function ebenenUmschalter(box, bereich, neuLaden) {
+  if (!box) return;
+  const cc = viewCountry(); const region = REGION_VON(cc);
+  const jetzt = aktuelleEbene(bereich);
+  const knoepfe = [['land', landLabel(cc)], ...(region ? [['region', (region === 'AFRICA' ? '🌍 ' : '🗺️ ') + t('eb_region_' + region)]] : []), ['welt', '🌐 ' + t('eb_welt')]];
+  box.innerHTML = '';
+  const leiste = el(`<div class="ebenen" role="tablist" aria-label="${esc(t('eb_aria'))}" data-ebenen="${esc(bereich)}">${knoepfe.map(([id, txt]) => `<button type="button" role="tab" data-ebene="${id}" aria-selected="${id === jetzt}" class="${id === jetzt ? '' : 'ghost'}">${esc(txt)}</button>`).join('')}</div>`);
+  leiste.querySelectorAll('[data-ebene]').forEach((b) => { b.onclick = () => { try { localStorage.setItem('apo_ebene_' + bereich, b.dataset.ebene); } catch { /* egal */ } neuLaden(); }; });
+  box.appendChild(leiste);
+}
 
 /**
  * Lagebild des angesehenen Landes (KI-Zusammenfassung mit Belegen).
@@ -3171,6 +3200,8 @@ function provenanceLegend() {
 async function loadShortages() {
   const feed = document.getElementById('feed');
   feed.innerHTML = '<div class="loading">…</div>';
+  // Region / Welt: Übersicht je Land statt der Liste eines Landes.
+  if (aktuelleEbene('engpaesse') !== 'land') return ladeEngpassEbene(feed);
   try {
     // Wie bei den News: das ANGESEHENE Land, nicht das eigene.
     const d = await api('GET','/api/shortages?country=' + viewCountry());
@@ -3179,6 +3210,7 @@ async function loadShortages() {
     // einschränkungen", PT „Ruturas de abastecimento"): Der Reiter trägt das
     // kurze Alltagswort, hier steht der Begriff, unter dem die Behörde führt.
     feed.appendChild(el(`<h2 class="page-h" data-shead>${esc(tc('nav_shortages'))}</h2>`));
+    { const eb = el('<div></div>'); feed.appendChild(eb); ebenenUmschalter(eb, 'engpaesse', () => loadShortages()); }
     zeigeDatenstand(feed, 'shortages');
     feed.appendChild(provenanceLegend());
     feed.appendChild(reportShortageCard(d.shortages));
@@ -3188,6 +3220,51 @@ async function loadShortages() {
     feed.appendChild(listBox);
     renderShortlist(listBox, bar, d.shortages);
   } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
+}
+
+// Engpasslage Region / Welt (server/src/services/regionLage.js): je Land amtlich
+// und Apotheken-Meldungen getrennt, „keine Behördenliste" ausdrücklich, dazu
+// Wirkstoffe, die in mehreren Ländern zugleich knapp sind (Frühwarnsignal).
+async function ladeEngpassEbene(feed) {
+  const ebene = aktuelleEbene('engpaesse');
+  let d;
+  try { d = await api('GET', `/api/lage/ebene?country=${encodeURIComponent(viewCountry())}&ebene=${ebene}`); }
+  catch (e) { feed.innerHTML = ''; feed.appendChild(errorState(e.message, loadTab)); return; }
+  feed.innerHTML = '';
+  feed.appendChild(el(`<h2 class="page-h" data-shead>${esc(tc('nav_shortages'))}</h2>`));
+  { const eb = el('<div></div>'); feed.appendChild(eb); ebenenUmschalter(eb, 'engpaesse', () => loadShortages()); }
+  const name = ebene === 'welt' ? t('eb_welt') : t('eb_region_' + d.region);
+  feed.appendChild(el(`<div class="card" data-ebenelage><b style="font-size:17px">${esc(ti('el_titel', { name }))}</b>
+    <div class="muted" style="font-size:15px;margin-top:4px">${esc(ti('el_sub', { n: d.mit_behoerdenliste, g: d.laender.length }))}${d.stand ? ' · ' + esc(ti('au_lage_stand', { z: vorZeit(d.stand) || '' })) : ''}</div></div>`));
+  // In mehreren Ländern knapp
+  const mk = el(`<div class="card" data-mehrere><b>${esc(t('el_mehrere'))}</b><div class="muted" style="font-size:14px;margin:2px 0 8px">${esc(t('el_mehrere_sub'))}</div><div data-mehrereliste></div></div>`);
+  const ml = mk.querySelector('[data-mehrereliste]');
+  if (!d.mehrere_laender.length) ml.appendChild(el(`<div class="muted">${esc(t('el_mehrere_leer'))}</div>`));
+  d.mehrere_laender.forEach((w) => {
+    const z = el(`<div class="el-zeile" style="padding:8px 0;border-top:1px solid var(--line)">
+      <button class="linklike" data-elw style="font-weight:700;font-size:16px">${esc(w.wirkstoff)}</button>
+      <div style="font-size:14px;margin-top:2px">${w.laender.map((l) => `<span class="el-land"><span class="es-punkt ${esc(l.status)}" aria-hidden="true"></span>${esc(landLabel(l.land))}${l.quelle ? ` <span class="muted">(${esc(l.quelle)})</span>` : ''}</span>`).join(' ')}</div></div>`);
+    z.querySelector('[data-elw]').onclick = () => openWirkstoff(w.wirkstoff);
+    ml.appendChild(z);
+  });
+  feed.appendChild(mk);
+  // Je Land
+  const lk = el(`<div class="card" data-jeland><b>${esc(t('el_jeland'))}</b><div class="muted" style="font-size:14px;margin:2px 0 8px">${esc(t('el_jeland_sub'))}</div></div>`);
+  d.laender.forEach((l) => {
+    const zahlen = l.behoerdenliste
+      ? `<span><b>${esc(ti('el_amtlich', { n: l.amtlich }))}</b>${l.kritisch ? ` · <span style="color:var(--crit-fg);font-weight:700">${esc(ti('el_kritisch', { n: l.kritisch }))}</span>` : ''}</span>`
+      : `<span class="muted">${esc(t('el_keine_liste'))}</span>`;
+    const z = el(`<button class="el-landzeile" data-elland="${esc(l.land)}">
+      <span style="font-weight:700">${esc(landLabel(l.land))}</span>
+      <span style="font-size:14px">${zahlen}${l.apotheken ? `<br><span class="muted">${esc(ti('el_apotheken', { n: l.apotheken }))}</span>` : ''}</span></button>`);
+    z.onclick = () => {
+      try { localStorage.setItem('apo_ebene_engpaesse', 'land'); } catch { /* egal */ }
+      const sel = document.getElementById('countrySwitch');
+      if (sel && sel.onchange) { sel.value = l.land; sel.onchange(); } else loadShortages();
+    };
+    lk.appendChild(z);
+  });
+  feed.appendChild(lk);
 }
 
 // Filtert die (bereits geladenen) Engpässe und füllt nur die Listenbox — die
