@@ -2238,6 +2238,13 @@ async function main() {
       const offen = await page.evaluate(() => { const mk = document.querySelector('[data-meldekarte]'); return !!mk && ![...mk.querySelectorAll('input, select')].every((e) => !e.offsetParent); });
       if (!offen) findings.push('Erster Eindruck: „Report a shortage" öffnet das Formular nicht');
     }
+    // Wirkstoff-Seite ohne leere Preis-Abschnitte; Live-Warnungen ohne Betreiber-Hinweis („AI enrichment").
+    await page.evaluate(() => openWirkstoff('Oxytocin')); await page.waitForTimeout(1500);
+    const wk = await page.locator('#app').innerText().catch(() => '');
+    if (/Price comparison|Running deals/.test(wk)) findings.push('Erster Eindruck: Wirkstoff-Seite zeigt leere Preis-/Aktions-Abschnitte');
+    await page.evaluate(() => mainScreen()); await page.waitForTimeout(600);
+    await reiterOeffnen(page, 'signals'); await page.waitForTimeout(1200);
+    if (/AI enrichment|configured/.test(await page.locator('#feed').innerText().catch(() => ''))) findings.push('Erster Eindruck: Live-Warnungen zeigen Apotheken einen Betreiber-Hinweis');
     // Premium-Seite: Produktname in der Sprache der Oberfläche (vorher „ApoPulse Premium (Monat)").
     await page.evaluate(() => openPremium()); await page.waitForSelector('[data-prpreis]', { timeout: 8000 }).catch(() => {});
     const preisZeile = await page.locator('[data-prpreis]').innerText().catch(() => '');

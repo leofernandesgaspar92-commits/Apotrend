@@ -2775,3 +2775,13 @@ englischen Oberfläche → `produktName()` mit `pn_*` (de/en/pt), auch in der Kr
 „Amount at fetch time – please send €9.99" → Klartext, wenn der Kurs fehlt. Krypto-Ablauf unverändert.
 
 **Tests.** Browser-Audit „Erster Eindruck" prüft die Premium-Zeile (Gegenprobe: alter Name → rot).
+
+### Cycle · Rundgang Uganda, Teil 4: Wirkstoff-Seite, Live-Warnungen, Menü (2026-10-14)
+
+**Befunde → WORK.** Wirkstoff-Seite zeigte in Ländern ohne Preise „Price comparison 0" und „Running
+deals 0" → nur mit Preisen/Aktionen. Live-Warnungen zeigten Apotheken „AI enrichment is not
+configured" (Betreiber-Angabe) → nur für die Moderation; Apotheken bekommen bei vorhandenen Meldungen
+einen Klartext-Hinweis, die Sicherheits-Ansicht ihre Erklärung ohne „KI". Menü: „Invite colleagues"
+vor „Advertise".
+
+**Tests.** Browser-Audit „Erster Eindruck" (Wirkstoff-Seite, Live-Warnungen); Gegenprobe → beide rot.

@@ -2942,11 +2942,13 @@ async function loadSignals() {
       // Läuft die KI? Ohne sie kommen Meldungen ohne Wirkstoff und Schweregrad
       // an — die Ansicht funktioniert, zeigt aber weniger. Das offen sagen,
       // statt es als leeren Inhalt aussehen zu lassen.
-      if (d.ki !== 'aktiv') liste.appendChild(el(`<div class="card muted" style="font-size:13px">${esc(sicherheit ? t('sig_safety_noai') : t('sig_ki_aus'))}</div>`));
+      // Leere Liste: „KI nicht eingerichtet" ist eine Betreiber-Angabe — nur für die
+      // Moderation. Apotheken erfahren nur, was für SIE zählt (Sicherheits-Ansicht).
+      if (d.ki !== 'aktiv' && (sicherheit || iAmModerator)) liste.appendChild(el(`<div class="card muted" style="font-size:13px">${esc(sicherheit ? t('sig_safety_noai') : t('sig_ki_aus'))}</div>`));
       return;
     }
     d.signale.forEach(s => liste.appendChild(signalCard(s)));
-    if (d.ki !== 'aktiv') liste.appendChild(el(`<div class="card muted" style="font-size:13px">${esc(t('sig_ki_aus'))}</div>`));
+    if (d.ki !== 'aktiv') liste.appendChild(el(`<div class="card muted" style="font-size:13px">${esc(iAmModerator ? t('sig_ki_aus') : t('sig_ki_aus_nutzer'))}</div>`));
   };
 
   let tippTimer = null;
@@ -8465,9 +8467,11 @@ async function openWirkstoff(name) {
   section(t('wk_seeks_t'), d.exchange.suche.length, t('wk_seeks_e'), body => d.exchange.suche.forEach(e => body.appendChild(exchangeCard(e))),
     canExchange ? { label: t('sc_seek'), onClick: () => startExchange('suche') } : null);
   // Preise
-  section(t('wk_prices_t'), d.prices.length, t('wk_prices_e'), body => d.prices.forEach(g => body.appendChild(priceGroup(g))));
+  // Preise und Aktionen nur, wo es sie gibt (z. B. nicht in Uganda): sonst zwei leere Abschnitte „0".
+  const mitPreisen = landHatPreise(viewCountry()) || d.prices.length || d.rabatte.length;
+  if (mitPreisen) section(t('wk_prices_t'), d.prices.length, t('wk_prices_e'), body => d.prices.forEach(g => body.appendChild(priceGroup(g))));
   // Rabatte
-  section(t('wk_deals_t'), d.rabatte.length, t('wk_deals_e'), body => d.rabatte.forEach(r => { r.rank = r.rank || 1; body.appendChild(rabattCard(r)); }));
+  if (mitPreisen) section(t('wk_deals_t'), d.rabatte.length, t('wk_deals_e'), body => d.rabatte.forEach(r => { r.rank = r.rank || 1; body.appendChild(rabattCard(r)); }));
   // ── Ausweich-Suche ───────────────────────────────────────────────────────
   //  Genau hier steht die Apothekerin, wenn ein Praeparat nicht lieferbar ist.
   //  Die Karte ist EINGEKLAPPT: Sie fragt RxNav im Netz, und ein Aufruf, den
