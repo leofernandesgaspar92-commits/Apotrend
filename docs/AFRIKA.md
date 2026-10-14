@@ -253,3 +253,18 @@ Geprüft durch `server/test/schein-konten.test.js` (mit Uhr).
 
 Geprüft durch den Browser-Audit-Block „Erster Eindruck" (Liberia, Zeitzone Africa/Monrovia, US-
 Englisch, plus Gegenprobe Österreich) und `server/test/laenderwahl.test.js`.
+
+## Öffentliche Seiten (Google) für Afrika
+
+`/engpaesse/<land>` zeigte für Länder ohne Behördenliste „Seite nicht gefunden" (auf Deutsch).
+Wer „medicine shortage Uganda" sucht, fand ApoPulse nicht. Jetzt:
+
+- **Länder ohne eingetragene Engpass-Quelle** (Uganda, Kenia, …) bekommen eine ehrliche
+  Landing-Seite: „ApoPulse does not (yet) receive an official shortage list for Uganda … pharmacies
+  report shortages themselves", mit Knopf in die App. Bewusst **ohne Daten**, auch ohne
+  Apotheken-Meldungen, denn eine Suchmaschine zeigt Auszüge ohne die Kennzeichnung „nicht amtlich".
+  Die Formulierung sagt, was ApoPulse erhält, nicht ob die Behörde eine Liste hat.
+- **Länder mit Quelle, die noch nicht geliefert hat,** bleiben bei 404.
+- **Übersicht `/engpaesse` und 404-Seite** folgen der Sprache des Browsers (`Accept-Language`,
+  `Vary`). Die Übersicht hat einen eigenen Abschnitt für Länder ohne amtliche Liste. Die
+  Landing-Seiten stehen in der Sitemap.

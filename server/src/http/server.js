@@ -832,6 +832,7 @@ function wirkstoffLage(cc, name) {
 // Öffentliche Engpass-Seiten für Suchmaschinen (services/oeffentlicheSeiten.js).
 const oeffentlich = createOeffentlicheSeiten({
   chronik, shortagesRepo, laender: COUNTRIES,
+  ohneQuelle: (cc) => !engpassQuellen().some((q) => String(q.country || '').toUpperCase() === cc),
   stand: () => { const job = scheduler.status().find((j) => j.name === 'shortages'); return (job && job.lastRunAt) || null; },
 });
 const seitenAufrufe = new Map(); // 'YYYY-MM-DD' -> Aufrufe der öffentlichen Seiten
@@ -2687,10 +2688,12 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/sitemap.xml') return sende(200, 'application/xml', oeffentlich.sitemap({ basis }), 3600);
     const m = pathname.match(/^\/engpaesse(?:\/([a-zA-Z]{2})(?:\/([a-z0-9-]{1,80}))?)?\/?$/);
     let html = null;
-    if (m && !m[1]) html = oeffentlich.index({ basis });
+    // Sprache für Übersicht und 404 (gehören keinem Land): aus Accept-Language.
+    const sp = (String(req.headers['accept-language'] || '').toLowerCase().match(/\b(de|en|pt)\b/) || [null, 'en'])[1];
+    if (m && !m[1]) { res.setHeader('Vary', 'Accept-Language'); html = oeffentlich.index({ basis, sp }); }
     else if (m && !m[2]) html = oeffentlich.land(m[1].toUpperCase(), { basis });
     else if (m) html = oeffentlich.wirkstoff(m[1].toUpperCase(), m[2], { basis });
-    if (!html) return sende(404, 'text/html', '<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><meta name="robots" content="noindex"><title>Nicht gefunden · ApoPulse</title></head><body style="font-family:system-ui;padding:24px"><h1>Seite nicht gefunden</h1><p><a href="/engpaesse">Alle Lieferengpässe nach Land</a></p></body></html>');
+    if (!html) { res.setHeader('Vary', 'Accept-Language'); return sende(404, 'text/html', oeffentlich.nichtGefunden({ sp })); }
     const tag = new Date().toISOString().slice(0, 10);
     seitenAufrufe.set(tag, (seitenAufrufe.get(tag) || 0) + 1);
     return sende(200, 'text/html', html);

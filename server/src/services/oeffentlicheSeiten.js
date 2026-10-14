@@ -53,6 +53,11 @@ const TEXTE = {
     cta_w: (w) => `Kostenlos benachrichtigt werden, wenn sich bei ${w} etwas ändert`, cta_land: 'Eigene Liste prüfen und Alarme einrichten — kostenlos',
     hinweis: 'Angaben aus der amtlichen Engpassliste. Keine Therapie- oder Austauschempfehlung — bei Fragen bitte an Apotheke oder Ärztin/Arzt wenden.',
     zurueck_land: (l) => `Alle Engpässe in ${l}`, alle_laender: 'Alle Länder',
+    ohne_titel: (l) => `Lieferengpässe bei Arzneimitteln in ${l}`,
+    ohne_beschr: (l, r) => `ApoPulse erhält für ${l} (noch) keine amtliche Engpassliste${r ? ` (Behörde: ${r})` : ''}. In ApoPulse melden Apotheken in ${l} Engpässe selbst und bestätigen sie gegenseitig — klar gekennzeichnet als nicht amtlich.`,
+    ohne_cta: (l) => `Meldungen aus Apotheken in ${l} ansehen und Alarme einrichten — kostenlos`,
+    laender_ohne: 'Länder ohne amtliche Liste in ApoPulse — Meldungen aus Apotheken',
+    nicht_gefunden: 'Seite nicht gefunden', alle_engpaesse: 'Alle Lieferengpässe nach Land',
   },
   en: {
     index_titel: 'Medicine shortages — current, with sources',
@@ -72,6 +77,11 @@ const TEXTE = {
     cta_w: (w) => `Get notified for free when anything changes for ${w}`, cta_land: 'Check your own list and set up alerts — free',
     hinweis: 'Data from the official shortage list. Not a treatment or substitution recommendation — please ask your pharmacist or doctor.',
     zurueck_land: (l) => `All shortages in ${l}`, alle_laender: 'All countries',
+    ohne_titel: (l) => `Medicine shortages in ${l}`,
+    ohne_beschr: (l, r) => `ApoPulse does not (yet) receive an official shortage list for ${l}${r ? ` (authority: ${r})` : ''}. In ApoPulse, pharmacies in ${l} report shortages themselves and confirm each other's reports — clearly marked as not official.`,
+    ohne_cta: (l) => `See reports from pharmacies in ${l} and set up alerts — free`,
+    laender_ohne: 'Countries without an official list in ApoPulse — pharmacy reports',
+    nicht_gefunden: 'Page not found', alle_engpaesse: 'All medicine shortages by country',
   },
   pt: {
     index_titel: 'Ruturas de medicamentos — atuais, com fonte',
@@ -91,6 +101,11 @@ const TEXTE = {
     cta_w: (w) => `Receber aviso grátis quando algo mudar em ${w}`, cta_land: 'Verificar a sua lista e criar alertas — grátis',
     hinweis: 'Dados da lista oficial de ruturas. Não é recomendação de tratamento ou substituição — consulte o seu farmacêutico ou médico.',
     zurueck_land: (l) => `Todas as ruturas em ${l}`, alle_laender: 'Todos os países',
+    ohne_titel: (l) => `Ruturas de medicamentos em ${l}`,
+    ohne_beschr: (l, r) => `O ApoPulse (ainda) não recebe uma lista oficial de ruturas para ${l}${r ? ` (autoridade: ${r})` : ''}. No ApoPulse, as farmácias em ${l} comunicam ruturas e confirmam-nas entre si — claramente assinaladas como não oficiais.`,
+    ohne_cta: (l) => `Ver comunicações de farmácias em ${l} e criar alertas — grátis`,
+    laender_ohne: 'Países sem lista oficial no ApoPulse — comunicações de farmácias',
+    nicht_gefunden: 'Página não encontrada', alle_engpaesse: 'Todas as ruturas de medicamentos por país',
   },
 };
 
@@ -99,7 +114,11 @@ function datum(iso, sprache) {
   try { return new Intl.DateTimeFormat(sprache, { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }).format(new Date(String(iso).slice(0, 10) + 'T00:00:00Z')); } catch { return iso; }
 }
 
-export function createOeffentlicheSeiten({ chronik, shortagesRepo, laender, stand = () => null }) {
+// `ohneQuelle(cc)`: Für das Land ist GAR KEINE Engpass-Quelle eingetragen (große
+// Teile Afrikas). Dann eine ehrliche Landing-Seite statt 404 — wer „medicine
+// shortage Uganda" sucht, fand vorher nichts. Länder MIT Quelle, die nur noch
+// nicht geliefert hat, bleiben 404: „keine amtliche Liste" wäre dort falsch.
+export function createOeffentlicheSeiten({ chronik, shortagesRepo, laender, stand = () => null, ohneQuelle = () => false }) {
   const sprache = (cc) => (laender[cc] && laender[cc].locale_default) || 'de';
   const landName = (cc, sp) => { try { return new Intl.DisplayNames([sp], { type: 'region' }).of(cc) || cc; } catch { return cc; } };
   const amtlich = (cc) => shortagesRepo.list({ country: cc })
@@ -128,6 +147,20 @@ export function createOeffentlicheSeiten({ chronik, shortagesRepo, laender, stan
   }
 
   const laenderMitDaten = () => chronik.beobachteteLaender().map((x) => x.land).filter((cc) => laender[cc]);
+  const laenderOhneQuelle = () => Object.keys(laender).filter((cc) => ohneQuelle(cc) && !laenderMitDaten().includes(cc))
+    .sort((a, b) => landName(a, 'en').localeCompare(landName(b, 'en')));
+
+  // Landing-Seite für Länder ohne jede Behördenquelle: KEINE Daten (auch keine
+  // Apotheken-Meldungen — eine Suchmaschine zeigte sie ohne Kennzeichnung),
+  // nur die ehrliche Aussage und der Weg in die App.
+  function ohneListe(cc, { basis }) {
+    const sp = sprache(cc); const T = TEXTE[sp] || TEXTE.de; const ln = landName(cc, sp);
+    const beschr = T.ohne_beschr(ln, laender[cc].regulator || null);
+    return rahmen({ sp, titel: T.ohne_titel(ln), beschr, pfad: `/engpaesse/${cc.toLowerCase()}`, basis,
+      inhalt: `<nav class="p"><a href="/engpaesse">${esc(T.alle_laender)}</a></nav>
+<div class="c"><h1>${esc(T.ohne_titel(ln))}</h1><p>${esc(beschr)}</p></div>
+<div class="c"><a class="b" href="/?land=${esc(cc)}">${esc(T.ohne_cta(ln))}</a><p class="mu" style="margin-top:12px">${esc(T.hinweis)}</p></div>` });
+  }
 
   /** Name zu einer Adresse: nur, was in der Behördenliste steht oder stand. */
   function nameZu(cc, s) {
@@ -165,17 +198,28 @@ ${inhalt}
   return {
     slug, laenderMitDaten, nameZu,
 
-    index({ basis }) {
-      const sp = 'de'; const T = TEXTE[sp];
+    laenderOhneQuelle,
+
+    // Sprache der Übersicht aus Accept-Language (sie gehört keinem Land) — vorher immer Deutsch.
+    index({ basis, sp: wunsch = 'de' }) {
+      const sp = TEXTE[wunsch] ? wunsch : 'de'; const T = TEXTE[sp];
       const liste = laenderMitDaten().map((cc) => {
         const n = eintraege(cc).length; const s2 = sprache(cc);
         return `<li><a href="/engpaesse/${cc.toLowerCase()}">${esc(landName(cc, s2))}</a><span class="mu">${n} · ${esc(laender[cc].regulator || '')}</span></li>`;
       }).join('');
+      const ohne = laenderOhneQuelle().map((cc) => `<li><a href="/engpaesse/${cc.toLowerCase()}">${esc(landName(cc, sprache(cc)))}</a></li>`).join('');
       return rahmen({ sp, titel: T.index_titel, beschr: T.index_beschr, pfad: '/engpaesse', basis,
-        inhalt: `<div class="c"><h1>${esc(T.index_titel)}</h1><p class="mu">${esc(T.index_beschr)}</p><h2>${esc(T.laender)}</h2><ul class="l">${liste}</ul></div>` });
+        inhalt: `<div class="c"><h1>${esc(T.index_titel)}</h1><p class="mu">${esc(T.index_beschr)}</p><h2>${esc(T.laender)}</h2><ul class="l">${liste}</ul></div>
+${ohne ? `<div class="c"><h2>${esc(T.laender_ohne)}</h2><ul class="l">${ohne}</ul></div>` : ''}` });
+    },
+
+    nichtGefunden({ sp: wunsch = 'de' }) {
+      const sp = TEXTE[wunsch] ? wunsch : 'de'; const T = TEXTE[sp];
+      return `<!DOCTYPE html><html lang="${sp}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>${esc(T.nicht_gefunden)} · ApoPulse</title></head><body style="font-family:system-ui;padding:24px;font-size:17px"><h1>${esc(T.nicht_gefunden)}</h1><p><a href="/engpaesse">${esc(T.alle_engpaesse)}</a></p></body></html>`;
     },
 
     land(cc, { basis }) {
+      if (laender[cc] && ohneQuelle(cc) && !laenderMitDaten().includes(cc)) return ohneListe(cc, { basis });
       if (!laender[cc] || !laenderMitDaten().includes(cc)) return null;
       const sp = sprache(cc); const T = TEXTE[sp] || TEXTE.de; const ln = landName(cc, sp);
       const liste = eintraege(cc);
@@ -219,7 +263,7 @@ ${anderswo ? `<p class="mu">${esc(T.anderswo(anderswo))}</p>` : ''}
 
     sitemap({ basis }) {
       const lm = stand() ? String(stand()).slice(0, 10) : null;
-      const urls = ['/', '/engpaesse'];
+      const urls = ['/', '/engpaesse', ...laenderOhneQuelle().map((cc) => `/engpaesse/${cc.toLowerCase()}`)];
       for (const cc of laenderMitDaten()) {
         urls.push(`/engpaesse/${cc.toLowerCase()}`);
         const gesehen = new Set();

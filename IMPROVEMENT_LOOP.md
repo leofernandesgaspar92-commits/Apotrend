@@ -2842,3 +2842,16 @@ und Meldungen mit eingesetzten Werten.
 
 **Tests.** `fehler-sprache.test.js` erkennt die neuen Codes und verlangt Übersetzungen; neuer Riegel:
 höchstens 33 Fehler ohne Code (Gegenprobe: ein Code entfernt → rot).
+
+### Cycle · Öffentliche Seiten: Landing für Länder ohne Behördenliste (2026-10-14)
+
+**Befund.** `/engpaesse/ug` → 404 „Seite nicht gefunden" (deutsch); Übersicht immer deutsch.
+
+**WORK.** `oeffentlicheSeiten`: `ohneQuelle(cc)` (keine Engpass-Quelle eingetragen) → Landing-Seite
+ohne Daten mit Weg in die App; Länder mit Quelle ohne Daten bleiben 404. Index/404 nach
+Accept-Language (Vary). Landing-Seiten in Sitemap und Übersicht.
+Ehrlichkeit: zuerst „es gibt keine öffentliche amtliche Liste" formuliert — für Portugal womöglich
+falsch. Jetzt: „ApoPulse erhält (noch) keine amtliche Engpassliste".
+
+**Tests.** `oeffentliche-seiten.test.js` (PT/UG Landing ohne Engpass-Zeilen, englische Übersicht,
+englische 404, Sitemap). Browser-Audit „Öffentliche Seiten" (en-UG). Gegenprobe: `ohneQuelle` aus → rot.

@@ -87,7 +87,21 @@ test('Über HTTP: Länder, Wirkstoffe, nur amtlich, 404, robots, Sitemap', { tim
     assert.ok(!r.text.includes('<b>Test</b>') && r.text.includes('&lt;b&gt;Test&lt;/b&gt;'));
 
     // Unbekannt -> 404 (keine endlosen Leerseiten, keine App-Hülle mit 200).
-    for (const pfad of ['/engpaesse/at/gibtsnicht', '/engpaesse/xx', '/engpaesse/pt', '/engpaesse/at/Amoxicillin', '/engpaesse/at/gemeldetin']) {
+    // Land OHNE eingetragene Engpass-Quelle (Portugal, Uganda): ehrliche Landing-Seite statt 404 —
+    // ohne Daten, auch ohne Apotheken-Meldungen, mit dem Weg in die App.
+    for (const [cc, satz] of [['pt', /O ApoPulse \(ainda\) não recebe uma lista oficial/], ['ug', /ApoPulse does not \(yet\) receive an official shortage list for Uganda/]]) {
+      const l = await holen('/engpaesse/' + cc);
+      assert.equal(l.status, 200, cc);
+      assert.match(l.text, satz);
+      assert.match(l.text, new RegExp(`href="/\\?land=${cc.toUpperCase()}"`));
+      assert.ok(!/class="s (kritisch|eingeschraenkt)"/.test(l.text), `${cc}: Landing-Seite zeigt Engpass-Zeilen`);
+    }
+    // Übersicht und 404 in der Sprache des Browsers.
+    const en = await (await fetch(B + '/engpaesse', { headers: { 'accept-language': 'en-UG,en;q=0.9' } })).text();
+    assert.match(en, /<html lang="en"/); assert.match(en, /Countries without an official list in ApoPulse/); assert.match(en, /href="\/engpaesse\/ug"/);
+    assert.match(await (await fetch(B + '/engpaesse/xx', { headers: { 'accept-language': 'en' } })).text(), /Page not found/);
+    assert.match((await holen('/sitemap.xml')).text, /\/engpaesse\/ug</);
+    for (const pfad of ['/engpaesse/at/gibtsnicht', '/engpaesse/xx', '/engpaesse/at/Amoxicillin', '/engpaesse/at/gemeldetin']) {
       const x = await holen(pfad);
       assert.equal(x.status, 404, pfad);
       assert.match(x.text, /noindex/);

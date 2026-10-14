@@ -1782,7 +1782,8 @@ async function main() {
     await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
     const href = await page.locator('[data-oeffentlich]').getAttribute('href').catch(() => null);
     if (href !== '/engpaesse') findings.push('Öffentliche Seiten: Startseite ohne Konto verlinkt die Engpasslisten nicht');
-    const ohneJs = await browser.newContext({ viewport: { width: 390, height: 844 }, javaScriptEnabled: false });
+    // Deutscher Browser: Die Übersicht folgt seit 10/2026 Accept-Language (vorher immer Deutsch).
+    const ohneJs = await browser.newContext({ viewport: { width: 390, height: 844 }, javaScriptEnabled: false, locale: 'de-AT' });
     const p2 = await ohneJs.newPage();
     const antwort = await p2.goto(BASE + '/engpaesse');
     const h1 = await p2.locator('h1').innerText().catch(() => '');
@@ -1792,8 +1793,21 @@ async function main() {
     const robots = await (await fetch(BASE + '/robots.txt')).text();
     if (!/Sitemap:/.test(robots)) findings.push('Öffentliche Seiten: robots.txt ohne Sitemap');
     if ((await fetch(BASE + '/engpaesse/zz')).status !== 404) findings.push('Öffentliche Seiten: unbekanntes Land liefert kein 404');
+    // Englischer Browser aus Uganda: Übersicht auf Englisch; Uganda (ohne Behördenquelle) mit
+    // ehrlicher Landing-Seite statt 404, ohne Querscrollen.
+    {
+      const enCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, javaScriptEnabled: false, locale: 'en-UG' });
+      const p3 = await enCtx.newPage();
+      await p3.goto(BASE + '/engpaesse');
+      if (!/Medicine shortages/.test(await p3.locator('h1').innerText().catch(() => ''))) findings.push('Öffentliche Seiten: Übersicht für englischen Browser nicht englisch');
+      const ug = await p3.goto(BASE + '/engpaesse/ug');
+      const ugText = await p3.locator('body').innerText().catch(() => '');
+      if (!ug || ug.status() !== 200 || !/does not \(yet\) receive an official shortage list for Uganda/.test(ugText)) findings.push(`Öffentliche Seiten: Uganda ohne Landing-Seite (${ug && ug.status()})`);
+      if ((await p3.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) > 0) findings.push('Öffentliche Seiten: Uganda-Seite scrollt quer');
+      await enCtx.close();
+    }
     for (const f of fehler) findings.push('Öffentliche Seiten: JS-Fehler ' + f);
-    if (!findings.some((f) => f.startsWith('Öffentliche Seiten'))) console.log('✓ Öffentliche Seiten: Startseite verlinkt, /engpaesse ohne JavaScript lesbar, kein Querscrollen, robots.txt mit Sitemap, 404 für Unbekanntes');
+    if (!findings.some((f) => f.startsWith('Öffentliche Seiten'))) console.log('✓ Öffentliche Seiten: Startseite verlinkt, /engpaesse ohne JavaScript lesbar, kein Querscrollen, robots.txt mit Sitemap, Uganda-Landing auf Englisch, 404 für Unbekanntes');
     await ohneJs.close(); await ctx.close();
   }
 
