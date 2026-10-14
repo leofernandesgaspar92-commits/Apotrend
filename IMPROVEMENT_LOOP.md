@@ -2317,3 +2317,32 @@ Prüfung möglich → rot; Frequenzgrenze weg → rot; Klick ohne gültiges Zeic
 Kontenzahlen offengelegt → Ende-zu-Ende rot; Anzeige auf der Engpass-Seite → Audit-Befund;
 Kennzeichnung entfernt → Audit-Befund. (Der Audit selbst hatte zuerst einen Fehler: Er suchte
 „Anzeige", das Label steht per CSS in Großbuchstaben — jetzt ohne Groß-/Kleinschreibung.)
+
+### Cycle · Teilen mit Vorschau: aus einem Link wird eine Nutzerin (2026-10-14)
+
+**Warum jetzt:** Die Daten sind da, das Geschäft (Premium, Anzeigen) auch — es fehlt Reichweite.
+In Apotheken und im Einkauf laufen Engpass-Nachrichten über WhatsApp. Ein geteilter App-Link war
+dort eine nackte Adresse ohne Vorschau, weil Messenger kein JavaScript ausführen; und wer ihm
+folgte, landete auf einer leeren Anmeldung und musste den Wirkstoff danach selbst suchen.
+
+**WORK.**
+- `http/teilseite.js` + Routen `/teilen/lage/:land` und `/teilen/w/:land/:wirkstoff`: fertiges
+  HTML mit Open Graph (Titel, Text, `og-bild.png` 1200×630). Aussage aus derselben Quelle wie die
+  App: „knapp seit N Tagen" mit Behörde und Stand; Apotheken-Meldungen als „nicht amtlich"; ohne
+  Behördenliste NIE „nicht knapp", sondern „noch keine Behördenliste". Nur öffentliche Angaben.
+- Knopf führt zu `/?land=AT&beobachten=Amoxicillin`: Land wird übernommen, die Anmeldung nennt den
+  Wirkstoff, und nach dem Konto-Anlegen steht er schon auf der Beobachtungsliste.
+- Teilen-Knöpfe (Wirkstoff-Seite, Engpass-Karte, neu „Lage teilen" auf „Für dich"): am Handy das
+  System-Teilen-Menü, sonst ein Blatt mit WhatsApp, E-Mail, Link kopieren.
+- Cockpit: „Aufrufe geteilter Links (7 Tage)" — zeigt, ob Teilen Leute bringt. `index.html` mit
+  Vorschau-Angaben und aktueller Beschreibung.
+- Härtung: Alles aus Adresse escaped; Host/Protokoll aus der Anfrage nur in harmloser Form
+  (Seite wird 5 Min. zwischengespeichert).
+
+**Tests.** `teilseite.test.js` (Seitenaussagen, Escaping; echter Server: vor dem Abruf „keine
+Liste", nach dem Abruf „knapp, Quelle BASG", andere Schreibweise, Lage, Host-Kopf, 404, Zähler im
+Cockpit), Browser-Audit „Teilen" (Blatt → WhatsApp-Link → Teilseite mit og:title; Link → Banner →
+Konto → Wirkstoff beobachtet, Absicht danach gelöscht).
+
+**Gegenproben (jede schlägt an):** Escaping weg → rot; „keine Liste" als „nicht knapp" → rot;
+Protokoll ungeprüft übernommen → rot; Absicht nicht verarbeitet → zwei Audit-Befunde.

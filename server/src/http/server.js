@@ -42,6 +42,7 @@ import { AppError } from '../domain/errors.js';
 import { HANDLE_RE, normalizeHandle, freierHandle } from '../domain/handle.js';
 import { createSortiment } from '../services/sortiment.js';
 import { vorratsRadar } from '../services/radar.js';
+import { teilseite } from './teilseite.js';
 import { createAnzeigen } from '../services/anzeigen.js';
 import { werbeplaetzeAusUmgebung, ZIELGRUPPEN } from '../data/werbeplaetze.js';
 import { createOverviewService } from '../services/overview.js';
@@ -702,6 +703,41 @@ const lagebildDienst = createLagebildDienst({
  * verbiegt.
  */
 
+// Öffentliche Lage eines Landes (Startseite, Teilseite): nur Zahlen und Quelle.
+function lageDaten(cc) {
+  const b = chronik.wochenbilanz(cc);
+  if (!b) return { land: cc, daten: false };
+  const quellen = [...new Set(shortagesRepo.list({ country: cc })
+    .filter((z) => z.provenance === 'verified' && !z.reporter_user_id && String(z.country || '').toUpperCase() === cc)
+    .map((z) => z.quelle).filter(Boolean))].slice(0, 3);
+  const job = scheduler.status().find((j) => j.name === 'shortages') || null;
+  return { land: cc, daten: true, offen: b.offen, neu: b.neu.length, beendet: b.beendet.length, aufzeichnung_seit: b.aufzeichnung_seit, quellen, stand: (job && job.lastRunAt) || null };
+}
+// Ein Wirkstoff in einem Land für die Teilseite: knapp ja/nein, seit wann, laut wem.
+// Dieselbe Quelle wie die Engpass-Liste der App (inkl. Herkunft), nichts Erfundenes.
+function wirkstoffLage(cc, name) {
+  const AKTIV = ['kritisch', 'eingeschraenkt'];
+  const treffer = shortagesRepo.list({ country: cc }).filter((z) => AKTIV.includes(z.status) && z.wirkstoff && gleicherWirkstoff(z.wirkstoff, name))
+    .sort((a, b) => (a.status === 'kritisch' ? -1 : 0) - (b.status === 'kritisch' ? -1 : 0));
+  const m = treffer[0];
+  const wirkstoff = m ? m.wirkstoff : name;
+  const kurz = chronik.kurz(wirkstoff, cc);
+  const job = scheduler.status().find((j) => j.name === 'shortages') || null;
+  return {
+    wirkstoff, knapp: !!m, beobachtet_land: !!chronik.aufzeichnungSeit(cc),
+    seit_tagen: kurz && kurz.offen_seit_tagen != null ? kurz.offen_seit_tagen : null,
+    herkunft: m ? m.provenance : null, quelle: m ? m.quelle : null,
+    stand: job && job.lastRunAt ? String(job.lastRunAt).slice(0, 10) : null,
+  };
+}
+// Aufrufe der Teilseiten je Tag — zeigt dem Owner, ob Teilen Leute bringt.
+const teilAufrufe = new Map(); // 'YYYY-MM-DD' -> Anzahl
+function teilAufrufeLetzte(tage = 7) {
+  const grenze = new Date(Date.now() - tage * 86400000).toISOString().slice(0, 10);
+  let n = 0; for (const [tag, z] of teilAufrufe) if (tag > grenze) n += z;
+  return n;
+}
+
 function rxBetrachter(userId) {
   if (!userId) return null;
   const prof = social.getProfile(userId);
@@ -1038,13 +1074,7 @@ const routes = [
   ['GET', /^\/api\/lage\/([A-Za-z]{2})$/, false, async ({ params }) => {
     const cc = params[0].toUpperCase();
     if (!COUNTRIES[cc]) { const e = new Error('Unbekanntes Land.'); e.status = 404; throw e; }
-    const b = chronik.wochenbilanz(cc);
-    if (!b) return { land: cc, daten: false };
-    const quellen = [...new Set(shortagesRepo.list({ country: cc })
-      .filter((z) => z.provenance === 'verified' && !z.reporter_user_id && String(z.country || '').toUpperCase() === cc)
-      .map((z) => z.quelle).filter(Boolean))].slice(0, 3);
-    const job = scheduler.status().find((j) => j.name === 'shortages') || null;
-    return { land: cc, daten: true, offen: b.offen, neu: b.neu.length, beendet: b.beendet.length, aufzeichnung_seit: b.aufzeichnung_seit, quellen, stand: (job && job.lastRunAt) || null };
+    return lageDaten(cc);
   }],
   // Datenabdeckung für Kundschaft (öffentlich): Aus welchen Ländern kommen
   // wirklich Behördendaten? Wer zahlen soll, muss wissen, wofür — und wo
@@ -2013,6 +2043,9 @@ const routes = [
       abruf: { zuletzt: (job && job.lastRunAt) || null, ok: job ? job.lastOk ?? null : null },
       mail: { aktiv: mailer.aktiv, grund: mailer.grund },
       ki: aiKonfiguration() ? 'aktiv' : 'aus',
+      // Wachstum und Werbung auf einen Blick: Aufrufe geteilter Links, Anzeigen.
+      teilen: { aufrufe_7: teilAufrufeLetzte(7) },
+      anzeigen: { laufend: anzeigen.alleLaufenden(userId).filter((k) => k.zustand === 'laeuft').length, zur_pruefung: anzeigen.zurPruefung(userId).length },
     };
   }],
   // ── Quellen testen und eintragen (Moderation) ─────────────────────────────
@@ -2306,6 +2339,31 @@ const server = http.createServer(async (req, res) => {
     // kurz genug, um einen falschen Fingerabdruck schnell zu korrigieren.
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });
     return res.end(JSON.stringify(doc, null, 2));
+  }
+
+  // ── Teilseiten mit Vorschau (teilseite.js) ──
+  //  Vor dem SPA-Rückfall: Messenger brauchen fertiges HTML mit Open Graph.
+  {
+    const mL = pathname.match(/^\/teilen\/lage\/([A-Za-z]{2})$/);
+    const mW = pathname.match(/^\/teilen\/w\/([A-Za-z]{2})\/([^/]{1,120})$/);
+    if ((mL || mW) && req.method === 'GET') {
+      const cc = (mL || mW)[1].toUpperCase();
+      if (!COUNTRIES[cc]) return json(req, res, 404, { error: 'Unbekanntes Land.' });
+      let name = '';
+      if (mW) { try { name = decodeURIComponent(mW[2]).trim().slice(0, 80); } catch { return json(req, res, 400, { error: 'Ungültiger Name.' }); } }
+      const sprache = (COUNTRIES[cc].locale_default) || 'de';
+      const d = mL ? { art: 'lage', ...lageDaten(cc) } : { art: 'wirkstoff', ...wirkstoffLage(cc, name) };
+      // Öffentliche Basis-Adresse: fest eingestellt, sonst aus der Anfrage.
+      //  Host und Protokoll aus der Anfrage nur in harmloser Form übernehmen —
+      //  die Seite wird 5 Minuten zwischengespeichert.
+      const proto = String(req.headers['x-forwarded-proto'] || 'http').split(',')[0].trim() === 'https' ? 'https' : 'http';
+      const host = /^[A-Za-z0-9.-]{1,253}(:\d{1,5})?$/.test(String(req.headers.host || '')) ? req.headers.host : 'localhost';
+      const basis = (process.env.APOPULSE_PUBLIC_URL || `${proto}://${host}`).replace(/\/$/, '');
+      const tag = new Date().toISOString().slice(0, 10);
+      teilAufrufe.set(tag, (teilAufrufe.get(tag) || 0) + 1);
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300' });
+      return res.end(teilseite({ ...d, land: cc, sprache, pfad: pathname }, { basis }));
+    }
   }
 
   // ── Statisches Frontend ──

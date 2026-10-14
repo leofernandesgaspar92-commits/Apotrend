@@ -544,3 +544,12 @@
   @media print { .wb-rechnung { border:0; } }
   .wb-unter { margin:2px 0 8px 28px; padding-left:12px; border-left:3px solid var(--line); }
   .wb-unter[hidden] { display:none; }
+
+  /* ── Teilen ── */
+  .teil-blatt { position:fixed; inset:0; z-index:60; background:rgba(15,20,25,.45); display:flex; align-items:flex-end; justify-content:center; padding:16px; }
+  .teil-karte { width:100%; max-width:440px; margin:0; }
+  .teil-wege { display:grid; gap:8px; }
+  .teil-wege .btn-link, .teil-wege button { width:100%; min-height:48px; font-size:16px; }
+  .teil-neutral { background:var(--chip-bg); color:var(--text); }
+  .teil-neutral:hover { background:var(--line); }
+  @media (min-width:700px){ .teil-blatt { align-items:center; } }

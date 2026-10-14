@@ -1553,6 +1553,54 @@ async function main() {
     await ctx.close();
   }
 
+  // ── Teilen mit Vorschau: Link → Konto → Wirkstoff wird beobachtet ───────
+  //  Ein geteilter Link soll in Messengern eine Vorschau mit Quelle zeigen und
+  //  Neue ohne Umweg zum Nutzen bringen: Konto anlegen, und der Wirkstoff aus
+  //  dem Link steht schon auf der Beobachtungsliste.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); delete Navigator.prototype.share; }, token);
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(800);
+    const knopf = page.locator('[data-lageteilen]');
+    if (!(await knopf.count())) findings.push('Teilen: „Lage teilen" fehlt auf „Für dich"');
+    else {
+      await knopf.click(); await page.waitForTimeout(300);
+      const wa = await page.locator('#teilBlatt a[href^="https://wa.me/"]').getAttribute('href').catch(() => null);
+      if (!wa) findings.push('Teilen: Teilen-Blatt ohne WhatsApp-Weg');
+      else {
+        const link = decodeURIComponent(wa).match(/https?:\/\/\S+\/teilen\/lage\/[A-Z]{2}/);
+        if (!link) findings.push(`Teilen: WhatsApp-Text ohne Link auf die Teilseite (${decodeURIComponent(wa).slice(0, 100)})`);
+        else {
+          const html = await (await fetch(BASE + new URL(link[0]).pathname)).text();
+          if (!/<meta property="og:title" content="[^"]+"/.test(html) || !/og-bild\.png/.test(html)) findings.push('Teilen: Teilseite ohne Vorschau-Angaben (og:title/og:image)');
+        }
+      }
+      await page.keyboard.press('Escape');
+      if (await page.locator('#teilBlatt').count()) findings.push('Teilen: Blatt schließt nicht mit Esc');
+    }
+    for (const f of fehler) findings.push('Teilen: JS-Fehler ' + f);
+    await ctx.close();
+
+    const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const neu = await ctx2.newPage();
+    const fehler2 = []; neu.on('pageerror', (e) => fehler2.push(e.message));
+    await neu.goto(BASE + '/?land=AT&beobachten=Amoxicillin', { waitUntil: 'networkidle' }); await neu.waitForTimeout(500);
+    const banner = await neu.locator('[data-absicht]').innerText().catch(() => '');
+    if (!/Amoxicillin/.test(banner)) findings.push('Teilen: Anmeldeseite nennt den Wirkstoff aus dem Link nicht');
+    if (/beobachten=/.test(neu.url())) findings.push('Teilen: Absicht bleibt in der Adresse stehen');
+    await neu.fill('#rg_name', 'Link Test'); await neu.fill('#rg_email', `teil_${Date.now().toString(36)}@reg.test`); await neu.fill('#rg_pw', 'Passwort123!');
+    await neu.click('#rg_go'); await neu.waitForTimeout(1200);
+    if (await neu.locator('#rc_done').count()) { await neu.click('#rc_done'); await neu.waitForTimeout(1200); }
+    const liste = await neu.evaluate(() => fetch('/api/watchlist', { headers: { authorization: 'Bearer ' + localStorage.getItem('apo_token') } }).then((r) => r.json()).catch(() => ({})));
+    if (!(liste.items || []).some((i) => /amoxicillin/i.test(JSON.stringify(i)))) findings.push('Teilen: nach dem Konto-Anlegen steht der Wirkstoff aus dem Link nicht auf der Beobachtungsliste');
+    if (await neu.evaluate(() => localStorage.getItem('apo_absicht'))) findings.push('Teilen: Absicht bleibt nach der Verarbeitung liegen (würde bei jedem Start erneut greifen)');
+    for (const f of fehler2) findings.push('Teilen: JS-Fehler ' + f);
+    if (!findings.some((f) => f.startsWith('Teilen'))) console.log('✓ Teilen: Blatt mit WhatsApp-Link auf Teilseite mit Vorschau; Link → Banner → Konto → Wirkstoff beobachtet');
+    await ctx2.close();
+  }
+
   // ── Registrierung im Browser: kurz, und ein Fehler verbrennt nichts ──────
   //  Bis 10/2026: sechs Felder (Pflicht-@Handle, Land doppelt), zwei Formulare
   //  untereinander — und ein vergebener Handle machte die E-Mail unbrauchbar.

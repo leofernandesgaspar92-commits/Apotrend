@@ -572,6 +572,7 @@ function authScreen() {
     <span>${ac ? `<span aria-hidden="true" style="font-size:1.2em">${esc(ac.flag)}</span> <b>${esc(ac.name)}</b>` : localStorage.getItem('apo_country') ? `<b>${esc(landAnzeige(localStorage.getItem('apo_country')))}</b>` : ''}</span>
     <button class="ghost small" id="changeCountry">${esc(t('cs_change'))}</button>
   </div>`));
+  { const ab = leseAbsicht(); if (ab && ab.beobachten) app.appendChild(el(`<div class="lage-box" data-absicht style="margin:0 0 14px"><div class="lage-kopf">${ico('bell', 18)}${esc(ti('absicht_banner', { w: ab.beobachten }))}</div></div>`)); }
   app.appendChild(el(`
   <div class="auth-grid">
     <div class="auth-hero">
@@ -1116,6 +1117,13 @@ async function mainScreen() {
   const sharedHashtag = params.get('hashtag');
   const deepTab = params.get('tab');
   const validTabs = ['overview','public','home','shortages','prices','rabatte','exchange','news'];
+  const absicht = leseAbsicht();
+  if (absicht && absicht.beobachten) {
+    try { localStorage.removeItem('apo_absicht'); } catch { /* egal */ }
+    try { await api('POST', '/api/watchlist', { wirkstoff: absicht.beobachten }); } catch { /* Seite öffnet trotzdem */ }
+    openWirkstoff(absicht.beobachten);
+    return;
+  }
   if (sharedPost) { history.replaceState(null, '', location.pathname); openPost(sharedPost); }
   else if (sharedWirkstoff) { history.replaceState(null, '', location.pathname); openWirkstoff(sharedWirkstoff); }
   else if (sharedProfile) { history.replaceState(null, '', location.pathname); openProfile(sharedProfile); }
@@ -1268,7 +1276,8 @@ function betriebsKarte(b) {
       ${kachel('💶', geld, ti('bt_revenue', { n: b.einnahmen.tage }), ti('bt_payments', { n: b.einnahmen.anzahl }) + (b.einnahmen.offen_pruefung ? ' · ' + ti('bt_pending', { n: b.einnahmen.offen_pruefung }) : ''), 'var(--green)')}
       ${kachel(q.fehler ? '✗' : '✓', `${q.liefern}/${q.gesamt}`, t('bt_sources'), q.fehler ? ti('bt_sources_bad', { n: q.fehler }) : (q.offen ? ti('bt_sources_open', { n: q.offen }) : t('bt_sources_ok')), q.fehler ? 'var(--crit-fg)' : 'var(--ok-fg)', 'data-btquellen role="button" tabindex="0" class="clickable"')}
     </div>
-    <div class="muted" style="font-size:14px;margin-top:8px">${esc(t('bt_fetch'))}: ${esc(b.abruf.zuletzt ? vorZeit(b.abruf.zuletzt) || '' : t('dq_never'))} · ${esc(t('bt_mail'))}: ${esc(b.mail.aktiv ? t('dq_on') : t('dq_off'))} · ${esc(t('dq_ai'))}: ${esc(b.ki === 'aktiv' ? t('dq_on') : t('dq_off'))}</div></div>`);
+    <div class="muted" style="font-size:14px;margin-top:8px">${esc(t('bt_fetch'))}: ${esc(b.abruf.zuletzt ? vorZeit(b.abruf.zuletzt) || '' : t('dq_never'))} · ${esc(t('bt_mail'))}: ${esc(b.mail.aktiv ? t('dq_on') : t('dq_off'))} · ${esc(t('dq_ai'))}: ${esc(b.ki === 'aktiv' ? t('dq_on') : t('dq_off'))}</div>
+    ${b.teilen ? `<div class="muted" style="font-size:14px;margin-top:4px" data-btwachstum>${esc(ti('bt_teilen', { n: b.teilen.aufrufe_7 }))}${b.anzeigen ? ' · ' + esc(ti('bt_anzeigen', { l: b.anzeigen.laufend, p: b.anzeigen.zur_pruefung })) : ''}</div>` : ''}</div>`);
   const qk = c.querySelector('[data-btquellen]');
   qk.onclick = openDatenquellen;
   qk.onkeydown = (e) => { if (e.key === 'Enter') openDatenquellen(); };
@@ -1357,7 +1366,7 @@ async function loadOverview() {
   ].filter(([, , , bereich]) => !bereich || featureAn(bereich));
   const head = el(`<div class="card">
     <h1 style="margin:0 0 2px">${esc(t('ov_hello'))}${firstName?', '+esc(firstName):''}</h1>
-    <div class="muted" style="margin-bottom:12px">${esc(t('ov_sub'))}</div>
+    <div class="row" style="margin-bottom:12px;gap:8px;flex-wrap:wrap"><span class="muted" style="flex:1">${esc(t('ov_sub'))}</span><button class="ghost small" data-lageteilen>${esc(ti('ov_lage_teilen', { land: landAnzeige(viewCountry()) }))}</button></div>
     <div class="ovtiles">
       ${tiles.join('')}
     </div>
@@ -1380,6 +1389,7 @@ async function loadOverview() {
   // „0" waere ein Zaehler ohne Aussage.
   { const lb = head.querySelector('#ov_logistik'); if (lb) lb.onclick = () => openLogistik(); }
   for (const [id, , , , fn] of schnell) if (fn) head.querySelector('#' + id).onclick = fn;
+  head.querySelector('[data-lageteilen]').onclick = () => teileLage();
   feed.appendChild(head);
   renderVorratsRadar(feed); // im Ausland knapp, bei dir nicht — direkt unter dem Überblick
   zeigeAnzeige('start', feed); // Anzeige (gekennzeichnet) nach Überblick und Radar
@@ -3483,11 +3493,7 @@ function shortageCard(s) {
   };
   // Engpass direkt aus der Liste teilen (Deep-Link zum Wirkstoff) — z.B. an Kolleg:innen.
   const shBtn = card.querySelector('[data-share]');
-  shBtn.onclick = async () => {
-    const url = location.origin + '/?wirkstoff=' + encodeURIComponent(s.wirkstoff);
-    try { await navigator.clipboard.writeText(url); shBtn.textContent = t('pc_copied'); setTimeout(()=>{ shBtn.textContent = t('pc_share'); }, 1500); }
-    catch { prompt(t('copy_link_fb'), url); }
-  };
+  shBtn.onclick = () => teileWirkstoff(s.wirkstoff); // Teilseite mit Vorschau
   const aboutbox = card.querySelector('[data-aboutbox]');
   card.querySelector('[data-about]').onclick = async () => {
     aboutbox.classList.toggle('hidden');
@@ -3596,6 +3602,52 @@ function downloadCsv(baseName, header, rows) {
 
 // „seit heute" / „seit 1 Tag" / „seit 12 Tagen" — statt „seit 0 Tagen".
 function seitTage(n) { return n <= 0 ? t('zeit_seit_heute') : n === 1 ? t('zeit_seit_1') : ti('fw_since', { n }); }
+
+// ── Teilen mit Vorschau ──────────────────────────────────────────────────────
+// Die Links zeigen auf Teilseiten des Servers (http/teilseite.js) — die
+// tragen Titel, Text und Bild für die Vorschau in WhatsApp & Co.
+const teilLinkWirkstoff = (name, land = viewCountry()) => `${location.origin}/teilen/w/${encodeURIComponent(land)}/${encodeURIComponent(name)}`;
+const teilLinkLage = (land = viewCountry()) => `${location.origin}/teilen/lage/${encodeURIComponent(land)}`;
+async function teilen({ titel, text, url }) {
+  // Handy: das Teilen-Menü des Systems (WhatsApp, Signal, Mail …).
+  if (navigator.share) { try { await navigator.share({ title: titel, text, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  document.getElementById('teilBlatt')?.remove();
+  const nachricht = `${text}\n${url}`;
+  const blatt = el(`<div id="teilBlatt" class="teil-blatt" role="dialog" aria-modal="true" aria-label="${esc(t('teilen_titel'))}">
+    <div class="card teil-karte"><div class="row" style="align-items:center"><b style="flex:1">${esc(t('teilen_titel'))}</b><button class="ghost small" data-zu aria-label="${esc(t('lb_close'))}">✕</button></div>
+      <div class="muted" style="font-size:14px;margin:6px 0 12px">${esc(text)}</div>
+      <div class="teil-wege">
+        <a class="btn-link" href="https://wa.me/?text=${encodeURIComponent(nachricht)}" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+        <a class="btn-link teil-neutral" href="mailto:?subject=${encodeURIComponent(titel)}&body=${encodeURIComponent(nachricht)}">${esc(t('teilen_email'))}</a>
+        <button class="ghost" data-kopieren>${esc(t('teilen_kopieren'))}</button>
+      </div></div></div>`);
+  const zu = () => blatt.remove();
+  blatt.onclick = (e) => { if (e.target === blatt) zu(); };
+  blatt.querySelector('[data-zu]').onclick = zu;
+  blatt.querySelector('[data-kopieren]').onclick = async (e) => {
+    try { await navigator.clipboard.writeText(url); e.currentTarget.textContent = t('teilen_kopiert'); } catch { prompt(t('copy_link_fb'), url); }
+  };
+  document.addEventListener('keydown', function esc2(e) { if (e.key === 'Escape') { zu(); document.removeEventListener('keydown', esc2); } });
+  document.body.appendChild(blatt);
+  blatt.querySelector('a').focus();
+}
+const teileWirkstoff = (name) => teilen({ titel: name, text: ti('teilen_w_text', { w: name, land: landAnzeige(viewCountry()) }), url: teilLinkWirkstoff(name) });
+const teileLage = () => teilen({ titel: 'ApoPulse', text: ti('teilen_lage_text', { land: landAnzeige(viewCountry()) }), url: teilLinkLage() });
+
+// Absicht aus einem geteilten Link („/?land=AT&beobachten=Amoxicillin"):
+// Land übernehmen, Wirkstoff nach der Anmeldung beobachten.
+function merkeLinkAbsicht() {
+  const q = new URLSearchParams(location.search);
+  const land = (q.get('land') || '').toUpperCase();
+  const w = (q.get('beobachten') || '').trim().slice(0, 80);
+  if (!land && !w) return;
+  try {
+    if (/^[A-Z]{2}$/.test(land) && !localStorage.getItem('apo_country')) localStorage.setItem('apo_country', land);
+    if (w) localStorage.setItem('apo_absicht', JSON.stringify({ beobachten: w }));
+  } catch { /* ohne Speicher: kein Nachholen */ }
+  history.replaceState(null, '', location.pathname);
+}
+function leseAbsicht() { try { return JSON.parse(localStorage.getItem('apo_absicht') || 'null'); } catch { return null; } }
 
 // ══ Anzeigen für Unternehmen ══════════════════════════════════════════════════
 // Server: services/anzeigen.js (Regeln), docs/WERBUNG.md (rechtlicher Rahmen).
@@ -7620,11 +7672,7 @@ async function openWirkstoff(name) {
   head.querySelector('[data-wktask]').onclick = () => { taskPrefill = { title: ti('tk_from_shortage', { w: d.wirkstoff }) }; openTasks(); };
   head.querySelector('[data-back]').onclick = () => goTab('overview');
   const shb = head.querySelector('[data-share]');
-  shb.onclick = async () => {
-    const url = location.origin + '/?wirkstoff=' + encodeURIComponent(d.wirkstoff);
-    try { await navigator.clipboard.writeText(url); shb.textContent = t('pc_copied'); setTimeout(()=>{ shb.textContent=t('pc_share'); }, 1500); }
-    catch { prompt(t('copy_link_fb'), url); }
-  };
+  shb.onclick = () => teileWirkstoff(d.wirkstoff); // Teilseite mit Vorschau
   const wb = head.querySelector('[data-watch]');
   let watched = !!d.watched;
   wb.onclick = async () => {
@@ -9328,6 +9376,7 @@ const _hasCountry = () => !!localStorage.getItem('apo_country');
 (async () => {
   // Zuerst eine mögliche OAuth-Rückleitung abfangen (Social-Login), sonst normaler Start.
   handleWbAbmelden();
+  merkeLinkAbsicht();
   if (await handleOAuthCallback()) return;
   if (localStorage.getItem('apo_token')) mainScreen().catch(() => (_hasCountry() ? authScreen() : countryScreen()));
   else if (_hasCountry()) authScreen();
