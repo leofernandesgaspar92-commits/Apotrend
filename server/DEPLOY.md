@@ -136,6 +136,12 @@ Server selbst welche und sichert sie mit dem Datenstand — gehen die Daten verl
 Geräte den Alarm neu einschalten. iPhone: nur als App vom Home-Bildschirm (iOS 16.4+).
 Einzelheiten: `docs/PUSH.md`.
 
+## Bei Google gefunden werden
+
+Öffentliche Engpass-Seiten (`/engpaesse/...`), `robots.txt` und `sitemap.xml` laufen ohne
+Einrichtung. Wichtig: `APOPULSE_PUBLIC_URL` auf die echte Domain setzen und die Sitemap in der
+Google Search Console einreichen. Einzelheiten: `docs/OEFFENTLICHE_SEITEN.md`.
+
 ## Datenspeicherung (Persistenz)
 
 Der Server kann seinen kompletten Zustand als **JSON-Snapshot** auf die Platte

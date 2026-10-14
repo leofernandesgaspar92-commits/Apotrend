@@ -625,6 +625,8 @@ function authScreen() {
   zeigeLage(app.querySelector('[data-lage]'), (ac && ac.code) || (localStorage.getItem('apo_country') || '').toUpperCase());
   // Für Unternehmen: Mediadaten ohne Anmeldung ansehen.
   { const hero = app.querySelector('.auth-hero'); if (hero) { const l = el(`<button class="linklike" data-wbfirmen style="margin-top:14px">${esc(t('wb2_fuer_firmen'))}</button>`); l.onclick = () => openWerbung(); hero.appendChild(l); } }
+  // Ohne Konto sehen, was ApoPulse weiß: öffentliche Engpasslisten je Land (auch für Suchmaschinen).
+  { const hero = app.querySelector('.auth-hero'); if (hero) hero.appendChild(el(`<a class="btn-link teil-neutral" data-oeffentlich href="/engpaesse" style="margin-top:12px;display:inline-flex">${esc(t('oe_landing'))}</a>`)); }
   // Woher die Daten kommen — wer sich registrieren soll, will das vorher wissen.
   fetch('/api/abdeckung').then((r) => r.json()).then((abd) => {
     const tx = abdeckungText(abd); const hero = app.querySelector('.auth-hero');

@@ -44,6 +44,7 @@ import { createSortiment } from '../services/sortiment.js';
 import { vorratsRadar } from '../services/radar.js';
 import { teilseite } from './teilseite.js';
 import { createAnzeigen } from '../services/anzeigen.js';
+import { createOeffentlicheSeiten } from '../services/oeffentlicheSeiten.js';
 import { createWebPush, pushNachricht, testNachricht, PUSH_TYPEN } from '../services/webPush.js';
 import { createRechnungsnummern } from '../services/rechnungsnummern.js';
 import { createRechnungen } from '../services/rechnungen.js';
@@ -775,6 +776,19 @@ function wirkstoffLage(cc, name) {
     herkunft: m ? m.provenance : null, quelle: m ? m.quelle : null,
     stand: job && job.lastRunAt ? String(job.lastRunAt).slice(0, 10) : null,
   };
+}
+// Öffentliche Engpass-Seiten für Suchmaschinen (services/oeffentlicheSeiten.js).
+const oeffentlich = createOeffentlicheSeiten({
+  chronik, shortagesRepo, laender: COUNTRIES,
+  stand: () => { const job = scheduler.status().find((j) => j.name === 'shortages'); return (job && job.lastRunAt) || null; },
+});
+const seitenAufrufe = new Map(); // 'YYYY-MM-DD' -> Aufrufe der öffentlichen Seiten
+/** Öffentliche Basis-Adresse: fest eingestellt, sonst Host/Protokoll aus der Anfrage (nur harmlose Form). */
+function oeffentlicheBasis(req) {
+  if (process.env.APOPULSE_PUBLIC_URL) return process.env.APOPULSE_PUBLIC_URL.replace(/\/+$/, '');
+  const proto = String(req.headers['x-forwarded-proto'] || 'http').split(',')[0].trim() === 'https' ? 'https' : 'http';
+  const host = /^[A-Za-z0-9.-]{1,253}(:\d{1,5})?$/.test(String(req.headers.host || '')) ? req.headers.host : 'localhost';
+  return `${proto}://${host}`;
 }
 // Aufrufe der Teilseiten je Tag — zeigt dem Owner, ob Teilen Leute bringt.
 const teilAufrufe = new Map(); // 'YYYY-MM-DD' -> Anzahl
@@ -2125,6 +2139,7 @@ const routes = [
       // Wachstum und Werbung auf einen Blick: Aufrufe geteilter Links, Anzeigen.
       teilen: { aufrufe_7: teilAufrufeLetzte(7) },
       push: webPush.stand(),
+      seiten: { aufrufe_7: [...seitenAufrufe].filter(([t]) => t > new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)).reduce((n, [, z]) => n + z, 0) },
       anzeigen: { laufend: anzeigen.alleLaufenden(userId).filter((k) => k.zustand === 'laeuft').length, zur_pruefung: anzeigen.zurPruefung(userId).length },
     };
   }],
@@ -2513,16 +2528,31 @@ const server = http.createServer(async (req, res) => {
       const sprache = (COUNTRIES[cc].locale_default) || 'de';
       const d = mL ? { art: 'lage', ...lageDaten(cc) } : { art: 'wirkstoff', ...wirkstoffLage(cc, name) };
       // Öffentliche Basis-Adresse: fest eingestellt, sonst aus der Anfrage.
-      //  Host und Protokoll aus der Anfrage nur in harmloser Form übernehmen —
-      //  die Seite wird 5 Minuten zwischengespeichert.
-      const proto = String(req.headers['x-forwarded-proto'] || 'http').split(',')[0].trim() === 'https' ? 'https' : 'http';
-      const host = /^[A-Za-z0-9.-]{1,253}(:\d{1,5})?$/.test(String(req.headers.host || '')) ? req.headers.host : 'localhost';
-      const basis = (process.env.APOPULSE_PUBLIC_URL || `${proto}://${host}`).replace(/\/$/, '');
+      const basis = oeffentlicheBasis(req); // Seite wird 5 Minuten zwischengespeichert
       const tag = new Date().toISOString().slice(0, 10);
       teilAufrufe.set(tag, (teilAufrufe.get(tag) || 0) + 1);
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300' });
       return res.end(teilseite({ ...d, land: cc, sprache, pfad: pathname }, { basis }));
     }
+  }
+
+  // ── Öffentliche Engpass-Seiten, robots.txt, sitemap.xml ──
+  //  Vor dem SPA-Rückfall: Suchmaschinen brauchen fertiges HTML — und eine
+  //  unbekannte Adresse muss 404 sein, nicht die App-Hülle mit Status 200.
+  if (req.method === 'GET' && (pathname === '/robots.txt' || pathname === '/sitemap.xml' || pathname === '/engpaesse' || pathname.startsWith('/engpaesse/'))) {
+    const basis = oeffentlicheBasis(req);
+    const sende = (code, typ, text, max = 900) => { res.writeHead(code, { 'Content-Type': `${typ}; charset=utf-8`, 'Cache-Control': code === 200 ? `public, max-age=${max}` : 'no-store' }); res.end(text); };
+    if (pathname === '/robots.txt') return sende(200, 'text/plain', oeffentlich.robots({ basis }), 3600);
+    if (pathname === '/sitemap.xml') return sende(200, 'application/xml', oeffentlich.sitemap({ basis }), 3600);
+    const m = pathname.match(/^\/engpaesse(?:\/([a-zA-Z]{2})(?:\/([a-z0-9-]{1,80}))?)?\/?$/);
+    let html = null;
+    if (m && !m[1]) html = oeffentlich.index({ basis });
+    else if (m && !m[2]) html = oeffentlich.land(m[1].toUpperCase(), { basis });
+    else if (m) html = oeffentlich.wirkstoff(m[1].toUpperCase(), m[2], { basis });
+    if (!html) return sende(404, 'text/html', '<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><meta name="robots" content="noindex"><title>Nicht gefunden · ApoPulse</title></head><body style="font-family:system-ui;padding:24px"><h1>Seite nicht gefunden</h1><p><a href="/engpaesse">Alle Lieferengpässe nach Land</a></p></body></html>');
+    const tag = new Date().toISOString().slice(0, 10);
+    seitenAufrufe.set(tag, (seitenAufrufe.get(tag) || 0) + 1);
+    return sende(200, 'text/html', html);
   }
 
   // ── Statisches Frontend ──

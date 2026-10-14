@@ -1755,6 +1755,30 @@ async function main() {
     if (!findings.some((f) => f.startsWith('Push'))) console.log('✓ Push: Startseite bietet an, Einschalten → Server kennt Gerät → Ausschalten meldet ab; „Nicht jetzt" bleibt; iPhone bekommt Anleitung');
   }
 
+  // ── Öffentliche Engpass-Seiten: ohne Konto erreichbar, lesbar ohne JS ────
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    await page.addInitScript(() => { if (!sessionStorage.getItem('x')) { localStorage.clear(); sessionStorage.setItem('x', '1'); } localStorage.setItem('apo_country', 'AT'); localStorage.setItem('apo_welcome_seen', '1'); });
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
+    const href = await page.locator('[data-oeffentlich]').getAttribute('href').catch(() => null);
+    if (href !== '/engpaesse') findings.push('Öffentliche Seiten: Startseite ohne Konto verlinkt die Engpasslisten nicht');
+    const ohneJs = await browser.newContext({ viewport: { width: 390, height: 844 }, javaScriptEnabled: false });
+    const p2 = await ohneJs.newPage();
+    const antwort = await p2.goto(BASE + '/engpaesse');
+    const h1 = await p2.locator('h1').innerText().catch(() => '');
+    if (!antwort || antwort.status() !== 200 || !/Lieferengpässe/.test(h1)) findings.push(`Öffentliche Seiten: /engpaesse ohne JavaScript nicht lesbar (${antwort && antwort.status()} ${h1.slice(0, 40)})`);
+    const quer = await p2.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    if (quer > 0) findings.push(`Öffentliche Seiten: ${quer} px Querscrollen am Handy`);
+    const robots = await (await fetch(BASE + '/robots.txt')).text();
+    if (!/Sitemap:/.test(robots)) findings.push('Öffentliche Seiten: robots.txt ohne Sitemap');
+    if ((await fetch(BASE + '/engpaesse/zz')).status !== 404) findings.push('Öffentliche Seiten: unbekanntes Land liefert kein 404');
+    for (const f of fehler) findings.push('Öffentliche Seiten: JS-Fehler ' + f);
+    if (!findings.some((f) => f.startsWith('Öffentliche Seiten'))) console.log('✓ Öffentliche Seiten: Startseite verlinkt, /engpaesse ohne JavaScript lesbar, kein Querscrollen, robots.txt mit Sitemap, 404 für Unbekanntes');
+    await ohneJs.close(); await ctx.close();
+  }
+
   // ── Registrierung im Browser: kurz, und ein Fehler verbrennt nichts ──────
   //  Bis 10/2026: sechs Felder (Pflicht-@Handle, Land doppelt), zwei Formulare
   //  untereinander — und ein vergebener Handle machte die E-Mail unbrauchbar.

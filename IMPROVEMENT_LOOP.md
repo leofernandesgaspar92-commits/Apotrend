@@ -2435,3 +2435,30 @@ Browser-Audit „Push".
 **Gegenproben (jede schlägt an):** Dienst-Liste weg; abgelaufene Abos bleiben; Haken nicht
 verdrahtet; falscher Info-Text der Verschlüsselung; Schlüssel nicht gesichert; iPhone ohne
 Anleitung.
+
+### Cycle · Bei Google gefunden werden: öffentliche Engpass-Seiten (2026-10-14)
+
+**Warum:** Wer „Amoxicillin Lieferengpass" sucht, fand ApoPulse nicht — Single-Page-App, kein
+`robots.txt`, keine Sitemap. Reichweite ohne Werbebudget kommt aus der Suche.
+
+**WORK.** `services/oeffentlicheSeiten.js` + Routen vor dem SPA-Rückfall: `/engpaesse`,
+`/engpaesse/:land`, `/engpaesse/:land/:wirkstoff` (Server-HTML, canonical, Open Graph,
+JSON-LD), `/robots.txt`, `/sitemap.xml`. Nur amtliche Daten, Quelle + Stand, Hinweis „keine
+Therapieempfehlung", 404 für Unbekanntes, Seite bleibt bei „wieder lieferbar". Knopf führt in
+die Beobachtung nach dem Konto-Anlegen. Link „Aktuelle Lieferengpässe nach Land" auf der
+Startseite ohne Konto und als `<noscript>`. Basis-Adresse gemeinsam mit den Teilseiten
+(`oeffentlicheBasis`). Aufrufe im Betriebs-Cockpit. `docs/OEFFENTLICHE_SEITEN.md`.
+
+**Tests.** `oeffentliche-seiten.test.js` (Adress-Bildung; echter Server: vor dem Abruf 404
+trotz Beispieldaten, Apotheken-Meldung nicht öffentlich (mit Gegencheck, dass sie in der App
+existiert), Wirkstoffe statt Präparate gezählt, Präparate mit „voraussichtlich bis", Escaping,
+404 für Unbekanntes/Großschreibung/Meldungen, „wieder lieferbar" bleibt erreichbar und in der
+Sitemap, robots.txt). Browser-Audit „Öffentliche Seiten" (Link ohne Konto, lesbar ohne
+JavaScript, kein Querscrollen).
+
+**Befund dabei:** Der Test schickte die Apotheken-Meldung zuerst an eine falsche Adresse — die
+Prüfung „Meldungen bleiben draußen" lief dadurch ins Leere. Jetzt mit Statusprüfung und
+Gegencheck.
+
+**Gegenproben (jede schlägt an):** Apotheken-Meldungen zugelassen; Länder ohne Behördenliste
+zugelassen; unbekannte Wirkstoffe als Seite; Escaping weg; App-Hülle statt 404.
