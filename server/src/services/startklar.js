@@ -25,6 +25,15 @@ export function startklar({ env = {}, dauerhaft = { level: 'flüchtig' }, quelle
       ? 'Die Daten liegen nur in einer Datei. Auf Render überlebt sie das nächste Deploy nicht — dann sind alle Konten, Zahlungen, Rechnungen und Alarme weg.'
       : 'Ohne Datenbank sind nach dem nächsten Neustart alle Konten, Zahlungen, Rechnungen und Alarme weg.',
     'In Render eine PostgreSQL-Datenbank anlegen und deren „Internal Database URL" beim Web-Service als DATABASE_URL eintragen (docs/DATENBANK.md).');
+  // Nur für Tests gedacht (services/shortages.js, ZAEHLT_AB_STUNDEN). Steht die
+  // Variable im Betrieb, zählen frische Schein-Konten sofort für „bestätigt".
+  // Der Wert ist eine Zahl, kein Geheimnis — er darf hier gelesen werden.
+  if (gesetzt('APOPULSE_BESTAETIGUNG_AB_STUNDEN') && !(Number(env.APOPULSE_BESTAETIGUNG_AB_STUNDEN) >= 24)) {
+    punkt('schutz', 'fehlt',
+      'Schutz vor Schein-Konten ist abgeschaltet',
+      'APOPULSE_BESTAETIGUNG_AB_STUNDEN ist gesetzt. Damit zählen frisch angelegte Konten sofort für „von 3 Apotheken bestätigt" — eine Person mit drei Konten könnte jede Meldung so erscheinen lassen.',
+      'In Render beim Web-Service die Variable APOPULSE_BESTAETIGUNG_AB_STUNDEN löschen (sie ist nur für Tests gedacht) und neu deployen.');
+  }
   punkt('anmeldung', gesetzt('APOPULSE_TOKEN_SECRET') ? 'ok' : 'fehlt',
     'Anmeldungen bleiben nach Neustart gültig',
     'Ohne festen Schlüssel werden bei jedem Neustart alle Nutzer:innen abgemeldet.',

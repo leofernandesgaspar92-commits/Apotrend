@@ -14,6 +14,7 @@ import { createSocialRepo } from '../src/repo/socialRepo.js';
 import { createSocialService } from '../src/services/social.js';
 import { createShortagesRepo } from '../src/repo/shortagesRepo.js';
 import { createShortagesService, vertrauenEinstellen } from '../src/services/shortages.js';
+import { startklar } from '../src/services/startklar.js';
 
 const SERVER = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'http', 'server.js');
 const STUNDE = 3600000;
@@ -28,7 +29,7 @@ test('Prüfliste: auffällige Meldung mit Signalen, unauffällige nicht; Bestät
   let modId = null;
   const social = createSocialService(socialRepo, repo, { isModerator: (uid) => uid === modId });
   const shortagesRepo = createShortagesRepo({ seed: false });
-  const svc = createShortagesService(shortagesRepo, social, { today: () => '2026-10-14' });
+  const svc = createShortagesService(shortagesRepo, social, { today: () => '2026-10-14', moderatoren: () => (modId ? [modId] : []), vonWem: (uid) => eingeladen.get(uid) || null });
   const anlegen = (name, alterStunden, von = null) => {
     const r = orgAuth.registerPharmacyWithOwner({ pharmacy: { name }, owner: { name, email: name.replace(/\W/g, '') + '@mp.test', password: 'geheim123' } });
     social.createProfile(r.user.id, { handle: name.replace(/\W/g, '').toLowerCase(), displayName: name, country: 'UG', accountType: 'pharmacy' });
@@ -48,6 +49,12 @@ test('Prüfliste: auffällige Meldung mit Signalen, unauffällige nicht; Bestät
   svc.confirmShortage(anlegen('Alt Zwei', 2000), n.id); svc.confirmShortage(anlegen('Alt Drei', 300), n.id);
 
   const vonWem = (uid) => eingeladen.get(uid) || null;
+  // Die Moderation erfährt es von selbst — einmal, und nur für die auffällige Meldung.
+  const pruefHinweise = () => social.notifications(mod).filter((x) => x.type === 'meldung_pruefen');
+  assert.equal(pruefHinweise().length, 1, 'Moderation nicht (oder mehrfach) benachrichtigt');
+  assert.match(pruefHinweise()[0].label, /^Oxytocin · UG$/);
+  svc.unconfirmShortage(s2, m.id); svc.confirmShortage(s2, m.id);
+  assert.equal(pruefHinweise().length, 1, 'erneute Bestätigung meldet doppelt');
   assert.throws(() => svc.pruefliste(a, { vonWem }), (e) => e.status === 403);
   const liste = svc.pruefliste(mod, { vonWem });
   assert.deepEqual(liste.map((x) => x.wirkstoff), ['Oxytocin'], 'unauffällige Meldung gelistet oder auffällige fehlt');
@@ -100,4 +107,11 @@ test('Über HTTP: frische Konten erscheinen in der Prüfliste; nur Moderation; E
   } finally {
     await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
   }
+});
+
+test('Startklar: abgeschalteter Schutz vor Schein-Konten steht als „fehlt"', () => {
+  const schutz = (env) => startklar({ env }).punkte.find((x) => x.id === 'schutz');
+  assert.equal(schutz({ APOPULSE_BESTAETIGUNG_AB_STUNDEN: '0' })?.stufe, 'fehlt', 'Warnung fehlt');
+  assert.equal(schutz({}), undefined, 'Warnung ohne Grund');
+  assert.equal(schutz({ APOPULSE_BESTAETIGUNG_AB_STUNDEN: '48' }), undefined);
 });

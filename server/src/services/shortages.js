@@ -129,7 +129,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       // Wie viele davon (noch) nicht zählen, weil das Konto jünger als ZAEHLT_AB_STUNDEN ist.
       apotheken_neu: s.provenance === 'community' ? apotheken - zaehlend : 0,
       aktualitaet: akt.stufe, tage_ohne_bestaetigung: akt.tage,
-      erinnert: undefined,
+      erinnert: undefined, pruef_gemeldet: undefined, bestaetigt_gemeldet: undefined,
       i_confirmed: !!viewerUserId && confirmations.includes(viewerUserId),
       reporter: reporter ? { handle: reporter.handle, display_name: reporter.display_name, verified: !!reporter.verified } : null,
       is_reporter: !!viewerUserId && s.reporter_user_id === viewerUserId,
@@ -173,6 +173,43 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
     for (const uid of empf) {
       social.pushNotification({ userId: uid, type: 'shortage_bestaetigt', actorUserId, refType: 'wirkstoff', refId: s.wirkstoff, label: `${s.wirkstoff} · ${s.country || ''} · ${n}` });
     }
+    return true;
+  }
+
+  // Auffälligkeiten einer aktiven Apotheken-Meldung (Moderation). null = nicht prüfbar.
+  const optVonWem = options.vonWem || (() => null);
+  const moderatoren = options.moderatoren || (() => []);
+  function pruefSignale(s, vonWem = optVonWem) {
+    if (s.provenance !== 'community' || !['kritisch', 'eingeschraenkt'].includes(s.status) || aktualitaet(s, today()).stufe === 'veraltet') return null;
+    const best = s.confirmations || [];
+    if (!best.length) return null;
+    const jetzt = vertrauen.jetzt();
+    const angelegt = (uid) => { const t = Date.parse((uid && vertrauen.kontoSeit(uid)) || ''); return Number.isNaN(t) ? null : t; };
+    const wer = (uid, rolle) => {
+      const p = uid ? social.getProfile(uid) : null; const t = angelegt(uid);
+      return { rolle, handle: p ? p.handle : null, name: p ? p.display_name : null, verifiziert: !!(p && p.verified), alter_stunden: t == null ? null : Math.max(0, Math.floor((jetzt - t) / 3600000)), eingeladen_von_meldender: rolle === 'bestaetigt' && !!s.reporter_user_id && vonWem(uid) === s.reporter_user_id };
+    };
+    const leute = [wer(s.reporter_user_id, 'meldet'), ...best.map((u) => wer(u, 'bestaetigt'))];
+    const signale = [];
+    const neu = leute.filter((l) => l.alter_stunden != null && l.alter_stunden < vertrauen.abStunden).length;
+    if (neu) signale.push({ art: 'neue_konten', n: neu });
+    const eing = leute.filter((l) => l.eingeladen_von_meldender).length;
+    if (eing) signale.push({ art: 'eingeladen', n: eing });
+    // Bestätigende, deren Konto binnen einer Stunde nach einem anderen Beteiligten entstand.
+    const zeiten = [s.reporter_user_id, ...best].map(angelegt);
+    const nah = best.filter((u, i) => { const t = zeiten[i + 1]; return t != null && zeiten.some((x, j) => j !== i + 1 && x != null && Math.abs(x - t) < 3600000); }).length;
+    if (nah >= 2) signale.push({ art: 'kurz_nacheinander', n: nah });
+    return { signale, leute };
+  }
+  // Auffällige Meldung erreicht die Schwelle (3 Apotheken): die Moderation
+  // erfährt es, einmal je Meldung — sonst müsste sie die Prüfliste von sich
+  // aus öffnen, und die 24 Stunden vergingen ungesehen.
+  function pruefungMelden(s, actorUserId) {
+    if (1 + (s.confirmations || []).length < BESTAETIGT_AB_APOTHEKEN || shortagesRepo.wasPruefGemeldet(s.id)) return false;
+    const p = pruefSignale(s);
+    if (!p || !p.signale.length) return false;
+    shortagesRepo.markPruefGemeldet(s.id);
+    for (const uid of moderatoren()) social.pushNotification({ userId: uid, type: 'meldung_pruefen', actorUserId, refType: 'shortage', refId: s.id, label: `${s.wirkstoff} · ${s.country || ''}` });
     return true;
   }
 
@@ -276,7 +313,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       // Schwelle „bestätigt" erreicht (einmal je Meldung): Beobachter:innen im
       // Land erfahren, dass aus einem Hinweis ein von mehreren Apotheken
       // bestätigter Engpass wurde — klar als nicht amtlich gekennzeichnet.
-      if (grew) bestaetigtMelden(updated, userId);
+      if (grew) { bestaetigtMelden(updated, userId); pruefungMelden(updated, userId); }
       return decorate(updated, userId);
     },
     // Bestätigung zurücknehmen (Fehlklick/Wieder-lieferbar bei uns) — Gegenstück zu confirmShortage.
@@ -434,32 +471,13 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
     //  In der Zeit soll die Moderation SEHEN, was auffällt — sonst ist die
     //  Verzögerung bloß ein Warten. Signale, keine Urteile: Kolleg:innen, die
     //  sich gegenseitig einladen und am selben Tag anlegen, sind oft echt.
-    pruefliste(modUserId, { vonWem = () => null } = {}) {
+    pruefliste(modUserId, { vonWem = optVonWem } = {}) {
       requireModerator(modUserId);
-      const jetzt = vertrauen.jetzt();
-      const alter = (uid) => { const t = Date.parse(vertrauen.kontoSeit(uid) || ''); return Number.isNaN(t) ? null : Math.max(0, Math.floor((jetzt - t) / 3600000)); };
-      const angelegt = (uid) => { const t = Date.parse(vertrauen.kontoSeit(uid) || ''); return Number.isNaN(t) ? null : t; };
       const out = [];
       for (const s of shortagesRepo.list()) {
-        if (s.provenance !== 'community' || !['kritisch', 'eingeschraenkt'].includes(s.status) || aktualitaet(s, today()).stufe === 'veraltet') continue;
-        const best = s.confirmations || [];
-        if (!best.length) continue;
-        const wer = (uid, rolle) => {
-          const p = uid ? social.getProfile(uid) : null;
-          return { rolle, handle: p ? p.handle : null, name: p ? p.display_name : null, verifiziert: !!(p && p.verified), alter_stunden: uid ? alter(uid) : null, eingeladen_von_meldender: rolle === 'bestaetigt' && !!s.reporter_user_id && vonWem(uid) === s.reporter_user_id };
-        };
-        const leute = [wer(s.reporter_user_id, 'meldet'), ...best.map((u) => wer(u, 'bestaetigt'))];
-        const signale = [];
-        const neu = leute.filter((l) => l.alter_stunden != null && l.alter_stunden < vertrauen.abStunden).length;
-        if (neu) signale.push({ art: 'neue_konten', n: neu });
-        const eing = leute.filter((l) => l.eingeladen_von_meldender).length;
-        if (eing) signale.push({ art: 'eingeladen', n: eing });
-        // Bestätigende, deren Konto binnen einer Stunde nach einem anderen Beteiligten entstand.
-        const zeiten = [s.reporter_user_id, ...best].map(angelegt);
-        const nah = best.filter((u, i) => { const t = zeiten[i + 1]; return t != null && zeiten.some((x, j) => j !== i + 1 && x != null && Math.abs(x - t) < 3600000); }).length;
-        if (nah >= 2) signale.push({ art: 'kurz_nacheinander', n: nah });
-        if (!signale.length) continue;
-        out.push({ id: s.id, wirkstoff: s.wirkstoff, bezeichnung: s.bezeichnung, land: s.country || null, status: s.status, gemeldet_am: s.gemeldet_am, apotheken: 1 + best.length, bestaetigt: istBestaetigt(s, today()), signale, beteiligte: leute });
+        const p = pruefSignale(s, vonWem);
+        if (!p || !p.signale.length) continue;
+        out.push({ id: s.id, wirkstoff: s.wirkstoff, bezeichnung: s.bezeichnung, land: s.country || null, status: s.status, gemeldet_am: s.gemeldet_am, apotheken: 1 + (s.confirmations || []).length, bestaetigt: istBestaetigt(s, today()), signale: p.signale, beteiligte: p.leute });
       }
       return out.sort((a, b) => (b.bestaetigt - a.bestaetigt) || (b.signale.length - a.signale.length));
     },

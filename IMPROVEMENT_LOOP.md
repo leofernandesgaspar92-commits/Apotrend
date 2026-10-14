@@ -2724,3 +2724,15 @@ die Meldende, kein „wieder verfügbar"). Routen `/api/mod/meldungen…`. Karte
 Moderation, Entfernen ohne Beobachter-Hinweis; HTTP mit frischen Konten). Browser-Audit
 „Meldungsprüfung". **Gegenproben:** Entfernen über wieder-lieferbar; Einladungs-Signal fehlt; ohne
 Moderations-Prüfung — jede schlägt an.
+
+### Cycle · Moderation von selbst informiert + Startklar-Warnung Schein-Konten-Schutz (2026-10-14)
+
+**WORK.** `pruefSignale` aus der Prüfliste gelöst (eine Logik für Liste und Hinweis).
+`pruefungMelden`: Erreicht eine auffällige Apotheken-Meldung 3 Beteiligte, bekommen alle
+Moderator:innen einmal `meldung_pruefen` (Klick öffnet die Moderation). Startklar: „Schutz vor
+Schein-Konten ist abgeschaltet" (fehlt), wenn `APOPULSE_BESTAETIGUNG_AB_STUNDEN` < 24 gesetzt ist.
+Interne Merker (`pruef_gemeldet`, `bestaetigt_gemeldet`) gehen nicht mehr in API-Antworten.
+
+**Tests.** `meldungs-pruefung.test.js` erweitert (genau ein Hinweis, kein Doppel nach
+Zurücknehmen/Neu-Bestätigen; Startklar 0 → fehlt, ungesetzt/48 → nichts). **Gegenproben:** ohne
+Hinweis; ohne Einmal-Sperre; Startklar stumm — jede schlägt an.

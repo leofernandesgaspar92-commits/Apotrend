@@ -192,7 +192,12 @@ function pushAn(userId, n) {
 const referenzDaten = /^(an|on|true)$/i.test(String(process.env.APOPULSE_REFERENCE_DATA || '').trim());
 const seedMarkt = referenzDaten && !restoring;
 const shortagesRepo = createShortagesRepo({ seed: seedMarkt });
-const shortages = createShortagesService(shortagesRepo, social, { hasPremium: (userId) => payments.hasFeature(userId, 'premium') });
+const shortages = createShortagesService(shortagesRepo, social, {
+  hasPremium: (userId) => payments.hasFeature(userId, 'premium'),
+  // Moderation bei auffälligen Apotheken-Meldungen benachrichtigen (services/shortages.js, pruefungMelden).
+  moderatoren: () => socialRepo.listProfiles().filter((p) => social.isModerator(p.user_id)).map((p) => p.user_id),
+  vonWem: (uid) => einladungen.vonWem(uid), // einladungen wird weiter unten angelegt; Aufruf erst zur Laufzeit
+});
 // „Bestätigt" zählt nur Konten ab ZAEHLT_AB_STUNDEN Alter (services/shortages.js) — gegen Schein-Apotheken.
 // APOPULSE_BESTAETIGUNG_AB_STUNDEN: nur für Tests (0), im Betrieb nicht setzen.
 vertrauenEinstellen({
@@ -1835,7 +1840,7 @@ const routes = [
   // ── Moderation (nur Redaktions-/Admin-Konten) ──
   // Prüfliste der Apotheken-Meldungen (services/shortages.js, pruefliste): neue Konten,
   // von der Meldenden eingeladene Bestätigende, kurz nacheinander angelegte Konten.
-  ['GET', /^\/api\/mod\/meldungen$/, true, async ({ userId }) => ({ meldungen: shortages.pruefliste(userId, { vonWem: (uid) => einladungen.vonWem(uid) }) })],
+  ['GET', /^\/api\/mod\/meldungen$/, true, async ({ userId }) => ({ meldungen: shortages.pruefliste(userId) })],
   ['POST', /^\/api\/mod\/meldungen\/([^/]+)\/bestaetigung-entfernen$/, true, async ({ userId, params, body }) => shortages.modBestaetigungEntfernen(userId, params[0], body.handle)],
   ['POST', /^\/api\/mod\/meldungen\/([^/]+)\/entfernen$/, true, async ({ userId, params }) => shortages.modEntfernen(userId, params[0])],
   ['GET', /^\/api\/reports$/, true, async ({ userId }) => ({ reports: social.moderationQueue(userId) })],

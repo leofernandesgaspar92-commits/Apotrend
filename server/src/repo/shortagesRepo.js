@@ -197,6 +197,8 @@ export function createShortagesRepo({ seed = true, today = null } = {}) {
     markErinnert(id) { const s = shortages.get(id); if (s) s.erinnert = true; },
     wasBestaetigtGemeldet(id) { const s = shortages.get(id); return !!(s && s.bestaetigt_gemeldet); },
     markBestaetigtGemeldet(id) { const s = shortages.get(id); if (s) s.bestaetigt_gemeldet = true; },
+    wasPruefGemeldet(id) { const s = shortages.get(id); return !!(s && s.pruef_gemeldet); },
+    markPruefGemeldet(id) { const s = shortages.get(id); if (s) s.pruef_gemeldet = true; },
     markConfirmNotified(id, userId) { const s = shortages.get(id); if (!s) return; if (!Array.isArray(s.notified_confirmers)) s.notified_confirmers = []; if (!s.notified_confirmers.includes(userId)) s.notified_confirmers.push(userId); },
 
     // ── Beobachtungsliste (Wirkstoffe je Nutzer) ──

@@ -221,6 +221,9 @@ Bisher reichten zwei frisch angelegte Schein-Apotheken, um jede Meldung so ersch
   Kolleg:innen laden sich oft gegenseitig ein. Die Moderation kann einzelne Bestätigungen entfernen
   oder die Meldung **als falsch entfernen**. Dann erfährt es die Meldende, und Beobachter:innen
   bekommen *kein* „wieder verfügbar". Das alte „Auflösen" hätte genau das fälschlich gemeldet.
+  Erreicht eine auffällige Meldung 3 beteiligte Apotheken, bekommt die Moderation **von selbst**
+  eine Benachrichtigung („Check a conspicuous pharmacy report"), einmal je Meldung.
+- **Startklar** meldet „fehlt", falls `APOPULSE_BESTAETIGUNG_AB_STUNDEN` im Betrieb gesetzt ist.
   Geprüft durch `server/test/meldungs-pruefung.test.js` und den Browser-Audit-Block „Meldungsprüfung".
 
 Geprüft durch `server/test/schein-konten.test.js` (mit Uhr).

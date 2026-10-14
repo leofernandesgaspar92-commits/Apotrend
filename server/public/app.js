@@ -9095,7 +9095,7 @@ async function showNotifications() {
   setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_home:'🔴', shortage_ended:'✅', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', shortage_abroad:'🌍', shortage_bestaetigt:'🤝', shortage_noch_aktuell:'⏰', einladung:'👥', shortage_entfernt:'🛡️', premium_ablauf:'⏳', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_home:'🔴', shortage_ended:'✅', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', shortage_abroad:'🌍', shortage_bestaetigt:'🤝', shortage_noch_aktuell:'⏰', einladung:'👥', shortage_entfernt:'🛡️', meldung_pruefen:'🛡️', premium_ablauf:'⏳', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️' };
   app.innerHTML = '';
   const procCount = d.notifications.filter(n => NOTIF_PROCUREMENT.has(n.type)).length;
   const showFilter = d.notifications.length >= 5 && procCount > 0 && procCount < d.notifications.length;
@@ -9128,7 +9128,7 @@ async function showNotifications() {
     const who = n.actor ? n.actor.display_name : t('notif_someone');
     // Systemmeldungen ohne handelnde Person: Hier hat niemand etwas getan,
     // eine Behoerde hat gemeldet. „Jemand hat …" waere schlicht falsch.
-    const noWho = n.type === 'shortage_entfernt' || n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'shortage_bestaetigt' || n.type === 'shortage_noch_aktuell' || n.type === 'shortage_home' || n.type === 'shortage_ended' || /^anzeige_/.test(n.type) || n.type === 'premium_ablauf' || n.type === 'payment_confirmed' || n.type === 'payment_rejected';
+    const noWho = n.type === 'shortage_entfernt' || n.type === 'meldung_pruefen' || n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'shortage_bestaetigt' || n.type === 'shortage_noch_aktuell' || n.type === 'shortage_home' || n.type === 'shortage_ended' || /^anzeige_/.test(n.type) || n.type === 'premium_ablauf' || n.type === 'payment_confirmed' || n.type === 'payment_rejected';
     // Profilbild der handelnden Person (wer) + Typ-Emoji (was) — auf einen Blick erkennbar,
     // konsistent zu Feed/Verzeichnis/Suche. Ohne Person (System-Meldung) nur das Emoji.
     const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:var(--ok-bg)'}">
@@ -9142,6 +9142,7 @@ async function showNotifications() {
     row.onclick = () => {
       if (!n.read) { api('POST',`/api/notifications/${n.id}/read`).then(refreshNotifCount).catch(()=>{}); }
       if ((n.type === 'follow' || n.type === 'einladung') && n.actor) { mainScreen().then(()=>openProfile(n.actor.handle)); }
+      else if (n.type === 'meldung_pruefen') { showModeration(); }
       else if (n.type === 'dm' && n.ref_id) { openDmThread(n.ref_id); }
       else if (n.type === 'exchange_offer' || n.type === 'exchange_want' || n.type === 'watch_offer') {
         mainScreen().then(()=>{ exchangeQuery = (n.label||'').split(/\s+/)[0]; exchangeFilter = n.type==='watch_offer'?'biete':''; exchangeBL=''; tab='exchange';
