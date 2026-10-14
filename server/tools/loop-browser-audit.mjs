@@ -1797,6 +1797,41 @@ async function main() {
     await ohneJs.close(); await ctx.close();
   }
 
+  // ── Moderation: Apotheken-Meldungen prüfen (Signale in Klartext, Entfernen ohne „wieder verfügbar") ──
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    const MP = { meldungen: [{ id: 'mp1', wirkstoff: 'Oxytocin', bezeichnung: 'Oxytocin 10 IU', land: 'UG', status: 'kritisch', apotheken: 3, bestaetigt: false,
+      signale: [{ art: 'neue_konten', n: 2 }, { art: 'eingeladen', n: 2 }, { art: 'kurz_nacheinander', n: 2 }],
+      beteiligte: [{ rolle: 'meldet', handle: 'kampala_apo', alter_stunden: 400, verifiziert: true }, { rolle: 'bestaetigt', handle: 'schein_eins', alter_stunden: 2, eingeladen_von_meldender: true }, { rolle: 'bestaetigt', handle: 'schein_zwei', alter_stunden: 2, eingeladen_von_meldender: true }] }] };
+    const posts = [];
+    await page.route('**/api/mod/meldungen', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MP) }));
+    await page.route('**/api/mod/meldungen/*/*', (r) => { posts.push(new URL(r.request().url()).pathname); return r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }); });
+    // Eigenes Konto aus Uganda: Die geprüften Texte sind die englischen.
+    const regUG = await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Mod UG', email: `mpug_${Date.now().toString(36)}@ex.com`, password: 'Passwort123!', accountType: 'pharmacy', country: 'UG' }) });
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, regUG.token);
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(400);
+    await page.evaluate(() => { app.innerHTML = ''; return meldungsPruefung(app); }); await page.waitForTimeout(400);
+    const k = page.locator('[data-mpkarte="mp1"]');
+    if (!(await k.count())) findings.push('Meldungsprüfung: Karte erscheint nicht');
+    else {
+      const text = await k.innerText();
+      for (const s of ['younger than 24 hours', 'the reporter invited', 'within one hour', 'invited by the reporter', 'account 2 h old', 'account 16 days old'])
+        if (!text.includes(s)) findings.push(`Meldungsprüfung: „${s}" fehlt`);
+      for (const b of await k.locator('button').all()) if ((await b.boundingBox()).height < 44) findings.push('Meldungsprüfung: Knopf kleiner als 44 px');
+      if (await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)) findings.push('Meldungsprüfung: Querscrollen');
+      page.once('dialog', (d) => d.accept());
+      await k.locator('[data-mpbest="schein_eins"]').click(); await page.waitForTimeout(500);
+      page.once('dialog', (d) => { if (!/Watchers do NOT get/.test(d.message())) findings.push('Meldungsprüfung: Rückfrage erklärt die Folgen nicht'); d.accept(); });
+      await page.locator('[data-mpkarte="mp1"] [data-mpentfernen]').click(); await page.waitForTimeout(500);
+      if (!posts.includes('/api/mod/meldungen/mp1/bestaetigung-entfernen') || !posts.includes('/api/mod/meldungen/mp1/entfernen')) findings.push(`Meldungsprüfung: Aktionen kommen nicht an (${posts.join(', ')})`);
+    }
+    for (const f of fehler) findings.push('Meldungsprüfung: JS-Fehler ' + f);
+    if (!findings.some((f) => f.startsWith('Meldungsprüfung'))) console.log('✓ Meldungsprüfung: Signale und Kontoalter in Klartext, Bestätigung entfernen und „als falsch entfernen" mit erklärender Rückfrage');
+    await ctx.close();
+  }
+
   // ── Startklar-Check (Redaktion): offene Punkte oben, aufklappbar, Handy ───
   {
     const { startklar } = await import('../src/services/startklar.js');

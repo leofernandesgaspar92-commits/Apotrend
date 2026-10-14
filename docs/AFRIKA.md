@@ -215,5 +215,12 @@ Bisher reichten zwei frisch angelegte Schein-Apotheken, um jede Meldung so ersch
   Menschen hinter einer Adresse, und welcher Eintrag hinter Render die echte Adresse ist, ist von
   hier nicht sicher prüfbar.
 - `APOPULSE_BESTAETIGUNG_AB_STUNDEN` gibt es **nur für Tests** (0). Im Betrieb nicht setzen.
+- **Moderation → „Apotheken-Meldungen prüfen":** Hier stehen die Meldungen mit Auffälligkeiten:
+  Konten jünger als 24 Stunden, Bestätigende, die die Meldende selbst eingeladen hat, und Konten,
+  die binnen einer Stunde nacheinander angelegt wurden. Das sind Signale, keine Urteile, denn
+  Kolleg:innen laden sich oft gegenseitig ein. Die Moderation kann einzelne Bestätigungen entfernen
+  oder die Meldung **als falsch entfernen**. Dann erfährt es die Meldende, und Beobachter:innen
+  bekommen *kein* „wieder verfügbar". Das alte „Auflösen" hätte genau das fälschlich gemeldet.
+  Geprüft durch `server/test/meldungs-pruefung.test.js` und den Browser-Audit-Block „Meldungsprüfung".
 
 Geprüft durch `server/test/schein-konten.test.js` (mit Uhr).

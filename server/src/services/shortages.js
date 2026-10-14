@@ -176,6 +176,10 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
     return true;
   }
 
+  function requireModerator(userId) {
+    if (!social.isModerator(userId)) throw new AppError('forbidden', 'Nur Moderation.', 403);
+  }
+
   function requireProfessional(userId) {
     const prof = social.getProfile(userId);
     if (prof && prof.account_type === 'private') {
@@ -425,6 +429,59 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       }
       return decorate(updated, userId);
     },
+    // ── Moderation: Prüfliste für Apotheken-Meldungen ──────────────────────
+    //  Die 24-Stunden-Regel (zaehlendeApotheken) verzögert Schein-Konten nur.
+    //  In der Zeit soll die Moderation SEHEN, was auffällt — sonst ist die
+    //  Verzögerung bloß ein Warten. Signale, keine Urteile: Kolleg:innen, die
+    //  sich gegenseitig einladen und am selben Tag anlegen, sind oft echt.
+    pruefliste(modUserId, { vonWem = () => null } = {}) {
+      requireModerator(modUserId);
+      const jetzt = vertrauen.jetzt();
+      const alter = (uid) => { const t = Date.parse(vertrauen.kontoSeit(uid) || ''); return Number.isNaN(t) ? null : Math.max(0, Math.floor((jetzt - t) / 3600000)); };
+      const angelegt = (uid) => { const t = Date.parse(vertrauen.kontoSeit(uid) || ''); return Number.isNaN(t) ? null : t; };
+      const out = [];
+      for (const s of shortagesRepo.list()) {
+        if (s.provenance !== 'community' || !['kritisch', 'eingeschraenkt'].includes(s.status) || aktualitaet(s, today()).stufe === 'veraltet') continue;
+        const best = s.confirmations || [];
+        if (!best.length) continue;
+        const wer = (uid, rolle) => {
+          const p = uid ? social.getProfile(uid) : null;
+          return { rolle, handle: p ? p.handle : null, name: p ? p.display_name : null, verifiziert: !!(p && p.verified), alter_stunden: uid ? alter(uid) : null, eingeladen_von_meldender: rolle === 'bestaetigt' && !!s.reporter_user_id && vonWem(uid) === s.reporter_user_id };
+        };
+        const leute = [wer(s.reporter_user_id, 'meldet'), ...best.map((u) => wer(u, 'bestaetigt'))];
+        const signale = [];
+        const neu = leute.filter((l) => l.alter_stunden != null && l.alter_stunden < vertrauen.abStunden).length;
+        if (neu) signale.push({ art: 'neue_konten', n: neu });
+        const eing = leute.filter((l) => l.eingeladen_von_meldender).length;
+        if (eing) signale.push({ art: 'eingeladen', n: eing });
+        // Bestätigende, deren Konto binnen einer Stunde nach einem anderen Beteiligten entstand.
+        const zeiten = [s.reporter_user_id, ...best].map(angelegt);
+        const nah = best.filter((u, i) => { const t = zeiten[i + 1]; return t != null && zeiten.some((x, j) => j !== i + 1 && x != null && Math.abs(x - t) < 3600000); }).length;
+        if (nah >= 2) signale.push({ art: 'kurz_nacheinander', n: nah });
+        if (!signale.length) continue;
+        out.push({ id: s.id, wirkstoff: s.wirkstoff, bezeichnung: s.bezeichnung, land: s.country || null, status: s.status, gemeldet_am: s.gemeldet_am, apotheken: 1 + best.length, bestaetigt: istBestaetigt(s, today()), signale, beteiligte: leute });
+      }
+      return out.sort((a, b) => (b.bestaetigt - a.bestaetigt) || (b.signale.length - a.signale.length));
+    },
+    // Moderation: eine Bestätigung entfernen (z. B. Schein-Konto).
+    modBestaetigungEntfernen(modUserId, id, handle) {
+      requireModerator(modUserId);
+      const p = social.getProfile(String(handle || ''));
+      if (!p) throw new AppError('profil_unbekannt', 'Konto nicht gefunden.', 404);
+      const s = shortagesRepo.get(id);
+      if (!s || s.provenance !== 'community') throw new AppError('shortage_not_community', 'Nur Apotheken-Meldungen.', 404);
+      return decorate(shortagesRepo.unconfirm(id, p.user_id), modUserId);
+    },
+    // Moderation: falsche Meldung entfernen. NICHT über „wieder lieferbar" —
+    // das meldete allen Beobachter:innen „Wieder verfügbar", was falsch wäre.
+    modEntfernen(modUserId, id) {
+      requireModerator(modUserId);
+      const weg = shortagesRepo.remove(id);
+      if (!weg) throw new AppError('shortage_not_community', 'Nur Apotheken-Meldungen können entfernt werden.', 404);
+      if (weg.reporter_user_id) social.pushNotification({ userId: weg.reporter_user_id, type: 'shortage_entfernt', actorUserId: modUserId, refType: 'wirkstoff', refId: weg.wirkstoff, label: `${weg.wirkstoff} · ${weg.country || ''}` });
+      return { ok: true, id };
+    },
+
     // Erinnerung an die Meldende, sobald „noch aktuell?" fällig ist (einmal je Runde).
     erinnern() {
       let n = 0;

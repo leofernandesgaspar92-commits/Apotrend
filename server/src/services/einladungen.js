@@ -48,6 +48,8 @@ export function createEinladungen({ uhr = () => Date.now() } = {}) {
       eingeladen.set(neuId, { von, am: new Date(uhr()).toISOString() });
       return von;
     },
+    /** Wer hat dieses Konto eingeladen? (Moderation: Prüfliste der Meldungen) */
+    vonWem(userId) { const e = eingeladen.get(userId); return e ? e.von : null; },
     anzahl(userId) {
       let n = 0;
       for (const e of eingeladen.values()) if (e.von === userId) n += 1;

@@ -9095,7 +9095,7 @@ async function showNotifications() {
   setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_home:'🔴', shortage_ended:'✅', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', shortage_abroad:'🌍', shortage_bestaetigt:'🤝', shortage_noch_aktuell:'⏰', einladung:'👥', premium_ablauf:'⏳', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_home:'🔴', shortage_ended:'✅', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', shortage_abroad:'🌍', shortage_bestaetigt:'🤝', shortage_noch_aktuell:'⏰', einladung:'👥', shortage_entfernt:'🛡️', premium_ablauf:'⏳', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️' };
   app.innerHTML = '';
   const procCount = d.notifications.filter(n => NOTIF_PROCUREMENT.has(n.type)).length;
   const showFilter = d.notifications.length >= 5 && procCount > 0 && procCount < d.notifications.length;
@@ -9128,7 +9128,7 @@ async function showNotifications() {
     const who = n.actor ? n.actor.display_name : t('notif_someone');
     // Systemmeldungen ohne handelnde Person: Hier hat niemand etwas getan,
     // eine Behoerde hat gemeldet. „Jemand hat …" waere schlicht falsch.
-    const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'shortage_bestaetigt' || n.type === 'shortage_noch_aktuell' || n.type === 'shortage_home' || n.type === 'shortage_ended' || /^anzeige_/.test(n.type) || n.type === 'premium_ablauf' || n.type === 'payment_confirmed' || n.type === 'payment_rejected';
+    const noWho = n.type === 'shortage_entfernt' || n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'shortage_bestaetigt' || n.type === 'shortage_noch_aktuell' || n.type === 'shortage_home' || n.type === 'shortage_ended' || /^anzeige_/.test(n.type) || n.type === 'premium_ablauf' || n.type === 'payment_confirmed' || n.type === 'payment_rejected';
     // Profilbild der handelnden Person (wer) + Typ-Emoji (was) — auf einen Blick erkennbar,
     // konsistent zu Feed/Verzeichnis/Suche. Ohne Person (System-Meldung) nur das Emoji.
     const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:var(--ok-bg)'}">
@@ -9501,6 +9501,56 @@ async function openDatenquellen() {
   };
 }
 
+// ── Apotheken-Meldungen prüfen (Moderation) ─────────────────────────────────
+// Neue Konten zählen 24 Stunden lang nicht für „bestätigt" — diese Liste zeigt
+// in der Zeit, was auffällt. Signale, keine Urteile: Kolleg:innen laden sich
+// gegenseitig ein und legen oft am selben Tag Konten an.
+async function meldungsPruefung(ziel) {
+  let d;
+  try { d = await api('GET', '/api/mod/meldungen'); } catch { return; }
+  const liste = (d && d.meldungen) || [];
+  const box = el(`<div data-meldpruef></div>`);
+  box.appendChild(el(`<div class="muted" style="margin:6px 2px;font-weight:700">${esc(ti('mp_sec', { n: liste.length }))}</div>`));
+  if (!liste.length) box.appendChild(el(`<div class="card muted" data-mpleer>${esc(t('mp_leer'))}</div>`));
+  const signalText = (sg) => sg.art === 'neue_konten' ? (sg.n === 1 ? t('mp_s_neu_1') : ti('mp_s_neu', { n: sg.n }))
+    : sg.art === 'eingeladen' ? (sg.n === 1 ? t('mp_s_eing_1') : ti('mp_s_eing', { n: sg.n }))
+    : ti('mp_s_nah', { n: sg.n });
+  for (const m of liste) {
+    const karte = el(`<div class="card" data-mpkarte="${esc(m.id)}">
+      <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><b style="font-size:17px">${esc(m.wirkstoff)}</b><span class="muted">${esc(m.land ? landLabel(m.land) : '')}</span>
+        <span class="vt-stufe ${m.bestaetigt ? 'vt-ok' : ''}" style="margin:0">${esc(m.bestaetigt ? ti('vt_bestaetigt', { n: m.apotheken }) : ti('vt_einzeln', { n: m.apotheken }))}</span></div>
+      <ul style="margin:8px 0 6px 18px;padding:0;font-size:15px">${m.signale.map((sg) => `<li style="color:var(--warn-fg);font-weight:600">${esc(signalText(sg))}</li>`).join('')}</ul>
+      <div data-mpleute></div>
+      <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><button class="small" data-mpentfernen style="min-height:44px;background:var(--crit-fg);border-color:var(--crit-fg)">${esc(t('mp_entfernen'))}</button></div>
+    </div>`);
+    const leute = karte.querySelector('[data-mpleute]');
+    for (const p of m.beteiligte) {
+      const merkmale = [
+        p.rolle === 'meldet' ? t('mp_meldet') : t('mp_bestaetigt'),
+        p.alter_stunden == null ? null : p.alter_stunden < 48 ? ti('mp_alter_std', { n: p.alter_stunden }) : ti('mp_alter_tage', { n: Math.floor(p.alter_stunden / 24) }),
+        p.verifiziert ? t('mp_verifiziert') : null,
+        p.eingeladen_von_meldender ? t('mp_von_meldender') : null,
+      ].filter(Boolean).join(' · ');
+      const zeile = el(`<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--line)">
+        <span style="flex:1;min-width:180px"><b>@${esc(p.handle || '?')}</b> <span class="muted">${esc(merkmale)}</span></span>
+        ${p.rolle === 'bestaetigt' && p.handle ? `<button class="ghost small" data-mpbest="${esc(p.handle)}" style="min-height:44px">${esc(t('mp_best_entfernen'))}</button>` : ''}</div>`);
+      const b = zeile.querySelector('[data-mpbest]');
+      if (b) b.onclick = async () => {
+        if (!confirm(ti('mp_best_frage', { h: p.handle }))) return;
+        try { await api('POST', `/api/mod/meldungen/${encodeURIComponent(m.id)}/bestaetigung-entfernen`, { handle: p.handle }); box.remove(); meldungsPruefung(ziel); } catch (e) { alert(e.message); }
+      };
+      leute.appendChild(zeile);
+    }
+    karte.querySelector('[data-mpentfernen]').onclick = async () => {
+      if (!confirm(ti('mp_entfernen_frage', { w: m.wirkstoff }))) return;
+      try { await api('POST', `/api/mod/meldungen/${encodeURIComponent(m.id)}/entfernen`); box.remove(); meldungsPruefung(ziel); } catch (e) { alert(e.message); }
+    };
+    box.appendChild(karte);
+  }
+  const vorher = ziel.querySelector('[data-meldpruef]');
+  if (vorher) vorher.replaceWith(box); else ziel.appendChild(box);
+}
+
 async function showModeration() {
   setDocTitle(t('md_doc'));
   app.innerHTML = '<div class="loading">…</div>';
@@ -9527,6 +9577,7 @@ async function showModeration() {
       ${mtile('👥', comm, t('md_community'), 'var(--warn-fg)')}
     </div></div>`);
   anzeigenPruefung(app); // Anzeigen prüfen (lädt selbst; erscheint unter dem Kopf)
+  meldungsPruefung(app); // Apotheken-Meldungen mit Auffälligkeiten (lädt selbst)
   head.querySelector('#back').onclick = mainScreen;
   head.querySelector('#dqOpen').onclick = openDatenquellen;
   app.appendChild(head);

@@ -1833,6 +1833,11 @@ const routes = [
   ['DELETE', /^\/api\/daten-api\/schluessel\/([a-f0-9]{1,24})$/, true, async ({ userId, params }) => datenApi.widerrufen(userId, params[0])],
 
   // ── Moderation (nur Redaktions-/Admin-Konten) ──
+  // Prüfliste der Apotheken-Meldungen (services/shortages.js, pruefliste): neue Konten,
+  // von der Meldenden eingeladene Bestätigende, kurz nacheinander angelegte Konten.
+  ['GET', /^\/api\/mod\/meldungen$/, true, async ({ userId }) => ({ meldungen: shortages.pruefliste(userId, { vonWem: (uid) => einladungen.vonWem(uid) }) })],
+  ['POST', /^\/api\/mod\/meldungen\/([^/]+)\/bestaetigung-entfernen$/, true, async ({ userId, params, body }) => shortages.modBestaetigungEntfernen(userId, params[0], body.handle)],
+  ['POST', /^\/api\/mod\/meldungen\/([^/]+)\/entfernen$/, true, async ({ userId, params }) => shortages.modEntfernen(userId, params[0])],
   ['GET', /^\/api\/reports$/, true, async ({ userId }) => ({ reports: social.moderationQueue(userId) })],
   ['POST', /^\/api\/reports\/([^/]+)\/resolve$/, true, async ({ userId, params, body }) => social.resolveReport(userId, params[0], { remove: !!body.remove })],
 

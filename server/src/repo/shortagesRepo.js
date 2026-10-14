@@ -168,6 +168,13 @@ export function createShortagesRepo({ seed = true, today = null } = {}) {
       if (userId && userId !== s.reporter_user_id && !s.confirmations.includes(userId)) { s.confirmations.push(userId); s.zuletzt_aktiv = am; s.erinnert = false; }
       return { ...s, confirmations: [...s.confirmations] };
     },
+    // Moderation: falsche Apotheken-Meldung ganz entfernen (nur Meldungen aus Apotheken).
+    remove(id) {
+      const s = shortages.get(id);
+      if (!s || s.provenance !== 'community') return null;
+      shortages.delete(id);
+      return { ...s, confirmations: [...(s.confirmations || [])] };
+    },
     unconfirm(id, userId) {
       const s = shortages.get(id);
       if (!s) return null;

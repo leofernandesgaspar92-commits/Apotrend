@@ -2706,3 +2706,21 @@ bestätigt, Alarm genau einmal, Lage zählt; HTTP-Voreinstellung; 21 Fehlversuch
 XFF → 429). Bestehende HTTP-Tests und der Browser-Audit mit `APOPULSE_BESTAETIGUNG_AB_STUNDEN=0`.
 
 **Gegenproben (jede schlägt an):** Alter ignoriert; kein Nachholen; Login nur je IP; Lage zählt alle.
+
+### Cycle · Moderation: Apotheken-Meldungen prüfen (2026-10-14)
+
+**Warum.** Die 24-Stunden-Regel verzögert Schein-Konten nur; die Doku versprach, dass die
+Moderation in der Zeit sieht, was passiert, aber eine Ansicht dafür gab es nicht. Außerdem hätte das
+vorhandene Moderations-„Auflösen" allen Beobachter:innen „wieder verfügbar" gemeldet.
+
+**WORK.** `shortages.pruefliste` (nur Moderation): aktive Apotheken-Meldungen mit Signalen
+`neue_konten`, `eingeladen` (Bestätigende von der Meldenden eingeladen, `einladungen.vonWem`) und
+`kurz_nacheinander`; je Beteiligter Kontoalter, Verifizierung, Einladung.
+`modBestaetigungEntfernen`, `modEntfernen` (Repo `remove`, Benachrichtigung `shortage_entfernt` an
+die Meldende, kein „wieder verfügbar"). Routen `/api/mod/meldungen…`. Karte in der Moderation
+(de/en/pt).
+
+**Tests.** `meldungs-pruefung.test.js` (Uhr; auffällig vs. unauffällig, Signale exakt, 403 ohne
+Moderation, Entfernen ohne Beobachter-Hinweis; HTTP mit frischen Konten). Browser-Audit
+„Meldungsprüfung". **Gegenproben:** Entfernen über wieder-lieferbar; Einladungs-Signal fehlt; ohne
+Moderations-Prüfung — jede schlägt an.
