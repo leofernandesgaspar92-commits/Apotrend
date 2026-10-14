@@ -2579,3 +2579,24 @@ Behördenliste mit Apotheken-Zahlen. de/en/pt.
 
 **Gegenproben (jede schlägt an):** Apotheken als amtlich; Schwelle ignoriert; Lage ohne
 Apotheken-Zahlen.
+
+### Cycle · Aktualität von Apotheken-Meldungen (2026-10-14)
+
+**Warum:** Eine Apotheken-Meldung blieb ewig „nicht lieferbar". In Ländern, die fast nur solche
+Meldungen haben, sahen alte Meldungen aus wie neue — und niemand außer der Redaktion konnte
+„wieder lieferbar" setzen.
+
+**WORK.** `aktualitaet(s, heute)`: ab 14 Tagen ohne Bestätigung „pruefen", ab 30 „veraltet"
+(amtliche Zeilen immer aktuell). Bestätigen und „Still short" frischen auf (`zuletzt_aktiv`).
+Veraltete: nicht „bestätigt", nicht in Engpasslage, Daten-Schnittstelle, Teilseiten,
+Sortiments-Check. `wiederLieferbar` nur für Meldende/Bestätigende/Redaktion, informiert
+Beobachter:innen im Land. Job `aktualitaet` (6 h) erinnert die Meldende einmal je Runde
+(`shortage_noch_aktuell`). Routen `/noch-aktuell`, `/wieder-lieferbar`. Karte zeigt Hinweis und
+Knöpfe. Audit-Präfix „Meldungs-Aktualität" (kollidierte mit dem bestehenden „Aktualität").
+
+**Tests.** `aktualitaet.test.js` (Stufen; Ablauf mit vorgespulter Uhr: Erinnerung einmal,
+Still short frischt auf und zählt, nach 30 Tagen veraltet, nicht bestätigt, nicht in der
+Engpasslage; Wieder lieferbar nur Beteiligte, Beobachter:innen informiert). Browser-Audit.
+
+**Gegenproben (jede schlägt an):** Erinnerung ohne Merker; veraltet bleibt bestätigt; Lage
+zählt veraltete; jeder darf „wieder lieferbar".

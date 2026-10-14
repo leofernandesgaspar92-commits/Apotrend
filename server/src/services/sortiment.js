@@ -25,6 +25,7 @@
 // ============================================================================
 
 import { wirkstoffSchluessel } from '../domain/inn.js';
+import { aktualitaet } from './shortages.js';
 import { anzeigeName } from '../domain/anzeigename.js';
 
 export const FREI_ZEILEN = 15;
@@ -132,7 +133,8 @@ export function createSortiment({ shortagesRepo, chronik, istPremium }) {
       const grenze = premium ? MAX_ZEILEN : FREI_ZEILEN;
       const zuPruefen = alle.slice(0, grenze);
       const v = verzeichnis(cc);
-      const hier = shortagesRepo.list({ country: cc }).filter((z) => AKTIV.has(z.status) && z.wirkstoff && (!zeilenFilter || zeilenFilter(z)));
+      const hier = shortagesRepo.list({ country: cc }).filter((z) => AKTIV.has(z.status) && z.wirkstoff && (!zeilenFilter || zeilenFilter(z))
+        && aktualitaet(z, new Date().toISOString().slice(0, 10)).stufe !== 'veraltet'); // veraltete Apotheken-Meldungen nicht
       const beobachtet = new Set(shortagesRepo.listWatch(userId).map((w) => wirkstoffSchluessel(w) || w.toLowerCase()));
 
       const gesehen = new Set();

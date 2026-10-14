@@ -90,3 +90,17 @@ Vertrauensstufe — nie als Behördenaussage:
   several pharmacies · not official"
 
 Beispieldaten erscheinen auf Teilseiten nicht mehr.
+
+## Aktualität von Apotheken-Meldungen
+
+Eine Meldung von vor zwei Monaten darf nicht wie eine von heute aussehen:
+
+| Tage ohne Bestätigung | Anzeige | Wirkung |
+|---|---|---|
+| < 14 | — | normal |
+| ab 14 | „Last confirmed 16 days ago — still short?" + Knopf **Still short** | die Meldende bekommt einmal die Erinnerung „Is your report still current?" |
+| ab 30 | grau „Outdated: not confirmed for 31 days — no longer counted" | zählt nicht mehr: nicht „bestätigt", nicht in Engpasslage, Daten-Schnittstelle, Teilseiten, Sortiments-Check |
+
+- **Still short** (jede Fachperson im Land) frischt die Meldung auf und zählt als Bestätigung.
+- **Available again** dürfen nur Meldende, Bestätigende oder die Redaktion — alle, die den Wirkstoff
+  im Land beobachten, werden informiert.

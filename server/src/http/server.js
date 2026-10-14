@@ -50,7 +50,7 @@ import { startklar } from '../services/startklar.js';
 import { createOeffentlicheSeiten } from '../services/oeffentlicheSeiten.js';
 import { createWebPush, pushNachricht, testNachricht, PUSH_TYPEN } from '../services/webPush.js';
 import { createRechnungsnummern } from '../services/rechnungsnummern.js';
-import { BESTAETIGT_AB_APOTHEKEN } from '../services/shortages.js';
+import { BESTAETIGT_AB_APOTHEKEN, aktualitaet } from '../services/shortages.js';
 import { createRechnungen } from '../services/rechnungen.js';
 import { createDatenApi, zugangPruefen, engpassZeile, fuerSchnittstelle, alsCsv } from '../services/datenApi.js';
 import { werbeplaetzeAusUmgebung, ZIELGRUPPEN } from '../data/werbeplaetze.js';
@@ -762,6 +762,7 @@ function lageDaten(cc) {
   const apo = new Map();
   for (const z of shortagesRepo.list({ country: cc })) {
     if (z.provenance !== 'community' || !['kritisch', 'eingeschraenkt'].includes(z.status) || !z.wirkstoff || String(z.country || '').toUpperCase() !== cc) continue;
+    if (aktualitaet(z, new Date().toISOString().slice(0, 10)).stufe === 'veraltet') continue; // 30+ Tage ohne Bestätigung
     const k = z.wirkstoff.trim().toLowerCase();
     apo.set(k, Math.max(apo.get(k) || 0, 1 + (z.confirmations || []).length));
   }
@@ -784,7 +785,7 @@ function wirkstoffLage(cc, name) {
   // daten (reference) gehören gar nicht auf eine öffentliche Seite.
   const amtlich = treffer.filter((z) => z.provenance === 'verified' && !z.reporter_user_id)
     .sort((a, b) => (a.status === 'kritisch' ? -1 : 0) - (b.status === 'kritisch' ? -1 : 0));
-  const apo = treffer.filter((z) => z.provenance === 'community').sort((a, b) => (b.confirmations || []).length - (a.confirmations || []).length);
+  const apo = treffer.filter((z) => z.provenance === 'community' && aktualitaet(z, new Date().toISOString().slice(0, 10)).stufe !== 'veraltet').sort((a, b) => (b.confirmations || []).length - (a.confirmations || []).length);
   const m = amtlich[0]; const c = apo[0];
   const wirkstoff = m ? m.wirkstoff : c ? c.wirkstoff : name;
   const kurz = chronik.kurz(wirkstoff, cc);
@@ -2279,6 +2280,9 @@ const routes = [
     country: userCountry(userId) })],
   ['POST', /^\/api\/shortages\/([^/]+)\/confirm$/, true, async ({ userId, params }) => shortages.confirmShortage(userId, params[0])],
   ['POST', /^\/api\/shortages\/([^/]+)\/unconfirm$/, true, async ({ userId, params }) => shortages.unconfirmShortage(userId, params[0])],
+  // Aktualität von Apotheken-Meldungen: „Still short" / „Wieder lieferbar".
+  ['POST', /^\/api\/shortages\/([^/]+)\/noch-aktuell$/, true, async ({ userId, params }) => shortages.nochAktuell(userId, params[0])],
+  ['POST', /^\/api\/shortages\/([^/]+)\/wieder-lieferbar$/, true, async ({ userId, params }) => shortages.wiederLieferbar(userId, params[0])],
   ['POST', /^\/api\/shortages\/([^/]+)\/resolve$/, true, async ({ userId, params }) => shortages.resolveShortage(userId, params[0])],
   ['POST', /^\/api\/shortages\/([^/]+)\/expected$/, true, async ({ userId, params, body }) => shortages.updateExpectedDate(userId, params[0], body.voraussichtlichBis)],
   ['POST', /^\/api\/shortages\/([^/]+)\/report-update$/, true, async ({ userId, params, body }) => shortages.updateShortageReport(userId, params[0], { status: body.status, grund: body.grund })],
@@ -2722,6 +2726,12 @@ server.listen(PORT, () => {
       run: async () => { const r = await wochenbericht.lauf(); if (r.gesendet) saveSoon(); return r; },
       intervalMs: 3_600_000,
       startDelayMs: 90_000,
+    });
+    // Apotheken-Meldungen: Meldende erinnern, wenn „noch aktuell?" fällig ist.
+    scheduler.add('aktualitaet', {
+      run: async () => { const n = shortages.erinnern(); if (n) saveSoon(); return { erinnert: n }; },
+      intervalMs: 6 * 3_600_000,
+      startDelayMs: 150_000,
     });
     scheduler.add('shortages', {
       run: runShortageIngest,

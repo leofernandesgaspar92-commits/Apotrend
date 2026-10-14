@@ -15,18 +15,19 @@
 //     Behörden je Land als Quelle.
 // ============================================================================
 import { wirkstoffSchluessel } from '../domain/inn.js';
-import { BESTAETIGT_AB_APOTHEKEN } from './shortages.js';
+import { BESTAETIGT_AB_APOTHEKEN, aktualitaet } from './shortages.js';
 
 const AKTIV = new Set(['kritisch', 'eingeschraenkt']);
 
-export function regionLage({ shortagesRepo, chronik, laender, codes }) {
+export function regionLage({ shortagesRepo, chronik, laender, codes, heute = new Date().toISOString().slice(0, 10) }) {
   const alle = shortagesRepo.list();
   const proLand = [];
   const jeWirkstoff = new Map(); // schluessel -> { name, laender: Map(cc -> { status, quelle }) }
   for (const cc of codes) {
     const zeilen = alle.filter((z) => String(z.country || '').toUpperCase() === cc && AKTIV.has(z.status) && z.wirkstoff);
     const amtlich = zeilen.filter((z) => z.provenance === 'verified' && !z.reporter_user_id);
-    const apotheken = zeilen.filter((z) => z.provenance === 'community');
+    // Veraltete Apotheken-Meldungen (30+ Tage ohne Bestätigung) zählen nicht mehr.
+    const apotheken = zeilen.filter((z) => z.provenance === 'community' && aktualitaet(z, heute).stufe !== 'veraltet');
     const amtlichW = new Set(); const apoW = new Set();
     for (const z of amtlich) {
       const k = wirkstoffSchluessel(z.wirkstoff) || z.wirkstoff.toLowerCase();

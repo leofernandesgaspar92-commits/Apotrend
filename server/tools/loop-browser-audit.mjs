@@ -1915,6 +1915,34 @@ async function main() {
     await ctx.close();
   }
 
+  // ── Aktualität: „noch aktuell?" sichtbar, „Wieder lieferbar" wirkt ────────
+  {
+    const u = Date.now().toString(36);
+    const tok = (await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'AK Apo', email: `ak_${u}@ex.com`, password: 'Passwort123!', accountType: 'pharmacy', country: 'ZM' }) })).token;
+    const auth = { 'content-type': 'application/json', authorization: 'Bearer ' + tok };
+    const m = await api('/api/shortages/report', { method: 'POST', headers: auth, body: JSON.stringify({ wirkstoff: 'Amoxicillin', bezeichnung: 'Amoxicillin 500 mg', status: 'kritisch', country: 'ZM' }) });
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    page.on('dialog', (d) => d.accept());
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); localStorage.setItem('apo_ebene_engpaesse', 'land'); }, tok);
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(600);
+    // Zustand „noch aktuell?" (Server-Uhr lässt sich hier nicht vorspulen): Karte direkt zeichnen.
+    const k = await page.evaluate(() => { const c = shortageCard({ id: 'x', wirkstoff: 'Salbutamol', bezeichnung: 'Inhaler', status: 'kritisch', provenance: 'community', apotheken: 1, bestaetigt: false, aktualitaet: 'pruefen', tage_ohne_bestaetigung: 16, confirm_count: 0, country: 'ZM' }); return { text: (c.querySelector('[data-aktualitaet]') || {}).textContent || '', knopf: !!c.querySelector('[data-nochaktuell]') }; });
+    if (!/16 days ago — still short\?/.test(k.text) || !k.knopf) findings.push(`Meldungs-Aktualität: „still short?" oder Knopf fehlt (${k.text})`);
+    await reiterOeffnen(page, 'shortages'); await page.waitForTimeout(900);
+    const wb = page.locator('[data-wiederlieferbar]').first();
+    if (!m || !(await wb.count())) findings.push('Meldungs-Aktualität: Meldende sieht „Available again" nicht');
+    else {
+      await wb.click(); await page.waitForTimeout(900);
+      const st = await page.evaluate(async (id) => { const r = await fetch('/api/shortages?country=ZM', { headers: { authorization: 'Bearer ' + localStorage.getItem('apo_token') } }); const d = await r.json(); return (d.shortages.find((s) => s.id === id) || {}).status; }, m.id);
+      if (st !== 'verfuegbar') findings.push(`Meldungs-Aktualität: „Available again" setzt den Status nicht (${st})`);
+    }
+    for (const f of fehler) findings.push('Meldungs-Aktualität: JS-Fehler ' + f);
+    if (!findings.some((f) => f.startsWith('Meldungs-Aktualität'))) console.log('✓ Meldungs-Aktualität: „Last confirmed 16 days ago — still short?" mit Knopf; „Available again" der Meldenden setzt den Status');
+    await ctx.close();
+  }
+
   // ── Registrierung im Browser: kurz, und ein Fehler verbrennt nichts ──────
   //  Bis 10/2026: sechs Felder (Pflicht-@Handle, Land doppelt), zwei Formulare
   //  untereinander — und ein vergebener Handle machte die E-Mail unbrauchbar.

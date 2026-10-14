@@ -161,11 +161,11 @@ export function createShortagesRepo({ seed = true, today = null } = {}) {
         .map(s => ({ ...s, confirmations: [...(s.confirmations || [])], history: (s.history || []).map(h => ({ ...h })) }));
     },
     // Bestätigung ("auch bei uns") durch eine Apotheke; kein Doppel, nicht der Melder.
-    confirm(id, userId) {
+    confirm(id, userId, am = heute()) {
       const s = shortages.get(id);
       if (!s) return null;
       if (!Array.isArray(s.confirmations)) s.confirmations = [];
-      if (userId && userId !== s.reporter_user_id && !s.confirmations.includes(userId)) s.confirmations.push(userId);
+      if (userId && userId !== s.reporter_user_id && !s.confirmations.includes(userId)) { s.confirmations.push(userId); s.zuletzt_aktiv = am; s.erinnert = false; }
       return { ...s, confirmations: [...s.confirmations] };
     },
     unconfirm(id, userId) {
@@ -177,6 +177,17 @@ export function createShortagesRepo({ seed = true, today = null } = {}) {
     // Dedup der Melder-Benachrichtigung: je (Engpass, Apotheke) nur EINMAL benachrichtigen —
     // auch bei wiederholtem confirm/unconfirm. Wird bei unconfirm bewusst NICHT zurückgesetzt.
     wasConfirmNotified(id, userId) { const s = shortages.get(id); return !!(s && Array.isArray(s.notified_confirmers) && s.notified_confirmers.includes(userId)); },
+    // „Noch aktuell" (Apotheken-Meldung): letzte Aktivität auf heute; wer
+    // bestätigt, zählt — Meldende nur als Auffrischung, nicht doppelt.
+    nochAktuell(id, userId, am = heute()) {
+      const s = shortages.get(id);
+      if (!s) return null;
+      if (!Array.isArray(s.confirmations)) s.confirmations = [];
+      if (userId && userId !== s.reporter_user_id && !s.confirmations.includes(userId)) s.confirmations.push(userId);
+      s.zuletzt_aktiv = am; s.erinnert = false;
+      return { ...s, confirmations: [...s.confirmations] };
+    },
+    markErinnert(id) { const s = shortages.get(id); if (s) s.erinnert = true; },
     wasBestaetigtGemeldet(id) { const s = shortages.get(id); return !!(s && s.bestaetigt_gemeldet); },
     markBestaetigtGemeldet(id) { const s = shortages.get(id); if (s) s.bestaetigt_gemeldet = true; },
     markConfirmNotified(id, userId) { const s = shortages.get(id); if (!s) return; if (!Array.isArray(s.notified_confirmers)) s.notified_confirmers = []; if (!s.notified_confirmers.includes(userId)) s.notified_confirmers.push(userId); },

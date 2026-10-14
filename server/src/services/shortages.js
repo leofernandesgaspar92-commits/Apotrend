@@ -62,6 +62,22 @@ export function weeklyChange(s, today, windowDays = 7) {
 
 /** Ab so vielen Apotheken (Meldende eingeschlossen) gilt eine Meldung als bestätigt. */
 export const BESTAETIGT_AB_APOTHEKEN = 3;
+/** Apotheken-Meldung ohne Bestätigung seit … Tagen: „noch aktuell?" bzw. „veraltet". */
+export const PRUEFEN_NACH_TAGEN = 14;
+export const VERALTET_NACH_TAGEN = 30;
+
+/**
+ * Aktualität einer Apotheken-Meldung (amtliche Zeilen sind immer „aktuell" —
+ * ihre Aktualität kommt aus dem Abruf der Behördenliste).
+ * In Ländern, die fast nur Apotheken-Meldungen haben, darf eine Meldung von vor
+ * zwei Monaten nicht wie eine von heute aussehen.
+ */
+export function aktualitaet(s, today) {
+  if (!s || s.provenance !== 'community' || !['kritisch', 'eingeschraenkt'].includes(s.status)) return { stufe: 'aktuell', tage: null };
+  const seit = s.zuletzt_aktiv || s.gemeldet_am;
+  const tage = seit ? daysBetween(seit, today) : 0;
+  return { stufe: tage >= VERALTET_NACH_TAGEN ? 'veraltet' : tage >= PRUEFEN_NACH_TAGEN ? 'pruefen' : 'aktuell', tage };
+}
 
 export function createShortagesService(shortagesRepo, social, options = {}) {
   // Heutiger Kalendertag (injizierbar für Tests) — Grundlage der Alters-/Fristsignale.
@@ -72,6 +88,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
   function decorate(s, viewerUserId) {
     const confirmations = s.confirmations || [];
     const apotheken = s.provenance === 'community' ? 1 + confirmations.length : 0;
+    const akt = aktualitaet(s, today());
     const reporter = s.reporter_user_id ? social.getProfile(s.reporter_user_id) : null;
     return {
       ...s,
@@ -81,7 +98,9 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       // Vertrauensstufe einer Apotheken-Meldung (nicht amtlich): ab drei
       // Apotheken (Meldende + zwei Bestätigungen) „bestätigt". In Ländern ohne
       // amtliche Liste (große Teile Afrikas) ist das die beste verfügbare Aussage.
-      apotheken, bestaetigt: apotheken >= BESTAETIGT_AB_APOTHEKEN,
+      apotheken, bestaetigt: apotheken >= BESTAETIGT_AB_APOTHEKEN && akt.stufe !== 'veraltet',
+      aktualitaet: akt.stufe, tage_ohne_bestaetigung: akt.tage,
+      erinnert: undefined,
       i_confirmed: !!viewerUserId && confirmations.includes(viewerUserId),
       reporter: reporter ? { handle: reporter.handle, display_name: reporter.display_name, verified: !!reporter.verified } : null,
       is_reporter: !!viewerUserId && s.reporter_user_id === viewerUserId,
@@ -197,7 +216,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       requireProfessional(userId);
       const before = shortagesRepo.get(id);
       if (!before) { const e = new Error('Engpass nicht gefunden.'); e.status = 404; throw e; }
-      const updated = shortagesRepo.confirm(id, userId);
+      const updated = shortagesRepo.confirm(id, userId, today());
       // Melder:in über Bestätigung informieren (soziales Feedback) — aber nur EINMAL je Apotheke,
       // sonst würde ein confirm/unconfirm/confirm-Toggle die Melder:in mit Meldungen fluten.
       const grew = (updated.confirmations || []).length > (before.confirmations || []).length;
@@ -341,6 +360,42 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       }
       // wie die übrigen Mutatoren dekoriert zurückgeben (keine rohen User-IDs nach außen).
       return decorate(updated, actorUserId);
+    },
+
+    // ── Aktualität von Apotheken-Meldungen ────────────────────────────────
+    // „Still short": jede Fachperson im Land frischt auf (und bestätigt damit).
+    nochAktuell(userId, id) {
+      requireProfessional(userId);
+      const s = shortagesRepo.get(id);
+      if (!s) { const e = new Error('Engpass nicht gefunden.'); e.status = 404; throw e; }
+      if (s.provenance !== 'community' || !['kritisch', 'eingeschraenkt'].includes(s.status)) throw new AppError('shortage_not_community', 'Nur offene Meldungen aus Apotheken lassen sich auffrischen.', 409);
+      return decorate(shortagesRepo.nochAktuell(id, userId, today()), userId);
+    },
+    // „Wieder lieferbar": nur wer gemeldet oder bestätigt hat (oder die Redaktion).
+    wiederLieferbar(userId, id) {
+      requireProfessional(userId);
+      const s = shortagesRepo.get(id);
+      if (!s) { const e = new Error('Engpass nicht gefunden.'); e.status = 404; throw e; }
+      if (s.provenance !== 'community') throw new AppError('shortage_not_community', 'Amtliche Einträge ändert nur die Behördenliste.', 409);
+      const beteiligt = s.reporter_user_id === userId || (s.confirmations || []).includes(userId) || social.isModerator(userId);
+      if (!beteiligt) throw new AppError('shortage_not_involved', 'Wieder lieferbar melden kann, wer den Engpass gemeldet oder bestätigt hat.', 403);
+      if (s.status === 'verfuegbar') return decorate(s, userId);
+      const updated = shortagesRepo.setStatus(id, { status: 'verfuegbar', gemeldet_am: today() });
+      const label = `${updated.wirkstoff} · ${STATUS_LABEL.verfuegbar} (Community-Meldung)`;
+      for (const uid of beobachterImLand(updated.wirkstoff, updated.country)) {
+        social.pushNotification({ userId: uid, type: 'watch_alert', actorUserId: userId, refType: 'shortage', refId: id, label });
+      }
+      return decorate(updated, userId);
+    },
+    // Erinnerung an die Meldende, sobald „noch aktuell?" fällig ist (einmal je Runde).
+    erinnern() {
+      let n = 0;
+      for (const s of shortagesRepo.list()) {
+        if (!s.reporter_user_id || s.erinnert || aktualitaet(s, today()).stufe !== 'pruefen') continue;
+        shortagesRepo.markErinnert(s.id);
+        if (social.pushNotification({ userId: s.reporter_user_id, type: 'shortage_noch_aktuell', refType: 'shortage', refId: s.id, label: `${s.wirkstoff} · ${s.country || ''}` })) n++;
+      }
+      return n;
     },
 
     // ── Beobachtungsliste: Wirkstoffe, die ein:e Apotheker:in im Blick behalten will ──

@@ -3486,8 +3486,12 @@ function shortageCard(s) {
     ${s.chronik&&s.chronik.anzahl>1?`<div style="margin-top:6px;font-size:14px" data-chronikzeile><span style="color:var(--warn-fg);font-weight:700">${esc(ti('ch_line',{n:s.chronik.anzahl,seit:fmtDateDe(s.chronik.aufzeichnung_seit)}))}</span>${s.chronik.durchschnitt_tage!=null?` <span class="muted">· ${esc(ti('ch_avg',{n:s.chronik.durchschnitt_tage}))}</span>`:''}</div>`:''}
     ${s.is_antibiotic?`<div style="margin-top:6px;font-size:13px"><span style="color:var(--ok-fg);font-weight:600">${esc(t('sc_abx'))}</span> — <span class="clickable" data-amr style="color:var(--ok-fg);text-decoration:underline">${esc(t('sc_abx_link'))}</span> <span class="muted">${esc(t('sc_abx_note'))}</span></div>`:''}
     ${s.price_alternatives>0&&s.status!=='verfuegbar'?`<div style="margin-top:6px"><button class="linklike small" data-alts style="color:var(--ok-fg);font-weight:700">${esc(ti('sc_alts',{n:s.price_alternatives}))}</button> <span class="muted" style="font-size:12px">${esc(t('sc_alts_note'))}</span></div>`:''}
+    ${s.provenance==='community'&&s.aktualitaet&&s.aktualitaet!=='aktuell'?`<div class="vt-alt ${s.aktualitaet==='veraltet'?'vt-veraltet':''}" data-aktualitaet="${esc(s.aktualitaet)}">${esc(s.aktualitaet==='veraltet'?ti('ak_veraltet',{n:s.tage_ohne_bestaetigung}):ti('ak_pruefen',{n:s.tage_ohne_bestaetigung}))}</div>`:''}
     ${s.provenance==='community'?`<div class="vt-stufe ${s.bestaetigt?'vt-ok':''}" data-vertrauen="${s.bestaetigt?'bestaetigt':'einzeln'}">${esc(s.bestaetigt?ti('vt_bestaetigt',{n:s.apotheken}):s.apotheken===1?t('vt_einzeln_1'):ti('vt_einzeln',{n:s.apotheken}))}</div>`:''}
     ${s.provenance==='community'&&s.reporter?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sc_reported_by'))} <b>@${esc(s.reporter.handle)}</b>${s.reporter.verified?' <span class="verified">✔</span>':''}</div>`:''}
+    ${s.provenance==='community'&&s.status!=='verfuegbar'&&!(me&&me.account_type==='private')?`<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px" data-aktknoepfe>
+      ${s.aktualitaet&&s.aktualitaet!=='aktuell'?`<button class="small" data-nochaktuell style="min-height:44px">${esc(t('ak_noch_knapp'))}</button>`:''}
+      ${s.is_reporter||s.i_confirmed?`<button class="ghost small" data-wiederlieferbar style="min-height:44px">${esc(t('ak_wieder'))}</button>`:''}</div>`:''}
     <div class="reacts">
       <button data-about>${esc(shortagePostsLabel(s.post_count||0))}</button>
       <button class="ghost" data-postbtn>${esc(t('sc_post_about'))}</button>
@@ -3602,6 +3606,8 @@ function shortageCard(s) {
     };
   }
   // Bestätigen und Zurücknehmen sind zwei klar beschriftete Buttons (keine versteckte Geste).
+  { const nb = card.querySelector('[data-nochaktuell]'); if (nb) nb.onclick = async () => { nb.disabled = true; try { await api('POST', `/api/shortages/${s.id}/noch-aktuell`); loadShortages(); } catch (e) { alert(e.message); nb.disabled = false; } }; }
+  { const wb = card.querySelector('[data-wiederlieferbar]'); if (wb) wb.onclick = async () => { if (!confirm(ti('ak_wieder_frage', { w: s.wirkstoff }))) return; wb.disabled = true; try { await api('POST', `/api/shortages/${s.id}/wieder-lieferbar`); loadShortages(); } catch (e) { alert(e.message); wb.disabled = false; } }; }
   const confirmBtn = card.querySelector('[data-confirm]');
   if (confirmBtn) confirmBtn.onclick = async () => {
     confirmBtn.disabled = true;
@@ -8992,7 +8998,7 @@ async function showNotifications() {
   setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_home:'🔴', shortage_ended:'✅', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', shortage_abroad:'🌍', shortage_bestaetigt:'🤝', premium_ablauf:'⏳', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_home:'🔴', shortage_ended:'✅', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', shortage_abroad:'🌍', shortage_bestaetigt:'🤝', shortage_noch_aktuell:'⏰', premium_ablauf:'⏳', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️' };
   app.innerHTML = '';
   const procCount = d.notifications.filter(n => NOTIF_PROCUREMENT.has(n.type)).length;
   const showFilter = d.notifications.length >= 5 && procCount > 0 && procCount < d.notifications.length;
@@ -9025,7 +9031,7 @@ async function showNotifications() {
     const who = n.actor ? n.actor.display_name : t('notif_someone');
     // Systemmeldungen ohne handelnde Person: Hier hat niemand etwas getan,
     // eine Behoerde hat gemeldet. „Jemand hat …" waere schlicht falsch.
-    const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'shortage_bestaetigt' || n.type === 'shortage_home' || n.type === 'shortage_ended' || /^anzeige_/.test(n.type) || n.type === 'premium_ablauf' || n.type === 'payment_confirmed' || n.type === 'payment_rejected';
+    const noWho = n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'shortage_bestaetigt' || n.type === 'shortage_noch_aktuell' || n.type === 'shortage_home' || n.type === 'shortage_ended' || /^anzeige_/.test(n.type) || n.type === 'premium_ablauf' || n.type === 'payment_confirmed' || n.type === 'payment_rejected';
     // Profilbild der handelnden Person (wer) + Typ-Emoji (was) — auf einen Blick erkennbar,
     // konsistent zu Feed/Verzeichnis/Suche. Ohne Person (System-Meldung) nur das Emoji.
     const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:var(--ok-bg)'}">
@@ -9049,6 +9055,7 @@ async function showNotifications() {
       else if (n.type === 'anzeige_pruefen' || n.type === 'anzeige_gemeldet') { showModeration(); }
       else if (/^anzeige_/.test(n.type)) { openWerbung(); }
       else if (/^shortage_(abroad|home|ended)$/.test(n.type)) { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
+      else if (n.type === 'shortage_noch_aktuell') { mainScreen().then(() => goTab('shortages')); }
       else if (n.type === 'shortage_bestaetigt') { const w = n.ref_id || (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
       else if (n.type === 'watch_alert') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
       // Der Klick fuehrt in die Live-Warnungen, auf den Wirkstoff gefiltert —

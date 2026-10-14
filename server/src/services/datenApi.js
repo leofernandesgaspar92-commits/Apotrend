@@ -18,6 +18,7 @@
 // ============================================================================
 import crypto from 'node:crypto';
 import { AppError } from '../domain/errors.js';
+import { aktualitaet } from './shortages.js';
 
 export const MAX_SCHLUESSEL = 5;
 export const ANFRAGEN_JE_MINUTE = 120;
@@ -125,8 +126,9 @@ export function engpassZeile(z, wirkstoffSchluessel) {
   };
 }
 
-/** Nur Zeilen mit echter Herkunft (Behörde oder Meldung aus Apotheken). */
-export const fuerSchnittstelle = (z) => z.provenance === 'verified' || z.provenance === 'community';
+/** Nur Zeilen mit echter Herkunft (Behörde oder Meldung aus Apotheken) — veraltete Apotheken-Meldungen nicht. */
+export const fuerSchnittstelle = (z) => z.provenance === 'verified'
+  || (z.provenance === 'community' && aktualitaet(z, new Date().toISOString().slice(0, 10)).stufe !== 'veraltet');
 
 /**
  * CSV für Excel und Warenwirtschaft: Semikolon (deutsches Excel), UTF-8 mit
