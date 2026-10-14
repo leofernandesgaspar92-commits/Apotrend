@@ -1804,6 +1804,48 @@ async function main() {
     await ctx.close();
   }
 
+  // ── Erste Schritte: Neukunde in drei Handgriffen zum ersten Alarm ───────
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    await page.addInitScript(() => { if (!sessionStorage.getItem('es')) { localStorage.clear(); sessionStorage.setItem('es', '1'); localStorage.setItem('apo_country', 'AT'); } });
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
+    await page.fill('#rg_name', 'Neu Kunde'); await page.fill('#rg_email', `es_${Date.now().toString(36)}@reg.test`); await page.fill('#rg_pw', 'Passwort123!');
+    await page.click('#rg_go'); await page.waitForTimeout(1200);
+    if (await page.locator('#rc_done').count()) { await page.click('#rc_done'); await page.waitForTimeout(1200); }
+    if (!(await page.locator('[data-erste-schritte]').count())) findings.push('Erste Schritte: Neukunde landet nicht in den ersten Schritten');
+    else {
+      const chips = page.locator('[data-eschip]');
+      const n = await chips.count();
+      if (n < 6) findings.push(`Erste Schritte: nur ${n} Vorschläge zum Antippen`);
+      const knopf = page.locator('[data-esweiter]');
+      if (!(await knopf.isDisabled())) findings.push('Erste Schritte: Weiter-Knopf ohne Auswahl aktiv');
+      await chips.nth(0).click(); await chips.nth(1).click();
+      await page.fill('#esEigene', 'Pantoprazol');
+      const text = await knopf.innerText();
+      if (!/3/.test(text)) findings.push(`Erste Schritte: Knopf zählt nicht mit (${text})`);
+      const groesse = await chips.nth(0).evaluate((e) => e.getBoundingClientRect().height);
+      if (groesse < 44) findings.push(`Erste Schritte: Auswahl-Knöpfe zu klein (${groesse}px)`);
+      const quer = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      if (quer > 0) findings.push(`Erste Schritte: ${quer} px Querscrollen`);
+      await knopf.click(); await page.waitForTimeout(900);
+      if (!(await page.locator('[data-es2] ~ [data-pushkarte], [data-pushkarte]').count())) findings.push('Erste Schritte: Schritt 2 ohne Handy-Alarm');
+      await page.click('[data-es2weiter]'); await page.waitForTimeout(400);
+      const fertig = await page.locator('[data-es3]').innerText().catch(() => '');
+      if (!/3 Wirkstoffen/.test(fertig)) findings.push(`Erste Schritte: Abschluss nennt die Anzahl nicht (${fertig.slice(0, 80)})`);
+      const liste = await page.evaluate(() => fetch('/api/watchlist', { headers: { authorization: 'Bearer ' + localStorage.getItem('apo_token') } }).then((r) => r.json()));
+      const namen = (liste.items || []).map((i) => JSON.stringify(i)).join(' ');
+      if ((liste.items || []).length !== 3 || !/Pantoprazol/.test(namen)) findings.push(`Erste Schritte: Beobachtungsliste stimmt nicht (${(liste.items || []).length})`);
+      await page.click('[data-es3go]'); await page.waitForTimeout(800);
+      await page.reload({ waitUntil: 'networkidle' }); await page.waitForTimeout(800);
+      if (await page.locator('[data-erste-schritte]').count()) findings.push('Erste Schritte: kommen nach dem Abschluss wieder');
+    }
+    for (const f of fehler) findings.push('Erste Schritte: JS-Fehler ' + f);
+    if (!findings.some((f) => f.startsWith('Erste Schritte'))) console.log('✓ Erste Schritte: Neukunde → Vorschläge antippen + eigener Wirkstoff → Handy-Alarm → fertig; Liste hat 3 Wirkstoffe; kommt nicht wieder');
+    await ctx.close();
+  }
+
   // ── Registrierung im Browser: kurz, und ein Fehler verbrennt nichts ──────
   //  Bis 10/2026: sechs Felder (Pflicht-@Handle, Land doppelt), zwei Formulare
   //  untereinander — und ein vergebener Handle machte die E-Mail unbrauchbar.

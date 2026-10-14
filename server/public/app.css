@@ -553,3 +553,15 @@
   .teil-neutral { background:var(--chip-bg); color:var(--text); }
   .teil-neutral:hover { background:var(--line); }
   @media (min-width:700px){ .teil-blatt { align-items:center; } }
+
+/* Erste Schritte: große, eindeutige Auswahl-Knöpfe */
+.es-chips { display:flex; flex-wrap:wrap; gap:8px; }
+.es-chip { min-height:44px; padding:8px 14px; border-radius:999px; border:2px solid var(--line); background:var(--card); color:var(--text, inherit); font-size:16px; font-weight:600; display:inline-flex; align-items:center; gap:8px; cursor:pointer; }
+.es-chip[aria-pressed="true"] { background:var(--green); border-color:var(--green); color:#fff; }
+.es-chip[aria-pressed="true"]::after { content:"✓"; font-weight:800; }
+.es-trenner { flex-basis:100%; font-size:15px; margin-top:8px; }
+.es-punkt { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:2px; vertical-align:middle; }
+.es-punkt.kritisch { background:var(--crit-fg); }
+.es-punkt.eingeschraenkt { background:var(--warn-fg); }
+.es-chip:hover { background:var(--chip-bg); color:var(--text, inherit); }
+.es-chip[aria-pressed="true"]:hover { background:var(--green-d); border-color:var(--green-d); color:#fff; }

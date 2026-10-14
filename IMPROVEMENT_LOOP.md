@@ -2484,3 +2484,24 @@ Passwort; echter Server: nur Redaktion, ohne Geheimnisse). Browser-Audit „Star
 
 **Gegenproben (jede schlägt an):** ohne Redaktions-Prüfung; Wert verraten; ohne Sortierung;
 Datenspeicherung immer „ok".
+
+### Cycle · Erste Schritte: in 30 Sekunden zum ersten Alarm (2026-10-14)
+
+**Kundensicht:** Nach der Registrierung kam eine Lese-Tour mit acht Absätzen. Wer danach keinen
+Wirkstoff beobachtet, bekommt nie einen Alarm, sieht keinen Nutzen und zahlt nie.
+
+**WORK.** `services/ersteSchritte.js` + `GET /api/erste-schritte`: Vorschläge zum Antippen —
+zuerst, was im Land amtlich knapp ist (mit Status und Quelle, „nicht lieferbar" vor
+„eingeschränkt", ohne Doppelte), dann häufig benötigte Wirkstoffe in der Landessprache —
+diese **ohne Status** (keine Engpass-Aussage ohne Quelle). Oberfläche: Schritt 1 große
+Auswahl-Knöpfe + eigenes Feld, Zähler im Knopf, „Überspringen"; Schritt 2 Handy-Alarm
+(dieselbe Karte wie unter Meldungen); Schritt 3 „Wir melden uns bei Ihren N Wirkstoffen" +
+Tipp Sortiments-Check. Ersetzt die Tour für Neukunden (die Tour bleibt über „Hilfe").
+
+**Tests.** `erste-schritte.test.js` (Reihenfolge, keine Doppelten, nur amtlich mit Status,
+Sprache, schon Beobachtetes über Sprachen hinweg). Browser-Audit „Erste Schritte" als echter
+Neukunde: Vorschläge antippen + eigener Wirkstoff → Zähler → Alarm → Abschluss → Liste hat genau
+3 Wirkstoffe → kommt nicht wieder; Knöpfe ≥ 44 px, kein Querscrollen.
+
+**Gegenproben (jede schlägt an):** Status ohne Quelle bei häufigen Wirkstoffen; alte Tour statt
+erster Schritte.

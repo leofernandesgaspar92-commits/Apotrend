@@ -44,6 +44,7 @@ import { createSortiment } from '../services/sortiment.js';
 import { vorratsRadar } from '../services/radar.js';
 import { teilseite } from './teilseite.js';
 import { createAnzeigen } from '../services/anzeigen.js';
+import { ersteSchritte } from '../services/ersteSchritte.js';
 import { startklar } from '../services/startklar.js';
 import { createOeffentlicheSeiten } from '../services/oeffentlicheSeiten.js';
 import { createWebPush, pushNachricht, testNachricht, PUSH_TYPEN } from '../services/webPush.js';
@@ -1732,6 +1733,11 @@ const routes = [
     return { ok: true };
   }],
 
+  // Erste Schritte (services/ersteSchritte.js): Wirkstoffe zum Antippen.
+  ['GET', /^\/api\/erste-schritte$/, true, async ({ userId, query }) => {
+    const land = activeCountry(userId, query);
+    return ersteSchritte({ shortagesRepo, land, sprache: (COUNTRIES[land] && COUNTRIES[land].locale_default) || 'de', beobachtet: shortagesRepo.listWatch(userId) });
+  }],
   // ── Web-Push (services/webPush.js) ──
   ['GET', /^\/api\/push$/, true, async ({ userId }) => ({ schluessel: webPush.oeffentlicherSchluessel(), geraete: webPush.geraete(userId) })],
   ['POST', /^\/api\/push\/abo$/, true, async ({ userId, body }) => webPush.abonnieren(userId, body.abo)],

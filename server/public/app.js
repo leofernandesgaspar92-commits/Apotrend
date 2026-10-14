@@ -1133,7 +1133,72 @@ async function mainScreen() {
   else if (sharedProfile) { history.replaceState(null, '', location.pathname); openProfile(sharedProfile); }
   else if (sharedHashtag) { history.replaceState(null, '', location.pathname); openHashtag(sharedHashtag); }
   else if (deepTab && validTabs.includes(deepTab)) { history.replaceState(null, '', location.pathname); goTab(deepTab); }
-  else if (!localStorage.getItem('apo_welcome_seen')) showWelcome(false);
+  // Neu hier: statt einer Lese-Tour drei Handgriffe bis zum ersten Alarm.
+  else if (!localStorage.getItem('apo_welcome_seen')) openErsteSchritte();
+}
+
+// ── Erste Schritte: in 30 Sekunden zum ersten Alarm ─────────────────────────
+// 1) Wirkstoffe antippen (amtlich knapp mit Quelle, sonst häufig benötigte —
+//    diese ohne Status), 2) Sofort-Alarm aufs Handy, 3) fertig.
+async function openErsteSchritte() {
+  try { localStorage.setItem('apo_welcome_seen', '1'); } catch { /* egal */ }
+  setDocTitle(t('es_titel'));
+  app.innerHTML = '';
+  const land = viewCountry();
+  const d = await api('GET', '/api/erste-schritte?country=' + encodeURIComponent(land)).catch(() => ({ amtlich: 0, vorschlaege: [] }));
+  const gewaehlt = new Set(d.vorschlaege.filter((v) => v.beobachtet).map((v) => v.wirkstoff));
+  const karte = el(`<div class="card" data-erste-schritte>
+    <div class="muted" style="font-size:15px;font-weight:700">${esc(ti('es_schritt', { n: 1, g: 3 }))}</div>
+    <h1 style="margin:4px 0 6px">${esc(t('es_titel'))}</h1>
+    <div style="font-size:17px;margin-bottom:12px">${esc(t('es_frage'))}</div>
+    ${d.amtlich ? `<div class="muted" style="font-size:15px;margin-bottom:6px">${esc(ti('es_amtlich', { land: landAnzeige(land) }))}</div>` : ''}
+    <div class="es-chips" data-eschips></div>
+    <label for="esEigene" style="display:block;margin-top:14px;font-weight:600">${esc(t('es_eigene'))}</label>
+    <input id="esEigene" placeholder="${esc(t('es_eigene_ph'))}" autocomplete="off">
+    <div class="row" style="gap:10px;margin-top:16px;flex-wrap:wrap;align-items:center">
+      <button data-esweiter class="auth-gross" style="min-height:52px;font-weight:700;flex:1 1 220px"></button>
+      <button class="linklike" data-esskip>${esc(t('es_skip'))}</button></div>
+    <div class="err" data-eserr></div></div>`);
+  app.appendChild(karte);
+  const chips = karte.querySelector('[data-eschips]');
+  const weiter = karte.querySelector('[data-esweiter]');
+  const eigene = () => karte.querySelector('#esEigene').value.split(/[,;\n]+/).map((x) => x.trim()).filter(Boolean);
+  const zaehle = () => { const n = new Set([...gewaehlt, ...eigene()]).size; weiter.textContent = n === 1 ? t('es_beobachten_1') : n ? ti('es_beobachten', { n }) : t('es_waehlen'); weiter.disabled = !n; };
+  let trennerGesetzt = false;
+  d.vorschlaege.forEach((v) => {
+    if (!v.status && d.amtlich && !trennerGesetzt) { trennerGesetzt = true; chips.appendChild(el(`<div class="muted es-trenner">${esc(t('es_haeufig'))}</div>`)); }
+    const b = el(`<button type="button" class="es-chip" aria-pressed="${gewaehlt.has(v.wirkstoff)}" data-eschip="${esc(v.wirkstoff)}">${v.status ? `<span class="es-punkt ${esc(v.status)}" aria-hidden="true"></span>` : ''}${esc(v.wirkstoff)}${v.status ? `<span class="sr-only"> — ${esc(t(v.status === 'kritisch' ? 'es_st_kritisch' : 'es_st_eingeschraenkt'))}</span>` : ''}</button>`);
+    b.onclick = () => { if (gewaehlt.has(v.wirkstoff)) gewaehlt.delete(v.wirkstoff); else gewaehlt.add(v.wirkstoff); b.setAttribute('aria-pressed', String(gewaehlt.has(v.wirkstoff))); zaehle(); };
+    chips.appendChild(b);
+  });
+  if (d.amtlich) chips.after(el(`<div class="muted" style="font-size:14px;margin-top:6px"><span class="es-punkt kritisch" aria-hidden="true"></span>${esc(t('es_st_kritisch'))} · <span class="es-punkt eingeschraenkt" aria-hidden="true"></span>${esc(t('es_st_eingeschraenkt'))} · ${esc(t('es_quelle_hinweis'))}</div>`));
+  karte.querySelector('#esEigene').oninput = zaehle;
+  zaehle();
+  karte.querySelector('[data-esskip]').onclick = () => mainScreen();
+  weiter.onclick = async () => {
+    const liste = [...new Set([...gewaehlt, ...eigene()])];
+    weiter.disabled = true;
+    try { await api('POST', '/api/watchlist/bulk', { wirkstoffe: liste }); ersteSchritteAlarm(liste.length); }
+    catch (e) { karte.querySelector('[data-eserr]').textContent = e.message; weiter.disabled = false; }
+  };
+}
+function ersteSchritteAlarm(n) {
+  app.innerHTML = '';
+  const k = el(`<div class="card" data-es2><div class="muted" style="font-size:15px;font-weight:700">${esc(ti('es_schritt', { n: 2, g: 3 }))}</div>
+    <h1 style="margin:4px 0 6px">${esc(t('es_alarm_titel'))}</h1><div style="font-size:17px">${esc(t('es_alarm_text'))}</div></div>`);
+  app.appendChild(k);
+  app.appendChild(pushKarte());
+  const w = el(`<div class="row" style="gap:10px;margin-top:4px"><button data-es2weiter class="auth-gross" style="min-height:52px;font-weight:700;flex:1">${esc(t('es_weiter'))}</button></div>`);
+  w.querySelector('[data-es2weiter]').onclick = () => {
+    app.innerHTML = '';
+    const f = el(`<div class="card" data-es3><div class="muted" style="font-size:15px;font-weight:700">${esc(ti('es_schritt', { n: 3, g: 3 }))}</div>
+      <h1 style="margin:4px 0 8px">${esc(t('es_fertig_titel'))}</h1><div class="ok-box" style="padding:12px 14px;font-size:17px">${esc(n === 1 ? t('es_fertig_text_1') : ti('es_fertig_text', { n }))}</div>
+      <div class="muted" style="font-size:15px;margin-top:10px">${esc(t('es_fertig_tipp'))}</div>
+      <button data-es3go class="auth-gross" style="min-height:52px;font-weight:700;width:100%;margin-top:14px">${esc(t('es_zur_uebersicht'))}</button></div>`);
+    f.querySelector('[data-es3go]').onclick = () => mainScreen();
+    app.appendChild(f);
+  };
+  app.appendChild(w);
 }
 
 function showWelcome(reopened) {
