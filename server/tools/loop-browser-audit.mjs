@@ -1407,7 +1407,7 @@ async function main() {
       const unbefristet = await premiumSeite({ premium: true, features: ['premium'], bis: null });
       await page.unroute('**/api/me/premium').catch(() => {});
       if (!/Aktiv bis 13\.11\.2026/.test(befristet) || !/keinen Tag/.test(befristet)) findings.push(`Premium: Ablaufdatum fehlt (${befristet.slice(0, 160)})`);
-      else if (!/Premium \(Monat\)/.test(befristet)) findings.push('Premium: mit Ablaufdatum kein Weg zum Verlängern');
+      else if (!/Premium \(1 Monat\)/.test(befristet)) findings.push('Premium: mit Ablaufdatum kein Weg zum Verlängern');
       else if (/Aktiv bis|Premium \(Monat\)/.test(unbefristet)) findings.push('Premium: unbefristetes Premium soll weder Datum noch Kaufangebot zeigen');
       else console.log('✓ Premium: Ablaufdatum mit Verlängern; unbefristet ohne Kaufangebot');
     }
@@ -1434,7 +1434,7 @@ async function main() {
       }
       await page.unroute('**/api/payments/crypto/start').catch(() => {});
       if (JSON.stringify(plaene) !== JSON.stringify(['premium_monthly', 'premium_yearly'])) findings.push(`Premium: Laufzeiten fehlen (${plaene.join(', ')})`);
-      else if (!/Jahr/.test(preis) || !/99,00/.test(preis)) findings.push(`Premium: Jahr gewählt, aber Preis zeigt ${preis}`);
+      else if (!/12 Monate/.test(preis) || !/99,00/.test(preis)) findings.push(`Premium: Jahr gewählt, aber Preis zeigt ${preis}`);
       else if (!/spart € ?20,88/.test(wahlText.replace(/\s+/g, ' '))) findings.push(`Premium: Ersparnis falsch oder fehlt (${wahlText})`);
       else if (!gestartet || gestartet.productId !== 'premium_yearly') findings.push(`Premium: gewähltes Jahr kam beim Kauf nicht an (${JSON.stringify(gestartet)})`);
       else console.log('✓ Premium: Monat und Jahr wählbar, Ersparnis gerechnet, gewähltes Produkt kommt beim Kauf an');
@@ -2238,8 +2238,12 @@ async function main() {
       const offen = await page.evaluate(() => { const mk = document.querySelector('[data-meldekarte]'); return !!mk && ![...mk.querySelectorAll('input, select')].every((e) => !e.offsetParent); });
       if (!offen) findings.push('Erster Eindruck: „Report a shortage" öffnet das Formular nicht');
     }
+    // Premium-Seite: Produktname in der Sprache der Oberfläche (vorher „ApoPulse Premium (Monat)").
+    await page.evaluate(() => openPremium()); await page.waitForSelector('[data-prpreis]', { timeout: 8000 }).catch(() => {});
+    const preisZeile = await page.locator('[data-prpreis]').innerText().catch(() => '');
+    if (!/\(1 month\)/.test(preisZeile) || /Monat/.test(preisZeile)) findings.push(`Erster Eindruck: Produktname auf der Premium-Seite nicht übersetzt (${preisZeile.slice(0, 60)})`);
     for (const f of fehler) findings.push('Erster Eindruck: JS-Fehler ' + f);
-    if (!findings.some((f) => f.startsWith('Erster Eindruck'))) console.log('✓ Erster Eindruck (Liberia): Länderwahl auf Englisch mit Vorschlag aus der Zeitzone, Afrika zuerst und alphabetisch; keine leeren Preis-Versprechen; Codes ohne Umbruch; leere Liste fordert zum Melden auf');
+    if (!findings.some((f) => f.startsWith('Erster Eindruck'))) console.log('✓ Erster Eindruck (Liberia): Länderwahl auf Englisch mit Vorschlag aus der Zeitzone, Afrika zuerst und alphabetisch; keine leeren Preis-Versprechen; Codes ohne Umbruch; leere Liste fordert zum Melden auf; Premium auf Englisch');
     await ctx.close();
   }
 

@@ -6965,6 +6965,9 @@ async function handleWbAbmelden() {
 
 // Gewählte Laufzeit auf der Premium-Seite (Monat oder Jahr).
 let prPlan = 'premium_monthly';
+// Produktnamen in der Sprache der Oberfläche. Der Server führt sie deutsch
+// („ApoPulse Premium (Monat)") — in Uganda stand das so auf der Premium-Seite.
+function produktName(id, ersatz) { const k = 'pn_' + id; return id && t(k) !== k ? t(k) : (ersatz || id || ''); }
 async function openPremium() {
   setDocTitle(t('pr_title'));
   app.innerHTML = '';
@@ -7041,7 +7044,7 @@ async function openPremium() {
       body.appendChild(wahl);
     }
     const priceMain = fmtCurrency(opt.amount, opt.currency || 'EUR');
-    body.appendChild(el(`<div data-prpreis style="font-weight:800;font-size:1.15em;margin-bottom:4px">${esc(opt.product_name)} — <span style="color:var(--green)">${esc(priceMain)}</span></div>`));
+    body.appendChild(el(`<div data-prpreis style="font-weight:800;font-size:1.15em;margin-bottom:4px">${esc(produktName(opt.product, opt.product_name))} — <span style="color:var(--green)">${esc(priceMain)}</span></div>`));
     // Näherung in der Landeswährung, damit niemand selbst umrechnen muss.
     // Erscheint NUR mit echtem Kurs — fehlt er, steht hier bewusst nichts.
     if (opt.local) {
@@ -9355,7 +9358,7 @@ function kryptoPruefKarte(z) {
       <b style="font-size:16px">${esc(k.display_name || '?')}</b> <span class="handle">@${esc(k.handle || '?')}</span>
       <span class="muted">${esc((land && land.flag + ' ' + land.name) || k.country || '')}</span>
     </div>
-    <div style="margin-top:6px;font-size:15px"><b>${esc(fmtMoney(z.amount_cents / 100))} ${esc(z.currency)}</b> · ${esc(z.product_name || '')}</div>
+    <div style="margin-top:6px;font-size:15px"><b>${esc(fmtMoney(z.amount_cents / 100))} ${esc(z.currency)}</b> · ${esc(produktName(z.product_id, z.product_name))}</div>
     ${ueberweisung ? `<div data-kpueberweisung style="margin-top:6px;font-size:15px"><b>${esc(t('kp_ueberweisung'))}</b> · ${esc(z.bezeichnung || '')}</div>
       <div style="font-size:14px;margin-top:2px">${esc(t('kp_bestellt'))}: <b>${esc(fmtZeit(z.created_at))}</b></div>
       <div data-kphint style="margin-top:10px;background:var(--info-bg);border:1px solid var(--info-bd);color:var(--info-fg);border-radius:8px;padding:10px 12px;font-size:14px;line-height:1.5">${esc(ti('kp_ueberweisung_hint', { betrag: fmtMoney(z.amount_cents / 100) + ' ' + z.currency, nr: String(z.bezeichnung || '').replace(/^Rechnung /, '') }))}</div>` : `

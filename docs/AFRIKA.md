@@ -245,6 +245,9 @@ Geprüft durch `server/test/schein-konten.test.js` (mit Uhr).
 - **Quelle antwortet nicht:** Das Banner ist **gelb**, nicht rot, denn Rot heißt in ApoPulse
   „kritischer Engpass". Es nennt die Quelle mit Namen („National Drug Authority Uganda — News"
   statt `nda_ug_news`) und verspricht keinen „letzten Stand", wenn es keinen gibt.
+- **Premium-Seite:** Produktnamen in der Sprache der Oberfläche („ApoPulse Premium (1 month)" statt
+  „(Monat)"). Ohne Kurs heißt es in Klartext „Exchange rate not available right now — please send
+  the equivalent of €9.99 at the current rate". Am Krypto-Zahlweg selbst ändert sich nichts.
 - **Afrika-Lage:** Länder ohne Behördenliste und ohne Apotheken-Meldung stehen in **einer** Gruppe
   mit antippbaren Länder-Knöpfen, statt 18 gleicher Zeilen „No official shortage list available".
 

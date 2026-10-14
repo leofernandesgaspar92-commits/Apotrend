@@ -2766,3 +2766,12 @@ Zeitzone ohne Vorrang → fünf Befunde, wie erwartet.
 
 **Tests.** `coverage.test.js` (Name statt Kennung; Gegenprobe Kennung → rot). Browser-Audit
 „Afrika": Uganda benennt die fehlende Liste auch in der Gruppe; keine informationslose Einzelzeile.
+
+### Cycle · Rundgang Uganda, Teil 3: Melden und Premium (2026-10-14)
+
+**Befunde → WORK.** Meldeformular in Ordnung; das Datumsfeld folgt der Gerätesprache, das ist von
+der Seite aus nicht steuerbar. Premium: deutscher Produktname „ApoPulse Premium (Monat)" in der
+englischen Oberfläche → `produktName()` mit `pn_*` (de/en/pt), auch in der Krypto-Prüfkarte.
+„Amount at fetch time – please send €9.99" → Klartext, wenn der Kurs fehlt. Krypto-Ablauf unverändert.
+
+**Tests.** Browser-Audit „Erster Eindruck" prüft die Premium-Zeile (Gegenprobe: alter Name → rot).
