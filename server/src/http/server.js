@@ -24,6 +24,7 @@ import { createCollabService } from '../services/collab.js';
 import { can as roleCan } from '../domain/roles.js';
 import { cleanSourceUrl } from '../domain/media.js';
 import { bilderAlsAdresse, bildHolen } from '../domain/bilder.js';
+import { startseiteKopf, kopfSprache } from './startseiteKopf.js';
 import { createSocialService } from '../services/social.js';
 import { createShortagesService } from '../services/shortages.js';
 import { createPricesService } from '../services/prices.js';
@@ -2718,9 +2719,19 @@ const server = http.createServer(async (req, res) => {
   // Cache-Control no-cache = immer revalidieren, damit Nutzer:innen nie eine veraltete
   // Version bekommen (die Assets sind nicht content-gehasht). Wichtig für langsame Leitungen.
   const stat = fs.statSync(serve);
-  const etag = 'W/"' + stat.size.toString(16) + '-' + Math.round(stat.mtimeMs).toString(16) + '"';
+  // Startseite: Kopf (Titel, Vorschau für WhatsApp & Co.) in der Sprache des Browsers
+  // (http/startseiteKopf.js). Darum eigener ETag je Sprache und Vary.
+  const istStart = serve === path.join(PUBLIC_DIR, 'index.html');
+  const sp = istStart ? kopfSprache(req.headers['accept-language']) : null;
+  const etag = 'W/"' + stat.size.toString(16) + '-' + Math.round(stat.mtimeMs).toString(16) + (sp ? '-' + sp : '') + '"';
   const headers = { 'Content-Type': type + (isText ? '; charset=utf-8' : ''), 'Cache-Control': 'no-cache', ETag: etag };
+  if (istStart) headers.Vary = 'Accept-Language, Accept-Encoding';
   if ((req.headers['if-none-match'] || '') === etag) { res.writeHead(304, headers); return res.end(); }
+  if (istStart) {
+    const html = Buffer.from(startseiteKopf(fs.readFileSync(serve, 'utf8'), { sp, basis: oeffentlicheBasis(req) }));
+    if (/\bgzip\b/.test(req.headers['accept-encoding'] || '')) { res.writeHead(200, { ...headers, 'Content-Encoding': 'gzip' }); return res.end(zlib.gzipSync(html)); }
+    res.writeHead(200, headers); return res.end(html);
+  }
   // Textassets (JS/CSS/HTML) gzip-komprimieren, wenn der Client es unterstützt — app.js
   // ist ~250 KB und schrumpft damit deutlich, spürbar auf mobilen Apotheken-Leitungen.
   if (isText && /\bgzip\b/.test(req.headers['accept-encoding'] || '')) {

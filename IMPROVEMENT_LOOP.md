@@ -2855,3 +2855,15 @@ falsch. Jetzt: „ApoPulse erhält (noch) keine amtliche Engpassliste".
 
 **Tests.** `oeffentliche-seiten.test.js` (PT/UG Landing ohne Engpass-Zeilen, englische Übersicht,
 englische 404, Sitemap). Browser-Audit „Öffentliche Seiten" (en-UG). Gegenprobe: `ohneQuelle` aus → rot.
+
+### Cycle · Startseite: Vorschau in der Sprache des Browsers (2026-10-14)
+
+**Befund.** Geteilte Hauptadresse zeigte in WhatsApp & Co. immer „Lieferengpässe mit Quelle —
+Behördenlisten aus Europa" (deutsch); Vorschaubild mit relativer Adresse.
+
+**WORK.** `http/startseiteKopf.js`: Titel, Beschreibung, og:title/description nach Accept-Language
+(de/en/pt, sonst Englisch), og:image absolut. „aus Europa" ersetzt durch „Behördenlisten und Meldungen
+aus Apotheken". ETag je Sprache, `Vary: Accept-Language`. App-Inhalt unverändert.
+
+**Tests.** `startseite-kopf.test.js` (Sprachwahl inkl. Suaheli → Englisch; HTTP: Kopf je Sprache,
+absolutes Bild, eigener ETag, 304, Skripte unverändert). Gegenprobe: ohne Umbau → rot.
