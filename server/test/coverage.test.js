@@ -14,7 +14,7 @@ import { createCoverageStore, landStatus } from '../src/services/coverage.js';
 const QUELLEN = [
   { id: 'bfarm_news', country: 'DE' },
   { id: 'pei_news', country: 'DE' },
-  { id: 'nafdac_news', country: 'NG' },
+  { id: 'nafdac_news', country: 'NG', label: 'NAFDAC Nigeria — News' },
   { id: 'basg_news', country: 'AT' },
 ];
 
@@ -57,6 +57,10 @@ test('nur Fehler machen das Land „stumm" — und die Quelle wird benannt', () 
   // „Die NAFDAC antwortet nicht" ist eine Aussage, mit der eine Apotheke etwas
   // anfangen kann. „Keine Daten" ist es nicht.
   assert.deepEqual(st.stumm, ['nafdac_news']);
+  // In der App mit Namen, nicht als interne Kennung („Affected: nda_ug_news", bis 10/2026).
+  const name = QUELLEN.find((q) => q.id === 'nafdac_news').label;
+  assert.ok(name && !/_/.test(name), 'Testquelle ohne lesbaren Namen');
+  assert.deepEqual(st.stumm_namen, [name]);
 });
 
 test('eine von zwei Quellen genuegt — das Land liefert', () => {

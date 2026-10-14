@@ -1929,8 +1929,11 @@ async function main() {
       await sk.click(); await page.waitForTimeout(900);
       const zeilen = await page.locator('[data-jeland] [data-elland]').count();
       if (zeilen < 18) findings.push(`Afrika: Engpasslage Afrika zeigt nur ${zeilen} Länder`);
-      const ug = await page.locator('[data-elland="UG"]').innerText().catch(() => '');
+      // Uganda steht entweder als eigene Zeile oder in der Gruppe „ohne Liste und ohne Meldung" — beides benennt die fehlende Liste.
+      const ug = await page.locator('[data-elland="UG"]').evaluate((e) => ((e.closest('[data-ohne]') && e.closest('[data-ohne]').querySelector('[data-ohnetitel]').textContent) || '') + ' ' + e.innerText).catch(() => '');
       if (!/No official shortage list/.test(ug)) findings.push(`Afrika: fehlende Behördenliste nicht ehrlich benannt (${ug.slice(0, 60)})`);
+      const gleich = await page.locator('[data-jeland] .el-landzeile', { hasText: 'No official shortage list available' }).evaluateAll((els) => els.filter((e) => !/pharmac/i.test(e.innerText)).length);
+      if (gleich) findings.push(`Afrika: ${gleich} Länder als eigene Zeile ohne jede Information (gehören in die Sammelgruppe)`);
       if ((await quer()) > 0) findings.push(`Afrika: ${await quer()} px Querscrollen in der Engpasslage`);
       await page.click('[data-elland="KE"]'); await page.waitForTimeout(1200);
       const ansicht = await page.evaluate(() => viewCountry());

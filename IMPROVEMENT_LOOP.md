@@ -2753,3 +2753,16 @@ Hinweis; ohne Einmal-Sperre; Startklar stumm — jede schlägt an.
 **Tests.** Browser-Audit „Erster Eindruck" (Liberia; Gegenprobe Österreich auf Deutsch).
 `laenderwahl.test.js` (mit/ohne Beispieldaten). **Gegenproben:** Preise immer an, Sprache fest,
 Zeitzone ohne Vorrang → fünf Befunde, wie erwartet.
+
+### Cycle · Rundgang Uganda, Teil 2: Nachrichten und Afrika-Lage (2026-10-14)
+
+**Befunde → WORK.**
+1. „Affected: nda_ug_news" (interne Kennung) → `coverage.landStatus.stumm_namen` (Label der Quelle),
+   App zeigt Namen.
+2. Quellen-Ausfall rot, obwohl Rot „kritischer Engpass" heißt → gelb (`warn`). Von „veraltet" bleibt
+   es über Symbol und Text unterscheidbar.
+3. „Showing the last known state", auch wenn nie etwas ankam → „We keep retrying automatically".
+4. Afrika-Lage: 18 gleiche Zeilen ohne Information → eine Sammelgruppe mit Länder-Knöpfen.
+
+**Tests.** `coverage.test.js` (Name statt Kennung; Gegenprobe Kennung → rot). Browser-Audit
+„Afrika": Uganda benennt die fehlende Liste auch in der Gruppe; keine informationslose Einzelzeile.

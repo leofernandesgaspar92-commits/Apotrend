@@ -2263,7 +2263,8 @@ async function ladeCoverage(land, art = 'news') {
  * Darum vier Zustände, die NICHT gleich aussehen dürfen, jeweils mit Symbol
  * und Text (nie nur Farbe):
  *   🟢 liefert und frisch · 🟡 liefert, aber letzter Abruf alt
- *   🔴 Quelle antwortet nicht · ⏳ erster Abruf läuft noch
+ *   ⚠️ Quelle antwortet nicht (gelb, nicht rot: Rot heißt in ApoPulse „kritischer
+ *      Engpass" — ein Ausfall der Quelle ist keiner) · ⏳ erster Abruf läuft noch
  */
 function datenstandZeile(st, land) {
   if (!st || st.zustand === 'keine') return null;
@@ -2272,7 +2273,7 @@ function datenstandZeile(st, land) {
   const name = landLabel(land);
   let symbol, text, ton;
   if (st.zustand === 'unbekannt' || !abruf.zuletzt) { symbol = 'clock'; text = ti('stand_first', { land: name }); ton = 'info'; }
-  else if (st.zustand === 'stumm') { symbol = 'alert'; text = ti('stand_silent', { land: name, wann }); ton = 'crit'; }
+  else if (st.zustand === 'stumm') { symbol = 'alert'; text = ti('stand_silent', { land: name, wann }); ton = 'warn'; }
   else if (!abruf.aktuell) { symbol = 'clock'; text = ti('stand_stale', { wann }); ton = 'warn'; }
   else { symbol = 'radio'; text = ti('stand_live', { land: name, wann }); ton = 'ok'; }
   return el(`<div data-datenstand="${ton}" role="status" style="display:flex;gap:8px;align-items:flex-start;background:var(--${ton}-bg);border:1px solid var(--${ton}-bd);color:var(--${ton}-fg);border-radius:10px;padding:8px 12px;margin:0 0 10px;font-size:14px;font-weight:600;line-height:1.45">
@@ -2343,8 +2344,9 @@ function coverageKarte(status) {
   const titel = status.zustand === 'stumm' ? `<b>${esc(t('cov_stumm_title'))}</b>` : '';
   // Wer nicht antwortet, wird benannt. „Die NAFDAC antwortet nicht" ist eine
   // Aussage, mit der eine Apotheke etwas anfangen kann; „keine Daten" nicht.
-  const wer = (status.stumm && status.stumm.length)
-    ? `<div class="muted" style="margin-top:8px;font-size:13px">${esc(ti('cov_quellen', { q: status.stumm.join(', ') }))}</div>` : '';
+  const namen = (status.stumm_namen && status.stumm_namen.length) ? status.stumm_namen : (status.stumm || []);
+  const wer = namen.length
+    ? `<div class="muted" style="margin-top:8px;font-size:13px">${esc(ti('cov_quellen', { q: namen.join(', ') }))}</div>` : '';
   return el(`<div class="card">${titel}<div class="muted" style="margin-top:${titel ? '6px' : '0'}">${esc(t(koerper))}</div>${wer}</div>`);
 }
 
@@ -3342,7 +3344,16 @@ async function ladeEngpassEbene(feed) {
   feed.appendChild(mk);
   // Je Land
   const lk = el(`<div class="card" data-jeland><b>${esc(t('el_jeland'))}</b><div class="muted" style="font-size:14px;margin:2px 0 8px">${esc(t('el_jeland_sub'))}</div></div>`);
-  d.laender.forEach((l) => {
+  // Länder, über die es nichts zu sagen gibt (keine Behördenliste, keine
+  // Apotheken-Meldung), in EINER Gruppe: Bis 10/2026 standen hier 18 gleiche
+  // Zeilen „No official shortage list available" — viel Scrollen, keine Information.
+  const oeffnen = (land) => () => {
+    try { localStorage.setItem('apo_ebene_engpaesse', 'land'); } catch { /* egal */ }
+    const sel = document.getElementById('countrySwitch');
+    if (sel && sel.onchange) { sel.value = land; sel.onchange(); } else loadShortages();
+  };
+  const ohne = d.laender.filter((l) => !l.behoerdenliste && !l.apotheken);
+  d.laender.filter((l) => l.behoerdenliste || l.apotheken).forEach((l) => {
     const zahlen = l.behoerdenliste
       ? `<span><b>${esc(ti('el_amtlich', { n: l.amtlich }))}</b>${l.kritisch ? ` · <span style="color:var(--crit-fg);font-weight:700">${esc(ti('el_kritisch', { n: l.kritisch }))}</span>` : ''}</span>`
       : `<span class="muted">${esc(t('el_keine_liste'))}</span>`;
@@ -3350,13 +3361,17 @@ async function ladeEngpassEbene(feed) {
     const z = el(`<button class="el-landzeile" data-elland="${esc(l.land)}">
       <span style="font-weight:700">${esc(landLabel(l.land))}</span>
       <span style="font-size:14px">${zahlen}${apo}</span></button>`);
-    z.onclick = () => {
-      try { localStorage.setItem('apo_ebene_engpaesse', 'land'); } catch { /* egal */ }
-      const sel = document.getElementById('countrySwitch');
-      if (sel && sel.onchange) { sel.value = l.land; sel.onchange(); } else loadShortages();
-    };
+    z.onclick = oeffnen(l.land);
     lk.appendChild(z);
   });
+  if (ohne.length) {
+    const g = el(`<div data-ohne style="padding-top:10px;border-top:1px solid var(--line)">
+      <div data-ohnetitel style="font-size:15px;font-weight:700;margin-bottom:8px">${esc(ti('el_ohne_titel', { n: ohne.length }))}</div>
+      <div class="row" style="flex-wrap:wrap;gap:8px">${ohne.map((l) => `<button class="ghost small" data-elland="${esc(l.land)}" style="min-height:44px">${esc(landLabel(l.land))}</button>`).join('')}</div>
+      <div class="muted" style="font-size:14px;margin-top:8px">${esc(t('el_ohne_hinweis'))}</div></div>`);
+    g.querySelectorAll('[data-elland]').forEach((b) => { b.onclick = oeffnen(b.dataset.elland); });
+    lk.appendChild(g);
+  }
   feed.appendChild(lk);
 }
 

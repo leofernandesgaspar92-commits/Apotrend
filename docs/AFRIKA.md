@@ -242,6 +242,11 @@ Geprüft durch `server/test/schein-konten.test.js` (mit Uhr).
 - **Leere Engpassliste ohne Filter:** Statt „Filter zurücksetzen" steht dort „No shortage has been
   reported for … yet. Is something short at your pharmacy? Report it", mit Knopf zum Formular.
 - **Wiederherstellungscodes** brechen nicht mehr um und stehen auf dem Handy einspaltig.
+- **Quelle antwortet nicht:** Das Banner ist **gelb**, nicht rot, denn Rot heißt in ApoPulse
+  „kritischer Engpass". Es nennt die Quelle mit Namen („National Drug Authority Uganda — News"
+  statt `nda_ug_news`) und verspricht keinen „letzten Stand", wenn es keinen gibt.
+- **Afrika-Lage:** Länder ohne Behördenliste und ohne Apotheken-Meldung stehen in **einer** Gruppe
+  mit antippbaren Länder-Knöpfen, statt 18 gleicher Zeilen „No official shortage list available".
 
 Geprüft durch den Browser-Audit-Block „Erster Eindruck" (Liberia, Zeitzone Africa/Monrovia, US-
 Englisch, plus Gegenprobe Österreich) und `server/test/laenderwahl.test.js`.

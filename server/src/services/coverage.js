@@ -209,5 +209,7 @@ export function landStatus(land, { store, quellen, art = 'news' }) {
     // eine Aussage, mit der eine Apotheke etwas anfangen kann. „Keine Daten"
     // ist es nicht.
     stumm: gemessen.quellen.filter((q) => !q.ok).map((q) => q.id),
+    // …und zwar mit Namen. Bis 10/2026 stand in der App „Affected: nda_ug_news".
+    stumm_namen: gemessen.quellen.filter((q) => !q.ok).map((q) => { const s = eingetragen.find((e) => e.id === q.id); return (s && s.label) || q.id; }),
   };
 }
