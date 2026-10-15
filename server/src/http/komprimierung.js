@@ -16,6 +16,7 @@
 import fs from 'node:fs';
 import zlib from 'node:zlib';
 import { promisify } from 'node:util';
+import { createHash } from 'node:crypto';
 
 const brotli = promisify(zlib.brotliCompress);
 const gzip = promisify(zlib.gzip);
@@ -40,6 +41,27 @@ export function kodierenSync(buf, kodierung) {
   if (kodierung === 'br') return zlib.brotliCompressSync(buf, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 5, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: buf.length } });
   if (kodierung === 'gzip') return zlib.gzipSync(buf);
   return buf;
+}
+
+// ── Versionskennung (ETag) aus dem INHALT ───────────────────────────────────
+//  Vorher: Größe + Änderungszeit. Render baut jedes Deploy aus einem frischen
+//  Git-Klon — alle Dateien bekommen eine neue Änderungszeit. Folge: nach JEDEM
+//  Deploy lud jedes Handy die ganze App neu (~245 KB), auch unveränderte
+//  Dateien. Jetzt eine Prüfsumme des Inhalts: Unverändertes bleibt beim kurzen
+//  „304 unverändert". Gerechnet wird nur, wenn sich Größe/Änderungszeit ändern.
+export function createVersionsKennung({ maxDateien = 256 } = {}) {
+  const speicher = new Map(); // Pfad -> { schluessel, hash }
+  return function etag(datei, stat, zusatz = null) {
+    const schluessel = stat.size + ':' + stat.mtimeMs;
+    let e = speicher.get(datei);
+    if (!e || e.schluessel !== schluessel) {
+      e = { schluessel, hash: createHash('sha256').update(fs.readFileSync(datei)).digest('base64url').slice(0, 22) };
+      speicher.delete(datei);
+      speicher.set(datei, e);
+      if (speicher.size > maxDateien) speicher.delete(speicher.keys().next().value);
+    }
+    return 'W/"' + e.hash + (zusatz ? '-' + zusatz : '') + '"';
+  };
 }
 
 /** Speicher für komprimierte statische Dateien: je Pfad nur die aktuelle Version. */

@@ -2909,3 +2909,15 @@ q=0 ignoriert → rot; kein Vary unkomprimiert → rot; Brotli Stufe 1 → rot (
 Nicht gemacht: i18n.js je Sprache aufteilen (weitere ~60 KB) — Länderwahl zeigt mehrere Sprachen
 gleichzeitig und Rückfall auf Deutsch; eigener Schritt mit Offline-Cache-Umbau.
 
+### Cycle · Versionskennung aus dem Inhalt: Deploy ≠ Neu-Download (2026-10-15)
+
+**Befund.** ETag = Größe + mtime. Render (`runtime: node`) baut aus frischem Git-Klon → neue mtime
+für alle Dateien → nach jedem Deploy lud jedes Gerät app.js, i18n.js, app.css, sw.js, Icons neu.
+
+**WORK.** `createVersionsKennung()` (http/komprimierung.js): SHA-256 des Inhalts (22 Zeichen),
+neu gerechnet nur bei geänderter Größe/mtime; Sprachzusatz für Startseite/Manifest wie bisher.
+server.js nutzt sie für alle statischen Dateien (und als Schlüssel des Kompressions-Speichers).
+
+**Tests.** `komprimierung.test.js` (+1, + Deploy-Fall über HTTP mit `utimes`). Gegenproben:
+Kennung wieder aus Größe+Zeit → rot (Unit + HTTP 304); Inhalt nie neu prüfen → rot.
+

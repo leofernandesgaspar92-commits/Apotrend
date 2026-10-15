@@ -10,7 +10,7 @@ import zlib from 'node:zlib';
 import { spawn } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { kodierungWaehlen, createKompressionsSpeicher } from '../src/http/komprimierung.js';
+import { kodierungWaehlen, createKompressionsSpeicher, createVersionsKennung } from '../src/http/komprimierung.js';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
 const SERVER = join(HIER, '..', 'src', 'http', 'server.js');
@@ -44,6 +44,25 @@ test('Speicher: je Version einmal rechnen, neue Version -> neuer Inhalt', async 
     sp.holen(join(dir, 'b'), 'x', 'gzip').catch(() => {}); sp.holen(join(dir, 'c'), 'x', 'gzip').catch(() => {});
     assert.equal(sp.groesse(), 2, 'Speicher begrenzt');
     await assert.rejects(sp.holen(join(dir, 'fehlt.js'), 'x', 'br'));
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('Versionskennung aus dem Inhalt: neue Änderungszeit (Deploy) ändert nichts, neuer Inhalt schon', () => {
+  const dir = fs.mkdtempSync(join(os.tmpdir(), 'etag-'));
+  const datei = join(dir, 'app.js');
+  try {
+    const etag = createVersionsKennung();
+    fs.writeFileSync(datei, 'console.log(1)');
+    const e1 = etag(datei, fs.statSync(datei));
+    assert.match(e1, /^W\/"[A-Za-z0-9_-]{22}"$/);
+    // Wie ein frischer Git-Klon: gleicher Inhalt, andere Änderungszeit.
+    fs.utimesSync(datei, new Date('2030-01-01'), new Date('2030-01-01'));
+    assert.equal(etag(datei, fs.statSync(datei)), e1, 'Deploy ohne Änderung -> gleiche Kennung');
+    assert.equal(createVersionsKennung()(datei, fs.statSync(datei)), e1, 'auch in einem neuen Prozess');
+    assert.equal(etag(datei, fs.statSync(datei), 'en'), e1.slice(0, -1) + '-en"', 'Sprache als Zusatz');
+    fs.writeFileSync(datei, 'console.log(2)'); // gleiche Größe, anderer Inhalt
+    fs.utimesSync(datei, new Date('2031-01-01'), new Date('2031-01-01'));
+    assert.notEqual(etag(datei, fs.statSync(datei)), e1, 'neuer Inhalt -> neue Kennung');
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -88,6 +107,13 @@ test('Über HTTP: app.js/i18n.js/app.css als Brotli, entpackt byte-genau, deutli
       // Zweiter Abruf aus dem Speicher: dieselben Bytes.
       assert.ok((await roh(port, '/' + name, BROWSER)).body.equals(br.body));
     }
+    // Deploy-Fall über HTTP: app.css bekommt eine neue Änderungszeit, Inhalt gleich -> 304.
+    const css = join(PUBLIC, 'app.css'); const vorher = fs.statSync(css);
+    const alt = (await roh(port, '/app.css', BROWSER)).headers.etag;
+    try {
+      fs.utimesSync(css, vorher.atime, new Date(vorher.mtimeMs + 86400000));
+      assert.equal((await roh(port, '/app.css', { ...BROWSER, 'if-none-match': alt })).status, 304, 'nach Deploy ohne Änderung kein Neu-Download');
+    } finally { fs.utimesSync(css, vorher.atime, vorher.mtime); }
     // Startseite (je Sprache erzeugt) und JSON-Antworten ebenfalls.
     const start = await roh(port, '/', { ...BROWSER, 'accept-language': 'en-UG' });
     assert.equal(start.headers['content-encoding'], 'br');

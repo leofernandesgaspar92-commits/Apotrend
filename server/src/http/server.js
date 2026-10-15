@@ -25,7 +25,7 @@ import { can as roleCan } from '../domain/roles.js';
 import { cleanSourceUrl } from '../domain/media.js';
 import { bilderAlsAdresse, bildHolen } from '../domain/bilder.js';
 import { startseiteKopf, kopfSprache, manifestSprache } from './startseiteKopf.js';
-import { kodierungWaehlen, kodierenSync, createKompressionsSpeicher } from './komprimierung.js';
+import { kodierungWaehlen, kodierenSync, createKompressionsSpeicher, createVersionsKennung } from './komprimierung.js';
 import { regionFaktoren, preisCents } from '../domain/regionPreis.js';
 import { createSocialService } from '../services/social.js';
 import { createShortagesService } from '../services/shortages.js';
@@ -302,9 +302,10 @@ const oauth = createOAuthService({ repo, social, providers: buildProvidersFromEn
 // braucht einen eigenen Anbieter; hier bewusst nur ein Log statt eines Fake-Versands).
 const cryptoRates = createCryptoRates();
 const fxRates = createFxRates();
-// Statische Dateien: ETag aus Größe+mtime (+ Sprache bei Startseite/Manifest); zugleich
-// Schlüssel des Kompressions-Speichers (http/komprimierung.js).
-const statischerEtag = (stat, sp = null) => 'W/"' + stat.size.toString(16) + '-' + Math.round(stat.mtimeMs).toString(16) + (sp ? '-' + sp : '') + '"';
+// Statische Dateien: ETag aus dem Inhalt (+ Sprache bei Startseite/Manifest), damit ein
+// Deploy unveränderte Dateien nicht neu herunterladen lässt; zugleich Schlüssel des
+// Kompressions-Speichers (http/komprimierung.js).
+const statischerEtag = createVersionsKennung();
 const kompression = createKompressionsSpeicher();
 // Regionale Premium-Preise (domain/regionPreis.js): Heimatland des Kontos, sonst das
 // angefragte Land (Anzeige ohne Anmeldung). Ohne APOPULSE_PREISE_REGION: Listenpreis.
@@ -2729,7 +2730,7 @@ const server = http.createServer(async (req, res) => {
   };
   const type = MIME[ext] || 'application/octet-stream';
   const isText = /^text\/|application\/(json|manifest\+json|javascript)/.test(type);
-  // ETag aus Größe+mtime (billig, ohne Datei zu lesen): unverändert -> 304, spart Bandbreite.
+  // ETag aus dem Inhalt (statischerEtag oben): unverändert -> 304, spart Bandbreite — auch nach einem Deploy.
   // Cache-Control no-cache = immer revalidieren, damit Nutzer:innen nie eine veraltete
   // Version bekommen (die Assets sind nicht content-gehasht). Wichtig für langsame Leitungen.
   const stat = fs.statSync(serve);
@@ -2738,7 +2739,7 @@ const server = http.createServer(async (req, res) => {
   const istStart = serve === path.join(PUBLIC_DIR, 'index.html');
   const istManifest = serve === path.join(PUBLIC_DIR, 'manifest.webmanifest');
   const sp = istStart || istManifest ? kopfSprache(req.headers['accept-language']) : null;
-  const etag = statischerEtag(stat, sp);
+  const etag = statischerEtag(serve, stat, sp);
   const headers = { 'Content-Type': type + (isText ? '; charset=utf-8' : ''), 'Cache-Control': 'no-cache', ETag: etag };
   if (isText) headers.Vary = 'Accept-Encoding';
   if (istStart || istManifest) headers.Vary = 'Accept-Language, Accept-Encoding';
@@ -2773,7 +2774,7 @@ server.listen(PORT, () => {
     for (const name of ['app.js', 'i18n.js', 'app.css', 'sw.js']) {
       try {
         const datei = path.join(PUBLIC_DIR, name);
-        const etag = statischerEtag(fs.statSync(datei));
+        const etag = statischerEtag(datei, fs.statSync(datei));
         for (const k of ['br', 'gzip']) kompression.holen(datei, etag, k).catch(() => {});
       } catch { /* Datei fehlt: beim ersten Abruf ohnehin 404/Rückfall */ }
     }

@@ -305,3 +305,10 @@ Speicher. Vorher wurde app.js bei jeder Anfrage neu gezippt. JSON-Antworten und 
 gehen ebenfalls als Brotli hinaus (schnelle Stufe). Tests: `server/test/komprimierung.test.js`
 (entpackt byte-genau gleich der Datei, `br;q=0` wird respektiert, neue Version ersetzt die alte).
 
+**Nach einem Deploy nur Geändertes neu laden.** Die Versionskennung (ETag) einer Datei war Größe +
+Änderungszeit. Render baut jedes Deploy aus einem frischen Git-Klon, also bekam jede Datei eine neue
+Zeit, und **jedes Handy lud nach jedem Deploy die ganze App neu** (~245 KB), auch unveränderte
+Dateien. Jetzt ist die Kennung eine Prüfsumme des Inhalts: Unverändertes bleibt beim kurzen
+„304 unverändert" (wenige hundert Byte). Test: `komprimierung.test.js` (neue Änderungszeit bei
+gleichem Inhalt → 304).
+
