@@ -107,7 +107,8 @@
   button:active { transform:translateY(1px); }
   @media (prefers-reduced-motion: reduce) { button, .ovtile { transition:none; } button:active, .ovtile.clickable:hover, .ovtile.clickable:focus-visible { transform:none; } }
   button.ghost { background:transparent; color:var(--green); border:1px solid var(--green); }
-  button.small { padding:8px 12px; font-size:0.85em; min-height:40px; }
+  /* Untergrenze 13px: In einem 13px-Hinweis ergab 0.85em sonst 11px („Unlock“ — zu klein zum Lesen). */
+  button.small { padding:8px 12px; font-size:13px; font-size:max(0.85em, 13px); min-height:40px; }
   /* Text-Link-artiger Button (z. B. „Passwort vergessen?") — sieht aus wie ein Link,
      bleibt aber als <button> tastatur-/screenreader-bedienbar. */
   button.linklike { background:transparent; color:var(--green); border:none; padding:4px 0; min-height:0; font-weight:600; text-decoration:underline; }
@@ -382,6 +383,11 @@
   header #countrySwitch { border-radius:var(--radius-btn); }
   .rechte-spalte { display:none; }
   @media (max-width:560px){ #whoami, #whoami.clickable { display:none; } header #countrySwitch { max-width:58px; padding:8px 6px; } header .logo { font-size:1.1em; letter-spacing:0; } }
+  /* Günstige Android-Handys (Tecno, itel, Infinix: 320–360px) und 375px mit großer Schrift:
+     Logo + Länderwahl + „Alerts“ + „Menu“ brauchten ~370px — der Menü-Knopf ragte halb aus
+     dem Bild, die ganze Seite ließ sich seitlich schieben. Dort nur das Logo-Symbol; die
+     Knöpfe behalten ihr Wort (Klartext-Vorgabe). Name bleibt per aria-label/title erhalten. */
+  @media (max-width:380px){ header .logo .logo-txt { display:none; } }
   /* Symbol über dem Wort, ohne Rahmen — wie die Kopfleiste von LinkedIn.
      Das Wort bleibt (Owner-Vorgabe: Klartext statt erratener Symbole). */
   .kopf-btn { position:relative; display:inline-flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;

@@ -233,6 +233,35 @@ async function main() {
     await ctx.close();
   }
 
+  // Günstige Android-Handys (Tecno, itel, Infinix — 320–360px), Konto in Uganda (Englisch).
+  //  Bis 10/2026 ragte der Menü-Knopf bei 320px (und 360px mit großer Schrift) halb aus dem
+  //  Bild — auf JEDEM Reiter, unbemerkt, weil die Prüfungen erst ab 390px liefen.
+  {
+    const ug = await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Kampala Pharmacy', email: `schmal_${uniq}@ex.com`, password: 'Passwort123!', country: 'UG', accountType: 'pharmacy' }) });
+    for (const [w, f] of [[320, '0'], [360, '2']]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: 740 }, colorScheme: 'light', locale: 'en-UG' });
+      const page = await ctx.newPage();
+      await page.addInitScript(([t, fs]) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); localStorage.setItem('apo_fontscale', fs); }, [ug && ug.token, f]);
+      await page.goto(BASE, { waitUntil: 'networkidle' });
+      const tag = `${w}px${f === '2' ? ' · große Schrift' : ''} · Uganda`;
+      const reiter = await reiterLesen(page, findings, tag);
+      for (const { tab, label } of reiter) {
+        await reiterOeffnen(page, tab);
+        await page.waitForTimeout(250);
+        const r = await page.evaluate(() => {
+          const W = document.documentElement.clientWidth;
+          const menue = [...document.querySelectorAll('header .kopf-btn')].filter((b) => b.getBoundingClientRect().width).map((b) => b.getBoundingClientRect().right).reduce((a, b) => Math.max(a, b), 0);
+          const winzig = [...document.querySelectorAll('#app *')].find((e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) && e.getBoundingClientRect().width && parseFloat(getComputedStyle(e).fontSize) < 12);
+          return { quer: document.documentElement.scrollWidth > W + 1, menueRaus: menue > W + 1, winzig: winzig ? winzig.textContent.trim().slice(0, 30) + ' (' + getComputedStyle(winzig).fontSize + ')' : null };
+        });
+        if (r.quer) findings.push(`Querscroll: ${label || tab} [${tag}]`);
+        if (r.menueRaus) findings.push(`Kopf-Knopf ragt aus dem Bild: ${label || tab} [${tag}]`);
+        if (r.winzig && f === '0') findings.push(`Schrift unter 12px: „${r.winzig}" in ${label || tab} [${tag}]`);
+      }
+      await ctx.close();
+    }
+  }
+
   // Wirkstoff-Detailseite (Hub) separat prüfen — sie ist KEIN Reiter und entging daher
   // dem Tab-Sweep. Genau hier versteckte sich ein Kopf-Button-Überlauf bei 390px (die
   // Aktions-Buttons brachen nicht um). Seed-Wirkstoff „Amoxicillin" ist immer vorhanden.

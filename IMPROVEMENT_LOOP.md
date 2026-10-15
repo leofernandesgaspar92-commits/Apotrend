@@ -2940,3 +2940,19 @@ Umbrüche → Leerzeichen — alle rot. **Lehre:** Die Umbruch-Mutation ließ si
 setzt Semikolons) → die vm-Probe ist kein Gleichheitsbeweis, der Token-Abgleich ist es. Und:
 `deepEqual` auf 128 000 Einträge sprengte bei Abweichung den Speicher → erste Abweichung suchen.
 
+### Cycle · Schmale Handys: Menü-Knopf ragte aus dem Bild (2026-10-15)
+
+**GATHER.** Probe 320/360px (+ große Schrift) über alle Reiter, Konto UG/en: Querscroll und
+`header .kopf-btn` „Menu" bei 290–354px (W=320) auf jedem Reiter; ebenso 360px mit großer Schrift.
+„Unlock" 11,05px (button.small 0.85em in 13px-Hinweis). Audit prüfte alle Reiter erst ab 390px.
+
+**Abgewogen, nicht gemacht:** i18n.js je Sprache (~58 KB einmalig) — sieben synchrone
+`setLocale`-Stellen inkl. Ansicht anderer Länder und Offline-Wechsel; Risiko > Nutzen.
+
+**WORK.** app.css: bis 380px nur Logo-Symbol (`.logo-txt` aus; aria-label bleibt);
+`button.small` mindestens 13px. Audit-Block „Günstige Android-Handys": alle Reiter 320px und
+360px+große Schrift, Uganda: Querscroll, Kopf-Knopf außerhalb, Schrift < 12px.
+
+**Gegenprobe.** Audit mit altem app.css → meldet Querscroll, „Kopf-Knopf ragt aus dem Bild" und
+„Unlock (11.05px)" je Reiter; mit neuem CSS sauber. Portugiesisch (MZ, „Alertas") geprüft.
+

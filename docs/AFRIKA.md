@@ -324,3 +324,13 @@ setzt; (3) der Browser-Audit läuft komplett auf der schlanken Fassung. Abschalt
 
 Erstes Öffnen insgesamt (Brotli): vorher ~320 KB (gzip) → jetzt ~205 KB.
 
+## Günstige Handys (320–360 px)
+
+In Afrika verbreitete Android-Handys (Tecno, itel, Infinix) sind oft nur 320–360 px breit. Dort ragte
+der **Menü-Knopf halb aus dem Bild** und die ganze Seite ließ sich seitlich verschieben, auf jedem
+Reiter. Bei 360 px mit großer Schrift ebenso. Grund: Logo-Schriftzug + Länderwahl + „Alerts" +
+„Menu" brauchten ~370 px. Jetzt steht bis 380 px Breite nur das grüne Logo-Symbol; „Alerts" und
+„Menu" behalten ihr Wort. Außerdem hatte „Unlock" (Premium-Hinweis an der Beobachtungsliste) nur
+11 px Schrift; kleine Knöpfe haben jetzt mindestens 13 px. Der Browser-Audit prüft alle Reiter bei
+320 px und 360 px mit großer Schrift (Konto in Uganda, Englisch).
+
