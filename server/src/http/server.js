@@ -25,6 +25,7 @@ import { can as roleCan } from '../domain/roles.js';
 import { cleanSourceUrl } from '../domain/media.js';
 import { bilderAlsAdresse, bildHolen } from '../domain/bilder.js';
 import { startseiteKopf, kopfSprache, manifestSprache } from './startseiteKopf.js';
+import { kodierungWaehlen, kodierenSync, createKompressionsSpeicher } from './komprimierung.js';
 import { regionFaktoren, preisCents } from '../domain/regionPreis.js';
 import { createSocialService } from '../services/social.js';
 import { createShortagesService } from '../services/shortages.js';
@@ -301,6 +302,10 @@ const oauth = createOAuthService({ repo, social, providers: buildProvidersFromEn
 // braucht einen eigenen Anbieter; hier bewusst nur ein Log statt eines Fake-Versands).
 const cryptoRates = createCryptoRates();
 const fxRates = createFxRates();
+// Statische Dateien: ETag aus Größe+mtime (+ Sprache bei Startseite/Manifest); zugleich
+// Schlüssel des Kompressions-Speichers (http/komprimierung.js).
+const statischerEtag = (stat, sp = null) => 'W/"' + stat.size.toString(16) + '-' + Math.round(stat.mtimeMs).toString(16) + (sp ? '-' + sp : '') + '"';
+const kompression = createKompressionsSpeicher();
 // Regionale Premium-Preise (domain/regionPreis.js): Heimatland des Kontos, sonst das
 // angefragte Land (Anzeige ohne Anmeldung). Ohne APOPULSE_PREISE_REGION: Listenpreis.
 const preisFaktoren = regionFaktoren(process.env.APOPULSE_PREISE_REGION);
@@ -584,12 +589,12 @@ const json = (req, res, code, obj, { bilderEinbetten = false } = {}) => {
   // geteilten Gerät sah ein zweites Konto offline die Antwort des ersten.
   // Der gewollte Offline-Stand liegt getrennt je Konto im Service Worker (sw.js).
   const headers = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' };
-  // Größere JSON-Antworten (Feed, Preise) gzip-komprimieren, wenn der Client es kann —
-  // spart Bandbreite bei jeder Navigation. Kleine Antworten lohnen die CPU nicht.
-  if (payload.length > 512 && /\bgzip\b/.test(req.headers['accept-encoding'] || '')) {
-    const gz = zlib.gzipSync(payload);
-    res.writeHead(code, { ...headers, 'Content-Encoding': 'gzip', Vary: 'Accept-Encoding' });
-    res.end(gz);
+  // Größere JSON-Antworten (Feed, Preise) komprimieren (Brotli, sonst gzip), wenn der
+  // Client es kann — spart Bandbreite bei jeder Navigation. Kleine lohnen die CPU nicht.
+  const kodierung = payload.length > 512 ? kodierungWaehlen(req.headers['accept-encoding']) : null;
+  if (kodierung) {
+    res.writeHead(code, { ...headers, 'Content-Encoding': kodierung, Vary: 'Accept-Encoding' });
+    res.end(kodierenSync(payload, kodierung));
   } else {
     res.writeHead(code, headers);
     res.end(payload);
@@ -2733,23 +2738,25 @@ const server = http.createServer(async (req, res) => {
   const istStart = serve === path.join(PUBLIC_DIR, 'index.html');
   const istManifest = serve === path.join(PUBLIC_DIR, 'manifest.webmanifest');
   const sp = istStart || istManifest ? kopfSprache(req.headers['accept-language']) : null;
-  const etag = 'W/"' + stat.size.toString(16) + '-' + Math.round(stat.mtimeMs).toString(16) + (sp ? '-' + sp : '') + '"';
+  const etag = statischerEtag(stat, sp);
   const headers = { 'Content-Type': type + (isText ? '; charset=utf-8' : ''), 'Cache-Control': 'no-cache', ETag: etag };
+  if (isText) headers.Vary = 'Accept-Encoding';
   if (istStart || istManifest) headers.Vary = 'Accept-Language, Accept-Encoding';
+  const kodierung = isText ? kodierungWaehlen(req.headers['accept-encoding']) : null;
   if ((req.headers['if-none-match'] || '') === etag) { res.writeHead(304, headers); return res.end(); }
   if (istStart || istManifest) {
     const roh = fs.readFileSync(serve, 'utf8');
     const html = Buffer.from(istStart ? startseiteKopf(roh, { sp, basis: oeffentlicheBasis(req) }) : manifestSprache(roh, sp));
-    if (/\bgzip\b/.test(req.headers['accept-encoding'] || '')) { res.writeHead(200, { ...headers, 'Content-Encoding': 'gzip' }); return res.end(zlib.gzipSync(html)); }
+    if (kodierung) { res.writeHead(200, { ...headers, 'Content-Encoding': kodierung }); return res.end(kodierenSync(html, kodierung)); }
     res.writeHead(200, headers); return res.end(html);
   }
-  // Textassets (JS/CSS/HTML) gzip-komprimieren, wenn der Client es unterstützt — app.js
-  // ist ~250 KB und schrumpft damit deutlich, spürbar auf mobilen Apotheken-Leitungen.
-  if (isText && /\bgzip\b/.test(req.headers['accept-encoding'] || '')) {
-    headers['Content-Encoding'] = 'gzip';
-    headers.Vary = 'Accept-Encoding';
-    res.writeHead(200, headers);
-    fs.createReadStream(serve).pipe(zlib.createGzip()).pipe(res);
+  // Textassets (JS/CSS) komprimiert aus dem Speicher (http/komprimierung.js): Brotli
+  // höchster Stufe, je Version nur einmal gerechnet — spürbar auf mobilen Leitungen.
+  if (kodierung) {
+    kompression.holen(serve, etag, kodierung).then((buf) => {
+      res.writeHead(200, { ...headers, 'Content-Encoding': kodierung, 'Content-Length': buf.length });
+      res.end(buf);
+    }, () => { res.writeHead(200, headers); fs.createReadStream(serve).pipe(res); });
   } else {
     res.writeHead(200, headers);
     fs.createReadStream(serve).pipe(res);
@@ -2759,6 +2766,18 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   // Tatsaechlicher Port: Bei PORT=0 (Tests) vergibt ihn das Betriebssystem.
   console.log(`ApoPulse Feed-Server läuft auf http://localhost:${server.address().port}`);
+  // Große Dateien gleich nach dem Start komprimieren (im Hintergrund), damit die erste
+  // Besucherin nach einem Deploy nicht auf die Brotli-Rechnung wartet. Nicht in Tests:
+  // dort starten Dutzende Server, und jeder würde sonst Sekunden Rechenzeit verbrauchen.
+  if (process.env.NODE_ENV === 'production') {
+    for (const name of ['app.js', 'i18n.js', 'app.css', 'sw.js']) {
+      try {
+        const datei = path.join(PUBLIC_DIR, name);
+        const etag = statischerEtag(fs.statSync(datei));
+        for (const k of ['br', 'gzip']) kompression.holen(datei, etag, k).catch(() => {});
+      } catch { /* Datei fehlt: beim ersten Abruf ohnehin 404/Rückfall */ }
+    }
+  }
   // Persistenz-Status deutlich anzeigen: Ein Produktiv-Deploy OHNE APOPULSE_DATA_FILE
   // läuft rein im Speicher — bei jedem Neustart sind ALLE Daten weg. Das darf nicht
   // unbemerkt passieren, darum eine laute Warnung (nicht in der Testumgebung).

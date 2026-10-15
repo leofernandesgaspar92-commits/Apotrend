@@ -2893,3 +2893,19 @@ gewählten Land ab (sonst stünden ohne Anmeldung 3,00 € neben 9,99 €). Höh
 **Tests.** `region-preis.test.js` (3). Gegenproben: Ansichtsland zuerst → rot; Krypto-Start mit
 Listenpreis → rot (999 ≠ 300); Rechnung mit Listenpreis → rot.
 
+### Cycle · Brotli und Kompressions-Speicher für mobile Daten (2026-10-15)
+
+**Befund.** Erstes Öffnen ≈ 320 KB gzip (app.js 189, i18n.js 116); app.js wurde bei jeder Anfrage
+neu gezippt; kein Brotli; unkomprimierte Antworten ohne `Vary: Accept-Encoding`.
+
+**WORK.** `http/komprimierung.js`: `kodierungWaehlen` (br vor gzip, q=0 = nein),
+`kodierenSync` (JSON/Startseite, Brotli Stufe 5), `createKompressionsSpeicher` (Brotli 11 / gzip 9
+je Pfad+ETag einmal, asynchron, begrenzt). server.js nutzt es für statische Dateien, Startseite,
+Manifest und `json()`; Vorwärmen nach dem Start nur mit `NODE_ENV=production`. Ergebnis: app.js
+144 KB, i18n.js 87 KB (−24 % gesamt); vorgewärmt in wenigen ms ausgeliefert.
+
+**Tests.** `komprimierung.test.js` (3). Gegenproben: ETag ignoriert → rot (alte Version);
+q=0 ignoriert → rot; kein Vary unkomprimiert → rot; Brotli Stufe 1 → rot (größer als gzip).
+Nicht gemacht: i18n.js je Sprache aufteilen (weitere ~60 KB) — Länderwahl zeigt mehrere Sprachen
+gleichzeitig und Rückfall auf Deutsch; eigener Schritt mit Offline-Cache-Umbau.
+

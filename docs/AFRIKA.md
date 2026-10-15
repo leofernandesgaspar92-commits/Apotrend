@@ -287,3 +287,21 @@ Wien. Den Preis legt der Betreiber fest; die Technik steht:
 - Tests: `server/test/region-preis.test.js` (Gegenproben: Ansichtsland statt Heimatland,
   Krypto-Start mit Listenpreis, Rechnung mit Listenpreis machen den Test rot).
 
+## Weniger mobile Daten beim Laden (Brotli)
+
+Beim ersten Öffnen lud ein Handy rund 320 KB (gzip), bei jedem App-Update erneut. Jetzt liefert der
+Server Brotli aus, sobald der Browser es ankündigt (alle heutigen Browser), sonst weiter gzip:
+
+| Datei | gzip vorher | Brotli jetzt |
+|---|---|---|
+| app.js | 189 KB | 144 KB |
+| i18n.js | 116 KB | 87 KB |
+| app.css | 13 KB | 12 KB |
+
+Zusammen rund **24 % weniger** Download, ohne die App zu ändern. Die höchste Brotli-Stufe kostet
+für app.js gut eine Sekunde Rechenzeit. Darum rechnet der Server jede Datei nur einmal je Version,
+im Hintergrund und gleich nach dem Start (`NODE_ENV=production`), und liefert sie danach aus dem
+Speicher. Vorher wurde app.js bei jeder Anfrage neu gezippt. JSON-Antworten und die Startseite
+gehen ebenfalls als Brotli hinaus (schnelle Stufe). Tests: `server/test/komprimierung.test.js`
+(entpackt byte-genau gleich der Datei, `br;q=0` wird respektiert, neue Version ersetzt die alte).
+
