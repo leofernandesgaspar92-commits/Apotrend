@@ -312,3 +312,15 @@ Dateien. Jetzt ist die Kennung eine Prüfsumme des Inhalts: Unverändertes bleib
 „304 unverändert" (wenige hundert Byte). Test: `komprimierung.test.js` (neue Änderungszeit bei
 gleichem Inhalt → 304).
 
+**Skripte ohne Kommentare ausliefern.** app.js ist bewusst ausführlich kommentiert; das Handy braucht
+das nicht. Der Server liefert Skripte jetzt ohne Kommentare, Einrückung und Leerzeilen aus
+(`server/src/http/schlank.js`, ohne Build-Werkzeug): app.js **144 → 105 KB** (Brotli), sw.js 2,5 → 1,3 KB.
+Die Datei im Repo bleibt unverändert. Absicherung: (1) Probe-Übersetzung vor dem Ausliefern, sonst
+geht das Original hinaus; (2) Test vergleicht app.js, i18n.js und sw.js **Token für Token und
+Zeilenumbruch für Zeilenumbruch** mit einem echten JavaScript-Parser. Die Probe-Übersetzung allein
+reicht nicht: Eine Gegenprobe ohne Zeilenumbrüche ließ sich übersetzen, weil app.js überall Semikolons
+setzt; (3) der Browser-Audit läuft komplett auf der schlanken Fassung. Abschalten:
+`APOPULSE_SCHLANK=aus`.
+
+Erstes Öffnen insgesamt (Brotli): vorher ~320 KB (gzip) → jetzt ~205 KB.
+

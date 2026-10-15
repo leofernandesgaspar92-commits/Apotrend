@@ -25,6 +25,7 @@ import { can as roleCan } from '../domain/roles.js';
 import { cleanSourceUrl } from '../domain/media.js';
 import { bilderAlsAdresse, bildHolen } from '../domain/bilder.js';
 import { startseiteKopf, kopfSprache, manifestSprache } from './startseiteKopf.js';
+import { schlankSicher } from './schlank.js';
 import { kodierungWaehlen, kodierenSync, createKompressionsSpeicher, createVersionsKennung } from './komprimierung.js';
 import { regionFaktoren, preisCents } from '../domain/regionPreis.js';
 import { createSocialService } from '../services/social.js';
@@ -306,7 +307,10 @@ const fxRates = createFxRates();
 // Deploy unveränderte Dateien nicht neu herunterladen lässt; zugleich Schlüssel des
 // Kompressions-Speichers (http/komprimierung.js).
 const statischerEtag = createVersionsKennung();
-const kompression = createKompressionsSpeicher();
+// Skripte gehen ohne Kommentare/Einrückung hinaus (http/schlank.js; APOPULSE_SCHLANK=aus schaltet ab).
+const kompression = createKompressionsSpeicher({
+  umformen: (datei, b) => (datei.endsWith('.js') && process.env.APOPULSE_SCHLANK !== 'aus' ? schlankSicher(b, { name: path.basename(datei) }) : b),
+});
 // Regionale Premium-Preise (domain/regionPreis.js): Heimatland des Kontos, sonst das
 // angefragte Land (Anzeige ohne Anmeldung). Ohne APOPULSE_PREISE_REGION: Listenpreis.
 const preisFaktoren = regionFaktoren(process.env.APOPULSE_PREISE_REGION);
@@ -2753,9 +2757,10 @@ const server = http.createServer(async (req, res) => {
   }
   // Textassets (JS/CSS) komprimiert aus dem Speicher (http/komprimierung.js): Brotli
   // höchster Stufe, je Version nur einmal gerechnet — spürbar auf mobilen Leitungen.
-  if (kodierung) {
-    kompression.holen(serve, etag, kodierung).then((buf) => {
-      res.writeHead(200, { ...headers, 'Content-Encoding': kodierung, 'Content-Length': buf.length });
+  //  Unkomprimiert ebenfalls aus dem Speicher (gleiche, ggf. schlanke Fassung); Bilder direkt.
+  if (isText) {
+    kompression.holen(serve, etag, kodierung || 'roh').then((buf) => {
+      res.writeHead(200, { ...headers, ...(kodierung ? { 'Content-Encoding': kodierung } : {}), 'Content-Length': buf.length });
       res.end(buf);
     }, () => { res.writeHead(200, headers); fs.createReadStream(serve).pipe(res); });
   } else {

@@ -2921,3 +2921,22 @@ server.js nutzt sie für alle statischen Dateien (und als Schlüssel des Kompres
 **Tests.** `komprimierung.test.js` (+1, + Deploy-Fall über HTTP mit `utimes`). Gegenproben:
 Kennung wieder aus Größe+Zeit → rot (Unit + HTTP 304); Inhalt nie neu prüfen → rot.
 
+### Cycle · Schlanke Skripte: app.js 144 → 105 KB (2026-10-15)
+
+**GATHER.** Messung Uganda-Rundgang (Playwright, übertragene Bytes): API-Anfragen ~16 KB, Neuladen
+dank Inhalts-ETag 7 KB; Rest = app.js 145 KB + i18n.js 87 KB beim ersten Öffnen. app.js ohne
+Zeilenkommentare/Einrückung: 110 KB.
+
+**WORK.** `http/schlank.js`: Zerleger (Zeichenketten, Vorlagen mit `${}`-Verschachtelung,
+reguläre Ausdrücke inkl. Klassen) entfernt Kommentare, Einrückung, Leerzeilen, doppelte
+Leerzeichen; je Zeilenumbruch bleibt einer (Semikolon-Regel). `schlankSicher` mit vm.Script-Probe
+und Rückfall. Kompressions-Speicher bekommt `umformen` und Kodierung `roh` (auch unkomprimiert
+dieselbe Fassung, Content-Length). `APOPULSE_SCHLANK=aus` schaltet ab.
+
+**Tests.** `komprimierung.test.js` +3 (Beispielprogramm mit Fallen in `test/fixtures/` — gleiches
+Ergebnis ausgeführt; Rückfall; Token- und Umbruch-Abgleich mit acorn für app.js/i18n.js/sw.js,
+übersprungen ohne acorn). Gegenproben: `${` ignoriert, Regex-Erkennung aus, Zeichenketten aus,
+Umbrüche → Leerzeichen — alle rot. **Lehre:** Die Umbruch-Mutation ließ sich übersetzen (app.js
+setzt Semikolons) → die vm-Probe ist kein Gleichheitsbeweis, der Token-Abgleich ist es. Und:
+`deepEqual` auf 128 000 Einträge sprengte bei Abweichung den Speicher → erste Abweichung suchen.
+

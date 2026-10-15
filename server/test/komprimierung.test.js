@@ -11,6 +11,9 @@ import { spawn } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { kodierungWaehlen, createKompressionsSpeicher, createVersionsKennung } from '../src/http/komprimierung.js';
+import { schlankJs, schlankSicher } from '../src/http/schlank.js';
+import vm from 'node:vm';
+import { createRequire } from 'node:module';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
 const SERVER = join(HIER, '..', 'src', 'http', 'server.js');
@@ -75,7 +78,7 @@ function roh(port, pfad, headers = {}) {
 }
 const entpacken = (r) => (r.headers['content-encoding'] === 'br' ? zlib.brotliDecompressSync(r.body) : r.headers['content-encoding'] === 'gzip' ? zlib.gunzipSync(r.body) : r.body);
 
-test('Über HTTP: app.js/i18n.js/app.css als Brotli, entpackt byte-genau, deutlich kleiner als gzip', { timeout: 90000 }, async () => {
+test('Über HTTP: app.js/i18n.js/app.css als Brotli, entpackt byte-genau (Skripte schlank), deutlich kleiner als gzip', { timeout: 90000 }, async () => {
   const env = { ...process.env, PORT: '0', APOPULSE_TOKEN_SECRET: 'komprimierung-test-12', APOPULSE_DATA_FILE: '', APOPULSE_PRESSE: 'aus' };
   const kind = spawn(process.execPath, [SERVER], { env, stdio: ['ignore', 'pipe', 'pipe'] });
   let log = '';
@@ -88,13 +91,14 @@ test('Über HTTP: app.js/i18n.js/app.css als Brotli, entpackt byte-genau, deutli
     });
     const BROWSER = { 'accept-encoding': 'gzip, deflate, br, zstd' };
     for (const name of ['app.js', 'i18n.js', 'app.css', 'sw.js']) {
-      const original = fs.readFileSync(join(PUBLIC, name));
+      // Skripte gehen schlank hinaus (ohne Kommentare/Einrückung), alles andere unverändert.
+      const original = name.endsWith('.js') ? Buffer.from(schlankJs(fs.readFileSync(join(PUBLIC, name), 'utf8'))) : fs.readFileSync(join(PUBLIC, name));
       const br = await roh(port, '/' + name, BROWSER);
       assert.equal(br.status, 200);
       assert.equal(br.headers['content-encoding'], 'br', name);
       assert.equal(Number(br.headers['content-length']), br.body.length, name + ': Länge stimmt');
       assert.match(br.headers.vary || '', /Accept-Encoding/);
-      assert.ok(entpacken(br).equals(original), name + ': Brotli entpackt = Datei');
+      assert.ok(entpacken(br).equals(original), name + ': Brotli entpackt = (schlanke) Datei');
       const gz = await roh(port, '/' + name, { 'accept-encoding': 'gzip' });
       assert.equal(gz.headers['content-encoding'], 'gzip');
       assert.ok(entpacken(gz).equals(original), name + ': gzip entpackt = Datei');
@@ -126,3 +130,45 @@ test('Über HTTP: app.js/i18n.js/app.css als Brotli, entpackt byte-genau, deutli
     await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
   }
 });
+
+// ── Schlanke Skripte (http/schlank.js) ───────────────────────────────────────
+const ausfuehren = (code) => JSON.stringify(vm.runInNewContext(code + '\n;ergebnis'));
+
+test('Schlank: Kommentarzeichen in Texten, Vorlagen und regulären Ausdrücken bleiben, Ergebnis gleich', () => {
+  const quelle = fs.readFileSync(join(HIER, 'fixtures', 'schlank-beispiel.js'), 'utf8');
+  const schlank = schlankJs(quelle);
+  assert.equal(ausfuehren(schlank), ausfuehren(quelle));
+  assert.ok(!/Kommentar am Anfang|Block-Kommentar/.test(schlank), 'Kommentare entfernt');
+  assert.match(schlank, /\/\/ bleibt\n        eingerückt bleibt/, 'Vorlagentext unverändert, samt Einrückung');
+  assert.match(schlank, /let w = z\n\+\+z/, 'Zeilenumbruch bleibt (Semikolon-Regel)');
+  assert.ok(!/^[ \t]+\S/m.test(schlank.replace(/`[^`]*`/g, '')), 'keine Einrückung außerhalb von Vorlagen');
+});
+
+test('Schlank sicher: Unübersetzbares geht unverändert hinaus', () => {
+  const kaputt = Buffer.from('const a = `offen');
+  assert.ok(schlankSicher(kaputt, { name: 'kaputt.js' }).equals(kaputt));
+  const ok = Buffer.from('// x\nconst a = 1;\n');
+  assert.equal(schlankSicher(ok).toString(), 'const a = 1;\n');
+});
+
+test('Schlank: app.js, i18n.js, sw.js Token für Token gleich (Abgleich mit einem echten Parser)', (t) => {
+  let acorn;
+  try { acorn = createRequire('/opt/node-tools/')('acorn'); } catch { return t.skip('acorn nicht vorhanden'); }
+  const tokens = (s) => { const out = []; for (const x of acorn.tokenizer(s, { ecmaVersion: 'latest' })) out.push(x.type.label + '\u0000' + (x.value === undefined ? '' : String(x.value))); return out; };
+  // Zeilen je Token: Wo im Original ein Zeilenumbruch zwischen zwei Tokens stand, muss einer bleiben.
+  const umbrueche = (s) => { const out = []; let vor = null; for (const x of acorn.tokenizer(s, { ecmaVersion: 'latest', locations: true })) { if (vor) out.push(x.loc.start.line > vor.loc.end.line); vor = x; } return out; };
+  for (const name of ['app.js', 'i18n.js', 'sw.js']) {
+    const roh = fs.readFileSync(join(PUBLIC, name), 'utf8');
+    const schlank = schlankJs(roh);
+    const a = tokens(roh); const b = tokens(schlank);
+    assert.equal(b.length, a.length, name + ': Anzahl Tokens');
+    const erste = a.findIndex((x, k) => x !== b[k]);
+    assert.equal(erste, -1, `${name}: Abweichung bei Token ${erste}: ${a[erste]} / ${b[erste]}`);
+    // Erste Abweichung statt deepEqual: ein Unterschiedsbericht über 100 000 Einträge sprengt den Speicher.
+    const ua = umbrueche(roh); const ub = umbrueche(schlank);
+    const ersteU = ua.findIndex((x, k) => x !== ub[k]);
+    assert.equal(ersteU, -1, `${name}: Zeilenumbruch zwischen Token ${ersteU} und ${ersteU + 1} ${ua[ersteU] ? 'verloren' : 'hinzugekommen'} (${a[ersteU + 1]})`);
+    if (name === 'app.js') assert.ok(schlank.length < roh.length * 0.9, 'app.js spürbar kleiner');
+  }
+});
+

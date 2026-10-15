@@ -64,10 +64,12 @@ export function createVersionsKennung({ maxDateien = 256 } = {}) {
   };
 }
 
-/** Speicher für komprimierte statische Dateien: je Pfad nur die aktuelle Version. */
-export function createKompressionsSpeicher({ maxDateien = 64 } = {}) {
-  const speicher = new Map(); // Pfad -> { etag, br?: Promise<Buffer>, gzip?: Promise<Buffer> }
-  function holen(datei, etag, kodierung) {
+/** Speicher für komprimierte statische Dateien: je Pfad nur die aktuelle Version.
+ *  umformen(datei, buf) -> buf: optional vor dem Komprimieren (schlanke Skripte);
+ *  einmal je Version, gemeinsam für alle Kodierungen. Kodierung 'roh' = unkomprimiert. */
+export function createKompressionsSpeicher({ maxDateien = 64, umformen = null } = {}) {
+  const speicher = new Map(); // Pfad -> { etag, roh?: Promise<Buffer>, br?: Promise<Buffer>, gzip?: Promise<Buffer> }
+  function holen(datei, etag, kodierung = 'roh') {
     let e = speicher.get(datei);
     if (!e || e.etag !== etag) {
       e = { etag };
@@ -76,7 +78,9 @@ export function createKompressionsSpeicher({ maxDateien = 64 } = {}) {
       if (speicher.size > maxDateien) speicher.delete(speicher.keys().next().value);
     }
     if (!e[kodierung]) {
-      const p = fs.promises.readFile(datei).then((b) => (kodierung === 'br'
+      let p;
+      if (kodierung === 'roh') p = fs.promises.readFile(datei).then((b) => (umformen ? umformen(datei, b) : b));
+      else p = holen(datei, etag, 'roh').then((b) => (kodierung === 'br'
         ? brotli(b, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: b.length } })
         : gzip(b, { level: 9 })));
       // Fehlschlag nicht festhalten: nächste Anfrage versucht es neu.
