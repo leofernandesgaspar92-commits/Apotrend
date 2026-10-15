@@ -7012,7 +7012,7 @@ async function openPremium() {
         ⚠️ <b>${esc(t('pr_rejected_t'))}</b>${letzte.review_note ? `<div style="margin-top:4px">${esc(t('pr_rejected_why'))}: „${esc(letzte.review_note)}“</div>` : ''}<div style="margin-top:4px">${esc(t('pr_rejected_s'))}</div></div>`);
     }
     const opt = await api('GET', `/api/payments/crypto?product=${encodeURIComponent(prPlan)}&country=${encodeURIComponent(viewCountry())}`);
-    const produkte = ((await api('GET', '/api/payments/products').catch(() => ({ products: [] }))).products) || [];
+    const produkte = ((await api('GET', `/api/payments/products?country=${encodeURIComponent(viewCountry())}`).catch(() => ({ products: [] }))).products) || [];
     body.innerHTML = '';
     if (premiumKopf) body.appendChild(premiumKopf);
     if (stand) body.appendChild(stand);

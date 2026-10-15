@@ -45,7 +45,11 @@ export function createPaymentsService({
   // Für Zahlungen ohne Katalogprodukt (Anzeigen-Kampagnen): wird nach jeder
   // bestätigten Zahlung aufgerufen. Fehler darin halten die Zahlung nicht auf.
   beiBezahlt = null,
+  // Regionaler Preis (domain/regionPreis.js): (userId|null, product, { country }) -> Cent.
+  // Ohne Angabe: Listenpreis. EINE Stelle für Anzeige, Krypto, Überweisung und Checkout.
+  preisFuer = null,
 }) {
+  const preis = (userId, product, opt = {}) => (typeof preisFuer === 'function' ? preisFuer(userId || null, product, opt) : product.amount_cents);
   const melde = (o) => { if (typeof benachrichtige === 'function') { try { benachrichtige(o); } catch { /* eine Glocke darf keine Zahlung aufhalten */ } } };
   const pick = (method) => {
     const kandidaten = Object.values(providers).filter(p => (p.methods || []).includes(method));
@@ -137,11 +141,11 @@ export function createPaymentsService({
     //    Chain-Verifizierung: statische Adressen erlauben keine zuverlässige Zuordnung
     //    „welche:r Kund:in hat gezahlt". Ablauf: anzeigen → Kund:in nennt Tx-ID → du
     //    bestätigst manuell (confirmPayment). Ehrlich statt Fake-Auto-Freischaltung. ──
-    async cryptoOptions(productId, { currency = null } = {}) {
+    async cryptoOptions(productId, { currency = null, userId = null, country = null } = {}) {
       const product = getProduct(productId);
       if (!product) throw new AppError('product_unknown', 'Unbekanntes Produkt.');
       const ws = wallets(); // Liste (mehrere Wallets je Coin möglich)
-      const eur = product.amount_cents / 100;
+      const eur = preis(userId, product, { country }) / 100;
       const rateMap = rates ? await rates.ratesEur([...new Set(ws.map(w => w.coin))]) : {};
       const coins = ws.map(w => {
         const rate = rateMap[w.coin]; // EUR pro 1 Coin
@@ -170,8 +174,9 @@ export function createPaymentsService({
       if (!w) throw new AppError('coin_unavailable', 'Wallet nicht verfügbar.');
       let rate = null;
       try { rate = rates ? ((await rates.ratesEur([w.coin])) || {})[w.coin] || null : null; } catch { rate = null; }
-      const eur = product.amount_cents / 100;
-      const payment = repo.createPayment({ userId, productId, amountCents: product.amount_cents, currency: product.currency, method: 'crypto_direct', provider: 'direct', coin: w.coin, walletId: w.id, address: w.address, status: 'pending' });
+      const cents = preis(userId, product);
+      const eur = cents / 100;
+      const payment = repo.createPayment({ userId, productId, amountCents: cents, currency: product.currency, method: 'crypto_direct', provider: 'direct', coin: w.coin, walletId: w.id, address: w.address, status: 'pending' });
       const mitBetrag = repo.updatePaymentReview
         ? repo.updatePaymentReview(payment.id, { rate_eur: rate, expected_crypto: rate ? Number((eur / rate).toFixed(8)) : null })
         : payment;
@@ -271,7 +276,7 @@ export function createPaymentsService({
     ueberweisungAnlegen(userId, productId) {
       const product = getProduct(productId);
       if (!product) throw new AppError('product_unknown', 'Unbekanntes Produkt.');
-      const p = repo.createPayment({ userId, productId: product.id, amountCents: product.amount_cents, currency: product.currency, method: 'invoice', provider: 'direct', status: 'pending_review' });
+      const p = repo.createPayment({ userId, productId: product.id, amountCents: preis(userId, product), currency: product.currency, method: 'invoice', provider: 'direct', status: 'pending_review' });
       const mit = repo.updatePaymentReview ? repo.updatePaymentReview(p.id, { claimed_at: new Date().toISOString() }) : p;
       spiegeln(mit || p);
       for (const mod of (moderatoren() || [])) {
@@ -321,8 +326,10 @@ export function createPaymentsService({
       if (!product) throw new AppError('product_unknown', 'Unbekanntes Produkt.');
       const provider = pick(method);
       if (!provider) throw new AppError('method_unavailable', 'Zahlungsmethode nicht verfügbar.');
-      const payment = repo.createPayment({ userId, productId, amountCents: product.amount_cents, currency: product.currency, method, provider: provider.name, status: 'pending' });
-      const checkout = await provider.createCheckout({ payment, product, method, successUrl, cancelUrl });
+      const cents = preis(userId, product);
+      const payment = repo.createPayment({ userId, productId, amountCents: cents, currency: product.currency, method, provider: provider.name, status: 'pending' });
+      // Anbieter (Stripe, Coinbase, PayPal) lesen product.amount_cents — der regionale Preis muss dort ankommen.
+      const checkout = await provider.createCheckout({ payment, product: { ...product, amount_cents: cents }, method, successUrl, cancelUrl });
       spiegeln((checkout && checkout.ref) ? repo.setPaymentRef(payment.id, checkout.ref) : payment);
       return { payment_id: payment.id, redirect_url: checkout && checkout.url };
     },

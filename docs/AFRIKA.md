@@ -268,3 +268,22 @@ Wer „medicine shortage Uganda" sucht, fand ApoPulse nicht. Jetzt:
 - **Übersicht `/engpaesse` und 404-Seite** folgen der Sprache des Browsers (`Accept-Language`,
   `Vary`). Die Übersicht hat einen eigenen Abschnitt für Länder ohne amtliche Liste. Die
   Landing-Seiten stehen in der Sitemap.
+
+## Premium-Preis für Afrika (eine Einstellung)
+
+9,99 €/Monat sind in Uganda rund 40 000 UGX, für eine kleine Apotheke eine andere Hürde als in
+Wien. Den Preis legt der Betreiber fest; die Technik steht:
+
+- **Einstellung in Render:** `APOPULSE_PREISE_REGION="AFRICA:30"` heißt „Premium in Afrika kostet
+  30 % des Listenpreises" (Monat 3,00 €, Jahr 29,70 €). Ohne Einstellung ändert sich nichts.
+- **Nur Premium.** Business (Großhandel, Ketten, Daten-Schnittstelle) und Anzeigen bleiben beim
+  Listenpreis.
+- **Heimatland entscheidet.** Wer in Wien die Ansicht auf Uganda stellt, zahlt weiter den
+  österreichischen Preis. Ohne Anmeldung zeigt die Premium-Seite den Preis des gewählten Landes;
+  bezahlt wird immer angemeldet.
+- **Ein Betrag überall:** Anzeige, Krypto-Zahlung (gespeicherter Betrag und Coin-Menge),
+  Überweisung mit Rechnung und Kartenzahlung nutzen denselben Preis. Das Krypto-Bezahlsystem
+  bleibt vollständig erhalten. Abgerechnet wird weiter in Euro.
+- Tests: `server/test/region-preis.test.js` (Gegenproben: Ansichtsland statt Heimatland,
+  Krypto-Start mit Listenpreis, Rechnung mit Listenpreis machen den Test rot).
+

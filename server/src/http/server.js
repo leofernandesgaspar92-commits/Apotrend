@@ -25,6 +25,7 @@ import { can as roleCan } from '../domain/roles.js';
 import { cleanSourceUrl } from '../domain/media.js';
 import { bilderAlsAdresse, bildHolen } from '../domain/bilder.js';
 import { startseiteKopf, kopfSprache, manifestSprache } from './startseiteKopf.js';
+import { regionFaktoren, preisCents } from '../domain/regionPreis.js';
 import { createSocialService } from '../services/social.js';
 import { createShortagesService } from '../services/shortages.js';
 import { createPricesService } from '../services/prices.js';
@@ -300,7 +301,15 @@ const oauth = createOAuthService({ repo, social, providers: buildProvidersFromEn
 // braucht einen eigenen Anbieter; hier bewusst nur ein Log statt eines Fake-Versands).
 const cryptoRates = createCryptoRates();
 const fxRates = createFxRates();
+// Regionale Premium-Preise (domain/regionPreis.js): Heimatland des Kontos, sonst das
+// angefragte Land (Anzeige ohne Anmeldung). Ohne APOPULSE_PREISE_REGION: Listenpreis.
+const preisFaktoren = regionFaktoren(process.env.APOPULSE_PREISE_REGION);
+const preisFuer = (uid, product, { country = null } = {}) => {
+  const land = uid ? userCountry(uid) : (country ? normalizeCountry(country) : null);
+  return preisCents(product, land ? regionVon(land) : null, preisFaktoren);
+};
 const payments = createPaymentsService({
+  preisFuer,
   // Krypto-Zahlung einer Anzeigen-Kampagne bestätigt -> Kampagne läuft.
   beiBezahlt: (p) => { if (String(p.product_id || '').startsWith('anzeige:')) anzeigen.bezahlt(p.product_id.slice(8), { methode: 'krypto', payment_id: p.id }); },
   repo,
@@ -1465,7 +1474,7 @@ const routes = [
   }],
 
   // ── Zahlungen / Premium — inaktiv, solange kein Anbieter konfiguriert ist. ──
-  ['GET', /^\/api\/payments\/products$/, false, async () => ({ products: listProducts() })],
+  ['GET', /^\/api\/payments\/products$/, false, async ({ userId, query }) => ({ products: listProducts().map((p) => ({ ...p, amount_cents: preisFuer(userId, p, { country: query.get('country') }) })) })],
   // Welche FIAT-Wege stehen hier und jetzt wirklich zur Verfügung?
   //
   // Zwei Bedingungen müssen BEIDE erfüllt sein, und sie kommen aus zwei
@@ -1511,10 +1520,10 @@ const routes = [
   // Start (pending), Tx-ID einreichen (pending_review), Moderation bestätigt manuell.
   // `country` steuert nur die ANZEIGE-Währung (Näherung). Abgerechnet wird in
   // der Produktwährung — deshalb ist der Parameter unkritisch und optional.
-  ['GET', /^\/api\/payments\/crypto$/, false, async ({ query }) => {
+  ['GET', /^\/api\/payments\/crypto$/, false, async ({ query, userId }) => {
     const country = query.get('country');
     const currency = country ? COUNTRIES[normalizeCountry(country)].currency : null;
-    return payments.cryptoOptions(query.get('product') || 'premium_monthly', { currency });
+    return payments.cryptoOptions(query.get('product') || 'premium_monthly', { currency, userId, country });
   }],
   ['POST', /^\/api\/payments\/crypto\/start$/, true, async ({ userId, body }) => payments.startCryptoPayment(userId, body.productId, body.walletId ?? body.coin)],
   ['POST', /^\/api\/payments\/crypto\/([^/]+)\/claim$/, true, async ({ userId, params, body }) => payments.claimCryptoPayment(userId, params[0], body.txRef)],

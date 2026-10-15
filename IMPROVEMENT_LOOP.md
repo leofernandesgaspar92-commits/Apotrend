@@ -2878,3 +2878,18 @@ Bildbeschriftungen nach Accept-Language; Schnellzugriff und Screenshot „Preise
 Ausgeliefert wie die Startseite (ETag je Sprache, Vary).
 
 **Tests.** `startseite-kopf.test.js`: Manifest en/pt, keine Preise, unlesbares JSON unverändert.
+
+### Cycle · Regionale Premium-Preise mit einer Einstellung (2026-10-15)
+
+**Befund.** Offener Owner-Punkt „Preis für Afrika": 9,99 € überall, keine Möglichkeit, Premium
+für afrikanische Apotheken günstiger anzubieten, ohne Code zu ändern.
+
+**WORK.** `domain/regionPreis.js` (`regionFaktoren`, `preisCents`), `payments.js` mit Option
+`preisFuer` (Krypto-Anzeige und -Start, Überweisung/Rechnung, Checkout), `server.js` liest
+`APOPULSE_PREISE_REGION`; Heimatland des Kontos entscheidet, ohne Anmeldung das angefragte Land.
+`/api/payments/products` liefert die Regionalpreise; die Premium-Seite fragt sie mit dem
+gewählten Land ab (sonst stünden ohne Anmeldung 3,00 € neben 9,99 €). Höhe = Owner-Entscheidung.
+
+**Tests.** `region-preis.test.js` (3). Gegenproben: Ansichtsland zuerst → rot; Krypto-Start mit
+Listenpreis → rot (999 ≠ 300); Rechnung mit Listenpreis → rot.
+
