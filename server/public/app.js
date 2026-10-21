@@ -8377,13 +8377,13 @@ async function openWirkstoff(name) {
       <div class="row"><b>${esc(t('wk_amr_title'))}</b>
         <span class="sp" style="flex:1"></span>
         <span class="muted" style="font-size:12px">${esc(t('wk_amr_tag'))}</span></div>
-      <div style="font-size:14px;margin-top:8px">${esc(a.note)}</div>
+      <div style="font-size:14px;margin-top:8px">${esc(t('wk_amr_note'))}</div>
       <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px">
         ${(a.sources||[]).map(s=>`<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" class="small" style="display:inline-block;text-decoration:none;border:1px solid var(--line,#ccc);border-radius:8px;padding:6px 10px">🔗 ${esc(s.label)}</a>`).join('')}
         <button class="ghost small" data-forum>${esc(t('wk_amr_forum'))}</button>
         <button class="ghost small" data-pinfo>${esc(t('wk_amr_pinfo'))}</button>
       </div>
-      <div class="muted" style="font-size:12px;margin-top:10px;font-style:italic">⚠️ ${esc(a.disclaimer)}</div>
+      <div class="muted" style="font-size:13px;margin-top:10px;font-style:italic">⚠️ ${esc(t('wk_amr_disclaimer'))}</div>
     </div>`);
     panel.querySelector('[data-forum]').onclick = () => openStewardship();
     panel.querySelector('[data-pinfo]').onclick = () => openPatientInfo();

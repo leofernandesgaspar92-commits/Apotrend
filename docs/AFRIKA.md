@@ -334,3 +334,22 @@ Reiter. Bei 360 px mit großer Schrift ebenso. Grund: Logo-Schriftzug + Länderw
 11 px Schrift; kleine Knöpfe haben jetzt mindestens 13 px. Der Browser-Audit prüft alle Reiter bei
 320 px und 360 px mit großer Schrift (Konto in Uganda, Englisch).
 
+## Antibiotika-Hinweis: Sprache, Quelle und Erkennung passend zum Land
+
+Ein Sprach-Scan aller Reiter, Menüs und Unterseiten für ein Konto in Uganda (Englisch) fand genau
+eine Stelle mit Deutsch: den **Antibiotika-Hinweis auf der Wirkstoff-Seite** (z. B. Amoxicillin). Dort
+standen ein deutscher Text und als einzige Quelle der **österreichische Resistenzbericht** (AURES).
+Für eine Apotheke in Kampala sind das falsche Sprache und eine fürs Land falsche Quelle. Zudem kannte
+die Erkennung nur deutsche Schreibweisen; „Co-trimoxazole" oder „Amoxicilina" lösten nichts aus.
+
+- Hinweis und Sicherheitssatz („keine patientenindividuelle Therapieempfehlung") stehen jetzt in
+  `i18n.js` in Deutsch, Englisch und Portugiesisch.
+- Quellen je angesehenem Land: **Österreich** behält AGES/AURES; **alle anderen Länder** bekommen die
+  weltweit gültigen WHO-Quellen: das [WHO-AWaRe-Antibiotikabuch](https://www.who.int/publications/i/item/9789240062382)
+  (Access/Watch/Reserve, abgestimmt auf die WHO-Liste unentbehrlicher Arzneimittel; Adresse per
+  Recherche bestätigt) und das WHO-Faktenblatt zu Antibiotikaresistenz. Beschriftung in der Landessprache.
+- Erkennung über den sprachübergreifenden Wirkstoff-Schlüssel (`domain/inn.js`) plus in Afrika gängige
+  Antibiotika der WHO-Liste (Chloramphenicol, Benzathin-Benzylpenicillin, Cefixim, Amikacin …).
+  Penicillamin (kein Antibiotikum) wird ausdrücklich nicht erkannt.
+- Der Browser-Audit sucht jetzt bei jedem Lauf deutsche Reste in der englischen Oberfläche.
+

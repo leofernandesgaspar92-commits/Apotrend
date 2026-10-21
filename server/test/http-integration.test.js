@@ -364,7 +364,9 @@ test('GET /api/wirkstoff/:name: Antibiotikum liefert quellenbelegte AMR-Info, Ni
   assert.ok(anti.amr && anti.amr.is_antibiotic, 'Amoxicillin als Antibiotikum erkannt');
   assert.ok(anti.amr.sources.length >= 1, 'mindestens eine Quelle');
   assert.ok(anti.amr.sources.every(s => /^https:\/\//.test(s.url)), 'alle Quellen sind https-Links');
-  assert.match(anti.amr.disclaimer, /keine patientenindividuelle Therapieempfehlung/i);
+  // Österreich (Standardland des Kontos): österreichische Quellen. Hinweistext steht in i18n.js
+  // (wk_amr_disclaimer, geprüft in amr.test.js für de/en/pt).
+  assert.ok(anti.amr.sources.some(s => /ages\.at/.test(s.url)), 'AGES-Quelle für Österreich');
   const non = await j('/api/wirkstoff/' + encodeURIComponent('Metformin'), a);
   assert.equal(non.amr, null, 'Metformin ist kein Antibiotikum -> keine AMR-Info');
 });

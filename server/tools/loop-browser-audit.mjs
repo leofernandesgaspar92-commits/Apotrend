@@ -262,6 +262,33 @@ async function main() {
     }
   }
 
+  // Keine deutschen Reste in der englischen Oberfläche (Konto in Uganda). Bis 10/2026 stand
+  //  auf der Amoxicillin-Seite ein deutscher Antibiotika-Hinweis mit dem österreichischen
+  //  Resistenzbericht als einziger Quelle. Geprüft: sichtbarer Text, Platzhalter, Titel.
+  {
+    const ug = await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Mukasa Pharmacy', email: `sprache_${uniq}@ex.com`, password: 'Passwort123!', country: 'UG', accountType: 'pharmacy' }) });
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, colorScheme: 'light', locale: 'en-UG' });
+    const page = await ctx.newPage();
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, ug && ug.token);
+    const DEUTSCH = /[äöüÄÖÜß]|\b(und|oder|nicht|der|die|das|mit|für|Quelle|Engpass|Engpässe|Meldung|Wirkstoff|Apotheke|Behörde|jetzt|keine|Zurück|Speichern|Abbrechen|Schließen)\b/;
+    const deutsch = async () => page.evaluate((muster) => {
+      const rx = new RegExp(muster); const out = [];
+      const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      while (w.nextNode()) { const n = w.currentNode; const p = n.parentElement; if (!p || !n.textContent.trim() || !p.getClientRects().length) continue; const cs = getComputedStyle(p); if (cs.visibility === 'hidden' || p.closest('script,style,.post-body,.comment-body')) continue; if (rx.test(n.textContent)) out.push(n.textContent.trim().slice(0, 60)); }
+      for (const e of document.querySelectorAll('[placeholder],[title],[aria-label]')) { if (!e.getClientRects().length) continue; for (const at of ['placeholder', 'title', 'aria-label']) { const v = e.getAttribute(at); if (v && rx.test(v)) out.push('@' + at + ' ' + v.slice(0, 60)); } }
+      return out;
+    }, DEUTSCH.source);
+    await page.goto(BASE, { waitUntil: 'networkidle' });
+    const gesehen = new Set();
+    for (const { tab, label } of await reiterLesen(page, findings, 'Sprache Uganda')) {
+      await reiterOeffnen(page, tab); await page.waitForTimeout(400);
+      for (const x of await deutsch()) if (!gesehen.has(x)) { gesehen.add(x); findings.push(`Deutsch in englischer Oberfläche (${label || tab}): „${x}"`); }
+    }
+    await page.goto(BASE + '/?wirkstoff=Amoxicillin', { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
+    for (const x of await deutsch()) if (!gesehen.has(x)) { gesehen.add(x); findings.push(`Deutsch in englischer Oberfläche (Wirkstoff-Seite): „${x}"`); }
+    await ctx.close();
+  }
+
   // Wirkstoff-Detailseite (Hub) separat prüfen — sie ist KEIN Reiter und entging daher
   // dem Tab-Sweep. Genau hier versteckte sich ein Kopf-Button-Überlauf bei 390px (die
   // Aktions-Buttons brachen nicht um). Seed-Wirkstoff „Amoxicillin" ist immer vorhanden.

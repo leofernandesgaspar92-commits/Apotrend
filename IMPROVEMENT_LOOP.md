@@ -2956,3 +2956,21 @@ setzt Semikolons) → die vm-Probe ist kein Gleichheitsbeweis, der Token-Abgleic
 **Gegenprobe.** Audit mit altem app.css → meldet Querscroll, „Kopf-Knopf ragt aus dem Bild" und
 „Unlock (11.05px)" je Reiter; mit neuem CSS sauber. Portugiesisch (MZ, „Alertas") geprüft.
 
+### Cycle · Antibiotika-Hinweis passend zu Land und Sprache (2026-10-21)
+
+**GATHER.** Live-Seite aus dieser Umgebung nicht erreichbar (Proxy 403). Sprach-Scan (Playwright,
+Konto UG/en): alle Reiter, jeder Menü-Eintrag, Glocke, Wirkstoff-Seite → 3 Funde, alle im AMR-Panel
+(services/amr.js: deutscher `note`/`disclaimer`, nur AT-Quellen). Erkennung nur deutsche INN-Formen.
+MZ/pt-Scan: nur Fehlalarme („das" ist auch Portugiesisch).
+
+**WORK.** amr.js: Erkennung über `wirkstoffSchluessel` (+ Teiltreffer ab 6 Zeichen, WHO-EML-Antibiotika
+ergänzt); `forWirkstoff(name, { land })` → Quellen AT = AGES/AURES, sonst WHO (AWaRe-Buch per
+Websuche bestätigt; Faktenblatt), Beschriftung nach `locale_default` des Landes. Text in i18n
+(`wk_amr_note`, `wk_amr_disclaimer`, de/en/pt). Africa CDC bewusst nicht: keine offizielle Seite bestätigt.
+Audit-Block „Deutsch in englischer Oberfläche" (Reiter + Wirkstoff-Seite, Konto UG).
+
+**Tests.** `amr.test.js` (5): Erkennung de/en/pt, keine Fehltreffer (Penicillamin, Clavulansäure allein),
+Quellen je Land, Sicherheitssatz in 3 Sprachen, HTTP UG/AT. Gegenproben: Land ignoriert, Erkennung
+ohne Schlüssel, Teiltreffer jeder Länge, Oberfläche mit Server-Text → jeweils rot. Audit gegen alten
+Stand meldet die drei Fundstellen.
+

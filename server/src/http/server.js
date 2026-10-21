@@ -1654,7 +1654,7 @@ const routes = [
     const ex = exBlocked ? [] : exchange.list(userId, { q: name, country: land }).eintraege;
     return {
       wirkstoff: name,
-      amr: amr.forWirkstoff(name),
+      amr: amr.forWirkstoff(name, { land }), // Quellen passend zum angesehenen Land
       watched: shortagesRepo.isWatched(userId, name),
       alert_pct: shortagesRepo.getWatchAlert(userId, name),
       premium: payments.hasFeature(userId, 'premium'),
