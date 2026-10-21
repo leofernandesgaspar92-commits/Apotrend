@@ -289,6 +289,30 @@ async function main() {
     await ctx.close();
   }
 
+  // Keine Sackgassen: Jede anklickbare Karte der Übersicht und jeder Knopf im Antibiotika-Kasten
+  //  muss irgendwohin führen. Bis 10/2026 führten „Fachforum" (Übersicht + Kasten) und
+  //  „Patienten-Infokarten" auf „Nicht gefunden" — die Bereiche dahinter ruhen.
+  {
+    const ug = await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Mukasa Pharmacy', email: `sackgasse_${uniq}@ex.com`, password: 'Passwort123!', country: 'UG', accountType: 'pharmacy' }) });
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, colorScheme: 'light' });
+    const page = await ctx.newPage();
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, ug && ug.token);
+    const sackgasse = async () => /Not found — this area|Nicht gefunden/.test(await page.locator('#feed').innerText().catch(() => ''));
+    const ziele = [['/', '#feed .card.clickable'], ['/?wirkstoff=Amoxicillin', '#feed .card[style*="0b7f28"] button']];
+    for (const [pfad, sel] of ziele) {
+      await page.goto(BASE + pfad, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
+      const n = Math.min(await page.locator(sel).count(), 12);
+      for (let k = 0; k < n; k++) {
+        await page.goto(BASE + pfad, { waitUntil: 'networkidle' }); await page.waitForTimeout(400);
+        const el = page.locator(sel).nth(k);
+        const name = (await el.innerText().catch(() => '?')).trim().split('\n')[0].slice(0, 40);
+        await el.click({ timeout: 2000 }).catch(() => {}); await page.waitForTimeout(700);
+        if (await sackgasse()) findings.push(`Sackgasse: „${name}" (${pfad}) führt auf „Nicht gefunden"`);
+      }
+    }
+    await ctx.close();
+  }
+
   // Wirkstoff-Detailseite (Hub) separat prüfen — sie ist KEIN Reiter und entging daher
   // dem Tab-Sweep. Genau hier versteckte sich ein Kopf-Button-Überlauf bei 390px (die
   // Aktions-Buttons brachen nicht um). Seed-Wirkstoff „Amoxicillin" ist immer vorhanden.

@@ -2974,3 +2974,20 @@ Quellen je Land, Sicherheitssatz in 3 Sprachen, HTTP UG/AT. Gegenproben: Land ig
 ohne Schlüssel, Teiltreffer jeder Länge, Oberfläche mit Server-Text → jeweils rot. Audit gegen alten
 Stand meldet die drei Fundstellen.
 
+### Cycle · Sackgassen zu ruhenden Bereichen; Patienten-Infokarten für Afrika (2026-10-21)
+
+**GATHER.** Nach dem AMR-Fix die Knöpfe im Kasten angetippt: „Fachdiskussion", „Patienten-Infokarten"
+und die Forum-Karte auf der ÜBERSICHT (alle Konten) → „That didn't work — Nicht gefunden". Ursache:
+`social` und `patienteninfo` ruhen (404), Einstiege ungeprüft sichtbar; 404 ohne Code → Deutsch.
+patientInfo.js: Sprachen de/en/tr, Standard 'de', Quelle nur AGES, „Reste in die Apotheke bringen".
+
+**WORK.** app.js: Forum-Karte, `data-forum`, `data-pinfo` nur bei `featureAn(...)`; server.js: 404
+mit `code: 'not_found'` (+ e_not_found de/en/pt). patientInfo.js: pt, Quelle je Land (AT AGES / sonst
+WHO), Entsorgungs-Karte `welt`-Variante außerhalb AT; Route mit `activeCountry`. app.js: patientLang/
+zettelLang null → Oberflächensprache, `&country=`, pt in Druckblatt und Einnahmeplan.
+Audit-Block „Keine Sackgassen" (Übersicht-Karten, AMR-Knöpfe).
+
+**Tests.** `patient-info-land.test.js` (5). Gegenproben: Entsorgung ohne Variante, Quelle immer AGES,
+404 ohne Code → rot. Audit mit altem app.js meldet die Sackgassen (Forum auf Übersicht,
+Patienten-Infokarten im Kasten).
+

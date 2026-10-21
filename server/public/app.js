@@ -1713,12 +1713,15 @@ async function loadOverview() {
   // Hinweis: Sparpotenzial, Top-Rabatt und bald ablaufende Aktionen stehen jetzt
   // kompakt als Kennzahl-Kacheln oben (weniger Scrollen); Details auf den Reitern.
 
-  // Antibiotic-Stewardship-Fachforum (Einstieg)
+  // Antibiotic-Stewardship-Fachforum (Einstieg) — nur, wenn das Forum läuft. Es hängt an
+  // den Hashtags (Bereich „social"); ruht der, führte die Karte auf „Nicht gefunden".
+  if (featureAn('social')) {
   const stew = el(`<div class="card clickable" style="border-left:4px solid #0b7f28">
     <div class="row"><b>${esc(t('sp_stew_title'))}</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:12px">${esc(t('sp_stew_tag'))}</span></div>
     <div class="muted" style="font-size:13px;margin-top:4px">${esc(t('sp_stew_sub'))}</div></div>`);
   stew.onclick = () => openStewardship();
   feed.appendChild(stew);
+  }
 
   // Offene Fachfragen von Kolleg:innen (nicht-blockierend nachgeladen)
   renderOpenQuestions(feed);
@@ -7243,9 +7246,9 @@ async function openStewardship() {
     <h1 style="margin:8px 0 2px">${esc(t('stew_title'))}</h1>
     <div class="muted" style="font-size:14px">${esc(t('stew_sub'))}</div>
     <div class="muted" style="font-size:12px;margin-top:8px;font-style:italic">${esc(t('stew_warn'))}</div>
-    <div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap"><button class="ghost small" data-pinfo>${esc(t('stew_pinfo'))}</button><button class="ghost small" data-zettel>${esc(t('stew_zettel'))}</button></div></div>`);
+    <div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap">${featureAn('patienteninfo') ? `<button class="ghost small" data-pinfo>${esc(t('stew_pinfo'))}</button>` : ''}<button class="ghost small" data-zettel>${esc(t('stew_zettel'))}</button></div></div>`);
   head.querySelector('[data-back]').onclick = () => goTab('overview');
-  head.querySelector('[data-pinfo]').onclick = () => openPatientInfo();
+  head.querySelector('[data-pinfo]')?.addEventListener('click', () => openPatientInfo());
   head.querySelector('[data-zettel]').onclick = () => openBegleitzettel();
   feed.appendChild(head);
   if (me) {
@@ -7270,11 +7273,15 @@ async function openStewardship() {
 }
 
 // Mehrsprachige Patienten-Infokarten (Antibiotika) — Aufklärung zur Abgabe.
-let patientLang = 'de';
+// Ohne Auswahl: Sprache der Oberfläche (vorher immer Deutsch — auch in Uganda).
+let patientLang = null;
+const PATIENT_SPRACHEN = ['de', 'en', 'pt', 'tr'];
+const patientStart = () => (PATIENT_SPRACHEN.includes(LOCALE) ? LOCALE : 'en');
 // Überschrift der Patienteninfo in der gewählten Patienten-Sprache (de/en/tr) —
 // damit gedruckte Info-Blätter nicht deutsch betitelt sind, obwohl der Inhalt engl./türk. ist.
 function patientInfoHeading(lang) {
   return lang === 'en' ? 'Antibiotics – Patient information'
+    : lang === 'pt' ? 'Antibióticos – Informação ao doente'
     : lang === 'tr' ? 'Antibiyotikler – Hasta bilgisi'
     : 'Antibiotika – Patienteninformation';
 }
@@ -7285,7 +7292,7 @@ function printPatientInfo(d) {
     h2{font-size:16px;margin:0 0 4px} p{margin:0;font-size:14px;line-height:1.5} .src{font-size:12px;color:#555;margin-top:16px}`;
   // Quell-Label in der Patienten-Sprache (wie die Überschrift) — ein deutsches „Quelle:"
   // auf einem englischen/türkischen Blatt wäre inkonsistent.
-  const srcLabel = d.lang === 'en' ? 'Source' : d.lang === 'tr' ? 'Kaynak' : 'Quelle';
+  const srcLabel = d.lang === 'en' ? 'Source' : d.lang === 'pt' ? 'Fonte' : d.lang === 'tr' ? 'Kaynak' : 'Quelle';
   const body = `<h1>🧫 ${esc(patientInfoHeading(d.lang))}</h1>${cards}
     <div class="src">${esc(srcLabel)}: ${esc(d.source.label)} · ${esc(d.source.url)}<br>${esc(d.disclaimer)}</div>`;
   openPrintDoc(patientInfoHeading(d.lang), css, body, d.lang);
@@ -7295,7 +7302,7 @@ async function openPatientInfo() {
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">…</div>';
   let d;
-  try { d = await api('GET','/api/patient-info?lang='+encodeURIComponent(patientLang)); }
+  try { d = await api('GET','/api/patient-info?lang='+encodeURIComponent(patientLang || patientStart())+'&country='+encodeURIComponent(viewCountry())); }
   catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   feed.innerHTML = '';
   const head = el(`<div class="card" style="border-left:4px solid #0b7f28">
@@ -7344,13 +7351,18 @@ const ZETTEL_L = {
     dauer: 'Duration', hinweise: 'Important notes',
     fragen: 'If you have questions, contact your pharmacy or your doctor.',
     herkunft: 'Details as prescribed — completed by pharmacy staff.' },
+  pt: { title: 'Plano de toma', morgens: 'Manhã', mittags: 'Meio-dia', abends: 'Noite', nacht: 'Ao deitar',
+    essen: { unabh: 'Tomar independentemente das refeições', vor: 'Tomar antes das refeições', zum: 'Tomar com as refeições', nach: 'Tomar depois das refeições' },
+    dauer: 'Duração', hinweise: 'Notas importantes',
+    fragen: 'Em caso de dúvidas, contacte a sua farmácia ou o seu médico.',
+    herkunft: 'Indicações conforme a receita — preenchidas pela equipa da farmácia.' },
   tr: { title: 'İlaç kullanım planı', morgens: 'Sabah', mittags: 'Öğle', abends: 'Akşam', nacht: 'Gece',
     essen: { unabh: 'Yemekten bağımsız alın', vor: 'Yemekten önce alın', zum: 'Yemekle birlikte alın', nach: 'Yemekten sonra alın' },
     dauer: 'Kullanım süresi', hinweise: 'Önemli notlar',
     fragen: 'Sorularınız için eczanenize veya doktorunuza başvurun.',
     herkunft: 'Reçeteye göre bilgiler — eczane personeli tarafından dolduruldu.' },
 };
-let zettelLang = 'de';
+let zettelLang = null; // ohne Auswahl: Sprache der Oberfläche (patientStart)
 // Innerer Inhalt (für Vorschau und Druck identisch).
 function zettelBody(z) {
   const L = ZETTEL_L[z.lang] || ZETTEL_L.de;
@@ -7421,7 +7433,7 @@ function openBegleitzettel() {
   </div>`);
   const preview = el(`<div class="card"><div class="muted" style="font-size:12px;margin-bottom:8px">${esc(t('bz_preview'))}</div><div data-z-prev style="background:#fff;color:#111;border:1px solid var(--line,#ccc);border-radius:10px;padding:16px"></div></div>`);
   const readZ = () => ({
-    lang: zettelLang,
+    lang: zettelLang || patientStart(),
     praeparat: form.querySelector('[data-z-p]').value.trim(),
     morgens: form.querySelector('[data-z-m]').value.trim(),
     mittags: form.querySelector('[data-z-mi]').value.trim(),
@@ -7435,8 +7447,9 @@ function openBegleitzettel() {
   const langBox = form.querySelector('[data-z-langs]');
   const drawLangs = () => {
     langBox.innerHTML = '';
-    [['de','Deutsch'],['en','English'],['tr','Türkçe']].forEach(([c,l]) => {
-      const bt = el(`<button class="small sortbtn${zettelLang===c?' active':''}" aria-pressed="${zettelLang===c}">${l}</button>`);
+    const aktiv = zettelLang || patientStart();
+    [['de','Deutsch'],['en','English'],['pt','Português'],['tr','Türkçe']].forEach(([c,l]) => {
+      const bt = el(`<button class="small sortbtn${aktiv===c?' active':''}" aria-pressed="${aktiv===c}">${l}</button>`);
       bt.onclick = () => { zettelLang = c; drawLangs(); drawPrev(); };
       langBox.appendChild(bt);
     });
@@ -7452,7 +7465,7 @@ function openBegleitzettel() {
     if (!w) { err.textContent = t('pi_popup'); return; }
     let cards = null;
     if (form.querySelector('[data-z-cards]').checked) {
-      try { cards = await api('GET','/api/patient-info?lang='+encodeURIComponent(z.lang)); }
+      try { cards = await api('GET','/api/patient-info?lang='+encodeURIComponent(z.lang)+'&country='+encodeURIComponent(viewCountry())); }
       catch { /* Karten optional — Zettel drucken trotzdem */ }
     }
     writeZettel(w, z, cards);
@@ -8380,13 +8393,14 @@ async function openWirkstoff(name) {
       <div style="font-size:14px;margin-top:8px">${esc(t('wk_amr_note'))}</div>
       <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px">
         ${(a.sources||[]).map(s=>`<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" class="small" style="display:inline-block;text-decoration:none;border:1px solid var(--line,#ccc);border-radius:8px;padding:6px 10px">🔗 ${esc(s.label)}</a>`).join('')}
-        <button class="ghost small" data-forum>${esc(t('wk_amr_forum'))}</button>
-        <button class="ghost small" data-pinfo>${esc(t('wk_amr_pinfo'))}</button>
+        ${featureAn('social') ? `<button class="ghost small" data-forum>${esc(t('wk_amr_forum'))}</button>` : ''}
+        ${featureAn('patienteninfo') ? `<button class="ghost small" data-pinfo>${esc(t('wk_amr_pinfo'))}</button>` : ''}
       </div>
       <div class="muted" style="font-size:13px;margin-top:10px;font-style:italic">⚠️ ${esc(t('wk_amr_disclaimer'))}</div>
     </div>`);
-    panel.querySelector('[data-forum]').onclick = () => openStewardship();
-    panel.querySelector('[data-pinfo]').onclick = () => openPatientInfo();
+    // Knöpfe nur, wenn der Bereich dahinter läuft (sonst Sackgasse „Nicht gefunden").
+    panel.querySelector('[data-forum]')?.addEventListener('click', () => openStewardship());
+    panel.querySelector('[data-pinfo]')?.addEventListener('click', () => openPatientInfo());
     feed.appendChild(panel);
   }
 

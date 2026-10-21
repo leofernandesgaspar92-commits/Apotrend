@@ -2047,7 +2047,8 @@ const routes = [
   ['GET', /^\/api\/hashtag\/([^/]+)$/, true, async ({ userId, params }) => ({ tag: decodeURIComponent(params[0]), posts: enrichPosts(social.postsByHashtag(userId, decodeURIComponent(params[0])), userId) })],
   ['GET', /^\/api\/trending\/hashtags$/, true, async ({ userId }) => ({ hashtags: social.trendingHashtags(userId) })],
   // Mehrsprachige Patienten-Infokarten (Antibiotika) — für Aufklärung bei der Abgabe.
-  ['GET', /^\/api\/patient-info$/, true, async ({ query }) => patientInfo.cards(query.get('lang') || 'de')],
+  // Quelle und Entsorgungs-Karte passend zum angesehenen Land (Österreich: AGES, sonst WHO).
+  ['GET', /^\/api\/patient-info$/, true, async ({ userId, query }) => patientInfo.cards(query.get('lang') || 'de', { land: activeCountry(userId, query) })],
   // Länder-Register (öffentlich): für Länderauswahl bei Registrierung + Umschalter.
   // `preise`: Gibt es für das Land überhaupt Preisvergleiche? Die Startseite verspricht
   // „Preise vergleichen" nur dort, wo es etwas zu vergleichen gibt (bis 10/2026 auch in Uganda).
@@ -2522,7 +2523,7 @@ async function datenSchnittstelle(req, res, url) {
     res.end(text);
   };
   try {
-    if (ruhenderBereichFuer(url.pathname)) return antwort(404, { error: 'Nicht gefunden' });
+    if (ruhenderBereichFuer(url.pathname)) return antwort(404, { error: 'Nicht gefunden', code: 'not_found' });
     const auth = String(req.headers.authorization || '');
     // `?key=` nur für GET: Excel („Daten aus dem Web") kann keine Kopfzeilen setzen.
     const roh = (auth.match(/^Bearer\s+(apk_\S+)$/) || [])[1] || req.headers['x-api-key'] || (req.method === 'GET' ? url.searchParams.get('key') : null);
@@ -2623,9 +2624,9 @@ const server = http.createServer(async (req, res) => {
     // verraten, auch nicht seine Existenz. Die Pruefung steht VOR dem
     // Nachschlagen der Route, damit auch eine vorhandene Route stumm bleibt.
     const ruht = ruhenderBereichFuer(pathname);
-    if (ruht) return json(req, res, 404, { error: 'Nicht gefunden' });
+    if (ruht) return json(req, res, 404, { error: 'Nicht gefunden', code: 'not_found' });
     const route = routes.find(([m, rx]) => m === req.method && rx.test(pathname));
-    if (!route) return json(req, res, 404, { error: 'Nicht gefunden' });
+    if (!route) return json(req, res, 404, { error: 'Nicht gefunden', code: 'not_found' });
     const [, rx, authRequired, handler] = route;
     let userId = userIdFrom(req);
     // Token gültig signiert, aber Nutzer existiert nicht mehr (Konto gelöscht) -> wie nicht

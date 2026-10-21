@@ -353,3 +353,25 @@ die Erkennung nur deutsche Schreibweisen; „Co-trimoxazole" oder „Amoxicilina
   Penicillamin (kein Antibiotikum) wird ausdrücklich nicht erkannt.
 - Der Browser-Audit sucht jetzt bei jedem Lauf deutsche Reste in der englischen Oberfläche.
 
+## Keine Sackgassen; Patienten-Infokarten für Afrika vorbereitet
+
+**Sackgassen behoben (betraf alle Länder):** Auf der Startübersicht „Für dich" stand für jedes
+Konto die Karte „Antibiotika-Fachforum", im Antibiotika-Kasten der Wirkstoff-Seite die Knöpfe
+„Fachdiskussion" und „Patienten-Infokarten". Die Bereiche dahinter ruhen (`data/features.js`:
+`social`, `patienteninfo`), jeder Klick endete auf „Nicht gefunden" (dazu auf Deutsch, weil die
+Antwort keinen Code trug). Jetzt erscheinen die Einstiege nur, wenn der Bereich läuft; ruhende
+Bereiche antworten mit Code `not_found` (übersetzt). Der Browser-Audit tippt jede anklickbare Karte
+der Übersicht und jeden Knopf im Antibiotika-Kasten an und meldet „Nicht gefunden".
+
+**Patienten-Infokarten und Einnahmeplan** (ruhen weiter; einschalten mit
+`APOPULSE_FEATURE_PATIENTENINFO=an`, Entscheidung des Betreibers) sind für Afrika vorbereitet:
+- **Portugiesisch** zusätzlich zu Deutsch, Englisch, Türkisch (Karten, Hinweis, Druckblatt, Einnahmeplan).
+- Standardsprache = Sprache der Oberfläche (vorher immer Deutsch).
+- Quelle je angesehenem Land: Österreich AGES, sonst WHO-Faktenblatt Antibiotikaresistenz (Adresse
+  über Kopien bestätigt, who.int ist aus dieser Umgebung gesperrt).
+- Karte „Reste entsorgen": außerhalb Österreichs **ohne** das Versprechen „Reste in die Apotheke
+  bringen". Ob Apotheken zurücknehmen, ist nicht überall geregelt; stattdessen „Fragen Sie in Ihrer
+  Apotheke, wie Reste sicher entsorgt werden" und „nicht weitergeben, nicht später selbst einnehmen".
+- Nicht gemacht: Swahili, Hausa, Amharisch u. a. Patiententexte zu Antibiotika brauchen eine
+  muttersprachliche Fachprüfung; ohne die keine Übersetzung.
+
