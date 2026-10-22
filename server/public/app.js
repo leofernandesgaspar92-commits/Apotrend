@@ -7142,9 +7142,14 @@ async function openPremium() {
     }
     if (rg && rg.moeglich) app.appendChild(rechnungenKarte(rg));
     if (!opt.coins.length) { body.appendChild(el(`<div class="muted">${esc(t('pr_none'))}</div>`)); }
+    // Kleiner Betrag: ehrlicher Hinweis auf schwankende Netzwerkgebühren (Reihenfolge kommt vom Server).
+    if (opt.amount < 20 && opt.coins.some((c) => c.low_fee) && opt.coins.some((c) => !c.low_fee)) {
+      body.appendChild(el(`<div data-prgebuehr style="background:var(--info-bg);border:1px solid var(--info-bd);color:var(--info-fg);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:15px">${esc(t('pr_fee_hint'))}</div>`));
+    }
     opt.coins.forEach(c => {
       const amountLbl = c.amount_crypto != null ? ti('pr_amount', { n: c.amount_crypto, sym: c.symbol }) : ti('pr_amount_na', { amount: fmtCurrency(opt.amount, opt.currency || 'EUR') });
-      const title = esc(c.symbol) + (c.label ? ` <span class="muted" style="font-weight:400;font-size:13px">· ${esc(c.label)}</span>` : '');
+      const title = esc(c.symbol) + (c.label ? ` <span class="muted" style="font-weight:400;font-size:13px">· ${esc(c.label)}</span>` : '')
+        + (c.low_fee ? ` <span data-lowfee style="display:inline-block;font-size:13px;font-weight:700;color:var(--ok-fg);background:var(--ok-bg);border:1px solid var(--ok-bd);border-radius:999px;padding:1px 8px">${esc(t('pr_low_fee'))}</span>` : '');
       const cc = el(`<div class="crypto-pay">
         <div class="row"><b>${title}</b> <span class="muted" style="font-size:13px">${esc(ti('pr_network', { net: c.network }))}</span><span class="sp" style="flex:1"></span><span style="font-weight:700">${esc(amountLbl)}</span></div>
         <div class="crypto-addr"><code>${esc(c.address)}</code></div>

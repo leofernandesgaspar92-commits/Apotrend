@@ -410,4 +410,10 @@ zusätzlich jede Server-Antwort „ruhender Bereich", auch wenn sie nicht sichtb
   pharmacies in Africa — regular price €9.99" (de/en/pt). Sonst wirkt „3,00 €" wie ein Fehler oder ein
   Lockangebot. `/api/payments/products` liefert dafür `list_cents` und `preis_region` — nur, wenn
   wirklich ermäßigt (Österreich und Business: keine Felder, kein Hinweis).
+- **Krypto bei kleinen Beträgen:** Bei 3,00 € können die schwankenden Netzwerkgebühren von Bitcoin
+  und Ethereum ein spürbarer Teil des Betrags sein. Unter 20 € stehen deshalb die Solana-Wallets
+  zuerst, markiert „Lowest fee" (Grundgebühr Bruchteile eines Cents), mit einem kurzen Hinweis. Es
+  wird nur sortiert, nie gefiltert — alle Krypto-Wege bleiben (Owner-Vorgabe). Tron/USDT bewusst
+  nicht als günstig markiert: Ohne eigene „Energie" kostet eine TRC-20-Überweisung oft rund einen
+  Dollar.
 

@@ -3033,3 +3033,12 @@ Africa — regular price €9.99", Jahr €29.70; AT ohne Hinweis.
 **Tests.** region-preis.test.js +Felder (UG premium list 999/AFRICA, Business und AT ohne) + Oberfläche.
 Gegenprobe: Felder immer mitschicken → rot.
 
+### Cycle · Krypto bei 3,00 €: niedrigste Gebühr zuerst (2026-10-22)
+
+**WORK.** payments.js `cryptoOptions`: `low_fee` (nur `solana`), unter 20 € stabil nach `low_fee`
+sortiert; nichts gefiltert. app.js: Hinweis `[data-prgebuehr]` (pr_fee_hint) und Marke
+`[data-lowfee]` (pr_low_fee), de/en/pt. Browser UG: SOL Seeker, SOL Phantom („Lowest fee"), BTC, ETH.
+
+**Tests.** `krypto-gebuehr.test.js` (3): 3 € Solana zuerst, alle Wallets vorhanden; 99 € Reihenfolge
+unverändert; Oberfläche/Texte, nur Solana markiert. Gegenproben: keine Sortierung / immer sortieren → rot.
+

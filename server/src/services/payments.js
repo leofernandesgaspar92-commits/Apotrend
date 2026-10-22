@@ -36,6 +36,12 @@ export function plusMonate(ms, n) {
   return d.getTime();
 }
 
+// Ketten mit verlässlich sehr niedriger Netzwerkgebühr (Solana: Grundgebühr 0,000005 SOL je
+// Signatur, also Bruchteile eines Cents). Tron/USDT bewusst NICHT: Ohne eigene „Energie"
+// kostet eine TRC-20-Überweisung oft rund einen Dollar.
+const NIEDRIGE_GEBUEHR = new Set(['solana']);
+const KLEINBETRAG_EUR = 20;
+
 export function createPaymentsService({
   repo, providers = {}, onPaid = null, wallets = () => ({}), rates = null, fx = null, isModerator = () => false, mirror = null,
   // Benachrichtigungen der manuellen Krypto-Prüfung. Optional, damit die
@@ -150,8 +156,12 @@ export function createPaymentsService({
       const coins = ws.map(w => {
         const rate = rateMap[w.coin]; // EUR pro 1 Coin
         const amount = rate ? Number((eur / rate).toFixed(8)) : null;
-        return { id: w.id, coin: w.coin, symbol: w.symbol, label: w.label, address: w.address, network: w.network, amount_eur: eur, amount_crypto: amount, uri: walletUri(w, amount) };
+        return { id: w.id, coin: w.coin, symbol: w.symbol, label: w.label, address: w.address, network: w.network, amount_eur: eur, amount_crypto: amount, uri: walletUri(w, amount), low_fee: NIEDRIGE_GEBUEHR.has(w.coin) };
       });
+      // Kleiner Betrag (Afrika-Preis 3,00 €): Netzwerkgebühren auf Bitcoin/Ethereum schwanken
+      // und können ein spürbarer Teil davon sein — Ketten mit verlässlich niedriger Gebühr
+      // zuerst. Stabil sortiert, sonst bleibt die Reihenfolge der Wallet-Liste.
+      if (eur < KLEINBETRAG_EUR) coins.sort((a, b) => Number(b.low_fee) - Number(a.low_fee));
 
       // Näherung in der Landeswährung. ABGERECHNET wird weiterhin in der
       // Produktwährung — der lokale Betrag ist eine Orientierung, damit eine
