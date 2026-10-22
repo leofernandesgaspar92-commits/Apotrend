@@ -416,4 +416,9 @@ zusätzlich jede Server-Antwort „ruhender Bereich", auch wenn sie nicht sichtb
   wird nur sortiert, nie gefiltert — alle Krypto-Wege bleiben (Owner-Vorgabe). Tron/USDT bewusst
   nicht als günstig markiert: Ohne eigene „Energie" kostet eine TRC-20-Überweisung oft rund einen
   Dollar.
+- **Keine österreichische Umsatzsteuer auf Rechnungen nach Afrika:** Mit `APOPULSE_UST_SATZ=20` wies
+  jede Rechnung 20 % aus, auch für eine Apotheke in Uganda; eine Firma in Nairobi zahlte für eine
+  Anzeige 20 % mehr. Für Empfänger außerhalb der EU steht jetzt keine Steuer, sondern der Hinweis auf
+  den Leistungsort (Art. 44/59 MwSt-Systemrichtlinie). Steuern im Land des Empfängers (digitale
+  Leistungen in Kenia, Nigeria …) sind damit nicht geklärt — Steuerberatung (docs/RECHNUNGEN.md).
 

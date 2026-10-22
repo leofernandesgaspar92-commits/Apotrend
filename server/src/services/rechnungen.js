@@ -24,6 +24,7 @@
 //   - Rechnungsnummern aus der gemeinsamen Reihe (rechnungsnummern.js).
 // ============================================================================
 import { AppError } from '../domain/errors.js';
+import { ustFuerEmpfaenger } from '../domain/umsatzsteuer.js';
 
 export const ANGABEN_FELDER = ['firma', 'ansprechpartner', 'strasse', 'plz', 'ort', 'land', 'ust_id', 'email'];
 const PFLICHT = ['firma', 'strasse', 'plz', 'ort', 'land', 'email'];
@@ -40,10 +41,12 @@ export function createRechnungen({
   const tag = () => new Date(jetzt()).toISOString().slice(0, 10);
   const kopie = (o) => JSON.parse(JSON.stringify(o));
 
-  function beitraege(brutto) {
-    const satz = Number(betreiber.ust_satz) || 0;
+  // Endpreis aufteilen. Empfänger außerhalb der EU: keine EU-Umsatzsteuer, stattdessen
+  // Hinweis auf der Rechnung (domain/umsatzsteuer.js).
+  function beitraege(brutto, land) {
+    const { satz, hinweis } = ustFuerEmpfaenger(betreiber.ust_satz, land, { drittlandMitSteuer: betreiber.ust_drittland === 'mit' });
     const ust = satz ? Math.round(brutto * satz / (100 + satz)) : 0;
-    return { brutto_cents: brutto, ust_satz: satz, ust_cents: ust, netto_cents: brutto - ust };
+    return { brutto_cents: brutto, ust_satz: satz, ust_cents: ust, netto_cents: brutto - ust, ust_hinweis: hinweis };
   }
   function zahlart(p) {
     if (p.method === 'invoice') return { art: 'ueberweisung' };
@@ -59,7 +62,7 @@ export function createRechnungen({
       aussteller: { firma: betreiber.firma, anschrift: betreiber.anschrift, ust_id: betreiber.ust_id || null, iban: betreiber.iban || null, bic: betreiber.bic || null, inhaber: betreiber.inhaber || betreiber.firma },
       empfaenger: { ...empfaenger },
       leistung: { produkt: pr.id, name: pr.name, monate: pr.monate || null },
-      ...beitraege(p.amount_cents), waehrung: p.currency || 'EUR',
+      ...beitraege(p.amount_cents, empfaenger && empfaenger.land), waehrung: p.currency || 'EUR',
       zahlart: zahlart(p),
     };
     rechnungen.set(nummer, r); zuZahlung.set(p.id, nummer);

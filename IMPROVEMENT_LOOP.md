@@ -3042,3 +3042,19 @@ sortiert; nichts gefiltert. app.js: Hinweis `[data-prgebuehr]` (pr_fee_hint) und
 **Tests.** `krypto-gebuehr.test.js` (3): 3 € Solana zuerst, alle Wallets vorhanden; 99 € Reihenfolge
 unverändert; Oberfläche/Texte, nur Solana markiert. Gegenproben: keine Sortierung / immer sortieren → rot.
 
+### Cycle · Rechnungen: keine EU-Umsatzsteuer für Empfänger außerhalb der EU (2026-10-22)
+
+**Befund.** rechnungen.js/anzeigen.js: `betreiber.ust_satz` für jeden Empfänger. Mit
+APOPULSE_UST_SATZ=20: Tarif-Rechnung Uganda „enthält 20 % USt" (Betreiber führt 20 % auf
+Afrika-Umsatz ab); Anzeige Nairobi netto + 20 % (Kunde zahlt mehr, Krypto ebenso).
+
+**WORK.** `domain/umsatzsteuer.js` (`EU_LAENDER` 27, `ustFuerEmpfaenger` → satz 0 + `drittland`
+außerhalb der EU; unklares Land → mit Steuer; `APOPULSE_UST_DRITTLAND=mit` = alt). rechnungen.js
+`beitraege(brutto, land)` + `ust_hinweis`; anzeigen.js `ustAnzeige(uid)` (Firmenangaben-Land, sonst
+Profil) für Rechnung UND Krypto-Betrag. app.js: Hinweis `[data-rgdrittland]` auf beiden Rechnungen,
+`rg_ust_drittland` de/en/pt.
+
+**Tests.** `umsatzsteuer.test.js` (3): Regel inkl. CH/GB/US, unklar → mit Steuer; Anzeige KE/AT inkl.
+Krypto = Rechnung; HTTP UG 300/0/drittland, AT 999/167. Gegenproben: Regel aus, Krypto-Betrag alt,
+Tarif ohne Land → jeweils rot. Offen (Steuerberatung): EU-Reverse-Charge, Steuern im Empfängerland.
+

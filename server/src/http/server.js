@@ -234,6 +234,8 @@ const betreiber = {
   ust_id: process.env.APOPULSE_FIRMA_UST_ID || '', iban: process.env.APOPULSE_BANK_IBAN || '',
   bic: process.env.APOPULSE_BANK_BIC || '', inhaber: process.env.APOPULSE_BANK_INHABER || '',
   ust_satz: Number(process.env.APOPULSE_UST_SATZ) || 0,
+  // Empfänger außerhalb der EU: keine EU-Umsatzsteuer (domain/umsatzsteuer.js). „mit" = altes Verhalten.
+  ust_drittland: String(process.env.APOPULSE_UST_DRITTLAND || '').trim().toLowerCase(),
 };
 const datenApi = createDatenApi();
 const einladungen = createEinladungen();

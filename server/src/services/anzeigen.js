@@ -30,6 +30,7 @@
 //      Tag; wer eine Anzeige ausblendet, sieht sie nicht wieder.
 // ============================================================================
 
+import { ustFuerEmpfaenger } from '../domain/umsatzsteuer.js';
 import { cleanImage } from '../domain/media.js';
 import { ZIELGRUPPEN, WERBEKUNDEN_TYPEN } from '../data/werbeplaetze.js';
 
@@ -55,6 +56,10 @@ export function createAnzeigen({
 } = {}) {
   const kampagnen = new Map();   // id -> Kampagne
   const kunden = new Map();      // userId -> Firmenangaben
+  // Steuersatz für die Anzeige eines Kunden: Land aus den Firmenangaben, sonst aus dem Profil.
+  // Rechnung UND Krypto-Zahlung nutzen diese eine Funktion — derselbe Betrag auf beiden Wegen.
+  const ustAnzeige = (uid) => ustFuerEmpfaenger(betreiber.ust_satz,
+    ((kunden.get(uid) || {}).land) || ((profilVon(uid) || {}).country), { drittlandMitSteuer: betreiber.ust_drittland === 'mit' });
   const gesehen = new Map();     // `${tag}|${uid}|${id}` -> Anzahl Einblendungen
   const geklickt = new Set();    // `${tag}|${uid}|${id}`
   const ausgeblendet = new Map(); // uid -> Set(id)
@@ -232,14 +237,14 @@ export function createAnzeigen({
     rechnung(userId, id) {
       const k = kampagnen.get(String(id));
       if (!k || (k.user_id !== userId && !istModerator(userId)) || !k.rechnung) throw fehler('rechnung_fehlt', 'Keine Rechnung vorhanden.', 404);
-      const satz = Number(betreiber.ust_satz) || 0;
+      const { satz, hinweis } = ustAnzeige(k.user_id);
       const ust = Math.round(k.preis_cents * satz / 100);
       return {
         nummer: k.rechnung.nummer, datum: k.rechnung.datum,
         aussteller: { firma: betreiber.firma, anschrift: betreiber.anschrift, ust_id: betreiber.ust_id || null, iban: betreiber.iban, bic: betreiber.bic || null, inhaber: betreiber.inhaber || betreiber.firma },
         empfaenger: kunden.get(k.user_id) || null,
         leistung: { titel: k.titel, platz: k.platz, laender: k.laender, wochen: k.wochen, start: k.start, ende: k.ende },
-        netto_cents: k.preis_cents, ust_satz: satz, ust_cents: ust, brutto_cents: k.preis_cents + ust, waehrung: k.waehrung,
+        netto_cents: k.preis_cents, ust_satz: satz, ust_cents: ust, brutto_cents: k.preis_cents + ust, ust_hinweis: hinweis, waehrung: k.waehrung,
         bezahlt: k.status === 'bezahlt',
       };
     },
@@ -262,7 +267,7 @@ export function createAnzeigen({
       if (k.status !== 'freigegeben') throw fehler('anzeige_status', 'Bezahlen lässt sich eine freigegebene Anzeige.', 409);
       // Brutto: Die Rechnung weist Preis + Umsatzsteuer aus — die Krypto-Zahlung
       // muss denselben Betrag verlangen (bis 10/2026 nur den Nettopreis).
-      const ust = Math.round(k.preis_cents * (Number(betreiber.ust_satz) || 0) / 100);
+      const ust = Math.round(k.preis_cents * ustAnzeige(k.user_id).satz / 100);
       return { id: k.id, betrag_cents: k.preis_cents + ust, waehrung: k.waehrung, name: `Anzeige „${k.titel}"` };
     },
 

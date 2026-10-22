@@ -4158,6 +4158,7 @@ async function zeigeTarifRechnung(nummer) {
       ${r.ust_satz ? `<div class="pv-zeile"><span>${esc(t('wb2_netto'))}</span><span></span><span>${esc(eur(r.netto_cents))}</span></div>
       <div class="pv-zeile"><span>${esc(ti('rg_ust_enthalten', { satz: r.ust_satz }))}</span><span></span><span>${esc(eur(r.ust_cents))}</span></div>` : ''}
       <div class="pv-zeile"><b>${esc(t('wb2_gesamt'))}</b><span></span><b>${esc(eur(r.brutto_cents))}</b></div></div>
+    ${r.ust_hinweis === 'drittland' ? `<div data-rgdrittland class="muted" style="font-size:14px;margin-top:8px">${esc(t('rg_ust_drittland'))}</div>` : ''}
     ${r.bezahlt ? `<div class="ok-box" data-rgbezahlt style="padding:8px 12px;margin-top:12px">${esc(zahlText)}</div>`
       : r.abgelehnt ? `<div class="muted" style="margin-top:12px">${esc(t('rg_abgelehnt'))}</div>`
       : `<div style="margin-top:14px" data-rgzahlung>${esc(t('rg_frist'))} ${esc(t('wb2_bitte_ueberweisen'))}<div><b>${esc(a.inhaber || '')}</b> · IBAN ${esc(a.iban || '')}${a.bic ? ` · BIC ${esc(a.bic)}` : ''}</div><div>${esc(t('wb2_verwendung'))}: <b>${esc(r.nummer)}</b></div></div>
@@ -4455,6 +4456,7 @@ async function zeigeRechnung(id) {
       <div class="pv-zeile"><span>${esc(t('wb2_netto'))}</span><span></span><span>${esc(eur(r.netto_cents))}</span></div>
       ${r.ust_satz ? `<div class="pv-zeile"><span>${esc(ti('wb2_ust', { satz: r.ust_satz }))}</span><span></span><span>${esc(eur(r.ust_cents))}</span></div>` : ''}
       <div class="pv-zeile"><b>${esc(t('wb2_gesamt'))}</b><span></span><b>${esc(eur(r.brutto_cents))}</b></div></div>
+    ${r.ust_hinweis === 'drittland' ? `<div data-rgdrittland class="muted" style="font-size:14px;margin-top:8px">${esc(t('rg_ust_drittland'))}</div>` : ''}
     <div style="margin-top:14px">${esc(t('wb2_bitte_ueberweisen'))}<div><b>${esc(a.inhaber || '')}</b> · IBAN ${esc(a.iban || '')}${a.bic ? ` · BIC ${esc(a.bic)}` : ''}</div><div>${esc(t('wb2_verwendung'))}: ${esc(r.nummer)}</div></div>
     ${r.bezahlt ? `<div class="ok-box" style="padding:8px 12px;margin-top:12px">${esc(t('wb2_bezahlt'))}</div>` : `<div class="muted" style="font-size:14px;margin-top:12px">${esc(t('wb2_start_nach_eingang'))}</div>`}
   </div>`);

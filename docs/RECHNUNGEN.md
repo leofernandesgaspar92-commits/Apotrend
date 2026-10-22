@@ -33,6 +33,15 @@ festgeschrieben).
   Rechnung Nettobetrag und enthaltene Umsatzsteuer aus. Anzeigenpreise sind dagegen Nettopreise
   + USt; **seit 10/2026 verlangt auch die Krypto-Zahlung einer Anzeige den Bruttobetrag**
   (vorher nur netto — weniger als auf der Rechnung).
+- **Empfänger außerhalb der EU (seit 22.10.2026):** keine Umsatzsteuer, stattdessen der Hinweis
+  „Leistungsort beim Empfänger, Art. 44/59 MwSt-Systemrichtlinie" (`domain/umsatzsteuer.js`).
+  Grundlage: Dienstleistungen an Unternehmen (Art. 44, AT § 3a Abs. 6 UStG) und elektronische
+  Leistungen an Privatpersonen außerhalb der EU (Art. 59) sind in der EU nicht steuerbar. Gilt für
+  Tarife (Endpreis = Betrag ohne Steuer) und Anzeigen (kein Aufschlag; Krypto-Betrag gleich).
+  Maßgeblich ist das Land der Rechnungsangaben (Anzeigen: sonst Profil-Land); fehlt es, bleibt die
+  Steuer. **Nicht abgedeckt:** EU-Reverse-Charge (Firma mit UID in einem anderen EU-Land) und
+  Steuern im Land des Empfängers (z. B. Umsatzsteuer auf digitale Leistungen in Kenia, Nigeria) —
+  bitte mit der Steuerberatung klären. Altes Verhalten: `APOPULSE_UST_DRITTLAND=mit`.
 - Ohne Rechnungssteller (`APOPULSE_FIRMA_NAME` + `APOPULSE_FIRMA_ANSCHRIFT`) keine Rechnung;
   ohne `APOPULSE_BANK_IBAN` kein „Per Rechnung zahlen". Keine halben Rechnungen.
 - Konto gelöscht: Rechnungsangaben werden gelöscht, **ausgestellte Rechnungen bleiben**

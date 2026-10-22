@@ -125,7 +125,9 @@ Mit `APOPULSE_FIRMA_NAME` und `APOPULSE_FIRMA_ANSCHRIFT` (dieselben Angaben wie 
 bekommen Kund:innen nach jeder Zahlung — auch Krypto — eine Rechnung. Mit zusätzlich
 `APOPULSE_BANK_IBAN` können Firmen **per Rechnung (Überweisung)** zahlen; die Redaktion
 verbucht den Eingang in der Prüfliste. Umsatzsteuer über `APOPULSE_UST_SATZ` (mit der
-Steuerberatung festlegen). Einzelheiten: `docs/RECHNUNGEN.md`.
+Steuerberatung festlegen); Empfänger außerhalb der EU bekommen keine Umsatzsteuer, sondern einen
+Hinweis auf den Leistungsort (`APOPULSE_UST_DRITTLAND=mit` = altes Verhalten). Einzelheiten:
+`docs/RECHNUNGEN.md`.
 
 ## Regionale Premium-Preise (Kaufkraft)
 
