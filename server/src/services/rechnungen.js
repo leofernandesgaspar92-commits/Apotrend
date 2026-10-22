@@ -25,9 +25,11 @@
 // ============================================================================
 import { AppError } from '../domain/errors.js';
 import { ustFuerEmpfaenger } from '../domain/umsatzsteuer.js';
+import { ISO_LAENDER } from '../domain/iso3166.js';
 
 export const ANGABEN_FELDER = ['firma', 'ansprechpartner', 'strasse', 'plz', 'ort', 'land', 'ust_id', 'email'];
-const PFLICHT = ['firma', 'strasse', 'plz', 'ort', 'land', 'email'];
+// PLZ nicht Pflicht: Uganda, Ruanda u. a. haben keine Postleitzahlen (vorher musste man eine erfinden).
+const PFLICHT = ['firma', 'strasse', 'ort', 'land', 'email'];
 
 export function createRechnungen({
   betreiber = {}, nummern, payments, produkt, jetzt = () => Date.now(), istModerator = () => false,
@@ -85,9 +87,11 @@ export function createRechnungen({
     angabenSetzen(userId, f) {
       const d = {};
       for (const k of ANGABEN_FELDER) d[k] = String((f && f[k]) || '').trim().slice(0, 160);
-      for (const k of PFLICHT) if (!d[k]) throw new AppError('rechnung_angaben', 'Bitte Firma, Straße, PLZ, Ort, Land und Rechnungs-E-Mail angeben.');
+      for (const k of PFLICHT) if (!d[k]) throw new AppError('rechnung_angaben', 'Bitte Firma, Straße, Ort, Land und Rechnungs-E-Mail angeben.');
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) throw new AppError('rechnung_email', 'Bitte eine gültige Rechnungs-E-Mail angeben.');
-      d.land = d.land.toUpperCase().slice(0, 2);
+      d.land = d.land.toUpperCase();
+      // Das Land entscheidet über die Umsatzsteuer — nur echte Ländercodes (Auswahlliste).
+      if (!ISO_LAENDER.has(d.land)) throw new AppError('rechnung_land', 'Bitte das Land aus der Liste wählen.');
       angaben.set(userId, d);
       return { ...d };
     },

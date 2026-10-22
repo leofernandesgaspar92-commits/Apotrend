@@ -421,4 +421,6 @@ zusätzlich jede Server-Antwort „ruhender Bereich", auch wenn sie nicht sichtb
   Anzeige 20 % mehr. Für Empfänger außerhalb der EU steht jetzt keine Steuer, sondern der Hinweis auf
   den Leistungsort (Art. 44/59 MwSt-Systemrichtlinie). Steuern im Land des Empfängers (digitale
   Leistungen in Kenia, Nigeria …) sind damit nicht geklärt — Steuerberatung (docs/RECHNUNGEN.md).
+- **Rechnungsangaben für Afrika tauglich:** Land als Auswahl mit Namen („Uganda") statt Kürzel-Feld;
+  Postleitzahl nicht mehr Pflicht (Uganda und Ruanda haben keine — vorher musste man eine erfinden).
 

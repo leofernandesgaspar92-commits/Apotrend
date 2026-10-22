@@ -31,6 +31,7 @@
 // ============================================================================
 
 import { ustFuerEmpfaenger } from '../domain/umsatzsteuer.js';
+import { ISO_LAENDER } from '../domain/iso3166.js';
 import { cleanImage } from '../domain/media.js';
 import { ZIELGRUPPEN, WERBEKUNDEN_TYPEN } from '../data/werbeplaetze.js';
 
@@ -143,12 +144,15 @@ export function createAnzeigen({
       if (!prof || !WERBEKUNDEN_TYPEN.includes(prof.account_type)) {
         throw fehler('werbekunde_typ', 'Werben können Unternehmen der Branche (Pharma, Großhandel, Logistik, Apotheken). Bitte den Kontotyp im Profil anpassen.', 403);
       }
-      const pflicht = ['firma', 'strasse', 'plz', 'ort', 'land', 'email'];
+      // PLZ nicht Pflicht: Uganda, Ruanda u. a. haben keine Postleitzahlen.
+      const pflicht = ['firma', 'strasse', 'ort', 'land', 'email'];
       const d = {};
-      for (const k of [...pflicht, 'ust_id', 'ansprechpartner']) d[k] = String((f && f[k]) || '').trim().slice(0, 160);
+      for (const k of [...pflicht, 'plz', 'ust_id', 'ansprechpartner']) d[k] = String((f && f[k]) || '').trim().slice(0, 160);
       for (const k of pflicht) if (!d[k]) throw fehler('werbekunde_angaben', 'Bitte Firma, Anschrift, Land und Rechnungs-E-Mail angeben.');
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) throw fehler('werbekunde_email', 'Bitte eine gültige Rechnungs-E-Mail angeben.');
-      d.land = d.land.toUpperCase().slice(0, 2);
+      d.land = d.land.toUpperCase();
+      // Das Land entscheidet über die Umsatzsteuer — nur echte Ländercodes (Auswahlliste).
+      if (!ISO_LAENDER.has(d.land)) throw fehler('rechnung_land', 'Bitte das Land aus der Liste wählen.');
       kunden.set(userId, d);
       return { ...d };
     },

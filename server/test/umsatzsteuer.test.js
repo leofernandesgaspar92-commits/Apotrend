@@ -9,6 +9,9 @@ import { fileURLToPath } from 'node:url';
 import { ustFuerEmpfaenger, EU_LAENDER } from '../src/domain/umsatzsteuer.js';
 import { createAnzeigen } from '../src/services/anzeigen.js';
 import { werbeplaetzeAusUmgebung } from '../src/data/werbeplaetze.js';
+import { ISO_LAENDER } from '../src/domain/iso3166.js';
+import { createRechnungen } from '../src/services/rechnungen.js';
+import { readFileSync } from 'node:fs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
 
@@ -73,3 +76,27 @@ test('Über HTTP: Tarif-Rechnung (Überweisung) Uganda ohne Steuer, Österreich 
     await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
   }
 });
+
+test('Land nur aus der Liste: „Austria" war früher „AU" = Australien (keine Steuer)', () => {
+  const r = createRechnungen({ betreiber: {}, nummern: { naechste: () => 'X' }, payments: {}, produkt: () => null });
+  const basis = { firma: 'Apotheke', strasse: 'Weg 1', plz: '1', ort: 'Ort', email: 'a@b.example' };
+  for (const land of ['Austria', 'XX', 'Kenia', 'U', '']) assert.throws(() => r.angabenSetzen('u1', { ...basis, land }), (e) => e.code === 'rechnung_land' || e.code === 'rechnung_angaben', land);
+  assert.equal(r.angabenSetzen('u1', { ...basis, land: 'ke' }).land, 'KE');
+  // Uganda, Ruanda u. a. haben keine Postleitzahlen: PLZ nicht Pflicht.
+  assert.equal(r.angabenSetzen('u2', { ...basis, plz: '', land: 'UG' }).land, 'UG');
+  const a = createAnzeigen({ plaetze: werbeplaetzeAusUmgebung({}), profilVon: () => ({ account_type: 'pharma', country: 'KE' }) });
+  assert.throws(() => a.firmaSetzen('f1', { ...basis, land: 'Austria' }), (e) => e.code === 'rechnung_land');
+  assert.equal(a.firmaSetzen('f1', { ...basis, land: 'at' }).land, 'AT');
+  assert.equal(a.firmaSetzen('f2', { ...basis, plz: '', land: 'RW' }).land, 'RW', 'Ruanda ohne PLZ');
+});
+
+test('Oberfläche: Auswahlliste mit Ländernamen, dieselben Codes wie der Server', () => {
+  const app = readFileSync(join(HIER, '..', 'public', 'app.js'), 'utf8');
+  const m = app.match(/const ISO_LAENDER = '([A-Z ]+)'\.split\(' '\);/);
+  assert.ok(m, 'Liste in app.js');
+  assert.deepEqual(m[1].split(' ').sort(), [...ISO_LAENDER].sort());
+  assert.match(app, /landAuswahl\('data-rg="land"'/); assert.match(app, /landAuswahl\('data-firma="land"'/);
+  assert.doesNotMatch(app, /maxlength="2"/, 'kein Zwei-Zeichen-Feld mehr');
+  assert.match(app, /new Intl\.DisplayNames\(\[LOCALE\], \{ type: 'region' \}\)/);
+});
+

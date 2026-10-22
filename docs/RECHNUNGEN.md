@@ -42,6 +42,10 @@ festgeschrieben).
   Steuer. **Nicht abgedeckt:** EU-Reverse-Charge (Firma mit UID in einem anderen EU-Land) und
   Steuern im Land des Empfängers (z. B. Umsatzsteuer auf digitale Leistungen in Kenia, Nigeria) —
   bitte mit der Steuerberatung klären. Altes Verhalten: `APOPULSE_UST_DRITTLAND=mit`.
+- **Land aus einer Liste (seit 22.10.2026):** Weil das Land über die Steuer entscheidet, ist es kein
+  Zwei-Zeichen-Feld mehr („AU" für Austria wäre Australien gewesen), sondern eine Auswahl mit
+  Ländernamen in der Sprache der Oberfläche; der Server nimmt nur ISO-3166-Codes an
+  (`domain/iso3166.js`). **PLZ ist optional** — Uganda, Ruanda u. a. haben keine Postleitzahlen.
 - Ohne Rechnungssteller (`APOPULSE_FIRMA_NAME` + `APOPULSE_FIRMA_ANSCHRIFT`) keine Rechnung;
   ohne `APOPULSE_BANK_IBAN` kein „Per Rechnung zahlen". Keine halben Rechnungen.
 - Konto gelöscht: Rechnungsangaben werden gelöscht, **ausgestellte Rechnungen bleiben**

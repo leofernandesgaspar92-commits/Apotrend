@@ -4081,13 +4081,25 @@ async function pushHinweis(feed) {
 }
 
 // ══ Rechnungen für Tarife (server/src/services/rechnungen.js) ════════════════
+// Land der Rechnungsangaben: Auswahl mit Ländernamen statt Zwei-Zeichen-Feld. Das Land
+// entscheidet über die Umsatzsteuer (server/src/domain/umsatzsteuer.js) — „AU" für Austria
+// wäre Australien gewesen. Liste = server/src/domain/iso3166.js (Test hält beide gleich).
+const ISO_LAENDER = 'AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW'.split(' ');
+function landAuswahl(attr, wert) {
+  let namen = null;
+  try { namen = new Intl.DisplayNames([LOCALE], { type: 'region' }); } catch { /* alter Browser: Codes */ }
+  const name = (c) => { try { return (namen && namen.of(c)) || c; } catch { return c; } };
+  const w = String(wert || '').toUpperCase();
+  const opts = ISO_LAENDER.map((c) => [c, name(c)]).sort((a, b) => a[1].localeCompare(b[1], LOCALE));
+  return `<select ${attr}>${opts.map(([c, n]) => `<option value="${c}"${c === w ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select>`;
+}
 // Firmen brauchen eine Rechnung — auch nach Krypto-Zahlung — und zahlen oft
 // nur per Überweisung. Rechnungsangaben einmal erfassen, dann ein Klick.
 function rechnungsAngabenFormular(vorher, fertig) {
   const v = vorher || { land: viewCountry() };
   const f = el(`<div class="card" data-rgangaben style="border:1px solid var(--line)"><b>${esc(t('rg_angaben_titel'))}</b>
     <div class="muted" style="font-size:14px;margin:4px 0 8px">${esc(t('rg_angaben_sub'))}</div>
-    <div class="wb-raster">${['firma', 'ansprechpartner', 'strasse', 'plz', 'ort', 'land', 'ust_id', 'email'].map((k) => `<label>${esc(t('wb2_f_' + k))}<input data-rg="${k}" value="${esc(v[k] || '')}" ${k === 'land' ? 'maxlength="2"' : ''}${k === 'email' ? ' type="email"' : ''}></label>`).join('')}</div>
+    <div class="wb-raster">${['firma', 'ansprechpartner', 'strasse', 'plz', 'ort', 'land', 'ust_id', 'email'].map((k) => `<label>${esc(t('wb2_f_' + k))}${k === 'land' ? landAuswahl('data-rg="land"', v.land || viewCountry()) : `<input data-rg="${k}" value="${esc(v[k] || '')}"${k === 'email' ? ' type="email"' : ''}>`}</label>`).join('')}</div>
     <div class="row" style="gap:8px;margin-top:10px"><button data-rgspeichern style="min-height:44px;font-weight:700">${esc(t('rg_speichern'))}</button><button class="ghost" data-rgab>${esc(t('cm_cancel'))}</button></div>
     <div class="err" data-rgerr></div></div>`);
   f.querySelector('[data-rgab]').onclick = () => f.remove();
@@ -4476,7 +4488,7 @@ function buchungsKarte(firma, alt) {
     <h1 style="margin:10px 0 4px">${esc(alt ? t('wb2_bearbeiten') : t('wb2_buchen'))}</h1>
     <div class="muted" style="margin-bottom:8px">${esc(t('wb2_buchen_sub'))}</div>
     ${firma ? '' : `<h2 class="wb-schritt">1 · ${esc(t('wb2_firma'))}</h2>
-      <div class="wb-raster">${['firma', 'ansprechpartner', 'strasse', 'plz', 'ort', 'land', 'ust_id', 'email'].map((f) => `<label>${esc(t('wb2_f_' + f))}<input data-firma="${f}" ${f === 'land' ? `value="${esc(viewCountry())}" maxlength="2"` : ''}></label>`).join('')}</div>`}
+      <div class="wb-raster">${['firma', 'ansprechpartner', 'strasse', 'plz', 'ort', 'land', 'ust_id', 'email'].map((f) => `<label>${esc(t('wb2_f_' + f))}${f === 'land' ? landAuswahl('data-firma="land"', viewCountry()) : `<input data-firma="${f}">`}</label>`).join('')}</div>`}
     <h2 class="wb-schritt">${firma ? 1 : 2} · ${esc(t('wb2_anzeige'))}</h2>
     <label>${esc(t('wb2_titel'))}<input data-f="titel" maxlength="70" value="${esc(v0.titel || '')}"></label>
     <label>${esc(t('wb2_text'))}<textarea data-f="text" maxlength="280" rows="3">${esc(v0.text || '')}</textarea></label>

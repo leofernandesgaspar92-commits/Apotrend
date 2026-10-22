@@ -3058,3 +3058,18 @@ Profil) für Rechnung UND Krypto-Betrag. app.js: Hinweis `[data-rgdrittland]` au
 Krypto = Rechnung; HTTP UG 300/0/drittland, AT 999/167. Gegenproben: Regel aus, Krypto-Betrag alt,
 Tarif ohne Land → jeweils rot. Offen (Steuerberatung): EU-Reverse-Charge, Steuern im Empfängerland.
 
+### Cycle · Rechnungsangaben: Land als Auswahl, PLZ optional (2026-10-22)
+
+**Befund.** Land = `<input maxlength="2">`, Server `slice(0, 2)` — entscheidet seit der USt-Regel über
+die Steuer („Austria" → AU = Australien → keine Steuer; „Nigeria" → NI). PLZ Pflicht, Uganda/Ruanda
+haben keine (Browser-Test: „256" eingetragen).
+
+**WORK.** `domain/iso3166.js` (249 Codes); rechnungen.js/anzeigen.js: nur ISO-Codes (`rechnung_land`,
+übersetzt), PLZ optional. app.js: `landAuswahl()` mit `Intl.DisplayNames` (Oberflächensprache,
+alphabetisch, vorbelegt mit Ansichtsland) in Rechnungs- und Werbe-Firmenangaben; Beschriftungen
+„Land"/„PLZ (falls vorhanden)".
+
+**Tests.** umsatzsteuer.test.js +2: „Austria"/„XX"/„Kenia" abgelehnt, „ke" → KE, ohne PLZ ok (UG, RW);
+Liste app.js = Server, kein `maxlength="2"`. Gegenprobe Server `slice(0,2)` → rot. Browser UG:
+Auswahl „Uganda" (249), Rechnung mit Drittland-Hinweis, keine Steuerzeile.
+
