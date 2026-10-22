@@ -5,6 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { regionFaktoren, preisCents, faktorenAusUmgebung } from '../src/domain/regionPreis.js';
@@ -55,6 +56,13 @@ test('Über HTTP mit AFRICA:30: Uganda zahlt 3,00 € überall, Österreich 9,99
     // Laufzeit-Wahl (Ersparnis Jahr vs. Monat) mit denselben Preisen.
     const pr = (await s.j('/api/payments/products', { headers: s.H(ug) })).products;
     assert.deepEqual([pr.find((p) => p.id === 'premium_monthly').amount_cents, pr.find((p) => p.id === 'premium_yearly').amount_cents, pr.find((p) => p.id === 'business_monthly').amount_cents], [300, 2970, 9900]);
+    // Für den Hinweis „Sonderpreis für Afrika — regulär 9,99 €": Listenpreis + Region nur bei Ermäßigung.
+    const pm = pr.find((p) => p.id === 'premium_monthly');
+    assert.equal(pm.list_cents, 999); assert.equal(pm.preis_region, 'AFRICA');
+    assert.equal(pr.find((p) => p.id === 'business_monthly').list_cents, undefined, 'Business ohne Ermäßigung');
+    const prAt = (await s.j('/api/payments/products', { headers: s.H(at) })).products.find((p) => p.id === 'premium_monthly');
+    assert.equal(prAt.list_cents, undefined, 'Österreich: kein Sonderpreis-Hinweis');
+    assert.equal(prAt.preis_region, undefined);
     // Krypto-Start: gespeicherter Betrag = angezeigter Betrag.
     const k = await s.j('/api/payments/crypto/start', { method: 'POST', headers: s.H(ug), body: JSON.stringify({ productId: 'premium_monthly', walletId: 'btc' }) });
     const meine = (await s.j('/api/payments/mine', { headers: s.H(ug) }));
@@ -93,3 +101,12 @@ test('Standard und Überschreiben (ohne Server)', () => {
   assert.equal(faktorenAusUmgebung({ APOPULSE_PREISE_REGION: 'aus' }).size, 0);
   assert.equal(faktorenAusUmgebung({ APOPULSE_PREISE_REGION: '' }).size, 0, 'leer gesetzt = aus');
 });
+
+test('Oberfläche: Hinweis „Sonderpreis" in drei Sprachen, nur bei Ermäßigung', () => {
+  const app = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app.js'), 'utf8');
+  assert.match(app, /gewaehlt\.list_cents > gewaehlt\.amount_cents && gewaehlt\.preis_region/);
+  assert.match(app, /ti\('pr_region_hint', \{ region: t\('cs_region_' \+ gewaehlt\.preis_region\)/);
+  const i18n = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'i18n.js'), 'utf8');
+  for (const w of ['Sonderpreis für Apotheken in {region}', 'Special price for pharmacies in {region}', 'Preço especial para farmácias em {region}']) assert.ok(i18n.includes(w), w);
+});
+

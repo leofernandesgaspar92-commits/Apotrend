@@ -314,10 +314,13 @@ const kompression = createKompressionsSpeicher({
 // Regionale Premium-Preise (domain/regionPreis.js): Heimatland des Kontos, sonst das
 // angefragte Land (Anzeige ohne Anmeldung). Ohne APOPULSE_PREISE_REGION: Listenpreis.
 const preisFaktoren = faktorenAusUmgebung(process.env); // Standard AFRICA:30 (domain/regionPreis.js)
+const preisLand = (uid, country) => (uid ? userCountry(uid) : (country ? normalizeCountry(country) : null));
 const preisFuer = (uid, product, { country = null } = {}) => {
-  const land = uid ? userCountry(uid) : (country ? normalizeCountry(country) : null);
+  const land = preisLand(uid, country);
   return preisCents(product, land ? regionVon(land) : null, preisFaktoren);
 };
+// Für die Anzeige: Region, deren Ermäßigung gilt (sonst null) — „Sonderpreis für Afrika".
+const preisRegionFuer = (uid, country) => { const land = preisLand(uid, country); const r = land ? regionVon(land) : null; return r && preisFaktoren.has(r) ? r : null; };
 const payments = createPaymentsService({
   preisFuer,
   // Krypto-Zahlung einer Anzeigen-Kampagne bestätigt -> Kampagne läuft.
@@ -1484,7 +1487,16 @@ const routes = [
   }],
 
   // ── Zahlungen / Premium — inaktiv, solange kein Anbieter konfiguriert ist. ──
-  ['GET', /^\/api\/payments\/products$/, false, async ({ userId, query }) => ({ products: listProducts().map((p) => ({ ...p, amount_cents: preisFuer(userId, p, { country: query.get('country') }) })) })],
+  // amount_cents = zu zahlender Preis (ggf. regional ermäßigt); list_cents = Listenpreis und
+  // preis_region nur, wenn wirklich ermäßigt — die Premium-Seite schreibt dann „Sonderpreis für Afrika".
+  ['GET', /^\/api\/payments\/products$/, false, async ({ userId, query }) => {
+    const country = query.get('country');
+    const region = preisRegionFuer(userId, country);
+    return { products: listProducts().map((p) => {
+      const cents = preisFuer(userId, p, { country });
+      return cents < p.amount_cents ? { ...p, amount_cents: cents, list_cents: p.amount_cents, preis_region: region } : { ...p };
+    }) };
+  }],
   // Welche FIAT-Wege stehen hier und jetzt wirklich zur Verfügung?
   //
   // Zwei Bedingungen müssen BEIDE erfüllt sein, und sie kommen aus zwei

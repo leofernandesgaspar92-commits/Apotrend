@@ -7063,6 +7063,14 @@ async function openPremium() {
     }
     const priceMain = fmtCurrency(opt.amount, opt.currency || 'EUR');
     body.appendChild(el(`<div data-prpreis style="font-weight:800;font-size:1.15em;margin-bottom:4px">${esc(produktName(opt.product, opt.product_name))} — <span style="color:var(--green)">${esc(priceMain)}</span></div>`));
+    // Regionaler Sonderpreis (domain/regionPreis.js): offen sagen, dass und warum es günstiger ist,
+    // samt regulärem Preis — sonst wirkt „3,00 €" wie ein Fehler oder ein Lockangebot.
+    const gewaehlt = produkte.find((p) => p.id === prPlan);
+    if (gewaehlt && gewaehlt.list_cents > gewaehlt.amount_cents && gewaehlt.preis_region) {
+      body.appendChild(el(`<div data-prregion style="background:var(--ok-bg);border:1px solid var(--ok-bd);color:var(--ok-fg);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:15px">${
+        esc(ti('pr_region_hint', { region: t('cs_region_' + gewaehlt.preis_region), list: fmtCurrency(gewaehlt.list_cents / 100, gewaehlt.currency || 'EUR') }))
+      }</div>`));
+    }
     // Näherung in der Landeswährung, damit niemand selbst umrechnen muss.
     // Erscheint NUR mit echtem Kurs — fehlt er, steht hier bewusst nichts.
     if (opt.local) {

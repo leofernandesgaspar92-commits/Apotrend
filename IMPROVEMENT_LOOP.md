@@ -3023,3 +3023,13 @@ neutrale Entsorgungs-Karte.
 **Tests.** region-preis.test.js +3 (Standard UG 3 €/AT 9,99 €, `aus`, Überschreiben); features-Tests
 auf neuen Beschluss; Gegenprobe Standard leer → rot.
 
+### Cycle · Premium-Seite: „Sonderpreis für Afrika — regulär 9,99 €" (2026-10-22)
+
+**WORK.** server.js: `preisLand`/`preisRegionFuer`; `/api/payments/products` mit `list_cents` +
+`preis_region` nur bei Ermäßigung. app.js: grüner Hinweis `[data-prregion]` unter dem Preis
+(`pr_region_hint`, Regionsname aus `cs_region_*`). Browser: UG „€3.00 — Special price for pharmacies in
+Africa — regular price €9.99", Jahr €29.70; AT ohne Hinweis.
+
+**Tests.** region-preis.test.js +Felder (UG premium list 999/AFRICA, Business und AT ohne) + Oberfläche.
+Gegenprobe: Felder immer mitschicken → rot.
+
