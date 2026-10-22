@@ -475,6 +475,12 @@ const AFRIKA_NEU = {
   MA: ['MAD', 'AMMPS', ['Loi portant création de l’AMMPS']],
   DZ: ['DZD', 'ANPP', ['Agence nationale des produits pharmaceutiques (Ministère de l’Industrie pharmaceutique)']],
   TN: ['TND', 'ANMPS', ['Loi n° 2023-2 du 12 juillet 2023 (ANMPS)']],
+  // Vierte Welle 10/2026: arabischsprachiges Afrika, Somalia, Äquatorialguinea.
+  EG: ['EGP', 'EDA', ['Law No. 151 of 2019 (Egyptian Drug Authority)']],
+  LY: ['LYD', 'NCFDC', ['Registration via the Ministry of Health (Pharmacy Administration); National Center for Food and Drug Control']],
+  SD: ['SDG', 'NMPB', ['National Medicines and Poisons Board (Federal Ministry of Health)']],
+  SO: ['SOS', 'Ministry of Health', ['Pharmaceutical law approved 3 Jan 2026 (Somali Pharmaceutical and Health Equipment Authority, being set up)']],
+  GQ: ['XAF', 'Ministerio de Sanidad y Bienestar Social', ['Ley n.º 3/2003 de Medicamentos']],
 };
 for (const [cc, [currency, regulator, legalFramework]] of Object.entries(AFRIKA_NEU)) {
   PROFILES[cc] = {
@@ -670,6 +676,8 @@ const CURRENCY_MINOR_UNITS = {
   LSL: 2, SZL: 2, MUR: 2, SCR: 2, SSP: 2, ERN: 2, CVE: 2, XOF: 0, STN: 2,
   // Frankophones Afrika (ISO 4217): XAF, GNF, BIF, DJF, KMF ohne Untereinheit; Dinar TND mit drei.
   XAF: 0, CDF: 2, GNF: 0, MGA: 2, BIF: 0, DJF: 0, KMF: 0, MRU: 2, MAD: 2, DZD: 2, TND: 3,
+  // ISO 4217: Libyscher Dinar mit drei Nachkommastellen.
+  EGP: 2, LYD: 3, SDG: 2, SOS: 2,
 };
 
 export function minorUnits(currency) {
@@ -704,6 +712,8 @@ const DEFAULT_LOCALE_BY_CURRENCY = {
   // CFA-Franc: acht von neun Ländern sprechen Französisch (Guinea-Bissau: Portugiesisch).
   XOF: 'fr-SN', XAF: 'fr-CM', CDF: 'fr-CD', GNF: 'fr-GN', MGA: 'fr-MG', BIF: 'fr-BI', DJF: 'fr-DJ', KMF: 'fr-KM',
   MRU: 'fr-MR', MAD: 'fr-MA', DZD: 'fr-DZ', TND: 'fr-TN',
+  // Arabisch mit westlichen Ziffern (wie Wirkstoffstärken und Preise auf Packungen).
+  EGP: 'ar-EG-u-nu-latn', LYD: 'ar-LY-u-nu-latn', SDG: 'ar-SD-u-nu-latn', SOS: 'en-SO',
 };
 
 // --- Der Zustands-Manager ---------------------------------------------------

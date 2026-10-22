@@ -517,6 +517,20 @@ const BUILTIN = [
     url: 'https://www.miph.gov.dz/fr/feed/',
     official: true, verified: false,
   },
+  // Vierte Welle 10/2026: Ägypten (EDA, Law 151/2019) und Sudan (NMPB, Adresse laut WHO-Afrika-
+  // Behördenliste). Feed-Pfad nicht live geprüft — bitte im Betrieb „Quellen testen".
+  {
+    id: 'eda_eg_news', kind: 'news', country: 'EG', format: 'rss',
+    label: 'Egyptian Drug Authority (EDA) — News',
+    url: 'https://www.edaegypt.gov.eg/en/feed/',
+    official: true, verified: false,
+  },
+  {
+    id: 'nmpb_sd_news', kind: 'news', country: 'SD', format: 'rss',
+    label: 'National Medicines and Poisons Board Sudan — News',
+    url: 'https://www.nmpb.gov.sd/en/feed/',
+    official: true, verified: false,
+  },
   // --- Kontinent und Welt (keinem Land zugeordnet) ------------------------
   //  `AFR` und `INT` sind QUELL-REGIONEN (data/countries.js), keine Länder.
   //  Ihre Meldungen erscheinen unter „Afrika" bzw. „Welt", nie im Feed eines

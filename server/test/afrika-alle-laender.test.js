@@ -31,7 +31,7 @@ for (const c of AFRIKA) {
   test(`${c.code} ${c.name}: alle Afrika-Bausteine vorhanden und stimmig`, () => {
     // Stammdaten: echter Ländercode, Sprache der App, gültige Währung und Zeitzone.
     assert.ok(ISO_LAENDER.has(c.code), 'ISO-Code');
-    assert.ok(['en', 'pt', 'fr'].includes(c.locale_default), `Sprache ${c.locale_default}`);
+    assert.ok(['en', 'pt', 'fr', 'ar'].includes(c.locale_default), `Sprache ${c.locale_default}`);
     assert.doesNotThrow(() => new Intl.NumberFormat('en', { style: 'currency', currency: c.currency }).format(1), 'Währung');
     assert.match(c.timezone, /^(Africa|Indian|Atlantic)\//, 'afrikanische Zeitzone (Inselstaaten: Indian/Atlantic)');
     assert.doesNotThrow(() => new Intl.DateTimeFormat('en', { timeZone: c.timezone }).format(0), 'Zeitzone');
@@ -47,7 +47,7 @@ for (const c of AFRIKA) {
     assert.notEqual(featureStatus(c.code, 'stock_exchange'), 'allowed', 'Tauschbörse nur mit Hinweis/gesperrt');
     // Presse (Land-Ebene der Nachrichten) und Datumsformat des Landes.
     assert.ok(GDELT_LAND[c.code], 'Presse-Land'); assert.ok(presseQuery(c.code, {}), 'Presse-Suche');
-    const tag = (app.match(new RegExp(`\\b${c.code}:'([a-z]{2}-[A-Z]{2})'`)) || [])[1];
+    const tag = (app.match(new RegExp(`\\b${c.code}:'([a-z]{2}-[A-Z]{2}(?:-u-nu-latn)?)'`)) || [])[1];
     assert.ok(tag, 'Datumsformat (REGIONAL_TAGS)');
     // Euro-Betrag lesbar: In Kap Verde machte „pt-CV“ aus 3,00 € „3$00 €“ (Escudo-Trenner).
     assert.match(new Intl.NumberFormat(tag, { style: 'currency', currency: 'EUR' }).format(3), /3[.,]00/, `Euro-Format ${tag}`);

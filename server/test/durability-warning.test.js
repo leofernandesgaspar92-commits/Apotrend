@@ -15,6 +15,6 @@ test('die Warnung haengt an der Auskunft, nicht an einer Vermutung', () => {
   assert.match(app, /h\.durability === 'sicher'/);
 });
 
-test('die Warnung steht in allen vier Sprachen bereit (de, en, pt, fr)', () => {
-  assert.equal((app.match(/au_durability_warn:/g) || []).length, 4);
+test('die Warnung steht in allen fünf Sprachen bereit (de, en, pt, fr, ar)', () => {
+  assert.equal((app.match(/au_durability_warn:/g) || []).length, 5);
 });

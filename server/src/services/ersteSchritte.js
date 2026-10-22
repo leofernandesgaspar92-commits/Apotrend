@@ -40,7 +40,10 @@ export function ersteSchritte({ shortagesRepo, land, sprache = 'de', region = nu
     if (vorschlaege.length >= MAX) break;
   }
   const anzahlAmtlich = vorschlaege.length;
-  const liste = region === 'AFRICA' ? (HAEUFIG_AFRIKA[sprache] || HAEUFIG_AFRIKA.en) : (HAEUFIG[sprache] || HAEUFIG.de);
+  // Arabisch: Wirkstoffnamen lateinisch (INN, englisch) — so schreiben sie Behörden und
+  // Apotheken in Ägypten und im Maghreb, und nur so trifft die Frühwarnung die Behördenlisten.
+  const sp = sprache === 'ar' ? 'en' : sprache;
+  const liste = region === 'AFRICA' ? (HAEUFIG_AFRIKA[sp] || HAEUFIG_AFRIKA.en) : (HAEUFIG[sp] || HAEUFIG.de);
   for (const w of liste) {
     if (vorschlaege.length >= MAX) break;
     const k = wirkstoffSchluessel(w) || w.toLowerCase();

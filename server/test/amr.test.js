@@ -48,7 +48,7 @@ test('Sicherheitshinweis in allen drei Sprachen, Oberfläche nutzt die Übersetz
   assert.match(I.de.wk_amr_disclaimer, /keine patientenindividuelle Therapieempfehlung/);
   assert.match(I.en.wk_amr_disclaimer, /not a treatment recommendation for an individual patient/);
   assert.match(I.pt.wk_amr_disclaimer, /não é uma recomendação terapêutica para um doente individual/);
-  for (const sp of ['de', 'en', 'pt', 'fr']) assert.ok(I[sp].wk_amr_note && I[sp].wk_amr_note.length > 60, sp + ': Hinweis');
+  for (const sp of ['de', 'en', 'pt', 'fr', 'ar']) assert.ok(I[sp].wk_amr_note && I[sp].wk_amr_note.length > 60, sp + ': Hinweis');
   const app = readFileSync(join(HIER, '..', 'public', 'app.js'), 'utf8');
   assert.match(app, /t\('wk_amr_note'\)/);
   assert.match(app, /t\('wk_amr_disclaimer'\)/);

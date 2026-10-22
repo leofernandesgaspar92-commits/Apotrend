@@ -72,6 +72,12 @@ export const GDELT_LAND = Object.freeze({
   MA: 'morocco',
   DZ: 'algeria',
   TN: 'tunisia',
+  // Vierte Welle (arabisch, Somalia, Äquatorialguinea).
+  EG: 'egypt',
+  LY: 'libya',
+  SD: 'sudan',
+  SO: 'somalia',
+  GQ: 'equatorialguinea',
 });
 
 /**
@@ -83,6 +89,8 @@ export const SUCHWOERTER = Object.freeze({
   pt: ['medicamentos', 'farmácia', 'farmácias', 'farmacêutica', '"falta de medicamentos"', '"rutura de medicamentos"'],
   en: ['pharmaceutical', 'pharmaceuticals', 'pharmacy', 'medicines', '"drug shortage"', '"medicine shortage"'],
   fr: ['médicaments', 'pharmacie', 'pharmacies', 'pharmaceutique', '"pénurie de médicaments"', '"rupture de médicaments"'],
+  // Arabisch: „Medikamente", „Apotheke(n)", „Arzneimittelmangel", „Arzneimittelknappheit".
+  ar: ['أدوية', 'الأدوية', 'صيدلية', 'الصيدليات', '"نقص الأدوية"', '"أزمة الدواء"'],
 });
 
 /** Welche Sprachen die Presse eines Landes schreibt (Reihenfolge egal). */
@@ -115,10 +123,15 @@ const LAND_SPRACHEN = Object.freeze({
   BI: ['fr'],
   DJ: ['fr'],
   KM: ['fr'],
-  MR: ['fr'],
-  MA: ['fr'],
-  DZ: ['fr'],
-  TN: ['fr'],
+  MR: ['fr', 'ar'],
+  MA: ['fr', 'ar'],
+  DZ: ['fr', 'ar'],
+  TN: ['fr', 'ar'],
+  EG: ['ar', 'en'],
+  LY: ['ar'],
+  SD: ['ar', 'en'],
+  SO: ['en', 'ar'],
+  GQ: ['fr'],
 });
 
 export const presseEnv = (land) => `APOPULSE_PRESSE_QUERY_${String(land).toUpperCase()}`;

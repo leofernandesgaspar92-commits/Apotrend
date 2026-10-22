@@ -3152,3 +3152,26 @@ echte fmtCurrency: 3 000 F CFA ohne ,00, Euro mit Cent). Browser-Audit neu: Sene
 (Anmeldung, erste Schritte, Reiter, Premium 3,00 € + Krypto, kein Querscrollen). Gegenproben: CSS-Fix
 entfernt → Audit „11 px Querscrollen"; SN ohne GDELT → nur SN rot; BI ohne Profil → nur BI rot.
 verify 1385/1385.
+
+### Cycle · Arabisch (RTL) + letzte fünf Länder: 54/54 (2026-10-22)
+
+**Anlass.** Owner: „… dann Arabisch, mach alle Länder".
+
+**WORK.** i18n ar (2 303 Texte, 10 geprüfte Blöcke; Zurück-Pfeile gespiegelt; Wirkstoff-Beispiele
+lateinisch). RTL: `dir` in setLocale/beim Laden/Druck/Begleitzettel; 136 physische Angaben in app.css/
+app.js auf logische umgestellt (margin-inline-start …), RTL-Gegenstücke für positionierte Elemente;
+`span.handle` isoliert. Server: domain/schreibrichtung.js; ar-Texte + `dir` in wochenbericht,
+webPush, teilseite, oeffentlicheSeiten, startseiteKopf (+ Manifest dir), lagebild, aiTranslate, amr,
+patientInfo, presse (Suchwörter ar); ersteSchritte ar → englische INN. Sprachwahl für mehrsprachige
+Länder (spracheFuer, Menü-Knopf, Anmeldeseite, `apo_sprachwahl`). Länder EG, LY, SD, SO, GQ (Register,
+Profil, Untereinheiten LYD 3, Formate ar-XX-u-nu-latn, Rechtsstufe, GDELT, 2 Feeds, 3 Ausnahmen);
+MA/DZ/TN/MR + ar.
+
+**Tests.** arabisch.test.js (9): Schlüssel/Platzhalter/wirklich Arabisch, Pfeile, lateinische Wirkstoffe
+(auch außerhalb Afrikas), dir in Oberfläche/Druck, keine physischen left/right-Angaben + RTL-Gegenstücke,
+echte spracheFuer (Marokko ar, Senegal nicht), Server-Seiten mit dir="rtl", Patientenkarten, 54 Länder.
+Browser-Audit: Ägypten ar 360 px + Marokko-Sprachwahl; Navigations-Audit um CM (Sprachknopf). Gefunden
+beim Durchspielen: Sprachknopf fehlte nach direktem Laden (Länderliste noch nicht da) → nachgeladen;
+„mitglied@" → isoliert; lateinisches Komma in „لك، منى". Gegenproben (7, alle rot, per cmp
+wiederhergestellt) — zwei zunächst grün gebliebene Proben haben den Test verschärft (Menü-Regel exakt,
+Latein-Regel auch außerhalb Afrikas). verify 1400/1400.

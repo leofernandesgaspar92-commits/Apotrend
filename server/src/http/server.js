@@ -2724,7 +2724,7 @@ const server = http.createServer(async (req, res) => {
     const m = pathname.match(/^\/engpaesse(?:\/([a-zA-Z]{2})(?:\/([a-z0-9-]{1,80}))?)?\/?$/);
     let html = null;
     // Sprache für Übersicht und 404 (gehören keinem Land): aus Accept-Language.
-    const sp = (String(req.headers['accept-language'] || '').toLowerCase().match(/\b(de|en|pt|fr)\b/) || [null, 'en'])[1];
+    const sp = (String(req.headers['accept-language'] || '').toLowerCase().match(/\b(de|en|pt|fr|ar)\b/) || [null, 'en'])[1];
     if (m && !m[1]) { res.setHeader('Vary', 'Accept-Language'); html = oeffentlich.index({ basis, sp }); }
     else if (m && !m[2]) html = oeffentlich.land(m[1].toUpperCase(), { basis });
     else if (m) html = oeffentlich.wirkstoff(m[1].toUpperCase(), m[2], { basis });

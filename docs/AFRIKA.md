@@ -564,5 +564,56 @@ jetzt um (alle Sprachen); der Browser-Audit prüft Senegal auf Französisch bei 
 Beträge in Währungen ohne Untereinheit (CFA-Franc, Uganda-Schilling …) erscheinen ohne „,00".
 
 **Noch offen — 5 Länder:** Ägypten, Libyen, Sudan (Arabisch), Somalia (Somali/Arabisch),
-Äquatorialguinea (Spanisch). Maghreb und Mauretanien bekommen zusätzlich Arabisch. → nächster Schritt:
-Arabisch (Schrift von rechts nach links).
+Äquatorialguinea (Spanisch) → seit 22.10.2026 erledigt, siehe „Arabisch und die letzten Länder".
+
+## Arabisch und die letzten Länder — alle 54 (Stand 22.10.2026)
+
+**Alle 54 Länder Afrikas sind im Register.** Arabisch ist die fünfte Sprache der App, von rechts nach
+links.
+
+**Arabisch in der App**
+- Alle 2 303 Texte (gleiche Schlüssel und Platzhalter, westliche Ziffern wie auf Packungen:
+  04/03/2026, 3.00 €). Zurück-Pfeile zeigen nach rechts („→ رجوع").
+- **Von rechts nach links:** `dir="rtl"` am Dokument; alle Abstände, Rahmen und Ausrichtungen sind
+  jetzt *logisch* geschrieben (Anfang/Ende statt links/rechts) — sie drehen sich von selbst, in den
+  übrigen vier Sprachen sieht alles aus wie vorher. Was mit links/rechts *positioniert* ist (Abzeichen,
+  Menü, Suchsymbol, Spalten am Desktop), hat ein eigenes Gegenstück. Ein Test verbietet neue
+  physische left/right-Abstände.
+- Server: Wochenbericht, Push, Vorschau beim Teilen, öffentliche Engpass-Seiten, Startseite und App-Name
+  — jede gebaute Seite mit `dir="rtl"`. Patienten-Infokarten und Begleitzettel auf Arabisch; eine
+  arabische Karte steht auch in einer deutschen Oberfläche richtig herum.
+- @-Namen (lateinisch) bleiben im arabischen Satz lesbar („@mitglied", nicht „mitglied@").
+
+**Wirkstoffnamen bleiben lateinisch.** In Ägypten und im Maghreb schreiben Behörden, Großhandel und
+Apotheken Wirkstoffe mit lateinischen Buchstaben (INN, englisch). Ein Wirkstoff in arabischer Schrift
+träfe keine Behördenliste — die Frühwarnung bliebe stumm. Deshalb: Vorschläge, Beispiele und
+Hinweise in der arabischen Oberfläche lateinisch („مثلًا Amoxicillin").
+
+**Sprachwahl in mehrsprachigen Ländern.** Bisher folgte die Sprache allein dem Land. Neu: ein Knopf im
+Menü und auf der Anmeldeseite, beschriftet mit dem Namen der anderen Sprache in ihrer eigenen Schrift
+(„العربية", „Français", „English") — so findet ihn auch, wer die gerade angezeigte Sprache nicht liest.
+Die Wahl bleibt gespeichert. Betrifft: Kamerun (fr/en), Marokko, Algerien, Tunesien, Mauretanien (fr/ar),
+Ägypten, Libyen, Sudan (ar/en), Somalia (en/ar).
+
+**Die letzten fünf Länder**
+
+| Land | App-Sprache | Währung | Behörde (Recherche) |
+|---|---|---|---|
+| Ägypten | Arabisch (+ Englisch) | EGP | EDA — Egyptian Drug Authority (Gesetz 151/2019), edaegypt.gov.eg |
+| Libyen | Arabisch (+ Englisch) | LYD | NCFDC; Registrierung beim Gesundheitsministerium |
+| Sudan | Arabisch (+ Englisch) | SDG | NMPB — National Medicines and Poisons Board (Adresse laut WHO-Afrika-Liste) |
+| Somalia | Englisch (+ Arabisch) | SOS | Gesundheitsministerium — Behördengesetz am 3.1.2026 beschlossen, Behörde noch im Aufbau |
+| Äquatorialguinea | Französisch (Amtssprache) | XAF | Gesundheitsministerium (Ley 3/2003 de Medicamentos) |
+
+Somali und Spanisch gibt es in der App nicht; Somalia startet deshalb auf Englisch (Sprache der
+Ausbildung) mit Arabisch, Äquatorialguinea auf Französisch. Je Land wie bisher: Krypto-Zahlung,
+Afrika-Preis 3,00 €, keine EU-Umsatzsteuer, vorsichtige Rechtsstufe (Tauschbörse gesperrt, Aktionen und
+Preisvergleich mit Hinweis — in Ägypten sind Arzneimittelpreise staatlich festgesetzt). Quellen: EDA und
+NMPB (Feed-Pfad nicht live geprüft, bitte „Quellen testen"); Libyen, Somalia, Äquatorialguinea ohne
+eigene Quelle (keine belegbare Adresse). Presse-Suche auf Arabisch für Ägypten, Libyen, Sudan, Maghreb.
+
+**Geprüft im Browser (360 px):** Ägypten auf Arabisch (Vorschlag per Zeitzone, Anmeldung, erste Schritte
+mit lateinischen Wirkstoffen, Menü öffnet links, Premium 3.00 € mit Solana/Bitcoin/Ethereum, kein
+Querscrollen), Desktop gespiegelt (Navigation rechts, Zusatzspalte links), Marokko Französisch ⇄
+Arabisch über den Sprachknopf, bleibt nach Neuladen. Beide Abläufe prüft der Browser-Audit jetzt bei
+jedem `npm run verify`.

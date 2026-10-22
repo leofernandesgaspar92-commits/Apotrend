@@ -7,10 +7,12 @@
 //  Adresse (manche Messenger zeigen dann keins).
 //
 //  Jetzt: Titel, Beschreibung und Open-Graph-Angaben nach Accept-Language
-//  (de/en/pt/fr; ohne passende Angabe Englisch — die Plattform ist international),
+//  (de/en/pt/fr/ar; ohne passende Angabe Englisch — die Plattform ist international),
 //  Bild mit absoluter Adresse. Der Inhalt der App bleibt unverändert; die
 //  App-Sprache folgt weiterhin dem gewählten Land.
 // ============================================================================
+
+import { richtung } from '../domain/schreibrichtung.js';
 
 const KOPF = {
   de: {
@@ -33,6 +35,11 @@ const KOPF = {
     beschr: 'Pénuries de médicaments avec sources : listes officielles et signalements des pharmacies, alerte à chaque changement, vérification de votre propre liste — pour pharmacies, grossistes et achats.',
     og: 'Listes officielles et signalements des pharmacies — à jour, clairs, avec une alerte à chaque changement.',
   },
+  ar: {
+    titel: 'ApoPulse — نقص الأدوية مع المصادر',
+    beschr: 'نقص الأدوية مع المصادر: قوائم رسمية وبلاغات من الصيدليات، تنبيه عند كل تغيير، فحص قائمتك الخاصة — للصيدليات وتجارة الجملة والمشتريات.',
+    og: 'قوائم رسمية وبلاغات من الصيدليات — محدّثة وواضحة، مع تنبيه عند كل تغيير.',
+  },
 };
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -50,7 +57,7 @@ export function kopfSprache(acceptLanguage) {
 export function startseiteKopf(html, { sp = 'en', basis = '' } = {}) {
   const K = KOPF[sp] || KOPF.en;
   return String(html)
-    .replace(/<html lang="[a-z]{2}">/, `<html lang="${sp}">`)
+    .replace(/<html lang="[a-z]{2}"( dir="[a-z]{3}")?>/, `<html lang="${sp}" dir="${richtung(sp)}">`)
     .replace(/<title>[^<]*<\/title>/, `<title>${esc(K.titel)}</title>`)
     .replace(/<meta name="description" content="[^"]*" \/>/, `<meta name="description" content="${esc(K.beschr)}" />`)
     .replace(/<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${esc(K.titel)}" />`)
@@ -86,6 +93,12 @@ const MANIFEST = {
     kurz: { shortages: ['Pénuries', 'Pénuries', 'Voir et signaler les pénuries actuelles'], overview: ['Pour vous', 'Pour vous', 'Votre vue d’ensemble avec les substances suivies'], news: ['Actualités', 'Actualités', 'Communications des autorités avec sources'] },
     bilder: ['Pénuries avec source et date', 'Vue d’ensemble : ce qui compte aujourd’hui', 'Actualités des autorités avec sources'],
   },
+  ar: {
+    name: 'ApoPulse – نقص الأدوية مع المصادر',
+    description: 'نقص الأدوية مع المصادر: قوائم رسمية وبلاغات من الصيدليات، تنبيه عند كل تغيير.',
+    kurz: { shortages: ['النقص', 'النقص', 'عرض حالات النقص الحالية والإبلاغ عنها'], overview: ['لك', 'لك', 'نظرتك العامة مع المواد المتابَعة'], news: ['الأخبار', 'الأخبار', 'بلاغات الجهات الرسمية مع المصادر'] },
+    bilder: ['النقص مع المصدر والتاريخ', 'نظرة عامة: ما يهم اليوم', 'أخبار الجهات الرسمية مع المصادر'],
+  },
 };
 
 /** manifest.webmanifest in der Sprache sp. Unlesbares JSON -> unverändert. */
@@ -93,7 +106,7 @@ export function manifestSprache(text, sp = 'en') {
   const M = MANIFEST[sp] || MANIFEST.en;
   let m;
   try { m = JSON.parse(text); } catch { return text; }
-  m.name = M.name; m.description = M.description; m.lang = sp;
+  m.name = M.name; m.description = M.description; m.lang = sp; m.dir = richtung(sp);
   // Nur Schnellzugriffe, die überall Inhalt haben (Preise gibt es nicht in jedem Land).
   m.shortcuts = (m.shortcuts || []).map((s) => {
     const tab = (String(s.url || '').match(/tab=([a-z]+)/) || [])[1];

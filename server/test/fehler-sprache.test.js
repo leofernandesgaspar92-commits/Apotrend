@@ -22,14 +22,14 @@ function codesImServer() {
     for (const m of s.matchAll(/\.code\s*=\s*'([a-z_0-9]+)'/g)) codes.add(m[1]);
     for (const m of s.matchAll(/code:\s*'([a-z_0-9]+)'/g)) codes.add(m[1]);
   }
-  for (const x of ['de', 'en', 'pt', 'fr', 'tr']) codes.delete(x); // Sprach-, keine Fehlercodes
+  for (const x of ['de', 'en', 'pt', 'fr', 'ar', 'tr']) codes.delete(x); // Sprach-, keine Fehlercodes
   return codes;
 }
 
-test('Jeder Fehlercode des Servers hat eine Übersetzung in de, en, pt und fr', () => {
+test('Jeder Fehlercode des Servers hat eine Übersetzung in de, en, pt, fr und ar', () => {
   const codes = codesImServer();
   assert.ok(codes.size > 100, `nur ${codes.size} Codes gefunden — Suche kaputt?`);
-  for (const l of ['de', 'en', 'pt', 'fr']) {
+  for (const l of ['de', 'en', 'pt', 'fr', 'ar']) {
     const fehlt = [...codes].filter((k) => !I[l]['e_' + k]);
     assert.deepEqual(fehlt, [], `${l}: ohne Übersetzung`);
   }

@@ -40,13 +40,13 @@ function i18nParity(html) {
   const anchor = 'const I18N = {';
   const start = html.indexOf(anchor);
   const close = html.indexOf('\n};', start);
-  if (start < 0 || close < 0) return { de: null, en: null, pt: null, fr: null, balanced: null, error: 'I18N nicht gefunden' };
+  if (start < 0 || close < 0) return { de: null, en: null, pt: null, fr: null, ar: null, balanced: null, error: 'I18N nicht gefunden' };
   const objText = html.slice(start + anchor.length - 1, close + 2); // von '{' bis '}'
   let I18N;
   try { I18N = new Function(`return (${objText})`)(); }
-  catch (e) { return { de: null, en: null, pt: null, fr: null, balanced: null, error: 'eval: ' + e.message }; }
+  catch (e) { return { de: null, en: null, pt: null, fr: null, ar: null, balanced: null, error: 'eval: ' + e.message }; }
   // Seit 10/2026 auch fr. Jede Sprache wird gegen de geprüft — in beide Richtungen.
-  const locales = ['de', 'en', 'pt', 'fr'];
+  const locales = ['de', 'en', 'pt', 'fr', 'ar'];
   const fremd = locales.filter((l) => l !== 'de');
   const sets = Object.fromEntries(locales.map((l) => [l, new Set(Object.keys(I18N[l] || {}))]));
   const missing = (a, b) => [...sets[a]].filter((k) => !sets[b].has(k));
@@ -173,8 +173,8 @@ function run() {
   console.log(t.skipped
     ? 'Tests:              im Gate geprüft ✓ (node --test lief in der verify-Kette davor)'
     : `Tests:              ${t.pass}/${t.count} grün${t.fail ? `  ⚠️ ${t.fail} rot` : ''}`);
-  console.log(`i18n-Attribute:     ${snapshot.data_i18n_attrs}   Schlüssel de/en/pt/fr: ${p.de}/${p.en}/${p.pt}/${p.fr}`);
-  console.log(`i18n-Lücken:        en fehlen ${p.gaps_en}, pt fehlen ${p.gaps_pt}, fr fehlen ${p.gaps_fr} ${p.balanced ? '✓' : '⚠️ ' + (p.gap_samples || []).join(', ')}`);
+  console.log(`i18n-Attribute:     ${snapshot.data_i18n_attrs}   Schlüssel de/en/pt/fr/ar: ${p.de}/${p.en}/${p.pt}/${p.fr}/${p.ar}`);
+  console.log(`i18n-Lücken:        en fehlen ${p.gaps_en}, pt fehlen ${p.gaps_pt}, fr fehlen ${p.gaps_fr}, ar fehlen ${p.gaps_ar} ${p.balanced ? '✓' : '⚠️ ' + (p.gap_samples || []).join(', ')}`);
   console.log(`Hartkod. Dialoge:   ${snapshot.hardcoded_dialogs} ${snapshot.hardcoded_dialogs === 0 ? '✓' : '⚠️'}`);
   const hu = snapshot.hardcoded_ui_de;
   console.log(`Hartkod. UI-DE:     ${hu.count} ${hu.count === 0 ? '✓' : '⚠️ ' + hu.samples.join(' | ')}`);

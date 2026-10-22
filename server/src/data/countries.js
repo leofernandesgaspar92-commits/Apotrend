@@ -75,15 +75,25 @@ export const COUNTRIES = {
   BI: { code: 'BI', name: 'Burundi', flag: '🇧🇮', locale_default: 'fr', locales: ['fr'], currency: 'BIF', timezone: 'Africa/Bujumbura', regulator: 'ABREMA', regulator_url: null, region: 'AFRICA' },
   DJ: { code: 'DJ', name: 'Djibouti', flag: '🇩🇯', locale_default: 'fr', locales: ['fr'], currency: 'DJF', timezone: 'Africa/Djibouti', regulator: 'DMPL', regulator_url: null, region: 'AFRICA' },
   KM: { code: 'KM', name: 'Comores', flag: '🇰🇲', locale_default: 'fr', locales: ['fr'], currency: 'KMF', timezone: 'Indian/Comoro', regulator: 'ANAMEV', regulator_url: null, region: 'AFRICA' },
-  MR: { code: 'MR', name: 'Mauritanie', flag: '🇲🇷', locale_default: 'fr', locales: ['fr'], currency: 'MRU', timezone: 'Africa/Nouakchott', regulator: 'Ministère de la Santé', regulator_url: null, region: 'AFRICA' },
-  MA: { code: 'MA', name: 'Maroc', flag: '🇲🇦', locale_default: 'fr', locales: ['fr'], currency: 'MAD', timezone: 'Africa/Casablanca', regulator: 'AMMPS', regulator_url: 'https://www.ammps.gov.ma', region: 'AFRICA' },
-  DZ: { code: 'DZ', name: 'Algérie', flag: '🇩🇿', locale_default: 'fr', locales: ['fr'], currency: 'DZD', timezone: 'Africa/Algiers', regulator: 'ANPP', regulator_url: null, region: 'AFRICA' },
-  TN: { code: 'TN', name: 'Tunisie', flag: '🇹🇳', locale_default: 'fr', locales: ['fr'], currency: 'TND', timezone: 'Africa/Tunis', regulator: 'ANMPS', regulator_url: null, region: 'AFRICA' },
+  MR: { code: 'MR', name: 'Mauritanie', flag: '🇲🇷', locale_default: 'fr', locales: ['fr', 'ar'], currency: 'MRU', timezone: 'Africa/Nouakchott', regulator: 'Ministère de la Santé', regulator_url: null, region: 'AFRICA' },
+  MA: { code: 'MA', name: 'Maroc', flag: '🇲🇦', locale_default: 'fr', locales: ['fr', 'ar'], currency: 'MAD', timezone: 'Africa/Casablanca', regulator: 'AMMPS', regulator_url: 'https://www.ammps.gov.ma', region: 'AFRICA' },
+  DZ: { code: 'DZ', name: 'Algérie', flag: '🇩🇿', locale_default: 'fr', locales: ['fr', 'ar'], currency: 'DZD', timezone: 'Africa/Algiers', regulator: 'ANPP', regulator_url: null, region: 'AFRICA' },
+  TN: { code: 'TN', name: 'Tunisie', flag: '🇹🇳', locale_default: 'fr', locales: ['fr', 'ar'], currency: 'TND', timezone: 'Africa/Tunis', regulator: 'ANMPS', regulator_url: null, region: 'AFRICA' },
+  // 10/2026, vierte Welle: Arabisch (seit 22.10.2026 Sprache der App, von rechts nach links) und
+  // die letzten Länder. Ägypten, Libyen, Sudan zweisprachig ar/en (Behörden veröffentlichen
+  // englisch, Wirkstoffnamen lateinisch). Somalia: Somali gibt es in der App nicht — Englisch
+  // (Sprache der Ausbildung) mit Arabisch. Äquatorialguinea: Französisch ist Amtssprache.
+  EG: { code: 'EG', name: 'مصر', flag: '🇪🇬', locale_default: 'ar', locales: ['ar', 'en'], currency: 'EGP', timezone: 'Africa/Cairo', regulator: 'EDA', regulator_url: 'https://www.edaegypt.gov.eg', region: 'AFRICA' },
+  LY: { code: 'LY', name: 'ليبيا', flag: '🇱🇾', locale_default: 'ar', locales: ['ar', 'en'], currency: 'LYD', timezone: 'Africa/Tripoli', regulator: 'NCFDC', regulator_url: null, region: 'AFRICA' },
+  SD: { code: 'SD', name: 'السودان', flag: '🇸🇩', locale_default: 'ar', locales: ['ar', 'en'], currency: 'SDG', timezone: 'Africa/Khartoum', regulator: 'NMPB', regulator_url: 'https://www.nmpb.gov.sd/en/', region: 'AFRICA' },
+  SO: { code: 'SO', name: 'Soomaaliya', flag: '🇸🇴', locale_default: 'en', locales: ['en', 'ar'], currency: 'SOS', timezone: 'Africa/Mogadishu', regulator: 'Ministry of Health', regulator_url: null, region: 'AFRICA' },
+  GQ: { code: 'GQ', name: 'Guinea Ecuatorial', flag: '🇬🇶', locale_default: 'fr', locales: ['fr'], currency: 'XAF', timezone: 'Africa/Malabo', regulator: 'Ministerio de Sanidad y Bienestar Social', regulator_url: null, region: 'AFRICA' },
 };
 
 export const DEFAULT_COUNTRY = 'AT';
-// Französisch seit 10/2026 (frankophones Afrika). Die Oberflächentexte stehen in public/i18n.js.
-export const SUPPORTED_LOCALES = ['de', 'en', 'pt', 'fr'];
+// Französisch seit 10/2026 (frankophones Afrika), Arabisch seit 10/2026 (Ägypten, Sudan,
+// Libyen, Maghreb; von rechts nach links). Die Oberflächentexte stehen in public/i18n.js.
+export const SUPPORTED_LOCALES = ['de', 'en', 'pt', 'fr', 'ar'];
 
 // Gültiger Ländercode? (Großschreibung normalisiert.)
 export function isValidCountry(code) {

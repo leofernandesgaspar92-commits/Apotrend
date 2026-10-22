@@ -21,6 +21,8 @@
 //      und Community-Meldungen — in einer HTML-Mail ist das Fremdinhalt.
 // ============================================================================
 
+import { richtung } from '../domain/schreibrichtung.js';
+
 const T = {
   de: {
     betreff: (land, kw, n, f) => `ApoPulse Wochenbericht ${land} · KW ${kw}: ${n} neu${f ? `, ${f} Frühwarnung${f > 1 ? 'en' : ''}` : ''}`,
@@ -78,9 +80,23 @@ const T = {
     oeffnen: 'Ouvrir dans ApoPulse', abmelden: 'Se désabonner du rapport hebdomadaire',
     status: { kritisch: 'critique', eingeschraenkt: 'limitée', verfuegbar: 'disponible' },
   },
+  ar: {
+    betreff: (land, kw, n, f) => `التقرير الأسبوعي من ApoPulse ${land} · الأسبوع ${kw}: ${n} جديدة${f ? `، ${f} إنذار مبكر` : ''}`,
+    hallo: (n) => `صباح الخير${n ? ' ' + n : ''}،`,
+    intro: (land) => `إليك وضع النقص خلال الأيام السبعة الأخيرة في ${land}.`,
+    beob: 'المواد التي تتابعها', keineBeob: 'لا تتابع أي مواد بعد. أضفها في التطبيق عبر «متابعة» وستظهر هنا.',
+    knapp: (t) => `ناقص منذ ${t} يوم`, nichtKnapp: 'ليس على قائمة النقص حاليًا', ausland: 'ناقص في الخارج',
+    fw: 'إنذار مبكر من الخارج', fwHinweis: 'حقيقة من قائمة الجهة الرسمية المعنية، لا توقع لبلدك.',
+    neu: 'جديد على قائمة النقص', beendet: 'لم يعد على القائمة', keinNeu: 'لا إدخالات جديدة هذا الأسبوع.',
+    offen: (n) => `حاليًا ${n} مادة على القائمة.`,
+    tage: (n) => `${n} يوم`, keineDaten: (land) => `لا توجد بعد بيانات رسمية لـ ${land} — يبقى هذا الجزء فارغًا بدلًا من الإيحاء بوضع هادئ.`,
+    grundlage: (s) => `الأساس: قوائم الجهات الرسمية، يسجلها ApoPulse عند كل جلب (التسجيل منذ ${s}).`,
+    oeffnen: 'فتح في ApoPulse', abmelden: 'إلغاء الاشتراك في التقرير الأسبوعي',
+    status: { kritisch: 'حرج', eingeschraenkt: 'محدود', verfuegbar: 'متوفر' },
+  },
 };
 // Datumsschreibweise je Berichtssprache (Tag.Monat.Jahr in allen vier).
-const DATUM_TAG = { de: 'de-AT', en: 'en-GB', pt: 'pt-PT', fr: 'fr-FR' };
+const DATUM_TAG = { de: 'de-AT', en: 'en-GB', pt: 'pt-PT', fr: 'fr-FR', ar: 'ar-EG-u-nu-latn' }; // Arabisch: Tag/Monat, westliche Ziffern
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const datum = (iso, loc) => { const t = Date.parse(String(iso || '') + 'T00:00:00Z'); return Number.isNaN(t) ? String(iso || '') : new Date(t).toLocaleDateString(DATUM_TAG[loc] || 'de-AT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }); };
@@ -148,7 +164,7 @@ export function rendereWochenbericht(d) {
   z.push('', `${t.oeffnen}: ${d.appUrl}`, `${t.abmelden}: ${d.abmeldeUrl}`);
   h.push(`<p style="margin-top:22px"><a href="${esc(d.appUrl)}" style="background:#0b7f28;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:700">${esc(t.oeffnen)}</a></p>`
     + `<p style="font-size:12px;color:#4c5d55;margin-top:18px"><a href="${esc(d.abmeldeUrl)}" style="color:#4c5d55">${esc(t.abmelden)}</a></p>`);
-  const html = `<!doctype html><html lang="${esc(d.locale)}"><body style="font-family:Arial,Helvetica,sans-serif;color:#1a2420;max-width:620px;margin:0 auto;padding:16px">`
+  const html = `<!doctype html><html lang="${esc(d.locale)}" dir="${richtung(d.locale)}"><body style="font-family:Arial,Helvetica,sans-serif;color:#1a2420;max-width:620px;margin:0 auto;padding:16px">`
     + `<div style="font-weight:800;font-size:20px;color:#0b7f28;margin-bottom:8px">ApoPulse</div>${h.join('')}</body></html>`;
   return { betreff, text: z.join('\n'), html };
 }

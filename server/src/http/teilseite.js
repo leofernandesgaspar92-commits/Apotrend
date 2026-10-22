@@ -14,6 +14,7 @@
 // ============================================================================
 
 import { frLand } from '../domain/franzLand.js';
+import { richtung } from '../domain/schreibrichtung.js';
 
 const TEXTE = {
   de: {
@@ -92,6 +93,25 @@ const TEXTE = {
     cta_lage: 'Voir toutes les pénuries avec sources — gratuit', mehr: 'Dans ApoPulse : historique, situation à l’étranger, vérification de votre propre liste.',
     marke: 'ApoPulse — pénuries de médicaments avec sources',
   },
+  ar: {
+    lage_titel: (n, land) => `${n} مواد على قائمة النقص في ${land}`,
+    lage_titel_1: (land) => `مادة واحدة على قائمة النقص في ${land}`,
+    lage_ohne: (land) => `نقص الأدوية في ${land}`,
+    lage_beschr: (neu, quellen) => `${neu} جديدة خلال الأيام السبعة الأخيرة · المصدر: ${quellen}`,
+    w_knapp: (w, land) => `${w}: ناقص في ${land}`,
+    w_seit: (n) => (n <= 0 ? 'منذ اليوم' : n === 1 ? 'منذ يوم واحد' : `منذ ${n} يوم`),
+    w_nicht: (w, land) => `${w}: غير مُبلَّغ عن نقصه حاليًا في ${land}`,
+    w_unbekannt: (w, land) => `${w}: لا توجد بعد قائمة رسمية لـ ${land}`,
+    w_apo_best: (w, land, n) => `${w}: أبلغت ${n} صيدليات في ${land} عن نقصه`,
+    w_apo: (w, land, n) => (n === 1 ? `${w}: صيدلية واحدة في ${land} تبلّغ عن نقص (لم يتأكد بعد)` : `${w}: ${n} صيدليات في ${land} تبلّغ عن نقص (لم يتأكد بعد)`),
+    lage_apo: (n, land) => (n === 1 ? `مادة واحدة أبلغت صيدليات في ${land} عن نقصها` : `${n} مواد أبلغت صيدليات في ${land} عن نقصها`),
+    lage_apo_beschr: (b) => `منها ${b} أكدتها عدة صيدليات · غير رسمي`,
+    quelle: 'المصدر', community: 'أبلغت عنه صيدليات، غير رسمي', referenz: 'بيانات مرجعية', stand: 'بتاريخ',
+    cta_w: (w) => `احصل على إشعار مجاني عند حدوث أي تغيير في ${w}`,
+    cta_bestaetigen: (w) => `ناقص لديك أيضًا؟ أكّد ${w} على ApoPulse — مجانًا`,
+    cta_lage: 'عرض كل حالات النقص مع المصادر — مجانًا', mehr: 'على ApoPulse: السجل، الوضع في الخارج، فحص قائمتك الخاصة.',
+    marke: 'ApoPulse — نقص الأدوية مع المصادر',
+  },
 };
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -145,7 +165,7 @@ export function teilseite(d, { basis }) {
   const bild = `${basis}/og-bild.png`;
   const cta = d.art === 'lage' ? T.cta_lage : d.bitte ? T.cta_bestaetigen(d.wirkstoff) : T.cta_w(d.wirkstoff);
   return `<!DOCTYPE html>
-<html lang="${esc(d.sprache)}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="${esc(d.sprache)}" dir="${richtung(d.sprache)}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(titel)} · ApoPulse</title>
 <meta name="description" content="${esc(beschr)}">
 <meta property="og:type" content="website"><meta property="og:site_name" content="ApoPulse">

@@ -65,7 +65,7 @@ test('wer Herkunft mitschicken WILL, kann es nicht', async () => {
 });
 
 test('der Auftrag verbietet Ergaenzungen, Empfehlungen und das Uebersetzen von Fachbegriffen', async () => {
-  for (const ziel of ['de', 'en', 'pt', 'fr']) {
+  for (const ziel of ['de', 'en', 'pt', 'fr', 'ar']) {
     const a = uebersetzungsAuftrag(ziel);
     assert.match(a, /ERFINDE|ÜBERSETZE NUR, WAS DASTEHT/i, ziel);
     assert.match(a, /KEINE EMPFEHLUNG/i, ziel);
@@ -100,8 +100,8 @@ test('leerer Text loest keinen bezahlten Aufruf aus', async () => {
 
 test('eine unbekannte Zielsprache ebenso', async () => {
   const { svc, aufrufe } = dienst();
-  // fr ist seit 10/2026 Zielsprache (Oberflächensprache) — es/ar noch nicht.
-  for (const z of ['es', 'ar', '', 'DEU', null]) {
+  // fr und ar sind seit 10/2026 Zielsprachen (Oberflächensprachen) — es/sw noch nicht.
+  for (const z of ['es', 'sw', '', 'DEU', null]) {
     await assert.rejects(() => svc.uebersetze('Text', z), (e) => e.code === 'translate_lang');
   }
   assert.equal(aufrufe.length, 0);

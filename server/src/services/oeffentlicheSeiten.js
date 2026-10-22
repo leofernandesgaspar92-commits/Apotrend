@@ -23,6 +23,7 @@
 // ============================================================================
 import { wirkstoffSchluessel } from '../domain/inn.js';
 import { frLand } from '../domain/franzLand.js';
+import { richtung } from '../domain/schreibrichtung.js';
 
 const AKTIV = new Set(['kritisch', 'eingeschraenkt']);
 
@@ -132,6 +133,30 @@ const TEXTE = {
     laender_ohne: 'Pays sans liste officielle dans ApoPulse — signalements des pharmacies',
     nicht_gefunden: 'Page introuvable', alle_engpaesse: 'Toutes les pénuries de médicaments par pays',
   },
+  ar: {
+    index_titel: 'نقص الأدوية — محدّث، مع المصادر',
+    index_beschr: 'قوائم النقص الحالية لدى الجهات الرسمية للأدوية حسب البلد. مع المصدر والتاريخ والسجل.',
+    land_titel: (l) => `نقص الأدوية في ${l} — القائمة الحالية`,
+    land_beschr: (n, l, q) => `${n} مواد على قائمة النقص حاليًا في ${l}. المصدر: ${q}.`,
+    land_leer: (l) => `لا توجد حاليًا أي مادة على قائمة النقص في ${l}.`,
+    w_titel_knapp: (w, l) => `${w}: نقص في ${l}`,
+    w_titel_nicht: (w, l) => `${w} في ${l}: لا نقص مُبلَّغ عنه حاليًا`,
+    w_knapp: (w, l, q) => `${w} على قائمة النقص في ${l} (المصدر: ${q}).`,
+    w_nicht: (w, l, bis) => `${w} ليس على قائمة النقص حاليًا في ${l}.${bis ? ` آخر نقص حتى ${bis}.` : ''}`,
+    seit: (n) => (n <= 0 ? 'منذ اليوم' : n === 1 ? 'منذ يوم واحد' : `منذ ${n} يوم`),
+    praeparate: 'المنتجات المتأثرة', status: { kritisch: 'غير متوفر', eingeschraenkt: 'توفر محدود' },
+    bis: 'متوقع حتى', verlauf: (n, d) => `على القائمة ${n} مرات منذ بدء التسجيل${d ? `، بمتوسط ${d} يوم` : ''}.`,
+    anderswo: (n) => (n === 1 ? 'ناقص أيضًا في بلد آخر واحد.' : `ناقص أيضًا في ${n} بلدان أخرى.`),
+    quelle: 'المصدر', stand: 'بتاريخ', wirkstoff: 'المادة', lage: 'الحالة', laender: 'بلدان لديها قائمة رسمية',
+    cta_w: (w) => `احصل على إشعار مجاني عند حدوث أي تغيير في ${w}`, cta_land: 'افحص قائمتك وأنشئ تنبيهات — مجانًا',
+    hinweis: 'بيانات من قائمة النقص الرسمية. ليست توصية بالعلاج أو الاستبدال — يرجى استشارة الصيدلي أو الطبيب.',
+    zurueck_land: (l) => `كل حالات النقص في ${l}`, alle_laender: 'كل البلدان',
+    ohne_titel: (l) => `نقص الأدوية في ${l}`,
+    ohne_beschr: (l, r) => `لا يتلقى ApoPulse (بعد) قائمة نقص رسمية لـ ${l}${r ? ` (الجهة الرسمية: ${r})` : ''}. في ApoPulse تبلّغ الصيدليات في ${l} عن النقص بنفسها وتؤكد بلاغات بعضها — مع تعليم واضح بأنها غير رسمية.`,
+    ohne_cta: (l) => `اعرض بلاغات الصيدليات في ${l} وأنشئ تنبيهات — مجانًا`,
+    laender_ohne: 'بلدان دون قائمة رسمية في ApoPulse — بلاغات الصيدليات',
+    nicht_gefunden: 'الصفحة غير موجودة', alle_engpaesse: 'كل حالات نقص الأدوية حسب البلد',
+  },
 };
 
 function datum(iso, sprache) {
@@ -198,7 +223,7 @@ export function createOeffentlicheSeiten({ chronik, shortagesRepo, laender, stan
   function rahmen({ sp, titel, beschr, pfad, basis, inhalt, jsonld = null }) {
     const url = `${basis}${pfad}`;
     return `<!DOCTYPE html>
-<html lang="${esc(sp)}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="${esc(sp)}" dir="${richtung(sp)}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(titel)} · ApoPulse</title>
 <meta name="description" content="${esc(beschr)}"><link rel="canonical" href="${esc(url)}">
 <meta property="og:type" content="website"><meta property="og:site_name" content="ApoPulse"><meta property="og:title" content="${esc(titel)}">
@@ -240,7 +265,7 @@ ${ohne ? `<div class="c"><h2>${esc(T.laender_ohne)}</h2><ul class="l">${ohne}</u
 
     nichtGefunden({ sp: wunsch = 'de' }) {
       const sp = TEXTE[wunsch] ? wunsch : 'de'; const T = TEXTE[sp];
-      return `<!DOCTYPE html><html lang="${sp}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>${esc(T.nicht_gefunden)} · ApoPulse</title></head><body style="font-family:system-ui;padding:24px;font-size:17px"><h1>${esc(T.nicht_gefunden)}</h1><p><a href="/engpaesse">${esc(T.alle_engpaesse)}</a></p></body></html>`;
+      return `<!DOCTYPE html><html lang="${sp}" dir="${richtung(sp)}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>${esc(T.nicht_gefunden)} · ApoPulse</title></head><body style="font-family:system-ui;padding:24px;font-size:17px"><h1>${esc(T.nicht_gefunden)}</h1><p><a href="/engpaesse">${esc(T.alle_engpaesse)}</a></p></body></html>`;
     },
 
     land(cc, { basis }) {

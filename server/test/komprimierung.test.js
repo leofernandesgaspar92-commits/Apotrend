@@ -121,7 +121,7 @@ test('Über HTTP: app.js/i18n.js/app.css als Brotli, entpackt byte-genau (Skript
     // Startseite (je Sprache erzeugt) und JSON-Antworten ebenfalls.
     const start = await roh(port, '/', { ...BROWSER, 'accept-language': 'en-UG' });
     assert.equal(start.headers['content-encoding'], 'br');
-    assert.match(entpacken(start).toString(), /<html lang="en">/);
+    assert.match(entpacken(start).toString(), /<html lang="en" dir="ltr">/);
     const api = await roh(port, '/api/countries', BROWSER);
     assert.equal(api.headers['content-encoding'], 'br');
     assert.ok(Array.isArray(JSON.parse(entpacken(api)).countries) || typeof JSON.parse(entpacken(api)) === 'object');

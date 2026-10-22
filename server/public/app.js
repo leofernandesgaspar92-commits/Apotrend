@@ -81,11 +81,26 @@ function applyTheme() {
 // Sie wird in index.html VOR dieser Datei geladen; `I18N` ist dadurch hier
 // sichtbar (gemeinsamer globaler Bindungsbereich klassischer Skripte).
 // Französisch seit 10/2026: Sprache von gut 20 afrikanischen Ländern (Senegal bis Kongo).
-const SUPPORTED_LOCALES = ['de','en','pt','fr'];
+// Arabisch seit 10/2026: Ägypten, Sudan, Libyen, Maghreb — von rechts nach links (dir="rtl").
+const SUPPORTED_LOCALES = ['de','en','pt','fr','ar'];
+const RTL_SPRACHEN = ['ar'];
+const richtungVon = (l) => (RTL_SPRACHEN.includes(l) ? 'rtl' : 'ltr');
+// Name jeder Sprache in ihrer eigenen Schrift — so findet die Sprachwahl auch, wer die
+// gerade angezeigte Sprache nicht lesen kann.
+const SPRACHNAMEN = { de: 'Deutsch', en: 'English', pt: 'Português', fr: 'Français', ar: 'العربية' };
+// Mehrsprachige Länder (Kamerun fr/en, Marokko/Algerien/Tunesien/Mauretanien fr/ar): die
+// selbst gewählte Sprache gilt, solange das Land sie führt — sonst wie bisher `sonst`.
+function spracheFuer(c, sonst) {
+  let wahl = null;
+  try { wahl = localStorage.getItem('apo_sprachwahl'); } catch { /* privater Modus */ }
+  if (c && wahl && (c.locales || []).includes(wahl) && SUPPORTED_LOCALES.includes(wahl)) return wahl;
+  return sonst || 'de';
+}
 let LOCALE = (() => { const s = localStorage.getItem('apo_locale'); return SUPPORTED_LOCALES.includes(s) ? s : 'de'; })();
 // <html lang> beim Laden mit der aktiven Sprache synchronisieren (statisch „de"),
 // damit Screenreader engl./pt. Inhalte nicht deutsch aussprechen.
 document.documentElement.setAttribute('lang', LOCALE);
+document.documentElement.setAttribute('dir', richtungVon(LOCALE));
 // Führende Emojis aus den Beschriftungen nehmen. 313 von 1667 Texten begannen
 // mit einem („🔴 Nur kritisch", „Drucken", „👥 Community") — das war das
 // deutlichste Zeichen einer generierten Oberfläche, und jedes Gerät zeichnet
@@ -103,6 +118,8 @@ function setLocale(l) {
   LOCALE = SUPPORTED_LOCALES.includes(l) ? l : 'de';
   localStorage.setItem('apo_locale', LOCALE);
   document.documentElement.setAttribute('lang', LOCALE);
+  document.documentElement.setAttribute('dir', richtungVon(LOCALE));
+  zeigeSprachwahl();
 }
 // ── Regionale Schreibweise: Sprache allein genügt nicht ─────────────────────
 // Bisher lieferte t('_bcp47') für JEDES englischsprachige Land „en-GB". In den
@@ -125,6 +142,9 @@ const REGIONAL_TAGS = {
   ET:'en-GB',
   // Frankophones Afrika (10/2026).
   SN:'fr-SN', CI:'fr-CI', CM:'fr-CM', CD:'fr-CD', CG:'fr-CG', GA:'fr-GA', BF:'fr-BF', ML:'fr-ML', NE:'fr-NE', TD:'fr-TD', CF:'fr-CF', BJ:'fr-BJ', TG:'fr-TG', GN:'fr-GN', MG:'fr-MG', BI:'fr-BI', DJ:'fr-DJ', KM:'fr-KM', MR:'fr-MR', MA:'fr-MA', DZ:'fr-DZ', TN:'fr-TN',
+  // Arabisch (10/2026): westliche Ziffern wie auf Packungen und in Behördenlisten — „ar-EG" allein
+  // schriebe ٠٤/٠٣/٢٠٢٦. Somalia englisch, Äquatorialguinea französisch.
+  EG:'ar-EG-u-nu-latn', LY:'ar-LY-u-nu-latn', SD:'ar-SD-u-nu-latn', SO:'en-GB', GQ:'fr-GQ', // „en-SO" kennt die Datumsbibliothek nicht (wie ET)
 };
 // Kennt der Browser eine Kennung nicht, fällt Intl STILL auf die bloße Sprache
 // zurück — bei Englisch also aufs US-Format (Monat/Tag). supportedLocalesOf
@@ -366,7 +386,7 @@ function renderWhoami() {
   const w = document.getElementById('whoami');
   if (!w) return;
   if (!me) { w.innerHTML = ''; w.classList.remove('clickable'); w.removeAttribute('role'); w.removeAttribute('tabindex'); w.onclick = null; w.onkeydown = null; return; }
-  w.innerHTML = avatarHtml(me, 26, false) + '<span>@' + esc(me.handle) + '</span>';
+  w.innerHTML = avatarHtml(me, 26, false) + '<span class="handle">@' + esc(me.handle) + '</span>';
   w.classList.add('clickable');
   w.setAttribute('role', 'button'); w.setAttribute('tabindex', '0');
   w.setAttribute('title', t('hdr_myprofile')); w.setAttribute('aria-label', t('hdr_myprofile'));
@@ -525,7 +545,7 @@ function legalNotice(featureId) {
   const reason = featReason(featureId);
   const msg = reason ? ti('legal_' + reason, { country: COUNTRY_NAME || t('legal_your_country') }) : '';
   const blocked = status === 'blocked';
-  return el(`<div class="card" style="border-left:4px solid ${blocked ? 'var(--crit-fg)' : 'var(--warn-fg)'};background:${blocked ? 'var(--crit-bg)' : 'var(--warn-bg)'}">
+  return el(`<div class="card" style="border-inline-start:4px solid ${blocked ? 'var(--crit-fg)' : 'var(--warn-fg)'};background:${blocked ? 'var(--crit-bg)' : 'var(--warn-bg)'}">
     <div class="row"><b>${esc(blocked ? ti('legal_blocked_title', { country: COUNTRY_NAME }) : t('legal_notice_title'))}</b></div>
     <div style="font-size:14px;margin-top:4px">${esc(msg)}</div>
     <div class="muted" style="font-size:12px;margin-top:6px">${esc(t('legal_disclaimer'))}</div>
@@ -608,12 +628,12 @@ async function countryScreen() {
   const vorschlag = vorgeschlageneLaender(countries);
   // Auch der Kopf („Menü") spricht hier schon die Sprache des Browsers; nach der Wahl setzt applyI18n zurück.
   document.querySelectorAll('header [data-i18n]').forEach((e) => { const k = e.dataset.i18n; if (I18N[bl] && I18N[bl][k]) e.textContent = I18N[bl][k]; });
-  const knopf = (c) => `<button class="country-pick" data-country="${esc(c.code)}" lang="${esc(c.locale_default)}"><span class="flag" aria-hidden="true">${esc(c.flag)}</span> ${esc(c.name)}</button>`;
+  const knopf = (c) => `<button class="country-pick" data-country="${esc(c.code)}" lang="${esc(c.locale_default)}" dir="auto"><span class="flag" aria-hidden="true">${esc(c.flag)}</span> ${esc(c.name)}</button>`;
   const folge = [...new Set([...(vorschlag[0] && vorschlag[0].region ? [vorschlag[0].region] : []), ...REGION_FOLGE, ...countries.map((c) => c.region)])].filter(Boolean);
   const nachName = (a, b) => String(a.name).localeCompare(String(b.name), bl);
   const gruppen = folge.map((r) => ({ r, laender: countries.filter((c) => c.region === r).sort(nachName) })).filter((g) => g.laender.length);
   const ohneRegion = countries.filter((c) => !c.region);
-  const card = el(`<div class="card" style="text-align:center" lang="${esc(bl)}" data-laenderwahl>
+  const card = el(`<div class="card" style="text-align:center" lang="${esc(bl)}" dir="${richtungVon(bl)}" data-laenderwahl>
     <div style="display:flex;justify-content:center;margin-bottom:8px"><svg width="54" height="54" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="7" fill="var(--green)"/><path d="M13 6.2v13.6M6.2 13h13.6" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/></svg></div>
     <h1 style="margin:.2em 0">${esc(tb('cs_title'))}</h1>
     <div class="muted" style="font-size:.95em">${esc(andere)}</div>
@@ -627,7 +647,7 @@ async function countryScreen() {
     const code = btn.dataset.country;
     const c = countries.find(x => x.code === code);
     localStorage.setItem('apo_country', code);
-    if (c && c.locale_default) { setLocale(c.locale_default); applyI18n(); applyTheme(); applyFontScale(); }
+    if (c && c.locale_default) { setLocale(spracheFuer(c, c.locale_default)); applyI18n(); applyTheme(); applyFontScale(); }
     authScreen();
   });
 }
@@ -691,7 +711,18 @@ function authScreen() {
   <div class="row" style="justify-content:center;gap:10px;margin-bottom:6px;align-items:center">
     <span>${ac ? `<span aria-hidden="true" style="font-size:1.2em">${esc(ac.flag)}</span> <b>${esc(ac.name)}</b>` : localStorage.getItem('apo_country') ? `<b>${esc(landAnzeige(localStorage.getItem('apo_country')))}</b>` : ''}</span>
     <button class="ghost small" id="changeCountry">${esc(t('cs_change'))}</button>
+    <span data-authsprache></span>
   </div>`));
+  // Sprachknopf (mehrsprachige Länder): Beim direkten Laden ist die Länderliste noch
+  // nicht da — dann nach dem Laden einsetzen statt gar nicht.
+  const sprachKnopf = () => {
+    const platz = app.querySelector('[data-authsprache]'); const n = naechsteSprache();
+    if (!platz || !n || platz.firstChild) return;
+    const b = el(`<button class="ghost small" id="authSprache" lang="${esc(n)}" dir="${richtungVon(n)}">${esc(SPRACHNAMEN[n])}</button>`);
+    b.onclick = () => spracheWechseln(n);
+    platz.appendChild(b);
+  };
+  sprachKnopf(); ensureCountries().then(() => { sprachKnopf(); zeigeSprachwahl(); }).catch(() => {});
   { const ab = leseAbsicht(); if (ab && ab.beobachten) app.appendChild(el(`<div class="lage-box" data-absicht style="margin:0 0 14px"><div class="lage-kopf">${ico('bell', 18)}${esc(ti('absicht_banner', { w: ab.beobachten }))}</div></div>`)); }
   app.appendChild(el(`
   <div class="auth-grid">
@@ -836,7 +867,7 @@ function recoveryCodesScreen(codes, onDone) {
     <div class="row" style="margin-top:12px;gap:8px">
       <button class="ghost small" id="rc_copy">${esc(t('rc_copy'))}</button>
       <button class="ghost small" id="rc_dl">${esc(t('rc_download'))}</button>
-      <span id="rc_msg" class="muted" style="margin-left:4px"></span>
+      <span id="rc_msg" class="muted" style="margin-inline-start:4px"></span>
     </div>
     <div style="margin-top:16px"><button id="rc_done">${esc(t('rc_saved_cta'))}</button></div>
   </div>`);
@@ -966,7 +997,7 @@ async function initCountrySwitcher() {
     const home = (me && me.country) || 'AT';
     ACTIVE_COUNTRY = (code === home) ? null : code; // eigenes Land = kein „Besuch"
     const c = (COUNTRIES_CACHE || []).find(x => x.code === viewCountry());
-    setLocale((c && c.locale_default) || (me && me.locale) || 'de'); // Sprache folgt der Ansicht
+    setLocale(spracheFuer(c, (c && c.locale_default) || (me && me.locale) || 'de')); // Sprache folgt der Ansicht
     applyI18n(); applyTheme(); applyFontScale();
     updateViewContext();
     loadTab(); // Inhalte des aktiven Reiters für die gewählte Länder-Ansicht neu laden
@@ -993,7 +1024,7 @@ function updateViewContext() {
     ACTIVE_COUNTRY = null;
     const sel = document.getElementById('countrySwitch'); if (sel) sel.value = home;
     const hcc = (COUNTRIES_CACHE || []).find(x => x.code === home);
-    setLocale((hcc && hcc.locale_default) || (me && me.locale) || 'de');
+    setLocale(spracheFuer(hcc, (hcc && hcc.locale_default) || (me && me.locale) || 'de'));
     applyI18n(); applyTheme(); applyFontScale(); updateViewContext(); loadTab();
     if (newsRailTimer) { newsRailSeen = null; refreshNewsRail(); }
   };
@@ -1027,8 +1058,10 @@ async function mainScreen() {
   }
   me = meData.profile;
   iAmModerator = !!meData.is_moderator;
-  // Sprache folgt dem Land des Profils (Owner-Vorgabe: länderbasierte Plattform).
-  setLocale(me && me.locale ? me.locale : 'de');
+  // Sprache folgt dem Land des Profils (Owner-Vorgabe: länderbasierte Plattform) —
+  // in mehrsprachigen Ländern die dort selbst gewählte Sprache.
+  await ensureCountries();
+  setLocale(spracheFuer((COUNTRIES_CACHE || []).find((x) => me && x.code === me.country), me && me.locale ? me.locale : 'de'));
   renderWhoami();
   await ladeFeatures();
   document.getElementById('btnLogout').classList.remove('hidden');
@@ -1386,10 +1419,10 @@ function renderMyTasksOverview(feed, tasks) {
   mine.sort((a, b) => (Number(isOverdue(b)) - Number(isOverdue(a))) || String(a.due_date || '9999').localeCompare(String(b.due_date || '9999')));
   const overdue = mine.filter(isOverdue).length;
   const top = mine.slice(0, 3);
-  const card = el(`<div class="card"${overdue?' style="border-left:4px solid var(--crit-fg)"':''}>
+  const card = el(`<div class="card"${overdue?' style="border-inline-start:4px solid var(--crit-fg)"':''}>
     <div class="row" style="align-items:baseline"><b style="flex:1">✅ ${esc(ti('ovt_title',{n:mine.length}))}</b>
       ${overdue?`<span style="font-size:12px;font-weight:700;color:var(--crit-fg)">${esc(ti('ovt_overdue',{n:overdue}))}</span>`:''}
-      <button class="linklike small" data-all style="margin-left:8px">${esc(t('ovt_all'))} ›</button></div>
+      <button class="linklike small" data-all style="margin-inline-start:8px">${esc(t('ovt_all'))} ›</button></div>
     ${top.map(t2=>`<div class="comment clickable" data-open><span>${isOverdue(t2)?'🔴 ':'▫️ '}</span>${esc(t2.title)}${t2.due_date?` <span class="muted" style="font-size:12px">· ${esc(ti('tk_due',{d:fmtDateDe(t2.due_date)}))}</span>`:''}</div>`).join('')}
   </div>`);
   card.querySelector('[data-all]').onclick = () => openTasks();
@@ -1408,9 +1441,9 @@ function renderTeamOverdueOverview(feed, tasks, canAssign) {
     .sort((a, b) => String(a.due_date).localeCompare(String(b.due_date))); // am längsten überfällig zuerst
   if (!teamOverdue.length) return;
   const top = teamOverdue.slice(0, 3);
-  const card = el(`<div class="card" style="border-left:4px solid var(--crit-fg)">
+  const card = el(`<div class="card" style="border-inline-start:4px solid var(--crit-fg)">
     <div class="row" style="align-items:baseline"><b style="flex:1">${esc(ti('ovt_team_title',{n:teamOverdue.length}))}</b>
-      <button class="linklike small" data-all style="margin-left:8px">${esc(t('ovt_all'))} ›</button></div>
+      <button class="linklike small" data-all style="margin-inline-start:8px">${esc(t('ovt_all'))} ›</button></div>
     <div class="muted" style="font-size:12px;margin:2px 0 4px">${esc(t('ovt_team_sub'))}</div>
     ${top.map(tk=>`<div class="comment clickable" data-open>🔴 ${esc(tk.title)} <span class="muted" style="font-size:12px">· ${esc(tk.assignee_name?ti('tk_assigned_to',{name:tk.assignee_name}):t('tk_unassigned'))} · ${esc(ti('tk_due',{d:fmtDateDe(tk.due_date)}))}</span></div>`).join('')}
   </div>`);
@@ -1424,7 +1457,7 @@ function renderLiveOverview(feed, liveNow, liveSoon) {
   if (!liveNow.length && !liveSoon.length) return;
   const soon = liveSoon.slice(0, 2);
   const hostLine = (s) => `<b class="clickable" data-openprofile="${esc(s.host?s.host.handle:'')}">${esc(s.host?(s.host.display_name||('@'+s.host.handle)):'—')}</b>${s.host&&s.host.verified?' <span title="'+esc(t('pc_verified'))+'">✔</span>':''}`;
-  const card = el(`<div class="card" style="border-left:4px solid var(--crit-fg)">
+  const card = el(`<div class="card" style="border-inline-start:4px solid var(--crit-fg)">
     ${liveNow.length?`<div style="font-weight:800;color:var(--crit-fg);margin-bottom:6px">🔴 ${esc(t('lv_ov_now'))}</div>
       ${liveNow.map(s=>`<div class="row" style="align-items:center;gap:8px;padding:4px 0;flex-wrap:wrap">
         <div style="flex:1;min-width:160px"><b>${esc(s.titel)}</b><div class="muted" style="font-size:13px">${esc(t('lv_host'))}: ${hostLine(s)}</div></div>
@@ -1580,7 +1613,7 @@ async function loadOverview() {
     ['ov_team', 'users', 'th_nav', 'zusammenarbeit', () => openTeamHub()],
   ].filter(([, , , bereich]) => !bereich || featureAn(bereich));
   const head = el(`<div class="card">
-    <h1 style="margin:0 0 2px">${esc(t('ov_hello'))}${firstName?', '+esc(firstName):''}</h1>
+    <h1 style="margin:0 0 2px">${esc(t('ov_hello'))}${firstName?(LOCALE === 'ar' ? '، ' : ', ')+esc(firstName):''}</h1>
     <div class="row" style="margin-bottom:12px;gap:8px;flex-wrap:wrap"><span class="muted" style="flex:1">${esc(t('ov_sub'))}</span><button class="ghost small" data-lageteilen>${esc(ti('ov_lage_teilen', { land: landAnzeige(viewCountry()) }))}</button></div>
     <div class="ovtiles">
       ${tiles.join('')}
@@ -1616,7 +1649,7 @@ async function loadOverview() {
   // sichtbar und führt direkt zum Report. Nur wenn tatsächlich Ersparnis erzielt wurde.
   if (d.procurement && d.procurement.saved > 0) {
     const pc = d.procurement;
-    const c = el(`<div class="card" style="border-left:4px solid var(--ok-fg)">
+    const c = el(`<div class="card" style="border-inline-start:4px solid var(--ok-fg)">
       <div class="row" style="align-items:baseline;gap:8px;flex-wrap:wrap"><b style="flex:1">${esc(t('ov_proc_title'))}</b><button class="linklike small" data-report>${esc(t('ov_proc_cta'))} ›</button></div>
       <div style="font-size:22px;font-weight:800;color:var(--ok-fg);margin-top:2px">€ ${fmtMoney(pc.saved)}</div>
       <div class="muted" style="font-size:13px">${esc(pc.orders === 1 ? t('ov_proc_sub_one') : ti('ov_proc_sub', { n: pc.orders }))}</div>
@@ -1671,7 +1704,7 @@ async function loadOverview() {
     d.watch_deals.forEach(w => {
       const row = el(`<div class="comment"><div class="row" style="align-items:baseline">
         <span style="flex:1">🏷️ <b>${esc(w.wirkstoff)}</b> — ${esc(w.supplier)} <span style="color:var(--ok-fg);font-weight:700">−${w.rabatt_pct}%</span> (€ ${fmtMoney(w.aktionspreis)})${w.ersparnis>0?` · <span style="color:var(--ok-fg);font-weight:700">${esc(ti('wd_saving',{x:fmtMoney(w.ersparnis)}))}</span>`:''}${w.expiring_soon?` · <b style="color:${w.days_left<=3?'var(--crit-fg)':'var(--warn-fg)'}">${esc(w.days_left<=0?t('pg_only_today'):ti('pg_only_days',{d:w.days_left}))}</b>`:''}</span>
-        ${featureAn('bestellung')?`<button class="ghost small" data-addcart title="${esc(t('cart_add'))}" aria-label="${esc(t('cart_add'))}" style="margin-left:6px">${ico('cart', 18)}</button>`:''}
+        ${featureAn('bestellung')?`<button class="ghost small" data-addcart title="${esc(t('cart_add'))}" aria-label="${esc(t('cart_add'))}" style="margin-inline-start:6px">${ico('cart', 18)}</button>`:''}
       </div></div>`);
       const wdCart = row.querySelector('[data-addcart]');
       if (wdCart) wdCart.onclick = (ev) => cartAdd({
@@ -1697,7 +1730,7 @@ async function loadOverview() {
       const bd = soon ? 'var(--warn-bd)' : 'var(--line)';
       return `<span style="display:inline-block;font-size:12px;font-weight:700;color:${col};background:${bg};border:1px solid ${bd};padding:2px 8px;border-radius:999px">${esc(label)}</span>`;
     };
-    const c = el(`<div class="card" style="border-left:4px solid var(--warn-fg)"><div class="row"><b>${esc(t('xo_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>${esc(t('xo_all'))}</button></div>
+    const c = el(`<div class="card" style="border-inline-start:4px solid var(--warn-fg)"><div class="row"><b>${esc(t('xo_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>${esc(t('xo_all'))}</button></div>
       <div class="muted" style="font-size:13px;margin:2px 0 6px">${esc(t('xo_sub'))}</div>
       ${d.expiring_offers.items.map(o=>`<div class="comment clickable" data-open>📦 <b>${esc(o.bezeichnung)}</b>${o.menge?` <span class="muted">· ${esc(o.menge)}</span>`:''} ${daysChip(o)}<div class="muted" style="font-size:12px;margin-top:2px">${esc(t('xo_expires'))} <b>${esc(fmtDateDe(o.ablauf))}</b>${o.match_count>0?` · <span style="color:var(--ok-fg);font-weight:700">${esc(o.match_count>1?ti('xo_matches_pl',{n:o.match_count}):t('xo_matches_sg'))}</span>`:''}</div></div>`).join('')}</div>`);
     c.querySelector('[data-all]').onclick = () => { exchangeMine = true; goTab('exchange'); };
@@ -1708,7 +1741,7 @@ async function loadOverview() {
   // Eigene, lange offene Community-Engpass-Meldungen: Anstoß, den Status zu prüfen —
   // hält die Engpass-Daten verlässlich (nur die eigenen Meldungen der Nutzer:in).
   if (d.my_reports && d.my_reports.count) {
-    const c = el(`<div class="card" style="border-left:4px solid var(--info-fg)"><div class="row"><b>${esc(t('sr_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>${esc(t('sp_view_all'))}</button></div>
+    const c = el(`<div class="card" style="border-inline-start:4px solid var(--info-fg)"><div class="row"><b>${esc(t('sr_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>${esc(t('sp_view_all'))}</button></div>
       <div class="muted" style="font-size:13px;margin:2px 0 6px">${esc(t('sr_sub'))}</div>
       ${d.my_reports.items.map(r=>{const m=watchStatusMeta(r.status);return `<div class="comment clickable" data-wk="${esc(r.wirkstoff)}"><span style="font-size:16px">${m.icon}</span> <b>${esc(r.wirkstoff)}</b>${r.bezeichnung?` <span class="muted">${esc(r.bezeichnung)}</span>`:''} <span style="display:inline-block;font-size:12px;font-weight:700;color:var(--warn-fg);background:var(--warn-bg);border:1px solid var(--warn-bd);padding:1px 8px;border-radius:999px">${esc(nlabel(r.days_reported,'sr_since_one','sr_since_many'))}</span>${r.confirm_count>0?` <span class="muted" style="font-size:12px">· ${esc(nlabel(r.confirm_count,'sr_confirms_one','sr_confirms_many'))}</span>`:''} <span class="ovtile-go" aria-hidden="true">›</span></div>`;}).join('')}</div>`);
     c.querySelector('[data-all]').onclick = () => goTab('shortages');
@@ -1766,7 +1799,7 @@ async function loadOverview() {
   // Antibiotic-Stewardship-Fachforum (Einstieg) — nur, wenn das Forum läuft. Es hängt an
   // den Hashtags (Bereich „social"); ruht der, führte die Karte auf „Nicht gefunden".
   if (featureAn('social')) {
-  const stew = el(`<div class="card clickable" style="border-left:4px solid #0b7f28">
+  const stew = el(`<div class="card clickable" style="border-inline-start:4px solid #0b7f28">
     <div class="row"><b>${esc(t('sp_stew_title'))}</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:12px">${esc(t('sp_stew_tag'))}</span></div>
     <div class="muted" style="font-size:13px;margin-top:4px">${esc(t('sp_stew_sub'))}</div></div>`);
   stew.onclick = () => openStewardship();
@@ -1843,7 +1876,7 @@ async function renderNearbyColleagues(feed) {
   let d;
   try { d = await api('GET','/api/colleagues/nearby'); } catch { return; }
   if (!d.bundesland || !d.people.length) return;
-  const card = el(`<div class="card"><div class="row"><b>${esc(ti('nb_title',{bl:d.bundesland}))}</b><span class="muted" style="font-size:13px;margin-left:8px">${d.people.length}</span></div>
+  const card = el(`<div class="card"><div class="row"><b>${esc(ti('nb_title',{bl:d.bundesland}))}</b><span class="muted" style="font-size:13px;margin-inline-start:8px">${d.people.length}</span></div>
     <div class="muted" style="font-size:13px;margin:2px 0 6px">${esc(t('nb_sub'))}</div><div data-nb></div></div>`);
   const box = card.querySelector('[data-nb]');
   d.people.forEach(p => {
@@ -1923,7 +1956,7 @@ function renderWeekReview(feed, wr) {
       <span class="ovtile-go" aria-hidden="true">›</span></div>`;
   };
   const blocks = sections.map(s => `<div style="margin-top:8px"><div class="muted" style="font-size:13px;font-weight:700;margin-bottom:4px">${esc(head[s.key])} <span style="opacity:.7">(${s.items.length})</span></div>${s.items.map(rowHtml).join('')}</div>`).join('');
-  const c = el(`<div class="card" style="border-left:4px solid var(--info-fg)">
+  const c = el(`<div class="card" style="border-inline-start:4px solid var(--info-fg)">
     <div class="row" style="flex-wrap:wrap;gap:6px"><b style="flex:1">${esc(t('wr_title'))}</b><button class="ghost small" data-wr-print title="${esc(t('wr_print_title'))}">${esc(t('wr_print'))}</button></div>
     <div class="muted" style="font-size:13px;margin:2px 0 2px">${esc(t('wr_sub'))}</div>
     ${blocks}</div>`);
@@ -2191,7 +2224,7 @@ function printMoney(v) { return LOCALE === 'en' ? Number(v).toFixed(2) : Number(
 function openPrintDoc(title, css, bodyHtml, lang = LOCALE) {
   const win = window.open('', '_blank');
   if (!win) { alert(t('pi_popup')); return false; }
-  win.document.write(`<!doctype html><html lang="${esc(lang)}"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${css}</style></head><body>${bodyHtml}<script>window.onload=function(){window.print();}<\/script></body></html>`);
+  win.document.write(`<!doctype html><html lang="${esc(lang)}" dir="${richtungVon(lang)}"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${css}</style></head><body>${bodyHtml}<script>window.onload=function(){window.print();}<\/script></body></html>`);
   win.document.close();
   return true;
 }
@@ -2208,7 +2241,7 @@ function printWatchlist(items) {
   }).join('');
   const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:800px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:22px;margin:0 0 2px} .meta{color:#555;font-size:13px;margin-bottom:16px}
-    table{width:100%;border-collapse:collapse} th{text-align:left;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
+    table{width:100%;border-collapse:collapse} th{text-align:start;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
     td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:12px;margin-top:2px}
     .st{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap} .nt{font-size:13px} .empty{color:#999}
     .src{font-size:12px;color:#555;margin-top:18px}`;
@@ -2238,7 +2271,7 @@ function printTasks(tasks) {
   }).join('');
   const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:800px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:22px;margin:0 0 2px} .meta{color:#555;font-size:13px;margin-bottom:16px}
-    table{width:100%;border-collapse:collapse} th{text-align:left;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
+    table{width:100%;border-collapse:collapse} th{text-align:start;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
     td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .tk{font-weight:700} .ds{font-weight:400;color:#555;font-size:12px;margin-top:2px}
     .od{color:#b3261e} .empty{color:#999} .src{font-size:12px;color:#555;margin-top:18px}`;
   const body = `<h1>✅ ${esc(t('tk_print_title'))}</h1><div class="meta">${esc(ti('wl_print_asof', { date: printDate() }))} · ${esc(open.length === 1 ? t('tk_print_count_sg') : ti('tk_print_count', { n: open.length }))}</div>
@@ -2512,7 +2545,7 @@ function renderProfileNudge(feed) {
   const c = profileCompleteness(me);
   if (c.pct >= 100) return;
   const missing = c.items.filter(i => !i.done).slice(0, 4).map(i => i.label).join(' · ');
-  const card = el(`<div class="card" style="border-left:4px solid var(--green)">
+  const card = el(`<div class="card" style="border-inline-start:4px solid var(--green)">
     <div class="row" style="align-items:center;gap:8px"><b style="flex:1">🙋 ${esc(ti('ov_profile_nudge', { pct: c.pct }))}</b><b>${c.pct}%</b></div>
     <div class="pfc-bar" style="margin-top:6px"><span style="width:${c.pct}%"></span></div>
     <div class="muted" style="font-size:13px;margin:6px 0">${esc(t('ov_profile_nudge_sub'))}${missing ? ' — ' + esc(missing) : ''}</div>
@@ -2870,7 +2903,7 @@ function signalCard(s) {
     ? `<span title="${esc(t('sig_conf_hint'))}">${esc(ti('sig_conf', { n: Math.round(Number(s.confidenceScore) * 100) }))}</span>`
     : `<span title="${esc(t('sig_noai_hint'))}">${esc(t('sig_noai'))}</span>`;
 
-  const card = el(`<div class="card" style="${schwere ? `border-left:4px solid ${schwere.fg}` : ''}">
+  const card = el(`<div class="card" style="${schwere ? `border-inline-start:4px solid ${schwere.fg}` : ''}">
     ${kopf}
     <div style="font-weight:800;margin-top:6px;line-height:1.35">${esc(s.title)}</div>
     ${zusammenfassung ? `<div data-sigtext style="margin-top:6px;line-height:1.5">${esc(zusammenfassung)}</div>` : ''}
@@ -3037,7 +3070,7 @@ async function loadNews() {
   // Composer einklappbar (standardmäßig zu): so stehen die News zuerst (content-first,
   // weniger Scrollen). Wer News teilen will, klappt ihn mit einem Klick auf.
   feed.appendChild(el(`<div class="card">
-    <button class="ghost small" data-ntoggle aria-expanded="false" style="width:100%;text-align:left;display:flex;align-items:center;gap:8px">
+    <button class="ghost small" data-ntoggle aria-expanded="false" style="width:100%;text-align:start;display:flex;align-items:center;gap:8px">
       <b>${esc(t('news_compose'))}</b><span class="sp" style="flex:1"></span><span data-nchev aria-hidden="true">▸</span>
     </button>
     <div data-ncompose class="hidden" style="margin-top:8px">
@@ -3171,7 +3204,7 @@ async function renderLagebild(box) {
   }
   const card = el(`<div class="card" data-lagebild>${kopf}
     <div data-lbhint style="margin-top:10px;background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-fg);border-radius:8px;padding:10px 12px;font-size:14px;line-height:1.5">ℹ️ ${esc(d.hinweis)}</div>
-    <ol data-lbpunkte style="margin:12px 0 0;padding-left:22px;line-height:1.55"></ol>
+    <ol data-lbpunkte style="margin:12px 0 0;padding-inline-start:22px;line-height:1.55"></ol>
     <div class="muted" style="font-size:13px;margin-top:8px">${esc(ti('lb_from', { n: d.quellen_gesamt }))}</div>
   </div>`);
   const ol = card.querySelector('[data-lbpunkte]');
@@ -3285,7 +3318,7 @@ function renderCurrencyConverter(feed) {
   // Einklappbar + „lazy": entlastet die Übersicht (weniger Scrollen, CLAUDE.md) und ruft die
   // Live-Kurse erst beim Öffnen ab. Standardmäßig zu.
   const card = el(`<div class="card">
-    <button class="ghost small" data-cc-toggle aria-expanded="false" style="width:100%;text-align:left;display:flex;align-items:center;gap:8px">
+    <button class="ghost small" data-cc-toggle aria-expanded="false" style="width:100%;text-align:start;display:flex;align-items:center;gap:8px">
       <span style="font-size:18px">🔁</span><b>${esc(t('cc_title'))}</b>
       <span class="muted" style="font-weight:400;font-size:13px">— ${esc(t('cc_hint'))}</span>
       <span class="sp" style="flex:1"></span><span data-cc-chev aria-hidden="true">▸</span>
@@ -3343,7 +3376,7 @@ async function buildCurrencyConverter(box) {
 // Fachleuten und macht die Quellenpflicht sichtbar (CLAUDE.md). Standard: zugeklappt.
 function provenanceLegend() {
   const card = el(`<div class="card" style="margin-bottom:10px">
-    <button class="ghost small" data-tgl style="width:100%;text-align:left">${esc(t('pl_open'))}</button>
+    <button class="ghost small" data-tgl style="width:100%;text-align:start">${esc(t('pl_open'))}</button>
     <div class="hidden" data-body style="margin-top:8px;font-size:14px">
       <div class="comment">${t('pl_v')}</div>
       <div class="comment">${t('pl_r')}</div>
@@ -3624,7 +3657,7 @@ function reportShortageCard(existing = []) {
       if (s) {
         // Statt ein Duplikat anzulegen: ansehen — und bei fremder Community-Meldung direkt „Auch bei uns".
         const canConfirm = s.provenance === 'community' && !s.is_reporter && !s.i_confirmed && !(me && me.account_type === 'private');
-        const hint = el(`<div class="muted" style="font-size:13px;background:var(--info-bg,#eef);border:1px solid var(--info-bd,#cce);border-radius:8px;padding:6px 10px">${esc(ti('sh_rep_exists', { w: s.wirkstoff }))} <button class="linklike small" data-view>${esc(t('sh_rep_exists_view'))}</button>${canConfirm ? ` <button class="small" data-confirm style="margin-left:6px">${esc(t('sc_conf_btn'))}</button>` : ''}</div>`);
+        const hint = el(`<div class="muted" style="font-size:13px;background:var(--info-bg,#eef);border:1px solid var(--info-bd,#cce);border-radius:8px;padding:6px 10px">${esc(ti('sh_rep_exists', { w: s.wirkstoff }))} <button class="linklike small" data-view>${esc(t('sh_rep_exists_view'))}</button>${canConfirm ? ` <button class="small" data-confirm style="margin-inline-start:6px">${esc(t('sc_conf_btn'))}</button>` : ''}</div>`);
         hint.querySelector('[data-view]').onclick = () => openWirkstoff(s.wirkstoff);
         const cb = hint.querySelector('[data-confirm]');
         if (cb) cb.onclick = async () => { cb.disabled = true; try { await api('POST', `/api/shortages/${s.id}/confirm`); loadShortages(); } catch (e) { alert(e.message); cb.disabled = false; } };
@@ -3667,7 +3700,7 @@ function reportShortageCard(existing = []) {
 // den Datumsfeldern abgeleitet — keine Sicherheitsaussage.
 function shortageCountdown(s) {
   if (s.status === 'verfuegbar' || s.days_until == null) return '';
-  const chip = (label, bg, fg, bd) => ` <span style="display:inline-block;background:${bg};color:${fg};border:1px solid ${bd};font-weight:700;font-size:12px;padding:1px 8px;border-radius:999px;margin-left:6px">${esc(label)}</span>`;
+  const chip = (label, bg, fg, bd) => ` <span style="display:inline-block;background:${bg};color:${fg};border:1px solid ${bd};font-weight:700;font-size:12px;padding:1px 8px;border-radius:999px;margin-inline-start:6px">${esc(label)}</span>`;
   if (s.overdue) return chip(`⚠️ ${nlabel(-s.days_until, 'sc_overdue_one', 'sc_overdue_many')}`, 'var(--crit-bg)', 'var(--crit-fg)', 'var(--crit-bd)');
   if (s.days_until === 0) return chip(`⏳ ${t('sc_due_today')}`, 'var(--warn-bg)', 'var(--warn-fg)', 'var(--warn-bd)');
   const label = `⏳ ${nlabel(s.days_until, 'sc_in_days_one', 'sc_in_days_many')}`;
@@ -3693,7 +3726,7 @@ function shortageCard(s) {
     ${s.price_alternatives>0&&s.status!=='verfuegbar'?`<div style="margin-top:6px"><button class="linklike small" data-alts style="color:var(--ok-fg);font-weight:700">${esc(ti('sc_alts',{n:s.price_alternatives}))}</button> <span class="muted" style="font-size:12px">${esc(t('sc_alts_note'))}</span></div>`:''}
     ${s.provenance==='community'&&s.aktualitaet&&s.aktualitaet!=='aktuell'?`<div class="vt-alt ${s.aktualitaet==='veraltet'?'vt-veraltet':''}" data-aktualitaet="${esc(s.aktualitaet)}">${esc(s.aktualitaet==='veraltet'?ti('ak_veraltet',{n:s.tage_ohne_bestaetigung}):ti('ak_pruefen',{n:s.tage_ohne_bestaetigung}))}</div>`:''}
     ${s.provenance==='community'?`<div class="vt-stufe ${s.bestaetigt?'vt-ok':''}" data-vertrauen="${s.bestaetigt?'bestaetigt':'einzeln'}">${esc(s.bestaetigt?ti('vt_bestaetigt',{n:s.apotheken}):s.apotheken>=3&&s.apotheken_neu?ti('vt_neu',{n:s.apotheken}):s.apotheken===1?t('vt_einzeln_1'):ti('vt_einzeln',{n:s.apotheken}))}</div>`:''}
-    ${s.provenance==='community'&&s.reporter?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sc_reported_by'))} <b>@${esc(s.reporter.handle)}</b>${s.reporter.verified?' <span class="verified">✔</span>':''}</div>`:''}
+    ${s.provenance==='community'&&s.reporter?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sc_reported_by'))} <b><bdi dir="ltr">@${esc(s.reporter.handle)}</bdi></b>${s.reporter.verified?' <span class="verified">✔</span>':''}</div>`:''}
     ${s.provenance==='community'&&s.status!=='verfuegbar'&&!(me&&me.account_type==='private')?`<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px" data-aktknoepfe>
       ${s.aktualitaet&&s.aktualitaet!=='aktuell'?`<button class="small" data-nochaktuell style="min-height:44px">${esc(t('ak_noch_knapp'))}</button>`:''}
       ${s.is_reporter||s.i_confirmed?`<button class="ghost small" data-wiederlieferbar style="min-height:44px">${esc(t('ak_wieder'))}</button>`:''}</div>`:''}
@@ -3885,7 +3918,7 @@ function shortageCard(s) {
     aboutbox.innerHTML = '<div class="loading">…</div>';
     const d = await api('GET',`/api/shortages/${s.id}`);
     aboutbox.innerHTML = d.posts.length ? '' : `<div class="muted">${esc(t('sa_empty'))}</div>`;
-    d.posts.forEach(p => aboutbox.appendChild(el(`<div class="comment"><b>@${esc(p.author?.handle||'?')}</b>: ${esc(p.body)}</div>`)));
+    d.posts.forEach(p => aboutbox.appendChild(el(`<div class="comment"><b><bdi dir="ltr">@${esc(p.author?.handle||'?')}</bdi></b>: ${esc(p.body)}</div>`)));
   };
   return card;
 }
@@ -4226,7 +4259,7 @@ async function zeigeTarifRechnung(nummer) {
     <div class="row" style="gap:8px;flex-wrap:wrap"><button class="ghost small" data-zurueck>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span><button class="small" data-drucken>${esc(t('wb2_drucken'))}</button></div>
     <div class="row" style="justify-content:space-between;align-items:flex-start;margin-top:14px;flex-wrap:wrap;gap:12px">
       <div><b>${esc(a.firma || '')}</b><div>${esc(a.anschrift || '')}</div>${a.ust_id ? `<div>${esc(t('wb2_uid'))}: ${esc(a.ust_id)}</div>` : ''}</div>
-      <div style="text-align:right"><h1 style="margin:0">${esc(t('wb2_rechnung'))}</h1><div>${esc(t('wb2_nr'))} ${esc(r.nummer)}</div><div>${esc(t('wb2_datum'))} ${esc(fmtDateDe(r.datum))}</div></div>
+      <div style="text-align:end"><h1 style="margin:0">${esc(t('wb2_rechnung'))}</h1><div>${esc(t('wb2_nr'))} ${esc(r.nummer)}</div><div>${esc(t('wb2_datum'))} ${esc(fmtDateDe(r.datum))}</div></div>
     </div>
     <div style="margin-top:16px"><b>${esc(e2.firma || '')}</b>${e2.ansprechpartner ? `<div>${esc(e2.ansprechpartner)}</div>` : ''}<div>${esc(e2.strasse || '')}</div><div>${esc((e2.plz || '') + ' ' + (e2.ort || ''))}</div><div>${esc(e2.land || '')}</div>${e2.ust_id ? `<div>${esc(t('wb2_uid'))}: ${esc(e2.ust_id)}</div>` : ''}</div>
     <div class="pv-tabelle" style="margin-top:16px">
@@ -4525,7 +4558,7 @@ async function zeigeRechnung(id) {
     <div class="row" style="gap:8px;flex-wrap:wrap"><button class="ghost small" data-zurueck>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span><button class="small" data-drucken>${esc(t('wb2_drucken'))}</button></div>
     <div class="row" style="justify-content:space-between;align-items:flex-start;margin-top:14px;flex-wrap:wrap;gap:12px">
       <div><b>${esc(a.firma || '')}</b><div>${esc(a.anschrift || '')}</div>${a.ust_id ? `<div>${esc(t('wb2_uid'))}: ${esc(a.ust_id)}</div>` : ''}</div>
-      <div style="text-align:right"><h1 style="margin:0">${esc(t('wb2_rechnung'))}</h1><div>${esc(t('wb2_nr'))} ${esc(r.nummer)}</div><div>${esc(t('wb2_datum'))} ${esc(fmtDateDe(r.datum))}</div></div>
+      <div style="text-align:end"><h1 style="margin:0">${esc(t('wb2_rechnung'))}</h1><div>${esc(t('wb2_nr'))} ${esc(r.nummer)}</div><div>${esc(t('wb2_datum'))} ${esc(fmtDateDe(r.datum))}</div></div>
     </div>
     <div style="margin-top:16px"><b>${esc(e2.firma || '')}</b><div>${esc(e2.strasse || '')}</div><div>${esc((e2.plz || '') + ' ' + (e2.ort || ''))}</div><div>${esc(e2.land || '')}</div>${e2.ust_id ? `<div>${esc(t('wb2_uid'))}: ${esc(e2.ust_id)}</div>` : ''}</div>
     <div class="pv-tabelle" style="margin-top:16px"><div class="pv-zeile"><span>${esc(ti('wb2_leistung', { platz: t('wb2_platz_' + r.leistung.platz), titel: r.leistung.titel }))}<div class="muted" style="font-size:13px">${esc(r.leistung.laender.map(landAnzeige).join(', '))} · ${esc(fmtDateDe(r.leistung.start))}–${esc(fmtDateDe(r.leistung.ende))} · ${r.leistung.wochen} ${esc(t('wb2_wochen'))}</div></span><span></span><span>${esc(eur(r.netto_cents))}</span></div>
@@ -4829,11 +4862,11 @@ function printWirkstoff(d) {
   const bestDeal = (d.rabatte || []).slice().sort((a, b) => (b.rabatt_pct || 0) - (a.rabatt_pct || 0))[0] || null;
   const dealHtml = bestDeal ? `<p>${esc(bestDeal.supplier)}: <b>€ ${money(bestDeal.aktionspreis)}</b> (−${bestDeal.rabatt_pct}%)${bestDeal.gueltig_bis ? ` · ${esc(t('pg_valid'))} ${esc(bestDeal.gueltig_bis)}` : ''}</p>` : '';
   const biete = (d.exchange && d.exchange.biete) || [];
-  const sourcesHtml = biete.length ? '<ul>' + biete.map(e => `<li><b>${esc((e.author && e.author.display_name) || t('ex_unknown'))}</b>${e.author && e.author.handle ? ` @${esc(e.author.handle)}` : ''}${e.menge ? ` — ${esc(e.menge)}` : ''}${e.ort || e.bundesland ? ` · 📍 ${esc([e.ort, e.bundesland].filter(Boolean).join(', '))}` : ''}</li>`).join('') + '</ul>' : '';
+  const sourcesHtml = biete.length ? '<ul>' + biete.map(e => `<li><b>${esc((e.author && e.author.display_name) || t('ex_unknown'))}</b>${e.author && e.author.handle ? ` <bdi dir="ltr">@${esc(e.author.handle)}</bdi>` : ''}${e.menge ? ` — ${esc(e.menge)}` : ''}${e.ort || e.bundesland ? ` · 📍 ${esc([e.ort, e.bundesland].filter(Boolean).join(', '))}` : ''}</li>`).join('') + '</ul>' : '';
   const noteHtml = d.note ? `<p>📝 ${esc(d.note)}</p>` : '';
   const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:760px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:24px;margin:0 0 2px} h2{font-size:15px;margin:18px 0 4px;border-bottom:1px solid #cbd5cf;padding-bottom:3px}
-    .meta{color:#555;font-size:13px} ul{margin:4px 0;padding-left:20px} li{margin:3px 0;font-size:14px} p{font-size:14px;margin:4px 0}
+    .meta{color:#555;font-size:13px} ul{margin:4px 0;padding-inline-start:20px} li{margin:3px 0;font-size:14px} p{font-size:14px;margin:4px 0}
     .muted{color:#777} .src{font-size:12px;color:#555;margin-top:20px}`;
   const body = `<h1>💊 ${esc(d.wirkstoff)}</h1><div class="meta">${esc(t('wk_print_title'))} · ${esc(ti('wl_print_asof', { date: printDate() }))}</div>
     ${section(t('wk_short_title'), shortHtml)}
@@ -4864,9 +4897,9 @@ function printPrices(comparisons) {
   }).join('');
   const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:900px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:22px;margin:0 0 2px} .meta{color:#555;font-size:13px;margin-bottom:16px}
-    table{width:100%;border-collapse:collapse} th{text-align:left;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
+    table{width:100%;border-collapse:collapse} th{text-align:start;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
     td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:12px;margin-top:2px}
-    .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap} .empty{color:#999} .src{font-size:12px;color:#555;margin-top:18px}`;
+    .num{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap} .empty{color:#999} .src{font-size:12px;color:#555;margin-top:18px}`;
   const body = `<h1>💶 ${esc(t('pr_print_title'))}</h1><div class="meta">${esc(ti('wl_print_asof', { date: printDate() }))} · ${esc(list.length === 1 ? '1' : list.length)} ${esc(t('pr_print_count'))}</div>
     <table><thead><tr><th>${esc(t('csv_praeparat'))}</th><th>${esc(t('pr_print_cheapest'))}</th><th class="num">${esc(t('csv_aep'))}</th><th class="num">${esc(t('pr_print_saving'))}</th><th>${esc(t('pr_print_deal'))}</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="src">${esc(t('wl_print_foot'))}</div>`;
@@ -4900,9 +4933,9 @@ function printRabatte(list) {
     </tr>`).join('');
   const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:960px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:22px;margin:0 0 2px} .meta{color:#555;font-size:13px;margin-bottom:16px}
-    table{width:100%;border-collapse:collapse} th{text-align:left;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
+    table{width:100%;border-collapse:collapse} th{text-align:start;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
     td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:12px;margin-top:2px}
-    .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap} .src{font-size:12px;color:#555;margin-top:18px}`;
+    .num{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap} .src{font-size:12px;color:#555;margin-top:18px}`;
   const body = `<h1>🏷️ ${esc(t('rb_print_title'))}</h1><div class="meta">${esc(ti('wl_print_asof', { date: printDate() }))} · ${rows0.length} ${esc(t('pr_print_count'))}</div>
     <table><thead><tr><th>${esc(t('csv_praeparat'))}</th><th>${esc(t('csv_lieferant'))}</th><th class="num">${esc(t('csv_aktionspreis'))}</th><th class="num">${esc(t('csv_rabatt'))}</th><th class="num">${esc(t('pr_print_saving'))}</th><th class="num">${esc(t('csv_minmenge'))}</th><th>${esc(t('csv_gueltig_bis'))}</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="src">${esc(t('wl_print_foot'))}</div>`;
@@ -4931,14 +4964,14 @@ function printExchange(entries) {
       <td class="wk">${esc(e.bezeichnung || '')}</td>
       <td>${esc(e.menge || '—')}</td>
       <td>${esc([e.ort, e.bundesland].filter(Boolean).join(', ') || '—')}</td>
-      <td>${esc((e.author && e.author.display_name) || '')}${e.author && e.author.handle ? `<div class="pr">@${esc(e.author.handle)}</div>` : ''}</td>
+      <td>${esc((e.author && e.author.display_name) || '')}${e.author && e.author.handle ? `<div class="pr"><bdi dir="ltr">@${esc(e.author.handle)}</bdi></div>` : ''}</td>
       <td class="num">${e.match_count || 0}</td>
     </tr>`).join('');
   const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:960px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:22px;margin:0 0 2px} .meta{color:#555;font-size:13px;margin-bottom:16px}
-    table{width:100%;border-collapse:collapse} th{text-align:left;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
+    table{width:100%;border-collapse:collapse} th{text-align:start;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
     td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:12px;margin-top:2px}
-    .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap} .src{font-size:12px;color:#555;margin-top:18px}`;
+    .num{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap} .src{font-size:12px;color:#555;margin-top:18px}`;
   const body = `<h1>🔄 ${esc(t('ex_print_title'))}</h1><div class="meta">${esc(ti('wl_print_asof', { date: printDate() }))} · ${rows0.length} ${esc(t('pr_print_count'))}</div>
     <table><thead><tr><th>${esc(t('ex_csv_art'))}</th><th>${esc(t('csv_praeparat'))}</th><th>${esc(t('ex_csv_menge'))}</th><th>${esc(t('ex_csv_ort'))}</th><th>${esc(t('ex_csv_anbieter'))}</th><th class="num">${esc(t('ex_csv_treffer'))}</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="src">${esc(t('ex_contact'))}</div>`;
@@ -5011,7 +5044,7 @@ function priceGroup(g, watchedSet, onWatchChange) {
   const wKey = g.wirkstoff ? g.wirkstoff.toLowerCase() : '';
   const showStar = watchedSet && g.wirkstoff;
   const card = el(`<div class="card">
-    <div class="post-author">${esc(g.bezeichnung)} ${g.wirkstoff?`<span class="handle clickable" data-wirkstoff="${esc(g.wirkstoff)}" title="${esc(ti('pg_all_about',{w:g.wirkstoff}))}">${esc(g.wirkstoff)}</span>`:''}${showStar?`<button class="ghost small" data-wwatch aria-pressed="${watchedSet.has(wKey)}" title="${esc(watchedSet.has(wKey)?t('sc_watched'):t('sc_watch'))}" style="padding:2px 8px;min-height:0;margin-left:4px">${watchedSet.has(wKey)?'⭐':'☆'}</button>`:''}</div>
+    <div class="post-author">${esc(g.bezeichnung)} ${g.wirkstoff?`<span class="handle clickable" data-wirkstoff="${esc(g.wirkstoff)}" title="${esc(ti('pg_all_about',{w:g.wirkstoff}))}">${esc(g.wirkstoff)}</span>`:''}${showStar?`<button class="ghost small" data-wwatch aria-pressed="${watchedSet.has(wKey)}" title="${esc(watchedSet.has(wKey)?t('sc_watched'):t('sc_watch'))}" style="padding:2px 8px;min-height:0;margin-inline-start:4px">${watchedSet.has(wKey)?'⭐':'☆'}</button>`:''}</div>
     <div class="muted" style="margin:2px 0 8px">${esc(t('pg_compare'))} ${esc(t('prov_reference'))}</div>
     ${rose?`<div style="display:inline-block;background:var(--crit-bg);color:var(--crit-fg);border:1px solid var(--crit-bd);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">${esc(ti('pg_rose',{x:Number(cheapest.trend_pct).toFixed(1)}))}</div>`:''}
     ${g.saving_abs>0?`<div style="display:inline-block;background:rgba(11,127,40,.12);color:var(--ok-fg);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">${esc(ti('pg_cheaper',{x:fmtMoney(g.saving_abs),supplier:g.best_supplier}))}</div>`:''}
@@ -5059,7 +5092,7 @@ function priceGroup(g, watchedSet, onWatchChange) {
         <span>${i===0?'⭐ ':''}<b>${esc(o.supplier)}</b>${i===0?` <span style="color:var(--ok-fg);font-size:12px;font-weight:700">${esc(t('pg_cheapest'))}</span>`:''}</span>
         <span class="sp" style="flex:1"></span>
         <span title="${Array.isArray(o.series)&&o.series.length?o.series.map(v=>'€ '+fmtMoney(v)).join(' → '):esc(t('pg_no_series'))}">${sparkline(o.series)}</span>
-        <span style="margin-left:8px"><b>€ ${fmtMoney(o.aep)}</b> ${trendStr(o.trend_pct)}</span>
+        <span style="margin-inline-start:8px"><b>€ ${fmtMoney(o.aep)}</b> ${trendStr(o.trend_pct)}</span>
       </div>
       <div class="row" style="margin-top:4px">
         <span class="muted">${esc(nlabel(o.post_count||0,'pg_posts_one','pg_posts'))}</span>
@@ -5156,7 +5189,7 @@ async function loadExchange() {
       <button class="ghost small" id="ex_imgclear" style="display:none">✕</button>
     </div>
     <img id="ex_imgprev" data-i18n-alt="a11y_img_preview" alt="Bildvorschau" style="display:none;max-width:100%;border-radius:8px;margin-top:6px" />
-    <div class="row" style="margin-top:8px"><button id="ex_go">${esc(t('ex_publish'))}</button><span class="err" id="ex_err" style="margin-left:10px"></span></div>
+    <div class="row" style="margin-top:8px"><button id="ex_go">${esc(t('ex_publish'))}</button><span class="err" id="ex_err" style="margin-inline-start:10px"></span></div>
     <div class="muted" style="font-size:13px;margin-top:6px">${esc(t('ex_contact'))}</div>
   </div>`);
   feed.appendChild(form);
@@ -5206,7 +5239,7 @@ async function loadExchange() {
       <button class="${!exchangeMine&&exchangeFilter==='suche'?'':'ghost '}small" data-f="suche">${esc(t('ex_seeks'))}</button>
       <button class="${exchangeMine?'':'ghost '}small" data-mine>${esc(t('ex_mine'))}</button>
       <button class="${!exchangeMine&&exchangeSort==='ablauf'?'':'ghost '}small" data-sortabl ${exchangeMine?'disabled':''} title="${esc(t('ex_sort_expiry'))}">${esc(t('ex_sort_expiry'))}</button>
-      <select id="ex_blf" data-i18n-aria="ex_all_bl" aria-label="${esc(t('ex_all_bl'))}" class="small" style="margin-left:auto" ${exchangeMine?'disabled':''}><option value="">${esc(t('ex_all_bl'))}</option>${blOptions(exchangeBL)}</select>
+      <select id="ex_blf" data-i18n-aria="ex_all_bl" aria-label="${esc(t('ex_all_bl'))}" class="small" style="margin-inline-start:auto" ${exchangeMine?'disabled':''}><option value="">${esc(t('ex_all_bl'))}</option>${blOptions(exchangeBL)}</select>
     </div>
     ${exchangeMine?`<div class="reacts" style="margin-top:6px;align-items:center">
       <span class="muted" style="font-size:13px">${esc(t('ex_mine_status'))}</span>
@@ -5323,7 +5356,7 @@ function exchangeCard(e) {
   const card = el(`<div class="card"${erledigt?' style="opacity:.75"':''}>
     <div class="row" style="align-items:baseline">
       ${badge}${doneBadge}${reservedBadge}
-      <b style="margin-left:8px">${esc(e.bezeichnung)}</b>
+      <b style="margin-inline-start:8px">${esc(e.bezeichnung)}</b>
       <span class="sp" style="flex:1"></span>
       <span class="muted" style="font-size:12px">${relTime(e.created_at)}</span>
     </div>
@@ -5334,7 +5367,7 @@ function exchangeCard(e) {
     ${istBild(e.image) ? `<img data-zoom loading="lazy" decoding="async" src="${e.image}" alt="${esc(t('ex_photo_alt'))}" style="max-width:100%;border-radius:10px;margin-top:6px;display:block;cursor:zoom-in" />` : ''}
     ${stale?`<div style="font-size:13px;margin-top:6px;background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-fg);border-radius:8px;padding:6px 10px">⏳ ${esc(ti('ex_stale',{d:ageDays}))} <button class="linklike small" data-freshrenew>${esc(t('ex_renew'))}</button> · <button class="linklike small" data-freshdone>${esc(t('ex_stale_done'))}</button></div>`:''}
     <div class="row" style="margin-top:8px;align-items:baseline">
-      <span class="handle clickable" data-openprofile="${esc(au.handle||'')}">${esc(t('ex_by'))} ${esc(au.display_name||t('ex_unknown'))} @${esc(au.handle||'?')}</span>
+      <span class="handle clickable" data-openprofile="${esc(au.handle||'')}">${esc(t('ex_by'))} ${esc(au.display_name||t('ex_unknown'))} <bdi dir="ltr">@${esc(au.handle||'?')}</bdi></span>
       <span class="sp" style="flex:1"></span>
       ${!mine ? `<button class="small" data-contact>${esc(t('ex_contact_btn'))}</button>`
               : (erledigt ? `<button class="ghost small" data-edit title="${esc(t('ex_edit'))}">✏️</button><button class="ghost small" data-reopen>${esc(t('ex_reopen'))}</button><button class="ghost small" data-del>🗑</button>`
@@ -5346,7 +5379,7 @@ function exchangeCard(e) {
       <select data-e-bl data-i18n-aria="ex_bl_ph" aria-label="${esc(t('ex_bl_ph'))}" style="margin-top:6px"><option value="">${esc(t('ex_bl_ph'))}</option>${blOptions(e.bundesland||'')}</select>
       <input data-e-note value="${esc(e.note||'')}" placeholder="${esc(t('ex_note_ph'))}" style="margin-top:6px">
       <div class="row" style="margin-top:6px;align-items:center;gap:6px"><label style="font-size:13px;margin:0">⏳ ${esc(t('ex_expiry'))}</label><input type="date" data-e-ablauf value="${esc(e.ablauf||'')}" aria-label="${esc(t('ex_expiry'))}"></div>
-      <div class="row" style="margin-top:8px"><button class="small" data-e-save>${esc(t('cm_save'))}</button><button class="ghost small" data-e-cancel>${esc(t('ex_edit_cancel'))}</button><span class="err" data-e-err style="margin-left:8px"></span></div>
+      <div class="row" style="margin-top:8px"><button class="small" data-e-save>${esc(t('cm_save'))}</button><button class="ghost small" data-e-cancel>${esc(t('ex_edit_cancel'))}</button><span class="err" data-e-err style="margin-inline-start:8px"></span></div>
     </div>` : ''}
   </div>`);
   card.querySelectorAll('[data-openprofile]').forEach(el => { if (el.dataset.openprofile) el.onclick = () => openProfile(el.dataset.openprofile); });
@@ -5484,7 +5517,7 @@ function rabattCard(r, watchedSet, onWatchChange) {
       <span><b>${esc(r.supplier)}</b></span>
       <span class="sp" style="flex:1"></span>
       <span class="muted" style="text-decoration:line-through">€ ${fmtMoney(r.listenpreis)}</span>
-      <span style="font-size:20px;font-weight:800;color:var(--ok-fg);margin-left:8px">€ ${fmtMoney(r.aktionspreis)}</span>
+      <span style="font-size:20px;font-weight:800;color:var(--ok-fg);margin-inline-start:8px">€ ${fmtMoney(r.aktionspreis)}</span>
     </div>
     <div class="muted" style="margin-top:4px">${esc(ti('rb_saving',{x:fmtMoney(r.ersparnis)}))}${r.min_menge?` · ${esc(ti('pg_from',{n:r.min_menge}))}`:''} · ${esc(t('pg_valid'))} <b>${esc(r.gueltig_bis)}</b></div>
     ${r.min_menge&&r.ersparnis>0?`<div style="margin-top:4px;font-size:13px;font-weight:700;color:var(--ok-fg)">${esc(ti('rb_minorder',{n:r.min_menge,x:fmtMoney(Number(r.ersparnis)*Number(r.min_menge))}))}</div>`:''}
@@ -5798,7 +5831,7 @@ function exportCartCsv(items) {
 }
 
 function printCart(d) {
-  const css = `table{border-collapse:collapse;width:100%;margin-bottom:14px} th,td{border:1px solid #bbb;padding:6px 8px;text-align:left;font-size:13px} th{background:#eee} .r{text-align:right} h3{margin:14px 0 6px;font-size:15px} tfoot td{font-weight:700;background:#eee}`;
+  const css = `table{border-collapse:collapse;width:100%;margin-bottom:14px} th,td{border:1px solid #bbb;padding:6px 8px;text-align:start;font-size:13px} th{background:#eee} .r{text-align:end} h3{margin:14px 0 6px;font-size:15px} tfoot td{font-weight:700;background:#eee}`;
   // Bestellungen gehen je Großhandel raus -> nach Lieferant gruppieren, je Gruppe eine Zwischensumme.
   const groups = new Map();
   for (const i of d.items) {
@@ -5845,7 +5878,7 @@ function openBookVideocall(providerHandle, providerName) {
     <input type="time" data-vtime value="10:00">
     <label style="margin-top:6px">${esc(t('vc_reason'))}</label>
     <input data-vreason placeholder="${esc(t('vc_reason_ph'))}" maxlength="300">
-    <div class="row" style="margin-top:10px"><button data-vsend>${esc(t('vc_request'))}</button><span class="err" data-verr style="margin-left:10px"></span></div>
+    <div class="row" style="margin-top:10px"><button data-vsend>${esc(t('vc_request'))}</button><span class="err" data-verr style="margin-inline-start:10px"></span></div>
     <div class="muted" style="font-size:12px;margin-top:8px">${esc(t('vc_privacy'))}</div>
   </div>`);
   card.querySelector('[data-back]').onclick = () => openProfile(providerHandle);
@@ -5946,7 +5979,7 @@ async function openTeam() {
       <select id="tm_role" aria-label="${esc(t('tm_role'))}">${TEAM_ROLES.map(r=>`<option value="${r}"${r==='pta'?' selected':''}>${esc(roleLabel(r))}</option>`).join('')}</select>
       <input id="tm_pw" type="text" placeholder="${esc(t('tm_pw'))}" style="flex:1;min-width:120px">
     </div>
-    <div class="row" style="margin-top:8px"><button data-add>${esc(t('tm_add_btn'))}</button><span class="err" data-err style="margin-left:10px"></span></div>
+    <div class="row" style="margin-top:8px"><button data-add>${esc(t('tm_add_btn'))}</button><span class="err" data-err style="margin-inline-start:10px"></span></div>
   </div>`);
   addCard.querySelector('[data-add]').onclick = async () => {
     const err = addCard.querySelector('[data-err]'); err.textContent='';
@@ -6037,7 +6070,7 @@ async function openTasks() {
         <select id="tk_assignee" aria-label="${esc(t('tk_f_assignee'))}">${opts}</select>
         <input id="tk_due" type="date" aria-label="${esc(t('tk_f_due'))}">
       </div>
-      <div class="row" style="margin-top:8px"><button data-add>${esc(t('tk_add'))}</button><span class="err" data-err style="margin-left:10px"></span></div>
+      <div class="row" style="margin-top:8px"><button data-add>${esc(t('tk_add'))}</button><span class="err" data-err style="margin-inline-start:10px"></span></div>
     </div>`);
     addCard.querySelector('[data-add]').onclick = async () => {
       const err = addCard.querySelector('[data-err]'); err.textContent='';
@@ -6052,7 +6085,7 @@ async function openTasks() {
   } else if (taskPrefill && taskPrefill.title) {
     // Vorbelegung angefordert, aber keine Berechtigung zum Anlegen — nicht stillschweigend
     // verwerfen, sondern klar erklären (Owner-UX: keine toten Primär-Aktionen).
-    feed.appendChild(el(`<div class="card" style="border-left:4px solid var(--warn-fg)">${esc(t('tk_no_create'))}</div>`));
+    feed.appendChild(el(`<div class="card" style="border-inline-start:4px solid var(--warn-fg)">${esc(t('tk_no_create'))}</div>`));
   }
   taskPrefill = null; // Vorbelegung ist einmalig
   if (!d.tasks.length) { feed.appendChild(emptyState({ icon:'✅', title:t('tk_empty_t'), text: d.can_assign ? t('tk_empty_s') : t('tk_empty_s_member') })); return; }
@@ -6113,7 +6146,7 @@ async function openTasks() {
             <option value="">${esc(t('tk_unassigned'))}</option>
             ${d.members.map(m=>`<option value="${esc(m.user_id)}"${tk.assignee_user_id===m.user_id?' selected':''}>${esc(m.name||'')}</option>`).join('')}
           </select>
-          <button class="ghost small" data-edit style="margin-left:auto">${esc(t('tk_edit'))}</button>
+          <button class="ghost small" data-edit style="margin-inline-start:auto">${esc(t('tk_edit'))}</button>
         </div>`:''}</div>`);
       card.querySelectorAll('[data-st]').forEach(b => { if (!b.disabled) b.onclick = async () => { try { await api('POST',`/api/tasks/${tk.id}/status`,{ status: b.dataset.st }); openTasks(); } catch(e){ alert(e.message); } }; });
       { const rs = card.querySelector('[data-reassign]'); if (rs) rs.onchange = async () => { try { await api('POST',`/api/tasks/${tk.id}/assign`,{ assigneeUserId: rs.value || null }); openTasks(); } catch(e){ alert(e.message); } }; }
@@ -6125,7 +6158,7 @@ async function openTasks() {
           <textarea data-edesc rows="2" maxlength="1000" placeholder="${esc(t('tk_f_desc_ph'))}" style="margin-top:6px">${esc(tk.description||'')}</textarea>
           <label style="font-size:13px;margin-top:6px" for="tke_d_${esc(tk.id)}">${esc(t('tk_f_due'))}</label>
           <input id="tke_d_${esc(tk.id)}" data-edue type="date" value="${esc(tk.due_date||'')}">
-          <div class="row" style="margin-top:8px;gap:6px"><button data-esave>${esc(t('cm_save'))}</button><button class="ghost" data-ecancel>${esc(t('cm_cancel'))}</button><span class="err" data-eerr style="margin-left:6px"></span></div>
+          <div class="row" style="margin-top:8px;gap:6px"><button data-esave>${esc(t('cm_save'))}</button><button class="ghost" data-ecancel>${esc(t('cm_cancel'))}</button><span class="err" data-eerr style="margin-inline-start:6px"></span></div>
         </div>`);
         form.querySelector('[data-ecancel]').onclick = () => renderList();
         form.querySelector('[data-esave]').onclick = async () => {
@@ -6167,7 +6200,7 @@ async function openNotes() {
       <input id="kb_title" placeholder="${esc(t('kb_f_title_ph'))}" maxlength="120" style="margin-top:6px">
       <textarea id="kb_body" rows="3" placeholder="${esc(t('kb_f_body_ph'))}" maxlength="2000" style="margin-top:6px"></textarea>
       <input id="kb_link" placeholder="${esc(t('kb_f_link_ph'))}" maxlength="500" style="margin-top:6px">
-      <div class="row" style="margin-top:8px"><button data-add>${esc(t('kb_add'))}</button><span class="err" data-err style="margin-left:10px"></span></div>
+      <div class="row" style="margin-top:8px"><button data-add>${esc(t('kb_add'))}</button><span class="err" data-err style="margin-inline-start:10px"></span></div>
     </div>`);
     addCard.querySelector('[data-add]').onclick = async () => {
       const err = addCard.querySelector('[data-err]'); err.textContent='';
@@ -6200,7 +6233,7 @@ async function openNotes() {
     if (!shown.length) { listBox.appendChild(el(`<div class="card muted">${esc(ti('kb_none_filter',{q:notesQuery}))}</div>`)); return; }
     shown.forEach(n => {
       const canDelete = n.mine || d.can_delete_role;
-      const card = el(`<div class="card"${n.pinned?' style="border-left:4px solid var(--warn-fg)"':''}>
+      const card = el(`<div class="card"${n.pinned?' style="border-inline-start:4px solid var(--warn-fg)"':''}>
         <div class="row" style="align-items:baseline;gap:8px">
           <b style="flex:1">${n.pinned?'📌 ':''}${esc(n.title)}</b>
         </div>
@@ -6216,11 +6249,11 @@ async function openNotes() {
       const db = card.querySelector('[data-del]'); if (db) db.onclick = async () => { if (!confirm(t('kb_delete_confirm'))) return; try { await api('POST',`/api/notes/${n.id}/delete`); openNotes(); } catch(e){ alert(e.message); } };
       const eb = card.querySelector('[data-edit]'); if (eb) eb.onclick = () => {
         // Inline-Bearbeiten: Karte durch ein Formular ersetzen (Titel/Inhalt/Link vorbefüllt).
-        const form = el(`<div class="card"${n.pinned?' style="border-left:4px solid var(--warn-fg)"':''}>
+        const form = el(`<div class="card"${n.pinned?' style="border-inline-start:4px solid var(--warn-fg)"':''}>
           <input data-etitle maxlength="120" value="${esc(n.title)}" aria-label="${esc(t('kb_f_title_ph'))}">
           <textarea data-ebody rows="3" maxlength="2000" placeholder="${esc(t('kb_f_body_ph'))}" style="margin-top:6px">${esc(n.body||'')}</textarea>
           <input data-elink maxlength="500" placeholder="${esc(t('kb_f_link_ph'))}" value="${esc(n.doc_url||'')}" style="margin-top:6px">
-          <div class="row" style="margin-top:8px;gap:6px"><button data-esave>${esc(t('kb_save'))}</button><button class="ghost" data-ecancel>${esc(t('kb_cancel'))}</button><span class="err" data-eerr style="margin-left:6px"></span></div>
+          <div class="row" style="margin-top:8px;gap:6px"><button data-esave>${esc(t('kb_save'))}</button><button class="ghost" data-ecancel>${esc(t('kb_cancel'))}</button><span class="err" data-eerr style="margin-inline-start:6px"></span></div>
         </div>`);
         form.querySelector('[data-ecancel]').onclick = () => renderNotes();
         form.querySelector('[data-esave]').onclick = async () => {
@@ -6331,7 +6364,7 @@ let promoState = { cat: null, mine: false };
 function promoAuthorLine(a) {
   if (!a) return '';
   const badge = (a.verified ? ' <span title="'+esc(t('pc_verified'))+'">✔</span>' : '') + (a.premium ? ' <span title="'+esc(t('pc_premium'))+'">⭐</span>' : '');
-  const av = a.avatar_url ? `<img src="${esc(a.avatar_url)}" alt="" style="width:22px;height:22px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:5px">` : '';
+  const av = a.avatar_url ? `<img src="${esc(a.avatar_url)}" alt="" style="width:22px;height:22px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-inline-end:5px">` : '';
   return `<span class="clickable" data-openprofile="${esc(a.handle)}">${av}<b>${esc(a.display_name||('@'+a.handle))}</b>${badge}</span>`;
 }
 function promoPrice(p) {
@@ -6442,7 +6475,7 @@ function openPromoForm(existing) {
       <img id="pr_imgprev" alt="" style="${img?'':'display:none;'}max-height:80px;border-radius:8px" ${img?`src="${esc(img)}"`:''}>
       <button class="linklike small" id="pr_imgclear" style="${img?'':'display:none'}">✕</button>
     </div>
-    <div class="row" style="margin-top:12px"><button data-save>${esc(existing?t('wb_save_edit'):t('wb_save'))}</button><span class="err" data-err style="margin-left:10px"></span></div>
+    <div class="row" style="margin-top:12px"><button data-save>${esc(existing?t('wb_save_edit'):t('wb_save'))}</button><span class="err" data-err style="margin-inline-start:10px"></span></div>
   </div>`);
   card.querySelector('[data-back]').onclick = () => existing ? openPromotionDetail(existing.id) : openPromotions();
   const prev = card.querySelector('#pr_imgprev'), clr = card.querySelector('#pr_imgclear');
@@ -6607,7 +6640,7 @@ function openLiveForm() {
     <textarea id="lv_topic_in" rows="3" maxlength="500" placeholder="${esc(t('lv_f_topic_ph'))}"></textarea>
     <label style="margin-top:8px">${esc(t('lv_f_when'))}</label>
     <input id="lv_when_in" type="datetime-local" value="${now}">
-    <div class="row" style="margin-top:12px"><button data-save>${esc(t('lv_save'))}</button><span class="err" data-err style="margin-left:10px"></span></div>
+    <div class="row" style="margin-top:12px"><button data-save>${esc(t('lv_save'))}</button><span class="err" data-err style="margin-inline-start:10px"></span></div>
     <div class="muted" style="font-size:12px;margin-top:8px">${esc(t('lv_privacy'))}</div>
   </div>`);
   card.querySelector('[data-back]').onclick = () => openLive();
@@ -6669,7 +6702,7 @@ function renderMonthlySavings(orders) {
     box.appendChild(el(`<div class="row" style="align-items:center;gap:8px;margin-bottom:6px">
       <span class="muted" style="min-width:72px;font-size:13px">${esc(ymLabel(d.ym))}</span>
       <span style="flex:1;min-width:40px;background:var(--chip-bg);border-radius:6px;height:16px;overflow:hidden" aria-hidden="true"><span style="display:block;height:100%;width:${pct}%;background:var(--ok-fg);border-radius:6px"></span></span>
-      <b style="min-width:72px;text-align:right;color:var(--ok-fg)">€ ${fmtMoney(d.saved)}</b>
+      <b style="min-width:72px;text-align:end;color:var(--ok-fg)">€ ${fmtMoney(d.saved)}</b>
     </div>`));
   });
   return card;
@@ -6709,7 +6742,7 @@ function printProcurementReport(orders) {
   const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:800px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:22px;margin:0 0 2px} h2{font-size:15px;margin:20px 0 6px;color:#333} .meta{color:#555;font-size:13px;margin-bottom:14px}
     .kpis{display:flex;flex-wrap:wrap;gap:20px;margin:8px 0} .kpi .n{font-size:22px;font-weight:800} .kpi .l{color:#555;font-size:12px}
-    table{width:100%;border-collapse:collapse} th{text-align:left;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px} td{padding:6px 8px;border-bottom:1px solid #e3e8e5;font-size:14px} th.r,td.r{text-align:right} td.r{font-weight:700;white-space:nowrap} td.sav{color:#0b7f28}
+    table{width:100%;border-collapse:collapse} th{text-align:start;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px} td{padding:6px 8px;border-bottom:1px solid #e3e8e5;font-size:14px} th.r,td.r{text-align:end} td.r{font-weight:700;white-space:nowrap} td.sav{color:#0b7f28}
     .src{font-size:12px;color:#555;margin-top:18px}`;
   const body = `<h1>📊 ${esc(t('os_rep_title'))}</h1>
     <div class="meta">${esc(ti('os_rep_period', { from: from ? fmtDateDe(from) : '—', to: to ? fmtDateDe(to) : '—' }))} · ${esc(ti('wl_print_asof', { date: printDate() }))}</div>
@@ -7133,8 +7166,8 @@ async function openPremium() {
       const ersparnis = monat.amount_cents * 12 - jahr.amount_cents;
       const wahl = el(`<div data-prplan style="margin:0 0 12px"><div style="font-weight:700;margin-bottom:6px">${esc(t('pr_plan_title'))}</div>
         <div class="row" style="gap:8px;flex-wrap:wrap">
-          <button class="${prPlan === monat.id ? '' : 'ghost '}" data-plan="${esc(monat.id)}" aria-pressed="${prPlan === monat.id}" style="flex:1 1 150px;min-height:56px;text-align:left">${esc(t('pr_plan_month'))}<br><b>${esc(fmtCurrency(monat.amount_cents / 100, monat.currency))}</b></button>
-          <button class="${prPlan === jahr.id ? '' : 'ghost '}" data-plan="${esc(jahr.id)}" aria-pressed="${prPlan === jahr.id}" style="flex:1 1 150px;min-height:56px;text-align:left">${esc(t('pr_plan_year'))}<br><b>${esc(fmtCurrency(jahr.amount_cents / 100, jahr.currency))}</b>${ersparnis > 0 ? `<br><span style="font-size:13px">${esc(ti('pr_plan_save', { s: fmtCurrency(ersparnis / 100, jahr.currency), m: fmtCurrency(jahr.amount_cents / 1200, jahr.currency) }))}</span>` : ''}</button>
+          <button class="${prPlan === monat.id ? '' : 'ghost '}" data-plan="${esc(monat.id)}" aria-pressed="${prPlan === monat.id}" style="flex:1 1 150px;min-height:56px;text-align:start">${esc(t('pr_plan_month'))}<br><b>${esc(fmtCurrency(monat.amount_cents / 100, monat.currency))}</b></button>
+          <button class="${prPlan === jahr.id ? '' : 'ghost '}" data-plan="${esc(jahr.id)}" aria-pressed="${prPlan === jahr.id}" style="flex:1 1 150px;min-height:56px;text-align:start">${esc(t('pr_plan_year'))}<br><b>${esc(fmtCurrency(jahr.amount_cents / 100, jahr.currency))}</b>${ersparnis > 0 ? `<br><span style="font-size:13px">${esc(ti('pr_plan_save', { s: fmtCurrency(ersparnis / 100, jahr.currency), m: fmtCurrency(jahr.amount_cents / 1200, jahr.currency) }))}</span>` : ''}</button>
         </div></div>`);
       wahl.querySelectorAll('[data-plan]').forEach((b) => { b.onclick = () => { prPlan = b.dataset.plan; openPremium(); }; });
       body.appendChild(wahl);
@@ -7268,7 +7301,7 @@ async function openBookmarks() {
     const d = await api('GET','/api/bookmarks');
     myBookmarks = new Set(d.posts.map(p=>p.id));
     feed.innerHTML = '';
-    const head = el(`<div class="card"><div class="row"><b>${esc(t('bm_title'))}</b><span class="sp" style="flex:1"></span><span class="muted">${d.posts.length}</span><button class="ghost small" data-back style="margin-left:10px">${esc(t('search_back'))}</button></div></div>`);
+    const head = el(`<div class="card"><div class="row"><b>${esc(t('bm_title'))}</b><span class="sp" style="flex:1"></span><span class="muted">${d.posts.length}</span><button class="ghost small" data-back style="margin-inline-start:10px">${esc(t('search_back'))}</button></div></div>`);
     head.querySelector('[data-back]').onclick = () => goTab('overview');
     feed.appendChild(head);
     if (!d.posts.length) { feed.appendChild(emptyState({ icon:'🔖', title:t('bm_empty_t'), text:t('bm_empty_s') })); return; }
@@ -7337,7 +7370,7 @@ async function openStewardship() {
   try { d = await api('GET','/api/hashtag/stewardship'); }
   catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   feed.innerHTML = '';
-  const head = el(`<div class="card" style="border-left:4px solid #0b7f28">
+  const head = el(`<div class="card" style="border-inline-start:4px solid #0b7f28">
     <div><button class="ghost small" data-back>${esc(t('search_back'))}</button></div>
     <h1 style="margin:8px 0 2px">${esc(t('stew_title'))}</h1>
     <div class="muted" style="font-size:14px">${esc(t('stew_sub'))}</div>
@@ -7371,7 +7404,7 @@ async function openStewardship() {
 // Mehrsprachige Patienten-Infokarten (Antibiotika) — Aufklärung zur Abgabe.
 // Ohne Auswahl: Sprache der Oberfläche (vorher immer Deutsch — auch in Uganda).
 let patientLang = null;
-const PATIENT_SPRACHEN = ['de', 'en', 'pt', 'fr', 'tr'];
+const PATIENT_SPRACHEN = ['de', 'en', 'pt', 'fr', 'ar', 'tr'];
 const patientStart = () => (PATIENT_SPRACHEN.includes(LOCALE) ? LOCALE : 'en');
 // Überschrift der Patienteninfo in der gewählten Patienten-Sprache (de/en/tr) —
 // damit gedruckte Info-Blätter nicht deutsch betitelt sind, obwohl der Inhalt engl./türk. ist.
@@ -7379,6 +7412,7 @@ function patientInfoHeading(lang) {
   return lang === 'en' ? 'Antibiotics – Patient information'
     : lang === 'pt' ? 'Antibióticos – Informação ao doente'
     : lang === 'fr' ? 'Antibiotiques – Information patient'
+    : lang === 'ar' ? 'المضادات الحيوية – معلومات للمريض'
     : lang === 'tr' ? 'Antibiyotikler – Hasta bilgisi'
     : 'Antibiotika – Patienteninformation';
 }
@@ -7389,7 +7423,7 @@ function printPatientInfo(d) {
     h2{font-size:16px;margin:0 0 4px} p{margin:0;font-size:14px;line-height:1.5} .src{font-size:12px;color:#555;margin-top:16px}`;
   // Quell-Label in der Patienten-Sprache (wie die Überschrift) — ein deutsches „Quelle:"
   // auf einem englischen/türkischen Blatt wäre inkonsistent.
-  const srcLabel = d.lang === 'en' ? 'Source' : d.lang === 'pt' ? 'Fonte' : d.lang === 'fr' ? 'Source' : d.lang === 'tr' ? 'Kaynak' : 'Quelle';
+  const srcLabel = d.lang === 'en' ? 'Source' : d.lang === 'pt' ? 'Fonte' : d.lang === 'fr' ? 'Source' : d.lang === 'ar' ? 'المصدر' : d.lang === 'tr' ? 'Kaynak' : 'Quelle';
   const body = `<h1>🧫 ${esc(patientInfoHeading(d.lang))}</h1>${cards}
     <div class="src">${esc(srcLabel)}: ${esc(d.source.label)} · ${esc(d.source.url)}<br>${esc(d.disclaimer)}</div>`;
   openPrintDoc(patientInfoHeading(d.lang), css, body, d.lang);
@@ -7402,7 +7436,7 @@ async function openPatientInfo() {
   try { d = await api('GET','/api/patient-info?lang='+encodeURIComponent(patientLang || patientStart())+'&country='+encodeURIComponent(viewCountry())); }
   catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   feed.innerHTML = '';
-  const head = el(`<div class="card" style="border-left:4px solid #0b7f28">
+  const head = el(`<div class="card" style="border-inline-start:4px solid #0b7f28">
     <div><button class="ghost small" data-back>${esc(t('search_back'))}</button></div>
     <h1 style="margin:8px 0 2px">${esc(t('pi_title'))}</h1>
     <div class="muted" style="font-size:14px">${esc(t('pi_sub'))}</div>
@@ -7422,7 +7456,7 @@ async function openPatientInfo() {
   });
   feed.appendChild(head);
   d.cards.forEach(c => {
-    const card = el(`<div class="card"><div class="row"><b>${esc(c.icon)} ${esc(c.title)}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-copy>${esc(t('pi_copy'))}</button></div>
+    const card = el(`<div class="card" lang="${esc(d.lang)}" dir="${richtungVon(d.lang)}"><div class="row"><b>${esc(c.icon)} ${esc(c.title)}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-copy>${esc(t('pi_copy'))}</button></div>
       <div style="font-size:14px;margin-top:6px">${esc(c.body)}</div></div>`);
     card.querySelector('[data-copy]').onclick = async (e) => {
       try { await navigator.clipboard.writeText(c.title + '\n' + c.body); e.target.textContent = t('pc_copied'); setTimeout(()=>{ e.target.textContent=t('pi_copy'); }, 1400); }
@@ -7430,7 +7464,7 @@ async function openPatientInfo() {
     };
     feed.appendChild(card);
   });
-  feed.appendChild(el(`<div class="card muted" style="font-size:12px"><a href="${esc(d.source.url)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(d.source.label)}</a> · <span style="font-style:italic">${esc(d.disclaimer)}</span></div>`));
+  feed.appendChild(el(`<div class="card muted" style="font-size:12px" lang="${esc(d.lang)}" dir="${richtungVon(d.lang)}"><a href="${esc(d.source.url)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(d.source.label)}</a> · <span style="font-style:italic">${esc(d.disclaimer)}</span></div>`));
 }
 
 // Verordnungs-Klartext-Begleitzettel (Abgabe in der Apotheke, ohne ELGA).
@@ -7458,6 +7492,11 @@ const ZETTEL_L = {
     dauer: 'Durée du traitement', hinweise: 'Remarques importantes',
     fragen: 'Pour toute question, adressez-vous à votre pharmacie ou à votre médecin.',
     herkunft: 'Indications selon l’ordonnance — remplies par l’équipe de la pharmacie.' },
+  ar: { title: 'جدول تناول الدواء', morgens: 'صباحًا', mittags: 'ظهرًا', abends: 'مساءً', nacht: 'عند النوم',
+    essen: { unabh: 'يؤخذ بغض النظر عن الوجبات', vor: 'يؤخذ قبل الوجبات', zum: 'يؤخذ مع الوجبات', nach: 'يؤخذ بعد الوجبات' },
+    dauer: 'مدة العلاج', hinweise: 'ملاحظات مهمة',
+    fragen: 'إذا كانت لديك أسئلة، تواصل مع صيدليتك أو طبيبك.',
+    herkunft: 'البيانات حسب الوصفة الطبية — ملأها فريق الصيدلية.' },
   tr: { title: 'İlaç kullanım planı', morgens: 'Sabah', mittags: 'Öğle', abends: 'Akşam', nacht: 'Gece',
     essen: { unabh: 'Yemekten bağımsız alın', vor: 'Yemekten önce alın', zum: 'Yemekle birlikte alın', nach: 'Yemekten sonra alın' },
     dauer: 'Kullanım süresi', hinweise: 'Önemli notlar',
@@ -7488,7 +7527,7 @@ function zettelPrintHtml(z, cards) {
       ${cards.cards.map(c => `<div style="border:1px solid #cbd5cf;border-radius:8px;padding:12px 14px;margin:10px 0;break-inside:avoid"><h2 style="font-size:16px;margin:0 0 4px">${esc(c.icon)} ${esc(c.title)}</h2><p style="margin:0;font-size:14px;line-height:1.5">${esc(c.body)}</p></div>`).join('')}
       <div style="font-size:12px;color:#555;margin-top:14px">${esc(cards.source.label)} · ${esc(cards.source.url)}<br>${esc(cards.disclaimer)}</div>
     </div>` : '';
-  return `<!doctype html><html lang="${esc(z.lang)}"><head><meta charset="utf-8"><title>${esc(ZETTEL_L[z.lang].title)}</title>
+  return `<!doctype html><html lang="${esc(z.lang)}" dir="${richtungVon(z.lang)}"><head><meta charset="utf-8"><title>${esc(ZETTEL_L[z.lang].title)}</title>
     <style>body{font-family:system-ui,-apple-system,sans-serif;max-width:640px;margin:28px auto;padding:0 18px;color:#111}</style></head>
     <body>${zettelBody(z)}${cardsHtml}<script>window.onload=function(){window.print();}<\/script></body></html>`;
 }
@@ -7501,7 +7540,7 @@ function openBegleitzettel() {
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '';
-  const head = el(`<div class="card" style="border-left:4px solid #0b7f28">
+  const head = el(`<div class="card" style="border-inline-start:4px solid #0b7f28">
     <div><button class="ghost small" data-back>${esc(t('search_back'))}</button></div>
     <h1 style="margin:8px 0 2px">${esc(t('bz_title'))}</h1>
     <div class="muted" style="font-size:14px">${esc(t('bz_sub'))}</div>
@@ -7545,12 +7584,17 @@ function openBegleitzettel() {
     dauer: form.querySelector('[data-z-d]').value.trim(),
     hinweise: form.querySelector('[data-z-h]').value.trim(),
   });
-  const drawPrev = () => { const z = readZ(); preview.querySelector('[data-z-prev]').innerHTML = z.praeparat ? zettelBody(z) : `<span style="color:#777">${esc(t('bz_preview_empty'))}</span>`; };
+  const drawPrev = () => {
+    const z = readZ(); const box = preview.querySelector('[data-z-prev]');
+    // Vorschau in der Richtung der Zettel-Sprache (Arabisch von rechts nach links).
+    box.setAttribute('dir', richtungVon(z.praeparat ? z.lang : LOCALE)); box.setAttribute('lang', z.praeparat ? z.lang : LOCALE);
+    box.innerHTML = z.praeparat ? zettelBody(z) : `<span style="color:#777">${esc(t('bz_preview_empty'))}</span>`;
+  };
   const langBox = form.querySelector('[data-z-langs]');
   const drawLangs = () => {
     langBox.innerHTML = '';
     const aktiv = zettelLang || patientStart();
-    [['de','Deutsch'],['en','English'],['pt','Português'],['fr','Français'],['tr','Türkçe']].forEach(([c,l]) => {
+    [['de','Deutsch'],['en','English'],['pt','Português'],['fr','Français'],['ar','العربية'],['tr','Türkçe']].forEach(([c,l]) => {
       const bt = el(`<button class="small sortbtn${aktiv===c?' active':''}" aria-pressed="${aktiv===c}">${l}</button>`);
       bt.onclick = () => { zettelLang = c; drawLangs(); drawPrev(); };
       langBox.appendChild(bt);
@@ -7586,7 +7630,7 @@ async function renderSearch(q) {
   try {
     const d = await api('GET','/api/search?q='+encodeURIComponent(q)+'&country='+encodeURIComponent(viewCountry()));
     feed.innerHTML = '';
-    const head = el(`<div class="card"><div class="row"><b tabindex="-1" data-stitle>${esc(ti('search_results_for',{q:d.query}))}</b><span class="sp" style="flex:1"></span><span class="muted">${esc(ti('search_hits',{n:d.total}))}</span><button class="ghost small" data-back style="margin-left:10px">${esc(t('search_back'))}</button></div></div>`);
+    const head = el(`<div class="card"><div class="row"><b tabindex="-1" data-stitle>${esc(ti('search_results_for',{q:d.query}))}</b><span class="sp" style="flex:1"></span><span class="muted">${esc(ti('search_hits',{n:d.total}))}</span><button class="ghost small" data-back style="margin-inline-start:10px">${esc(t('search_back'))}</button></div></div>`);
     head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
     feed.appendChild(head);
     // Wie die Wirkstoff-Detailseite: oben starten (man sucht oft aus einer tief gescrollten
@@ -7737,7 +7781,7 @@ function editProfileForm(p) {
     <div class="muted" style="font-size:12px;margin-bottom:6px">${esc(t('ep_edu_hint'))}</div>
     <div id="ep_edu_list"></div>
     <button type="button" class="ghost small" id="ep_edu_add" style="margin-top:2px">${esc(t('ep_edu_add'))}</button>
-    <div class="row" style="margin-top:12px"><button id="ep_save">${esc(t('cm_save'))}</button><span class="err" id="ep_err" style="margin-left:10px"></span></div>
+    <div class="row" style="margin-top:12px"><button id="ep_save">${esc(t('cm_save'))}</button><span class="err" id="ep_err" style="margin-inline-start:10px"></span></div>
   </div>`);
   feed.appendChild(form);
   // Werdegang: wiederholbare Stationen (Rolle Pflicht, Rest optional).
@@ -7880,7 +7924,7 @@ async function openProfile(handle) {
           ${p.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}
           ${p.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
           ${p.premium?`<span class="premium-badge" title="${esc(t('pc_premium'))}">${esc(t('pc_premium'))}</span>`:''}
-          ${p.account_type?`<span class="spec" style="margin-left:2px">${esc(acctLabel(p.account_type))}</span>`:''}
+          ${p.account_type?`<span class="spec" style="margin-inline-start:2px">${esc(acctLabel(p.account_type))}</span>`:''}
         </div>
         <div class="handle">@${esc(p.handle)}</div>
         ${p.title?`<div class="muted">${esc(p.title)}</div>`:''}
@@ -8015,12 +8059,12 @@ async function openProfile(handle) {
           <b style="font-size:0.95em">${esc(t('ac_pw_title'))}</b>
           <input id="pw_old" type="password" placeholder="${esc(t('ac_pw_old'))}" style="margin-top:6px">
           <input id="pw_new" type="password" placeholder="${esc(t('ac_pw_new'))}" style="margin-top:6px">
-          <div class="row" style="margin-top:8px"><button class="small" id="pw_go">${esc(t('ac_pw_title'))}</button><span id="pw_msg" style="margin-left:8px"></span></div>
+          <div class="row" style="margin-top:8px"><button class="small" id="pw_go">${esc(t('ac_pw_title'))}</button><span id="pw_msg" style="margin-inline-start:8px"></span></div>
         </div>
         <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
           <b style="font-size:0.95em">${esc(t('ac_rc_title'))}</b>
           <div class="muted" style="margin-top:4px" id="rc_remaining">—</div>
-          <div class="row" style="margin-top:8px"><button class="ghost small" id="rc_regen">${esc(t('ac_rc_regen'))}</button><span class="muted" style="margin-left:8px;font-size:0.85em">${esc(t('ac_rc_warn'))}</span></div>
+          <div class="row" style="margin-top:8px"><button class="ghost small" id="rc_regen">${esc(t('ac_rc_regen'))}</button><span class="muted" style="margin-inline-start:8px;font-size:0.85em">${esc(t('ac_rc_warn'))}</span></div>
         </div>
         <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
           <b style="font-size:0.95em;color:var(--crit-fg)">${esc(t('ac_del_title'))}</b>
@@ -8098,7 +8142,7 @@ function recommendationsCard(d, handle) {
     </div>
     ${d.can_recommend?`<div data-recform class="hidden" style="margin-top:8px">
       <textarea data-recbody maxlength="600" placeholder="${esc(t('rec_ph'))}">${esc(d.my_recommendation||'')}</textarea>
-      <div class="row" style="margin-top:6px"><button class="small" data-recsave>${esc(t('rec_save'))}</button><span class="err" data-recerr style="margin-left:8px"></span></div>
+      <div class="row" style="margin-top:6px"><button class="small" data-recsave>${esc(t('rec_save'))}</button><span class="err" data-recerr style="margin-inline-start:8px"></span></div>
     </div>`:''}
     <div data-reclist style="margin-top:8px"></div>
   </div>`);
@@ -8115,7 +8159,7 @@ function recommendationsCard(d, handle) {
             ${a.title?`<div class="muted" style="font-size:12px">${esc(a.title)}</div>`:''}
           </div>
           <span class="muted" style="font-size:12px">${relTime(r.created_at)}</span>
-          ${r.can_remove?`<button class="ghost small" data-recdel="${esc(r.id)}" title="${esc(t('rec_remove'))}" aria-label="${esc(t('rec_remove'))}" style="margin-left:6px">🗑</button>`:''}
+          ${r.can_remove?`<button class="ghost small" data-recdel="${esc(r.id)}" title="${esc(t('rec_remove'))}" aria-label="${esc(t('rec_remove'))}" style="margin-inline-start:6px">🗑</button>`:''}
         </div>
         <div class="rec-body">${esc(r.body)}</div>
       </div>`);
@@ -8205,7 +8249,7 @@ async function openDiscoverOpenTo(key) {
         <div class="row" style="align-items:center">
           <span class="post-author clickable" data-openprofile="${esc(p.handle)}">${esc(p.display_name||t('ex_unknown'))}</span>
           ${p.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}${p.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
-          ${p.account_type&&p.account_type!=='pharmacy'?`<span class="spec" style="margin-left:2px">${esc(acctLabel(p.account_type))}</span>`:''}
+          ${p.account_type&&p.account_type!=='pharmacy'?`<span class="spec" style="margin-inline-start:2px">${esc(acctLabel(p.account_type))}</span>`:''}
         </div>
         <div class="handle clickable" data-openprofile="${esc(p.handle)}">@${esc(p.handle)}</div>
         ${p.title?`<div class="muted" style="font-size:13px">${esc(p.title)}</div>`:''}
@@ -8492,7 +8536,7 @@ async function openWirkstoff(name) {
   // quellenbelegt, ausdrücklich keine patientenindividuelle Therapieempfehlung.
   if (d.amr && d.amr.is_antibiotic) {
     const a = d.amr;
-    const panel = el(`<div class="card" style="border-left:4px solid #0b7f28">
+    const panel = el(`<div class="card" style="border-inline-start:4px solid #0b7f28">
       <div class="row"><b>${esc(t('wk_amr_title'))}</b>
         <span class="sp" style="flex:1"></span>
         <span class="muted" style="font-size:12px">${esc(t('wk_amr_tag'))}</span></div>
@@ -8557,7 +8601,7 @@ async function openWirkstoff(name) {
     // muss. Standardmäßig eingeklappt, damit die Detailseite kompakt bleibt.
     if (hist.length >= 2) {
       const toggle = el(`<button class="linklike small" aria-expanded="false" style="margin-top:4px;display:inline-block">📈 ${esc(ti('wk_hist',{n:hist.length}))}</button>`);
-      const tl = el(`<div class="hidden" style="margin-top:6px;padding-left:8px;border-left:2px solid var(--line)"></div>`);
+      const tl = el(`<div class="hidden" style="margin-top:6px;padding-inline-start:8px;border-inline-start:2px solid var(--line)"></div>`);
       // Neueste Änderung zuerst — konsistent mit dem „Verlauf" auf der Engpass-Karte
       // (dort [...history].reverse()); so lesen beide Ansichten die gleiche Reihenfolge.
       [...hist].reverse().forEach(h => {
@@ -8652,7 +8696,7 @@ async function openWirkstoff(name) {
  */
 async function renderAusweich(feed, wirkstoff) {
   const card = el(`<div class="card">
-    <button class="ghost small" data-open aria-expanded="false" style="width:100%;text-align:left;display:flex;align-items:center;gap:8px;min-height:44px">
+    <button class="ghost small" data-open aria-expanded="false" style="width:100%;text-align:start;display:flex;align-items:center;gap:8px;min-height:44px">
       <b>🔄 ${esc(t('aw_title'))}</b><span class="sp" style="flex:1"></span><span data-chev aria-hidden="true">▸</span>
     </button>
     <div class="muted" style="font-size:13px;margin-top:4px">${esc(t('aw_sub'))}</div>
@@ -8739,7 +8783,7 @@ async function renderAusweich(feed, wirkstoff) {
       const pl = pbox.querySelector('[data-plist]');
       praeparate.forEach((pr) => {
         pl.appendChild(el(`<div style="font-size:14px">${esc(pr.name)}
-          ${pr.quelle ? `<a class="linklike small" href="${esc(pr.quelle)}" target="_blank" rel="noopener noreferrer" style="margin-left:6px">${esc(t('aw_lookup'))}</a>` : ''}</div>`));
+          ${pr.quelle ? `<a class="linklike small" href="${esc(pr.quelle)}" target="_blank" rel="noopener noreferrer" style="margin-inline-start:6px">${esc(t('aw_lookup'))}</a>` : ''}</div>`));
       });
       body.appendChild(pbox);
     }
@@ -8817,7 +8861,7 @@ async function openLogistik() {
 
   const FARBE = { kritisch: 'var(--crit-fg)', hinweis: 'var(--warn-fg)', behoben: 'var(--ok-fg)' };
   const karte = (m) => {
-    const c = el(`<div class="card" style="border-left:4px solid ${FARBE[m.dringlichkeit] || 'var(--line)'}">
+    const c = el(`<div class="card" style="border-inline-start:4px solid ${FARBE[m.dringlichkeit] || 'var(--line)'}">
       <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
         <span style="font-weight:700">${esc(t('lg_art_' + m.art))}</span>
         <span style="background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:13px;color:${FARBE[m.dringlichkeit] || ''}">${esc(t('lg_d_' + m.dringlichkeit))}</span>
@@ -8843,7 +8887,7 @@ async function openLogistik() {
 
   const formular = () => {
     const f = el(`<div class="card">
-      <button class="ghost small" data-open aria-expanded="false" style="width:100%;text-align:left;display:flex;align-items:center;gap:8px;min-height:44px">
+      <button class="ghost small" data-open aria-expanded="false" style="width:100%;text-align:start;display:flex;align-items:center;gap:8px;min-height:44px">
         <b>${esc(t('lg_new'))}</b><span class="sp" style="flex:1"></span><span data-chev aria-hidden="true">▸</span>
       </button>
       <div class="hidden" data-form style="margin-top:8px">
@@ -8860,7 +8904,7 @@ async function openLogistik() {
           <input data-bis type="date" aria-label="${esc(t('lg_until_label'))}">
         </div>
         <div class="muted" style="font-size:12px;margin-top:6px">${esc(t('lg_selfreported_hint'))}</div>
-        <div class="row" style="margin-top:8px"><button data-send>${esc(t('lg_send'))}</button><span class="err" data-err style="margin-left:8px"></span></div>
+        <div class="row" style="margin-top:8px"><button data-send>${esc(t('lg_send'))}</button><span class="err" data-err style="margin-inline-start:8px"></span></div>
       </div>
     </div>`);
     const form = f.querySelector('[data-form]');
@@ -8939,7 +8983,7 @@ async function renderVerifyCard(card) {
     <label for="vf_note" style="display:block;margin-top:8px;font-size:13px">${esc(t('vf_note_label'))}</label>
     <input id="vf_note" placeholder="${esc(t('vf_note_ph'))}" aria-label="${esc(t('vf_note_label'))}" style="margin-top:4px">
     <div class="muted" style="font-size:12px;margin-top:6px">${esc(t('vf_rx_hint'))}</div>
-    <div class="row" style="margin-top:8px"><button id="vf_go">${esc(t('vf_apply'))}</button><span class="err" id="vf_err" style="margin-left:8px"></span></div>`;
+    <div class="row" style="margin-top:8px"><button id="vf_go">${esc(t('vf_apply'))}</button><span class="err" id="vf_err" style="margin-inline-start:8px"></span></div>`;
   card.querySelector('#vf_go').onclick = async () => {
     try {
       await api('POST','/api/verify/request',{ note: v('vf_note'), licenseNumber: behoerde ? null : v('vf_lic') });
@@ -8991,7 +9035,7 @@ function repostEmbedHtml(o) {
 // link=false: rein dekorativ (z.B. verschachtelt in einem bereits klickbaren Element).
 function avatarHtml(a, size = 36, link = true) {
   const ini = (a.display_name||'?').split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();
-  const st = `width:${size}px;height:${size}px;font-size:${Math.round(size*0.38)}px;margin-right:9px`;
+  const st = `width:${size}px;height:${size}px;font-size:${Math.round(size*0.38)}px;margin-inline-end:9px`;
   const attr = link ? ` class="avatar clickable" data-openprofile="${esc(a.handle||'')}"` : ' class="avatar"';
   if (a.avatar_url) return `<img${attr} alt="" loading="lazy" decoding="async" style="object-fit:cover;${st}" src="${esc(a.avatar_url)}">`;
   return `<span${attr} style="${st}">${esc(ini)}</span>`;
@@ -9024,8 +9068,8 @@ function postCard(p) {
           ${a.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}
           ${a.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
           ${a.premium?`<span class="premium-badge" title="${esc(t('pc_premium'))}">${esc(t('pc_premium'))}</span>`:''}
-          ${a.account_type&&a.account_type!=='pharmacy'?`<span class="spec" style="margin-left:2px">${esc(acctLabel(a.account_type))}</span>`:''}
-          ${mine||!featureAn('social')?'':`<button class="${a.is_following?'ghost ':''}small" data-follow="${esc(a.handle)}" data-on="${a.is_following?'1':'0'}" style="margin-left:auto">${a.is_following?esc(t('fl_following_btn')):esc(t('co_follow_btn'))}</button>`}
+          ${a.account_type&&a.account_type!=='pharmacy'?`<span class="spec" style="margin-inline-start:2px">${esc(acctLabel(a.account_type))}</span>`:''}
+          ${mine||!featureAn('social')?'':`<button class="${a.is_following?'ghost ':''}small" data-follow="${esc(a.handle)}" data-on="${a.is_following?'1':'0'}" style="margin-inline-start:auto">${a.is_following?esc(t('fl_following_btn')):esc(t('co_follow_btn'))}</button>`}
         </div>
         <div class="post-hd-sub">
           <span class="handle clickable" data-openprofile="${esc(a.handle||'')}">@${esc(a.handle||'?')}</span>
@@ -9109,7 +9153,7 @@ function postCard(p) {
     const cur = bodyEl.textContent;
     const box = el(`<div data-editbox style="margin:8px 0">
       <textarea data-eb>${esc(cur)}</textarea>
-      <div class="row" style="margin-top:6px"><button class="small" data-ebsave>${esc(t('cm_save'))}</button><button class="ghost small" data-ebcancel>${esc(t('cm_cancel'))}</button><span class="err" data-eberr style="margin-left:8px"></span></div>
+      <div class="row" style="margin-top:6px"><button class="small" data-ebsave>${esc(t('cm_save'))}</button><button class="ghost small" data-ebcancel>${esc(t('cm_cancel'))}</button><span class="err" data-eberr style="margin-inline-start:8px"></span></div>
     </div>`);
     bodyEl.style.display = 'none';
     bodyEl.after(box);
@@ -9207,18 +9251,18 @@ function commentRow(postId, c, card, depth = 0) {
   const isQuestion = post.kind === 'frage';
   const isAccepted = isQuestion && post.accepted_comment_id === c.id;
   const iAmAsker = me && post.author && post.author.handle === me.handle;
-  const accentStyle = isAccepted ? 'border-left:3px solid #0b7f28;background:rgba(11,127,40,.06);' : (indent?'border-left:2px solid var(--line);':'');
-  const row = el(`<div class="comment" style="${indent?`margin-left:${indent}px;`:''}${accentStyle}">
+  const accentStyle = isAccepted ? 'border-inline-start:3px solid #0b7f28;background:rgba(11,127,40,.06);' : (indent?'border-inline-start:2px solid var(--line);':'');
+  const row = el(`<div class="comment" style="${indent?`margin-inline-start:${indent}px;`:''}${accentStyle}">
     <div class="row" style="align-items:center">
       ${avatarHtml(au, 30)}
       <b class="clickable" data-openprofile="${esc(au.handle||'')}">${esc(au.display_name||t('ex_unknown'))}</b>
       <span class="handle clickable" data-openprofile="${esc(au.handle||'')}">@${esc(au.handle||'?')}</span>
       ${au.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}
       ${au.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
-      ${au.account_type&&au.account_type!=='pharmacy'?`<span class="spec" style="margin-left:2px">${esc(acctLabel(au.account_type))}</span>`:''}
-      ${isAccepted?`<span style="color:var(--ok-fg);font-weight:700;font-size:12px;margin-left:6px">${esc(t('cm_best'))}</span>`:''}
-      <span class="muted" style="font-size:12px;margin-left:6px" title="${esc(c.created_at)}">${relTime(c.created_at)}</span>
-      ${c.edited_at?`<span class="vis" style="margin-left:6px">${esc(t('pc_edited'))}</span>`:''}
+      ${au.account_type&&au.account_type!=='pharmacy'?`<span class="spec" style="margin-inline-start:2px">${esc(acctLabel(au.account_type))}</span>`:''}
+      ${isAccepted?`<span style="color:var(--ok-fg);font-weight:700;font-size:12px;margin-inline-start:6px">${esc(t('cm_best'))}</span>`:''}
+      <span class="muted" style="font-size:12px;margin-inline-start:6px" title="${esc(c.created_at)}">${relTime(c.created_at)}</span>
+      ${c.edited_at?`<span class="vis" style="margin-inline-start:6px">${esc(t('pc_edited'))}</span>`:''}
       <span class="sp" style="flex:1"></span>
       ${mine?'<button class="ghost small" data-ced>✏️</button><button class="ghost small" data-cdel>🗑</button>':''}
     </div>
@@ -9359,7 +9403,7 @@ async function showNotifications() {
       <div class="row" style="align-items:center">
         ${n.actor ? avatarHtml(n.actor, 34, false) : ''}
         <span${n.actor?' style="font-size:16px"':''}>${icons[n.type]||'🔔'}</span>
-        <span style="margin-left:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' „'+esc(/^shortage_(abroad|home|ended)$/.test(n.type)?n.label.replace(/ · ([A-Z]{2})$/, (m, cc) => ' · ' + landLabel(cc)):n.type==='premium_ablauf'?fmtDateDe(n.label):n.type==='watch_alert'?notifLabel(n.label):n.label)+'"':''}${n.read?'':'</b>'}</span>
+        <span style="margin-inline-start:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' „'+esc(/^shortage_(abroad|home|ended)$/.test(n.type)?n.label.replace(/ · ([A-Z]{2})$/, (m, cc) => ' · ' + landLabel(cc)):n.type==='premium_ablauf'?fmtDateDe(n.label):n.type==='watch_alert'?notifLabel(n.label):n.label)+'"':''}${n.read?'':'</b>'}</span>
         <span class="sp" style="flex:1"></span>
         <span class="muted" style="font-size:12px">${relTime(n.created_at)}</span>
       </div></div>`);
@@ -9515,7 +9559,7 @@ function kryptoPruefKarte(z) {
     ${link ? `<div style="margin-top:8px"><a class="btn-link small" href="${esc(link)}" target="_blank" rel="noopener noreferrer" data-kpexplorer style="min-height:40px;display:inline-flex;align-items:center">🔎 ${esc(t('kp_explorer'))} ↗</a></div>`
            : `<div style="margin-top:8px;color:var(--crit-fg);font-weight:700">⚠️ ${esc(t('kp_bad_format'))}</div>`}
     <div data-kphint style="margin-top:10px;background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-fg);border-radius:8px;padding:10px 12px;font-size:14px;line-height:1.5">
-      <b>${esc(t('kp_check_t'))}</b><ol style="margin:6px 0 0;padding-left:20px"><li>${esc(t('kp_check_1'))}</li><li>${esc(t('kp_check_2'))}</li><li>${esc(t('kp_check_3'))}</li></ol>
+      <b>${esc(t('kp_check_t'))}</b><ol style="margin:6px 0 0;padding-inline-start:20px"><li>${esc(t('kp_check_1'))}</li><li>${esc(t('kp_check_2'))}</li><li>${esc(t('kp_check_3'))}</li></ol>
     </div>`}
     <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">
       <button class="small" data-kpok style="min-height:44px">✓ ${esc(t(ueberweisung ? 'kp_eingang' : 'kp_confirm'))}</button>
@@ -9926,7 +9970,7 @@ async function showDmInbox() {
       const r = el(`<div class="comment clickable" style="cursor:pointer;opacity:.85">
         <div class="row" style="align-items:center">${avatarHtml(o, 38, false)}<div style="flex:1;min-width:0">
         <div class="row"><b>${esc(o.display_name||t('ex_unknown'))}</b> <span class="handle">@${esc(o.handle||'?')}</span>
-        <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:12px;margin-right:6px">${when}</span>`:''}<button class="ghost small" data-restore>${esc(t('dm_restore'))}</button></div>
+        <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:12px;margin-inline-end:6px">${when}</span>`:''}<button class="ghost small" data-restore>${esc(t('dm_restore'))}</button></div>
         <div class="muted" style="margin-top:2px">${esc((th.last_message?.body||'').slice(0,60))}</div></div></div></div>`);
       r.onclick = () => openDmThread(th.thread_id);
       r.querySelector('[data-restore]').onclick = async (e) => {
@@ -9965,7 +10009,7 @@ async function showDmInbox() {
       const row = el(`<div class="comment clickable" style="cursor:pointer${unread?';background:rgba(11,127,40,.06);border-radius:8px':''}">
         <div class="row" style="align-items:center">${avatarHtml(o, 38, false)}<div style="flex:1;min-width:0">
         <div class="row"><b style="${unread?'font-weight:800':''}">${esc(o.display_name||t('ex_unknown'))}</b> <span class="handle">@${esc(o.handle||'?')}</span>
-        <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:12px;margin-right:6px">${when}</span>`:''}${unread?`<span style="background:var(--green);color:var(--on-green);border-radius:999px;font-size:12px;font-weight:700;padding:1px 8px;min-width:20px;text-align:center;margin-right:6px">${th.unread}</span>`:''}<button class="ghost small" data-archive title="${esc(t('dm_archive'))}" aria-label="${esc(t('dm_archive'))}">🗂</button></div>
+        <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:12px;margin-inline-end:6px">${when}</span>`:''}${unread?`<span style="background:var(--green);color:var(--on-green);border-radius:999px;font-size:12px;font-weight:700;padding:1px 8px;min-width:20px;text-align:center;margin-inline-end:6px">${th.unread}</span>`:''}<button class="ghost small" data-archive title="${esc(t('dm_archive'))}" aria-label="${esc(t('dm_archive'))}">🗂</button></div>
         <div class="muted" style="margin-top:2px${unread?';color:inherit;font-weight:600':''}">${esc((th.last_message?.body||'').slice(0,60))}</div></div></div></div>`);
       row.onclick = () => openDmThread(th.thread_id);
       row.querySelector('[data-archive]').onclick = async (e) => {
@@ -10159,6 +10203,33 @@ applyTheme();
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { zu(true); mehrSchliessen(); } });
 })();
+// Sprachwahl im Menü: nur, wenn das angesehene Land mehrere Sprachen der App führt.
+// Beschriftet mit dem Namen der NÄCHSTEN Sprache in ihrer eigenen Schrift.
+function sprachenDesLands() {
+  const code = me ? viewCountry() : (localStorage.getItem('apo_country') || '');
+  const c = (COUNTRIES_CACHE || []).find((x) => x.code === code);
+  return c ? (c.locales || []).filter((l) => SUPPORTED_LOCALES.includes(l)) : [];
+}
+function naechsteSprache() {
+  const liste = sprachenDesLands();
+  if (liste.length < 2) return null;
+  return liste[(liste.indexOf(LOCALE) + 1) % liste.length];
+}
+function zeigeSprachwahl() {
+  const b = document.getElementById('btnSprache');
+  if (!b) return;
+  const n = naechsteSprache();
+  b.classList.toggle('hidden', !n);
+  const lab = document.getElementById('spracheLabel');
+  if (n && lab) { lab.textContent = SPRACHNAMEN[n]; lab.setAttribute('lang', n); lab.setAttribute('dir', richtungVon(n)); }
+}
+function spracheWechseln(n) {
+  if (!n) return;
+  try { localStorage.setItem('apo_sprachwahl', n); } catch { /* privater Modus */ }
+  setLocale(n); applyI18n(); applyTheme(); applyFontScale();
+  if (me) { updateViewContext(); loadTab(); } else authScreen();
+}
+document.getElementById('btnSprache').onclick = () => spracheWechseln(naechsteSprache());
 document.getElementById('btnFont').onclick = () => {
   const lvl = (parseInt(localStorage.getItem('apo_fontscale') || '0', 10) + 1) % 3;
   localStorage.setItem('apo_fontscale', String(lvl));

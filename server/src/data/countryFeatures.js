@@ -47,6 +47,9 @@ const FEATURE_RESTRICTIONS = {
   // (Preisstruktur UEMOA/CEMAC, Maghreb) — Preisvergleich nur mit Hinweis.
   ...Object.fromEntries(['SN', 'CI', 'CM', 'CD', 'CG', 'GA', 'BF', 'ML', 'NE', 'TD', 'CF', 'BJ', 'TG', 'GN', 'MG', 'BI', 'DJ', 'KM', 'MR', 'MA', 'DZ', 'TN']
     .map((cc) => [cc, { deals: 'restricted', price_compare: 'restricted', stock_exchange: 'blocked' }])),
+  // Vierte Welle (10/2026): ebenso vorsichtig — in Ägypten sind Arzneimittelpreise staatlich festgesetzt.
+  ...Object.fromEntries(['EG', 'LY', 'SD', 'SO', 'GQ']
+    .map((cc) => [cc, { deals: 'restricted', price_compare: 'restricted', stock_exchange: 'blocked' }])),
 };
 
 // Rechtsstatus einer Funktion im Land: 'blocked' | 'restricted' | 'allowed'.

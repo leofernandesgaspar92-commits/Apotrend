@@ -58,7 +58,7 @@ test('i18n: fr ist wirklich Französisch, nicht kopiertes Englisch', () => {
 test('Sprachlisten: Server und Oberfläche kennen fr', () => {
   assert.ok(SUPPORTED_LOCALES.includes('fr'));
   assert.equal(normalizeLocale('fr', 'AT'), 'fr');
-  assert.match(app, /const SUPPORTED_LOCALES = \['de','en','pt','fr'\];/);
+  assert.match(app, /const SUPPORTED_LOCALES = \[[^\]]*'fr'[^\]]*\];/);
   assert.ok(ZIELSPRACHEN.includes('fr'), 'Übersetzen auf Zuruf');
   assert.ok(LAGEBILD_SPRACHEN.includes('fr') && LAGEBILD_HINWEIS.fr, 'Lagebild');
   assert.ok(TEILSEITE_SPRACHEN.includes('fr'), 'Teilseite');
@@ -83,7 +83,7 @@ test('Patienten-Infokarten und Begleitzettel auf Französisch', () => {
   }
   // Entsorgung außerhalb Österreichs: kein Rücknahme-Versprechen ohne Quelle.
   assert.doesNotMatch(pi.cards('fr', { land: 'SN' }).cards.find((c) => c.id === 'entsorgung').body, /Rapportez/);
-  assert.match(app, /const PATIENT_SPRACHEN = \['de', 'en', 'pt', 'fr', 'tr'\];/);
+  assert.match(app, /const PATIENT_SPRACHEN = \[[^\]]*'fr'[^\]]*\];/);
   assert.match(app, /\['fr','Français'\]/, 'Sprachknopf am Begleitzettel');
   assert.match(app, /\n {2}fr: \{ title: 'Plan de prise'/, 'Begleitzettel-Texte');
 });
@@ -104,7 +104,7 @@ test('Wochenbericht auf Französisch, Datum Tag/Monat/Jahr', () => {
 test('Startseite, App-Manifest, Teilseite und Push auf Französisch', () => {
   assert.equal(kopfSprache('fr-CI,fr;q=0.9,en;q=0.5'), 'fr');
   const kopf = startseiteKopf('<html lang="de"><title>x</title>', { sp: 'fr' });
-  assert.match(kopf, /<html lang="fr">/);
+  assert.match(kopf, /<html lang="fr" dir="ltr">/);
   assert.match(kopf, /pénuries de médicaments/);
   const m = JSON.parse(manifestSprache(JSON.stringify({ name: 'x', shortcuts: [{ url: '/?tab=shortages' }], screenshots: [] }), 'fr'));
   assert.equal(m.lang, 'fr');

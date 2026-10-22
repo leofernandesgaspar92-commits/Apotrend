@@ -290,7 +290,9 @@ test('jedes Land des Registers hat eine Quelle', () => {
   // Dritte Welle (frankophon): 17 Länder ohne belegte Behörden-Domain — Recherche fand die
   // Behörde, aber keine Adresse, die eine amtliche Stelle selbst nennt.
   const OHNE_BELEGTE_QUELLE = new Set(['GW', 'ST',
-    'SN', 'CM', 'CD', 'CG', 'GA', 'ML', 'NE', 'TD', 'CF', 'TG', 'GN', 'MG', 'BI', 'DJ', 'KM', 'MR', 'TN']);
+    'SN', 'CM', 'CD', 'CG', 'GA', 'ML', 'NE', 'TD', 'CF', 'TG', 'GN', 'MG', 'BI', 'DJ', 'KM', 'MR', 'TN',
+    // Vierte Welle: Libyen, Somalia (Behörde erst beschlossen), Äquatorialguinea.
+    'LY', 'SO', 'GQ']);
   for (const cc of OHNE_BELEGTE_QUELLE) assert.ok(listCountries().some((c) => c.code === cc), `${cc}: Ausnahme ohne Land im Register`);
   const fehlend = listCountries().map((c) => c.code).filter((cc) => !proLand.has(cc) && !OHNE_BELEGTE_QUELLE.has(cc));
   assert.deepEqual(fehlend, [], `Ohne Quelle: ${fehlend.join(', ')}`);

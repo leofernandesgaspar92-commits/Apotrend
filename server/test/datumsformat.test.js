@@ -29,7 +29,7 @@ const reihenfolge = (tag) => new Intl.DateTimeFormat(tag, { day: '2-digit', mont
   .formatToParts(new Date(Date.UTC(2026, 2, 4))).filter((p) => ['day', 'month', 'year'].includes(p.type)).map((p) => p.type).join('-');
 
 test('Jedes Land hat eine Schreibweise, und kein Land außer den USA bekommt Monat vor Tag', () => {
-  assert.deepEqual(Object.keys(STANDARD).sort(), ['de', 'en', 'fr', 'pt']);
+  assert.deepEqual(Object.keys(STANDARD).sort(), ['ar', 'de', 'en', 'fr', 'pt']);
   const tabelle = app.slice(start, app.indexOf('};', start));
   for (const [code, land] of Object.entries(COUNTRIES)) {
     assert.match(tabelle, new RegExp(`\\b${code}:'`), `${code} fehlt in REGIONAL_TAGS`);

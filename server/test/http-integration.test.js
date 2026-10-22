@@ -615,7 +615,7 @@ test('POST /api/translate: ohne KI-Schluessel ehrlich abgewiesen, nie geraten', 
   // — ein Knopf, der nichts tut und nichts sagt, ist schlimmer als keiner.
   const st = await j('/api/translate/status', user);
   assert.equal(st.available, false);
-  assert.deepEqual(st.languages, ['de', 'en', 'pt', 'fr']);
+  assert.deepEqual(st.languages, ['de', 'en', 'pt', 'fr', 'ar']);
 
   const r = await post('/api/translate', user, { text: 'Lieferengpass gemeldet', to: 'en' });
   assert.equal(r.status, 503);

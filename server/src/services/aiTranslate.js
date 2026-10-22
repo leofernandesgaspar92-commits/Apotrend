@@ -35,8 +35,8 @@ import { aiKonfiguration, frageAnbieter } from './aiExtract.js';
 // Sprachen (aiExtract.SPRACHEN, de/en/pt): Die werden bei jeder Meldung
 // vorab erzeugt und gespeichert (summaryDe/En/Pt). Französisch wird nur auf
 // Zuruf übersetzt — ohne zusätzliche Spalte und ohne Mehrkosten je Meldung.
-export const ZIELSPRACHEN = ['de', 'en', 'pt', 'fr'];
-const SPRACHNAME = { de: 'Deutsch', en: 'English', pt: 'Português', fr: 'Français' };
+export const ZIELSPRACHEN = ['de', 'en', 'pt', 'fr', 'ar'];
+const SPRACHNAME = { de: 'Deutsch', en: 'English', pt: 'Português', fr: 'Français', ar: 'العربية' };
 
 /**
  * Der Auftrag an das Modell.

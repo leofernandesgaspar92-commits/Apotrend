@@ -187,6 +187,17 @@ const TEXTE = {
     watch_termin: (w, d) => [`Nouvelle date : ${w}`, d ? `${w} de nouveau en stock prévu d’ici le ${d} (signalement de pharmacie).` : `Pas encore de date de livraison pour ${w} (signalement de pharmacie).`],
     test: () => ['ApoPulse : les notifications fonctionnent', 'Voici comment arrive une alerte de pénurie, même quand l’application est fermée.'],
   },
+  ar: {
+    shortage_home: (w, l) => [`نقص: ${w}`, `${w} ناقص في ${l} وفق الجهة الرسمية. اضغط لرؤية المصدر والسجل.`],
+    shortage_ended: (w, l) => [`متوفر من جديد: ${w}`, `لم يعد ${w} على قائمة النقص في ${l}.`],
+    shortage_abroad: (w, l) => [`إنذار مبكر: ${w}`, `${w} ناقص في ${l} — ليس في بلدك بعد. تحقق من مخزونك.`],
+    shortage_bestaetigt: (w, l, n) => [`مؤكد: ${w}`, `${n} صيدليات في ${l} تبلّغ عن نقص ${w} (غير رسمي).`],
+    watch_alert: (w) => [`بلاغ من صيدلية: ${w}`, `صيدلية تبلّغ عن نقص ${w} (غير رسمي).`],
+    watch_wieder: (w) => [`متوفر من جديد: ${w}`, `وفق بلاغ صيدلية، ${w} متوفر من جديد (غير رسمي).`],
+    watch_eingeschraenkt: (w) => [`توفر محدود: ${w}`, `صيدلية تبلّغ عن توفر محدود لـ ${w} (غير رسمي).`],
+    watch_termin: (w, d) => [`موعد جديد: ${w}`, d ? `يُتوقع توفر ${w} من جديد حتى ${d} (بلاغ صيدلية).` : `لا يوجد بعد موعد توريد لـ ${w} (بلاغ صيدلية).`],
+    test: () => ['ApoPulse: الإشعارات تعمل', 'هكذا يصل تنبيه النقص، حتى عندما يكون التطبيق مغلقًا.'],
+  },
 };
 export const PUSH_TYPEN = new Set(['shortage_home', 'shortage_ended', 'shortage_abroad', 'watch_alert', 'shortage_bestaetigt']);
 

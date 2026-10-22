@@ -447,7 +447,8 @@ async function main() {
       const page = await ctx.newPage();
       await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
       await page.goto(BASE, { waitUntil: 'networkidle' });
-      for (const cc of ['AT', 'GB', 'PT']) {
+      // CM (Französisch/Englisch): dort erscheint zusätzlich der Sprachknopf („English").
+      for (const cc of ['AT', 'GB', 'PT', 'CM']) {
         await page.selectOption('#countrySwitch', cc).catch(() => {});
         await page.waitForTimeout(400);
         const r = await page.evaluate(() => {
@@ -469,7 +470,9 @@ async function main() {
               }
             }
           }
+          // Der Sprachknopf ist nur in mehrsprachigen Ländern da (hier: CM) — sonst bewusst verborgen.
           document.querySelectorAll('header .hlabel').forEach((el) => {
+            if (el.closest('#btnSprache.hidden')) return;
             if (!el.offsetParent) f.push(`Kopf-Werkzeug ohne sichtbares Wort: „${el.textContent}"`);
             else if (el.scrollWidth > el.clientWidth + 1) f.push(`abgeschnitten „${el.textContent}"`);
           });
@@ -875,7 +878,7 @@ async function main() {
     const anfragen = [];
     await page2.route('**/api/translate/status', (route) => route.fulfill({
       status: 200, contentType: 'application/json',
-      body: JSON.stringify({ available: true, languages: ['de', 'en', 'pt', 'fr'], max_chars: 4000 }),
+      body: JSON.stringify({ available: true, languages: ['de', 'en', 'pt', 'fr', 'ar'], max_chars: 4000 }),
     }));
     await page2.route('**/api/translate', (route) => {
       anfragen.push(route.request().postData() || '');
@@ -2034,6 +2037,50 @@ async function main() {
     for (const f of fehler) findings.push('Senegal: JS-Fehler ' + f);
     if (!findings.some((f) => f.startsWith('Senegal'))) console.log('✓ Senegal (fr, 360 px): Anmeldung, erste Schritte mit Afrika-Vorschlägen, Reiter, Premium 3,00 € + Krypto — Französisch, kein Querscrollen');
     await ctx.close();
+  }
+
+  // ── Arabisch: Ägypten von rechts nach links (360 px) + Sprachwahl in Marokko ──
+  //  Prüft, was bei RTL bricht: dir am <html>, Menü auf der linken Seite, kein
+  //  Querscrollen, lateinische Wirkstoff-Vorschläge, Premium 3.00 € mit Krypto.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 360, height: 760 }, locale: 'ar-EG', timezoneId: 'Africa/Cairo' });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    await page.addInitScript(() => { if (!sessionStorage.getItem('eg')) { localStorage.clear(); sessionStorage.setItem('eg', '1'); localStorage.setItem('apo_country', 'EG'); localStorage.setItem('apo_locale', 'ar'); } });
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
+    const quer = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    const [dir, lang] = await page.evaluate(() => [document.documentElement.dir, document.documentElement.lang]);
+    if (dir !== 'rtl' || lang !== 'ar') findings.push(`Ägypten: <html> dir=${dir} lang=${lang} statt rtl/ar`);
+    await page.fill('#rg_name', 'منى أحمد'); await page.fill('#rg_email', `eg_${Date.now().toString(36)}@reg.test`); await page.fill('#rg_pw', 'Kalima123!');
+    await page.click('#rg_go'); await page.waitForTimeout(1200);
+    if (await page.locator('#rc_done').count()) { await page.click('#rc_done'); await page.waitForTimeout(1200); }
+    const chips = await page.locator('[data-eschip]').allInnerTexts().catch(() => []);
+    if (!chips.includes('Amoxicillin')) findings.push(`Ägypten: Vorschläge nicht lateinisch (${chips.slice(0, 3).join(', ')})`);
+    if (await quer() > 0) findings.push(`Ägypten: erste Schritte ${await quer()} px Querscrollen`);
+    await page.click('#btnMenue'); await page.waitForTimeout(250);
+    const m = await page.evaluate(() => { const r = document.getElementById('kopfMenue').getBoundingClientRect(); return { l: r.left, r: r.right, w: innerWidth }; });
+    if (!(m.l < m.w - m.r)) findings.push('Ägypten: Menü öffnet nicht auf der linken Seite (RTL)');
+    if (!/English/.test(await page.textContent('#spracheLabel').catch(() => ''))) findings.push('Ägypten: Sprachknopf „English" fehlt');
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => openPremium()); await page.waitForTimeout(1200);
+    const prem = await page.evaluate(() => document.body.innerText);
+    if (!/3[.,]00/.test(prem) || !/أفريقيا/.test(prem)) findings.push('Ägypten: Premium ohne Afrika-Preis');
+    if (!/SOL|Solana/.test(prem) || !/BTC|Bitcoin/.test(prem)) findings.push('Ägypten: Krypto-Zahlung fehlt');
+    if (await quer() > 0) findings.push(`Ägypten: Premium ${await quer()} px Querscrollen`);
+    for (const f of fehler) findings.push('Ägypten: JS-Fehler ' + f);
+    await ctx.close();
+    const c2 = await browser.newContext({ viewport: { width: 360, height: 760 } });
+    const p2 = await c2.newPage();
+    await p2.addInitScript(() => { if (!sessionStorage.getItem('ma')) { localStorage.clear(); sessionStorage.setItem('ma', '1'); localStorage.setItem('apo_country', 'MA'); localStorage.setItem('apo_locale', 'fr'); } });
+    await p2.goto(BASE, { waitUntil: 'networkidle' }); await p2.waitForTimeout(500);
+    if (!(await p2.locator('#authSprache').count())) findings.push('Marokko: kein Sprachknopf auf der Anmeldeseite');
+    else {
+      await p2.click('#authSprache'); await p2.waitForTimeout(400);
+      await p2.reload({ waitUntil: 'networkidle' }); await p2.waitForTimeout(500);
+      if ((await p2.evaluate(() => document.documentElement.dir)) !== 'rtl') findings.push('Marokko: Wahl „العربية" überlebt das Neuladen nicht');
+    }
+    await c2.close();
+    if (!findings.some((f) => f.startsWith('Ägypten') || f.startsWith('Marokko'))) console.log('✓ Ägypten (ar, RTL, 360 px): dir/lang, lateinische Vorschläge, Menü links, Premium 3.00 € + Krypto, kein Querscrollen · Marokko: Französisch ⇄ Arabisch bleibt gewählt');
   }
 
   // ── Afrika-Start: Uganda auf Englisch, drei Ebenen Land / Afrika / Welt ──
