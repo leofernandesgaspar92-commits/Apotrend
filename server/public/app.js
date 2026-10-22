@@ -123,6 +123,8 @@ const REGIONAL_TAGS = {
   // sie fällt still auf „en" (USA) zurück, aus dem 4. März würde 03/04.
   // In Äthiopien schreibt man Tag/Monat (gregorianisch) wie in Großbritannien.
   ET:'en-GB',
+  // Frankophones Afrika (10/2026).
+  SN:'fr-SN', CI:'fr-CI', CM:'fr-CM', CD:'fr-CD', CG:'fr-CG', GA:'fr-GA', BF:'fr-BF', ML:'fr-ML', NE:'fr-NE', TD:'fr-TD', CF:'fr-CF', BJ:'fr-BJ', TG:'fr-TG', GN:'fr-GN', MG:'fr-MG', BI:'fr-BI', DJ:'fr-DJ', KM:'fr-KM', MR:'fr-MR', MA:'fr-MA', DZ:'fr-DZ', TN:'fr-TN',
 };
 // Kennt der Browser eine Kennung nicht, fällt Intl STILL auf die bloße Sprache
 // zurück — bei Englisch also aufs US-Format (Monat/Tag). supportedLocalesOf
@@ -234,10 +236,13 @@ function fmtCurrency(v, currency) {
   const n = Number(v);
   if (!isFinite(n) || !currency) return fmtMoney(v);
   const big = ['AOA', 'NGN', 'KES', 'MZN'].includes(currency) && Math.abs(n) >= 100;
+  // CFA-Franc, Uganda-Schilling & Co. haben keine Untereinheit: „3 000 F CFA", nie „3 000,00".
+  let ohneUnter = false;
+  try { ohneUnter = new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits === 0; } catch { /* unbekannt */ }
   try {
     return new Intl.NumberFormat(bcp47(), {
       style: 'currency', currency,
-      minimumFractionDigits: big ? 0 : 2, maximumFractionDigits: big ? 0 : 2,
+      minimumFractionDigits: big || ohneUnter ? 0 : 2, maximumFractionDigits: big || ohneUnter ? 0 : 2,
     }).format(n);
   } catch { return fmtMoney(n) + ' ' + currency; } // unbekannter Code: roh statt Absturz
 }

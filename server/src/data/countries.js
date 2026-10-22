@@ -52,6 +52,33 @@ export const COUNTRIES = {
   CV: { code: 'CV', name: 'Cabo Verde', flag: '🇨🇻', locale_default: 'pt', locales: ['pt'], currency: 'CVE', timezone: 'Atlantic/Cape_Verde', regulator: 'ERIS', regulator_url: null, region: 'AFRICA' },
   GW: { code: 'GW', name: 'Guiné-Bissau', flag: '🇬🇼', locale_default: 'pt', locales: ['pt'], currency: 'XOF', timezone: 'Africa/Bissau', regulator: 'Ministério da Saúde Pública', regulator_url: null, region: 'AFRICA' },
   ST: { code: 'ST', name: 'São Tomé e Príncipe', flag: '🇸🇹', locale_default: 'pt', locales: ['pt'], currency: 'STN', timezone: 'Africa/Sao_Tome', regulator: 'Ministério da Saúde', regulator_url: null, region: 'AFRICA' },
+  // 10/2026, dritte Welle: frankophones Afrika (Französisch ist seit 22.10.2026 Sprache der App).
+  // Behörden laut Recherche (docs/AFRIKA.md). Adresse nur, wo sie belegt ist; wo keine eigene
+  // arbeitende Behörde belegt ist (Niger, Togo: im Aufbau; Zentralafrika, Mauretanien), steht
+  // das Gesundheitsministerium. Maghreb (MA, DZ, TN) und Mauretanien vorerst auf Französisch —
+  // Arabisch folgt.
+  SN: { code: 'SN', name: 'Sénégal', flag: '🇸🇳', locale_default: 'fr', locales: ['fr'], currency: 'XOF', timezone: 'Africa/Dakar', regulator: 'ARP', regulator_url: null, region: 'AFRICA' },
+  CI: { code: 'CI', name: 'Côte d\'Ivoire', flag: '🇨🇮', locale_default: 'fr', locales: ['fr'], currency: 'XOF', timezone: 'Africa/Abidjan', regulator: 'AIRP', regulator_url: 'https://www.airp.ci', region: 'AFRICA' },
+  CM: { code: 'CM', name: 'Cameroun', flag: '🇨🇲', locale_default: 'fr', locales: ['fr', 'en'], currency: 'XAF', timezone: 'Africa/Douala', regulator: 'DPML', regulator_url: null, region: 'AFRICA' },
+  CD: { code: 'CD', name: 'RD Congo', flag: '🇨🇩', locale_default: 'fr', locales: ['fr'], currency: 'CDF', timezone: 'Africa/Kinshasa', regulator: 'ACOREP', regulator_url: null, region: 'AFRICA' },
+  CG: { code: 'CG', name: 'Congo', flag: '🇨🇬', locale_default: 'fr', locales: ['fr'], currency: 'XAF', timezone: 'Africa/Brazzaville', regulator: 'Direction de la Pharmacie et du Médicament', regulator_url: null, region: 'AFRICA' },
+  GA: { code: 'GA', name: 'Gabon', flag: '🇬🇦', locale_default: 'fr', locales: ['fr'], currency: 'XAF', timezone: 'Africa/Libreville', regulator: 'ANMAPS', regulator_url: null, region: 'AFRICA' },
+  BF: { code: 'BF', name: 'Burkina Faso', flag: '🇧🇫', locale_default: 'fr', locales: ['fr'], currency: 'XOF', timezone: 'Africa/Ouagadougou', regulator: 'ANRP', regulator_url: null, region: 'AFRICA' },
+  ML: { code: 'ML', name: 'Mali', flag: '🇲🇱', locale_default: 'fr', locales: ['fr'], currency: 'XOF', timezone: 'Africa/Bamako', regulator: 'DPM', regulator_url: null, region: 'AFRICA' },
+  NE: { code: 'NE', name: 'Niger', flag: '🇳🇪', locale_default: 'fr', locales: ['fr'], currency: 'XOF', timezone: 'Africa/Niamey', regulator: 'Ministère de la Santé publique', regulator_url: null, region: 'AFRICA' },
+  TD: { code: 'TD', name: 'Tchad', flag: '🇹🇩', locale_default: 'fr', locales: ['fr'], currency: 'XAF', timezone: 'Africa/Ndjamena', regulator: 'DGPML', regulator_url: null, region: 'AFRICA' },
+  CF: { code: 'CF', name: 'Centrafrique', flag: '🇨🇫', locale_default: 'fr', locales: ['fr'], currency: 'XAF', timezone: 'Africa/Bangui', regulator: 'Ministère de la Santé et de la Population', regulator_url: null, region: 'AFRICA' },
+  BJ: { code: 'BJ', name: 'Bénin', flag: '🇧🇯', locale_default: 'fr', locales: ['fr'], currency: 'XOF', timezone: 'Africa/Porto-Novo', regulator: 'ABMed', regulator_url: 'https://abmed.bj', region: 'AFRICA' },
+  TG: { code: 'TG', name: 'Togo', flag: '🇹🇬', locale_default: 'fr', locales: ['fr'], currency: 'XOF', timezone: 'Africa/Lome', regulator: 'Ministère de la Santé', regulator_url: null, region: 'AFRICA' },
+  GN: { code: 'GN', name: 'Guinée', flag: '🇬🇳', locale_default: 'fr', locales: ['fr'], currency: 'GNF', timezone: 'Africa/Conakry', regulator: 'DNPM', regulator_url: null, region: 'AFRICA' },
+  MG: { code: 'MG', name: 'Madagascar', flag: '🇲🇬', locale_default: 'fr', locales: ['fr'], currency: 'MGA', timezone: 'Indian/Antananarivo', regulator: 'Agence du Médicament de Madagascar', regulator_url: null, region: 'AFRICA' },
+  BI: { code: 'BI', name: 'Burundi', flag: '🇧🇮', locale_default: 'fr', locales: ['fr'], currency: 'BIF', timezone: 'Africa/Bujumbura', regulator: 'ABREMA', regulator_url: null, region: 'AFRICA' },
+  DJ: { code: 'DJ', name: 'Djibouti', flag: '🇩🇯', locale_default: 'fr', locales: ['fr'], currency: 'DJF', timezone: 'Africa/Djibouti', regulator: 'DMPL', regulator_url: null, region: 'AFRICA' },
+  KM: { code: 'KM', name: 'Comores', flag: '🇰🇲', locale_default: 'fr', locales: ['fr'], currency: 'KMF', timezone: 'Indian/Comoro', regulator: 'ANAMEV', regulator_url: null, region: 'AFRICA' },
+  MR: { code: 'MR', name: 'Mauritanie', flag: '🇲🇷', locale_default: 'fr', locales: ['fr'], currency: 'MRU', timezone: 'Africa/Nouakchott', regulator: 'Ministère de la Santé', regulator_url: null, region: 'AFRICA' },
+  MA: { code: 'MA', name: 'Maroc', flag: '🇲🇦', locale_default: 'fr', locales: ['fr'], currency: 'MAD', timezone: 'Africa/Casablanca', regulator: 'AMMPS', regulator_url: 'https://www.ammps.gov.ma', region: 'AFRICA' },
+  DZ: { code: 'DZ', name: 'Algérie', flag: '🇩🇿', locale_default: 'fr', locales: ['fr'], currency: 'DZD', timezone: 'Africa/Algiers', regulator: 'ANPP', regulator_url: null, region: 'AFRICA' },
+  TN: { code: 'TN', name: 'Tunisie', flag: '🇹🇳', locale_default: 'fr', locales: ['fr'], currency: 'TND', timezone: 'Africa/Tunis', regulator: 'ANMPS', regulator_url: null, region: 'AFRICA' },
 };
 
 export const DEFAULT_COUNTRY = 'AT';

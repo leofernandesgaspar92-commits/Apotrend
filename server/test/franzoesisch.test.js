@@ -10,7 +10,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import { SUPPORTED_LOCALES, normalizeLocale } from '../src/data/countries.js';
+import { SUPPORTED_LOCALES, normalizeLocale, listCountries } from '../src/data/countries.js';
 import { createPatientInfoService } from '../src/services/patientInfo.js';
 import { rendereWochenbericht } from '../src/services/wochenbericht.js';
 import { kopfSprache, startseiteKopf, manifestSprache } from '../src/http/startseiteKopf.js';
@@ -197,4 +197,25 @@ test('Oberfläche (fr): ti() setzt au/en/du korrekt — die echte Funktion aus a
   // Andere Sprachen bleiben unberührt.
   ctx.LOCALE = 'en'; ctx.t = (k) => I.en[k];
   assert.equal(ctx.ti('au_lage_title', { land: 'Senegal' }), I.en.au_lage_title.replace('{land}', 'Senegal'));
+});
+
+test('Frankophones Afrika: Länder sprechen fr, Beträge in CFA-Franc ohne „,00"', () => {
+  const franko = listCountries().filter((c) => c.region === 'AFRICA' && c.locale_default === 'fr');
+  assert.ok(franko.length >= 22, `nur ${franko.length}`);
+  for (const c of franko) {
+    assert.equal(normalizeLocale(null, c.code), 'fr', c.code);
+    // Präposition für jeden Landesnamen bestimmbar (keine leere Ausgabe).
+    assert.match(frLand(new Intl.DisplayNames(['fr'], { type: 'region' }).of(c.code)), /^(au|en|aux|à) \S/, c.code);
+  }
+  // Echte fmtCurrency() aus app.js: XOF/XAF haben keine Untereinheit.
+  const a = app.indexOf('const REGIONAL_TAGS = {');
+  const e = app.indexOf('\n}\n', app.indexOf('function fmtCurrency(v, currency) {')) + 3;
+  const ctx = { LOCALE: 'fr', viewCountry: () => 'SN', t: (k) => I.fr[k], Intl };
+  vm.createContext(ctx);
+  vm.runInContext(app.slice(a, e) + ';globalThis.fmtCurrency = fmtCurrency;', ctx);
+  const xof = ctx.fmtCurrency(3000, 'XOF');
+  assert.match(xof, /3\s?000/); assert.doesNotMatch(xof, /,00/);
+  ctx.viewCountry = () => 'CM';
+  assert.doesNotMatch(ctx.fmtCurrency(1500, 'XAF'), /,00/);
+  assert.match(ctx.fmtCurrency(3, 'EUR'), /3,00\s?€/, 'Euro weiterhin mit Cent');
 });

@@ -452,6 +452,29 @@ const AFRIKA_NEU = {
   CV: ['CVE', 'ERIS', ['Portaria n.º 50/2021 (autorização de introdução no mercado)']],
   GW: ['XOF', 'Ministério da Saúde Pública', ['Legislação farmacêutica nacional']],
   ST: ['STN', 'Ministério da Saúde', ['Lista Nacional de Medicamentos']],
+  // Dritte Welle 10/2026: frankophones Afrika.
+  SN: ['XOF', 'ARP', ['Décret n° 2022-824 (Agence sénégalaise de Réglementation pharmaceutique)']],
+  CI: ['XOF', 'AIRP', ['Loi n° 2017-541 relative à la régulation du secteur pharmaceutique']],
+  CM: ['XAF', 'DPML', ['Décret n° 2014/554 (Ministère de la Santé publique, DPML)']],
+  CD: ['CDF', 'ACOREP', ['ACOREP (Autorité congolaise de réglementation pharmaceutique, 2020)']],
+  CG: ['XAF', 'Direction de la Pharmacie et du Médicament', ['Politique pharmaceutique nationale']],
+  GA: ['XAF', 'ANMAPS', ['Ordonnance portant création de l’ANMAPS (2023)']],
+  BF: ['XOF', 'ANRP', ['Décret portant création de l’ANRP (2018)']],
+  ML: ['XOF', 'DPM', ['Décret n° 2011-753 (Direction de la Pharmacie et du Médicament)']],
+  NE: ['XOF', 'Ministère de la Santé publique', ['Décret n° 2021-279 (Politique pharmaceutique nationale)']],
+  TD: ['XAF', 'DGPML', ['Direction générale de la Pharmacie, des Médicaments et des Laboratoires']],
+  CF: ['XAF', 'Ministère de la Santé et de la Population', ['Législation pharmaceutique nationale']],
+  BJ: ['XOF', 'ABMed', ['Agence béninoise du Médicament et des autres produits de santé']],
+  TG: ['XOF', 'Ministère de la Santé', ['Loi-cadre n° 2001-002 sur le médicament et la pharmacie']],
+  GN: ['GNF', 'DNPM', ['Loi L/2018/024/AN (médicaments et produits de santé)']],
+  MG: ['MGA', 'Agence du Médicament de Madagascar', ['Agence du Médicament de Madagascar (Ministère de la Santé publique)']],
+  BI: ['BIF', 'ABREMA', ['Décret n° 100/039 du 26 février 2021 (ABREMA)']],
+  DJ: ['DJF', 'DMPL', ['Arrêté n° 166 MSLS/CAB du 28 septembre 2015']],
+  KM: ['KMF', 'ANAMEV', ['Décret présidentiel 2017 (ANAMEV)']],
+  MR: ['MRU', 'Ministère de la Santé', ['Législation pharmaceutique nationale']],
+  MA: ['MAD', 'AMMPS', ['Loi portant création de l’AMMPS']],
+  DZ: ['DZD', 'ANPP', ['Agence nationale des produits pharmaceutiques (Ministère de l’Industrie pharmaceutique)']],
+  TN: ['TND', 'ANMPS', ['Loi n° 2023-2 du 12 juillet 2023 (ANMPS)']],
 };
 for (const [cc, [currency, regulator, legalFramework]] of Object.entries(AFRIKA_NEU)) {
   PROFILES[cc] = {
@@ -645,6 +668,8 @@ const CURRENCY_MINOR_UNITS = {
   UGX: 0, RWF: 0, TZS: 2, ZMW: 2, BWP: 2, NAD: 2, MWK: 2, ETB: 2, SLE: 2, LRD: 2, GMD: 2,
   // ISO 4217: CFA-Franc (XOF) ohne Untereinheit.
   LSL: 2, SZL: 2, MUR: 2, SCR: 2, SSP: 2, ERN: 2, CVE: 2, XOF: 0, STN: 2,
+  // Frankophones Afrika (ISO 4217): XAF, GNF, BIF, DJF, KMF ohne Untereinheit; Dinar TND mit drei.
+  XAF: 0, CDF: 2, GNF: 0, MGA: 2, BIF: 0, DJF: 0, KMF: 0, MRU: 2, MAD: 2, DZD: 2, TND: 3,
 };
 
 export function minorUnits(currency) {
@@ -675,7 +700,10 @@ const DEFAULT_LOCALE_BY_CURRENCY = {
   BRL: 'pt-BR', AOA: 'pt-AO', MZN: 'pt-MZ', NGN: 'en-NG', KES: 'en-KE', GHS: 'en-GH', ZAR: 'en-ZA',
   UGX: 'en-UG', TZS: 'en-TZ', ZMW: 'en-ZM', RWF: 'en-RW', BWP: 'en-BW', NAD: 'en-NA', MWK: 'en-MW',
   ETB: 'en-ET', SLE: 'en-SL', LRD: 'en-LR', GMD: 'en-GM',
-  LSL: 'en-LS', SZL: 'en-SZ', MUR: 'en-MU', SCR: 'en-SC', SSP: 'en-SS', ERN: 'en-ER', CVE: 'pt-CV', XOF: 'pt-GW', STN: 'pt-ST',
+  LSL: 'en-LS', SZL: 'en-SZ', MUR: 'en-MU', SCR: 'en-SC', SSP: 'en-SS', ERN: 'en-ER', CVE: 'pt-CV', STN: 'pt-ST',
+  // CFA-Franc: acht von neun Ländern sprechen Französisch (Guinea-Bissau: Portugiesisch).
+  XOF: 'fr-SN', XAF: 'fr-CM', CDF: 'fr-CD', GNF: 'fr-GN', MGA: 'fr-MG', BIF: 'fr-BI', DJF: 'fr-DJ', KMF: 'fr-KM',
+  MRU: 'fr-MR', MAD: 'fr-MA', DZD: 'fr-DZ', TND: 'fr-TN',
 };
 
 // --- Der Zustands-Manager ---------------------------------------------------

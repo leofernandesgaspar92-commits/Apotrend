@@ -124,6 +124,9 @@
   .repost-embed.clickable { cursor:pointer; }
   .repost-embed.clickable:hover { border-color:var(--green); }
   .row > button { flex-shrink:0; white-space:nowrap; } /* Buttons in einer Zeile (Folgen, Filtern …) behalten ihre Breite; das Eingabefeld gibt nach statt den Button-Text mitten im Wort umzubrechen */
+  /* Große Hauptknöpfe dürfen umbrechen: „Veuillez choisir au moins une substance" lief auf
+     360-px-Handys 11 px über den Rand (waagrechtes Scrollen). Kurze Knöpfe bleiben einzeilig. */
+  .row > button.auth-gross { flex-shrink:1; white-space:normal; min-width:0; line-height:1.25; padding-top:8px; padding-bottom:8px; }
   #sgo { white-space:nowrap; } /* „Search"/„Pesquisar" nicht umbrechen lassen */
   /* Filter-/Sortier-Chips füllen sich leicht (Chip-Grund statt Karten-Grund), damit sie
      auf einer Karte klar als antippbare Schalter erkennbar sind — nicht als flacher Text. */

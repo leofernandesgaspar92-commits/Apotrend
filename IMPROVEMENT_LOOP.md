@@ -3134,3 +3134,21 @@ Push ohne fr, Patienteninfo ohne fr. Browser (360 px, fr-SN, Africa/Dakar): Län
 votre pays", Anmeldeseite fr ohne Überlauf, keine Seitenfehler. verify: 1362/1362.
 
 **Offen.** Die frankophonen Länder selbst (nächster Schritt), dann Arabisch (RTL).
+
+### Cycle · Frankophones Afrika: +22 Länder (2026-10-22)
+
+**Anlass.** Owner: „mach alle Länder". Nach Französisch als Sprache: 27/54 → 49/54.
+
+**WORK.** Behörden je Land per Websuche (Tabelle in docs/AFRIKA.md); Adresse nur, wo eine amtliche
+Stelle sie selbst nennt (CI, BJ, MA), sonst null. countries.js (22 Einträge, locale fr, CM fr/en),
+compliance.js (AFRIKA_NEU + Untereinheiten XAF/GNF/BIF/DJF/KMF 0, TND 3; Formatsprache je Währung,
+XOF → fr-SN), countryFeatures.js (deals/price_compare restricted, stock_exchange blocked), presse.js
+(GDELT-Namen, Sprachen), app.js REGIONAL_TAGS fr-XX + fmtCurrency ohne „,00" bei Währungen ohne
+Untereinheit, sources.js +5 Feeds (verified false), 17 begründete Ausnahmen im Quellen-Test. CSS:
+große Hauptknöpfe in Zeilen brechen um.
+
+**Tests.** afrika-alle-laender: 49 Länder grün. franzoesisch.test.js +1 (alle fr-Länder, Präposition,
+echte fmtCurrency: 3 000 F CFA ohne ,00, Euro mit Cent). Browser-Audit neu: Senegal fr 360 px
+(Anmeldung, erste Schritte, Reiter, Premium 3,00 € + Krypto, kein Querscrollen). Gegenproben: CSS-Fix
+entfernt → Audit „11 px Querscrollen"; SN ohne GDELT → nur SN rot; BI ohne Profil → nur BI rot.
+verify 1385/1385.

@@ -513,3 +513,56 @@ englische Zusammenfassung bzw. das Original (so ist klar, welche Sprache es ist)
 **Nebenbei behoben (alle Sprachen):** Wer die Anmeldeseite direkt neu lud, sah Kopfzeile („Menü") und
 Sprunglink auf Deutsch — auch auf Englisch und Portugiesisch. Jetzt beschriftet die Anmeldeseite den
 Kopf selbst.
+
+## Dritte Welle: frankophones Afrika (Stand 22.10.2026)
+
+**49 von 54 Ländern** sind jetzt im Register (vorher 27). Neu, alle mit Französisch als App-Sprache:
+
+| Länder | Währung | Behörde (Recherche) |
+|---|---|---|
+| Senegal | XOF | ARP — Agence sénégalaise de Réglementation pharmaceutique (Décret 2022-824) |
+| Côte d'Ivoire | XOF | AIRP (Loi 2017-541) — airp.ci |
+| Kamerun (fr/en) | XAF | DPML, Gesundheitsministerium |
+| DR Kongo | CDF | ACOREP (seit 2020) |
+| Kongo | XAF | Direction de la Pharmacie et du Médicament (Name wechselnd belegt) |
+| Gabun | XAF | ANMAPS (2023) |
+| Burkina Faso | XOF | ANRP (2018) |
+| Mali | XOF | DPM (Décret 2011-753) |
+| Niger | XOF | Gesundheitsministerium — eigene Agentur beschlossen, Name nicht belegt |
+| Tschad | XAF | DGPML |
+| Zentralafrika | XAF | Gesundheitsministerium — keine Behörde belegbar |
+| Benin | XOF | ABMed — abmed.bj |
+| Togo | XOF | Gesundheitsministerium — neue Agentur 2025 beschlossen, Name nicht belegt |
+| Guinea | GNF | DNPM (Loi L/2018/024/AN) |
+| Madagaskar | MGA | Agence du Médicament de Madagascar |
+| Burundi | BIF | ABREMA (Décret 100/039, 2021) |
+| Dschibuti | DJF | DMPL (Arrêté 166/2015) |
+| Komoren | KMF | ANAMEV |
+| Mauretanien | MRU | Gesundheitsministerium — keine Behörde belegbar |
+| Marokko | MAD | AMMPS — ammps.gov.ma |
+| Algerien | DZD | ANPP |
+| Tunesien | TND | ANMPS (Loi 2023-2) |
+
+Je Land: Rechts-/Zahlprofil mit **Krypto**, Afrika-Preis 3,00 €, keine EU-Umsatzsteuer, Datums- und
+Zahlformat (fr-SN, fr-CM …), Presse-Suche auf Französisch (Kamerun auch Englisch), Vorschläge auf
+Französisch. Rechtsstufe vorsichtig wie bei Angola/Mosambik: Aktionen und Preisvergleich nur mit
+Hinweis (Preise dort meist staatlich festgesetzt), Tauschbörse gesperrt — ohne eigene Rechtsanalyse.
+
+**Quellen.** Nur 5 neue Nachrichten-Feeds (Côte d'Ivoire, Benin, Marokko, Burkina Faso, Algerien) —
+nur Domains, die eine amtliche Stelle selbst nennt; Pfad nicht live geprüft (bitte „Quellen testen";
+bei 404 sucht die Selbstfindung auf der Startseite). **17 Länder ohne eigene Quelle**, weil keine
+belegbare Adresse gefunden wurde — dort Afrika-/Welt-Nachrichten, Presse und Apotheken-Meldungen.
+Lieber keine Quelle als eine erfundene.
+
+**Presse-Suche (GDELT).** Ländernamen nach GDELT-Liste; bei DR Kongo („democraticrepublicofthecongo"),
+Kongo („republicofthecongo") und Côte d'Ivoire („ivorycoast") ist der Name nicht live geprüft — bleibt
+die Presse leer, `APOPULSE_PRESSE_QUERY_<LAND>` setzen.
+
+**Gefunden beim Durchspielen (Senegal, 360 px):** Der große Hauptknopf „Veuillez choisir au moins une
+substance" durfte nicht umbrechen und schob die Seite 11 px über den Rand. Große Hauptknöpfe brechen
+jetzt um (alle Sprachen); der Browser-Audit prüft Senegal auf Französisch bei 360 px. Außerdem:
+Beträge in Währungen ohne Untereinheit (CFA-Franc, Uganda-Schilling …) erscheinen ohne „,00".
+
+**Noch offen — 5 Länder:** Ägypten, Libyen, Sudan (Arabisch), Somalia (Somali/Arabisch),
+Äquatorialguinea (Spanisch). Maghreb und Mauretanien bekommen zusätzlich Arabisch. → nächster Schritt:
+Arabisch (Schrift von rechts nach links).

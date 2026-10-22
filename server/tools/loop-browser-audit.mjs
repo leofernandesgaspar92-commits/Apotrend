@@ -2006,6 +2006,36 @@ async function main() {
     await ctx.close();
   }
 
+  // ── Frankophones Afrika: Senegal auf Französisch, günstiges Handy (360 px) ──
+  //  Französisch ist ~20 % länger als Englisch. Am 22.10.2026 lief der Hauptknopf
+  //  „Veuillez choisir au moins une substance" 11 px über den Rand.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 360, height: 760 }, locale: 'fr-SN', timezoneId: 'Africa/Dakar' });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    await page.addInitScript(() => { if (!sessionStorage.getItem('sn')) { localStorage.clear(); sessionStorage.setItem('sn', '1'); localStorage.setItem('apo_country', 'SN'); localStorage.setItem('apo_locale', 'fr'); } });
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
+    const quer = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    if (!/Changer de pays/.test(await page.locator('#changeCountry').innerText().catch(() => ''))) findings.push('Senegal: Anmeldeseite nicht auf Französisch');
+    await page.fill('#rg_name', 'Awa Diop'); await page.fill('#rg_email', `sn_${Date.now().toString(36)}@reg.test`); await page.fill('#rg_pw', 'Motdepasse123!');
+    await page.click('#rg_go'); await page.waitForTimeout(1200);
+    if (await page.locator('#rc_done').count()) { await page.click('#rc_done'); await page.waitForTimeout(1200); }
+    if ((await page.evaluate(() => document.documentElement.lang)) !== 'fr') findings.push('Senegal: App-Sprache nicht fr');
+    const chips = await page.locator('[data-eschip]').allInnerTexts().catch(() => []);
+    if (!chips.some((c) => /Artéméther/.test(c))) findings.push(`Senegal: Afrika-Vorschläge nicht französisch (${chips.slice(0, 3).join(', ')})`);
+    if (await quer() > 0) findings.push(`Senegal: erste Schritte ${await quer()} px Querscrollen (360 px)`);
+    const reiter = await page.locator('.tabs button[data-tab="shortages"]').innerText().catch(() => '');
+    if (!/Ruptures/.test(reiter)) findings.push(`Senegal: Reiter nicht französisch (${reiter})`);
+    await page.evaluate(() => openPremium()); await page.waitForTimeout(1200);
+    const prem = await page.evaluate(() => document.body.innerText);
+    if (!/3,00/.test(prem) || !/Afrique/.test(prem)) findings.push('Senegal: Premium ohne Afrika-Preis 3,00 €');
+    if (!/SOL|Solana/.test(prem) || !/BTC|Bitcoin/.test(prem)) findings.push('Senegal: Krypto-Zahlung fehlt');
+    if (await quer() > 0) findings.push(`Senegal: Premium ${await quer()} px Querscrollen`);
+    for (const f of fehler) findings.push('Senegal: JS-Fehler ' + f);
+    if (!findings.some((f) => f.startsWith('Senegal'))) console.log('✓ Senegal (fr, 360 px): Anmeldung, erste Schritte mit Afrika-Vorschlägen, Reiter, Premium 3,00 € + Krypto — Französisch, kein Querscrollen');
+    await ctx.close();
+  }
+
   // ── Afrika-Start: Uganda auf Englisch, drei Ebenen Land / Afrika / Welt ──
   {
     const neu = await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Kampala Pharmacy', email: `ug_${Date.now().toString(36)}@ex.com`, password: 'Passwort123!', accountType: 'pharmacy', country: 'UG' }) });

@@ -415,7 +415,8 @@ test('die Quellenzahl stimmt — die Umstellung hat keine verloren', () => {
   // WHO Afrika, WHO.
   // 45 seit der zweiten Afrika-Welle (10/2026): + 7 Länder (LS, SZ, MU, SC, SS, ER, CV).
   const alle = activeSources({});
-  assert.equal(alle.length, 45);
-  assert.equal(sourcesByKind('news', {}).length, 42);
+  // 50 seit der dritten Welle (frankophon): + CI, BJ, MA, BF, DZ.
+  assert.equal(alle.length, 50);
+  assert.equal(sourcesByKind('news', {}).length, 47);
   assert.equal(sourcesByKind('shortages', {}).length, 3);
 });

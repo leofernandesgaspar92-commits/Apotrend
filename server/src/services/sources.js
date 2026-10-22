@@ -484,6 +484,39 @@ const BUILTIN = [
     url: 'https://www.eris.cv/index.php?format=feed&type=rss',
     official: true, verified: false,
   },
+  // Dritte Welle 10/2026 (frankophon). Nur Domains, die in amtlichen Dokumenten oder
+  // Mitteilungen der Behörde selbst genannt sind; Feed-Pfad nicht live geprüft — die
+  // Selbstfindung sucht bei 404 auf der Startseite. Bitte im Betrieb „Quellen testen".
+  {
+    id: 'airp_ci_news', kind: 'news', country: 'CI', format: 'rss',
+    label: 'AIRP Côte d’Ivoire — Actualités',
+    url: 'https://www.airp.ci/feed/',
+    official: true, verified: false,
+  },
+  {
+    id: 'abmed_bj_news', kind: 'news', country: 'BJ', format: 'rss',
+    label: 'ABMed Bénin — Communiqués',
+    url: 'https://abmed.bj/feed/',
+    official: true, verified: false,
+  },
+  {
+    id: 'ammps_ma_news', kind: 'news', country: 'MA', format: 'rss',
+    label: 'AMMPS Maroc — Actualités',
+    url: 'https://www.ammps.gov.ma/feed/',
+    official: true, verified: false,
+  },
+  {
+    id: 'sante_bf_news', kind: 'news', country: 'BF', format: 'rss',
+    label: 'Ministère de la Santé Burkina Faso — Actualités',
+    url: 'https://www.sante.gov.bf/feed/',
+    official: true, verified: false,
+  },
+  {
+    id: 'miph_dz_news', kind: 'news', country: 'DZ', format: 'rss',
+    label: 'Ministère de l’Industrie pharmaceutique Algérie (ANPP) — Actualités',
+    url: 'https://www.miph.gov.dz/fr/feed/',
+    official: true, verified: false,
+  },
   // --- Kontinent und Welt (keinem Land zugeordnet) ------------------------
   //  `AFR` und `INT` sind QUELL-REGIONEN (data/countries.js), keine Länder.
   //  Ihre Meldungen erscheinen unter „Afrika" bzw. „Welt", nie im Feed eines

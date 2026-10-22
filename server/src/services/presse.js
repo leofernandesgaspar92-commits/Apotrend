@@ -48,6 +48,30 @@ export const GDELT_LAND = Object.freeze({
   // dem alten Namen. Falls eine Suche leer bleibt: APOPULSE_PRESSE_QUERY_<LAND> überschreibt.
   LS: 'lesotho', SZ: 'swaziland', MU: 'mauritius', SC: 'seychelles', SS: 'southsudan', ER: 'eritrea',
   CV: 'capeverde', GW: 'guineabissau', ST: 'saotomeandprincipe',
+  // Dritte Welle (frankophon). Namen nach GDELT-Länderliste; Kongo-Kinshasa/-Brazzaville
+  // und Côte d'Ivoire sind dort englisch benannt — bei leerer Suche per Umgebungsvariable korrigieren.
+  SN: 'senegal',
+  CI: 'ivorycoast',
+  CM: 'cameroon',
+  CD: 'democraticrepublicofthecongo',
+  CG: 'republicofthecongo',
+  GA: 'gabon',
+  BF: 'burkinafaso',
+  ML: 'mali',
+  NE: 'niger',
+  TD: 'chad',
+  CF: 'centralafricanrepublic',
+  BJ: 'benin',
+  TG: 'togo',
+  GN: 'guinea',
+  MG: 'madagascar',
+  BI: 'burundi',
+  DJ: 'djibouti',
+  KM: 'comoros',
+  MR: 'mauritania',
+  MA: 'morocco',
+  DZ: 'algeria',
+  TN: 'tunisia',
 });
 
 /**
@@ -72,6 +96,29 @@ const LAND_SPRACHEN = Object.freeze({
   // Mauritius und Seychellen: Presse überwiegend bzw. teils französisch.
   LS: ['en'], SZ: ['en'], MU: ['en', 'fr'], SC: ['en', 'fr'], SS: ['en'], ER: ['en'],
   CV: ['pt'], GW: ['pt'], ST: ['pt'],
+  // Frankophones Afrika; Kamerun zweisprachig. Maghreb/Mauretanien: Arabisch folgt.
+  SN: ['fr'],
+  CI: ['fr'],
+  CM: ['fr', 'en'],
+  CD: ['fr'],
+  CG: ['fr'],
+  GA: ['fr'],
+  BF: ['fr'],
+  ML: ['fr'],
+  NE: ['fr'],
+  TD: ['fr'],
+  CF: ['fr'],
+  BJ: ['fr'],
+  TG: ['fr'],
+  GN: ['fr'],
+  MG: ['fr'],
+  BI: ['fr'],
+  DJ: ['fr'],
+  KM: ['fr'],
+  MR: ['fr'],
+  MA: ['fr'],
+  DZ: ['fr'],
+  TN: ['fr'],
 });
 
 export const presseEnv = (land) => `APOPULSE_PRESSE_QUERY_${String(land).toUpperCase()}`;

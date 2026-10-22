@@ -287,7 +287,10 @@ test('jedes Land des Registers hat eine Quelle', () => {
   // Begründete Ausnahmen: keine belegbare offizielle Seite gefunden (Recherche 10/2026,
   // docs/AFRIKA.md). Lieber keine Quelle als eine erfundene Adresse. Dort gelten Afrika-
   // und Welt-Nachrichten, Presse-Suche und Apotheken-Meldungen.
-  const OHNE_BELEGTE_QUELLE = new Set(['GW', 'ST']);
+  // Dritte Welle (frankophon): 17 Länder ohne belegte Behörden-Domain — Recherche fand die
+  // Behörde, aber keine Adresse, die eine amtliche Stelle selbst nennt.
+  const OHNE_BELEGTE_QUELLE = new Set(['GW', 'ST',
+    'SN', 'CM', 'CD', 'CG', 'GA', 'ML', 'NE', 'TD', 'CF', 'TG', 'GN', 'MG', 'BI', 'DJ', 'KM', 'MR', 'TN']);
   for (const cc of OHNE_BELEGTE_QUELLE) assert.ok(listCountries().some((c) => c.code === cc), `${cc}: Ausnahme ohne Land im Register`);
   const fehlend = listCountries().map((c) => c.code).filter((cc) => !proLand.has(cc) && !OHNE_BELEGTE_QUELLE.has(cc));
   assert.deepEqual(fehlend, [], `Ohne Quelle: ${fehlend.join(', ')}`);
