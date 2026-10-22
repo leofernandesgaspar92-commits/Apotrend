@@ -812,7 +812,9 @@ test('Bestandsaustausch über HTTP: anlegen -> erscheint in offener Liste -> erl
 test('Frühwarnnetz über HTTP: Beobachter wird bei fremder Engpass-Meldung benachrichtigt', async () => {
   const watcher = await reg('warnw' + PORT);
   const reporter = await reg('warnr' + PORT);
-  const wirk = 'Ramipril' + PORT; // eindeutig pro Testlauf
+  // Eigener Name: Ein früherer Test meldet „Ramipril<Port>“ — eine zweite Meldung desselben
+  // Wirkstoffs zählt seit 10/2026 als Bestätigung, nicht als neue Meldung.
+  const wirk = 'Lisinopril' + PORT; // eindeutig pro Testlauf
   // Beobachter beobachtet den Wirkstoff.
   const w = await post('/api/watchlist', watcher, { wirkstoff: wirk });
   assert.equal(w.status, 200);

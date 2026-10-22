@@ -3521,7 +3521,7 @@ function reportShortageCard(existing = []) {
     <div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sh_rep_desc'))}</div>
     <div class="hidden" data-form style="margin-top:10px">
       <label>${esc(t('sh_rep_w'))}</label>
-      <input data-w placeholder="${esc(t('sh_rep_w_ph'))}">
+      <input data-w list="wkVorschlaege" autocomplete="off" placeholder="${esc(t('sh_rep_w_ph'))}"><datalist id="wkVorschlaege"></datalist>
       <div data-exists style="margin-top:6px"></div>
       <label style="margin-top:6px">${esc(t('sh_rep_b'))}</label>
       <input data-b placeholder="${esc(t('sh_rep_b_ph'))}">
@@ -3555,6 +3555,16 @@ function reportShortageCard(existing = []) {
   });
   const existsBox = card.querySelector('[data-exists]');
   const winput = card.querySelector('[data-w]');
+  // Vorschläge beim Tippen: im Land schon gemeldete Wirkstoffe + häufige (in Afrika an der
+  // WHO-Liste unentbehrlicher Arzneimittel orientiert, /api/erste-schritte). Gleiche Schreibweise
+  // heißt: Meldungen landen beim selben Wirkstoff und zählen zusammen.
+  (async () => {
+    const namen = new Map();
+    for (const s of (existing || [])) if (s.wirkstoff) namen.set(s.wirkstoff.trim().toLowerCase(), s.wirkstoff.trim());
+    try { for (const v of ((await api('GET', '/api/erste-schritte?country=' + encodeURIComponent(viewCountry()))).vorschlaege || [])) if (v.wirkstoff && !namen.has(v.wirkstoff.toLowerCase())) namen.set(v.wirkstoff.toLowerCase(), v.wirkstoff); } catch { /* ohne Vorschläge geht es auch */ }
+    const dl = card.querySelector('#wkVorschlaege');
+    if (dl) dl.innerHTML = [...namen.values()].sort((a, b) => a.localeCompare(b, LOCALE)).map((n) => `<option value="${esc(n)}"></option>`).join('');
+  })();
   let deb;
   winput.oninput = () => {
     clearTimeout(deb);
@@ -3578,14 +3588,19 @@ function reportShortageCard(existing = []) {
     const wirkstoff = card.querySelector('[data-w]').value.trim();
     if (!wirkstoff) { err.textContent = t('sh_rep_need_w'); return; }
     try {
-      await api('POST','/api/shortages/report',{
+      const r = await api('POST','/api/shortages/report',{
         wirkstoff,
         bezeichnung: card.querySelector('[data-b]').value.trim(),
         status: card.querySelector('[data-s]').value,
         grund: card.querySelector('[data-g]').value.trim(),
         voraussichtlichBis: card.querySelector('[data-vb]').value || undefined,
       });
-      loadShortages();
+      await loadShortages();
+      // Eine andere Apotheke hatte den Wirkstoff schon gemeldet: Die Meldung zählt als
+      // Bestätigung — das sagen, sonst sucht man vergeblich nach der „eigenen" Meldung.
+      if (r && r.zusammengefuehrt) {
+        document.getElementById('feed')?.prepend(el(`<div role="status" data-zusammengefuehrt style="background:var(--ok-bg);border:1px solid var(--ok-bd);color:var(--ok-fg);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:15px">${esc(ti('sh_rep_merged', { w: r.wirkstoff }))}</div>`));
+      }
     } catch(e){ err.textContent = e.message; }
   };
   // Vorbelegung aus der Suche: Formular öffnen und Wirkstoff eintragen (Sackgasse -> nächster Schritt).

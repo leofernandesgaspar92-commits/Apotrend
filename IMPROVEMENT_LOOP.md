@@ -3073,3 +3073,20 @@ alphabetisch, vorbelegt mit Ansichtsland) in Rechnungs- und Werbe-Firmenangaben;
 Liste app.js = Server, kein `maxlength="2"`. Gegenprobe Server `slice(0,2)` → rot. Browser UG:
 Auswahl „Uganda" (249), Rechnung mit Drittland-Hinweis, keine Steuerzeile.
 
+### Cycle · Melden: zweite Meldung zählt als Bestätigung; Vorschläge beim Tippen (2026-10-22)
+
+**Befund.** reportShortage: Duplikat-Schutz nur für die EIGENE Meldung, Vergleich exakt lowercase.
+Zweite Apotheke → zweite Meldung; Bestätigungen verteilen sich, Schwelle 3 wird nicht erreicht.
+Meldeformular ohne Vorschläge.
+
+**WORK.** shortages.js: `gleich()` über `wirkstoffSchluessel` (+ exakt); eigene Doppelmeldung wie
+bisher abgewiesen; fremde offene Community-Meldung im selben Land → `dienst.confirmShortage` +
+`zusammengefuehrt: true` (Service-Objekt als `dienst` benannt). app.js: `<datalist>` aus Landesliste +
+`/api/erste-schritte`; grüner Status-Hinweis `[data-zusammengefuehrt]` (sh_rep_merged, de/en/pt, Wortlaut
+des Bestätigen-Knopfs). http-integration: Frühwarn-Test mit eigenem Wirkstoffnamen (kollidierte mit
+früherer „Ramipril<Port>"-Meldung — jetzt korrekt eine Bestätigung).
+
+**Tests.** `meldung-zusammenfuehren.test.js` (2): UG Amoxicillin + Amoxicilina → 1 Meldung, 1 Bestätigung,
+nicht doppelt; eigene Trihydrat-Meldung → shortage_duplicate; Kenia eigene Meldung; Paracetamol eigene.
+Gegenproben: ohne Zusammenführung / über Ländergrenzen / ohne Schlüssel → rot. Browser UG bestätigt.
+

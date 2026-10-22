@@ -223,7 +223,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       throw new AppError('shortage_pro_only', 'Engpass-Meldungen sind sicherheitsrelevant und Fachkreisen (Apotheke, Pharma-Unternehmen, Behörde) vorbehalten. Als Privatnutzer:in kannst du Engpässe lesen, aber nicht melden oder bestätigen.', 403);
     }
   }
-  return {
+  const dienst = {
     list() { return shortagesRepo.list(); },
     get(id) { return shortagesRepo.get(id); },
 
@@ -275,14 +275,22 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
         if (!isValidCalendarDay(vb)) throw new AppError('shortage_bad_date', 'Ungültiges Datum (voraussichtlich bis).');
         voraussichtlich_bis = vb;
       }
+      // Gleicher Wirkstoff über Schreibweisen und Sprachen hinweg (domain/inn.js):
+      // „Amoxicilina" = „Amoxicillin" = „Amoxicillin-Trihydrat".
+      const schluessel = wirkstoffSchluessel(w);
+      const gleich = (s) => s.provenance === 'community' && s.status !== 'verfuegbar'
+        && (wirkstoffSchluessel(s.wirkstoff) === schluessel || s.wirkstoff.trim().toLowerCase() === w.toLowerCase());
       // Doppel-/Fehlklick-Schutz: dieselbe Apotheke soll denselben Wirkstoff nicht
       // mehrfach offen melden (andere sollen stattdessen bestätigen).
-      const dupe = shortagesRepo.list().find(s =>
-        s.reporter_user_id === userId &&
-        s.provenance === 'community' &&
-        s.status !== 'verfuegbar' &&
-        s.wirkstoff.trim().toLowerCase() === w.toLowerCase());
+      const dupe = shortagesRepo.list().find(s => s.reporter_user_id === userId && gleich(s));
       if (dupe) throw new AppError('shortage_duplicate', 'Du hast diesen Wirkstoff bereits gemeldet.');
+      // Hat eine ANDERE Apotheke im selben Land denselben Wirkstoff schon offen gemeldet,
+      // zählt diese Meldung als Bestätigung („Auch bei uns"). Vorher entstand eine zweite,
+      // getrennte Meldung — keine von beiden erreichte die Schwelle „von 3 Apotheken
+      // bestätigt", gerade dort, wo Apotheken-Meldungen die einzige Quelle sind (Afrika).
+      const fremd = shortagesRepo.list().find(s => s.reporter_user_id && s.reporter_user_id !== userId
+        && (s.country || null) === (country || null) && gleich(s));
+      if (fremd) return { ...dienst.confirmShortage(userId, fremd.id), zusammengefuehrt: true };
       const today = new Date().toISOString().slice(0, 10);
       const created = shortagesRepo.upsert({
         wirkstoff: w, bezeichnung: bez, status, grund: (grund ? String(grund).trim().slice(0, 200) : null),
@@ -608,4 +616,5 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       });
     },
   };
+  return dienst;
 }

@@ -424,3 +424,17 @@ zusätzlich jede Server-Antwort „ruhender Bereich", auch wenn sie nicht sichtb
 - **Rechnungsangaben für Afrika tauglich:** Land als Auswahl mit Namen („Uganda") statt Kürzel-Feld;
   Postleitzahl nicht mehr Pflicht (Uganda und Ruanda haben keine — vorher musste man eine erfinden).
 
+## Melden: gleicher Engpass, eine Meldung
+
+In Afrika sind Meldungen aus Apotheken oft die einzige Quelle. Bisher legte jede Apotheke, die
+denselben Engpass meldete, eine **eigene** Meldung an („Amoxicillin", „Amoxicilina", „amoxycilin") —
+keine erreichte die Schwelle „von 3 Apotheken bestätigt". Jetzt:
+
+- **Zweite Meldung = Bestätigung:** Hat eine andere Apotheke im selben Land den Wirkstoff schon offen
+  gemeldet, zählt die neue Meldung als „Auch bei uns" (über den sprachübergreifenden
+  Wirkstoff-Schlüssel, also auch „Amoxicilina" = „Amoxicillin"). Die Apotheke sieht: „Another pharmacy
+  had already reported Amoxicillin. Your report counts as a confirmation". Über Ländergrenzen wird
+  nichts zusammengeführt. Die 24-Stunden-Regel für neue Konten gilt weiter.
+- **Vorschläge beim Tippen:** im Land gemeldete Wirkstoffe plus die häufigen (in Afrika an der
+  WHO-Liste unentbehrlicher Arzneimittel orientiert) — gleiche Schreibweise von Anfang an.
+
