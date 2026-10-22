@@ -140,10 +140,22 @@ export const FEATURES = [
     ],
   },
   {
-    id: 'patienteninfo', zustand: 'ruht',
+    // Seit 22.10.2026 aktiv (Owner: „entscheid du"). Vorher geparkt als Nebenschauplatz.
+    // Jetzt fertig für Afrika: Englisch/Portugiesisch, WHO-Quelle außerhalb Österreichs,
+    // Entsorgungs-Karte ohne Rücknahme-Versprechen. Antibiotikaresistenz ist in den
+    // Afrika-Märkten ein Kernthema der Abgabe — die Karten helfen genau dort.
+    id: 'patienteninfo', zustand: 'aktiv',
     titel: 'Patienten-Infokarten und Antibiotika-Hinweise',
-    grund: 'Fachlich sauber, aber Nebenschauplatz solange die Hauptsache wackelt.',
-    api: [/^\/api\/(patient-info|compliance)/],
+    grund: 'Aufklärung bei der Abgabe von Antibiotika (mehrsprachig, quellenbelegt, druckbar) — Kernthema in den Afrika-Märkten.',
+    api: [/^\/api\/patient-info/],
+  },
+  {
+    // Bis 22.10.2026 hing diese Schnittstelle am Schalter der Patienten-Infokarten —
+    // deren Einschalten hätte nebenbei eine fachfremde Schnittstelle geöffnet.
+    id: 'compliance_api', zustand: 'ruht',
+    titel: 'Compliance-Schnittstelle (Länderprofile, Gebühren-Angebot)',
+    grund: 'Nur die Checkout-Demo nutzt die Regeln, und zwar eingebettet; die App liest Länderregeln über /api/countries.',
+    api: [/^\/api\/compliance/],
   },
   {
     id: 'waehrungsrechner', zustand: 'ruht',

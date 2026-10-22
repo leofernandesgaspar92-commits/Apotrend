@@ -274,8 +274,9 @@ Wer „medicine shortage Uganda" sucht, fand ApoPulse nicht. Jetzt:
 9,99 €/Monat sind in Uganda rund 40 000 UGX, für eine kleine Apotheke eine andere Hürde als in
 Wien. Den Preis legt der Betreiber fest; die Technik steht:
 
-- **Einstellung in Render:** `APOPULSE_PREISE_REGION="AFRICA:30"` heißt „Premium in Afrika kostet
-  30 % des Listenpreises" (Monat 3,00 €, Jahr 29,70 €). Ohne Einstellung ändert sich nichts.
+- **Beschlossen am 22.10.2026 (Owner: „entscheid du"): 30 %** — Monat 3,00 €, Jahr 29,70 € (≈ 12 000
+  statt 42 000 UGX im Monat). Gilt als Standard ohne Render-Einstellung. Ändern mit
+  `APOPULSE_PREISE_REGION` (z. B. `AFRICA:40`), abschalten mit `aus`.
 - **Nur Premium.** Business (Großhandel, Ketten, Daten-Schnittstelle) und Anzeigen bleiben beim
   Listenpreis.
 - **Heimatland entscheidet.** Wer in Wien die Ansicht auf Uganda stellt, zahlt weiter den
@@ -391,4 +392,18 @@ jeweils Bereich ruht → Knopf erscheint nur noch, wenn der Bereich läuft:
 Die Engpass-Karten-Knöpfe standen im Live-Betrieb in Österreich und Deutschland auf **jeder** Karte.
 Der Browser-Audit tippt jetzt auch Wirkstoff-Seite, Engpass-Karte und beide Profile durch und meldet
 zusätzlich jede Server-Antwort „ruhender Bereich", auch wenn sie nicht sichtbar wird.
+
+## Entscheidungen vom 22.10.2026 (Owner: „entscheid du")
+
+- **Afrika-Preis 30 %** des Listenpreises als Standard (siehe oben). Warum 30 %: Kaufkraft in Uganda,
+  Kenia oder Nigeria ist ein Bruchteil Österreichs; große Abo-Dienste liegen in vergleichbaren Märkten
+  bei rund einem Viertel bis zwei Fünfteln des EU-Preises. 3 € sind für eine kleine Apotheke eine
+  realistische Hürde, und der Preis bleibt über einer Schwelle, ab der eine Zahlung ernst genommen wird.
+  Business und Anzeigen bleiben beim Listenpreis (Großhandel, Ketten, Industrie).
+- **Patienten-Infokarten eingeschaltet** (`patienteninfo` aktiv). Erreichbar über den
+  Antibiotika-Kasten der Wirkstoff-Seite; Englisch/Portugiesisch, WHO-Quelle, druckbar, mit
+  Einnahmeplan. Die Compliance-Schnittstelle, die bisher am selben Schalter hing, hat einen eigenen
+  Schalter (`compliance_api`) und ruht weiter. Fachforum bleibt aus (hängt an den Social-Funktionen).
+- **Nicht entschieden, weil von hier nicht machbar:** „Quellen testen" für die afrikanischen
+  Behörden-Listen — die Behörden-Seiten sind aus dieser Umgebung gesperrt.
 

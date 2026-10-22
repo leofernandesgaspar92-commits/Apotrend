@@ -129,10 +129,11 @@ Steuerberatung festlegen). Einzelheiten: `docs/RECHNUNGEN.md`.
 
 ## Regionale Premium-Preise (Kaufkraft)
 
-Optional: `APOPULSE_PREISE_REGION="AFRICA:30"` macht Premium für Konten mit Heimatland in
-Afrika auf 30 % des Listenpreises günstiger (mehrere Regionen mit Komma, z. B.
-`AFRICA:30,AMERICAS:80`; erlaubt sind 1–100, also nur Ermäßigungen). **Wie viel, entscheidet der
-Betreiber.** Ohne Variable bleibt alles beim Listenpreis. Business und Anzeigen bleiben immer
+**Standard seit 22.10.2026: `AFRICA:30`** — Premium für Konten mit Heimatland in Afrika kostet
+30 % des Listenpreises (3,00 € statt 9,99 €/Monat). Beschlossen mit Owner-Freigabe („entscheid
+du"); Begründung in `src/domain/regionPreis.js`. Ändern über `APOPULSE_PREISE_REGION`, z. B.
+`AFRICA:40` oder `AFRICA:30,AMERICAS:80` (erlaubt 1–100, also nur Ermäßigungen); `aus` (oder leer
+gesetzt) = überall Listenpreis. Business und Anzeigen bleiben immer
 beim Listenpreis. Krypto, Überweisung, Karte und Rechnung rechnen mit demselben Betrag. Es zählt
 das Heimatland des Kontos, nicht das gerade angesehene Land.
 

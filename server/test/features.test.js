@@ -31,11 +31,12 @@ test('jeder Bereich ist vollstaendig und plausibel beschrieben', () => {
 
 test('das Audit-Ergebnis steht so im Code, wie es beschlossen wurde', () => {
   const zustand = Object.fromEntries(featureListe(LEER).map((f) => [f.id, f.zustand]));
-  for (const id of ['engpaesse', 'news', 'konten', 'preise', 'rabatte']) {
+  // patienteninfo seit 22.10.2026 aktiv (Owner-Freigabe „entscheid du", siehe data/features.js).
+  for (const id of ['engpaesse', 'news', 'konten', 'preise', 'rabatte', 'patienteninfo']) {
     assert.equal(zustand[id], 'aktiv', `${id} sollte aktiv sein (Behalten/Reparieren)`);
   }
   for (const id of ['tauschboerse', 'bestellung', 'zusammenarbeit', 'termine',
-    'patienteninfo', 'waehrungsrechner', 'verzeichnis',
+    'compliance_api', 'waehrungsrechner', 'verzeichnis',
     'social', 'direktnachrichten', 'werbung', 'bindungsmechanik']) {
     assert.equal(zustand[id], 'ruht', `${id} sollte ruhen (Parken/Streichen)`);
   }

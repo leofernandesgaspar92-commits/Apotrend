@@ -75,7 +75,7 @@ test('Ruhende Bereiche: keine Knöpfe ins Leere, 404 mit übersetzbarem Code', {
   assert.match(app, /featureAn\('social'\) \? `<button class="ghost small" data-forum>/);
   assert.match(app, /featureAn\('patienteninfo'\) \? `<button class="ghost small" data-pinfo>\$\{esc\(t\('wk_amr_pinfo'\)\)\}/);
   const env = { ...process.env, PORT: '0', APOPULSE_TOKEN_SECRET: 'patient-info-ruht-12345', APOPULSE_DATA_FILE: '', APOPULSE_PRESSE: 'aus' };
-  delete env.APOPULSE_FEATURE_PATIENTENINFO; delete env.APOPULSE_FEATURE_SOCIAL;
+  delete env.APOPULSE_FEATURE_COMPLIANCE_API; delete env.APOPULSE_FEATURE_SOCIAL;
   const kind = spawn(process.execPath, [join(HIER, '..', 'src', 'http', 'server.js')], { env, stdio: ['ignore', 'pipe', 'pipe'] });
   let log = '';
   try {
@@ -85,7 +85,7 @@ test('Ruhende Bereiche: keine Knöpfe ins Leere, 404 mit übersetzbarem Code', {
       kind.stdout.on('data', lies); kind.stderr.on('data', lies);
       kind.on('exit', (c) => { clearTimeout(zeit); fail(new Error(`Server beendet (${c}):\n${log}`)); });
     });
-    for (const pfad of ['/api/patient-info', '/api/hashtag/stewardship', '/api/gibt-es-nicht']) {
+    for (const pfad of ['/api/compliance/AT', '/api/hashtag/stewardship', '/api/gibt-es-nicht']) {
       const r = await fetch(`http://localhost:${port}${pfad}`);
       assert.equal(r.status, 404, pfad);
       assert.equal((await r.json()).code, 'not_found', pfad + ': Code für die Übersetzung');

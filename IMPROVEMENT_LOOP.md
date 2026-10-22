@@ -3009,3 +3009,17 @@ Netzwerk-Mitschnitt `not_found`).
 Aufgaben-Knopf immer → rot. Audit mit altem app.js: 12 Funde (sichtbar + Netzwerk); neuer Stand:
 Crawler UG 0, AT 0.
 
+### Cycle · Owner-Freigabe „entscheid du": Afrika-Preis 30 %, Patienten-Infokarten aktiv (2026-10-22)
+
+**Entscheidungen.** (1) `PREISE_REGION_STANDARD = 'AFRICA:30'` (domain/regionPreis.js), wirkt ohne
+Render-Zugriff; `faktorenAusUmgebung`: Variable gesetzt → gilt (auch `aus`/leer), sonst Standard.
+(2) `patienteninfo` aktiv; `/api/compliance` auf eigenen Schalter `compliance_api` (ruht) getrennt —
+sonst hätte das Einschalten eine fachfremde Schnittstelle geöffnet. Forum bleibt aus.
+
+**Geprüft.** Keine festen Preise in der Oberfläche (grep 9,99/99 €). Browser: Amoxicillin (UG) und
+Amoxicilina (MZ) → „Patient info cards"/„Cartões informativos" → Karten en/pt, WHO/OMS-Quelle,
+neutrale Entsorgungs-Karte.
+
+**Tests.** region-preis.test.js +3 (Standard UG 3 €/AT 9,99 €, `aus`, Überschreiben); features-Tests
+auf neuen Beschluss; Gegenprobe Standard leer → rot.
+

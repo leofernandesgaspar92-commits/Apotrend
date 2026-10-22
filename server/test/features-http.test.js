@@ -65,7 +65,7 @@ test('GET /api/features nennt Zustand und Begruendung — ohne Anmeldung', async
 test('ruhende Bereiche antworten mit 404 — als gaebe es sie nicht', async () => {
   for (const pfad of ['/api/exchange/offers', '/api/dm/threads', '/api/cart',
     '/api/trending/hashtags', '/api/fx-rates', '/api/colleagues/nearby',
-    '/api/patient-info', '/api/tasks', '/api/appointments']) {
+    '/api/compliance/AT', '/api/tasks', '/api/appointments']) {
     const r = await fetch(BASE + pfad);
     assert.equal(r.status, 404, `${pfad} sollte ruhen, antwortete aber mit ${r.status}`);
     // Kein 403: Ein geparkter Bereich verraet nichts ueber sich, auch nicht

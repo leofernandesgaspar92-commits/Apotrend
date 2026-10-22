@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { regionFaktoren, preisCents } from '../src/domain/regionPreis.js';
+import { regionFaktoren, preisCents, faktorenAusUmgebung } from '../src/domain/regionPreis.js';
 
 const SERVER = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'http', 'server.js');
 
@@ -70,10 +70,26 @@ test('Über HTTP mit AFRICA:30: Uganda zahlt 3,00 € überall, Österreich 9,99
   } finally { await s.ende(); }
 });
 
-test('Über HTTP ohne Einstellung: unverändert 9,99 € auch in Uganda', { timeout: 60000 }, async () => {
+test('Über HTTP ohne Einstellung: Standard AFRICA:30 — Uganda 3,00 €, Österreich 9,99 €', { timeout: 60000 }, async () => {
   const s = await starte({});
+  try {
+    const ug = await s.konto('UG'); const at = await s.konto('AT');
+    assert.equal((await s.j('/api/payments/crypto?product=premium_monthly', { headers: s.H(ug) })).amount, 3);
+    assert.equal((await s.j('/api/payments/crypto?product=premium_monthly', { headers: s.H(at) })).amount, 9.99);
+  } finally { await s.ende(); }
+});
+
+test('Über HTTP mit „aus": überall Listenpreis, auch in Uganda', { timeout: 60000 }, async () => {
+  const s = await starte({ APOPULSE_PREISE_REGION: 'aus' });
   try {
     const ug = await s.konto('UG');
     assert.equal((await s.j('/api/payments/crypto?product=premium_monthly', { headers: s.H(ug) })).amount, 9.99);
   } finally { await s.ende(); }
+});
+
+test('Standard und Überschreiben (ohne Server)', () => {
+  assert.deepEqual([...faktorenAusUmgebung({})], [['AFRICA', 30]], 'Standard');
+  assert.deepEqual([...faktorenAusUmgebung({ APOPULSE_PREISE_REGION: 'AFRICA:40' })], [['AFRICA', 40]]);
+  assert.equal(faktorenAusUmgebung({ APOPULSE_PREISE_REGION: 'aus' }).size, 0);
+  assert.equal(faktorenAusUmgebung({ APOPULSE_PREISE_REGION: '' }).size, 0, 'leer gesetzt = aus');
 });

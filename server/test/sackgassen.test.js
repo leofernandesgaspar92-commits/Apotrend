@@ -42,5 +42,7 @@ test('Profil und Beiträge: Folgen, Stummschalten, Nachricht, Termine, Team, Has
 
 test('Die geprüften Bereiche ruhen tatsächlich (sonst wäre der Test wertlos)', () => {
   const zustand = Object.fromEntries(FEATURES.map((f) => [f.id, f.zustand]));
-  for (const id of ['tauschboerse', 'zusammenarbeit', 'social', 'patienteninfo']) assert.equal(zustand[id], 'ruht', id + ' ruht standardmäßig');
+  for (const id of ['tauschboerse', 'zusammenarbeit', 'social']) assert.equal(zustand[id], 'ruht', id + ' ruht standardmäßig');
+  // patienteninfo ist seit 22.10.2026 aktiv — die Bedingung im Code bleibt (Betreiber kann abschalten).
+  assert.equal(zustand.patienteninfo, 'aktiv');
 });

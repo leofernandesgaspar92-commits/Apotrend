@@ -27,7 +27,7 @@ import { bilderAlsAdresse, bildHolen } from '../domain/bilder.js';
 import { startseiteKopf, kopfSprache, manifestSprache } from './startseiteKopf.js';
 import { schlankSicher } from './schlank.js';
 import { kodierungWaehlen, kodierenSync, createKompressionsSpeicher, createVersionsKennung } from './komprimierung.js';
-import { regionFaktoren, preisCents } from '../domain/regionPreis.js';
+import { faktorenAusUmgebung, preisCents } from '../domain/regionPreis.js';
 import { createSocialService } from '../services/social.js';
 import { createShortagesService } from '../services/shortages.js';
 import { createPricesService } from '../services/prices.js';
@@ -313,7 +313,7 @@ const kompression = createKompressionsSpeicher({
 });
 // Regionale Premium-Preise (domain/regionPreis.js): Heimatland des Kontos, sonst das
 // angefragte Land (Anzeige ohne Anmeldung). Ohne APOPULSE_PREISE_REGION: Listenpreis.
-const preisFaktoren = regionFaktoren(process.env.APOPULSE_PREISE_REGION);
+const preisFaktoren = faktorenAusUmgebung(process.env); // Standard AFRICA:30 (domain/regionPreis.js)
 const preisFuer = (uid, product, { country = null } = {}) => {
   const land = uid ? userCountry(uid) : (country ? normalizeCountry(country) : null);
   return preisCents(product, land ? regionVon(land) : null, preisFaktoren);
