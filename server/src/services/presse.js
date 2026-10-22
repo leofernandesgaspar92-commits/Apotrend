@@ -44,6 +44,10 @@ export const GDELT_LAND = Object.freeze({
   NG: 'nigeria', KE: 'kenya', GH: 'ghana', ZA: 'southafrica',
   UG: 'uganda', TZ: 'tanzania', ZM: 'zambia', ZW: 'zimbabwe', RW: 'rwanda', BW: 'botswana',
   NA: 'namibia', MW: 'malawi', ET: 'ethiopia', SL: 'sierraleone', LR: 'liberia', GM: 'gambia',
+  // Zweite Welle 10/2026. GDELT-Ländernamen ohne Leerzeichen; Eswatini führt GDELT unter
+  // dem alten Namen. Falls eine Suche leer bleibt: APOPULSE_PRESSE_QUERY_<LAND> überschreibt.
+  LS: 'lesotho', SZ: 'swaziland', MU: 'mauritius', SC: 'seychelles', SS: 'southsudan', ER: 'eritrea',
+  CV: 'capeverde', GW: 'guineabissau', ST: 'saotomeandprincipe',
 });
 
 /**
@@ -64,6 +68,8 @@ const LAND_SPRACHEN = Object.freeze({
   NG: ['en'], KE: ['en'], GH: ['en'], ZA: ['en'],
   UG: ['en'], TZ: ['en'], ZM: ['en'], ZW: ['en'], RW: ['en'], BW: ['en'],
   NA: ['en'], MW: ['en'], ET: ['en'], SL: ['en'], LR: ['en'], GM: ['en'],
+  LS: ['en'], SZ: ['en'], MU: ['en'], SC: ['en'], SS: ['en'], ER: ['en'],
+  CV: ['pt'], GW: ['pt'], ST: ['pt'],
 });
 
 export const presseEnv = (land) => `APOPULSE_PRESSE_QUERY_${String(land).toUpperCase()}`;

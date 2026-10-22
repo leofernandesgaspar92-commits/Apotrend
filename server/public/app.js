@@ -114,6 +114,10 @@ const REGIONAL_TAGS = {
   PT:'pt-PT', BR:'pt-BR', AO:'pt-AO', MZ:'pt-MZ',
   UG:'en-UG', TZ:'en-TZ', ZM:'en-ZM', ZW:'en-ZW', RW:'en-RW', BW:'en-BW', NA:'en-NA', MW:'en-MW',
   SL:'en-SL', LR:'en-LR', GM:'en-GM',
+  LS:'en-LS', SZ:'en-SZ', MU:'en-MU', SC:'en-SC', SS:'en-SS', ER:'en-ER', GW:'pt-GW', ST:'pt-ST',
+  // Kap Verde: „pt-CV" nimmt das Escudo-Zeichen als Dezimaltrenner — aus 3,00 € wurde „3$00 €".
+  // Portugiesisch-Standard hat dieselbe Datumsreihenfolge (Tag/Monat) und ein Komma.
+  CV:'pt-PT',
   // Äthiopien: „en-ET" gibt es in der Datums-Bibliothek der Browser nicht —
   // sie fällt still auf „en" (USA) zurück, aus dem 4. März würde 03/04.
   // In Äthiopien schreibt man Tag/Monat (gregorianisch) wie in Großbritannien.

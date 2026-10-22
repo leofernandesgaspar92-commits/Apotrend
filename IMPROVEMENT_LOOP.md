@@ -3090,3 +3090,21 @@ früherer „Ramipril<Port>"-Meldung — jetzt korrekt eine Bestätigung).
 nicht doppelt; eigene Trihydrat-Meldung → shortage_duplicate; Kenia eigene Meldung; Paracetamol eigene.
 Gegenproben: ohne Zusammenführung / über Ländergrenzen / ohne Schlüssel → rot. Browser UG bestätigt.
 
+### Cycle · Alle afrikanischen Länder: Prüfung je Land + zweite Welle (+9) (2026-10-22)
+
+**Anlass.** Owner: Uganda nur Beispiel? „Konzentriere dich auf alle afrikanischen Länder." Bestand:
+18/54 (16 en, 2 pt).
+
+**WORK.** `afrika-alle-laender.test.js` (je Land: ISO, Sprache, Währung, Zeitzone Africa/Indian/
+Atlantic, Behörde, Compliance-Profil + Krypto, Tauschbörse ≠ allowed, GDELT/Presse, REGIONAL_TAGS +
+Euro-Format, Afrika-Preis 300, USt drittland, erste Schritte). Neu: LS, SZ, MU, SC, SS, ER (en), CV, GW,
+ST (pt) in countries.js, compliance.js (AFRIKA_NEU, Untereinheiten XOF 0, Locale), countryFeatures.js
+(en: restricted; pt: wie AO/MZ, LUSO), presse.js (GDELT-Namen, Sprachen), app.js REGIONAL_TAGS
+(CV → pt-PT wegen „3$00 €"), sources.js (+7 Feeds, verified false). Behörden/Domains per Websuche;
+GW/ST ohne belegbare Seite → begründete Ausnahme im Quellen-Test statt erfundener Adresse.
+Äquatorialguinea zurückgestellt (Spanisch).
+
+**Tests.** 28 Länder-Tests grün; Gegenproben: CV ohne Datumsformat → nur CV rot, MU ohne Profil → nur
+MU rot, CV mit pt-CV → rot (Euro-Format). Browser: Länderwahl Afrika 27 (Vorschlag MU per Zeitzone),
+MU/SS en 3,00 €, CV pt „Preço especial … 9,99 €".
+

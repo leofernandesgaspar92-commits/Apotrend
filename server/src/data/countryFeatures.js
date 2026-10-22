@@ -7,7 +7,7 @@ import { COUNTRIES, normalizeCountry } from './countries.js';
 
 // Sprachgruppen aus der Ziel-Matrix (für gruppenspezifische, geplante Module).
 const DACH = new Set(['AT', 'DE', 'CH', 'LI']);
-const LUSO = new Set(['PT', 'BR', 'AO', 'MZ']);
+const LUSO = new Set(['PT', 'BR', 'AO', 'MZ', 'CV', 'GW', 'ST']);
 // (Alle übrigen Register-Länder sind anglophon: GB, US, NG, KE, GH, CA, AU, ZA und das
 // englischsprachige Afrika seit 10/2026: UG, TZ, ZM, ZW, RW, BW, NA, MW, ET, SL, LR, GM.)
 
@@ -37,8 +37,11 @@ const FEATURE_RESTRICTIONS = {
   ZA: { deals: 'restricted', price_compare: 'restricted', stock_exchange: 'restricted' },
   // Englischsprachiges Afrika (10/2026): ohne eigene Rechtsanalyse vorsichtig
   // wie NG/KE/GH — Aktionen und Börse nur mit Hinweis.
-  ...Object.fromEntries(['UG', 'TZ', 'ZM', 'ZW', 'RW', 'BW', 'NA', 'MW', 'ET', 'SL', 'LR', 'GM']
+  ...Object.fromEntries(['UG', 'TZ', 'ZM', 'ZW', 'RW', 'BW', 'NA', 'MW', 'ET', 'SL', 'LR', 'GM',
+    'LS', 'SZ', 'MU', 'SC', 'SS', 'ER']
     .map((cc) => [cc, { deals: 'restricted', stock_exchange: 'restricted' }])),
+  // Portugiesischsprachiges Afrika (zweite Welle 10/2026): vorsichtig wie AO/MZ.
+  ...Object.fromEntries(['CV', 'GW', 'ST'].map((cc) => [cc, { deals: 'restricted', stock_exchange: 'blocked' }])),
 };
 
 // Rechtsstatus einer Funktion im Land: 'blocked' | 'restricted' | 'allowed'.

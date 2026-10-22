@@ -39,6 +39,19 @@ export const COUNTRIES = {
   SL: { code: 'SL', name: 'Sierra Leone',     flag: '🇸🇱', locale_default: 'en', locales: ['en'],             currency: 'SLE', timezone: 'Africa/Freetown',   regulator: 'Pharmacy Board of Sierra Leone', regulator_url: null, region: 'AFRICA' },
   LR: { code: 'LR', name: 'Liberia',          flag: '🇱🇷', locale_default: 'en', locales: ['en'],             currency: 'LRD', timezone: 'Africa/Monrovia',   regulator: 'LMHRA',           regulator_url: null, region: 'AFRICA' },
   GM: { code: 'GM', name: 'The Gambia',       flag: '🇬🇲', locale_default: 'en', locales: ['en'],             currency: 'GMD', timezone: 'Africa/Banjul',     regulator: 'MCA',             regulator_url: null, region: 'AFRICA' },
+  // 10/2026, zweite Welle (Owner: „alle afrikanischen Länder"): übrige Länder mit Englisch
+  // bzw. Portugiesisch als Amtssprache. Behörde laut Recherche; wo keine eigene arbeitende
+  // Behörde belegt ist (Lesotho, Eswatini: gesetzlich vorgesehen, noch im Aufbau; Seychellen,
+  // Guinea-Bissau, São Tomé), steht das Gesundheitsministerium — nichts Erfundenes.
+  LS: { code: 'LS', name: 'Lesotho', flag: '🇱🇸', locale_default: 'en', locales: ['en'], currency: 'LSL', timezone: 'Africa/Maseru', regulator: 'Ministry of Health', regulator_url: null, region: 'AFRICA' },
+  SZ: { code: 'SZ', name: 'Eswatini', flag: '🇸🇿', locale_default: 'en', locales: ['en'], currency: 'SZL', timezone: 'Africa/Mbabane', regulator: 'Ministry of Health', regulator_url: null, region: 'AFRICA' },
+  MU: { code: 'MU', name: 'Mauritius', flag: '🇲🇺', locale_default: 'en', locales: ['en'], currency: 'MUR', timezone: 'Indian/Mauritius', regulator: 'Pharmacy Board', regulator_url: null, region: 'AFRICA' },
+  SC: { code: 'SC', name: 'Seychelles', flag: '🇸🇨', locale_default: 'en', locales: ['en'], currency: 'SCR', timezone: 'Indian/Mahe', regulator: 'Ministry of Health', regulator_url: null, region: 'AFRICA' },
+  SS: { code: 'SS', name: 'South Sudan', flag: '🇸🇸', locale_default: 'en', locales: ['en'], currency: 'SSP', timezone: 'Africa/Juba', regulator: 'DFCA', regulator_url: null, region: 'AFRICA' },
+  ER: { code: 'ER', name: 'Eritrea', flag: '🇪🇷', locale_default: 'en', locales: ['en'], currency: 'ERN', timezone: 'Africa/Asmara', regulator: 'NMFA', regulator_url: null, region: 'AFRICA' },
+  CV: { code: 'CV', name: 'Cabo Verde', flag: '🇨🇻', locale_default: 'pt', locales: ['pt'], currency: 'CVE', timezone: 'Atlantic/Cape_Verde', regulator: 'ERIS', regulator_url: null, region: 'AFRICA' },
+  GW: { code: 'GW', name: 'Guiné-Bissau', flag: '🇬🇼', locale_default: 'pt', locales: ['pt'], currency: 'XOF', timezone: 'Africa/Bissau', regulator: 'Ministério da Saúde Pública', regulator_url: null, region: 'AFRICA' },
+  ST: { code: 'ST', name: 'São Tomé e Príncipe', flag: '🇸🇹', locale_default: 'pt', locales: ['pt'], currency: 'STN', timezone: 'Africa/Sao_Tome', regulator: 'Ministério da Saúde', regulator_url: null, region: 'AFRICA' },
 };
 
 export const DEFAULT_COUNTRY = 'AT';

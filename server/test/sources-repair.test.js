@@ -413,8 +413,9 @@ test('die Quellenzahl stimmt — die Umstellung hat keine verloren', () => {
   // 23 seit 10/2026: BfArM-Engpassliste (DE) dazu.
   // 38 seit dem Afrika-Start (10/2026): 12 Länderbehörden + Africa CDC,
   // WHO Afrika, WHO.
+  // 45 seit der zweiten Afrika-Welle (10/2026): + 7 Länder (LS, SZ, MU, SC, SS, ER, CV).
   const alle = activeSources({});
-  assert.equal(alle.length, 38);
-  assert.equal(sourcesByKind('news', {}).length, 35);
+  assert.equal(alle.length, 45);
+  assert.equal(sourcesByKind('news', {}).length, 42);
   assert.equal(sourcesByKind('shortages', {}).length, 3);
 });

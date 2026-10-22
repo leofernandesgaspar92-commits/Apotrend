@@ -436,6 +436,54 @@ const BUILTIN = [
     fallbacks: ['https://moh.gov.gm/feed/'],
     official: true, verified: false,
   },
+  // --- Zweite Welle Afrika (10/2026) --------------------------------------
+  //  Domains per Recherche belegt (docs/AFRIKA.md); Feed-Pfade nach dem System
+  //  der Seite (WordPress /feed/, Joomla ?format=feed&type=rss) — NICHT live
+  //  geprüft (aus der Entwicklungsumgebung gesperrt). „Quellen testen“ im
+  //  Redaktions-Bereich prüft sie live. Guinea-Bissau und São Tomé: keine
+  //  belegbare offizielle Seite gefunden — bewusst keine erfundene Adresse.
+  {
+    id: 'moh_ls_news', kind: 'news', country: 'LS', format: 'rss',
+    label: 'Government of Lesotho — Ministry of Health',
+    url: 'https://www.gov.ls/feed/',
+    official: true, verified: false,
+  },
+  {
+    id: 'moh_sz_news', kind: 'news', country: 'SZ', format: 'rss',
+    label: 'Government of Eswatini — Ministry of Health',
+    url: 'https://www.gov.sz/index.php?format=feed&type=rss',
+    official: true, verified: false,
+  },
+  {
+    id: 'moh_mu_news', kind: 'news', country: 'MU', format: 'rss',
+    label: 'Ministry of Health and Wellness Mauritius — News',
+    url: 'https://health.govmu.org/feed/',
+    official: true, verified: false,
+  },
+  {
+    id: 'moh_sc_news', kind: 'news', country: 'SC', format: 'rss',
+    label: 'Ministry of Health Seychelles — News',
+    url: 'https://www.health.gov.sc/feed/',
+    official: true, verified: false,
+  },
+  {
+    id: 'moh_ss_news', kind: 'news', country: 'SS', format: 'rss',
+    label: 'Ministry of Health South Sudan (incl. DFCA) — News',
+    url: 'https://www.moh.gov.ss/feed/',
+    official: true, verified: false,
+  },
+  {
+    id: 'shabait_er_news', kind: 'news', country: 'ER', format: 'rss',
+    label: 'Shabait (Ministry of Information Eritrea) — News',
+    url: 'https://shabait.com/feed/',
+    official: true, verified: false,
+  },
+  {
+    id: 'eris_cv_news', kind: 'news', country: 'CV', format: 'rss',
+    label: 'ERIS Cabo Verde — Notícias',
+    url: 'https://www.eris.cv/index.php?format=feed&type=rss',
+    official: true, verified: false,
+  },
   // --- Kontinent und Welt (keinem Land zugeordnet) ------------------------
   //  `AFR` und `INT` sind QUELL-REGIONEN (data/countries.js), keine Länder.
   //  Ihre Meldungen erscheinen unter „Afrika" bzw. „Welt", nie im Feed eines

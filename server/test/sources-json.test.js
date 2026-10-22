@@ -284,7 +284,12 @@ test('jedes Land des Registers hat eine Quelle', () => {
   // Der eigentliche Auftrag dieser Runde. Ohne diese Prüfung fällt ein
   // vergessenes Land erst auf, wenn dort jemand eine leere Ansicht sieht.
   const proLand = new Set(activeSources({}).map((s) => s.country));
-  const fehlend = listCountries().map((c) => c.code).filter((cc) => !proLand.has(cc));
+  // Begründete Ausnahmen: keine belegbare offizielle Seite gefunden (Recherche 10/2026,
+  // docs/AFRIKA.md). Lieber keine Quelle als eine erfundene Adresse. Dort gelten Afrika-
+  // und Welt-Nachrichten, Presse-Suche und Apotheken-Meldungen.
+  const OHNE_BELEGTE_QUELLE = new Set(['GW', 'ST']);
+  for (const cc of OHNE_BELEGTE_QUELLE) assert.ok(listCountries().some((c) => c.code === cc), `${cc}: Ausnahme ohne Land im Register`);
+  const fehlend = listCountries().map((c) => c.code).filter((cc) => !proLand.has(cc) && !OHNE_BELEGTE_QUELLE.has(cc));
   assert.deepEqual(fehlend, [], `Ohne Quelle: ${fehlend.join(', ')}`);
 });
 

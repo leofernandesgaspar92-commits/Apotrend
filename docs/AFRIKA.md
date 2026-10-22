@@ -438,3 +438,37 @@ keine erreichte die Schwelle „von 3 Apotheken bestätigt". Jetzt:
 - **Vorschläge beim Tippen:** im Land gemeldete Wirkstoffe plus die häufigen (in Afrika an der
   WHO-Liste unentbehrlicher Arzneimittel orientiert) — gleiche Schreibweise von Anfang an.
 
+## Alle afrikanischen Länder (Stand 22.10.2026)
+
+Owner: „Konzentriere dich auf alle afrikanischen Länder" — Uganda war nur das Testbeispiel. Seit
+dieser Runde prüft `server/test/afrika-alle-laender.test.js` **jedes** Land der Region AFRICA einzeln:
+Ländercode, Sprache, Währung, Zeitzone, Behörde, Rechts-/Zahlprofil mit Krypto, vorsichtige
+Rechtsstufe der Tauschbörse, Presse-Suche, Datums- und Euro-Format, Afrika-Preis 3,00 €, keine
+EU-Umsatzsteuer, afrikatypische Vorschläge. Ein neues Land, dem eine Stelle fehlt, macht den Test rot.
+
+**27 von 54 Ländern** (zweite Welle +9):
+
+| Sprache der App | Länder |
+|---|---|
+| Englisch (22) | Nigeria, Kenia, Ghana, Südafrika, Uganda, Tansania, Sambia, Simbabwe, Ruanda, Botswana, Namibia, Malawi, Äthiopien, Sierra Leone, Liberia, Gambia, **Lesotho, Eswatini, Mauritius, Seychellen, Südsudan, Eritrea** |
+| Portugiesisch (5) | Angola, Mosambik, **Kap Verde, Guinea-Bissau, São Tomé und Príncipe** |
+
+Behörden der zweiten Welle (recherchiert, nichts erfunden): Lesotho und Eswatini — Behörde gesetzlich
+vorgesehen, noch im Aufbau, bis dahin Gesundheitsministerium; Mauritius — Pharmacy Board (Pharmacy Act
+1983); Seychellen — Gesundheitsministerium (Pharmacy Act); Südsudan — DFCA (Act 2012); Eritrea — NMFA;
+Kap Verde — ERIS (Portaria 50/2021); Guinea-Bissau, São Tomé — Gesundheitsministerium (keine belastbare
+Quelle für eine eigene Behörde). Nachrichtenquellen: 7 neue Feeds (nicht live geprüft — bitte
+„Quellen testen"); **Guinea-Bissau und São Tomé ohne eigene Quelle**, weil keine offizielle Seite
+belegbar war — dort Afrika-/Welt-Nachrichten, Presse-Suche und Apotheken-Meldungen.
+
+Gefunden beim Durchspielen: Kap Verde zeigte „3$00 €" (regionales Format nimmt das Escudo-Zeichen als
+Dezimaltrenner) → Portugiesisch-Standardformat; der Test prüft jetzt das Euro-Format je Land.
+
+**Noch nicht abgedeckt — 27 Länder, weil die Sprache fehlt:**
+- **Französisch (≈ 21):** Senegal, Côte d'Ivoire, Kamerun, DR Kongo, Kongo, Gabun, Burkina Faso, Mali,
+  Niger, Tschad, Zentralafrika, Benin, Togo, Guinea, Madagaskar, Burundi, Dschibuti, Komoren,
+  Mauretanien (auch Arabisch); Marokko, Algerien, Tunesien (Arabisch/Französisch). → **nächster Schritt:
+  Französisch als vierte Sprache der App.**
+- **Arabisch:** Ägypten, Libyen, Sudan (u. a.) — braucht Rechts-nach-links-Darstellung.
+- **Spanisch:** Äquatorialguinea. **Somali/Arabisch:** Somalia.
+

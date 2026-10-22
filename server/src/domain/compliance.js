@@ -442,6 +442,16 @@ const AFRIKA_NEU = {
   SL: ['SLE', 'Pharmacy Board of Sierra Leone', ['Pharmacy and Drugs Act']],
   LR: ['LRD', 'LMHRA', ['LMHRA Act 2010']],
   GM: ['GMD', 'MCA', ['Medicines and Related Products Act 2014']],
+  // Zweite Welle 10/2026 (Behörden/Gesetze per Recherche, siehe docs/AFRIKA.md).
+  LS: ['LSL', 'Ministry of Health', ['Act No. 6 of 2023 (medicines regulatory authority, being set up)']],
+  SZ: ['SZL', 'Ministry of Health', ['Medicines and Related Substances Control Act 2016']],
+  MU: ['MUR', 'Pharmacy Board', ['Pharmacy Act 1983']],
+  SC: ['SCR', 'Ministry of Health', ['Pharmacy Act']],
+  SS: ['SSP', 'DFCA', ['Drug and Food Control Authority Act 2012']],
+  ER: ['ERN', 'NMFA', ['National Medicines and Food Administration (Ministry of Health)']],
+  CV: ['CVE', 'ERIS', ['Portaria n.º 50/2021 (autorização de introdução no mercado)']],
+  GW: ['XOF', 'Ministério da Saúde Pública', ['Legislação farmacêutica nacional']],
+  ST: ['STN', 'Ministério da Saúde', ['Lista Nacional de Medicamentos']],
 };
 for (const [cc, [currency, regulator, legalFramework]] of Object.entries(AFRIKA_NEU)) {
   PROFILES[cc] = {
@@ -633,6 +643,8 @@ const CURRENCY_MINOR_UNITS = {
   AOA: 2, KES: 2, NGN: 2,
   // ISO 4217: Uganda- und Ruanda-Schilling/Franc haben keine Untereinheit.
   UGX: 0, RWF: 0, TZS: 2, ZMW: 2, BWP: 2, NAD: 2, MWK: 2, ETB: 2, SLE: 2, LRD: 2, GMD: 2,
+  // ISO 4217: CFA-Franc (XOF) ohne Untereinheit.
+  LSL: 2, SZL: 2, MUR: 2, SCR: 2, SSP: 2, ERN: 2, CVE: 2, XOF: 0, STN: 2,
 };
 
 export function minorUnits(currency) {
@@ -663,6 +675,7 @@ const DEFAULT_LOCALE_BY_CURRENCY = {
   BRL: 'pt-BR', AOA: 'pt-AO', MZN: 'pt-MZ', NGN: 'en-NG', KES: 'en-KE', GHS: 'en-GH', ZAR: 'en-ZA',
   UGX: 'en-UG', TZS: 'en-TZ', ZMW: 'en-ZM', RWF: 'en-RW', BWP: 'en-BW', NAD: 'en-NA', MWK: 'en-MW',
   ETB: 'en-ET', SLE: 'en-SL', LRD: 'en-LR', GMD: 'en-GM',
+  LSL: 'en-LS', SZL: 'en-SZ', MUR: 'en-MU', SCR: 'en-SC', SSP: 'en-SS', ERN: 'en-ER', CVE: 'pt-CV', XOF: 'pt-GW', STN: 'pt-ST',
 };
 
 // --- Der Zustands-Manager ---------------------------------------------------

@@ -32,7 +32,8 @@ test('Englischsprachiges Afrika: Land, Sprache, Währung, Behörde, Quelle, Kryp
   }
   // Neue Länder ohne geprüfte Rechtsanalyse: keine Marktplatz-Gebühren.
   assert.equal(complianceProfile('UG').transactionFeeAllowed, false);
-  assert.deepEqual(laenderInRegion('AFRICA').sort(), [...ANGLO_AFRIKA, 'AO', 'MZ'].sort());
+  // Zweite Welle 10/2026 (Owner: alle afrikanischen Länder) — je Land geprüft in afrika-alle-laender.test.js.
+  assert.deepEqual(laenderInRegion('AFRICA').sort(), [...ANGLO_AFRIKA, 'AO', 'MZ', 'LS', 'SZ', 'MU', 'SC', 'SS', 'ER', 'CV', 'GW', 'ST'].sort());
   assert.equal(regionVon('AFR'), 'AFRICA');
   assert.equal(regionVon('INT'), null);
   // Quell-Regionen haben eigene Quellen.
