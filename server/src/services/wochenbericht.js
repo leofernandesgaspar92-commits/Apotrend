@@ -64,10 +64,26 @@ const T = {
     oeffnen: 'Abrir na ApoPulse', abmelden: 'Cancelar o relatório semanal',
     status: { kritisch: 'crítico', eingeschraenkt: 'limitado', verfuegbar: 'disponível' },
   },
+  fr: {
+    betreff: (land, kw, n, f) => `ApoPulse rapport hebdomadaire ${land} · semaine ${kw} : ${n} nouvelle${n === 1 ? '' : 's'}${f ? `, ${f} alerte${f > 1 ? 's' : ''} précoce${f > 1 ? 's' : ''}` : ''}`,
+    hallo: (n) => `Bonjour${n ? ' ' + n : ''},`,
+    intro: (land) => `voici la situation des pénuries des 7 derniers jours pour ${land}.`,
+    beob: 'Substances que vous suivez', keineBeob: 'Vous ne suivez encore aucune substance. Ajoutez-les dans l’application avec « Suivre » et elles apparaîtront ici.',
+    knapp: (t) => `en pénurie depuis ${t} jours`, nichtKnapp: 'actuellement pas sur la liste des pénuries', ausland: 'en pénurie à l’étranger',
+    fw: 'Alerte précoce venue de l’étranger', fwHinweis: 'Fait tiré de la liste de l’autorité concernée, pas une prévision pour votre pays.',
+    neu: 'Nouveau sur la liste des pénuries', beendet: 'Plus sur la liste', keinNeu: 'Aucune nouvelle entrée cette semaine.',
+    offen: (n) => `Actuellement ${n} substance${n === 1 ? '' : 's'} sur la liste.`,
+    tage: (n) => `${n} jours`, keineDaten: (land) => `Pas encore de données de l’autorité pour ${land} — cette partie reste vide plutôt que de suggérer une situation calme.`,
+    grundlage: (s) => `Base : listes des autorités, enregistrées par ApoPulse à chaque consultation (enregistrement depuis le ${s}).`,
+    oeffnen: 'Ouvrir dans ApoPulse', abmelden: 'Se désabonner du rapport hebdomadaire',
+    status: { kritisch: 'critique', eingeschraenkt: 'limitée', verfuegbar: 'disponible' },
+  },
 };
+// Datumsschreibweise je Berichtssprache (Tag.Monat.Jahr in allen vier).
+const DATUM_TAG = { de: 'de-AT', en: 'en-GB', pt: 'pt-PT', fr: 'fr-FR' };
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const datum = (iso, loc) => { const t = Date.parse(String(iso || '') + 'T00:00:00Z'); return Number.isNaN(t) ? String(iso || '') : new Date(t).toLocaleDateString(loc === 'en' ? 'en-GB' : loc === 'pt' ? 'pt-PT' : 'de-AT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }); };
+const datum = (iso, loc) => { const t = Date.parse(String(iso || '') + 'T00:00:00Z'); return Number.isNaN(t) ? String(iso || '') : new Date(t).toLocaleDateString(DATUM_TAG[loc] || 'de-AT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }); };
 
 /** ISO-Kalenderwoche als { jahr, kw, schluessel: '2026-W42' }. */
 export function isoWoche(ms) {
@@ -144,7 +160,7 @@ export function createWochenbericht({ repo, social, chronik, fruehwarnung, short
   function daten(userId) {
     const p = social.getProfile(userId) || {};
     const land = String(p.country || 'AT').toUpperCase();
-    const locale = ['de', 'en', 'pt'].includes(p.locale) ? p.locale : 'de';
+    const locale = Object.keys(T).includes(p.locale) ? p.locale : 'de';
     // Ländernamen in der Sprache des Berichts (die Länderliste führt sie
     // gemischt: „Österreich", aber „United States").
     let namen = null;

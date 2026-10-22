@@ -875,7 +875,7 @@ async function main() {
     const anfragen = [];
     await page2.route('**/api/translate/status', (route) => route.fulfill({
       status: 200, contentType: 'application/json',
-      body: JSON.stringify({ available: true, languages: ['de', 'en', 'pt'], max_chars: 4000 }),
+      body: JSON.stringify({ available: true, languages: ['de', 'en', 'pt', 'fr'], max_chars: 4000 }),
     }));
     await page2.route('**/api/translate', (route) => {
       anfragen.push(route.request().postData() || '');

@@ -6,7 +6,7 @@
 //          node tools/loop-audit.mjs --json     (nur JSON, für den Loop)
 //
 // Die Zahlen sind Steuergrößen für THINK/ANALYSE: sinkende Test-Zahl, steigende
-// TODOs, wachsende index.html, i18n-Drift zwischen de/en/pt = Handlungsbedarf.
+// TODOs, wachsende index.html, i18n-Drift zwischen de/en/pt/fr = Handlungsbedarf.
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -33,30 +33,32 @@ function tests() {
   }
 }
 
-// 2) i18n-Parität: dieselben Schlüssel in de/en/pt? Fehlende = fehlende Übersetzung.
+// 2) i18n-Parität: dieselben Schlüssel in de/en/pt/fr? Fehlende = fehlende Übersetzung.
 // KEIN Regex-Raten (an Apostrophen in Werten zerbricht das) — stattdessen das echte
 // I18N-Objektliteral extrahieren und mit dem JS-Parser auswerten: 100 % exakt.
 function i18nParity(html) {
   const anchor = 'const I18N = {';
   const start = html.indexOf(anchor);
   const close = html.indexOf('\n};', start);
-  if (start < 0 || close < 0) return { de: null, en: null, pt: null, balanced: null, error: 'I18N nicht gefunden' };
+  if (start < 0 || close < 0) return { de: null, en: null, pt: null, fr: null, balanced: null, error: 'I18N nicht gefunden' };
   const objText = html.slice(start + anchor.length - 1, close + 2); // von '{' bis '}'
   let I18N;
   try { I18N = new Function(`return (${objText})`)(); }
-  catch (e) { return { de: null, en: null, pt: null, balanced: null, error: 'eval: ' + e.message }; }
-  const locales = ['de', 'en', 'pt'];
+  catch (e) { return { de: null, en: null, pt: null, fr: null, balanced: null, error: 'eval: ' + e.message }; }
+  // Seit 10/2026 auch fr. Jede Sprache wird gegen de geprüft — in beide Richtungen.
+  const locales = ['de', 'en', 'pt', 'fr'];
+  const fremd = locales.filter((l) => l !== 'de');
   const sets = Object.fromEntries(locales.map((l) => [l, new Set(Object.keys(I18N[l] || {}))]));
   const missing = (a, b) => [...sets[a]].filter((k) => !sets[b].has(k));
-  const gaps = { en: missing('de', 'en'), pt: missing('de', 'pt') };
-  const extra = { en: missing('en', 'de'), pt: missing('pt', 'de') }; // in en/pt, aber nicht de
+  const gaps = Object.fromEntries(fremd.map((l) => [l, missing('de', l)]));
+  const extra = Object.fromEntries(fremd.map((l) => [l, missing(l, 'de')])); // in en/pt/fr, aber nicht de
   const counts = Object.fromEntries(locales.map((l) => [l, sets[l].size]));
+  const alle = fremd.flatMap((l) => [...gaps[l], ...extra[l]]);
   return {
     ...counts,
-    gaps_en: gaps.en.length, gaps_pt: gaps.pt.length,
-    extra_en: extra.en.length, extra_pt: extra.pt.length,
-    gap_samples: [...new Set([...gaps.en, ...gaps.pt, ...extra.en, ...extra.pt])].slice(0, 10),
-    balanced: gaps.en.length === 0 && gaps.pt.length === 0 && extra.en.length === 0 && extra.pt.length === 0,
+    ...Object.fromEntries(fremd.flatMap((l) => [[`gaps_${l}`, gaps[l].length], [`extra_${l}`, extra[l].length]])),
+    gap_samples: [...new Set(alle)].slice(0, 10),
+    balanced: alle.length === 0,
   };
 }
 
@@ -171,8 +173,8 @@ function run() {
   console.log(t.skipped
     ? 'Tests:              im Gate geprüft ✓ (node --test lief in der verify-Kette davor)'
     : `Tests:              ${t.pass}/${t.count} grün${t.fail ? `  ⚠️ ${t.fail} rot` : ''}`);
-  console.log(`i18n-Attribute:     ${snapshot.data_i18n_attrs}   Schlüssel de/en/pt: ${p.de}/${p.en}/${p.pt}`);
-  console.log(`i18n-Lücken:        en fehlen ${p.gaps_en}, pt fehlen ${p.gaps_pt} ${p.balanced ? '✓' : '⚠️ ' + (p.gap_samples || []).join(', ')}`);
+  console.log(`i18n-Attribute:     ${snapshot.data_i18n_attrs}   Schlüssel de/en/pt/fr: ${p.de}/${p.en}/${p.pt}/${p.fr}`);
+  console.log(`i18n-Lücken:        en fehlen ${p.gaps_en}, pt fehlen ${p.gaps_pt}, fr fehlen ${p.gaps_fr} ${p.balanced ? '✓' : '⚠️ ' + (p.gap_samples || []).join(', ')}`);
   console.log(`Hartkod. Dialoge:   ${snapshot.hardcoded_dialogs} ${snapshot.hardcoded_dialogs === 0 ? '✓' : '⚠️'}`);
   const hu = snapshot.hardcoded_ui_de;
   console.log(`Hartkod. UI-DE:     ${hu.count} ${hu.count === 0 ? '✓' : '⚠️ ' + hu.samples.join(' | ')}`);

@@ -21,6 +21,7 @@
 // ============================================================================
 import crypto from 'node:crypto';
 import { AppError } from '../domain/errors.js';
+import { frLand } from '../domain/franzLand.js';
 
 const b64u = (buf) => Buffer.from(buf).toString('base64url');
 const vonB64u = (s) => Buffer.from(String(s || ''), 'base64url');
@@ -174,6 +175,17 @@ const TEXTE = {
     watch_eingeschraenkt: (w) => [`Disponibilidade limitada: ${w}`, `Uma farmácia comunica disponibilidade limitada de ${w} (não oficial).`],
     watch_termin: (w, d) => [`Nova data: ${w}`, d ? `${w} previsto de novo em stock até ${d} (comunicação de farmácias).` : `Ainda sem data de entrega para ${w} (comunicação de farmácias).`],
     test: () => ['ApoPulse: notificações a funcionar', 'É assim que chega um alerta de rutura, mesmo com a app fechada.'],
+  },
+  fr: {
+    shortage_home: (w, l) => [`Pénurie : ${w}`, `${w} est en pénurie ${frLand(l)} selon l’autorité. Touchez pour voir la source et l’historique.`],
+    shortage_ended: (w, l) => [`De nouveau disponible : ${w}`, `${w} ne figure plus sur la liste des pénuries ${frLand(l)}.`],
+    shortage_abroad: (w, l) => [`Alerte précoce : ${w}`, `${w} est en pénurie ${frLand(l)} — pas encore dans votre pays. Vérifiez votre stock.`],
+    shortage_bestaetigt: (w, l, n) => [`Confirmé : ${w}`, `${n} pharmacies ${frLand(l)} signalent ${w} en pénurie (non officiel).`],
+    watch_alert: (w) => [`Signalement de pharmacie : ${w}`, `Une pharmacie signale ${w} en pénurie (non officiel).`],
+    watch_wieder: (w) => [`De nouveau disponible : ${w}`, `Selon le signalement d’une pharmacie, ${w} est de nouveau disponible (non officiel).`],
+    watch_eingeschraenkt: (w) => [`Disponibilité limitée : ${w}`, `Une pharmacie signale une disponibilité limitée de ${w} (non officiel).`],
+    watch_termin: (w, d) => [`Nouvelle date : ${w}`, d ? `${w} de nouveau en stock prévu d’ici le ${d} (signalement de pharmacie).` : `Pas encore de date de livraison pour ${w} (signalement de pharmacie).`],
+    test: () => ['ApoPulse : les notifications fonctionnent', 'Voici comment arrive une alerte de pénurie, même quand l’application est fermée.'],
   },
 };
 export const PUSH_TYPEN = new Set(['shortage_home', 'shortage_ended', 'shortage_abroad', 'watch_alert', 'shortage_bestaetigt']);

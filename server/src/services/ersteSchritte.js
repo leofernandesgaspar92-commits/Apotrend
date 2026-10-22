@@ -12,7 +12,7 @@ import { wirkstoffSchluessel } from '../domain/inn.js';
 const HAEUFIG = {
   de: ['Amoxicillin', 'Ibuprofen', 'Paracetamol', 'Salbutamol', 'Metformin', 'Amlodipin', 'Cefalexin', 'Azithromycin', 'Prednisolon', 'Levothyroxin', 'Insulin', 'Clarithromycin'],
   en: ['Amoxicillin', 'Ibuprofen', 'Paracetamol', 'Salbutamol', 'Metformin', 'Amlodipine', 'Cefalexin', 'Azithromycin', 'Prednisolone', 'Levothyroxine', 'Insulin', 'Clarithromycin'],
-  pt: ['Amoxicilina', 'Ibuprofeno', 'Paracetamol', 'Salbutamol', 'Metformina', 'Amlodipina', 'Cefalexina', 'Azitromicina', 'Prednisolona', 'Levotiroxina', 'Insulina', 'Claritromicina'],
+  pt: ['Amoxicilina', 'Ibuprofeno', 'Paracetamol', 'Salbutamol', 'Metformina', 'Amlodipina', 'Cefalexina', 'Azitromicina', 'Prednisolona', 'Levotiroxina', 'Insulina', 'Claritromicina'],  fr: ['Amoxicilline', 'Ibuprofène', 'Paracétamol', 'Salbutamol', 'Metformine', 'Amlodipine', 'Céfalexine', 'Azithromycine', 'Prednisolone', 'Lévothyroxine', 'Insuline', 'Clarithromycine'],
 };
 // Afrika: was dort am häufigsten fehlt und am meisten zählt — Malaria
 // (Artemether/Lumefantrin), Mutter-Kind (Oxytocin, Magnesiumsulfat),
@@ -20,7 +20,7 @@ const HAEUFIG = {
 // Orientierung an der WHO-Liste unentbehrlicher Arzneimittel.
 const HAEUFIG_AFRIKA = {
   en: ['Artemether/Lumefantrine', 'Amoxicillin', 'Oxytocin', 'Oral rehydration salts', 'Zinc sulfate', 'Paracetamol', 'Ceftriaxone', 'Metformin', 'Insulin', 'Salbutamol', 'Magnesium sulfate', 'Rifampicin', 'Tenofovir/Lamivudine/Dolutegravir', 'Gentamicin'],
-  pt: ['Artemeter/Lumefantrina', 'Amoxicilina', 'Ocitocina', 'Sais de reidratação oral', 'Sulfato de zinco', 'Paracetamol', 'Ceftriaxona', 'Metformina', 'Insulina', 'Salbutamol', 'Sulfato de magnésio', 'Rifampicina', 'Tenofovir/Lamivudina/Dolutegravir', 'Gentamicina'],
+  pt: ['Artemeter/Lumefantrina', 'Amoxicilina', 'Ocitocina', 'Sais de reidratação oral', 'Sulfato de zinco', 'Paracetamol', 'Ceftriaxona', 'Metformina', 'Insulina', 'Salbutamol', 'Sulfato de magnésio', 'Rifampicina', 'Tenofovir/Lamivudina/Dolutegravir', 'Gentamicina'],  fr: ['Artéméther/Luméfantrine', 'Amoxicilline', 'Ocytocine', 'Sels de réhydratation orale', 'Sulfate de zinc', 'Paracétamol', 'Ceftriaxone', 'Metformine', 'Insuline', 'Salbutamol', 'Sulfate de magnésium', 'Rifampicine', 'Ténofovir/Lamivudine/Dolutégravir', 'Gentamicine'],
 };
 const MAX = 12;
 

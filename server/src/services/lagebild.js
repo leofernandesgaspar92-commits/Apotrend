@@ -31,17 +31,18 @@ import { aiKonfiguration, frageAnbieter, parseAiAntwort } from './aiExtract.js';
 import { COUNTRIES } from '../data/countries.js';
 import { landPasst } from './signalAlerts.js';
 
-export const SPRACHEN = ['de', 'en', 'pt'];
+export const SPRACHEN = ['de', 'en', 'pt', 'fr'];
 export const MIN_BELEGE = 2;
 export const MAX_BELEGE = 24;
 export const MAX_PUNKTE = 6;
 
-const SPRACHNAME = { de: 'Deutsch', en: 'English', pt: 'Português' };
+const SPRACHNAME = { de: 'Deutsch', en: 'English', pt: 'Português', fr: 'Français' };
 
 export const LAGEBILD_HINWEIS = {
   de: 'KI-Zusammenfassung der verlinkten Meldungen. Jede Aussage nennt ihre Quellen — maßgeblich sind die Quellen selbst, nicht diese Zusammenfassung.',
   en: 'AI summary of the linked reports. Every statement names its sources — the sources themselves are authoritative, not this summary.',
   pt: 'Resumo por IA das notícias com ligação. Cada afirmação indica as suas fontes — as fontes são determinantes, não este resumo.',
+  fr: 'Résumé par IA des communications en lien. Chaque affirmation indique ses sources — ce sont les sources qui font foi, pas ce résumé.',
 };
 
 /**

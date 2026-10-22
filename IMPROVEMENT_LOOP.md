@@ -3108,3 +3108,29 @@ GW/ST ohne belegbare Seite → begründete Ausnahme im Quellen-Test statt erfund
 MU rot, CV mit pt-CV → rot (Euro-Format). Browser: Länderwahl Afrika 27 (Vorschlag MU per Zeitzone),
 MU/SS en 3,00 €, CV pt „Preço especial … 9,99 €".
 
+
+### Cycle · Französisch als vierte Sprache (2026-10-22)
+
+**Anlass.** Owner: „mach weiter mit Französisch, dann Arabisch, mach alle Länder". 27 der 54 Länder
+Afrikas fehlten, weil die Sprache fehlte — die meisten davon französisch.
+
+**WORK.** `public/i18n.js` fr-Block (2 303 Texte, in 10 Blöcken übersetzt, je Block maschinell geprüft:
+Schlüssel, Platzhalter, Anfangs-Symbol). SUPPORTED_LOCALES Server + Oberfläche; Datums-/Zahlformat
+über `_bcp47` statt fester de/en/pt-Weiche. Server-Texte fr: wochenbericht, webPush, teilseite,
+oeffentlicheSeiten, startseiteKopf (Kopf + Manifest), lagebild, aiTranslate (eigene ZIELSPRACHEN, die
+Extraktion bleibt de/en/pt), amr, patientInfo (+ Begleitzettel in app.js), ersteSchritte, presse
+(Suchwörter; MU/SC/CH/CA zusätzlich fr). Neu `domain/franzLand.js` (au/en/aux/à/du/d') + Kopie in
+`ti()`. `domain/inn.js`: Füllwörter, Metall-vor-Salz, Ocytocine, ORS fr/pt, pt-Metallnamen.
+Audit-Parität auf vier Sprachen. Nebenbei: Anmeldeseite beschriftet den Kopf selbst (vorher deutsch
+nach direktem Neuladen — in allen Sprachen).
+
+**Tests.** `test/franzoesisch.test.js` (15): Schlüssel/Platzhalter/kein Rest-Englisch, Sprachlisten,
+Patientenkarten + Begleitzettel, Wochenbericht (Datum 04/10/2026), Kopf/Manifest/Teilseite/Push,
+öffentliche Seiten, Presse, erste Schritte (jeder fr-Vorschlag = gleicher Schlüssel wie en), INN
+positiv + negativ, Präpositionen für 25 Länder, echte `ti()` aus app.js per vm. Bestehende Tests von
+drei auf vier Sprachen. Gegenproben (8, alle rot, Dateien per cmp wiederhergestellt): Platzhalter
+entfernt/umbenannt, Regel „immer en", `ti()` ohne Präposition, INN ohne Ocytocine bzw. ohne Füllwörter,
+Push ohne fr, Patienteninfo ohne fr. Browser (360 px, fr-SN, Africa/Dakar): Länderwahl „Choisissez
+votre pays", Anmeldeseite fr ohne Überlauf, keine Seitenfehler. verify: 1362/1362.
+
+**Offen.** Die frankophonen Länder selbst (nächster Schritt), dann Arabisch (RTL).

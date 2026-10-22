@@ -22,6 +22,7 @@
 //     Engpässen).
 // ============================================================================
 import { wirkstoffSchluessel } from '../domain/inn.js';
+import { frLand } from '../domain/franzLand.js';
 
 const AKTIV = new Set(['kritisch', 'eingeschraenkt']);
 
@@ -106,6 +107,30 @@ const TEXTE = {
     ohne_cta: (l) => `Ver comunicações de farmácias em ${l} e criar alertas — grátis`,
     laender_ohne: 'Países sem lista oficial no ApoPulse — comunicações de farmácias',
     nicht_gefunden: 'Página não encontrada', alle_engpaesse: 'Todas as ruturas de medicamentos por país',
+  },
+  fr: {
+    index_titel: 'Pénuries de médicaments — à jour, avec sources',
+    index_beschr: 'Listes actuelles de pénuries des autorités du médicament, par pays. Avec source, date et historique.',
+    land_titel: (l) => `Pénuries de médicaments ${l} — liste actuelle`,
+    land_beschr: (n, l, q) => `${n} substances figurent actuellement sur la liste des pénuries ${frLand(l)}. Source : ${q}.`,
+    land_leer: (l) => `Aucune substance ne figure actuellement sur la liste des pénuries ${frLand(l)}.`,
+    w_titel_knapp: (w, l) => `${w} : pénurie ${frLand(l)}`,
+    w_titel_nicht: (w, l) => `${w} ${frLand(l)} : aucune pénurie signalée actuellement`,
+    w_knapp: (w, l, q) => `${w} figure sur la liste des pénuries ${frLand(l)} (source : ${q}).`,
+    w_nicht: (w, l, bis) => `${w} ne figure actuellement pas sur la liste des pénuries ${frLand(l)}.${bis ? ` Dernière pénurie jusqu’au ${bis}.` : ''}`,
+    seit: (n) => (n <= 0 ? 'depuis aujourd’hui' : n === 1 ? 'depuis 1 jour' : `depuis ${n} jours`),
+    praeparate: 'Produits concernés', status: { kritisch: 'indisponible', eingeschraenkt: 'disponibilité limitée' },
+    bis: 'prévu jusqu’au', verlauf: (n, d) => `${n}× sur la liste depuis le début de l’enregistrement${d ? `, en moyenne ${d} jours` : ''}.`,
+    anderswo: (n) => (n === 1 ? 'Également en pénurie dans 1 autre pays.' : `Également en pénurie dans ${n} autres pays.`),
+    quelle: 'Source', stand: 'Mis à jour', wirkstoff: 'Substance', lage: 'Statut', laender: 'Pays avec liste officielle',
+    cta_w: (w) => `Être averti gratuitement dès que quelque chose change pour ${w}`, cta_land: 'Vérifier votre propre liste et créer des alertes — gratuit',
+    hinweis: 'Données issues de la liste officielle des pénuries. Pas une recommandation de traitement ou de substitution — veuillez demander conseil à votre pharmacien ou médecin.',
+    zurueck_land: (l) => `Toutes les pénuries ${frLand(l)}`, alle_laender: 'Tous les pays',
+    ohne_titel: (l) => `Pénuries de médicaments ${frLand(l)}`,
+    ohne_beschr: (l, r) => `ApoPulse ne reçoit pas (encore) de liste officielle des pénuries pour ${l}${r ? ` (autorité : ${r})` : ''}. Dans ApoPulse, les pharmacies ${frLand(l)} signalent elles-mêmes les pénuries et confirment mutuellement leurs signalements — clairement indiqués comme non officiels.`,
+    ohne_cta: (l) => `Voir les signalements des pharmacies ${frLand(l)} et créer des alertes — gratuit`,
+    laender_ohne: 'Pays sans liste officielle dans ApoPulse — signalements des pharmacies',
+    nicht_gefunden: 'Page introuvable', alle_engpaesse: 'Toutes les pénuries de médicaments par pays',
   },
 };
 

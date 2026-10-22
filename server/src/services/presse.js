@@ -58,17 +58,19 @@ export const SUCHWOERTER = Object.freeze({
   de: ['Arzneimittel', 'Medikamente', 'Apotheke', 'Apotheken', 'Lieferengpass', 'Pharmaindustrie'],
   pt: ['medicamentos', 'farmácia', 'farmácias', 'farmacêutica', '"falta de medicamentos"', '"rutura de medicamentos"'],
   en: ['pharmaceutical', 'pharmaceuticals', 'pharmacy', 'medicines', '"drug shortage"', '"medicine shortage"'],
+  fr: ['médicaments', 'pharmacie', 'pharmacies', 'pharmaceutique', '"pénurie de médicaments"', '"rupture de médicaments"'],
 });
 
 /** Welche Sprachen die Presse eines Landes schreibt (Reihenfolge egal). */
 const LAND_SPRACHEN = Object.freeze({
-  AT: ['de'], DE: ['de'], LI: ['de'], CH: ['de', 'en'],
+  AT: ['de'], DE: ['de'], LI: ['de'], CH: ['de', 'fr', 'en'],
   PT: ['pt'], BR: ['pt'], AO: ['pt'], MZ: ['pt', 'en'],
-  GB: ['en'], US: ['en'], CA: ['en'], AU: ['en'],
+  GB: ['en'], US: ['en'], CA: ['en', 'fr'], AU: ['en'],
   NG: ['en'], KE: ['en'], GH: ['en'], ZA: ['en'],
   UG: ['en'], TZ: ['en'], ZM: ['en'], ZW: ['en'], RW: ['en'], BW: ['en'],
   NA: ['en'], MW: ['en'], ET: ['en'], SL: ['en'], LR: ['en'], GM: ['en'],
-  LS: ['en'], SZ: ['en'], MU: ['en'], SC: ['en'], SS: ['en'], ER: ['en'],
+  // Mauritius und Seychellen: Presse überwiegend bzw. teils französisch.
+  LS: ['en'], SZ: ['en'], MU: ['en', 'fr'], SC: ['en', 'fr'], SS: ['en'], ER: ['en'],
   CV: ['pt'], GW: ['pt'], ST: ['pt'],
 });
 

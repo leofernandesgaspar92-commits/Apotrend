@@ -13,6 +13,7 @@
 //  Alles, was aus der Adresse kommt, wird escaped — die Seite ist öffentlich.
 // ============================================================================
 
+import { frLand } from '../domain/franzLand.js';
 
 const TEXTE = {
   de: {
@@ -71,6 +72,25 @@ const TEXTE = {
     cta_bestaetigen: (w) => `Também em rutura na sua farmácia? Confirme ${w} no ApoPulse — grátis`,
     cta_lage: 'Ver todas as ruturas com fonte — grátis', mehr: 'No ApoPulse: histórico, situação no estrangeiro, verificar a sua lista.',
     marke: 'ApoPulse — ruturas de medicamentos com fonte',
+  },
+  fr: {
+    lage_titel: (n, land) => `${n} substances sur la liste des pénuries ${frLand(land)}`,
+    lage_titel_1: (land) => `1 substance sur la liste des pénuries ${frLand(land)}`,
+    lage_ohne: (land) => `Pénuries de médicaments ${frLand(land)}`,
+    lage_beschr: (neu, quellen) => `${neu} nouvelle(s) au cours des 7 derniers jours · Source : ${quellen}`,
+    w_knapp: (w, land) => `${w} : en pénurie ${frLand(land)}`,
+    w_seit: (n) => (n <= 0 ? 'depuis aujourd’hui' : n === 1 ? 'depuis 1 jour' : `depuis ${n} jours`),
+    w_nicht: (w, land) => `${w} : actuellement pas signalé en pénurie ${frLand(land)}`,
+    w_unbekannt: (w, land) => `${w} : pas encore de liste officielle pour ${land}`,
+    w_apo_best: (w, land, n) => `${w} : signalé en pénurie par ${n} pharmacies ${frLand(land)}`,
+    w_apo: (w, land, n) => (n === 1 ? `${w} : 1 pharmacie ${frLand(land)} signale une pénurie (pas encore confirmée)` : `${w} : ${n} pharmacies ${frLand(land)} signalent une pénurie (pas encore confirmée)`),
+    lage_apo: (n, land) => (n === 1 ? `1 substance signalée en pénurie par des pharmacies ${frLand(land)}` : `${n} substances signalées en pénurie par des pharmacies ${frLand(land)}`),
+    lage_apo_beschr: (b) => `dont ${b} confirmée(s) par plusieurs pharmacies · non officiel`,
+    quelle: 'Source', community: 'signalé par des pharmacies, non officiel', referenz: 'données de référence', stand: 'Mis à jour',
+    cta_w: (w) => `Être averti gratuitement dès que quelque chose change pour ${w}`,
+    cta_bestaetigen: (w) => `En pénurie chez vous aussi ? Confirmez ${w} dans ApoPulse — gratuit`,
+    cta_lage: 'Voir toutes les pénuries avec sources — gratuit', mehr: 'Dans ApoPulse : historique, situation à l’étranger, vérification de votre propre liste.',
+    marke: 'ApoPulse — pénuries de médicaments avec sources',
   },
 };
 

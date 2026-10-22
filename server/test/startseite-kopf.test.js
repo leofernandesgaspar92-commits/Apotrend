@@ -15,7 +15,8 @@ test('Sprache: bevorzugte unterstützte, sonst Englisch', () => {
   assert.equal(kopfSprache('pt-AO'), 'pt');
   assert.equal(kopfSprache('sw-TZ,sw;q=0.9,en;q=0.5'), 'en');
   assert.equal(kopfSprache(''), 'en');
-  assert.equal(kopfSprache('fr-FR'), 'en');
+  assert.equal(kopfSprache('fr-SN,fr;q=0.9'), 'fr', 'Französisch seit 10/2026');
+  assert.equal(kopfSprache('es-GQ'), 'en');
 });
 
 test('Über HTTP: Kopf je Sprache, absolutes Vorschaubild, eigener ETag, App-Inhalt unverändert', { timeout: 60000 }, async () => {

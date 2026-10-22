@@ -70,7 +70,7 @@ import { cryptoWallets, paymentRoutes } from '../data/cryptoWallets.js';
 import { listProducts, getProduct } from '../data/products.js';
 import { createAmrService } from '../services/amr.js';
 import { createPatientInfoService } from '../services/patientInfo.js';
-import { COUNTRIES, DEFAULT_COUNTRY, isValidCountry, listCountries, normalizeCountry, normalizeLocale, istQuellRegion, regionVon, laenderInRegion } from '../data/countries.js';
+import { COUNTRIES, DEFAULT_COUNTRY, isValidCountry, listCountries, normalizeCountry, normalizeLocale, SUPPORTED_LOCALES, istQuellRegion, regionVon, laenderInRegion } from '../data/countries.js';
 import { countryConfig, featureStatus, isFeatureBlocked } from '../data/countryFeatures.js';
 import {
   availablePurposes, calculateFee, checkoutFieldsFor, complianceProfile,
@@ -98,7 +98,7 @@ import { suchProtokoll } from '../services/feedDiscovery.js';
 import { createSignalStore, baueSignal } from '../services/signals.js';
 import { benachrichtigeZuSignal } from '../services/signalAlerts.js';
 import { extractSignal, aiKonfiguration, KATEGORIEN as SIGNAL_KATEGORIEN } from '../services/aiExtract.js';
-import { createTranslateService, MAX_ZEICHEN as TRANSLATE_MAX } from '../services/aiTranslate.js';
+import { createTranslateService, MAX_ZEICHEN as TRANSLATE_MAX, ZIELSPRACHEN as TRANSLATE_SPRACHEN } from '../services/aiTranslate.js';
 import { rxErlaubt, verificationStatusFor } from '../domain/jurisdiction.js';
 import { erfundeneStartmeldungenEntfernen } from '../services/startbereinigung.js';
 import { createChronik, chronikFuerBetrachter } from '../services/chronik.js';
@@ -1998,7 +1998,7 @@ const routes = [
   //  kostet. Der Dienst hat zusaetzlich einen Zwischenspeicher, damit derselbe
   //  Text nicht zweimal bezahlt wird.
   ['GET', /^\/api\/translate\/status$/, true, async () => ({
-    available: translate.verfuegbar(), languages: ['de', 'en', 'pt'], max_chars: TRANSLATE_MAX,
+    available: translate.verfuegbar(), languages: TRANSLATE_SPRACHEN, max_chars: TRANSLATE_MAX,
   })],
   ['POST', /^\/api\/translate$/, true, async ({ userId, body }) => {
     const key = 'tr:' + userId;
@@ -2050,7 +2050,7 @@ const routes = [
     const region = regionVon(land);
     if (ebene === 'region') herkunft = [...laenderInRegion(region), ...Object.entries({ AFR: 'AFRICA', EU: 'EUROPE' }).filter(([, r]) => r === region).map(([k]) => k)];
     if (ebene === 'welt') {
-      const sp = ['de', 'en', 'pt'].includes(query.get('sprache')) ? query.get('sprache') : ((COUNTRIES[land] && COUNTRIES[land].locale_default) || 'en');
+      const sp = SUPPORTED_LOCALES.includes(query.get('sprache')) ? query.get('sprache') : ((COUNTRIES[land] && COUNTRIES[land].locale_default) || 'en');
       herkunft = ['INT', 'EU', 'AFR', ...Object.values(COUNTRIES).filter((c) => c.locales.includes(sp)).map((c) => c.code)];
     }
     // Warnungen (Fälschung/Rückruf) per Stichwort in der Behördenmeldung — `nur=warnungen` filtert.
@@ -2724,7 +2724,7 @@ const server = http.createServer(async (req, res) => {
     const m = pathname.match(/^\/engpaesse(?:\/([a-zA-Z]{2})(?:\/([a-z0-9-]{1,80}))?)?\/?$/);
     let html = null;
     // Sprache für Übersicht und 404 (gehören keinem Land): aus Accept-Language.
-    const sp = (String(req.headers['accept-language'] || '').toLowerCase().match(/\b(de|en|pt)\b/) || [null, 'en'])[1];
+    const sp = (String(req.headers['accept-language'] || '').toLowerCase().match(/\b(de|en|pt|fr)\b/) || [null, 'en'])[1];
     if (m && !m[1]) { res.setHeader('Vary', 'Accept-Language'); html = oeffentlich.index({ basis, sp }); }
     else if (m && !m[2]) html = oeffentlich.land(m[1].toUpperCase(), { basis });
     else if (m) html = oeffentlich.wirkstoff(m[1].toUpperCase(), m[2], { basis });

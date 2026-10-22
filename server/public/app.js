@@ -80,7 +80,8 @@ function applyTheme() {
 // Die Sprachtexte stehen in public/i18n.js — dort auch die Begründung.
 // Sie wird in index.html VOR dieser Datei geladen; `I18N` ist dadurch hier
 // sichtbar (gemeinsamer globaler Bindungsbereich klassischer Skripte).
-const SUPPORTED_LOCALES = ['de','en','pt'];
+// Französisch seit 10/2026: Sprache von gut 20 afrikanischen Ländern (Senegal bis Kongo).
+const SUPPORTED_LOCALES = ['de','en','pt','fr'];
 let LOCALE = (() => { const s = localStorage.getItem('apo_locale'); return SUPPORTED_LOCALES.includes(s) ? s : 'de'; })();
 // <html lang> beim Laden mit der aktiven Sprache synchronisieren (statisch „de"),
 // damit Screenreader engl./pt. Inhalte nicht deutsch aussprechen.
@@ -178,10 +179,45 @@ function tc(key) {
   return t(key);
 }
 
+// ── Französisch: Präposition vor dem Ländernamen ────────────────────────────
+// „en {land}" wäre für Senegal, Kamerun, Mali falsch („au Sénégal"). Regeln
+// und Begründung: src/domain/franzLand.js — dies ist eine Kopie, die
+// test/franzoesisch.test.js gleich hält.
+const FR_LAND = {
+  insel: ['Maurice', 'Madagascar', 'Djibouti', 'Sao Tomé-et-Principe', 'São Tomé-et-Principe', 'Malte', 'Chypre', 'Singapour', 'Cuba', 'Monaco', 'Bahreïn'],
+  plural: ['Comores', 'Seychelles', 'États-Unis', 'Pays-Bas', 'Philippines', 'Émirats arabes unis', 'Maldives'],
+  maskulinE: ['Mozambique', 'Zimbabwe', 'Cambodge', 'Mexique', 'Belize', 'Royaume-Uni'],
+};
+function frLand(text, art = 'dans') {
+  const s = String(text ?? '');
+  const m = s.match(/^([^\p{L}]*)(.*)$/u);
+  const vor = m[1]; const name = m[2].trim();
+  if (!name) return s;
+  const dans = art !== 'de';
+  let p;
+  if (FR_LAND.insel.includes(name)) p = dans ? 'à ' : 'de ';
+  else if (FR_LAND.plural.includes(name)) p = dans ? 'aux ' : 'des ';
+  else if (/^[AEIOUYÉÈÊÎÔÂ]/i.test(name)) p = dans ? 'en ' : 'd’';
+  else if (/^République\b/.test(name)) p = dans ? 'en ' : 'de la ';
+  else if (/e$/.test(name.split('-')[0]) && !FR_LAND.maskulinE.includes(name)) p = dans ? 'en ' : 'de ';
+  else p = dans ? 'au ' : 'du ';
+  return p + vor + name;
+}
+// „en {land}", „En {country}", „de {land}", „à {flag} {land}" -> fertige Präposition + Name.
+function frPraepositionen(s, vars) {
+  return s.replace(/(^|[\s(])(en|En|de|à) (\{flag\} )?\{(land|country)\}/g, (ganz, vor, p, flag, k) => {
+    if (vars[k] == null) return ganz;
+    const name = (flag && vars.flag ? vars.flag + ' ' : '') + vars[k];
+    const r = frLand(name, p === 'de' ? 'de' : 'dans');
+    return vor + (p === 'En' ? r.charAt(0).toUpperCase() + r.slice(1) : r);
+  });
+}
+
 // Füllt alle [data-i18n]-Elemente (Textinhalt) und [data-i18n-ph] (Platzhalter).
 // t() mit einfacher Platzhalter-Ersetzung: ti('key', {land:'…'}) -> {land} wird ersetzt.
 function ti(key, vars) {
   let s = t(key);
+  if (vars && LOCALE === 'fr') s = frPraepositionen(s, vars);
   if (vars) for (const k in vars) s = s.split('{'+k+'}').join(vars[k]);
   return s;
 }
@@ -536,7 +572,7 @@ function browserSprache() {
     const b = String(l || '').slice(0, 2).toLowerCase();
     if (SUPPORTED_LOCALES.includes(b)) return b;
   }
-  return 'en'; // unbekannte Sprache (z. B. Suaheli, Französisch): Englisch statt Deutsch
+  return 'en'; // unbekannte Sprache (z. B. Suaheli, Arabisch): Englisch statt Deutsch
 }
 function vorgeschlageneLaender(countries) {
   const codes = [];
@@ -638,6 +674,10 @@ async function zeigeLage(box, land) {
 function authScreen() {
   setDocTitle('');
   hideHeaderForAuth();
+  // Kopf („Menü") und Sprunglink stehen in index.html auf Deutsch. Wer die
+  // Anmeldeseite direkt neu lädt, sah sie bisher auch auf Englisch,
+  // Portugiesisch und Französisch so — beschriftet wurde erst nach der Länderwahl.
+  applyI18n();
   app.innerHTML = '';
   app.classList.add('auth-mode'); // breitere Landing-Ansicht (Wert links, Formulare rechts)
   const ac = currentAuthCountry();
@@ -2139,7 +2179,7 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
 // Premium: Beobachtungsliste als sauberer, druckbarer Team-Aushang (Status + Notizen).
 // ── Gemeinsame Druck-Helfer (von allen window.open-Druck-Reports genutzt) ──
 // Locale-korrektes Datum bzw. Geldbetrag für Druck-Reports.
-function printDate() { return new Date().toLocaleDateString(LOCALE === 'de' ? 'de-AT' : LOCALE === 'pt' ? 'pt-PT' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric' }); }
+function printDate() { return new Date().toLocaleDateString(t('_bcp47'), { year: 'numeric', month: 'long', day: 'numeric' }); }
 function printMoney(v) { return LOCALE === 'en' ? Number(v).toFixed(2) : Number(v).toFixed(2).replace('.', ','); }
 // Öffnet ein Druck-Dokument mit gemeinsamem Rahmen (Popup-Guard, <head>/<body>, Auto-Print).
 // `css` bleibt pro Report unverändert -> keine visuelle Änderung. Gibt false bei Popup-Blocker.
@@ -3282,7 +3322,7 @@ async function buildCurrencyConverter(box) {
     <div data-res style="font-weight:700;font-size:18px;margin-top:8px"></div>
     <div class="muted" style="font-size:12px;margin-top:2px">${esc(ti('cc_updated', { date: data.updated_at ? new Date(data.updated_at).toLocaleDateString(bcp47()) : '—' }))} · open.er-api.com</div>`;
   const amt = box.querySelector('[data-amt]'), from = box.querySelector('[data-from]'), to = box.querySelector('[data-to]'), res = box.querySelector('[data-res]');
-  const fmt = (n) => n.toLocaleString(LOCALE === 'en' ? 'en-GB' : LOCALE === 'pt' ? 'pt-PT' : 'de-AT', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+  const fmt = (n) => n.toLocaleString(t('_bcp47'), { maximumFractionDigits: 2, minimumFractionDigits: 2 });
   const recompute = () => {
     const a = parseFloat(amt.value); const rf = rates[from.value], rt = rates[to.value];
     if (!(a >= 0) || !(rf > 0) || !(rt > 0)) { res.textContent = '—'; return; }
@@ -7326,13 +7366,14 @@ async function openStewardship() {
 // Mehrsprachige Patienten-Infokarten (Antibiotika) — Aufklärung zur Abgabe.
 // Ohne Auswahl: Sprache der Oberfläche (vorher immer Deutsch — auch in Uganda).
 let patientLang = null;
-const PATIENT_SPRACHEN = ['de', 'en', 'pt', 'tr'];
+const PATIENT_SPRACHEN = ['de', 'en', 'pt', 'fr', 'tr'];
 const patientStart = () => (PATIENT_SPRACHEN.includes(LOCALE) ? LOCALE : 'en');
 // Überschrift der Patienteninfo in der gewählten Patienten-Sprache (de/en/tr) —
 // damit gedruckte Info-Blätter nicht deutsch betitelt sind, obwohl der Inhalt engl./türk. ist.
 function patientInfoHeading(lang) {
   return lang === 'en' ? 'Antibiotics – Patient information'
     : lang === 'pt' ? 'Antibióticos – Informação ao doente'
+    : lang === 'fr' ? 'Antibiotiques – Information patient'
     : lang === 'tr' ? 'Antibiyotikler – Hasta bilgisi'
     : 'Antibiotika – Patienteninformation';
 }
@@ -7343,7 +7384,7 @@ function printPatientInfo(d) {
     h2{font-size:16px;margin:0 0 4px} p{margin:0;font-size:14px;line-height:1.5} .src{font-size:12px;color:#555;margin-top:16px}`;
   // Quell-Label in der Patienten-Sprache (wie die Überschrift) — ein deutsches „Quelle:"
   // auf einem englischen/türkischen Blatt wäre inkonsistent.
-  const srcLabel = d.lang === 'en' ? 'Source' : d.lang === 'pt' ? 'Fonte' : d.lang === 'tr' ? 'Kaynak' : 'Quelle';
+  const srcLabel = d.lang === 'en' ? 'Source' : d.lang === 'pt' ? 'Fonte' : d.lang === 'fr' ? 'Source' : d.lang === 'tr' ? 'Kaynak' : 'Quelle';
   const body = `<h1>🧫 ${esc(patientInfoHeading(d.lang))}</h1>${cards}
     <div class="src">${esc(srcLabel)}: ${esc(d.source.label)} · ${esc(d.source.url)}<br>${esc(d.disclaimer)}</div>`;
   openPrintDoc(patientInfoHeading(d.lang), css, body, d.lang);
@@ -7407,6 +7448,11 @@ const ZETTEL_L = {
     dauer: 'Duração', hinweise: 'Notas importantes',
     fragen: 'Em caso de dúvidas, contacte a sua farmácia ou o seu médico.',
     herkunft: 'Indicações conforme a receita — preenchidas pela equipa da farmácia.' },
+  fr: { title: 'Plan de prise', morgens: 'Matin', mittags: 'Midi', abends: 'Soir', nacht: 'Au coucher',
+    essen: { unabh: 'Prendre indépendamment des repas', vor: 'Prendre avant les repas', zum: 'Prendre pendant les repas', nach: 'Prendre après les repas' },
+    dauer: 'Durée du traitement', hinweise: 'Remarques importantes',
+    fragen: 'Pour toute question, adressez-vous à votre pharmacie ou à votre médecin.',
+    herkunft: 'Indications selon l’ordonnance — remplies par l’équipe de la pharmacie.' },
   tr: { title: 'İlaç kullanım planı', morgens: 'Sabah', mittags: 'Öğle', abends: 'Akşam', nacht: 'Gece',
     essen: { unabh: 'Yemekten bağımsız alın', vor: 'Yemekten önce alın', zum: 'Yemekle birlikte alın', nach: 'Yemekten sonra alın' },
     dauer: 'Kullanım süresi', hinweise: 'Önemli notlar',
@@ -7499,7 +7545,7 @@ function openBegleitzettel() {
   const drawLangs = () => {
     langBox.innerHTML = '';
     const aktiv = zettelLang || patientStart();
-    [['de','Deutsch'],['en','English'],['pt','Português'],['tr','Türkçe']].forEach(([c,l]) => {
+    [['de','Deutsch'],['en','English'],['pt','Português'],['fr','Français'],['tr','Türkçe']].forEach(([c,l]) => {
       const bt = el(`<button class="small sortbtn${aktiv===c?' active':''}" aria-pressed="${aktiv===c}">${l}</button>`);
       bt.onclick = () => { zettelLang = c; drawLangs(); drawPrev(); };
       langBox.appendChild(bt);

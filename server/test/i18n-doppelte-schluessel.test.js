@@ -39,8 +39,8 @@ function doppelte(block) {
   return [...zaehler].filter(([, n]) => n > 1).map(([k, n]) => `${k} (${n}×)`);
 }
 
-test('i18n: drei Sprachblöcke gefunden', () => {
-  assert.deepEqual(Object.keys(bloecke()).sort(), ['de', 'en', 'pt']);
+test('i18n: vier Sprachblöcke gefunden (de, en, pt, fr)', () => {
+  assert.deepEqual(Object.keys(bloecke()).sort(), ['de', 'en', 'fr', 'pt']);
 });
 
 for (const [sprache, block] of Object.entries(bloecke())) {

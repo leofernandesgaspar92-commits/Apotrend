@@ -55,7 +55,8 @@ export const COUNTRIES = {
 };
 
 export const DEFAULT_COUNTRY = 'AT';
-export const SUPPORTED_LOCALES = ['de', 'en', 'pt'];
+// Französisch seit 10/2026 (frankophones Afrika). Die Oberflächentexte stehen in public/i18n.js.
+export const SUPPORTED_LOCALES = ['de', 'en', 'pt', 'fr'];
 
 // Gültiger Ländercode? (Großschreibung normalisiert.)
 export function isValidCountry(code) {

@@ -7,7 +7,7 @@
 //  Adresse (manche Messenger zeigen dann keins).
 //
 //  Jetzt: Titel, Beschreibung und Open-Graph-Angaben nach Accept-Language
-//  (de/en/pt; ohne passende Angabe Englisch — die Plattform ist international),
+//  (de/en/pt/fr; ohne passende Angabe Englisch — die Plattform ist international),
 //  Bild mit absoluter Adresse. Der Inhalt der App bleibt unverändert; die
 //  App-Sprache folgt weiterhin dem gewählten Land.
 // ============================================================================
@@ -27,6 +27,11 @@ const KOPF = {
     titel: 'ApoPulse — ruturas de medicamentos com fonte',
     beschr: 'Ruturas de medicamentos com fonte: listas oficiais e comunicações de farmácias, alerta a cada alteração, verificar a sua lista — para farmácias, distribuição e compras.',
     og: 'Listas oficiais e comunicações de farmácias — atuais, claras, com alerta a cada alteração.',
+  },
+  fr: {
+    titel: 'ApoPulse — pénuries de médicaments avec sources',
+    beschr: 'Pénuries de médicaments avec sources : listes officielles et signalements des pharmacies, alerte à chaque changement, vérification de votre propre liste — pour pharmacies, grossistes et achats.',
+    og: 'Listes officielles et signalements des pharmacies — à jour, clairs, avec une alerte à chaque changement.',
   },
 };
 
@@ -74,6 +79,12 @@ const MANIFEST = {
     description: 'Ruturas de medicamentos com fonte: listas oficiais e comunicações de farmácias, alerta a cada alteração.',
     kurz: { shortages: ['Ruturas', 'Ruturas', 'Ver e comunicar ruturas atuais'], overview: ['Para si', 'Para si', 'A sua visão geral com substâncias acompanhadas'], news: ['Notícias', 'Notícias', 'Avisos das autoridades com fonte'] },
     bilder: ['Ruturas com fonte e data', 'Visão geral: o que conta hoje', 'Notícias das autoridades com fonte'],
+  },
+  fr: {
+    name: 'ApoPulse – pénuries de médicaments avec sources',
+    description: 'Pénuries de médicaments avec sources : listes officielles et signalements des pharmacies, alerte à chaque changement.',
+    kurz: { shortages: ['Pénuries', 'Pénuries', 'Voir et signaler les pénuries actuelles'], overview: ['Pour vous', 'Pour vous', 'Votre vue d’ensemble avec les substances suivies'], news: ['Actualités', 'Actualités', 'Communications des autorités avec sources'] },
+    bilder: ['Pénuries avec source et date', 'Vue d’ensemble : ce qui compte aujourd’hui', 'Actualités des autorités avec sources'],
   },
 };
 

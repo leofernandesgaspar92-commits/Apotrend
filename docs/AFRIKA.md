@@ -467,8 +467,49 @@ Dezimaltrenner) → Portugiesisch-Standardformat; der Test prüft jetzt das Euro
 **Noch nicht abgedeckt — 27 Länder, weil die Sprache fehlt:**
 - **Französisch (≈ 21):** Senegal, Côte d'Ivoire, Kamerun, DR Kongo, Kongo, Gabun, Burkina Faso, Mali,
   Niger, Tschad, Zentralafrika, Benin, Togo, Guinea, Madagaskar, Burundi, Dschibuti, Komoren,
-  Mauretanien (auch Arabisch); Marokko, Algerien, Tunesien (Arabisch/Französisch). → **nächster Schritt:
-  Französisch als vierte Sprache der App.**
+  Mauretanien (auch Arabisch); Marokko, Algerien, Tunesien (Arabisch/Französisch). → Französisch ist
+  seit 22.10.2026 die vierte Sprache der App (siehe unten); die Länder folgen.
 - **Arabisch:** Ägypten, Libyen, Sudan (u. a.) — braucht Rechts-nach-links-Darstellung.
 - **Spanisch:** Äquatorialguinea. **Somali/Arabisch:** Somalia.
 
+
+## Französisch — vierte Sprache der App (Stand 22.10.2026)
+
+Voraussetzung für das frankophone Afrika (gut 20 Länder). Die Länder selbst folgen im nächsten Schritt;
+die Sprache ist jetzt vollständig da:
+
+- **Oberfläche:** alle 2 303 Texte auf Französisch (Sie-Form, « » nur wo nötig, Platzhalter und
+  Symbole wie im Englischen). Geprüft: gleiche Schlüssel wie Deutsch, gleiche Platzhalter wie Englisch,
+  kein Text wortgleich englisch geblieben.
+- **Server-Texte:** Wochenbericht, Push-Nachrichten, Vorschau beim Teilen (WhatsApp), öffentliche
+  Engpass-Seiten (Google), Startseiten-Kopf und App-Name auf dem Handy, Lagebild-Hinweis, Übersetzen auf
+  Zuruf (Zielsprache fr), Antibiotika-Quellen.
+- **Patienten-Infokarten und Begleitzettel** auf Französisch (5 Karten, Hinweis, Quelle OMS/AGES;
+  Entsorgung außerhalb Österreichs ohne Rücknahme-Versprechen — wie in den anderen Sprachen).
+- **Erste Schritte (Afrika):** die 14 Vorschläge auf Französisch (Artéméther/Luméfantrine, Ocytocine,
+  Sels de réhydratation orale …).
+- **Presse-Suche:** französische Suchwörter; Mauritius und Seychellen suchen jetzt englisch **und**
+  französisch (dort schreibt die Presse überwiegend bzw. teils französisch), Schweiz und Kanada ebenso.
+
+**Grammatik der Ländernamen.** „en {Land}" ist für die halbe Region falsch: richtig ist „au Sénégal",
+„au Cameroun", aber „en Côte d'Ivoire", „aux Comores", „à Madagascar". Für Apothekerinnen in Dakar liest
+sich der Fehler wie Maschinenübersetzung — und dann traut man auch den Engpass-Angaben weniger.
+`server/src/domain/franzLand.js` setzt die Präposition nach festen Regeln (Inselstaat, Plural, Vokal,
+„République …", Geschlecht, Ausnahmen wie Mozambique/Zimbabwe; bei Bindestrich zählt der erste Teil:
+„au Congo-Brazzaville"). Die Oberfläche trägt eine Kopie in `ti()`; ein Test hält beide gleich.
+
+**Wirkstoffe über Sprachen.** Französische (und portugiesische) Namen fielen teils nicht auf denselben
+Schlüssel wie die englischen — „Ocytocine"/„Ocitocina" ≠ „Oxytocin", „Sulfate de zinc" ≠ „Zinc
+sulfate". Dann hätte die Frühwarnung einen Engpass in Kenia für eine Apotheke in Dakar nicht erkannt.
+Jetzt: Füllwörter (de, du, da …) fallen weg, bei „Salz de Metall" steht das Metall vorn, INN-Sprach-
+fassung Ocytocine/Ocitocina, Orale Rehydratationssalze in fr/pt. Gegenrichtung bleibt geprüft:
+Zink- ≠ Magnesiumsulfat, Kaliumchlorid ≠ Kaliumcitrat, Prednison ≠ Prednisolon.
+
+**Bewusst nicht gemacht:** Behördenmeldungen werden weiterhin beim Eingang in de/en/pt
+zusammengefasst und gespeichert. Französisch kommt über „Übersetzen" auf Zuruf — keine neue
+Datenbankspalte und keine Mehrkosten pro Meldung. Wer auf Französisch liest, sieht bis dahin die
+englische Zusammenfassung bzw. das Original (so ist klar, welche Sprache es ist).
+
+**Nebenbei behoben (alle Sprachen):** Wer die Anmeldeseite direkt neu lud, sah Kopfzeile („Menü") und
+Sprunglink auf Deutsch — auch auf Englisch und Portugiesisch. Jetzt beschriftet die Anmeldeseite den
+Kopf selbst.

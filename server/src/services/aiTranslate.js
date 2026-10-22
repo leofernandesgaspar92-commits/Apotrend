@@ -29,9 +29,14 @@
 // ============================================================================
 
 import crypto from 'node:crypto';
-import { aiKonfiguration, frageAnbieter, SPRACHEN } from './aiExtract.js';
+import { aiKonfiguration, frageAnbieter } from './aiExtract.js';
 
-const SPRACHNAME = { de: 'Deutsch', en: 'English', pt: 'Português' };
+// Zielsprachen = Sprachen der Oberfläche. Bewusst NICHT die Extraktions-
+// Sprachen (aiExtract.SPRACHEN, de/en/pt): Die werden bei jeder Meldung
+// vorab erzeugt und gespeichert (summaryDe/En/Pt). Französisch wird nur auf
+// Zuruf übersetzt — ohne zusätzliche Spalte und ohne Mehrkosten je Meldung.
+export const ZIELSPRACHEN = ['de', 'en', 'pt', 'fr'];
+const SPRACHNAME = { de: 'Deutsch', en: 'English', pt: 'Português', fr: 'Français' };
 
 /**
  * Der Auftrag an das Modell.
@@ -104,8 +109,8 @@ export function createTranslateService({
       const t = String(text ?? '').trim();
       const z = String(ziel || '').toLowerCase();
       if (!t) { const e = new Error('Kein Text zum Übersetzen.'); e.code = 'translate_empty'; e.status = 400; throw e; }
-      if (!SPRACHEN.includes(z)) {
-        const e = new Error(`Zielsprache nicht unterstützt (${SPRACHEN.join('/')}).`);
+      if (!ZIELSPRACHEN.includes(z)) {
+        const e = new Error(`Zielsprache nicht unterstützt (${ZIELSPRACHEN.join('/')}).`);
         e.code = 'translate_lang'; e.status = 400; throw e;
       }
       if (t.length > MAX_ZEICHEN) {

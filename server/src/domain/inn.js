@@ -21,6 +21,12 @@
 //      Seiten gleich angewandt — es entsteht ein Vergleichsschlüssel, kein Name.
 //   3. SYNONYME nur, wo US-Name und internationaler Name (INN) belegt
 //      verschieden sind (Acetaminophen = Paracetamol, Albuterol = Salbutamol).
+//   3b. SPRACHFASSUNGEN der INN, wo die Lautregeln nicht reichen
+//      (Oxytocin / Ocytocine / Ocitocina).
+//   3c. Französisch/Portugiesisch stellen das Salz VOR das Metall
+//      („Sulfate de zinc", „Sulfato de magnésio"). Füllwörter (de, du, da …)
+//      fallen weg; bleibt nur Metall + Salz, steht das Metall vorn — wie in
+//      „Zinc sulfate" und „Zinksulfat".
 //   4. KOMBINATIONEN bleiben Kombinationen: „Amoxicillin/Clavulansäure" ist
 //      nicht „Amoxicillin". Bestandteile werden sortiert, damit die Reihenfolge
 //      keine Rolle spielt.
@@ -39,6 +45,7 @@ const SALZ = [
   'chlorid', 'chloride', 'lactat', 'lactate', 'gluconat', 'gluconate', 'tosilat', 'tosylate', 'pamoat', 'pamoate',
   'lysinat', 'lysinate', 'dipropionat', 'dipropionate', 'propionat', 'propionate', 'valerat', 'valerate', 'stearat', 'stearate',
   'natrium', 'sodium', 'sodico', 'kalium', 'potassium', 'potassico', 'calcium', 'calcico', 'magnesium',
+  'sulfato',
 ];
 // Kationen: Bleibt nur so etwas übrig, war der „Zusatz" der Wirkstoff.
 const KATION = new Set(['natrium', 'sodium', 'sodico', 'kalium', 'potassium', 'potassico', 'calcium', 'calcico', 'magnesium', 'lithium', 'zink', 'zinc', 'eisen', 'iron']);
@@ -55,7 +62,18 @@ const SYNONYME = {
   meperidine: 'pethidin', glyburide: 'glibenclamid', isoproterenol: 'isoprenalin',
   cyclosporine: 'ciclosporin', frusemide: 'furosemid', rifampin: 'rifampicin', dipyrone: 'metamizol',
   amoxycillin: 'amoxicillin',
+  // INN-Sprachfassungen (WHO-INN-Listen: fr. „ocytocine", pt. „ocitocina").
+  ocytocine: 'oxytocin',
+  // Orale Rehydratationssalze (WHO-Liste unentbehrlicher Arzneimittel) — kein
+  // INN, aber auf dem Afrika-Vorschlag in jeder Sprache.
+  'sels de rehydratation orale': 'oral rehydration salts', 'sais de reidratacao oral': 'oral rehydration salts',
 };
+// Verbindungswörter in fr./pt. Salznamen („sulfate DE zinc") — nie selbst ein Wirkstoff.
+const FUELL = new Set(['de', 'du', 'des', 'd', 'da', 'do', 'das', 'dos']);
+// Portugiesische Metallnamen, die die Lautregeln nicht treffen („zinco" ist zu
+// kurz für die Endvokal-Regel, „magnésio" endet anders als „magnesium").
+const METALL = { zinco: 'zinc', magnesio: 'magnesium' };
+const woerterVon = (s) => s.split(/[\s\-_.()']+/).filter(Boolean).filter((w) => !FUELL.has(w));
 
 const falten = (s) => String(s ?? '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/ß/g, 'ss');
 
@@ -68,10 +86,12 @@ function laut(w) {
 
 function bestandteil(roh) {
   // Stärken und Einheiten („400 mg", „5 µg/ml") gehören nicht zum Namen.
-  let woerter = roh.split(/[\s\-_.()]+/).filter(Boolean).filter((w) => !/^\d/.test(w) && !EINHEIT.has(w));
+  let woerter = woerterVon(roh).filter((w) => !/^\d/.test(w) && !EINHEIT.has(w)).map((w) => METALL[w] || w);
   // Regel 1a: Salz als eigenes Wort — nur, wenn ein Nicht-Salz-Wort bleibt.
   const kern = woerter.filter((w) => !SALZ_SET.has(w));
   if (kern.length && kern.some((w) => !KATION.has(w))) woerter = kern;
+  // Regel 3c: nur Metall + Salz übrig -> Metall zuerst („sulfate zinc" = „zinc sulfate").
+  else if (woerter.some((w) => KATION.has(w))) woerter = [...woerter.filter((w) => KATION.has(w)), ...woerter.filter((w) => !KATION.has(w))];
   // Regel 1b: angehängtes Salz („metoprololsuccinat") — nur, wenn der Rest
   // lang genug und selbst kein Kation ist („kaliumchlorid" bleibt).
   woerter = woerter.map((w) => {
@@ -96,7 +116,7 @@ function bestandteil(roh) {
 // werden wie bisher zusammengezogen.
 function lautWoerter(woerter) { return woerter.map(laut).join('').replace(/(.)\1+/g, '$1'); }
 
-const SYN = new Map(Object.entries(SYNONYME).map(([a, b]) => [lautWoerter(falten(a).split(/[\s\-_.()]+/).filter(Boolean)), lautWoerter(falten(b).split(/[\s\-_.()]+/).filter(Boolean))]));
+const SYN = new Map(Object.entries(SYNONYME).map(([a, b]) => [lautWoerter(woerterVon(falten(a))), lautWoerter(woerterVon(falten(b)))]));
 
 /** Vergleichsschlüssel eines Wirkstoffnamens; '' wenn nichts Verwertbares. */
 export function wirkstoffSchluessel(name) {

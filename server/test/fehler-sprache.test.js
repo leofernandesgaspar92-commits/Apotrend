@@ -22,14 +22,14 @@ function codesImServer() {
     for (const m of s.matchAll(/\.code\s*=\s*'([a-z_0-9]+)'/g)) codes.add(m[1]);
     for (const m of s.matchAll(/code:\s*'([a-z_0-9]+)'/g)) codes.add(m[1]);
   }
-  for (const x of ['de', 'en', 'pt', 'tr']) codes.delete(x); // Sprach-, keine Fehlercodes
+  for (const x of ['de', 'en', 'pt', 'fr', 'tr']) codes.delete(x); // Sprach-, keine Fehlercodes
   return codes;
 }
 
-test('Jeder Fehlercode des Servers hat eine Übersetzung in de, en und pt', () => {
+test('Jeder Fehlercode des Servers hat eine Übersetzung in de, en, pt und fr', () => {
   const codes = codesImServer();
   assert.ok(codes.size > 100, `nur ${codes.size} Codes gefunden — Suche kaputt?`);
-  for (const l of ['de', 'en', 'pt']) {
+  for (const l of ['de', 'en', 'pt', 'fr']) {
     const fehlt = [...codes].filter((k) => !I[l]['e_' + k]);
     assert.deepEqual(fehlt, [], `${l}: ohne Übersetzung`);
   }
@@ -37,6 +37,7 @@ test('Jeder Fehlercode des Servers hat eine Übersetzung in de, en und pt', () =
   // keine Link-Eingabe. Die erste Übersetzung hatte das aus dem Code-Namen falsch geraten.
   assert.match(I.en.e_link_invalid, /unsubscribe/);
   assert.match(I.de.e_link_invalid, /Abmelde-Link/);
+  assert.match(I.fr.e_link_invalid, /désabonnement/);
 });
 
 test('Platzhalter: tx_format nennt Kette und Format auch auf Englisch', { timeout: 60000 }, async () => {
