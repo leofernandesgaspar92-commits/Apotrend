@@ -375,3 +375,20 @@ der Übersicht und jeden Knopf im Antibiotika-Kasten an und meldet „Nicht gefu
 - Nicht gemacht: Swahili, Hausa, Amharisch u. a. Patiententexte zu Antibiotika brauchen eine
   muttersprachliche Fachprüfung; ohne die keine Übersetzung.
 
+**Zweiter Durchgang: alle Knöpfe, alle Reiter, Profile (2026-10-22).** Ein Browser-Rundgang tippte
+für ein Konto in Uganda und eines in Österreich jeden sichtbaren Knopf an: alle Reiter, Menü,
+Wirkstoff-Seite, eine gemeldete Engpass-Karte, eigenes und fremdes Profil. Gefunden und behoben,
+jeweils Bereich ruht → Knopf erscheint nur noch, wenn der Bereich läuft:
+
+| Wo | Knopf | Ruhender Bereich |
+|---|---|---|
+| Jede Engpass-Karte | „Sources", „I need this" | Tauschbörse |
+| Wirkstoff-Seite | „Post an offer", „I need this", „As task" | Tauschbörse, Zusammenarbeit |
+| Beiträge | „Folgen", Hashtag-Links (#stewardship) | Social |
+| Eigenes Profil | „Meine Videosprechstunden", Karte „Team" | Termine, Zusammenarbeit |
+| Fremdes Profil | „Nachricht", „Folgen", „Stummschalten", „Videosprechstunde buchen" | Direktnachrichten, Social, Termine |
+
+Die Engpass-Karten-Knöpfe standen im Live-Betrieb in Österreich und Deutschland auf **jeder** Karte.
+Der Browser-Audit tippt jetzt auch Wirkstoff-Seite, Engpass-Karte und beide Profile durch und meldet
+zusätzlich jede Server-Antwort „ruhender Bereich", auch wenn sie nicht sichtbar wird.
+

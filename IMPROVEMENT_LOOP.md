@@ -2991,3 +2991,21 @@ Audit-Block „Keine Sackgassen" (Übersicht-Karten, AMR-Knöpfe).
 404 ohne Code → rot. Audit mit altem app.js meldet die Sackgassen (Forum auf Übersicht,
 Patienten-Infokarten im Kasten).
 
+### Cycle · Sackgassen, zweiter Durchgang: Engpass-Karte, Wirkstoff-Seite, Profile (2026-10-22)
+
+**GATHER.** Crawler (Playwright, 1280px): je Reiter/Menü/Wirkstoff-Seite/Profil jeden sichtbaren,
+ungefährlichen Knopf antippen, 404 `not_found` mitschneiden. UG ohne Daten: 3 (Wirkstoff-Seite).
+Mit gemeldetem Engpass + AT: + Beiträge (Folgen, #hashtag). Profile: + 5 (Termine, Team, DM, Folgen,
+Stumm). Engpass-Karte „Sources"/„I need this": nur Länderprüfung, kein Bereichs-Check.
+
+**WORK.** app.js: `tauschAn()` = `featureAn('tauschboerse') && !featBlocked('stock_exchange')` für
+Engpass-Karte und Wirkstoff-Seite; `data-wktask` an `zusammenarbeit`; Profil: appts/bookvc an
+`termine`, dm an `direktnachrichten`, follow/mute an `social`, Team-Karte an `zusammenarbeit`;
+Beitragskarte „Folgen" und Hashtag-Klick an `social` (sonst reiner Text). Audit-Block „Keine
+Sackgassen" erweitert (Wirkstoff-Seite alle Knöpfe, gemeldete Engpass-Karte, eigenes + fremdes Profil,
+Netzwerk-Mitschnitt `not_found`).
+
+**Tests.** `sackgassen.test.js` (4). Gegenproben: Engpass-Karte nur Land, `tauschAn` ohne Bereich,
+Aufgaben-Knopf immer → rot. Audit mit altem app.js: 12 Funde (sichtbar + Netzwerk); neuer Stand:
+Crawler UG 0, AT 0.
+

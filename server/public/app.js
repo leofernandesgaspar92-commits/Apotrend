@@ -437,7 +437,8 @@ const linkifyMentions = (s) => esc(s)
   .replace(/(^|[^\w@])@([a-z0-9_]{3,30})/gi,
     (m, pre, h) => `${pre}<span class="mention clickable" data-openprofile="${h}">@${h}</span>`)
   .replace(/(^|[^\w#])#([a-z0-9äöüß_]{2,30})/gi,
-    (m, pre, t) => `${pre}<span class="hashtag clickable" data-hashtag="${t}">#${t}</span>`);
+    // Hashtag-Seiten gehören zum Bereich „social“: ruht er, bleibt #tag reiner Text (kein Klick ins Leere).
+    (m, pre, t) => (featureAn('social') ? `${pre}<span class="hashtag clickable" data-hashtag="${t}">#${t}</span>` : `${pre}<span class="hashtag">#${t}</span>`));
 // Bild-Lightbox: Inhaltsbilder (data-zoom) in voller Größe ansehen — wichtig, um kleine
 // Details wie Charge/Verfallsdatum auf Verpackungsfotos lesen zu können. Schließen per
 // Klick auf den Hintergrund, ✕ oder Escape.
@@ -2583,6 +2584,10 @@ async function ladeFeatures() {
   } catch { /* Voreinstellung: alles an */ }
 }
 const featureAn = (id) => FEATURE_ZUSTAND[id] !== 'ruht';
+// Tauschbörse nutzbar: Bereich läuft (data/features.js) UND im Land erlaubt. Vorher prüften
+// die Knöpfe nur das Land — „Sources“/„I need this“ auf JEDER Engpass-Karte und „Post an
+// offer“ auf der Wirkstoff-Seite führten auf „Nicht gefunden“, weil der Bereich ruht.
+const tauschAn = () => featureAn('tauschboerse') && !featBlocked('stock_exchange');
 
 /** Bedienelemente ruhender Bereiche entfernen. Entfernen, nicht nur verstecken:
  *  Ein verstecktes Element bleibt per Tastatur erreichbar. */
@@ -3632,8 +3637,8 @@ function shortageCard(s) {
     <div class="reacts">
       <button data-about>${esc(shortagePostsLabel(s.post_count||0))}</button>
       <button class="ghost" data-postbtn>${esc(t('sc_post_about'))}</button>
-      ${!featBlocked('stock_exchange')?`<button class="ghost" data-exchange title="${esc(t('sc_sources_t'))}">${esc(t('sc_sources'))}</button>`:''}
-      ${(me&&me.account_type!=='private'&&!featBlocked('stock_exchange'))?`<button class="ghost" data-seek title="${esc(t('sc_seek_t'))}">${esc(t('sc_seek'))}</button>`:''}
+      ${tauschAn()?`<button class="ghost" data-exchange title="${esc(t('sc_sources_t'))}">${esc(t('sc_sources'))}</button>`:''}
+      ${(me&&me.account_type!=='private'&&tauschAn())?`<button class="ghost" data-seek title="${esc(t('sc_seek_t'))}">${esc(t('sc_seek'))}</button>`:''}
       <button class="ghost" data-watch title="${esc(t('wl_add_aria'))}" aria-pressed="${!!s.watched}">${s.watched?esc(t('sc_watched')):esc(t('sc_watch'))}</button>
       <button class="ghost" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button>
       ${s.provenance==='community'&&!s.is_reporter&&!(me&&me.account_type==='private')?(s.i_confirmed
@@ -7798,7 +7803,7 @@ async function openProfile(handle) {
         <span class="clickable" data-following><b>${d.following_count}</b> <span class="muted">${esc(t('pf_following'))}</span></span>
         ${d.best_answers?`<span title="${esc(t('pf_best_title'))}"><b>🏆 ${d.best_answers}</b> <span class="muted">${esc(nlabel(d.best_answers,'pf_best_one','pf_best'))}</span></span>`:''}
         <span class="sp" style="flex:1"></span>
-        ${d.is_self?`<button class="ghost small" data-activity>${esc(t('pf_activity'))}</button> <button class="ghost small" data-appts>${esc(t('vc_my'))}</button> <button class="ghost small" data-edit>${esc(t('pf_edit'))}</button>`:`<button class="ghost small" data-dm>${esc(t('pf_dm'))}</button> <button class="${d.is_following?'ghost ':''}small" data-togglefollow>${d.is_following?esc(t('pf_unfollow')):esc(t('pf_follow'))}</button>${d.profile&&d.profile.premium?` <button class="small" data-bookvc>${esc(t('vc_book'))}</button>`:''} <button class="ghost small" data-togglemute>${d.is_muted?esc(t('pf_unmute')):esc(t('pf_mute'))}</button>`}
+        ${d.is_self?`<button class="ghost small" data-activity>${esc(t('pf_activity'))}</button>${featureAn('termine')?` <button class="ghost small" data-appts>${esc(t('vc_my'))}</button>`:''} <button class="ghost small" data-edit>${esc(t('pf_edit'))}</button>`:`${featureAn('direktnachrichten')?`<button class="ghost small" data-dm>${esc(t('pf_dm'))}</button> `:''}${featureAn('social')?`<button class="${d.is_following?'ghost ':''}small" data-togglefollow>${d.is_following?esc(t('pf_unfollow')):esc(t('pf_follow'))}</button>`:''}${d.profile&&d.profile.premium&&featureAn('termine')?` <button class="small" data-bookvc>${esc(t('vc_book'))}</button>`:''}${featureAn('social')?` <button class="ghost small" data-togglemute>${d.is_muted?esc(t('pf_unmute')):esc(t('pf_mute'))}</button>`:''}`}
       </div>
       ${d.is_self ? (() => {
         const c = profileCompleteness(p);
@@ -7900,9 +7905,12 @@ async function openProfile(handle) {
       const pcard = el(`<div class="card"><div class="row"><b style="flex:1">${esc(t('pr_title'))}</b><button class="small" id="go_premium">${esc(t('ac_premium'))}</button></div></div>`);
       pcard.querySelector('#go_premium').onclick = openPremium;
       feed.appendChild(pcard);
+      // Team gehört zum Bereich „zusammenarbeit“ — ruht er, keine Karte (sonst „Nicht gefunden“).
+      if (featureAn('zusammenarbeit')) {
       const tcard = el(`<div class="card"><div class="row"><div style="flex:1"><b>${esc(t('th_nav'))}</b><div class="muted" style="font-size:13px">${esc(t('th_sub'))}</div></div><button class="small" id="go_team">${esc(t('tm_open'))}</button></div></div>`);
       tcard.querySelector('#go_team').onclick = openTeamHub;
       feed.appendChild(tcard);
+      }
       const dcard = el(`<div class="card"><b>${esc(t('ac_title'))}</b>
         <div class="muted" style="margin-top:4px">${esc(t('ac_export_d'))}</div>
         <div style="margin-top:8px"><button class="ghost small" id="dl_export">${esc(t('ac_export_btn'))}</button></div>
@@ -8300,9 +8308,10 @@ async function openWirkstoff(name) {
     <h1 tabindex="-1" style="margin:8px 0 2px">💊 ${esc(d.wirkstoff)}</h1>
     <div class="muted">${esc(t('wk_sub'))}</div>
     ${d.also_watching >= 1 ? `<div class="muted" style="font-size:13px;margin-top:4px">${esc(d.also_watching === 1 ? t('wk_also_1') : ti('wk_also_n', { n: d.also_watching }))}</div>` : ''}
-    <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap"><button class="${d.watched?'':'ghost '}small" data-watch aria-pressed="${!!d.watched}">${d.watched?esc(t('sc_watched')):esc(t('sc_watch'))}</button><button class="ghost small" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button><button class="ghost small" data-wkprint title="${esc(t('wk_print_t'))}">${esc(t('pr_print_btn'))}</button><button class="ghost small" data-wktask title="${esc(t('tk_as_task'))}">${esc(t('tk_as_task'))}</button></div></div>`);
+    <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap"><button class="${d.watched?'':'ghost '}small" data-watch aria-pressed="${!!d.watched}">${d.watched?esc(t('sc_watched')):esc(t('sc_watch'))}</button><button class="ghost small" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button><button class="ghost small" data-wkprint title="${esc(t('wk_print_t'))}">${esc(t('pr_print_btn'))}</button>${featureAn('zusammenarbeit') ? `<button class="ghost small" data-wktask title="${esc(t('tk_as_task'))}">${esc(t('tk_as_task'))}</button>` : ''}</div></div>`);
   head.querySelector('[data-wkprint]').onclick = () => printWirkstoff(d);
-  head.querySelector('[data-wktask]').onclick = () => { taskPrefill = { title: ti('tk_from_shortage', { w: d.wirkstoff }) }; openTasks(); };
+  // Aufgaben gehören zum Bereich „zusammenarbeit“ — ruht er, gibt es den Knopf nicht.
+  head.querySelector('[data-wktask]')?.addEventListener('click', () => { taskPrefill = { title: ti('tk_from_shortage', { w: d.wirkstoff }) }; openTasks(); });
   head.querySelector('[data-back]').onclick = () => goTab('overview');
   const shb = head.querySelector('[data-share]');
   shb.onclick = () => teileWirkstoff(d.wirkstoff); // Teilseite mit Vorschau
@@ -8414,7 +8423,7 @@ async function openWirkstoff(name) {
   };
   // Aus dem Wirkstoff-Hub heraus direkt ein Angebot/Gesuch anlegen (Formular in
   // Biete/Suche vorbelegt). Nur für Fachkreise — das Backend erzwingt es zusätzlich.
-  const canExchange = me && me.account_type !== 'private' && !featBlocked('stock_exchange');
+  const canExchange = me && me.account_type !== 'private' && tauschAn();
   const startExchange = (kind) => {
     exchangePrefill = { kind, bezeichnung: d.wirkstoff };
     exchangeQuery = ''; exchangeFilter = ''; exchangeBL = ''; exchangeMine = false;
@@ -8919,7 +8928,7 @@ function postCard(p) {
           ${a.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
           ${a.premium?`<span class="premium-badge" title="${esc(t('pc_premium'))}">${esc(t('pc_premium'))}</span>`:''}
           ${a.account_type&&a.account_type!=='pharmacy'?`<span class="spec" style="margin-left:2px">${esc(acctLabel(a.account_type))}</span>`:''}
-          ${mine?'':`<button class="${a.is_following?'ghost ':''}small" data-follow="${esc(a.handle)}" data-on="${a.is_following?'1':'0'}" style="margin-left:auto">${a.is_following?esc(t('fl_following_btn')):esc(t('co_follow_btn'))}</button>`}
+          ${mine||!featureAn('social')?'':`<button class="${a.is_following?'ghost ':''}small" data-follow="${esc(a.handle)}" data-on="${a.is_following?'1':'0'}" style="margin-left:auto">${a.is_following?esc(t('fl_following_btn')):esc(t('co_follow_btn'))}</button>`}
         </div>
         <div class="post-hd-sub">
           <span class="handle clickable" data-openprofile="${esc(a.handle||'')}">@${esc(a.handle||'?')}</span>

@@ -298,18 +298,31 @@ async function main() {
     const page = await ctx.newPage();
     await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, ug && ug.token);
     const sackgasse = async () => /Not found — this area|Nicht gefunden/.test(await page.locator('#feed').innerText().catch(() => ''));
-    const ziele = [['/', '#feed .card.clickable'], ['/?wirkstoff=Amoxicillin', '#feed .card[style*="0b7f28"] button']];
-    for (const [pfad, sel] of ziele) {
-      await page.goto(BASE + pfad, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
-      const n = Math.min(await page.locator(sel).count(), 12);
-      for (let k = 0; k < n; k++) {
-        await page.goto(BASE + pfad, { waitUntil: 'networkidle' }); await page.waitForTimeout(400);
-        const el = page.locator(sel).nth(k);
-        const name = (await el.innerText().catch(() => '?')).trim().split('\n')[0].slice(0, 40);
-        await el.click({ timeout: 2000 }).catch(() => {}); await page.waitForTimeout(700);
-        if (await sackgasse()) findings.push(`Sackgasse: „${name}" (${pfad}) führt auf „Nicht gefunden"`);
+    // Jede Server-Antwort „ruhender Bereich" zählt — auch wenn sie nicht sichtbar wird.
+    let wo = ''; const ruhend = new Set();
+    page.on('response', async (r) => { if (r.status() !== 404 || !r.url().includes('/api/')) return; try { if ((await r.json()).code === 'not_found') ruhend.add(`${new URL(r.url()).pathname} ← ${wo}`); } catch { /* kein JSON */ } });
+    page.on('dialog', (d) => d.dismiss().catch(() => {}));
+    // Eine Engpass-Karte gibt es nur mit Daten: selbst melden (wie eine Apotheke).
+    await api('/api/shortages/report', { method: 'POST', headers: { authorization: `Bearer ${ug && ug.token}` }, body: JSON.stringify({ wirkstoff: 'Amoxicillin', bezeichnung: 'Amoxicillin 500 mg' }) });
+    const GEFAEHRLICH = /log ?out|abmelden|delete|löschen|remove|entfernen|cancel|pay\b|zahlen|send|senden|publish|report|melden|confirm|bestätigen|block|print|drucken|share|teilen/i;
+    // Profile (eigenes + fremdes): erreichbar über jeden Autorennamen. Bis 10/2026 führten dort
+    //  „Folgen", „Stummschalten", „Nachricht", „Meine Videosprechstunden" und „Team" ins Leere.
+    const anderes = await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Other Pharmacy', email: `sackgasse2_${uniq}@ex.com`, password: 'Passwort123!', country: 'UG', accountType: 'pharmacy', handle: `andere_${uniq}` }) });
+    const handleVon = async (tok) => { const m = await api('/api/me', { headers: { authorization: `Bearer ${tok}` } }); return (m && ((m.profile && m.profile.handle) || m.handle)) || ''; };
+    const ziele = [['/', null, '#feed .card.clickable'], ['/?wirkstoff=Amoxicillin', null, '#feed button'], ['/', 'shortages', '#feed .card button'],
+      ['/?profile=' + encodeURIComponent(await handleVon(ug && ug.token)), null, '#feed button'], ['/?profile=' + encodeURIComponent(await handleVon(anderes && anderes.token)), null, '#feed button']];
+    for (const [pfad, tab, sel] of ziele) {
+      const hin = async () => { await page.goto(BASE + pfad, { waitUntil: 'networkidle' }); await page.waitForTimeout(400); if (tab) { await reiterOeffnen(page, tab); await page.waitForTimeout(700); } };
+      await hin();
+      const namen = (await page.locator(sel).evaluateAll((els) => els.filter((e) => e.getClientRects().length).map((e) => (e.innerText || e.getAttribute('aria-label') || '').trim().split('\n')[0].slice(0, 40))));
+      for (const name of [...new Set(namen)].filter((x) => x && !GEFAEHRLICH.test(x)).slice(0, 16)) {
+        await hin();
+        wo = `„${name}" (${tab || pfad})`;
+        await page.locator(sel).filter({ hasText: name }).first().click({ timeout: 2000 }).catch(() => {}); await page.waitForTimeout(700);
+        if (await sackgasse()) findings.push(`Sackgasse: ${wo} führt auf „Nicht gefunden"`);
       }
     }
+    for (const x of ruhend) findings.push(`Ruhender Bereich aufgerufen: ${x}`);
     await ctx.close();
   }
 
