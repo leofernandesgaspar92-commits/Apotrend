@@ -3175,3 +3175,20 @@ beim Durchspielen: Sprachknopf fehlte nach direktem Laden (Länderliste noch nic
 „mitglied@" → isoliert; lateinisches Komma in „لك، منى". Gegenproben (7, alle rot, per cmp
 wiederhergestellt) — zwei zunächst grün gebliebene Proben haben den Test verschärft (Menü-Regel exakt,
 Latein-Regel auch außerhalb Afrikas). verify 1400/1400.
+
+### Cycle · Nur eine Sprache laden: Erstladung 309 → 197 KB (2026-10-22)
+
+**Anlass.** Mit fünf Sprachen war i18n.js (147 KB br) fast die Hälfte der Erstladung; jede Person braucht
+eine Sprache (≈ 35 KB). Ziel Afrika: Prepaid-Daten, 2G/3G.
+
+**WORK.** http/sprachdateien.js (je Sprache aus i18n.js, br/gzip, ETag); Route /i18n/<sp>.js;
+index.html-Lader (localStorage → Browser → en, document.write für die Reihenfolge); app.js: LOCALE aus
+dem Lader, aufbereiten() je Sprache, t() mit Rückfall ohne Deutsch, spracheLaden()/neuZeichnen(),
+setLocale lädt fehlende Sprache nach, CS_TITEL fest, Landessprache ohne Wahl auf der Anmeldeseite,
+Sprachdatei durch den Service Worker holen; sw.js v4 ohne /i18n.js.
+
+**Tests.** sprachdateien.test.js (3); Browser-Audit Senegal: nur /i18n/fr.js. Gefunden beim Lauf: Wer das
+Land gespeichert, aber keine Sprache gewählt hatte, bekam die Browsersprache statt der des Landes
+(Audit „Lage jetzt"/„Erste Schritte" rot) → landesspracheOhneWahl(). Gegenproben: index lädt wieder
+alle, t() ohne Schutz, Titel abweichend, Nachladen überschreibt, SW-Version alt, Landessprache-Regel
+weg (Audit rot) — alle rot. verify 1403/1403.

@@ -27,6 +27,7 @@ import { bilderAlsAdresse, bildHolen } from '../domain/bilder.js';
 import { startseiteKopf, kopfSprache, manifestSprache } from './startseiteKopf.js';
 import { schlankSicher } from './schlank.js';
 import { kodierungWaehlen, kodierenSync, createKompressionsSpeicher, createVersionsKennung } from './komprimierung.js';
+import { createSprachdateien } from './sprachdateien.js';
 import { faktorenAusUmgebung, preisCents } from '../domain/regionPreis.js';
 import { createSocialService } from '../services/social.js';
 import { createShortagesService } from '../services/shortages.js';
@@ -309,6 +310,8 @@ const fxRates = createFxRates();
 // Deploy unveränderte Dateien nicht neu herunterladen lässt; zugleich Schlüssel des
 // Kompressions-Speichers (http/komprimierung.js).
 const statischerEtag = createVersionsKennung();
+// Je Sprache eine Datei (/i18n/<sp>.js) statt aller Sprachen — http/sprachdateien.js.
+const sprachdateien = createSprachdateien({ datei: path.join(PUBLIC_DIR, 'i18n.js'), sprachen: SUPPORTED_LOCALES });
 // Skripte gehen ohne Kommentare/Einrückung hinaus (http/schlank.js; APOPULSE_SCHLANK=aus schaltet ab).
 const kompression = createKompressionsSpeicher({
   umformen: (datei, b) => (datei.endsWith('.js') && process.env.APOPULSE_SCHLANK !== 'aus' ? schlankSicher(b, { name: path.basename(datei) }) : b),
@@ -2732,6 +2735,19 @@ const server = http.createServer(async (req, res) => {
     const tag = new Date().toISOString().slice(0, 10);
     seitenAufrufe.set(tag, (seitenAufrufe.get(tag) || 0) + 1);
     return sende(200, 'text/html', html);
+  }
+
+  // ── Sprachtexte: nur die eine Sprache, die gebraucht wird ──
+  const sprachdatei = req.method === 'GET' && pathname.match(/^\/i18n\/([a-z]{2})\.js$/);
+  if (sprachdatei) {
+    const kodierung = kodierungWaehlen(req.headers['accept-encoding']);
+    let d = null;
+    try { d = sprachdateien.holen(sprachdatei[1], kodierung); } catch (e) { console.warn('ApoPulse: Sprachdatei — ' + ((e && e.message) || e)); }
+    if (!d) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('Unbekannte Sprache'); }
+    const kopf = { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-cache', ETag: d.etag, Vary: 'Accept-Encoding' };
+    if ((req.headers['if-none-match'] || '') === d.etag) { res.writeHead(304, kopf); return res.end(); }
+    res.writeHead(200, { ...kopf, ...(kodierung ? { 'Content-Encoding': kodierung } : {}), 'Content-Length': d.body.length });
+    return res.end(d.body);
   }
 
   // ── Statisches Frontend ──

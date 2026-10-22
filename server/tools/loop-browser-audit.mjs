@@ -2016,6 +2016,8 @@ async function main() {
     const ctx = await browser.newContext({ viewport: { width: 360, height: 760 }, locale: 'fr-SN', timezoneId: 'Africa/Dakar' });
     const page = await ctx.newPage();
     const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    // Nur EINE Sprachdatei (35 statt 147 KB) — nie alle Sprachen auf einmal.
+    const sprachdateien = []; page.on('request', (r) => { const p = new URL(r.url()).pathname; if (p === '/i18n.js' || p.startsWith('/i18n/')) sprachdateien.push(p); });
     await page.addInitScript(() => { if (!sessionStorage.getItem('sn')) { localStorage.clear(); sessionStorage.setItem('sn', '1'); localStorage.setItem('apo_country', 'SN'); localStorage.setItem('apo_locale', 'fr'); } });
     await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
     const quer = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -2034,8 +2036,9 @@ async function main() {
     if (!/3,00/.test(prem) || !/Afrique/.test(prem)) findings.push('Senegal: Premium ohne Afrika-Preis 3,00 €');
     if (!/SOL|Solana/.test(prem) || !/BTC|Bitcoin/.test(prem)) findings.push('Senegal: Krypto-Zahlung fehlt');
     if (await quer() > 0) findings.push(`Senegal: Premium ${await quer()} px Querscrollen`);
+    if (sprachdateien.join() !== '/i18n/fr.js') findings.push(`Senegal: Sprachdateien ${sprachdateien.join(', ') || 'keine'} statt nur /i18n/fr.js`);
     for (const f of fehler) findings.push('Senegal: JS-Fehler ' + f);
-    if (!findings.some((f) => f.startsWith('Senegal'))) console.log('✓ Senegal (fr, 360 px): Anmeldung, erste Schritte mit Afrika-Vorschlägen, Reiter, Premium 3,00 € + Krypto — Französisch, kein Querscrollen');
+    if (!findings.some((f) => f.startsWith('Senegal'))) console.log('✓ Senegal (fr, 360 px): nur /i18n/fr.js geladen, Anmeldung, erste Schritte mit Afrika-Vorschlägen, Reiter, Premium 3,00 € + Krypto — Französisch, kein Querscrollen');
     await ctx.close();
   }
 

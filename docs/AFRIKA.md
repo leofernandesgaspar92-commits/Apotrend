@@ -617,3 +617,26 @@ mit lateinischen Wirkstoffen, Menü öffnet links, Premium 3.00 € mit Solana/B
 Querscrollen), Desktop gespiegelt (Navigation rechts, Zusatzspalte links), Marokko Französisch ⇄
 Arabisch über den Sprachknopf, bleibt nach Neuladen. Beide Abläufe prüft der Browser-Audit jetzt bei
 jedem `npm run verify`.
+
+## Nur eine Sprache laden — 112 KB weniger beim ersten Besuch (Stand 22.10.2026)
+
+Mit fünf Sprachen war die Sprachdatei die größte Last der Erstladung: alle Sprachen zusammen 147 KB
+(Brotli) von rund 309 KB — obwohl jede Nutzerin nur eine braucht (je ca. 35 KB). Auf Prepaid-Daten in
+Dakar, Kampala oder Kairo ist das bares Geld und auf 2G/3G spürbare Wartezeit.
+
+- **Server** (`server/src/http/sprachdateien.js`): schneidet aus `public/i18n.js` je Sprache eine Datei
+  `/i18n/<sprache>.js` — komprimiert, mit ETag/304, neu sobald sich i18n.js ändert. i18n.js bleibt die
+  eine Quelle (Tests, Paritätsprüfung).
+- **Seite**: ein kleiner Lader in index.html holt nur die zuletzt benutzte Sprache, beim ersten Besuch die
+  des Browsers (sonst Englisch). Erstladung jetzt ≈ 197 statt ≈ 309 KB.
+- **Wechsel** (Land, Sprachknopf, Anmeldung): die neue Sprache wird nachgeladen; bis sie da ist, bleibt die
+  bisherige stehen — nie rohe Schlüssel. Wer ein Land gespeichert, aber noch keine Sprache gewählt hat,
+  bekommt wie bisher die Sprache des Landes.
+- **Offline**: Der Service Worker (Version v4) speichert die benutzte Sprachdatei; die App startet ohne
+  Netz in der zuletzt benutzten Sprache.
+
+Geprüft: `test/sprachdateien.test.js` (Texte identisch mit i18n.js, < 30 % der Größe, Nachladen hängt an
+statt zu überschreiben, HTTP br/304/404, Lader kennt dieselben Sprachen wie der Server, Rückfall ohne
+Deutsch, neue Cache-Version). Browser-Audit: Senegal lädt nur `/i18n/fr.js`. Im Browser durchgespielt:
+Erstbesuch fr-SN → nur fr; Marokko → Arabisch lädt `ar.js` nach; Ansicht Uganda lädt `en.js`; offline
+neu geladen → läuft. Gegenproben (6, alle rot).

@@ -11,7 +11,9 @@
 // Anwendung startete mit undefiniertem I18N: leere Beschriftungen ueberall,
 // und zwar nur bei Bestandsnutzer:innen. Die Version MUSS mitziehen, wenn
 // sich die Liste unten aendert.
-const CACHE = 'apopulse-shell-v3';
+// v4: Statt /i18n.js (alle Sprachen) lädt die Seite nur noch /i18n/<sprache>.js —
+// die landet beim Abruf im Speicher (Netz zuerst, unten), nicht vorab alle fünf.
+const CACHE = 'apopulse-shell-v4';
 // Gespeicherte Lese-Antworten für offline. Schlüssel enthält einen Hash des
 // Anmelde-Tokens: Auf einem geteilten Gerät sieht kein Konto die Daten eines
 // anderen. Abmelden löscht den ganzen Speicher (Seite: caches.delete).
@@ -45,7 +47,7 @@ async function netzZuerst(req) {
     return new Response(await alt.arrayBuffer(), { status: 200, headers: kopf });
   }
 }
-const SHELL = ['/', '/index.html', '/i18n.js', '/app.js', '/app.css', '/manifest.webmanifest',
+const SHELL = ['/', '/index.html', '/app.js', '/app.css', '/manifest.webmanifest',
   '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {

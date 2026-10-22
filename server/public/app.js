@@ -96,7 +96,9 @@ function spracheFuer(c, sonst) {
   if (c && wahl && (c.locales || []).includes(wahl) && SUPPORTED_LOCALES.includes(wahl)) return wahl;
   return sonst || 'de';
 }
-let LOCALE = (() => { const s = localStorage.getItem('apo_locale'); return SUPPORTED_LOCALES.includes(s) ? s : 'de'; })();
+// Geladen ist nur EINE Sprache (index.html, http/sprachdateien.js): die zuletzt benutzte,
+// beim ersten Besuch die des Browsers. Weitere lädt spracheLaden() bei Bedarf nach.
+let LOCALE = (() => { const s = localStorage.getItem('apo_locale'); return SUPPORTED_LOCALES.includes(s) ? s : (SUPPORTED_LOCALES.includes(self.APO_SPRACHE) && I18N[self.APO_SPRACHE] ? self.APO_SPRACHE : 'de'); })();
 // <html lang> beim Laden mit der aktiven Sprache synchronisieren (statisch „de"),
 // damit Screenreader engl./pt. Inhalte nicht deutsch aussprechen.
 document.documentElement.setAttribute('lang', LOCALE);
@@ -110,12 +112,41 @@ document.documentElement.setAttribute('dir', richtungVon(LOCALE));
 // nur aus einem Zeichen bestehen, bleiben, wie sie sind.
 const SYMBOL_ANFANG = /^\p{Extended_Pictographic}[️‍\p{Extended_Pictographic}\p{Emoji_Modifier}]*\s+/u;
 function ohneEmojiAnfang(s) { return typeof s === 'string' ? s.replace(SYMBOL_ANFANG, '') : s; }
-for (const sprache of Object.keys(I18N)) {
-  for (const k of Object.keys(I18N[sprache])) if (!k.startsWith('react_')) I18N[sprache][k] = ohneEmojiAnfang(I18N[sprache][k]);
+function aufbereiten(sprache) {
+  for (const k of Object.keys(I18N[sprache] || {})) if (!k.startsWith('react_')) I18N[sprache][k] = ohneEmojiAnfang(I18N[sprache][k]);
 }
-const t = (key) => (I18N[LOCALE] && I18N[LOCALE][key]) || I18N.de[key] || key;
+for (const sprache of Object.keys(I18N)) aufbereiten(sprache);
+// Rückfall auf eine andere GELADENE Sprache — Deutsch ist nicht mehr zwingend da.
+const t = (key) => (I18N[LOCALE] && I18N[LOCALE][key]) || (I18N.de && I18N.de[key]) || (I18N.en && I18N.en[key]) || key;
+// Eine Sprache nachladen (Sprachwahl, Länderwechsel). Geht über den Service Worker —
+// danach ist sie auch offline da.
+const _sprachLaden = {};
+function spracheLaden(l) {
+  if (I18N[l]) return Promise.resolve();
+  if (!_sprachLaden[l]) {
+    _sprachLaden[l] = new Promise((ok, fehler) => {
+      const s = document.createElement('script');
+      s.src = '/i18n/' + l + '.js';
+      s.onload = () => { aufbereiten(l); ok(); };
+      s.onerror = () => { delete _sprachLaden[l]; s.remove(); fehler(new Error('Sprache ' + l + ' nicht geladen')); };
+      document.head.appendChild(s);
+    });
+  }
+  return _sprachLaden[l];
+}
+// Nach dem Nachladen einer Sprache die aktuelle Ansicht neu zeichnen.
+function neuZeichnen() {
+  applyI18n(); applyTheme(); applyFontScale();
+  if (me) { updateViewContext(); loadTab(); }
+  else if (document.querySelector('[data-laenderwahl]')) countryScreen();
+  else authScreen();
+}
 function setLocale(l) {
-  LOCALE = SUPPORTED_LOCALES.includes(l) ? l : 'de';
+  l = SUPPORTED_LOCALES.includes(l) ? l : 'de';
+  // Noch nicht geladen: erst laden, bis dahin bleibt die bisherige Sprache stehen
+  // (nie rohe Schlüssel). Offline und ohne gespeicherte Datei: bleibt es dabei.
+  if (!I18N[l]) { spracheLaden(l).then(() => { setLocale(l); neuZeichnen(); }).catch(() => {}); return; }
+  LOCALE = l;
   localStorage.setItem('apo_locale', LOCALE);
   document.documentElement.setAttribute('lang', LOCALE);
   document.documentElement.setAttribute('dir', richtungVon(LOCALE));
@@ -592,6 +623,9 @@ function currentAuthCountry() {
 // schlechteste erste Eindruck. Jetzt: Sprache des Browsers für diesen einen
 // Bildschirm (die App-Sprache folgt danach wie bisher dem gewählten Land),
 // ein Vorschlag oben (Zeitzone + Browser-Sprache) und die Liste nach Regionen.
+// „Wähle dein Land" in jeder Sprache — fest hier, weil nur EINE Sprachdatei geladen ist
+// (test/sprachdateien.test.js hält das gleich mit i18n.js).
+const CS_TITEL = { de: 'Wähle dein Land', en: 'Choose your country', pt: 'Escolha o seu país', fr: 'Choisissez votre pays', ar: 'اختر بلدك' };
 function browserSprache() {
   for (const l of (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ''])) {
     const b = String(l || '').slice(0, 2).toLowerCase();
@@ -624,7 +658,7 @@ async function countryScreen() {
   // Texte dieses Bildschirms in der Sprache des Browsers — ohne die App-Sprache umzustellen.
   const bl = localStorage.getItem('apo_locale') && SUPPORTED_LOCALES.includes(localStorage.getItem('apo_locale')) ? LOCALE : browserSprache();
   const tb = (k) => (I18N[bl] && I18N[bl][k]) || t(k);
-  const andere = SUPPORTED_LOCALES.filter((l) => l !== bl).map((l) => (I18N[l] || {}).cs_title).filter(Boolean).join(' · ');
+  const andere = SUPPORTED_LOCALES.filter((l) => l !== bl).map((l) => CS_TITEL[l]).filter(Boolean).join(' · ');
   const vorschlag = vorgeschlageneLaender(countries);
   // Auch der Kopf („Menü") spricht hier schon die Sprache des Browsers; nach der Wahl setzt applyI18n zurück.
   document.querySelectorAll('header [data-i18n]').forEach((e) => { const k = e.dataset.i18n; if (I18N[bl] && I18N[bl][k]) e.textContent = I18N[bl][k]; });
@@ -696,9 +730,21 @@ async function zeigeLage(box, land) {
     <div class="muted" style="font-size:14px">${esc(t('au_lage_quelle'))}: ${esc(d.quellen.join(', ') || '—')}${d.stand ? ' · ' + esc(ti('au_lage_stand', { z: vorZeit(d.stand) || '' })) : ''}</div></div>`;
 }
 
+// Noch keine Sprache gewählt, aber ein Land: Sprache des Landes (wie vor dem Laden
+// einzelner Sprachen, als Deutsch immer da war). Geladen ist zunächst nur die des Browsers.
+function landesspracheOhneWahl() {
+  let gewaehlt = null;
+  try { gewaehlt = localStorage.getItem('apo_locale'); } catch { /* privater Modus */ }
+  const c = currentAuthCountry();
+  if (gewaehlt || !c || !c.locale_default) return;
+  const soll = spracheFuer(c, c.locale_default);
+  if (soll !== LOCALE || !I18N[soll]) setLocale(soll); // lädt bei Bedarf nach und zeichnet neu
+  else { try { localStorage.setItem('apo_locale', soll); } catch { /* egal */ } }
+}
 function authScreen() {
   setDocTitle('');
   hideHeaderForAuth();
+  landesspracheOhneWahl();
   // Kopf („Menü") und Sprunglink stehen in index.html auf Deutsch. Wer die
   // Anmeldeseite direkt neu lädt, sah sie bisher auch auf Englisch,
   // Portugiesisch und Französisch so — beschriftet wurde erst nach der Länderwahl.
@@ -722,7 +768,7 @@ function authScreen() {
     b.onclick = () => spracheWechseln(n);
     platz.appendChild(b);
   };
-  sprachKnopf(); ensureCountries().then(() => { sprachKnopf(); zeigeSprachwahl(); }).catch(() => {});
+  sprachKnopf(); ensureCountries().then(() => { sprachKnopf(); zeigeSprachwahl(); landesspracheOhneWahl(); }).catch(() => {});
   { const ab = leseAbsicht(); if (ab && ab.beobachten) app.appendChild(el(`<div class="lage-box" data-absicht style="margin:0 0 14px"><div class="lage-kopf">${ico('bell', 18)}${esc(ti('absicht_banner', { w: ab.beobachten }))}</div></div>`)); }
   app.appendChild(el(`
   <div class="auth-grid">
@@ -10098,6 +10144,9 @@ async function openDmThread(threadId, prefill) {
 // PWA: Service Worker registrieren (macht die App installierbar).
 if (swVerfuegbar()) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+  // Die geladene Sprachdatei einmal durch den Service Worker holen — sonst fehlte sie
+  // offline nach dem allerersten Besuch (da lief die Seite noch ohne Service Worker).
+  try { navigator.serviceWorker.ready.then(() => fetch('/i18n/' + LOCALE + '.js')).catch(() => {}); } catch { /* egal */ }
 }
 
 // „Nach oben"-Button für lange Listen (v.a. mobil): erscheint ab ~600px Scroll.

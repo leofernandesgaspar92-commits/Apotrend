@@ -58,8 +58,21 @@
 <main class="wrap" id="app" tabindex="-1" role="main"></main>
 
 <!-- Sprachtexte VOR der Anwendung: app.js liest `I18N` beim Auswerten.
-     Reihenfolge ist hier keine Kosmetik — sie ist die Abhaengigkeit. -->
-<script src="/i18n.js"></script>
+     Reihenfolge ist hier keine Kosmetik — sie ist die Abhaengigkeit.
+     Nur EINE Sprache laden (35 statt 147 KB, http/sprachdateien.js): die zuletzt
+     benutzte, beim ersten Besuch die des Browsers (sonst Englisch). Weitere
+     Sprachen lädt die App beim Wechsel nach. document.write hält die Reihenfolge
+     (die Datei ist sicher vor app.js da) — eigene Herkunft, kein Fremdskript. -->
+<script>(function () {
+  var ok = ['de', 'en', 'pt', 'fr', 'ar'], l = null, i, b;
+  try { l = localStorage.getItem('apo_locale'); } catch (e) { /* privater Modus */ }
+  if (ok.indexOf(l) < 0) {
+    var liste = (navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language || ''];
+    for (l = 'en', i = 0; i < liste.length; i++) { b = String(liste[i] || '').slice(0, 2).toLowerCase(); if (ok.indexOf(b) >= 0) { l = b; break; } }
+  }
+  self.APO_SPRACHE = l;
+  document.write('<script src="/i18n/' + l + '.js"><\/script>');
+})();</script>
 <script src="/app.js"></script>
 </body>
 </html>
