@@ -141,6 +141,10 @@
   button.sortbtn:hover { border-color:var(--green); background:var(--chip-bg); }
   button.sortbtn.active { background:var(--green); color:var(--on-green); border-color:var(--green); }
   button.sortbtn.active:hover { background:var(--green-d); }
+  /* Gesperrte Knöpfe sehen gesperrt aus: grau, kein Hand-Zeiger. Bis 10/2026 waren sie
+     genauso grün wie aktive — „Bitte mindestens einen Wirkstoff wählen" wirkte klickbar. */
+  button:disabled, button:disabled:hover { background:var(--chip-bg); color:var(--muted); border-color:var(--line); cursor:not-allowed; box-shadow:none; transform:none; }
+  button.linklike:disabled { background:transparent; text-decoration:none; }
   .row { display:flex; gap:8px; align-items:center; }
   /* Kopfzeilen mit Abstandshalter (Titel · Spacer · Aktion) dürfen umbrechen: ein langer
      Button (z. B. CSV-Export) rutscht auf Mobil unter den Titel, statt ihn zu stauchen.

@@ -3311,3 +3311,15 @@ der installierten App, nach Installation nie wieder, „Später" 30 Tage. i18n +
 **Tests.** app-installieren.test.js (3); Browser-Audit „App installieren": Ereignis nachgestellt
 (prompt/userChoice wie Chrome) → Karte, 48-px-Knopf, Dialog aufgerufen, nach Neuladen weg; iPhone-UA →
 Anleitung ohne Knopf. Im Browser zusätzlich: Senegal (fr) „Später" → 30 Tage, Karte bleibt weg.
+
+### Cycle · Gesperrte Knöpfe sehen gesperrt aus (2026-10-23)
+
+**Fund (Rundgang).** Erste Schritte ohne Auswahl: grüner Hauptknopf „Bitte mindestens einen Wirkstoff
+wählen" — wirkt klickbar, tut nichts. Ursache: app.css hatte überhaupt keine Regel für `:disabled`; alle
+gesperrten Knöpfe (nach „Passwort geändert", „Link verschickt", „abgemeldet" …) sahen aktiv aus.
+
+**WORK.** Eine Regel nach allen Knopf-Varianten: grau (chip-bg / muted), kein Hand-Zeiger, kein Drück-
+Effekt; Links-Knöpfe ohne Unterstreichung. Im Browser hell und dunkel geprüft (Kontrast muted auf
+chip-bg ca. 5,6 : 1 hell).
+
+**Tests.** lesbarkeit.test.js +1 (Regel vorhanden, steht nach ghost/sortbtn/linklike).
