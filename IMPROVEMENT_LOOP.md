@@ -3285,3 +3285,14 @@ Beim Ansehen der Bildschirme gefunden:
 **Tests.** leere-ansichten.test.js (3), franzoesisch.test.js erweitert (pour-Regel, ti(), Server-Texte),
 Browser-Audit „Einstieg": Codes-Karte ≤ 520 px, kein Querscrollen, leere Engpässe ohne Filterleiste,
 Preise-Leertext „au Sénégal".
+
+### Cycle · Keine Winzig-Schrift: Untergrenze 13 px (2026-10-23)
+
+**GATHER.** Rundgang Ägypten (ar, RTL): Schreibrichtung, Codes, Leertexte sauber. Auffällig in allen drei
+Rundgängen: Rechtshinweis und Badge „Referenzdaten" in 12 px. Zählung: 128 Stellen mit 11–12 px in app.js/
+app.css (Zeitstempel, Werbe-Kennzeichnung „Anzeige", Lesebestätigung, Badges, Hinweise).
+
+**WORK.** Alle auf 13 px (Owner-Regel „keine Winzig-Schrift"). Browser-Audit-Grenze von 12 auf 13 px.
+Danach Rundgang Ghana (en) und Kamerun (fr) bei 360 px: kein Querscrollen, kein Text unter 13 px.
+
+**Tests.** lesbarkeit.test.js: keine font-size unter 13 px in app.js/app.css/index.html, Audit-Grenze 13.

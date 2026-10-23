@@ -590,7 +590,7 @@ function legalNotice(featureId) {
   return el(`<div class="card" style="border-inline-start:4px solid ${blocked ? 'var(--crit-fg)' : 'var(--warn-fg)'};background:${blocked ? 'var(--crit-bg)' : 'var(--warn-bg)'}">
     <div class="row"><b>${esc(blocked ? ti('legal_blocked_title', { country: COUNTRY_NAME }) : t('legal_notice_title'))}</b></div>
     <div style="font-size:14px;margin-top:4px">${esc(msg)}</div>
-    <div class="muted" style="font-size:12px;margin-top:6px">${esc(t('legal_disclaimer'))}</div>
+    <div class="muted" style="font-size:13px;margin-top:6px">${esc(t('legal_disclaimer'))}</div>
   </div>`);
 }
 // Aktiver Länder-Kontext („Land = Sicht"): temporäre Besuchs-Ansicht, die das HEIMATLAND
@@ -1371,7 +1371,7 @@ async function mainScreen() {
   const saved = localStorage.getItem(DRAFT_KEY);
   if (saved && !pbEl.value) {
     pbEl.value = saved;
-    const hint = el(`<div id="pbDraftHint" class="muted" style="font-size:12px;margin-bottom:4px">${esc(t('dr_restored'))} · <button class="linklike small" id="pbDraftDiscard">${esc(t('dr_discard'))}</button></div>`);
+    const hint = el(`<div id="pbDraftHint" class="muted" style="font-size:13px;margin-bottom:4px">${esc(t('dr_restored'))} · <button class="linklike small" id="pbDraftDiscard">${esc(t('dr_discard'))}</button></div>`);
     pbEl.insertAdjacentElement('beforebegin', hint);
     hint.querySelector('#pbDraftDiscard').onclick = () => { pbEl.value = ''; clearDraft(); pbEl.dispatchEvent(new Event('input')); };
   }
@@ -1608,9 +1608,9 @@ function renderMyTasksOverview(feed, tasks) {
   const top = mine.slice(0, 3);
   const card = el(`<div class="card"${overdue?' style="border-inline-start:4px solid var(--crit-fg)"':''}>
     <div class="row" style="align-items:baseline"><b style="flex:1">✅ ${esc(ti('ovt_title',{n:mine.length}))}</b>
-      ${overdue?`<span style="font-size:12px;font-weight:700;color:var(--crit-fg)">${esc(ti('ovt_overdue',{n:overdue}))}</span>`:''}
+      ${overdue?`<span style="font-size:13px;font-weight:700;color:var(--crit-fg)">${esc(ti('ovt_overdue',{n:overdue}))}</span>`:''}
       <button class="linklike small" data-all style="margin-inline-start:8px">${esc(t('ovt_all'))} ›</button></div>
-    ${top.map(t2=>`<div class="comment clickable" data-open><span>${isOverdue(t2)?'🔴 ':'▫️ '}</span>${esc(t2.title)}${t2.due_date?` <span class="muted" style="font-size:12px">· ${esc(ti('tk_due',{d:fmtDateDe(t2.due_date)}))}</span>`:''}</div>`).join('')}
+    ${top.map(t2=>`<div class="comment clickable" data-open><span>${isOverdue(t2)?'🔴 ':'▫️ '}</span>${esc(t2.title)}${t2.due_date?` <span class="muted" style="font-size:13px">· ${esc(ti('tk_due',{d:fmtDateDe(t2.due_date)}))}</span>`:''}</div>`).join('')}
   </div>`);
   card.querySelector('[data-all]').onclick = () => openTasks();
   card.querySelectorAll('[data-open]').forEach(row => row.onclick = () => openTasks());
@@ -1631,8 +1631,8 @@ function renderTeamOverdueOverview(feed, tasks, canAssign) {
   const card = el(`<div class="card" style="border-inline-start:4px solid var(--crit-fg)">
     <div class="row" style="align-items:baseline"><b style="flex:1">${esc(ti('ovt_team_title',{n:teamOverdue.length}))}</b>
       <button class="linklike small" data-all style="margin-inline-start:8px">${esc(t('ovt_all'))} ›</button></div>
-    <div class="muted" style="font-size:12px;margin:2px 0 4px">${esc(t('ovt_team_sub'))}</div>
-    ${top.map(tk=>`<div class="comment clickable" data-open>🔴 ${esc(tk.title)} <span class="muted" style="font-size:12px">· ${esc(tk.assignee_name?ti('tk_assigned_to',{name:tk.assignee_name}):t('tk_unassigned'))} · ${esc(ti('tk_due',{d:fmtDateDe(tk.due_date)}))}</span></div>`).join('')}
+    <div class="muted" style="font-size:13px;margin:2px 0 4px">${esc(t('ovt_team_sub'))}</div>
+    ${top.map(tk=>`<div class="comment clickable" data-open>🔴 ${esc(tk.title)} <span class="muted" style="font-size:13px">· ${esc(tk.assignee_name?ti('tk_assigned_to',{name:tk.assignee_name}):t('tk_unassigned'))} · ${esc(ti('tk_due',{d:fmtDateDe(tk.due_date)}))}</span></div>`).join('')}
   </div>`);
   const openOverdue = () => { taskFilter = 'ueberfaellig'; openTasks(); };
   card.querySelector('[data-all]').onclick = openOverdue;
@@ -1910,17 +1910,17 @@ async function loadOverview() {
   // Restbestand abzugeben, bevor er verfällt (spart Geld, vermeidet Verschwendung).
   if (d.expiring_offers && d.expiring_offers.count) {
     const daysChip = (o) => {
-      if (o.expired) return `<span style="display:inline-block;font-size:12px;font-weight:700;color:#fff;background:var(--crit-fg);padding:2px 8px;border-radius:999px">${esc(t('xo_expired'))}</span>`;
+      if (o.expired) return `<span style="display:inline-block;font-size:13px;font-weight:700;color:#fff;background:var(--crit-fg);padding:2px 8px;border-radius:999px">${esc(t('xo_expired'))}</span>`;
       const label = o.days_until_expiry === 0 ? t('xo_today') : nlabel(o.days_until_expiry, 'xo_days_one', 'xo_days_many');
       const soon = o.days_until_expiry <= 7;
       const col = soon ? 'var(--warn-fg)' : 'var(--muted)';
       const bg = soon ? 'var(--warn-bg)' : 'var(--chip-bg)';
       const bd = soon ? 'var(--warn-bd)' : 'var(--line)';
-      return `<span style="display:inline-block;font-size:12px;font-weight:700;color:${col};background:${bg};border:1px solid ${bd};padding:2px 8px;border-radius:999px">${esc(label)}</span>`;
+      return `<span style="display:inline-block;font-size:13px;font-weight:700;color:${col};background:${bg};border:1px solid ${bd};padding:2px 8px;border-radius:999px">${esc(label)}</span>`;
     };
     const c = el(`<div class="card" style="border-inline-start:4px solid var(--warn-fg)"><div class="row"><b>${esc(t('xo_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>${esc(t('xo_all'))}</button></div>
       <div class="muted" style="font-size:13px;margin:2px 0 6px">${esc(t('xo_sub'))}</div>
-      ${d.expiring_offers.items.map(o=>`<div class="comment clickable" data-open>📦 <b>${esc(o.bezeichnung)}</b>${o.menge?` <span class="muted">· ${esc(o.menge)}</span>`:''} ${daysChip(o)}<div class="muted" style="font-size:12px;margin-top:2px">${esc(t('xo_expires'))} <b>${esc(fmtDateDe(o.ablauf))}</b>${o.match_count>0?` · <span style="color:var(--ok-fg);font-weight:700">${esc(o.match_count>1?ti('xo_matches_pl',{n:o.match_count}):t('xo_matches_sg'))}</span>`:''}</div></div>`).join('')}</div>`);
+      ${d.expiring_offers.items.map(o=>`<div class="comment clickable" data-open>📦 <b>${esc(o.bezeichnung)}</b>${o.menge?` <span class="muted">· ${esc(o.menge)}</span>`:''} ${daysChip(o)}<div class="muted" style="font-size:13px;margin-top:2px">${esc(t('xo_expires'))} <b>${esc(fmtDateDe(o.ablauf))}</b>${o.match_count>0?` · <span style="color:var(--ok-fg);font-weight:700">${esc(o.match_count>1?ti('xo_matches_pl',{n:o.match_count}):t('xo_matches_sg'))}</span>`:''}</div></div>`).join('')}</div>`);
     c.querySelector('[data-all]').onclick = () => { exchangeMine = true; goTab('exchange'); };
     c.querySelectorAll('[data-open]').forEach(row => row.onclick = () => { exchangeMine = true; goTab('exchange'); });
     feed.appendChild(c);
@@ -1931,7 +1931,7 @@ async function loadOverview() {
   if (d.my_reports && d.my_reports.count) {
     const c = el(`<div class="card" style="border-inline-start:4px solid var(--info-fg)"><div class="row"><b>${esc(t('sr_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>${esc(t('sp_view_all'))}</button></div>
       <div class="muted" style="font-size:13px;margin:2px 0 6px">${esc(t('sr_sub'))}</div>
-      ${d.my_reports.items.map(r=>{const m=watchStatusMeta(r.status);return `<div class="comment clickable" data-wk="${esc(r.wirkstoff)}"><span style="font-size:16px">${m.icon}</span> <b>${esc(r.wirkstoff)}</b>${r.bezeichnung?` <span class="muted">${esc(r.bezeichnung)}</span>`:''} <span style="display:inline-block;font-size:12px;font-weight:700;color:var(--warn-fg);background:var(--warn-bg);border:1px solid var(--warn-bd);padding:1px 8px;border-radius:999px">${esc(nlabel(r.days_reported,'sr_since_one','sr_since_many'))}</span>${r.confirm_count>0?` <span class="muted" style="font-size:12px">· ${esc(nlabel(r.confirm_count,'sr_confirms_one','sr_confirms_many'))}</span>`:''} <span class="ovtile-go" aria-hidden="true">›</span></div>`;}).join('')}</div>`);
+      ${d.my_reports.items.map(r=>{const m=watchStatusMeta(r.status);return `<div class="comment clickable" data-wk="${esc(r.wirkstoff)}"><span style="font-size:16px">${m.icon}</span> <b>${esc(r.wirkstoff)}</b>${r.bezeichnung?` <span class="muted">${esc(r.bezeichnung)}</span>`:''} <span style="display:inline-block;font-size:13px;font-weight:700;color:var(--warn-fg);background:var(--warn-bg);border:1px solid var(--warn-bd);padding:1px 8px;border-radius:999px">${esc(nlabel(r.days_reported,'sr_since_one','sr_since_many'))}</span>${r.confirm_count>0?` <span class="muted" style="font-size:13px">· ${esc(nlabel(r.confirm_count,'sr_confirms_one','sr_confirms_many'))}</span>`:''} <span class="ovtile-go" aria-hidden="true">›</span></div>`;}).join('')}</div>`);
     c.querySelector('[data-all]').onclick = () => goTab('shortages');
     c.querySelectorAll('[data-wk]').forEach(row => row.onclick = () => openWirkstoff(row.dataset.wk));
     feed.appendChild(c);
@@ -1988,7 +1988,7 @@ async function loadOverview() {
   // den Hashtags (Bereich „social"); ruht der, führte die Karte auf „Nicht gefunden".
   if (featureAn('social')) {
   const stew = el(`<div class="card clickable" style="border-inline-start:4px solid #0b7f28">
-    <div class="row"><b>${esc(t('sp_stew_title'))}</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:12px">${esc(t('sp_stew_tag'))}</span></div>
+    <div class="row"><b>${esc(t('sp_stew_title'))}</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:13px">${esc(t('sp_stew_tag'))}</span></div>
     <div class="muted" style="font-size:13px;margin-top:4px">${esc(t('sp_stew_sub'))}</div></div>`);
   stew.onclick = () => openStewardship();
   feed.appendChild(stew);
@@ -2030,14 +2030,14 @@ async function renderOpenQuestions(feed) {
   try { d = await api('GET','/api/feed/public?filter=questions&country=' + viewCountry()); } catch { return; }
   const open = (d.posts || []).filter(p => p.is_question && !p.answered && !(me && p.author && p.author.handle === me.handle)).slice(0, 3);
   if (!open.length) return;
-  const card = el(`<div class="card"><div class="row"><b>${esc(t('oq_title'))}</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:12px">${esc(t('oq_waiting'))}</span></div><div data-oq style="margin-top:6px"></div></div>`);
+  const card = el(`<div class="card"><div class="row"><b>${esc(t('oq_title'))}</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:13px">${esc(t('oq_waiting'))}</span></div><div data-oq style="margin-top:6px"></div></div>`);
   const box = card.querySelector('[data-oq]');
   open.forEach(q => {
     const nAns = q.comment_count||0;
     const ansHtml = nAns === 0
       ? `<b style="color:var(--warn-fg)">${esc(t('oq_no_answer'))}</b>`
       : `${nAns} ${esc(nAns===1?t('oq_answer_sg'):t('oq_answer_pl'))}`;
-    const row = el(`<div class="comment clickable">❓ ${esc((q.body||'').slice(0,90))}${(q.body||'').length>90?'…':''} <span class="muted" style="font-size:12px">· ${q.author?'@'+esc(q.author.handle):''} · ${ansHtml}</span></div>`);
+    const row = el(`<div class="comment clickable">❓ ${esc((q.body||'').slice(0,90))}${(q.body||'').length>90?'…':''} <span class="muted" style="font-size:13px">· ${q.author?'@'+esc(q.author.handle):''} · ${ansHtml}</span></div>`);
     row.onclick = () => openPost(q.id);
     box.appendChild(row);
   });
@@ -2139,8 +2139,8 @@ function renderWeekReview(feed, wr) {
     const m = watchStatusMeta(it.status);
     return `<div class="comment clickable" data-wk="${esc(it.wirkstoff)}">
       <span style="font-size:16px">${m.icon}</span> <b>${esc(it.wirkstoff)}</b>${it.bezeichnung ? ` <span class="muted">${esc(it.bezeichnung)}</span>` : ''}
-      <span style="display:inline-block;font-size:12px;font-weight:700;color:${m.color};background:${m.bg};padding:1px 8px;border-radius:999px">${esc(m.label)}</span>
-      <span class="muted" style="font-size:12px">· ${esc(wrDaysAgo(it.week_change))}</span>
+      <span style="display:inline-block;font-size:13px;font-weight:700;color:${m.color};background:${m.bg};padding:1px 8px;border-radius:999px">${esc(m.label)}</span>
+      <span class="muted" style="font-size:13px">· ${esc(wrDaysAgo(it.week_change))}</span>
       <span class="ovtile-go" aria-hidden="true">›</span></div>`;
   };
   const blocks = sections.map(s => `<div style="margin-top:8px"><div class="muted" style="font-size:13px;font-weight:700;margin-bottom:4px">${esc(head[s.key])} <span style="opacity:.7">(${s.items.length})</span></div>${s.items.map(rowHtml).join('')}</div>`).join('');
@@ -2171,9 +2171,9 @@ function printWeekReview(wr) {
   const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:800px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:22px;margin:0 0 2px} h2{font-size:15px;margin:20px 0 6px;color:#333} .meta{color:#555;font-size:13px;margin-bottom:8px}
     table{width:100%;border-collapse:collapse} td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px}
-    .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:12px;margin-top:2px}
-    .st{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap} .nt{font-size:13px;color:#555}
-    .src{font-size:12px;color:#555;margin-top:18px}`;
+    .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:13px;margin-top:2px}
+    .st{display:inline-block;font-size:13px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap} .nt{font-size:13px;color:#555}
+    .src{font-size:13px;color:#555;margin-top:18px}`;
   const body = `<h1>📋 ${esc(t('wr_print_title'))}</h1><div class="meta">${esc(ti('wr_print_asof', { date: printDate() }))}</div>
     ${groups}<div class="src">${esc(t('wr_print_foot'))}</div>`;
   openPrintDoc(t('wr_print_title'), css, body);
@@ -2185,7 +2185,7 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
   const rabattAlarm = landHatPreise(viewCountry()) && !featBlocked('deals');
   const card = el(`<div class="card">
     <div class="row" style="flex-wrap:wrap;gap:6px 8px;align-items:center"><b>${esc(t('wl_title'))}</b>
-      ${alerts?`<span style="background:#c0392b;color:#fff;border-radius:999px;font-size:12px;font-weight:700;padding:2px 8px">${alerts} ${esc(alerts>1?t('wl_alerts_pl'):t('wl_alerts_sg'))}</span>`:''}
+      ${alerts?`<span style="background:#c0392b;color:#fff;border-radius:999px;font-size:13px;font-weight:700;padding:2px 8px">${alerts} ${esc(alerts>1?t('wl_alerts_pl'):t('wl_alerts_sg'))}</span>`:''}
       ${items.length?`<button class="ghost small" data-wl-csv title="${esc(t('wl_csv_title'))}">CSV</button>`:''}
       ${premium?`<button class="ghost small" data-wl-print title="${esc(t('wl_print_title'))}">${esc(t('wl_print'))}</button>`:''}
     </div>
@@ -2195,7 +2195,7 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
       <input type="number" min="1" max="99" data-baval placeholder="${esc(t('wk_alert_ph'))}" style="width:74px" aria-label="${esc(t('wl_alert_all_aria'))}"><span>%</span>
       <button class="small" data-baset>${esc(t('wl_alert_all_set'))}</button>
       <button class="ghost small" data-baoff>${esc(t('wl_alert_all_off'))}</button>
-      <span class="muted" data-bamsg style="font-size:12px;color:var(--ok-fg)"></span>
+      <span class="muted" data-bamsg style="font-size:13px;color:var(--ok-fg)"></span>
     </div>`:''}
     <div data-wl></div>
     <div data-wl-sug></div>
@@ -2252,7 +2252,7 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
     const open = suggestions.filter(s => s.wirkstoff && !have.has(s.wirkstoff.trim().toLowerCase()));
     sugBox.innerHTML = '';
     if (!open.length) return;
-    const wrap = el(`<div style="margin-top:8px"><div class="muted" style="font-size:12px">${esc(t('wl_quick'))}</div><div class="row" data-chips style="flex-wrap:wrap;gap:6px;margin-top:4px"></div></div>`);
+    const wrap = el(`<div style="margin-top:8px"><div class="muted" style="font-size:13px">${esc(t('wl_quick'))}</div><div class="row" data-chips style="flex-wrap:wrap;gap:6px;margin-top:4px"></div></div>`);
     const chips = wrap.querySelector('[data-chips]');
     open.slice(0, 6).forEach(s => {
       const chip = el(`<button class="small sortbtn">${esc(s.wirkstoff)} +</button>`);
@@ -2290,8 +2290,8 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
           <span style="font-size:18px">${m.icon}</span>
           <div style="flex:1;min-width:0">
             <div><b>${esc(it.wirkstoff)}</b></div>
-            <div style="display:inline-block;font-size:12px;font-weight:700;color:${m.color};background:${m.bg};padding:2px 8px;border-radius:999px;margin-top:2px">${m.label}</div>${shortageCountdown(it)}
-            ${it.bezeichnung?`<div class="muted" style="font-size:12px;margin-top:2px">${esc(it.bezeichnung)}</div>`:''}
+            <div style="display:inline-block;font-size:13px;font-weight:700;color:${m.color};background:${m.bg};padding:2px 8px;border-radius:999px;margin-top:2px">${m.label}</div>${shortageCountdown(it)}
+            ${it.bezeichnung?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(it.bezeichnung)}</div>`:''}
           </div>
           ${it.shortage_id?`<button class="ghost small" data-open>${esc(t('wl_view'))}</button>`:''}
           <button class="ghost small" data-rm title="${esc(t('wl_remove'))}" aria-label="${esc(t('wl_remove'))}">✕</button>
@@ -2309,7 +2309,7 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
           if (!rabattAlarm) return;
           aw.innerHTML = '';
           if (it.alert_pct) {
-            const view = el(`<div class="row" style="gap:6px;align-items:center"><span style="display:inline-block;font-size:12px;font-weight:700;color:var(--ok-fg);background:var(--ok-bg);border:1px solid var(--ok-bd);padding:2px 8px;border-radius:999px">${esc(ti('wl_alert_on',{n:it.alert_pct}))}</span><button class="linklike small" data-aedit>${esc(t('wl_alert_edit'))}</button></div>`);
+            const view = el(`<div class="row" style="gap:6px;align-items:center"><span style="display:inline-block;font-size:13px;font-weight:700;color:var(--ok-fg);background:var(--ok-bg);border:1px solid var(--ok-bd);padding:2px 8px;border-radius:999px">${esc(ti('wl_alert_on',{n:it.alert_pct}))}</span><button class="linklike small" data-aedit>${esc(t('wl_alert_edit'))}</button></div>`);
             view.querySelector('[data-aedit]').onclick = editAlert;
             aw.appendChild(view);
           } else {
@@ -2429,10 +2429,10 @@ function printWatchlist(items) {
   }).join('');
   const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:800px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:22px;margin:0 0 2px} .meta{color:#555;font-size:13px;margin-bottom:16px}
-    table{width:100%;border-collapse:collapse} th{text-align:start;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
-    td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:12px;margin-top:2px}
-    .st{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap} .nt{font-size:13px} .empty{color:#999}
-    .src{font-size:12px;color:#555;margin-top:18px}`;
+    table{width:100%;border-collapse:collapse} th{text-align:start;font-size:13px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
+    td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:13px;margin-top:2px}
+    .st{display:inline-block;font-size:13px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap} .nt{font-size:13px} .empty{color:#999}
+    .src{font-size:13px;color:#555;margin-top:18px}`;
   const body = `<h1>💊 ${esc(t('wl_print_title'))}</h1><div class="meta">${esc(ti('wl_print_asof', { date: printDate() }))} · ${esc(list.length === 1 ? t('wl_print_count_sg') : ti('wl_print_count', { n: list.length }))}</div>
     <table><thead><tr><th>${esc(t('wl_print_col_sub'))}</th><th>${esc(t('wl_print_col_status'))}</th><th>${esc(t('wl_print_col_note'))}</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="src">${esc(t('wl_print_foot'))}</div>`;
@@ -2459,9 +2459,9 @@ function printTasks(tasks) {
   }).join('');
   const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:800px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:22px;margin:0 0 2px} .meta{color:#555;font-size:13px;margin-bottom:16px}
-    table{width:100%;border-collapse:collapse} th{text-align:start;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
-    td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .tk{font-weight:700} .ds{font-weight:400;color:#555;font-size:12px;margin-top:2px}
-    .od{color:#b3261e} .empty{color:#999} .src{font-size:12px;color:#555;margin-top:18px}`;
+    table{width:100%;border-collapse:collapse} th{text-align:start;font-size:13px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
+    td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .tk{font-weight:700} .ds{font-weight:400;color:#555;font-size:13px;margin-top:2px}
+    .od{color:#b3261e} .empty{color:#999} .src{font-size:13px;color:#555;margin-top:18px}`;
   const body = `<h1>✅ ${esc(t('tk_print_title'))}</h1><div class="meta">${esc(ti('wl_print_asof', { date: printDate() }))} · ${esc(open.length === 1 ? t('tk_print_count_sg') : ti('tk_print_count', { n: open.length }))}</div>
     <table><thead><tr><th>${esc(t('tk_print_col_task'))}</th><th>${esc(t('tk_print_col_assignee'))}</th><th>${esc(t('tk_f_due'))}</th><th>${esc(t('csv_status'))}</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="src">${esc(t('tk_print_foot'))}</div>`;
@@ -3099,7 +3099,7 @@ function signalCard(s) {
       zeilen.map(([k, v]) => `<div><span class="muted">${esc(k)}:</span> <b>${esc(v)}</b></div>`).join('')
     }</div>` : ''}
     <div>${quellenAbzeichen(s)}</div>
-    <div class="muted" style="margin-top:6px;font-size:12px">${vertrauen}</div>
+    <div class="muted" style="margin-top:6px;font-size:13px">${vertrauen}</div>
   </div>`);
 
   // Übersetzen-Knopf am TEXT, nicht an der Karte: Das Herkunfts-Abzeichen mit
@@ -3546,7 +3546,7 @@ async function buildCurrencyConverter(box) {
       <button class="ghost small" data-swap title="${esc(t('cc_swap'))}" aria-label="${esc(t('cc_swap'))}">⇅</button>
     </div>
     <div data-res style="font-weight:700;font-size:18px;margin-top:8px"></div>
-    <div class="muted" style="font-size:12px;margin-top:2px">${esc(ti('cc_updated', { date: data.updated_at ? new Date(data.updated_at).toLocaleDateString(bcp47()) : '—' }))} · open.er-api.com</div>`;
+    <div class="muted" style="font-size:13px;margin-top:2px">${esc(ti('cc_updated', { date: data.updated_at ? new Date(data.updated_at).toLocaleDateString(bcp47()) : '—' }))} · open.er-api.com</div>`;
   const amt = box.querySelector('[data-amt]'), from = box.querySelector('[data-from]'), to = box.querySelector('[data-to]'), res = box.querySelector('[data-res]');
   const fmt = (n) => n.toLocaleString(t('_bcp47'), { maximumFractionDigits: 2, minimumFractionDigits: 2 });
   const recompute = () => {
@@ -3891,7 +3891,7 @@ function reportShortageCard(existing = []) {
 // den Datumsfeldern abgeleitet — keine Sicherheitsaussage.
 function shortageCountdown(s) {
   if (s.status === 'verfuegbar' || s.days_until == null) return '';
-  const chip = (label, bg, fg, bd) => ` <span style="display:inline-block;background:${bg};color:${fg};border:1px solid ${bd};font-weight:700;font-size:12px;padding:1px 8px;border-radius:999px;margin-inline-start:6px">${esc(label)}</span>`;
+  const chip = (label, bg, fg, bd) => ` <span style="display:inline-block;background:${bg};color:${fg};border:1px solid ${bd};font-weight:700;font-size:13px;padding:1px 8px;border-radius:999px;margin-inline-start:6px">${esc(label)}</span>`;
   if (s.overdue) return chip(`⚠️ ${nlabel(-s.days_until, 'sc_overdue_one', 'sc_overdue_many')}`, 'var(--crit-bg)', 'var(--crit-fg)', 'var(--crit-bd)');
   if (s.days_until === 0) return chip(`⏳ ${t('sc_due_today')}`, 'var(--warn-bg)', 'var(--warn-fg)', 'var(--warn-bd)');
   const label = `⏳ ${nlabel(s.days_until, 'sc_in_days_one', 'sc_in_days_many')}`;
@@ -3905,7 +3905,7 @@ function shortageCard(s) {
   const card = el(`<div class="card">
     <div class="row">
       <span class="post-author clickable" data-wirkstoff="${esc(s.wirkstoff)}" title="${esc(ti('sh_view_all_wk',{wk:s.wirkstoff}))}">${esc(s.wirkstoff)}</span>
-      <span style="background:${scol};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${slabel}</span>
+      <span style="background:${scol};color:#fff;border-radius:6px;padding:2px 8px;font-size:13px">${slabel}</span>
       <span class="sp" style="flex:1"></span>
       <span class="vis" title="${esc(t('pl_open'))}">${esc(provLabel(s.provenance))}</span>
     </div>
@@ -3914,7 +3914,7 @@ function shortageCard(s) {
     ${s.voraussichtlich_bis&&s.status!=='verfuegbar'?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sc_until'))} <b>${esc(fmtDateDe(s.voraussichtlich_bis))}</b>${shortageCountdown(s)}</div>`:''}
     ${s.chronik&&s.chronik.anzahl>1?`<div style="margin-top:6px;font-size:14px" data-chronikzeile><span style="color:var(--warn-fg);font-weight:700">${esc(ti('ch_line',{n:s.chronik.anzahl,seit:fmtDateDe(s.chronik.aufzeichnung_seit)}))}</span>${s.chronik.durchschnitt_tage!=null?` <span class="muted">· ${esc(ti('ch_avg',{n:s.chronik.durchschnitt_tage}))}</span>`:''}</div>`:''}
     ${s.is_antibiotic?`<div style="margin-top:6px;font-size:13px"><span style="color:var(--ok-fg);font-weight:600">${esc(t('sc_abx'))}</span> — <span class="clickable" data-amr style="color:var(--ok-fg);text-decoration:underline">${esc(t('sc_abx_link'))}</span> <span class="muted">${esc(t('sc_abx_note'))}</span></div>`:''}
-    ${s.price_alternatives>0&&s.status!=='verfuegbar'?`<div style="margin-top:6px"><button class="linklike small" data-alts style="color:var(--ok-fg);font-weight:700">${esc(ti('sc_alts',{n:s.price_alternatives}))}</button> <span class="muted" style="font-size:12px">${esc(t('sc_alts_note'))}</span></div>`:''}
+    ${s.price_alternatives>0&&s.status!=='verfuegbar'?`<div style="margin-top:6px"><button class="linklike small" data-alts style="color:var(--ok-fg);font-weight:700">${esc(ti('sc_alts',{n:s.price_alternatives}))}</button> <span class="muted" style="font-size:13px">${esc(t('sc_alts_note'))}</span></div>`:''}
     ${s.provenance==='community'&&s.aktualitaet&&s.aktualitaet!=='aktuell'?`<div class="vt-alt ${s.aktualitaet==='veraltet'?'vt-veraltet':''}" data-aktualitaet="${esc(s.aktualitaet)}">${esc(s.aktualitaet==='veraltet'?ti('ak_veraltet',{n:s.tage_ohne_bestaetigung}):ti('ak_pruefen',{n:s.tage_ohne_bestaetigung}))}</div>`:''}
     ${s.provenance==='community'?`<div class="vt-stufe ${s.bestaetigt?'vt-ok':''}" data-vertrauen="${s.bestaetigt?'bestaetigt':'einzeln'}">${esc(s.bestaetigt?ti('vt_bestaetigt',{n:s.apotheken}):s.apotheken>=3&&s.apotheken_neu?ti('vt_neu',{n:s.apotheken}):s.apotheken===1?t('vt_einzeln_1'):ti('vt_einzeln',{n:s.apotheken}))}</div>`:''}
     ${s.provenance==='community'&&s.reporter?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sc_reported_by'))} <b><bdi dir="ltr">@${esc(s.reporter.handle)}</bdi></b>${s.reporter.verified?' <span class="verified">✔</span>':''}</div>`:''}
@@ -5064,7 +5064,7 @@ function printWirkstoff(d) {
   const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:760px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:24px;margin:0 0 2px} h2{font-size:15px;margin:18px 0 4px;border-bottom:1px solid #cbd5cf;padding-bottom:3px}
     .meta{color:#555;font-size:13px} ul{margin:4px 0;padding-inline-start:20px} li{margin:3px 0;font-size:14px} p{font-size:14px;margin:4px 0}
-    .muted{color:#777} .src{font-size:12px;color:#555;margin-top:20px}`;
+    .muted{color:#777} .src{font-size:13px;color:#555;margin-top:20px}`;
   const body = `<h1>💊 ${esc(d.wirkstoff)}</h1><div class="meta">${esc(t('wk_print_title'))} · ${esc(ti('wl_print_asof', { date: printDate() }))}</div>
     ${section(t('wk_short_title'), shortHtml)}
     ${section(t('wk_print_cheapest'), priceHtml)}
@@ -5094,9 +5094,9 @@ function printPrices(comparisons) {
   }).join('');
   const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:900px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:22px;margin:0 0 2px} .meta{color:#555;font-size:13px;margin-bottom:16px}
-    table{width:100%;border-collapse:collapse} th{text-align:start;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
-    td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:12px;margin-top:2px}
-    .num{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap} .empty{color:#999} .src{font-size:12px;color:#555;margin-top:18px}`;
+    table{width:100%;border-collapse:collapse} th{text-align:start;font-size:13px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
+    td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:13px;margin-top:2px}
+    .num{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap} .empty{color:#999} .src{font-size:13px;color:#555;margin-top:18px}`;
   const body = `<h1>💶 ${esc(t('pr_print_title'))}</h1><div class="meta">${esc(ti('wl_print_asof', { date: printDate() }))} · ${esc(list.length === 1 ? '1' : list.length)} ${esc(t('pr_print_count'))}</div>
     <table><thead><tr><th>${esc(t('csv_praeparat'))}</th><th>${esc(t('pr_print_cheapest'))}</th><th class="num">${esc(t('csv_aep'))}</th><th class="num">${esc(t('pr_print_saving'))}</th><th>${esc(t('pr_print_deal'))}</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="src">${esc(t('wl_print_foot'))}</div>`;
@@ -5130,9 +5130,9 @@ function printRabatte(list) {
     </tr>`).join('');
   const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:960px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:22px;margin:0 0 2px} .meta{color:#555;font-size:13px;margin-bottom:16px}
-    table{width:100%;border-collapse:collapse} th{text-align:start;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
-    td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:12px;margin-top:2px}
-    .num{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap} .src{font-size:12px;color:#555;margin-top:18px}`;
+    table{width:100%;border-collapse:collapse} th{text-align:start;font-size:13px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
+    td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:13px;margin-top:2px}
+    .num{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap} .src{font-size:13px;color:#555;margin-top:18px}`;
   const body = `<h1>🏷️ ${esc(t('rb_print_title'))}</h1><div class="meta">${esc(ti('wl_print_asof', { date: printDate() }))} · ${rows0.length} ${esc(t('pr_print_count'))}</div>
     <table><thead><tr><th>${esc(t('csv_praeparat'))}</th><th>${esc(t('csv_lieferant'))}</th><th class="num">${esc(t('csv_aktionspreis'))}</th><th class="num">${esc(t('csv_rabatt'))}</th><th class="num">${esc(t('pr_print_saving'))}</th><th class="num">${esc(t('csv_minmenge'))}</th><th>${esc(t('csv_gueltig_bis'))}</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="src">${esc(t('wl_print_foot'))}</div>`;
@@ -5166,9 +5166,9 @@ function printExchange(entries) {
     </tr>`).join('');
   const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:960px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:22px;margin:0 0 2px} .meta{color:#555;font-size:13px;margin-bottom:16px}
-    table{width:100%;border-collapse:collapse} th{text-align:start;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
-    td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:12px;margin-top:2px}
-    .num{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap} .src{font-size:12px;color:#555;margin-top:18px}`;
+    table{width:100%;border-collapse:collapse} th{text-align:start;font-size:13px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
+    td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:13px;margin-top:2px}
+    .num{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap} .src{font-size:13px;color:#555;margin-top:18px}`;
   const body = `<h1>🔄 ${esc(t('ex_print_title'))}</h1><div class="meta">${esc(ti('wl_print_asof', { date: printDate() }))} · ${rows0.length} ${esc(t('pr_print_count'))}</div>
     <table><thead><tr><th>${esc(t('ex_csv_art'))}</th><th>${esc(t('csv_praeparat'))}</th><th>${esc(t('ex_csv_menge'))}</th><th>${esc(t('ex_csv_ort'))}</th><th>${esc(t('ex_csv_anbieter'))}</th><th class="num">${esc(t('ex_csv_treffer'))}</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="src">${esc(t('ex_contact'))}</div>`;
@@ -5248,7 +5248,7 @@ function priceGroup(g, watchedSet, onWatchChange) {
     ${g.action?`<div style="background:rgba(11,127,40,.08);border:1px solid rgba(11,127,40,.35);border-radius:10px;padding:8px 10px;margin-bottom:8px">
       <div style="font-weight:700;color:var(--ok-fg);font-size:14px">${esc(t('pg_act_title'))}</div>
       <div style="font-size:13px;margin-top:2px">${esc(g.action.supplier)}: <b>€ ${fmtMoney(g.action.aktionspreis)}</b> ${esc(t('pg_instead'))} € ${fmtMoney(g.best_aep)} ${esc(t('pg_aep'))} — <b>−€ ${fmtMoney(g.action.unter_aep_abs)} ${esc(t('pg_per_pack'))}</b> · −${g.action.rabatt_pct}%</div>
-      <div class="muted" style="font-size:12px;margin-top:2px">${esc(ti('pg_from',{n:g.action.min_menge}))}${g.action.expiring_soon?` · <b style="color:${g.action.days_left<=3?'var(--crit-fg)':'var(--warn-fg)'}">${esc(g.action.days_left<=0?t('pg_only_today'):ti('pg_only_days',{d:g.action.days_left}))}</b>`:` · ${esc(t('pg_valid'))} ${esc(g.action.gueltig_bis)}`} · ${esc(t('prov_reference'))}</div>
+      <div class="muted" style="font-size:13px;margin-top:2px">${esc(ti('pg_from',{n:g.action.min_menge}))}${g.action.expiring_soon?` · <b style="color:${g.action.days_left<=3?'var(--crit-fg)':'var(--warn-fg)'}">${esc(g.action.days_left<=0?t('pg_only_today'):ti('pg_only_days',{d:g.action.days_left}))}</b>`:` · ${esc(t('pg_valid'))} ${esc(g.action.gueltig_bis)}`} · ${esc(t('prov_reference'))}</div>
       ${featureAn('bestellung')?`<div style="margin-top:6px"><button class="ghost small" data-actcart>${esc(t('cart_add'))}</button></div>`:''}
     </div>`:''}
     <div data-offers></div>
@@ -5286,7 +5286,7 @@ function priceGroup(g, watchedSet, onWatchChange) {
   g.offers.forEach((o, i) => {
     const row = el(`<div class="comment"${i===0&&g.saving_abs>0?' style="background:rgba(11,127,40,.06);border-radius:8px"':''}>
       <div class="row">
-        <span>${i===0?'⭐ ':''}<b>${esc(o.supplier)}</b>${i===0?` <span style="color:var(--ok-fg);font-size:12px;font-weight:700">${esc(t('pg_cheapest'))}</span>`:''}</span>
+        <span>${i===0?'⭐ ':''}<b>${esc(o.supplier)}</b>${i===0?` <span style="color:var(--ok-fg);font-size:13px;font-weight:700">${esc(t('pg_cheapest'))}</span>`:''}</span>
         <span class="sp" style="flex:1"></span>
         <span title="${Array.isArray(o.series)&&o.series.length?o.series.map(v=>'€ '+fmtMoney(v)).join(' → '):esc(t('pg_no_series'))}">${sparkline(o.series)}</span>
         <span style="margin-inline-start:8px"><b>€ ${fmtMoney(o.aep)}</b> ${trendStr(o.trend_pct)}</span>
@@ -5377,7 +5377,7 @@ async function loadExchange() {
         <option value="rx">${esc(t('ex_rx_rx'))}</option>
         <option value="otc">${esc(t('ex_rx_otc'))}</option>
       </select>
-      <div class="muted" style="font-size:12px;margin-top:4px">${esc(t('ex_rx_hint'))}</div>
+      <div class="muted" style="font-size:13px;margin-top:4px">${esc(t('ex_rx_hint'))}</div>
     </div>
     <div class="row" style="margin-top:6px;align-items:center;gap:6px"><label style="font-size:13px;margin:0" for="ex_ablauf">⏳ ${esc(t('ex_expiry'))}</label><input id="ex_ablauf" type="date" aria-label="${esc(t('ex_expiry'))}"></div>
     <div class="row" style="margin-top:6px">
@@ -5539,8 +5539,8 @@ function exchangeCard(e) {
   const badge = isBiete ? `<span style="background:var(--ok-bg);color:var(--ok-fg);border:1px solid var(--ok-bd);border-radius:999px;padding:2px 10px;font-weight:700;font-size:13px">${esc(t('ex_badge_biete'))}</span>`
                         : `<span style="background:var(--warn-bg);color:var(--warn-fg);border:1px solid var(--warn-bd);border-radius:999px;padding:2px 10px;font-weight:700;font-size:13px">${esc(t('ex_badge_suche'))}</span>`;
   const erledigt = e.status === 'erledigt';
-  const doneBadge = erledigt ? ` <span style="background:var(--line);color:var(--muted);border-radius:999px;padding:2px 8px;font-size:12px;font-weight:600">${esc(t('ex_done_badge'))}</span>` : '';
-  const reservedBadge = (!erledigt && e.reserved) ? ` <span style="background:var(--warn-bg);color:var(--warn-fg);border:1px solid var(--warn-bd);border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700">${esc(t('ex_reserved_badge'))}</span>` : '';
+  const doneBadge = erledigt ? ` <span style="background:var(--line);color:var(--muted);border-radius:999px;padding:2px 8px;font-size:13px;font-weight:600">${esc(t('ex_done_badge'))}</span>` : '';
+  const reservedBadge = (!erledigt && e.reserved) ? ` <span style="background:var(--warn-bg);color:var(--warn-fg);border:1px solid var(--warn-bd);border-radius:999px;padding:2px 8px;font-size:13px;font-weight:700">${esc(t('ex_reserved_badge'))}</span>` : '';
   // Frische-Hinweis: eigener, offener Eintrag, der schon lange steht — zum Aufräumen anregen
   // (hält Angebot/Nachfrage im Netzwerk aktuell). Schwelle: 21 Tage.
   const ageDays = e.created_at ? Math.floor((Date.now() - Date.parse(e.created_at)) / 86400000) : 0;
@@ -5555,7 +5555,7 @@ function exchangeCard(e) {
       ${badge}${doneBadge}${reservedBadge}
       <b style="margin-inline-start:8px">${esc(e.bezeichnung)}</b>
       <span class="sp" style="flex:1"></span>
-      <span class="muted" style="font-size:12px">${relTime(e.created_at)}</span>
+      <span class="muted" style="font-size:13px">${relTime(e.created_at)}</span>
     </div>
     <div class="muted" style="margin-top:4px">${e.menge?esc(t('ex_qty'))+' '+esc(e.menge):''}${e.menge&&(e.ort||e.bundesland)?' · ':''}${e.ort||e.bundesland?'📍 '+esc([e.ort,e.bundesland].filter(Boolean).join(', ')):''}</div>
     ${e.ablauf?(()=>{const lt=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);const du=Math.round((Date.parse(e.ablauf+'T00:00:00Z')-Date.parse(lt+'T00:00:00Z'))/86400000);const expired=du!=null&&du<0;const soon=du!=null&&du>=0&&du<=30;const col=expired?'var(--crit-fg)':(soon?'var(--warn-fg)':'var(--muted)');const bg=expired?'var(--crit-bg)':(soon?'var(--warn-bg)':'var(--chip-bg)');const txt=expired?t('ex_expired'):(du===0?t('ex_exp_today'):(du===1?t('ex_exp_1'):ti('ex_exp_in',{d:du})));return `<div style="display:inline-block;margin-top:6px;font-size:13px;font-weight:700;color:${col};background:${bg};border-radius:999px;padding:2px 10px">⏳ ${esc(t('ex_valid'))} ${esc(fmtDateDe(e.ablauf))} · ${esc(txt)}</div>`;})():''}
@@ -6053,7 +6053,7 @@ function printCart(d) {
   const savings = Number(d.total_savings) || 0;
   const body = `<div style="color:#444;margin-bottom:8px">${esc(printDate())} · ${esc(ti('cart_summary',{ n:d.total_positions, sum:printMoney(d.total_price) }))}${savings>0?` · <b style="color:#0b7f28">${esc(ti('cart_savings',{ sum:printMoney(savings) }))}</b>`:''}</div>
     ${ordered.map(section).join('')}
-    <div style="margin-top:6px;color:#666;font-size:12px">${esc(t('cart_print_foot'))}</div>`;
+    <div style="margin-top:6px;color:#666;font-size:13px">${esc(t('cart_print_foot'))}</div>`;
   openPrintDoc(t('cart_print_title'), css, body);
 }
 
@@ -6076,7 +6076,7 @@ function openBookVideocall(providerHandle, providerName) {
     <label style="margin-top:6px">${esc(t('vc_reason'))}</label>
     <input data-vreason placeholder="${esc(t('vc_reason_ph'))}" maxlength="300">
     <div class="row" style="margin-top:10px"><button data-vsend>${esc(t('vc_request'))}</button><span class="err" data-verr style="margin-inline-start:10px"></span></div>
-    <div class="muted" style="font-size:12px;margin-top:8px">${esc(t('vc_privacy'))}</div>
+    <div class="muted" style="font-size:13px;margin-top:8px">${esc(t('vc_privacy'))}</div>
   </div>`);
   card.querySelector('[data-back]').onclick = () => openProfile(providerHandle);
   card.querySelector('[data-vsend]').onclick = async () => {
@@ -6126,7 +6126,7 @@ async function openAppointments(flash) {
       <div class="row" style="align-items:baseline">
         <b>${esc(fmtDateDe(a.datum))} · ${esc(a.uhrzeit)}</b>
         <span class="sp" style="flex:1"></span>
-        <span style="display:inline-block;font-size:12px;font-weight:700;color:${col};background:${bg};padding:2px 8px;border-radius:999px">${esc(lab)}</span>
+        <span style="display:inline-block;font-size:13px;font-weight:700;color:${col};background:${bg};padding:2px 8px;border-radius:999px">${esc(lab)}</span>
       </div>
       <div class="muted" style="font-size:13px;margin-top:2px">${esc(a.i_am_provider?t('vc_with_customer'):t('vc_with_pharmacy'))}: <b class="clickable" data-openprofile="${esc(other?other.handle:'')}">${esc(other?(other.display_name||('@'+other.handle)):'—')}</b></div>
       ${a.grund?`<div class="post-body" style="margin-top:6px">${esc(a.grund)}</div>`:''}
@@ -6325,7 +6325,7 @@ async function openTasks() {
       const card = el(`<div class="card">
         <div class="row" style="align-items:baseline;gap:8px">
           <b style="flex:1">${esc(tk.title)}</b>
-          <span style="display:inline-block;font-size:12px;font-weight:800;color:${col};background:${bg};padding:2px 10px;border-radius:999px">${esc(lab)}</span>
+          <span style="display:inline-block;font-size:13px;font-weight:800;color:${col};background:${bg};padding:2px 10px;border-radius:999px">${esc(lab)}</span>
         </div>
         ${tk.description?`<div class="muted" style="font-size:14px;white-space:pre-wrap;margin-top:4px">${esc(tk.description)}</div>`:''}
         <div class="muted" style="font-size:13px;margin-top:6px">
@@ -6436,7 +6436,7 @@ async function openNotes() {
         </div>
         ${n.body?`<div class="muted" style="font-size:14px;white-space:pre-wrap;margin-top:4px">${esc(n.body)}</div>`:''}
         ${n.doc_url?`<div style="margin-top:6px"><a href="${esc(n.doc_url)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(n.doc_url)}</a></div>`:''}
-        <div class="muted" style="font-size:12px;margin-top:6px">${n.creator_name?esc(ti('kb_by',{name:n.creator_name}))+' · ':''}${esc(relTime(n.created_at))}</div>
+        <div class="muted" style="font-size:13px;margin-top:6px">${n.creator_name?esc(ti('kb_by',{name:n.creator_name}))+' · ':''}${esc(relTime(n.created_at))}</div>
         <div class="reacts" style="margin-top:8px">
           ${d.can_pin?`<button class="ghost small" data-pin>${n.pinned?esc(t('kb_unpin')):esc(t('kb_pin'))}</button>`:''}
           ${canDelete?`<button class="ghost small" data-edit>${esc(t('kb_edit'))}</button>`:''}
@@ -6538,7 +6538,7 @@ async function openDirectory(type) {
           <span class="handle clickable" data-openprofile="${esc(p.handle)}">@${esc(p.handle)}</span>
         </div>
         ${p.title?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(p.title)}</div>`:''}
-        <div class="muted" style="font-size:12px;margin-top:2px">${p.bundesland?esc(p.bundesland)+' · ':''}${ti('dir_followers',{n:p.follower_count})}</div>
+        <div class="muted" style="font-size:13px;margin-top:2px">${p.bundesland?esc(p.bundesland)+' · ':''}${ti('dir_followers',{n:p.follower_count})}</div>
       </div>
     </div>
     <div class="row" style="margin-top:10px;gap:6px">
@@ -6566,15 +6566,15 @@ function promoAuthorLine(a) {
 }
 function promoPrice(p) {
   if (p.preis == null) return `<span class="muted">${esc(t('wb_on_request'))}</span>`;
-  return `<b>€ ${esc(fmtMoney(p.preis))}</b>${p.einheit?` <span class="muted" style="font-size:12px">${esc(p.einheit)}</span>`:''}`;
+  return `<b>€ ${esc(fmtMoney(p.preis))}</b>${p.einheit?` <span class="muted" style="font-size:13px">${esc(p.einheit)}</span>`:''}`;
 }
 function promoCard(p) {
   const card = el(`<div class="card" style="cursor:pointer" data-open="${esc(p.id)}">
     ${p.image?`<img data-zoom loading="lazy" decoding="async" src="${esc(p.image)}" alt="${esc(p.titel)}" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;margin-bottom:8px;cursor:zoom-in">`:''}
     <div class="row" style="align-items:baseline;gap:8px">
-      <span style="display:inline-block;font-size:12px;font-weight:700;color:var(--info-fg);background:var(--info-bg);padding:2px 8px;border-radius:999px">${esc(promoCatLabel(p.kategorie))}</span>
+      <span style="display:inline-block;font-size:13px;font-weight:700;color:var(--info-fg);background:var(--info-bg);padding:2px 8px;border-radius:999px">${esc(promoCatLabel(p.kategorie))}</span>
       <span class="sp" style="flex:1"></span>
-      <span style="font-size:11px;font-weight:700;color:var(--muted);border:1px solid var(--line);padding:1px 6px;border-radius:6px">${esc(t('wb_ad'))}</span>
+      <span style="font-size:13px;font-weight:700;color:var(--muted);border:1px solid var(--line);padding:1px 6px;border-radius:6px">${esc(t('wb_ad'))}</span>
     </div>
     <h3 style="margin:8px 0 4px">${esc(p.titel)}</h3>
     <div style="margin-bottom:6px">${promoPrice(p)}</div>
@@ -6714,8 +6714,8 @@ async function openPromotionDetail(id) {
     <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span>${d.is_mine?`<button class="ghost small" data-edit>${esc(t('wb_edit'))}</button><button class="ghost small" data-del>${esc(t('wb_delete'))}</button>`:`<button class="ghost small" data-report>${esc(t('pc_report'))}</button>`}</div>
     ${d.image?`<img data-zoom loading="lazy" decoding="async" src="${esc(d.image)}" alt="${esc(d.titel)}" style="width:100%;max-height:320px;object-fit:cover;border-radius:10px;margin:8px 0;cursor:zoom-in">`:''}
     <div class="row" style="align-items:baseline;gap:8px;margin-top:6px">
-      <span style="display:inline-block;font-size:12px;font-weight:700;color:var(--info-fg);background:var(--info-bg);padding:2px 8px;border-radius:999px">${esc(promoCatLabel(d.kategorie))}</span>
-      <span class="sp" style="flex:1"></span><span style="font-size:11px;font-weight:700;color:var(--muted);border:1px solid var(--line);padding:1px 6px;border-radius:6px">${esc(t('wb_ad'))}</span>
+      <span style="display:inline-block;font-size:13px;font-weight:700;color:var(--info-fg);background:var(--info-bg);padding:2px 8px;border-radius:999px">${esc(promoCatLabel(d.kategorie))}</span>
+      <span class="sp" style="flex:1"></span><span style="font-size:13px;font-weight:700;color:var(--muted);border:1px solid var(--line);padding:1px 6px;border-radius:6px">${esc(t('wb_ad'))}</span>
     </div>
     <h1 style="margin:8px 0 4px">${esc(d.titel)}</h1>
     <div style="font-size:18px;margin-bottom:6px">${promoPrice(d)}</div>
@@ -6797,7 +6797,7 @@ async function openLive(flash) {
     const [col,bg,lab] = statusMeta[s.status] || ['var(--muted)','var(--chip-bg)',s.status];
     const card = el(`<div class="card">
       <div class="row" style="align-items:baseline;gap:8px">
-        <span style="display:inline-block;font-size:12px;font-weight:800;color:${col};background:${bg};padding:2px 10px;border-radius:999px">${esc(lab)}</span>
+        <span style="display:inline-block;font-size:13px;font-weight:800;color:${col};background:${bg};padding:2px 10px;border-radius:999px">${esc(lab)}</span>
         <span class="sp" style="flex:1"></span>
         <span class="muted" style="font-size:13px">🗓 ${esc(liveWhen(s.geplant_am))}</span>
       </div>
@@ -6838,7 +6838,7 @@ function openLiveForm() {
     <label style="margin-top:8px">${esc(t('lv_f_when'))}</label>
     <input id="lv_when_in" type="datetime-local" value="${now}">
     <div class="row" style="margin-top:12px"><button data-save>${esc(t('lv_save'))}</button><span class="err" data-err style="margin-inline-start:10px"></span></div>
-    <div class="muted" style="font-size:12px;margin-top:8px">${esc(t('lv_privacy'))}</div>
+    <div class="muted" style="font-size:13px;margin-top:8px">${esc(t('lv_privacy'))}</div>
   </div>`);
   card.querySelector('[data-back]').onclick = () => openLive();
   card.querySelector('[data-save]').onclick = async () => {
@@ -6938,9 +6938,9 @@ function printProcurementReport(orders) {
   const kpi = (num, label, col = '#111') => `<div class="kpi"><div class="n" style="color:${col}">${esc(num)}</div><div class="l">${esc(label)}</div></div>`;
   const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:800px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:22px;margin:0 0 2px} h2{font-size:15px;margin:20px 0 6px;color:#333} .meta{color:#555;font-size:13px;margin-bottom:14px}
-    .kpis{display:flex;flex-wrap:wrap;gap:20px;margin:8px 0} .kpi .n{font-size:22px;font-weight:800} .kpi .l{color:#555;font-size:12px}
-    table{width:100%;border-collapse:collapse} th{text-align:start;font-size:12px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px} td{padding:6px 8px;border-bottom:1px solid #e3e8e5;font-size:14px} th.r,td.r{text-align:end} td.r{font-weight:700;white-space:nowrap} td.sav{color:#0b7f28}
-    .src{font-size:12px;color:#555;margin-top:18px}`;
+    .kpis{display:flex;flex-wrap:wrap;gap:20px;margin:8px 0} .kpi .n{font-size:22px;font-weight:800} .kpi .l{color:#555;font-size:13px}
+    table{width:100%;border-collapse:collapse} th{text-align:start;font-size:13px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px} td{padding:6px 8px;border-bottom:1px solid #e3e8e5;font-size:14px} th.r,td.r{text-align:end} td.r{font-weight:700;white-space:nowrap} td.sav{color:#0b7f28}
+    .src{font-size:13px;color:#555;margin-top:18px}`;
   const body = `<h1>📊 ${esc(t('os_rep_title'))}</h1>
     <div class="meta">${esc(ti('os_rep_period', { from: from ? fmtDateDe(from) : '—', to: to ? fmtDateDe(to) : '—' }))} · ${esc(ti('wl_print_asof', { date: printDate() }))}</div>
     <div class="kpis">
@@ -6993,7 +6993,7 @@ async function openOrders(flash) {
     const statsCard = el('<div class="card"></div>');
     feed.appendChild(statsCard);
     const PERIODS = [['all', t('os_p_all')], ['year', t('os_p_year')], ['d90', t('os_p_90')], ['d30', t('os_p_30')]];
-    const stat = (num, label, col) => `<div style="flex:1;min-width:96px"><div style="font-size:20px;font-weight:800;color:${col}">${esc(num)}</div><div class="muted" style="font-size:12px">${esc(label)}</div></div>`;
+    const stat = (num, label, col) => `<div style="flex:1;min-width:96px"><div style="font-size:20px;font-weight:800;color:${col}">${esc(num)}</div><div class="muted" style="font-size:13px">${esc(label)}</div></div>`;
     const renderStats = () => {
       const list = d.orders.filter(o => orderInPeriod(o, orderStatsPeriod));
       const spent = list.reduce((s, o) => s + (Number(o.total_price) || 0), 0);
@@ -7034,12 +7034,12 @@ async function openOrders(flash) {
       <div class="row" style="align-items:baseline;flex-wrap:wrap;gap:6px">
         <b>${o.reference?esc(o.reference):esc(relTime(o.created_at))}</b>
         ${o.received_at
-          ? `<span style="font-size:12px;font-weight:700;color:var(--ok-fg);background:var(--ok-bg);border:1px solid var(--ok-bd);padding:1px 8px;border-radius:999px">${esc(t('ord_received'))}</span>`
-          : `<span style="font-size:12px;font-weight:700;color:var(--warn-fg);background:var(--warn-bg);border:1px solid var(--warn-bd);padding:1px 8px;border-radius:999px">${esc(t('ord_ordered'))}</span>`}
+          ? `<span style="font-size:13px;font-weight:700;color:var(--ok-fg);background:var(--ok-bg);border:1px solid var(--ok-bd);padding:1px 8px;border-radius:999px">${esc(t('ord_received'))}</span>`
+          : `<span style="font-size:13px;font-weight:700;color:var(--warn-fg);background:var(--warn-bg);border:1px solid var(--warn-bd);padding:1px 8px;border-radius:999px">${esc(t('ord_ordered'))}</span>`}
         <span class="sp" style="flex:1"></span>
         <span style="font-weight:800">€ ${fmtMoney(o.total_price)}</span>
       </div>
-      ${o.reference?`<div class="muted" style="font-size:12px">${esc(relTime(o.created_at))}</div>`:''}
+      ${o.reference?`<div class="muted" style="font-size:13px">${esc(relTime(o.created_at))}</div>`:''}
       <div class="muted" style="font-size:13px;margin-top:4px">${esc(ti('ord_positions',{n:o.positions}))} · ${o.total_pieces} ${esc(t('cart_col_menge'))}${o.total_savings>0?` · <span style="color:var(--ok-fg);font-weight:700">${esc(ti('cart_savings',{sum:fmtMoney(o.total_savings)}))}</span>`:''}</div>
       ${suppliers.length?`<div class="muted" style="font-size:13px;margin-top:2px">🏢 ${esc(suppliers.join(' · '))}</div>`:''}
       ${suppliers.length?`<div class="reacts" style="margin-top:8px;gap:6px;flex-wrap:wrap">${suppliers.map(s=>`<button class="ghost small" data-copysup="${esc(s)}" title="${esc(t('cart_copy_order'))}">📋 ${esc(s)}</button>`).join('')}</div>`:''}
@@ -7571,7 +7571,7 @@ async function openStewardship() {
     <div><button class="ghost small" data-back>${esc(t('search_back'))}</button></div>
     <h1 style="margin:8px 0 2px">${esc(t('stew_title'))}</h1>
     <div class="muted" style="font-size:14px">${esc(t('stew_sub'))}</div>
-    <div class="muted" style="font-size:12px;margin-top:8px;font-style:italic">${esc(t('stew_warn'))}</div>
+    <div class="muted" style="font-size:13px;margin-top:8px;font-style:italic">${esc(t('stew_warn'))}</div>
     <div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap">${featureAn('patienteninfo') ? `<button class="ghost small" data-pinfo>${esc(t('stew_pinfo'))}</button>` : ''}<button class="ghost small" data-zettel>${esc(t('stew_zettel'))}</button></div></div>`);
   head.querySelector('[data-back]').onclick = () => goTab('overview');
   head.querySelector('[data-pinfo]')?.addEventListener('click', () => openPatientInfo());
@@ -7617,7 +7617,7 @@ function printPatientInfo(d) {
   const cards = d.cards.map(c => `<div class="c"><h2>${esc(c.icon)} ${esc(c.title)}</h2><p>${esc(c.body)}</p></div>`).join('');
   const css = `body{font-family:system-ui,-apple-system,sans-serif;max-width:720px;margin:24px auto;padding:0 16px;color:#111}
     h1{font-size:20px} .c{border:1px solid #cbd5cf;border-radius:8px;padding:12px 14px;margin:10px 0;break-inside:avoid}
-    h2{font-size:16px;margin:0 0 4px} p{margin:0;font-size:14px;line-height:1.5} .src{font-size:12px;color:#555;margin-top:16px}`;
+    h2{font-size:16px;margin:0 0 4px} p{margin:0;font-size:14px;line-height:1.5} .src{font-size:13px;color:#555;margin-top:16px}`;
   // Quell-Label in der Patienten-Sprache (wie die Überschrift) — ein deutsches „Quelle:"
   // auf einem englischen/türkischen Blatt wäre inkonsistent.
   const srcLabel = d.lang === 'en' ? 'Source' : d.lang === 'pt' ? 'Fonte' : d.lang === 'fr' ? 'Source' : d.lang === 'ar' ? 'المصدر' : d.lang === 'tr' ? 'Kaynak' : 'Quelle';
@@ -7661,7 +7661,7 @@ async function openPatientInfo() {
     };
     feed.appendChild(card);
   });
-  feed.appendChild(el(`<div class="card muted" style="font-size:12px" lang="${esc(d.lang)}" dir="${richtungVon(d.lang)}"><a href="${esc(d.source.url)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(d.source.label)}</a> · <span style="font-style:italic">${esc(d.disclaimer)}</span></div>`));
+  feed.appendChild(el(`<div class="card muted" style="font-size:13px" lang="${esc(d.lang)}" dir="${richtungVon(d.lang)}"><a href="${esc(d.source.url)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(d.source.label)}</a> · <span style="font-style:italic">${esc(d.disclaimer)}</span></div>`));
 }
 
 // Verordnungs-Klartext-Begleitzettel (Abgabe in der Apotheke, ohne ELGA).
@@ -7714,7 +7714,7 @@ function zettelBody(z) {
     ${z.dauer ? `<div style="font-size:16px;margin-top:6px">📅 ${esc(L.dauer)}: <b>${esc(z.dauer)}</b></div>` : ''}
     ${z.hinweise ? `<div style="font-size:15px;margin-top:10px"><b>${esc(L.hinweise)}:</b> ${esc(z.hinweise)}</div>` : ''}
     <div style="font-size:14px;margin-top:14px">${esc(L.fragen)}</div>
-    <div style="font-size:11.5px;color:#4a5a51;margin-top:12px;font-style:italic">${esc(L.herkunft)}</div>`;
+    <div style="font-size:13px;color:#4a5a51;margin-top:12px;font-style:italic">${esc(L.herkunft)}</div>`;
 }
 // Komplette Druckseite: Einnahmeplan, optional plus Patienten-Infokarten
 // (gleiche Sprache) auf einer Folgeseite — ein Druckauftrag bei der Abgabe.
@@ -7722,7 +7722,7 @@ function zettelPrintHtml(z, cards) {
   const cardsHtml = cards ? `<div style="break-before:page;page-break-before:always">
       <h1 style="font-size:20px">🧫 ${esc(patientInfoHeading(cards.lang))}</h1>
       ${cards.cards.map(c => `<div style="border:1px solid #cbd5cf;border-radius:8px;padding:12px 14px;margin:10px 0;break-inside:avoid"><h2 style="font-size:16px;margin:0 0 4px">${esc(c.icon)} ${esc(c.title)}</h2><p style="margin:0;font-size:14px;line-height:1.5">${esc(c.body)}</p></div>`).join('')}
-      <div style="font-size:12px;color:#555;margin-top:14px">${esc(cards.source.label)} · ${esc(cards.source.url)}<br>${esc(cards.disclaimer)}</div>
+      <div style="font-size:13px;color:#555;margin-top:14px">${esc(cards.source.label)} · ${esc(cards.source.url)}<br>${esc(cards.disclaimer)}</div>
     </div>` : '';
   return `<!doctype html><html lang="${esc(z.lang)}" dir="${richtungVon(z.lang)}"><head><meta charset="utf-8"><title>${esc(ZETTEL_L[z.lang].title)}</title>
     <style>body{font-family:system-ui,-apple-system,sans-serif;max-width:640px;margin:28px auto;padding:0 18px;color:#111}</style></head>
@@ -7741,7 +7741,7 @@ function openBegleitzettel() {
     <div><button class="ghost small" data-back>${esc(t('search_back'))}</button></div>
     <h1 style="margin:8px 0 2px">${esc(t('bz_title'))}</h1>
     <div class="muted" style="font-size:14px">${esc(t('bz_sub'))}</div>
-    <div class="muted" style="font-size:12px;margin-top:6px;font-style:italic">${esc(t('bz_warn'))}</div></div>`);
+    <div class="muted" style="font-size:13px;margin-top:6px;font-style:italic">${esc(t('bz_warn'))}</div></div>`);
   head.querySelector('[data-back]').onclick = () => goTab('overview');
   feed.appendChild(head);
   const form = el(`<div class="card">
@@ -7749,7 +7749,7 @@ function openBegleitzettel() {
     <input data-z-p placeholder="${esc(t('bz_med_ph'))}">
     <label style="margin-top:8px">${esc(t('bz_schema'))}</label>
     <div class="row" style="gap:6px;flex-wrap:wrap">
-      ${[['m',t('bz_morning')],['mi',t('bz_noon')],['a',t('bz_evening')],['n',t('bz_night')]].map(([k,l])=>`<label style="flex:1;min-width:80px;font-size:12px">${esc(l)}<input data-z-${k} value="0" style="width:100%;text-align:center"></label>`).join('')}
+      ${[['m',t('bz_morning')],['mi',t('bz_noon')],['a',t('bz_evening')],['n',t('bz_night')]].map(([k,l])=>`<label style="flex:1;min-width:80px;font-size:13px">${esc(l)}<input data-z-${k} value="0" style="width:100%;text-align:center"></label>`).join('')}
     </div>
     <label style="margin-top:8px">${esc(t('bz_food'))}</label>
     <select data-z-e>
@@ -7769,7 +7769,7 @@ function openBegleitzettel() {
     </label>
     <div class="row" style="margin-top:12px;gap:8px"><button class="small" data-z-print>${esc(t('bz_print'))}</button><span class="err" data-z-err style="font-size:13px"></span></div>
   </div>`);
-  const preview = el(`<div class="card"><div class="muted" style="font-size:12px;margin-bottom:8px">${esc(t('bz_preview'))}</div><div data-z-prev style="background:#fff;color:#111;border:1px solid var(--line,#ccc);border-radius:10px;padding:16px"></div></div>`);
+  const preview = el(`<div class="card"><div class="muted" style="font-size:13px;margin-bottom:8px">${esc(t('bz_preview'))}</div><div data-z-prev style="background:#fff;color:#111;border:1px solid var(--line,#ccc);border-radius:10px;padding:16px"></div></div>`);
   const readZ = () => ({
     lang: zettelLang || patientStart(),
     praeparat: form.querySelector('[data-z-p]').value.trim(),
@@ -7947,7 +7947,7 @@ function editProfileForm(p) {
       <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px">${esc(t('ep_cover_pick'))}<input type="file" id="ep_covfile" accept="image/*" style="display:none"></label>
       <button type="button" class="ghost small" id="ep_covclear"${p.cover_url?'':' style="display:none"'}>${esc(t('ep_photo_remove'))}</button>
     </div>
-    <div class="muted" style="font-size:12px;margin-bottom:8px">${esc(t('ep_cover_hint'))}</div>
+    <div class="muted" style="font-size:13px;margin-bottom:8px">${esc(t('ep_cover_hint'))}</div>
     <label>${esc(t('ep_photo'))}</label>
     <div class="row" style="align-items:center;gap:12px;margin-bottom:4px">
       <span class="avatar" id="ep_av_ini"${p.avatar_url?' style="display:none"':''}>${esc(initials)}</span>
@@ -7955,27 +7955,27 @@ function editProfileForm(p) {
       <label class="ghost small" style="display:inline-flex;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line);border-radius:8px">${esc(t('ep_photo_pick'))}<input type="file" id="ep_avfile" accept="image/*" style="display:none"></label>
       <button type="button" class="ghost small" id="ep_avclear"${p.avatar_url?'':' style="display:none"'}>${esc(t('ep_photo_remove'))}</button>
     </div>
-    <div class="muted" style="font-size:12px;margin-bottom:8px">${esc(t('ep_photo_hint'))}</div>
+    <div class="muted" style="font-size:13px;margin-bottom:8px">${esc(t('ep_photo_hint'))}</div>
     <label for="ep_name">${esc(t('ep_name'))}</label><input id="ep_name" value="${esc(p.display_name||'')}">
     <label for="ep_title">${esc(t('ep_func'))}</label><input id="ep_title" value="${esc(p.title||'')}" placeholder="${esc(t('ep_func_ph'))}">
     <label for="ep_bio">${esc(t('ep_about'))}</label><textarea id="ep_bio" placeholder="${esc(t('ep_about_ph'))}">${esc(p.bio||'')}</textarea>
     <label for="ep_specs">${esc(t('ep_specs_l'))}</label><input id="ep_specs" value="${esc(specs)}" placeholder="${esc(t('ep_specs_ph'))}">
     <label style="margin-top:8px">${esc(t('ep_opento'))}</label>
-    <div class="muted" style="font-size:12px;margin-bottom:4px">${esc(t('ep_opento_hint'))}</div>
+    <div class="muted" style="font-size:13px;margin-bottom:4px">${esc(t('ep_opento_hint'))}</div>
     <div id="ep_opento">${OPEN_TO.map(k=>`<label class="ot-check"><input type="checkbox" value="${k}"${(p.open_to||[]).includes(k)?' checked':''}> ${esc(openToLabel(k))}</label>`).join('')}</div>
     <label>${esc(t('ep_region'))}</label>
     <select id="ep_bl"><option value="">${esc(t('ep_none'))}</option>${BUNDESLAENDER.map(x=>`<option value="${x}"${x===(p.bundesland||'')?' selected':''}>${x}</option>`).join('')}</select>
-    <div class="muted" style="font-size:12px;margin-top:2px">${esc(t('ep_region_hint'))}</div>
+    <div class="muted" style="font-size:13px;margin-top:2px">${esc(t('ep_region_hint'))}</div>
     <label for="ep_web">${esc(t('ep_website'))}</label><input id="ep_web" type="url" value="${esc(p.website||'')}" placeholder="${esc(t('ep_website_ph'))}">
     <label for="ep_pmail">${esc(t('ep_pubmail'))}</label><input id="ep_pmail" type="email" value="${esc(p.public_email||'')}" placeholder="${esc(t('ep_pubmail_ph'))}">
     <label for="ep_phone">${esc(t('ep_phone'))}</label><input id="ep_phone" type="tel" value="${esc(p.phone||'')}" placeholder="${esc(t('ep_phone_ph'))}">
-    <div class="muted" style="font-size:12px;margin-top:2px">${esc(t('ep_contact_hint'))}</div>
+    <div class="muted" style="font-size:13px;margin-top:2px">${esc(t('ep_contact_hint'))}</div>
     <label style="margin-top:10px">${esc(t('ep_exp'))}</label>
-    <div class="muted" style="font-size:12px;margin-bottom:6px">${esc(t('ep_exp_hint'))}</div>
+    <div class="muted" style="font-size:13px;margin-bottom:6px">${esc(t('ep_exp_hint'))}</div>
     <div id="ep_exp_list"></div>
     <button type="button" class="ghost small" id="ep_exp_add" style="margin-top:2px">${esc(t('ep_exp_add'))}</button>
     <label style="margin-top:10px">${esc(t('ep_edu'))}</label>
-    <div class="muted" style="font-size:12px;margin-bottom:6px">${esc(t('ep_edu_hint'))}</div>
+    <div class="muted" style="font-size:13px;margin-bottom:6px">${esc(t('ep_edu_hint'))}</div>
     <div id="ep_edu_list"></div>
     <button type="button" class="ghost small" id="ep_edu_add" style="margin-top:2px">${esc(t('ep_edu_add'))}</button>
     <div class="row" style="margin-top:12px"><button id="ep_save">${esc(t('cm_save'))}</button><span class="err" id="ep_err" style="margin-inline-start:10px"></span></div>
@@ -8159,9 +8159,9 @@ async function openProfile(handle) {
       })() : ''}
       ${d.is_self ? `<div class="pv">
         <div class="row" style="align-items:center;gap:8px"><b>👀 ${esc(t('pv_title'))}</b><span class="sp" style="flex:1"></span><b>${d.viewer_count}</b></div>
-        ${d.viewer_count ? `<div class="muted" style="font-size:12px;margin:2px 0 6px">${esc(t('pv_hint'))}</div>
+        ${d.viewer_count ? `<div class="muted" style="font-size:13px;margin:2px 0 6px">${esc(t('pv_hint'))}</div>
           <div class="pv-list">${d.viewers.map(v => `<button class="pv-item" data-openprofile="${esc(v.handle)}" title="@${esc(v.handle)}">
-            ${avatarHtml(v, 30, false)}<span class="pv-name">${esc(v.display_name||('@'+v.handle))}</span><span class="muted" style="font-size:12px">· ${relTime(v.viewed_at)}</span>
+            ${avatarHtml(v, 30, false)}<span class="pv-name">${esc(v.display_name||('@'+v.handle))}</span><span class="muted" style="font-size:13px">· ${relTime(v.viewed_at)}</span>
           </button>`).join('')}</div>`
         : `<div class="muted" style="font-size:13px">${esc(t('pv_none'))}</div>`}
       </div>` : ''}
@@ -8327,10 +8327,10 @@ async function openProfile(handle) {
         ${d.exchange_entries.map(e => {
           const isB = e.kind === 'biete';
           const badge = isB
-            ? `<span style="background:var(--ok-bg);color:var(--ok-fg);border:1px solid var(--ok-bd);border-radius:999px;padding:1px 8px;font-weight:700;font-size:12px">${esc(t('ex_badge_biete'))}</span>`
-            : `<span style="background:var(--warn-bg);color:var(--warn-fg);border:1px solid var(--warn-bd);border-radius:999px;padding:1px 8px;font-weight:700;font-size:12px">${esc(t('ex_badge_suche'))}</span>`;
+            ? `<span style="background:var(--ok-bg);color:var(--ok-fg);border:1px solid var(--ok-bd);border-radius:999px;padding:1px 8px;font-weight:700;font-size:13px">${esc(t('ex_badge_biete'))}</span>`
+            : `<span style="background:var(--warn-bg);color:var(--warn-fg);border:1px solid var(--warn-bd);border-radius:999px;padding:1px 8px;font-weight:700;font-size:13px">${esc(t('ex_badge_suche'))}</span>`;
           const loc = [e.ort, e.bundesland].filter(Boolean).join(', ');
-          return `<div class="comment clickable" data-exq="${esc(e.bezeichnung)}" data-exk="${esc(e.kind)}">${badge} <b>${esc(e.bezeichnung)}</b>${e.menge?` <span class="muted">· ${esc(t('ex_qty'))} ${esc(e.menge)}</span>`:''}${loc?` <span class="muted" style="font-size:12px">· 📍 ${esc(loc)}</span>`:''} <span class="ovtile-go" aria-hidden="true">›</span></div>`;
+          return `<div class="comment clickable" data-exq="${esc(e.bezeichnung)}" data-exk="${esc(e.kind)}">${badge} <b>${esc(e.bezeichnung)}</b>${e.menge?` <span class="muted">· ${esc(t('ex_qty'))} ${esc(e.menge)}</span>`:''}${loc?` <span class="muted" style="font-size:13px">· 📍 ${esc(loc)}</span>`:''} <span class="ovtile-go" aria-hidden="true">›</span></div>`;
         }).join('')}</div>`);
       exCard.querySelector('[data-exall]').onclick = () => goTab('exchange');
       exCard.querySelectorAll('[data-exq]').forEach(row => row.onclick = () => {
@@ -8367,9 +8367,9 @@ function recommendationsCard(d, handle) {
         <div class="row" style="align-items:center">${avatarHtml(a, 34)}
           <div style="flex:1;min-width:0">
             <span class="post-author clickable" data-openprofile="${esc(a.handle||'')}">${esc(a.display_name||t('ex_unknown'))}</span>
-            ${a.title?`<div class="muted" style="font-size:12px">${esc(a.title)}</div>`:''}
+            ${a.title?`<div class="muted" style="font-size:13px">${esc(a.title)}</div>`:''}
           </div>
-          <span class="muted" style="font-size:12px">${relTime(r.created_at)}</span>
+          <span class="muted" style="font-size:13px">${relTime(r.created_at)}</span>
           ${r.can_remove?`<button class="ghost small" data-recdel="${esc(r.id)}" title="${esc(t('rec_remove'))}" aria-label="${esc(t('rec_remove'))}" style="margin-inline-start:6px">🗑</button>`:''}
         </div>
         <div class="rec-body">${esc(r.body)}</div>
@@ -8522,7 +8522,7 @@ async function openMyActivity() {
   const qs = qcard.querySelector('[data-qs]');
   if (!d.questions.length) qs.appendChild(el(`<div class="muted" style="font-size:14px">${esc(t('ma_no_q'))}</div>`));
   else d.questions.forEach(q => {
-    const row = el(`<div class="comment clickable"><span style="color:${q.answered?'var(--ok-fg)':'var(--info-fg)'};font-weight:700">${q.answered?'✔':'❓'}</span> ${esc((q.body||'').slice(0,90))}${(q.body||'').length>90?'…':''} <span class="muted" style="font-size:12px">· ${q.comment_count||0} ${esc(t('oq_answer_pl'))}</span></div>`);
+    const row = el(`<div class="comment clickable"><span style="color:${q.answered?'var(--ok-fg)':'var(--info-fg)'};font-weight:700">${q.answered?'✔':'❓'}</span> ${esc((q.body||'').slice(0,90))}${(q.body||'').length>90?'…':''} <span class="muted" style="font-size:13px">· ${q.comment_count||0} ${esc(t('oq_answer_pl'))}</span></div>`);
     row.onclick = () => openPost(q.id);
     qs.appendChild(row);
   });
@@ -8534,7 +8534,7 @@ async function openMyActivity() {
   if (!d.reports.length) rs.appendChild(el(`<div class="muted" style="font-size:14px">${esc(t('ma_no_r'))}</div>`));
   else d.reports.forEach(s => {
     const m = watchStatusMeta(s.status);
-    const row = el(`<div class="comment clickable">${m.icon} <b>${esc(s.wirkstoff)}</b> <span style="color:${m.color};font-weight:700;font-size:12px">${m.label}</span>${s.confirm_count?` · <span class="muted" style="font-size:12px">${esc(ti('ma_confirmed',{n:s.confirm_count}))}</span>`:''}</div>`);
+    const row = el(`<div class="comment clickable">${m.icon} <b>${esc(s.wirkstoff)}</b> <span style="color:${m.color};font-weight:700;font-size:13px">${m.label}</span>${s.confirm_count?` · <span class="muted" style="font-size:13px">${esc(ti('ma_confirmed',{n:s.confirm_count}))}</span>`:''}</div>`);
     row.onclick = () => goTab('shortages');
     rs.appendChild(row);
   });
@@ -8695,7 +8695,7 @@ async function openWirkstoff(name) {
         <input type="number" min="1" max="99" value="${d.alert_pct||''}" data-alertpct placeholder="${esc(t('wk_alert_ph'))}" style="width:88px" aria-label="${esc(t('wk_alert_label'))}"><span>%</span>
         <button class="small" data-alertsave>${esc(t('cm_save'))}</button>
         <span class="muted" data-alertmsg style="font-size:13px"></span>
-      </div><div class="muted" style="font-size:12px;margin-top:4px">${esc(t('wk_alert_hint'))}</div></div>`);
+      </div><div class="muted" style="font-size:13px;margin-top:4px">${esc(t('wk_alert_hint'))}</div></div>`);
     al.querySelector('[data-alertsave]').onclick = async () => {
       const v = al.querySelector('[data-alertpct]').value;
       const msg = al.querySelector('[data-alertmsg]');
@@ -8750,7 +8750,7 @@ async function openWirkstoff(name) {
     const panel = el(`<div class="card" style="border-inline-start:4px solid #0b7f28">
       <div class="row"><b>${esc(t('wk_amr_title'))}</b>
         <span class="sp" style="flex:1"></span>
-        <span class="muted" style="font-size:12px">${esc(t('wk_amr_tag'))}</span></div>
+        <span class="muted" style="font-size:13px">${esc(t('wk_amr_tag'))}</span></div>
       <div style="font-size:14px;margin-top:8px">${esc(t('wk_amr_note'))}</div>
       <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px">
         ${(a.sources||[]).map(s=>`<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" class="small" style="display:inline-block;text-decoration:none;border:1px solid var(--line,#ccc);border-radius:8px;padding:6px 10px">🔗 ${esc(s.label)}</a>`).join('')}
@@ -8796,7 +8796,7 @@ async function openWirkstoff(name) {
       <label style="font-size:13px;margin-top:6px">${esc(t('sh_rep_until'))}</label>
       <input data-vb type="date" data-i18n-aria="sh_rep_until_t" aria-label="${esc(t('sh_rep_until_t'))}" title="${esc(t('sh_rep_until_t'))}">
       <div style="margin-top:8px"><button class="small" data-send>${esc(t('wk_send_community'))}</button></div>
-      <div class="muted" style="font-size:12px;margin-top:4px">${esc(t('wk_community_note'))}</div>
+      <div class="muted" style="font-size:13px;margin-top:4px">${esc(t('wk_community_note'))}</div>
       <div class="err" data-err></div>
     </div></div>`);
   const sbody = scard.querySelector('[data-sbody]');
@@ -8806,7 +8806,7 @@ async function openWirkstoff(name) {
     // Erstmeldedatum aus dem Statusverlauf (Fallback: gemeldet_am) — zeigt „seit wann".
     const hist = Array.isArray(s.history) ? s.history.filter(h => h && h.am) : [];
     const firstAm = (hist[0] && hist[0].am) || s.gemeldet_am || null;
-    const row = el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:12px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:12px">· ${esc(provLabel(s.provenance))}${s.grund?' · '+esc(grundLabel(s.grund)):''}${firstAm?' · '+esc(ti('wk_since',{date:fmtDateDe(firstAm)})):''}${s.quelle&&/^https?:\/\//i.test(s.quelle)?` · <a href="${esc(s.quelle)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(t('wk_hist_src'))}${srcDomSuffix(s.quelle)}</a>`:''}</span></div>`);
+    const row = el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:13px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:13px">· ${esc(provLabel(s.provenance))}${s.grund?' · '+esc(grundLabel(s.grund)):''}${firstAm?' · '+esc(ti('wk_since',{date:fmtDateDe(firstAm)})):''}${s.quelle&&/^https?:\/\//i.test(s.quelle)?` · <a href="${esc(s.quelle)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(t('wk_hist_src'))}${srcDomSuffix(s.quelle)}</a>`:''}</span></div>`);
     // Statusverlauf (nur ab 2 dokumentierten Schritten): macht sichtbar, wie lange und
     // wie stabil der Engpass ist — hilft bei der Entscheidung, ob aktiv beschafft werden
     // muss. Standardmäßig eingeklappt, damit die Detailseite kompakt bleibt.
@@ -9082,7 +9082,7 @@ async function openLogistik() {
       ${m.beschreibung ? `<div style="margin-top:6px;line-height:1.5">${esc(m.beschreibung)}</div>` : ''}
       ${m.betroffen ? `<div style="margin-top:6px;font-size:14px"><span class="muted">${esc(t('lg_affected'))}:</span> <b>${esc(m.betroffen)}</b></div>` : ''}
       ${m.gueltig_bis ? `<div class="muted" style="margin-top:4px;font-size:13px">${esc(ti('lg_until', { d: dayLabel(m.gueltig_bis) }))}</div>` : ''}
-      <div class="muted" style="margin-top:8px;font-size:12px">
+      <div class="muted" style="margin-top:8px;font-size:13px">
         ${esc(ti('lg_reported_by', { who: (m.melder && m.melder.display_name) || '—' }))} · ${esc(t('lg_selfreported'))}
       </div>
       ${me && m.melder && m.melder.handle === me.handle && m.dringlichkeit !== 'behoben'
@@ -9114,7 +9114,7 @@ async function openLogistik() {
           </select>
           <input data-bis type="date" aria-label="${esc(t('lg_until_label'))}">
         </div>
-        <div class="muted" style="font-size:12px;margin-top:6px">${esc(t('lg_selfreported_hint'))}</div>
+        <div class="muted" style="font-size:13px;margin-top:6px">${esc(t('lg_selfreported_hint'))}</div>
         <div class="row" style="margin-top:8px"><button data-send>${esc(t('lg_send'))}</button><span class="err" data-err style="margin-inline-start:8px"></span></div>
       </div>
     </div>`);
@@ -9193,7 +9193,7 @@ async function renderVerifyCard(card) {
     <input id="vf_lic" placeholder="${esc(t('vf_license_ph'))}" aria-label="${esc(t('vf_license_label'))}" style="margin-top:4px">`}
     <label for="vf_note" style="display:block;margin-top:8px;font-size:13px">${esc(t('vf_note_label'))}</label>
     <input id="vf_note" placeholder="${esc(t('vf_note_ph'))}" aria-label="${esc(t('vf_note_label'))}" style="margin-top:4px">
-    <div class="muted" style="font-size:12px;margin-top:6px">${esc(t('vf_rx_hint'))}</div>
+    <div class="muted" style="font-size:13px;margin-top:6px">${esc(t('vf_rx_hint'))}</div>
     <div class="row" style="margin-top:8px"><button id="vf_go">${esc(t('vf_apply'))}</button><span class="err" id="vf_err" style="margin-inline-start:8px"></span></div>`;
   card.querySelector('#vf_go').onclick = async () => {
     try {
@@ -9471,8 +9471,8 @@ function commentRow(postId, c, card, depth = 0) {
       ${au.is_editorial?`<span class="editorial">${esc(t('prov_editorial'))}</span>`:''}
       ${au.verified?`<span class="verified">${esc(t('pc_verified'))}</span>`:''}
       ${au.account_type&&au.account_type!=='pharmacy'?`<span class="spec" style="margin-inline-start:2px">${esc(acctLabel(au.account_type))}</span>`:''}
-      ${isAccepted?`<span style="color:var(--ok-fg);font-weight:700;font-size:12px;margin-inline-start:6px">${esc(t('cm_best'))}</span>`:''}
-      <span class="muted" style="font-size:12px;margin-inline-start:6px" title="${esc(c.created_at)}">${relTime(c.created_at)}</span>
+      ${isAccepted?`<span style="color:var(--ok-fg);font-weight:700;font-size:13px;margin-inline-start:6px">${esc(t('cm_best'))}</span>`:''}
+      <span class="muted" style="font-size:13px;margin-inline-start:6px" title="${esc(c.created_at)}">${relTime(c.created_at)}</span>
       ${c.edited_at?`<span class="vis" style="margin-inline-start:6px">${esc(t('pc_edited'))}</span>`:''}
       <span class="sp" style="flex:1"></span>
       ${mine?'<button class="ghost small" data-ced>✏️</button><button class="ghost small" data-cdel>🗑</button>':''}
@@ -9616,7 +9616,7 @@ async function showNotifications() {
         <span${n.actor?' style="font-size:16px"':''}>${icons[n.type]||'🔔'}</span>
         <span style="margin-inline-start:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' „'+esc(/^shortage_(abroad|home|ended)$/.test(n.type)?n.label.replace(/ · ([A-Z]{2})$/, (m, cc) => ' · ' + landLabel(cc)):n.type==='premium_ablauf'?fmtDateDe(n.label):n.type==='watch_alert'?notifLabel(n.label):n.label)+'"':''}${n.read?'':'</b>'}</span>
         <span class="sp" style="flex:1"></span>
-        <span class="muted" style="font-size:12px">${relTime(n.created_at)}</span>
+        <span class="muted" style="font-size:13px">${relTime(n.created_at)}</span>
       </div></div>`);
     row.onclick = () => {
       if (!n.read) { api('POST',`/api/notifications/${n.id}/read`).then(refreshNotifCount).catch(()=>{}); }
@@ -9938,7 +9938,7 @@ async function openDatenquellen() {
         <div class="row" style="gap:8px;flex-wrap:wrap;align-items:baseline"><span style="flex:1;min-width:180px;font-weight:600">${esc(q.label || q.id)}</span>${status}</div>
         <div class="muted" style="font-size:13px;margin-top:2px">${esc(q.kind === 'shortages' ? t('dq_kind_shortages') : t('dq_kind_news'))}${r && r.stand ? ' · ' + esc(vorZeit(r.stand) || '') : ''}</div>
         ${r && !r.ok && r.fehler ? `<div style="font-size:14px;margin-top:4px;color:var(--crit-fg)">${esc(r.fehler)}</div>` : ''}
-        ${href ? `<div style="font-size:12px;margin-top:2px;word-break:break-all"><a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(href)}</a></div>` : ''}
+        ${href ? `<div style="font-size:13px;margin-top:2px;word-break:break-all"><a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(href)}</a></div>` : ''}
         ${q.kind === 'shortages' ? `<div class="row" style="gap:8px;margin-top:6px;flex-wrap:wrap"><button class="ghost small" data-dqprobe="${esc(q.id)}">🔍 ${esc(t('dq_probe'))}</button>${q.eigen ? `<span class="muted" style="font-size:13px">${esc(t('dq_own'))}</span><button class="ghost small" data-dqweg="${esc(q.id)}">${esc(t('dq_remove'))}</button>` : ''}</div><div data-dqprobeerg></div>` : ''}
       </div>`));
     }
@@ -9975,7 +9975,7 @@ async function openDatenquellen() {
     try { await navigator.clipboard.writeText(text); msg.style.color = 'var(--ok-fg)'; msg.textContent = t('dq_copied'); }
     catch {
       // Ohne Zwischenablage (z. B. ohne HTTPS) den Text zum Markieren zeigen.
-      const ta = el(`<textarea readonly style="width:100%;min-height:200px;margin-top:8px;font-size:12px"></textarea>`);
+      const ta = el(`<textarea readonly style="width:100%;min-height:200px;margin-top:8px;font-size:13px"></textarea>`);
       ta.value = text; kopf.appendChild(ta); ta.select(); msg.textContent = '';
     }
   };
@@ -10181,7 +10181,7 @@ async function showDmInbox() {
       const r = el(`<div class="comment clickable" style="cursor:pointer;opacity:.85">
         <div class="row" style="align-items:center">${avatarHtml(o, 38, false)}<div style="flex:1;min-width:0">
         <div class="row"><b>${esc(o.display_name||t('ex_unknown'))}</b> <span class="handle">@${esc(o.handle||'?')}</span>
-        <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:12px;margin-inline-end:6px">${when}</span>`:''}<button class="ghost small" data-restore>${esc(t('dm_restore'))}</button></div>
+        <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:13px;margin-inline-end:6px">${when}</span>`:''}<button class="ghost small" data-restore>${esc(t('dm_restore'))}</button></div>
         <div class="muted" style="margin-top:2px">${esc((th.last_message?.body||'').slice(0,60))}</div></div></div></div>`);
       r.onclick = () => openDmThread(th.thread_id);
       r.querySelector('[data-restore]').onclick = async (e) => {
@@ -10220,7 +10220,7 @@ async function showDmInbox() {
       const row = el(`<div class="comment clickable" style="cursor:pointer${unread?';background:rgba(11,127,40,.06);border-radius:8px':''}">
         <div class="row" style="align-items:center">${avatarHtml(o, 38, false)}<div style="flex:1;min-width:0">
         <div class="row"><b style="${unread?'font-weight:800':''}">${esc(o.display_name||t('ex_unknown'))}</b> <span class="handle">@${esc(o.handle||'?')}</span>
-        <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:12px;margin-inline-end:6px">${when}</span>`:''}${unread?`<span style="background:var(--green);color:var(--on-green);border-radius:999px;font-size:12px;font-weight:700;padding:1px 8px;min-width:20px;text-align:center;margin-inline-end:6px">${th.unread}</span>`:''}<button class="ghost small" data-archive title="${esc(t('dm_archive'))}" aria-label="${esc(t('dm_archive'))}">🗂</button></div>
+        <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:13px;margin-inline-end:6px">${when}</span>`:''}${unread?`<span style="background:var(--green);color:var(--on-green);border-radius:999px;font-size:13px;font-weight:700;padding:1px 8px;min-width:20px;text-align:center;margin-inline-end:6px">${th.unread}</span>`:''}<button class="ghost small" data-archive title="${esc(t('dm_archive'))}" aria-label="${esc(t('dm_archive'))}">🗂</button></div>
         <div class="muted" style="margin-top:2px${unread?';color:inherit;font-weight:600':''}">${esc((th.last_message?.body||'').slice(0,60))}</div></div></div></div>`);
       row.onclick = () => openDmThread(th.thread_id);
       row.querySelector('[data-archive]').onclick = async (e) => {
@@ -10268,17 +10268,17 @@ async function openDmThread(threadId, prefill) {
       const day = (m.created_at || '').slice(0, 10);
       if (day && day !== lastDay) {
         lastDay = day;
-        msgs.appendChild(el(`<div style="text-align:center;margin:12px 0 6px"><span class="muted" style="font-size:12px;background:var(--chip-bg);border:1px solid var(--line);border-radius:999px;padding:2px 10px">${esc(dayLabel(m.created_at))}</span></div>`));
+        msgs.appendChild(el(`<div style="text-align:center;margin:12px 0 6px"><span class="muted" style="font-size:13px;background:var(--chip-bg);border:1px solid var(--line);border-radius:999px;padding:2px 10px">${esc(dayLabel(m.created_at))}</span></div>`));
       }
       const mine = me && m.sender_user_id === me.user_id;
       // Zustell-/Lese-Hinweis nur unter der letzten eigenen Nachricht: „Gelesen" (grün) sobald
       // read_at gesetzt ist (Gegenüber hat den Verlauf geöffnet), sonst „Zugestellt".
       const receipt = (mine && i === lastMineIdx)
-        ? `<div style="font-size:11px;margin-top:2px;font-weight:600;color:${m.read_at ? 'var(--ok-fg)' : 'var(--muted)'}">${m.read_at ? '✓✓ ' + esc(t('dm_read')) : '✓ ' + esc(t('dm_delivered'))}</div>`
+        ? `<div style="font-size:13px;margin-top:2px;font-weight:600;color:${m.read_at ? 'var(--ok-fg)' : 'var(--muted)'}">${m.read_at ? '✓✓ ' + esc(t('dm_read')) : '✓ ' + esc(t('dm_delivered'))}</div>`
         : '';
       msgs.appendChild(el(`<div style="display:flex;flex-direction:column;margin:4px 0;${mine?'align-items:flex-end':'align-items:flex-start'}">
         <div style="max-width:75%;padding:8px 12px;border-radius:12px;background:${mine?'var(--green)':'var(--chip-bg)'};color:${mine?'var(--on-green)':'inherit'}">${esc(m.body)}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">${esc(fmtClock(m.created_at))}</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:2px">${esc(fmtClock(m.created_at))}</div>
         ${receipt}
       </div>`));
     });

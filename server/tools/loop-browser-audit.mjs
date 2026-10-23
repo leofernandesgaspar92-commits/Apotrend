@@ -251,7 +251,7 @@ async function main() {
         const r = await page.evaluate(() => {
           const W = document.documentElement.clientWidth;
           const menue = [...document.querySelectorAll('header .kopf-btn')].filter((b) => b.getBoundingClientRect().width).map((b) => b.getBoundingClientRect().right).reduce((a, b) => Math.max(a, b), 0);
-          const winzig = [...document.querySelectorAll('#app *')].find((e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) && e.getBoundingClientRect().width && parseFloat(getComputedStyle(e).fontSize) < 12);
+          const winzig = [...document.querySelectorAll('#app *')].find((e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) && e.getBoundingClientRect().width && parseFloat(getComputedStyle(e).fontSize) < 13);
           return { quer: document.documentElement.scrollWidth > W + 1, menueRaus: menue > W + 1, winzig: winzig ? winzig.textContent.trim().slice(0, 30) + ' (' + getComputedStyle(winzig).fontSize + ')' : null };
         });
         if (r.quer) findings.push(`Querscroll: ${label || tab} [${tag}]`);

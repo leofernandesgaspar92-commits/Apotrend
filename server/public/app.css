@@ -159,7 +159,7 @@
   .post-hd-sub .handle { font-size:13px; }
   .handle { color:var(--muted); font-weight:400; font-size:0.9em; }
   .verified { color:var(--green); font-size:13px; }
-  .editorial { background:var(--info-bg); color:var(--info-fg); font-size:12px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid var(--info-bd); }
+  .editorial { background:var(--info-bg); color:var(--info-fg); font-size:13px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid var(--info-bd); }
   .rank { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:30px; padding:0 6px; border-radius:999px; background:var(--green); color:var(--on-green); font-weight:800; font-size:15px; margin-inline-end:8px; }
   .rabatt-badge { background:var(--ok-bg); color:var(--ok-fg); font-weight:800; font-size:16px; padding:4px 12px; border-radius:999px; border:1px solid var(--ok-bd); white-space:nowrap; } /* Rabatt-Prozentwert nie mitten in der Zahl umbrechen (z. B. „−29.8%") */
   .mention { color:var(--green); font-weight:600; }
@@ -187,12 +187,12 @@
   a.btn-link:hover { background:var(--green-d); }
   .ok-box { background:var(--ok-bg); color:var(--ok-fg); border-radius:8px; }
   /* Premium-Abzeichen: sichtbarer Vorteil für zahlende Mitglieder (gold, gut lesbar). */
-  .premium-badge { font-size:12px; font-weight:700; color:#6f5700; background:#fff3c4; border:1px solid #f0d98a; border-radius:6px; padding:1px 7px; white-space:nowrap; }
+  .premium-badge { font-size:13px; font-weight:700; color:#6f5700; background:#fff3c4; border:1px solid #f0d98a; border-radius:6px; padding:1px 7px; white-space:nowrap; }
   body.dark .premium-badge { color:#ffd95e; background:#3a3200; border-color:#5c4f00; }
   /* „Beobachtet"-Zustand am Such-Chip: klar als aktiv erkennbar (grün). */
   .watched-on { color:var(--green); border-color:var(--green); font-weight:700; }
   /* Daten-Herkunfts-Pille: grün = live, gelb = Referenz/Aufbau. Gut lesbar in hell/dunkel. */
-  .data-pill { font-size:12px; font-weight:700; border-radius:999px; padding:2px 9px; white-space:nowrap; border:1px solid transparent; }
+  .data-pill { font-size:13px; font-weight:700; border-radius:999px; padding:2px 9px; white-space:nowrap; border:1px solid transparent; }
   .data-pill.live { color:#0b6b2e; background:#dff3e6; border-color:#a9dcbd; }
   .data-pill.ref  { color:#6f5700; background:#fff3c4; border-color:#f0d98a; }
   body.dark .data-pill.live { color:#7ee2a3; background:#0f3320; border-color:#1f5c39; }
@@ -205,7 +205,7 @@
   .backtotop:hover { background:var(--green-d); }
   @media print { .backtotop { display:none; } }
   /* Weicher Zeichenzähler an Textfeldern: dezent, wird bei Überschreitung rot. */
-  .char-counter { font-size:12px; text-align:end; margin-top:2px; min-height:14px; }
+  .char-counter { font-size:13px; text-align:end; margin-top:2px; min-height:14px; }
   .char-counter.over { color:var(--crit-fg); font-weight:700; }
   .avatar { display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:50%; background:var(--green); color:var(--on-green); font-weight:800; font-size:19px; flex:0 0 auto; box-shadow:0 0 0 1px var(--line); }
   .profile-cover { width:100%; height:140px; border-radius:var(--radius); background:var(--chip-bg); background-size:cover; background-position:center; border:1px solid var(--line); }
@@ -259,7 +259,7 @@
   .nr-src { display:flex; align-items:center; gap:6px; font-size:14px; font-weight:700; margin-bottom:7px; }
   .nr-x { font-weight:900; }
   .nr-handle { color:var(--handle); }
-  .nr-newtag { color:var(--ok-fg); font-weight:800; font-size:11px; letter-spacing:.03em; }
+  .nr-newtag { color:var(--ok-fg); font-weight:800; font-size:13px; letter-spacing:.03em; }
   .nr-time { margin-inline-start:auto; color:var(--muted); font-weight:600; }
   .nr-body { font-size:15px; line-height:1.5; overflow-wrap:anywhere; }
   /* Inline-News (Handy): leichtere Karten, blendet aus, sobald die Seitenleiste erscheint. */
@@ -275,12 +275,12 @@
      dezent vom Inhalt abgesetzt — sofort verständlich, nicht aufdringlich. */
   .qr-ad { padding:12px; cursor:pointer; transition:border-color .12s, box-shadow .12s; }
   .qr-ad:hover { border-color:var(--green); box-shadow:var(--shadow-hover); }
-  .qr-ad-label { font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); border:1px solid var(--line); border-radius:6px; padding:1px 7px; display:inline-block; margin-bottom:8px; }
+  .qr-ad-label { font-size:13px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); border:1px solid var(--line); border-radius:6px; padding:1px 7px; display:inline-block; margin-bottom:8px; }
   .qr-ad-img { width:100%; height:130px; object-fit:cover; border-radius:10px; margin-bottom:8px; display:block; }
-  .qr-ad-cat { font-size:12px; font-weight:700; color:var(--info-fg); background:var(--info-bg); border:1px solid var(--info-bd); border-radius:999px; padding:2px 8px; display:inline-block; }
+  .qr-ad-cat { font-size:13px; font-weight:700; color:var(--info-fg); background:var(--info-bg); border:1px solid var(--info-bd); border-radius:999px; padding:2px 8px; display:inline-block; }
   .qr-ad-title { font-weight:700; font-size:15px; margin:6px 0 2px; line-height:1.3; }
   .qr-ad-price { font-size:14px; }
-  .qr-ad-by { font-size:12px; color:var(--muted); margin-top:4px; }
+  .qr-ad-by { font-size:13px; color:var(--muted); margin-top:4px; }
   /* Klickbarkeits-Hinweis der Anzeige: „Angebot ansehen ›" — für die nicht-technische
      Zielgruppe eindeutig, dass die Karte zum Angebot führt (mehr Klicks = Monetarisierung). */
   .qr-ad-cta { margin-top:8px; font-weight:700; font-size:13px; color:var(--green); }
@@ -294,7 +294,7 @@
   .cart-subline { text-align:end; font-weight:800; margin:2px 2px 8px; padding:6px 12px; border-top:2px solid var(--line); color:var(--text); }
   .spec { display:inline-block; background:var(--chip-bg); border:1px solid var(--line); border-radius:999px; padding:3px 10px; font-size:13px; margin:2px 2px 2px 0; }
   .post-body { margin:8px 0; white-space:pre-wrap; line-height:1.55; overflow-wrap:anywhere; }
-  .vis { font-size:12px; color:var(--muted); }
+  .vis { font-size:13px; color:var(--muted); }
   .reacts { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
   .reacts button { background:var(--chip-bg); color:var(--text); border:1px solid var(--line); padding:8px 12px; font-size:0.85em; font-weight:500; min-height:40px; }
   .reacts button:not(.reacted):hover { border-color:var(--green); color:var(--green); }
@@ -316,7 +316,7 @@
   @keyframes apo-spin { to { transform:rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) { .loading::before { animation:none; } .loading { animation:none; } }
   .bell { position:relative; }
-  .badge { position:absolute; top:-6px; right:-6px; background:#e02a2a; color:#fff; border-radius:10px; font-size:11px; padding:1px 6px; }
+  .badge { position:absolute; top:-6px; right:-6px; background:#e02a2a; color:#fff; border-radius:10px; font-size:13px; padding:1px 6px; }
   .comments { border-top:1px solid var(--line); margin-top:10px; padding-top:10px; }
   .comment { font-size:0.9em; padding:6px 0; border-bottom:1px solid var(--line); }
   .comment:last-child { border-bottom:none; }
@@ -416,7 +416,7 @@
     border:0; border-radius:var(--radius-sm); padding:12px 14px; font-size:16px; font-weight:600; min-height:48px; position:relative; }
   .kopf-menue button.hidden { display:none; }
   .kopf-menue button:hover { background:var(--chip-bg); }
-  .kopf-menue .badge { position:static; margin-inline-start:auto; font-size:12px; padding:2px 8px; }
+  .kopf-menue .badge { position:static; margin-inline-start:auto; font-size:13px; padding:2px 8px; }
   .ic-text { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; font-weight:800; font-size:18px; line-height:1; }
   body.dark .kopf-menue { box-shadow:0 8px 28px rgba(0,0,0,.55); }
 
@@ -468,7 +468,7 @@
     body.mit-nav .tabs.mehr-offen .tab-neben.active { color:var(--green); background:var(--chip-bg); }
     body.mit-nav .backtotop { bottom:calc(84px + env(safe-area-inset-bottom)); }
     /* Große Schrift: Wörter dürfen in zwei Zeilen, die Leiste wächst mit. */
-    body.mit-nav[data-fontscale="2"] .tabs button { font-size:12.5px; }
+    body.mit-nav[data-fontscale="2"] .tabs button { font-size:13px; }
   }
   body.dark .tabs.mehr-offen { box-shadow:0 -10px 30px rgba(0,0,0,.6); }
 
@@ -528,7 +528,7 @@
   /* ── Anzeigen (gekennzeichnet) ── */
   .anz-karte { border-color:var(--line); }
   .anz-kopf { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
-  .anz-label { font-size:12px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); border:1px solid var(--line); border-radius:6px; padding:2px 8px; }
+  .anz-label { font-size:13px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); border:1px solid var(--line); border-radius:6px; padding:2px 8px; }
   .anz-von { font-size:14px; }
   .anz-mehr { min-height:36px; padding:4px 12px; font-size:13px; }
   .anz-bild { width:100%; max-height:240px; object-fit:cover; border-radius:var(--radius-sm); margin-bottom:8px; display:block; }
