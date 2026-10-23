@@ -909,7 +909,7 @@ function authScreen() {
   document.getElementById('rg_form').onsubmit = (e) => { e.preventDefault(); registrieren(); };
   const anmelden = async () => {
     try {
-      const d = await api('POST','/api/login',{ email:v('li_email'), password:v('li_pw') });
+      const d = await api('POST','/api/login',{ email:v('li_email'), password:v('li_pw'), land: localStorage.getItem('apo_country') || undefined });
       afterAuth(d);
     } catch(e){ document.getElementById('li_err').textContent = e.message; }
   };
@@ -1080,8 +1080,8 @@ async function resetScreen() {
   setDocTitle(t('rs_title'));
   hideHeaderForAuth();
   app.innerHTML = '';
-  let mitLink = false;
-  try { mitLink = !!(await api('GET', '/api/auth/providers')).passwort_link; } catch { /* dann nur Code */ }
+  let mitLink = false, mitTelefon = false;
+  try { const pv = await api('GET', '/api/auth/providers'); mitLink = !!pv.passwort_link; mitTelefon = !!pv.telefon; } catch { /* dann nur Code */ }
   const codeForm = `<form id="rs_form">
     <div class="muted" style="margin-top:4px">${esc(t('rs_intro'))}</div>
     <label for="rs_email" style="margin-top:10px">${esc(t('au_email'))}</label><input id="rs_email" type="email" autocomplete="username" placeholder="${esc(t('au_email_ph'))}">
@@ -1101,6 +1101,7 @@ async function resetScreen() {
   </div>`);
   app.appendChild(card);
   pwSchalter(card);
+  if (mitTelefon) emailOderTelefon('rs_email');
   card.querySelector('#rs_back').onclick = () => authScreen();
   const linkForm = card.querySelector('#rs_link_form');
   if (linkForm) linkForm.onsubmit = async (ev) => {
@@ -1116,7 +1117,7 @@ async function resetScreen() {
     ev.preventDefault();
     const msg = card.querySelector('#rs_msg');
     try {
-      await api('POST', '/api/password/reset', { email: v('rs_email'), code: v('rs_code'), newPassword: document.getElementById('rs_pw').value });
+      await api('POST', '/api/password/reset', { email: v('rs_email'), land: localStorage.getItem('apo_country') || undefined, code: v('rs_code'), newPassword: document.getElementById('rs_pw').value });
       msg.style.color = 'var(--green)'; msg.textContent = t('rs_success');
       card.querySelector('#rs_go').disabled = true;
     } catch (e) { msg.style.color = 'var(--crit-fg)'; msg.textContent = e.message; }
@@ -1156,6 +1157,15 @@ function nimmPwLink() {
 
 // Anmelden mit Telefonnummer (services/telefonLogin.js): Nummer → Code aus der SMS →
 // angemeldet. Neue Nummer: noch Name + Kontotyp, dann ist das Konto da. Kein Passwort.
+// Mit Telefon-Anmeldung gibt es Konten ohne E-Mail: Dort darf statt der Adresse die
+// Handynummer stehen (type="email" würde sie im Browser abweisen).
+function emailOderTelefon(id) {
+  const f = document.getElementById(id);
+  if (!f) return;
+  f.type = 'text'; f.removeAttribute('inputmode');
+  const l = document.querySelector(`label[for="${id}"]`);
+  if (l) l.textContent = t('au_email_tel');
+}
 function telefonScreen(vorwahlen) {
   setDocTitle(t('tel_title'));
   hideHeaderForAuth();
@@ -1246,6 +1256,7 @@ async function renderOAuthButtons() {
     host.innerHTML = '';
     // Telefonnummer + SMS-Code: in Afrika oft die naheliegendste Anmeldung (nur mit SMS-Anbieter).
     if (d.telefon) {
+      emailOderTelefon('li_email');
       const tb = el(`<button type="button" class="auth-gross" data-telefon style="width:100%;margin-bottom:8px">${esc(t('au_tel_btn'))}</button>`);
       tb.onclick = () => telefonScreen(d.vorwahlen || {});
       host.appendChild(tb);

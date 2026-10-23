@@ -714,3 +714,5 @@ Passwort. Eine Nummer ist ein Konto, egal wie sie getippt wird (Côte d'Ivoire: 
 seit 2021 zur Nummer). Code 10 Minuten gültig, nur einmal, nach 5 Fehlversuchen verbrannt. Erscheint
 erst, wenn der Owner einen SMS-Anbieter einrichtet (Africa's Talking oder Twilio, server/DEPLOY.md);
 vorher entstehen keine Kosten.
+Handy oder SIM verloren: Mit der Handynummer und einem Wiederherstellungscode lässt sich unter „Passwort
+vergessen" ein Passwort setzen; danach geht die Anmeldung auch mit Nummer + Passwort.

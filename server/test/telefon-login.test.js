@@ -106,6 +106,10 @@ test('Oberfläche: Knopf nur mit SMS-Anbieter, Code-Feld mit Autofill aus der SM
   assert.match(tel, /type="tel" inputmode="tel"/);
   assert.match(tel, /'\/api\/telefon\/code'[\s\S]*'\/api\/telefon\/pruefen'[\s\S]*'\/api\/telefon\/konto'/);
   assert.match(tel, /sessionStorage\.setItem\('apo_rc_neu'/, 'Codes-Karte wie bei der E-Mail-Registrierung');
+  // Anmelde- und Reset-Feld nehmen dann auch die Nummer (type="email" würde sie abweisen).
+  assert.match(knopf, /if \(d\.telefon\) \{\n {6}emailOderTelefon\('li_email'\);/);
+  assert.match(app, /if \(mitTelefon\) emailOderTelefon\('rs_email'\);/);
+  assert.match(app, /function emailOderTelefon\(id\) \{[\s\S]{0,120}f\.type = 'text';/);
 });
 
 test('HTTP: ganzer Ablauf mit Schein-Anbieter; Platzhalter-Adresse gesperrt; Bremse je Nummer', { timeout: 90000 }, async () => {
@@ -157,6 +161,12 @@ test('HTTP: ganzer Ablauf mit Schein-Anbieter; Platzhalter-Adresse gesperrt; Bre
     const wieder = (await req('POST', '/api/telefon/pruefen', { telefon: '0771234567', land: 'SN', code: c2 })).json;
     assert.equal(wieder.user.id, konto.json.user.id);
     assert.equal(wieder.user.password_hash, undefined, 'kein Hash in der Antwort');
+    // SIM weg: mit Handynummer + Wiederherstellungscode ein Passwort setzen, dann Nummer + Passwort.
+    const reset = await req('POST', '/api/password/reset', { email: '77 123 45 67', land: 'SN', code: konto.json.recovery_codes[0], newPassword: 'neues-passwort-1' });
+    assert.equal(reset.status, 200, JSON.stringify(reset.json));
+    const pwLogin = await req('POST', '/api/login', { email: '+221 77 123 45 67', password: 'neues-passwort-1' });
+    assert.equal(pwLogin.status, 200);
+    assert.equal(pwLogin.json.user.id, konto.json.user.id);
     // Platzhalter-Adresse über das E-Mail-Formular besetzen: verboten.
     const besetzen = await req('POST', '/api/register', { name: 'X', email: telefonAdresse('+221770000000'), password: 'geheim1234' });
     assert.equal(besetzen.json.code, 'email_reserviert');

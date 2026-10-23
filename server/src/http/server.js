@@ -91,7 +91,7 @@ import { createMailer } from '../services/mailer.js';
 import { createPasswortLink } from '../services/passwortLink.js';
 import { createSms } from '../services/sms.js';
 import { createTelefonLogin, telefonAdresse } from '../services/telefonLogin.js';
-import { VORWAHL } from '../domain/telefon.js';
+import { VORWAHL, normalisiereTelefon } from '../domain/telefon.js';
 import { hashPassword } from '../domain/password.js';
 import { createWochenbericht } from '../services/wochenbericht.js';
 import { createEigeneQuellen } from '../services/eigeneQuellen.js';
@@ -1185,6 +1185,16 @@ async function runShortageIngest() {
 // Konto anlegen — gemeinsamer Weg für E-Mail- und Telefon-Registrierung (Handle,
 // Profil, Einladung, Wiederherstellungscodes). `intern` erlaubt die Platzhalter-
 // Adressen (@telefon.local, @oauth.local), die von außen nie gewählt werden dürfen.
+// Anmelde-Kennung: E-Mail — oder die Handynummer eines Telefon-Kontos (dessen interne
+// Platzhalter-Adresse kennt niemand). So kommen Telefon-Konten mit Passwort bzw.
+// Wiederherstellungscode hinein, wenn die SIM-Karte weg ist.
+function kontoKennung(eingabe, land) {
+  const s = String(eingabe || '').trim();
+  if (s.includes('@')) return s.toLowerCase();
+  const nummer = normalisiereTelefon(s, land);
+  return nummer ? telefonAdresse(nummer) : s.toLowerCase();
+}
+
 function kontoAnlegen(body, { intern = false } = {}) {
   const { email, password, displayName, pharmacyName } = body;
   const name = String(body.name || '').trim();
@@ -1332,13 +1342,13 @@ const routes = [
 
   // Passwort per Wiederherstellungscode zurücksetzen (kein E-Mail-Dienst nötig). Rate-limitiert.
   ['POST', /^\/api\/password\/reset$/, false, async ({ body, ip }) => {
-    const konto = String(body.email || '').trim().toLowerCase();
+    const konto = kontoKennung(body.email, body.land);
     const key = (ip || 'unknown') + '|' + konto;
     const st0 = resetLimiter.check(key); const st1 = resetJeKonto.check(konto);
     const st = st0.blocked ? st0 : st1;
     if (st.blocked) { const e = new Error('Zu viele Versuche. Bitte später erneut.'); e.status = 429; e.code = 'too_many_attempts'; e.retryAfterS = Math.ceil(st.retryAfterMs / 1000); throw e; }
     try {
-      const r = orgAuth.resetPassword({ email: body.email, code: body.code, newPassword: body.newPassword });
+      const r = orgAuth.resetPassword({ email: konto, code: body.code, newPassword: body.newPassword });
       resetLimiter.reset(key); resetJeKonto.reset(konto); // Erfolg hebt die Bremse auf
       return r;
     } catch (e) { resetLimiter.fail(key); resetJeKonto.fail(konto); throw e; } // Fehlversuch zählt gegen das Limit
@@ -1672,7 +1682,7 @@ const routes = [
   ['POST', /^\/api\/auth\/identities\/([a-z0-9_]+)\/unlink$/, true, async ({ userId, params }) => oauth.unlink(userId, params[0])],
 
   ['POST', /^\/api\/login$/, false, async ({ body, ip }) => {
-    const konto = String(body.email || '').trim().toLowerCase();
+    const konto = kontoKennung(body.email, body.land);
     const key = (ip || 'unknown') + '|' + konto;
     const st0 = loginLimiter.check(key); const st1 = loginJeKonto.check(konto);
     const st = st0.blocked ? st0 : st1;
@@ -1681,7 +1691,7 @@ const routes = [
       e.status = 429; e.code = 'too_many_attempts'; e.retryAfterS = Math.ceil(st.retryAfterMs / 1000);
       throw e;
     }
-    const r = orgAuth.login({ email: body.email, password: body.password });
+    const r = orgAuth.login({ email: konto, password: body.password });
     if (!r.ok) { loginLimiter.fail(key); loginJeKonto.fail(konto); const e = new Error(r.error); e.status = 401; e.code = 'login_failed'; throw e; }
     loginLimiter.reset(key); loginJeKonto.reset(konto); // erfolgreiche Anmeldung setzt die Zähler zurück
     return { token: issueToken(r.user.id), user: r.user, profile: social.getProfile(r.user.id) };

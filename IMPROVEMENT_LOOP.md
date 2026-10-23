@@ -3373,3 +3373,8 @@ zusätzlich: nur Nummern aus Register-Ländern (keine +882-Sondernummern o. ä.)
 alle SMS zusammen (100/h, APOPULSE_SMS_MAX_STUNDE). Test + Gegenprobe.
 Nebenbei: Smoke-Schritt „Land bestimmt Sprache" wackelte im vollen Lauf (Deutsch wird beim Wechsel
 nachgeladen, unter Last > 300 ms) → wartet jetzt auf die Überschrift statt fester Zeit.
+Danach: Telefon-Konten bekamen Wiederherstellungscodes, konnten sie aber nicht nutzen (Reset fragt nach
+einer E-Mail, die es nicht gibt) — SIM weg = Konto weg. Jetzt nehmen Anmeldung und Reset per Code auch die
+Handynummer (kontoKennung(): ohne „@" → Normalform → Telefon-Konto); Felder werden bei aktiver Telefon-
+Anmeldung zu „E-Mail oder Handynummer" (type=text, sonst weist der Browser die Nummer ab). HTTP-Test:
+Reset mit „77 123 45 67" + Code, dann Login mit „+221 77 123 45 67" + Passwort → dasselbe Konto.
