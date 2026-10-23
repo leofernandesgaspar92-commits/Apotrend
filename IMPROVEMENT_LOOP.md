@@ -3247,3 +3247,22 @@ gescheiterte Anbieter-Anmeldung zeigt den Grund über dem Anmeldeformular (vorhe
 **Tests.** oauth.test.js +4 (keine Übernahme über unbestätigte E-Mail, Facebook-Adapter mit Fake-
 fetch inkl. appsecret_proof, Google email_verified, Oberfläche). Im Browser (Lagos, en-NG): Nigeria
 automatisch, „Sign in with Facebook" 50 px hoch oben; kaputter Rücksprung → Meldung, Adresse bereinigt.
+
+### Cycle · Sitzungen beenden: Passwortwechsel meldet andere Geräte ab (2026-10-23)
+
+**Anlass.** Beim Passwort-Link aufgefallen: Ein Sitzungs-Token galt für immer. Wer sein Passwort
+zurücksetzt, weil jemand Fremdes im Konto war, warf diese Person damit NICHT hinaus.
+
+**WORK.** http/token.js: Token tragen die Ausstellungszeit („userId|ms"), tokenDetails(),
+sitzungGueltig(). memoryRepo: setUserPassword() setzt sitzungen_ab (gilt für Passwort ändern, Reset per
+Code und per E-Mail-Link), beendeSitzungen(). server.js: jede Anfrage prüft sitzungen_ab → sonst 401
+not_authenticated (Frontend führt zur Anmeldung). POST /api/me/password gibt ein neues Token zurück,
+neu POST /api/me/sitzungen/beenden. Kontoeinstellungen: „Angemeldete Geräte" mit Knopf „Auf allen
+anderen Geräten abmelden". Ohne Zwangs-Abmeldung beim Deploy: alte Token ohne Zeitpunkt gelten weiter,
+bis das Konto zum ersten Mal Sitzungen beendet. i18n +5 in 5 Sprachen.
+
+**Tests.** sitzungen.test.js (5): Format alt/neu, Regel, Repo inkl. Sicherung/Neustart, Oberfläche,
+HTTP mit drei Geräten (Handy, Laptop, altes Token) über „überall abmelden" und Passwortwechsel.
+http-integration: Reset per Code → Token der Registrierung jetzt 401 (Test nutzte es weiter — genau die
+Lücke). Gegenproben (Prüfung im Server entfernt, kein sitzungen_ab beim Passwort, alte Token immer gültig,
+kein neues Token beim Passwortwechsel, Client übernimmt es nicht, altes Format abgelehnt) — alle rot.

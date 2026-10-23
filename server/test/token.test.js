@@ -14,9 +14,10 @@ test('issueToken/verifyToken: Round-Trip', () => {
 
 test('Token nutzt das gesetzte APOPULSE_TOKEN_SECRET (stabil über Neustarts)', () => {
   // Erwartete Signatur mit demselben Secret unabhängig nachrechnen.
-  const payload = Buffer.from('user-123').toString('base64url');
+  // Inhalt seit 10/2026: „userId|Ausstellungszeit" (Sitzungen beendbar, siehe sitzungen.test.js).
+  const payload = Buffer.from('user-123|1700000000000').toString('base64url');
   const expectSig = crypto.createHmac('sha256', Buffer.from(SECRET, 'utf8')).update(payload).digest('base64url');
-  assert.equal(issueToken('user-123'), `${payload}.${expectSig}`);
+  assert.equal(issueToken('user-123', 1700000000000), `${payload}.${expectSig}`);
 });
 
 test('verifyToken: manipuliertes Token wird abgelehnt', () => {

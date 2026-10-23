@@ -86,11 +86,23 @@ export function createMemoryRepo({ jetzt = () => Date.now() } = {}) {
       return u ? { ...u } : null;
     },
 
+    // Neues Passwort beendet zugleich alle bisherigen Sitzungen (http/token.js) —
+    // wer ein Passwort ändert oder zurücksetzt, will fremde Geräte draußen haben.
     setUserPassword(userId, passwordHash) {
       const u = users.get(userId);
       if (!u) return null;
       u.password_hash = passwordHash;
+      u.sitzungen_ab = Date.now();
       return { ...u };
+    },
+
+    // „Auf allen anderen Geräten abmelden": Token, die vor diesem Zeitpunkt ausgestellt
+    // wurden, gelten nicht mehr.
+    beendeSitzungen(userId, ab = Date.now()) {
+      const u = users.get(userId);
+      if (!u) return null;
+      u.sitzungen_ab = ab;
+      return ab;
     },
 
     // Wiederherstellungscode-Hashes setzen (Registrierung erzeugt sie, Reset verbraucht einen).

@@ -86,7 +86,7 @@ import { activeSources, sourcesByKind, shortagesFromCsv, shortagesFromJson, dedu
 import { createDealsService, seedDemoDealsIfNoneRunning } from '../services/deals.js';
 import { createPrismaStore } from '../repo/prismaStore.js';
 import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
-import { issueToken, verifyToken, issueZweckToken, verifyZweckToken } from './token.js';
+import { issueToken, tokenDetails, sitzungGueltig, issueZweckToken, verifyZweckToken } from './token.js';
 import { createMailer } from '../services/mailer.js';
 import { createPasswortLink } from '../services/passwortLink.js';
 import { hashPassword } from '../domain/password.js';
@@ -631,7 +631,7 @@ const readBody = (req) => new Promise((resolve) => {
   let d = ''; req.on('data', c => { d += c; if (d.length > 2e6) req.destroy(); }); // 2 MB (Bilder als data-URL)
   req.on('end', () => { try { resolve(d ? JSON.parse(d) : {}); } catch { resolve({}); } });
 });
-const userIdFrom = (req) => verifyToken((req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
+const sitzungAus = (req) => tokenDetails((req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
 // Nutzerobjekt vor der Auslieferung von Geheimnissen befreien (Passwort-Hash,
 // 2FA-Geheimnis, Wiederherstellungs-Hashes gehören nie in eine API-Antwort).
 const safeUser = (u) => { if (!u) return u; const { password_hash, twofa_secret, recovery_hashes, ...rest } = u; return rest; };
@@ -1735,7 +1735,10 @@ const routes = [
   ['GET', /^\/api\/discover\/open-to\/([^/]+)$/, true, async ({ userId, params }) => social.discoverByOpenTo(userId, decodeURIComponent(params[0]))],
   ['GET', /^\/api\/handles$/, true, async ({ query }) => ({ handles: social.searchHandles(query.get('q') || '') })],
   ['GET', /^\/api\/me\/export$/, true, async ({ userId }) => ({ ...social.exportData(userId), exchange_entries: exchange.mine(userId) })],
-  ['POST', /^\/api\/me\/password$/, true, async ({ userId, body }) => orgAuth.changePassword(userId, { oldPassword: body.oldPassword, newPassword: body.newPassword })],
+  // Passwort ändern beendet alle Sitzungen — dieses Gerät bekommt gleich ein neues Token.
+  ['POST', /^\/api\/me\/password$/, true, async ({ userId, body }) => ({ ...orgAuth.changePassword(userId, { oldPassword: body.oldPassword, newPassword: body.newPassword }), token: issueToken(userId) })],
+  // „Auf allen anderen Geräten abmelden" (verlorenes Handy, Gerät in der Offizin geteilt).
+  ['POST', /^\/api\/me\/sitzungen\/beenden$/, true, async ({ userId }) => { repo.beendeSitzungen(userId); return { ok: true, token: issueToken(userId) }; }],
   // ── Team-Verwaltung (Mitglieder der eigenen Organisation) ──
   ['GET', /^\/api\/team$/, true, async ({ userId }) => ({ membership: orgAuth.myMembership(userId), members: orgAuth.myMembership(userId)?.can_manage_users ? orgAuth.teamMembers(userId) : [] })],
   ['POST', /^\/api\/team$/, true, async ({ userId, body }) => ({ member: orgAuth.addTeamMember(userId, { name: body.name, email: body.email, password: body.password, role: body.role }) })],
@@ -2685,10 +2688,12 @@ const server = http.createServer(async (req, res) => {
     const route = routes.find(([m, rx]) => m === req.method && rx.test(pathname));
     if (!route) return json(req, res, 404, { error: 'Nicht gefunden', code: 'not_found' });
     const [, rx, authRequired, handler] = route;
-    let userId = userIdFrom(req);
-    // Token gültig signiert, aber Nutzer existiert nicht mehr (Konto gelöscht) -> wie nicht
-    // angemeldet behandeln, damit ein sauberes 401 statt eines Folgefehlers (400) kommt.
-    if (userId && !repo.getUserById(userId)) userId = null;
+    const sitzung = sitzungAus(req);
+    let userId = sitzung ? sitzung.userId : null;
+    // Token gültig signiert, aber Nutzer existiert nicht mehr (Konto gelöscht) oder die
+    // Sitzung wurde beendet (Passwort geändert, „überall abmelden") -> wie nicht angemeldet
+    // behandeln, damit ein sauberes 401 statt eines Folgefehlers (400) kommt.
+    if (userId && !sitzungGueltig(sitzung, repo.getUserById(userId))) userId = null;
     // Eigener Code, damit das Frontend eine ABGELAUFENE/UNGÜLTIGE Sitzung von anderen
     // 401 (falscher Login, falsches Passwort) unterscheiden und sauber zum Login führen kann.
     if (authRequired && !userId) return json(req, res, 401, { error: 'Nicht angemeldet', code: 'not_authenticated' });

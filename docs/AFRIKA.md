@@ -696,3 +696,8 @@ Konto, das fast alle haben — ein Tipp statt Formular. Erscheint groß oben, so
 Facebook bestätigt E-Mail-Adressen nicht verlässlich; deshalb koppelt ApoPulse ein Facebook-Login nie
 über die E-Mail an ein bestehendes Konto (Schutz vor Kontoübernahme). Scheitert die Anmeldung, steht
 der Grund über dem Formular.
+
+**Abmelden auf anderen Geräten (Stand 23.10.2026).** Wer das Passwort ändert oder zurücksetzt, wird auf
+allen anderen Geräten abgemeldet (vorher blieben sie für immer angemeldet). In den Kontoeinstellungen
+gibt es „Auf allen anderen Geräten abmelden" — für das verlorene Handy oder den geteilten Rechner in
+der Offizin. Beim Deploy wird niemand zwangsweise abgemeldet.

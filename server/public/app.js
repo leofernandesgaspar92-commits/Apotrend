@@ -8238,6 +8238,11 @@ async function openProfile(handle) {
           <input id="pw_new" type="password" placeholder="${esc(t('ac_pw_new'))}" style="margin-top:6px">
           <div class="row" style="margin-top:8px"><button class="small" id="pw_go">${esc(t('ac_pw_title'))}</button><span id="pw_msg" style="margin-inline-start:8px"></span></div>
         </div>
+        <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px" data-sitzungen>
+          <b style="font-size:0.95em">${esc(t('ac_sess_title'))}</b>
+          <div class="muted" style="margin-top:4px">${esc(t('ac_sess_d'))}</div>
+          <div class="row" style="margin-top:8px;flex-wrap:wrap;gap:8px"><button class="ghost small" id="sess_end">${esc(t('ac_sess_btn'))}</button><span id="sess_msg" role="status"></span></div>
+        </div>
         <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
           <b style="font-size:0.95em">${esc(t('ac_rc_title'))}</b>
           <div class="muted" style="margin-top:4px" id="rc_remaining">—</div>
@@ -8270,8 +8275,17 @@ async function openProfile(handle) {
       };
       dcard.querySelector('#pw_go').onclick = async () => {
         const msg = dcard.querySelector('#pw_msg');
-        try { await api('POST','/api/me/password',{ oldPassword:v('pw_old'), newPassword:v('pw_new') });
-          msg.style.color='var(--green)'; msg.textContent=t('ac_pw_ok'); dcard.querySelector('#pw_old').value=''; dcard.querySelector('#pw_new').value='';
+        try { const r = await api('POST','/api/me/password',{ oldPassword:v('pw_old'), newPassword:v('pw_new') });
+          // Alle Sitzungen sind beendet — dieses Gerät bleibt mit dem neuen Token angemeldet.
+          if (r && r.token) localStorage.setItem('apo_token', r.token);
+          msg.style.color='var(--green)'; msg.textContent=t('ac_pw_ok2'); dcard.querySelector('#pw_old').value=''; dcard.querySelector('#pw_new').value='';
+        } catch(e){ msg.style.color='var(--crit-fg)'; msg.textContent=e.message; }
+      };
+      dcard.querySelector('#sess_end').onclick = async () => {
+        const msg = dcard.querySelector('#sess_msg');
+        try { const r = await api('POST','/api/me/sitzungen/beenden');
+          if (r && r.token) localStorage.setItem('apo_token', r.token);
+          msg.style.color='var(--green)'; msg.textContent=t('ac_sess_ok'); dcard.querySelector('#sess_end').disabled = true;
         } catch(e){ msg.style.color='var(--crit-fg)'; msg.textContent=e.message; }
       };
       dcard.querySelector('#dl_export').onclick = async () => {

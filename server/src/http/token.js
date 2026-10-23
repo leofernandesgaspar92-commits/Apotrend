@@ -9,20 +9,40 @@ const envSecret = process.env.APOPULSE_TOKEN_SECRET;
 const SECRET = envSecret && envSecret.length >= 16 ? Buffer.from(envSecret, 'utf8') : crypto.randomBytes(32);
 if (!envSecret) console.warn('Hinweis: APOPULSE_TOKEN_SECRET nicht gesetzt — Sessions überleben keinen Neustart. Für Produktion setzen.');
 
-export function issueToken(userId) {
-  const payload = Buffer.from(String(userId)).toString('base64url');
+// Seit 10/2026 trägt das Token den Ausstellungszeitpunkt („userId|ms"). Damit lassen
+// sich alle älteren Sitzungen eines Kontos beenden (Passwort geändert, „Auf allen
+// anderen Geräten abmelden"), ohne eine Sitzungstabelle zu führen. Ältere Token ohne
+// Zeitpunkt bleiben gültig, bis das Konto zum ersten Mal Sitzungen beendet.
+export function issueToken(userId, ausgestellt = Date.now()) {
+  const payload = Buffer.from(`${userId}|${ausgestellt}`).toString('base64url');
   const sig = crypto.createHmac('sha256', SECRET).update(payload).digest('base64url');
   return `${payload}.${sig}`;
 }
 
-export function verifyToken(token) {
+/** Geprüftes Token → { userId, ausgestellt } (ausgestellt null bei alten Token) oder null. */
+export function tokenDetails(token) {
   if (!token || typeof token !== 'string') return null;
   const [payload, sig] = token.split('.');
   if (!payload || !sig) return null;
   const expect = crypto.createHmac('sha256', SECRET).update(payload).digest('base64url');
   const a = Buffer.from(sig), b = Buffer.from(expect);
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
-  return Buffer.from(payload, 'base64url').toString();
+  const roh = Buffer.from(payload, 'base64url').toString();
+  const i = roh.lastIndexOf('|');
+  if (i < 0) return { userId: roh, ausgestellt: null };
+  return { userId: roh.slice(0, i), ausgestellt: Number(roh.slice(i + 1)) || null };
+}
+
+export function verifyToken(token) {
+  const d = tokenDetails(token);
+  return d ? d.userId : null;
+}
+
+/** Gilt die Sitzung noch? Nein, wenn das Konto danach alle Sitzungen beendet hat. */
+export function sitzungGueltig(details, user) {
+  if (!details || !user) return false;
+  if (!user.sitzungen_ab) return true;
+  return details.ausgestellt != null && details.ausgestellt >= user.sitzungen_ab;
 }
 
 // Zweck-Token (z. B. Abmelde-Link im Wochenbericht). Eigener, aus dem Secret

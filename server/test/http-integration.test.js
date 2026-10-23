@@ -908,14 +908,17 @@ test('Passwort-Reset per Wiederherstellungscode über HTTP (kein E-Mail-Dienst)'
   assert.equal((await reset.json()).remaining_codes, 7);
   const ok = await fetch(BASE + '/api/login', { method: 'POST', headers: H(), body: JSON.stringify({ email, password: 'neuespw123' }) });
   assert.equal(ok.status, 200, 'Login mit neuem Passwort');
+  const neuToken = (await ok.json()).token;
+  // Reset beendet alle alten Sitzungen (sitzungen.test.js) — das Token der Registrierung gilt nicht mehr.
+  assert.equal((await fetch(BASE + '/api/recovery-codes', { headers: H(reg.token) })).status, 401);
   // Verbrauchter Code funktioniert nicht mehr -> reset_invalid (400)
   const reuse = await post('/api/password/reset', null, { email, code, newPassword: 'nochwas123' });
   assert.equal(reuse.status, 400);
   assert.equal((await reuse.json()).code, 'reset_invalid');
   // Eingeloggt: verbleibende Codes abfragen + neu erzeugen
-  const rem = await j('/api/recovery-codes', reg.token);
+  const rem = await j('/api/recovery-codes', neuToken);
   assert.equal(rem.remaining, 7);
-  const regen = await (await post('/api/recovery-codes/regenerate', reg.token, {})).json();
+  const regen = await (await post('/api/recovery-codes/regenerate', neuToken, {})).json();
   assert.equal(regen.codes.length, 8, 'Neu-Erzeugung liefert 8 Codes');
 });
 
