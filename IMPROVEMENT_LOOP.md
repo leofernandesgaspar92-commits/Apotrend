@@ -3192,3 +3192,22 @@ Land gespeichert, aber keine Sprache gewählt hatte, bekam die Browsersprache st
 (Audit „Lage jetzt"/„Erste Schritte" rot) → landesspracheOhneWahl(). Gegenproben: index lädt wieder
 alle, t() ohne Schutz, Titel abweichend, Nachladen überschreibt, SW-Version alt, Landessprache-Regel
 weg (Audit rot) — alle rot. verify 1403/1403.
+
+### Cycle · Einstieg wie bei Facebook: Land automatisch, Formular zuerst (2026-10-22)
+
+**Anlass.** Owner: „Einloggen so einfach wie bei Facebook oder Twitter; Länder automatisch nach Lokation,
+nur nach Bedarf ändern."
+
+**WORK.** data/zeitzonen.js (aus zone.tab, 156 Zonen, jede eindeutig), domain/landVorschlag.js (sicher
+nur bei eindeutiger Zone und ohne widersprechende, bewusst gewählte Sprach-Region; Werksvorgaben en-US/
+pt-BR/ar-EG zählen nicht), GET /api/land-vorschlag (öffentlich, keine IP). app.js: landAutomatisch() beim
+Start, Kandidaten zuerst in der Länderwahl, startSpracheFuer() (Browsersprache, wenn das Land sie
+führt), „(automatisch erkannt)", Logo ausgeloggt → Anmeldung. Formulare: <form> für Anmeldung und
+Registrierung (Enter, autocomplete username/current-password/new-password), „Anzeigen" am Passwort,
+Social-Login oben und groß, Codes-Karte (sessionStorage) statt Pflicht-Seite, Handy: Formular vor den
+Vorteilen (CSS order), Kopfzeile bricht um. i18n +4 Schlüssel in 5 Sprachen.
+
+**Tests.** land-vorschlag.test.js (5); Browser-Audit „Einstieg" (Dakar → direkt Anmeldung fr, Formular
+oben, Enter, keine Codes-Seite; Kenia de-AT → Frage KE/AT); Smoke: Logo → Anmeldung, „Land ändern" →
+64 Länder. Gefunden beim Durchspielen: Kamerun (en) 40 px Querscrollen in der Kopfzeile → Umbruch;
+Formular am Handy erst nach einer Bildschirmhöhe → nach oben.

@@ -2009,6 +2009,34 @@ async function main() {
     await ctx.close();
   }
 
+  // ── Einstieg wie bei Facebook: Land automatisch, Formular zuerst, Enter ──
+  //  Leerer Browser in Dakar: keine Länderliste, gleich die Anmeldung auf
+  //  Französisch; Registrieren mit der Eingabetaste; Codes als Karte statt
+  //  Pflicht-Seite. Kenia mit „de-AT": wird gefragt (Kenia oder Österreich).
+  {
+    const ctx = await browser.newContext({ viewport: { width: 360, height: 760 }, locale: 'fr-SN', timezoneId: 'Africa/Dakar' });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
+    if (await page.locator('[data-laenderwahl]').count()) findings.push('Einstieg: Dakar zeigt die Länderliste statt gleich die Anmeldung');
+    if ((await page.evaluate(() => localStorage.getItem('apo_country'))) !== 'SN') findings.push('Einstieg: Land nicht automatisch Senegal');
+    const formOben = await page.evaluate(() => { const f = document.querySelector('.auth-forms'); return f ? f.getBoundingClientRect().top : 9999; });
+    if (formOben > 300) findings.push(`Einstieg: Formular erst bei ${Math.round(formOben)} px (Handy: zuerst)`);
+    await page.fill('#rg_name', 'Awa Diop').catch(() => {}); await page.fill('#rg_email', `auto_${Date.now().toString(36)}@reg.test`).catch(() => {}); await page.fill('#rg_pw', 'Motdepasse123!').catch(() => {});
+    await page.press('#rg_pw', 'Enter').catch(() => {}); await page.waitForTimeout(1300);
+    if (!(await page.evaluate(() => !!localStorage.getItem('apo_token')))) findings.push('Einstieg: Registrieren mit Enter klappt nicht');
+    if (await page.locator('#rc_done').count()) findings.push('Einstieg: Codes-Seite hält den Einstieg auf');
+    for (const f of fehler) findings.push('Einstieg: JS-Fehler ' + f);
+    await ctx.close();
+    const c2 = await browser.newContext({ viewport: { width: 360, height: 760 }, locale: 'de-AT', timezoneId: 'Africa/Nairobi' });
+    const p2 = await c2.newPage();
+    await p2.goto(BASE, { waitUntil: 'networkidle' }); await p2.waitForTimeout(500);
+    const vor = await p2.locator('[data-vorschlag] [data-country]').evaluateAll((b) => b.map((x) => x.dataset.country)).catch(() => []);
+    if (vor.join() !== 'KE,AT') findings.push(`Einstieg: Kenia/de-AT sollte fragen (KE, AT), zeigt ${vor.join() || 'nichts'}`);
+    await c2.close();
+    if (!findings.some((f) => f.startsWith('Einstieg'))) console.log('✓ Einstieg: Dakar → gleich Anmeldung (Senegal, Französisch, Formular oben), Registrieren mit Enter, keine Codes-Pflichtseite · Kenia mit de-AT → Frage KE/AT');
+  }
+
   // ── Frankophones Afrika: Senegal auf Französisch, günstiges Handy (360 px) ──
   //  Französisch ist ~20 % länger als Englisch. Am 22.10.2026 lief der Hauptknopf
   //  „Veuillez choisir au moins une substance" 11 px über den Rand.
@@ -2380,6 +2408,11 @@ async function main() {
     const page = await ctx.newPage();
     const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
     await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
+    // Seit 10/2026 erkennt die Zeitzone das Land (Handy auf „en-US" zählt nicht):
+    // gleich die Anmeldung für Liberia. Die Länderliste gibt es über „Land ändern".
+    const auto = await page.evaluate(() => ({ land: localStorage.getItem('apo_country'), liste: !!document.querySelector('[data-laenderwahl]'), lang: document.documentElement.lang }));
+    if (auto.land !== 'LR' || auto.liste || auto.lang !== 'en') findings.push(`Erster Eindruck: Liberia nicht automatisch erkannt (${auto.land}, Liste ${auto.liste}, ${auto.lang})`);
+    await page.click('#changeCountry').catch(() => {}); await page.waitForTimeout(500);
     const lw = await page.evaluate(() => {
       const k = document.querySelector('[data-laenderwahl]'); if (!k) return null;
       // Nur der Name (ohne Flaggen-Emoji davor).
@@ -2399,8 +2432,8 @@ async function main() {
     {
       const de = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'de-AT', timezoneId: 'Europe/Vienna' });
       const p2 = await de.newPage(); await p2.goto(BASE, { waitUntil: 'networkidle' }); await p2.waitForTimeout(400);
-      const r = await p2.evaluate(() => ({ h: document.querySelector('[data-laenderwahl] h1')?.textContent, v: [...document.querySelectorAll('[data-vorschlag] [data-country]')].map((b) => b.dataset.country).join() }));
-      if (r.h !== 'Wähle dein Land' || r.v !== 'AT') findings.push(`Erster Eindruck: Österreich bekommt nicht Deutsch + AT-Vorschlag (${r.h} / ${r.v})`);
+      const r = await p2.evaluate(() => ({ land: localStorage.getItem('apo_country'), lang: document.documentElement.lang, form: !!document.querySelector('#rg_form, #li_form') }));
+      if (r.land !== 'AT' || r.lang !== 'de' || !r.form) findings.push(`Erster Eindruck: Wien bekommt nicht gleich die Anmeldung für Österreich auf Deutsch (${r.land} / ${r.lang} / Formular ${r.form})`);
       await de.close();
     }
     await page.click('[data-vorschlag] [data-country="LR"]').catch(() => {}); await page.waitForTimeout(600);
@@ -2414,6 +2447,11 @@ async function main() {
     }
     for (const w of ['Oxytocin', 'Amoxicillin']) await page.locator('#app button', { hasText: w }).first().click().catch(() => {});
     for (let k = 0; k < 3; k++) { const b = page.locator('#app button:visible', { hasText: /^(Watch|Continue|Go to)/ }).first(); if (!(await b.count())) break; await b.click().catch(() => {}); await page.waitForTimeout(800); }
+    // Wiederherstellungscodes: seit 10/2026 als Karte auf der Startseite — dort darf kein Code umbrechen.
+    if (await page.locator('[data-rckarte]').count()) {
+      const zeilen = await page.$$eval('[data-rckarte] ol.recovery-codes code', (els) => els.map((e) => e.getClientRects().length));
+      if (!zeilen.length || zeilen.some((n) => n !== 1)) findings.push(`Erster Eindruck: Wiederherstellungscode bricht um (${zeilen.join(',')})`);
+    }
     await page.waitForTimeout(800);
     if (await page.locator('[data-bulkalert], [data-aset]').count()) findings.push('Erster Eindruck: Rabatt-Alarme in einem Land ohne Preise');
     // CSV der Beobachtungsliste: Spaltenköpfe in der Sprache der Oberfläche (vorher fest „Wirkstoff;Aktueller Status").

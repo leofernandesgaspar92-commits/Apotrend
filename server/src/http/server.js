@@ -28,6 +28,7 @@ import { startseiteKopf, kopfSprache, manifestSprache } from './startseiteKopf.j
 import { schlankSicher } from './schlank.js';
 import { kodierungWaehlen, kodierenSync, createKompressionsSpeicher, createVersionsKennung } from './komprimierung.js';
 import { createSprachdateien } from './sprachdateien.js';
+import { landVorschlag } from '../domain/landVorschlag.js';
 import { faktorenAusUmgebung, preisCents } from '../domain/regionPreis.js';
 import { createSocialService } from '../services/social.js';
 import { createShortagesService } from '../services/shortages.js';
@@ -2069,6 +2070,13 @@ const routes = [
   // Länder-Register (öffentlich): für Länderauswahl bei Registrierung + Umschalter.
   // `preise`: Gibt es für das Land überhaupt Preisvergleiche? Die Startseite verspricht
   // „Preise vergleichen" nur dort, wo es etwas zu vergleichen gibt (bis 10/2026 auch in Uganda).
+  // Land automatisch (domain/landVorschlag.js): nur Zeitzone und Sprach-Region des
+  // Browsers — keine IP-Auswertung, kein Dienst Dritter, nichts wird gespeichert.
+  ['GET', /^\/api\/land-vorschlag$/, false, async ({ query }) => landVorschlag({
+    zeitzone: String(query.get('tz') || '').slice(0, 64),
+    sprachen: String(query.get('sprachen') || '').split(',').slice(0, 10).map((s) => s.slice(0, 20)),
+    laender: COUNTRIES,
+  })],
   ['GET', /^\/api\/countries$/, false, async () => {
     const mitAngebot = new Set(rabatteRepo.listFlat().map((r) => String(r.country || '').toUpperCase()));
     return { countries: listCountries().map((c) => ({ ...c, preise: mitAngebot.has(c.code) || pricesRepo.listComparisons({ country: c.code }).length > 0 })) };

@@ -73,10 +73,13 @@ async function main() {
     // <html lang> folgt der Sprache (a11y — Screenreader-Aussprache).
     const htmlLang = await op.evaluate(() => document.documentElement.lang);
     step('<html lang> folgt der Sprache (GB→en)', htmlLang === 'en', `lang=${htmlLang}`);
-    // Logo (grüner Punkt) führt ausgeloggt zurück zur Länderauswahl.
+    // Logo führt ausgeloggt zur Anmeldung — das gewählte Land bleibt (Owner 10/2026: Land
+    // „nur nach Bedarf ändern"). Die Länderliste gibt es über „Land ändern".
     await op.click('#logoHome').catch(() => {}); await op.waitForTimeout(300);
-    const backToCountry = await op.evaluate(() => new Set([...document.querySelectorAll('[data-country]')].map((b) => b.dataset.country)).size);
-    step('Logo führt ausgeloggt zurück zur Länderauswahl', backToCountry === expectedCountries, `${backToCountry} Länder`);
+    const zurAnmeldung = await op.locator('#li_form, #rg_form').count();
+    await op.click('#changeCountry').catch(() => {}); await op.waitForTimeout(300);
+    const laender = await op.evaluate(() => new Set([...document.querySelectorAll('[data-country]')].map((b) => b.dataset.country)).size);
+    step('Logo führt ausgeloggt zur Anmeldung (Land bleibt), „Land ändern" zur Länderliste', zurAnmeldung > 0 && laender === expectedCountries, `${zurAnmeldung ? 'Anmeldung' : 'keine Anmeldung'}, ${laender} Länder`);
     await octx.close();
   }
 

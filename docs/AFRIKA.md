@@ -640,3 +640,39 @@ statt zu überschreiben, HTTP br/304/404, Lader kennt dieselben Sprachen wie der
 Deutsch, neue Cache-Version). Browser-Audit: Senegal lädt nur `/i18n/fr.js`. Im Browser durchgespielt:
 Erstbesuch fr-SN → nur fr; Marokko → Arabisch lädt `ar.js` nach; Ansicht Uganda lädt `en.js`; offline
 neu geladen → läuft. Gegenproben (6, alle rot).
+
+## Einstieg wie bei Facebook — Land automatisch (Stand 22.10.2026)
+
+Owner: „Einloggen so einfach wie bei Facebook oder Twitter; Länder automatisch nach Lokation wählen und
+nur nach Bedarf ändern."
+
+**Land automatisch.** Beim ersten Besuch keine Liste mit 64 Ländern mehr: Die Zeitzone des Geräts ist
+das verlässlichste Ortssignal, das ein Browser ohne Rückfrage liefert („Africa/Dakar" = Senegal). Die
+Tabelle (`server/src/data/zeitzonen.js`) stammt aus der amtlichen tz-Datenbank; jede Zone gehört genau zu
+einem Land — für alle 54 afrikanischen Länder eindeutig.
+- Festgelegt wird nur, wenn es sicher ist (`server/src/domain/landVorschlag.js`). Werksvorgaben der
+  Handys („en-US", „pt-BR", „ar-EG") überstimmen die Zeitzone nicht — ugandische Handys stehen oft auf
+  „en-US". Zeigt die Spracheinstellung bewusst auf ein anderes Land (Kenia, Gerät „de-AT"), wird kurz
+  gefragt: „Kenia oder Österreich?". Ohne bekannte Zone: die Länderliste wie bisher.
+- Keine Standortfreigabe, keine IP-Auswertung, kein Dienst Dritter — nur der Zonenname geht an den Server.
+- Die Sprache folgt dem Land; führt das Land die Sprache des Browsers mit, gilt diese (Kamerun mit
+  englischem Handy → Englisch).
+- Ändern nur bei Bedarf: „Land ändern" auf der Anmeldeseite, nach der Anmeldung die Länderwahl im Kopf.
+  Das Logo führt ausgeloggt zur Anmeldung, nicht mehr zur Länderliste.
+
+**Anmelden/Registrieren wie bei Facebook**
+- Am Handy steht das Formular oben, die Vorteile darunter (vorher erst nach einer Bildschirmhöhe).
+- Echte Formulare: die Eingabetaste schickt ab; Passwort-Manager von Android/iPhone/Chrome erkennen
+  Anmeldung und Registrierung, füllen aus und bieten das Speichern an.
+- „Anzeigen" neben dem Passwort — am Handy vertippt man sich leicht.
+- Nach der Registrierung direkt in die App. Die Wiederherstellungscodes stehen als Karte oben auf der
+  Startseite, bis „gesichert" — nur für diese Sitzung gespeichert, nie dauerhaft im Browser.
+- „Weiter mit Google" steht oben und groß, sobald Google-Anmeldung eingerichtet ist (Render:
+  `OAUTH_GOOGLE_CLIENT_ID`, `OAUTH_GOOGLE_CLIENT_SECRET`, siehe docs/SOCIAL_LOGIN.md).
+- Angemeldet bleibt man wie bisher, bis man sich abmeldet.
+
+Geprüft: `test/land-vorschlag.test.js` (Tabelle für jedes Register-Land, Werksvorgaben, Widerspruch,
+HTTP ohne IP-Auswertung, Formulare/Enter/Passwort-Manager, keine Pflicht-Codes-Seite). Browser-Audit:
+leerer Browser in Dakar → gleich die Anmeldung auf Französisch, Formular oben, Registrieren mit Enter;
+Kenia mit „de-AT" → Frage Kenia/Österreich. Im Browser durchgespielt: Senegal, Uganda (en-US),
+Kamerun (en-CM), Kenia (de-AT), Japan.

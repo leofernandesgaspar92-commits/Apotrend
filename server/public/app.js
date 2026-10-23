@@ -633,7 +633,35 @@ function browserSprache() {
   }
   return 'en'; // unbekannte Sprache (z. B. Suaheli, Arabisch): Englisch statt Deutsch
 }
+// Kandidaten aus /api/land-vorschlag, wenn das Land nicht sicher war (z. B. Zeitzone
+// Kenia, Browser „de-AT"): diese zuerst anbieten.
+let LAND_KANDIDATEN = [];
+// Land automatisch (Owner: „nach Lokation wählen, nur nach Bedarf ändern"): Zeitzone und
+// Sprach-Region des Browsers, ausgewertet von domain/landVorschlag.js. Gesetzt wird nur,
+// wenn es eindeutig ist — sonst die Länderwahl mit den Kandidaten oben.
+async function landAutomatisch() {
+  let tz = '';
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch { /* alter Browser */ }
+  const sprachen = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || '']).join(',');
+  try {
+    const d = await (await fetch('/api/land-vorschlag?tz=' + encodeURIComponent(tz) + '&sprachen=' + encodeURIComponent(sprachen))).json();
+    if (d && d.land) {
+      localStorage.setItem('apo_country', d.land);
+      try { localStorage.setItem('apo_land_auto', '1'); } catch { /* nur Anzeige */ }
+      return true;
+    }
+    LAND_KANDIDATEN = (d && Array.isArray(d.kandidaten)) ? d.kandidaten : [];
+  } catch { /* offline oder Server alt: Länderwahl wie bisher */ }
+  return false;
+}
+// Sprache für ein Land: die des Browsers, wenn das Land sie führt (Kamerun englisch,
+// Marokko arabisch), sonst die Landessprache — und eine eigene Wahl geht immer vor.
+function startSpracheFuer(c) {
+  const bs = browserSprache();
+  return spracheFuer(c, (c.locales || []).includes(bs) && SUPPORTED_LOCALES.includes(bs) ? bs : c.locale_default);
+}
 function vorgeschlageneLaender(countries) {
+  if (LAND_KANDIDATEN.length) return LAND_KANDIDATEN.map((c) => countries.find((x) => x.code === c)).filter(Boolean);
   const codes = [];
   let tz = '';
   try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch { /* egal */ }
@@ -681,7 +709,8 @@ async function countryScreen() {
     const code = btn.dataset.country;
     const c = countries.find(x => x.code === code);
     localStorage.setItem('apo_country', code);
-    if (c && c.locale_default) { setLocale(spracheFuer(c, c.locale_default)); applyI18n(); applyTheme(); applyFontScale(); }
+    try { localStorage.removeItem('apo_land_auto'); } catch { /* egal */ }
+    if (c && c.locale_default) { setLocale(startSpracheFuer(c)); applyI18n(); applyTheme(); applyFontScale(); }
     authScreen();
   });
 }
@@ -737,7 +766,7 @@ function landesspracheOhneWahl() {
   try { gewaehlt = localStorage.getItem('apo_locale'); } catch { /* privater Modus */ }
   const c = currentAuthCountry();
   if (gewaehlt || !c || !c.locale_default) return;
-  const soll = spracheFuer(c, c.locale_default);
+  const soll = startSpracheFuer(c);
   if (soll !== LOCALE || !I18N[soll]) setLocale(soll); // lädt bei Bedarf nach und zeichnet neu
   else { try { localStorage.setItem('apo_locale', soll); } catch { /* egal */ } }
 }
@@ -754,8 +783,9 @@ function authScreen() {
   const ac = currentAuthCountry();
   // Gewähltes Land oben + „Land ändern" (zurück zu Schritt 1).
   app.appendChild(el(`
-  <div class="row" style="justify-content:center;gap:10px;margin-bottom:6px;align-items:center">
+  <div class="row" style="justify-content:center;gap:8px 10px;margin-bottom:6px;align-items:center;flex-wrap:wrap">
     <span>${ac ? `<span aria-hidden="true" style="font-size:1.2em">${esc(ac.flag)}</span> <b>${esc(ac.name)}</b>` : localStorage.getItem('apo_country') ? `<b>${esc(landAnzeige(localStorage.getItem('apo_country')))}</b>` : ''}</span>
+    ${localStorage.getItem('apo_land_auto') ? `<span class="muted" data-landauto style="font-size:14px">(${esc(t('cs_auto'))})</span>` : ''}
     <button class="ghost small" id="changeCountry">${esc(t('cs_change'))}</button>
     <span data-authsprache></span>
   </div>`));
@@ -782,31 +812,33 @@ function authScreen() {
       <div class="card auth-karte">
       <!-- Ein Formular zur Zeit, umschaltbar (wie bei LinkedIn/X) — statt zwei
            langer Formulare untereinander (am Handy ~1700px). -->
+      <div id="oauthBtns"></div>
       <div class="auth-switch" role="tablist">
         <button type="button" role="tab" data-auth="login">${esc(t('au_login'))}</button>
         <button type="button" role="tab" data-auth="register">${esc(t('au_create'))}</button>
       </div>
-      <div data-authpane="login">
+      <!-- Echte Formulare: Enter schickt ab, Passwort-Manager erkennen Anmeldung
+           und Registrierung und füllen aus bzw. bieten das Speichern an. -->
+      <form data-authpane="login" id="li_form" novalidate>
         <h2 class="sr-only">${esc(t('au_login'))}</h2>
-        <label for="li_email">${esc(t('au_email'))}</label><input id="li_email" type="email" autocomplete="email" placeholder="${esc(t('au_email_ph'))}">
-        <label for="li_pw">${esc(t('au_pw'))}</label><input id="li_pw" type="password" autocomplete="current-password" placeholder="${esc(t('au_pw'))}">
-        <div style="margin-top:14px"><button id="li_go" class="auth-gross">${esc(t('au_login'))}</button></div>
-        <div style="margin-top:8px"><button class="linklike small" id="li_forgot">${esc(t('au_forgot'))}</button></div>
-        <div id="oauthBtns"></div>
+        <label for="li_email">${esc(t('au_email'))}</label><input id="li_email" name="email" type="email" autocomplete="username" inputmode="email" placeholder="${esc(t('au_email_ph'))}">
+        <label for="li_pw">${esc(t('au_pw'))}</label><div class="pw-zeile"><input id="li_pw" name="password" type="password" autocomplete="current-password" placeholder="${esc(t('au_pw'))}"><button type="button" class="ghost small pw-zeigen" data-pw="li_pw" aria-controls="li_pw">${esc(t('au_pw_show'))}</button></div>
+        <div style="margin-top:14px"><button id="li_go" type="submit" class="auth-gross">${esc(t('au_login'))}</button></div>
+        <div style="margin-top:8px"><button type="button" class="linklike small" id="li_forgot">${esc(t('au_forgot'))}</button></div>
         <div class="err" id="li_err"></div>
-      </div>
-      <div data-authpane="register">
+      </form>
+      <form data-authpane="register" id="rg_form" novalidate>
         <h2 class="sr-only">${esc(t('au_register'))}</h2>
         <div id="rg_durability" class="err" hidden></div>
         <!-- Nur, was wirklich gebraucht wird: Land steht schon fest (Schritt 1),
              der @Handle entsteht aus dem Namen. -->
-        <label for="rg_name">${esc(t('au_name'))}</label><input id="rg_name" autocomplete="name" placeholder="Dr. Anna Huber">
-        <label for="rg_email">${esc(t('au_email'))}</label><input id="rg_email" type="email" autocomplete="email" placeholder="${esc(t('au_email_ph'))}">
-        <label for="rg_pw">${esc(t('au_pw8'))}</label><input id="rg_pw" type="password" autocomplete="new-password">
-        <label for="rg_accounttype">${esc(t('at_label'))}</label><select id="rg_accounttype"></select>
-        <div style="margin-top:14px"><button id="rg_go" class="auth-gross">${esc(t('au_create'))}</button></div>
+        <label for="rg_name">${esc(t('au_name'))}</label><input id="rg_name" name="name" autocomplete="name" placeholder="Dr. Anna Huber">
+        <label for="rg_email">${esc(t('au_email'))}</label><input id="rg_email" name="email" type="email" autocomplete="username" inputmode="email" placeholder="${esc(t('au_email_ph'))}">
+        <label for="rg_pw">${esc(t('au_pw8'))}</label><div class="pw-zeile"><input id="rg_pw" name="new-password" type="password" autocomplete="new-password"><button type="button" class="ghost small pw-zeigen" data-pw="rg_pw" aria-controls="rg_pw">${esc(t('au_pw_show'))}</button></div>
+        <label for="rg_accounttype">${esc(t('at_label'))}</label><select id="rg_accounttype" name="account-type"></select>
+        <div style="margin-top:14px"><button id="rg_go" type="submit" class="auth-gross">${esc(t('au_create'))}</button></div>
         <div class="err" id="rg_err"></div>
-      </div>
+      </form>
       </div>
     </div>
   </div>`));
@@ -851,19 +883,30 @@ function authScreen() {
   // „Land ändern" -> zurück zur Länderauswahl (Schritt 1).
   const cc = document.getElementById('changeCountry');
   if (cc) cc.onclick = () => countryScreen();
-  document.getElementById('li_go').onclick = async () => {
+  // Passwort anzeigen/verbergen (am Handy vertippt man sich leicht).
+  app.querySelectorAll('[data-pw]').forEach((b) => {
+    b.onclick = () => {
+      const f = document.getElementById(b.dataset.pw); const zeigen = f.type === 'password';
+      f.type = zeigen ? 'text' : 'password'; b.textContent = t(zeigen ? 'au_pw_hide' : 'au_pw_show'); b.setAttribute('aria-pressed', String(zeigen));
+    };
+  });
+  document.getElementById('li_form').onsubmit = (e) => { e.preventDefault(); anmelden(); };
+  document.getElementById('rg_form').onsubmit = (e) => { e.preventDefault(); registrieren(); };
+  const anmelden = async () => {
     try {
       const d = await api('POST','/api/login',{ email:v('li_email'), password:v('li_pw') });
       afterAuth(d);
     } catch(e){ document.getElementById('li_err').textContent = e.message; }
   };
-  document.getElementById('rg_go').onclick = async () => {
+  const registrieren = async () => {
     try {
       const d = await api('POST','/api/register',{ name:v('rg_name'), email:v('rg_email'), password:v('rg_pw'), country:(localStorage.getItem('apo_country') || 'AT'), locale:LOCALE, accountType:v('rg_accounttype'), einladung: leseEinladung() });
       try { localStorage.removeItem('apo_einladung'); } catch { /* egal */ }
-      // Wiederherstellungscodes einmalig zeigen (zum Sichern), dann in die App.
-      if (Array.isArray(d.recovery_codes) && d.recovery_codes.length) recoveryCodesScreen(d.recovery_codes, () => afterAuth(d));
-      else afterAuth(d);
+      // Direkt in die App (wie bei Facebook). Die Wiederherstellungscodes erscheinen
+      // als Karte oben auf der Startseite, bis sie gesichert sind — sie halten den
+      // Einstieg nicht mehr auf. Nur in dieser Sitzung gespeichert, nie dauerhaft.
+      if (Array.isArray(d.recovery_codes) && d.recovery_codes.length) { try { sessionStorage.setItem('apo_rc_neu', JSON.stringify(d.recovery_codes)); } catch { /* dann im Konto neu erzeugen */ } }
+      afterAuth(d);
     } catch(e){
       document.getElementById('rg_err').textContent = e.message;
       // Schon registriert: direkt zur Anmeldung, E-Mail übernommen.
@@ -899,6 +942,29 @@ function afterAuth(d) {
   mainScreen();
 }
 
+// Nach der Registrierung: Codes als Karte auf der Startseite, bis „gesichert" — statt
+// eines Bildschirms, der den Einstieg aufhält.
+function rcKarte() {
+  let codes = null;
+  try { codes = JSON.parse(sessionStorage.getItem('apo_rc_neu') || 'null'); } catch { /* keine */ }
+  if (!Array.isArray(codes) || !codes.length) return null;
+  const text = codes.join('\n');
+  const k = el(`<div class="card" data-rckarte style="border-inline-start:4px solid var(--warn-bd, #e0a800)">
+    <h2 style="margin:0 0 4px;font-size:19px">${esc(t('rc_title'))}</h2>
+    <div class="muted" style="font-size:15px">${esc(t('rc_intro'))}</div>
+    <ol class="recovery-codes" style="margin-top:10px">${codes.map((c) => `<li><code>${esc(c)}</code></li>`).join('')}</ol>
+    <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button class="ghost small" data-rccopy>${esc(t('rc_copy'))}</button>
+      <button class="ghost small" data-rcdl>${esc(t('rc_download'))}</button>
+      <button class="small" data-rcok>${esc(t('rc_card_ok'))}</button></div></div>`);
+  k.querySelector('[data-rccopy]').onclick = async (e) => { try { await navigator.clipboard.writeText(text); e.target.textContent = t('rc_copied'); } catch { /* Download bleibt */ } };
+  k.querySelector('[data-rcdl]').onclick = () => {
+    const url = URL.createObjectURL(new Blob([text + '\n'], { type: 'text/plain' }));
+    const a = document.createElement('a'); a.href = url; a.download = 'apopulse-wiederherstellungscodes.txt'; a.click(); URL.revokeObjectURL(url);
+  };
+  k.querySelector('[data-rcok]').onclick = () => { try { sessionStorage.removeItem('apo_rc_neu'); } catch { /* egal */ } k.remove(); };
+  return k;
+}
 // Wiederherstellungscodes einmalig anzeigen (nach Registrierung oder Neu-Erzeugung).
 // onDone wird beim „Weiter" aufgerufen. codesOnly=true nur anzeigen (kein App-Wechsel).
 function recoveryCodesScreen(codes, onDone) {
@@ -972,12 +1038,14 @@ async function renderOAuthButtons() {
     const d = await api('GET', '/api/auth/providers?redirect_uri=' + encodeURIComponent(oauthRedirectUri()));
     const provs = ((d && d.providers) || []).filter(p => p.authorize_url);
     if (!provs.length) return; // kein Provider aktiv -> nichts anzeigen
-    host.innerHTML = `<div class="muted" style="text-align:center;margin:10px 0 6px">${esc(t('au_or'))}</div>`;
+    // Oben und groß, wie bei Facebook/X: ein Tipp, kein Formular. Darunter „oder" + E-Mail.
+    host.innerHTML = '';
     provs.forEach(p => {
-      const btn = el(`<button class="ghost" style="width:100%;margin-top:8px">${esc(ti('au_oauth_with', { p: capitalize(p.provider) }))}</button>`);
+      const btn = el(`<button type="button" class="ghost auth-gross" data-oauth="${esc(p.provider)}" style="width:100%;margin-bottom:8px">${esc(ti('au_oauth_with', { p: capitalize(p.provider) }))}</button>`);
       btn.onclick = () => { location.href = p.authorize_url; };
       host.appendChild(btn);
     });
+    host.appendChild(el(`<div class="muted" style="text-align:center;margin:4px 0 10px">${esc(t('au_or'))}</div>`));
   } catch { /* Providerliste nicht abrufbar -> stillschweigend ohne Social-Login */ }
 }
 
@@ -1666,6 +1734,7 @@ async function loadOverview() {
     </div>
     <div class="ov-links">${schnell.map(([id, icon, label]) => `<button class="ov-link" id="${id}">${ico(icon, 22)}<span>${esc(ohneSymbol(t(label)))}</span>${ico('chevron', 18)}</button>`).join('')}</div>
   </div>`);
+  { const rc = rcKarte(); if (rc) feed.appendChild(rc); }
   head.querySelectorAll('.ovtile[data-go]').forEach(t => { if (t.dataset.go) t.onclick = () => { if (t.dataset.go === 'live') { openLive(); return; } if (t.dataset.filter) shortageFilter = t.dataset.filter; goTab(t.dataset.go); }; });
   head.querySelectorAll('.ovtile').forEach(t => { if (!t.dataset.go) t.onclick = () => document.getElementById('btnNotif').click(); });
   // Einstieg in die Live-Warnungen vom Dashboard aus.
@@ -10310,8 +10379,8 @@ function goHome() {
     loadTab();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } else {
-    // Ausgeloggt: zurück zum Start des Flows (Länderauswahl).
-    countryScreen();
+    // Ausgeloggt: zurück zur Anmeldeseite (Land steht meist schon fest), sonst Länderwahl.
+    if (_hasCountry()) authScreen(); else countryScreen();
   }
 }
 const _logo = document.getElementById('logoHome');
@@ -10326,5 +10395,6 @@ const _hasCountry = () => !!localStorage.getItem('apo_country');
   if (await handleOAuthCallback()) return;
   if (localStorage.getItem('apo_token')) mainScreen().catch(() => (_hasCountry() ? authScreen() : countryScreen()));
   else if (_hasCountry()) authScreen();
+  else if (await landAutomatisch()) authScreen();
   else countryScreen();
 })();

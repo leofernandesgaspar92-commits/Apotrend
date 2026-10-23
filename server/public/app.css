@@ -63,6 +63,9 @@
   #app.auth-mode { max-width:920px; }
   .auth-grid { display:grid; grid-template-columns:1fr; gap:16px; align-items:start; }
   @media (min-width:820px){ .auth-grid { grid-template-columns:1.05fr .95fr; } }
+  /* Handy: Anmelden/Registrieren zuerst (wie Facebook/X) — die Vorteile stehen darunter,
+     statt das Formular eine Bildschirmhöhe nach unten zu schieben. */
+  @media (max-width:819.98px){ .auth-forms { order:-1; } }
   /* Startseite wie LinkedIn: große Aussage auf ruhiger Fläche statt grünem
      Verlaufsblock, Häkchen statt Emojis, Anmeldung daneben. */
   .auth-hero { padding:8px 4px 16px; }
@@ -633,3 +636,8 @@ span.vt-ok { color:var(--ok-fg); }
 span.handle { direction:ltr; unicode-bidi:isolate; }
 /* Arabische Schrift braucht etwas mehr Zeilenhöhe, sonst stoßen Punkte und Bögen an. */
 [lang="ar"] body { line-height:1.6; }
+
+/* Passwortfeld mit „Anzeigen" daneben (Anmeldung/Registrierung). */
+.pw-zeile { display:flex; gap:8px; align-items:center; }
+.pw-zeile input { flex:1; min-width:0; }
+.pw-zeile .pw-zeigen { flex:none; min-height:44px; white-space:nowrap; }
