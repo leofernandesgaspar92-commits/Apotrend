@@ -701,3 +701,8 @@ der Grund über dem Formular.
 allen anderen Geräten abgemeldet (vorher blieben sie für immer angemeldet). In den Kontoeinstellungen
 gibt es „Auf allen anderen Geräten abmelden" — für das verlorene Handy oder den geteilten Rechner in
 der Offizin. Beim Deploy wird niemand zwangsweise abgemeldet.
+
+**„App installieren" (Stand 23.10.2026).** Auf Android-Handys erscheint auf der Startseite die Karte
+„ApoPulse als App auf den Startbildschirm" mit „Jetzt installieren" — ein Symbol wie bei einer App, ohne
+App-Store und ohne großen Download. Auf dem iPhone steht stattdessen die kurze Anleitung („Teilen → Zum
+Home-Bildschirm"). „Später" blendet die Karte 30 Tage aus; in der installierten App erscheint sie nie.

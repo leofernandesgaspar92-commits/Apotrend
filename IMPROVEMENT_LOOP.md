@@ -3296,3 +3296,18 @@ app.css (Zeitstempel, Werbe-Kennzeichnung „Anzeige", Lesebestätigung, Badges,
 Danach Rundgang Ghana (en) und Kamerun (fr) bei 360 px: kein Querscrollen, kein Text unter 13 px.
 
 **Tests.** lesbarkeit.test.js: keine font-size unter 13 px in app.js/app.css/index.html, Audit-Grenze 13.
+
+### Cycle · „App installieren" (2026-10-23)
+
+**Anlass.** Kein Weg auf den Startbildschirm, obwohl Manifest und Service Worker längst da sind. In Afrika
+überwiegen Android-Handys; ein Symbol auf dem Startbildschirm bringt Leute zurück wie eine App — ohne
+App-Store, ohne großen Download.
+
+**WORK.** app.js: beforeinstallprompt abfangen, Karte „ApoPulse als App auf den Startbildschirm" auf der
+Übersicht (auch nachgereicht, wenn Chrome erst später „installierbar" meldet), Knopf öffnet den echten
+Installationsdialog; iPhone (kein Ereignis): Anleitung „Teilen → Zum Home-Bildschirm" ohne Knopf. Nie in
+der installierten App, nach Installation nie wieder, „Später" 30 Tage. i18n +5 in 5 Sprachen.
+
+**Tests.** app-installieren.test.js (3); Browser-Audit „App installieren": Ereignis nachgestellt
+(prompt/userChoice wie Chrome) → Karte, 48-px-Knopf, Dialog aufgerufen, nach Neuladen weg; iPhone-UA →
+Anleitung ohne Knopf. Im Browser zusätzlich: Senegal (fr) „Später" → 30 Tage, Karte bleibt weg.

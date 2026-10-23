@@ -2051,6 +2051,39 @@ async function main() {
     if (!findings.some((f) => f.startsWith('Einstieg'))) console.log('✓ Einstieg: Dakar → gleich Anmeldung (Senegal, Französisch, Formular oben), Registrieren mit Enter, keine Codes-Pflichtseite, Codes-Karte kompakt, leere Engpässe/Preise ohne Ballast · Kenia mit de-AT → Frage KE/AT');
   }
 
+  // ── „App installieren": Android-Dialog über beforeinstallprompt, iPhone-Anleitung ──
+  //  Headless-Chrome feuert das Ereignis nicht von selbst — es wird mit prompt()/
+  //  userChoice nachgestellt, genau wie Chrome es liefert.
+  {
+    const neu = async (opts) => {
+      const ctx = await browser.newContext({ viewport: { width: 360, height: 760 }, serviceWorkers: 'block', ...opts });
+      const page = await ctx.newPage();
+      await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(400);
+      await page.fill('#rg_name', 'Kofi Mensah').catch(() => {}); await page.fill('#rg_email', `inst_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}@reg.test`).catch(() => {}); await page.fill('#rg_pw', 'Passwort123!').catch(() => {});
+      await page.press('#rg_pw', 'Enter').catch(() => {}); await page.waitForTimeout(1200);
+      await page.click('[data-esskip]').catch(() => {}); await page.waitForTimeout(900);
+      return { ctx, page };
+    };
+    const feuern = (page) => page.evaluate(() => { const e = new Event('beforeinstallprompt', { cancelable: true }); e.prompt = () => { window.__gefragt = (window.__gefragt || 0) + 1; }; e.userChoice = Promise.resolve({ outcome: 'accepted' }); window.dispatchEvent(e); });
+    const { ctx, page } = await neu({ locale: 'en-GH', timezoneId: 'Africa/Accra' });
+    if (await page.locator('[data-installkarte]').count()) findings.push('Installieren: Karte ohne Installierbarkeit (kein Ereignis, kein iPhone)');
+    await feuern(page); await page.waitForTimeout(300);
+    const h = await page.evaluate(() => { const b = document.querySelector('[data-installkarte] [data-install]'); return b ? b.getBoundingClientRect().height : 0; });
+    if (!h) findings.push('Installieren: Karte erscheint nicht, wenn Chrome „installierbar" meldet');
+    else if (h < 44) findings.push(`Installieren: Knopf nur ${h} px hoch`);
+    await page.click('[data-installkarte] [data-install]').catch(() => {}); await page.waitForTimeout(300);
+    if ((await page.evaluate(() => window.__gefragt)) !== 1) findings.push('Installieren: Knopf ruft den Installationsdialog nicht auf');
+    await page.reload({ waitUntil: 'networkidle' }); await page.waitForTimeout(700); await feuern(page); await page.waitForTimeout(300);
+    if (await page.locator('[data-installkarte]').count()) findings.push('Installieren: Karte kommt nach der Installation wieder');
+    await ctx.close();
+    const ip = await neu({ locale: 'en-NG', timezoneId: 'Africa/Lagos', userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1' });
+    const iphone = await ip.page.evaluate(() => { const k = document.querySelector('[data-installkarte]'); return k ? { knopf: !!k.querySelector('[data-install]'), text: k.textContent } : null; });
+    if (!iphone) findings.push('Installieren: iPhone bekommt keine Anleitung');
+    else if (iphone.knopf || !/Add to Home Screen/.test(iphone.text)) findings.push('Installieren: iPhone-Karte falsch (Knopf ohne Funktion oder ohne Anleitung)');
+    await ip.ctx.close();
+    if (!findings.some((f) => f.startsWith('Installieren'))) console.log('✓ App installieren: Android → Karte mit Installationsdialog, danach nie wieder · iPhone → Anleitung „Teilen → Zum Home-Bildschirm"');
+  }
+
   // ── Frankophones Afrika: Senegal auf Französisch, günstiges Handy (360 px) ──
   //  Französisch ist ~20 % länger als Englisch. Am 22.10.2026 lief der Hauptknopf
   //  „Veuillez choisir au moins une substance" 11 px über den Rand.

@@ -950,6 +950,54 @@ function afterAuth(d) {
   mainScreen();
 }
 
+// „App installieren": In Afrika nutzen die meisten Android-Handys. Ein Symbol auf dem
+// Startbildschirm öffnet ApoPulse wie eine App — ohne App-Store, ohne großen Download.
+// Chrome/Android meldet „installierbar" über beforeinstallprompt; iPhone kennt das
+// nicht, dort steht die Anleitung (Teilen → Zum Home-Bildschirm). „Später" gilt
+// 30 Tage; in der installierten App erscheint die Karte nie.
+let installEreignis = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installEreignis = e;
+  // Kam das Ereignis erst nach dem Aufbau der Übersicht: Karte nachreichen.
+  const feed = document.getElementById('feed');
+  let angemeldet = false; try { angemeldet = !!localStorage.getItem('apo_token'); } catch { /* ohne Speicher */ }
+  if (tab === 'overview' && feed && angemeldet && !feed.querySelector('[data-installkarte]')) {
+    const k = installKarte(); if (k) feed.insertBefore(k, feed.children[1] || null);
+  }
+});
+window.addEventListener('appinstalled', () => {
+  installEreignis = null;
+  try { localStorage.setItem('apo_install', 'fertig'); } catch { /* egal */ }
+  const k = document.querySelector('[data-installkarte]'); if (k) k.remove();
+});
+const istInstalliert = () => { try { return matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch { return false; } };
+function installKarte() {
+  if (istInstalliert()) return null;
+  let st = null; try { st = localStorage.getItem('apo_install'); } catch { /* ohne Speicher: zeigen */ }
+  if (st === 'fertig' || Number(st) > Date.now()) return null;
+  const iphone = !installEreignis && istIphoneOhneApp();
+  if (!installEreignis && !iphone) return null;
+  const k = el(`<div class="card" data-installkarte>
+    <b style="font-size:18px">${esc(t('inst_title'))}</b>
+    <div class="muted" style="font-size:15px;margin-top:4px">${esc(t(iphone ? 'inst_iphone' : 'inst_sub'))}</div>
+    <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">
+      ${iphone ? '' : `<button data-install style="min-height:48px">${esc(t('inst_btn'))}</button>`}
+      <button class="ghost" data-installspaeter style="min-height:48px">${esc(t('inst_later'))}</button></div></div>`);
+  const b = k.querySelector('[data-install]');
+  if (b) b.onclick = async () => {
+    const e = installEreignis; installEreignis = null; k.remove();
+    if (!e) return;
+    e.prompt();
+    try { const r = await e.userChoice; if (r && r.outcome === 'accepted') localStorage.setItem('apo_install', 'fertig'); } catch { /* Auswahl unbekannt */ }
+  };
+  k.querySelector('[data-installspaeter]').onclick = () => {
+    try { localStorage.setItem('apo_install', String(Date.now() + 30 * 86400000)); } catch { /* egal */ }
+    k.remove();
+  };
+  return k;
+}
+
 // Nach der Registrierung: Codes als Karte auf der Startseite, bis „gesichert" — statt
 // eines Bildschirms, der den Einstieg aufhält.
 function rcKarte() {
@@ -1808,6 +1856,7 @@ async function loadOverview() {
     <div class="ov-links">${schnell.map(([id, icon, label]) => `<button class="ov-link" id="${id}">${ico(icon, 22)}<span>${esc(ohneSymbol(t(label)))}</span>${ico('chevron', 18)}</button>`).join('')}</div>
   </div>`);
   { const rc = rcKarte(); if (rc) feed.appendChild(rc); }
+  { const ik = installKarte(); if (ik) feed.appendChild(ik); }
   head.querySelectorAll('.ovtile[data-go]').forEach(t => { if (t.dataset.go) t.onclick = () => { if (t.dataset.go === 'live') { openLive(); return; } if (t.dataset.filter) shortageFilter = t.dataset.filter; goTab(t.dataset.go); }; });
   head.querySelectorAll('.ovtile').forEach(t => { if (!t.dataset.go) t.onclick = () => document.getElementById('btnNotif').click(); });
   // Einstieg in die Live-Warnungen vom Dashboard aus.
