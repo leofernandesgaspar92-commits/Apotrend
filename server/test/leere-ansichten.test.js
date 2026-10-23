@@ -36,3 +36,13 @@ test('Codes-Karte zweispaltig auch am Handy', () => {
   const i = css.indexOf('ol.recovery-codes.rc-zwei { grid-template-columns:1fr 1fr;');
   assert.ok(i > css.indexOf('@media (max-width:420px){ ol.recovery-codes { grid-template-columns:1fr; } }'), 'muss nach der Ein-Spalten-Regel stehen');
 });
+
+test('Melde-Formular: Beschriftungen mit den Feldern verknüpft, großer Absende-Knopf, Bestätigung oben', () => {
+  const k = app.slice(app.indexOf('function reportShortageCard('), app.indexOf('// Vorbelegung aus der Suche'));
+  for (const id of ['rep_w', 'rep_b', 'rep_s', 'rep_g', 'rep_vb']) {
+    assert.match(k, new RegExp(`<label for="${id}"`), id);
+    assert.match(k, new RegExp(`id="${id}"`), id);
+  }
+  assert.match(k, /<button class="auth-gross" data-send style="width:100%;min-height:52px">/);
+  assert.match(k, /data-gemeldet[\s\S]*ti\('sh_rep_ok', \{ w: wirkstoff \}\)/);
+});

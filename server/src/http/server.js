@@ -2557,7 +2557,10 @@ const routes = [
     const exchangeHits = isFeatureBlocked(home, 'stock_exchange') ? [] : r.exchange;
     const priceHits = isFeatureBlocked(home, 'price_compare') ? [] : r.prices;
     const total = r.total - (r.rabatte.length - rabatteHits.length) - (r.exchange.length - exchangeHits.length) - (r.prices.length - priceHits.length);
-    return { ...r, rabatte: rabatteHits, exchange: exchangeHits, prices: priceHits, total, posts: enrichPosts(r.posts, userId) };
+    // Engpässe wie in der Engpass-Liste aufbereiten: Bis 10/2026 kamen hier die rohen Zeilen —
+    // mit den Benutzer-IDs der bestätigenden Apotheken und ohne Vertrauensstufe
+    // („, pharmacies signalent" statt „1 pharmacie signale").
+    return { ...r, shortages: r.shortages.map((s) => shortages.fuerAnzeige(userId, s)), rabatte: rabatteHits, exchange: exchangeHits, prices: priceHits, total, posts: enrichPosts(r.posts, userId) };
   }],
 ];
 

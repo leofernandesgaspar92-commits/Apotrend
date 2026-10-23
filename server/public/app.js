@@ -282,7 +282,8 @@ function frPraepositionen(s, vars) {
 function ti(key, vars) {
   let s = t(key);
   if (vars && LOCALE === 'fr') s = frPraepositionen(s, vars);
-  if (vars) for (const k in vars) s = s.split('{'+k+'}').join(vars[k]);
+  // Fehlender Wert: leer statt „undefined" — und nie join(undefined), das ein Komma einsetzt.
+  if (vars) for (const k in vars) s = s.split('{'+k+'}').join(vars[k] ?? '');
   return s;
 }
 // Geld-Anzeige mit locale-korrektem Dezimaltrennzeichen (de/pt: Komma, en: Punkt),
@@ -3842,21 +3843,22 @@ function reportShortageCard(existing = []) {
     </div>
     <div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sh_rep_desc'))}</div>
     <div class="hidden" data-form style="margin-top:10px">
-      <label>${esc(t('sh_rep_w'))}</label>
-      <input data-w list="wkVorschlaege" autocomplete="off" placeholder="${esc(t('sh_rep_w_ph'))}"><datalist id="wkVorschlaege"></datalist>
+      <label for="rep_w">${esc(t('sh_rep_w'))}</label>
+      <input id="rep_w" data-w list="wkVorschlaege" autocomplete="off" placeholder="${esc(t('sh_rep_w_ph'))}"><datalist id="wkVorschlaege"></datalist>
       <div data-exists style="margin-top:6px"></div>
-      <label style="margin-top:6px">${esc(t('sh_rep_b'))}</label>
-      <input data-b placeholder="${esc(t('sh_rep_b_ph'))}">
-      <label style="margin-top:6px">${esc(t('sh_rep_status'))}</label>
-      <select data-s data-i18n-aria="sh_rep_status" aria-label="${esc(t('sh_rep_status'))}">
+      <label for="rep_b" style="margin-top:6px">${esc(t('sh_rep_b'))}</label>
+      <input id="rep_b" data-b placeholder="${esc(t('sh_rep_b_ph'))}">
+      <label for="rep_s" style="margin-top:6px">${esc(t('sh_rep_status'))}</label>
+      <select id="rep_s" data-s>
         <option value="kritisch">${esc(t('sh_rep_opt_krit'))}</option>
         <option value="eingeschraenkt">${esc(t('st_eing'))}</option>
       </select>
-      <label style="margin-top:6px">${esc(t('sh_rep_reason'))}</label>
-      <input data-g placeholder="${esc(t('sh_rep_reason_ph'))}">
-      <label style="margin-top:6px">${esc(t('sh_rep_until'))}</label>
-      <input data-vb type="date" data-i18n-aria="sh_rep_until_t" aria-label="${esc(t('sh_rep_until_t'))}" title="${esc(t('sh_rep_until_t'))}">
-      <div style="margin-top:8px"><button class="small" data-send>${esc(t('sh_rep_send'))}</button></div>
+      <label for="rep_g" style="margin-top:6px">${esc(t('sh_rep_reason'))}</label>
+      <input id="rep_g" data-g placeholder="${esc(t('sh_rep_reason_ph'))}">
+      <label for="rep_vb" style="margin-top:6px">${esc(t('sh_rep_until'))}</label>
+      <input id="rep_vb" data-vb type="date" title="${esc(t('sh_rep_until_t'))}">
+      <!-- Hauptaktion des Formulars: groß und über die ganze Breite (Owner-Regel). -->
+      <div style="margin-top:12px"><button class="auth-gross" data-send style="width:100%;min-height:52px">${esc(t('sh_rep_send'))}</button></div>
       <div class="err" data-err></div>
     </div>
   </div>`);
@@ -3918,6 +3920,12 @@ function reportShortageCard(existing = []) {
         voraussichtlichBis: card.querySelector('[data-vb]').value || undefined,
       });
       await loadShortages();
+      // Rückmeldung oben (bis 10/2026 lud nur die Liste neu — ob es geklappt hat, sah man erst
+      // weit unten zwischen den Karten).
+      if (!(r && r.zusammengefuehrt)) {
+        document.getElementById('feed')?.prepend(el(`<div role="status" data-gemeldet style="background:var(--ok-bg);border:1px solid var(--ok-bd);color:var(--ok-fg);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:15px">${esc(ti('sh_rep_ok', { w: wirkstoff }))}</div>`));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
       // Eine andere Apotheke hatte den Wirkstoff schon gemeldet: Die Meldung zählt als
       // Bestätigung — das sagen, sonst sucht man vergeblich nach der „eigenen" Meldung.
       if (r && r.zusammengefuehrt) {
@@ -7876,7 +7884,7 @@ async function renderSearch(q) {
   try {
     const d = await api('GET','/api/search?q='+encodeURIComponent(q)+'&country='+encodeURIComponent(viewCountry()));
     feed.innerHTML = '';
-    const head = el(`<div class="card"><div class="row"><b tabindex="-1" data-stitle>${esc(ti('search_results_for',{q:d.query}))}</b><span class="sp" style="flex:1"></span><span class="muted">${esc(ti('search_hits',{n:d.total}))}</span><button class="ghost small" data-back style="margin-inline-start:10px">${esc(t('search_back'))}</button></div></div>`);
+    const head = el(`<div class="card"><div class="row"><b tabindex="-1" data-stitle>${esc(ti('search_results_for',{q:d.query}))}</b><span class="sp" style="flex:1"></span><span class="muted">${esc(nlabel(d.total, 'search_hits_1', 'search_hits'))}</span><button class="ghost small" data-back style="margin-inline-start:10px">${esc(t('search_back'))}</button></div></div>`);
     head.querySelector('[data-back]').onclick = () => { tab='public'; document.querySelector('.tabs button[data-tab="public"]').classList.add('active'); loadTab(); };
     feed.appendChild(head);
     // Wie die Wirkstoff-Detailseite: oben starten (man sucht oft aus einer tief gescrollten

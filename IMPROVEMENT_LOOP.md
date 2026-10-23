@@ -3323,3 +3323,19 @@ Effekt; Links-Knöpfe ohne Unterstreichung. Im Browser hell und dunkel geprüft 
 chip-bg ca. 5,6 : 1 hell).
 
 **Tests.** lesbarkeit.test.js +1 (Regel vorhanden, steht nach ghost/sortbtn/linklike).
+
+### Cycle · Rundgang mit Handlungen: melden, suchen (Senegal, fr) (2026-10-23)
+
+**GATHER.** Skript: neues Konto → Engpass melden → suchen → Wirkstoff-Seite (360 px). Gefunden:
+1. **Suche gab rohe Engpass-Zeilen aus** — mit den Benutzer-IDs der bestätigenden Apotheken (die Engpass-
+   Liste entfernt sie bewusst) und ohne Vertrauensstufe. Die Karte zeigte „, pharmacies signalent —
+   confirmé à partir de 3": `{n}` war undefined, `join(undefined)` setzt ein Komma. Jetzt dieselbe
+   Aufbereitung wie die Liste (`shortages.fuerAnzeige`), und `ti()` setzt für fehlende Werte nichts ein.
+2. **„1 résultats"** → Singular (nlabel, search_hits_1 in 5 Sprachen).
+3. **Melde-Formular:** Beschriftungen ohne Verknüpfung (Tippen auf „Substance" fokussierte nichts,
+   Screenreader lasen Felder ohne Namen) → label for/id. Absende-Knopf klein → groß über die ganze Breite.
+   Nach dem Melden keinerlei Rückmeldung → grüne Bestätigung oben („Merci — votre signalement sur
+   Amoxicilline est publié …"), Seite springt nach oben.
+
+**Tests.** suche-engpass.test.js (3, u. a. HTTP mit zwei Apotheken: apotheken=2, keine Benutzer-ID im
+Ergebnis), leere-ansichten.test.js +1 (Formular).

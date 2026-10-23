@@ -59,7 +59,7 @@ test('Über HTTP: zweite Meldung desselben Wirkstoffs im selben Land = Bestätig
 
 test('Oberfläche: Vorschläge beim Tippen, Hinweis bei Zusammenführung (de/en/pt)', () => {
   const app = readFileSync(join(HIER, '..', 'public', 'app.js'), 'utf8');
-  assert.match(app, /<input data-w list="wkVorschlaege"/);
+  assert.match(app, /<input id="rep_w" data-w list="wkVorschlaege"/);
   assert.match(app, /api\('GET', '\/api\/erste-schritte\?country='/);
   assert.match(app, /if \(r && r\.zusammengefuehrt\)/);
   const i18n = readFileSync(join(HIER, '..', 'public', 'i18n.js'), 'utf8');

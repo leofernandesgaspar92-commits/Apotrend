@@ -252,6 +252,10 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       return shortagesRepo.list({ country }).map(s => decorate(s, viewerUserId));
     },
 
+    // Rohe Repo-Zeile → Anzeige-Form (für andere Dienste, z. B. die Suche): mit
+    // Vertrauensstufe, OHNE interne Listen (Benutzer-IDs der Bestätigenden).
+    fuerAnzeige(viewerUserId, s) { return decorate(s, viewerUserId); },
+
     // ── Community-Meldung: eine Apotheke meldet einen selbst beobachteten Engpass ──
     // Herkunft klar als 'community' gekennzeichnet (nicht offiziell/BASG-verifiziert).
     /**
