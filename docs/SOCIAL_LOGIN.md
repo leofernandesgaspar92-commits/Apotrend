@@ -77,6 +77,36 @@ OAUTH_GOOGLE_CLIENT_SECRET=…
 Registrierte Redirect-URI beim Anbieter = die App-URL (z. B. `https://apopulse.onrender.com/`).
 `buildProvidersFromEnv()` aktiviert Google automatisch, sobald beide Werte vorhanden sind.
 
+## Facebook (seit 10/2026)
+
+„Anmelden mit Facebook" erscheint, sobald in Render gesetzt ist:
+
+```
+OAUTH_FACEBOOK_APP_ID=…
+OAUTH_FACEBOOK_APP_SECRET=…
+# optional: OAUTH_FACEBOOK_GRAPH_VERSION=v23.0  (Standard; Meta schaltet alte Versionen nach ~2 Jahren ab)
+```
+
+Bei Meta (developers.facebook.com): App vom Typ „Verbraucher" anlegen, Produkt „Facebook Login"
+hinzufügen, als „Gültige OAuth-Redirect-URI" die App-Adresse eintragen (z. B. `https://www.apopulse.com/`),
+Datenschutz-URL hinterlegen und die App auf „Live" stellen. Berechtigungen: nur `public_profile` und
+`email` (keine App-Prüfung nötig). Der Adapter (`createFacebookAdapter`) tauscht den Code serverseitig
+und ruft `/me?fields=id,name,email` mit `appsecret_proof` ab — das Secret verlässt nie den Server.
+
+## Regel: E-Mail nur verknüpfen, wenn der Anbieter sie bestätigt
+
+Schritt 2 (E-Mail trifft bestehendes Konto → verknüpfen) gilt nur, wenn der Adapter
+`emailVerified` nicht auf `false` setzt. Google liefert `email_verified`; Facebook sagt es nicht
+zuverlässig, deshalb `emailVerified:false`. Folgen:
+- Unbestätigte E-Mail trifft ein bestehendes Konto → **keine** Verknüpfung, Meldung
+  „Mit dieser E-Mail gibt es schon ein Konto. Bitte mit E-Mail und Passwort anmelden" (`oauth_email_exists`).
+- Unbestätigte, neue E-Mail → Konto ja, aber mit Platzhalter-Adresse `facebook_<id>@oauth.local` —
+  die echte Adresse bleibt frei für ihre Besitzerin.
+
+Grund: Sonst könnte jemand eine fremde Adresse unbestätigt bei einem Anbieter eintragen und so das
+ApoPulse-Konto dahinter übernehmen. Gescheiterte Anbieter-Anmeldungen zeigt die Anmeldeseite jetzt
+mit Grund an (vorher fiel sie still zurück).
+
 ## Offen (bewusst noch nicht gebaut — braucht echten Provider zum sicheren Testen)
 
 1. **CSRF-`state` härten:** aktuell trägt `state` den Providernamen. Produktiv sollte `state`

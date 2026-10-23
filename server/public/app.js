@@ -921,7 +921,9 @@ function authScreen() {
   };
   app.querySelectorAll('[data-auth]').forEach((b) => { b.onclick = () => zeigeAuth(b.dataset.auth); });
   let kontoBekannt = false; try { kontoBekannt = !!localStorage.getItem('apo_konto_bekannt'); } catch { /* ohne Speicher: Registrierung zuerst */ }
-  zeigeAuth(kontoBekannt ? 'login' : 'register');
+  zeigeAuth(kontoBekannt || oauthFehler ? 'login' : 'register');
+  // Anmeldung über Google/Facebook gescheitert: sagen warum, statt still zurückzufallen.
+  if (oauthFehler) { document.getElementById('li_err').textContent = oauthFehler; oauthFehler = null; }
   // Kontotyp-Auswahl befüllen (Apotheke als Vorauswahl).
   ensureAccountTypes().then(() => {
     const sel = document.getElementById('rg_accounttype');
@@ -1121,11 +1123,13 @@ async function handleOAuthCallback() {
     history.replaceState({}, '', location.pathname); // Query-Parameter entfernen
     afterAuth(d);
     return true;
-  } catch {
+  } catch (e) {
     history.replaceState({}, '', location.pathname);
+    oauthFehler = e.message; // authScreen() zeigt ihn über dem Anmeldeformular
     return false; // fällt auf den normalen Anmelde-Flow zurück
   }
 }
+let oauthFehler = null;
 
 // ── Länder-/Sprach-Umschalter (Kopfzeile) ──
 // Ein Wechsel des Landes filtert die Inhalte (News/Engpässe/Preise) auf dieses

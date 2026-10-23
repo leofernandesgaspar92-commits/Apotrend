@@ -3235,3 +3235,15 @@ Reihenfolge, HTTP. Im Browser (360 px, Senegal): ohne Mail nur Code-Formular, mi
 oben, Enter schickt ab, Antwort auf Französisch, kein Querscrollen; ?pwlink= verschwindet aus der
 Adresse, Fehler auf Französisch. Gefunden: Kopf „Menü" blieb beim direkten Öffnen aus der E-Mail
 deutsch → applyI18n().
+
+### Cycle · „Anmelden mit Facebook" + E-Mail nur bestätigt verknüpfen (2026-10-23)
+
+**WORK.** services/oauth.js: createFacebookAdapter (Graph API, Version per Env mit Format-Prüfung,
+appsecret_proof, Secret nie im Browser-Link), Aktivierung über OAUTH_FACEBOOK_APP_ID/SECRET.
+Sicherheitslücke im Kern geschlossen: Verknüpfen über die E-Mail nur, wenn der Anbieter sie bestätigt
+(Google: email_verified; Facebook: nie) — sonst oauth_email_exists bzw. Platzhalter-Adresse. app.js:
+gescheiterte Anbieter-Anmeldung zeigt den Grund über dem Anmeldeformular (vorher still). i18n +1.
+
+**Tests.** oauth.test.js +4 (keine Übernahme über unbestätigte E-Mail, Facebook-Adapter mit Fake-
+fetch inkl. appsecret_proof, Google email_verified, Oberfläche). Im Browser (Lagos, en-NG): Nigeria
+automatisch, „Sign in with Facebook" 50 px hoch oben; kaputter Rücksprung → Meldung, Adresse bereinigt.

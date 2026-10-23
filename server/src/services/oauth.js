@@ -4,7 +4,11 @@
 // Ohne konfigurierten Provider ist der Flow inaktiv (leere Provider-Liste), aber
 // der Verknüpfungs-Kern ist vollständig testbar (mit einem Fake-Adapter).
 //
-// Adapter-Vertrag:  async exchange(code, redirectUri) -> { providerUserId, email?, name? }
+// Adapter-Vertrag:  async exchange(code, redirectUri) -> { providerUserId, email?, name?, emailVerified? }
+//   emailVerified:false = der Anbieter bestätigt die Adresse nicht (Facebook). Dann wird
+//   NIE über die E-Mail an ein bestehendes Konto gekoppelt und die Adresse nicht für ein
+//   neues Konto belegt — sonst könnte, wer eine fremde Adresse unbestätigt bei einem
+//   Anbieter einträgt, das ApoPulse-Konto dahinter übernehmen.
 import crypto from 'node:crypto';
 import { hashPassword } from '../domain/password.js';
 
@@ -37,16 +41,19 @@ export function createOAuthService({ repo, social, providers = {} }) {
       let userId = repo.findUserIdByIdentity(provider, ext.providerUserId);
       if (userId && repo.getUserById(userId)) return { userId, created: false };
 
-      // 2) E-Mail trifft ein bestehendes Konto -> Identität an dieses koppeln.
+      // 2) E-Mail trifft ein bestehendes Konto -> Identität an dieses koppeln — nur mit
+      //    vom Anbieter bestätigter Adresse. Unbestätigt: lieber mit Passwort anmelden lassen.
+      const bestaetigt = !!ext.email && ext.emailVerified !== false;
       if (ext.email) {
         const existing = repo.getUserByEmail(ext.email);
-        if (existing) { repo.linkIdentity(provider, ext.providerUserId, existing.id); return { userId: existing.id, created: false }; }
+        if (existing && bestaetigt) { repo.linkIdentity(provider, ext.providerUserId, existing.id); return { userId: existing.id, created: false }; }
+        if (existing) { const e = new Error('Mit dieser E-Mail gibt es schon ein Konto. Bitte mit E-Mail und Passwort anmelden.'); e.code = 'oauth_email_exists'; e.status = 409; throw e; }
       }
 
       // 3) Neues Konto anlegen (zufälliges Passwort — Login läuft über den Anbieter
       //    oder später über „Passwort vergessen"/Wiederherstellungscodes).
       const name = ext.name || (ext.email ? ext.email.split('@')[0] : 'Nutzer');
-      const email = ext.email || `${provider}_${ext.providerUserId}@oauth.local`;
+      const email = bestaetigt ? ext.email : `${provider}_${ext.providerUserId}@oauth.local`;
       const user = repo.createUser({ email, name, passwordHash: hashPassword(crypto.randomBytes(24).toString('hex')) });
       social.createProfile(user.id, { handle: uniqueHandle(social, name), displayName: name, country, locale });
       repo.linkIdentity(provider, ext.providerUserId, user.id);
@@ -83,6 +90,14 @@ export function buildProvidersFromEnv(env = process.env, fetchImpl = globalThis.
       fetchImpl,
     });
   }
+  if (env.OAUTH_FACEBOOK_APP_ID && env.OAUTH_FACEBOOK_APP_SECRET) {
+    providers.facebook = createFacebookAdapter({
+      appId: env.OAUTH_FACEBOOK_APP_ID,
+      appSecret: env.OAUTH_FACEBOOK_APP_SECRET,
+      version: env.OAUTH_FACEBOOK_GRAPH_VERSION || undefined,
+      fetchImpl,
+    });
+  }
   return providers;
 }
 
@@ -105,7 +120,36 @@ export function createGoogleAdapter({ clientId, clientSecret, fetchImpl = global
       const infoRes = await fetchImpl('https://openidconnect.googleapis.com/v1/userinfo', { headers: { authorization: 'Bearer ' + tok.access_token } });
       const info = await infoRes.json();
       if (!info || !info.sub) return null;
-      return { providerUserId: info.sub, email: info.email || null, name: info.name || null };
+      return { providerUserId: info.sub, email: info.email || null, name: info.name || null, emailVerified: info.email_verified === true || info.email_verified === 'true' };
+    },
+  };
+}
+
+// Facebook-Login (Graph API). In Afrika für viele das bekannteste Konto — ein Tipp statt
+// Formular. Nur aktiv mit OAUTH_FACEBOOK_APP_ID/OAUTH_FACEBOOK_APP_SECRET. Facebook sagt
+// nicht zuverlässig, ob die E-Mail bestätigt ist → emailVerified:false (siehe oben).
+// appsecret_proof: Facebook nimmt das Zugriffstoken dann nur zusammen mit unserem Secret an.
+export const FACEBOOK_GRAPH_VERSION = 'v23.0';
+export function createFacebookAdapter({ appId, appSecret, version = FACEBOOK_GRAPH_VERSION, fetchImpl = globalThis.fetch }) {
+  const v = /^v\d{1,2}\.\d$/.test(String(version)) ? version : FACEBOOK_GRAPH_VERSION;
+  return {
+    name: 'facebook',
+    authorizeUrl(redirectUri, state) {
+      const q = new URLSearchParams({ client_id: appId, redirect_uri: redirectUri || '', response_type: 'code', scope: 'public_profile,email' });
+      if (state) q.set('state', state);
+      return `https://www.facebook.com/${v}/dialog/oauth?` + q.toString();
+    },
+    async exchange(code, redirectUri) {
+      const q = new URLSearchParams({ client_id: appId, client_secret: appSecret, redirect_uri: redirectUri || '', code: String(code || '') });
+      const tokenRes = await fetchImpl(`https://graph.facebook.com/${v}/oauth/access_token?` + q.toString());
+      const tok = await tokenRes.json();
+      if (!tok || !tok.access_token) return null;
+      const proof = crypto.createHmac('sha256', appSecret).update(tok.access_token).digest('hex');
+      const me = new URLSearchParams({ fields: 'id,name,email', access_token: tok.access_token, appsecret_proof: proof });
+      const infoRes = await fetchImpl(`https://graph.facebook.com/${v}/me?` + me.toString());
+      const info = await infoRes.json();
+      if (!info || !info.id) return null;
+      return { providerUserId: String(info.id), email: info.email || null, name: info.name || null, emailVerified: false };
     },
   };
 }

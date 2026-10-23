@@ -689,3 +689,10 @@ bleibt als zweiter Weg („Ich habe einen Wiederherstellungscode").
   Je Adresse höchstens 3 Links pro Stunde, je Gerät 5 in 15 Minuten.
 - Mail in der Sprache, in der die App gerade läuft (de/en/pt/fr/ar, Arabisch von rechts nach links).
 - Code: `server/src/services/passwortLink.js`, Tests `server/test/passwort-link.test.js`.
+
+**„Anmelden mit Facebook" (Stand 23.10.2026).** In vielen afrikanischen Ländern ist Facebook das
+Konto, das fast alle haben — ein Tipp statt Formular. Erscheint groß oben, sobald der Owner in Render
+`OAUTH_FACEBOOK_APP_ID` und `OAUTH_FACEBOOK_APP_SECRET` setzt (Schritte bei Meta: docs/SOCIAL_LOGIN.md).
+Facebook bestätigt E-Mail-Adressen nicht verlässlich; deshalb koppelt ApoPulse ein Facebook-Login nie
+über die E-Mail an ein bestehendes Konto (Schutz vor Kontoübernahme). Scheitert die Anmeldung, steht
+der Grund über dem Formular.
