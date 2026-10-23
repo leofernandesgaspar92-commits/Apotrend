@@ -23,6 +23,7 @@
 
 import { richtung } from '../domain/schreibrichtung.js';
 import { frLand } from '../domain/franzLand.js';
+import { istPlatzhalterAdresse } from '../domain/adresse.js';
 
 const T = {
   de: {
@@ -218,7 +219,8 @@ export function createWochenbericht({ repo, social, chronik, fruehwarnung, short
       for (const uid of repo.listUsersWithEntitlement('premium')) {
         if (!istPremium(uid) || abbestellt.has(uid) || gesendet.get(uid) === woche) { r.uebersprungen++; continue; }
         const u = repo.getUserById(uid);
-        if (!u || !u.email) { r.uebersprungen++; continue; }
+        // Telefon-/Anbieter-Konto ohne echte E-Mail: kein Bericht per Mail (er ginge ins Leere).
+        if (!u || !u.email || istPlatzhalterAdresse(u.email)) { r.uebersprungen++; continue; }
         try {
           const b = rendereWochenbericht(daten(uid));
           await mailer.sende({ an: u.email, betreff: b.betreff, text: b.text, html: b.html });

@@ -13,6 +13,8 @@
 //  still nichts zu tun. Der Schlüssel erscheint nie in Logs oder Antworten.
 // ============================================================================
 
+import { istPlatzhalterAdresse } from '../domain/adresse.js';
+
 const ANBIETER = {
   resend: {
     url: 'https://api.resend.com/emails',
@@ -39,6 +41,7 @@ export function createMailer({ env = process.env, fetchImpl = globalThis.fetch, 
     async sende({ an, betreff, text, html }) {
       if (grund) throw new Error('E-Mail-Versand aus: ' + grund);
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(an || ''))) throw new Error('ungültige Empfängeradresse');
+      if (istPlatzhalterAdresse(an)) throw Object.assign(new Error('Platzhalter-Adresse, kein Postfach'), { code: 'keine_echte_adresse' });
       const res = await fetchImpl(a.url, {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...a.kopf(key) },

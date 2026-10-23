@@ -3364,3 +3364,6 @@ Oberfläche, HTTP mit lokalem Schein-Anbieter (ganzer Ablauf, dasselbe Konto bei
 in der Antwort, Platzhalter gesperrt, vierte SMS je Nummer → 429 und nicht verschickt). Browser 360 px:
 Senegal (fr) und Ägypten (ar) komplett durchgespielt; gefunden: Vorwahl in Arabisch „20+" → isoliert,
 arabischer Platzhalter im LTR-Feld verdreht → nur Ziffern.
+Nachgezogen: Platzhalter-Adressen (Telefon, und schon vorher OAuth ohne E-Mail) — domain/adresse.js;
+mailer.sende() lehnt sie ab (keine_echte_adresse), Wochenbericht überspringt sie, Team-Liste zeigt die
+Nummer statt „tel_…@telefon.local" (kontoAdresse()).

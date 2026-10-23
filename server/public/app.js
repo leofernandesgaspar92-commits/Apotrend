@@ -321,6 +321,14 @@ function shortagePostsLabel(n) {
 }
 // Generischer Singular/Plural-Zähler: n===1 nutzt oneKey, sonst manyKey ({n} wird ersetzt).
 // Vermeidet Grammatikfehler wie „1 Beiträge" quer durch die App.
+// Anzeige der Kontoadresse: Telefon-Konten zeigen die Nummer, Anbieter-Konten ohne
+// E-Mail nichts — nie die interne Platzhalter-Adresse (…@telefon.local / …@oauth.local).
+function kontoAdresse(email) {
+  const s = String(email || '');
+  const tel = s.match(/^tel_(\d{8,15})@telefon\.local$/i);
+  if (tel) return '+' + tel[1];
+  return /@oauth\.local$/i.test(s) ? '' : s;
+}
 function nlabel(n, oneKey, manyKey) {
   return n === 1 ? ti(oneKey, { n }) : ti(manyKey, { n });
 }
@@ -6330,7 +6338,7 @@ async function openTeam() {
   const ml = listCard.querySelector('[data-ml]');
   d.members.forEach(m => {
     const row = el(`<div class="row" style="align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap">
-      <div style="flex:1;min-width:140px"><b>${esc(m.name||m.email)}</b>${m.is_self?` <span class="muted">(${esc(t('tm_you'))})</span>`:''}<div class="muted" style="font-size:13px">${esc(m.email)}</div></div>
+      <div style="flex:1;min-width:140px"><b>${esc(m.name||kontoAdresse(m.email))}</b>${m.is_self?` <span class="muted">(${esc(t('tm_you'))})</span>`:''}<div class="muted" style="font-size:13px" dir="ltr">${esc(kontoAdresse(m.email))}</div></div>
       <select data-role aria-label="${esc(t('tm_role'))}">${TEAM_ROLES.map(r=>`<option value="${r}"${m.role===r?' selected':''}>${esc(roleLabel(r))}</option>`).join('')}</select>
       <button class="ghost small" data-remove ${m.is_self?'disabled':''}>${esc(t('tm_remove'))}</button>
     </div>`);

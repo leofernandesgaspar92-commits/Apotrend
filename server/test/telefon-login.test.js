@@ -6,6 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { join, dirname } from 'node:path';
@@ -165,4 +166,22 @@ test('HTTP: ganzer Ablauf mit Schein-Anbieter; Platzhalter-Adresse gesperrt; Bre
     assert.equal(zuviel.status, 429);
     assert.equal(empfangen.length, 3, 'keine vierte SMS verschickt');
   } finally { kind.kill(); anbieter.close(); }
+});
+
+test('Platzhalter-Adressen: nie Post dorthin, angezeigt wird die Nummer', async () => {
+  const { istPlatzhalterAdresse } = await import('../src/domain/adresse.js');
+  const { createMailer } = await import('../src/services/mailer.js');
+  assert.ok(istPlatzhalterAdresse(telefonAdresse('+221771234567')) && istPlatzhalterAdresse('google_1@oauth.local'));
+  assert.ok(!istPlatzhalterAdresse('awa@pharmacie.sn'));
+  let aufgerufen = false;
+  const mailer = createMailer({ env: { APOPULSE_MAIL_PROVIDER: 'resend', APOPULSE_MAIL_API_KEY: 'k', APOPULSE_MAIL_FROM: 'A <a@b.cd>' }, fetchImpl: async () => { aufgerufen = true; return { ok: true }; } });
+  await assert.rejects(() => mailer.sende({ an: telefonAdresse('+221771234567'), betreff: 'x', text: 'x' }), { code: 'keine_echte_adresse' });
+  assert.equal(aufgerufen, false);
+  const wb = readFileSync(join(HIER, '..', 'src', 'services', 'wochenbericht.js'), 'utf8');
+  assert.match(wb, /if \(!u \|\| !u\.email \|\| istPlatzhalterAdresse\(u\.email\)\) \{ r\.uebersprungen\+\+; continue; \}/);
+  const app = readFileSync(join(HIER, '..', 'public', 'app.js'), 'utf8');
+  const f = app.slice(app.indexOf('function kontoAdresse('), app.indexOf('function nlabel('));
+  const c = {}; vm.runInNewContext(f + ';this.k = kontoAdresse;', c);
+  assert.deepEqual([c.k('tel_221771234567@telefon.local'), c.k('facebook_9@oauth.local'), c.k('a@b.cd')], ['+221771234567', '', 'a@b.cd']);
+  assert.match(app, /\$\{esc\(kontoAdresse\(m\.email\)\)\}/, 'Team-Liste');
 });
