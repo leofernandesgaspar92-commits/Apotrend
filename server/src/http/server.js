@@ -2500,7 +2500,7 @@ const routes = [
   // Wie Engpaesse und Rabatte: das ANGESEHENE Land (Laender-Umschalter),
   // nicht pauschal alles. Preise sind dabei der unmittelbarste Fall — an
   // ihnen haengt eine Zahl, die jemand einer Verhandlung zugrunde legt.
-  ['GET', /^\/api\/prices$/, true, async ({ userId, query }) => { ensureFeatureAllowed('price_compare', userId); return { comparisons: prices.comparisons(userId, { country: activeCountry(userId, query) }), savings: prices.savingsSummary() }; }],
+  ['GET', /^\/api\/prices$/, true, async ({ userId, query }) => { ensureFeatureAllowed('price_compare', userId); return { comparisons: prices.comparisons(userId, { country: activeCountry(userId, query) }), savings: prices.savingsSummary({ country: activeCountry(userId, query) }) }; }],
   ['GET', /^\/api\/prices\/([^/]+)$/, true, async ({ userId, params }) => {
     ensureFeatureAllowed('price_compare', userId);
     const d = prices.withActivity(userId, params[0]);

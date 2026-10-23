@@ -174,7 +174,7 @@ export function createOverviewService({ shortages, exchange, social, rabatte, pr
         notifications: { unread: social.unreadCount(userId), dm_unread: social.dmUnreadTotal(userId) },
         top_rabatt: topR,
         rabatte_expiring: { count: expiringSoon.length, soonest: expiringSoon.sort((a, b) => a.days_left - b.days_left)[0] || null },
-        savings: prices ? prices.savingsSummary() : null,
+        savings: prices ? prices.savingsSummary({ country }) : null,
       };
     },
   };

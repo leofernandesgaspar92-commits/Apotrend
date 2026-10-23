@@ -168,6 +168,8 @@ test('Präposition vor Ländernamen: au Sénégal, en Côte d’Ivoire, aux Como
   assert.equal(frLand(n.of('EG'), 'de'), 'd’Égypte');
   assert.equal(frLand(n.of('KM'), 'de'), 'des Comores');
   assert.equal(frLand('🇸🇳 Sénégal'), 'au 🇸🇳 Sénégal', 'Flagge bleibt am Namen');
+  // „pour" mit Artikel (bis 10/2026: „signalée pour Sénégal").
+  for (const [name, soll] of [['Sénégal', 'pour le Sénégal'], ['Guinée', 'pour la Guinée'], ['Égypte', 'pour l’Égypte'], ['Comores', 'pour les Comores'], ['Maurice', 'pour Maurice'], ['République centrafricaine', 'pour la République centrafricaine'], ['Mozambique', 'pour le Mozambique'], ['🇸🇳 Sénégal', 'pour le 🇸🇳 Sénégal']]) assert.equal(frLand(name, 'pour'), soll, name);
   // Die Kopie in app.js muss dieselben Regeln tragen.
   for (const liste of Object.values(FR_LAND)) for (const name of liste) assert.ok(app.includes(`'${name}'`), `app.js: ${name}`);
 });
@@ -178,6 +180,10 @@ test('Server-Texte auf Französisch: nirgends „en ${…}" vor einem Ländernam
     const fr = s.slice(s.indexOf('\n  fr: {'), s.indexOf('\n  },\n};', s.indexOf('\n  fr: {')));
     assert.ok(fr.length > 200, datei);
     assert.doesNotMatch(fr, /\ben \$\{(l|land)\}/, datei);
+  }
+  // „pour" + Land ohne Artikel („pour Sénégal") — auch im Wochenbericht.
+  for (const datei of ['../src/services/oeffentlicheSeiten.js', '../src/http/teilseite.js', '../src/services/wochenbericht.js']) {
+    assert.doesNotMatch(readFileSync(new URL(datei, import.meta.url), 'utf8'), /\bpour \$\{(l|land)\}/, datei);
   }
 });
 
@@ -194,6 +200,8 @@ test('Oberfläche (fr): ti() setzt au/en/du korrekt — die echte Funktion aus a
   assert.equal(ctx.ti('presse_title', { land: 'Égypte' }), 'Presse d’Égypte');
   assert.match(ctx.ti('legal_deals_blocked', { country: 'Mali' }), /^Au Mali, /);
   assert.equal(ctx.ti('vc_back', { flag: '🇲🇬', land: 'Madagascar' }), '↩ Retour à 🇲🇬 Madagascar');
+  assert.match(ctx.ti('sh_leer_land', { land: '🇸🇳 Sénégal' }), /pour le 🇸🇳 Sénégal/);
+  assert.match(ctx.ti('pr_leer_land', { land: 'Sénégal' }), /au Sénégal.*pour le Sénégal/);
   // Andere Sprachen bleiben unberührt.
   ctx.LOCALE = 'en'; ctx.t = (k) => I.en[k];
   assert.equal(ctx.ti('au_lage_title', { land: 'Senegal' }), I.en.au_lage_title.replace('{land}', 'Senegal'));

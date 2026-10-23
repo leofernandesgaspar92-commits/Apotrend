@@ -22,6 +22,7 @@
 // ============================================================================
 
 import { richtung } from '../domain/schreibrichtung.js';
+import { frLand } from '../domain/franzLand.js';
 
 const T = {
   de: {
@@ -69,13 +70,13 @@ const T = {
   fr: {
     betreff: (land, kw, n, f) => `ApoPulse rapport hebdomadaire ${land} · semaine ${kw} : ${n} nouvelle${n === 1 ? '' : 's'}${f ? `, ${f} alerte${f > 1 ? 's' : ''} précoce${f > 1 ? 's' : ''}` : ''}`,
     hallo: (n) => `Bonjour${n ? ' ' + n : ''},`,
-    intro: (land) => `voici la situation des pénuries des 7 derniers jours pour ${land}.`,
+    intro: (land) => `voici la situation des pénuries des 7 derniers jours ${frLand(land, 'pour')}.`,
     beob: 'Substances que vous suivez', keineBeob: 'Vous ne suivez encore aucune substance. Ajoutez-les dans l’application avec « Suivre » et elles apparaîtront ici.',
     knapp: (t) => `en pénurie depuis ${t} jours`, nichtKnapp: 'actuellement pas sur la liste des pénuries', ausland: 'en pénurie à l’étranger',
     fw: 'Alerte précoce venue de l’étranger', fwHinweis: 'Fait tiré de la liste de l’autorité concernée, pas une prévision pour votre pays.',
     neu: 'Nouveau sur la liste des pénuries', beendet: 'Plus sur la liste', keinNeu: 'Aucune nouvelle entrée cette semaine.',
     offen: (n) => `Actuellement ${n} substance${n === 1 ? '' : 's'} sur la liste.`,
-    tage: (n) => `${n} jours`, keineDaten: (land) => `Pas encore de données de l’autorité pour ${land} — cette partie reste vide plutôt que de suggérer une situation calme.`,
+    tage: (n) => `${n} jours`, keineDaten: (land) => `Pas encore de données de l’autorité ${frLand(land, 'pour')} — cette partie reste vide plutôt que de suggérer une situation calme.`,
     grundlage: (s) => `Base : listes des autorités, enregistrées par ApoPulse à chaque consultation (enregistrement depuis le ${s}).`,
     oeffnen: 'Ouvrir dans ApoPulse', abmelden: 'Se désabonner du rapport hebdomadaire',
     status: { kritisch: 'critique', eingeschraenkt: 'limitée', verfuegbar: 'disponible' },

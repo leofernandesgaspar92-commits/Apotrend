@@ -55,9 +55,11 @@ export function createPricesService(pricesRepo, social, rabatteRepo = null) {
       });
     },
 
-    // Gesamt-Ersparnis: wie viel bei optimaler Lieferantenwahl je Packung frei wird.
-    savingsSummary() {
-      const groups = pricesRepo.listComparisons().map(withSavings).filter(g => g.offers.length >= 2 && g.saving_abs > 0);
+    // Gesamt-Ersparnis: wie viel bei optimaler Lieferantenwahl je Packung frei wird —
+    // für das angesehene Land (bis 10/2026 über alle Länder: in Ghana standen sonst
+    // österreichische Euro-Ersparnisse).
+    savingsSummary({ country = null } = {}) {
+      const groups = pricesRepo.listComparisons({ country }).map(withSavings).filter(g => g.offers.length >= 2 && g.saving_abs > 0);
       const total_abs = Math.round(groups.reduce((s, g) => s + g.saving_abs, 0) * 100) / 100;
       const top = [...groups].sort((a, b) => b.saving_abs - a.saving_abs).slice(0, 3)
         .map(g => ({ bezeichnung: g.bezeichnung, best_supplier: g.best_supplier, saving_abs: g.saving_abs, saving_pct: g.saving_pct }));

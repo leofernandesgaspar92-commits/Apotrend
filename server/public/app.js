@@ -246,6 +246,17 @@ function frLand(text, art = 'dans') {
   const m = s.match(/^([^\p{L}]*)(.*)$/u);
   const vor = m[1]; const name = m[2].trim();
   if (!name) return s;
+  if (art === 'pour') {
+    // „pour" braucht den Artikel: pour le Sénégal, la Guinée, l’Égypte, les Comores — Inseln ohne.
+    let a;
+    if (FR_LAND.insel.includes(name)) a = '';
+    else if (FR_LAND.plural.includes(name)) a = 'les ';
+    else if (/^[AEIOUYÉÈÊÎÔÂ]/i.test(name)) a = 'l’';
+    else if (/^République\b/.test(name)) a = 'la ';
+    else if (/e$/.test(name.split('-')[0]) && !FR_LAND.maskulinE.includes(name)) a = 'la ';
+    else a = 'le ';
+    return 'pour ' + a + vor + name;
+  }
   const dans = art !== 'de';
   let p;
   if (FR_LAND.insel.includes(name)) p = dans ? 'à ' : 'de ';
@@ -256,12 +267,12 @@ function frLand(text, art = 'dans') {
   else p = dans ? 'au ' : 'du ';
   return p + vor + name;
 }
-// „en {land}", „En {country}", „de {land}", „à {flag} {land}" -> fertige Präposition + Name.
+// „en {land}", „En {country}", „de {land}", „à {flag} {land}", „pour {land}" -> fertige Präposition + Name.
 function frPraepositionen(s, vars) {
-  return s.replace(/(^|[\s(])(en|En|de|à) (\{flag\} )?\{(land|country)\}/g, (ganz, vor, p, flag, k) => {
+  return s.replace(/(^|[\s(])(en|En|de|à|pour) (\{flag\} )?\{(land|country)\}/g, (ganz, vor, p, flag, k) => {
     if (vars[k] == null) return ganz;
     const name = (flag && vars.flag ? vars.flag + ' ' : '') + vars[k];
-    const r = frLand(name, p === 'de' ? 'de' : 'dans');
+    const r = frLand(name, p === 'de' ? 'de' : p === 'pour' ? 'pour' : 'dans');
     return vor + (p === 'En' ? r.charAt(0).toUpperCase() + r.slice(1) : r);
   });
 }
@@ -949,7 +960,7 @@ function rcKarte() {
   const k = el(`<div class="card" data-rckarte style="border-inline-start:4px solid var(--warn-bd, #e0a800)">
     <h2 style="margin:0 0 4px;font-size:19px">${esc(t('rc_title'))}</h2>
     <div class="muted" style="font-size:15px">${esc(t('rc_intro'))}</div>
-    <ol class="recovery-codes" style="margin-top:10px">${codes.map((c) => `<li><code>${esc(c)}</code></li>`).join('')}</ol>
+    <ol class="recovery-codes rc-zwei" style="margin-top:10px">${codes.map((c) => `<li><code>${esc(c)}</code></li>`).join('')}</ol>
     <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">
       <button class="ghost small" data-rccopy>${esc(t('rc_copy'))}</button>
       <button class="ghost small" data-rcdl>${esc(t('rc_download'))}</button>
@@ -3586,6 +3597,9 @@ async function loadShortages() {
     feed.appendChild(provenanceLegend());
     feed.appendChild(reportShortageCard(d.shortages));
     const bar = shortageFilterBar();
+    // Ganz leer: Filter „Alle 0 · Kritisch 0 …", Sortierung und „CSV (0)" helfen niemandem,
+    // sie schieben nur die Erklärung und „Engpass melden" nach unten.
+    if (!d.shortages.length) bar.hidden = true;
     feed.appendChild(bar);
     const listBox = el('<div data-shortlist></div>');
     feed.appendChild(listBox);
@@ -4117,6 +4131,12 @@ async function loadPrices() {
         ${s.top.length?`<div style="margin-top:8px">${s.top.map(it=>`<div class="comment" style="font-size:14px">💰 <b>${esc(it.bezeichnung)}</b>: −€ ${fmtMoney(it.saving_abs)} (−${it.saving_pct}%) ${esc(t('pr_at'))} <b>${esc(it.best_supplier)}</b></div>`).join('')}</div>`:''}
       </div>`);
       feed.appendChild(head);
+    }
+    // Für dieses Land gibt es (noch) keine Preise: das sagen, statt „Kein Präparat für
+    // diese Suche" unter einer leeren Suche — und ohne Export/Filter für null Zeilen.
+    if (!d.comparisons.length) {
+      feed.appendChild(el(`<div class="card" data-preiseleer><div style="font-size:16px">${esc(ti('pr_leer_land', { land: landAnzeige(viewCountry()) }))}</div></div>`));
+      return;
     }
     // CSV-Export für Einkauf/Großhandel (Excel-tauglich)
     let shownPrices = d.comparisons; // aktuell gefilterte Auswahl für Export/Druck

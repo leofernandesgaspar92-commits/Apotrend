@@ -14,6 +14,8 @@
 //    - „République …"                   -> en / de la   (en République centrafricaine)
 //    - feminin (endet auf -e)           -> en / de      (en Guinée, de Tunisie)
 //    - sonst maskulin                   -> au / du      (au Sénégal, du Cameroun)
+//  „pour" setzt den Artikel: pour le Sénégal, pour la Guinée, pour l’Égypte,
+//  pour les Comores, pour Maurice.
 //  Ausnahmen maskulin trotz -e: Mozambique, Zimbabwe, Cambodge, Mexique, Belize,
 //  Royaume-Uni. Bei Bindestrich-Namen zählt der erste Teil: au Congo-Brazzaville,
 //  au Cap-Vert, aber en Guinée-Bissau.
@@ -29,12 +31,23 @@ export const FR_LAND = {
   maskulinE: ['Mozambique', 'Zimbabwe', 'Cambodge', 'Mexique', 'Belize', 'Royaume-Uni'],
 };
 
-/** Präposition + Name. art: 'dans' (au/en/aux/à) oder 'de' (du/de/des/d'). */
+/** Präposition + Name. art: 'dans' (au/en/aux/à), 'de' (du/de/des/d') oder 'pour' (pour le/la/l'/les). */
 export function frLand(text, art = 'dans') {
   const s = String(text ?? '');
   const m = s.match(/^([^\p{L}]*)(.*)$/u);
   const vor = m[1]; const name = m[2].trim();
   if (!name) return s;
+  if (art === 'pour') {
+    // „pour" braucht den Artikel: pour le Sénégal, la Guinée, l’Égypte, les Comores — Inseln ohne.
+    let a;
+    if (FR_LAND.insel.includes(name)) a = '';
+    else if (FR_LAND.plural.includes(name)) a = 'les ';
+    else if (/^[AEIOUYÉÈÊÎÔÂ]/i.test(name)) a = 'l’';
+    else if (/^République\b/.test(name)) a = 'la ';
+    else if (/e$/.test(name.split('-')[0]) && !FR_LAND.maskulinE.includes(name)) a = 'la ';
+    else a = 'le ';
+    return 'pour ' + a + vor + name;
+  }
   const dans = art !== 'de';
   let p;
   if (FR_LAND.insel.includes(name)) p = dans ? 'à ' : 'de ';

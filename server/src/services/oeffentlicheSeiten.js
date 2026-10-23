@@ -128,7 +128,7 @@ const TEXTE = {
     hinweis: 'Données issues de la liste officielle des pénuries. Pas une recommandation de traitement ou de substitution — veuillez demander conseil à votre pharmacien ou médecin.',
     zurueck_land: (l) => `Toutes les pénuries ${frLand(l)}`, alle_laender: 'Tous les pays',
     ohne_titel: (l) => `Pénuries de médicaments ${frLand(l)}`,
-    ohne_beschr: (l, r) => `ApoPulse ne reçoit pas (encore) de liste officielle des pénuries pour ${l}${r ? ` (autorité : ${r})` : ''}. Dans ApoPulse, les pharmacies ${frLand(l)} signalent elles-mêmes les pénuries et confirment mutuellement leurs signalements — clairement indiqués comme non officiels.`,
+    ohne_beschr: (l, r) => `ApoPulse ne reçoit pas (encore) de liste officielle des pénuries ${frLand(l, 'pour')}${r ? ` (autorité : ${r})` : ''}. Dans ApoPulse, les pharmacies ${frLand(l)} signalent elles-mêmes les pénuries et confirment mutuellement leurs signalements — clairement indiqués comme non officiels.`,
     ohne_cta: (l) => `Voir les signalements des pharmacies ${frLand(l)} et créer des alertes — gratuit`,
     laender_ohne: 'Pays sans liste officielle dans ApoPulse — signalements des pharmacies',
     nicht_gefunden: 'Page introuvable', alle_engpaesse: 'Toutes les pénuries de médicaments par pays',

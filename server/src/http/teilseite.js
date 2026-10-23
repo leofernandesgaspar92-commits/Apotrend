@@ -82,7 +82,7 @@ const TEXTE = {
     w_knapp: (w, land) => `${w} : en pénurie ${frLand(land)}`,
     w_seit: (n) => (n <= 0 ? 'depuis aujourd’hui' : n === 1 ? 'depuis 1 jour' : `depuis ${n} jours`),
     w_nicht: (w, land) => `${w} : actuellement pas signalé en pénurie ${frLand(land)}`,
-    w_unbekannt: (w, land) => `${w} : pas encore de liste officielle pour ${land}`,
+    w_unbekannt: (w, land) => `${w} : pas encore de liste officielle ${frLand(land, 'pour')}`,
     w_apo_best: (w, land, n) => `${w} : signalé en pénurie par ${n} pharmacies ${frLand(land)}`,
     w_apo: (w, land, n) => (n === 1 ? `${w} : 1 pharmacie ${frLand(land)} signale une pénurie (pas encore confirmée)` : `${w} : ${n} pharmacies ${frLand(land)} signalent une pénurie (pas encore confirmée)`),
     lage_apo: (n, land) => (n === 1 ? `1 substance signalée en pénurie par des pharmacies ${frLand(land)}` : `${n} substances signalées en pénurie par des pharmacies ${frLand(land)}`),

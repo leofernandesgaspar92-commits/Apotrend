@@ -3266,3 +3266,22 @@ HTTP mit drei Geräten (Handy, Laptop, altes Token) über „überall abmelden" 
 http-integration: Reset per Code → Token der Registrierung jetzt 401 (Test nutzte es weiter — genau die
 Lücke). Gegenproben (Prüfung im Server entfernt, kein sitzungen_ab beim Passwort, alte Token immer gültig,
 kein neues Token beim Passwortwechsel, Client übernimmt es nicht, altes Format abgelehnt) — alle rot.
+
+### Cycle · Rundgang „neues Konto in Ghana/Senegal" (2026-10-23)
+
+**GATHER.** Neues Skript-Rundgang (Handy 360 px): Registrieren, Erste Schritte, alle Reiter, Menü —
+Querscrollen, Schrift < 13 px, deutsche Wörter in fremder Oberfläche, JS-Fehler. Technisch sauber.
+Beim Ansehen der Bildschirme gefunden:
+1. **Ersparnis aus fremdem Land:** `savingsSummary()` rechnete über alle Länder — in Ghana hätte die
+   Preis-Seite und die Übersichts-Kachel österreichische Euro-Ersparnisse gezeigt. Jetzt je Land.
+2. **Engpässe leer:** volle Werkzeugleiste („All 0 · Critical 0 …", Sortierung, „CSV (0)") vor der
+   Erklärung. Jetzt ausgeblendet, solange es nichts zu filtern gibt.
+3. **Preise leer:** „Kein Präparat für diese Suche" — ohne Suche. Jetzt: „Für Ghana liegen noch keine
+   Lieferantenpreise vor …", ohne Export/Filter.
+4. **Codes-Karte** eine ganze Bildschirmhöhe (8 Codes untereinander) → zwei Spalten (~430 px statt ~650).
+5. **Französisch „pour Sénégal"** (10 App-Texte, 4 Server-Texte: öffentliche Seite, Wochenbericht,
+   Teilseite) → frLand(…, 'pour'): pour le Sénégal / la Guinée / l’Égypte / les Comores / Maurice.
+
+**Tests.** leere-ansichten.test.js (3), franzoesisch.test.js erweitert (pour-Regel, ti(), Server-Texte),
+Browser-Audit „Einstieg": Codes-Karte ≤ 520 px, kein Querscrollen, leere Engpässe ohne Filterleiste,
+Preise-Leertext „au Sénégal".

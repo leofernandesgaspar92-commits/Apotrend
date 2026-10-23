@@ -2026,6 +2026,20 @@ async function main() {
     await page.press('#rg_pw', 'Enter').catch(() => {}); await page.waitForTimeout(1300);
     if (!(await page.evaluate(() => !!localStorage.getItem('apo_token')))) findings.push('Einstieg: Registrieren mit Enter klappt nicht');
     if (await page.locator('#rc_done').count()) findings.push('Einstieg: Codes-Seite hält den Einstieg auf');
+    // Erster Blick nach der Registrierung (Rundgang 23.10.2026): Codes-Karte nicht eine
+    // ganze Bildschirmhöhe; leere Engpass-Liste ohne Filter „Tous 0"; Preise ehrlich leer.
+    await page.click('[data-esskip]').catch(() => {}); await page.waitForTimeout(1200);
+    const rcH = await page.evaluate(() => { const k = document.querySelector('[data-rckarte]'); return k ? k.getBoundingClientRect().height : 0; });
+    if (!rcH) findings.push('Einstieg: Codes-Karte fehlt auf der Startseite');
+    else if (rcH > 520) findings.push(`Einstieg: Codes-Karte ${Math.round(rcH)} px hoch (zwei Spalten, sonst eine Bildschirmhöhe)`);
+    const quer = await page.evaluate(() => document.documentElement.scrollWidth);
+    if (quer > 360) findings.push(`Einstieg: Startseite mit Codes-Karte ${quer - 360} px Querscrollen`);
+    await page.evaluate(() => { const b = document.querySelector('.tabs button[data-tab="shortages"]'); if (b) b.click(); }); await page.waitForTimeout(1200);
+    if (await page.locator('[data-leermelden]').count() && await page.locator('[data-f]:visible').count()) findings.push('Einstieg: leere Engpass-Liste zeigt trotzdem die Filterleiste');
+    await page.evaluate(() => { const b = document.querySelector('.tabs button[data-tab="prices"]'); if (b) b.click(); }); await page.waitForTimeout(1200);
+    const preise = await page.evaluate(() => ({ leer: document.querySelector('[data-preiseleer]')?.textContent || '', suche: !!document.querySelector('[data-pq]') }));
+    if (!preise.leer && !preise.suche) findings.push('Einstieg: Preise ohne Liste und ohne Erklärung');
+    if (preise.leer && !/au .*Sénégal/.test(preise.leer)) findings.push(`Einstieg: Preise-Leertext ohne „au Sénégal": ${preise.leer.slice(0, 80)}`);
     for (const f of fehler) findings.push('Einstieg: JS-Fehler ' + f);
     await ctx.close();
     const c2 = await browser.newContext({ viewport: { width: 360, height: 760 }, locale: 'de-AT', timezoneId: 'Africa/Nairobi' });
@@ -2034,7 +2048,7 @@ async function main() {
     const vor = await p2.locator('[data-vorschlag] [data-country]').evaluateAll((b) => b.map((x) => x.dataset.country)).catch(() => []);
     if (vor.join() !== 'KE,AT') findings.push(`Einstieg: Kenia/de-AT sollte fragen (KE, AT), zeigt ${vor.join() || 'nichts'}`);
     await c2.close();
-    if (!findings.some((f) => f.startsWith('Einstieg'))) console.log('✓ Einstieg: Dakar → gleich Anmeldung (Senegal, Französisch, Formular oben), Registrieren mit Enter, keine Codes-Pflichtseite · Kenia mit de-AT → Frage KE/AT');
+    if (!findings.some((f) => f.startsWith('Einstieg'))) console.log('✓ Einstieg: Dakar → gleich Anmeldung (Senegal, Französisch, Formular oben), Registrieren mit Enter, keine Codes-Pflichtseite, Codes-Karte kompakt, leere Engpässe/Preise ohne Ballast · Kenia mit de-AT → Frage KE/AT');
   }
 
   // ── Frankophones Afrika: Senegal auf Französisch, günstiges Handy (360 px) ──

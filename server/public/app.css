@@ -122,6 +122,10 @@
   /* Ein Code darf nie umbrechen („G96DD-" / „EZFW5" auf zwei Zeilen wird falsch abgeschrieben). */
   @media (max-width:420px){ ol.recovery-codes { grid-template-columns:1fr; } }
   ol.recovery-codes code { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:1.05em; letter-spacing:1px; }
+  /* Codes-Karte auf der Startseite: zwei Spalten auch am Handy — sonst nimmt sie eine ganze Bildschirmhöhe ein. */
+  ol.recovery-codes.rc-zwei { grid-template-columns:1fr 1fr; gap:6px; }
+  ol.recovery-codes.rc-zwei li { padding:6px 8px; }
+  ol.recovery-codes.rc-zwei code { font-size:0.98em; letter-spacing:0; }
   /* Repost: das eingebettete Original klar abgesetzt (Rahmen + leichter Hintergrund). */
   .repost-embed { border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-top:8px; background:var(--bg); }
   .repost-embed.clickable { cursor:pointer; }
