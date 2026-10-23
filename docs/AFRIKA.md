@@ -676,3 +676,16 @@ HTTP ohne IP-Auswertung, Formulare/Enter/Passwort-Manager, keine Pflicht-Codes-S
 leerer Browser in Dakar → gleich die Anmeldung auf Französisch, Formular oben, Registrieren mit Enter;
 Kenia mit „de-AT" → Frage Kenia/Österreich. Im Browser durchgespielt: Senegal, Uganda (en-US),
 Kamerun (en-CM), Kenia (de-AT), Japan.
+
+**Passwort vergessen → Link per E-Mail (Stand 23.10.2026).** Wie bei Facebook/X: E-Mail eingeben, Link
+kommt ins Postfach, neues Passwort eingeben — und man ist gleich angemeldet. Der Wiederherstellungscode
+bleibt als zweiter Weg („Ich habe einen Wiederherstellungscode").
+- Nur sichtbar, wenn der E-Mail-Versand eingerichtet ist (Render: `APOPULSE_MAIL_PROVIDER`,
+  `APOPULSE_MAIL_API_KEY`, `APOPULSE_MAIL_FROM` — dieselben wie für den Wochenbericht). Sonst bleibt
+  „Passwort vergessen" wie bisher beim Code.
+- Sicher: Die Antwort ist immer gleich („Wenn es ein Konto gibt, ist der Link unterwegs") — niemand kann
+  so herausfinden, wer angemeldet ist. Der Link gilt 60 Minuten und nur einmal (nach dem Ändern passt er
+  nicht mehr), ist mit einem eigenen Schlüssel signiert und zeigt immer auf `APOPULSE_PUBLIC_URL`.
+  Je Adresse höchstens 3 Links pro Stunde, je Gerät 5 in 15 Minuten.
+- Mail in der Sprache, in der die App gerade läuft (de/en/pt/fr/ar, Arabisch von rechts nach links).
+- Code: `server/src/services/passwortLink.js`, Tests `server/test/passwort-link.test.js`.

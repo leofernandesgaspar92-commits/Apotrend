@@ -3211,3 +3211,27 @@ Vorteilen (CSS order), Kopfzeile bricht um. i18n +4 Schlüssel in 5 Sprachen.
 oben, Enter, keine Codes-Seite; Kenia de-AT → Frage KE/AT); Smoke: Logo → Anmeldung, „Land ändern" →
 64 Länder. Gefunden beim Durchspielen: Kamerun (en) 40 px Querscrollen in der Kopfzeile → Umbruch;
 Formular am Handy erst nach einer Bildschirmhöhe → nach oben.
+Gegenproben (je Änderung zurückgenommen → Test rot, danach per cmp wiederhergestellt): Aufruf
+landAutomatisch() entfernt; „en-US" aus den Werksvorgaben; Codes in localStorage statt sessionStorage;
+CSS-Regel „Formular zuerst"; autocomplete="current-password"; Zeitzone im Endpunkt ignoriert — alle rot.
+
+### Cycle · Passwort vergessen → Link per E-Mail (2026-10-23)
+
+**Anlass.** Gleicher Owner-Auftrag („so einfach wie bei Facebook"): Bisher ging „Passwort vergessen" nur
+mit einem Wiederherstellungscode — den hat kaum jemand zur Hand.
+
+**WORK.** services/passwortLink.js: Link mit Ablauf (60 min) und Fingerabdruck des Passwort-Hashs
+(einmalig, ohne Server-Zustand), Zweck-Schlüssel 'pw_reset', feste Basis-Adresse (nie Host-Kopf), Mail
+in 5 Sprachen. Server: POST /api/password/reset-link (immer gleiche Antwort, Versand im Hintergrund,
+Bremse je Gerät und je Adresse), POST /api/password/reset-mit-link (setzt Passwort, gibt Sitzung),
+/api/auth/providers meldet `passwort_link`. app.js: resetScreen() mit Link zuerst und Code als
+aufklappbarem zweitem Weg (beide als echte Formulare), pwLinkScreen() für ?pwlink= (Adresse sofort
+bereinigt), pwSchalter() gemeinsam für alle Passwortfelder. i18n +10 Schlüssel in 5 Sprachen
+(Fehlercodes pwlink_invalid/pwlink_expired — link_invalid war schon für den Abmelde-Link vergeben).
+
+**Tests.** passwort-link.test.js (7): keine Konto-Aufzählung, Link einmalig, Ablauf, fremde Token
+(Sitzung, Abmelde-Link, verändert) abgelehnt, Mail aus = ehrlich 503, Mail in allen Sprachen, UI-
+Reihenfolge, HTTP. Im Browser (360 px, Senegal): ohne Mail nur Code-Formular, mit Mail Link-Formular
+oben, Enter schickt ab, Antwort auf Französisch, kein Querscrollen; ?pwlink= verschwindet aus der
+Adresse, Fehler auf Französisch. Gefunden: Kopf „Menü" blieb beim direkten Öffnen aus der E-Mail
+deutsch → applyI18n().

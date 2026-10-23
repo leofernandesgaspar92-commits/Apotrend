@@ -88,6 +88,8 @@ import { createPrismaStore } from '../repo/prismaStore.js';
 import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
 import { issueToken, verifyToken, issueZweckToken, verifyZweckToken } from './token.js';
 import { createMailer } from '../services/mailer.js';
+import { createPasswortLink } from '../services/passwortLink.js';
+import { hashPassword } from '../domain/password.js';
 import { createWochenbericht } from '../services/wochenbericht.js';
 import { createEigeneQuellen } from '../services/eigeneQuellen.js';
 import { betriebsZahlen } from '../services/betrieb.js';
@@ -118,6 +120,9 @@ const resetLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
 // je Adresse, weil sich so auch ein fremdes Konto kurz sperren lässt.
 const loginJeKonto = createRateLimiter({ max: 20, windowMs: 15 * 60 * 1000 });
 const resetJeKonto = createRateLimiter({ max: 10, windowMs: 15 * 60 * 1000 });
+// Passwort-Links: jede Anfrage verschickt eine Mail — eng, damit niemand fremde Postfächer flutet.
+const linkLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
+const linkJeKonto = createRateLimiter({ max: 3, windowMs: 60 * 60 * 1000 });
 // Uebersetzungen: 60 Anbieter-Aufrufe je Stunde und Konto. Das ist kein
 // Missbrauchsschutz im engeren Sinn, sondern eine KOSTENBREMSE — jeder Aufruf
 // geht gegen die Abrechnung des Owners. Antworten aus dem Zwischenspeicher
@@ -268,6 +273,14 @@ const wochenbericht = createWochenbericht({
   istPremium: (uid) => payments.hasFeature(uid, 'premium'),
   appUrl: String(process.env.APOPULSE_PUBLIC_URL || 'https://www.apopulse.com').replace(/\/+$/, ''),
   zweckToken: (uid) => issueZweckToken('wb_abmelden', uid),
+});
+// Passwort vergessen → Link per E-Mail (services/passwortLink.js). Nur aktiv,
+// wenn der E-Mail-Versand eingerichtet ist; sonst bleibt der Wiederherstellungscode.
+const passwortLink = createPasswortLink({
+  repo, mailer, hashPassword,
+  ausstellen: (inhalt) => issueZweckToken('pw_reset', inhalt),
+  pruefen: (t) => verifyZweckToken('pw_reset', t),
+  basis: String(process.env.APOPULSE_PUBLIC_URL || 'https://www.apopulse.com').replace(/\/+$/, ''),
 });
 // Eigene Engpass-Quellen der Redaktion (services/eigeneQuellen.js) — auch sie
 // werden mit gesichert, also VOR applySnapshot() anlegen.
@@ -1307,6 +1320,25 @@ const routes = [
     } catch (e) { resetLimiter.fail(key); resetJeKonto.fail(konto); throw e; } // Fehlversuch zählt gegen das Limit
   }],
 
+  // Passwort-Link per E-Mail anfordern: antwortet immer gleich (keine Konto-Aufzählung).
+  ['POST', /^\/api\/password\/reset-link$/, false, async ({ body, ip }) => {
+    const konto = String(body.email || '').trim().toLowerCase();
+    const st0 = linkLimiter.check(ip || 'unknown'); const st1 = linkJeKonto.check(konto);
+    const st = st0.blocked ? st0 : st1;
+    if (st.blocked) { const e = new Error('Zu viele Versuche. Bitte später erneut.'); e.status = 429; e.code = 'too_many_attempts'; e.retryAfterS = Math.ceil(st.retryAfterMs / 1000); throw e; }
+    linkLimiter.fail(ip || 'unknown'); linkJeKonto.fail(konto); // jede Anfrage zählt — sie verschickt eine Mail
+    return passwortLink.anfordern({ email: konto, sprache: SUPPORTED_LOCALES.includes(body.sprache) ? body.sprache : 'en' });
+  }],
+  // Link einlösen: neues Passwort setzen und gleich angemeldet sein.
+  ['POST', /^\/api\/password\/reset-mit-link$/, false, async ({ body, ip }) => {
+    const key = ip || 'unknown';
+    const st = resetLimiter.check(key);
+    if (st.blocked) { const e = new Error('Zu viele Versuche. Bitte später erneut.'); e.status = 429; e.code = 'too_many_attempts'; e.retryAfterS = Math.ceil(st.retryAfterMs / 1000); throw e; }
+    let r;
+    try { r = passwortLink.einloesen({ t: body.t, newPassword: body.newPassword }); } catch (e) { resetLimiter.fail(key); throw e; }
+    return { token: issueToken(r.userId), user: safeUser(repo.getUserById(r.userId)), profile: social.getProfile(r.userId) };
+  }],
+
   // Verbleibende Wiederherstellungscodes (eingeloggt) + Neu-Erzeugung.
   ['GET', /^\/api\/recovery-codes$/, true, async ({ userId }) => ({ remaining: orgAuth.remainingRecoveryCodes(userId) })],
   ['POST', /^\/api\/recovery-codes\/regenerate$/, true, async ({ userId }) => orgAuth.regenerateRecoveryCodes(userId)],
@@ -1578,7 +1610,7 @@ const routes = [
       if (redirectUri) { try { authorize_url = oauth.authorizeUrl(name, redirectUri, name); } catch { /* Provider ohne Authorize-URL */ } }
       return { provider: name, authorize_url };
     });
-    return { providers };
+    return { providers, passwort_link: passwortLink.aktiv };
   }],
   ['POST', /^\/api\/auth\/oauth\/([a-z0-9_]+)$/, false, async ({ params, body }) => {
     const { userId } = await oauth.loginOrRegister(params[0], body.code, body.redirectUri, { country: normalizeCountry(body.country), locale: body.locale });

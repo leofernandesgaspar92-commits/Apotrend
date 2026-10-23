@@ -884,12 +884,7 @@ function authScreen() {
   const cc = document.getElementById('changeCountry');
   if (cc) cc.onclick = () => countryScreen();
   // Passwort anzeigen/verbergen (am Handy vertippt man sich leicht).
-  app.querySelectorAll('[data-pw]').forEach((b) => {
-    b.onclick = () => {
-      const f = document.getElementById(b.dataset.pw); const zeigen = f.type === 'password';
-      f.type = zeigen ? 'text' : 'password'; b.textContent = t(zeigen ? 'au_pw_hide' : 'au_pw_show'); b.setAttribute('aria-pressed', String(zeigen));
-    };
-  });
+  pwSchalter(app);
   document.getElementById('li_form').onsubmit = (e) => { e.preventDefault(); anmelden(); };
   document.getElementById('rg_form').onsubmit = (e) => { e.preventDefault(); registrieren(); };
   const anmelden = async () => {
@@ -999,24 +994,56 @@ function recoveryCodesScreen(codes, onDone) {
   card.querySelector('#rc_done').onclick = () => { if (typeof onDone === 'function') onDone(); };
 }
 
-// „Passwort vergessen" — Reset per Wiederherstellungscode (kein E-Mail-Dienst nötig).
-function resetScreen() {
+// Passwort anzeigen/verbergen (am Handy vertippt man sich leicht).
+function pwSchalter(root) {
+  root.querySelectorAll('[data-pw]').forEach((b) => {
+    b.onclick = () => {
+      const f = document.getElementById(b.dataset.pw); const zeigen = f.type === 'password';
+      f.type = zeigen ? 'text' : 'password'; b.textContent = t(zeigen ? 'au_pw_hide' : 'au_pw_show'); b.setAttribute('aria-pressed', String(zeigen));
+    };
+  });
+}
+
+// „Passwort vergessen": Ist der E-Mail-Versand eingerichtet, zuerst der Link per
+// E-Mail (wie bei Facebook/X); der Wiederherstellungscode bleibt als zweiter Weg.
+async function resetScreen() {
   setDocTitle(t('rs_title'));
   hideHeaderForAuth();
   app.innerHTML = '';
+  let mitLink = false;
+  try { mitLink = !!(await api('GET', '/api/auth/providers')).passwort_link; } catch { /* dann nur Code */ }
+  const codeForm = `<form id="rs_form">
+    <div class="muted" style="margin-top:4px">${esc(t('rs_intro'))}</div>
+    <label for="rs_email" style="margin-top:10px">${esc(t('au_email'))}</label><input id="rs_email" type="email" autocomplete="username" placeholder="${esc(t('au_email_ph'))}">
+    <label for="rs_code">${esc(t('rs_code'))}</label><input id="rs_code" placeholder="AB2CD-EF3GH" autocomplete="off">
+    <label for="rs_pw">${esc(t('rs_newpw'))}</label><div class="pw-zeile"><input id="rs_pw" type="password" autocomplete="new-password"><button type="button" class="ghost small pw-zeigen" data-pw="rs_pw" aria-controls="rs_pw">${esc(t('au_pw_show'))}</button></div>
+    <div class="row" style="margin-top:12px;gap:8px"><button type="submit" id="rs_go">${esc(t('rs_go'))}</button></div>
+    <div id="rs_msg" role="status" style="margin-top:8px"></div></form>`;
   const card = el(`<div class="card" style="max-width:520px;margin:0 auto">
     <h1>${esc(t('rs_title'))}</h1>
-    <div class="muted" style="margin-top:4px">${esc(t('rs_intro'))}</div>
-    <label for="rs_email" style="margin-top:10px">${esc(t('au_email'))}</label><input id="rs_email" type="email" placeholder="${esc(t('au_email_ph'))}">
-    <label for="rs_code">${esc(t('rs_code'))}</label><input id="rs_code" placeholder="AB2CD-EF3GH" autocomplete="off">
-    <label for="rs_pw">${esc(t('rs_newpw'))}</label><input id="rs_pw" type="password">
-    <div class="row" style="margin-top:12px;gap:8px"><button id="rs_go">${esc(t('rs_go'))}</button>
-      <button class="linklike small" id="rs_back">${esc(t('rs_back'))}</button></div>
-    <div id="rs_msg" style="margin-top:8px"></div>
+    ${mitLink ? `<form id="rs_link_form" data-rslink>
+      <div class="muted" style="margin-top:4px;font-size:16px">${esc(t('rs_link_intro'))}</div>
+      <label for="rs_l_email" style="margin-top:10px">${esc(t('au_email'))}</label><input id="rs_l_email" type="email" autocomplete="username" placeholder="${esc(t('au_email_ph'))}">
+      <button type="submit" id="rs_l_go" class="auth-gross" style="width:100%;margin-top:12px">${esc(t('rs_link_go'))}</button>
+      <div id="rs_l_msg" role="status" style="margin-top:8px;font-size:16px"></div></form>
+      <details style="margin-top:18px"><summary style="cursor:pointer;font-size:16px;padding:6px 0">${esc(t('rs_code_toggle'))}</summary>${codeForm}</details>` : codeForm}
+    <button type="button" class="linklike small" id="rs_back" style="margin-top:14px">${esc(t('rs_back'))}</button>
   </div>`);
   app.appendChild(card);
+  pwSchalter(card);
   card.querySelector('#rs_back').onclick = () => authScreen();
-  card.querySelector('#rs_go').onclick = async () => {
+  const linkForm = card.querySelector('#rs_link_form');
+  if (linkForm) linkForm.onsubmit = async (ev) => {
+    ev.preventDefault();
+    const msg = card.querySelector('#rs_l_msg');
+    try {
+      await api('POST', '/api/password/reset-link', { email: v('rs_l_email'), sprache: LOCALE });
+      msg.style.color = 'var(--green)'; msg.textContent = t('rs_link_sent');
+      card.querySelector('#rs_l_go').disabled = true;
+    } catch (e) { msg.style.color = 'var(--crit-fg)'; msg.textContent = e.message; }
+  };
+  card.querySelector('#rs_form').onsubmit = async (ev) => {
+    ev.preventDefault();
     const msg = card.querySelector('#rs_msg');
     try {
       await api('POST', '/api/password/reset', { email: v('rs_email'), code: v('rs_code'), newPassword: document.getElementById('rs_pw').value });
@@ -1024,6 +1051,37 @@ function resetScreen() {
       card.querySelector('#rs_go').disabled = true;
     } catch (e) { msg.style.color = 'var(--crit-fg)'; msg.textContent = e.message; }
   };
+}
+
+// Link aus der E-Mail (?pwlink=…): neues Passwort eingeben — danach gleich angemeldet.
+function pwLinkScreen(tok) {
+  setDocTitle(t('rs_pl_title'));
+  hideHeaderForAuth();
+  applyI18n(); // direkt aus der E-Mail geöffnet: Kopf („Menü") noch nicht übersetzt
+  app.innerHTML = '';
+  const card = el(`<div class="card" style="max-width:520px;margin:0 auto">
+    <h1>${esc(t('rs_pl_title'))}</h1>
+    <form id="pl_form">
+      <label for="pl_pw" style="margin-top:10px">${esc(t('au_pw8'))}</label><div class="pw-zeile"><input id="pl_pw" type="password" autocomplete="new-password"><button type="button" class="ghost small pw-zeigen" data-pw="pl_pw" aria-controls="pl_pw">${esc(t('au_pw_show'))}</button></div>
+      <button type="submit" id="pl_go" class="auth-gross" style="width:100%;margin-top:12px">${esc(t('rs_pl_go'))}</button>
+      <div id="pl_msg" role="alert" style="margin-top:8px;color:var(--crit-fg);font-size:16px"></div>
+    </form>
+    <button type="button" class="linklike small" id="pl_neu" style="margin-top:14px">${esc(t('rs_pl_new'))}</button>
+  </div>`);
+  app.appendChild(card);
+  pwSchalter(card);
+  card.querySelector('#pl_neu').onclick = () => resetScreen();
+  card.querySelector('#pl_form').onsubmit = async (ev) => {
+    ev.preventDefault();
+    try { afterAuth(await api('POST', '/api/password/reset-mit-link', { t: tok, newPassword: document.getElementById('pl_pw').value })); }
+    catch (e) { card.querySelector('#pl_msg').textContent = e.message; }
+  };
+}
+function nimmPwLink() {
+  const tok = new URLSearchParams(location.search).get('pwlink');
+  if (!tok) return null;
+  history.replaceState(null, '', location.pathname); // nicht im Verlauf/Lesezeichen liegen lassen
+  return tok;
 }
 
 // Einheitliches Redirect-Ziel für OAuth (der Provider wird über `state` transportiert).
@@ -10393,6 +10451,8 @@ const _hasCountry = () => !!localStorage.getItem('apo_country');
   handleWbAbmelden();
   merkeLinkAbsicht();
   if (await handleOAuthCallback()) return;
+  const pwLink = nimmPwLink();
+  if (pwLink) { pwLinkScreen(pwLink); return; }
   if (localStorage.getItem('apo_token')) mainScreen().catch(() => (_hasCountry() ? authScreen() : countryScreen()));
   else if (_hasCountry()) authScreen();
   else if (await landAutomatisch()) authScreen();
