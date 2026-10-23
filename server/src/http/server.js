@@ -131,6 +131,9 @@ const linkJeKonto = createRateLimiter({ max: 3, windowMs: 60 * 60 * 1000 });
 const telCodeJeNummer = createRateLimiter({ max: 3, windowMs: 60 * 60 * 1000 });
 const telCodeJeGeraet = createRateLimiter({ max: 10, windowMs: 60 * 60 * 1000 });
 const telPruefJeGeraet = createRateLimiter({ max: 20, windowMs: 15 * 60 * 1000 });
+// Obergrenze für ALLE SMS zusammen: Die Geräte-Bremse hängt an X-Forwarded-For, das der Client selbst
+// setzt — mit wechselnden Nummern und Angaben dort wäre sie umgehbar. Die Summe nicht.
+const telCodeGesamt = createRateLimiter({ max: Math.max(1, Number(process.env.APOPULSE_SMS_MAX_STUNDE) || 100), windowMs: 60 * 60 * 1000 });
 // Uebersetzungen: 60 Anbieter-Aufrufe je Stunde und Konto. Das ist kein
 // Missbrauchsschutz im engeren Sinn, sondern eine KOSTENBREMSE — jeder Aufruf
 // geht gegen die Abrechnung des Owners. Antworten aus dem Zwischenspeicher
@@ -1364,10 +1367,10 @@ const routes = [
   // 1) Code per SMS. Jede Anfrage zählt gegen die Bremsen — sie kostet eine SMS.
   ['POST', /^\/api\/telefon\/code$/, false, async ({ body, ip }) => {
     const nummer = telefonLogin.nummer(body.telefon, body.land);
-    const st0 = telCodeJeGeraet.check(ip || 'unknown'); const st1 = telCodeJeNummer.check(nummer);
-    const st = st0.blocked ? st0 : st1;
+    const st0 = telCodeJeGeraet.check(ip || 'unknown'); const st1 = telCodeJeNummer.check(nummer); const st2 = telCodeGesamt.check('alle');
+    const st = st0.blocked ? st0 : st1.blocked ? st1 : st2;
     if (st.blocked) { const e = new Error('Zu viele Versuche. Bitte später erneut.'); e.status = 429; e.code = 'too_many_attempts'; e.retryAfterS = Math.ceil(st.retryAfterMs / 1000); throw e; }
-    telCodeJeGeraet.fail(ip || 'unknown'); telCodeJeNummer.fail(nummer);
+    telCodeJeGeraet.fail(ip || 'unknown'); telCodeJeNummer.fail(nummer); telCodeGesamt.fail('alle');
     return telefonLogin.anfordern({ telefon: nummer, sprache: SUPPORTED_LOCALES.includes(body.sprache) ? body.sprache : 'en' });
   }],
   // 2) Code prüfen → angemeldet, oder Ticket für ein neues Konto.

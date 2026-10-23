@@ -10,7 +10,9 @@
 //    - sonst: führende 0 (Verkehrsausscheidungsziffer) weg, Landesvorwahl davor.
 //      Ausnahme Côte d'Ivoire: Seit 2021 gehört die führende 0 zur Nummer
 //      (+225 07 …), sie bleibt stehen.
-//    - Gültig sind 8 bis 15 Ziffern nach dem „+" (E.164).
+//    - Gültig sind 8 bis 15 Ziffern nach dem „+" (E.164) — und nur Nummern aus
+//      Ländern des Registers. Sonst ließen sich SMS an teure Sondernummern
+//      irgendwo auf der Welt auslösen („SMS-Pumping", die Kosten trägt der Owner).
 //  Vorwahlen nach ITU-T E.164 (Zuweisungsliste), für alle Länder des Registers.
 // ============================================================================
 
@@ -24,6 +26,7 @@ export const VORWAHL = Object.freeze({
   LY: '218', SD: '249', SO: '252', GQ: '240',
 });
 const NULL_GEHOERT_DAZU = new Set(['CI']);
+const VORWAHLEN = [...new Set(Object.values(VORWAHL))];
 
 /** Eingabe + Land → „+<Ziffern>" oder null, wenn keine gültige Nummer daraus wird. */
 export function normalisiereTelefon(eingabe, land) {
@@ -40,5 +43,6 @@ export function normalisiereTelefon(eingabe, land) {
     ziffern = vw + n;
   }
   if (!/^[1-9]\d{7,14}$/.test(ziffern)) return null;
+  if (!VORWAHLEN.some((vw) => ziffern.startsWith(vw))) return null;
   return '+' + ziffern;
 }

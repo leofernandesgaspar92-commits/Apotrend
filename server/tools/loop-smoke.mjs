@@ -64,10 +64,13 @@ async function main() {
     step('Länderauswahl erscheint als erster Schritt', countryCount === expectedCountries && countryCount >= 16, `${countryCount}/${expectedCountries} Länder`);
     // Land bestimmt Sprache: AT -> „Anmelden", GB -> „Log in".
     const loginHead = async () => op.evaluate(() => [...document.querySelectorAll('h1, h2')].map(h => h.textContent.trim()).find(t => /Anmelden|Log in|Entrar/.test(t)) || '');
-    await op.click('[data-region] [data-country="AT"]').catch(() => {}); await op.waitForTimeout(300);
+    // Warten auf das Ergebnis statt fester Zeit: Deutsch wird erst beim Wechsel nachgeladen
+    // (/i18n/de.js) — unter Last dauerte das im vollen verify-Lauf länger als 300 ms.
+    const warteAuf = (text) => op.waitForFunction((t) => [...document.querySelectorAll('h1, h2')].some((h) => h.textContent.trim() === t), text, { timeout: 8000 }).catch(() => {});
+    await op.click('[data-region] [data-country="AT"]').catch(() => {}); await warteAuf('Anmelden');
     const de = await loginHead();
     await op.click('#changeCountry').catch(() => {}); await op.waitForTimeout(250);
-    await op.click('[data-region] [data-country="GB"]').catch(() => {}); await op.waitForTimeout(300);
+    await op.click('[data-region] [data-country="GB"]').catch(() => {}); await warteAuf('Log in');
     const en = await loginHead();
     step('Land bestimmt Sprache (AT→Anmelden, GB→Log in)', de === 'Anmelden' && en === 'Log in', `${de}/${en}`);
     // <html lang> folgt der Sprache (a11y — Screenreader-Aussprache).

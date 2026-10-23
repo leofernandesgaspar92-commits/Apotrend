@@ -3367,3 +3367,9 @@ arabischer Platzhalter im LTR-Feld verdreht → nur Ziffern.
 Nachgezogen: Platzhalter-Adressen (Telefon, und schon vorher OAuth ohne E-Mail) — domain/adresse.js;
 mailer.sende() lehnt sie ab (keine_echte_adresse), Wochenbericht überspringt sie, Team-Liste zeigt die
 Nummer statt „tel_…@telefon.local" (kontoAdresse()).
+Sicherheitsprüfung danach („SMS-Pumping": massenhaft Codes an teure Nummern, Kosten beim Owner): Die
+Geräte-Bremse hängt an X-Forwarded-For (vom Client setzbar) — mit wechselnden Nummern umgehbar. Jetzt
+zusätzlich: nur Nummern aus Register-Ländern (keine +882-Sondernummern o. ä.) und eine Obergrenze für
+alle SMS zusammen (100/h, APOPULSE_SMS_MAX_STUNDE). Test + Gegenprobe.
+Nebenbei: Smoke-Schritt „Land bestimmt Sprache" wackelte im vollen Lauf (Deutsch wird beim Wechsel
+nachgeladen, unter Last > 300 ms) → wartet jetzt auf die Überschrift statt fester Zeit.

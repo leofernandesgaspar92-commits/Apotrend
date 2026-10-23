@@ -185,3 +185,12 @@ test('Platzhalter-Adressen: nie Post dorthin, angezeigt wird die Nummer', async 
   assert.deepEqual([c.k('tel_221771234567@telefon.local'), c.k('facebook_9@oauth.local'), c.k('a@b.cd')], ['+221771234567', '', 'a@b.cd']);
   assert.match(app, /\$\{esc\(kontoAdresse\(m\.email\)\)\}/, 'Team-Liste');
 });
+
+test('SMS-Pumping: nur Nummern aus Register-Ländern; Obergrenze für alle SMS zusammen', () => {
+  assert.equal(normalisiereTelefon('+882 1234 5678', 'SN'), null, 'internationale Sondernummer');
+  assert.equal(normalisiereTelefon('+7 912 345 67 89', 'SN'), null, 'Land außerhalb des Registers');
+  assert.equal(normalisiereTelefon('+1 415 555 0100', 'SN'), '+14155550100', 'USA/Kanada stehen im Register');
+  const srv = readFileSync(join(HIER, '..', 'src', 'http', 'server.js'), 'utf8');
+  assert.match(srv, /const telCodeGesamt = createRateLimiter\(\{ max: Math\.max\(1, Number\(process\.env\.APOPULSE_SMS_MAX_STUNDE\) \|\| 100\)/);
+  assert.match(srv, /telCodeGesamt\.check\('alle'\)[\s\S]{0,700}telCodeGesamt\.fail\('alle'\)/);
+});
