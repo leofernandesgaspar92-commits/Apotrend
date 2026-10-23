@@ -1146,6 +1146,82 @@ function nimmPwLink() {
   return tok;
 }
 
+// Anmelden mit Telefonnummer (services/telefonLogin.js): Nummer → Code aus der SMS →
+// angemeldet. Neue Nummer: noch Name + Kontotyp, dann ist das Konto da. Kein Passwort.
+function telefonScreen(vorwahlen) {
+  setDocTitle(t('tel_title'));
+  hideHeaderForAuth();
+  applyI18n();
+  app.innerHTML = '';
+  let land = 'AT'; try { land = localStorage.getItem('apo_country') || 'AT'; } catch { /* Standard */ }
+  const vw = vorwahlen[land] ? '+' + vorwahlen[land] : '';
+  const card = el(`<div class="card" style="max-width:520px;margin:0 auto" data-telefonkarte>
+    <h1>${esc(t('tel_title'))}</h1>
+    <form id="tel_form">
+      <div class="muted" style="font-size:16px;margin-top:4px">${esc(t('tel_intro'))}</div>
+      <label for="tel_nr" style="margin-top:10px">${esc(t('tel_nr'))}</label>
+      <div class="row" dir="ltr" style="gap:8px;flex-wrap:nowrap;align-items:center">${vw ? `<span class="tel-vw" dir="ltr" style="font-size:17px;font-weight:700;white-space:nowrap;direction:ltr;unicode-bidi:isolate">${esc(vw)}</span>` : ''}<input id="tel_nr" type="tel" inputmode="tel" autocomplete="tel-national" dir="ltr" placeholder="${esc(t('tel_nr_ph'))}" style="flex:1"></div>
+      <button type="submit" id="tel_go" class="auth-gross" style="width:100%;margin-top:12px">${esc(t('tel_send'))}</button>
+      <div class="err" id="tel_msg" role="alert"></div>
+    </form>
+    <form id="tel_code_form" hidden>
+      <div data-telgesendet style="font-size:16px;margin-top:4px"></div>
+      <label for="tel_code" style="margin-top:10px">${esc(t('tel_code'))}</label>
+      <input id="tel_code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" style="font-size:22px;letter-spacing:4px">
+      <button type="submit" id="tel_ok" class="auth-gross" style="width:100%;margin-top:12px">${esc(t('tel_login'))}</button>
+      <button type="button" class="linklike small" id="tel_nochmal" style="margin-top:10px">${esc(t('tel_resend'))}</button>
+      <div class="err" id="tel_cmsg" role="alert"></div>
+    </form>
+    <form id="tel_neu_form" hidden>
+      <div style="font-size:16px;margin-top:4px">${esc(t('tel_neu_intro'))}</div>
+      <label for="tel_name" style="margin-top:10px">${esc(t('au_name'))}</label>
+      <input id="tel_name" autocomplete="name">
+      <label for="tel_typ">${esc(t('at_label'))}</label>
+      <select id="tel_typ"></select>
+      <button type="submit" id="tel_konto" class="auth-gross" style="width:100%;margin-top:12px">${esc(t('tel_create'))}</button>
+      <div class="err" id="tel_nmsg" role="alert"></div>
+    </form>
+    <button type="button" class="linklike small" id="tel_back" style="margin-top:14px">${esc(t('rs_back'))}</button>
+  </div>`);
+  app.appendChild(card);
+  const $ = (id) => card.querySelector('#' + id);
+  let nummer = '', ticket = '';
+  const zeige = (id) => ['tel_form', 'tel_code_form', 'tel_neu_form'].forEach((f) => { $(f).hidden = f !== id; });
+  const fertig = (d) => {
+    if (Array.isArray(d.recovery_codes) && d.recovery_codes.length) { try { sessionStorage.setItem('apo_rc_neu', JSON.stringify(d.recovery_codes)); } catch { /* im Konto neu erzeugen */ } }
+    afterAuth(d);
+  };
+  $('tel_back').onclick = () => authScreen();
+  $('tel_nochmal').onclick = () => { zeige('tel_form'); $('tel_nr').focus(); };
+  $('tel_form').onsubmit = async (ev) => {
+    ev.preventDefault(); $('tel_msg').textContent = ''; $('tel_go').disabled = true;
+    try {
+      const r = await api('POST', '/api/telefon/code', { telefon: $('tel_nr').value, land, sprache: LOCALE });
+      nummer = r.nummer;
+      card.querySelector('[data-telgesendet]').textContent = ti('tel_gesendet', { nr: r.nummer });
+      zeige('tel_code_form'); $('tel_code').value = ''; $('tel_code').focus();
+    } catch (e) { $('tel_msg').textContent = e.message; }
+    $('tel_go').disabled = false;
+  };
+  $('tel_code_form').onsubmit = async (ev) => {
+    ev.preventDefault(); $('tel_cmsg').textContent = '';
+    try {
+      const r = await api('POST', '/api/telefon/pruefen', { telefon: nummer, land, code: $('tel_code').value });
+      if (r.neu) {
+        ticket = r.ticket;
+        await ensureAccountTypes(); $('tel_typ').innerHTML = accountTypeOptionsHtml('pharmacy');
+        zeige('tel_neu_form'); $('tel_name').focus();
+      } else fertig(r);
+    } catch (e) { $('tel_cmsg').textContent = e.message; }
+  };
+  $('tel_neu_form').onsubmit = async (ev) => {
+    ev.preventDefault(); $('tel_nmsg').textContent = '';
+    try { fertig(await api('POST', '/api/telefon/konto', { ticket, name: $('tel_name').value.trim(), accountType: $('tel_typ').value, country: land, locale: LOCALE, einladung: leseEinladung() })); }
+    catch (e) { $('tel_nmsg').textContent = e.message; }
+  };
+  $('tel_nr').focus();
+}
+
 // Einheitliches Redirect-Ziel für OAuth (der Provider wird über `state` transportiert).
 const oauthRedirectUri = () => location.origin + location.pathname;
 const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -1157,9 +1233,15 @@ async function renderOAuthButtons() {
   try {
     const d = await api('GET', '/api/auth/providers?redirect_uri=' + encodeURIComponent(oauthRedirectUri()));
     const provs = ((d && d.providers) || []).filter(p => p.authorize_url);
-    if (!provs.length) return; // kein Provider aktiv -> nichts anzeigen
+    if (!provs.length && !(d && d.telefon)) return; // nichts eingerichtet -> nichts anzeigen
     // Oben und groß, wie bei Facebook/X: ein Tipp, kein Formular. Darunter „oder" + E-Mail.
     host.innerHTML = '';
+    // Telefonnummer + SMS-Code: in Afrika oft die naheliegendste Anmeldung (nur mit SMS-Anbieter).
+    if (d.telefon) {
+      const tb = el(`<button type="button" class="auth-gross" data-telefon style="width:100%;margin-bottom:8px">${esc(t('au_tel_btn'))}</button>`);
+      tb.onclick = () => telefonScreen(d.vorwahlen || {});
+      host.appendChild(tb);
+    }
     provs.forEach(p => {
       const btn = el(`<button type="button" class="ghost auth-gross" data-oauth="${esc(p.provider)}" style="width:100%;margin-bottom:8px">${esc(ti('au_oauth_with', { p: capitalize(p.provider) }))}</button>`);
       btn.onclick = () => { location.href = p.authorize_url; };

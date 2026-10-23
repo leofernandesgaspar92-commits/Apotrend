@@ -103,6 +103,28 @@ Einrichtung (einmalig, ca. 15 Minuten):
 4. Speichern (Render startet neu). Ob der Versand an ist, zeigt `GET /api/live/status` → `mail`.
    Sofort testen: Redaktions-Konto, `POST /api/live/run/wochenbericht`.
 
+## Anmelden mit Telefonnummer (SMS-Code)
+
+Für Afrika oft die einfachste Anmeldung: Nummer eingeben, 6-stelliger Code per SMS, fertig —
+ohne E-Mail, ohne Passwort. Ohne Einrichtung ist die Funktion **aus** (kein Knopf, keine Kosten).
+Jede SMS kostet beim Anbieter ein paar Cent; Bremsen: je Nummer 3, je Gerät 10 Codes pro Stunde.
+
+Einrichtung mit **Africa's Talking** (Afrika-Anbieter, günstig in KE/UG/TZ/NG/RW/MW/ZM …):
+1. Konto auf africastalking.com anlegen, eine App erstellen, Guthaben aufladen.
+2. Unter „Settings → API Key" einen Schlüssel erzeugen.
+3. Optional eine Absender-ID („ApoPulse") beantragen — je Land unterschiedlich, dauert Tage.
+4. In Render → Environment eintragen:
+   - `APOPULSE_SMS_PROVIDER` = `africastalking`
+   - `APOPULSE_SMS_USERNAME` = der App-Benutzername (zum Testen `sandbox`)
+   - `APOPULSE_SMS_API_KEY` = der API-Schlüssel
+   - optional `APOPULSE_SMS_FROM` = die genehmigte Absender-ID
+
+Alternativ **Twilio** (weltweit): `APOPULSE_SMS_PROVIDER` = `twilio`, `APOPULSE_SMS_USERNAME` =
+Account SID (`AC…`), `APOPULSE_SMS_API_KEY` = Auth Token, `APOPULSE_SMS_FROM` = Twilio-Nummer (Pflicht).
+
+Danach erscheint auf der Anmeldeseite groß „Mit Telefonnummer anmelden". Ob der Versand an ist,
+zeigt `GET /api/auth/providers` → `telefon: true`.
+
 ## Anzeigen für Unternehmen (Einnahmen)
 
 Pharma, Großhandel und Logistik buchen Anzeigen selbst („Menü → Werben auf ApoPulse"). Damit

@@ -104,6 +104,16 @@ services:
         sync: false
       - key: APOPULSE_MAIL_FROM
         sync: false
+      # Anmelden per Telefonnummer + SMS-Code (services/sms.js, telefonLogin.js).
+      # Ohne Werte AUS. Anbieter: africastalking oder twilio — siehe server/DEPLOY.md.
+      - key: APOPULSE_SMS_PROVIDER
+        sync: false
+      - key: APOPULSE_SMS_USERNAME
+        sync: false
+      - key: APOPULSE_SMS_API_KEY
+        sync: false
+      - key: APOPULSE_SMS_FROM
+        sync: false
       # Anzeigen: Rechnungssteller und Bank (ohne sie nur Krypto). docs/WERBUNG.md
       - key: APOPULSE_FIRMA_NAME
         sync: false

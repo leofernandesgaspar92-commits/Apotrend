@@ -3339,3 +3339,28 @@ chip-bg ca. 5,6 : 1 hell).
 
 **Tests.** suche-engpass.test.js (3, u. a. HTTP mit zwei Apotheken: apotheken=2, keine Benutzer-ID im
 Ergebnis), leere-ansichten.test.js +1 (Formular).
+
+### Cycle · Anmelden mit Telefonnummer + SMS-Code (2026-10-23)
+
+**Anlass.** Owner „Okay mach weiter" auf die Frage nach SMS-Anmeldung. Gebaut anbieterneutral und AUS,
+bis ein Anbieter eingetragen ist — also ohne Kosten, bis der Owner es will.
+
+**WORK.** domain/telefon.js (Vorwahlen aller 64 Register-Länder nach ITU, Normalform E.164, Côte
+d'Ivoire behält die 0), services/sms.js (Africa's Talking inkl. Sandbox, Twilio; Status je Empfänger
+geprüft), services/telefonLogin.js (Code aus crypto.randomInt, nur Hash gespeichert, 10 min, einmalig,
+5 Versuche; Konto über Platzhalter-Adresse tel_<Ziffern>@telefon.local; neues Konto per Zweck-Ticket
+'tel_reg', 15 min). server.js: kontoAnlegen() aus /api/register herausgelöst (ein Weg für E-Mail und
+Telefon), Platzhalter-Adressen @telefon.local/@oauth.local über das E-Mail-Formular gesperrt (sonst
+ließe sich das Telefon-Konto einer anderen Person vorab besetzen — galt auch für OAuth-Platzhalter),
+POST /api/telefon/code|pruefen|konto, Bremsen je Nummer (3/h) und Gerät (10/h, Prüfen 20/15 min),
+/api/auth/providers meldet telefon + Vorwahlen. app.js: großer Knopf über „oder", Bildschirm mit drei
+Schritten (Nummer mit Vorwahl davor, Code mit SMS-Autofill, Name + Kontotyp), Codes-Karte wie bei der
+E-Mail-Registrierung. i18n +21 in 5 Sprachen. DEPLOY.md + render.yaml: Einrichtung.
+
+**Tests.** telefon-login.test.js (6): Normalform (UG/SN/CI/KE/NG/AT, ungültige), Vorwahl je Register-
+Land, SMS-Dienst gegen Schein-fetch (Sandbox-URL, Kopf, abgelehnter Empfänger, Twilio Basic-Auth),
+Code-Regeln mit Uhr (Sperre nach 5, einmalig, Ablauf, Ticket-Ablauf), SMS-Fehler legt keinen Code an,
+Oberfläche, HTTP mit lokalem Schein-Anbieter (ganzer Ablauf, dasselbe Konto beim zweiten Mal, kein Hash
+in der Antwort, Platzhalter gesperrt, vierte SMS je Nummer → 429 und nicht verschickt). Browser 360 px:
+Senegal (fr) und Ägypten (ar) komplett durchgespielt; gefunden: Vorwahl in Arabisch „20+" → isoliert,
+arabischer Platzhalter im LTR-Feld verdreht → nur Ziffern.

@@ -89,6 +89,9 @@ import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js'
 import { issueToken, tokenDetails, sitzungGueltig, issueZweckToken, verifyZweckToken } from './token.js';
 import { createMailer } from '../services/mailer.js';
 import { createPasswortLink } from '../services/passwortLink.js';
+import { createSms } from '../services/sms.js';
+import { createTelefonLogin, telefonAdresse } from '../services/telefonLogin.js';
+import { VORWAHL } from '../domain/telefon.js';
 import { hashPassword } from '../domain/password.js';
 import { createWochenbericht } from '../services/wochenbericht.js';
 import { createEigeneQuellen } from '../services/eigeneQuellen.js';
@@ -123,6 +126,11 @@ const resetJeKonto = createRateLimiter({ max: 10, windowMs: 15 * 60 * 1000 });
 // Passwort-Links: jede Anfrage verschickt eine Mail — eng, damit niemand fremde Postfächer flutet.
 const linkLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
 const linkJeKonto = createRateLimiter({ max: 3, windowMs: 60 * 60 * 1000 });
+// SMS-Codes kosten je Stück Geld: je Nummer 3, je Gerät 10 pro Stunde. Code-Prüfung je Gerät 20 / 15 min
+// (zusätzlich verbrennt der Code nach 5 Fehlversuchen, services/telefonLogin.js).
+const telCodeJeNummer = createRateLimiter({ max: 3, windowMs: 60 * 60 * 1000 });
+const telCodeJeGeraet = createRateLimiter({ max: 10, windowMs: 60 * 60 * 1000 });
+const telPruefJeGeraet = createRateLimiter({ max: 20, windowMs: 15 * 60 * 1000 });
 // Uebersetzungen: 60 Anbieter-Aufrufe je Stunde und Konto. Das ist kein
 // Missbrauchsschutz im engeren Sinn, sondern eine KOSTENBREMSE — jeder Aufruf
 // geht gegen die Abrechnung des Owners. Antworten aus dem Zwischenspeicher
@@ -281,6 +289,13 @@ const passwortLink = createPasswortLink({
   ausstellen: (inhalt) => issueZweckToken('pw_reset', inhalt),
   pruefen: (t) => verifyZweckToken('pw_reset', t),
   basis: String(process.env.APOPULSE_PUBLIC_URL || 'https://www.apopulse.com').replace(/\/+$/, ''),
+});
+// Anmelden per Telefonnummer + SMS-Code (services/telefonLogin.js). Nur mit SMS-Anbieter aktiv.
+const sms = createSms();
+const telefonLogin = createTelefonLogin({
+  sms, repo,
+  ausstellen: (inhalt) => issueZweckToken('tel_reg', inhalt),
+  pruefen: (t) => verifyZweckToken('tel_reg', t),
 });
 // Eigene Engpass-Quellen der Redaktion (services/eigeneQuellen.js) — auch sie
 // werden mit gesichert, also VOR applySnapshot() anlegen.
@@ -1164,6 +1179,41 @@ async function runShortageIngest() {
   return summary;
 }
 
+// Konto anlegen — gemeinsamer Weg für E-Mail- und Telefon-Registrierung (Handle,
+// Profil, Einladung, Wiederherstellungscodes). `intern` erlaubt die Platzhalter-
+// Adressen (@telefon.local, @oauth.local), die von außen nie gewählt werden dürfen.
+function kontoAnlegen(body, { intern = false } = {}) {
+  const { email, password, displayName, pharmacyName } = body;
+  const name = String(body.name || '').trim();
+  // ERST alles prüfen, DANN anlegen. Bis 10/2026 entstanden Organisation und
+  // Konto vor der Handle-Prüfung: Ein zu kurzer oder vergebener Handle ließ
+  // ein Konto ohne Profil zurück, und die E-Mail war für immer „vergeben".
+  if (!name && !displayName) throw new AppError('display_name_required', 'Anzeigename erforderlich.');
+  const wunsch = normalizeHandle(body.handle);
+  if (wunsch && !HANDLE_RE.test(wunsch)) throw new AppError('profile_handle_format', 'Handle: 3–30 Zeichen, nur a–z 0–9 _.');
+  if (wunsch && social.getProfile(wunsch)) throw new AppError('handle_taken', 'Handle ist bereits vergeben.');
+  if (!intern && /@(telefon|oauth)\.local$/i.test(String(email || '').trim())) throw new AppError('email_reserviert', 'Diese Adresse ist reserviert.');
+  if (repo.getUserByEmail(String(email || '').trim())) throw new AppError('email_taken', 'E-Mail ist bereits vergeben.');
+  if (String(password || '').length < 8) throw new AppError('pw_too_short', 'Passwort muss mindestens 8 Zeichen haben.');
+  // Ohne Wunsch: Handle aus dem Namen („Jürgen Müller" -> juergen_mueller).
+  const handle = wunsch || freierHandle(displayName || name, (h) => !!social.getProfile(h));
+  const reg = orgAuth.registerPharmacyWithOwner({
+    pharmacy: { name: pharmacyName || `${name || 'Meine'} Apotheke` },
+    owner: { name, email, password },
+  });
+  // Land + UI-Sprache bei der Registrierung (Länderauswahl); Fallback AT/de.
+  const country = normalizeCountry(body.country);
+  const locale = normalizeLocale(body.locale, country);
+  // Kontotyp bei der Registrierung (Apotheke/Pharma/Behörde/Privat); Fallback Apotheke.
+  const accountType = normalizeAccountType(body.accountType);
+  const profile = social.createProfile(reg.user.id, { handle, displayName: displayName || name, pharmacyOrgId: reg.organization.id, country, locale, accountType });
+  // Über einen Einladungs-Link gekommen (services/einladungen.js): zuordnen, einladende Person benachrichtigen.
+  const eingeladenVon = einladungen.zuordnen(reg.user.id, body.einladung);
+  if (eingeladenVon) social.einladungAngenommen(eingeladenVon, reg.user.id);
+  // recoveryCodes einmalig mitschicken, damit das Frontend sie zum Sichern anzeigen kann.
+  return { token: issueToken(reg.user.id), user: reg.user, profile, recovery_codes: reg.recoveryCodes };
+}
+
 const routes = [
   // Health-Check für Hosting-Plattformen (kein Auth, keine Daten).
   // `durability` ist hier absichtlich ÖFFENTLICH und absichtlich NUR die Stufe.
@@ -1275,36 +1325,7 @@ const routes = [
 
   // Eigener Einladungs-Link (services/einladungen.js). __sichern: Der erste Abruf legt den Code an.
   ['GET', /^\/api\/einladung$/, true, async ({ userId }) => ({ code: einladungen.code(userId), beigetreten: einladungen.anzahl(userId), __sichern: true })],
-  ['POST', /^\/api\/register$/, false, async ({ body }) => {
-    const { email, password, displayName, pharmacyName } = body;
-    const name = String(body.name || '').trim();
-    // ERST alles prüfen, DANN anlegen. Bis 10/2026 entstanden Organisation und
-    // Konto vor der Handle-Prüfung: Ein zu kurzer oder vergebener Handle ließ
-    // ein Konto ohne Profil zurück, und die E-Mail war für immer „vergeben".
-    if (!name && !displayName) throw new AppError('display_name_required', 'Anzeigename erforderlich.');
-    const wunsch = normalizeHandle(body.handle);
-    if (wunsch && !HANDLE_RE.test(wunsch)) throw new AppError('profile_handle_format', 'Handle: 3–30 Zeichen, nur a–z 0–9 _.');
-    if (wunsch && social.getProfile(wunsch)) throw new AppError('handle_taken', 'Handle ist bereits vergeben.');
-    if (repo.getUserByEmail(String(email || '').trim())) throw new AppError('email_taken', 'E-Mail ist bereits vergeben.');
-    if (String(password || '').length < 8) throw new AppError('pw_too_short', 'Passwort muss mindestens 8 Zeichen haben.');
-    // Ohne Wunsch: Handle aus dem Namen („Jürgen Müller" -> juergen_mueller).
-    const handle = wunsch || freierHandle(displayName || name, (h) => !!social.getProfile(h));
-    const reg = orgAuth.registerPharmacyWithOwner({
-      pharmacy: { name: pharmacyName || `${name || 'Meine'} Apotheke` },
-      owner: { name, email, password },
-    });
-    // Land + UI-Sprache bei der Registrierung (Länderauswahl); Fallback AT/de.
-    const country = normalizeCountry(body.country);
-    const locale = normalizeLocale(body.locale, country);
-    // Kontotyp bei der Registrierung (Apotheke/Pharma/Behörde/Privat); Fallback Apotheke.
-    const accountType = normalizeAccountType(body.accountType);
-    const profile = social.createProfile(reg.user.id, { handle, displayName: displayName || name, pharmacyOrgId: reg.organization.id, country, locale, accountType });
-    // Über einen Einladungs-Link gekommen (services/einladungen.js): zuordnen, einladende Person benachrichtigen.
-    const eingeladenVon = einladungen.zuordnen(reg.user.id, body.einladung);
-    if (eingeladenVon) social.einladungAngenommen(eingeladenVon, reg.user.id);
-    // recoveryCodes einmalig mitschicken, damit das Frontend sie zum Sichern anzeigen kann.
-    return { token: issueToken(reg.user.id), user: reg.user, profile, recovery_codes: reg.recoveryCodes };
-  }],
+  ['POST', /^\/api\/register$/, false, async ({ body }) => kontoAnlegen(body)],
 
   // Passwort per Wiederherstellungscode zurücksetzen (kein E-Mail-Dienst nötig). Rate-limitiert.
   ['POST', /^\/api\/password\/reset$/, false, async ({ body, ip }) => {
@@ -1337,6 +1358,34 @@ const routes = [
     let r;
     try { r = passwortLink.einloesen({ t: body.t, newPassword: body.newPassword }); } catch (e) { resetLimiter.fail(key); throw e; }
     return { token: issueToken(r.userId), user: safeUser(repo.getUserById(r.userId)), profile: social.getProfile(r.userId) };
+  }],
+
+  // ── Anmelden mit Telefonnummer ────────────────────────────────────────────
+  // 1) Code per SMS. Jede Anfrage zählt gegen die Bremsen — sie kostet eine SMS.
+  ['POST', /^\/api\/telefon\/code$/, false, async ({ body, ip }) => {
+    const nummer = telefonLogin.nummer(body.telefon, body.land);
+    const st0 = telCodeJeGeraet.check(ip || 'unknown'); const st1 = telCodeJeNummer.check(nummer);
+    const st = st0.blocked ? st0 : st1;
+    if (st.blocked) { const e = new Error('Zu viele Versuche. Bitte später erneut.'); e.status = 429; e.code = 'too_many_attempts'; e.retryAfterS = Math.ceil(st.retryAfterMs / 1000); throw e; }
+    telCodeJeGeraet.fail(ip || 'unknown'); telCodeJeNummer.fail(nummer);
+    return telefonLogin.anfordern({ telefon: nummer, sprache: SUPPORTED_LOCALES.includes(body.sprache) ? body.sprache : 'en' });
+  }],
+  // 2) Code prüfen → angemeldet, oder Ticket für ein neues Konto.
+  ['POST', /^\/api\/telefon\/pruefen$/, false, async ({ body, ip }) => {
+    const st = telPruefJeGeraet.check(ip || 'unknown');
+    if (st.blocked) { const e = new Error('Zu viele Versuche. Bitte später erneut.'); e.status = 429; e.code = 'too_many_attempts'; e.retryAfterS = Math.ceil(st.retryAfterMs / 1000); throw e; }
+    let r;
+    try { r = telefonLogin.pruefen({ telefon: body.telefon, land: body.land, code: body.code }); }
+    catch (e) { telPruefJeGeraet.fail(ip || 'unknown'); throw e; }
+    if (r.neu) return { neu: true, ticket: r.ticket };
+    return { token: issueToken(r.userId), user: safeUser(repo.getUserById(r.userId)), profile: social.getProfile(r.userId) };
+  }],
+  // 3) Neues Konto zur bestätigten Nummer (Name + Kontotyp). Doppelt abgeschickt: einfach anmelden.
+  ['POST', /^\/api\/telefon\/konto$/, false, async ({ body }) => {
+    const nummer = telefonLogin.ticketNummer(body.ticket);
+    const da = repo.getUserByEmail(telefonAdresse(nummer));
+    if (da) return { token: issueToken(da.id), user: safeUser(da), profile: social.getProfile(da.id) };
+    return kontoAnlegen({ ...body, handle: undefined, email: telefonAdresse(nummer), password: crypto.randomBytes(24).toString('hex') }, { intern: true });
   }],
 
   // Verbleibende Wiederherstellungscodes (eingeloggt) + Neu-Erzeugung.
@@ -1610,7 +1659,7 @@ const routes = [
       if (redirectUri) { try { authorize_url = oauth.authorizeUrl(name, redirectUri, name); } catch { /* Provider ohne Authorize-URL */ } }
       return { provider: name, authorize_url };
     });
-    return { providers, passwort_link: passwortLink.aktiv };
+    return { providers, passwort_link: passwortLink.aktiv, telefon: telefonLogin.aktiv, ...(telefonLogin.aktiv ? { vorwahlen: VORWAHL } : {}) };
   }],
   ['POST', /^\/api\/auth\/oauth\/([a-z0-9_]+)$/, false, async ({ params, body }) => {
     const { userId } = await oauth.loginOrRegister(params[0], body.code, body.redirectUri, { country: normalizeCountry(body.country), locale: body.locale });

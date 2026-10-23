@@ -706,3 +706,11 @@ der Offizin. Beim Deploy wird niemand zwangsweise abgemeldet.
 „ApoPulse als App auf den Startbildschirm" mit „Jetzt installieren" — ein Symbol wie bei einer App, ohne
 App-Store und ohne großen Download. Auf dem iPhone steht stattdessen die kurze Anleitung („Teilen → Zum
 Home-Bildschirm"). „Später" blendet die Karte 30 Tage aus; in der installierten App erscheint sie nie.
+
+**Anmelden mit Telefonnummer (Stand 23.10.2026).** Wie bei WhatsApp: Handynummer eingeben (so wie sie
+auf der Visitenkarte steht, „77 123 45 67" — die Landesvorwahl +221 steht schon davor), 6-stelliger
+Code per SMS, fertig. Neue Nummer: noch Name und Kontotyp, dann ist das Konto da — ohne E-Mail, ohne
+Passwort. Eine Nummer ist ein Konto, egal wie sie getippt wird (Côte d'Ivoire: die führende 0 gehört
+seit 2021 zur Nummer). Code 10 Minuten gültig, nur einmal, nach 5 Fehlversuchen verbrannt. Erscheint
+erst, wenn der Owner einen SMS-Anbieter einrichtet (Africa's Talking oder Twilio, server/DEPLOY.md);
+vorher entstehen keine Kosten.
