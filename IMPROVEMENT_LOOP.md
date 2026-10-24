@@ -3396,3 +3396,18 @@ Desktop-Rundgang Nigeria (1280 px): Aufbau sauber; Namens-Beispiel „Dr. Anna H
 (5 Sprachen), Preise-Reiter mit €-Symbol → Münzstapel. Bewusst NICHT angefasst: Die Preisanzeige rechnet
 durchgehend in Euro (nur AT-Referenzpreise vorhanden; afrikanische Länder zeigen die Leer-Ansicht). Eine
 Umstellung auf Landeswährungen bleibt Backlog-Punkt „sicherheitsnah, Freigabe nötig".
+
+### Cycle · Herkunfts-Etikett nennt die tatsächliche Behörde (2026-10-24)
+
+**Fund (systematische Suche nach Österreich-Resten in en/fr/pt/ar).** Das Etikett für amtliche Daten hieß in
+allen Sprachen „✔ BASG (verified)" — auf jeder amtlichen Engpass-Karte, auch bei Meldungen von SAHPRA,
+FDA Ghana oder BfArM; die Legende erklärte es als „Austrian Federal Office …". Bei Engpass-Angaben ist eine
+falsche Quelle schlimmer als keine (CLAUDE.md: sicherheitsrelevante Aussagen nur mit Quelle).
+
+**WORK.** provLabel(key, quelle): amtlich → „✔ Official · <quelle der Zeile>", ohne Quelle nur „✔ Official"
+(nie eine erfundene Behörde). Engpass-Karte, Preiszeile, Übersichtsliste und CSV-Export reichen die Quelle
+durch. Legende: „Daten der Arzneimittelbehörde des Landes; welche Behörde, steht bei jedem Eintrag."
+Beispiel „z. B. BASG" im Quellenfeld der Redaktion neutral. 5 Sprachen.
+
+**Tests.** herkunft-quelle.test.js (2): kein BASG/Austrian in den Etiketten aller Sprachen; echte
+provLabel() mit SAHPRA, ohne Quelle, andere Herkunft; Aufrufstellen + CSV.

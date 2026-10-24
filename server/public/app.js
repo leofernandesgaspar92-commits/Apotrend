@@ -3617,7 +3617,12 @@ const STATUS_FG = { kritisch:'var(--crit-fg)', eingeschraenkt:'var(--warn-fg)', 
 const statusFg = (key) => STATUS_FG[key] || 'var(--muted)';
 // Herkunfts-Label (übersetzt) je Datenquelle.
 const PROV_I18N = { verified:'prov_verified', reference:'prov_reference', simulated:'prov_simulated', editorial:'prov_editorial', community:'prov_community' };
-function provLabel(key) { return PROV_I18N[key] ? t(PROV_I18N[key]) : (key || ''); }
+// Amtlich: die TATSÄCHLICHE Behörde nennen. Bis 10/2026 stand auf jeder amtlichen Karte
+// „BASG (verifiziert)" — auch bei Meldungen von SAHPRA, FDA Ghana oder BfArM.
+function provLabel(key, quelle) {
+  if (key === 'verified' && quelle) return ti('prov_verified_q', { q: quelle });
+  return PROV_I18N[key] ? t(PROV_I18N[key]) : (key || '');
+}
 // Engpass-Grund: bekannte Standard-Gründe (aus den Seed-Daten) übersetzen;
 // frei eingegebene Community-Gründe bleiben unverändert (kein Falsch-Übersetzen).
 const GRUND_I18N = { 'Erhöhte Nachfrage':'gr_demand', 'Herstellungsproblem':'gr_manuf', 'Kontingentierung':'gr_ration', 'Produktionsverzögerung':'gr_delay', 'Wirkstoffknappheit':'gr_api' };
@@ -4067,7 +4072,7 @@ function shortageCard(s) {
       <span class="post-author clickable" data-wirkstoff="${esc(s.wirkstoff)}" title="${esc(ti('sh_view_all_wk',{wk:s.wirkstoff}))}">${esc(s.wirkstoff)}</span>
       <span style="background:${scol};color:#fff;border-radius:6px;padding:2px 8px;font-size:13px">${slabel}</span>
       <span class="sp" style="flex:1"></span>
-      <span class="vis" title="${esc(t('pl_open'))}">${esc(provLabel(s.provenance))}</span>
+      <span class="vis" title="${esc(t('pl_open'))}">${esc(provLabel(s.provenance, s.quelle))}</span>
     </div>
     <div class="post-body">${esc(s.bezeichnung)}</div>
     <div class="muted">${s.grund?esc(grundLabel(s.grund))+' · ':''}${esc(t('sc_reported'))} ${esc(s.gemeldet_am?fmtDateDe(s.gemeldet_am):'—')}${s.days_reported>0&&s.status!=='verfuegbar'?` · ${esc(nlabel(s.days_reported,'sc_age_one','sc_age_many'))}`:''}${s.quelle&&/^https?:\/\//i.test(s.quelle)?` · <a href="${esc(s.quelle)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(t('wk_hist_src'))}${srcDomSuffix(s.quelle)}</a>`:''}</div>
@@ -5358,7 +5363,8 @@ function exportShortagesCsv(list) {
     (s.days_reported != null && s.status !== 'verfuegbar') ? String(s.days_reported) : '',
     s.status !== 'verfuegbar' ? (s.voraussichtlich_bis || '') : '',
     csvYesNo(s.is_antibiotic),
-    provText[s.provenance] || s.provenance || '',
+    // Amtlich mit der tatsächlichen Behörde (z. B. „Official (SAHPRA)").
+    (s.provenance === 'verified' && s.quelle ? `${provText.verified} (${s.quelle})` : (provText[s.provenance] || s.provenance || '')),
     s.provenance === 'community' && s.reporter ? '@' + s.reporter.handle : '',
     csvYesNo(s.watched),
   ]);
@@ -8100,7 +8106,7 @@ async function renderSearch(q) {
       d.prices.forEach(pr => feed.appendChild(el(`<div class="card"><div class="row">
         <span class="post-author">${esc(pr.bezeichnung)}</span><span class="handle">${esc(pr.wirkstoff||'')}</span>
         <span class="sp" style="flex:1"></span><span><b>€ ${fmtMoney(pr.aep)}</b> ${trendStr(pr.trend_pct)}</span></div>
-        <div class="muted">${esc(pr.supplier)} · ${esc(provLabel(pr.provenance))}</div></div>`)));
+        <div class="muted">${esc(pr.supplier)} · ${esc(provLabel(pr.provenance, pr.quelle))}</div></div>`)));
     }
     if (d.rabatte.length) { section(t('search_sec_rabatte')); d.rabatte.forEach((r,i) => { r.rank = i+1; feed.appendChild(rabattCard(r)); }); }
     if (d.exchange && d.exchange.length) { section(t('nav_exchange')); d.exchange.forEach(e => feed.appendChild(exchangeCard(e))); }
@@ -8981,7 +8987,7 @@ async function openWirkstoff(name) {
     // Erstmeldedatum aus dem Statusverlauf (Fallback: gemeldet_am) — zeigt „seit wann".
     const hist = Array.isArray(s.history) ? s.history.filter(h => h && h.am) : [];
     const firstAm = (hist[0] && hist[0].am) || s.gemeldet_am || null;
-    const row = el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:13px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:13px">· ${esc(provLabel(s.provenance))}${s.grund?' · '+esc(grundLabel(s.grund)):''}${firstAm?' · '+esc(ti('wk_since',{date:fmtDateDe(firstAm)})):''}${s.quelle&&/^https?:\/\//i.test(s.quelle)?` · <a href="${esc(s.quelle)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(t('wk_hist_src'))}${srcDomSuffix(s.quelle)}</a>`:''}</span></div>`);
+    const row = el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:13px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:13px">· ${esc(provLabel(s.provenance, s.quelle))}${s.grund?' · '+esc(grundLabel(s.grund)):''}${firstAm?' · '+esc(ti('wk_since',{date:fmtDateDe(firstAm)})):''}${s.quelle&&/^https?:\/\//i.test(s.quelle)?` · <a href="${esc(s.quelle)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(t('wk_hist_src'))}${srcDomSuffix(s.quelle)}</a>`:''}</span></div>`);
     // Statusverlauf (nur ab 2 dokumentierten Schritten): macht sichtbar, wie lange und
     // wie stabil der Engpass ist — hilft bei der Entscheidung, ob aktiv beschafft werden
     // muss. Standardmäßig eingeklappt, damit die Detailseite kompakt bleibt.
