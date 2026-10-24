@@ -37,3 +37,10 @@ test('echte provLabel(): amtlich mit tatsächlicher Quelle, andere Herkünfte un
   ]) assert.ok(app.includes(stelle), stelle);
   assert.match(app, /s\.provenance === 'verified' && s\.quelle \? `\$\{provText\.verified\} \(\$\{s\.quelle\}\)`/, 'CSV-Export');
 });
+
+test('keine Österreich-Bezüge in den Texten außerhalb Deutsch', () => {
+  for (const sp of ['en', 'pt', 'fr', 'ar']) {
+    const roh = JSON.stringify(I[sp]);
+    assert.doesNotMatch(roh, /Austria|Autriche|autrichien|Áustria|austríac|النمسا|BASG/, sp);
+  }
+});

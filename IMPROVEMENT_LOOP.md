@@ -3411,3 +3411,5 @@ Beispiel „z. B. BASG" im Quellenfeld der Redaktion neutral. 5 Sprachen.
 
 **Tests.** herkunft-quelle.test.js (2): kein BASG/Austrian in den Etiketten aller Sprachen; echte
 provLabel() mit SAHPRA, ohne Quelle, andere Herkunft; Aufrufstellen + CSV.
+Danach pt/ar/en/fr durchsucht: einziger Rest „normal für deutsche und österreichische Markennamen" (RxNorm-
+Hinweis) → „Markennamen außerhalb der USA". Wächter-Test: kein Austria/BASG/النمسا … außerhalb Deutsch.
