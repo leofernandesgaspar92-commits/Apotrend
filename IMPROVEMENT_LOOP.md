@@ -3392,3 +3392,7 @@ Reset mit „77 123 45 67" + Code, dann Login mit „+221 77 123 45 67" + Passwo
 4. **„Mark all as read"** als großer grüner Knopf ohne Benachrichtigungen → nur bei Ungelesenem.
 
 **Tests.** premium-zahlwahl.test.js (1), leere-ansichten.test.js +1, Browser-Audit (Zahlweg-Auswahl).
+Desktop-Rundgang Nigeria (1280 px): Aufbau sauber; Namens-Beispiel „Dr. Anna Huber" → „First and last name"
+(5 Sprachen), Preise-Reiter mit €-Symbol → Münzstapel. Bewusst NICHT angefasst: Die Preisanzeige rechnet
+durchgehend in Euro (nur AT-Referenzpreise vorhanden; afrikanische Länder zeigen die Leer-Ansicht). Eine
+Umstellung auf Landeswährungen bleibt Backlog-Punkt „sicherheitsnah, Freigabe nötig".

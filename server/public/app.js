@@ -10,6 +10,8 @@ const ICONS = {
   package: '<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/>',
   news: '<path d="M4 5h12v14H6a2 2 0 0 1-2-2z"/><path d="M16 9h4v8a2 2 0 0 1-2 2h-2"/><path d="M8 9h4M8 13h4M8 16h2"/>',
   euro: '<path d="M18 6.5a7 7 0 1 0 0 11"/><path d="M4 10h9M4 14h9"/>',
+  // Münzstapel: Preise ohne Währungszeichen — in Nigeria zahlt man nicht in Euro.
+  coins: '<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>',
   tag: '<path d="M3 12V4h8l10 10-8 8z"/><path d="M7.5 7.5h.01"/>',
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/>',
   swap: '<path d="M7 7h13l-3-3"/><path d="M17 17H4l3 3"/>',
@@ -340,7 +342,7 @@ function nlabel(n, oneKey, manyKey) {
 // Engpass-Seite und als Tooltip am Reiter: dort, wo man ihn zum Nachschlagen
 // im Register braucht.
 // Symbol je Reiter aus dem Linien-Set (statt des Emojis im Übersetzungstext).
-const TAB_ICON = { overview: 'sparkle', signals: 'alert', shortages: 'package', news: 'news', prices: 'euro', rabatte: 'tag', exchange: 'swap', public: 'globe', home: 'home' };
+const TAB_ICON = { overview: 'sparkle', signals: 'alert', shortages: 'package', news: 'news', prices: 'coins', rabatte: 'tag', exchange: 'swap', public: 'globe', home: 'home' };
 function navTabLabel(n, k) {
   const s = t(k);
   const m = s.match(/^(\S+)\s+(.+)$/);
@@ -852,7 +854,7 @@ function authScreen() {
         <div id="rg_durability" class="err" hidden></div>
         <!-- Nur, was wirklich gebraucht wird: Land steht schon fest (Schritt 1),
              der @Handle entsteht aus dem Namen. -->
-        <label for="rg_name">${esc(t('au_name'))}</label><input id="rg_name" name="name" autocomplete="name" placeholder="Dr. Anna Huber">
+        <label for="rg_name">${esc(t('au_name'))}</label><input id="rg_name" name="name" autocomplete="name" placeholder="${esc(t('au_name_ph'))}">
         <label for="rg_email">${esc(t('au_email'))}</label><input id="rg_email" name="email" type="email" autocomplete="username" inputmode="email" placeholder="${esc(t('au_email_ph'))}">
         <label for="rg_pw">${esc(t('au_pw8'))}</label><div class="pw-zeile"><input id="rg_pw" name="new-password" type="password" autocomplete="new-password"><button type="button" class="ghost small pw-zeigen" data-pw="rg_pw" aria-controls="rg_pw">${esc(t('au_pw_show'))}</button></div>
         <label for="rg_accounttype">${esc(t('at_label'))}</label><select id="rg_accounttype" name="account-type"></select>

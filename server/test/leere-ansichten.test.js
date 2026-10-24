@@ -54,3 +54,9 @@ test('Rundgang Kenia: kein „Alle gelesen" ohne Ungelesenes, „Angaben" statt 
   assert.doesNotMatch(i18n, /item\(s\)|Angabe\(n\)|élément\(s\)|item\(ns\)/);
   assert.doesNotMatch(i18n, /AT-K-2026-1188|Vienna|Vienne|فيينا|Viena|Universidade de Lisboa/);
 });
+
+test('Desktop-Rundgang Nigeria: Namens-Beispiel ohne Länderbezug, Preise-Reiter ohne €-Symbol', () => {
+  assert.doesNotMatch(app, /placeholder="Dr\. Anna Huber"/);
+  assert.match(app, /placeholder="\$\{esc\(t\('au_name_ph'\)\)\}"/);
+  assert.match(app, /prices: 'coins'/);
+});
