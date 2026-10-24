@@ -46,3 +46,11 @@ test('Melde-Formular: Beschriftungen mit den Feldern verknüpft, großer Absende
   assert.match(k, /<button class="auth-gross" data-send style="width:100%;min-height:52px">/);
   assert.match(k, /data-gemeldet[\s\S]*ti\('sh_rep_ok', \{ w: wirkstoff \}\)/);
 });
+
+test('Rundgang Kenia: kein „Alle gelesen" ohne Ungelesenes, „Angaben" statt „item(s)", keine Wien-Beispiele außerhalb Deutsch', () => {
+  assert.match(app, /\$\{unreadN \? `<button class="small" id="readall">/);
+  assert.match(app, /nlabel\(missing\.length, 'pfc_missing_1', 'pfc_missing'\)/);
+  const i18n = readFileSync(new URL('../public/i18n.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(i18n, /item\(s\)|Angabe\(n\)|élément\(s\)|item\(ns\)/);
+  assert.doesNotMatch(i18n, /AT-K-2026-1188|Vienna|Vienne|فيينا|Viena|Universidade de Lisboa/);
+});

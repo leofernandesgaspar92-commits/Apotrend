@@ -7612,11 +7612,26 @@ async function openPremium() {
     if (opt.amount < 20 && opt.coins.some((c) => c.low_fee) && opt.coins.some((c) => !c.low_fee)) {
       body.appendChild(el(`<div data-prgebuehr style="background:var(--info-bg);border:1px solid var(--info-bd);color:var(--info-fg);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:15px">${esc(t('pr_fee_hint'))}</div>`));
     }
-    opt.coins.forEach(c => {
+    // Womit zahlst du? Bis 10/2026 standen alle Wallets untereinander (je ~450 px, am Handy
+    // fast zwei Bildschirmhöhen Adressen). Jetzt eine Auswahl; gezeigt wird nur der gewählte
+    // Zahlweg, der günstigste (Reihenfolge vom Server) ist vorgewählt. Alle bleiben einen Tipp
+    // entfernt — am Krypto-Bezahlen selbst ändert sich nichts.
+    if (opt.coins.length > 1) {
+      const wahl = el(`<div data-coinwahl style="margin-bottom:10px"><div style="font-weight:700;margin-bottom:6px">${esc(t('pr_coin_choose'))}</div>
+        <div class="row" style="gap:8px;flex-wrap:wrap">${opt.coins.map((c, i) => `<button type="button" class="small sortbtn${i ? '' : ' active'}" aria-pressed="${i ? 'false' : 'true'}" data-coin="${esc(c.id)}">${esc(c.symbol)}${c.label ? ' · ' + esc(c.label) : ''}</button>`).join('')}</div></div>`);
+      wahl.querySelectorAll('[data-coin]').forEach((b) => {
+        b.onclick = () => {
+          wahl.querySelectorAll('[data-coin]').forEach((x) => { const an = x === b; x.classList.toggle('active', an); x.setAttribute('aria-pressed', String(an)); });
+          body.querySelectorAll('.crypto-pay[data-coinid]').forEach((k) => { k.hidden = k.dataset.coinid !== b.dataset.coin; });
+        };
+      });
+      body.appendChild(wahl);
+    }
+    opt.coins.forEach((c, i) => {
       const amountLbl = c.amount_crypto != null ? ti('pr_amount', { n: c.amount_crypto, sym: c.symbol }) : ti('pr_amount_na', { amount: fmtCurrency(opt.amount, opt.currency || 'EUR') });
       const title = esc(c.symbol) + (c.label ? ` <span class="muted" style="font-weight:400;font-size:13px">· ${esc(c.label)}</span>` : '')
         + (c.low_fee ? ` <span data-lowfee style="display:inline-block;font-size:13px;font-weight:700;color:var(--ok-fg);background:var(--ok-bg);border:1px solid var(--ok-bd);border-radius:999px;padding:1px 8px">${esc(t('pr_low_fee'))}</span>` : '');
-      const cc = el(`<div class="crypto-pay">
+      const cc = el(`<div class="crypto-pay" data-coinid="${esc(c.id)}"${i && opt.coins.length > 1 ? ' hidden' : ''}>
         <div class="row"><b>${title}</b> <span class="muted" style="font-size:13px">${esc(ti('pr_network', { net: c.network }))}</span><span class="sp" style="flex:1"></span><span style="font-weight:700">${esc(amountLbl)}</span></div>
         <div class="crypto-addr"><code>${esc(c.address)}</code></div>
         <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap">
@@ -8310,7 +8325,7 @@ async function openProfile(handle) {
             <b>${esc(t('pfc_title_head'))}</b><span class="sp" style="flex:1"></span><b>${c.pct}%</b>
           </div>
           <div class="pfc-bar"><span style="width:${c.pct}%"></span></div>
-          <div class="muted" style="font-size:13px;margin:4px 0 6px">${esc(ti('pfc_missing', { n: missing.length }))}</div>
+          <div class="muted" style="font-size:13px;margin:4px 0 6px">${esc(nlabel(missing.length, 'pfc_missing_1', 'pfc_missing'))}</div>
           <div>${missing.map(i => `<span class="spec">➕ ${esc(i.label)}</span>`).join(' ')}</div>
           <div class="row" style="margin-top:8px"><button class="small" data-edit>${esc(t('pfc_cta'))}</button></div>
         </div>`;
@@ -9748,7 +9763,7 @@ async function showNotifications() {
     </div>`:''}
     ${showUnreadToggle?`<div class="reacts" style="margin-top:8px"><button class="small sortbtn" data-unreadonly aria-pressed="false">${esc(ti('nf_unread_only',{n:unreadN}))}</button></div>`:''}
     <div id="notiflist" style="margin-top:8px"></div>
-    <div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap"><button class="small" id="readall">${esc(t('notif_readall'))}</button>${d.notifications.some(n=>n.read)?`<button class="ghost small" id="clearread">${esc(t('notif_clearread'))}</button>`:''}<button class="ghost small" id="notifsettings">${esc(t('np_open'))}</button></div></div>`);
+    <div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap">${unreadN ? `<button class="small" id="readall">${esc(t('notif_readall'))}</button>` : ''}${d.notifications.some(n=>n.read)?`<button class="ghost small" id="clearread">${esc(t('notif_clearread'))}</button>`:''}<button class="ghost small" id="notifsettings">${esc(t('np_open'))}</button></div></div>`);
   app.appendChild(head);
   head.after(pushKarte()); // Sofort-Alarm aufs Handy: Einschalten, Test, Ausschalten
   const list = head.querySelector('#notiflist');
@@ -9817,7 +9832,8 @@ async function showNotifications() {
   if (showFilter) head.querySelectorAll('[data-nf]').forEach(b => b.onclick = () => { notifFilter = b.dataset.nf; drawNotifs(); });
   { const ub = head.querySelector('[data-unreadonly]'); if (ub) ub.onclick = () => { notifUnreadOnly = !notifUnreadOnly; drawNotifs(); }; }
   head.querySelector('#back').onclick = mainScreen;
-  head.querySelector('#readall').onclick = async () => { await api('POST','/api/notifications/read-all'); refreshNotifCount(); showNotifications(); };
+  // „Alle gelesen“ nur, wenn es Ungelesenes gibt — sonst ein großer grüner Knopf ohne Wirkung.
+  { const ra = head.querySelector('#readall'); if (ra) ra.onclick = async () => { await api('POST','/api/notifications/read-all'); refreshNotifCount(); showNotifications(); }; }
   { const cr = head.querySelector('#clearread'); if (cr) cr.onclick = async () => { if (!confirm(t('notif_clearread_confirm'))) return; try { await api('POST','/api/notifications/clear-read'); refreshNotifCount(); showNotifications(); } catch(e){ alert(e.message); } }; }
   head.querySelector('#notifsettings').onclick = openNotifSettings;
   refreshNotifCount();

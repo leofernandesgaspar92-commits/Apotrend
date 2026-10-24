@@ -3378,3 +3378,17 @@ einer E-Mail, die es nicht gibt) — SIM weg = Konto weg. Jetzt nehmen Anmeldung
 Handynummer (kontoKennung(): ohne „@" → Normalform → Telefon-Konto); Felder werden bei aktiver Telefon-
 Anmeldung zu „E-Mail oder Handynummer" (type=text, sonst weist der Browser die Nummer ab). HTTP-Test:
 Reset mit „77 123 45 67" + Code, dann Login mit „+221 77 123 45 67" + Passwort → dasselbe Konto.
+
+### Cycle · Rundgang Kenia: Premium, Profil, Benachrichtigungen (2026-10-24)
+
+**Gefunden (360 px, en-KE):**
+1. **Premium-Seite 4722 px** — alle vier Krypto-Wallets untereinander (je ~450 px). Jetzt „Womit zahlst
+   du?" mit einem Knopf je Wallet (SOL · Seeker, SOL · Phantom, BTC, ETH), die günstigste vorgewählt, nur
+   die gewählte sichtbar: 3413 px. Alle Wallets bleiben einen Tipp entfernt, Adressen/Ablauf unverändert
+   (Owner: Krypto bleibt zu 100 %). Audit prüft: Knopf je Wallet, genau eine sichtbar, letzte erreichbar.
+2. **Österreichisches Beispiel in Kenia** („AT-K-2026-1188" beim Verifizieren) und weitere Wien/Lissabon-
+   Beispiele in en/pt/fr/ar (Universität Wien, Route Wien–Luanda) → ortsneutral.
+3. **„8 more item(s)"** → „8 more details" mit Singular (pfc_missing_1).
+4. **„Mark all as read"** als großer grüner Knopf ohne Benachrichtigungen → nur bei Ungelesenem.
+
+**Tests.** premium-zahlwahl.test.js (1), leere-ansichten.test.js +1, Browser-Audit (Zahlweg-Auswahl).

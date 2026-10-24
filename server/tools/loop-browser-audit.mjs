@@ -1741,6 +1741,15 @@ async function main() {
       if (!/Business/.test(preis)) findings.push(`Daten-Schnittstelle: Buchen führt nicht zur Business-Zahlung (${preis.slice(0, 80)})`);
       const krypto = await page.locator('.crypto-pay').count();
       if (!krypto) findings.push('Daten-Schnittstelle: Business ohne Krypto-Zahlung');
+      // Zahlweg-Auswahl: jede Wallet hat einen Knopf, genau eine ist sichtbar, Umschalten zeigt die andere Adresse.
+      const knoepfe = await page.locator('[data-coin]').count();
+      if (krypto > 1 && knoepfe !== krypto) findings.push(`Premium: ${krypto} Krypto-Zahlwege, aber ${knoepfe} Auswahl-Knöpfe`);
+      if (krypto > 1) {
+        const sichtbar = await page.locator('.crypto-pay:not([hidden])').count();
+        await page.locator('[data-coin]').last().click().catch(() => {});
+        const letzte = await page.locator('.crypto-pay').last().isVisible();
+        if (sichtbar !== 1 || !letzte) findings.push(`Premium: Zahlweg-Auswahl zeigt ${sichtbar} statt 1 Wallet / letzte nicht erreichbar`);
+      }
     }
     // Mit Business (nachgebildet): Schlüssel anlegen.
     const roh = 'apk_PRUEF' + 'x'.repeat(27);
