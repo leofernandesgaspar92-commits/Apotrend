@@ -29,6 +29,11 @@ test('echte provLabel(): amtlich mit tatsächlicher Quelle, andere Herkünfte un
   assert.equal(ctx.p('verified', 'SAHPRA'), '✔ Official · SAHPRA');
   assert.equal(ctx.p('verified'), '✔ Official', 'ohne Quelle nur „Official" — nie eine erfundene Behörde');
   assert.equal(ctx.p('community', 'x'), I.en.prov_community);
-  for (const stelle of ['provLabel(s.provenance, s.quelle)', 'provLabel(pr.provenance, pr.quelle)']) assert.ok(app.includes(stelle), stelle);
+  // Jede Stelle einzeln (zwei sehen gleich aus — „irgendwo" reicht nicht):
+  for (const stelle of [
+    '<span class="vis" title="${esc(t(\'pl_open\'))}">${esc(provLabel(s.provenance, s.quelle))}</span>', // Engpass-Karte
+    '${esc(pr.supplier)} · ${esc(provLabel(pr.provenance, pr.quelle))}', // Preiszeile
+    '<b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:13px">· ${esc(provLabel(s.provenance, s.quelle))}', // Übersichtsliste
+  ]) assert.ok(app.includes(stelle), stelle);
   assert.match(app, /s\.provenance === 'verified' && s\.quelle \? `\$\{provText\.verified\} \(\$\{s\.quelle\}\)`/, 'CSV-Export');
 });
