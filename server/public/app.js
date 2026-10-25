@@ -3035,7 +3035,12 @@ async function ladeFeatures() {
   try {
     const d = await (await fetch('/api/features')).json();
     for (const f of (d.features || [])) FEATURE_ZUSTAND[f.id] = f.zustand;
-  } catch { /* Voreinstellung: alles an */ }
+    try { localStorage.setItem('apo_features', JSON.stringify(FEATURE_ZUSTAND)); } catch { /* nur Komfort */ }
+  } catch {
+    // Offline: der zuletzt bekannte Stand — sonst tauchten ruhende Bereiche (Tauschbörse-
+    // Kacheln mit „0") nur dann auf, wenn das Netz fehlt. Ohne gemerkten Stand: alles an.
+    try { Object.assign(FEATURE_ZUSTAND, JSON.parse(localStorage.getItem('apo_features') || '{}')); } catch { /* alles an */ }
+  }
 }
 const featureAn = (id) => FEATURE_ZUSTAND[id] !== 'ruht';
 // Tauschbörse nutzbar: Bereich läuft (data/features.js) UND im Land erlaubt. Vorher prüften
@@ -4024,9 +4029,20 @@ function reportShortageCard(existing = []) {
       <!-- Hauptaktion des Formulars: groß und über die ganze Breite (Owner-Regel). -->
       <div style="margin-top:12px"><button class="auth-gross" data-send style="width:100%;min-height:52px">${esc(t('sh_rep_send'))}</button></div>
       <div class="err" data-err></div>
+      <div data-wartet role="status" class="hidden" style="margin-top:8px;background:var(--warn-bg,#fff7e6);border:1px solid var(--warn-bd,#e0a800);border-radius:8px;padding:8px 10px;font-size:15px"></div>
     </div>
   </div>`);
   const form = card.querySelector('[data-form]');
+  // Schwaches Netz (Afrika: Normalfall): Was getippt ist, bleibt auf dem Gerät, bis es gesendet
+  // ist — auch wenn die App zugeht. Nur dieses Gerät; nach dem Senden gelöscht.
+  const ENTWURF = 'apo_meldeentwurf';
+  const felder = { w: '[data-w]', b: '[data-b]', s: '[data-s]', g: '[data-g]', vb: '[data-vb]' };
+  const entwurfSichern = () => {
+    const d = {}; for (const [k, sel] of Object.entries(felder)) d[k] = card.querySelector(sel).value;
+    try { if (d.w.trim() || d.b.trim() || d.g.trim()) localStorage.setItem(ENTWURF, JSON.stringify({ ...d, ts: Date.now() })); else localStorage.removeItem(ENTWURF); } catch { /* ohne Speicher kein Entwurf */ }
+  };
+  const entwurfLoeschen = () => { try { localStorage.removeItem(ENTWURF); } catch { /* egal */ } };
+  form.addEventListener('input', entwurfSichern); form.addEventListener('change', entwurfSichern);
   const toggle = card.querySelector('[data-toggle]');
   toggle.onclick = () => { const open = form.classList.toggle('hidden'); toggle.textContent = open ? t('sh_rep_open') : t('sh_rep_close'); };
   // Datenqualität: gibt es schon eine offene Meldung zum getippten Wirkstoff, zum Ansehen/
@@ -4084,6 +4100,7 @@ function reportShortageCard(existing = []) {
         grund: card.querySelector('[data-g]').value.trim(),
         voraussichtlichBis: card.querySelector('[data-vb]').value || undefined,
       });
+      entwurfLoeschen();
       await loadShortages();
       // Rückmeldung oben (bis 10/2026 lud nur die Liste neu — ob es geklappt hat, sah man erst
       // weit unten zwischen den Karten).
@@ -4103,8 +4120,27 @@ function reportShortageCard(existing = []) {
       if (r && r.zusammengefuehrt) {
         document.getElementById('feed')?.prepend(el(`<div role="status" data-zusammengefuehrt style="background:var(--ok-bg);border:1px solid var(--ok-bd);color:var(--ok-fg);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:15px">${esc(ti('sh_rep_merged', { w: r.wirkstoff }))}</div>`));
       }
-    } catch(e){ err.textContent = e.message; }
+    } catch(e){
+      // Netz weg: nicht „Fehler" und nicht verlieren — gespeichert lassen und senden, sobald
+      // das Netz zurück ist (solange die Seite offen ist; sonst kommt der Entwurf beim nächsten Mal).
+      if (e && e.code === 'network') {
+        const w8 = card.querySelector('[data-wartet]'); w8.textContent = t('sh_rep_wartet'); w8.classList.remove('hidden');
+        entwurfSichern();
+        window.addEventListener('online', () => { if (card.isConnected) card.querySelector('[data-send]').click(); }, { once: true });
+        return;
+      }
+      err.textContent = e.message;
+    }
   };
+  // Nicht gesendeter Entwurf vom letzten Mal (höchstens 3 Tage alt): zurückholen, Formular offen.
+  if (!shortageReportPrefill) {
+    let ent = null; try { ent = JSON.parse(localStorage.getItem(ENTWURF) || 'null'); } catch { /* keiner */ }
+    if (ent && Date.now() - (ent.ts || 0) < 3 * 86400000) {
+      for (const [k, sel] of Object.entries(felder)) if (ent[k] != null && ent[k] !== '') card.querySelector(sel).value = ent[k];
+      form.classList.remove('hidden'); toggle.textContent = t('sh_rep_close');
+      const w8 = card.querySelector('[data-wartet]'); w8.textContent = t('sh_rep_entwurf'); w8.classList.remove('hidden');
+    } else if (ent) entwurfLoeschen();
+  }
   // Von der Startseite („Engpass melden"): Formular offen, oben, Cursor im Wirkstofffeld.
   if (meldeFormAuf) {
     meldeFormAuf = false;
@@ -10638,7 +10674,12 @@ document.addEventListener('keydown', (e) => {
 // warnen, dass Engpass-Angaben veraltet sein können.
 var OFFLINE_STAND = null; // var: kann vor dieser Zeile gelesen werden (api() beim Start)
 function zeigeOfflineStand(iso) { OFFLINE_STAND = iso || null; updateOfflineBanner(); }
-async function offlineSpeicherLeeren() { OFFLINE_STAND = null; try { if (window.caches) await caches.delete('apopulse-api-v1'); } catch { /* egal */ } }
+async function offlineSpeicherLeeren() {
+  OFFLINE_STAND = null;
+  // Geteiltes Gerät in der Offizin: ein nicht gesendeter Meldungs-Entwurf gehört dem Konto, das abmeldet.
+  try { localStorage.removeItem('apo_meldeentwurf'); } catch { /* egal */ }
+  try { if (window.caches) await caches.delete('apopulse-api-v1'); } catch { /* egal */ }
+}
 function updateOfflineBanner() {
   const el = document.getElementById('offlineBanner');
   if (!el) return;

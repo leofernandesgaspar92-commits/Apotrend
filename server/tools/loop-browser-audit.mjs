@@ -1737,6 +1737,38 @@ async function main() {
     if (!findings.some((f) => f.startsWith('Teilen'))) console.log('✓ Teilen: Blatt mit WhatsApp-Link auf Teilseite mit Vorschau; Link → Banner → Konto → Wirkstoff beobachtet; Bestätigungs-Link → Banner „bestätigen" → Meldung im Blick → Rückmeldung');
   }
 
+  // ── Schwaches Netz beim Melden (25.10.2026): nichts geht verloren ─────────
+  //  Netz weg beim Absenden → Hinweis „wird automatisch gesendet", Entwurf auf dem Gerät;
+  //  Netz zurück → ohne erneutes Tippen gesendet, Entwurf gelöscht. Getipptes übersteht
+  //  das Schließen der App; Abmelden löscht den Entwurf (geteiltes Gerät).
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    await page.addInitScript((t) => { if (!sessionStorage.getItem('netz')) { sessionStorage.setItem('netz', '1'); localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); } }, token);
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(800);
+    await page.evaluate(() => { meldeFormAuf = true; goTab('shortages'); }); await page.waitForTimeout(1200);
+    await page.fill('[data-meldekarte] [data-w]', 'Cefixim'); await page.fill('[data-meldekarte] [data-g]', 'Netztest');
+    await ctx.setOffline(true);
+    await page.click('[data-meldekarte] [data-send]'); await page.waitForTimeout(800);
+    const wartet = await page.locator('[data-meldekarte] [data-wartet]:visible').innerText().catch(() => '');
+    const entwurf = await page.evaluate(() => localStorage.getItem('apo_meldeentwurf'));
+    if (!/automati/i.test(wartet) || !/Cefixim/.test(entwurf || '')) findings.push(`Netz: ohne Verbindung kein „wird automatisch gesendet" oder kein Entwurf (${wartet.slice(0, 60)} · ${entwurf})`);
+    await ctx.setOffline(false); await page.evaluate(() => window.dispatchEvent(new Event('online'))); await page.waitForTimeout(1800);
+    if (!(await page.locator('[data-gemeldet], [data-zusammengefuehrt]').count())) findings.push('Netz: nach Rückkehr des Netzes nicht automatisch gesendet');
+    if (await page.evaluate(() => localStorage.getItem('apo_meldeentwurf'))) findings.push('Netz: Entwurf bleibt nach dem Senden liegen');
+    await page.evaluate(() => { meldeFormAuf = true; goTab('shortages'); }); await page.waitForTimeout(1000);
+    await page.fill('[data-meldekarte] [data-w]', 'Entwurfprobe');
+    await page.reload({ waitUntil: 'networkidle' }); await page.waitForTimeout(900);
+    await page.evaluate(() => goTab('shortages')); await page.waitForTimeout(1200);
+    if ((await page.inputValue('[data-meldekarte] [data-w]').catch(() => '')) !== 'Entwurfprobe') findings.push('Netz: Getipptes übersteht das Schließen der App nicht');
+    await page.evaluate(() => offlineSpeicherLeeren());
+    if (await page.evaluate(() => localStorage.getItem('apo_meldeentwurf'))) findings.push('Netz: Abmelden lässt den Meldungs-Entwurf auf dem Gerät');
+    for (const f of fehler) findings.push('Netz: JS-Fehler ' + f);
+    if (!findings.some((f) => f.startsWith('Netz'))) console.log('✓ Netz: Melden ohne Verbindung → Hinweis + Entwurf; Netz zurück → automatisch gesendet; Entwurf übersteht Schließen, Abmelden löscht ihn');
+    await ctx.close();
+  }
+
   // ── Daten-Schnittstelle (Business): verständlich, Schlüssel nur einmal ────
   //  Ohne Business: Preis und Buchen-Knopf, der auf die Zahlung mit dem
   //  Business-Tarif führt. Mit Business (nachgebildet): neuer Schlüssel

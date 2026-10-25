@@ -3548,3 +3548,22 @@ Sénégal signale une pénurie (pas encore confirmée)") → Konto → bestätig
 
 **Tests.** anfuehrungszeichen.test.js (3); Browser-Audit „Teilen": Bestätigungs-Link → Banner nennt das
 Bestätigen → nach dem Konto Knopf sichtbar und im Fokus → Rückmeldung.
+
+### Cycle · Schwaches Netz: keine Meldung geht verloren (2026-10-25)
+
+**Geprüft am „langsamen Handy"** (CPU ×6, 360 px, fr-SN; Netz per Playwright aus — und, weil dessen
+Offline-Schalter den Service Worker nicht erfasst, zusätzlich mit abgeschaltetem Server = echt tot):
+- Vorher gut: freundliche Meldung „Problème de connexion …", Felder bleiben; App startet offline aus dem
+  Speicher mit „Hors ligne — données enregistrées du 25 oct. 2026, 15:29. Les informations sur les ruptures
+  peuvent être dépassées."; Engpassliste offline lesbar.
+- **Fund 1:** Wer bei Netzausfall absendete, musste selbst merken, später erneut zu tippen; schloss sie die
+  App, war alles Getippte weg. Jetzt: Entwurf auf dem Gerät (localStorage, nur Komfort — max. 3 Tage,
+  nach dem Senden und beim Abmelden gelöscht); bei Netzfehler Hinweis „Votre signalement est gardé et
+  partira automatiquement dès que le réseau revient" statt rotem Fehler; beim Ereignis „online" wird
+  automatisch gesendet; beim nächsten Öffnen „Brouillon non envoyé récupéré — vérifiez puis envoyez".
+- **Fund 2:** Offline erschienen ruhende Bereiche (Tauschbörse-Kacheln „0 offres") — fiel /api/features
+  aus, galt „alles an". Jetzt der zuletzt bekannte Stand (localStorage), ohne ihn weiter „alles an".
+
+**Tests.** netz-schwach.test.js (3: Bereiche online gemerkt/offline genutzt, Senden-Pfad, Abmelden);
+Browser-Audit „Netz": offline absenden → Hinweis + Entwurf → online → automatisch gesendet, Entwurf weg;
+Getipptes übersteht Neuladen; Abmelden löscht den Entwurf.
