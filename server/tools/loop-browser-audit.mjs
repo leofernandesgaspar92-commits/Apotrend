@@ -2033,6 +2033,7 @@ async function main() {
     if ((await page.evaluate(() => localStorage.getItem('apo_country'))) !== 'SN') findings.push('Einstieg: Land nicht automatisch Senegal');
     const formOben = await page.evaluate(() => { const f = document.querySelector('.auth-forms'); return f ? f.getBoundingClientRect().top : 9999; });
     if (formOben > 300) findings.push(`Einstieg: Formular erst bei ${Math.round(formOben)} px (Handy: zuerst)`);
+    if (!/ruptures de médicaments/.test(await page.locator('[data-authkurz]:visible').innerText().catch(() => ''))) findings.push('Einstieg: über dem Formular fehlt die Zeile, worum es geht (für Besucher von TikTok)');
     await page.fill('#rg_name', 'Awa Diop').catch(() => {}); await page.fill('#rg_email', `auto_${Date.now().toString(36)}@reg.test`).catch(() => {}); await page.fill('#rg_pw', 'Motdepasse123!').catch(() => {});
     await page.press('#rg_pw', 'Enter').catch(() => {}); await page.waitForTimeout(1300);
     if (!(await page.evaluate(() => !!localStorage.getItem('apo_token')))) findings.push('Einstieg: Registrieren mit Enter klappt nicht');
@@ -2045,6 +2046,18 @@ async function main() {
     else if (rcH > 520) findings.push(`Einstieg: Codes-Karte ${Math.round(rcH)} px hoch (zwei Spalten, sonst eine Bildschirmhöhe)`);
     const quer = await page.evaluate(() => document.documentElement.scrollWidth);
     if (quer > 360) findings.push(`Einstieg: Startseite mit Codes-Karte ${quer - 360} px Querscrollen`);
+    // Rundgang TikTok (25.10.2026): zuerst der Überblick, dann die Codes (zugeklappt); „Signaler
+    // une rupture" als großer Knopf auf der Startseite öffnet das Formular mit Cursor im Feld.
+    const reihe = await page.evaluate(() => { const h = document.querySelector('#feed h1'); const k = document.querySelector('[data-rckarte]'); const d = k && k.querySelector('details');
+      return { ueberblickZuerst: !!(h && k && (h.compareDocumentPosition(k) & Node.DOCUMENT_POSITION_FOLLOWING)), zu: !!(d && !d.open) }; });
+    if (!reihe.ueberblickZuerst || !reihe.zu) findings.push(`Einstieg: Codes-Karte vor dem Überblick oder aufgeklappt (${JSON.stringify(reihe)})`);
+    const mk = page.locator('[data-ovmelden]');
+    if (!(await mk.count())) findings.push('Einstieg: kein „Signaler une rupture" auf der Startseite');
+    else {
+      await mk.click(); await page.waitForTimeout(1300);
+      const fokus = await page.evaluate(() => { const a = document.activeElement; return !!(a && a.matches('[data-meldekarte] [data-w]')) && a.getBoundingClientRect().top < innerHeight; });
+      if (!fokus) findings.push('Einstieg: „Signaler une rupture" öffnet das Formular nicht mit Cursor im Wirkstofffeld');
+    }
     await page.evaluate(() => { const b = document.querySelector('.tabs button[data-tab="shortages"]'); if (b) b.click(); }); await page.waitForTimeout(1200);
     if (await page.locator('[data-leermelden]').count() && await page.locator('[data-f]:visible').count()) findings.push('Einstieg: leere Engpass-Liste zeigt trotzdem die Filterleiste');
     await page.evaluate(() => { const b = document.querySelector('.tabs button[data-tab="prices"]'); if (b) b.click(); }); await page.waitForTimeout(1200);
@@ -2059,7 +2072,7 @@ async function main() {
     const vor = await p2.locator('[data-vorschlag] [data-country]').evaluateAll((b) => b.map((x) => x.dataset.country)).catch(() => []);
     if (vor.join() !== 'KE,AT') findings.push(`Einstieg: Kenia/de-AT sollte fragen (KE, AT), zeigt ${vor.join() || 'nichts'}`);
     await c2.close();
-    if (!findings.some((f) => f.startsWith('Einstieg'))) console.log('✓ Einstieg: Dakar → gleich Anmeldung (Senegal, Französisch, Formular oben), Registrieren mit Enter, keine Codes-Pflichtseite, Codes-Karte kompakt, leere Engpässe/Preise ohne Ballast · Kenia mit de-AT → Frage KE/AT');
+    if (!findings.some((f) => f.startsWith('Einstieg'))) console.log('✓ Einstieg: Dakar → gleich Anmeldung (Senegal, Französisch, Formular oben), Zeile „worum es geht“ über dem Formular, Registrieren mit Enter, keine Codes-Pflichtseite, Überblick vor der (zugeklappten) Codes-Karte, „Signaler une rupture“ öffnet das Formular mit Cursor, leere Engpässe/Preise ohne Ballast · Kenia mit de-AT → Frage KE/AT');
   }
 
   // ── „App installieren": Android-Dialog über beforeinstallprompt, iPhone-Anleitung ──
@@ -2538,6 +2551,7 @@ async function main() {
     for (let k = 0; k < 3; k++) { const b = page.locator('#app button:visible', { hasText: /^(Watch|Continue|Go to)/ }).first(); if (!(await b.count())) break; await b.click().catch(() => {}); await page.waitForTimeout(800); }
     // Wiederherstellungscodes: seit 10/2026 als Karte auf der Startseite — dort darf kein Code umbrechen.
     if (await page.locator('[data-rckarte]').count()) {
+      await page.evaluate(() => document.querySelectorAll('[data-rckarte] details').forEach((d) => { d.open = true; }));
       const zeilen = await page.$$eval('[data-rckarte] ol.recovery-codes code', (els) => els.map((e) => e.getClientRects().length));
       if (!zeilen.length || zeilen.some((n) => n !== 1)) findings.push(`Erster Eindruck: Wiederherstellungscode bricht um (${zeilen.join(',')})`);
     }

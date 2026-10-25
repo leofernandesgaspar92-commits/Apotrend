@@ -66,6 +66,8 @@
   /* Handy: Anmelden/Registrieren zuerst (wie Facebook/X) — die Vorteile stehen darunter,
      statt das Formular eine Bildschirmhöhe nach unten zu schieben. */
   @media (max-width:819.98px){ .auth-forms { order:-1; } }
+  .auth-kurz { text-align:center; font-size:17px; font-weight:600; line-height:1.4; margin:4px 8px 12px; color:var(--text); }
+  @media (min-width:820px){ .auth-kurz { display:none; } }
   /* Startseite wie LinkedIn: große Aussage auf ruhiger Fläche statt grünem
      Verlaufsblock, Häkchen statt Emojis, Anmeldung daneben. */
   .auth-hero { padding:8px 4px 16px; }

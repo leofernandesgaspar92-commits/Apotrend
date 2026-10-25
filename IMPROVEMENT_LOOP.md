@@ -3500,3 +3500,29 @@ zur Anmeldung, erster Kanal zählt, danach gelöscht). Schutz: höchstens 30 Nam
 Aufbewahrung, Speichern/Laden mit Unsinn, Browser-Seite (Merken, 3 Anmeldewege, Löschen), HTTP Ende-zu-
 Ende (Besuch ×2 inkl. Großschreibung, WhatsApp-Vorschau und app.js zählen nicht, Konto ohne Kanal-Spur,
 nur Redaktion sieht das Cockpit). Browser-Audit: Cockpit zeigt TikTok und Play-Store-App.
+
+### Cycle · Rundgang „Apothekerin kommt über TikTok" (fr-SN, en-NG, 360 px) (2026-10-25)
+
+**Ablauf gemessen (Skript, frischer Server):** Link /?k=tiktok → Konto nach 5 s → „Étape 3 sur 3 Terminé"
+nach 10 s → erste Meldung veröffentlicht nach ~18 s. Keine JS-Fehler. Funde und Behebung:
+1. **Worum geht es?** Am Handy steht das Formular zuerst (wie Facebook) — aber ApoPulse kennt noch
+   niemand; die Beschreibung stand UNTER dem Formular. Jetzt eine Zeile darüber: „Les ruptures de
+   médicaments dans votre pays — signalées par les pharmacies, toujours avec la source. Gratuit."
+   (5 Sprachen, nur am Handy; am Desktop steht die Beschreibung daneben).
+2. **„Engpass melden" fehlte auf der Startseite** — das, was die Werbung verspricht („en 20 secondes"),
+   war nur über Reiter „Ruptures" → „Ouvrir le formulaire" erreichbar. Jetzt großer grüner Knopf im
+   Überblick (nicht für Privatkonten — Melden ist Fachkreisen vorbehalten); öffnet das Formular oben,
+   Cursor im Wirkstofffeld.
+3. **Erster Bildschirm nach der Anmeldung = acht Codes.** Die Codes-Karte stand VOR dem Überblick und
+   füllte den Bildschirm. Jetzt: Überblick zuerst, Codes-Karte darunter, Codes hinter „Afficher les
+   codes (8)"; sie bleibt, bis „Codes enregistrés" getippt ist.
+4. **Nach dem Melden kein nächster Schritt.** Bestätigt ist eine Meldung erst ab drei Apotheken — der
+   Knopf „Kolleg:innen um Bestätigung bitten" stand nur weiter unten an der eigenen Karte. Jetzt direkt in
+   der Danke-Meldung, mit „Encore 2 pharmacies pour « confirmé »" (Teilen mit Einladungs-Link → wächst).
+5. Beispiel im Wirkstofffeld „pantoprazole" → „amoxicilline" (passt zu Afrika und zum Latein-Hinweis).
+**Hinweis Betrieb:** Die rote Warnung „ce serveur n'enregistre PAS les comptes" steht auch mit Datei —
+richtig so (Render-Datei überlebt kein Deploy). Ohne DATABASE_URL sieht JEDER TikTok-Besucher sie.
+
+**Tests.** startseite-melden.test.js (4); Browser-Audit Senegal: Zeile über dem Formular, Überblick vor
+der zugeklappten Codes-Karte, „Signaler une rupture" → Formular mit Cursor. Rundgang-Skript liegt im
+Scratchpad (nicht im Repo).

@@ -613,6 +613,7 @@ let shortageFilter = ''; // '', 'kritisch', 'watched', 'community'
 let shortageQuery = '';  // Textsuche nach Wirkstoff/Präparat
 let shortageSort = 'kritisch'; // 'kritisch' (kritischste zuerst) | 'neu' (neueste zuerst)
 let shortageReportPrefill = null; // Wirkstoff, mit dem das Meldeformular vorbelegt/geöffnet wird (z.B. aus der Suche)
+let meldeFormAuf = false; // „Engpass melden" auf der Startseite: Formular gleich offen, Cursor im Feld
 let rabattQuery = '';     // Textsuche im Rabatt-Reiter
 let rabattExpiring = false; // nur bald ablaufende Aktionen
 let rabattWatchedOnly = false; // nur Aktionen zu beobachteten Wirkstoffen
@@ -822,6 +823,10 @@ function authScreen() {
   };
   sprachKnopf(); ensureCountries().then(() => { sprachKnopf(); zeigeSprachwahl(); landesspracheOhneWahl(); }).catch(() => {});
   { const ab = leseAbsicht(); if (ab && ab.beobachten) app.appendChild(el(`<div class="lage-box" data-absicht style="margin:0 0 14px"><div class="lage-kopf">${ico('bell', 18)}${esc(ti('absicht_banner', { w: ab.beobachten }))}</div></div>`)); }
+  // Am Handy steht das Formular zuerst (wie bei Facebook) — aber ApoPulse kennt noch niemand.
+  // Wer über TikTok kommt, soll in einer Zeile lesen, worum es geht. Am Desktop steht die
+  // Beschreibung ohnehin daneben (CSS blendet die Zeile dort aus).
+  app.appendChild(el(`<p class="auth-kurz" data-authkurz>${esc(t('au_kurz'))}</p>`));
   app.appendChild(el(`
   <div class="auth-grid">
     <div class="auth-hero">
@@ -1020,11 +1025,12 @@ function rcKarte() {
   const k = el(`<div class="card" data-rckarte style="border-inline-start:4px solid var(--warn-bd, #e0a800)">
     <h2 style="margin:0 0 4px;font-size:19px">${esc(t('rc_title'))}</h2>
     <div class="muted" style="font-size:15px">${esc(t('rc_intro'))}</div>
+    <details data-rcauf style="margin-top:10px"><summary style="display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:999px;font-weight:600;cursor:pointer;background:var(--card)">${esc(ti('rc_zeigen', { n: codes.length }))}</summary>
     <ol class="recovery-codes rc-zwei" style="margin-top:10px">${codes.map((c) => `<li><code>${esc(c)}</code></li>`).join('')}</ol>
     <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">
       <button class="ghost small" data-rccopy>${esc(t('rc_copy'))}</button>
       <button class="ghost small" data-rcdl>${esc(t('rc_download'))}</button>
-      <button class="small" data-rcok>${esc(t('rc_card_ok'))}</button></div></div>`);
+      <button class="small" data-rcok>${esc(t('rc_card_ok'))}</button></div></details></div>`);
   k.querySelector('[data-rccopy]').onclick = async (e) => { try { await navigator.clipboard.writeText(text); e.target.textContent = t('rc_copied'); } catch { /* Download bleibt */ } };
   k.querySelector('[data-rcdl]').onclick = () => {
     const url = URL.createObjectURL(new Blob([text + '\n'], { type: 'text/plain' }));
@@ -1968,10 +1974,12 @@ async function loadOverview() {
     <div class="ovtiles">
       ${tiles.join('')}
     </div>
+    ${me && me.account_type === 'private' ? '' : `<button class="auth-gross" data-ovmelden style="margin-top:14px;min-height:52px">${esc(t('sh_rep_title'))}</button>`}
     <div class="ov-links">${schnell.map(([id, icon, label]) => `<button class="ov-link" id="${id}">${ico(icon, 22)}<span>${esc(ohneSymbol(t(label)))}</span>${ico('chevron', 18)}</button>`).join('')}</div>
   </div>`);
-  { const rc = rcKarte(); if (rc) feed.appendChild(rc); }
-  { const ik = installKarte(); if (ik) feed.appendChild(ik); }
+  // Die Hauptsache (Engpass melden — so verspricht es auch die Werbung) als großer Knopf
+  // auf der Startseite; vorher nur über Reiter „Engpässe" → „Formular öffnen" erreichbar.
+  { const mb = head.querySelector('[data-ovmelden]'); if (mb) mb.onclick = () => { meldeFormAuf = true; goTab('shortages'); }; }
   head.querySelectorAll('.ovtile[data-go]').forEach(t => { if (t.dataset.go) t.onclick = () => { if (t.dataset.go === 'live') { openLive(); return; } if (t.dataset.filter) shortageFilter = t.dataset.filter; goTab(t.dataset.go); }; });
   head.querySelectorAll('.ovtile').forEach(t => { if (!t.dataset.go) t.onclick = () => document.getElementById('btnNotif').click(); });
   // Einstieg in die Live-Warnungen vom Dashboard aus.
@@ -1991,6 +1999,10 @@ async function loadOverview() {
   for (const [id, , , , fn] of schnell) if (fn) head.querySelector('#' + id).onclick = fn;
   head.querySelector('[data-lageteilen]').onclick = () => teileLage();
   feed.appendChild(head);
+  // Codes und App-Karte NACH dem Überblick: Wer neu ist, sieht zuerst, wofür er da ist —
+  // nicht acht Codes (die bleiben, bis „Codes gesichert" getippt ist).
+  { const rc = rcKarte(); if (rc) feed.appendChild(rc); }
+  { const ik = installKarte(); if (ik) feed.appendChild(ik); }
   pushHinweis(feed); // Sofort-Alarm aufs Handy anbieten (nur wenn noch nicht an, abweisbar)
   renderVorratsRadar(feed); // im Ausland knapp, bei dir nicht — direkt unter dem Überblick
   zeigeAnzeige('start', feed); // Anzeige (gekennzeichnet) nach Überblick und Radar
@@ -4059,7 +4071,14 @@ function reportShortageCard(existing = []) {
       // Rückmeldung oben (bis 10/2026 lud nur die Liste neu — ob es geklappt hat, sah man erst
       // weit unten zwischen den Karten).
       if (!(r && r.zusammengefuehrt)) {
-        document.getElementById('feed')?.prepend(el(`<div role="status" data-gemeldet style="background:var(--ok-bg);border:1px solid var(--ok-bd);color:var(--ok-fg);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:15px">${esc(ti('sh_rep_ok', { w: wirkstoff }))}</div>`));
+        // Nächster Schritt gleich hier: Bestätigt ist eine Meldung erst ab drei Apotheken —
+        // also Kolleg:innen fragen (WhatsApp & Co., mit Einladungs-Link). Vorher stand der
+        // Knopf nur weiter unten an der eigenen Karte.
+        const ok = el(`<div role="status" data-gemeldet style="background:var(--ok-bg);border:1px solid var(--ok-bd);color:var(--ok-fg);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:15px">${esc(ti('sh_rep_ok', { w: wirkstoff }))}
+          <div style="margin-top:10px"><button class="auth-gross" data-gemeldetbitten style="display:inline-flex;align-items:center;justify-content:center;gap:8px">${ico('users', 20)}<span>${esc(t('ei_bitte_btn'))}</span></button>
+          <div style="font-size:14px;margin-top:6px;color:var(--text)">${esc(ti('ei_bitte_hinweis', { n: 2 }))}</div></div></div>`);
+        ok.querySelector('[data-gemeldetbitten]').onclick = () => bestaetigungErbitten({ wirkstoff, country: viewCountry() }).catch((e) => alert(e.message));
+        document.getElementById('feed')?.prepend(ok);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
       // Eine andere Apotheke hatte den Wirkstoff schon gemeldet: Die Meldung zählt als
@@ -4069,6 +4088,12 @@ function reportShortageCard(existing = []) {
       }
     } catch(e){ err.textContent = e.message; }
   };
+  // Von der Startseite („Engpass melden"): Formular offen, oben, Cursor im Wirkstofffeld.
+  if (meldeFormAuf) {
+    meldeFormAuf = false;
+    form.classList.remove('hidden'); toggle.textContent = t('sh_rep_close');
+    setTimeout(() => { card.scrollIntoView({ block: 'start' }); window.scrollBy(0, -70); winput.focus(); }, 0);
+  }
   // Vorbelegung aus der Suche: Formular öffnen und Wirkstoff eintragen (Sackgasse -> nächster Schritt).
   if (shortageReportPrefill) {
     const w = shortageReportPrefill; shortageReportPrefill = null;
