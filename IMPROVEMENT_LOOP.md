@@ -3466,3 +3466,18 @@ lateinisch mit Akzenten nein), alle drei Eingabestellen, Text in 5 Sprachen. Bro
 arabisch getippt → Hinweis mit „Amoxicillin", lateinisch → weg.
 Ladezeit gemessen (Ghana, 360 px, frischer Besuch): 165 KB, bedienbar nach 4,8 s auf langsamem 3G
 (400 kbit/s, 400 ms) bzw. 1,3 s auf schnellem 3G — kein Handlungsbedarf.
+
+### Cycle · Startklar-Check kennt Anmeldung und Android-App (2026-10-25)
+
+**Anlass: Start am 1. November.** Der Startklar-Check (Redaktion) zeigte Datenbank, Domain, Mail, Krypto
+usw., aber nichts von dem, was seit Oktober dazukam. Neu (nur OB gesetzt, nie ein Wert):
+- **SMS-Anmeldung** (Warnung, solange aus): mit dem Grund in Worten — „Twilio braucht eine Absendernummer:
+  APOPULSE_SMS_FROM fehlt" statt still ausgeblendetem Knopf. Nutzt createSms().grund, also dieselbe Logik
+  wie der Versand.
+- **„Weiter mit Google"** (Warnung) und **„Weiter mit Facebook"** (optional/Info).
+- **Android-App:** Info, bis die App in der Play Console existiert; **Warnung bei nur EINEM
+  Fingerabdruck** (der typische Fehler: Selbsttest ok, Store-Installation mit Adressleiste); ok ab zwei
+  verschiedenen (gleiche Abdrücke zählen einmal — parseFingerprints wie assetlinks.json).
+
+**Tests.** startklar.test.js +2 (Anmeldung mit Grund in Worten; Android 0/1/2/doppelt), „alles
+eingerichtet" und „kein Geheimnis" um SMS-/OAuth-Schlüssel erweitert.

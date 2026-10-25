@@ -20,7 +20,10 @@ test('Nichts eingerichtet: das Gefährliche steht oben und heißt „fehlt"', ()
 });
 
 test('Alles eingerichtet: alles erledigt, keine Anleitungen mehr', () => {
-  const env = { APOPULSE_TOKEN_SECRET: 'x', APOPULSE_PUBLIC_URL: 'https://a.example', APOPULSE_FIRMA_NAME: 'A', APOPULSE_FIRMA_ANSCHRIFT: 'B', APOPULSE_BANK_IBAN: 'AT00', APOPULSE_UST_SATZ: '20' };
+  const env = { APOPULSE_TOKEN_SECRET: 'x', APOPULSE_PUBLIC_URL: 'https://a.example', APOPULSE_FIRMA_NAME: 'A', APOPULSE_FIRMA_ANSCHRIFT: 'B', APOPULSE_BANK_IBAN: 'AT00', APOPULSE_UST_SATZ: '20',
+    APOPULSE_SMS_PROVIDER: 'africastalking', APOPULSE_SMS_USERNAME: 'u', APOPULSE_SMS_API_KEY: 'k',
+    OAUTH_GOOGLE_CLIENT_ID: 'g', OAUTH_GOOGLE_CLIENT_SECRET: 'gs', OAUTH_FACEBOOK_APP_ID: 'f', OAUTH_FACEBOOK_APP_SECRET: 'fs',
+    APOPULSE_ANDROID_PACKAGE: 'com.apopulse.app', APOPULSE_ANDROID_SHA256: `${'A'.repeat(64)},${'b'.repeat(64)}` };
   const r = startklar({ env, dauerhaft: { level: 'sicher' }, quellen: { gesamt: 3, liefern: 3, fehler: 0 }, mail: { aktiv: true }, vapidFest: true, wallets: [{ id: 'btc' }, { id: 'tron' }], zahlwege: ['stripe'] });
   assert.equal(r.erledigt, r.gesamt);
   assert.ok(r.punkte.every((p) => p.stufe === 'ok' && p.tun === null));
@@ -37,8 +40,30 @@ test('Teilweise: Quellen mit Fehlern, Datei statt Datenbank (= fehlt), kein USDT
   assert.match(r.punkte.find((p) => p.id === 'krypto').tun, /APOPULSE_WALLET_TRON/);
 });
 
+test('Anmeldung: SMS und Google sind Warnungen, Facebook optional; der Grund steht in Worten da', () => {
+  const r = startklar({});
+  assert.equal(stufe(r, 'sms'), 'warnung');
+  assert.equal(stufe(r, 'google'), 'warnung');
+  assert.equal(stufe(r, 'facebook'), 'info');
+  const halb = startklar({ env: { APOPULSE_SMS_PROVIDER: 'twilio', APOPULSE_SMS_USERNAME: 'AC1', APOPULSE_SMS_API_KEY: 'k' } });
+  assert.match(halb.punkte.find((p) => p.id === 'sms').warum, /APOPULSE_SMS_FROM fehlt/);
+  const an = startklar({ env: { APOPULSE_SMS_PROVIDER: 'africastalking', APOPULSE_SMS_USERNAME: 'u', APOPULSE_SMS_API_KEY: 'k' } });
+  assert.equal(stufe(an, 'sms'), 'ok');
+  assert.match(an.punkte.find((p) => p.id === 'sms').warum, /Africa's Talking/);
+});
+
+test('Android: ohne Angaben nur Info, EIN Fingerabdruck ist eine Warnung, zwei sind ok', () => {
+  const fp = (n) => Array.from({ length: n }, (_, i) => String(i + 1).repeat(64)).join(',');
+  const mit = (sha) => stufe(startklar({ env: { APOPULSE_ANDROID_PACKAGE: 'com.apopulse.app', APOPULSE_ANDROID_SHA256: sha } }), 'android');
+  assert.equal(stufe(startklar({}), 'android'), 'info');
+  assert.equal(mit(fp(1)), 'warnung');
+  assert.match(startklar({ env: { APOPULSE_ANDROID_PACKAGE: 'com.apopulse.app', APOPULSE_ANDROID_SHA256: fp(1) } }).punkte.find((p) => p.id === 'android').warum, /Adressleiste/);
+  assert.equal(mit(fp(2)), 'ok');
+  assert.equal(mit(`${fp(1)},${fp(1)}`), 'warnung', 'derselbe Abdruck doppelt zählt einmal');
+});
+
 test('Kein Geheimnis in der Antwort', () => {
-  const env = { APOPULSE_TOKEN_SECRET: 'GEHEIM-token-123', APOPULSE_BANK_IBAN: 'AT61 1904 3002 3457 3201', APOPULSE_MAIL_API_KEY: 'GEHEIM-mail', APOPULSE_VAPID_PRIVATE_KEY: 'GEHEIM-vapid', APOPULSE_FIRMA_NAME: 'A', APOPULSE_FIRMA_ANSCHRIFT: 'B', DATABASE_URL: 'postgres://u:GEHEIM@h/db' };
+  const env = { APOPULSE_TOKEN_SECRET: 'GEHEIM-token-123', APOPULSE_BANK_IBAN: 'AT61 1904 3002 3457 3201', APOPULSE_MAIL_API_KEY: 'GEHEIM-mail', APOPULSE_VAPID_PRIVATE_KEY: 'GEHEIM-vapid', APOPULSE_SMS_API_KEY: 'GEHEIM-sms', OAUTH_GOOGLE_CLIENT_SECRET: 'GEHEIM-google', OAUTH_FACEBOOK_APP_SECRET: 'GEHEIM-fb', APOPULSE_FIRMA_NAME: 'A', APOPULSE_FIRMA_ANSCHRIFT: 'B', DATABASE_URL: 'postgres://u:GEHEIM@h/db' };
   const text = JSON.stringify(startklar({ env }));
   for (const v of ['GEHEIM', '1904 3002']) assert.ok(!text.includes(v), v);
 });

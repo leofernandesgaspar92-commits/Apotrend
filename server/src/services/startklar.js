@@ -10,7 +10,17 @@
 //  Kein Geheimnis verlässt den Server (keine Schlüssel, keine IBAN).
 // ============================================================================
 
+import { createSms } from './sms.js';
+import { parseFingerprints, istPaketname, ASSETLINKS_ENV } from '../http/assetlinks.js';
+
 const ORDNUNG = { fehlt: 0, warnung: 1, info: 2, ok: 3 };
+// Warum der SMS-Versand aus ist (createSms().grund) — in Worten statt als Kürzel.
+const SMS_GRUND = {
+  anbieter_unbekannt: 'APOPULSE_SMS_PROVIDER ist weder „africastalking" noch „twilio".',
+  kein_benutzer: 'Anbieter gesetzt, aber APOPULSE_SMS_USERNAME fehlt.',
+  kein_schluessel: 'Anbieter gesetzt, aber APOPULSE_SMS_API_KEY fehlt.',
+  kein_absender: 'Twilio braucht eine Absendernummer: APOPULSE_SMS_FROM fehlt.',
+};
 
 export function startklar({ env = {}, dauerhaft = { level: 'flüchtig' }, quellen = { gesamt: 0, liefern: 0, fehler: 0 }, mail = { aktiv: false }, vapidFest = false, wallets = [], zahlwege = [] } = {}) {
   const gesetzt = (k) => String(env[k] || '').trim() !== '';
@@ -81,6 +91,33 @@ export function startklar({ env = {}, dauerhaft = { level: 'flüchtig' }, quelle
     'Karte / PayPal (optional)',
     'Für Apotheken in Europa der gewohnte Weg; Krypto bleibt daneben vollständig erhalten.',
     'Stripe (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET) oder PayPal einrichten (docs/PAYMENTS.md).');
+
+  // ── Anmeldung so einfach wie bei Facebook (Owner-Wunsch) ────────────────
+  const sms = createSms({ env, fetchImpl: null });
+  punkt('sms', sms.aktiv ? 'ok' : 'warnung',
+    'Anmelden mit Handynummer (SMS-Code)',
+    sms.aktiv ? `Aktiv über ${sms.anbieter === 'africastalking' ? "Africa's Talking" : 'Twilio'}.`
+      : (SMS_GRUND[sms.grund] || 'In Afrika der gewohnte Weg — viele haben im Alltag keine E-Mail. Solange kein Anbieter eingerichtet ist, ist der Knopf ausgeblendet.'),
+    "Africa's Talking (für Afrika günstiger) oder Twilio einrichten: APOPULSE_SMS_PROVIDER, APOPULSE_SMS_USERNAME, APOPULSE_SMS_API_KEY, bei Twilio APOPULSE_SMS_FROM. Jede SMS kostet; Obergrenze je Stunde mit APOPULSE_SMS_MAX_STUNDE (server/DEPLOY.md).");
+  punkt('google', gesetzt('OAUTH_GOOGLE_CLIENT_ID') && gesetzt('OAUTH_GOOGLE_CLIENT_SECRET') ? 'ok' : 'warnung',
+    '„Weiter mit Google"',
+    'Ein Tipp statt Formular — der schnellste Weg zum Konto.',
+    'In der Google Cloud Console einen OAuth-Client anlegen und OAUTH_GOOGLE_CLIENT_ID / OAUTH_GOOGLE_CLIENT_SECRET setzen (docs/SOCIAL_LOGIN.md).');
+  punkt('facebook', gesetzt('OAUTH_FACEBOOK_APP_ID') && gesetzt('OAUTH_FACEBOOK_APP_SECRET') ? 'ok' : 'info',
+    '„Weiter mit Facebook" (optional)',
+    'In vielen afrikanischen Ländern verbreiteter als Google-Konten.',
+    'Bei Meta for Developers eine App anlegen und OAUTH_FACEBOOK_APP_ID / OAUTH_FACEBOOK_APP_SECRET setzen (docs/SOCIAL_LOGIN.md).');
+  // ── Android-App (android/README.md, Schritt 4) ─────────────────────────────
+  //  Ein einziger Fingerabdruck ist der typische Fehler: Der Selbsttest klappt, die
+  //  Store-Installation zeigt eine Adressleiste (Google signiert neu).
+  const paketOk = istPaketname(env[ASSETLINKS_ENV.paket]);
+  const fp = parseFingerprints(env[ASSETLINKS_ENV.fingerabdruecke]).length;
+  punkt('android', paketOk && fp >= 2 ? 'ok' : paketOk && fp === 1 ? 'warnung' : 'info',
+    'Android-App ohne Adressleiste',
+    paketOk && fp === 1
+      ? 'Nur EIN Fingerabdruck eingetragen. Aus dem Play Store installiert zeigt die App dann eine Browser-Adressleiste — Google signiert die App neu.'
+      : 'Erst nötig, wenn die App in der Play Console angelegt ist.',
+    'APOPULSE_ANDROID_PACKAGE = com.apopulse.app und APOPULSE_ANDROID_SHA256 mit ZWEI Fingerabdrücken (Googles App-Signaturschlüssel und der eigene Upload-Schlüssel), mit Komma getrennt (android/README.md, Schritt 4).');
 
   p.sort((a, b) => ORDNUNG[a.stufe] - ORDNUNG[b.stufe]);
   const zaehlt = p.filter((x) => x.stufe !== 'info');
