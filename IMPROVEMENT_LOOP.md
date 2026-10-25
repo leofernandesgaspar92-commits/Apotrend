@@ -3448,3 +3448,21 @@ Browser-Audit: Play-App ohne Zahlwege, Website im selben Browser mit allen Krypt
 **Backlog (neu).** Arabisch geschriebene Wirkstoffnamen (أموكسيسيلين) werden nicht dem INN zugeordnet:
 keine Antibiotika-Kennzeichnung, keine Zusammenführung mit „Amoxicillin". Für Ägypten/Maghreb ergänzen
 (sicherheitsnah — Zuordnung nur mit geprüfter Quelle).
+
+### Cycle · Wirkstoff in arabischer Schrift → Hinweis auf den internationalen Namen (2026-10-25)
+
+**Fund (Store-Screenshots Ägypten).** „أموكسيسيلين" bekommt einen anderen INN-Schlüssel als „Amoxicillin":
+keine Antibiotika-Kennzeichnung, keine Zusammenführung mit Meldungen anderer Länder, keine Frühwarnung.
+**Entscheidung:** KEINE Übersetzungstabelle arabisch → INN (ohne geprüfte Quelle bei Engpass-Angaben zu
+riskant; in Ägypten und im Maghreb schreibt man den internationalen Namen ohnehin lateinisch). Stattdessen
+ein Hinweis, sobald arabische oder äthiopische Schrift im Wirkstofffeld steht — Meldeformular,
+Beobachtungsliste, Sortiments-Check: „Bitte den internationalen Namen in lateinischer Schrift eintragen
+(z. B. Amoxicillin) …". Blockiert nichts; verschwindet bei lateinischer Eingabe. 5 Sprachen.
+Arabische Store-Screenshots auf lateinische Wirkstoffnamen umgestellt (realistisch; zeigen jetzt auch
+die Antibiotika-Kennzeichnung).
+
+**Tests.** latein-hinweis.test.js (4): Anlass (Schlüssel verschieden), Erkennung (arabisch/äthiopisch ja,
+lateinisch mit Akzenten nein), alle drei Eingabestellen, Text in 5 Sprachen. Browser-Audit Ägypten:
+arabisch getippt → Hinweis mit „Amoxicillin", lateinisch → weg.
+Ladezeit gemessen (Ghana, 360 px, frischer Besuch): 165 KB, bedienbar nach 4,8 s auf langsamem 3G
+(400 kbit/s, 400 ms) bzw. 1,3 s auf schnellem 3G — kein Handlungsbedarf.

@@ -2176,6 +2176,15 @@ async function main() {
     if (!/3[.,]00/.test(prem) || !/أفريقيا/.test(prem)) findings.push('Ägypten: Premium ohne Afrika-Preis');
     if (!/SOL|Solana/.test(prem) || !/BTC|Bitcoin/.test(prem)) findings.push('Ägypten: Krypto-Zahlung fehlt');
     if (await quer() > 0) findings.push(`Ägypten: Premium ${await quer()} px Querscrollen`);
+    // Wirkstoff in arabischer Schrift: Hinweis auf den lateinischen Namen; lateinisch → weg.
+    await page.evaluate(() => mainScreen()); await page.waitForTimeout(600);
+    await reiterOeffnen(page, 'shortages'); await page.waitForTimeout(1200);
+    await page.click('[data-meldekarte] [data-toggle]').catch(() => {});
+    await page.fill('[data-meldekarte] [data-w]', 'أموكسيسيلين');
+    const mitHinweis = await page.locator('[data-meldekarte] [data-lateinhinweis]').innerText().catch(() => '');
+    await page.fill('[data-meldekarte] [data-w]', 'Amoxicillin');
+    const ohne = await page.locator('[data-meldekarte] [data-lateinhinweis]').count();
+    if (!/Amoxicillin/.test(mitHinweis) || ohne) findings.push(`Ägypten: Hinweis auf lateinischen Wirkstoffnamen fehlt/bleibt (${mitHinweis.slice(0, 40)} · danach ${ohne})`);
     for (const f of fehler) findings.push('Ägypten: JS-Fehler ' + f);
     await ctx.close();
     const c2 = await browser.newContext({ viewport: { width: 360, height: 760 } });
@@ -2189,7 +2198,7 @@ async function main() {
       if ((await p2.evaluate(() => document.documentElement.dir)) !== 'rtl') findings.push('Marokko: Wahl „العربية" überlebt das Neuladen nicht');
     }
     await c2.close();
-    if (!findings.some((f) => f.startsWith('Ägypten') || f.startsWith('Marokko'))) console.log('✓ Ägypten (ar, RTL, 360 px): dir/lang, lateinische Vorschläge, Menü links, Premium 3.00 € + Krypto, kein Querscrollen · Marokko: Französisch ⇄ Arabisch bleibt gewählt');
+    if (!findings.some((f) => f.startsWith('Ägypten') || f.startsWith('Marokko'))) console.log('✓ Ägypten (ar, RTL, 360 px): dir/lang, lateinische Vorschläge, Menü links, Premium 3.00 € + Krypto, kein Querscrollen, Hinweis bei arabisch geschriebenem Wirkstoff · Marokko: Französisch ⇄ Arabisch bleibt gewählt');
   }
 
   // ── Afrika-Start: Uganda auf Englisch, drei Ebenen Land / Afrika / Welt ──

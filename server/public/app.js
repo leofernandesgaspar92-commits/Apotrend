@@ -2356,6 +2356,7 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
       <input data-wl-in placeholder="${esc(t('wl_ph'))}" style="flex:1" aria-label="${esc(t('wl_add_aria'))}">
       <button class="small" data-wl-add>${esc(t('wl_add'))}</button>
     </div>
+    <div data-latein></div>
     <div class="err" data-wl-err></div>
   </div>`);
   const box = card.querySelector('[data-wl]');
@@ -2542,6 +2543,7 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
   }
   card.querySelector('[data-wl-add]').onclick = add;
   input.onkeydown = (e) => { if (e.key === 'Enter') add(); };
+  input.addEventListener('input', () => lateinHinweis(card.querySelector('[data-latein]'), input.value));
   // Für Gratis-Nutzer:innen ein dezenter, ehrlicher Hinweis auf den Premium-Zusatznutzen
   // dieser Liste (private Notizen + druckbarer Aushang). Kein Sperren von Kern-Funktionen.
   if (!premium) {
@@ -3937,6 +3939,19 @@ function shortageFilterBar() {
 }
 
 // "Engpass melden": eine Apotheke meldet einen selbst beobachteten Engpass (Community).
+// Wirkstoffname in arabischer (oder äthiopischer) Schrift: Die Zuordnung über Länder hinweg
+// (INN-Schlüssel: Frühwarnung, Antibiotika-Kennzeichnung, Zusammenführen gleicher Meldungen)
+// kennt nur lateinische Schrift. Eine Übersetzungstabelle ohne geprüfte Quelle wäre bei
+// Engpass-Angaben riskanter als dieser Hinweis — in Ägypten und im Maghreb schreibt man den
+// internationalen Namen ohnehin lateinisch. Nur Hinweis, blockiert nichts.
+const NICHT_LATEIN = /[\p{Script=Arabic}\p{Script=Ethiopic}]/u;
+function lateinHinweis(box, text) {
+  const da = box.querySelector('[data-lateinhinweis]');
+  const noetig = NICHT_LATEIN.test(String(text || ''));
+  if (noetig && !da) box.appendChild(el(`<div data-lateinhinweis role="note" style="font-size:14px;margin-top:6px;background:var(--info-bg,#eef);border:1px solid var(--info-bd,#cce);border-radius:8px;padding:8px 10px">${esc(t('wk_latein'))}</div>`));
+  if (!noetig && da) da.remove();
+}
+
 function reportShortageCard(existing = []) {
   // Privatnutzer:innen: Engpass-Meldung ist Fachkreisen vorbehalten (sicherheitsrelevant).
   // Statt des Formulars ein klarer Hinweis (das Backend erzwingt es zusätzlich).
@@ -3953,6 +3968,7 @@ function reportShortageCard(existing = []) {
     <div class="hidden" data-form style="margin-top:10px">
       <label for="rep_w">${esc(t('sh_rep_w'))}</label>
       <input id="rep_w" data-w list="wkVorschlaege" autocomplete="off" placeholder="${esc(t('sh_rep_w_ph'))}"><datalist id="wkVorschlaege"></datalist>
+      <div data-latein></div>
       <div data-exists style="margin-top:6px"></div>
       <label for="rep_b" style="margin-top:6px">${esc(t('sh_rep_b'))}</label>
       <input id="rep_b" data-b placeholder="${esc(t('sh_rep_b_ph'))}">
@@ -3999,6 +4015,7 @@ function reportShortageCard(existing = []) {
   })();
   let deb;
   winput.oninput = () => {
+    lateinHinweis(card.querySelector('[data-latein]'), winput.value);
     clearTimeout(deb);
     deb = setTimeout(() => {
       const w = winput.value.trim().toLowerCase();
@@ -5102,6 +5119,7 @@ async function openSortiment() {
     <div class="muted" style="font-size:15px">${esc(t('srt_sub'))}</div>
     <label for="srtText" style="margin-top:12px">${esc(t('srt_label'))}</label>
     <textarea id="srtText" rows="8" placeholder="${esc(t('srt_ph'))}" style="font-family:inherit"></textarea>
+    <div data-latein></div>
     <div class="row" style="margin-top:10px;flex-wrap:wrap;gap:8px">
       <label class="srt-datei">${ico('download', 18)}<span>${esc(t('srt_file'))}</span><input type="file" id="srtDatei" accept=".csv,.txt,text/csv,text/plain" hidden></label>
       <span class="sp" style="flex:1"></span>
@@ -5115,6 +5133,8 @@ async function openSortiment() {
   feed.appendChild(box);
   const ta = card.querySelector('#srtText');
   ta.value = srtLetzterText;
+  ta.addEventListener('input', () => lateinHinweis(card.querySelector('[data-latein]'), ta.value));
+  lateinHinweis(card.querySelector('[data-latein]'), ta.value);
   card.querySelector('[data-back]').onclick = () => goTab('overview');
   card.querySelector('#srtDatei').onchange = async (e) => {
     const f = e.target.files[0]; if (!f) return;

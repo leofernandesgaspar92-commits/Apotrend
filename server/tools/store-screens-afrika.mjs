@@ -50,10 +50,12 @@ const SPRACHEN = [
     neu: ['Ceftriaxona', 'Ceftriaxona 1 g injetável', 'Esgotado no grossista'] },
   { sp: 'ar', land: 'EG', locale: 'ar-EG', zone: 'Africa/Cairo', band: 'بيانات توضيحية',
     leute: ['Mona Hassan', 'Ahmed Farouk', 'Sara Mahmoud'],
-    w: ['أوكسيتوسين', 'أموكسيسيلين', 'أرتيميثر/لوميفانترين'],
-    b: ['أوكسيتوسين 10 وحدات/مل حقن', 'أموكسيسيلين 500 ملغ كبسولات', 'أرتيميثر/لوميفانترين 20/120 ملغ أقراص'],
+    // Wirkstoff und Präparat lateinisch — so schreibt man sie in Ägypten (und nur so greift
+    // die INN-Zuordnung, siehe lateinHinweis in app.js); der Grund auf Arabisch.
+    w: ['Oxytocin', 'Amoxicillin', 'Artemether/Lumefantrine'],
+    b: ['Oxytocin 10 IU/ml injection', 'Amoxicillin 500 mg capsules', 'Artemether/Lumefantrine 20/120 mg tablets'],
     g: ['نفد لدى تاجر الجملة', 'تأخر المورّد', 'عبوات صغيرة فقط'],
-    neu: ['سيفترياكسون', 'سيفترياكسون 1 غ حقن', 'نفد لدى تاجر الجملة'] },
+    neu: ['Ceftriaxone', 'Ceftriaxone 1 g injection', 'نفد لدى تاجر الجملة'] },
 ];
 
 async function server() {
