@@ -716,3 +716,10 @@ erst, wenn der Owner einen SMS-Anbieter einrichtet (Africa's Talking oder Twilio
 vorher entstehen keine Kosten.
 Handy oder SIM verloren: Mit der Handynummer und einem Wiederherstellungscode lässt sich unter „Passwort
 vergessen" ein Passwort setzen; danach geht die Anmeldung auch mit Nummer + Passwort.
+
+**Android-App im Play Store — vorbereitet (Stand 25.10.2026).** Store-Texte auf Englisch (Standard),
+Französisch, Portugiesisch, Arabisch und Deutsch; je Sprache vier Screenshots aus der echten App
+(Ghana, Senegal, Mosambik, Ägypten — mit Band „Beispieldaten"). In der Play-App gibt es keinen
+Kaufknopf und keine Krypto-Adressen, weil Google dort nur Google Play Billing erlaubt; auf der Website
+bleibt die Krypto-Zahlung vollständig. Wer auf der Website Premium kauft, hat es auch in der App.
+Schritt-für-Schritt-Anleitung: android/README.md.

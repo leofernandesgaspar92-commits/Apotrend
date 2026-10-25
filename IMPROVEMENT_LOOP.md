@@ -3413,3 +3413,38 @@ Beispiel „z. B. BASG" im Quellenfeld der Redaktion neutral. 5 Sprachen.
 provLabel() mit SAHPRA, ohne Quelle, andere Herkunft; Aufrufstellen + CSV.
 Danach pt/ar/en/fr durchsucht: einziger Rest „normal für deutsche und österreichische Markennamen" (RxNorm-
 Hinweis) → „Markennamen außerhalb der USA". Wächter-Test: kein Austria/BASG/النمسا … außerhalb Deutsch.
+
+### Cycle · Play-Store-Start vorbereiten (2026-10-25)
+
+**Owner:** „ich will die apopulse jetzt als app rausbringen" — erst Android/Google Play, Name ApoPulse,
+Domain apopulse.com; Krypto bleibt zu 100 % (Afrika-Strategie).
+
+**Regel-Konflikt gelöst.** Google Play erlaubt in Apps für digitale Abos nur Google Play Billing; Krypto,
+Rechnung und jeder Verweis auf einen Kauf anderswo führen zur Sperre. Lösung: In der Play-App (Trusted
+Web Activity) zeigt Premium Vorteile und Status, aber keinen Zahlweg; Anzeigen-Buchung ebenso. Erkennung:
+Startadresse /?src=twa (twa-manifest: startUrl und Verknüpfungen) oder Referrer android-app://com.apopulse.app,
+gemerkt NUR in sessionStorage — die Play-App teilt den Speicher mit Chrome; localStorage würde die
+Krypto-Zahlung auch auf der Website ausblenden. Website unverändert. Hinweistexte 5 Sprachen, ohne Verweis
+auf andere Bezahlwege. Google Play Billing = spätere Stufe, sobald die App in der Play Console existiert.
+
+**Store.** store-listing.md neu: Englisch Standardsprache + FR/PT/AR/DE, auf Afrika ausgerichtet (54
+Länder, Sprache/Land automatisch, Herkunft je Eintrag, keine Therapieaussagen, keine Preise/Bezahlwege).
+check-store-listing.mjs kennt jetzt französische und arabische Überschriften; eine unbekannte Überschrift
+wird gemeldet statt still mit 4000 Zeichen geprüft (vorher wäre ein französischer Titel mit 40 Zeichen
+durchgerutscht). Neue tools/store-screens-afrika.mjs: je Sprache 4 Screenshots 1080 × 1920 aus der echten
+App (Wegwerf-Server, Beispiel-Meldungen, Band „Example data"/„Données d'exemple" …, Play-App-Modus).
+Datenschutzerklärung: Telefonnummer, SMS-Dienstleister, Facebook-Anmeldung ergänzt. android/README.md als
+Schritt-für-Schritt-Anleitung (Domain, Konto, Schlüssel, Bau, Fingerabdrücke, Eintrag, 12 Tester).
+
+**Nebenfund beim Fotografieren.** Die Wirkstoff-Seite zeigte in Ghana „Rabatt-Alarm ab … %" — ein Feld,
+das ohne Preisdaten nie auslösen kann (die Beobachtungsliste blendete es schon aus). Jetzt gleiche
+Bedingung (landHatPreise && !featBlocked('deals')); Browser-Audit Liberia prüft es.
+
+**Tests.** play-app.test.js (3): Erkennung inkl. „nie localStorage", beide Bezahlstellen halten vor jedem
+Zahlweg, Paketkennung/Startadresse/Verknüpfungen. store-listing.test.js (4): Grenzen je Sprache, Datei mit
+15 Blöcken und Englisch zuerst, zu langer französischer Titel fällt auf, kein Bezahlweg im Store-Text.
+Browser-Audit: Play-App ohne Zahlwege, Website im selben Browser mit allen Krypto-Wallets.
+
+**Backlog (neu).** Arabisch geschriebene Wirkstoffnamen (أموكسيسيلين) werden nicht dem INN zugeordnet:
+keine Antibiotika-Kennzeichnung, keine Zusammenführung mit „Amoxicillin". Für Ägypten/Maghreb ergänzen
+(sicherheitsnah — Zuordnung nur mit geprüfter Quelle).

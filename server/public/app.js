@@ -4881,6 +4881,7 @@ function werbeCockpit(d) {
 
 /** Bezahlen: Krypto (wie Premium) oder Rechnung/Überweisung. */
 async function zahlungKampagne(k, box, rechnungMoeglich) {
+  if (istPlayApp) { box.innerHTML = ''; box.appendChild(el(`<div class="muted" data-playhinweis style="font-size:15px">${esc(t('wb2_play_hinweis'))}</div>`)); return; }
   box.innerHTML = `<div class="wb-zahlung"><div style="font-weight:700;margin-bottom:6px">${esc(ti('wb2_zahlen_betrag', { betrag: eur(k.preis_cents) }))}</div><div class="row" style="gap:8px;flex-wrap:wrap" data-wbwege></div><div data-wbweg></div></div>`;
   const wege = box.querySelector('[data-wbwege]'); const weg = box.querySelector('[data-wbweg]');
   if (rechnungMoeglich) {
@@ -7460,6 +7461,22 @@ let prPlan = 'premium_monthly';
 // Produktnamen in der Sprache der Oberfläche. Der Server führt sie deutsch
 // („ApoPulse Premium (Monat)") — in Uganda stand das so auf der Premium-Seite.
 function produktName(id, ersatz) { const k = 'pn_' + id; return id && t(k) !== k ? t(k) : (ersatz || id || ''); }
+// ── Play-Store-App (Trusted Web Activity, android/twa-manifest.json) ──────────
+// Google Play verlangt für digitale Abos in Apps Google Play Billing; Krypto- und
+// Rechnungszahlung dürfen IN der Play-App nicht angeboten werden. Auf der Website
+// bleibt alles unverändert (Owner: Krypto zu 100 % — für die Afrika-Strategie).
+// Erkennung: Startadresse /?src=twa, Android meldet sich als android-app://<paket>.
+// Gemerkt NUR für diese Sitzung: Die Play-App teilt den Speicher mit Chrome —
+// localStorage würde Krypto auch im normalen Browser ausblenden.
+const PLAY_PAKET = 'com.apopulse.app';
+const istPlayApp = (() => {
+  try {
+    const q = new URLSearchParams(location.search);
+    if (q.get('src') === 'twa' || String(document.referrer || '').startsWith('android-app://' + PLAY_PAKET)) sessionStorage.setItem('apo_play_app', '1');
+    return sessionStorage.getItem('apo_play_app') === '1';
+  } catch { return false; }
+})();
+
 async function openPremium() {
   setDocTitle(t('pr_title'));
   app.innerHTML = '';
@@ -7517,6 +7534,12 @@ async function openPremium() {
     { const tx = abdeckungText(abd); if (tx) body.appendChild(el(`<div class="lage-box" data-prabdeckung><div class="lage-kopf"><span class="nr-live" aria-hidden="true"></span>${esc(t('ab_titel'))}</div><div style="font-size:15px">${esc(tx)}</div></div>`)); }
     // Vorschau des Wochenberichts für alle: Sie zeigt, was Premium liefert.
     app.appendChild(wochenberichtKarte(!!mine.premium));
+    // Play-Store-App: Vorteile und Status ja, Kauf nein (siehe istPlayApp). Bewusst ohne
+    // Verweis auf einen anderen Bezahlweg — auch das untersagt Google.
+    if (istPlayApp) {
+      body.appendChild(el(`<div class="muted" data-playhinweis style="font-size:15px;margin-top:10px">${esc(t(mine.premium ? 'pr_play_aktiv' : 'pr_play_hinweis'))}</div>`));
+      return;
+    }
     // Laufzeit wählen. Das Jahr stand im Code (99 €), wurde aber nirgends
     // angeboten — die Seite kannte nur den Monat. Die Ersparnis wird aus den
     // Produktpreisen gerechnet, nicht in einen Text geschrieben.
@@ -8870,7 +8893,9 @@ async function openWirkstoff(name) {
   startDetailView(head.querySelector('h1'));
 
   // Rabatt-Alarm für diesen Wirkstoff (nur wenn beobachtet): ab X % Rabatt benachrichtigen.
-  if (d.watched) {
+  // Nur wo es Preise/Angebote gibt — wie an der Beobachtungsliste (rabattAlarm); in Ghana
+  // stand hier sonst ein Rabatt-Feld, das nie auslösen kann.
+  if (d.watched && landHatPreise(viewCountry()) && !featBlocked('deals')) {
     const al = el(`<div class="card"><div class="row" style="align-items:center;gap:8px;flex-wrap:wrap">
         <span aria-hidden="true">🔔</span><label style="margin:0">${esc(t('wk_alert_label'))}</label>
         <input type="number" min="1" max="99" value="${d.alert_pct||''}" data-alertpct placeholder="${esc(t('wk_alert_ph'))}" style="width:88px" aria-label="${esc(t('wk_alert_label'))}"><span>%</span>

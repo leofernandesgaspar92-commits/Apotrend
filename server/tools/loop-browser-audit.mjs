@@ -2093,6 +2093,28 @@ async function main() {
     if (!findings.some((f) => f.startsWith('Installieren'))) console.log('✓ App installieren: Android → Karte mit Installationsdialog, danach nie wieder · iPhone → Anleitung „Teilen → Zum Home-Bildschirm"');
   }
 
+  // ── Play-Store-App: Premium ohne Zahlwege, Website mit allen (Krypto zu 100 %) ──
+  {
+    const ctx = await browser.newContext({ viewport: { width: 360, height: 760 }, serviceWorkers: 'block', locale: 'en-KE', timezoneId: 'Africa/Nairobi' });
+    const web = await ctx.newPage();
+    await web.goto(BASE, { waitUntil: 'networkidle' }); await web.waitForTimeout(400);
+    await web.fill('#rg_name', 'Play Test').catch(() => {}); await web.fill('#rg_email', `play_${Date.now().toString(36)}@reg.test`).catch(() => {}); await web.fill('#rg_pw', 'Passwort123!').catch(() => {});
+    await web.press('#rg_pw', 'Enter').catch(() => {}); await web.waitForTimeout(1200);
+    await web.click('[data-esskip]').catch(() => {}); await web.waitForTimeout(600);
+    // Play-App: eigene Seite (eigene Sitzung) mit der Startadresse der Android-App.
+    const play = await ctx.newPage();
+    await play.goto(BASE + '/?src=twa', { waitUntil: 'networkidle' }); await play.waitForTimeout(800);
+    await play.evaluate(() => openPremium()); await play.waitForSelector('[data-playhinweis]', { timeout: 8000 }).catch(() => {});
+    const inApp = await play.evaluate(() => ({ hinweis: !!document.querySelector('[data-playhinweis]'), krypto: document.querySelectorAll('.crypto-pay').length, plan: !!document.querySelector('[data-prplan]') }));
+    if (!inApp.hinweis || inApp.krypto || inApp.plan) findings.push(`Play-App: Premium zeigt Zahlwege (Hinweis ${inApp.hinweis}, Krypto ${inApp.krypto}, Laufzeit ${inApp.plan}) — Google-Play-Regel`);
+    // Website im selben Browser (Speicher geteilt wie bei der echten Play-App): Krypto muss da sein.
+    await web.evaluate(() => openPremium()); await web.waitForSelector('.crypto-pay', { timeout: 8000 }).catch(() => {});
+    const imWeb = await web.locator('.crypto-pay').count();
+    if (imWeb < 1) findings.push('Play-App: Krypto-Zahlung verschwindet auch auf der Website — darf nie passieren');
+    await ctx.close();
+    if (!findings.some((f) => f.startsWith('Play-App'))) console.log(`✓ Play-App: Premium ohne Zahlwege · Website im selben Browser mit ${imWeb} Krypto-Wallets`);
+  }
+
   // ── Frankophones Afrika: Senegal auf Französisch, günstiges Handy (360 px) ──
   //  Französisch ist ~20 % länger als Englisch. Am 22.10.2026 lief der Hauptknopf
   //  „Veuillez choisir au moins une substance" 11 px über den Rand.
@@ -2535,6 +2557,8 @@ async function main() {
     await page.evaluate(() => openWirkstoff('Oxytocin')); await page.waitForTimeout(1500);
     const wk = await page.locator('#app').innerText().catch(() => '');
     if (/Price comparison|Running deals/.test(wk)) findings.push('Erster Eindruck: Wirkstoff-Seite zeigt leere Preis-/Aktions-Abschnitte');
+    // Oxytocin ist beobachtet — trotzdem kein Rabatt-Alarm-Feld: in Liberia gibt es keine Rabatte.
+    if (await page.locator('#app [data-alertpct]').count()) findings.push('Erster Eindruck: Wirkstoff-Seite zeigt Rabatt-Alarm in einem Land ohne Preise');
     await page.evaluate(() => mainScreen()); await page.waitForTimeout(600);
     await reiterOeffnen(page, 'signals'); await page.waitForTimeout(1200);
     if (/AI enrichment|configured/.test(await page.locator('#feed').innerText().catch(() => ''))) findings.push('Erster Eindruck: Live-Warnungen zeigen Apotheken einen Betreiber-Hinweis');

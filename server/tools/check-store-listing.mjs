@@ -38,7 +38,7 @@ export function leseBloecke(markdown) {
     out.push({ beschriftung: m[1].trim(), angegeben: Number(m[2]), text: m[3] });
   }
   // Vollbeschreibungen tragen keine Zahl in der Überschrift.
-  const rxVoll = /^### (Vollständige Beschreibung|Full description|Descrição completa)\s*\n```\n([\s\S]*?)\n```/gm;
+  const rxVoll = /^### (Vollständige Beschreibung|Full description|Descrição completa|Description complète|الوصف الكامل)\s*\n```\n([\s\S]*?)\n```/gm;
   for (const m of markdown.matchAll(rxVoll)) {
     out.push({ beschriftung: m[1].trim(), angegeben: null, text: m[2] });
   }
@@ -48,9 +48,12 @@ export function leseBloecke(markdown) {
 /** Welche Grenze gilt für eine Beschriftung? */
 export function grenzeFuer(beschriftung) {
   const b = beschriftung.toLowerCase();
-  if (/^titel|^title|^título/.test(b)) return { name: 'Titel', max: GRENZEN.titel, puffer: PUFFER };
-  if (/kurzbeschreibung|short description|descrição breve/.test(b)) return { name: 'Kurzbeschreibung', max: GRENZEN.kurz, puffer: PUFFER };
-  return { name: 'Vollbeschreibung', max: GRENZEN.voll, puffer: 0 };
+  if (/^(titel|title|título|titre|العنوان)$/.test(b)) return { name: 'Titel', max: GRENZEN.titel, puffer: PUFFER };
+  if (/^(kurzbeschreibung|short description|descrição breve|description courte|الوصف المختصر)$/.test(b)) return { name: 'Kurzbeschreibung', max: GRENZEN.kurz, puffer: PUFFER };
+  if (/^(vollständige beschreibung|full description|descrição completa|description complète|الوصف الكامل)$/.test(b)) return { name: 'Vollbeschreibung', max: GRENZEN.voll, puffer: 0 };
+  // Unbekannte Beschriftung (neue Sprache?) NICHT still mit 4000 prüfen — ein Titel
+  // würde sonst durchrutschen. Lieber laut melden.
+  return null;
 }
 
 export function pruefe(markdown) {
@@ -62,6 +65,10 @@ export function pruefe(markdown) {
   }
   for (const b of bloecke) {
     const g = grenzeFuer(b.beschriftung);
+    if (!g) {
+      befunde.push(`„${b.beschriftung}": unbekannte Überschrift — welche Play-Grenze gilt? In grenzeFuer() ergänzen.`);
+      continue;
+    }
     const n = [...b.text].length; // Codepoints, nicht UTF-16-Einheiten
     if (n > g.max) {
       befunde.push(`„${b.beschriftung}": ${n} Zeichen, erlaubt sind ${g.max}. Play verweigert das Speichern.`);

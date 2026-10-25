@@ -13,7 +13,7 @@
   "navigationDividerColorDark": "#0d1214",
   "backgroundColor": "#f4f6f5",
   "enableNotifications": true,
-  "startUrl": "/",
+  "startUrl": "/?src=twa",
   "iconUrl": "https://www.apopulse.com/icon-512.png",
   "maskableIconUrl": "https://www.apopulse.com/icon-512.png",
   "splashScreenFadeOutDuration": 300,
@@ -27,13 +27,13 @@
     {
       "name": "Lieferengpässe",
       "short_name": "Engpässe",
-      "url": "/?tab=shortages",
+      "url": "/?tab=shortages&src=twa",
       "chosenIconUrl": "https://www.apopulse.com/icon-192.png"
     },
     {
       "name": "Behörden-News",
       "short_name": "News",
-      "url": "/?tab=news",
+      "url": "/?tab=news&src=twa",
       "chosenIconUrl": "https://www.apopulse.com/icon-192.png"
     }
   ],
@@ -41,7 +41,9 @@
   "webManifestUrl": "https://www.apopulse.com/manifest.webmanifest",
   "fallbackType": "customtabs",
   "features": {},
-  "alphaDependencies": { "enabled": false },
+  "alphaDependencies": {
+    "enabled": false
+  },
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
@@ -49,7 +51,9 @@
   "minSdkVersion": 23,
   "targetSdkVersion": 36,
   "appVersion": "1.0.0",
-  "additionalTrustedOrigins": ["https://apopulse.com"],
+  "additionalTrustedOrigins": [
+    "https://apopulse.com"
+  ],
   "retainedBundles": [],
   "protocolHandlers": [],
   "fileHandlers": [],
