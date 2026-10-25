@@ -1769,6 +1769,34 @@ async function main() {
     await ctx.close();
   }
 
+  // ── Wiederkehr nach einer Woche (25.10.2026): „Seit deinem letzten Besuch" oben ──
+  {
+    const ctx = await browser.newContext({ viewport: { width: 360, height: 740 } });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
+    const gelesen = [];
+    await page.route('**/api/notifications', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ unread: 3, notifications: [
+      { id: 'n1', type: 'watch_alert', label: 'Paracetamol · Wieder verfügbar (Community-Meldung)', read: false, created_at: new Date().toISOString() },
+      { id: 'n2', type: 'shortage_home', label: 'Oxytocin · AT', read: false, created_at: new Date().toISOString() },
+      { id: 'n3', type: 'follow', label: 'x', read: false, created_at: new Date().toISOString() },
+    ] }) }));
+    await page.route('**/api/notifications/*/read', (r) => { gelesen.push(r.request().url().split('/').slice(-2)[0]); r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }); });
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(1200);
+    const r = await page.evaluate(() => { const k = document.querySelector('[data-seitbesuch]'); const h = document.querySelector('#feed h1'); if (!k) return null;
+      const box = k.getBoundingClientRect(); return { text: k.innerText, vorUeberblick: !!(h && (k.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING)), oben: box.top < innerHeight / 2 }; });
+    if (!r) findings.push('Wiederkehr: keine Karte „Seit deinem letzten Besuch" trotz ungelesener Engpass-Nachrichten');
+    else {
+      if (!r.vorUeberblick || !r.oben) findings.push(`Wiederkehr: Karte nicht oben vor dem Überblick (${JSON.stringify({ vor: r.vorUeberblick, oben: r.oben })})`);
+      if (!/Paracetamol/.test(r.text) || !/Oxytocin/.test(r.text) || !/Apotheke/i.test(r.text) || !/amtlich/i.test(r.text)) findings.push(`Wiederkehr: Wirkstoff oder Herkunft fehlt (${r.text.replace(/\s+/g, ' ').slice(0, 160)})`);
+      await page.click('[data-seitgesehen]'); await page.waitForTimeout(800);
+      if (await page.locator('[data-seitbesuch]').count() || gelesen.sort().join() !== 'n1,n2') findings.push(`Wiederkehr: „Gesehen" markiert nicht genau die gezeigten Nachrichten (${gelesen.join()})`);
+    }
+    for (const f of fehler) findings.push('Wiederkehr: JS-Fehler ' + f);
+    if (!findings.some((f) => f.startsWith('Wiederkehr'))) console.log('✓ Wiederkehr: „Seit deinem letzten Besuch" oben vor dem Überblick, je Wirkstoff mit Herkunft (Apotheke/amtlich); „Gesehen" markiert genau diese');
+    await ctx.close();
+  }
+
   // ── Daten-Schnittstelle (Business): verständlich, Schlüssel nur einmal ────
   //  Ohne Business: Preis und Buchen-Knopf, der auf die Zahlung mit dem
   //  Business-Tarif führt. Mit Business (nachgebildet): neuer Schlüssel

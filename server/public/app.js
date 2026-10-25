@@ -1894,6 +1894,58 @@ function betriebsKarte(b) {
   return c;
 }
 
+// „Seit deinem letzten Besuch" (Rundgang „eine Woche weg", 25.10.2026): Die Startseite zeigte den
+// heutigen Stand der beobachteten Wirkstoffe, aber nicht, WAS sich geändert hat — „wieder lieferbar"
+// sah aus wie seit Wochen so. Quelle sind die ungelesenen Engpass-Benachrichtigungen; je Wirkstoff
+// nur die neueste. „Gesehen" markiert genau diese als gelesen.
+const SEIT_TYPEN = new Set(['watch_alert', 'shortage_home', 'shortage_ended', 'shortage_abroad', 'shortage_bestaetigt', 'shortage_confirm']);
+function seitBesuchZeilen(notifs) {
+  const je = new Map();
+  for (const n of notifs || []) {
+    if (n.read || !SEIT_TYPEN.has(n.type)) continue;
+    const w = String(n.label || n.ref_id || '').split(' · ')[0].trim();
+    if (!w) continue;
+    const key = w.toLowerCase();
+    if (!je.has(key)) je.set(key, { w, n, ids: [] });
+    je.get(key).ids.push(n.id);
+  }
+  return [...je.values()].map(({ w, n, ids }) => {
+    let art = 'kritisch';
+    if (n.type === 'shortage_ended' || / · Wieder verfügbar/.test(n.label || '')) art = 'wieder';
+    else if (/ · Eingeschränkt lieferbar/.test(n.label || '')) art = 'eing';
+    else if (n.type === 'shortage_abroad') art = 'ausland';
+    else if (n.type === 'shortage_confirm' || n.type === 'shortage_bestaetigt') art = 'bestaetigt';
+    // Herkunft (CLAUDE.md: Engpass-Aussagen nur mit Quelle): Apotheken-Meldung oder amtliche Liste.
+    const quelle = / \(Community-Meldung\)/.test(n.label || '') || n.type === 'shortage_confirm' || n.type === 'shortage_bestaetigt' ? 'apotheke'
+      : (n.type === 'shortage_home' || n.type === 'shortage_ended' || n.type === 'shortage_abroad') ? 'amtlich' : null;
+    return { w, art, quelle, wer: n.actor && n.actor.display_name, zeit: n.created_at, ids };
+  });
+}
+async function seitBesuchKarte(feed, kopf) {
+  let d; try { d = await api('GET', '/api/notifications'); } catch { return; }
+  const zeilen = seitBesuchZeilen(d.notifications);
+  if (!zeilen.length) return;
+  const zeichen = { kritisch: '🔴', eing: '🟠', wieder: '🟢', ausland: '🌍', bestaetigt: '✅' };
+  const text = (z) => z.art === 'bestaetigt' ? (z.wer ? ti('seit_bestaetigt', { wer: z.wer }) : t('seit_bestaetigt_kurz')) : t('seit_' + z.art);
+  const k = el(`<div class="card" data-seitbesuch><h2 style="margin:0 0 6px;font-size:19px">${esc(t('seit_titel'))}</h2>
+    ${zeilen.slice(0, 5).map((z, i) => `<button class="ov-link" data-seitw="${i}" style="align-items:flex-start"><span aria-hidden="true" style="font-size:18px;flex:none">${zeichen[z.art]}</span><span style="text-align:start;font-weight:400"><b>${esc(z.w)}</b> — ${esc(text(z))}<br><span class="muted" style="font-size:14px">${esc(relTime(z.zeit))}${z.quelle ? ' · ' + esc(t(z.quelle === 'amtlich' ? 'seit_q_amtlich' : 'nl_community')) : ''}</span></span>${ico('chevron', 18)}</button>`).join('')}
+    <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><button class="ghost small" data-seitgesehen>${esc(t('seit_gesehen'))}</button>${zeilen.length > 5 || d.unread > zeilen.length ? `<button class="linklike small" data-seitalle>${esc(ti('seit_alle', { n: d.unread }))}</button>` : ''}</div></div>`);
+  k.querySelectorAll('[data-seitw]').forEach((b) => { b.onclick = () => openWirkstoff(zeilen[Number(b.dataset.seitw)].w); });
+  k.querySelector('[data-seitgesehen]').onclick = async () => {
+    k.remove();
+    for (const id of zeilen.flatMap((z) => z.ids)) { try { await api('POST', `/api/notifications/${encodeURIComponent(id)}/read`); } catch { /* nächstes Mal wieder */ } }
+    refreshNotifCount();
+  };
+  const alle = k.querySelector('[data-seitalle]'); if (alle) alle.onclick = () => document.getElementById('btnNotif').click();
+  // GANZ OBEN, vor dem Überblick: Der Überblick füllt am Handy den ersten Bildschirm, darunter
+  // sah die Karte niemand. Sie erscheint nur, wenn sich etwas geändert hat.
+  // Wurde die Startseite inzwischen neu aufgebaut (zweiter loadOverview-Lauf), gehört diese
+  // Antwort zu einer verworfenen Seite — sonst standen zwei Karten da.
+  if (!kopf || !kopf.isConnected) return;
+  feed.querySelectorAll('[data-seitbesuch]').forEach((x) => x.remove());
+  kopf.before(k);
+}
+
 async function loadOverview() {
   const feed = document.getElementById('feed');
   feed.innerHTML = '<div class="loading">…</div>';
@@ -2005,6 +2057,7 @@ async function loadOverview() {
   for (const [id, , , , fn] of schnell) if (fn) head.querySelector('#' + id).onclick = fn;
   head.querySelector('[data-lageteilen]').onclick = () => teileLage();
   feed.appendChild(head);
+  seitBesuchKarte(feed, head);
   // Codes und App-Karte NACH dem Überblick: Wer neu ist, sieht zuerst, wofür er da ist —
   // nicht acht Codes (die bleiben, bis „Codes gesichert" getippt ist).
   { const rc = rcKarte(); if (rc) feed.appendChild(rc); }

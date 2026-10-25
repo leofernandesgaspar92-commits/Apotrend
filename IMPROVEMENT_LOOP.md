@@ -3567,3 +3567,23 @@ Offline-Schalter den Service Worker nicht erfasst, zusätzlich mit abgeschaltete
 **Tests.** netz-schwach.test.js (3: Bereiche online gemerkt/offline genutzt, Senden-Pfad, Abmelden);
 Browser-Audit „Netz": offline absenden → Hinweis + Entwurf → online → automatisch gesendet, Entwurf weg;
 Getipptes übersteht Neuladen; Abmelden löscht den Entwurf.
+
+### Cycle · Wiederkehr nach einer Woche: „Seit deinem letzten Besuch" (2026-10-25)
+
+**Rundgang (fr-SN, 360 px):** Awa beobachtet Amoxicilline, Ocytocine, Paracétamol; in „ihrer Woche" meldet
+Moussa Ocytocine kritisch, Fatou bestätigt Awas Amoxicilline-Meldung, Paracétamol wird knapp und wieder
+lieferbar. Die Startseite zeigte den heutigen STAND („🟢 Paracétamol — De nouveau disponible") und „4
+nouvelles alertes" — aber nicht, WAS sich geändert hat; „wieder lieferbar" sah aus wie seit Wochen so.
+Die Benachrichtigungen selbst waren sauber übersetzt.
+
+**WORK.** Karte „Depuis votre dernière visite" GANZ OBEN (der Überblick füllt am Handy den ersten
+Bildschirm — darunter sah sie niemand), nur wenn es Ungelesenes gibt: je Wirkstoff die neueste Engpass-
+Nachricht als Zeile (🔴 neuer kritischer Engpass · 🟠 eingeschränkt · 🟢 wieder lieferbar · 🌍 im Ausland
+knapp · ✅ bestätigt von …), mit Zeit und **Herkunft** („signalement de pharmacie" / „liste officielle de
+l'autorité" — CLAUDE.md: Engpass-Aussagen nur mit Quelle). Zeile → Wirkstoff-Seite; „Vu" markiert genau
+diese Nachrichten als gelesen (Glocke wird leer); „Toutes les notifications (n)". 5 Sprachen. Kein neuer
+Server-Endpunkt — Quelle sind die vorhandenen Benachrichtigungen.
+
+**Tests.** seit-besuch.test.js (2: Gruppierung/Neueste/Gelesenes/Fremdes/Herkunft; Platz, Herkunft,
+„Gesehen", Texte ×5); Browser-Audit „Wiederkehr" (Karte oben vor dem Überblick, Herkunft, „Gesehen"
+markiert genau n1/n2).
