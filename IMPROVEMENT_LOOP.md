@@ -3481,3 +3481,22 @@ usw., aber nichts von dem, was seit Oktober dazukam. Neu (nur OB gesetzt, nie ei
 
 **Tests.** startklar.test.js +2 (Anmeldung mit Grund in Worten; Android 0/1/2/doppelt), „alles
 eingerichtet" und „kein Geheimnis" um SMS-/OAuth-Schlüssel erweitert.
+
+### Cycle · Herkunft messen: Wirkt die TikTok-Werbung? (2026-10-25)
+
+**Anlass.** Der Owner wirbt ab jetzt auf TikTok (Bilder/Videos EN+FR) und startet am 1. November. Bisher
+war nicht sichtbar, ob daraus Konten entstehen. Neu: Link mit Kanal, z. B. `apopulse.com/?k=tiktok`
+(frei wählbar: k=whatsapp, k=flyer-dakar …); die Play-App (Start /?src=twa) zählt als „play".
+Betriebs-Cockpit: „Woher neue Konten kommen (30 Tage) — tiktok: 120 Besuche → 14 neue Konten".
+
+**Datensparsam.** services/kanaele.js speichert NUR Summen je Tag und Kanal (Snapshot `kanaele`), kein
+Konto trägt seinen Kanal, keine IP, kein Cookie. Besuch = Aufruf der Startseite mit ?k=/src=twa
+(serverseitig, ohne Skript); Vorschau-Abrufer (WhatsApp, TikTok, Facebook, Bots) zählen nicht. Konto =
+Registrierung, Telefon-Konto oder NEUES Google-/Facebook-Konto mit gemerktem Kanal (localStorage bis
+zur Anmeldung, erster Kanal zählt, danach gelöscht). Schutz: höchstens 30 Namen (Rest „andere"),
+120 Tage Aufbewahrung, Kanalname nur a–z 0–9 - (2–20).
+
+**Tests.** kanaele.test.js (7): Namen, Vorschau-Abrufer, Summen/Zeitraum/Reihenfolge, Flut-Schutz und
+Aufbewahrung, Speichern/Laden mit Unsinn, Browser-Seite (Merken, 3 Anmeldewege, Löschen), HTTP Ende-zu-
+Ende (Besuch ×2 inkl. Großschreibung, WhatsApp-Vorschau und app.js zählen nicht, Konto ohne Kanal-Spur,
+nur Redaktion sieht das Cockpit). Browser-Audit: Cockpit zeigt TikTok und Play-Store-App.

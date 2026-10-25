@@ -1543,6 +1543,7 @@ async function main() {
         einnahmen: { tage: 30, anzahl: 6, summen: [{ currency: 'EUR', cents: 15894 }], offen_pruefung: 1 },
         quellen: { gesamt: 3, liefern: 2, offen: 0, fehler: 1, fehlerhaft: [{ id: 'openfda_shortages', land: 'US', label: 'FDA', fehler: 'HTTP 403' }] },
         abruf: { zuletzt: new Date(Date.now() - 3600000).toISOString(), ok: true }, mail: { aktiv: false, grund: 'kein_anbieter' }, ki: 'aus',
+        kanaele: [{ kanal: 'tiktok', besuche: 120, konten: 14 }, { kanal: 'play', besuche: 30, konten: 3 }],
       };
       const leer = (pfad, body) => page.route(pfad, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) }));
       await leer('**/api/betrieb', betrieb);
@@ -1563,8 +1564,9 @@ async function main() {
       await page.evaluate(() => { iAmModerator = false; });
       if (!/1 Engpass-Quelle liefert nicht/.test(hinweis) || !/FDA \(HTTP 403\)/.test(hinweis)) findings.push(`Redaktion: Quellen-Hinweis fehlt oder ohne Grund (${hinweis})`);
       else if (!/128/.test(cockpit) || !/9 neu in 7 Tagen/.test(cockpit) || !/14/.test(cockpit) || !/2 laufen in 7 Tagen ab/.test(cockpit) || !/158,94/.test(cockpit) || !/2\/3/.test(cockpit)) findings.push(`Cockpit: Zahlen fehlen (${cockpit.replace(/\s+/g, ' ').slice(0, 200)})`);
+      else if (!/tiktok\s*120 Besuche → 14 neue Konten/.test(cockpit) || !/Play-Store-App\s*30 Besuche → 3 neue Konten/.test(cockpit)) findings.push(`Cockpit: Herkunft (Kanäle) fehlt (${cockpit.replace(/\s+/g, ' ').slice(-160)})`);
       else if (!aufDq) findings.push('Cockpit: Klick auf „Quellen" öffnet die Datenquellen-Seite nicht');
-      else console.log('✓ Redaktion: Quellen-Hinweis mit Grund; Cockpit mit Konten, Premium, Einnahmen, Quellen — Klick führt zu den Datenquellen');
+      else console.log('✓ Redaktion: Quellen-Hinweis mit Grund; Cockpit mit Konten, Premium, Einnahmen, Quellen, Herkunft (TikTok/Play) — Klick führt zu den Datenquellen');
     }
 
     if (errors.length) findings.push(`Säule 3: JS-Fehler — ${errors.slice(0, 2).join(' | ')}`);

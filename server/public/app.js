@@ -917,7 +917,7 @@ function authScreen() {
   };
   const registrieren = async () => {
     try {
-      const d = await api('POST','/api/register',{ name:v('rg_name'), email:v('rg_email'), password:v('rg_pw'), country:(localStorage.getItem('apo_country') || 'AT'), locale:LOCALE, accountType:v('rg_accounttype'), einladung: leseEinladung() });
+      const d = await api('POST','/api/register',{ name:v('rg_name'), email:v('rg_email'), password:v('rg_pw'), country:(localStorage.getItem('apo_country') || 'AT'), locale:LOCALE, accountType:v('rg_accounttype'), einladung: leseEinladung(), kanal: leseKanal() });
       try { localStorage.removeItem('apo_einladung'); } catch { /* egal */ }
       // Direkt in die App (wie bei Facebook). Die Wiederherstellungscodes erscheinen
       // als Karte oben auf der Startseite, bis sie gesichert sind — sie halten den
@@ -956,6 +956,7 @@ const v = (id) => document.getElementById(id).value.trim();
 
 function afterAuth(d) {
   localStorage.setItem('apo_token', d.token);
+  try { localStorage.removeItem('apo_kanal'); } catch { /* egal */ }
   try { localStorage.setItem('apo_konto_bekannt', '1'); } catch { /* nur Komfort */ }
   me = d.profile || d.user;
   mainScreen();
@@ -1236,7 +1237,7 @@ function telefonScreen(vorwahlen) {
   };
   $('tel_neu_form').onsubmit = async (ev) => {
     ev.preventDefault(); $('tel_nmsg').textContent = '';
-    try { fertig(await api('POST', '/api/telefon/konto', { ticket, name: $('tel_name').value.trim(), accountType: $('tel_typ').value, country: land, locale: LOCALE, einladung: leseEinladung() })); }
+    try { fertig(await api('POST', '/api/telefon/konto', { ticket, name: $('tel_name').value.trim(), accountType: $('tel_typ').value, country: land, locale: LOCALE, einladung: leseEinladung(), kanal: leseKanal() })); }
     catch (e) { $('tel_nmsg').textContent = e.message; }
   };
   $('tel_nr').focus();
@@ -1281,7 +1282,7 @@ async function handleOAuthCallback() {
   try {
     const d = await api('POST', '/api/auth/oauth/' + encodeURIComponent(provider), {
       code, redirectUri: oauthRedirectUri(),
-      country: localStorage.getItem('apo_country') || undefined, locale: LOCALE,
+      country: localStorage.getItem('apo_country') || undefined, locale: LOCALE, kanal: leseKanal(),
     });
     history.replaceState({}, '', location.pathname); // Query-Parameter entfernen
     afterAuth(d);
@@ -1851,6 +1852,15 @@ function startklarKarte(s) {
   return c;
 }
 
+// Herkunft der neuen Konten (?k=tiktok …, server/src/services/kanaele.js): nur Summen.
+function kanalListe(liste) {
+  if (!Array.isArray(liste)) return '';
+  if (!liste.length) return `<div class="muted" data-btkanaele style="font-size:14px;margin-top:8px">${esc(t('bt_kanaele_leer'))}</div>`;
+  const name = (k) => k === 'play' ? t('bt_kanal_play') : k === 'andere' ? t('bt_kanal_andere') : k;
+  return `<div data-btkanaele style="margin-top:12px"><b style="font-size:15px">${esc(t('bt_kanaele'))}</b>
+    ${liste.slice(0, 8).map((k) => `<div class="row" data-kanal="${esc(k.kanal)}" style="justify-content:space-between;gap:10px;font-size:15px;padding:6px 0;border-top:1px solid var(--line)"><span style="font-weight:600">${esc(name(k.kanal))}</span><span>${esc(ti('bt_kanal_zeile', { b: k.besuche, k: k.konten }))}</span></div>`).join('')}</div>`;
+}
+
 function betriebsKarte(b) {
   const geld = (b.einnahmen.summen || []).map((x) => fmtCurrency(x.cents / 100, x.currency)).join(' + ') || fmtCurrency(0, 'EUR');
   const kachel = (icon, wert, label, sub, col, attr = '') => `<div ${attr} style="flex:1;min-width:140px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px">
@@ -1864,7 +1874,8 @@ function betriebsKarte(b) {
       ${kachel(q.fehler ? '✗' : '✓', `${q.liefern}/${q.gesamt}`, t('bt_sources'), q.fehler ? ti('bt_sources_bad', { n: q.fehler }) : (q.offen ? ti('bt_sources_open', { n: q.offen }) : t('bt_sources_ok')), q.fehler ? 'var(--crit-fg)' : 'var(--ok-fg)', 'data-btquellen role="button" tabindex="0" class="clickable"')}
     </div>
     <div class="muted" style="font-size:14px;margin-top:8px">${esc(t('bt_fetch'))}: ${esc(b.abruf.zuletzt ? vorZeit(b.abruf.zuletzt) || '' : t('dq_never'))} · ${esc(t('bt_mail'))}: ${esc(b.mail.aktiv ? t('dq_on') : t('dq_off'))} · ${esc(t('dq_ai'))}: ${esc(b.ki === 'aktiv' ? t('dq_on') : t('dq_off'))}</div>
-    ${b.teilen ? `<div class="muted" style="font-size:14px;margin-top:4px" data-btwachstum>${esc(ti('bt_teilen', { n: b.teilen.aufrufe_7 }))}${b.anzeigen ? ' · ' + esc(ti('bt_anzeigen', { l: b.anzeigen.laufend, p: b.anzeigen.zur_pruefung })) : ''}</div>` : ''}</div>`);
+    ${b.teilen ? `<div class="muted" style="font-size:14px;margin-top:4px" data-btwachstum>${esc(ti('bt_teilen', { n: b.teilen.aufrufe_7 }))}${b.anzeigen ? ' · ' + esc(ti('bt_anzeigen', { l: b.anzeigen.laufend, p: b.anzeigen.zur_pruefung })) : ''}</div>` : ''}
+    ${kanalListe(b.kanaele)}</div>`);
   const qk = c.querySelector('[data-btquellen]');
   qk.onclick = openDatenquellen;
   qk.onkeydown = (e) => { if (e.key === 'Enter') openDatenquellen(); };
@@ -4437,7 +4448,11 @@ function merkeLinkAbsicht() {
   const land = (q.get('land') || '').toUpperCase();
   const w = (q.get('beobachten') || '').trim().slice(0, 80);
   const e = q.get('e') || '';
-  if (!land && !w && !e) return;
+  // Herkunft (?k=tiktok; Play-App ?src=twa): bis zur Registrierung merken, dann nur als
+  // Summe gezählt (server/src/services/kanaele.js). Der erste Kanal zählt.
+  const k = (q.get('k') || (q.get('src') === 'twa' ? 'play' : '')).toLowerCase();
+  try { if (/^[a-z0-9][a-z0-9-]{1,19}$/.test(k) && !localStorage.getItem('apo_token') && !localStorage.getItem('apo_kanal')) localStorage.setItem('apo_kanal', k); } catch { /* ohne Speicher: nicht gezählt */ }
+  if (!land && !w && !e && !q.get('k')) return;
   try {
     if (/^[A-Z]{2}$/.test(land) && !localStorage.getItem('apo_country')) localStorage.setItem('apo_country', land);
     // bestaetigen=1: Link aus „Kolleg:innen um Bestätigung bitten" — nach der Anmeldung zur Meldung.
@@ -4449,6 +4464,7 @@ function merkeLinkAbsicht() {
 }
 function leseAbsicht() { try { return JSON.parse(localStorage.getItem('apo_absicht') || 'null'); } catch { return null; } }
 function leseEinladung() { try { return localStorage.getItem('apo_einladung') || null; } catch { return null; } }
+function leseKanal() { try { return localStorage.getItem('apo_kanal') || undefined; } catch { return undefined; } }
 
 // ══ Kolleg:innen einladen (server/src/services/einladungen.js) ═══════════════
 // Ohne Behördenliste (große Teile Afrikas) entsteht die Lage aus Meldungen von

@@ -61,6 +61,7 @@ import { createRechnungsnummern } from '../services/rechnungsnummern.js';
 import { aktualitaet, zaehlendeApotheken, istBestaetigt, vertrauenEinstellen, ZAEHLT_AB_STUNDEN } from '../services/shortages.js';
 import { createRechnungen } from '../services/rechnungen.js';
 import { createEinladungen, CODE_RE as EINLADUNG_RE } from '../services/einladungen.js';
+import { createKanaele, istVorschauAbruf } from '../services/kanaele.js';
 import { createDatenApi, zugangPruefen, engpassZeile, fuerSchnittstelle, alsCsv } from '../services/datenApi.js';
 import { werbeplaetzeAusUmgebung, ZIELGRUPPEN } from '../data/werbeplaetze.js';
 import { createOverviewService } from '../services/overview.js';
@@ -257,6 +258,8 @@ const betreiber = {
 };
 const datenApi = createDatenApi();
 const einladungen = createEinladungen();
+// Herkunft (?k=tiktok): nur Summen je Tag und Kanal, nie je Konto (services/kanaele.js).
+const kanaele = createKanaele();
 // Eine Rechnungsnummern-Reihe für Anzeigen UND Tarife (lückenlos, eindeutig).
 const rechnungsnummern = createRechnungsnummern();
 const anzeigen = createAnzeigen({
@@ -404,6 +407,7 @@ function applySnapshot(snap) {
   rechnungen.__load(snap.rechnungen);
   datenApi.__load(snap.datenApi);
   einladungen.__load(snap.einladungen);
+  kanaele.__load(snap.kanaele);
   // Alte, unbefristete Premium-Freischaltungen aus bezahlten Monats-/Jahres-
   // käufen bekommen ihr Ablaufdatum (services/payments.js, laufzeitenUmstellen).
   const umgestellt = payments.laufzeitenUmstellen();
@@ -459,6 +463,7 @@ function collectSnapshot() {
     rechnungen: rechnungen.__dump(),
     datenApi: datenApi.__dump(),
     einladungen: einladungen.__dump(),
+    kanaele: kanaele.__dump(),
   };
 }
 let saveTimer = null;
@@ -1223,6 +1228,8 @@ function kontoAnlegen(body, { intern = false } = {}) {
   // Über einen Einladungs-Link gekommen (services/einladungen.js): zuordnen, einladende Person benachrichtigen.
   const eingeladenVon = einladungen.zuordnen(reg.user.id, body.einladung);
   if (eingeladenVon) social.einladungAngenommen(eingeladenVon, reg.user.id);
+  // Herkunft nur als Summe zählen — das Konto selbst bekommt keinen Kanal.
+  kanaele.zaehle(body.kanal, 'konten');
   // recoveryCodes einmalig mitschicken, damit das Frontend sie zum Sichern anzeigen kann.
   return { token: issueToken(reg.user.id), user: reg.user, profile, recovery_codes: reg.recoveryCodes };
 }
@@ -1675,7 +1682,8 @@ const routes = [
     return { providers, passwort_link: passwortLink.aktiv, telefon: telefonLogin.aktiv, ...(telefonLogin.aktiv ? { vorwahlen: VORWAHL } : {}) };
   }],
   ['POST', /^\/api\/auth\/oauth\/([a-z0-9_]+)$/, false, async ({ params, body }) => {
-    const { userId } = await oauth.loginOrRegister(params[0], body.code, body.redirectUri, { country: normalizeCountry(body.country), locale: body.locale });
+    const { userId, created } = await oauth.loginOrRegister(params[0], body.code, body.redirectUri, { country: normalizeCountry(body.country), locale: body.locale });
+    if (created) kanaele.zaehle(body.kanal, 'konten');
     return { token: issueToken(userId), user: safeUser(repo.getUserById(userId)), profile: social.getProfile(userId) };
   }],
   ['GET', /^\/api\/auth\/identities$/, true, async ({ userId }) => ({ identities: oauth.linkedIdentities(userId) })],
@@ -2391,6 +2399,7 @@ const routes = [
       push: webPush.stand(),
       seiten: { aufrufe_7: [...seitenAufrufe].filter(([t]) => t > new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)).reduce((n, [, z]) => n + z, 0) },
       anzeigen: { laufend: anzeigen.alleLaufenden(userId).filter((k) => k.zustand === 'laeuft').length, zur_pruefung: anzeigen.zurPruefung(userId).length },
+      kanaele: kanaele.bericht(30),
     };
   }],
   // Startklar-Check (services/startklar.js): was der Betreiber noch einrichten muss.
@@ -2867,6 +2876,12 @@ const server = http.createServer(async (req, res) => {
     file = '/index.html'; // SPA-Fallback
   }
   const serve = path.join(PUBLIC_DIR, file);
+  // Besuch über einen Kanal-Link (?k=tiktok) oder aus der Play-App (?src=twa) — nur die
+  // Startseite, keine Vorschau-Abrufer von Messengern (services/kanaele.js).
+  if (file === '/index.html' && req.method === 'GET') {
+    const k = url.searchParams.get('k') || (url.searchParams.get('src') === 'twa' ? 'play' : null);
+    if (k && !istVorschauAbruf(req.headers['user-agent']) && kanaele.zaehle(k, 'besuche')) saveSoon();
+  }
   const ext = path.extname(serve);
   const MIME = {
     '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
