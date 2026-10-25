@@ -1711,8 +1711,30 @@ async function main() {
     if (!(liste.items || []).some((i) => /amoxicillin/i.test(JSON.stringify(i)))) findings.push('Teilen: nach dem Konto-Anlegen steht der Wirkstoff aus dem Link nicht auf der Beobachtungsliste');
     if (await neu.evaluate(() => localStorage.getItem('apo_absicht'))) findings.push('Teilen: Absicht bleibt nach der Verarbeitung liegen (würde bei jedem Start erneut greifen)');
     for (const f of fehler2) findings.push('Teilen: JS-Fehler ' + f);
-    if (!findings.some((f) => f.startsWith('Teilen'))) console.log('✓ Teilen: Blatt mit WhatsApp-Link auf Teilseite mit Vorschau; Link → Banner → Konto → Wirkstoff beobachtet');
     await ctx2.close();
+
+    // „Kolleg:innen um Bestätigung bitten" (Rundgang Tag 2, 25.10.2026): Wer über den Link
+    // kommt, liest im Banner, WOZU das Konto (bestätigen, nicht nur beobachten), landet nach
+    // dem Konto direkt bei der Meldung (Knopf sichtbar, im Fokus) und bekommt eine Rückmeldung.
+    const probe = 'Cefaclor';
+    await fetch(BASE + '/api/shortages/report', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token }, body: JSON.stringify({ wirkstoff: probe, bezeichnung: probe + ' 500 mg', status: 'kritisch', country: 'AT' }) });
+    const ctx3 = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const kol = await ctx3.newPage();
+    const fehler3 = []; kol.on('pageerror', (e) => fehler3.push(e.message));
+    await kol.goto(BASE + `/?land=AT&beobachten=${probe}&bestaetigen=1`, { waitUntil: 'networkidle' }); await kol.waitForTimeout(500);
+    const bb = await kol.locator('[data-absicht]').innerText().catch(() => '');
+    if (!/bestätigen|confirm/i.test(bb) || !bb.includes(probe)) findings.push(`Teilen: Bestätigungs-Link — Banner sagt nicht, dass es ums Bestätigen geht (${bb.slice(0, 90)})`);
+    await kol.fill('#rg_name', 'Kollegin Test'); await kol.fill('#rg_email', `best_${Date.now().toString(36)}@reg.test`); await kol.fill('#rg_pw', 'Passwort123!');
+    await kol.click('#rg_go'); await kol.waitForTimeout(1800);
+    const ziel = await kol.evaluate(() => { const k = document.querySelector('[data-bestaetigenziel]'); const b = k && k.querySelector('[data-confirm]'); if (!b) return null; const r = b.getBoundingClientRect(); return { sichtbar: r.top >= 0 && r.bottom <= innerHeight, fokus: document.activeElement === b }; });
+    if (!ziel || !ziel.sichtbar || !ziel.fokus) findings.push(`Teilen: Bestätigungs-Link — „Auch bei uns" nach dem Konto nicht sichtbar/im Fokus (${JSON.stringify(ziel)})`);
+    else {
+      await kol.click('[data-bestaetigenziel] [data-confirm]'); await kol.waitForTimeout(1500);
+      if (!(await kol.locator('[data-bestaetigtok]').count())) findings.push('Teilen: Bestätigungs-Link — nach „Auch bei uns" keine Rückmeldung');
+    }
+    for (const f of fehler3) findings.push('Teilen: JS-Fehler ' + f);
+    await ctx3.close();
+    if (!findings.some((f) => f.startsWith('Teilen'))) console.log('✓ Teilen: Blatt mit WhatsApp-Link auf Teilseite mit Vorschau; Link → Banner → Konto → Wirkstoff beobachtet; Bestätigungs-Link → Banner „bestätigen" → Meldung im Blick → Rückmeldung');
   }
 
   // ── Daten-Schnittstelle (Business): verständlich, Schlüssel nur einmal ────

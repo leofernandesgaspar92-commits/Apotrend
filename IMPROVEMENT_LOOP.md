@@ -3526,3 +3526,25 @@ richtig so (Render-Datei überlebt kein Deploy). Ohne DATABASE_URL sieht JEDER T
 **Tests.** startseite-melden.test.js (4); Browser-Audit Senegal: Zeile über dem Formular, Überblick vor
 der zugeklappten Codes-Karte, „Signaler une rupture" → Formular mit Cursor. Rundgang-Skript liegt im
 Scratchpad (nicht im Repo).
+
+### Cycle · Rundgang Tag 2: Kollegin bestätigt per WhatsApp-Link, Melderin kommt wieder (2026-10-25)
+
+**Kette geprüft (zwei Handys, fr-SN):** Awa meldet → „Demander une confirmation" → WhatsApp-Text („… au 🇸🇳
+Sénégal ?" — Präposition stimmt dank frPraepositionen) → Fatou öffnet die Teilseite („1 pharmacie au
+Sénégal signale une pénurie (pas encore confirmée)") → Konto → bestätigt → Awa sieht am nächsten Tag
+„Fatou Sarr confirme …" und „Fatou Sarr a rejoint ApoPulse grâce à votre invitation". Funde:
+1. **Deutsche Anführungszeichen in jeder Sprache:** Die Benachrichtigungsliste setzte den Wirkstoff fest in
+   „…" — „Amoxicilline" mitten im französischen Satz. Neu zitat(): de „…“, en “…”, fr « … » (schmales
+   festes Leerzeichen), pt/ar «…». Dabei gefunden: 15 portugiesische und 1 englischer Text mit „ (z. B.
+   „Já existe um aviso aberto para „{w}"") → korrigiert. Wächter-Test.
+2. **Banner passte nicht zum Anlass:** Wer zum BESTÄTIGEN kam, las „nous surveillons Amoxicilline pour
+   vous". Jetzt: „Compte gratuit en 30 secondes — ensuite, confirmez d'un geste : {w} manque aussi dans
+   votre pharmacie." (5 Sprachen)
+3. **Meldung außerhalb des Bildschirms:** Nach dem Konto lag die Karte mit „Chez nous aussi" unter Filtern
+   und Meldeformular. Jetzt wird sie hervorgehoben, nach oben geholt, der Knopf hat den Fokus.
+4. **Keine Rückmeldung nach „Chez nous aussi":** Die Liste lud nur neu. Jetzt oben „✓ Merci — vous avez
+   confirmé : {w} manque aussi dans votre pharmacie. Les collègues le voient."
+(Neue Konten zählen für „bestätigt" erst nach 24 h — das sagt die Karte bereits: vt_neu.)
+
+**Tests.** anfuehrungszeichen.test.js (3); Browser-Audit „Teilen": Bestätigungs-Link → Banner nennt das
+Bestätigen → nach dem Konto Knopf sichtbar und im Fokus → Rückmeldung.

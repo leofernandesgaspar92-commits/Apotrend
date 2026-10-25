@@ -281,6 +281,11 @@ function frPraepositionen(s, vars) {
 
 // Füllt alle [data-i18n]-Elemente (Textinhalt) und [data-i18n-ph] (Platzhalter).
 // t() mit einfacher Platzhalter-Ersetzung: ti('key', {land:'…'}) -> {land} wird ersetzt.
+// Anführungszeichen je Sprache — „…“ ist nur deutsch; in Dakar las sich eine Benachrichtigung
+// mit „Amoxicilline" wie eine maschinelle Übersetzung. Französisch mit schmalem festem Leerzeichen.
+const ZITAT = { de: ['„', '“'], en: ['“', '”'], fr: ['«\u202f', '\u202f»'], pt: ['«', '»'], ar: ['«', '»'] };
+function zitat(text) { const [a, z] = ZITAT[LOCALE] || ZITAT.en; return a + text + z; }
+
 function ti(key, vars) {
   let s = t(key);
   if (vars && LOCALE === 'fr') s = frPraepositionen(s, vars);
@@ -613,7 +618,8 @@ let shortageFilter = ''; // '', 'kritisch', 'watched', 'community'
 let shortageQuery = '';  // Textsuche nach Wirkstoff/Präparat
 let shortageSort = 'kritisch'; // 'kritisch' (kritischste zuerst) | 'neu' (neueste zuerst)
 let shortageReportPrefill = null; // Wirkstoff, mit dem das Meldeformular vorbelegt/geöffnet wird (z.B. aus der Suche)
-let meldeFormAuf = false; // „Engpass melden" auf der Startseite: Formular gleich offen, Cursor im Feld
+let meldeFormAuf = false;
+let bestaetigenZiel = null; // über „Bitte bestätigen"-Link gekommen: diese Meldung in der Liste zeigen // „Engpass melden" auf der Startseite: Formular gleich offen, Cursor im Feld
 let rabattQuery = '';     // Textsuche im Rabatt-Reiter
 let rabattExpiring = false; // nur bald ablaufende Aktionen
 let rabattWatchedOnly = false; // nur Aktionen zu beobachteten Wirkstoffen
@@ -822,7 +828,7 @@ function authScreen() {
     platz.appendChild(b);
   };
   sprachKnopf(); ensureCountries().then(() => { sprachKnopf(); zeigeSprachwahl(); landesspracheOhneWahl(); }).catch(() => {});
-  { const ab = leseAbsicht(); if (ab && ab.beobachten) app.appendChild(el(`<div class="lage-box" data-absicht style="margin:0 0 14px"><div class="lage-kopf">${ico('bell', 18)}${esc(ti('absicht_banner', { w: ab.beobachten }))}</div></div>`)); }
+  { const ab = leseAbsicht(); if (ab && ab.beobachten) app.appendChild(el(`<div class="lage-box" data-absicht style="margin:0 0 14px"><div class="lage-kopf">${ico('bell', 18)}${esc(ti(ab.bestaetigen ? 'absicht_banner_best' : 'absicht_banner', { w: ab.beobachten }))}</div></div>`)); }
   // Am Handy steht das Formular zuerst (wie bei Facebook) — aber ApoPulse kennt noch niemand.
   // Wer über TikTok kommt, soll in einer Zeile lesen, worum es geht. Am Desktop steht die
   // Beschreibung ohnehin daneben (CSS blendet die Zeile dort aus).
@@ -1628,7 +1634,7 @@ async function mainScreen() {
     try { localStorage.removeItem('apo_absicht'); } catch { /* egal */ }
     try { await api('POST', '/api/watchlist', { wirkstoff: absicht.beobachten }); } catch { /* Seite öffnet trotzdem */ }
     // Gebeten, eine Apotheken-Meldung zu bestätigen: gleich zur Meldung (mit „Bestätigen").
-    if (absicht.bestaetigen) { shortageQuery = absicht.beobachten; goTab('shortages'); return; }
+    if (absicht.bestaetigen) { shortageQuery = absicht.beobachten; bestaetigenZiel = absicht.beobachten; goTab('shortages'); return; }
     openWirkstoff(absicht.beobachten);
     return;
   }
@@ -3924,6 +3930,17 @@ function renderShortlist(listBox, bar, all) {
     }));
   }
   else list.forEach(s => listBox.appendChild(shortageCard(s)));
+  // Über „Bitte bestätigen" gekommen (Kolleg:in per WhatsApp): die Meldung mit „Chez nous aussi"
+  // nach oben holen — vorher lag sie unter Filtern und Meldeformular, außerhalb des Bildschirms.
+  if (bestaetigenZiel) {
+    const ziel = bestaetigenZiel.trim().toLowerCase(); bestaetigenZiel = null;
+    const karte = [...listBox.querySelectorAll('.card')].find((c) => (c.querySelector('[data-wirkstoff]')?.dataset.wirkstoff || '').trim().toLowerCase() === ziel);
+    if (karte) {
+      karte.setAttribute('data-bestaetigenziel', '');
+      karte.style.outline = '3px solid var(--green)'; karte.style.outlineOffset = '2px';
+      setTimeout(() => { karte.scrollIntoView({ block: 'start' }); window.scrollBy(0, -80); karte.querySelector('[data-confirm]')?.focus({ preventScroll: true }); }, 0);
+    }
+  }
   // Merker für Neu-Rendern nach Filter-/Suchänderung + Export der aktuellen Auswahl
   renderShortlist._ctx = { listBox, bar, all };
   renderShortlist._filtered = list;
@@ -4259,7 +4276,13 @@ function shortageCard(s) {
   const confirmBtn = card.querySelector('[data-confirm]');
   if (confirmBtn) confirmBtn.onclick = async () => {
     confirmBtn.disabled = true;
-    try { await api('POST',`/api/shortages/${s.id}/confirm`); loadShortages(); }
+    try {
+      await api('POST',`/api/shortages/${s.id}/confirm`);
+      await loadShortages();
+      // Rückmeldung oben — vorher lud nur die Liste neu, und man sah nicht, ob es geklappt hat.
+      document.getElementById('feed')?.prepend(el(`<div role="status" data-bestaetigtok style="background:var(--ok-bg);border:1px solid var(--ok-bd);color:var(--ok-fg);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:15px">${esc(ti('sc_conf_ok', { w: s.wirkstoff }))}</div>`));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
     catch(e){ alert(e.message); confirmBtn.disabled = false; }
   };
   const unconfirmBtn = card.querySelector('[data-unconfirm]');
@@ -7569,7 +7592,7 @@ async function openPremium() {
         ⏳ <b>${esc(ti('pr_review_t', { d: fmtZeit(letzte.claimed_at || letzte.created_at) }))}</b><div style="margin-top:4px">${esc(t('pr_review_s'))}</div></div>`);
     } else if (letzte && letzte.status === 'failed') {
       stand = el(`<div data-prstand="failed" style="background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-fg);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:15px;line-height:1.5">
-        ⚠️ <b>${esc(t('pr_rejected_t'))}</b>${letzte.review_note ? `<div style="margin-top:4px">${esc(t('pr_rejected_why'))}: „${esc(letzte.review_note)}“</div>` : ''}<div style="margin-top:4px">${esc(t('pr_rejected_s'))}</div></div>`);
+        ⚠️ <b>${esc(t('pr_rejected_t'))}</b>${letzte.review_note ? `<div style="margin-top:4px">${esc(t('pr_rejected_why'))}: ${esc(zitat(letzte.review_note))}</div>` : ''}<div style="margin-top:4px">${esc(t('pr_rejected_s'))}</div></div>`);
     }
     const opt = await api('GET', `/api/payments/crypto?product=${encodeURIComponent(prPlan)}&country=${encodeURIComponent(viewCountry())}`);
     const produkte = ((await api('GET', `/api/payments/products?country=${encodeURIComponent(viewCountry())}`).catch(() => ({ products: [] }))).products) || [];
@@ -9881,7 +9904,7 @@ async function showNotifications() {
       <div class="row" style="align-items:center">
         ${n.actor ? avatarHtml(n.actor, 34, false) : ''}
         <span${n.actor?' style="font-size:16px"':''}>${icons[n.type]||'🔔'}</span>
-        <span style="margin-inline-start:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' „'+esc(/^shortage_(abroad|home|ended)$/.test(n.type)?n.label.replace(/ · ([A-Z]{2})$/, (m, cc) => ' · ' + landLabel(cc)):n.type==='premium_ablauf'?fmtDateDe(n.label):n.type==='watch_alert'?notifLabel(n.label):n.label)+'"':''}${n.read?'':'</b>'}</span>
+        <span style="margin-inline-start:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' '+esc(zitat(/^shortage_(abroad|home|ended)$/.test(n.type)?n.label.replace(/ · ([A-Z]{2})$/, (m, cc) => ' · ' + landLabel(cc)):n.type==='premium_ablauf'?fmtDateDe(n.label):n.type==='watch_alert'?notifLabel(n.label):n.label)):''}${n.read?'':'</b>'}</span>
         <span class="sp" style="flex:1"></span>
         <span class="muted" style="font-size:13px">${relTime(n.created_at)}</span>
       </div></div>`);
