@@ -1812,12 +1812,12 @@ function renderLiveOverview(feed, liveNow, liveSoon) {
   const card = el(`<div class="card" style="border-inline-start:4px solid var(--crit-fg)">
     ${liveNow.length?`<div style="font-weight:800;color:var(--crit-fg);margin-bottom:6px">🔴 ${esc(t('lv_ov_now'))}</div>
       ${liveNow.map(s=>`<div class="row" style="align-items:center;gap:8px;padding:4px 0;flex-wrap:wrap">
-        <div style="flex:1;min-width:160px"><b>${esc(s.titel)}</b><div class="muted" style="font-size:13px">${esc(t('lv_host'))}: ${hostLine(s)}</div></div>
+        <div style="flex:1;min-width:min(160px,100%)"><b>${esc(s.titel)}</b><div class="muted" style="font-size:13px">${esc(t('lv_host'))}: ${hostLine(s)}</div></div>
         ${s.room_url?`<a class="small" style="text-decoration:none;font-weight:700;color:var(--crit-fg)" href="${esc(s.room_url)}" target="_blank" rel="noopener noreferrer">${esc(t('lv_join'))}</a>`:''}
       </div>`).join('')}`:''}
     ${soon.length?`<div style="font-weight:700;margin:${liveNow.length?'10':'0'}px 0 6px">${esc(t('lv_ov_soon'))}</div>
       ${soon.map(s=>`<div class="row" style="align-items:center;gap:8px;padding:4px 0;flex-wrap:wrap">
-        <div style="flex:1;min-width:160px"><b>${esc(s.titel)}</b><div class="muted" style="font-size:13px">🗓 ${esc(liveWhen(s.geplant_am))} · ${hostLine(s)}</div></div>
+        <div style="flex:1;min-width:min(160px,100%)"><b>${esc(s.titel)}</b><div class="muted" style="font-size:13px">🗓 ${esc(liveWhen(s.geplant_am))} · ${hostLine(s)}</div></div>
         ${!s.i_am_host?`<button class="${s.i_am_interested?'':'ghost '}small" data-remind="${esc(s.id)}">${esc(s.i_am_interested?t('lv_interested'):t('lv_interest'))}</button>`:''}
       </div>`).join('')}`:''}
     <div class="row" style="margin-top:8px"><button class="linklike small" data-all>${esc(t('lv_nav'))} ›</button></div>
@@ -1875,7 +1875,7 @@ function kanalListe(liste) {
 
 function betriebsKarte(b) {
   const geld = (b.einnahmen.summen || []).map((x) => fmtCurrency(x.cents / 100, x.currency)).join(' + ') || fmtCurrency(0, 'EUR');
-  const kachel = (icon, wert, label, sub, col, attr = '') => `<div ${attr} style="flex:1;min-width:140px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px">
+  const kachel = (icon, wert, label, sub, col, attr = '') => `<div ${attr} style="flex:1;min-width:min(140px,100%);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px">
     <div style="font-size:22px;font-weight:800;color:${col}">${icon} ${esc(String(wert))}</div><div style="font-size:14px;margin-top:2px">${esc(label)}</div>${sub ? `<div class="muted" style="font-size:13px">${esc(sub)}</div>` : ''}</div>`;
   const q = b.quellen;
   const c = el(`<div class="card" data-betrieb><b style="font-size:16px">📊 ${esc(t('bt_title'))}</b>
@@ -2630,7 +2630,7 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
   // dieser Liste (private Notizen + druckbarer Aushang). Kein Sperren von Kern-Funktionen.
   if (!premium) {
     const hint = el(`<div class="row" style="margin-top:8px;gap:8px;align-items:center;font-size:13px">
-      <span class="muted" style="flex:1;min-width:140px">${esc(t('wl_premium_hint'))}</span>
+      <span class="muted" style="flex:1;min-width:min(140px,100%)">${esc(t('wl_premium_hint'))}</span>
       <button class="ghost small" data-upsell>${esc(t('wl_premium_cta'))}</button>
     </div>`);
     hint.querySelector('[data-upsell]').onclick = () => { if (typeof openPremium === 'function') openPremium(); };
@@ -3385,7 +3385,7 @@ async function loadSignals() {
     <div class="muted" style="margin-top:6px;font-size:14px">${esc(t('sig_sub'))}</div>
     <div class="row" data-sigkat style="gap:6px;flex-wrap:wrap;margin-top:10px"></div>
     <div class="row" style="gap:6px;margin-top:8px">
-      <input data-sigq value="${esc(suche)}" placeholder="${esc(t('sig_q_ph'))}" aria-label="${esc(t('sig_q_ph'))}" style="flex:1;min-width:160px">
+      <input data-sigq value="${esc(suche)}" placeholder="${esc(t('sig_q_ph'))}" aria-label="${esc(t('sig_q_ph'))}" style="flex:1;min-width:min(160px,100%)">
     </div>
   </div>`);
 
@@ -3738,7 +3738,7 @@ function countryRegulatorCard(live = false) {
     : `<span class="data-pill ref" title="${esc(t('ds_ref_title'))}">${esc(t('ds_ref'))}</span>`;
   return el(`<div class="card"><div class="row" style="align-items:center;gap:10px;flex-wrap:wrap">
     <span class="karte-ic" aria-hidden="true">${ico('landmark', 22)}</span>
-    <div style="flex:1;min-width:180px">
+    <div style="flex:1;min-width:min(180px,100%)">
       <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><span style="font-weight:700">${esc(ti('reg_title', { reg: c.regulator }))}</span>${pill}</div>
       <div class="muted" style="font-size:13px">${esc(ti('reg_sub', { land: c.flag + ' ' + c.name }))}</div>
     </div>
@@ -5022,7 +5022,7 @@ function werbeCockpit(d) {
   d.kampagnen.forEach((k) => {
     const ctr = k.impressionen ? (100 * k.klicks / k.impressionen).toFixed(1).replace('.', LOCALE === 'en' ? '.' : ',') + ' %' : '—';
     const z = el(`<div class="wb-kampagne" data-wbk="${esc(k.id)}">
-      <div class="row" style="gap:8px;align-items:flex-start;flex-wrap:wrap"><div style="flex:1;min-width:200px"><b>${esc(k.titel)}</b>
+      <div class="row" style="gap:8px;align-items:flex-start;flex-wrap:wrap"><div style="flex:1;min-width:min(200px,100%)"><b>${esc(k.titel)}</b>
         <div class="muted" style="font-size:14px">${esc(t('wb2_platz_' + k.platz))} · ${esc(k.laender.map(landAnzeige).join(', '))} · ${esc(fmtDateDe(k.start))}–${esc(fmtDateDe(k.ende))} · ${esc(eur(k.preis_cents))}</div></div>
         <span class="wb-status wb-status-${esc(k.zustand)}">${esc(wbStatusText(k))}</span></div>
       <div class="wb-zahlen"><span><b>${k.impressionen}</b> ${esc(t('wb2_impr'))}</span><span><b>${k.klicks}</b> ${esc(t('wb2_klicks'))}</span><span><b>${esc(ctr)}</b> ${esc(t('wb2_ctr'))}</span></div>
@@ -5068,7 +5068,7 @@ async function zahlungKampagne(k, box, rechnungMoeglich) {
       const zeile = el(`<div class="crypto-pay"><b>${esc(c.symbol || c.coin)}</b> <span class="muted">${esc(c.network || '')}</span>
         <div>${c.amount_crypto != null ? esc(`${c.amount_crypto} ${c.symbol || ''}`) : esc(t('wb2_kurs_fehlt'))} · ${esc(eur(k.preis_cents))}</div>
         <div class="crypto-addr"><code>${esc(c.address)}</code></div>
-        <div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap"><input data-tx placeholder="${esc(t('wb2_tx_ph'))}" style="flex:1;min-width:180px"><button class="small" data-melden>${esc(t('wb2_tx_melden'))}</button></div>
+        <div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap"><input data-tx placeholder="${esc(t('wb2_tx_ph'))}" style="flex:1;min-width:min(180px,100%)"><button class="small" data-melden>${esc(t('wb2_tx_melden'))}</button></div>
         <div class="err" data-txerr></div></div>`);
       zeile.querySelector('[data-melden]').onclick = async () => {
         try {
@@ -5139,8 +5139,8 @@ function buchungsKarte(firma, alt) {
     <div class="wb-wahl wb-mehrspaltig">${(COUNTRIES_CACHE || []).map((l) => `<label><input type="checkbox" data-land="${esc(l.code)}" ${v0.laender.includes(l.code) ? 'checked' : ''}> ${esc(landAnzeige(l.code))}</label>`).join('')}</div>
     <div style="font-weight:700;margin-top:10px">${esc(t('wb2_gruppen'))}</div>
     <div class="wb-wahl wb-mehrspaltig">${WB_GRUPPEN.map((g) => `<label><input type="checkbox" data-gruppe="${g}" ${v0.zielgruppen.includes(g) ? 'checked' : ''}> ${esc(gruppeName(g))}</label>`).join('')}</div>
-    <div class="row" style="gap:12px;flex-wrap:wrap;margin-top:10px"><label style="flex:1;min-width:150px">${esc(t('wb2_start'))}<input type="date" data-f="start" min="${heute}" value="${esc(v0.start)}"></label>
-      <label style="flex:1;min-width:150px">${esc(t('wb2_wochen'))}<input type="number" data-f="wochen" min="1" max="52" value="${esc(String(v0.wochen))}"></label></div>
+    <div class="row" style="gap:12px;flex-wrap:wrap;margin-top:10px"><label style="flex:1;min-width:min(150px,100%)">${esc(t('wb2_start'))}<input type="date" data-f="start" min="${heute}" value="${esc(v0.start)}"></label>
+      <label style="flex:1;min-width:min(150px,100%)">${esc(t('wb2_wochen'))}<input type="number" data-f="wochen" min="1" max="52" value="${esc(String(v0.wochen))}"></label></div>
     <div class="wb-summe" data-wbsumme></div>
     <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:12px"><button class="ghost" data-speichern>${esc(t('wb2_entwurf'))}</button><button data-einreichen>${esc(t('wb2_einreichen'))}</button></div>
     <div class="err" data-err></div>
@@ -6173,7 +6173,7 @@ async function openCart(flash) {
       <button class="small" data-maddbtn>${esc(t('cart_manual_add'))}</button>
     </div>
     ${d.items.length?`<div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap">
-      <input data-cref placeholder="${esc(t('cart_checkout_ref_ph'))}" style="flex:1;min-width:140px" aria-label="${esc(t('cart_checkout_ref_ph'))}">
+      <input data-cref placeholder="${esc(t('cart_checkout_ref_ph'))}" style="flex:1;min-width:min(140px,100%)" aria-label="${esc(t('cart_checkout_ref_ph'))}">
       <button class="small" data-ccheckout>${esc(t('cart_checkout'))}</button>
       <button class="ghost small" data-savetpl title="${esc(t('tpl_save_t'))}">${esc(t('tpl_save'))}</button>
       <button class="ghost small" data-cclear>${esc(t('cart_clear'))}</button>
@@ -6201,7 +6201,7 @@ async function openCart(flash) {
       const box = tc.querySelector('[data-tpllist]');
       tl.templates.forEach(tp => {
         const row = el(`<div class="comment"><div class="row" style="align-items:baseline;gap:8px;flex-wrap:wrap">
-          <b style="flex:1;min-width:120px">📋 ${esc(tp.name)}</b>
+          <b style="flex:1;min-width:min(120px,100%)">📋 ${esc(tp.name)}</b>
           <span class="muted" style="font-size:13px">${esc(ti('ord_positions',{n:tp.positions}))}${tp.total_price>0?` · € ${fmtMoney(tp.total_price)}`:''}</span>
           <button class="small" data-apply>${esc(t('tpl_apply'))}</button>
           <button class="ghost small" data-del title="${esc(t('tpl_delete'))}" aria-label="${esc(t('tpl_delete'))}">🗑</button>
@@ -6514,7 +6514,7 @@ async function openTeam() {
     <input id="tm_email" type="email" placeholder="${esc(t('tm_email'))}" style="margin-top:6px">
     <div class="row" style="gap:6px;margin-top:6px">
       <select id="tm_role" aria-label="${esc(t('tm_role'))}">${TEAM_ROLES.map(r=>`<option value="${r}"${r==='pta'?' selected':''}>${esc(roleLabel(r))}</option>`).join('')}</select>
-      <input id="tm_pw" type="text" placeholder="${esc(t('tm_pw'))}" style="flex:1;min-width:120px">
+      <input id="tm_pw" type="text" placeholder="${esc(t('tm_pw'))}" style="flex:1;min-width:min(120px,100%)">
     </div>
     <div class="row" style="margin-top:8px"><button data-add>${esc(t('tm_add_btn'))}</button><span class="err" data-err style="margin-inline-start:10px"></span></div>
   </div>`);
@@ -6531,7 +6531,7 @@ async function openTeam() {
   const ml = listCard.querySelector('[data-ml]');
   d.members.forEach(m => {
     const row = el(`<div class="row" style="align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap">
-      <div style="flex:1;min-width:140px"><b>${esc(m.name||kontoAdresse(m.email))}</b>${m.is_self?` <span class="muted">(${esc(t('tm_you'))})</span>`:''}<div class="muted" style="font-size:13px" dir="ltr">${esc(kontoAdresse(m.email))}</div></div>
+      <div style="flex:1;min-width:min(140px,100%)"><b>${esc(m.name||kontoAdresse(m.email))}</b>${m.is_self?` <span class="muted">(${esc(t('tm_you'))})</span>`:''}<div class="muted" style="font-size:13px" dir="ltr">${esc(kontoAdresse(m.email))}</div></div>
       <select data-role aria-label="${esc(t('tm_role'))}">${TEAM_ROLES.map(r=>`<option value="${r}"${m.role===r?' selected':''}>${esc(roleLabel(r))}</option>`).join('')}</select>
       <button class="ghost small" data-remove ${m.is_self?'disabled':''}>${esc(t('tm_remove'))}</button>
     </div>`);
@@ -6841,7 +6841,7 @@ async function openDirectory(type) {
     <div class="row" style="flex-wrap:wrap;gap:6px">
       ${DIR_TYPES.map(ty=>`<button class="small sortbtn${dirState.type===ty?' active':''}" data-type="${ty}">${DIR_ICON[ty]} ${esc(acctLabel(ty))} <span class="muted">${(counts.counts&&counts.counts[ty])||0}</span></button>`).join('')}
     </div>
-    <div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap"><input data-q value="${esc(dirState.q)}" placeholder="${esc(t('dir_search'))}" maxlength="60" style="flex:1;min-width:140px"><button class="small" data-go>🔎</button>
+    <div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap"><input data-q value="${esc(dirState.q)}" placeholder="${esc(t('dir_search'))}" maxlength="60" style="flex:1;min-width:min(140px,100%)"><button class="small" data-go>🔎</button>
       ${(me&&me.country==='AT')?`<select data-blf class="small" data-i18n-aria="ex_all_bl" aria-label="${esc(t('ex_all_bl'))}"><option value="">${esc(t('ex_all_bl'))}</option>${blOptions(dirState.bl)}</select>`:''}
     </div>
     <div class="reacts" style="margin-top:8px"><button class="small sortbtn${dirState.verified?' active':''}" data-vonly aria-pressed="${dirState.verified}">${esc(t('dir_verified_only'))}</button></div>
@@ -7002,8 +7002,8 @@ function openPromoForm(existing) {
     <label style="margin-top:8px">${esc(t('wb_f_desc'))}</label>
     <textarea id="pr_desc" rows="4" maxlength="1000" placeholder="${esc(t('wb_f_desc_ph'))}">${esc(existing&&existing.beschreibung?existing.beschreibung:'')}</textarea>
     <div class="row" style="gap:10px;flex-wrap:wrap">
-      <div style="flex:1;min-width:140px"><label>${esc(t('wb_f_price'))}</label><input id="pr_price" type="number" min="0" step="0.01" value="${existing&&existing.preis!=null?existing.preis:''}"></div>
-      <div style="flex:1;min-width:140px"><label>${esc(t('wb_f_unit'))}</label><input id="pr_unit" maxlength="30" placeholder="${esc(t('wb_f_unit_ph'))}" value="${esc(existing&&existing.einheit?existing.einheit:'')}"></div>
+      <div style="flex:1;min-width:min(140px,100%)"><label>${esc(t('wb_f_price'))}</label><input id="pr_price" type="number" min="0" step="0.01" value="${existing&&existing.preis!=null?existing.preis:''}"></div>
+      <div style="flex:1;min-width:min(140px,100%)"><label>${esc(t('wb_f_unit'))}</label><input id="pr_unit" maxlength="30" placeholder="${esc(t('wb_f_unit_ph'))}" value="${esc(existing&&existing.einheit?existing.einheit:'')}"></div>
     </div>
     <label style="margin-top:8px">${esc(t('wb_f_link'))}</label>
     <input id="pr_link" maxlength="500" placeholder="${esc(t('wb_f_link_ph'))}" value="${esc(existing&&existing.link?existing.link:'')}">
@@ -7843,7 +7843,7 @@ async function openPremium() {
           <button class="ghost small" data-copy="${esc(c.address)}">${esc(t('pr_copy_addr'))}</button>
         </div>
         <div style="margin-top:10px"><div class="muted" style="font-size:13px;margin-bottom:4px">${esc(t('pr_paid_q'))}</div>
-          <div class="row" style="gap:8px;flex-wrap:wrap"><input class="tx-in" placeholder="${esc(t('pr_tx_ph'))}" style="flex:1;min-width:180px"><button class="small" data-report="${esc(c.id)}">${esc(t('pr_report'))}</button></div>
+          <div class="row" style="gap:8px;flex-wrap:wrap"><input class="tx-in" placeholder="${esc(t('pr_tx_ph'))}" style="flex:1;min-width:min(180px,100%)"><button class="small" data-report="${esc(c.id)}">${esc(t('pr_report'))}</button></div>
           <div class="tx-msg" style="margin-top:6px"></div>
         </div>
       </div>`);
@@ -10285,9 +10285,9 @@ async function openDatenquellen() {
       <button class="ghost small" data-dqback style="min-height:44px">${esc(t('gen_back'))}</button></div>
     <div class="muted" style="margin-top:4px">${esc(t('dq_sub'))}</div>
     <div class="row" style="gap:10px;flex-wrap:wrap;margin-top:12px" data-dqsumme>
-      <div style="flex:1;min-width:110px;border:1px solid var(--crit-bd);background:var(--crit-bg);border-radius:12px;padding:10px 12px"><div style="font-size:24px;font-weight:800;color:var(--crit-fg)">✗ ${kaputt}</div><div style="font-size:14px">${esc(t('dq_sum_bad'))}</div></div>
-      <div style="flex:1;min-width:110px;border:1px solid var(--line);border-radius:12px;padding:10px 12px"><div style="font-size:24px;font-weight:800">? ${offen}</div><div style="font-size:14px">${esc(t('dq_sum_open'))}</div></div>
-      <div style="flex:1;min-width:110px;border:1px solid var(--ok-bd);background:var(--ok-bg);border-radius:12px;padding:10px 12px"><div style="font-size:24px;font-weight:800;color:var(--ok-fg)">✓ ${gut}</div><div style="font-size:14px">${esc(t('dq_sum_ok'))}</div></div>
+      <div style="flex:1;min-width:min(110px,100%);border:1px solid var(--crit-bd);background:var(--crit-bg);border-radius:12px;padding:10px 12px"><div style="font-size:24px;font-weight:800;color:var(--crit-fg)">✗ ${kaputt}</div><div style="font-size:14px">${esc(t('dq_sum_bad'))}</div></div>
+      <div style="flex:1;min-width:min(110px,100%);border:1px solid var(--line);border-radius:12px;padding:10px 12px"><div style="font-size:24px;font-weight:800">? ${offen}</div><div style="font-size:14px">${esc(t('dq_sum_open'))}</div></div>
+      <div style="flex:1;min-width:min(110px,100%);border:1px solid var(--ok-bd);background:var(--ok-bg);border-radius:12px;padding:10px 12px"><div style="font-size:24px;font-weight:800;color:var(--ok-fg)">✓ ${gut}</div><div style="font-size:14px">${esc(t('dq_sum_ok'))}</div></div>
     </div>
     <div style="margin-top:12px;font-size:15px;line-height:1.7">
       ${jobZeile('news', t('dq_job_news'))}
@@ -10315,7 +10315,7 @@ async function openDatenquellen() {
           : `<span style="color:var(--crit-fg);font-weight:700">✗ ${esc(t('dq_st_bad'))}</span>`;
       const href = sichererLink(q.url);
       rows.appendChild(el(`<div data-dqquelle="${esc(q.id)}" style="padding:10px 0;border-top:1px solid var(--line)">
-        <div class="row" style="gap:8px;flex-wrap:wrap;align-items:baseline"><span style="flex:1;min-width:180px;font-weight:600">${esc(q.label || q.id)}</span>${status}</div>
+        <div class="row" style="gap:8px;flex-wrap:wrap;align-items:baseline"><span style="flex:1;min-width:min(180px,100%);font-weight:600">${esc(q.label || q.id)}</span>${status}</div>
         <div class="muted" style="font-size:13px;margin-top:2px">${esc(q.kind === 'shortages' ? t('dq_kind_shortages') : t('dq_kind_news'))}${r && r.stand ? ' · ' + esc(vorZeit(r.stand) || '') : ''}</div>
         ${r && !r.ok && r.fehler ? `<div style="font-size:14px;margin-top:4px;color:var(--crit-fg)">${esc(r.fehler)}</div>` : ''}
         ${href ? `<div style="font-size:13px;margin-top:2px;word-break:break-all"><a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(href)}</a></div>` : ''}
@@ -10392,7 +10392,7 @@ async function meldungsPruefung(ziel) {
         p.eingeladen_von_meldender ? t('mp_von_meldender') : null,
       ].filter(Boolean).join(' · ');
       const zeile = el(`<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--line)">
-        <span style="flex:1;min-width:180px"><b>@${esc(p.handle || '?')}</b> <span class="muted">${esc(merkmale)}</span></span>
+        <span style="flex:1;min-width:min(180px,100%)"><b>@${esc(p.handle || '?')}</b> <span class="muted">${esc(merkmale)}</span></span>
         ${p.rolle === 'bestaetigt' && p.handle ? `<button class="ghost small" data-mpbest="${esc(p.handle)}" style="min-height:44px">${esc(t('mp_best_entfernen'))}</button>` : ''}</div>`);
       const b = zeile.querySelector('[data-mpbest]');
       if (b) b.onclick = async () => {
@@ -10423,7 +10423,7 @@ async function showModeration() {
   app.innerHTML = '';
   const krit = (sh.shortages||[]).filter(s => s.status === 'kritisch').length;
   const comm = (sh.shortages||[]).filter(s => s.provenance === 'community').length;
-  const mtile = (icon, num, label, col) => `<div style="flex:1;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px">
+  const mtile = (icon, num, label, col) => `<div style="flex:1;min-width:min(120px,100%);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px">
     <div style="font-size:24px;font-weight:800;color:${col}">${icon} ${num}</div><div class="muted" style="font-size:13px;margin-top:2px">${esc(label)}</div></div>`;
   const head = el(`<div class="card"><div class="row" style="gap:8px;flex-wrap:wrap"><h1 style="flex:1">${esc(t('md_title'))}</h1>
     <button class="small" id="dqOpen" style="min-height:44px">📡 ${esc(t('dq_open'))}</button>

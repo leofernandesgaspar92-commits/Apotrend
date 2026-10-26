@@ -652,3 +652,47 @@ span.handle { direction:ltr; unicode-bidi:isolate; }
 .pw-zeile { display:flex; gap:8px; align-items:center; }
 .pw-zeile input { flex:1; min-width:0; }
 .pw-zeile .pw-zeigen { flex:none; min-height:44px; white-space:nowrap; }
+
+/* ── Große Schrift / Zoom am Handy (Prüfung 26.10.2026) ──────────────────────
+   Wer am Handy die Schrift vergrößert oder zoomt, hat effektiv 180–260 CSS-px
+   Breite. Gemessen ragten dann Überschrift, „Menü", Filterknöpfe und die lange
+   Wallet-Adresse aus dem Bildschirm (Querscrollen 22–113 px). Alles hier greift
+   nur bei so schmaler Breite — normale Handys (≥ 320 px) sehen keinen Unterschied. */
+h1, h2, h3, .auth-hero-title { overflow-wrap:break-word; hyphens:auto; }
+.auth-grid > * { min-width:0; } /* sonst setzt das längste Wort („l'approvisionnement") die Spaltenbreite */
+.post-author.clickable[data-wirkstoff] { display:inline-flex; align-items:center; min-height:40px; }
+button[data-coin] { overflow-wrap:anywhere; }
+@media (max-width:319.98px) {
+  header { gap:4px; padding-inline:8px; }
+  header #countrySwitch { padding:6px 4px; max-width:60px; } /* Flagge statt „Sén…" */
+  .kopf-btn { min-width:44px; padding:4px; }
+  .row { flex-wrap:wrap; }
+  .row > button { white-space:normal; flex-shrink:1; min-width:0; }
+  .row > * { min-width:0; max-width:100%; }
+  button, .badge, span { overflow-wrap:break-word; } /* nie mitten im Wort („Amox‑icillin"), nur wenn ein Wort allein nicht passt */
+  .card { padding-inline:12px; }
+  .data-pill { white-space:normal; }
+  /* Vergleich Gratis/Premium: Merkmal oben über die ganze Breite, darunter beide Spalten. */
+  .pv-kopf, .pv-zeile { grid-template-columns:1fr 1fr; padding:10px; }
+  .pv-kopf > span:first-child, .pv-zeile > span:first-child { grid-column:1 / -1; }
+  /* Suche: Feld über die ganze Breite, „Suchen" darunter — statt eines Feldes mit vier Buchstaben. */
+  .suche-feld + button { flex:1 1 100%; }
+  /* Untere Leiste: fünf Wörter passen nicht nebeneinander — nur der aktive Reiter trägt sein
+     Wort, die anderen das Symbol (Name bleibt für Vorleseprogramme erhalten). */
+  .tabs button:not(.active) .tab-tx { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
+  input, select, textarea { max-width:100%; min-width:0; }
+}
+/* Sehr schmal (≈ 200 % Zoom): nur die Symbole im Kopf — der Name bleibt für Vorleseprogramme
+   (aria-label) erhalten. Lieber das als ein „Menü", das man nicht mehr erreicht. */
+@media (max-width:229.98px) {
+  .kopf-btn .hlabel { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
+  header .logo { display:none; } /* Startseite bleibt über „Für dich" unten erreichbar */
+  header #countrySwitch { max-width:56px; }
+  /* Nur bei ≈ 200 % Zoom: Ein Wort wie „Amoxicilline" ist breiter als die ganze Zeile — dann
+     lieber (mit Trennstrich, wo der Browser das kann) umbrechen als abschneiden. */
+  span, button, b { overflow-wrap:anywhere; hyphens:auto; }
+  .ov-link { gap:8px; }
+  .auth-switch { grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); }
+  .auth-switch button { white-space:normal; min-width:0; line-height:1.2; }
+  .country-pick { padding:12px 10px; word-break:normal; overflow-wrap:anywhere; hyphens:auto; }
+}

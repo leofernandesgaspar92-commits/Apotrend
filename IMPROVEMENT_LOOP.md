@@ -3587,3 +3587,26 @@ Server-Endpunkt — Quelle sind die vorhandenen Benachrichtigungen.
 **Tests.** seit-besuch.test.js (2: Gruppierung/Neueste/Gelesenes/Fremdes/Herkunft; Platz, Herkunft,
 „Gesehen", Texte ×5); Browser-Audit „Wiederkehr" (Karte oben vor dem Überblick, Herkunft, „Gesehen"
 markiert genau n1/n2).
+
+### Cycle · Große Schrift / Zoom am Handy (2026-10-26)
+
+**Gemessen** (eigenes Prüfskript, kein axe verfügbar): 150 % und 200 % Zoom auf einem 360-px-Handy
+(= 240 / 180 CSS-px), 8 Seiten (Anmeldung, Start, Engpässe, Melden, Wirkstoff, Benachrichtigungen, Premium,
+Menü), je: Querscrollen, Elemente rechts außerhalb, abgeschnittener Text, Tippflächen, Kontrast (WCAG
+4,5:1 bzw. 3:1). **Kontrast: keine Funde.** Vorher: 22–113 px Querscrollen auf jeder Seite.
+Funde → Behebung (nur bei < 320 / < 230 px Breite — normale Handys unverändert):
+- Langes Wort im Titel („l'approvisionnement") setzte die Spaltenbreite: `.auth-grid > * {min-width:0}`,
+  Überschriften `overflow-wrap:break-word; hyphens:auto`.
+- „Menü" außerhalb: Kopf enger, Länderwahl nur Flagge; bei ≈200 % nur Symbole (Name bleibt per aria).
+- 24 feste `min-width:110–200px` im Markup → `min(…px,100%)` (z. B. Behörden-Karte, 180 px).
+- Knopfzeilen (Filter, Sortierung, „Débloquer") liefen hinaus: bei schmaler Breite umbrechen.
+- Suchfeld auf „Subs" geschrumpft: Feld volle Breite, „Rechercher" darunter.
+- Untere Leiste: fünf Wörter überlappten — nur der aktive Reiter zeigt sein Wort.
+- Vergleich Gratis/Premium mit festen Spalten: Merkmal oben, darunter beide Spalten.
+- Wallet-Adresse, Datenstand-Plakette, Eingabefelder: umbrechen/schrumpfen.
+- Tippfläche Wirkstoffname auf Karten 24 px → 40 px.
+- Zwischenstand brach „Amox‑icillin" mitten im Wort — Wortbruch nur noch bei ≈200 %, mit Trennstrich.
+Ergebnis: 0 px Querscrollen auf allen 8 Seiten bei 150 % und 200 %.
+
+**Tests.** Browser-Audit „Zoom 150/200 %" (Anmeldung, Start, Engpässe, Premium ohne Querscrollen;
+„Menü" erreichbar; Suchfeld ≥ 60 % breit; untere Leiste nur ein Wort).

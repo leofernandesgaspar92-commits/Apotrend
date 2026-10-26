@@ -1797,6 +1797,36 @@ async function main() {
     await ctx.close();
   }
 
+  // ── Große Schrift / Zoom am Handy (26.10.2026) ──────────────────────────────
+  //  150 % bzw. 200 % Zoom auf einem 360-px-Handy = 240 bzw. 180 CSS-px. Vorher 22–113 px
+  //  Querscrollen, „Menü" außerhalb, Suchfeld mit vier Buchstaben, Leisten-Wörter übereinander.
+  for (const [stufe, breite] of [['150 %', 240], ['200 %', 180]]) {
+    const ctx = await browser.newContext({ viewport: { width: breite, height: 500 } });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    const quer = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(700);
+    if (await quer() > 0) findings.push(`Zoom ${stufe}: Anmeldeseite ${await quer()} px Querscrollen`);
+    await page.evaluate((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(900);
+    for (const [name, fn] of [['Start', () => {}], ['Engpässe', () => goTab('shortages')], ['Premium', () => openPremium()]]) {
+      await page.evaluate(fn); await page.waitForTimeout(900);
+      const q = await quer(); if (q > 0) findings.push(`Zoom ${stufe}: ${name} ${q} px Querscrollen`);
+    }
+    await page.evaluate(() => mainScreen()); await page.waitForTimeout(900);
+    const k = await page.evaluate(() => {
+      const m = document.getElementById('btnMenue').getBoundingClientRect();
+      const sq = document.getElementById('sq'); const tx = [...document.querySelectorAll('.tabs button .tab-tx')].filter((e) => e.getBoundingClientRect().width > 2);
+      return { menue: m.right <= innerWidth + 1 && m.width > 0, suche: sq ? Math.round(sq.getBoundingClientRect().width) : 0, woerter: tx.length };
+    });
+    if (!k.menue) findings.push(`Zoom ${stufe}: „Menü" liegt außerhalb des Bildschirms`);
+    if (k.suche < breite * 0.6) findings.push(`Zoom ${stufe}: Suchfeld nur ${k.suche} px breit`);
+    if (k.woerter > 1) findings.push(`Zoom ${stufe}: ${k.woerter} Wörter in der unteren Leiste (passen nicht nebeneinander)`);
+    for (const f of fehler) findings.push(`Zoom ${stufe}: JS-Fehler ` + f);
+    await ctx.close();
+  }
+  if (!findings.some((f) => f.startsWith('Zoom'))) console.log('✓ Zoom 150/200 %: Anmeldung, Start, Engpässe, Premium ohne Querscrollen; „Menü" erreichbar, Suchfeld breit, untere Leiste nur aktives Wort');
+
   // ── Daten-Schnittstelle (Business): verständlich, Schlüssel nur einmal ────
   //  Ohne Business: Preis und Buchen-Knopf, der auf die Zahlung mit dem
   //  Business-Tarif führt. Mit Business (nachgebildet): neuer Schlüssel
