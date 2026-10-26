@@ -1868,7 +1868,7 @@ function startklarKarte(s) {
 function kanalListe(liste) {
   if (!Array.isArray(liste)) return '';
   if (!liste.length) return `<div class="muted" data-btkanaele style="font-size:14px;margin-top:8px">${esc(t('bt_kanaele_leer'))}</div>`;
-  const name = (k) => k === 'play' ? t('bt_kanal_play') : k === 'andere' ? t('bt_kanal_andere') : k;
+  const name = (k) => k === 'play' ? t('bt_kanal_play') : k === 'andere' ? t('bt_kanal_andere') : k === 'suchmaschine' ? t('bt_kanal_suche') : k;
   return `<div data-btkanaele style="margin-top:12px"><b style="font-size:15px">${esc(t('bt_kanaele'))}</b>
     ${liste.slice(0, 8).map((k) => `<div class="row" data-kanal="${esc(k.kanal)}" style="justify-content:space-between;gap:10px;font-size:15px;padding:6px 0;border-top:1px solid var(--line)"><span style="font-weight:600">${esc(name(k.kanal))}</span><span>${esc(ti('bt_kanal_zeile', { b: k.besuche, k: k.konten }))}</span></div>`).join('')}</div>`;
 }

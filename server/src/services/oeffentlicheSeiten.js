@@ -54,6 +54,7 @@ const TEXTE = {
     quelle: 'Quelle', stand: 'Stand', wirkstoff: 'Wirkstoff', lage: 'Status', laender: 'Länder mit Behördenliste',
     cta_w: (w) => `Kostenlos benachrichtigt werden, wenn sich bei ${w} etwas ändert`, cta_land: 'Eigene Liste prüfen und Alarme einrichten — kostenlos',
     hinweis: 'Angaben aus der amtlichen Engpassliste. Keine Therapie- oder Austauschempfehlung — bei Fragen bitte an Apotheke oder Ärztin/Arzt wenden.',
+    hinweis_ohne: 'Meldungen aus Apotheken sind nicht amtlich bestätigt. Keine Therapie- oder Austauschempfehlung — bei Fragen bitte an Apotheke oder Ärztin/Arzt wenden.',
     zurueck_land: (l) => `Alle Engpässe in ${l}`, alle_laender: 'Alle Länder',
     ohne_titel: (l) => `Lieferengpässe bei Arzneimitteln in ${l}`,
     ohne_beschr: (l, r) => `ApoPulse erhält für ${l} (noch) keine amtliche Engpassliste${r ? ` (Behörde: ${r})` : ''}. In ApoPulse melden Apotheken in ${l} Engpässe selbst und bestätigen sie gegenseitig — klar gekennzeichnet als nicht amtlich.`,
@@ -78,6 +79,7 @@ const TEXTE = {
     quelle: 'Source', stand: 'As of', wirkstoff: 'Substance', lage: 'Status', laender: 'Countries with an authority list',
     cta_w: (w) => `Get notified for free when anything changes for ${w}`, cta_land: 'Check your own list and set up alerts — free',
     hinweis: 'Data from the official shortage list. Not a treatment or substitution recommendation — please ask your pharmacist or doctor.',
+    hinweis_ohne: 'Reports from pharmacies are not officially confirmed. Not a treatment or substitution recommendation — please ask your pharmacist or doctor.',
     zurueck_land: (l) => `All shortages in ${l}`, alle_laender: 'All countries',
     ohne_titel: (l) => `Medicine shortages in ${l}`,
     ohne_beschr: (l, r) => `ApoPulse does not (yet) receive an official shortage list for ${l}${r ? ` (authority: ${r})` : ''}. In ApoPulse, pharmacies in ${l} report shortages themselves and confirm each other's reports — clearly marked as not official.`,
@@ -102,6 +104,7 @@ const TEXTE = {
     quelle: 'Fonte', stand: 'Atualizado', wirkstoff: 'Substância', lage: 'Estado', laender: 'Países com lista oficial',
     cta_w: (w) => `Receber aviso grátis quando algo mudar em ${w}`, cta_land: 'Verificar a sua lista e criar alertas — grátis',
     hinweis: 'Dados da lista oficial de ruturas. Não é recomendação de tratamento ou substituição — consulte o seu farmacêutico ou médico.',
+    hinweis_ohne: 'As comunicações de farmácias não são confirmadas oficialmente. Não é recomendação de tratamento ou substituição — consulte o seu farmacêutico ou médico.',
     zurueck_land: (l) => `Todas as ruturas em ${l}`, alle_laender: 'Todos os países',
     ohne_titel: (l) => `Ruturas de medicamentos em ${l}`,
     ohne_beschr: (l, r) => `O ApoPulse (ainda) não recebe uma lista oficial de ruturas para ${l}${r ? ` (autoridade: ${r})` : ''}. No ApoPulse, as farmácias em ${l} comunicam ruturas e confirmam-nas entre si — claramente assinaladas como não oficiais.`,
@@ -126,6 +129,7 @@ const TEXTE = {
     quelle: 'Source', stand: 'Mis à jour', wirkstoff: 'Substance', lage: 'Statut', laender: 'Pays avec liste officielle',
     cta_w: (w) => `Être averti gratuitement dès que quelque chose change pour ${w}`, cta_land: 'Vérifier votre propre liste et créer des alertes — gratuit',
     hinweis: 'Données issues de la liste officielle des pénuries. Pas une recommandation de traitement ou de substitution — veuillez demander conseil à votre pharmacien ou médecin.',
+    hinweis_ohne: 'Les signalements des pharmacies ne sont pas confirmés officiellement. Pas une recommandation de traitement ou de substitution — veuillez demander conseil à votre pharmacien ou médecin.',
     zurueck_land: (l) => `Toutes les pénuries ${frLand(l)}`, alle_laender: 'Tous les pays',
     ohne_titel: (l) => `Pénuries de médicaments ${frLand(l)}`,
     ohne_beschr: (l, r) => `ApoPulse ne reçoit pas (encore) de liste officielle des pénuries ${frLand(l, 'pour')}${r ? ` (autorité : ${r})` : ''}. Dans ApoPulse, les pharmacies ${frLand(l)} signalent elles-mêmes les pénuries et confirment mutuellement leurs signalements — clairement indiqués comme non officiels.`,
@@ -150,6 +154,7 @@ const TEXTE = {
     quelle: 'المصدر', stand: 'بتاريخ', wirkstoff: 'المادة', lage: 'الحالة', laender: 'بلدان لديها قائمة رسمية',
     cta_w: (w) => `احصل على إشعار مجاني عند حدوث أي تغيير في ${w}`, cta_land: 'افحص قائمتك وأنشئ تنبيهات — مجانًا',
     hinweis: 'بيانات من قائمة النقص الرسمية. ليست توصية بالعلاج أو الاستبدال — يرجى استشارة الصيدلي أو الطبيب.',
+    hinweis_ohne: 'بلاغات الصيدليات غير مؤكدة رسميًا. ليست توصية بالعلاج أو الاستبدال — يرجى استشارة الصيدلي أو الطبيب.',
     zurueck_land: (l) => `كل حالات النقص في ${l}`, alle_laender: 'كل البلدان',
     ohne_titel: (l) => `نقص الأدوية في ${l}`,
     ohne_beschr: (l, r) => `لا يتلقى ApoPulse (بعد) قائمة نقص رسمية لـ ${l}${r ? ` (الجهة الرسمية: ${r})` : ''}. في ApoPulse تبلّغ الصيدليات في ${l} عن النقص بنفسها وتؤكد بلاغات بعضها — مع تعليم واضح بأنها غير رسمية.`,
@@ -209,7 +214,7 @@ export function createOeffentlicheSeiten({ chronik, shortagesRepo, laender, stan
     return rahmen({ sp, titel: T.ohne_titel(ln), beschr, pfad: `/engpaesse/${cc.toLowerCase()}`, basis,
       inhalt: `<nav class="p"><a href="/engpaesse">${esc(T.alle_laender)}</a></nav>
 <div class="c"><h1>${esc(T.ohne_titel(ln))}</h1><p>${esc(beschr)}</p></div>
-<div class="c"><a class="b" href="/?land=${esc(cc)}">${esc(T.ohne_cta(ln))}</a><p class="mu" style="margin-top:12px">${esc(T.hinweis)}</p></div>` });
+<div class="c"><a class="b" href="/?land=${esc(cc)}&amp;k=suchmaschine">${esc(T.ohne_cta(ln))}</a><p class="mu" style="margin-top:12px">${esc(T.hinweis_ohne)}</p></div>` });
   }
 
   /** Name zu einer Adresse: nur, was in der Behördenliste steht oder stand. */
@@ -253,13 +258,16 @@ ${inhalt}
     // Sprache der Übersicht aus Accept-Language (sie gehört keinem Land) — vorher immer Deutsch.
     index({ basis, sp: wunsch = 'de' }) {
       const sp = TEXTE[wunsch] ? wunsch : 'de'; const T = TEXTE[sp];
-      const liste = laenderMitDaten().map((cc) => {
-        const n = eintraege(cc).length; const s2 = sprache(cc);
-        return `<li><a href="/engpaesse/${cc.toLowerCase()}">${esc(landName(cc, s2))}</a><span class="mu">${n} · ${esc(laender[cc].regulator || '')}</span></li>`;
+      // Ländernamen in der Sprache DIESER Seite (vorher je Land: „Australia", „مصر" mitten in der
+      // französischen Liste) und danach sortiert.
+      const nachName = (a, b) => landName(a, sp).localeCompare(landName(b, sp), sp);
+      const liste = laenderMitDaten().sort(nachName).map((cc) => {
+        const n = eintraege(cc).length;
+        return `<li><a href="/engpaesse/${cc.toLowerCase()}">${esc(landName(cc, sp))}</a><span class="mu">${n} · ${esc(laender[cc].regulator || '')}</span></li>`;
       }).join('');
-      const ohne = laenderOhneQuelle().map((cc) => `<li><a href="/engpaesse/${cc.toLowerCase()}">${esc(landName(cc, sprache(cc)))}</a></li>`).join('');
+      const ohne = laenderOhneQuelle().sort(nachName).map((cc) => `<li><a href="/engpaesse/${cc.toLowerCase()}">${esc(landName(cc, sp))}</a></li>`).join('');
       return rahmen({ sp, titel: T.index_titel, beschr: T.index_beschr, pfad: '/engpaesse', basis,
-        inhalt: `<div class="c"><h1>${esc(T.index_titel)}</h1><p class="mu">${esc(T.index_beschr)}</p><h2>${esc(T.laender)}</h2><ul class="l">${liste}</ul></div>
+        inhalt: `<div class="c"><h1>${esc(T.index_titel)}</h1><p class="mu">${esc(T.index_beschr)}</p>${liste ? `<h2>${esc(T.laender)}</h2><ul class="l">${liste}</ul>` : ''}</div>
 ${ohne ? `<div class="c"><h2>${esc(T.laender_ohne)}</h2><ul class="l">${ohne}</ul></div>` : ''}` });
     },
 
@@ -281,7 +289,7 @@ ${ohne ? `<div class="c"><h2>${esc(T.laender_ohne)}</h2><ul class="l">${ohne}</u
         inhalt: `<nav class="p"><a href="/engpaesse">${esc(T.alle_laender)}</a></nav>
 <div class="c"><h1>${esc(T.land_titel(ln))}</h1><p>${esc(beschr)}</p><p class="mu">${esc(T.quelle)}: ${esc(q)}${st ? ` · ${esc(T.stand)}: ${esc(st)}` : ''}</p>
 ${liste.length ? `<ul class="l">${zeilen}</ul>` : ''}</div>
-<div class="c"><a class="b" href="/?land=${esc(cc)}">${esc(T.cta_land)}</a><p class="mu" style="margin-top:12px">${esc(T.hinweis)}</p></div>` });
+<div class="c"><a class="b" href="/?land=${esc(cc)}&amp;k=suchmaschine">${esc(T.cta_land)}</a><p class="mu" style="margin-top:12px">${esc(T.hinweis)}</p></div>` });
     },
 
     wirkstoff(cc, s, { basis }) {
@@ -304,7 +312,7 @@ ${liste.length ? `<ul class="l">${zeilen}</ul>` : ''}</div>
 ${f && f.anzahl ? `<p class="mu">${esc(T.verlauf(f.anzahl, f.durchschnitt_tage))}</p>` : ''}
 ${anderswo ? `<p class="mu">${esc(T.anderswo(anderswo))}</p>` : ''}
 <p class="mu">${esc(T.quelle)}: ${esc((e && e.quelle) || laender[cc].regulator || '—')}${st ? ` · ${esc(T.stand)}: ${esc(st)}` : ''}</p>${praep}</div>
-<div class="c"><a class="b" href="/?land=${esc(cc)}&amp;beobachten=${encodeURIComponent(name)}">${esc(T.cta_w(name))}</a><p class="mu" style="margin-top:12px">${esc(T.hinweis)}</p></div>` });
+<div class="c"><a class="b" href="/?land=${esc(cc)}&amp;beobachten=${encodeURIComponent(name)}&amp;k=suchmaschine">${esc(T.cta_w(name))}</a><p class="mu" style="margin-top:12px">${esc(T.hinweis)}</p></div>` });
     },
 
     robots({ basis }) {

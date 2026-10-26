@@ -78,7 +78,7 @@ test('Über HTTP: Länder, Wirkstoffe, nur amtlich, 404, robots, Sitemap', { tim
     assert.match(r.text, /Amoxicillin 1000 mg Filmtabletten/);
     assert.match(r.text, /nicht lieferbar/);
     assert.match(r.text, /voraussichtlich bis 15\.12\.2026/);
-    assert.match(r.text, /href="\/\?land=AT&amp;beobachten=Amoxicillin"/, 'Knopf führt nicht in die Beobachtung');
+    assert.match(r.text, /href="\/\?land=AT&amp;beobachten=Amoxicillin&amp;k=suchmaschine"/, 'Knopf führt nicht in die Beobachtung');
     assert.match(r.text, /Keine Therapie- oder Austauschempfehlung/);
     assert.match(r.text, /application\/ld\+json/);
     // Inhalte aus der Behördenliste werden escaped.
@@ -93,7 +93,7 @@ test('Über HTTP: Länder, Wirkstoffe, nur amtlich, 404, robots, Sitemap', { tim
       const l = await holen('/engpaesse/' + cc);
       assert.equal(l.status, 200, cc);
       assert.match(l.text, satz);
-      assert.match(l.text, new RegExp(`href="/\\?land=${cc.toUpperCase()}"`));
+      assert.match(l.text, new RegExp(`href="/\\?land=${cc.toUpperCase()}&amp;k=suchmaschine"`));
       assert.ok(!/class="s (kritisch|eingeschraenkt)"/.test(l.text), `${cc}: Landing-Seite zeigt Engpass-Zeilen`);
     }
     // Übersicht und 404 in der Sprache des Browsers.

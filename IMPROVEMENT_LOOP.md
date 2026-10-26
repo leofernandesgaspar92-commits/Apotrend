@@ -3610,3 +3610,22 @@ Ergebnis: 0 px Querscrollen auf allen 8 Seiten bei 150 % und 200 %.
 
 **Tests.** Browser-Audit „Zoom 150/200 %" (Anmeldung, Start, Engpässe, Premium ohne Querscrollen;
 „Menü" erreichbar; Suchfeld ≥ 60 % breit; untere Leiste nur ein Wort).
+
+### Cycle · Öffentliche Engpass-Seiten (Google-Besucher) (2026-10-26)
+
+**Geprüft als Besucher aus der Suche** (fr-SN, 360 px): /engpaesse, /engpaesse/sn, /engpaesse/ng,
+Wirkstoff-Seiten. Gut: nur amtliche Daten indexiert (Apotheken-Meldungen bewusst nicht), Titel/Beschreibung/
+canonical/og je Seite, Sprache des Landes, ehrliche Landing-Seite für Länder ohne Behördenliste.
+Funde:
+1. **Falsche Herkunftsangabe:** Auf Seiten OHNE amtliche Liste (Senegal, Nigeria, …) stand unten
+   „Données issues de la liste officielle des pénuries" — obwohl dort keine amtlichen Daten stehen.
+   Jetzt eigener Hinweis: „Les signalements des pharmacies ne sont pas confirmés officiellement. …"
+   (5 Sprachen). Seiten mit amtlicher Liste behalten den alten Hinweis.
+2. **Sprachmix in der Übersicht:** Ländernamen standen in der Sprache des jeweiligen Landes —
+   „Australia", „Brasil", „مصر" mitten in der französischen Liste. Jetzt in der Sprache der Seite und
+   danach sortiert; die leere Überschrift „Pays avec liste officielle" entfällt, wenn die Liste leer ist.
+3. **Herkunft messbar:** Knöpfe in die App tragen `k=suchmaschine` → Cockpit „Suchmaschinen (Google &
+   Co.): Besuche → neue Konten" (wie TikTok, nur Summen).
+
+**Tests.** oeffentliche-seiten-texte.test.js (4); oeffentliche-seiten.test.js an die Knopf-Adresse
+angepasst.
