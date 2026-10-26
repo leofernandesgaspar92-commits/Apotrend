@@ -1953,6 +1953,23 @@ async function seitBesuchKarte(feed, kopf) {
   kopf.before(k);
 }
 
+// Redaktion: Was wartet? Ganz oben auf der Startseite, nur wenn etwas offen ist — vorher sah man
+// eine wartende Krypto-Zahlung (Kundin ohne Freischaltung) oder Anzeige erst über Menü → Moderation.
+async function modAufgabenKarte(feed, kopf) {
+  if (!iAmModerator) return;
+  let n; try { n = await api('GET', '/api/mod/aufgaben'); } catch { return; }
+  if (!n || !n.gesamt || !kopf || !kopf.isConnected) return;
+  const zeilen = [['krypto', 'ma_krypto'], ['anzeigen', 'ma_anzeigen'], ['meldungen', 'ma_meldungen'], ['berichte', 'ma_berichte'], ['verifizierungen', 'ma_verif']]
+    .filter(([k]) => n[k] > 0).map(([k, key]) => `<li>${esc(ti(key, { n: n[k] }))}</li>`).join('');
+  feed.querySelectorAll('[data-modaufgaben]').forEach((x) => x.remove());
+  const k = el(`<div class="card" data-modaufgaben style="border-inline-start:4px solid var(--warn-bd,#e0a800)">
+    <h2 style="margin:0 0 6px;font-size:19px">🛡️ ${esc(n.gesamt === 1 ? t('ma_titel_1') : ti('ma_titel', { n: n.gesamt }))}</h2>
+    <ul style="margin:0 0 10px;padding-inline-start:20px;font-size:16px">${zeilen}</ul>
+    <button class="auth-gross" data-modgo>${esc(t('ma_go'))}</button></div>`);
+  k.querySelector('[data-modgo]').onclick = () => showModeration();
+  kopf.before(k);
+}
+
 async function loadOverview() {
   const feed = document.getElementById('feed');
   feed.innerHTML = '<div class="loading">…</div>';
@@ -2065,6 +2082,7 @@ async function loadOverview() {
   head.querySelector('[data-lageteilen]').onclick = () => teileLage();
   feed.appendChild(head);
   seitBesuchKarte(feed, head);
+  modAufgabenKarte(feed, head);
   // Codes und App-Karte NACH dem Überblick: Wer neu ist, sieht zuerst, wofür er da ist —
   // nicht acht Codes (die bleiben, bis „Codes gesichert" getippt ist).
   { const rc = rcKarte(); if (rc) feed.appendChild(rc); }
@@ -10454,24 +10472,27 @@ async function showModeration() {
       ${mtile('🔴', krit, t('ov_t_crit'), 'var(--crit-fg)')}
       ${mtile('👥', comm, t('md_community'), 'var(--warn-fg)')}
     </div></div>`);
-  anzeigenPruefung(app); // Anzeigen prüfen (lädt selbst; erscheint unter dem Kopf)
-  meldungsPruefung(app); // Apotheken-Meldungen mit Auffälligkeiten (lädt selbst)
   head.querySelector('#back').onclick = mainScreen;
   head.querySelector('#dqOpen').onclick = openDatenquellen;
-  app.appendChild(head);
-  // Betriebs-Cockpit direkt unter dem Kopf: Geschäft und Datenlage auf einen Blick.
-  api('GET', '/api/betrieb').then((b) => { if (b) head.after(betriebsKarte(b)); }).catch(() => {});
-  // Startklar-Check ganz oben: Was fehlt noch, damit alles live wirkt?
-  api('GET', '/api/startklar').then((s) => { if (s) head.after(startklarKarte(s)); }).catch(() => {});
+  // Reihenfolge am Handy (Rundgang 26.10.2026): erst was zu TUN ist (Zahlungen, Anzeigen,
+  // Meldungen), dann der Überblick (Startklar, Betrieb). Vorher standen 14 Startklar-Punkte und
+  // das Cockpit davor — die wartende Krypto-Zahlung kam erst nach ~2000 px.
+  const aufgaben = el('<div data-modaufgabenliste></div>');
+  const ueberblick = el('<div data-modueberblick></div>');
+  app.append(head, aufgaben, ueberblick);
+  anzeigenPruefung(aufgaben); // Anzeigen prüfen (lädt selbst)
+  meldungsPruefung(aufgaben); // Apotheken-Meldungen mit Auffälligkeiten (lädt selbst)
+  api('GET', '/api/startklar').then((s) => { if (s) ueberblick.prepend(startklarKarte(s)); }).catch(() => {});
+  api('GET', '/api/betrieb').then((b) => { if (b) ueberblick.appendChild(betriebsKarte(b)); }).catch(() => {});
   // Krypto-Zahlungen ZUERST: Hier wartet eine zahlende Kundin auf ihre Freischaltung.
-  if (kz === null) app.appendChild(el(`<div class="card" style="border-color:var(--crit-bd)">${esc(t('kp_load_err'))}</div>`));
+  if (kz === null) aufgaben.appendChild(el(`<div class="card" style="border-color:var(--crit-bd)">${esc(t('kp_load_err'))}</div>`));
   else if (kz.length) {
-    app.appendChild(el(`<div class="muted" style="margin:6px 2px;font-weight:700">${esc(t('kp_sec'))}</div>`));
-    kz.forEach(z => app.appendChild(kryptoPruefKarte(z)));
+    aufgaben.appendChild(el(`<div class="muted" style="margin:6px 2px;font-weight:700">${esc(t('kp_sec'))}</div>`));
+    kz.forEach(z => aufgaben.appendChild(kryptoPruefKarte(z)));
   }
   // Verifizierungs-Anträge
   if (vq.requests.length) {
-    app.appendChild(el(`<div class="muted" style="margin:6px 2px;font-weight:700">${esc(t('md_verif_sec'))}</div>`));
+    aufgaben.appendChild(el(`<div class="muted" style="margin:6px 2px;font-weight:700">${esc(t('md_verif_sec'))}</div>`));
     vq.requests.forEach(rq => {
       // Die Ansicht muss sagen, WAS eine Freigabe bedeutet. Vorher stand hier
       // nur der Freitext — wer „verifizieren" drueckte, wusste nicht, ob damit
@@ -10496,11 +10517,11 @@ async function showModeration() {
       </div>`);
       card.querySelector('[data-approve]').onclick = async () => { try { await api('POST',`/api/verify/${encodeURIComponent(rq.user_id)}/resolve`,{ approve:true }); showModeration(); } catch(e){ alert(e.message); } };
       card.querySelector('[data-reject]').onclick = async () => { try { await api('POST',`/api/verify/${encodeURIComponent(rq.user_id)}/resolve`,{ approve:false }); showModeration(); } catch(e){ alert(e.message); } };
-      app.appendChild(card);
+      aufgaben.appendChild(card);
     });
   }
-  if (d.reports.length) app.appendChild(el(`<div class="muted" style="margin:10px 2px 6px;font-weight:700">${esc(t('md_reported_sec'))}</div>`));
-  else if (!vq.requests.length && !(kz && kz.length)) { app.appendChild(el(`<div class="card muted">${esc(t('md_empty'))}</div>`)); return; }
+  if (d.reports.length) aufgaben.appendChild(el(`<div class="muted" style="margin:10px 2px 6px;font-weight:700">${esc(t('md_reported_sec'))}</div>`));
+  else if (!vq.requests.length && !(kz && kz.length)) { aufgaben.appendChild(el(`<div class="card muted">${esc(t('md_empty'))}</div>`)); return; }
   d.reports.forEach(r => {
     const post = r.post;
     const card = el(`<div class="card">
@@ -10519,7 +10540,7 @@ async function showModeration() {
     card.querySelector('[data-ok]').onclick = async () => {
       try { await api('POST',`/api/reports/${r.id}/resolve`,{ remove:false }); showModeration(); } catch(e){ alert(e.message); }
     };
-    app.appendChild(card);
+    aufgaben.appendChild(card);
   });
 }
 

@@ -1985,6 +1985,14 @@ const routes = [
   // Prüfliste der Apotheken-Meldungen (services/shortages.js, pruefliste): neue Konten,
   // von der Meldenden eingeladene Bestätigende, kurz nacheinander angelegte Konten.
   ['GET', /^\/api\/mod\/meldungen$/, true, async ({ userId }) => ({ meldungen: shortages.pruefliste(userId) })],
+  // Wie viel wartet auf die Redaktion? Nur Zahlen — für den Hinweis auf der Startseite
+  // (vorher sah man offene Krypto-Zahlungen und Anzeigen erst, wenn man selbst nachsah).
+  ['GET', /^\/api\/mod\/aufgaben$/, true, async ({ userId }) => {
+    if (!social.isModerator(userId)) { const e = new Error('Nur Moderation.'); e.status = 403; e.code = 'forbidden'; throw e; }
+    const n = { krypto: payments.listPendingReview(userId, {}).length, anzeigen: anzeigen.zurPruefung(userId).length,
+      meldungen: shortages.pruefliste(userId).length, berichte: social.moderationQueue(userId).length, verifizierungen: social.verificationQueue(userId).length };
+    return { ...n, gesamt: Object.values(n).reduce((a, b) => a + b, 0) };
+  }],
   ['POST', /^\/api\/mod\/meldungen\/([^/]+)\/bestaetigung-entfernen$/, true, async ({ userId, params, body }) => shortages.modBestaetigungEntfernen(userId, params[0], body.handle)],
   ['POST', /^\/api\/mod\/meldungen\/([^/]+)\/entfernen$/, true, async ({ userId, params }) => shortages.modEntfernen(userId, params[0])],
   ['GET', /^\/api\/reports$/, true, async ({ userId }) => ({ reports: social.moderationQueue(userId) })],

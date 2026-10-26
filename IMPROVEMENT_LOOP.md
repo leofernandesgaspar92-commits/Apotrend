@@ -3646,3 +3646,18 @@ company account" → Buchungsformular. Funde:
 und Woche) — für Afrika gibt es bei Premium einen Regionalpreis, bei Anzeigen nicht.
 
 **Tests.** werbung-afrika.test.js (3: Länderfolge, Firmenkonto-Weg, Münzen inkl. USDT mit Tron).
+
+### Cycle · Redaktion am Handy: Was wartet, steht vorne (2026-10-26)
+
+**Rundgang (de-AT, 360 px, Redaktions-Konto):** ein Großhändler aus Nigeria reicht eine Anzeige ein, eine
+Apothekerin aus Ghana meldet eine Krypto-Zahlung für Premium. Funde:
+1. **Startseite verriet nichts:** Keine Karte, kein Punkt am Menü — die zahlende Kundin wartete, bis die
+   Redaktion von selbst Menü → Moderation öffnete. Jetzt oben „🛡️ Redaktion: 2 Aufgaben warten · 1 ×
+   Krypto-Zahlung bestätigen · 1 × Anzeige prüfen" mit großem „Jetzt prüfen" (nur Redaktion, nur wenn
+   etwas offen ist). Neuer Endpunkt GET /api/mod/aufgaben: nur Zahlen (Krypto, Anzeigen, auffällige
+   Meldungen, gemeldete Inhalte, Verifizierungen), 403 für alle anderen.
+2. **Aufgaben ganz unten:** Die Moderationsseite (4133 px) zeigte zuerst Kacheln, 14 Startklar-Punkte und
+   das Betriebs-Cockpit; die wartende Krypto-Zahlung kam erst nach ~2000 px. Jetzt: Kopf → Aufgaben
+   (Krypto, Verifizierungen, Gemeldetes, Anzeigen, auffällige Meldungen) → Überblick (Startklar, Betrieb).
+
+**Tests.** mod-aufgaben.test.js (3: Reihenfolge, Startseiten-Karte, HTTP-Zahlen inkl. 403/401).
