@@ -2513,7 +2513,9 @@ const routes = [
     return {
       plaetze: anzeigen.plaetze(), laender,
       gesamt: zahl(profile.length), verifiziert: zahl(profile.filter((p) => p.verified).length),
-      zahlung: { krypto: cryptoWallets().length > 0, rechnung: anzeigen.ueberweisungMoeglich() },
+      // Welche Münzen tatsächlich eingerichtet sind (vorher fest „BTC, ETH, SOL" im Text — USDT,
+      // in Afrika am verbreitetsten, fehlte auch dann, wenn es eingerichtet war).
+      zahlung: { krypto: cryptoWallets().length > 0, krypto_muenzen: [...new Set(cryptoWallets().map((w) => w.symbol))], rechnung: anzeigen.ueberweisungMoeglich() },
     };
   }],
   ['GET', /^\/api\/werbung\/firma$/, true, async ({ userId }) => ({ firma: anzeigen.firma(userId) })],

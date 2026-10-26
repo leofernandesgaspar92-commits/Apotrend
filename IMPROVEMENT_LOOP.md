@@ -3629,3 +3629,20 @@ Funde:
 
 **Tests.** oeffentliche-seiten-texte.test.js (4); oeffentliche-seiten.test.js an die Knopf-Adresse
 angepasst.
+
+### Cycle · Werben aus Sicht eines Großhändlers in Nigeria (2026-10-26)
+
+**Rundgang (en-NG, 360 px, ohne Konto):** „For companies: advertise on ApoPulse" → Mediadaten → „Create a
+company account" → Buchungsformular. Funde:
+1. **Firmenkonto landete bei den Apotheken-ersten-Schritten:** Kontotyp war „Pharmacy" vorbelegt, und nach
+   dem Anlegen musste die Firma die Werbeseite neu suchen. Jetzt: Absicht `werbung` gemerkt → Hinweis
+   „Create a company account (free) — then you go straight on to your ad", Kontotyp „Wholesaler", nach dem
+   Anlegen direkt zur Werbeseite (Erste Schritte übersprungen). 5 Sprachen.
+2. **Zahlwege fest „Crypto (BTC, ETH, SOL)":** USDT (in Afrika am verbreitetsten) fehlte auch, wenn
+   eingerichtet. Mediadaten liefern jetzt `krypto_muenzen` aus den eingerichteten Wallets; der Text nennt sie.
+3. **Zielländer begannen mit Deutschland, Schweiz, Liechtenstein:** Jetzt eigenes Land, dann eigene Region
+   (Afrika), dann der Rest — je alphabetisch.
+**Offen (Owner-Entscheidung, nicht angefasst):** Werbepreise sind weltweit gleich (490/290/190 € je Land
+und Woche) — für Afrika gibt es bei Premium einen Regionalpreis, bei Anzeigen nicht.
+
+**Tests.** werbung-afrika.test.js (3: Länderfolge, Firmenkonto-Weg, Münzen inkl. USDT mit Tron).

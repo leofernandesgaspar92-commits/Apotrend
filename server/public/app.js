@@ -828,6 +828,7 @@ function authScreen() {
     platz.appendChild(b);
   };
   sprachKnopf(); ensureCountries().then(() => { sprachKnopf(); zeigeSprachwahl(); landesspracheOhneWahl(); }).catch(() => {});
+  { const ab = leseAbsicht(); if (ab && ab.werbung) app.appendChild(el(`<div class="lage-box" data-absicht style="margin:0 0 14px"><div class="lage-kopf">${ico('tag', 18)}${esc(t('absicht_banner_werbung'))}</div></div>`)); }
   { const ab = leseAbsicht(); if (ab && ab.beobachten) app.appendChild(el(`<div class="lage-box" data-absicht style="margin:0 0 14px"><div class="lage-kopf">${ico('bell', 18)}${esc(ti(ab.bestaetigen ? 'absicht_banner_best' : 'absicht_banner', { w: ab.beobachten }))}</div></div>`)); }
   // Am Handy steht das Formular zuerst (wie bei Facebook) — aber ApoPulse kennt noch niemand.
   // Wer über TikTok kommt, soll in einer Zeile lesen, worum es geht. Am Desktop steht die
@@ -960,7 +961,8 @@ function authScreen() {
   // Kontotyp-Auswahl befüllen (Apotheke als Vorauswahl).
   ensureAccountTypes().then(() => {
     const sel = document.getElementById('rg_accounttype');
-    if (sel) sel.innerHTML = accountTypeOptionsHtml('pharmacy');
+    const ab = leseAbsicht();
+    if (sel) sel.innerHTML = accountTypeOptionsHtml(ab && ab.werbung ? 'wholesale' : 'pharmacy');
   });
 }
 const v = (id) => document.getElementById(id).value.trim();
@@ -1630,6 +1632,11 @@ async function mainScreen() {
   const deepTab = params.get('tab');
   const validTabs = ['overview','public','home','shortages','prices','rabatte','exchange','news'];
   const absicht = leseAbsicht();
+  if (absicht && absicht.werbung) {
+    try { localStorage.removeItem('apo_absicht'); localStorage.setItem('apo_welcome_seen', '1'); } catch { /* egal */ }
+    openWerbung();
+    return;
+  }
   if (absicht && absicht.beobachten) {
     try { localStorage.removeItem('apo_absicht'); } catch { /* egal */ }
     try { await api('POST', '/api/watchlist', { wirkstoff: absicht.beobachten }); } catch { /* Seite öffnet trotzdem */ }
@@ -4963,6 +4970,15 @@ function anzeigeImFeed(list) {
 
 // ── Werben auf ApoPulse: Mediadaten, Buchung, Cockpit ─────────────────────────
 let wbMedia = null;
+// Zielländer einer Anzeige: das eigene Land zuerst, dann die eigene Region (für Nigeria: Afrika),
+// dann der Rest — je alphabetisch in der Sprache der Oberfläche. Vorher stand Europa oben, und eine
+// Firma in Lagos musste an Deutschland, Schweiz, Liechtenstein vorbei.
+function wbLaenderFolge(liste, heim) {
+  const region = (liste.find((c) => c.code === heim) || {}).region;
+  const rang = (c) => (c.code === heim ? 0 : region && c.region === region ? 1 : 2);
+  return [...liste].sort((a, b) => rang(a) - rang(b) || landAnzeige(a.code).replace(/^\S+\s/, '').localeCompare(landAnzeige(b.code).replace(/^\S+\s/, ''), LOCALE));
+}
+
 async function openWerbung() {
   setDocTitle(t('wb2_title'));
   app.innerHTML = '<div class="loading">…</div>';
@@ -5002,12 +5018,14 @@ function mediadatenKarte(md, angemeldet) {
     <ul class="auth-hero-list" style="margin-top:0">${['kennzeichnung', 'pruefung', 'rx', 'sicherheit', 'zahlen'].map((k) => `<li><span class="auth-hero-ok" aria-hidden="true">${ico('check', 18)}</span><span style="font-weight:500">${esc(t('wb2_r_' + k))}</span></li>`).join('')}</ul>
     <h2 style="margin:18px 0 8px">${esc(t('wb2_ablauf'))}</h2>
     <ol class="wb-ablauf">${['buchen', 'pruefen', 'zahlen', 'laeuft'].map((k) => `<li>${esc(t('wb2_a_' + k))}</li>`).join('')}</ol>
-    <div class="muted" style="font-size:14px;margin:8px 0 14px">${esc(t('wb2_zahlwege'))}: ${esc([md && md.zahlung.krypto ? t('wb2_krypto') : null, md && md.zahlung.rechnung ? t('wb2_rechnung') : null].filter(Boolean).join(' · ') || '—')}</div>
+    <div class="muted" style="font-size:14px;margin:8px 0 14px">${esc(t('wb2_zahlwege'))}: ${esc([md && md.zahlung.krypto ? ((md.zahlung.krypto_muenzen || []).length ? ti('wb2_krypto_mit', { muenzen: md.zahlung.krypto_muenzen.join(', ') }) : t('wb2_krypto')) : null, md && md.zahlung.rechnung ? t('wb2_rechnung') : null].filter(Boolean).join(' · ') || '—')}</div>
     ${darfWerben ? `<button class="auth-gross" data-wbneu style="width:auto;padding:0 28px">${esc(t('wb2_buchen'))}</button>`
       : angemeldet ? `<div class="srt-sperre">${esc(t('wb2_nur_firmen'))}</div>`
       : `<button class="auth-gross" data-wbkonto style="width:auto;padding:0 28px">${esc(t('wb2_konto'))}</button>`}
   </div>`);
-  const k = c.querySelector('[data-wbkonto]'); if (k) k.onclick = () => authScreen();
+  // Firmenkonto: Kontotyp passend vorbelegt und nach dem Anlegen direkt zurück zur Buchung —
+  // vorher landete die Firma in den Apotheken-ersten-Schritten und musste die Seite neu suchen.
+  const k = c.querySelector('[data-wbkonto]'); if (k) k.onclick = () => { try { localStorage.setItem('apo_absicht', JSON.stringify({ werbung: true })); } catch { /* ohne Speicher: normaler Weg */ } authScreen(); };
   return c;
 }
 
@@ -5136,7 +5154,7 @@ function buchungsKarte(firma, alt) {
     <h2 class="wb-schritt">${firma ? 3 : 4} · ${esc(t('wb2_wo_wer'))}</h2>
     <div class="wb-wahl">${md.plaetze.map((p) => `<label><input type="radio" name="wbplatz" value="${esc(p.id)}" ${v0.platz === p.id ? 'checked' : ''}> ${esc(t('wb2_platz_' + p.id))} — ${esc(eur(p.preis_woche_cents))} ${esc(t('wb2_je_land_woche'))}</label>`).join('')}</div>
     <div style="font-weight:700;margin-top:10px">${esc(t('wb2_laender'))}</div>
-    <div class="wb-wahl wb-mehrspaltig">${(COUNTRIES_CACHE || []).map((l) => `<label><input type="checkbox" data-land="${esc(l.code)}" ${v0.laender.includes(l.code) ? 'checked' : ''}> ${esc(landAnzeige(l.code))}</label>`).join('')}</div>
+    <div class="wb-wahl wb-mehrspaltig">${wbLaenderFolge(COUNTRIES_CACHE || [], (me && me.country) || viewCountry()).map((l) => `<label><input type="checkbox" data-land="${esc(l.code)}" ${v0.laender.includes(l.code) ? 'checked' : ''}> ${esc(landAnzeige(l.code))}</label>`).join('')}</div>
     <div style="font-weight:700;margin-top:10px">${esc(t('wb2_gruppen'))}</div>
     <div class="wb-wahl wb-mehrspaltig">${WB_GRUPPEN.map((g) => `<label><input type="checkbox" data-gruppe="${g}" ${v0.zielgruppen.includes(g) ? 'checked' : ''}> ${esc(gruppeName(g))}</label>`).join('')}</div>
     <div class="row" style="gap:12px;flex-wrap:wrap;margin-top:10px"><label style="flex:1;min-width:min(150px,100%)">${esc(t('wb2_start'))}<input type="date" data-f="start" min="${heute}" value="${esc(v0.start)}"></label>
