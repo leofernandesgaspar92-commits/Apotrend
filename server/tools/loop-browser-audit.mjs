@@ -358,7 +358,10 @@ async function main() {
       const knopf = page.locator(`.country-pick[data-country="${land}"]`).first();
       if (!(await knopf.count())) { findings.push(`Länderwahl: ${land} nicht anklickbar`); continue; }
       await knopf.click();
-      await page.waitForTimeout(400);
+      // Die Sprache gilt erst, wenn ihre Datei (/i18n/<sp>.js) geladen ist — unter Last (ganze
+      // Testsuite parallel) dauert das erste Laden länger als feste 400 ms. Darum: warten, bis
+      // sie gesetzt ist (höchstens 5 s); bleibt sie falsch, ist es weiterhin ein Befund.
+      await page.waitForFunction((sp) => localStorage.getItem('apo_locale') === sp, sprache, { timeout: 5000 }).catch(() => {});
 
       const gesetzt = await page.evaluate(() => localStorage.getItem('apo_locale'));
       if (gesetzt !== sprache) {

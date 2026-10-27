@@ -3760,3 +3760,21 @@ Startseite nach Browsersprache, Teilseiten und öffentliche Engpass-Seiten nach 
 französisch), unbekannt → englisch. `og-bild.png` (alte Links) ist jetzt das englische Bild.
 **Tests.** startseite-kopf (+Bildgrößen, Sprachwahl), teilseite (+Senegal, unbekannte Sprache),
 oeffentliche-seiten. 4 Gegenproben, alle rot.
+
+### Cycle · Absturz-Schutz: eine kaputte Anfrage beendete den ganzen Server (2026-10-27)
+
+**Fund:** `new URL(req.url, 'http://' + Host)` stand ganz vorn in der (async) Anfrage-Verarbeitung, außerhalb
+jedes try. Eine einzige Anfrage mit Host „a b", „[" oder „x:99999" warf dort, niemand fing die Ablehnung ab,
+und Node beendete den Prozess — gemessen: Server weg, jeder weitere Abruf „Verbindung abgelehnt". Auf Render
+folgt ein Neustart; ohne Datenbank wären dabei alle Konten verloren gewesen.
+**Behoben:** Adresse gegen festen Platzhalter lesen (Host wird dort nicht gebraucht); die ganze Verarbeitung
+abgefangen — schlimmstenfalls Antwort 500 mit übersetzbarem Code statt Absturz; abgelehnte Zusagen im
+Hintergrund werden protokolliert statt den Server zu beenden; bei echtem Programmfehler ERST sichern (Datei
+sofort, Datenbank mit 4-s-Deckel), DANN beenden. Zähler im Betriebs-Cockpit (`/api/betrieb` → `fehler`).
+**Gegencheck:** alle 266 Routen mit falsch typisierten Feldern (Objekt, Liste, Zahl, null, 20 000 Zeichen)
+beschossen — kein einziger Programmfehler; 151 schreibende Routen mit leeren Eingaben — jeder Fehler hat
+einen übersetzten Code (keine deutschen Texte in Ghana/Senegal).
+**Tests.** absturz-schutz.test.js (2). 2 Gegenproben, rot.
+**Nebenbei:** Der Browser-Audit meldete unter Last einmal „Sprache folgt Land nicht: BR". Ursache war das feste
+Warten von 400 ms, während die Sprachdatei noch lud (zwei Einzelläufe ohne Befund); jetzt wartet der Audit
+bis zu 5 s auf die Sprache und meldet weiterhin, wenn sie falsch bleibt.

@@ -516,6 +516,25 @@ function saveToDbSoon() {
 }
 if (persistence && !restoring) saveNow(); // Ausgangszustand (Seed) sofort sichern
 // Sauber speichern beim Herunterfahren (z.B. Deploy/Neustart auf dem Host).
+// ── Fehler außerhalb von Anfragen ──────────────────────────────────────────
+//  Ein vergessenes catch in einem Hintergrund-Ablauf (Abruf, Mail, Push) beendete
+//  bisher den ganzen Server (Node-Standard). Abgelehnte Zusagen werden jetzt
+//  protokolliert und gezählt — der Server läuft weiter. Bei einem echten Programm-
+//  fehler (uncaughtException) ist der Zustand unsicher: dann ERST sichern (Datei
+//  sofort, Datenbank mit Deckel), DANN beenden — Render startet neu.
+const betriebsFehler = { anfragen: 0, hintergrund: 0, zuletzt: null };
+process.on('unhandledRejection', (e) => {
+  betriebsFehler.hintergrund++; betriebsFehler.zuletzt = new Date().toISOString();
+  console.error('Hintergrund-Fehler (Server läuft weiter):', (e && e.stack) || e);
+});
+process.on('uncaughtException', (e) => {
+  console.error('Programmfehler — sichere und starte neu:', (e && e.stack) || e);
+  saveNow();
+  if (!db) process.exit(1);
+  const notbremse = setTimeout(() => process.exit(1), 4000);
+  if (notbremse.unref) notbremse.unref();
+  db.saveSnapshot(collectSnapshot()).catch(() => {}).finally(() => process.exit(1));
+});
 for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => {
   saveNow(); // Datei: synchron, sofort fertig
   // Datenbank: Render schickt beim Deploy SIGTERM und wartet nur kurz. Ohne
@@ -2459,6 +2478,8 @@ const routes = [
       seiten: { aufrufe_7: [...seitenAufrufe].filter(([t]) => t > new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)).reduce((n, [, z]) => n + z, 0) },
       anzeigen: { laufend: anzeigen.alleLaufenden(userId).filter((k) => k.zustand === 'laeuft').length, zur_pruefung: anzeigen.zurPruefung(userId).length },
       kanaele: kanaele.bericht(30),
+      // Abgefangene Fehler seit dem letzten Start (Details im Render-Protokoll).
+      fehler: { ...betriebsFehler },
     };
   }],
   // Startklar-Check (services/startklar.js): was der Betreiber noch einrichten muss.
@@ -2770,8 +2791,28 @@ async function datenSchnittstelle(req, res, url) {
   }
 }
 
-const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
+// ── Absturz-Schutz ────────────────────────────────────────────────────────
+//  Bis 10/2026 baute die Verarbeitung als Erstes `new URL(req.url, 'http://' + Host)`
+//  außerhalb jedes try — EINE Anfrage mit kaputter Host-Angabe („a b", „[") warf dort,
+//  die Ablehnung fing niemand, und Node beendete den ganzen Server. Auf Render folgt
+//  ein Neustart; ohne Datenbank wären damit alle Konten weg gewesen.
+//  Jetzt: Adresse gegen einen festen Platzhalter lesen (Host wird hier nicht gebraucht —
+//  öffentliche Adressen baut oeffentlicheBasis), und alles, was in einer Anfrage schief-
+//  geht, endet als Antwort 500 statt als Absturz.
+const server = http.createServer((req, res) => {
+  anfrage(req, res).catch((e) => {
+    betriebsFehler.anfragen++;
+    console.error('Anfrage fehlgeschlagen:', req.method, String(req.url || '').slice(0, 200), (e && e.stack) || e);
+    try {
+      if (!res.headersSent) { res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify({ error: 'Etwas ist schiefgelaufen. Bitte erneut versuchen.', code: 'unbekannt' })); }
+      else res.end();
+    } catch { /* Verbindung schon weg */ }
+  });
+});
+async function anfrage(req, res) {
+  let url;
+  try { url = new URL(req.url, 'http://localhost'); }
+  catch { res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('Bad Request'); }
   const pathname = url.pathname;
 
   // ── Zahlungs-Webhook (ROHER Body für die Signaturprüfung) — VOR dem JSON-Router. ──
@@ -2984,7 +3025,7 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(200, headers);
     fs.createReadStream(serve).pipe(res);
   }
-});
+}
 
 server.listen(PORT, () => {
   // Tatsaechlicher Port: Bei PORT=0 (Tests) vergibt ihn das Betriebssystem.
