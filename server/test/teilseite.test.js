@@ -24,7 +24,10 @@ test('Seite: drei Aussagen, Quelle, Knopf mit Beobachtung, alles escaped', () =>
   const knapp = teilseite({ art: 'wirkstoff', land: 'AT', sprache: 'de', pfad: '/teilen/w/AT/Amoxicillin', wirkstoff: 'Amoxicillin', beobachtet_land: true, knapp: true, seit_tagen: 12, herkunft: 'verified', quelle: 'BASG', stand: '2026-10-01' }, { basis });
   assert.equal(meta(knapp, 'og:title'), 'Amoxicillin: knapp in Österreich seit 12 Tagen');
   assert.equal(meta(knapp, 'og:description'), 'Quelle: BASG · Stand: 01.10.2026');
-  assert.equal(meta(knapp, 'og:image'), 'https://apopulse.example/og-bild.png');
+  assert.equal(meta(knapp, 'og:image'), 'https://apopulse.example/og-bild-de.png');
+  // Senegal: Seite und Vorschaubild französisch (nicht das deutsche Bild).
+  assert.equal(meta(teilseite({ art: 'lage', land: 'SN', sprache: 'fr', pfad: '/teilen/lage/SN' }, { basis }), 'og:image'), 'https://apopulse.example/og-bild-fr.png');
+  assert.equal(meta(teilseite({ art: 'lage', land: 'XX', sprache: 'sw', pfad: '/teilen/lage/XX' }, { basis }), 'og:image'), 'https://apopulse.example/og-bild-en.png', 'unbekannte Sprache');
   assert.equal(meta(knapp, 'og:url'), 'https://apopulse.example/teilen/w/AT/Amoxicillin');
   assert.match(knapp, /href="\/\?land=AT&amp;beobachten=Amoxicillin"/);
 
@@ -85,7 +88,7 @@ test('Teilseiten über den Server: Behördenliste, unbekanntes Land, Aufrufe im 
     let html = await r.text();
     assert.match(meta(html, 'og:title'), /^Amoxicillin: knapp in Österreich/);
     assert.match(meta(html, 'og:description'), /Quelle: BASG/);
-    assert.equal(meta(html, 'og:image'), `http://localhost:${port}/og-bild.png`);
+    assert.equal(meta(html, 'og:image'), `http://localhost:${port}/og-bild-de.png`);
 
     r = await fetch(B + '/teilen/w/AT/Ibuprofen');
     assert.equal(meta(await r.text(), 'og:title'), 'Ibuprofen: in Österreich derzeit nicht als knapp gemeldet');
@@ -106,7 +109,7 @@ test('Teilseiten über den Server: Behördenliste, unbekanntes Land, Aufrufe im 
       }).on('error', fail);
     });
     assert.ok(!gefaelscht.includes('<script>a()'), 'Kopfzeile landet roh im HTML');
-    assert.equal(meta(gefaelscht, 'og:image'), 'http://x.example/og-bild.png');
+    assert.equal(meta(gefaelscht, 'og:image'), 'http://x.example/og-bild-de.png');
 
     assert.equal((await fetch(B + '/teilen/lage/XX')).status, 404);
     assert.equal((await fetch(B + '/og-bild.png')).headers.get('content-type'), 'image/png');

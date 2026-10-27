@@ -15,6 +15,7 @@
 
 import { frLand } from '../domain/franzLand.js';
 import { richtung } from '../domain/schreibrichtung.js';
+import { vorschaubild } from '../domain/vorschaubild.js';
 
 const TEXTE = {
   de: {
@@ -162,7 +163,7 @@ export function teilseite(d, { basis }) {
   // Persönlicher Einladungs-Code (services/einladungen.js) — vom Server geprüft.
   if (d.einladung) ziel += `&e=${encodeURIComponent(d.einladung)}`;
   const url = `${basis}${d.pfad}`;
-  const bild = `${basis}/og-bild.png`;
+  const bild = `${basis}${vorschaubild(d.sprache)}`;
   const cta = d.art === 'lage' ? T.cta_lage : d.bitte ? T.cta_bestaetigen(d.wirkstoff) : T.cta_w(d.wirkstoff);
   return `<!DOCTYPE html>
 <html lang="${esc(d.sprache)}" dir="${richtung(d.sprache)}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">

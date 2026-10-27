@@ -13,6 +13,7 @@
 // ============================================================================
 
 import { richtung } from '../domain/schreibrichtung.js';
+import { vorschaubild } from '../domain/vorschaubild.js';
 
 const KOPF = {
   de: {
@@ -62,7 +63,7 @@ export function startseiteKopf(html, { sp = 'en', basis = '' } = {}) {
     .replace(/<meta name="description" content="[^"]*" \/>/, `<meta name="description" content="${esc(K.beschr)}" />`)
     .replace(/<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${esc(K.titel)}" />`)
     .replace(/<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${esc(K.og)}" />`)
-    .replace(/<meta property="og:image" content="\/og-bild\.png" \/>/, `<meta property="og:image" content="${esc(basis)}/og-bild.png" />`);
+    .replace(/<meta property="og:image" content="\/og-bild\.png" \/>/, `<meta property="og:image" content="${esc(basis)}${vorschaubild(sp)}" />`);
 }
 
 // ── Manifest (App auf dem Startbildschirm) ───────────────────────────────────

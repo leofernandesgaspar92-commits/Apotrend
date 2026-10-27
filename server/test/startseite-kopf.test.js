@@ -35,7 +35,15 @@ test('Über HTTP: Kopf je Sprache, absolutes Vorschaubild, eigener ETag, App-Inh
     const en = await hol('en-UG,en;q=0.9');
     assert.match(en.t, /<meta property="og:title" content="ApoPulse — medicine shortages with sources" \/>/);
     assert.ok(!/aus Europa/.test(en.t), 'englische Vorschau mit „aus Europa"');
-    assert.match(en.t, /<meta property="og:image" content="https:\/\/apopulse\.example\/og-bild\.png" \/>/);
+    assert.match(en.t, /<meta property="og:image" content="https:\/\/apopulse\.example\/og-bild-en\.png" \/>/);
+    // Vorschaubild in der Sprache: französisch für Senegal/Côte d'Ivoire, arabisch für Ägypten.
+    assert.match((await hol('fr-SN,fr;q=0.9')).t, /<meta property="og:image" content="https:\/\/apopulse\.example\/og-bild-fr\.png" \/>/);
+    assert.match((await hol('ar-EG')).t, /og-bild-ar\.png/);
+    for (const sp of ['de', 'en', 'fr', 'pt', 'ar', '']) {
+      const bild = await fetch(B + '/og-bild' + (sp ? '-' + sp : '') + '.png');
+      assert.equal(bild.status, 200, sp); assert.equal(bild.headers.get('content-type'), 'image/png');
+      assert.ok((await bild.arrayBuffer()).byteLength > 20000, 'Bild leer: ' + sp);
+    }
     assert.match(en.r.headers.get('vary') || '', /Accept-Language/);
     const de = await hol('de-AT,de;q=0.9');
     assert.match(de.t, /og:title" content="ApoPulse — Lieferengpässe mit Quelle"/);
@@ -62,4 +70,17 @@ test('Manifest: Name und Schnellzugriffe in der Sprache des Browsers, kein Schne
   assert.ok(en.screenshots.every((b) => !/preise/.test(b.src) && !/[äöü]/.test(b.label)));
   assert.equal(JSON.parse(manifestSprache(roh, 'pt')).shortcuts[0].name, 'Ruturas');
   assert.equal(manifestSprache('kein json', 'en'), 'kein json');
+});
+
+test('Vorschaubilder: alle Sprachen vorhanden, 1200×630 (Format für WhatsApp/Facebook), og-bild.png = Englisch', async () => {
+  const { readFileSync } = await import('node:fs');
+  const ordner = new URL('../public/', import.meta.url);
+  for (const sp of ['de', 'en', 'fr', 'pt', 'ar']) {
+    const b = readFileSync(new URL(`og-bild-${sp}.png`, ordner));
+    assert.equal(b.toString('ascii', 12, 16), 'IHDR', sp);
+    assert.deepEqual([b.readUInt32BE(16), b.readUInt32BE(20)], [1200, 630], sp);
+  }
+  assert.ok(readFileSync(new URL('og-bild.png', ordner)).equals(readFileSync(new URL('og-bild-en.png', ordner))), 'Rückfallbild ist nicht das englische');
+  const { vorschaubild } = await import('../src/domain/vorschaubild.js');
+  assert.deepEqual(['fr', 'ar', 'sw', undefined, '../x'].map(vorschaubild), ['/og-bild-fr.png', '/og-bild-ar.png', '/og-bild-en.png', '/og-bild-en.png', '/og-bild-en.png']);
 });

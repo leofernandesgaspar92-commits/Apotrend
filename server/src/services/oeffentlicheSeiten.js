@@ -21,6 +21,7 @@
 //   - Keine Anzeigen auf diesen Seiten (wie in der App: kein Werbeumfeld bei
 //     Engpässen).
 // ============================================================================
+import { vorschaubild } from '../domain/vorschaubild.js';
 import { wirkstoffSchluessel } from '../domain/inn.js';
 import { frLand } from '../domain/franzLand.js';
 import { richtung } from '../domain/schreibrichtung.js';
@@ -232,7 +233,7 @@ export function createOeffentlicheSeiten({ chronik, shortagesRepo, laender, stan
 <title>${esc(titel)} · ApoPulse</title>
 <meta name="description" content="${esc(beschr)}"><link rel="canonical" href="${esc(url)}">
 <meta property="og:type" content="website"><meta property="og:site_name" content="ApoPulse"><meta property="og:title" content="${esc(titel)}">
-<meta property="og:description" content="${esc(beschr)}"><meta property="og:url" content="${esc(url)}"><meta property="og:image" content="${esc(basis)}/og-bild.png">
+<meta property="og:description" content="${esc(beschr)}"><meta property="og:url" content="${esc(url)}"><meta property="og:image" content="${esc(basis)}${vorschaubild(sp)}">
 <meta name="twitter:card" content="summary_large_image"><link rel="icon" type="image/png" href="/icon-192.png">
 ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(/</g, '\\u003c')}</script>` : ''}
 <style>

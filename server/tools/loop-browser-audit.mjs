@@ -1688,7 +1688,7 @@ async function main() {
         if (!link) findings.push(`Teilen: WhatsApp-Text ohne Link auf die Teilseite (${decodeURIComponent(wa).slice(0, 100)})`);
         else {
           const html = await (await fetch(BASE + new URL(link[0]).pathname)).text();
-          if (!/<meta property="og:title" content="[^"]+"/.test(html) || !/og-bild\.png/.test(html)) findings.push('Teilen: Teilseite ohne Vorschau-Angaben (og:title/og:image)');
+          if (!/<meta property="og:title" content="[^"]+"/.test(html) || !/og-bild(-[a-z]{2})?\.png/.test(html)) findings.push('Teilen: Teilseite ohne Vorschau-Angaben (og:title/og:image)');
         }
       }
       await page.keyboard.press('Escape');

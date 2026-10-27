@@ -98,7 +98,7 @@ test('Über HTTP: Länder, Wirkstoffe, nur amtlich, 404, robots, Sitemap', { tim
     }
     // Übersicht und 404 in der Sprache des Browsers.
     const en = await (await fetch(B + '/engpaesse', { headers: { 'accept-language': 'en-UG,en;q=0.9' } })).text();
-    assert.match(en, /<html lang="en"/); assert.match(en, /Countries without an official list in ApoPulse/); assert.match(en, /href="\/engpaesse\/ug"/);
+    assert.match(en, /<html lang="en"/); assert.match(en, /og-bild-en\.png/, 'englische Übersicht mit fremdsprachigem Vorschaubild'); assert.match(en, /Countries without an official list in ApoPulse/); assert.match(en, /href="\/engpaesse\/ug"/);
     assert.match(await (await fetch(B + '/engpaesse/xx', { headers: { 'accept-language': 'en' } })).text(), /Page not found/);
     assert.match((await holen('/sitemap.xml')).text, /\/engpaesse\/ug</);
     for (const pfad of ['/engpaesse/at/gibtsnicht', '/engpaesse/xx', '/engpaesse/at/Amoxicillin', '/engpaesse/at/gemeldetin']) {

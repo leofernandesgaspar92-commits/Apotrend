@@ -3749,3 +3749,14 @@ alle Startseiten-Abrufe unter 15 ms (Median) — Lesen ist unkritisch. Zwei echt
 **Tests.** dauerbetrieb.test.js (3: Speichern bei Beiträgen alle 150 ms + Absturz mit SIGKILL + Neustart,
 Seiten öffentlich/Start ohne Doppelte, Oberfläche), benachrichtigungen-aufbewahren.test.js (3: Obergrenze,
 Alter + Laden, Abrufzeit bei 100 000 fremden Einträgen). 11 Gegenproben, alle rot.
+
+### Cycle · Vorschaubild beim Teilen (WhatsApp, Facebook, Telegram) in 5 Sprachen (2026-10-27)
+
+In Afrika verbreitet sich ApoPulse fast nur über geteilte Links — die Vorschau ist der erste Eindruck.
+Titel und Beschreibung waren schon je Sprache, **das Bild aber überall deutsch: „Lieferengpässe mit Quelle —
+Behördenlisten aus Europa"**, auch in Ghana, Senegal oder Ägypten. Jetzt `og-bild-<de|en|fr|pt|ar>.png`
+(1200×630, erzeugt mit `tools/og-bilder.mjs`, prüft dabei, dass kein Text überläuft oder überlappt):
+Startseite nach Browsersprache, Teilseiten und öffentliche Engpass-Seiten nach Sprache der Seite (Senegal →
+französisch), unbekannt → englisch. `og-bild.png` (alte Links) ist jetzt das englische Bild.
+**Tests.** startseite-kopf (+Bildgrößen, Sprachwahl), teilseite (+Senegal, unbekannte Sprache),
+oeffentliche-seiten. 4 Gegenproben, alle rot.
