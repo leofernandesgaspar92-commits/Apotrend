@@ -7537,10 +7537,27 @@ async function loadFeed() {
       } catch { /* keine Werbung → nichts anzeigen */ }
     }
     const adAfter = Math.min(2, d.posts.length - 1); // nach dem 3. Beitrag (oder letzter, wenn kürzer)
+    const gezeigt = new Set();
     d.posts.forEach((p, i) => {
-      feed.appendChild(postCard(p));
+      gezeigt.add(p.id); feed.appendChild(postCard(p));
       if (adCard && i === adAfter) { feed.appendChild(adCard); adCard = null; }
     });
+    // Seitenweise (je 30): unten ein deutlicher Knopf statt Endlos-Nachladen beim Scrollen —
+    // spart Daten am Handy, und man sieht, dass es weitergeht.
+    const mehrKnopf = (weiter) => {
+      const b = el(`<button class="auth-gross" data-feedmehr style="width:100%;margin:6px 0 72px">${esc(t('fe_mehr'))}</button>`);
+      b.onclick = async () => {
+        b.disabled = true; b.textContent = '…';
+        try {
+          const n = await api('GET', url + (url.includes('?') ? '&' : '?') + 'ab=' + weiter);
+          b.remove();
+          for (const p of n.posts) if (!gezeigt.has(p.id)) { gezeigt.add(p.id); feed.appendChild(postCard(p)); }
+          if (n.mehr) feed.appendChild(mehrKnopf(n.weiter));
+        } catch (e) { b.disabled = false; b.textContent = t('fe_mehr'); alert(e.message); }
+      };
+      return b;
+    };
+    if (d.mehr) feed.appendChild(mehrKnopf(d.weiter));
   } catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); }
 }
 

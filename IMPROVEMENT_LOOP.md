@@ -3725,3 +3725,27 @@ Raten an einer Nummer trotz wechselnder Schreibweise gebremst, Gesamtgrenze, Lin
 (4: Hash-Gleichwertigkeit, Code-Hash alt/neu, HTTP-Ansturm mit Wartezeit-Messung + Doppel-Registrierung +
 gleicher Handle + Melde-Grenze, Texte). 12 Gegenproben, alle rot.
 **Owner:** Für den Start-Tag `APOPULSE_SMS_MAX_STUNDE` ggf. anheben (server/DEPLOY.md).
+
+### Cycle · Dauerbetrieb: Speichern ohne Aussetzer, Feed seitenweise (2026-10-27)
+
+Realistisch befüllter Server (400 bzw. 1000 Apotheken in 8 Afrika-Ländern, 3000 Meldungen, 2000 Beiträge):
+alle Startseiten-Abrufe unter 15 ms (Median) — Lesen ist unkritisch. Zwei echte Funde:
+1. **Die Datei wurde im Dauerbetrieb NIE geschrieben.** `saveSoon` schob das Speichern bei jeder Änderung um
+   400 ms hinaus. Kommt alle 200 ms etwas Neues (Start-Tag), wird nie gespeichert — gemessen: nach 50
+   Beiträgen in 10 s stand keiner in der Datei; ein Absturz hätte alles seit der letzten ruhigen Sekunde
+   gelöscht. Jetzt spätestens 400 ms nach der ERSTEN ungespeicherten Änderung (die Datenbank-Sicherung alle
+   20 s war richtig gebaut). Kosten bei 1000 Konten (6,9 MB): ~25 ms je Speichern.
+2. **Feed lieferte alle Beiträge eines Landes auf einmal** (250 Beiträge = 200 KB, wächst täglich). Jetzt je
+   30, darunter ein großer Knopf „Ältere Beiträge laden" (5 Sprachen) statt Endlos-Scrollen; doppelte beim
+   Nachladen werden übersprungen; höchstens 100 je Abruf. Geprüft am Handy (360 px): 30 → 60 → 70, Knopf
+   verschwindet am Ende, kein Querscrollen; Platz unter dem Knopf, damit „Nach oben" ihn nicht verdeckt.
+
+3. **Benachrichtigungen wurden nie gelöscht, und jede Abfrage durchsuchte die ALLER Konten.** Im Test mit
+   1000 Konten: 7278 Benachrichtigungen (2,6 MB, größter Teil des Speicherabbilds) nach wenigen Minuten —
+   beobachtete Wirkstoffe erzeugen täglich neue. Jetzt: Verzeichnis je Konto (Abruf hängt nicht mehr von der
+   Gesamtzahl ab), höchstens 200 je Konto (zuerst fallen gelesene, dann die ältesten), gelesene nach 90
+   Tagen weg; gilt auch für ältere Speicherabbilder beim Laden. Bei gleichem Zeitstempel die neueste zuerst.
+
+**Tests.** dauerbetrieb.test.js (3: Speichern bei Beiträgen alle 150 ms + Absturz mit SIGKILL + Neustart,
+Seiten öffentlich/Start ohne Doppelte, Oberfläche), benachrichtigungen-aufbewahren.test.js (3: Obergrenze,
+Alter + Laden, Abrufzeit bei 100 000 fremden Einträgen). 11 Gegenproben, alle rot.

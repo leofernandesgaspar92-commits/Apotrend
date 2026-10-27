@@ -479,11 +479,17 @@ function collectSnapshot() {
   };
 }
 let saveTimer = null;
+// Spätestens 400 ms nach der ERSTEN ungespeicherten Änderung schreiben. Bis 10/2026 schob
+// jede neue Änderung den Termin wieder hinaus — bei Dauerbetrieb (alle paar hundert ms
+// etwas Neues, z. B. am Start-Tag) wurde die Datei NIE geschrieben; ein Absturz hätte
+// alles seit der letzten ruhigen Sekunde gelöscht.
 function saveSoon() {
   saveToDbSoon(); // unabhaengig von der Datei: die Datenbank ist der Deploy-Schutz
-  if (!persistence) return;
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => { try { persistence.save(collectSnapshot()); } catch (e) { console.error('Speichern fehlgeschlagen:', e.message); } }, 400);
+  if (!persistence || saveTimer) return;
+  saveTimer = setTimeout(() => {
+    saveTimer = null;
+    try { persistence.save(collectSnapshot()); } catch (e) { console.error('Speichern fehlgeschlagen:', e.message); }
+  }, 400);
 }
 function saveNow() { if (persistence) { try { persistence.save(collectSnapshot()); } catch { /* egal */ } } }
 
@@ -620,6 +626,16 @@ function ensureFeatureAllowed(featureId, userId) {
 // Rechts-Gate (Heimatland): in Ländern mit gesperrten Modulen wird die betroffene
 // Preis-/Rabatt-Vorschau NICHT angehängt — sonst würden Rabatt-/Preisdaten über
 // referenzierende Beiträge in Feed/Suche an der Sperre vorbei sichtbar.
+// Feed seitenweise: Bis 10/2026 kamen ALLE Beiträge eines Landes auf einmal — bei 250
+// Beiträgen 200 KB, und es wächst jeden Tag. Am Handy mit schwachem Netz zu viel.
+// ?ab=<Anzahl schon geladen>&limit=<höchstens 100>; Standard 30. `weiter` ist das
+// nächste `ab`, `mehr` sagt, ob es ältere gibt.
+const FEED_SEITE = 30;
+function feedSeite(alle, query, userId) {
+  const limit = Math.min(100, Math.max(1, parseInt(query.get('limit'), 10) || FEED_SEITE));
+  const ab = Math.max(0, parseInt(query.get('ab'), 10) || 0);
+  return { posts: enrichPosts(alle.slice(ab, ab + limit), userId), mehr: alle.length > ab + limit, weiter: ab + limit };
+}
 function enrichPosts(posts, userId) {
   const home = userCountry(userId);
   const dealsBlocked = isFeatureBlocked(home, 'deals');
@@ -2185,8 +2201,8 @@ const routes = [
     return r;
   }],
 
-  ['GET', /^\/api\/feed\/home$/, true, async ({ userId }) => ({ posts: enrichPosts(social.homeFeed(userId), userId) })],
-  ['GET', /^\/api\/feed\/public$/, true, async ({ userId, query }) => ({ country: activeCountry(userId, query), posts: enrichPosts(social.publicFeed(userId, { sort: query.get('sort') || 'neu', filter: query.get('filter') || 'all', country: activeCountry(userId, query) }), userId) })],
+  ['GET', /^\/api\/feed\/home$/, true, async ({ userId, query }) => feedSeite(social.homeFeed(userId), query, userId)],
+  ['GET', /^\/api\/feed\/public$/, true, async ({ userId, query }) => ({ country: activeCountry(userId, query), ...feedSeite(social.publicFeed(userId, { sort: query.get('sort') || 'neu', filter: query.get('filter') || 'all', country: activeCountry(userId, query) }), query, userId) })],
 
   ['POST', /^\/api\/posts$/, true, async ({ userId, body }) => social.createPost(userId, { body: body.body, visibility: body.visibility, kind: body.kind, image: body.image, sourceUrl: body.sourceUrl, pollOptions: body.pollOptions })],
   // Drei Ebenen (docs/AFRIKA.md): `ebene=land` (Standard) | `region` | `welt`.

@@ -4,6 +4,9 @@
 // gegen das Fundament-Repo).
 import crypto from 'node:crypto';
 
+export const MAX_BENACHRICHTIGUNGEN = 200;
+export const BENACHRICHTIGUNG_TAGE = 90;
+
 export function createSocialRepo() {
   const profiles = new Map();       // userId -> profile
   const profilesByHandle = new Map(); // lower(handle) -> userId
@@ -14,6 +17,27 @@ export function createSocialRepo() {
   const follows = new Map();        // `${follower}|${followee}` -> row
   const mutes = new Map();          // `${muter}|${muted}` -> row (Beiträge stummgeschaltet)
   const notifications = new Map();
+  // Benachrichtigungen je Konto (userId -> Set der IDs, älteste zuerst). Bis 10/2026 durchsuchte
+  // jede Abfrage ALLE Benachrichtigungen aller Konten, und nichts wurde je gelöscht — bei
+  // beobachteten Wirkstoffen kommen täglich neue dazu (Test: 1000 Konten → 7000 in Minuten).
+  const notifJeKonto = new Map();
+  const notifDazu = (row) => { let s = notifJeKonto.get(row.user_id); if (!s) notifJeKonto.set(row.user_id, (s = new Set())); s.add(row.id); };
+  const notifWeg = (id) => {
+    const r = notifications.get(id); if (!r) return;
+    notifications.delete(id);
+    const s = notifJeKonto.get(r.user_id); if (s) { s.delete(id); if (!s.size) notifJeKonto.delete(r.user_id); }
+  };
+  const notifVon = (userId) => [...(notifJeKonto.get(userId) || [])].map((id) => notifications.get(id)).filter(Boolean);
+  // Aufbewahren: höchstens MAX_BENACHRICHTIGUNGEN je Konto (zuerst fallen gelesene, dann die
+  // ältesten) und gelesene nur BENACHRICHTIGUNG_TAGE lang.
+  const kuerzen = (userId) => {
+    const s = notifJeKonto.get(userId); if (!s) return;
+    const grenze = new Date(Date.now() - BENACHRICHTIGUNG_TAGE * 86400000).toISOString();
+    for (const id of [...s]) { const r = notifications.get(id); if (r && r.read && r.created_at < grenze) notifWeg(id); }
+    if (s.size <= MAX_BENACHRICHTIGUNGEN) return;
+    for (const id of [...s]) { if (s.size <= MAX_BENACHRICHTIGUNGEN) break; const r = notifications.get(id); if (r && r.read) notifWeg(id); }
+    for (const id of [...s]) { if (s.size <= MAX_BENACHRICHTIGUNGEN) break; notifWeg(id); }
+  };
   const dmThreads = new Map();
   const dmMessages = new Map();
   const reports = new Map();
@@ -341,10 +365,13 @@ export function createSocialRepo() {
     createNotification(n) {
       const row = { id: uuid(), user_id: n.userId, type: n.type, actor_user_id: n.actorUserId ?? null, ref_type: n.refType ?? null, ref_id: n.refId ?? null, label: n.label ?? null, read: false, created_at: now() };
       notifications.set(row.id, row);
+      notifDazu(row);
+      kuerzen(row.user_id);
       return { ...row };
     },
     listNotifications(userId) {
-      return [...notifications.values()].filter(n => n.user_id === userId).sort((a, b) => b.created_at.localeCompare(a.created_at)).map(n => ({ ...n }));
+      // reverse(): bei gleicher Zeit (gleiche Millisekunde) die zuletzt angelegte zuerst.
+      return notifVon(userId).reverse().sort((a, b) => b.created_at.localeCompare(a.created_at)).map(n => ({ ...n }));
     },
     // ── Benachrichtigungs-Einstellungen (je Kategorie an/aus; nur Abweichungen speichern) ──
     getNotifPrefs(userId) { return { ...(notifPrefs.get(userId) || {}) }; },
@@ -355,10 +382,10 @@ export function createSocialRepo() {
       return { ...cur };
     },
     markNotificationRead(id) { const n = notifications.get(id); if (n) n.read = true; },
-    markAllNotificationsRead(userId) { for (const n of notifications.values()) if (n.user_id === userId) n.read = true; },
+    markAllNotificationsRead(userId) { for (const n of notifVon(userId)) n.read = true; },
     // Gelesene Benachrichtigungen entfernen (Liste aufräumen); gibt die Anzahl zurück.
-    clearReadNotifications(userId) { let n = 0; for (const [id, r] of notifications) if (r.user_id === userId && r.read) { notifications.delete(id); n++; } return n; },
-    unreadNotificationCount(userId) { return [...notifications.values()].filter(n => n.user_id === userId && !n.read).length; },
+    clearReadNotifications(userId) { let n = 0; for (const r of notifVon(userId)) if (r.read) { notifWeg(r.id); n++; } return n; },
+    unreadNotificationCount(userId) { return notifVon(userId).filter(n => !n.read).length; },
 
     // ── Direktnachrichten (1:1) ──
     findDmThread(userX, userY) {
@@ -427,7 +454,7 @@ export function createSocialRepo() {
       for (const k of pollVotes.keys()) if (k.endsWith('|' + userId)) pollVotes.delete(k);
       for (const [k, f] of follows) if (f.follower_user_id === userId || f.followee_user_id === userId) follows.delete(k);
       for (const [k, m] of mutes) if (m.muter_user_id === userId || m.muted_user_id === userId) mutes.delete(k);
-      for (const [id, n] of notifications) if (n.user_id === userId || n.actor_user_id === userId) notifications.delete(id);
+      for (const [id, n] of notifications) if (n.user_id === userId || n.actor_user_id === userId) notifWeg(id);
       for (const [id, t] of dmThreads) if (t.user_a_id === userId || t.user_b_id === userId) {
         dmThreads.delete(id);
         for (const [mid, m] of dmMessages) if (m.thread_id === id) dmMessages.delete(mid);
@@ -461,7 +488,11 @@ export function createSocialRepo() {
       const fill = (map, rows) => { map.clear(); for (const [k, v] of rows || []) map.set(k, v); };
       fill(profiles, d.profiles); fill(profilesByHandle, d.profilesByHandle); fill(posts, d.posts);
       fill(comments, d.comments); fill(reactions, d.reactions); fill(pollVotes, d.pollVotes); fill(follows, d.follows); fill(mutes, d.mutes);
-      fill(notifications, d.notifications); fill(dmThreads, d.dmThreads); fill(dmMessages, d.dmMessages); fill(reports, d.reports);
+      fill(notifications, d.notifications);
+      notifJeKonto.clear();
+      for (const r of [...notifications.values()].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))) notifDazu(r);
+      for (const uid of [...notifJeKonto.keys()]) kuerzen(uid);
+      fill(dmThreads, d.dmThreads); fill(dmMessages, d.dmMessages); fill(reports, d.reports);
       fill(verifications, d.verifications); fill(bookmarks, d.bookmarks); fill(endorsements, d.endorsements); fill(profileViews, d.profileViews); fill(recommendations, d.recommendations); fill(cartItems, d.cartItems); fill(orders, d.orders); fill(cartTemplates, d.cartTemplates); fill(appointments, d.appointments); fill(promotions, d.promotions); fill(liveSessions, d.liveSessions); fill(notifPrefs, d.notifPrefs);
     },
   };
