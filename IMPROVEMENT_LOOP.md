@@ -3691,3 +3691,11 @@ USDT: kein Querscrollen, keine JS-Fehler, alles übersetzt. Funde:
    gefährlich beim Abtippen. Global: `code { direction:ltr; unicode-bidi:isolate }` (Adressen,
    Transaktions-IDs, Wiederherstellungscodes, Schlüssel).
 **Tests.** rtl-isolierung.test.js (2).
+
+### Cycle · Rundgang Portugiesisch (pt-AO, 360 px) (2026-10-27)
+
+Einstieg (Zeile über dem Formular, Land automatisch Angola), Erste Schritte, „Reportar uma falta",
+Rückmeldung mit „Pedir confirmação a colegas", Wiederkehr-Karte („Desde a sua última visita"), Premium mit
+USDT (Adresse links→rechts): kein Querscrollen, keine JS-Fehler, keine deutschen Reste. Einziger Fund:
+E-Mail-Beispiel „nome@farmacia.pt" (Portugal-Domain) für Angola/Mosambik → „nome@farmacia.com".
+Damit sind alle vier Afrika-Sprachen (en, fr, ar, pt) am Handy über die neuen Abläufe geprüft.
