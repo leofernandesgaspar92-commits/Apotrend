@@ -3661,3 +3661,21 @@ Apothekerin aus Ghana meldet eine Krypto-Zahlung für Premium. Funde:
    (Krypto, Verifizierungen, Gemeldetes, Anzeigen, auffällige Meldungen) → Überblick (Startklar, Betrieb).
 
 **Tests.** mod-aufgaben.test.js (3: Reihenfolge, Startseiten-Karte, HTTP-Zahlen inkl. 403/401).
+
+### Cycle · Krypto-Zahlung aus Kundensicht: melden → warten → bestätigt/abgelehnt (2026-10-27)
+
+**Rundgang (en-GH, 360 px, USDT über Tron eingerichtet):** USDT wird angeboten, Adresse + „In Wallet
+öffnen" + „Adresse kopieren"; nach Bestätigung durch die Redaktion „You have Premium ✓ Active until …".
+Funde:
+1. **Nach „Report payment"** stand der Dank nur klein in der Wallet-Karte, weit unten; den Wartezustand
+   („⏳ … is being reviewed. Please do not pay again") sah man erst nach erneutem Öffnen. Jetzt baut sich die
+   Premium-Seite sofort neu auf und zeigt ihn oben — wichtig, damit niemand doppelt zahlt.
+2. **Deutsch in der Benachrichtigung:** „Premium is unlocked “ApoPulse Premium (Monat)”". Bekannte
+   Produktnamen werden auf die Produkt-ID zurückgeführt und übersetzt (auch alte Benachrichtigungen).
+3. **Ablehnungsgrund auf Deutsch:** Die Redaktion schreibt deutsch, die Kundin in Ghana las den deutschen
+   Satz. Jetzt wählt die Redaktion einen Standardgrund (Transaktion älter als der Zahlungsstart, Betrag zu
+   niedrig, falsche Adresse, falsches Netzwerk, nicht gefunden) — gespeichert wird nur „#code" (plus
+   optionaler Zusatz), die Kundin liest den Satz in ihrer Sprache; „Anderer Grund" bleibt freier Text.
+   Kein Server-Umbau nötig (Format im bisherigen Grund-Feld).
+
+**Tests.** krypto-kundensicht.test.js (3).

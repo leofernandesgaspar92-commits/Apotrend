@@ -7670,6 +7670,20 @@ let prPlan = 'premium_monthly';
 // Produktnamen in der Sprache der Oberfläche. Der Server führt sie deutsch
 // („ApoPulse Premium (Monat)") — in Uganda stand das so auf der Premium-Seite.
 function produktName(id, ersatz) { const k = 'pn_' + id; return id && t(k) !== k ? t(k) : (ersatz || id || ''); }
+// Benachrichtigungen tragen den (deutschen) Produktnamen vom Server — „Premium is unlocked
+// “ApoPulse Premium (Monat)”" in Ghana. Bekannte Namen auf die Produkt-ID zurückführen und übersetzen.
+const PRODUKT_NAMEN = { 'ApoPulse Premium (Monat)': 'premium_monthly', 'ApoPulse Premium (Jahr)': 'premium_yearly',
+  'ApoPulse Business mit Daten-Schnittstelle (Monat)': 'business_monthly', 'ApoPulse Business mit Daten-Schnittstelle (Jahr)': 'business_yearly' };
+const produktAusName = (name) => (PRODUKT_NAMEN[name] ? produktName(PRODUKT_NAMEN[name], name) : name);
+// Ablehnungsgründe für Krypto-Zahlungen: Die Redaktion wählt einen Standardgrund, gespeichert wird
+// nur „#code" (optional „#code: Zusatz"); die Kundin liest ihn in IHRER Sprache. Vorher schrieb die
+// Redaktion frei auf Deutsch — und die Apothekerin in Ghana bekam einen deutschen Satz.
+const ABLEHN_GRUENDE = ['tx_vor_start', 'betrag_zu_niedrig', 'falsche_adresse', 'falsches_netz', 'nicht_gefunden'];
+function ablehnGrund(g) {
+  const m = /^#([a-z_]+)(?::\s*([\s\S]*))?$/.exec(String(g || '').trim());
+  if (!m || !ABLEHN_GRUENDE.includes(m[1])) return String(g || '');
+  return t('kg_' + m[1]) + (m[2] ? ' — ' + m[2] : '');
+}
 // ── Play-Store-App (Trusted Web Activity, android/twa-manifest.json) ──────────
 // Google Play verlangt für digitale Abos in Apps Google Play Billing; Krypto- und
 // Rechnungszahlung dürfen IN der Play-App nicht angeboten werden. Auf der Website
@@ -7717,7 +7731,7 @@ async function openPremium() {
         ⏳ <b>${esc(ti('pr_review_t', { d: fmtZeit(letzte.claimed_at || letzte.created_at) }))}</b><div style="margin-top:4px">${esc(t('pr_review_s'))}</div></div>`);
     } else if (letzte && letzte.status === 'failed') {
       stand = el(`<div data-prstand="failed" style="background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-fg);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:15px;line-height:1.5">
-        ⚠️ <b>${esc(t('pr_rejected_t'))}</b>${letzte.review_note ? `<div style="margin-top:4px">${esc(t('pr_rejected_why'))}: ${esc(zitat(letzte.review_note))}</div>` : ''}<div style="margin-top:4px">${esc(t('pr_rejected_s'))}</div></div>`);
+        ⚠️ <b>${esc(t('pr_rejected_t'))}</b>${letzte.review_note ? `<div style="margin-top:4px">${esc(t('pr_rejected_why'))}: ${esc(zitat(ablehnGrund(letzte.review_note)))}</div>` : ''}<div style="margin-top:4px">${esc(t('pr_rejected_s'))}</div></div>`);
     }
     const opt = await api('GET', `/api/payments/crypto?product=${encodeURIComponent(prPlan)}&country=${encodeURIComponent(viewCountry())}`);
     const produkte = ((await api('GET', `/api/payments/products?country=${encodeURIComponent(viewCountry())}`).catch(() => ({ products: [] }))).products) || [];
@@ -7890,6 +7904,9 @@ async function openPremium() {
           const s = await api('POST', '/api/payments/crypto/start', { productId: prPlan, walletId: c.id });
           await api('POST', `/api/payments/crypto/${encodeURIComponent(s.payment_id)}/claim`, { txRef: inp.value });
           msg.style.color = 'var(--green)'; msg.textContent = t('pr_reported'); inp.value = '';
+          // Seite neu aufbauen: Oben steht dann „⏳ Ihre Zahlung wird geprüft — bitte nicht noch einmal
+          // zahlen". Vorher stand der Dank nur klein in der Wallet-Karte, weit unten am Handy.
+          await openPremium(); window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (e) { msg.style.color = 'var(--crit-fg)'; msg.textContent = e.message; }
       };
       body.appendChild(cc);
@@ -10029,7 +10046,7 @@ async function showNotifications() {
       <div class="row" style="align-items:center">
         ${n.actor ? avatarHtml(n.actor, 34, false) : ''}
         <span${n.actor?' style="font-size:16px"':''}>${icons[n.type]||'🔔'}</span>
-        <span style="margin-inline-start:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' '+esc(zitat(/^shortage_(abroad|home|ended)$/.test(n.type)?n.label.replace(/ · ([A-Z]{2})$/, (m, cc) => ' · ' + landLabel(cc)):n.type==='premium_ablauf'?fmtDateDe(n.label):n.type==='watch_alert'?notifLabel(n.label):n.label)):''}${n.read?'':'</b>'}</span>
+        <span style="margin-inline-start:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' '+esc(zitat(/^shortage_(abroad|home|ended)$/.test(n.type)?n.label.replace(/ · ([A-Z]{2})$/, (m, cc) => ' · ' + landLabel(cc)):n.type==='premium_ablauf'?fmtDateDe(n.label):n.type==='watch_alert'?notifLabel(n.label):n.type==='payment_confirmed'?produktAusName(n.label):n.type==='payment_rejected'?ablehnGrund(n.label):n.label)):''}${n.read?'':'</b>'}</span>
         <span class="sp" style="flex:1"></span>
         <span class="muted" style="font-size:13px">${relTime(n.created_at)}</span>
       </div></div>`);
@@ -10193,8 +10210,10 @@ function kryptoPruefKarte(z) {
       <button class="ghost small" data-kpno style="min-height:44px">${esc(t('kp_reject'))}</button>
     </div>
     <div class="hidden" data-kpgrund style="margin-top:8px">
-      <label style="font-size:14px">${esc(t('kp_reason'))}</label>
-      <input data-kpgrundin maxlength="300" placeholder="${esc(t('kp_reason_ph'))}">
+      <label style="font-size:14px">${esc(t('kg_waehlen'))}</label>
+      <select data-kpgrundwahl><option value="" selected disabled>${esc(t('kg_bitte'))}</option>${ABLEHN_GRUENDE.map((c) => `<option value="${c}">${esc(t('kg_' + c))}</option>`).join('')}<option value="__frei">${esc(t('kg_anderer'))}</option></select>
+      <label style="font-size:14px;margin-top:6px">${esc(t('kg_zusatz'))}</label>
+      <input data-kpgrundin maxlength="250" placeholder="${esc(t('kp_reason_ph'))}">
       <div class="row" style="margin-top:6px"><button class="small" data-kpsend style="min-height:44px">${esc(t('kp_reject_send'))}</button></div>
     </div>
     <div class="err" data-kperr></div>
@@ -10207,7 +10226,11 @@ function kryptoPruefKarte(z) {
   card.querySelector('[data-kpno]').onclick = () => { card.querySelector('[data-kpgrund]').classList.remove('hidden'); card.querySelector('[data-kpgrundin]').focus(); };
   card.querySelector('[data-kpsend]').onclick = async () => {
     err.textContent = '';
-    const grund = card.querySelector('[data-kpgrundin]').value.trim();
+    // Kein vorausgewählter Grund: Ablehnen braucht eine bewusste Wahl (Browser-Audit „Krypto-Prüfung").
+    const code = card.querySelector('[data-kpgrundwahl]').value;
+    const zusatz = card.querySelector('[data-kpgrundin]').value.trim();
+    // Standardgrund gewählt → „#code" (+ Zusatz); sonst gilt der getippte Text als freier Grund.
+    const grund = code && code !== '__frei' ? '#' + code + (zusatz ? ': ' + zusatz : '') : zusatz;
     if (!grund) { err.textContent = t('kp_reason_need'); return; }
     try { await api('POST', `/api/payments/${encodeURIComponent(z.id)}/reject`, { grund }); showModeration(); } catch (e) { err.textContent = e.message; }
   };
