@@ -3699,3 +3699,29 @@ Rückmeldung mit „Pedir confirmação a colegas", Wiederkehr-Karte („Desde a
 USDT (Adresse links→rechts): kein Querscrollen, keine JS-Fehler, keine deutschen Reste. Einziger Fund:
 E-Mail-Beispiel „nome@farmacia.pt" (Portugal-Domain) für Angola/Mosambik → „nome@farmacia.com".
 Damit sind alle vier Afrika-Sprachen (en, fr, ar, pt) am Handy über die neuen Abläufe geprüft.
+
+### Cycle · Start-Tag 1. November: Ansturm und Missbrauch (2026-10-27)
+
+Simuliert: viele neue Konten gleichzeitig aus EINEM Handynetz, Melde-Spam von einem Konto. Drei echte Funde:
+1. **Server stand beim Ansturm still.** 60 Registrierungen gleichzeitig brauchten 30 s; eine Apothekerin, die
+   nur die Liste lesen wollte, wartete bis zu **20 s**. Ursache: Jede Registrierung rechnete 9 scrypt-Hashes
+   (Passwort + 8 Wiederherstellungscodes, je ~55 ms) synchron — das hält den ganzen Server an. Jetzt:
+   Passwort- und Code-Hashes laufen im Hintergrund-Thread (Registrieren, Anmelden), die zufälligen Codes
+   (~2^49,5 Möglichkeiten) mit scrypt N=2048 statt 16384 (Format `rc$…`; alte `scrypt$`-Hashes gelten weiter).
+   Nach dem Warten wird noch einmal geprüft (Adresse/Handle könnten inzwischen vergeben sein).
+   **Ergebnis: 60 Registrierungen in 1,8 s, Lesende warten höchstens ~50 ms.**
+2. **Geteilte Handynetz-Adressen (Carrier-NAT) sperrten echte Nutzer aus.** SMS-Code: 10/Stunde je IP — die
+   11. Apothekerin im selben MTN-Netz las „Zu viele Versuche". Ebenso Code-Prüfung (20 Fehlversuche je IP für
+   alle), Passwort-Link (5/15 min je IP), Link einlösen (5 Fehler je IP). Jetzt: Schutz hängt an Nummer/Konto
+   (3 SMS je Nummer/h, 3 Links je Adresse/h, Code verbrennt nach 5 Fehlern, Prüfung je IP+Nummer), je IP nur
+   noch weite Grenzen (30). SMS-Gesamtgrenze erreicht → ehrliche Meldung „gerade ausgelastet — oder mit
+   E-Mail anmelden" statt „Sie haben zu oft versucht" (5 Sprachen).
+3. **Ein neues Konto konnte 128 erfundene Engpässe in Nigeria anlegen** — dort, wo Apotheken-Meldungen die
+   einzige Quelle sind, wäre die Liste unbrauchbar. Jetzt höchstens 10 NEUE Meldungen je Konto und Tag
+   (Bestätigen zählt nicht, Redaktion ausgenommen); die Eingabe bleibt als Entwurf für morgen gespeichert.
+
+**Tests.** geteilte-adressen.test.js (1: 25 Nachbarn bekommen Codes, 21 Vertipper sperren den 22. nicht,
+Raten an einer Nummer trotz wechselnder Schreibweise gebremst, Gesamtgrenze, Links), start-ansturm.test.js
+(4: Hash-Gleichwertigkeit, Code-Hash alt/neu, HTTP-Ansturm mit Wartezeit-Messung + Doppel-Registrierung +
+gleicher Handle + Melde-Grenze, Texte). 12 Gegenproben, alle rot.
+**Owner:** Für den Start-Tag `APOPULSE_SMS_MAX_STUNDE` ggf. anheben (server/DEPLOY.md).

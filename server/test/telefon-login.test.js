@@ -202,5 +202,5 @@ test('SMS-Pumping: nur Nummern aus Register-Ländern; Obergrenze für alle SMS z
   assert.equal(normalisiereTelefon('+1 415 555 0100', 'SN'), '+14155550100', 'USA/Kanada stehen im Register');
   const srv = readFileSync(join(HIER, '..', 'src', 'http', 'server.js'), 'utf8');
   assert.match(srv, /const telCodeGesamt = createRateLimiter\(\{ max: Math\.max\(1, Number\(process\.env\.APOPULSE_SMS_MAX_STUNDE\) \|\| 100\)/);
-  assert.match(srv, /telCodeGesamt\.check\('alle'\)[\s\S]{0,700}telCodeGesamt\.fail\('alle'\)/);
+  assert.match(srv, /telCodeGesamt\.check\('alle'\)[\s\S]{0,1200}telCodeGesamt\.fail\('alle'\)/);
 });

@@ -93,7 +93,8 @@ import { createPasswortLink } from '../services/passwortLink.js';
 import { createSms } from '../services/sms.js';
 import { createTelefonLogin, telefonAdresse } from '../services/telefonLogin.js';
 import { VORWAHL, normalisiereTelefon } from '../domain/telefon.js';
-import { hashPassword } from '../domain/password.js';
+import { hashPassword, hashPasswordAsync } from '../domain/password.js';
+import { generateRecoveryCodesAsync } from '../domain/recoveryCodes.js';
 import { createWochenbericht } from '../services/wochenbericht.js';
 import { createEigeneQuellen } from '../services/eigeneQuellen.js';
 import { betriebsZahlen } from '../services/betrieb.js';
@@ -124,13 +125,24 @@ const resetLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
 // je Adresse, weil sich so auch ein fremdes Konto kurz sperren lässt.
 const loginJeKonto = createRateLimiter({ max: 20, windowMs: 15 * 60 * 1000 });
 const resetJeKonto = createRateLimiter({ max: 10, windowMs: 15 * 60 * 1000 });
-// Passwort-Links: jede Anfrage verschickt eine Mail — eng, damit niemand fremde Postfächer flutet.
-const linkLimiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000 });
+// GETEILTE ADRESSEN: In Afrika teilen sich oft Hunderte Handy-Kund:innen eines Netzes
+// eine öffentliche IP (Carrier-NAT). Bremsen nur je IP sperren dort am Start-Tag echte
+// Apotheker:innen aus („Zu viele Versuche", obwohl sie es zum ersten Mal versuchen).
+// Darum: Der eigentliche Schutz hängt an Konto bzw. Nummer; je IP gilt nur eine weite Grenze.
+// Passwort-Links: jede Anfrage verschickt eine Mail — je Konto eng (3/h), damit niemand
+// fremde Postfächer flutet; je IP 30 / 15 min.
+const linkLimiter = createRateLimiter({ max: 30, windowMs: 15 * 60 * 1000 });
 const linkJeKonto = createRateLimiter({ max: 3, windowMs: 60 * 60 * 1000 });
-// SMS-Codes kosten je Stück Geld: je Nummer 3, je Gerät 10 pro Stunde. Code-Prüfung je Gerät 20 / 15 min
-// (zusätzlich verbrennt der Code nach 5 Fehlversuchen, services/telefonLogin.js).
+// Link einlösen: Der Link ist ein langes Zufallsgeheimnis (nicht erratbar) — Fehlversuche je IP
+// zählen nur gegen Durchprobieren. Eigene Bremse, damit Tippfehler beim neuen Passwort von
+// Nachbarn im selben Netz nicht den Wiederherstellungscode-Schutz oben auslösen.
+const linkEinloesen = createRateLimiter({ max: 30, windowMs: 15 * 60 * 1000 });
+// SMS-Codes kosten je Stück Geld: je Nummer 3 pro Stunde, je IP 30 (geteilte Netze, s. o.),
+// alle zusammen APOPULSE_SMS_MAX_STUNDE. Code-Prüfung: 20 Fehlversuche / 15 min je IP UND Nummer
+// (zusätzlich verbrennt der Code nach 5 Fehlversuchen, services/telefonLogin.js — bei 3 Codes
+// pro Stunde sind das höchstens 15 Rateversuche je Nummer und Stunde bei 1 000 000 Möglichkeiten).
 const telCodeJeNummer = createRateLimiter({ max: 3, windowMs: 60 * 60 * 1000 });
-const telCodeJeGeraet = createRateLimiter({ max: 10, windowMs: 60 * 60 * 1000 });
+const telCodeJeGeraet = createRateLimiter({ max: 30, windowMs: 60 * 60 * 1000 });
 const telPruefJeGeraet = createRateLimiter({ max: 20, windowMs: 15 * 60 * 1000 });
 // Obergrenze für ALLE SMS zusammen: Die Geräte-Bremse hängt an X-Forwarded-For, das der Client selbst
 // setzt — mit wechselnden Nummern und Angaben dort wäre sie umgehbar. Die Summe nicht.
@@ -1200,24 +1212,34 @@ function kontoKennung(eingabe, land) {
   return nummer ? telefonAdresse(nummer) : s.toLowerCase();
 }
 
-function kontoAnlegen(body, { intern = false } = {}) {
+async function kontoAnlegen(body, { intern = false } = {}) {
   const { email, password, displayName, pharmacyName } = body;
   const name = String(body.name || '').trim();
   // ERST alles prüfen, DANN anlegen. Bis 10/2026 entstanden Organisation und
   // Konto vor der Handle-Prüfung: Ein zu kurzer oder vergebener Handle ließ
   // ein Konto ohne Profil zurück, und die E-Mail war für immer „vergeben".
-  if (!name && !displayName) throw new AppError('display_name_required', 'Anzeigename erforderlich.');
   const wunsch = normalizeHandle(body.handle);
-  if (wunsch && !HANDLE_RE.test(wunsch)) throw new AppError('profile_handle_format', 'Handle: 3–30 Zeichen, nur a–z 0–9 _.');
-  if (wunsch && social.getProfile(wunsch)) throw new AppError('handle_taken', 'Handle ist bereits vergeben.');
-  if (!intern && /@(telefon|oauth)\.local$/i.test(String(email || '').trim())) throw new AppError('email_reserviert', 'Diese Adresse ist reserviert.');
-  if (repo.getUserByEmail(String(email || '').trim())) throw new AppError('email_taken', 'E-Mail ist bereits vergeben.');
-  if (String(password || '').length < 8) throw new AppError('pw_too_short', 'Passwort muss mindestens 8 Zeichen haben.');
+  const pruefen = () => {
+    if (!name && !displayName) throw new AppError('display_name_required', 'Anzeigename erforderlich.');
+    if (wunsch && !HANDLE_RE.test(wunsch)) throw new AppError('profile_handle_format', 'Handle: 3–30 Zeichen, nur a–z 0–9 _.');
+    if (wunsch && social.getProfile(wunsch)) throw new AppError('handle_taken', 'Handle ist bereits vergeben.');
+    if (!intern && /@(telefon|oauth)\.local$/i.test(String(email || '').trim())) throw new AppError('email_reserviert', 'Diese Adresse ist reserviert.');
+    if (repo.getUserByEmail(String(email || '').trim())) throw new AppError('email_taken', 'E-Mail ist bereits vergeben.');
+    if (String(password || '').length < 8) throw new AppError('pw_too_short', 'Passwort muss mindestens 8 Zeichen haben.');
+  };
+  pruefen();
+  // Hashes im Hintergrund-Thread rechnen (Start-Ansturm: synchron hielt jede
+  // Registrierung den ganzen Server ~0,5 s an). Während des Wartens kann eine
+  // zweite Anfrage dieselbe Adresse/denselben Handle belegt haben — darum danach
+  // noch einmal prüfen; ab hier läuft alles ohne Unterbrechung.
+  const [passwordHash, recovery] = await Promise.all([hashPasswordAsync(password), generateRecoveryCodesAsync()]);
+  pruefen();
   // Ohne Wunsch: Handle aus dem Namen („Jürgen Müller" -> juergen_mueller).
   const handle = wunsch || freierHandle(displayName || name, (h) => !!social.getProfile(h));
   const reg = orgAuth.registerPharmacyWithOwner({
     pharmacy: { name: pharmacyName || `${name || 'Meine'} Apotheke` },
     owner: { name, email, password },
+    vorab: { passwordHash, recovery },
   });
   // Land + UI-Sprache bei der Registrierung (Länderauswahl); Fallback AT/de.
   const country = normalizeCountry(body.country);
@@ -1373,10 +1395,10 @@ const routes = [
   // Link einlösen: neues Passwort setzen und gleich angemeldet sein.
   ['POST', /^\/api\/password\/reset-mit-link$/, false, async ({ body, ip }) => {
     const key = ip || 'unknown';
-    const st = resetLimiter.check(key);
+    const st = linkEinloesen.check(key);
     if (st.blocked) { const e = new Error('Zu viele Versuche. Bitte später erneut.'); e.status = 429; e.code = 'too_many_attempts'; e.retryAfterS = Math.ceil(st.retryAfterMs / 1000); throw e; }
     let r;
-    try { r = passwortLink.einloesen({ t: body.t, newPassword: body.newPassword }); } catch (e) { resetLimiter.fail(key); throw e; }
+    try { r = passwortLink.einloesen({ t: body.t, newPassword: body.newPassword }); } catch (e) { linkEinloesen.fail(key); throw e; }
     return { token: issueToken(r.userId), user: safeUser(repo.getUserById(r.userId)), profile: social.getProfile(r.userId) };
   }],
 
@@ -1386,17 +1408,24 @@ const routes = [
     const nummer = telefonLogin.nummer(body.telefon, body.land);
     const st0 = telCodeJeGeraet.check(ip || 'unknown'); const st1 = telCodeJeNummer.check(nummer); const st2 = telCodeGesamt.check('alle');
     const st = st0.blocked ? st0 : st1.blocked ? st1 : st2;
+    // Gesamtgrenze erreicht: nicht „Sie haben zu oft versucht" — die Person hat nichts falsch gemacht.
+    // Ehrlich sagen, dass SMS gerade ausgelastet ist, und auf E-Mail/Google verweisen.
+    if (st.blocked && st === st2) { const e = new Error('SMS-Anmeldung ist gerade ausgelastet. Bitte in einigen Minuten erneut — oder mit E-Mail anmelden.'); e.status = 429; e.code = 'sms_ausgelastet'; e.retryAfterS = Math.ceil(st.retryAfterMs / 1000); throw e; }
     if (st.blocked) { const e = new Error('Zu viele Versuche. Bitte später erneut.'); e.status = 429; e.code = 'too_many_attempts'; e.retryAfterS = Math.ceil(st.retryAfterMs / 1000); throw e; }
     telCodeJeGeraet.fail(ip || 'unknown'); telCodeJeNummer.fail(nummer); telCodeGesamt.fail('alle');
     return telefonLogin.anfordern({ telefon: nummer, sprache: SUPPORTED_LOCALES.includes(body.sprache) ? body.sprache : 'en' });
   }],
   // 2) Code prüfen → angemeldet, oder Ticket für ein neues Konto.
   ['POST', /^\/api\/telefon\/pruefen$/, false, async ({ body, ip }) => {
-    const st = telPruefJeGeraet.check(ip || 'unknown');
+    // Schlüssel IP + Nummer (einheitlich geschrieben: „077…" und „+221 77…" sind dieselbe), damit
+    // Nachbarn im selben Handynetz sich nicht gegenseitig sperren. Ungültige Nummer: nur die IP.
+    let nr = ''; try { nr = telefonLogin.nummer(body.telefon, body.land); } catch { /* pruefen meldet den Fehler */ }
+    const key = (ip || 'unknown') + '|' + nr;
+    const st = telPruefJeGeraet.check(key);
     if (st.blocked) { const e = new Error('Zu viele Versuche. Bitte später erneut.'); e.status = 429; e.code = 'too_many_attempts'; e.retryAfterS = Math.ceil(st.retryAfterMs / 1000); throw e; }
     let r;
     try { r = telefonLogin.pruefen({ telefon: body.telefon, land: body.land, code: body.code }); }
-    catch (e) { telPruefJeGeraet.fail(ip || 'unknown'); throw e; }
+    catch (e) { telPruefJeGeraet.fail(key); throw e; }
     if (r.neu) return { neu: true, ticket: r.ticket };
     return { token: issueToken(r.userId), user: safeUser(repo.getUserById(r.userId)), profile: social.getProfile(r.userId) };
   }],
@@ -1405,7 +1434,13 @@ const routes = [
     const nummer = telefonLogin.ticketNummer(body.ticket);
     const da = repo.getUserByEmail(telefonAdresse(nummer));
     if (da) return { token: issueToken(da.id), user: safeUser(da), profile: social.getProfile(da.id) };
-    return kontoAnlegen({ ...body, handle: undefined, email: telefonAdresse(nummer), password: crypto.randomBytes(24).toString('hex') }, { intern: true });
+    try { return await kontoAnlegen({ ...body, handle: undefined, email: telefonAdresse(nummer), password: crypto.randomBytes(24).toString('hex') }, { intern: true }); }
+    catch (e) {
+      // Doppelt abgeschickt, während die erste Anfrage noch rechnete: dann gibt es das Konto jetzt.
+      const jetzt = e && e.code === 'email_taken' && repo.getUserByEmail(telefonAdresse(nummer));
+      if (jetzt) return { token: issueToken(jetzt.id), user: safeUser(jetzt), profile: social.getProfile(jetzt.id) };
+      throw e;
+    }
   }],
 
   // Verbleibende Wiederherstellungscodes (eingeloggt) + Neu-Erzeugung.
@@ -1699,7 +1734,7 @@ const routes = [
       e.status = 429; e.code = 'too_many_attempts'; e.retryAfterS = Math.ceil(st.retryAfterMs / 1000);
       throw e;
     }
-    const r = orgAuth.login({ email: konto, password: body.password });
+    const r = await orgAuth.loginAsync({ email: konto, password: body.password });
     if (!r.ok) { loginLimiter.fail(key); loginJeKonto.fail(konto); const e = new Error(r.error); e.status = 401; e.code = 'login_failed'; throw e; }
     loginLimiter.reset(key); loginJeKonto.reset(konto); // erfolgreiche Anmeldung setzt die Zähler zurück
     return { token: issueToken(r.user.id), user: r.user, profile: social.getProfile(r.user.id) };

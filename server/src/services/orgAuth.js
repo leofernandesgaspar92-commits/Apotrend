@@ -1,7 +1,7 @@
 // Fundament-Service: Registrierung, Login, Mitgliedschaften/Rollen und die
 // zentrale Mandanten-Isolation. Kennt nur das Repository-Interface + Domaenen-
 // regeln — keine DB-Details, kein HTTP.
-import { hashPassword, verifyPassword } from '../domain/password.js';
+import { hashPassword, verifyPassword, verifyPasswordAsync } from '../domain/password.js';
 import { generateRecoveryCodes, matchRecoveryCode } from '../domain/recoveryCodes.js';
 import { ROLES, ORG_TYPES, roleAllowedForOrgType, can } from '../domain/roles.js';
 import { AppError } from '../domain/errors.js';
@@ -11,18 +11,20 @@ export function createOrgAuthService(repo) {
     // Neue Apotheke anlegen + erster Nutzer wird ADMIN dieser Apotheke.
     // Ersetzt die alte "erstes localStorage-Konto = Admin"-Simulation durch
     // echte, serverseitige Logik mit gehashtem Passwort.
-    registerPharmacyWithOwner({ pharmacy, owner }) {
+    // `vorab` (optional): im Hintergrund vorberechnete Hashes { passwordHash, recovery }
+    // — siehe kontoAnlegen in http/server.js. Ohne: synchron wie bisher.
+    registerPharmacyWithOwner({ pharmacy, owner, vorab = null }) {
       const org = repo.createOrganization({ ...pharmacy, type: ORG_TYPES.PHARMACY });
       const user = repo.createUser({
         email: owner.email,
         name: owner.name,
-        passwordHash: hashPassword(owner.password),
+        passwordHash: vorab ? vorab.passwordHash : hashPassword(owner.password),
       });
       const membership = repo.createMembership({
         userId: user.id, organizationId: org.id, role: ROLES.ADMIN,
       });
       // Einmal-Wiederherstellungscodes erzeugen: Klartext EINMAL zurückgeben, nur Hashes speichern.
-      const { codes, hashes } = generateRecoveryCodes();
+      const { codes, hashes } = vorab ? vorab.recovery : generateRecoveryCodes();
       repo.setRecoveryHashes(user.id, hashes);
       return { organization: org, user: publicUser(user), membership, recoveryCodes: codes };
     },
@@ -43,6 +45,16 @@ export function createOrgAuthService(repo) {
     login({ email, password }) {
       const user = repo.getUserByEmail(email);
       if (!user || !verifyPassword(password, user.password_hash)) {
+        return { ok: false, error: 'E-Mail oder Passwort falsch.' };
+      }
+      if (user.status !== 'active') return { ok: false, error: 'Konto ist nicht aktiv.' };
+      return { ok: true, user: publicUser(user), memberships: repo.getMembershipsForUser(user.id) };
+    },
+
+    // Dasselbe, aber der Hash-Vergleich läuft im Hintergrund-Thread (Anmelde-Route).
+    async loginAsync({ email, password }) {
+      const user = repo.getUserByEmail(email);
+      if (!user || !(await verifyPasswordAsync(password, user.password_hash))) {
         return { ok: false, error: 'E-Mail oder Passwort falsch.' };
       }
       if (user.status !== 'active') return { ok: false, error: 'Konto ist nicht aktiv.' };

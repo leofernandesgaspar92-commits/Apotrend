@@ -105,6 +105,8 @@ export function aktualitaet(s, today) {
   return { stufe: tage >= VERALTET_NACH_TAGEN ? 'veraltet' : tage >= PRUEFEN_NACH_TAGEN ? 'pruefen' : 'aktuell', tage };
 }
 
+export const MAX_NEUE_MELDUNGEN_TAG = 10;
+
 export function createShortagesService(shortagesRepo, social, options = {}) {
   // Heutiger Kalendertag (injizierbar für Tests) — Grundlage der Alters-/Fristsignale.
   const today = () => (options.today ? options.today() : new Date().toISOString().slice(0, 10));
@@ -296,6 +298,14 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
         && (s.country || null) === (country || null) && gleich(s));
       if (fremd) return { ...dienst.confirmShortage(userId, fremd.id), zusammengefuehrt: true };
       const today = new Date().toISOString().slice(0, 10);
+      // Tagesgrenze für NEUE Meldungen je Konto (Bestätigungen oben zählen nicht). Ein frisch
+      // angelegtes Konto konnte sonst Hunderte erfundene Engpässe in ein Land schreiben — dort,
+      // wo Apotheken-Meldungen die einzige Quelle sind, wäre die Liste unbrauchbar geworden.
+      // Eine echte Apotheke meldet selten mehr als eine Handvoll neue Engpässe am Tag.
+      const heute = shortagesRepo.list().filter(s => s.reporter_user_id === userId && s.gemeldet_am === today).length;
+      if (heute >= MAX_NEUE_MELDUNGEN_TAG && !(social.isModerator && social.isModerator(userId))) {
+        throw new AppError('meldungen_tageslimit', `Heute schon ${MAX_NEUE_MELDUNGEN_TAG} neue Engpässe gemeldet. Weitere bitte morgen — bestehende Meldungen bestätigen geht weiter.`, 429);
+      }
       const created = shortagesRepo.upsert({
         wirkstoff: w, bezeichnung: bez, status, grund: (grund ? String(grund).trim().slice(0, 200) : null),
         provenance: 'community', quelle: null, reporter_user_id: userId, gemeldet_am: today,

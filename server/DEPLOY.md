@@ -107,8 +107,12 @@ Einrichtung (einmalig, ca. 15 Minuten):
 
 Für Afrika oft die einfachste Anmeldung: Nummer eingeben, 6-stelliger Code per SMS, fertig —
 ohne E-Mail, ohne Passwort. Ohne Einrichtung ist die Funktion **aus** (kein Knopf, keine Kosten).
-Jede SMS kostet beim Anbieter ein paar Cent; Bremsen: je Nummer 3, je Gerät 10 Codes pro Stunde, insgesamt
+Jede SMS kostet beim Anbieter ein paar Cent; Bremsen: je Nummer 3, je Internet-Adresse 30 Codes pro Stunde
+(in Afrika teilen sich oft viele Handys eines Netzes eine Adresse — darum nicht enger), insgesamt
 höchstens 100 SMS pro Stunde (`APOPULSE_SMS_MAX_STUNDE` ändert das), nur an Nummern aus den Ländern des Registers.
+Ist die Gesamtgrenze erreicht, lesen Nutzer:innen „SMS-Anmeldung gerade ausgelastet — oder mit E-Mail anmelden".
+**Start-Tag / Werbeaktion:** Wenn viele gleichzeitig kommen sollen (z. B. TikTok-Kampagne), die Grenze für
+diese Tage anheben (etwa `APOPULSE_SMS_MAX_STUNDE` = 300) und das Guthaben beim Anbieter prüfen.
 
 Einrichtung mit **Africa's Talking** (Afrika-Anbieter, günstig in KE/UG/TZ/NG/RW/MW/ZM …):
 1. Konto auf africastalking.com anlegen, eine App erstellen, Guthaben aufladen.
