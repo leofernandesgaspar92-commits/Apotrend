@@ -189,6 +189,9 @@
   .crypto-pay { border:1px solid var(--line); border-radius:10px; padding:12px; margin-top:10px; background:var(--bg); }
   .crypto-addr { margin-top:8px; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
   .crypto-addr code { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.92em; word-break:break-all; }
+  /* Adressen, Transaktions-IDs, Codes, Schlüssel: immer links→rechts und vom Satz abgeschottet —
+     in arabischer Oberfläche ordnet der Browser Satzzeichen darin sonst um (Gefahr beim Abtippen). */
+  code { direction:ltr; unicode-bidi:isolate; }
   a.btn-link { display:inline-flex; align-items:center; justify-content:center; background:var(--green); color:var(--on-green); border-radius:var(--radius-sm); padding:10px 14px; font-weight:600; font-size:0.9em; text-decoration:none; min-height:40px; }
   a.btn-link:hover { background:var(--green-d); }
   .ok-box { background:var(--ok-bg); color:var(--ok-fg); border-radius:8px; }

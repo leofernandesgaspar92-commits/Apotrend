@@ -3679,3 +3679,15 @@ Funde:
    Kein Server-Umbau nötig (Format im bisherigen Grund-Feld).
 
 **Tests.** krypto-kundensicht.test.js (3).
+
+### Cycle · Rundgang Arabisch (ar-EG, 360 px) über die neuen Karten (2026-10-27)
+
+Anmeldung (Zeile über dem Formular), Erste Schritte, „الإبلاغ عن نقص" von der Startseite, Latein-Hinweis
+bei arabisch getipptem Wirkstoff, Rückmeldung mit „اطلب من الزملاء التأكيد", Wiederkehr-Karte, Premium mit
+USDT: kein Querscrollen, keine JS-Fehler, alles übersetzt. Funde:
+1. **Name zerrissen:** „Amoxicillin — أكّده Sara Mahmoud" stand als „Sara" oben rechts, „Mahmoud" eine Zeile
+   tiefer am anderen Ende. Wirkstoff und Name jetzt in `<bdi>`.
+2. **Wallet-Adresse in Rechts-nach-links-Richtung:** Bei Satzzeichen ordnet der Browser sie optisch um —
+   gefährlich beim Abtippen. Global: `code { direction:ltr; unicode-bidi:isolate }` (Adressen,
+   Transaktions-IDs, Wiederherstellungscodes, Schlüssel).
+**Tests.** rtl-isolierung.test.js (2).

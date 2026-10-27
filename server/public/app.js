@@ -1933,9 +1933,11 @@ async function seitBesuchKarte(feed, kopf) {
   const zeilen = seitBesuchZeilen(d.notifications);
   if (!zeilen.length) return;
   const zeichen = { kritisch: '🔴', eing: '🟠', wieder: '🟢', ausland: '🌍', bestaetigt: '✅' };
-  const text = (z) => z.art === 'bestaetigt' ? (z.wer ? ti('seit_bestaetigt', { wer: z.wer }) : t('seit_bestaetigt_kurz')) : t('seit_' + z.art);
+  // Namen und Wirkstoffe in eigener Schreibrichtung (<bdi>): In arabischen Sätzen riss
+  // „أكّده Sara Mahmoud" sonst auseinander („Sara" oben rechts, „Mahmoud" eine Zeile tiefer).
+  const text = (z) => z.art === 'bestaetigt' ? (z.wer ? esc(ti('seit_bestaetigt', { wer: '\u0000' })).replace('\u0000', `<bdi>${esc(z.wer)}</bdi>`) : esc(t('seit_bestaetigt_kurz'))) : esc(t('seit_' + z.art));
   const k = el(`<div class="card" data-seitbesuch><h2 style="margin:0 0 6px;font-size:19px">${esc(t('seit_titel'))}</h2>
-    ${zeilen.slice(0, 5).map((z, i) => `<button class="ov-link" data-seitw="${i}" style="align-items:flex-start"><span aria-hidden="true" style="font-size:18px;flex:none">${zeichen[z.art]}</span><span style="text-align:start;font-weight:400"><b>${esc(z.w)}</b> — ${esc(text(z))}<br><span class="muted" style="font-size:14px">${esc(relTime(z.zeit))}${z.quelle ? ' · ' + esc(t(z.quelle === 'amtlich' ? 'seit_q_amtlich' : 'nl_community')) : ''}</span></span>${ico('chevron', 18)}</button>`).join('')}
+    ${zeilen.slice(0, 5).map((z, i) => `<button class="ov-link" data-seitw="${i}" style="align-items:flex-start"><span aria-hidden="true" style="font-size:18px;flex:none">${zeichen[z.art]}</span><span style="text-align:start;font-weight:400"><b><bdi>${esc(z.w)}</bdi></b> — ${text(z)}<br><span class="muted" style="font-size:14px">${esc(relTime(z.zeit))}${z.quelle ? ' · ' + esc(t(z.quelle === 'amtlich' ? 'seit_q_amtlich' : 'nl_community')) : ''}</span></span>${ico('chevron', 18)}</button>`).join('')}
     <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><button class="ghost small" data-seitgesehen>${esc(t('seit_gesehen'))}</button>${zeilen.length > 5 || d.unread > zeilen.length ? `<button class="linklike small" data-seitalle>${esc(ti('seit_alle', { n: d.unread }))}</button>` : ''}</div></div>`);
   k.querySelectorAll('[data-seitw]').forEach((b) => { b.onclick = () => openWirkstoff(zeilen[Number(b.dataset.seitw)].w); });
   k.querySelector('[data-seitgesehen]').onclick = async () => {
