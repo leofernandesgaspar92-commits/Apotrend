@@ -2328,7 +2328,9 @@ async function main() {
     if (await quer() > 0) findings.push(`Ägypten: erste Schritte ${await quer()} px Querscrollen`);
     await page.click('#btnMenue'); await page.waitForTimeout(250);
     const m = await page.evaluate(() => { const r = document.getElementById('kopfMenue').getBoundingClientRect(); return { l: r.left, r: r.right, w: innerWidth }; });
-    if (!(m.l < m.w - m.r)) findings.push('Ägypten: Menü öffnet nicht auf der linken Seite (RTL)');
+    // Am Handy ist das Menü ein fast bildschirmbreites Panel (links und rechts je 12 px) —
+    // dann gibt es kein „links" mehr; gleich große Ränder sind korrekt. Rechtsbündig bleibt ein Fehler.
+    if (!(m.l <= m.w - m.r + 0.5)) findings.push('Ägypten: Menü öffnet nicht auf der linken Seite (RTL)');
     if (!/English/.test(await page.textContent('#spracheLabel').catch(() => ''))) findings.push('Ägypten: Sprachknopf „English" fehlt');
     await page.keyboard.press('Escape');
     await page.evaluate(() => openPremium()); await page.waitForTimeout(1200);
