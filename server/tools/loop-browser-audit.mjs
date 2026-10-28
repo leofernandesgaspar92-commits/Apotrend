@@ -82,8 +82,38 @@ async function main() {
   // page.route nach — Anfragen aus dem Service Worker umgehen das (seit er
   // Lese-Antworten für offline speichert). Wo der Service Worker selbst geprüft
   // wird (Push, Offline), steht ausdrücklich serviceWorkers: 'allow'.
-  { const neu = browser.newContext.bind(browser); browser.newContext = (opt = {}) => neu({ serviceWorkers: 'block', ...opt }); }
+  // Jeder Verstoß gegen die Content-Security-Policy in IRGENDEINEM Ablauf ist ein Befund —
+  // sonst bräche eine künftige Änderung (Inline-Skript, fremde Adresse) still eine Funktion.
+  const cspVerstoesse = new Set();
+  { const neu = browser.newContext.bind(browser); browser.newContext = async (opt = {}) => {
+    const c = await neu({ serviceWorkers: 'block', ...opt });
+    c.on('console', (m) => { if (/Content Security Policy/i.test(m.text())) cspVerstoesse.add(m.text().replace(/\s+/g, ' ').slice(0, 170)); });
+    return c;
+  }; }
   const findings = [];
+
+  // Content-Security-Policy: wirkt sie? Eine (simulierte) vergessene Maskierung darf
+  // keinen Code ausführen, und die App selbst läuft ohne einen einzigen Verstoß.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
+    const antwort = await page.goto(BASE, { waitUntil: 'networkidle' });
+    const csp = (antwort && antwort.headers()['content-security-policy']) || '';
+    const scriptSrc = (csp.match(/script-src([^;]*)/) || [])[1] || '';
+    if (!/'self'/.test(scriptSrc) || /unsafe-inline|unsafe-eval/.test(scriptSrc)) findings.push('CSP: App-Seite ohne strikte script-src');
+    await page.evaluate(() => {
+      window.__xss = 0;
+      document.body.insertAdjacentHTML('beforeend', '<img src="/gibt-es-nicht.png" onerror="window.__xss=1"><a id="xjs" href="javascript:window.__xss=2">x</a>');
+    });
+    await page.waitForTimeout(600);
+    await page.click('#xjs').catch(() => {});
+    await page.waitForTimeout(300);
+    if (await page.evaluate(() => window.__xss)) findings.push('CSP: eingeschleuster Code wurde ausgeführt (onerror/javascript:)');
+    else console.log('✓ CSP: eingeschleuster Code (onerror, javascript:-Link) blockiert; App-Seite mit strikter script-src');
+    cspVerstoesse.clear(); // die absichtlichen Verstöße oben zählen nicht
+    await ctx.close();
+  }
   for (const [theme, scheme] of [['hell', 'light'], ['dunkel', 'dark']]) {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, colorScheme: scheme });
     const page = await ctx.newPage();
@@ -2794,6 +2824,7 @@ async function main() {
   stopServer();
 
   console.log('── ApoPulse Loop · GATHER (Browser) · 390 + 768/1024/1280/1440 + große Schrift + Wirkstoff-Detail ──');
+  for (const v of cspVerstoesse) findings.push('CSP-Verstoß im Ablauf: ' + v);
   if (findings.length === 0) {
     console.log('✓ Kein Querscroll (Mobil + Tablet/Laptop-Breiten + große Schrift + Detailseite), keine JS-Fehler, keine a11y-Lücken auf allen Reitern der Reiterleiste (hell + dunkel).');
   } else {

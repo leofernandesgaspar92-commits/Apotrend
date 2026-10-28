@@ -24,7 +24,7 @@ import { createCollabService } from '../services/collab.js';
 import { can as roleCan } from '../domain/roles.js';
 import { cleanSourceUrl } from '../domain/media.js';
 import { bilderAlsAdresse, bildHolen } from '../domain/bilder.js';
-import { startseiteKopf, kopfSprache, manifestSprache } from './startseiteKopf.js';
+import { startseiteKopf, kopfSprache, manifestSprache, startseiteCsp } from './startseiteKopf.js';
 import { schlankSicher } from './schlank.js';
 import { kodierungWaehlen, kodierenSync, createKompressionsSpeicher, createVersionsKennung } from './komprimierung.js';
 import { createSprachdateien } from './sprachdateien.js';
@@ -3010,6 +3010,7 @@ async function anfrage(req, res) {
   if (istStart || istManifest) {
     const roh = fs.readFileSync(serve, 'utf8');
     const html = Buffer.from(istStart ? startseiteKopf(roh, { sp, basis: oeffentlicheBasis(req) }) : manifestSprache(roh, sp));
+    if (istStart) { headers['Content-Security-Policy'] = startseiteCsp(roh); headers['X-Content-Type-Options'] = 'nosniff'; headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'; }
     if (kodierung) { res.writeHead(200, { ...headers, 'Content-Encoding': kodierung }); return res.end(kodierenSync(html, kodierung)); }
     res.writeHead(200, headers); return res.end(html);
   }

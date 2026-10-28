@@ -12,6 +12,7 @@
 //  App-Sprache folgt weiterhin dem gewählten Land.
 // ============================================================================
 
+import { createHash } from 'node:crypto';
 import { richtung } from '../domain/schreibrichtung.js';
 import { vorschaubild } from '../domain/vorschaubild.js';
 
@@ -116,4 +117,33 @@ export function manifestSprache(text, sp = 'en') {
   }).filter(Boolean);
   m.screenshots = (m.screenshots || []).filter((b) => !/preise/.test(b.src)).map((b, i) => ({ ...b, label: M.bilder[i] || b.label }));
   return JSON.stringify(m, null, 2);
+}
+
+// ── Content-Security-Policy der App-Seite ────────────────────────────────────
+//  Zweite Schutzschicht gegen eingeschleusten Code: Selbst wenn irgendwo eine
+//  Maskierung vergessen würde, führt der Browser nur Skripte von hier aus —
+//  keine aus Beiträgen, Namen oder Meldungen. Erlaubt ist genau das eingebettete
+//  Sprach-Skript der index.html (per Prüfsumme, aus der ausgelieferten Datei
+//  berechnet — bleibt bei Änderungen von selbst richtig).
+//  Stile inline erlaubt (die App setzt viele style-Attribute; Stile führen keinen
+//  Code aus). Bilder auch von https (Profilbilder, Wochenbericht-Vorschau).
+export function startseiteCsp(html) {
+  const hashes = [...String(html).matchAll(/<script>([\s\S]*?)<\/script>/g)]
+    .map((m) => `'sha256-${createHash('sha256').update(m[1], 'utf8').digest('base64')}'`);
+  return [
+    "default-src 'self'",
+    `script-src 'self' ${hashes.join(' ')}`.trim(),
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data:",
+    "connect-src 'self'",
+    "media-src 'self' blob: https:",
+    "frame-src 'self'",
+    "worker-src 'self'",
+    "manifest-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ].join('; ');
 }

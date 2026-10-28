@@ -3778,3 +3778,21 @@ einen übersetzten Code (keine deutschen Texte in Ghana/Senegal).
 **Nebenbei:** Der Browser-Audit meldete unter Last einmal „Sprache folgt Land nicht: BR". Ursache war das feste
 Warten von 400 ms, während die Sprachdatei noch lud (zwei Einzelläufe ohne Befund); jetzt wartet der Audit
 bis zu 5 s auf die Sprache und meldet weiterhin, wenn sie falsch bleibt.
+
+### Cycle · Eingeschleuster Code (XSS): Angriffstest + Content-Security-Policy (2026-10-28)
+
+**Angriffstest (Browser):** Ein Täterkonto in Ghana füllte jedes Freitextfeld mit Schadcode (Name, Apotheke,
+Profil: Titel/Über mich/Fachgebiete/Erfahrung/Ausbildung, Beiträge, Umfrage-Optionen, Kommentare, Weiterteilen,
+Engpass-Meldung: Wirkstoff/Bezeichnung/Grund, Beobachtung, Verifizierungsantrag, Meldung an die Redaktion,
+Empfehlung). Opfer (gleiches Land) und Redaktion klickten durch Start, Öffentlich, Engpässe, Glocke, Profil,
+Nachrichten, Wirkstoff, Beobachtungsliste, Suche, Moderation; dazu Teilseiten und öffentliche Engpass-Seiten
+roh. **Ergebnis: kein einziger Treffer** — der Schadcode erscheint überall nur als Text (bis 9× je Seite);
+`javascript:`-Adressen für Webseite/Quelle lehnt der Server schon beim Speichern ab.
+**Zweite Schicht:** Die App-Seite hatte keine Content-Security-Policy. Jetzt: Skripte nur von der eigenen
+Adresse plus Prüfsumme des eingebetteten Sprach-Skripts (aus der ausgelieferten Datei berechnet), kein
+`unsafe-inline`/`eval` für Skripte, `object-src 'none'`, `frame-ancestors 'none'`, `connect-src 'self'`, dazu
+`nosniff`. Vorher angepasst: Druckfenster (Beobachtungsliste, Begleitzettel, Rechnungen …) hatten ein
+eingebettetes Skript für den Druckdialog — das hätte die CSP blockiert; jetzt startet die App den Druck.
+Browser-Nachweis: simulierte vergessene Maskierung (`onerror`, `javascript:`-Link) wird blockiert; ohne CSP
+läuft sie (Gegenprobe). Der Browser-Audit meldet ab jetzt jeden CSP-Verstoß in irgendeinem seiner Abläufe.
+**Tests.** csp.test.js (3). 4 Gegenproben, alle rot.

@@ -2676,9 +2676,17 @@ function printMoney(v) { return LOCALE === 'en' ? Number(v).toFixed(2) : Number(
 function openPrintDoc(title, css, bodyHtml, lang = LOCALE) {
   const win = window.open('', '_blank');
   if (!win) { alert(t('pi_popup')); return false; }
-  win.document.write(`<!doctype html><html lang="${esc(lang)}" dir="${richtungVon(lang)}"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${css}</style></head><body>${bodyHtml}<script>window.onload=function(){window.print();}<\/script></body></html>`);
+  win.document.write(`<!doctype html><html lang="${esc(lang)}" dir="${richtungVon(lang)}"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${css}</style></head><body>${bodyHtml}</body></html>`);
   win.document.close();
+  druckenWennGeladen(win);
   return true;
+}
+// Druckdialog im neuen Fenster öffnen — von HIER aus, nicht per Skript im Dokument: Das Fenster
+// erbt die Sicherheitsregeln der App (Content-Security-Policy), die eingebettete Skripte sperren.
+function druckenWennGeladen(win) {
+  const los = () => { try { win.focus(); win.print(); } catch { /* Fenster schon zu */ } };
+  if (win.document.readyState === 'complete') setTimeout(los, 150);
+  else win.addEventListener('load', () => setTimeout(los, 150), { once: true });
 }
 
 function printWatchlist(items) {
@@ -8175,12 +8183,13 @@ function zettelPrintHtml(z, cards) {
     </div>` : '';
   return `<!doctype html><html lang="${esc(z.lang)}" dir="${richtungVon(z.lang)}"><head><meta charset="utf-8"><title>${esc(ZETTEL_L[z.lang].title)}</title>
     <style>body{font-family:system-ui,-apple-system,sans-serif;max-width:640px;margin:28px auto;padding:0 18px;color:#111}</style></head>
-    <body>${zettelBody(z)}${cardsHtml}<script>window.onload=function(){window.print();}<\/script></body></html>`;
+    <body>${zettelBody(z)}${cardsHtml}</body></html>`;
 }
 function writeZettel(w, z, cards) {
   w.document.open();
   w.document.write(zettelPrintHtml(z, cards));
   w.document.close();
+  druckenWennGeladen(w);
 }
 function openBegleitzettel() {
   const feed = document.getElementById('feed');
