@@ -725,7 +725,7 @@ async function countryScreen() {
   const gruppen = folge.map((r) => ({ r, laender: countries.filter((c) => c.region === r).sort(nachName) })).filter((g) => g.laender.length);
   const ohneRegion = countries.filter((c) => !c.region);
   const card = el(`<div class="card" style="text-align:center" lang="${esc(bl)}" dir="${richtungVon(bl)}" data-laenderwahl>
-    <div style="display:flex;justify-content:center;margin-bottom:8px"><svg width="54" height="54" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--green)"/><path d="M5.5 16.5h5l2.6-5.5 4.2 10.5 2.6-5h3.1" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="25.2" cy="16.5" r="2.3" fill="#fff"/></svg></div>
+    <div style="display:flex;justify-content:center;margin-bottom:8px"><svg width="54" height="54" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lga1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--logo-1)"/><stop offset="1" style="stop-color:var(--logo-2)"/></linearGradient><mask id="lma1"><rect width="32" height="32" fill="#fff"/><path d="M4 16.2h7.2l2.2-4.4 3.4 8.6 2.2-4.2H28" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><path d="M11.5 3h9a1 1 0 0 1 1 1v7.5H29a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-7.5V28a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-7.5H3a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h7.5V4a1 1 0 0 1 1-1z" fill="url(#lga1)" mask="url(#lma1)"/></svg></div>
     <h1 style="margin:.2em 0">${esc(tb('cs_title'))}</h1>
     <div class="muted" style="font-size:.95em">${esc(andere)}</div>
     <div class="muted" style="margin-top:6px">${esc(tb('cs_sub'))}</div>
@@ -2252,7 +2252,7 @@ async function loadOverview() {
   // Antibiotic-Stewardship-Fachforum (Einstieg) — nur, wenn das Forum läuft. Es hängt an
   // den Hashtags (Bereich „social"); ruht der, führte die Karte auf „Nicht gefunden".
   if (featureAn('social')) {
-  const stew = el(`<div class="card clickable" style="border-inline-start:4px solid #0b7f28">
+  const stew = el(`<div class="card clickable" style="border-inline-start:4px solid var(--green)">
     <div class="row"><b>${esc(t('sp_stew_title'))}</b><span class="sp" style="flex:1"></span><span class="muted" style="font-size:13px">${esc(t('sp_stew_tag'))}</span></div>
     <div class="muted" style="font-size:13px;margin-top:4px">${esc(t('sp_stew_sub'))}</div></div>`);
   stew.onclick = () => openStewardship();
@@ -8027,7 +8027,7 @@ async function openStewardship() {
   try { d = await api('GET','/api/hashtag/stewardship'); }
   catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   feed.innerHTML = '';
-  const head = el(`<div class="card" style="border-inline-start:4px solid #0b7f28">
+  const head = el(`<div class="card" style="border-inline-start:4px solid var(--green)">
     <div><button class="ghost small" data-back>${esc(t('search_back'))}</button></div>
     <h1 style="margin:8px 0 2px">${esc(t('stew_title'))}</h1>
     <div class="muted" style="font-size:14px">${esc(t('stew_sub'))}</div>
@@ -8093,7 +8093,7 @@ async function openPatientInfo() {
   try { d = await api('GET','/api/patient-info?lang='+encodeURIComponent(patientLang || patientStart())+'&country='+encodeURIComponent(viewCountry())); }
   catch(e){ (feed.innerHTML='', feed.appendChild(errorState(e.message, loadTab))); return; }
   feed.innerHTML = '';
-  const head = el(`<div class="card" style="border-inline-start:4px solid #0b7f28">
+  const head = el(`<div class="card" style="border-inline-start:4px solid var(--green)">
     <div><button class="ghost small" data-back>${esc(t('search_back'))}</button></div>
     <h1 style="margin:8px 0 2px">${esc(t('pi_title'))}</h1>
     <div class="muted" style="font-size:14px">${esc(t('pi_sub'))}</div>
@@ -8198,7 +8198,7 @@ function openBegleitzettel() {
   const feed = document.getElementById('feed');
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '';
-  const head = el(`<div class="card" style="border-inline-start:4px solid #0b7f28">
+  const head = el(`<div class="card" style="border-inline-start:4px solid var(--green)">
     <div><button class="ghost small" data-back>${esc(t('search_back'))}</button></div>
     <h1 style="margin:8px 0 2px">${esc(t('bz_title'))}</h1>
     <div class="muted" style="font-size:14px">${esc(t('bz_sub'))}</div>
@@ -9210,7 +9210,7 @@ async function openWirkstoff(name) {
   // quellenbelegt, ausdrücklich keine patientenindividuelle Therapieempfehlung.
   if (d.amr && d.amr.is_antibiotic) {
     const a = d.amr;
-    const panel = el(`<div class="card" style="border-inline-start:4px solid #0b7f28">
+    const panel = el(`<div class="card" style="border-inline-start:4px solid var(--green)">
       <div class="row"><b>${esc(t('wk_amr_title'))}</b>
         <span class="sp" style="flex:1"></span>
         <span class="muted" style="font-size:13px">${esc(t('wk_amr_tag'))}</span></div>

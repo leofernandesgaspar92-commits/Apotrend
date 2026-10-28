@@ -1,5 +1,13 @@
-  :root { --green:#0b7f28; --green-d:#086420; --bg:#f3f4f6; --card:#fff; --line:#e1e5e8; --text:#0f1419; --muted:#536471;
-    --chip-bg:#eff3f4;
+  :root { --green:#2b3440; --green-d:#1a2028; --bg:#f2f3f5; --card:#fff; --line:#e0e3e8; --text:#13171c; --muted:#5a6370;
+    --chip-bg:#eef0f3;
+    /* Metall-Optik: dezente Verläufe statt Flächenfarbe (Graphit hell, Silber dunkel). */
+    --accent-fill:linear-gradient(180deg, #3b4552 0%, #242b34 100%);
+    --accent-fill-hover:linear-gradient(180deg, #46515f 0%, #2b333d 100%);
+    --accent-glanz:inset 0 1px 0 rgba(255,255,255,.14), 0 1px 2px rgba(16,24,40,.22);
+    --kopf-fill:linear-gradient(180deg, #ffffff 0%, #f0f1f4 100%);
+    --kopf-glanz:inset 0 -1px 0 #dde1e6, 0 1px 3px rgba(16,24,40,.05);
+    --flaeche-fill:linear-gradient(180deg, #ffffff 0%, #f6f7f9 100%);
+    --logo-1:#4a5562; --logo-2:#1d242d;
     /* Schrift AUF Grün (Knöpfe, aktiver Reiter). Eigenes Token, weil Grün im
        dunklen Modus hell ist: Weiß darauf lag bei 2,1:1 (WCAG verlangt 4,5:1). */
     --on-green:#ffffff;
@@ -7,8 +15,8 @@
     /* Karten: flach mit feiner Linie statt weichem Schatten (wie LinkedIn/X).
        Der Verlaufs-Schatten auf jeder Karte war eines der „Baukasten"-Signale. */
     --card-bd:var(--line);
-    --shadow:none;
-    --shadow-hover:0 2px 10px rgba(15,20,25,.08);
+    --shadow:0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.03);
+    --shadow-hover:0 4px 14px rgba(16,24,40,.08);
     --ok-bg:#e6f7ef; --ok-fg:#0b7f28; --ok-bd:#b6e6cf;
     --warn-bg:#fff4e6; --warn-fg:#945900; --warn-bd:#ffd9a8;
     --crit-bg:#fdece9; --crit-fg:#c0392b; --crit-bd:#f2c6bf;
@@ -16,14 +24,21 @@
     /* Design-System: einheitliche Radien & Abstandsraster (Social-Feed-Ruhe). */
     --radius:8px; --radius-sm:6px; --radius-btn:6px; --radius-chip:4px;
     --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; }
-  body.dark { --green:#22cc5c; --green-d:#1aa749; --bg:#0f1419; --card:#16202a; --line:#2f3b45; --text:#e7e9ea; --muted:#9aa8b4;
-    --chip-bg:#1f2b36;
-    --on-green:#04170a; /* 8,7:1 auf #22cc5c, 5,9:1 auf der Hover-Farbe */
+  body.dark { --green:#d3d8df; --green-d:#eef1f4; --bg:#0d1014; --card:#151920; --line:#262c35; --text:#e8ebef; --muted:#9ba4b0;
+    --chip-bg:#1c2129;
+    --on-green:#11151a; /* Graphit auf Silber: >12:1 */
+    --accent-fill:linear-gradient(180deg, #f1f3f6 0%, #c3c9d2 100%);
+    --accent-fill-hover:linear-gradient(180deg, #ffffff 0%, #d0d5dd 100%);
+    --accent-glanz:inset 0 1px 0 rgba(255,255,255,.65), 0 1px 2px rgba(0,0,0,.45);
+    --kopf-fill:linear-gradient(180deg, #1b2028 0%, #12161c 100%);
+    --kopf-glanz:inset 0 -1px 0 #232931, 0 1px 3px rgba(0,0,0,.35);
+    --flaeche-fill:linear-gradient(180deg, #181d24 0%, #141820 100%);
+    --logo-1:#f4f6f9; --logo-2:#b9c0ca;
     --handle:#6cbcf5;
     /* Karten dunkel: feiner Rand nötig — Schatten sind auf Dunkel kaum sichtbar. */
     --card-bd:var(--line);
-    --shadow:none;
-    --shadow-hover:0 4px 14px rgba(0,0,0,.45);
+    --shadow:0 1px 2px rgba(0,0,0,.35);
+    --shadow-hover:0 6px 18px rgba(0,0,0,.45);
     --ok-bg:#12331e; --ok-fg:#46d67a; --ok-bd:#205834;
     --warn-bg:#33280f; --warn-fg:#e2ac44; --warn-bd:#5a4620;
     --crit-bg:#3a1c18; --crit-fg:#f0857a; --crit-bd:#5e2b25;
@@ -105,8 +120,8 @@
   textarea { resize:vertical; min-height:70px; }
   /* Aktives Eingabefeld klar erkennbar (grüner Rahmen) — moderne Formular-Optik, ergänzt
      den Tastatur-Fokusring, ohne ihn zu ersetzen. */
-  input:focus, textarea:focus, select:focus { border-color:var(--green); }  button { background:var(--green); color:var(--on-green); border:none; border-radius:var(--radius-sm); padding:12px 16px; font-size:0.95em; font-weight:600; cursor:pointer; min-height:44px; transition:background .13s ease, border-color .13s ease, color .13s ease, box-shadow .13s ease, transform .04s ease; }
-  button:hover { background:var(--green-d); }
+  input:focus, textarea:focus, select:focus { border-color:var(--green); }  button { background:var(--accent-fill); color:var(--on-green); border:none; border-radius:var(--radius-sm); padding:12px 16px; font-size:0.95em; font-weight:600; cursor:pointer; min-height:44px; transition:background .13s ease, border-color .13s ease, color .13s ease, box-shadow .13s ease, transform .04s ease; }
+  button:hover { background:var(--accent-fill-hover); }
   /* Tasthaftes Drücken: jeder Button gibt beim Klick sichtbar nach (klare Affordanz für
      nicht-technische Nutzer:innen). @media reduced-motion respektiert Bewegungsstopp. */
   button:active { transform:translateY(1px); }
@@ -141,8 +156,8 @@
      auf einer Karte klar als antippbare Schalter erkennbar sind — nicht als flacher Text. */
   button.sortbtn { background:var(--chip-bg); color:var(--text); border:1px solid var(--line); font-weight:600; }
   button.sortbtn:hover { border-color:var(--green); background:var(--chip-bg); }
-  button.sortbtn.active { background:var(--green); color:var(--on-green); border-color:var(--green); }
-  button.sortbtn.active:hover { background:var(--green-d); }
+  button.sortbtn.active { background:var(--accent-fill); color:var(--on-green); border-color:var(--green); }
+  button.sortbtn.active:hover { background:var(--accent-fill-hover); }
   /* Gesperrte Knöpfe sehen gesperrt aus: grau, kein Hand-Zeiger. Bis 10/2026 waren sie
      genauso grün wie aktive — „Bitte mindestens einen Wirkstoff wählen" wirkte klickbar. */
   button:disabled, button:disabled:hover { background:var(--chip-bg); color:var(--muted); border-color:var(--line); cursor:not-allowed; box-shadow:none; transform:none; }
@@ -166,7 +181,7 @@
   .handle { color:var(--muted); font-weight:400; font-size:0.9em; }
   .verified { color:var(--green); font-size:13px; }
   .editorial { background:var(--info-bg); color:var(--info-fg); font-size:13px; font-weight:600; padding:2px 8px; border-radius:var(--radius-chip); border:1px solid var(--info-bd); }
-  .rank { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:30px; padding:0 6px; border-radius:var(--radius-chip); background:var(--green); color:var(--on-green); font-weight:800; font-size:15px; margin-inline-end:8px; }
+  .rank { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:30px; padding:0 6px; border-radius:var(--radius-chip); background:var(--accent-fill); color:var(--on-green); font-weight:800; font-size:15px; margin-inline-end:8px; }
   .rabatt-badge { background:var(--ok-bg); color:var(--ok-fg); font-weight:800; font-size:16px; padding:4px 12px; border-radius:var(--radius-chip); border:1px solid var(--ok-bd); white-space:nowrap; } /* Rabatt-Prozentwert nie mitten in der Zahl umbrechen (z. B. „−29.8%") */
   .mention { color:var(--green); font-weight:600; }
   .mention-ac { border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--card); margin-top:4px; overflow:hidden; }
@@ -192,8 +207,8 @@
   /* Adressen, Transaktions-IDs, Codes, Schlüssel: immer links→rechts und vom Satz abgeschottet —
      in arabischer Oberfläche ordnet der Browser Satzzeichen darin sonst um (Gefahr beim Abtippen). */
   code { direction:ltr; unicode-bidi:isolate; }
-  a.btn-link { display:inline-flex; align-items:center; justify-content:center; background:var(--green); color:var(--on-green); border-radius:var(--radius-sm); padding:10px 14px; font-weight:600; font-size:0.9em; text-decoration:none; min-height:40px; }
-  a.btn-link:hover { background:var(--green-d); }
+  a.btn-link { display:inline-flex; align-items:center; justify-content:center; background:var(--accent-fill); color:var(--on-green); border-radius:var(--radius-sm); padding:10px 14px; font-weight:600; font-size:0.9em; text-decoration:none; min-height:40px; }
+  a.btn-link:hover { background:var(--accent-fill-hover); }
   .ok-box { background:var(--ok-bg); color:var(--ok-fg); border-radius:var(--radius-sm); }
   /* Premium-Abzeichen: sichtbarer Vorteil für zahlende Mitglieder (gold, gut lesbar). */
   .premium-badge { font-size:13px; font-weight:700; color:#6f5700; background:#fff3c4; border:1px solid #f0d98a; border-radius:6px; padding:1px 7px; white-space:nowrap; }
@@ -208,15 +223,15 @@
   body.dark .data-pill.ref  { color:#ffd95e; background:#3a3200; border-color:#5c4f00; }
   /* „Nach oben"-Button: erscheint beim Scrollen auf langen Listen (v.a. mobil). */
   .backtotop { position:fixed; right:max(16px, env(safe-area-inset-right)); bottom:max(16px, env(safe-area-inset-bottom)); z-index:40; width:44px; height:44px; border-radius:50%;
-    border:none; background:var(--green); color:var(--on-green); font-size:20px; line-height:44px; text-align:center; cursor:pointer;
+    border:none; background:var(--accent-fill); color:var(--on-green); font-size:20px; line-height:44px; text-align:center; cursor:pointer;
     box-shadow:0 2px 8px rgba(0,0,0,.25); opacity:0; transform:translateY(8px); transition:opacity .18s, transform .18s; pointer-events:none; }
   .backtotop.show { opacity:1; transform:none; pointer-events:auto; }
-  .backtotop:hover { background:var(--green-d); }
+  .backtotop:hover { background:var(--accent-fill-hover); }
   @media print { .backtotop { display:none; } }
   /* Weicher Zeichenzähler an Textfeldern: dezent, wird bei Überschreitung rot. */
   .char-counter { font-size:13px; text-align:end; margin-top:2px; min-height:14px; }
   .char-counter.over { color:var(--crit-fg); font-weight:700; }
-  .avatar { display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:50%; background:var(--green); color:var(--on-green); font-weight:800; font-size:19px; flex:0 0 auto; box-shadow:0 0 0 1px var(--line); }
+  .avatar { display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:50%; background:var(--accent-fill); color:var(--on-green); font-weight:800; font-size:19px; flex:0 0 auto; box-shadow:0 0 0 1px var(--line); }
   .profile-cover { width:100%; height:140px; border-radius:var(--radius); background:var(--chip-bg); background-size:cover; background-position:center; border:1px solid var(--line); }
   /* Jedes Profil bekommt ein „Banner" (Social-Optik): ohne Bild ein dezenter grüner Verlauf. */
   .profile-cover-ph { background:linear-gradient(120deg, var(--green), var(--green-d)); border-color:transparent; }
@@ -229,7 +244,7 @@
   #whoami .avatar { border:1.5px solid var(--line); }
   .pfc { margin-top:14px; padding:12px; border:1px solid var(--line); border-radius:var(--radius); background:var(--chip-bg); }
   .pfc-bar { height:10px; border-radius:3px; background:var(--line); overflow:hidden; margin-top:6px; }
-  .pfc-bar > span { display:block; height:100%; background:var(--green); border-radius:3px; transition:width .3s ease; }
+  .pfc-bar > span { display:block; height:100%; background:var(--accent-fill); border-radius:3px; transition:width .3s ease; }
   .pfc-done { margin-top:14px; padding:10px 12px; border-radius:var(--radius); background:rgba(11,127,40,.10); color:var(--ok-fg); font-weight:700; }
   .exp-section { margin-top:12px; border-top:1px solid var(--line); padding-top:10px; }
   .exp-head { font-weight:800; margin-bottom:6px; }
@@ -307,8 +322,8 @@
   .reacts { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
   .reacts button { background:var(--chip-bg); color:var(--text); border:1px solid var(--line); padding:8px 12px; font-size:0.85em; font-weight:500; min-height:40px; }
   .reacts button:not(.reacted):hover { border-color:var(--green); color:var(--green); }
-  .reacts button.reacted { background:var(--green); color:var(--on-green); border-color:var(--green); font-weight:700; } /* eigene Reaktion sichtbar markiert (nochmal klicken = entfernen) */
-  body.dark .reacts button.reacted { background:var(--green); color:var(--on-green); }
+  .reacts button.reacted { background:var(--accent-fill); color:var(--on-green); border-color:var(--green); font-weight:700; } /* eigene Reaktion sichtbar markiert (nochmal klicken = entfernen) */
+  body.dark .reacts button.reacted { background:var(--accent-fill); color:var(--on-green); }
   .muted { color:var(--muted); font-size:14px; }
   .err { color:var(--crit-fg); font-size:14px; margin-top:8px; }
   /* Einheitlicher, freundlicher Leerzustand (Icon + Titel + Text + optionale Aktion).
@@ -358,7 +373,7 @@
   .poll-you { color:var(--ok-fg); font-weight:700; font-size:.82em; margin-inline-start:4px; }
   .poll-total { font-size:13px; margin-top:2px; }
   @media (prefers-reduced-motion:reduce){ .poll-bar { transition:none; } }
-  .skiplink { position:absolute; left:-9999px; top:0; z-index:20; background:var(--green); color:var(--on-green); padding:10px 14px; border-radius:0 0 8px 0; font-weight:700; }
+  .skiplink { position:absolute; left:-9999px; top:0; z-index:20; background:var(--accent-fill); color:var(--on-green); padding:10px 14px; border-radius:0 0 8px 0; font-weight:700; }
   .skiplink:focus { left:0; }
   #printhead { display:none; }
   @media print {
@@ -398,7 +413,7 @@
   #sq:focus { background:var(--card); border-color:var(--green); }
 
   /* ── Kopf ── */
-  header { box-shadow:none; gap:8px; padding-top:max(8px, env(safe-area-inset-top)); padding-bottom:8px; }
+  header { background:var(--kopf-fill); box-shadow:var(--kopf-glanz); border-bottom-color:transparent; gap:8px; padding-top:max(8px, env(safe-area-inset-top)); padding-bottom:8px; }
   header #countrySwitch { border-radius:var(--radius-btn); }
   .rechte-spalte { display:none; }
   @media (max-width:560px){ #whoami, #whoami.clickable { display:none; } header #countrySwitch { max-width:58px; padding:8px 6px; } header .logo { font-size:1.1em; letter-spacing:0; } }
@@ -458,8 +473,8 @@
   .km-v-titel { font-weight:700; font-size:16px; color:var(--text); }
   .km-v-text { font-size:14px; color:var(--muted); line-height:1.4; font-weight:400; }
   .km-v-cta { margin-top:auto; font-weight:700; font-size:15px; color:var(--green); text-align:start; }
-  .km-vorschau button.km-v-cta { align-self:flex-start; width:auto; min-height:44px; padding:10px 16px; background:var(--green); color:var(--on-green); border-radius:var(--radius-btn); }
-  .km-vorschau button.km-v-cta:hover { background:var(--green-d); }
+  .km-vorschau button.km-v-cta { align-self:flex-start; width:auto; min-height:44px; padding:10px 16px; background:var(--accent-fill); color:var(--on-green); border-radius:var(--radius-btn); }
+  .km-vorschau button.km-v-cta:hover { background:var(--accent-fill-hover); }
   .km-mock { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:10px; display:flex; flex-direction:column; gap:8px; }
   .km-mock-kopf { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
   .km-zeile { display:flex; flex-wrap:wrap; align-items:flex-start; gap:6px 10px; padding:8px 10px; border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--card); }
@@ -643,14 +658,14 @@
 /* Erste Schritte: große, eindeutige Auswahl-Knöpfe */
 .es-chips { display:flex; flex-wrap:wrap; gap:8px; }
 .es-chip { min-height:44px; padding:8px 14px; border-radius:var(--radius-sm); border:2px solid var(--line); background:var(--card); color:var(--text, inherit); font-size:16px; font-weight:600; display:inline-flex; align-items:center; gap:8px; cursor:pointer; }
-.es-chip[aria-pressed="true"] { background:var(--green); border-color:var(--green); color:#fff; }
+.es-chip[aria-pressed="true"] { background:var(--accent-fill); border-color:var(--green); color:#fff; }
 .es-chip[aria-pressed="true"]::after { content:"✓"; font-weight:800; }
 .es-trenner { flex-basis:100%; font-size:15px; margin-top:8px; }
 .es-punkt { display:inline-block; width:10px; height:10px; border-radius:50%; margin-inline-end:2px; vertical-align:middle; }
 .es-punkt.kritisch { background:var(--crit-fg); }
 .es-punkt.eingeschraenkt { background:var(--warn-fg); }
 .es-chip:hover { background:var(--chip-bg); color:var(--text, inherit); }
-.es-chip[aria-pressed="true"]:hover { background:var(--green-d); border-color:var(--green-d); color:#fff; }
+.es-chip[aria-pressed="true"]:hover { background:var(--accent-fill-hover); border-color:var(--green-d); color:#fff; }
 
 /* Drei Ebenen: Land / Region / Welt — große, eindeutige Umschalter */
 .ebenen { display:flex; gap:8px; margin:0 0 12px; flex-wrap:wrap; }
@@ -785,3 +800,52 @@ a.km-v-cta:hover { text-decoration:underline; }
 .km-inline { display:flex; flex-direction:column; gap:12px; margin:2px 4px 8px; padding:12px; background:var(--bg); border:1px solid var(--line); border-radius:var(--radius); }
 .km-inline .km-v-kopf { display:none; }
 @media (min-width:760px){ .km-inline { display:none; } }
+
+/* ══ Metall-Optik (Silber/Graphit) ══════════════════════════════════════════
+   Primäraktionen mit dezentem Verlauf und Glanzkante; Karten mit feinem Schatten.
+   Grün bleibt ausschließlich semantisch (verfügbar/ok), Rot für kritisch. */
+.auth-gross, form button[type="submit"]:not(.ghost):not(.linklike), button.km-v-cta { box-shadow:var(--accent-glanz); }
+.auth-gross { letter-spacing:.01em; }
+header .logo { color:var(--text); letter-spacing:-.01em; font-weight:700; }
+header .logo .logo-ic { filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
+body.dark header .logo .logo-ic { filter:none; }
+.card { box-shadow:var(--shadow); }
+.auth-karte { background:var(--flaeche-fill); }
+
+/* ══ Menü: straff statt Bausteine ═══════════════════════════════════════════
+   Eine Fläche, Haarlinien statt Kästen, kompakte Zeilen, Auswahl als feine
+   Markierung. Keine Rahmen um Einzelteile. */
+.kopf-menue { border-color:var(--line); box-shadow:0 12px 32px rgba(16,24,40,.14), 0 2px 6px rgba(16,24,40,.06); }
+body.dark .kopf-menue { box-shadow:0 12px 32px rgba(0,0,0,.6); }
+.km-liste { padding:6px; }
+.km-gruppe { gap:0; padding:4px 0; }
+.km-titel { font-size:13px; font-weight:600; letter-spacing:.04em; padding:8px 10px 4px; }
+.kopf-menue button { min-height:44px; padding:8px 10px; gap:12px; font-size:15px; font-weight:500; border-radius:var(--radius-chip); box-shadow:none; }
+.kopf-menue button .ic svg { width:20px; height:20px; }
+.kopf-menue button:hover, .kopf-menue button.km-aktiv { background:var(--chip-bg); }
+.kopf-menue button.km-aktiv { box-shadow:inset 2px 0 0 var(--green); }
+[dir="rtl"] .kopf-menue button.km-aktiv { box-shadow:inset -2px 0 0 var(--green); }
+.km-desc { font-size:13px; }
+/* Darstellung: eine Segment-Leiste statt zweier Kästen */
+.km-einstellungen { gap:0; padding:2px 6px 4px; }
+.km-einstellungen button { flex:1 1 0; border:1px solid var(--line); border-radius:0; min-height:40px; font-size:14px; background:var(--card); }
+.km-einstellungen button + button { border-inline-start:0; }
+.km-einstellungen button:first-child { border-start-start-radius:var(--radius-sm); border-end-start-radius:var(--radius-sm); }
+.km-einstellungen button:last-child, .km-einstellungen button:nth-last-child(2):has(+ .hidden) { border-start-end-radius:var(--radius-sm); border-end-end-radius:var(--radius-sm); }
+/* Vorschau-Spalte: keine eigene Kachel, nur Trennlinie */
+@media (min-width:760px) {
+  .km-vorschau { background:transparent; padding:18px 18px 16px; gap:12px; }
+}
+.km-v-ic { width:auto; height:auto; background:none; color:var(--muted); padding-top:2px; }
+.km-v-titel { font-size:15px; }
+.km-mock { background:transparent; border:0; padding:0; gap:0; border-top:1px solid var(--line); border-radius:0; }
+.km-mock-kopf { padding:10px 0 4px; font-size:13px; font-weight:600; letter-spacing:.04em; }
+.km-zeile { border:0; border-bottom:1px solid var(--line); border-radius:0; padding:9px 0; background:transparent; }
+.km-zeile:last-child { border-bottom:0; }
+.km-chip { border:0; border-radius:3px; padding:1px 7px; font-weight:600; }
+.km-inline { background:transparent; border:0; border-top:1px solid var(--line); border-radius:0; margin:0 10px 6px; padding:4px 0 0; }
+.km-inline .km-mock { border-top:0; }
+/* Startseiten-Karten passend: Fläche + Haarlinien statt Kasten im Kasten */
+.km-karte { box-shadow:var(--shadow); gap:12px; }
+.km-karte .km-mock { background:transparent; }
+.km-karte .km-v-kopf { min-height:5.2em; }

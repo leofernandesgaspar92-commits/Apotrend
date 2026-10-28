@@ -28,15 +28,15 @@ function seite(sp) {
   return `<!DOCTYPE html><html lang="${sp}" dir="${rtl ? 'rtl' : 'ltr'}"><head><meta charset="utf-8"><style>
   * { box-sizing: border-box; margin: 0; }
   body { width: 1200px; height: 630px; background: #fff; font-family: Inter, 'DejaVu Sans', sans-serif; color: #0d1117; overflow: hidden;
-    display: flex; flex-direction: column; padding: 80px 90px 40px; border-top: 14px solid #0a7d28; }
+    display: flex; flex-direction: column; padding: 80px 90px 40px; border-top: 14px solid #2b3440; }
   .marke { display: flex; align-items: center; gap: 30px; direction: ltr; }
   .logo { width: 104px; height: 104px; flex: none; display: block; }
   .name { font-size: 84px; font-weight: 700; letter-spacing: -1px; }
-  h1 { margin-top: 56px; font-size: 56px; font-weight: 700; color: #0a7d28; line-height: 1.1; }
+  h1 { margin-top: 56px; font-size: 56px; font-weight: 700; color: #2b3440; line-height: 1.1; }
   p { margin-top: 14px; font-size: 32px; color: #4a5866; line-height: 1.35; }
   .fuss { margin-top: auto; font-size: 28px; font-weight: 600; }
   </style></head><body>
-  <div class="marke"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#0b7f28"/><path d="M5.5 16.5h5l2.6-5.5 4.2 10.5 2.6-5h3.1" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="25.2" cy="16.5" r="2.3" fill="#fff"/></svg><div class="name">ApoPulse</div></div>
+  <div class="marke"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lgog" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a5562"/><stop offset="1" stop-color="#1d242d"/></linearGradient><mask id="lmog"><rect width="32" height="32" fill="#fff"/><path d="M4 16.2h7.2l2.2-4.4 3.4 8.6 2.2-4.2H28" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><path d="M11.5 3h9a1 1 0 0 1 1 1v7.5H29a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-7.5V28a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-7.5H3a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h7.5V4a1 1 0 0 1 1-1z" fill="url(#lgog)" mask="url(#lmog)"/></svg><div class="name">ApoPulse</div></div>
   <h1>${esc(T.kopf)}</h1><p>${esc(T.sub)}</p><div class="fuss">${esc(T.fuss)}</div></body></html>`;
 }
 
