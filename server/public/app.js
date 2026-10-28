@@ -569,7 +569,7 @@ function openLightbox(src, alt) {
   if (!src) return;
   const ov = el(`<div class="lightbox" role="dialog" aria-modal="true" tabindex="-1" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:16px">
     <img alt="${esc(alt||'')}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px">
-    <button class="lightbox-close" aria-label="${esc(t('lb_close'))}" title="${esc(t('lb_close'))}" style="position:absolute;top:12px;right:12px;font-size:22px;line-height:1;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:999px;width:42px;height:42px;cursor:pointer">✕</button>
+    <button class="lightbox-close" aria-label="${esc(t('lb_close'))}" title="${esc(t('lb_close'))}" style="position:absolute;top:12px;right:12px;font-size:22px;line-height:1;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:42px;height:42px;cursor:pointer">✕</button>
   </div>`);
   ov.querySelector('img').src = src; // src per Property setzen (auch große data:-URLs sicher)
   const close = () => { document.removeEventListener('keydown', onKey); ov.remove(); };
@@ -1036,7 +1036,7 @@ function rcKarte() {
   const k = el(`<div class="card" data-rckarte style="border-inline-start:4px solid var(--warn-bd, #e0a800)">
     <h2 style="margin:0 0 4px;font-size:19px">${esc(t('rc_title'))}</h2>
     <div class="muted" style="font-size:15px">${esc(t('rc_intro'))}</div>
-    <details data-rcauf style="margin-top:10px"><summary style="display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:999px;font-weight:600;cursor:pointer;background:var(--card)">${esc(ti('rc_zeigen', { n: codes.length }))}</summary>
+    <details data-rcauf style="margin-top:10px"><summary style="display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:var(--radius-chip);font-weight:600;cursor:pointer;background:var(--card)">${esc(ti('rc_zeigen', { n: codes.length }))}</summary>
     <ol class="recovery-codes rc-zwei" style="margin-top:10px">${codes.map((c) => `<li><code>${esc(c)}</code></li>`).join('')}</ol>
     <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">
       <button class="ghost small" data-rccopy>${esc(t('rc_copy'))}</button>
@@ -1885,7 +1885,7 @@ function kanalListe(liste) {
 
 function betriebsKarte(b) {
   const geld = (b.einnahmen.summen || []).map((x) => fmtCurrency(x.cents / 100, x.currency)).join(' + ') || fmtCurrency(0, 'EUR');
-  const kachel = (icon, wert, label, sub, col, attr = '') => `<div ${attr} style="flex:1;min-width:min(140px,100%);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px">
+  const kachel = (icon, wert, label, sub, col, attr = '') => `<div ${attr} style="flex:1;min-width:min(140px,100%);background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:12px">
     <div style="font-size:22px;font-weight:800;color:${col}">${icon} ${esc(String(wert))}</div><div style="font-size:14px;margin-top:2px">${esc(label)}</div>${sub ? `<div class="muted" style="font-size:13px">${esc(sub)}</div>` : ''}</div>`;
   const q = b.quellen;
   const c = el(`<div class="card" data-betrieb><b style="font-size:16px">📊 ${esc(t('bt_title'))}</b>
@@ -2175,13 +2175,13 @@ async function loadOverview() {
   // Restbestand abzugeben, bevor er verfällt (spart Geld, vermeidet Verschwendung).
   if (d.expiring_offers && d.expiring_offers.count) {
     const daysChip = (o) => {
-      if (o.expired) return `<span style="display:inline-block;font-size:13px;font-weight:700;color:#fff;background:var(--crit-fg);padding:2px 8px;border-radius:999px">${esc(t('xo_expired'))}</span>`;
+      if (o.expired) return `<span style="display:inline-block;font-size:13px;font-weight:700;color:#fff;background:var(--crit-fg);padding:2px 8px;border-radius:var(--radius-chip)">${esc(t('xo_expired'))}</span>`;
       const label = o.days_until_expiry === 0 ? t('xo_today') : nlabel(o.days_until_expiry, 'xo_days_one', 'xo_days_many');
       const soon = o.days_until_expiry <= 7;
       const col = soon ? 'var(--warn-fg)' : 'var(--muted)';
       const bg = soon ? 'var(--warn-bg)' : 'var(--chip-bg)';
       const bd = soon ? 'var(--warn-bd)' : 'var(--line)';
-      return `<span style="display:inline-block;font-size:13px;font-weight:700;color:${col};background:${bg};border:1px solid ${bd};padding:2px 8px;border-radius:999px">${esc(label)}</span>`;
+      return `<span style="display:inline-block;font-size:13px;font-weight:700;color:${col};background:${bg};border:1px solid ${bd};padding:2px 8px;border-radius:var(--radius-chip)">${esc(label)}</span>`;
     };
     const c = el(`<div class="card" style="border-inline-start:4px solid var(--warn-fg)"><div class="row"><b>${esc(t('xo_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>${esc(t('xo_all'))}</button></div>
       <div class="muted" style="font-size:13px;margin:2px 0 6px">${esc(t('xo_sub'))}</div>
@@ -2196,7 +2196,7 @@ async function loadOverview() {
   if (d.my_reports && d.my_reports.count) {
     const c = el(`<div class="card" style="border-inline-start:4px solid var(--info-fg)"><div class="row"><b>${esc(t('sr_title'))}</b><span class="sp" style="flex:1"></span><button class="ghost small" data-all>${esc(t('sp_view_all'))}</button></div>
       <div class="muted" style="font-size:13px;margin:2px 0 6px">${esc(t('sr_sub'))}</div>
-      ${d.my_reports.items.map(r=>{const m=watchStatusMeta(r.status);return `<div class="comment clickable" data-wk="${esc(r.wirkstoff)}"><span style="font-size:16px">${m.icon}</span> <b>${esc(r.wirkstoff)}</b>${r.bezeichnung?` <span class="muted">${esc(r.bezeichnung)}</span>`:''} <span style="display:inline-block;font-size:13px;font-weight:700;color:var(--warn-fg);background:var(--warn-bg);border:1px solid var(--warn-bd);padding:1px 8px;border-radius:999px">${esc(nlabel(r.days_reported,'sr_since_one','sr_since_many'))}</span>${r.confirm_count>0?` <span class="muted" style="font-size:13px">· ${esc(nlabel(r.confirm_count,'sr_confirms_one','sr_confirms_many'))}</span>`:''} <span class="ovtile-go" aria-hidden="true">›</span></div>`;}).join('')}</div>`);
+      ${d.my_reports.items.map(r=>{const m=watchStatusMeta(r.status);return `<div class="comment clickable" data-wk="${esc(r.wirkstoff)}"><span style="font-size:16px">${m.icon}</span> <b>${esc(r.wirkstoff)}</b>${r.bezeichnung?` <span class="muted">${esc(r.bezeichnung)}</span>`:''} <span style="display:inline-block;font-size:13px;font-weight:700;color:var(--warn-fg);background:var(--warn-bg);border:1px solid var(--warn-bd);padding:1px 8px;border-radius:var(--radius-chip)">${esc(nlabel(r.days_reported,'sr_since_one','sr_since_many'))}</span>${r.confirm_count>0?` <span class="muted" style="font-size:13px">· ${esc(nlabel(r.confirm_count,'sr_confirms_one','sr_confirms_many'))}</span>`:''} <span class="ovtile-go" aria-hidden="true">›</span></div>`;}).join('')}</div>`);
     c.querySelector('[data-all]').onclick = () => goTab('shortages');
     c.querySelectorAll('[data-wk]').forEach(row => row.onclick = () => openWirkstoff(row.dataset.wk));
     feed.appendChild(c);
@@ -2404,7 +2404,7 @@ function renderWeekReview(feed, wr) {
     const m = watchStatusMeta(it.status);
     return `<div class="comment clickable" data-wk="${esc(it.wirkstoff)}">
       <span style="font-size:16px">${m.icon}</span> <b>${esc(it.wirkstoff)}</b>${it.bezeichnung ? ` <span class="muted">${esc(it.bezeichnung)}</span>` : ''}
-      <span style="display:inline-block;font-size:13px;font-weight:700;color:${m.color};background:${m.bg};padding:1px 8px;border-radius:999px">${esc(m.label)}</span>
+      <span style="display:inline-block;font-size:13px;font-weight:700;color:${m.color};background:${m.bg};padding:1px 8px;border-radius:var(--radius-chip)">${esc(m.label)}</span>
       <span class="muted" style="font-size:13px">· ${esc(wrDaysAgo(it.week_change))}</span>
       <span class="ovtile-go" aria-hidden="true">›</span></div>`;
   };
@@ -2437,7 +2437,7 @@ function printWeekReview(wr) {
     h1{font-size:22px;margin:0 0 2px} h2{font-size:15px;margin:20px 0 6px;color:#333} .meta{color:#555;font-size:13px;margin-bottom:8px}
     table{width:100%;border-collapse:collapse} td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px}
     .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:13px;margin-top:2px}
-    .st{display:inline-block;font-size:13px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap} .nt{font-size:13px;color:#555}
+    .st{display:inline-block;font-size:13px;font-weight:700;padding:2px 8px;border-radius:var(--radius-chip);white-space:nowrap} .nt{font-size:13px;color:#555}
     .src{font-size:13px;color:#555;margin-top:18px}`;
   const body = `<h1>📋 ${esc(t('wr_print_title'))}</h1><div class="meta">${esc(ti('wr_print_asof', { date: printDate() }))}</div>
     ${groups}<div class="src">${esc(t('wr_print_foot'))}</div>`;
@@ -2450,7 +2450,7 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
   const rabattAlarm = landHatPreise(viewCountry()) && !featBlocked('deals');
   const card = el(`<div class="card">
     <div class="row" style="flex-wrap:wrap;gap:6px 8px;align-items:center"><b>${esc(t('wl_title'))}</b>
-      ${alerts?`<span style="background:#c0392b;color:#fff;border-radius:999px;font-size:13px;font-weight:700;padding:2px 8px">${alerts} ${esc(alerts>1?t('wl_alerts_pl'):t('wl_alerts_sg'))}</span>`:''}
+      ${alerts?`<span style="background:#c0392b;color:#fff;border-radius:var(--radius-chip);font-size:13px;font-weight:700;padding:2px 8px">${alerts} ${esc(alerts>1?t('wl_alerts_pl'):t('wl_alerts_sg'))}</span>`:''}
       ${items.length?`<button class="ghost small" data-wl-csv title="${esc(t('wl_csv_title'))}">CSV</button>`:''}
       ${premium?`<button class="ghost small" data-wl-print title="${esc(t('wl_print_title'))}">${esc(t('wl_print'))}</button>`:''}
     </div>
@@ -2556,7 +2556,7 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
           <span style="font-size:18px">${m.icon}</span>
           <div style="flex:1;min-width:0">
             <div><b>${esc(it.wirkstoff)}</b></div>
-            <div style="display:inline-block;font-size:13px;font-weight:700;color:${m.color};background:${m.bg};padding:2px 8px;border-radius:999px;margin-top:2px">${m.label}</div>${shortageCountdown(it)}
+            <div style="display:inline-block;font-size:13px;font-weight:700;color:${m.color};background:${m.bg};padding:2px 8px;border-radius:var(--radius-chip);margin-top:2px">${m.label}</div>${shortageCountdown(it)}
             ${it.bezeichnung?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(it.bezeichnung)}</div>`:''}
           </div>
           ${it.shortage_id?`<button class="ghost small" data-open>${esc(t('wl_view'))}</button>`:''}
@@ -2575,7 +2575,7 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
           if (!rabattAlarm) return;
           aw.innerHTML = '';
           if (it.alert_pct) {
-            const view = el(`<div class="row" style="gap:6px;align-items:center"><span style="display:inline-block;font-size:13px;font-weight:700;color:var(--ok-fg);background:var(--ok-bg);border:1px solid var(--ok-bd);padding:2px 8px;border-radius:999px">${esc(ti('wl_alert_on',{n:it.alert_pct}))}</span><button class="linklike small" data-aedit>${esc(t('wl_alert_edit'))}</button></div>`);
+            const view = el(`<div class="row" style="gap:6px;align-items:center"><span style="display:inline-block;font-size:13px;font-weight:700;color:var(--ok-fg);background:var(--ok-bg);border:1px solid var(--ok-bd);padding:2px 8px;border-radius:var(--radius-chip)">${esc(ti('wl_alert_on',{n:it.alert_pct}))}</span><button class="linklike small" data-aedit>${esc(t('wl_alert_edit'))}</button></div>`);
             view.querySelector('[data-aedit]').onclick = editAlert;
             aw.appendChild(view);
           } else {
@@ -2706,7 +2706,7 @@ function printWatchlist(items) {
     h1{font-size:22px;margin:0 0 2px} .meta{color:#555;font-size:13px;margin-bottom:16px}
     table{width:100%;border-collapse:collapse} th{text-align:start;font-size:13px;color:#555;border-bottom:2px solid #cbd5cf;padding:6px 8px}
     td{padding:8px;border-bottom:1px solid #e3e8e5;vertical-align:top;font-size:14px} .wk{font-weight:700} .pr{font-weight:400;color:#555;font-size:13px;margin-top:2px}
-    .st{display:inline-block;font-size:13px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap} .nt{font-size:13px} .empty{color:#999}
+    .st{display:inline-block;font-size:13px;font-weight:700;padding:2px 8px;border-radius:var(--radius-chip);white-space:nowrap} .nt{font-size:13px} .empty{color:#999}
     .src{font-size:13px;color:#555;margin-top:18px}`;
   const body = `<h1>💊 ${esc(t('wl_print_title'))}</h1><div class="meta">${esc(ti('wl_print_asof', { date: printDate() }))} · ${esc(list.length === 1 ? t('wl_print_count_sg') : ti('wl_print_count', { n: list.length }))}</div>
     <table><thead><tr><th>${esc(t('wl_print_col_sub'))}</th><th>${esc(t('wl_print_col_status'))}</th><th>${esc(t('wl_print_col_note'))}</th></tr></thead><tbody>${rows}</tbody></table>
@@ -2833,7 +2833,7 @@ function datenstandZeile(st, land) {
   else if (st.zustand === 'stumm') { symbol = 'alert'; text = ti('stand_silent', { land: name, wann }); ton = 'warn'; }
   else if (!abruf.aktuell) { symbol = 'clock'; text = ti('stand_stale', { wann }); ton = 'warn'; }
   else { symbol = 'radio'; text = ti('stand_live', { land: name, wann }); ton = 'ok'; }
-  return el(`<div data-datenstand="${ton}" role="status" style="display:flex;gap:8px;align-items:flex-start;background:var(--${ton}-bg);border:1px solid var(--${ton}-bd);color:var(--${ton}-fg);border-radius:10px;padding:8px 12px;margin:0 0 10px;font-size:14px;font-weight:600;line-height:1.45">
+  return el(`<div data-datenstand="${ton}" role="status" style="display:flex;gap:8px;align-items:flex-start;background:var(--${ton}-bg);border:1px solid var(--${ton}-bd);color:var(--${ton}-fg);border-radius:var(--radius-sm);padding:8px 12px;margin:0 0 10px;font-size:14px;font-weight:600;line-height:1.45">
     <span aria-hidden="true" style="padding-top:1px">${ico(symbol, 18)}</span><span>${esc(text)}</span></div>`);
 }
 // Platz SOFORT reservieren, später füllen: Alle Reiter teilen sich #feed.
@@ -3348,7 +3348,7 @@ function signalCard(s) {
     <span style="font-size:1.1em" aria-hidden="true">${esc((land && land.flag) || '🌍')}</span>
     <span class="muted" style="font-size:13px">${esc((land && land.name) || s.country)}</span>
     <span style="font-weight:700">${esc(t('sig_kat_' + kat.toLowerCase()))}</span>
-    ${schwere ? `<span style="background:${schwere.bg};color:${schwere.fg};border:1px solid ${schwere.bd};border-radius:999px;padding:2px 10px;font-size:13px;font-weight:700">${esc(t(schwere.key))}</span>` : ''}
+    ${schwere ? `<span style="background:${schwere.bg};color:${schwere.fg};border:1px solid ${schwere.bd};border-radius:var(--radius-chip);padding:2px 10px;font-size:13px;font-weight:700">${esc(t(schwere.key))}</span>` : ''}
   </div>`;
 
   const zusammenfassung = signalText(s);
@@ -3662,7 +3662,7 @@ async function renderLagebild(box) {
   if (d.grund === 'ki_aus') return;
   const kopf = `<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
       <b style="font-size:17px">🧭 ${esc(ti('lb_title', { land: landLabel(cc) }))}</b>
-      <span style="background:var(--info-bg);color:var(--info-fg);border:1px solid var(--info-bd);border-radius:999px;padding:2px 10px;font-size:13px;font-weight:700">${esc(t('lb_badge'))}</span>
+      <span style="background:var(--info-bg);color:var(--info-fg);border:1px solid var(--info-bd);border-radius:var(--radius-chip);padding:2px 10px;font-size:13px;font-weight:700">${esc(t('lb_badge'))}</span>
     </div>`;
   if (!d.verfuegbar) {
     const text = d.grund === 'zu_wenig_quellen' ? ti('lb_none_sources', { land: landLabel(cc), n: d.quellen_gesamt || 0 })
@@ -3684,7 +3684,7 @@ async function renderLagebild(box) {
       if (!href) continue;
       const art = q.herkunft === 'behoerde' ? t('lb_authority') : t('lb_press');
       chips.appendChild(el(`<a href="${esc(href)}" target="_blank" rel="noopener noreferrer" data-lbquelle="${esc(q.herkunft)}"
-        style="font-size:13px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;text-decoration:none;min-height:32px;display:inline-flex;align-items:center"
+        style="font-size:13px;border:1px solid var(--line);border-radius:var(--radius-chip);padding:3px 10px;text-decoration:none;min-height:32px;display:inline-flex;align-items:center"
         title="${esc(q.titel || '')}">[${q.nr}] ${esc(art)}${q.quelle ? ' · ' + esc(q.quelle) : ''} ↗</a>`));
     }
     ol.appendChild(li);
@@ -4253,7 +4253,7 @@ function reportShortageCard(existing = []) {
 // den Datumsfeldern abgeleitet — keine Sicherheitsaussage.
 function shortageCountdown(s) {
   if (s.status === 'verfuegbar' || s.days_until == null) return '';
-  const chip = (label, bg, fg, bd) => ` <span style="display:inline-block;background:${bg};color:${fg};border:1px solid ${bd};font-weight:700;font-size:13px;padding:1px 8px;border-radius:999px;margin-inline-start:6px">${esc(label)}</span>`;
+  const chip = (label, bg, fg, bd) => ` <span style="display:inline-block;background:${bg};color:${fg};border:1px solid ${bd};font-weight:700;font-size:13px;padding:1px 8px;border-radius:var(--radius-chip);margin-inline-start:6px">${esc(label)}</span>`;
   if (s.overdue) return chip(`⚠️ ${nlabel(-s.days_until, 'sc_overdue_one', 'sc_overdue_many')}`, 'var(--crit-bg)', 'var(--crit-fg)', 'var(--crit-bd)');
   if (s.days_until === 0) return chip(`⏳ ${t('sc_due_today')}`, 'var(--warn-bg)', 'var(--warn-fg)', 'var(--warn-bd)');
   const label = `⏳ ${nlabel(s.days_until, 'sc_in_days_one', 'sc_in_days_many')}`;
@@ -5632,9 +5632,9 @@ function priceGroup(g, watchedSet, onWatchChange) {
   const card = el(`<div class="card">
     <div class="post-author">${esc(g.bezeichnung)} ${g.wirkstoff?`<span class="handle clickable" data-wirkstoff="${esc(g.wirkstoff)}" title="${esc(ti('pg_all_about',{w:g.wirkstoff}))}">${esc(g.wirkstoff)}</span>`:''}${showStar?`<button class="ghost small" data-wwatch aria-pressed="${watchedSet.has(wKey)}" title="${esc(watchedSet.has(wKey)?t('sc_watched'):t('sc_watch'))}" style="padding:2px 8px;min-height:0;margin-inline-start:4px">${watchedSet.has(wKey)?'⭐':'☆'}</button>`:''}</div>
     <div class="muted" style="margin:2px 0 8px">${esc(t('pg_compare'))} ${esc(t('prov_reference'))}</div>
-    ${rose?`<div style="display:inline-block;background:var(--crit-bg);color:var(--crit-fg);border:1px solid var(--crit-bd);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">${esc(ti('pg_rose',{x:Number(cheapest.trend_pct).toFixed(1)}))}</div>`:''}
-    ${g.saving_abs>0?`<div style="display:inline-block;background:rgba(11,127,40,.12);color:var(--ok-fg);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-bottom:8px">${esc(ti('pg_cheaper',{x:fmtMoney(g.saving_abs),supplier:g.best_supplier}))}</div>`:''}
-    ${g.action?`<div style="background:rgba(11,127,40,.08);border:1px solid rgba(11,127,40,.35);border-radius:10px;padding:8px 10px;margin-bottom:8px">
+    ${rose?`<div style="display:inline-block;background:var(--crit-bg);color:var(--crit-fg);border:1px solid var(--crit-bd);font-weight:700;font-size:13px;padding:3px 10px;border-radius:var(--radius-chip);margin-bottom:8px">${esc(ti('pg_rose',{x:Number(cheapest.trend_pct).toFixed(1)}))}</div>`:''}
+    ${g.saving_abs>0?`<div style="display:inline-block;background:rgba(11,127,40,.12);color:var(--ok-fg);font-weight:700;font-size:13px;padding:3px 10px;border-radius:var(--radius-chip);margin-bottom:8px">${esc(ti('pg_cheaper',{x:fmtMoney(g.saving_abs),supplier:g.best_supplier}))}</div>`:''}
+    ${g.action?`<div style="background:rgba(11,127,40,.08);border:1px solid rgba(11,127,40,.35);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:8px">
       <div style="font-weight:700;color:var(--ok-fg);font-size:14px">${esc(t('pg_act_title'))}</div>
       <div style="font-size:13px;margin-top:2px">${esc(g.action.supplier)}: <b>€ ${fmtMoney(g.action.aktionspreis)}</b> ${esc(t('pg_instead'))} € ${fmtMoney(g.best_aep)} ${esc(t('pg_aep'))} — <b>−€ ${fmtMoney(g.action.unter_aep_abs)} ${esc(t('pg_per_pack'))}</b> · −${g.action.rabatt_pct}%</div>
       <div class="muted" style="font-size:13px;margin-top:2px">${esc(ti('pg_from',{n:g.action.min_menge}))}${g.action.expiring_soon?` · <b style="color:${g.action.days_left<=3?'var(--crit-fg)':'var(--warn-fg)'}">${esc(g.action.days_left<=0?t('pg_only_today'):ti('pg_only_days',{d:g.action.days_left}))}</b>`:` · ${esc(t('pg_valid'))} ${esc(g.action.gueltig_bis)}`} · ${esc(t('prov_reference'))}</div>
@@ -5925,11 +5925,11 @@ function exchangeCard(e) {
   const au = e.author || {};
   const mine = me && au.handle === me.handle;
   const isBiete = e.kind === 'biete';
-  const badge = isBiete ? `<span style="background:var(--ok-bg);color:var(--ok-fg);border:1px solid var(--ok-bd);border-radius:999px;padding:2px 10px;font-weight:700;font-size:13px">${esc(t('ex_badge_biete'))}</span>`
-                        : `<span style="background:var(--warn-bg);color:var(--warn-fg);border:1px solid var(--warn-bd);border-radius:999px;padding:2px 10px;font-weight:700;font-size:13px">${esc(t('ex_badge_suche'))}</span>`;
+  const badge = isBiete ? `<span style="background:var(--ok-bg);color:var(--ok-fg);border:1px solid var(--ok-bd);border-radius:var(--radius-chip);padding:2px 10px;font-weight:700;font-size:13px">${esc(t('ex_badge_biete'))}</span>`
+                        : `<span style="background:var(--warn-bg);color:var(--warn-fg);border:1px solid var(--warn-bd);border-radius:var(--radius-chip);padding:2px 10px;font-weight:700;font-size:13px">${esc(t('ex_badge_suche'))}</span>`;
   const erledigt = e.status === 'erledigt';
-  const doneBadge = erledigt ? ` <span style="background:var(--line);color:var(--muted);border-radius:999px;padding:2px 8px;font-size:13px;font-weight:600">${esc(t('ex_done_badge'))}</span>` : '';
-  const reservedBadge = (!erledigt && e.reserved) ? ` <span style="background:var(--warn-bg);color:var(--warn-fg);border:1px solid var(--warn-bd);border-radius:999px;padding:2px 8px;font-size:13px;font-weight:700">${esc(t('ex_reserved_badge'))}</span>` : '';
+  const doneBadge = erledigt ? ` <span style="background:var(--line);color:var(--muted);border-radius:var(--radius-chip);padding:2px 8px;font-size:13px;font-weight:600">${esc(t('ex_done_badge'))}</span>` : '';
+  const reservedBadge = (!erledigt && e.reserved) ? ` <span style="background:var(--warn-bg);color:var(--warn-fg);border:1px solid var(--warn-bd);border-radius:var(--radius-chip);padding:2px 8px;font-size:13px;font-weight:700">${esc(t('ex_reserved_badge'))}</span>` : '';
   // Frische-Hinweis: eigener, offener Eintrag, der schon lange steht — zum Aufräumen anregen
   // (hält Angebot/Nachfrage im Netzwerk aktuell). Schwelle: 21 Tage.
   const ageDays = e.created_at ? Math.floor((Date.now() - Date.parse(e.created_at)) / 86400000) : 0;
@@ -5947,10 +5947,10 @@ function exchangeCard(e) {
       <span class="muted" style="font-size:13px">${relTime(e.created_at)}</span>
     </div>
     <div class="muted" style="margin-top:4px">${e.menge?esc(t('ex_qty'))+' '+esc(e.menge):''}${e.menge&&(e.ort||e.bundesland)?' · ':''}${e.ort||e.bundesland?'📍 '+esc([e.ort,e.bundesland].filter(Boolean).join(', ')):''}</div>
-    ${e.ablauf?(()=>{const lt=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);const du=Math.round((Date.parse(e.ablauf+'T00:00:00Z')-Date.parse(lt+'T00:00:00Z'))/86400000);const expired=du!=null&&du<0;const soon=du!=null&&du>=0&&du<=30;const col=expired?'var(--crit-fg)':(soon?'var(--warn-fg)':'var(--muted)');const bg=expired?'var(--crit-bg)':(soon?'var(--warn-bg)':'var(--chip-bg)');const txt=expired?t('ex_expired'):(du===0?t('ex_exp_today'):(du===1?t('ex_exp_1'):ti('ex_exp_in',{d:du})));return `<div style="display:inline-block;margin-top:6px;font-size:13px;font-weight:700;color:${col};background:${bg};border-radius:999px;padding:2px 10px">⏳ ${esc(t('ex_valid'))} ${esc(fmtDateDe(e.ablauf))} · ${esc(txt)}</div>`;})():''}
+    ${e.ablauf?(()=>{const lt=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);const du=Math.round((Date.parse(e.ablauf+'T00:00:00Z')-Date.parse(lt+'T00:00:00Z'))/86400000);const expired=du!=null&&du<0;const soon=du!=null&&du>=0&&du<=30;const col=expired?'var(--crit-fg)':(soon?'var(--warn-fg)':'var(--muted)');const bg=expired?'var(--crit-bg)':(soon?'var(--warn-bg)':'var(--chip-bg)');const txt=expired?t('ex_expired'):(du===0?t('ex_exp_today'):(du===1?t('ex_exp_1'):ti('ex_exp_in',{d:du})));return `<div style="display:inline-block;margin-top:6px;font-size:13px;font-weight:700;color:${col};background:${bg};border-radius:var(--radius-chip);padding:2px 10px">⏳ ${esc(t('ex_valid'))} ${esc(fmtDateDe(e.ablauf))} · ${esc(txt)}</div>`;})():''}
     ${mc?`<div style="margin-top:6px"><button class="linklike small" data-match style="color:var(--green);font-weight:700">${esc(matchLabel)}</button></div>`:''}
     ${e.note?`<div class="post-body" style="margin:6px 0">${esc(e.note)}</div>`:''}
-    ${istBild(e.image) ? `<img data-zoom loading="lazy" decoding="async" src="${e.image}" alt="${esc(t('ex_photo_alt'))}" style="max-width:100%;border-radius:10px;margin-top:6px;display:block;cursor:zoom-in" />` : ''}
+    ${istBild(e.image) ? `<img data-zoom loading="lazy" decoding="async" src="${e.image}" alt="${esc(t('ex_photo_alt'))}" style="max-width:100%;border-radius:var(--radius-sm);margin-top:6px;display:block;cursor:zoom-in" />` : ''}
     ${stale?`<div style="font-size:13px;margin-top:6px;background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-fg);border-radius:8px;padding:6px 10px">⏳ ${esc(ti('ex_stale',{d:ageDays}))} <button class="linklike small" data-freshrenew>${esc(t('ex_renew'))}</button> · <button class="linklike small" data-freshdone>${esc(t('ex_stale_done'))}</button></div>`:''}
     <div class="row" style="margin-top:8px;align-items:baseline">
       <span class="handle clickable" data-openprofile="${esc(au.handle||'')}">${esc(t('ex_by'))} ${esc(au.display_name||t('ex_unknown'))} <bdi dir="ltr">@${esc(au.handle||'?')}</bdi></span>
@@ -6108,9 +6108,9 @@ function rabattCard(r, watchedSet, onWatchChange) {
     <div class="muted" style="margin-top:4px">${esc(ti('rb_saving',{x:fmtMoney(r.ersparnis)}))}${r.min_menge?` · ${esc(ti('pg_from',{n:r.min_menge}))}`:''} · ${esc(t('pg_valid'))} <b>${esc(r.gueltig_bis)}</b></div>
     ${r.min_menge&&r.ersparnis>0?`<div style="margin-top:4px;font-size:13px;font-weight:700;color:var(--ok-fg)">${esc(ti('rb_minorder',{n:r.min_menge,x:fmtMoney(Number(r.ersparnis)*Number(r.min_menge))}))}</div>`:''}
     ${r.aktionspreis!=null?`<div class="row" style="margin-top:6px;align-items:center;gap:6px;flex-wrap:wrap"><label style="font-size:13px">🧮 ${esc(t('rb_calc_qty'))}</label><input type="number" min="1" step="1" value="${r.min_menge||1}" data-qty style="width:88px" aria-label="${esc(t('rb_calc_qty'))}"><span data-calc style="font-size:13px;font-weight:700;color:var(--ok-fg)"></span></div>`:''}
-    ${r.best_for_wirkstoff?`<div style="display:inline-block;margin-top:6px;background:rgba(11,127,40,.12);color:var(--ok-fg);border:1px solid rgba(11,127,40,.35);font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px">${esc(ti('rb_best',{w:r.wirkstoff,alt:(r.wirkstoff_alternatives===1?t('rb_alt_one'):ti('rb_alt_many',{n:r.wirkstoff_alternatives}))}))}</div>`:''}
+    ${r.best_for_wirkstoff?`<div style="display:inline-block;margin-top:6px;background:rgba(11,127,40,.12);color:var(--ok-fg);border:1px solid rgba(11,127,40,.35);font-weight:700;font-size:13px;padding:3px 10px;border-radius:var(--radius-chip)">${esc(ti('rb_best',{w:r.wirkstoff,alt:(r.wirkstoff_alternatives===1?t('rb_alt_one'):ti('rb_alt_many',{n:r.wirkstoff_alternatives}))}))}</div>`:''}
     ${!r.best_for_wirkstoff&&r.wirkstoff_alternatives>0?`<div class="muted" style="margin-top:6px;font-size:13px">${esc(ti('rb_cheaper_hint',{w:r.wirkstoff}))}</div>`:''}
-    ${r.expiring_soon?`<div style="display:inline-block;margin-top:6px;background:${r.days_left<=3?'#c0392b':'#c77700'};color:#fff;font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px">⏳ ${esc(r.days_left<=0?t('rb_exp_today'):(r.days_left===1?t('rb_exp_one'):ti('pg_only_days',{d:r.days_left})))}</div>`:''}
+    ${r.expiring_soon?`<div style="display:inline-block;margin-top:6px;background:${r.days_left<=3?'#c0392b':'#c77700'};color:#fff;font-weight:700;font-size:13px;padding:3px 10px;border-radius:var(--radius-chip)">⏳ ${esc(r.days_left<=0?t('rb_exp_today'):(r.days_left===1?t('rb_exp_one'):ti('pg_only_days',{d:r.days_left})))}</div>`:''}
     <div class="row" style="margin-top:8px">
       <span class="muted">${esc(nlabel(r.post_count||0,'pg_posts_one','pg_posts'))}</span>
       <span class="sp" style="flex:1"></span>
@@ -6515,7 +6515,7 @@ async function openAppointments(flash) {
       <div class="row" style="align-items:baseline">
         <b>${esc(fmtDateDe(a.datum))} · ${esc(a.uhrzeit)}</b>
         <span class="sp" style="flex:1"></span>
-        <span style="display:inline-block;font-size:13px;font-weight:700;color:${col};background:${bg};padding:2px 8px;border-radius:999px">${esc(lab)}</span>
+        <span style="display:inline-block;font-size:13px;font-weight:700;color:${col};background:${bg};padding:2px 8px;border-radius:var(--radius-chip)">${esc(lab)}</span>
       </div>
       <div class="muted" style="font-size:13px;margin-top:2px">${esc(a.i_am_provider?t('vc_with_customer'):t('vc_with_pharmacy'))}: <b class="clickable" data-openprofile="${esc(other?other.handle:'')}">${esc(other?(other.display_name||('@'+other.handle)):'—')}</b></div>
       ${a.grund?`<div class="post-body" style="margin-top:6px">${esc(a.grund)}</div>`:''}
@@ -6714,7 +6714,7 @@ async function openTasks() {
       const card = el(`<div class="card">
         <div class="row" style="align-items:baseline;gap:8px">
           <b style="flex:1">${esc(tk.title)}</b>
-          <span style="display:inline-block;font-size:13px;font-weight:800;color:${col};background:${bg};padding:2px 10px;border-radius:999px">${esc(lab)}</span>
+          <span style="display:inline-block;font-size:13px;font-weight:800;color:${col};background:${bg};padding:2px 10px;border-radius:var(--radius-chip)">${esc(lab)}</span>
         </div>
         ${tk.description?`<div class="muted" style="font-size:14px;white-space:pre-wrap;margin-top:4px">${esc(tk.description)}</div>`:''}
         <div class="muted" style="font-size:13px;margin-top:6px">
@@ -6959,9 +6959,9 @@ function promoPrice(p) {
 }
 function promoCard(p) {
   const card = el(`<div class="card" style="cursor:pointer" data-open="${esc(p.id)}">
-    ${p.image?`<img data-zoom loading="lazy" decoding="async" src="${esc(p.image)}" alt="${esc(p.titel)}" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;margin-bottom:8px;cursor:zoom-in">`:''}
+    ${p.image?`<img data-zoom loading="lazy" decoding="async" src="${esc(p.image)}" alt="${esc(p.titel)}" style="width:100%;max-height:220px;object-fit:cover;border-radius:var(--radius-sm);margin-bottom:8px;cursor:zoom-in">`:''}
     <div class="row" style="align-items:baseline;gap:8px">
-      <span style="display:inline-block;font-size:13px;font-weight:700;color:var(--info-fg);background:var(--info-bg);padding:2px 8px;border-radius:999px">${esc(promoCatLabel(p.kategorie))}</span>
+      <span style="display:inline-block;font-size:13px;font-weight:700;color:var(--info-fg);background:var(--info-bg);padding:2px 8px;border-radius:var(--radius-chip)">${esc(promoCatLabel(p.kategorie))}</span>
       <span class="sp" style="flex:1"></span>
       <span style="font-size:13px;font-weight:700;color:var(--muted);border:1px solid var(--line);padding:1px 6px;border-radius:6px">${esc(t('wb_ad'))}</span>
     </div>
@@ -7101,9 +7101,9 @@ async function openPromotionDetail(id) {
   feed.innerHTML = '';
   const head = el(`<div class="card">
     <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button><span class="sp" style="flex:1"></span>${d.is_mine?`<button class="ghost small" data-edit>${esc(t('wb_edit'))}</button><button class="ghost small" data-del>${esc(t('wb_delete'))}</button>`:`<button class="ghost small" data-report>${esc(t('pc_report'))}</button>`}</div>
-    ${d.image?`<img data-zoom loading="lazy" decoding="async" src="${esc(d.image)}" alt="${esc(d.titel)}" style="width:100%;max-height:320px;object-fit:cover;border-radius:10px;margin:8px 0;cursor:zoom-in">`:''}
+    ${d.image?`<img data-zoom loading="lazy" decoding="async" src="${esc(d.image)}" alt="${esc(d.titel)}" style="width:100%;max-height:320px;object-fit:cover;border-radius:var(--radius-sm);margin:8px 0;cursor:zoom-in">`:''}
     <div class="row" style="align-items:baseline;gap:8px;margin-top:6px">
-      <span style="display:inline-block;font-size:13px;font-weight:700;color:var(--info-fg);background:var(--info-bg);padding:2px 8px;border-radius:999px">${esc(promoCatLabel(d.kategorie))}</span>
+      <span style="display:inline-block;font-size:13px;font-weight:700;color:var(--info-fg);background:var(--info-bg);padding:2px 8px;border-radius:var(--radius-chip)">${esc(promoCatLabel(d.kategorie))}</span>
       <span class="sp" style="flex:1"></span><span style="font-size:13px;font-weight:700;color:var(--muted);border:1px solid var(--line);padding:1px 6px;border-radius:6px">${esc(t('wb_ad'))}</span>
     </div>
     <h1 style="margin:8px 0 4px">${esc(d.titel)}</h1>
@@ -7186,7 +7186,7 @@ async function openLive(flash) {
     const [col,bg,lab] = statusMeta[s.status] || ['var(--muted)','var(--chip-bg)',s.status];
     const card = el(`<div class="card">
       <div class="row" style="align-items:baseline;gap:8px">
-        <span style="display:inline-block;font-size:13px;font-weight:800;color:${col};background:${bg};padding:2px 10px;border-radius:999px">${esc(lab)}</span>
+        <span style="display:inline-block;font-size:13px;font-weight:800;color:${col};background:${bg};padding:2px 10px;border-radius:var(--radius-chip)">${esc(lab)}</span>
         <span class="sp" style="flex:1"></span>
         <span class="muted" style="font-size:13px">🗓 ${esc(liveWhen(s.geplant_am))}</span>
       </div>
@@ -7423,8 +7423,8 @@ async function openOrders(flash) {
       <div class="row" style="align-items:baseline;flex-wrap:wrap;gap:6px">
         <b>${o.reference?esc(o.reference):esc(relTime(o.created_at))}</b>
         ${o.received_at
-          ? `<span style="font-size:13px;font-weight:700;color:var(--ok-fg);background:var(--ok-bg);border:1px solid var(--ok-bd);padding:1px 8px;border-radius:999px">${esc(t('ord_received'))}</span>`
-          : `<span style="font-size:13px;font-weight:700;color:var(--warn-fg);background:var(--warn-bg);border:1px solid var(--warn-bd);padding:1px 8px;border-radius:999px">${esc(t('ord_ordered'))}</span>`}
+          ? `<span style="font-size:13px;font-weight:700;color:var(--ok-fg);background:var(--ok-bg);border:1px solid var(--ok-bd);padding:1px 8px;border-radius:var(--radius-chip)">${esc(t('ord_received'))}</span>`
+          : `<span style="font-size:13px;font-weight:700;color:var(--warn-fg);background:var(--warn-bg);border:1px solid var(--warn-bd);padding:1px 8px;border-radius:var(--radius-chip)">${esc(t('ord_ordered'))}</span>`}
         <span class="sp" style="flex:1"></span>
         <span style="font-weight:800">€ ${fmtMoney(o.total_price)}</span>
       </div>
@@ -7689,7 +7689,7 @@ async function handleWbAbmelden() {
   let text;
   try { await api('POST', '/api/wochenbericht/abmelden', { t: tok }); text = t('wbr_unsubscribed'); }
   catch (e) { text = e.message; }
-  const b = el(`<div role="status" data-wbabgemeldet style="position:fixed;left:50%;transform:translateX(-50%);top:12px;z-index:50;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px;padding:12px 16px;font-size:15px;max-width:92vw"></div>`);
+  const b = el(`<div role="status" data-wbabgemeldet style="position:fixed;left:50%;transform:translateX(-50%);top:12px;z-index:50;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:var(--radius-sm);padding:12px 16px;font-size:15px;max-width:92vw"></div>`);
   b.textContent = text;
   document.body.appendChild(b);
   setTimeout(() => b.remove(), 9000);
@@ -7914,7 +7914,7 @@ async function openPremium() {
     opt.coins.forEach((c, i) => {
       const amountLbl = c.amount_crypto != null ? ti('pr_amount', { n: c.amount_crypto, sym: c.symbol }) : ti('pr_amount_na', { amount: fmtCurrency(opt.amount, opt.currency || 'EUR') });
       const title = esc(c.symbol) + (c.label ? ` <span class="muted" style="font-weight:400;font-size:13px">· ${esc(c.label)}</span>` : '')
-        + (c.low_fee ? ` <span data-lowfee style="display:inline-block;font-size:13px;font-weight:700;color:var(--ok-fg);background:var(--ok-bg);border:1px solid var(--ok-bd);border-radius:999px;padding:1px 8px">${esc(t('pr_low_fee'))}</span>` : '');
+        + (c.low_fee ? ` <span data-lowfee style="display:inline-block;font-size:13px;font-weight:700;color:var(--ok-fg);background:var(--ok-bg);border:1px solid var(--ok-bd);border-radius:var(--radius-chip);padding:1px 8px">${esc(t('pr_low_fee'))}</span>` : '');
       const cc = el(`<div class="crypto-pay" data-coinid="${esc(c.id)}"${i && opt.coins.length > 1 ? ' hidden' : ''}>
         <div class="row"><b>${title}</b> <span class="muted" style="font-size:13px">${esc(ti('pr_network', { net: c.network }))}</span><span class="sp" style="flex:1"></span><span style="font-weight:700">${esc(amountLbl)}</span></div>
         <div class="crypto-addr"><code>${esc(c.address)}</code></div>
@@ -8230,7 +8230,7 @@ function openBegleitzettel() {
     </label>
     <div class="row" style="margin-top:12px;gap:8px"><button class="small" data-z-print>${esc(t('bz_print'))}</button><span class="err" data-z-err style="font-size:13px"></span></div>
   </div>`);
-  const preview = el(`<div class="card"><div class="muted" style="font-size:13px;margin-bottom:8px">${esc(t('bz_preview'))}</div><div data-z-prev style="background:#fff;color:#111;border:1px solid var(--line,#ccc);border-radius:10px;padding:16px"></div></div>`);
+  const preview = el(`<div class="card"><div class="muted" style="font-size:13px;margin-bottom:8px">${esc(t('bz_preview'))}</div><div data-z-prev style="background:#fff;color:#111;border:1px solid var(--line,#ccc);border-radius:var(--radius-sm);padding:16px"></div></div>`);
   const readZ = () => ({
     lang: zettelLang || patientStart(),
     praeparat: form.querySelector('[data-z-p]').value.trim(),
@@ -8788,8 +8788,8 @@ async function openProfile(handle) {
         ${d.exchange_entries.map(e => {
           const isB = e.kind === 'biete';
           const badge = isB
-            ? `<span style="background:var(--ok-bg);color:var(--ok-fg);border:1px solid var(--ok-bd);border-radius:999px;padding:1px 8px;font-weight:700;font-size:13px">${esc(t('ex_badge_biete'))}</span>`
-            : `<span style="background:var(--warn-bg);color:var(--warn-fg);border:1px solid var(--warn-bd);border-radius:999px;padding:1px 8px;font-weight:700;font-size:13px">${esc(t('ex_badge_suche'))}</span>`;
+            ? `<span style="background:var(--ok-bg);color:var(--ok-fg);border:1px solid var(--ok-bd);border-radius:var(--radius-chip);padding:1px 8px;font-weight:700;font-size:13px">${esc(t('ex_badge_biete'))}</span>`
+            : `<span style="background:var(--warn-bg);color:var(--warn-fg);border:1px solid var(--warn-bd);border-radius:var(--radius-chip);padding:1px 8px;font-weight:700;font-size:13px">${esc(t('ex_badge_suche'))}</span>`;
           const loc = [e.ort, e.bundesland].filter(Boolean).join(', ');
           return `<div class="comment clickable" data-exq="${esc(e.bezeichnung)}" data-exk="${esc(e.kind)}">${badge} <b>${esc(e.bezeichnung)}</b>${e.menge?` <span class="muted">· ${esc(t('ex_qty'))} ${esc(e.menge)}</span>`:''}${loc?` <span class="muted" style="font-size:13px">· 📍 ${esc(loc)}</span>`:''} <span class="ovtile-go" aria-hidden="true">›</span></div>`;
         }).join('')}</div>`);
@@ -8963,7 +8963,7 @@ async function openMyActivity() {
 
   // Beitrag-Statistik: Kennzahlen des eigenen Engagements auf einen Blick.
   const st = d.stats || {};
-  const kpi = (val, label, color) => `<div style="flex:1;min-width:96px;text-align:center;padding:10px 8px;background:var(--card2,rgba(0,0,0,.03));border-radius:10px">
+  const kpi = (val, label, color) => `<div style="flex:1;min-width:96px;text-align:center;padding:10px 8px;background:var(--card2,rgba(0,0,0,.03));border-radius:var(--radius-sm)">
       <div style="font-size:26px;font-weight:800;line-height:1.1;color:${color||'inherit'}">${val}</div>
       <div class="muted" style="font-size:13px;margin-top:2px">${label}</div></div>`;
   const scard = el(`<div class="card"><div class="row"><b>${esc(t('ma_stats'))}</b></div>
@@ -9075,7 +9075,7 @@ function chronikKarte(c, wirkstoff) {
   // Premium-Schnitt (Server entscheidet, siehe services/chronik.js): ohne
   // Premium kommt die Episodenliste gar nicht erst an — hier nur der Hinweis.
   const sperre = c.episoden_gesperrt
-    ? `<div class="row" data-chroniksperre style="align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;padding:10px;border:1px dashed var(--line);border-radius:10px"><span style="font-size:14px;flex:1 1 220px">🔒 ${esc(t('ch_locked'))}</span><button class="small" data-gopremium>${esc(t('wb_go_premium'))}</button></div>`
+    ? `<div class="row" data-chroniksperre style="align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;padding:10px;border:1px dashed var(--line);border-radius:var(--radius-sm)"><span style="font-size:14px;flex:1 1 220px">🔒 ${esc(t('ch_locked'))}</span><button class="small" data-gopremium>${esc(t('wb_go_premium'))}</button></div>`
     : '';
   const export_ = !c.episoden_gesperrt && c.episoden.length
     ? `<div style="margin-top:8px"><button class="ghost small" data-chronikcsv>⬇️ ${esc(ti('ch_export', { land }))}</button></div>`
@@ -9538,7 +9538,7 @@ async function openLogistik() {
     const c = el(`<div class="card" style="border-inline-start:4px solid ${FARBE[m.dringlichkeit] || 'var(--line)'}">
       <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
         <span style="font-weight:700">${esc(t('lg_art_' + m.art))}</span>
-        <span style="background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:13px;color:${FARBE[m.dringlichkeit] || ''}">${esc(t('lg_d_' + m.dringlichkeit))}</span>
+        <span style="background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-chip);padding:2px 10px;font-size:13px;color:${FARBE[m.dringlichkeit] || ''}">${esc(t('lg_d_' + m.dringlichkeit))}</span>
         ${m.region ? `<span class="muted" style="font-size:13px">📍 ${esc(m.region)}</span>` : ''}
       </div>
       <div style="font-weight:800;margin-top:6px;line-height:1.35">${esc(m.titel)}</div>
@@ -9667,7 +9667,7 @@ async function renderVerifyCard(card) {
 }
 
 function qBadgeHtml(answered) {
-  return `<span style="display:inline-block;background:${answered?'rgba(11,127,40,.12)':'rgba(41,82,204,.12)'};color:${answered?'var(--ok-fg)':'var(--info-fg)'};font-weight:700;font-size:13px;padding:2px 10px;border-radius:999px">${esc(answered?t('pc_answered'):t('pc_question_open'))}</span>`;
+  return `<span style="display:inline-block;background:${answered?'rgba(11,127,40,.12)':'rgba(41,82,204,.12)'};color:${answered?'var(--ok-fg)':'var(--info-fg)'};font-weight:700;font-size:13px;padding:2px 10px;border-radius:var(--radius-chip)">${esc(answered?t('pc_answered'):t('pc_question_open'))}</span>`;
 }
 
 // Umfrage-Block: Optionen als antippbare Balken mit Ergebnis-Anteil, eigene Stimme markiert.
@@ -9757,7 +9757,7 @@ function postCard(p) {
     ${(p.body||'').trim()||!p.repost_of_post?`<div class="post-body" data-body>${linkifyMentions(p.body)}</div>`:'<div class="post-body" data-body hidden></div>'}
     ${p.poll ? pollHtml(p) : ''}
     ${p.repost_of_post ? repostEmbedHtml(p.repost_of_post) : ''}
-    ${istBild(p.image) ? `<img data-zoom loading="lazy" decoding="async" src="${p.image}" alt="${esc(t('pc_img_alt'))}" style="max-width:100%;border-radius:10px;margin-top:8px;display:block;cursor:zoom-in" />` : ''}
+    ${istBild(p.image) ? `<img data-zoom loading="lazy" decoding="async" src="${p.image}" alt="${esc(t('pc_img_alt'))}" style="max-width:100%;border-radius:var(--radius-sm);margin-top:8px;display:block;cursor:zoom-in" />` : ''}
     ${sourceLinkHtml(p.source_url)}
     <div class="vis" data-edited ${p.edited_at?'':'style="display:none"'}>${esc(t('pc_edited'))}</div>
     ${refChip(p.ref_summary)}
@@ -10292,7 +10292,7 @@ const vorZeit = (iso) => {
 // abweichende Benennung zuordnen lässt.
 function probeErgebnis(r) {
   const ok = r.ok;
-  const box = el(`<div data-dqprobeok="${ok ? '1' : '0'}" style="margin-top:8px;padding:10px 12px;border-radius:10px;border:1px solid ${ok ? 'var(--ok-bd)' : 'var(--crit-bd)'};background:${ok ? 'var(--ok-bg)' : 'var(--crit-bg)'};font-size:14px;line-height:1.5"></div>`);
+  const box = el(`<div data-dqprobeok="${ok ? '1' : '0'}" style="margin-top:8px;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid ${ok ? 'var(--ok-bd)' : 'var(--crit-bd)'};background:${ok ? 'var(--ok-bg)' : 'var(--crit-bg)'};font-size:14px;line-height:1.5"></div>`);
   const kopf = ok ? `✓ ${ti('dq_probe_ok', { n: r.zeilen, ms: r.ms })}` : `✗ ${r.fehler || t('dq_probe_none')}`;
   box.innerHTML = `<b style="color:${ok ? 'var(--ok-fg)' : 'var(--crit-fg)'}">${esc(kopf)}</b>`
     + (r.beispiele && r.beispiele.length ? `<div style="margin-top:6px">${r.beispiele.map((z) => `<div>• <b>${esc(z.wirkstoff)}</b> — ${esc(z.bezeichnung)} · ${esc(statusShort(z.status)[0])}${z.gemeldet_am ? ' · ' + esc(fmtDateDe(z.gemeldet_am)) : ''}</div>`).join('')}</div>` : '')
@@ -10375,9 +10375,9 @@ async function openDatenquellen() {
       <button class="ghost small" data-dqback style="min-height:44px">${esc(t('gen_back'))}</button></div>
     <div class="muted" style="margin-top:4px">${esc(t('dq_sub'))}</div>
     <div class="row" style="gap:10px;flex-wrap:wrap;margin-top:12px" data-dqsumme>
-      <div style="flex:1;min-width:min(110px,100%);border:1px solid var(--crit-bd);background:var(--crit-bg);border-radius:12px;padding:10px 12px"><div style="font-size:24px;font-weight:800;color:var(--crit-fg)">✗ ${kaputt}</div><div style="font-size:14px">${esc(t('dq_sum_bad'))}</div></div>
-      <div style="flex:1;min-width:min(110px,100%);border:1px solid var(--line);border-radius:12px;padding:10px 12px"><div style="font-size:24px;font-weight:800">? ${offen}</div><div style="font-size:14px">${esc(t('dq_sum_open'))}</div></div>
-      <div style="flex:1;min-width:min(110px,100%);border:1px solid var(--ok-bd);background:var(--ok-bg);border-radius:12px;padding:10px 12px"><div style="font-size:24px;font-weight:800;color:var(--ok-fg)">✓ ${gut}</div><div style="font-size:14px">${esc(t('dq_sum_ok'))}</div></div>
+      <div style="flex:1;min-width:min(110px,100%);border:1px solid var(--crit-bd);background:var(--crit-bg);border-radius:var(--radius);padding:10px 12px"><div style="font-size:24px;font-weight:800;color:var(--crit-fg)">✗ ${kaputt}</div><div style="font-size:14px">${esc(t('dq_sum_bad'))}</div></div>
+      <div style="flex:1;min-width:min(110px,100%);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px"><div style="font-size:24px;font-weight:800">? ${offen}</div><div style="font-size:14px">${esc(t('dq_sum_open'))}</div></div>
+      <div style="flex:1;min-width:min(110px,100%);border:1px solid var(--ok-bd);background:var(--ok-bg);border-radius:var(--radius);padding:10px 12px"><div style="font-size:24px;font-weight:800;color:var(--ok-fg)">✓ ${gut}</div><div style="font-size:14px">${esc(t('dq_sum_ok'))}</div></div>
     </div>
     <div style="margin-top:12px;font-size:15px;line-height:1.7">
       ${jobZeile('news', t('dq_job_news'))}
@@ -10513,7 +10513,7 @@ async function showModeration() {
   app.innerHTML = '';
   const krit = (sh.shortages||[]).filter(s => s.status === 'kritisch').length;
   const comm = (sh.shortages||[]).filter(s => s.provenance === 'community').length;
-  const mtile = (icon, num, label, col) => `<div style="flex:1;min-width:min(120px,100%);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px">
+  const mtile = (icon, num, label, col) => `<div style="flex:1;min-width:min(120px,100%);background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:12px">
     <div style="font-size:24px;font-weight:800;color:${col}">${icon} ${num}</div><div class="muted" style="font-size:13px;margin-top:2px">${esc(label)}</div></div>`;
   const head = el(`<div class="card"><div class="row" style="gap:8px;flex-wrap:wrap"><h1 style="flex:1">${esc(t('md_title'))}</h1>
     <button class="small" id="dqOpen" style="min-height:44px">📡 ${esc(t('dq_open'))}</button>
@@ -10693,7 +10693,7 @@ async function showDmInbox() {
       const row = el(`<div class="comment clickable" style="cursor:pointer${unread?';background:rgba(11,127,40,.06);border-radius:8px':''}">
         <div class="row" style="align-items:center">${avatarHtml(o, 38, false)}<div style="flex:1;min-width:0">
         <div class="row"><b style="${unread?'font-weight:800':''}">${esc(o.display_name||t('ex_unknown'))}</b> <span class="handle">@${esc(o.handle||'?')}</span>
-        <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:13px;margin-inline-end:6px">${when}</span>`:''}${unread?`<span style="background:var(--green);color:var(--on-green);border-radius:999px;font-size:13px;font-weight:700;padding:1px 8px;min-width:20px;text-align:center;margin-inline-end:6px">${th.unread}</span>`:''}<button class="ghost small" data-archive title="${esc(t('dm_archive'))}" aria-label="${esc(t('dm_archive'))}">🗂</button></div>
+        <span class="sp" style="flex:1"></span>${when?`<span class="muted" style="font-size:13px;margin-inline-end:6px">${when}</span>`:''}${unread?`<span style="background:var(--green);color:var(--on-green);border-radius:var(--radius-chip);font-size:13px;font-weight:700;padding:1px 8px;min-width:20px;text-align:center;margin-inline-end:6px">${th.unread}</span>`:''}<button class="ghost small" data-archive title="${esc(t('dm_archive'))}" aria-label="${esc(t('dm_archive'))}">🗂</button></div>
         <div class="muted" style="margin-top:2px${unread?';color:inherit;font-weight:600':''}">${esc((th.last_message?.body||'').slice(0,60))}</div></div></div></div>`);
       row.onclick = () => openDmThread(th.thread_id);
       row.querySelector('[data-archive]').onclick = async (e) => {
@@ -10741,7 +10741,7 @@ async function openDmThread(threadId, prefill) {
       const day = (m.created_at || '').slice(0, 10);
       if (day && day !== lastDay) {
         lastDay = day;
-        msgs.appendChild(el(`<div style="text-align:center;margin:12px 0 6px"><span class="muted" style="font-size:13px;background:var(--chip-bg);border:1px solid var(--line);border-radius:999px;padding:2px 10px">${esc(dayLabel(m.created_at))}</span></div>`));
+        msgs.appendChild(el(`<div style="text-align:center;margin:12px 0 6px"><span class="muted" style="font-size:13px;background:var(--chip-bg);border:1px solid var(--line);border-radius:var(--radius-chip);padding:2px 10px">${esc(dayLabel(m.created_at))}</span></div>`));
       }
       const mine = me && m.sender_user_id === me.user_id;
       // Zustell-/Lese-Hinweis nur unter der letzten eigenen Nachricht: „Gelesen" (grün) sobald
@@ -10750,7 +10750,7 @@ async function openDmThread(threadId, prefill) {
         ? `<div style="font-size:13px;margin-top:2px;font-weight:600;color:${m.read_at ? 'var(--ok-fg)' : 'var(--muted)'}">${m.read_at ? '✓✓ ' + esc(t('dm_read')) : '✓ ' + esc(t('dm_delivered'))}</div>`
         : '';
       msgs.appendChild(el(`<div style="display:flex;flex-direction:column;margin:4px 0;${mine?'align-items:flex-end':'align-items:flex-start'}">
-        <div style="max-width:75%;padding:8px 12px;border-radius:12px;background:${mine?'var(--green)':'var(--chip-bg)'};color:${mine?'var(--on-green)':'inherit'}">${esc(m.body)}</div>
+        <div style="max-width:75%;padding:8px 12px;border-radius:var(--radius);background:${mine?'var(--green)':'var(--chip-bg)'};color:${mine?'var(--on-green)':'inherit'}">${esc(m.body)}</div>
         <div style="font-size:13px;color:var(--muted);margin-top:2px">${esc(fmtClock(m.created_at))}</div>
         ${receipt}
       </div>`));
