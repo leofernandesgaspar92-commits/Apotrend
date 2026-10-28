@@ -10868,11 +10868,11 @@ fuelleIcons();
 applyFontScale();
 applyTheme();
 // ── Funktionen mit Vorschau (Menü und Startseite) ─────────────────────────
-//  Eine Quelle für beides: Was ApoPulse kann, steht im Menü (mit Vorschau-Panel
+//  Eine Quelle für beides: Was ApoPulse kann, steht im Menü (mit Vorschau-Spalte
 //  ab Tablet-Breite) und auf der Startseite unter dem Formular. Die Vorschauen
-//  sind bewusst SCHEMATISCH (Platzhalter-Balken + echte Status-Begriffe) und als
-//  „Beispielansicht" beschriftet: keine erfundenen Wirkstoffe, keine Zahlen ohne
-//  Quelle (Vorgabe: sicherheitsrelevante Aussagen nur mit Quelle).
+//  zeigen ECHTE, aktuelle Einträge des Landes (/api/vorschau, nur amtliche
+//  Engpässe, jede Zeile mit Quelle) — keine erfundenen Beispiele. Gibt es für
+//  ein Land nichts, sagt die Vorschau das, statt Platzhalter zu zeigen.
 function kmFunktionsListe() {
   const liste = [
     { id: 'shortages', ic: 'package', t: 'km_f_shortages_t', d: 'km_f_shortages_d' },
@@ -10883,51 +10883,60 @@ function kmFunktionsListe() {
   if ((featureAn('preise') || featureAn('rabatte')) && landHatPreise()) liste.push({ id: 'prices', ic: 'euro', t: 'km_f_prices_t', d: 'km_f_prices_d' });
   return liste;
 }
-function kmMock(id) {
-  const chip = (art, key) => `<span class="km-chip km-chip-${art}">${esc(t(key))}</span>`;
-  const balken = (w) => `<span class="km-bar" style="width:${w}%"></span>`;
-  const zeile = (inhalt) => `<div class="km-zeile">${inhalt}</div>`;
-  const quelle = `<span class="km-quelle">${esc(t('km_m_quelle'))}</span>`;
-  const z = {
-    shortages: [[62, chip('crit', 'km_m_krit')], [48, chip('warn', 'km_m_eing')], [55, chip('ok', 'km_m_wieder')]]
-      .map(([w, c]) => zeile(`<span class="km-zeile-haupt">${balken(w)}${balken(w - 22)}</span>${c}${quelle}`)).join(''),
-    signals: [[58, chip('crit', 'km_m_rueckruf')], [66, chip('info', 'km_m_hinweis')], [50, chip('crit', 'km_m_rueckruf')]]
-      .map(([w, c]) => zeile(`${c}<span class="km-zeile-haupt">${balken(w)}${balken(w - 25)}</span>${quelle}`)).join(''),
-    news: [[70, true], [58, false], [64, false]]
-      .map(([w, neu]) => zeile(`<span class="km-thumb"></span><span class="km-zeile-haupt">${balken(w)}${balken(w - 18)}</span>${neu ? chip('ok', 'km_m_neu') : ''}`)).join(''),
-    prices: [[52, true], [60, false], [46, false]]
-      .map(([w, best]) => zeile(`<span class="km-zeile-haupt">${balken(w)}${balken(w - 20)}</span>${best ? chip('ok', 'km_m_guenstig') : ''}<span class="km-preis">${balken(100)}</span>`)).join(''),
-  };
-  return `<div class="km-mock" aria-hidden="true"><div class="km-mock-kopf">${esc(t('km_beispiel'))}</div>${z[id] || ''}</div>`;
+const _kmDaten = {};
+function kmLand() {
+  try { return String((me && localStorage.getItem('apo_token') ? viewCountry() : localStorage.getItem('apo_country')) || '').toUpperCase(); } catch { return ''; }
 }
-// Was ein Klick auf eine Funktion bewirkt — abhängig davon, ob jemand angemeldet ist.
+function kmLadeVorschau(cc = kmLand()) {
+  if (!/^[A-Z]{2}$/.test(cc)) return Promise.resolve(null);
+  if (!_kmDaten[cc]) _kmDaten[cc] = fetch('/api/vorschau/' + cc).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  return _kmDaten[cc];
+}
+const kmDatum = (iso) => { try { return iso ? new Date(iso).toLocaleDateString(LOCALE, { day: 'numeric', month: 'short' }) : ''; } catch { return ''; } };
+// Vorschau-Inhalt: `daten` = Antwort von /api/vorschau, `undefined` = lädt noch.
+function kmMock(id, daten) {
+  if (id === 'prices') return '';
+  const chip = (art, key) => `<span class="km-chip km-chip-${art}">${esc(t(key))}</span>`;
+  const zeile = (haupt, rechts = '') => `<div class="km-zeile"><span class="km-zeile-haupt">${haupt}</span>${rechts}</div>`;
+  const quelle = (q, d) => `<span class="km-zeile-quelle">${esc([q, kmDatum(d)].filter(Boolean).join(' · '))}</span>`;
+  let zeilen;
+  if (!kmLand()) zeilen = `<div class="km-hinweis">${esc(t('km_land_zuerst'))}</div>`;
+  else if (daten === undefined) zeilen = `<div class="km-hinweis">${esc(t('km_laedt'))}</div>`;
+  else {
+    const z = (daten && daten[{ shortages: 'engpaesse', signals: 'signale', news: 'news' }[id]]) || [];
+    if (!z.length) zeilen = `<div class="km-hinweis">${esc(t('km_leer'))}</div>`;
+    else if (id === 'shortages') zeilen = z.map((e) => zeile(`<span class="km-zeile-titel">${esc(e.wirkstoff)}</span>${quelle(e.quelle)}`, chip(e.status === 'kritisch' ? 'crit' : 'warn', e.status === 'kritisch' ? 'km_m_krit' : 'km_m_eing'))).join('');
+    else if (id === 'signals') zeilen = z.map((e) => zeile(`<span class="km-zeile-titel km-2z">${esc(e.titel)}</span>${quelle(e.quelle, e.datum)}`,
+      e.kategorie === 'RECALL' ? chip('crit', 'km_m_rueckruf') : e.kategorie === 'SHORTAGE' ? chip('warn', 'km_m_engpass') : chip('info', 'km_m_hinweis'))).join('');
+    else zeilen = z.map((e) => zeile(`<span class="km-zeile-titel km-2z">${esc(e.titel)}</span>${quelle(e.quelle, e.datum)}`)).join('');
+  }
+  return `<div class="km-mock"><div class="km-mock-kopf">${esc(t('km_live'))}</div>${zeilen}</div>`;
+}
+// Was ein Klick auf eine Funktion bewirkt. Angemeldet: den Bereich öffnen.
+// Ohne Konto gibt es nur für Engpässe ein eigenes Ziel (die öffentliche Liste);
+// alles andere zeigt die Vorschau — keine Registrierungs-Aufforderung je Karte.
 function kmAktion(id) {
   if (me && localStorage.getItem('apo_token')) return { label: t('km_oeffnen'), los: () => switchTab(id) };
-  if (id === 'shortages') return { label: t('km_ohne_konto'), los: () => { location.href = '/engpaesse'; } };
-  return { label: t('km_registrieren'), los: kmZurRegistrierung };
+  const cc = kmLand();
+  if (id === 'shortages') return { label: t('km_alle_engpaesse'), href: cc ? '/engpaesse/' + cc.toLowerCase() : '/engpaesse' };
+  return null;
 }
-function kmZurRegistrierung() {
-  if (!document.querySelector('[data-auth="register"]')) {
-    if (!_hasCountry()) { const k = document.querySelector('.country-pick'); if (k) k.focus(); return; }
-    authScreen();
-  }
-  const tab = document.querySelector('[data-auth="register"]');
-  if (tab) tab.click();
-  const feld = document.getElementById('rg_name');
-  if (feld) { feld.scrollIntoView({ behavior: 'smooth', block: 'center' }); feld.focus({ preventScroll: true }); }
+function kmCta(a) {
+  if (!a) return '';
+  return a.href ? `<a class="km-v-cta" href="${esc(a.href)}">${esc(a.label)} <span aria-hidden="true">→</span></a>`
+    : `<button type="button" class="km-v-cta" data-kmcta>${esc(a.label)} <span aria-hidden="true">→</span></button>`;
 }
-function kmVorschauHtml(f) {
-  const a = kmAktion(f.id);
+function kmVorschauHtml(f, daten) {
   return `<div class="km-v-kopf"><span class="km-v-ic">${ico(f.ic, 20)}</span><div><div class="km-v-titel">${esc(t(f.t))}</div><div class="km-v-text">${esc(t(f.d))}</div></div></div>
-    ${kmMock(f.id)}<button type="button" class="km-v-cta" data-kmcta>${esc(a.label)} <span aria-hidden="true">→</span></button>`;
+    ${kmMock(f.id, daten)}${kmCta(kmAktion(f.id))}`;
 }
 // Funktionskarten für die Startseite (vor der Anmeldung).
 function kmFunktionsKarten() {
-  const karten = kmFunktionsListe().map((f) => `<button type="button" class="km-karte" data-kmkarte="${f.id}">
-      <span class="km-v-kopf"><span class="km-v-ic">${ico(f.ic, 20)}</span><span><span class="km-v-titel">${esc(t(f.t))}</span><span class="km-v-text">${esc(t(f.d))}</span></span></span>
-      ${kmMock(f.id)}<span class="km-v-cta">${esc(kmAktion(f.id).label)} <span aria-hidden="true">→</span></span></button>`).join('');
-  const sek = el(`<section class="km-landing" aria-labelledby="kmLandingTitel"><h2 id="kmLandingTitel" class="km-landing-titel">${esc(t('km_landing_titel'))}</h2><div class="km-karten">${karten}</div></section>`);
-  sek.querySelectorAll('[data-kmkarte]').forEach((b) => { b.onclick = () => kmAktion(b.dataset.kmkarte).los(); });
+  const liste = kmFunktionsListe();
+  const karte = (f, daten) => `<div class="km-v-kopf"><span class="km-v-ic">${ico(f.ic, 20)}</span><div><h3 class="km-v-titel">${esc(t(f.t))}</h3><div class="km-v-text">${esc(t(f.d))}</div></div></div>${kmMock(f.id, daten)}${kmCta(kmAktion(f.id))}`;
+  const sek = el(`<section class="km-landing" aria-labelledby="kmLandingTitel"><h2 id="kmLandingTitel" class="km-landing-titel">${esc(t('km_landing_titel'))}</h2>
+    <div class="km-karten">${liste.map((f) => `<article class="km-karte" id="kmKarte-${f.id}">${karte(f)}</article>`).join('')}</div></section>`);
+  kmLadeVorschau().then((d) => liste.forEach((f) => { const k = sek.querySelector('#kmKarte-' + f.id); if (k) k.innerHTML = karte(f, d); }));
   return sek;
 }
 
@@ -10940,12 +10949,32 @@ function kmFunktionsKarten() {
   const fkt = document.getElementById('kmFunktionen');
   const vorschau = document.getElementById('kmVorschau');
   if (!knopf || !menue) return;
+  let daten;
+  const binde = (wurzel, f) => { const cta = wurzel.querySelector('[data-kmcta]'); if (cta) cta.onclick = () => { zu(false); kmAktion(f.id).los(); }; };
   const zeige = (f) => {
     if (!vorschau || !f) return;
-    vorschau.innerHTML = kmVorschauHtml(f);
-    const cta = vorschau.querySelector('[data-kmcta]');
-    if (cta) cta.onclick = () => { zu(false); kmAktion(f.id).los(); };
+    vorschau.dataset.kmf = f.id;
+    vorschau.innerHTML = kmVorschauHtml(f, daten);
+    binde(vorschau, f);
     fkt.querySelectorAll('[data-kmf]').forEach((b) => b.classList.toggle('km-aktiv', b.dataset.kmf === f.id));
+  };
+  // Ohne Konto führt ein Klick zum Beispiel: zur Karte auf der Startseite oder —
+  // wo es keine gibt (Länderwahl) — klappt die Vorschau direkt unter dem Eintrag auf.
+  const zumBeispiel = (f, knopfEl) => {
+    const karte = document.getElementById('kmKarte-' + f.id);
+    if (karte) {
+      zu(false);
+      karte.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      karte.classList.remove('km-karte-fokus'); void karte.offsetWidth; karte.classList.add('km-karte-fokus');
+      return;
+    }
+    const offen = fkt.querySelector('.km-inline');
+    const warSelbe = offen && offen.dataset.kmf === f.id;
+    if (offen) offen.remove();
+    fkt.querySelectorAll('[data-kmf]').forEach((b) => b.setAttribute('aria-expanded', 'false'));
+    if (warSelbe) return;
+    const box = el(`<div class="km-inline" data-kmf="${f.id}">${kmVorschauHtml(f, daten)}</div>`);
+    binde(box, f); knopfEl.after(box); knopfEl.setAttribute('aria-expanded', 'true');
   };
   // Bei jedem Öffnen neu: Land, Anmeldung und Sprache können sich geändert haben.
   const baue = () => {
@@ -10956,9 +10985,19 @@ function kmFunktionsKarten() {
       const f = liste.find((x) => x.id === b.dataset.kmf);
       b.addEventListener('mouseenter', () => zeige(f));
       b.addEventListener('focus', () => zeige(f));
-      b.onclick = () => kmAktion(f.id).los();
+      b.onclick = (e) => {
+        const a = kmAktion(f.id);
+        if (a && a.los) { a.los(); return; }
+        e.stopPropagation(); zumBeispiel(f, b);
+      };
     });
     zeige(liste[0]);
+    kmLadeVorschau().then((d) => {
+      daten = d;
+      const f = liste.find((x) => x.id === vorschau?.dataset.kmf); if (f) zeige(f);
+      const box = fkt.querySelector('.km-inline');
+      if (box) { const g = liste.find((x) => x.id === box.dataset.kmf); if (g) { box.innerHTML = kmVorschauHtml(g, daten); binde(box, g); } }
+    });
   };
   const zu = (fokus) => {
     if (menue.hidden) return;
@@ -10974,7 +11013,7 @@ function kmFunktionsKarten() {
   };
   menue.addEventListener('click', (e) => {
     const b = e.target.closest('button');
-    if (b && b.id !== 'btnTheme' && b.id !== 'btnFont') zu(false);
+    if (b && b.id !== 'btnTheme' && b.id !== 'btnFont' && !(b.dataset.kmf && !kmAktion(b.dataset.kmf)?.los)) zu(false);
   });
   // Pfeiltasten wie in jedem Menü (WAI-ARIA): hoch/runter, Pos1/Ende.
   menue.addEventListener('keydown', (e) => {

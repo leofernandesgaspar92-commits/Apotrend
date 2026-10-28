@@ -253,6 +253,8 @@ ${inhalt}
 
   return {
     slug, laenderMitDaten, nameZu,
+    // Für die Funktionsvorschau der App (/api/vorschau): dieselben amtlichen Einträge wie hier.
+    eintraege,
 
     laenderOhneQuelle,
 

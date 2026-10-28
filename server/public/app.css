@@ -462,18 +462,17 @@
   .km-vorschau button.km-v-cta:hover { background:var(--green-d); }
   .km-mock { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:10px; display:flex; flex-direction:column; gap:8px; }
   .km-mock-kopf { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
-  .km-zeile { display:flex; align-items:center; gap:8px; padding:8px; border:1px solid var(--line); border-radius:var(--radius-sm); min-height:44px; }
-  .km-zeile-haupt { flex:1; display:flex; flex-direction:column; gap:5px; min-width:0; }
-  .km-bar { display:block; height:7px; border-radius:4px; background:var(--line); max-width:100%; }
-  .km-bar + .km-bar { height:5px; opacity:.7; }
+  .km-zeile { display:flex; flex-wrap:wrap; align-items:flex-start; gap:6px 10px; padding:8px 10px; border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--card); }
+  .km-zeile-haupt { flex:1 1 6em; display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .km-zeile-titel { font-size:14px; font-weight:600; color:var(--text); line-height:1.35; overflow-wrap:break-word; }
+  .km-2z { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .km-zeile-quelle { font-size:13px; color:var(--muted); line-height:1.3; }
+  .km-hinweis { font-size:14px; color:var(--muted); padding:6px 2px; }
   .km-chip { flex:none; font-size:13px; font-weight:700; padding:2px 8px; border-radius:var(--radius-chip); border:1px solid; white-space:nowrap; }
   .km-chip-crit { background:var(--crit-bg); color:var(--crit-fg); border-color:var(--crit-bd); }
   .km-chip-warn { background:var(--warn-bg); color:var(--warn-fg); border-color:var(--warn-bd); }
   .km-chip-ok { background:var(--ok-bg); color:var(--ok-fg); border-color:var(--ok-bd); }
   .km-chip-info { background:var(--info-bg); color:var(--info-fg); border-color:var(--info-bd); }
-  .km-quelle { flex:none; font-size:13px; font-weight:600; color:var(--muted); border:1px dashed var(--line); border-radius:6px; padding:1px 6px; }
-  .km-thumb { flex:none; width:30px; height:30px; border-radius:6px; background:var(--chip-bg); }
-  .km-preis { flex:none; width:38px; }
   /* Startseite: Funktionskarten unter Formular und Nutzenversprechen. */
   .km-landing { margin:36px 0 24px; }
   .km-landing-titel { font-size:1.35em; font-weight:800; letter-spacing:-0.01em; margin:0 0 14px; }
@@ -481,7 +480,6 @@
   .km-karte { display:flex; flex-direction:column; gap:14px; align-items:stretch; text-align:start; background:var(--card); color:var(--text);
     border:1px solid var(--line); border-radius:var(--radius); padding:16px; font-weight:400; min-height:0; box-shadow:none;
     transition:border-color .15s ease, box-shadow .15s ease; }
-  button.km-karte { border-radius:var(--radius); }
   .km-karte:hover { background:var(--card); border-color:var(--green); box-shadow:var(--shadow-hover); }
   .km-karte .km-mock { background:var(--bg); }
   .ic-text { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; font-weight:800; font-size:18px; line-height:1; }
@@ -773,6 +771,17 @@ a.btn-link.teil-neutral:hover { background:var(--chip-bg); }
 @media (min-width:820px){ .auth-land { justify-content:flex-start; margin-bottom:14px; } }
 /* Funktionskarten: Vorschauen auf einer Linie, auch wenn die Beschreibung unterschiedlich lang ist. */
 .km-karte .km-v-kopf { min-height:5.6em; }
-.km-thumb { background:var(--line); }
 /* Unter 1000px liegt unten die Navigationsleiste (76px) — das Menü endet darüber. */
 @media (max-width:999.98px){ body.mit-nav .kopf-menue { max-height:calc(100vh - var(--header-h, 64px) - 96px - env(safe-area-inset-bottom)); } }
+/* Link-Variante der Vorschau-Aktion (ohne Konto: öffentliche Engpassliste) — ruhiger Textlink. */
+a.km-v-cta { text-decoration:none; align-self:flex-start; }
+a.km-v-cta:hover { text-decoration:underline; }
+/* Aus dem Menü angesprungene Karte kurz hervorheben. */
+.km-karte { scroll-margin-top:calc(var(--header-h, 64px) + 16px); }
+.km-karte-fokus { animation:km-fokus 1.8s ease-out; }
+@keyframes km-fokus { 0%, 35% { border-color:var(--green); box-shadow:0 0 0 3px var(--ok-bd); } 100% { box-shadow:0 0 0 0 transparent; } }
+@media (prefers-reduced-motion:reduce){ .km-karte-fokus { animation:none; border-color:var(--green); } }
+/* Vorschau direkt im Menü (Handy, wo keine Karte zum Anspringen da ist). */
+.km-inline { display:flex; flex-direction:column; gap:12px; margin:2px 4px 8px; padding:12px; background:var(--bg); border:1px solid var(--line); border-radius:var(--radius); }
+.km-inline .km-v-kopf { display:none; }
+@media (min-width:760px){ .km-inline { display:none; } }
