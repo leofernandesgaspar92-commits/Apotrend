@@ -246,7 +246,7 @@ ul.l{list-style:none;margin:0;padding:0}ul.l li{padding:10px 0;border-top:1px so
 .s{font-weight:700;white-space:nowrap}.s.kritisch{color:#b42318}.s.eingeschraenkt{color:#9a6700}nav.p{font-size:15px;margin:8px 0}
 @media (prefers-color-scheme:dark){body{background:#0f1419;color:#e7e9ea}.c{background:#16202a;border-color:#2f3b45}.mu{color:#9aa8b4}ul.l li{border-color:#2f3b45}a{color:#6cb6ff}.m{color:#22cc5c}a.b{background:#22cc5c;color:#04170a}.s.kritisch{color:#ff8a80}.s.eingeschraenkt{color:#ffd166}}
 </style></head>
-<body><div class="k"><a class="m" href="/"><svg width="28" height="28" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="7" fill="#0b7f28"/><path d="M13 6.2v13.6M6.2 13h13.6" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/></svg>ApoPulse</a>
+<body><div class="k"><a class="m" href="/"><svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#0b7f28"/><path d="M5.5 16.5h5l2.6-5.5 4.2 10.5 2.6-5h3.1" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="25.2" cy="16.5" r="2.3" fill="#fff"/></svg>ApoPulse</a>
 ${inhalt}
 </div></body></html>`;
   }

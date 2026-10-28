@@ -185,7 +185,7 @@ a.b{display:block;text-align:center;background:#0b7f28;color:#fff;text-decoratio
 @media (prefers-color-scheme:dark){body{background:#0f1419;color:#e7e9ea}.c{background:#16202a;border-color:#2f3b45}p,.s{color:#9aa8b4}.m{color:#22cc5c}a.b{background:#22cc5c;color:#04170a}}
 </style></head>
 <body><div class="k"><div class="c">
-<div class="m"><svg width="28" height="28" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="7" fill="#0b7f28"/><path d="M13 6.2v13.6M6.2 13h13.6" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/></svg>ApoPulse</div>
+<div class="m"><svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#0b7f28"/><path d="M5.5 16.5h5l2.6-5.5 4.2 10.5 2.6-5h3.1" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="25.2" cy="16.5" r="2.3" fill="#fff"/></svg>ApoPulse</div>
 <h1>${esc(flagge(d.land))} ${esc(titel)}</h1>
 <p>${esc(beschr)}</p>
 <a class="b" href="${esc(ziel)}">${esc(cta)}</a>

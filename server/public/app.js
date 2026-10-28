@@ -725,7 +725,7 @@ async function countryScreen() {
   const gruppen = folge.map((r) => ({ r, laender: countries.filter((c) => c.region === r).sort(nachName) })).filter((g) => g.laender.length);
   const ohneRegion = countries.filter((c) => !c.region);
   const card = el(`<div class="card" style="text-align:center" lang="${esc(bl)}" dir="${richtungVon(bl)}" data-laenderwahl>
-    <div style="display:flex;justify-content:center;margin-bottom:8px"><svg width="54" height="54" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="7" fill="var(--green)"/><path d="M13 6.2v13.6M6.2 13h13.6" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/></svg></div>
+    <div style="display:flex;justify-content:center;margin-bottom:8px"><svg width="54" height="54" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--green)"/><path d="M5.5 16.5h5l2.6-5.5 4.2 10.5 2.6-5h3.1" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="25.2" cy="16.5" r="2.3" fill="#fff"/></svg></div>
     <h1 style="margin:.2em 0">${esc(tb('cs_title'))}</h1>
     <div class="muted" style="font-size:.95em">${esc(andere)}</div>
     <div class="muted" style="margin-top:6px">${esc(tb('cs_sub'))}</div>
@@ -812,7 +812,7 @@ function authScreen() {
   const ac = currentAuthCountry();
   // Gewähltes Land oben + „Land ändern" (zurück zu Schritt 1).
   app.appendChild(el(`
-  <div class="row" style="justify-content:center;gap:8px 10px;margin-bottom:6px;align-items:center;flex-wrap:wrap">
+  <div class="row auth-land" style="gap:8px 10px;margin-bottom:6px;align-items:center;flex-wrap:wrap">
     <span>${ac ? `<span aria-hidden="true" style="font-size:1.2em">${esc(ac.flag)}</span> <b>${esc(ac.name)}</b>` : localStorage.getItem('apo_country') ? `<b>${esc(landAnzeige(localStorage.getItem('apo_country')))}</b>` : ''}</span>
     ${localStorage.getItem('apo_land_auto') ? `<span class="muted" data-landauto style="font-size:14px">(${esc(t('cs_auto'))})</span>` : ''}
     <button class="ghost small" id="changeCountry">${esc(t('cs_change'))}</button>
@@ -877,11 +877,14 @@ function authScreen() {
     </div>
   </div>`));
 
+  app.appendChild(kmFunktionsKarten());
   // Bereiche erst nach der Abfrage kennen (vor der Anmeldung noch nicht
   // geladen), dann die Liste neu setzen; „Lage jetzt" mit echten Zahlen.
   ladeFeatures().then(() => {
     const ul = app.querySelector('[data-herolist]');
     if (ul) ul.innerHTML = heroListe();
+    const alt = app.querySelector('.km-landing');
+    if (alt) alt.replaceWith(kmFunktionsKarten());
   });
   // Code aus der gespeicherten Wahl, nicht aus `ac`: Die Länderliste ist beim
   // ersten Aufbau oft noch nicht geladen, `ac` dann leer.
@@ -10864,13 +10867,99 @@ makeClickableAccessible(document);
 fuelleIcons();
 applyFontScale();
 applyTheme();
+// ── Funktionen mit Vorschau (Menü und Startseite) ─────────────────────────
+//  Eine Quelle für beides: Was ApoPulse kann, steht im Menü (mit Vorschau-Panel
+//  ab Tablet-Breite) und auf der Startseite unter dem Formular. Die Vorschauen
+//  sind bewusst SCHEMATISCH (Platzhalter-Balken + echte Status-Begriffe) und als
+//  „Beispielansicht" beschriftet: keine erfundenen Wirkstoffe, keine Zahlen ohne
+//  Quelle (Vorgabe: sicherheitsrelevante Aussagen nur mit Quelle).
+function kmFunktionsListe() {
+  const liste = [
+    { id: 'shortages', ic: 'package', t: 'km_f_shortages_t', d: 'km_f_shortages_d' },
+    { id: 'signals', ic: 'alert', t: 'km_f_signals_t', d: 'km_f_signals_d' },
+    { id: 'news', ic: 'news', t: 'km_f_news_t', d: 'km_f_news_d' },
+  ];
+  // Preise nur, wo es sie gibt (gleiche Regel wie die Punkte auf der Startseite).
+  if ((featureAn('preise') || featureAn('rabatte')) && landHatPreise()) liste.push({ id: 'prices', ic: 'euro', t: 'km_f_prices_t', d: 'km_f_prices_d' });
+  return liste;
+}
+function kmMock(id) {
+  const chip = (art, key) => `<span class="km-chip km-chip-${art}">${esc(t(key))}</span>`;
+  const balken = (w) => `<span class="km-bar" style="width:${w}%"></span>`;
+  const zeile = (inhalt) => `<div class="km-zeile">${inhalt}</div>`;
+  const quelle = `<span class="km-quelle">${esc(t('km_m_quelle'))}</span>`;
+  const z = {
+    shortages: [[62, chip('crit', 'km_m_krit')], [48, chip('warn', 'km_m_eing')], [55, chip('ok', 'km_m_wieder')]]
+      .map(([w, c]) => zeile(`<span class="km-zeile-haupt">${balken(w)}${balken(w - 22)}</span>${c}${quelle}`)).join(''),
+    signals: [[58, chip('crit', 'km_m_rueckruf')], [66, chip('info', 'km_m_hinweis')], [50, chip('crit', 'km_m_rueckruf')]]
+      .map(([w, c]) => zeile(`${c}<span class="km-zeile-haupt">${balken(w)}${balken(w - 25)}</span>${quelle}`)).join(''),
+    news: [[70, true], [58, false], [64, false]]
+      .map(([w, neu]) => zeile(`<span class="km-thumb"></span><span class="km-zeile-haupt">${balken(w)}${balken(w - 18)}</span>${neu ? chip('ok', 'km_m_neu') : ''}`)).join(''),
+    prices: [[52, true], [60, false], [46, false]]
+      .map(([w, best]) => zeile(`<span class="km-zeile-haupt">${balken(w)}${balken(w - 20)}</span>${best ? chip('ok', 'km_m_guenstig') : ''}<span class="km-preis">${balken(100)}</span>`)).join(''),
+  };
+  return `<div class="km-mock" aria-hidden="true"><div class="km-mock-kopf">${esc(t('km_beispiel'))}</div>${z[id] || ''}</div>`;
+}
+// Was ein Klick auf eine Funktion bewirkt — abhängig davon, ob jemand angemeldet ist.
+function kmAktion(id) {
+  if (me && localStorage.getItem('apo_token')) return { label: t('km_oeffnen'), los: () => switchTab(id) };
+  if (id === 'shortages') return { label: t('km_ohne_konto'), los: () => { location.href = '/engpaesse'; } };
+  return { label: t('km_registrieren'), los: kmZurRegistrierung };
+}
+function kmZurRegistrierung() {
+  if (!document.querySelector('[data-auth="register"]')) {
+    if (!_hasCountry()) { const k = document.querySelector('.country-pick'); if (k) k.focus(); return; }
+    authScreen();
+  }
+  const tab = document.querySelector('[data-auth="register"]');
+  if (tab) tab.click();
+  const feld = document.getElementById('rg_name');
+  if (feld) { feld.scrollIntoView({ behavior: 'smooth', block: 'center' }); feld.focus({ preventScroll: true }); }
+}
+function kmVorschauHtml(f) {
+  const a = kmAktion(f.id);
+  return `<div class="km-v-kopf"><span class="km-v-ic">${ico(f.ic, 20)}</span><div><div class="km-v-titel">${esc(t(f.t))}</div><div class="km-v-text">${esc(t(f.d))}</div></div></div>
+    ${kmMock(f.id)}<button type="button" class="km-v-cta" data-kmcta>${esc(a.label)} <span aria-hidden="true">→</span></button>`;
+}
+// Funktionskarten für die Startseite (vor der Anmeldung).
+function kmFunktionsKarten() {
+  const karten = kmFunktionsListe().map((f) => `<button type="button" class="km-karte" data-kmkarte="${f.id}">
+      <span class="km-v-kopf"><span class="km-v-ic">${ico(f.ic, 20)}</span><span><span class="km-v-titel">${esc(t(f.t))}</span><span class="km-v-text">${esc(t(f.d))}</span></span></span>
+      ${kmMock(f.id)}<span class="km-v-cta">${esc(kmAktion(f.id).label)} <span aria-hidden="true">→</span></span></button>`).join('');
+  const sek = el(`<section class="km-landing" aria-labelledby="kmLandingTitel"><h2 id="kmLandingTitel" class="km-landing-titel">${esc(t('km_landing_titel'))}</h2><div class="km-karten">${karten}</div></section>`);
+  sek.querySelectorAll('[data-kmkarte]').forEach((b) => { b.onclick = () => kmAktion(b.dataset.kmkarte).los(); });
+  return sek;
+}
+
 // Kopf-Menü: ein Knopf statt sieben. Schließt bei Klick daneben, mit Escape
 // und nach der Wahl — außer bei Hell/Dunkel und Schrift, deren Wirkung man
 // direkt sehen und gleich noch einmal umschalten will.
 (function kopfMenue() {
   const knopf = document.getElementById('btnMenue');
   const menue = document.getElementById('kopfMenue');
+  const fkt = document.getElementById('kmFunktionen');
+  const vorschau = document.getElementById('kmVorschau');
   if (!knopf || !menue) return;
+  const zeige = (f) => {
+    if (!vorschau || !f) return;
+    vorschau.innerHTML = kmVorschauHtml(f);
+    const cta = vorschau.querySelector('[data-kmcta]');
+    if (cta) cta.onclick = () => { zu(false); kmAktion(f.id).los(); };
+    fkt.querySelectorAll('[data-kmf]').forEach((b) => b.classList.toggle('km-aktiv', b.dataset.kmf === f.id));
+  };
+  // Bei jedem Öffnen neu: Land, Anmeldung und Sprache können sich geändert haben.
+  const baue = () => {
+    if (!fkt) return;
+    const liste = kmFunktionsListe();
+    fkt.innerHTML = liste.map((f) => `<button role="menuitem" data-kmf="${f.id}"><span class="ic">${ico(f.ic, 24)}</span><span class="km-tx"><span class="hlabel">${esc(t(f.t))}</span><small class="km-desc">${esc(t(f.d))}</small></span></button>`).join('');
+    fkt.querySelectorAll('[data-kmf]').forEach((b) => {
+      const f = liste.find((x) => x.id === b.dataset.kmf);
+      b.addEventListener('mouseenter', () => zeige(f));
+      b.addEventListener('focus', () => zeige(f));
+      b.onclick = () => kmAktion(f.id).los();
+    });
+    zeige(liste[0]);
+  };
   const zu = (fokus) => {
     if (menue.hidden) return;
     menue.hidden = true; knopf.setAttribute('aria-expanded', 'false');
@@ -10879,12 +10968,24 @@ applyTheme();
   knopf.onclick = (e) => {
     e.stopPropagation();
     const auf = menue.hidden;
+    if (auf) baue();
     menue.hidden = !auf; knopf.setAttribute('aria-expanded', String(auf));
     if (auf) { const erster = menue.querySelector('button:not(.hidden)'); if (erster) erster.focus(); }
   };
   menue.addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (b && b.id !== 'btnTheme' && b.id !== 'btnFont') zu(false);
+  });
+  // Pfeiltasten wie in jedem Menü (WAI-ARIA): hoch/runter, Pos1/Ende.
+  menue.addEventListener('keydown', (e) => {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return;
+    const alle = [...menue.querySelectorAll('[role="menuitem"]')].filter((b) => !b.classList.contains('hidden') && b.offsetParent);
+    if (!alle.length) return;
+    e.preventDefault();
+    const i = alle.indexOf(document.activeElement);
+    const n = e.key === 'Home' ? 0 : e.key === 'End' ? alle.length - 1
+      : e.key === 'ArrowDown' ? (i + 1) % alle.length : (i - 1 + alle.length) % alle.length;
+    alle[n].focus();
   });
   document.addEventListener('click', (e) => {
     if (!menue.contains(e.target) && e.target !== knopf) zu(false);
