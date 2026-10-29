@@ -2799,12 +2799,14 @@ async function datenSchnittstelle(req, res, url) {
       const ergebnisse = r.ergebnisse.map((e) => ({
         eingabe: e.eingabe, wirkstoff: e.wirkstoff || null, einstufung: e.einstufung, status: e.status || null,
         erkannt_ueber: e.erkannt_ueber || null, // Produktname aus den Engpassdaten, über den die Zeile erkannt wurde
+        auch: e.auch || [], // weitere Zeilen der Liste mit demselben Wirkstoff
         voraussichtlich_bis: e.voraussichtlich_bis || null, seit_tagen: e.seit_tagen ?? null,
         herkunft: e.herkunft === 'verified' ? 'behoerde' : e.herkunft === 'community' ? 'apotheken_meldung' : null,
         quelle: e.quelle || null,
         ausland: (e.ausland || []).map((a) => a.land),
       }));
-      if (format === 'csv') return csv(alsCsv(ergebnisse, V1_PRUEF_SPALTEN), 'apopulse-pruefung.csv');
+      // CSV: jede eingegebene Zeile bekommt eine Ergebniszeile (auch die mit gleichem Wirkstoff).
+      if (format === 'csv') return csv(alsCsv(ergebnisse.flatMap((e) => [e, ...e.auch.map((a) => ({ ...e, eingabe: a }))]), V1_PRUEF_SPALTEN), 'apopulse-pruefung.csv');
       return antwort(200, { land, stand, geprueft: r.geprueft, nicht_geprueft: r.gesperrt, zusammenfassung: r.zusammenfassung, ergebnisse, laender_mit_behoerdenliste: r.laender, hinweis });
     }
     return antwort(404, { error: 'Unbekannter Endpunkt. Verfügbar: /api/v1/status, /api/v1/engpaesse, /api/v1/pruefen' });

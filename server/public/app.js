@@ -5419,7 +5419,7 @@ function zeigeSortiment(box, d) {
   };
   const c = kopf.querySelector('[data-srtcsv]');
   if (c) c.onclick = () => downloadCsv('sortiment-check', [t('srt_csv_eingabe'), t('srt_csv_wirkstoff'), t('srt_csv_einstufung'), t('srt_csv_details')],
-    d.ergebnisse.map((e) => [e.eingabe, e.wirkstoff || '', t('srt_k_' + e.einstufung), srtZeileText(e)]));
+    d.ergebnisse.flatMap((e) => [e.eingabe, ...(e.auch || [])].map((z) => [z, e.wirkstoff || '', t('srt_k_' + e.einstufung), srtZeileText(e)])));
   const liste = el('<div class="card srt-liste"></div>');
   d.ergebnisse.forEach((e) => {
     const zeile = el(`<div class="srt-zeile" style="--srt-farbe:${SRT_FARBE[e.einstufung]}">
@@ -5427,6 +5427,7 @@ function zeigeSortiment(box, d) {
       <div class="srt-text">
         <div class="srt-name">${esc(e.wirkstoff || e.eingabe)}${e.wirkstoff && e.eingabe.toLowerCase() !== e.wirkstoff.toLowerCase() ? ` <span class="muted srt-eingabe">${esc(e.eingabe)}</span>` : ''}</div>
         <div class="srt-status">${esc(srtZeileText(e))}</div>
+        ${e.auch && e.auch.length ? `<div class="muted srt-auch" style="font-size:14px;margin-top:2px">${esc(ti('srt_auch', { zeilen: e.auch.join(' · ') }))}</div>` : ''}
       </div>
       ${!e.wirkstoff && e.aehnlich && e.aehnlich.length ? `<div class="srt-aktion"><button class="ghost small" data-aehnlich>${esc(t('srt_ansehen'))}</button></div>` : ''}
       ${e.wirkstoff ? `<div class="srt-aktion">

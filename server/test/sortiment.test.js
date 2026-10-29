@@ -118,3 +118,13 @@ test('Handelsnamen aus den Engpassdaten: „Amoxil 500mg caps" → Amoxicillin (
   const direkt = s.pruefen('u', 'Metformin 850 mg', 'KE').ergebnisse[0];
   assert.equal(direkt.einstufung, 'knapp'); assert.equal(direkt.erkannt_ueber, null);
 });
+
+test('Gleicher Wirkstoff mehrfach in der Liste: ein Ergebnis, keine Zeile verschwindet', () => {
+  const { s } = aufbau(true);
+  const r = s.pruefen('u', 'Amoxicillin 1000 mg Filmtabletten\nAmoxicilin Saft 250 mg/5 ml\nAMOXICILLIN 500\nIbuprofen 400', 'AT');
+  const amox = r.ergebnisse.filter((e) => e.wirkstoff === 'Amoxicillin');
+  assert.equal(amox.length, 1);
+  assert.deepEqual(amox[0].auch, ['Amoxicilin Saft 250 mg/5 ml', 'AMOXICILLIN 500']);
+  const sichtbar = r.ergebnisse.reduce((n, e) => n + 1 + (e.auch || []).length, 0);
+  assert.equal(sichtbar, r.geprueft, 'jede geprüfte Zeile steht im Ergebnis');
+});

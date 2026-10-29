@@ -164,7 +164,9 @@ export function createSortiment({ shortagesRepo, chronik, istPremium }) {
       const beobachtet = new Set(shortagesRepo.listWatch(userId).map((w) => wirkstoffSchluessel(w) || w.toLowerCase()));
 
       const hn = handelsnamen(v);
-      const gesehen = new Set();
+      // Dieselbe Substanz mehrfach in der Liste (Kapseln UND Saft): EIN Ergebnis, die weiteren
+      // Zeilen unter `auch` — bis 10/2026 fielen sie still weg (9 Zeilen geprüft, 8 angezeigt).
+      const proSchluessel = new Map();
       const ergebnisse = [];
       for (const zeile of zuPruefen) {
         let k = erkenne(zeile, v);
@@ -173,8 +175,7 @@ export function createSortiment({ shortagesRepo, chronik, istPremium }) {
           const h = hn.get((ersteWort(zeile) || '').toLowerCase());
           if (h && h.schluessel.size === 1) { k = [...h.schluessel][0]; ueber = h.beispiel; }
         }
-        if (k && gesehen.has(k)) continue; // dieselbe Substanz zweimal in der Liste
-        if (k) gesehen.add(k);
+        if (k && proSchluessel.has(k)) { proSchluessel.get(k).auch.push(zeile); continue; }
         if (!k) { ergebnisse.push({ eingabe: zeile, einstufung: 'unbekannt', aehnlich: aehnliche(zeile, v) }); continue; }
         const name = v.get(k);
         const meldungen = hier.filter((z) => wirkstoffSchluessel(z.wirkstoff) === k)
@@ -183,8 +184,8 @@ export function createSortiment({ shortagesRepo, chronik, istPremium }) {
         const ausland = chronik.offenAnderswo(name, cc).map((a) => ({ land: a.land, seit_tagen: a.dauer_tage, quelle: a.quelle || null }));
         const m = meldungen[0];
         const einstufung = m ? 'knapp' : ausland.length ? 'ausland' : verlauf && verlauf.anzahl ? 'wiederholt' : 'ruhig';
-        ergebnisse.push({
-          eingabe: zeile, wirkstoff: name, einstufung, erkannt_ueber: ueber,
+        const eintrag = {
+          eingabe: zeile, wirkstoff: name, einstufung, erkannt_ueber: ueber, auch: [],
           status: m ? m.status : null,
           quelle: m ? (m.quelle || null) : null,
           herkunft: m ? (m.provenance || null) : null, // verified = Behörde, community = Meldung aus Apotheken
@@ -194,7 +195,9 @@ export function createSortiment({ shortagesRepo, chronik, istPremium }) {
           verlauf: verlauf ? { anzahl: verlauf.anzahl, durchschnitt_tage: verlauf.durchschnitt_tage } : null,
           ausland,
           beobachtet: beobachtet.has(k),
-        });
+        };
+        ergebnisse.push(eintrag);
+        proSchluessel.set(k, eintrag);
       }
       const ordnung = { knapp: 0, ausland: 1, wiederholt: 2, ruhig: 3, unbekannt: 4 };
       ergebnisse.sort((a, b) => ordnung[a.einstufung] - ordnung[b.einstufung]

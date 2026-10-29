@@ -177,6 +177,11 @@ test('Schnittstelle über HTTP: kaufen, Schlüssel, abfragen, widerrufen', { tim
     assert.match(amox.quelle, /^BASG/);
     r = await req('GET', '/api/v1/pruefen?land=AT&wirkstoffe=Amoxicillin;Ibuprofen&format=csv', '', null, A);
     assert.match(r.d, /^eingabe;wirkstoff;einstufung/); // fetch().text() entfernt das BOM
+    // Gleicher Wirkstoff zweimal: JSON fasst zusammen (`auch`), CSV gibt jede Zeile zurück.
+    r = await req('POST', '/api/v1/pruefen', '', { land: 'AT', wirkstoffe: ['Amoxicillin 1000 mg', 'Amoxicillin Saft'] }, A);
+    assert.deepEqual(r.d.ergebnisse.find((e) => e.wirkstoff === 'Amoxicillin').auch, ['Amoxicillin Saft']);
+    r = await req('GET', '/api/v1/pruefen?land=AT&wirkstoffe=Amoxicillin 1000 mg;Amoxicillin Saft&format=csv', '', null, A);
+    assert.equal(r.d.trim().split(/\r?\n/).length, 3, 'Kopf + zwei Zeilen');
     assert.equal((await req('GET', '/api/v1/status', '', null, A)).d.ok, true);
     assert.equal((await req('GET', '/api/v1/gibtsnicht', '', null, A)).status, 404);
 

@@ -3835,3 +3835,11 @@ unter dem Eingabefeld angepasst; Daten-Schnittstelle liefert `erkannt_ueber` (do
 **Owner-Hinweis (Design, nicht geändert):** Im neuen Silber/Graphit-Design haben Nebenknöpfe („Share
 situation", „Open form", „Africa/World", Länderliste) einen Rand mit nur ~1,3:1 Kontrast (WCAG 1.4.11
 empfiehlt 3:1). Sichtbar sind sie als Kästen; wer es deutlicher will: Randfarbe der Knöpfe dunkler.
+
+### Cycle · Sortiments-Check: keine Zeile verschwindet mehr (2026-10-29)
+
+Im Kenia-Rundgang: 9 Zeilen geprüft, 8 angezeigt — „Amoxicilin syrup" fiel still weg, weil derselbe
+Wirkstoff schon über „Amoxil" erkannt war. Wer seine Liste abhakt, sucht die Zeile. Jetzt: ein Ergebnis je
+Wirkstoff, darunter „Also in your list (same substance): …" (5 Sprachen); CSV-Export (App und
+Daten-Schnittstelle) gibt jede eingegebene Zeile zurück, JSON der Schnittstelle hat `auch`.
+**Tests.** sortiment (+1), daten-api (erweitert). 2 Gegenproben, rot.
