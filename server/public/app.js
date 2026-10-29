@@ -1,3 +1,37 @@
+// ── Fehler auf dem Gerät melden ─────────────────────────────────────────────
+// Brach die App auf einem Handy mit einem Skript-Fehler ab, erfuhr das bis 10/2026
+// niemand. Unerwartete Fehler gehen jetzt anonym an /api/fehlerbericht
+// (server/src/services/geraeteFehler.js) — höchstens 5 je Aufruf, jeder nur einmal.
+// NICHT gemeldet: Netz-/Server-Fehler (tragen e.code bzw. sind Netzabbrüche — auf
+// schwachem Netz erwartbar), fremde Skripte (Browser-Erweiterungen), Lade-Fehler.
+(function () {
+  var gemeldet = {}, anzahl = 0;
+  var NETZ = /Failed to fetch|NetworkError|Load failed|network error|The network connection was lost/i;
+  function melde(meldung, datei, zeile, spalte, stapel) {
+    meldung = String(meldung || '').slice(0, 500);
+    if (!meldung || anzahl >= 5 || /^Script error\.?$/i.test(meldung) || /ResizeObserver loop/.test(meldung) || NETZ.test(meldung)) return;
+    if (datei && String(datei).indexOf(location.origin + '/') !== 0) return;
+    var k = meldung + '|' + datei + '|' + zeile;
+    if (gemeldet[k]) return;
+    gemeldet[k] = 1; anzahl++;
+    var daten = JSON.stringify({ meldung: meldung, datei: datei || '', zeile: zeile || 0, spalte: spalte || 0, stapel: String(stapel || '').slice(0, 2000) });
+    try {
+      if (navigator.sendBeacon && navigator.sendBeacon('/api/fehlerbericht', new Blob([daten], { type: 'application/json' }))) return;
+    } catch (e) { /* weiter mit fetch */ }
+    try { fetch('/api/fehlerbericht', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: daten, keepalive: true }).catch(function () {}); } catch (e) { /* egal */ }
+  }
+  window.addEventListener('error', function (e) {
+    if (!e || !e.message) return; // Lade-Fehler von Bildern/Skripten: kein Code-Fehler
+    melde(e.message, e.filename, e.lineno, e.colno, e.error && e.error.stack);
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    var r = e && e.reason;
+    if (!(r instanceof Error) || r.code) return; // Fehler mit Code kommen vom Server/Netz — erwartbar
+    var m = String(r.stack || '').match(/(https?:\/\/[^\s)]+?):(\d+):(\d+)/);
+    melde((r.name || 'Error') + ': ' + r.message, m ? m[1] : '', m ? +m[2] : 0, m ? +m[3] : 0, r.stack);
+  });
+})();
+
 // ── Symbole ─────────────────────────────────────────────────────────────────
 // Ein einheitliches Linien-Set statt Emojis. Emojis sahen je Gerät anders aus,
 // mischten Stile (🔴 📦 💶 🌍) und waren das deutlichste „von KI gebaut"-Signal
@@ -1912,6 +1946,22 @@ function kanalListe(liste) {
     ${liste.slice(0, 8).map((k) => `<div class="row" data-kanal="${esc(k.kanal)}" style="justify-content:space-between;gap:10px;font-size:15px;padding:6px 0;border-top:1px solid var(--line)"><span style="font-weight:600">${esc(name(k.kanal))}</span><span>${esc(ti('bt_kanal_zeile', { b: k.besuche, k: k.konten }))}</span></div>`).join('')}</div>`;
 }
 
+// Abbrüche auf den Geräten (server/src/services/geraeteFehler.js) und abgefangene Server-Fehler.
+function fehlerListe(gf, sf) {
+  if (!gf) return '';
+  const server = sf ? `<div class="muted" style="font-size:14px;margin-top:6px" data-btserverfehler>${esc(ti('bt_gf_server', { a: sf.anfragen || 0, h: sf.hintergrund || 0 }))}</div>` : '';
+  const kopf = `<b style="font-size:15px">${esc(t('bt_gf_titel'))}</b>`;
+  if (!gf.liste || !gf.liste.length) return `<div data-btgeraetefehler style="margin-top:12px">${kopf}<div class="muted" style="font-size:14px;margin-top:4px">${esc(t('bt_gf_leer'))}</div>${server}</div>`;
+  return `<div data-btgeraetefehler style="margin-top:12px">${kopf}
+    <div class="muted" style="font-size:14px;margin-top:4px">${esc(t('bt_gf_hilfe'))}</div>
+    ${gf.liste.slice(0, 5).map((f) => `<div data-gf style="font-size:15px;padding:8px 0;border-top:1px solid var(--line)">
+      <div style="font-weight:600;overflow-wrap:anywhere" dir="ltr">${esc(f.meldung)}</div>
+      <div class="muted" style="font-size:14px">${esc(ti('bt_gf_zeile', { n: f.anzahl, z: vorZeit(f.zuletzt) || '' }))}${f.ort ? ' · <span dir="ltr">' + esc(f.ort) + '</span>' : ''}</div>
+      <div class="muted" style="font-size:14px">${esc((f.geraete || []).slice(0, 3).map((g) => `${g.klasse} (${g.n})`).join(' · '))}</div>
+      ${f.stapel ? `<details style="margin-top:4px"><summary style="cursor:pointer;font-size:14px">${esc(t('bt_gf_details'))}</summary><pre dir="ltr" style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;margin:6px 0 0">${esc(f.stapel)}</pre></details>` : ''}
+    </div>`).join('')}${server}</div>`;
+}
+
 function betriebsKarte(b) {
   const geld = (b.einnahmen.summen || []).map((x) => fmtCurrency(x.cents / 100, x.currency)).join(' + ') || fmtCurrency(0, 'EUR');
   const kachel = (icon, wert, label, sub, col, attr = '') => `<div ${attr} style="flex:1;min-width:min(140px,100%);background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:12px">
@@ -1926,7 +1976,8 @@ function betriebsKarte(b) {
     </div>
     <div class="muted" style="font-size:14px;margin-top:8px">${esc(t('bt_fetch'))}: ${esc(b.abruf.zuletzt ? vorZeit(b.abruf.zuletzt) || '' : t('dq_never'))} · ${esc(t('bt_mail'))}: ${esc(b.mail.aktiv ? t('dq_on') : t('dq_off'))} · ${esc(t('dq_ai'))}: ${esc(b.ki === 'aktiv' ? t('dq_on') : t('dq_off'))}</div>
     ${b.teilen ? `<div class="muted" style="font-size:14px;margin-top:4px" data-btwachstum>${esc(ti('bt_teilen', { n: b.teilen.aufrufe_7 }))}${b.anzeigen ? ' · ' + esc(ti('bt_anzeigen', { l: b.anzeigen.laufend, p: b.anzeigen.zur_pruefung })) : ''}</div>` : ''}
-    ${kanalListe(b.kanaele)}</div>`);
+    ${kanalListe(b.kanaele)}
+    ${fehlerListe(b.geraete_fehler, b.fehler)}</div>`);
   const qk = c.querySelector('[data-btquellen]');
   qk.onclick = openDatenquellen;
   qk.onkeydown = (e) => { if (e.key === 'Enter') openDatenquellen(); };

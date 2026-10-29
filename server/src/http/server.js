@@ -63,6 +63,7 @@ import { aktualitaet, zaehlendeApotheken, istBestaetigt, vertrauenEinstellen, ZA
 import { createRechnungen } from '../services/rechnungen.js';
 import { createEinladungen, CODE_RE as EINLADUNG_RE } from '../services/einladungen.js';
 import { createKanaele, istVorschauAbruf } from '../services/kanaele.js';
+import { createGeraeteFehler } from '../services/geraeteFehler.js';
 import { createDatenApi, zugangPruefen, engpassZeile, fuerSchnittstelle, alsCsv } from '../services/datenApi.js';
 import { werbeplaetzeAusUmgebung, ZIELGRUPPEN } from '../data/werbeplaetze.js';
 import { createOverviewService } from '../services/overview.js';
@@ -273,6 +274,10 @@ const datenApi = createDatenApi();
 const einladungen = createEinladungen();
 // Herkunft (?k=tiktok): nur Summen je Tag und Kanal, nie je Konto (services/kanaele.js).
 const kanaele = createKanaele();
+// Abbrüche auf den Geräten (services/geraeteFehler.js): je Fehlerart gezählt, ohne IP und Konto.
+const geraeteFehler = createGeraeteFehler();
+// Je Gerät höchstens 30 Fehlerberichte pro Stunde (die Seite selbst schickt höchstens 5 je Aufruf).
+const fehlerberichtLimiter = createRateLimiter({ max: 30, windowMs: 60 * 60 * 1000 });
 // Eine Rechnungsnummern-Reihe für Anzeigen UND Tarife (lückenlos, eindeutig).
 const rechnungsnummern = createRechnungsnummern();
 const anzeigen = createAnzeigen({
@@ -421,6 +426,7 @@ function applySnapshot(snap) {
   datenApi.__load(snap.datenApi);
   einladungen.__load(snap.einladungen);
   kanaele.__load(snap.kanaele);
+  geraeteFehler.__load(snap.geraeteFehler);
   // Alte, unbefristete Premium-Freischaltungen aus bezahlten Monats-/Jahres-
   // käufen bekommen ihr Ablaufdatum (services/payments.js, laufzeitenUmstellen).
   const umgestellt = payments.laufzeitenUmstellen();
@@ -477,6 +483,7 @@ function collectSnapshot() {
     datenApi: datenApi.__dump(),
     einladungen: einladungen.__dump(),
     kanaele: kanaele.__dump(),
+    geraeteFehler: geraeteFehler.__dump(),
   };
 }
 let saveTimer = null;
@@ -2278,6 +2285,13 @@ const routes = [
   // „Preise vergleichen" nur dort, wo es etwas zu vergleichen gibt (bis 10/2026 auch in Uganda).
   // Land automatisch (domain/landVorschlag.js): nur Zeitzone und Sprach-Region des
   // Browsers — keine IP-Auswertung, kein Dienst Dritter, nichts wird gespeichert.
+  // Fehler auf dem Gerät (Skript-Abbruch): anonym gezählt, für das Betriebs-Cockpit.
+  //  Die IP dient nur der Mengenbegrenzung und wird nicht gespeichert.
+  ['POST', /^\/api\/fehlerbericht$/, false, async ({ body, ip, ua }) => {
+    if (fehlerberichtLimiter.check('fb:' + ip).blocked) return { ok: false };
+    fehlerberichtLimiter.fail('fb:' + ip);
+    return { ok: geraeteFehler.melde(body, ua) };
+  }],
   ['GET', /^\/api\/land-vorschlag$/, false, async ({ query }) => landVorschlag({
     zeitzone: String(query.get('tz') || '').slice(0, 64),
     sprachen: String(query.get('sprachen') || '').split(',').slice(0, 10).map((s) => s.slice(0, 20)),
@@ -2501,6 +2515,7 @@ const routes = [
       seiten: { aufrufe_7: [...seitenAufrufe].filter(([t]) => t > new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)).reduce((n, [, z]) => n + z, 0) },
       anzeigen: { laufend: anzeigen.alleLaufenden(userId).filter((k) => k.zustand === 'laeuft').length, zur_pruefung: anzeigen.zurPruefung(userId).length },
       kanaele: kanaele.bericht(30),
+      geraete_fehler: geraeteFehler.bericht({ tage: 7, anzahl: 10 }),
       // Abgefangene Fehler seit dem letzten Start (Details im Render-Protokoll).
       fehler: { ...betriebsFehler },
     };
@@ -2904,7 +2919,7 @@ async function anfrage(req, res) {
       const params = (pathname.match(rx) || []).slice(1);
       // Client-IP (hinter dem Render-Proxy steht die echte IP in x-forwarded-for).
       const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
-      const result = await handler({ userId, body, params, query: url.searchParams, ip });
+      const result = await handler({ userId, body, params, query: url.searchParams, ip, ua: req.headers['user-agent'] });
       // Weiterleitung (Anzeigen-Klick): gezählt ist schon, jetzt zum Ziel.
       if (result && result.__weiterleitung) {
         saveSoon();

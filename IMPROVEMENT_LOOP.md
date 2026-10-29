@@ -3934,3 +3934,18 @@ Länder-Einstellung, Merkliste (je Konto), Funktionsschaltung (öffentlich). In 
 Start-Abfragen; Länder-Einstellung fällt auf den letzten bekannten Stand zurück (rechtlich gesperrte
 Reiter bleiben gesperrt, statt beim Netzwackler aufzutauchen). **Ergebnis: nie → 4,6 s** bedienbar.
 **Tests.** netz-haengt.test.js (6, Service Worker in Node mit Speicher- und Netz-Attrappe), netz-schwach (angepasst: Ausschnitt braucht mitFrist). 12 Gegenproben, rot.
+
+### Cycle · Fehler auf den Geräten sichtbar machen (2026-10-29)
+
+Brach die App auf einem Handy mit einem Skript-Fehler ab, erfuhr das **niemand** — gerade auf älteren
+Android-Geräten in den Zielmärkten. **Jetzt** meldet die Seite unerwartete Fehler an `/api/fehlerbericht`
+(höchstens 5 je Aufruf, jeder einmal; nicht: Netz-/Server-Fehler, fremde Skripte, Lade-Fehler). Der
+Server zählt je Fehlerart (services/geraeteFehler.js): Meldung, Ort im Code, Stapel-Ausschnitt, Anzahl,
+erstes/letztes Auftreten, grobe Geräteklasse („Android 10 · Chrome"). **Ohne IP, ohne Konto, ohne
+User-Agent**; E-Mail-Adressen, lange Ziffernfolgen, lange Zeichenketten (Schlüssel) und Adress-Zusätze
+werden vor dem Speichern unkenntlich gemacht. Höchstens 50 Arten, 30 Tage, 30 Berichte je Gerät und
+Stunde. Betriebs-Cockpit: „Fehler auf Geräten (7 Tage)" mit den 5 häufigsten — und endlich auch der
+Zähler abgefangener Server-Fehler (wurde gesammelt, aber nie angezeigt). Datenschutzerklärung ergänzt.
+Im Browser geprüft (Chromium, Android-User-Agent): Fehler → Bericht → Cockpit, keine CSP-Verstöße.
+**Tests.** geraete-fehler.test.js (5). 14 Gegenproben, rot (eine — Adress-Zusätze — blieb zunächst grün,
+weil im Test zufällig von der Schlüssel-Regel mit erfasst; Fall mit kurzem Suchbegriff ergänzt).
