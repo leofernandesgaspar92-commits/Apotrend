@@ -1323,7 +1323,17 @@ function countryOptionsHtml(selected) {
     .join('');
 }
 // Kontotyp: übersetztes Label je Schlüssel (Register-Reihenfolge aus /api/account-types).
-const ACCT_I18N = { pharmacy:'at_pharmacy', pharma:'at_pharma', wholesale:'at_wholesale', logistics:'at_logistics', authority:'at_authority', private:'at_private' };
+// Organisationsname im Team-Kopf. Ältere Konten bekamen automatisch „<Name> Apotheke" bzw.
+// „Meine Apotheke" (auch Kliniken und Konten in Afrika) — diesen Zusatz nicht anzeigen.
+function orgAnzeige(name) {
+  const n = String(name || '');
+  const ich = me && (me.display_name || '');
+  if (n === 'Meine Apotheke') return ich || '';
+  if (ich && n === ich + ' Apotheke') return ich;
+  return n;
+}
+const ANREDE_RE = /^(dr|prof|pharm|pharmd|mr|mrs|ms|miss|mag|dipl|mme|mlle|dra|sr|sra|chief|alhaji|alhaja|hajia|rev|pastor|sir|madam|dame)\.?$/i;
+const ACCT_I18N = { pharmacy:'at_pharmacy', clinic:'at_clinic', pharma:'at_pharma', wholesale:'at_wholesale', logistics:'at_logistics', authority:'at_authority', private:'at_private' };
 function acctLabel(key) { return ACCT_I18N[key] ? t(ACCT_I18N[key]) : (key || ''); }
 // „Offen für"-Optionen (Schlüssel = Backend OPEN_TO_KEYS); Label übersetzt.
 const OPEN_TO = ['kooperation', 'einkauf', 'vertretung', 'austausch', 'mentoring', 'jobs'];
@@ -2006,7 +2016,9 @@ async function loadOverview() {
   // Zeitkritische (Live). Danach erst Referenz-/Hinweis-Karten (Behörde, Profil,
   // Umrechner). Nur die kleine Daten-Ehrlichkeits-Notiz bleibt ganz oben.
   const hello = me ? (me.display_name || '@'+me.handle) : '';
-  const firstName = hello ? (hello.split(/\s+/).find(w => !/\.$/.test(w)) || hello) : '';
+  // Titel und Anreden überspringen — mit Punkt („Dr.") und ohne, wie in Nigeria/Ghana üblich
+  // („Dr Ada Okafor" hieß bis 10/2026 „For you, Dr").
+  const firstName = hello ? (hello.split(/\s+/).find(w => !/\.$/.test(w) && !ANREDE_RE.test(w)) || hello) : '';
   // Kennzahlen-Kacheln
   // Kacheln sind Navigations-Buttons (alle klickbar): .clickable macht sie zusätzlich
   // tastaturbedienbar (tabindex+role via zentralem a11y-Mechanismus) und zeigt Hover-Affordanz.
@@ -4938,7 +4950,7 @@ async function openDatenApi() {
 // Plätze: Startseite, News-Feed, rechte Spalte. NIE auf Engpass-, Live-Warnungs-
 // oder Wirkstoff-Seiten — dort darf nichts wie eine gekaufte Empfehlung wirken.
 const eur = (cents) => fmtCurrency(cents / 100, 'EUR');
-const WB_GRUPPEN = ['pharmacy', 'pharma', 'wholesale', 'logistics', 'authority', 'private'];
+const WB_GRUPPEN = ['pharmacy', 'clinic', 'pharma', 'wholesale', 'logistics', 'authority', 'private'];
 const gruppeName = (g) => ohneSymbol(t('at_' + g));
 
 /** Eine ausgelieferte Anzeige als Karte: Kennzeichnung, „Warum?", Ausblenden, Melden. */
@@ -6544,7 +6556,7 @@ async function openTeam() {
   const head = el(`<div class="card">
     <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button></div>
     <h1 style="margin:8px 0 2px">👥 ${esc(t('tm_title'))}</h1>
-    <div class="muted">${mem?esc(mem.org_name||''):''}${mem?' · '+esc(roleLabel(mem.role)):''}</div>
+    <div class="muted">${mem?esc(orgAnzeige(mem.org_name)):''}${mem?' · '+esc(roleLabel(mem.role)):''}</div>
   </div>`);
   head.querySelector('[data-back]').onclick = () => openTeamHub();
   feed.appendChild(head);
@@ -6604,7 +6616,7 @@ async function openTeamHub() {
   const head = el(`<div class="card">
     <div class="row"><button class="ghost small" data-back>${esc(t('gen_back'))}</button></div>
     <h1 style="margin:8px 0 2px">${esc(t('th_nav'))}</h1>
-    <div class="muted">${mem?esc(mem.org_name||''):''}${mem&&mem.role?' · '+esc(roleLabel(mem.role)):''}</div>
+    <div class="muted">${mem?esc(orgAnzeige(mem.org_name)):''}${mem&&mem.role?' · '+esc(roleLabel(mem.role)):''}</div>
   </div>`);
   head.querySelector('[data-back]').onclick = () => goTab('overview');
   feed.appendChild(head);

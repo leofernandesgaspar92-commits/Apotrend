@@ -1272,7 +1272,9 @@ async function kontoAnlegen(body, { intern = false } = {}) {
   // Ohne Wunsch: Handle aus dem Namen („Jürgen Müller" -> juergen_mueller).
   const handle = wunsch || freierHandle(displayName || name, (h) => !!social.getProfile(h));
   const reg = orgAuth.registerPharmacyWithOwner({
-    pharmacy: { name: pharmacyName || `${name || 'Meine'} Apotheke` },
+    // Name der Organisation: angegeben, sonst der Name der Person. Bis 10/2026 hieß jede
+    // „<Name> Apotheke" — auch Kliniken, Großhändler und Konten in Ghana (deutsches Wort im Team-Kopf).
+    pharmacy: { name: String(pharmacyName || '').trim() || name || displayName || 'ApoPulse' },
     owner: { name, email, password },
     vorab: { passwordHash, recovery },
   });

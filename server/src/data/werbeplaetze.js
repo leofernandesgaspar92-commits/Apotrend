@@ -31,6 +31,6 @@ export function werbeplaetzeAusUmgebung(env = process.env) {
 }
 
 // Berufsgruppen, die man ansprechen kann (Kontotypen aus data/accountTypes.js).
-export const ZIELGRUPPEN = ['pharmacy', 'pharma', 'wholesale', 'logistics', 'authority', 'private'];
+export const ZIELGRUPPEN = ['pharmacy', 'clinic', 'pharma', 'wholesale', 'logistics', 'authority', 'private'];
 // Wer werben darf: Unternehmen der Branche. Behörden und Privatpersonen nicht.
 export const WERBEKUNDEN_TYPEN = ['pharma', 'wholesale', 'logistics', 'pharmacy'];

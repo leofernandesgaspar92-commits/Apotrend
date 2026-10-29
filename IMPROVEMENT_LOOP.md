@@ -3796,3 +3796,23 @@ eingebettetes Skript für den Druckdialog — das hätte die CSP blockiert; jetz
 Browser-Nachweis: simulierte vergessene Maskierung (`onerror`, `javascript:`-Link) wird blockiert; ohne CSP
 läuft sie (Gegenprobe). Der Browser-Audit meldet ab jetzt jeden CSP-Verstoß in irgendeinem seiner Abläufe.
 **Tests.** csp.test.js (3). 4 Gegenproben, alle rot.
+
+### Cycle · Kontoart für Ärzt:innen / Kliniken / Krankenhäuser + Rundgang Ärztin in Nigeria (2026-10-29)
+
+**Fund:** Ärzt:innen sind laut Vorgaben Zielgruppe, die Premium-Seite warb sogar mit „Nutzen für Ärzt:innen" —
+aber es gab **keine Kontoart** dafür. Eine Ärztin musste sich als „Apotheke" ausgeben oder als „Privat"
+(dann ohne Melden/Bestätigen). In Afrika sind Kliniken und Krankenhausapotheken zentrale Versorgungsstellen.
+**Jetzt:** „🩺 Arztpraxis / Klinik / Krankenhaus" (5 Sprachen) direkt nach Apotheke; Fachkreis (melden,
+bestätigen); als Werbe-Zielgruppe wählbar. Rx-Angebote (Tauschbörse) bewusst **ohne** Freigabe — fail closed,
+bis die Rechtslage je Land geklärt ist (Owner-Entscheidung).
+**Rundgang (Dr Ada Okafor, en-NG, 360 px):** Kontoart im Formular, Start, Engpässe, „Us too" bei der Meldung
+einer Apotheke (zählt), Premium zeigt „Doctors: See before prescribing …", Profil „Doctor / clinic /
+hospital", kein Querscrollen, keine JS-Fehler. Zwei Funde dabei:
+1. Begrüßung **„For you, Dr"** — Titel ohne Punkt (in Nigeria/Ghana üblich) und Anreden wie Chief/Alhaji
+   werden jetzt übersprungen („For you, Ada"); „Drew" bleibt „Drew".
+2. Jedes neue Konto hieß als Organisation automatisch **„<Name> Apotheke"** — auch Kliniken, Großhändler und
+   Konten in Ghana (deutsches Wort im Team-Kopf). Jetzt nur der Name; alte automatische Zusätze werden
+   nicht angezeigt, echte Apothekennamen bleiben.
+**Offen (Owner):** Die Vertrauensstufe sagt „von 3 Apotheken bestätigt" — gezählt werden alle Fachkreise
+(auch Großhandel, Behörde und jetzt Kliniken). Wortlaut ggf. auf „Fachleute" ändern?
+**Tests.** kontoart-klinik.test.js (5). 5 Gegenproben, alle rot.

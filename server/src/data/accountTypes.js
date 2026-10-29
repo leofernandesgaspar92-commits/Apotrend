@@ -14,6 +14,12 @@
 
 export const ACCOUNT_TYPES = {
   pharmacy:  { key: 'pharmacy',  icon: '🏥', label: 'Apotheke' },
+  // Ärzt:innen, Praxen, Kliniken, Krankenhäuser (auch deren Apotheke) — Fachkreis:
+  // dürfen melden und bestätigen. Fehlte bis 10/2026: Wer verschreibt, musste sich
+  // als „Apotheke" ausgeben oder als „Privat" (dann ohne Melden). Für Rx-Angebote
+  // (Tauschbörse) bewusst KEINE Freigabe: verificationStatusFor kennt den Typ nicht
+  // und bleibt bei UNVERIFIED (fail closed), bis die Rechtslage je Land geklärt ist.
+  clinic:    { key: 'clinic',    icon: '🩺', label: 'Arztpraxis / Klinik / Krankenhaus' },
   pharma:    { key: 'pharma',    icon: '🏭', label: 'Pharma-Unternehmen' },
   // Grosshandel und Logistik: eigene Teilnehmergruppen, nicht Unterarten der
   // Apotheke. Sie brauchen eine eigene VERIFIZIERUNGSSTUFE, weil daran die
