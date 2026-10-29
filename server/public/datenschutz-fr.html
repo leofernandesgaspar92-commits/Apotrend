@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Politique de confidentialité — ApoPulse</title>
+<meta name="description" content="Quelles données ApoPulse traite, pourquoi, combien de temps, et quels sont vos droits.">
+<link rel="stylesheet" href="/app.css">
+<style>
+  /* Stand-alone page: it must work WITHOUT the app (the Google Play Store fetches it
+     from a server that runs no JavaScript). No app.js, only markup and app.css. */
+  .dsg { max-width: 72ch; margin: 0 auto; padding: 32px 20px 80px; line-height: 1.6; }
+  .dsg h1 { font-size: 28px; line-height: 1.2; margin: 0 0 8px; }
+  .dsg h2 { font-size: 19px; margin: 32px 0 8px; }
+  .dsg p, .dsg li { font-size: 16px; }
+  .dsg ul { padding-left: 22px; }
+  .dsg table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 15px; }
+  .dsg th, .dsg td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .dsg th { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted-fg, #5f7370); }
+  .entwurf { border-left: 4px solid var(--crit-fg, #a4232b); background: var(--crit-bg, #f6e4e4);
+             padding: 14px 16px; border-radius: 0 6px 6px 0; margin: 20px 0; }
+  .luecke { font-weight: 600; color: var(--crit-fg, #a4232b); }
+  .zurueck { display: inline-block; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+<main class="dsg">
+  <a class="zurueck" href="/">← Retour à ApoPulse</a>
+  <!--sprachen-->
+  <h1>Politique de confidentialité</h1>
+  <p class="muted">Version : 3 octobre 2026 · Traduction de la version allemande. En cas de doute, la version allemande fait foi.</p>
+
+  <div class="entwurf">
+    <p><strong>Projet — pas encore vérifié juridiquement.</strong></p>
+    <p>Ce texte décrit fidèlement ce que fait réellement le logiciel ; il est tiré du code
+    source, pas d’un modèle. Il ne constitue <strong>pas un conseil juridique</strong> et ne
+    remplace pas l’examen par un avocat. Avant la publication sur le Google Play Store, les
+    <span class="luecke">lacunes</span> marquées en rouge ci-dessous doivent être complétées et
+    l’ensemble du texte vérifié — la plateforme traite des données personnelles de professionnels de santé.</p>
+  </div>
+
+  <h2>1. Responsable du traitement</h2>
+  <p><span class="luecke" data-luecke="verantwortlich">[À compléter : nom ou société, adresse, adresse e-mail,
+  le cas échéant registre du commerce et représentants légaux.]</span></p>
+  <p>Sans ces informations, la politique n’est complète ni au sens du RGPD ni selon les règles du
+  Google Play Store.</p>
+
+  <h2>2. Quelles données nous traitons</h2>
+  <table>
+    <thead><tr><th>Données</th><th>Finalité</th><th>Base juridique</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Adresse e-mail, nom, nom d’utilisateur (identifiant), pays, type de compte (pharmacie,
+        cabinet médical/clinique, grossiste, logistique, industrie pharmaceutique, autorité ou particulier)</td>
+        <td>Créer le compte et se connecter ; afficher les contenus du bon pays</td>
+        <td>Exécution du contrat (art. 6, par. 1, point b RGPD)</td>
+      </tr>
+      <tr>
+        <td>Mot de passe — nous ne conservons <strong>jamais le mot de passe lui-même</strong>, seulement
+        une valeur de contrôle irréversible (scrypt avec une valeur aléatoire par compte)</td>
+        <td>Connexion</td>
+        <td>Exécution du contrat</td>
+      </tr>
+      <tr>
+        <td>Contenus que vous publiez : publications, signalements de rupture, commentaires,
+        informations de profil, images téléversées</td>
+        <td>Affichage dans le réseau professionnel</td>
+        <td>Exécution du contrat</td>
+      </tr>
+      <tr>
+        <td>Adresse IP, pour une durée limitée et uniquement en lien avec des tentatives de connexion</td>
+        <td>Protection contre l’essai automatisé de mots de passe</td>
+        <td>Intérêt légitime (art. 6, par. 1, point f RGPD) — sécurité des comptes</td>
+      </tr>
+      <tr>
+        <td>Rapports d’erreur techniques de l’application après un plantage inattendu : texte de l’erreur,
+        emplacement dans le code, catégorie d’appareil approximative (p. ex. « Android 12 · Chrome ») —
+        <strong>sans compte et sans adresse IP</strong>. Les adresses e-mail, les longues suites de
+        chiffres et les paramètres d’adresse dans le texte de l’erreur sont rendus méconnaissables avant l’enregistrement.</td>
+        <td>Trouver et corriger les erreurs de l’application</td>
+        <td>Intérêt légitime (art. 6, par. 1, point f RGPD) — une application qui fonctionne</td>
+      </tr>
+      <tr>
+        <td>Numéro de téléphone — uniquement si vous vous connectez avec un code SMS (facultatif).
+        Le code de connexion lui-même n’est conservé que sous forme de valeur de contrôle et 10 minutes au plus.</td>
+        <td>Connexion sans adresse e-mail ; protection contre l’envoi massif de SMS</td>
+        <td>Exécution du contrat ; protection contre les abus : intérêt légitime</td>
+      </tr>
+      <tr>
+        <td>Codes de récupération (sous forme de valeur de contrôle)</td>
+        <td>Accès au compte en cas d’oubli du mot de passe</td>
+        <td>Exécution du contrat</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>3. Ce que nous ne faisons <em>pas</em></h2>
+  <ul>
+    <li><strong>Aucun traceur publicitaire ou d’analyse.</strong> L’application n’intègre ni
+    Google Analytics, ni réseau publicitaire, ni pixel de réseau social.</li>
+    <li><strong>Aucune transmission à des fins publicitaires</strong> et aucune vente de données.</li>
+    <li><strong>Aucun suivi de votre provenance.</strong> Si un lien indique un canal (p. ex.
+    <code>?k=tiktok</code>), nous comptons seulement le total des visites et des nouveaux comptes par
+    canal et par jour — votre compte n’enregistre pas le canal et aucune adresse IP n’est conservée à cet effet.</li>
+    <li><strong>Aucune donnée de patient.</strong> La plateforme est un réseau professionnel entre
+    établissements. Elle n’est pas conçue pour enregistrer des informations sur des patients
+    individuels et ne demande jamais de telles informations.</li>
+    <li><strong>Aucune donnée de paiement chez nous.</strong> Les données de carte et de portefeuille
+    sont saisies et traitées exclusivement par des prestataires de paiement agréés.</li>
+  </ul>
+
+  <h2>4. Où sont stockées les données</h2>
+  <p>L’application fonctionne sur des serveurs situés à <strong>Francfort-sur-le-Main (UE)</strong> ;
+  la base de données également. En fonctionnement normal, aucun transfert vers des pays tiers n’a lieu.</p>
+  <p>Font exception les services cités au point 5, si vous les utilisez.</p>
+
+  <h2>5. Services intégrés</h2>
+  <p>Ces services ne sont actifs que si vous les utilisez réellement :</p>
+  <ul>
+    <li><strong>Connexion avec Google</strong> (facultatif) : Google apprend que vous vous connectez à
+    ApoPulse. Nous recevons de Google votre adresse e-mail et votre nom.</li>
+    <li><strong>Connexion avec Facebook</strong> (facultatif) : comme pour Google — Meta apprend que
+    vous vous connectez à ApoPulse ; nous recevons votre nom et, s’il est confirmé par Facebook,
+    votre adresse e-mail.</li>
+    <li><strong>Envoi de SMS</strong> (facultatif, uniquement pour la connexion par numéro de téléphone) :
+    votre numéro et le code de connexion sont transmis au prestataire SMS qui délivre le message
+    <span class="luecke" data-luecke="sms">[À compléter : le prestataire effectivement configuré.]</span>
+    Le prestataire ne traite le numéro que pour délivrer le SMS.</li>
+    <li><strong>Prestataires de paiement</strong> (facultatif, uniquement pour les fonctions payantes) :
+    <span class="luecke" data-luecke="zahlung">[À compléter : les prestataires effectivement activés.]</span></li>
+  </ul>
+  <p>Les listes officielles de ruptures (p. ex. des autorités du médicament) sont récupérées par le
+  <em>serveur</em>, pas par votre appareil. Les autorités n’apprennent ainsi rien sur les utilisateurs individuels.</p>
+
+  <h2>6. Durée de conservation</h2>
+  <p>Les données du compte sont conservées tant que le compte existe. Après suppression, elles sont
+  effacées ; les publications que vous avez faites peuvent subsister sous forme anonymisée lorsque
+  d’autres y ont fait référence.</p>
+  <p>Les adresses IP liées au blocage de connexion ne sont conservées que pendant la durée du blocage
+  et ne sont pas enregistrées durablement.</p>
+  <p>Les rapports d’erreur techniques de l’application sont supprimés 30 jours après leur dernière
+  apparition. Pour limiter les envois massifs, l’adresse IP est comptée en mémoire vive pendant une
+  heure au plus et n’est pas enregistrée.</p>
+
+  <h2>7. Vos droits</h2>
+  <p>Vous disposez d’un droit d’accès, de rectification, d’effacement, de limitation du traitement,
+  de portabilité des données et d’opposition (art. 15 à 21 RGPD).</p>
+  <ul>
+    <li><strong>Exporter vos données :</strong> dans l’application sous « Profil → Exporter les données ».</li>
+    <li><strong>Supprimer le compte :</strong> dans l’application sous « Profil → Supprimer le compte ».</li>
+  </ul>
+  <p>Vous pouvez aussi introduire une réclamation auprès d’une autorité de protection des données —
+  en Autriche auprès de la Datenschutzbehörde, en Allemagne auprès de l’autorité de votre Land. Si vous
+  résidez hors de l’UE (p. ex. au Sénégal, en Côte d’Ivoire ou au Maroc), vous pouvez
+  également vous adresser à l’autorité de protection des données de votre pays.</p>
+
+  <h2>8. Remarque sur les contenus professionnels</h2>
+  <p>Les informations sur les ruptures et les médicaments proviennent de sources officielles ou de
+  signalements d’autres établissements. Chaque information indique visiblement son origine :
+  <em>vérifié</em>, <em>données de référence</em> ou <em>signalement de la communauté</em>.
+  ApoPulse ne donne <strong>aucune recommandation de traitement, de posologie ou de substitution</strong>
+  et ne remplace pas l’évaluation professionnelle du cas individuel.</p>
+
+  <h2>9. Contact pour les questions de confidentialité</h2>
+  <p><span class="luecke" data-luecke="kontakt">[À compléter : adresse e-mail pour les demandes relatives
+  à la protection des données ; le cas échéant, le délégué à la protection des données.]</span></p>
+</main>
+</body>
+</html>

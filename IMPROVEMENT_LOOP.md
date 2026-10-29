@@ -3979,3 +3979,19 @@ Umfragen bleiben als Ergebnis lesbar; Posten funktioniert unverändert (im Brows
 fehlgeschlagene Anfrage). Die Klickrunde legt jetzt Beiträge und eine Umfrage an, damit Karten-Knöpfe
 mitgeprüft werden.
 **Tests.** klickrunde-funde (+1, mit DOM-Attrappe für wendeFeaturesAn). 5 Gegenproben, rot.
+
+### Cycle · Datenschutzerklärung in fünf Sprachen (2026-10-29)
+
+Die Datenschutzerklärung gab es **nur auf Deutsch**: Wer in Senegal auf „Confidentialité" oder in Ghana
+auf „Privacy" tippte, bekam eine deutsche Seite — für die Afrika-Strategie eine Lücke, auch rechtlich
+(verständliche Information, z. B. nach den Datenschutzgesetzen in Ghana, Nigeria, Kenia, Senegal).
+**Jetzt** Übersetzungen auf Englisch, Französisch, Portugiesisch und Arabisch (rechts nach links), jede
+mit „Übersetzung der deutschen Fassung; im Zweifel gilt die deutsche". Gleicher Aufbau, Platzhalter
+sprachneutral markiert (`data-luecke`), Anbieter-Texte (SMS, Zahlung, Krypto, Überweisung) in allen fünf
+Sprachen. Server wählt: `?sp=` (Links aus der App tragen die App-Sprache), sonst Browser-Sprache, sonst
+Englisch (auch für die Play-Prüfung). Sprachwahl oben auf der Seite. Deutsche Fassung korrigiert:
+Kontoarten vollständig (Klinik, Logistik, privat), Hinweis auf die Datenschutzbehörde im eigenen Land
+außerhalb der EU (nur Länder mit bestehender Behörde genannt). Im Browser geprüft: Arabisch rtl, kein
+Querscrollen bei 360 px.
+**Offen (Owner):** rechtliche Prüfung (gilt für alle Fassungen), danach `APOPULSE_DATENSCHUTZ_GEPRUEFT=ja`.
+**Tests.** datenschutz-sprachen.test.js (3), impressum (angepasst). 9 Gegenproben, rot.

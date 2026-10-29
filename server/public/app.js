@@ -410,6 +410,8 @@ function applyI18n(root) {
   scope.querySelectorAll('[data-i18n-aria]').forEach(n => { n.setAttribute('aria-label', t(n.getAttribute('data-i18n-aria'))); });
   // alt-Text mehrsprachig: Bildvorschauen brauchen einen Alt-Text (Screenreader/Bild-aus).
   scope.querySelectorAll('[data-i18n-alt]').forEach(n => { n.setAttribute('alt', t(n.getAttribute('data-i18n-alt'))); });
+  // Impressum/Datenschutz in der Sprache der App (gibt es in 5 Sprachen) — nicht der des Browsers.
+  scope.querySelectorAll('a[href^="/impressum"], a[href^="/datenschutz.html"]').forEach(n => { n.setAttribute('href', n.getAttribute('href').split('?')[0] + '?sp=' + LOCALE); });
 }
 // Frist für Start-Abfragen: Hängt das Netz (Verbindung da, aber keine Antwort), startet die
 // App trotzdem — mit dem Ersatzwert (bzw. dem Fehler) statt endlos zu warten.
@@ -1000,7 +1002,7 @@ function authScreen() {
   // Anmeldung über Google/Facebook gescheitert: sagen warum, statt still zurückzufallen.
   if (oauthFehler) { document.getElementById('li_err').textContent = oauthFehler; oauthFehler = null; }
   // Impressum · Datenschutz (Pflichtangaben) — auch vor der Anmeldung erreichbar.
-  app.appendChild(el(`<div class="auth-recht"><a href="/impressum">${esc(t('rc_impressum'))}</a> · <a href="/datenschutz.html">${esc(t('rc_datenschutz'))}</a></div>`));
+  app.appendChild(el(`<div class="auth-recht"><a href="/impressum?sp=${LOCALE}">${esc(t('rc_impressum'))}</a> · <a href="/datenschutz.html?sp=${LOCALE}">${esc(t('rc_datenschutz'))}</a></div>`));
   // Kontotyp-Auswahl befüllen (Apotheke als Vorauswahl).
   ensureAccountTypes().then(() => {
     const sel = document.getElementById('rg_accounttype');

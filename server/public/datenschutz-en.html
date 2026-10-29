@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy policy — ApoPulse</title>
+<meta name="description" content="Which data ApoPulse processes, why, for how long, and what rights you have.">
+<link rel="stylesheet" href="/app.css">
+<style>
+  /* Stand-alone page: it must work WITHOUT the app (the Google Play Store fetches it
+     from a server that runs no JavaScript). No app.js, only markup and app.css. */
+  .dsg { max-width: 72ch; margin: 0 auto; padding: 32px 20px 80px; line-height: 1.6; }
+  .dsg h1 { font-size: 28px; line-height: 1.2; margin: 0 0 8px; }
+  .dsg h2 { font-size: 19px; margin: 32px 0 8px; }
+  .dsg p, .dsg li { font-size: 16px; }
+  .dsg ul { padding-left: 22px; }
+  .dsg table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 15px; }
+  .dsg th, .dsg td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .dsg th { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted-fg, #5f7370); }
+  .entwurf { border-left: 4px solid var(--crit-fg, #a4232b); background: var(--crit-bg, #f6e4e4);
+             padding: 14px 16px; border-radius: 0 6px 6px 0; margin: 20px 0; }
+  .luecke { font-weight: 600; color: var(--crit-fg, #a4232b); }
+  .zurueck { display: inline-block; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+<main class="dsg">
+  <a class="zurueck" href="/">← Back to ApoPulse</a>
+  <!--sprachen-->
+  <h1>Privacy policy</h1>
+  <p class="muted">Version: 3 October 2026 · Translation of the German version. In case of doubt, the German version prevails.</p>
+
+  <div class="entwurf">
+    <p><strong>Draft — not yet legally reviewed.</strong></p>
+    <p>This text truthfully describes what the software actually does; it is derived from
+    the source code, not from a template. It is <strong>not legal advice</strong> and does
+    not replace a review by a lawyer. Before publication in the Google Play Store, the
+    <span class="luecke">gaps</span> marked in red below must be filled in and the whole text
+    must be reviewed — the platform processes personal data of healthcare professionals.</p>
+  </div>
+
+  <h2>1. Controller</h2>
+  <p><span class="luecke" data-luecke="verantwortlich">[To be added: name or company, address, email address,
+  and where applicable commercial register and authorised representatives.]</span></p>
+  <p>Without this information the policy is not complete under the GDPR or the rules of the
+  Google Play Store.</p>
+
+  <h2>2. Which data we process</h2>
+  <table>
+    <thead><tr><th>Data</th><th>Purpose</th><th>Legal basis</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Email address, name, user name (handle), country, account type (pharmacy,
+        doctor's practice/clinic, wholesale, logistics, pharma, authority or private)</td>
+        <td>Create the account and sign in; show content for the right country</td>
+        <td>Performance of a contract (Art. 6(1)(b) GDPR)</td>
+      </tr>
+      <tr>
+        <td>Password — we <strong>never store the password itself</strong>, only a
+        non-reversible check value (scrypt with a random value per account)</td>
+        <td>Sign-in</td>
+        <td>Performance of a contract</td>
+      </tr>
+      <tr>
+        <td>Content you post: posts, shortage reports, comments, profile details,
+        uploaded images</td>
+        <td>Display in the professional network</td>
+        <td>Performance of a contract</td>
+      </tr>
+      <tr>
+        <td>IP address, for a limited time and only in connection with sign-in attempts</td>
+        <td>Protection against automated password guessing</td>
+        <td>Legitimate interest (Art. 6(1)(f) GDPR) — security of the accounts</td>
+      </tr>
+      <tr>
+        <td>Technical error reports of the app after an unexpected crash: error text, location in
+        the program code, rough device class (e.g. “Android 12 · Chrome”) — <strong>without account
+        and without IP address</strong>. Email addresses, longer digit sequences and address
+        parameters in the error text are made unrecognisable before storage.</td>
+        <td>Find and fix errors in the app</td>
+        <td>Legitimate interest (Art. 6(1)(f) GDPR) — a working app</td>
+      </tr>
+      <tr>
+        <td>Phone number — only if you sign in with an SMS code (optional). The sign-in code
+        itself is stored only as a check value and for at most 10 minutes.</td>
+        <td>Sign-in without an email address; protection against mass sending of SMS</td>
+        <td>Performance of a contract; protection against abuse: legitimate interest</td>
+      </tr>
+      <tr>
+        <td>Recovery codes (as check values)</td>
+        <td>Access to the account if you forget your password</td>
+        <td>Performance of a contract</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>3. What we do <em>not</em> do</h2>
+  <ul>
+    <li><strong>No advertising or analytics trackers.</strong> The app does not include
+    Google Analytics, advertising networks or social media pixels.</li>
+    <li><strong>No sharing for advertising purposes</strong> and no sale of data.</li>
+    <li><strong>No tracking of where you come from.</strong> If a link carries a channel (e.g.
+    <code>?k=tiktok</code>), we only count the total of visits and new accounts per channel and day —
+    your account does not store the channel, and no IP address is stored for this.</li>
+    <li><strong>No patient data.</strong> The platform is a professional network between
+    businesses. It is not intended for recording details about individual patients and
+    never asks for such details.</li>
+    <li><strong>No payment card data with us.</strong> Card and wallet data are entered and
+    processed exclusively by licensed payment service providers.</li>
+  </ul>
+
+  <h2>4. Where the data is stored</h2>
+  <p>The application runs on servers in <strong>Frankfurt am Main (EU)</strong>; so does
+  the database. In normal operation there is no transfer to third countries.</p>
+  <p>The exceptions are the services listed in section 5, if you use them.</p>
+
+  <h2>5. Integrated services</h2>
+  <p>These services only become active if you actually use them:</p>
+  <ul>
+    <li><strong>Sign-in with Google</strong> (optional): Google learns that you are signing
+    in to ApoPulse. We receive your email address and your name from Google.</li>
+    <li><strong>Sign-in with Facebook</strong> (optional): as with Google — Meta learns that
+    you are signing in to ApoPulse; we receive your name and, if confirmed by Facebook,
+    your email address.</li>
+    <li><strong>SMS delivery</strong> (optional, only when signing in with a phone number): your
+    number and the sign-in code go to the SMS provider that delivers the message
+    <span class="luecke" data-luecke="sms">[To be added: the provider actually configured.]</span>
+    The provider processes the number only to deliver the SMS.</li>
+    <li><strong>Payment providers</strong> (optional, only for paid features):
+    <span class="luecke" data-luecke="zahlung">[To be added: which providers are actually enabled.]</span></li>
+  </ul>
+  <p>Official shortage lists (e.g. from medicines authorities) are fetched by the <em>server</em>,
+  not by your device. The authorities therefore learn nothing about individual users.</p>
+
+  <h2>6. Storage period</h2>
+  <p>Account data is stored for as long as the account exists. After deletion it is removed;
+  posts you have published may remain in anonymised form where others have referred to them.</p>
+  <p>IP addresses from the sign-in lock are kept only for the duration of the respective lock
+  and are not stored permanently.</p>
+  <p>Technical error reports of the app are deleted 30 days after they last occurred. To limit
+  mass reports, the IP address is counted in working memory for at most one hour and is not
+  stored.</p>
+
+  <h2>7. Your rights</h2>
+  <p>You have the right of access, rectification, erasure, restriction of processing, data
+  portability and objection (Art. 15–21 GDPR).</p>
+  <ul>
+    <li><strong>Data export:</strong> in the app under “Profile → Export data”.</li>
+    <li><strong>Delete account:</strong> in the app under “Profile → Delete account”.</li>
+  </ul>
+  <p>You can also lodge a complaint with a data protection supervisory authority — in Austria
+  with the Datenschutzbehörde, in Germany with the authority of your federal state. If you live
+  outside the EU (e.g. in Ghana, Nigeria, Kenya or Senegal), you can also contact the data
+  protection authority of your country.</p>
+
+  <h2>8. Note on the professional content</h2>
+  <p>Shortage and medicine reports come from official sources or from reports by other
+  businesses. Every statement visibly shows its origin:
+  <em>verified</em>, <em>reference data</em> or <em>community report</em>.
+  ApoPulse gives <strong>no therapy, dosage or substitution advice</strong> and does not
+  replace a professional assessment of the individual case.</p>
+
+  <h2>9. Contact for privacy questions</h2>
+  <p><span class="luecke" data-luecke="kontakt">[To be added: email address for privacy requests;
+  if appointed, also the data protection officer.]</span></p>
+</main>
+</body>
+</html>

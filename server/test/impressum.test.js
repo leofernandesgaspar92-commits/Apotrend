@@ -40,7 +40,7 @@ test('Erreichbar: Menü, Anmeldung, öffentliche Seiten, Teilseiten; Startseite 
   assert.match(idx, /class="km-recht"><a href="\/impressum"[^>]*>Impressum<\/a> · <a href="\/datenschutz\.html"/);
   const app = readFileSync(join(HIER, '..', 'public', 'app.js'), 'utf8');
   const auth = app.slice(app.indexOf('function authScreen('), app.indexOf('function afterAuth('));
-  assert.match(auth, /class="auth-recht"><a href="\/impressum">/);
+  assert.match(auth, /class="auth-recht"><a href="\/impressum\?sp=\$\{LOCALE\}">/);
   const kind = spawn(process.execPath, [join(HIER, '..', 'src', 'http', 'server.js')], { env: { ...process.env, PORT: '0', APOPULSE_TOKEN_SECRET: 'imp-1', APOPULSE_DATA_FILE: '', APOPULSE_PRESSE: 'aus',
     APOPULSE_PUBLIC_URL: 'https://apopulse.example', APOPULSE_FIRMA_ANSCHRIFT: 'Hauptplatz 1, 4020 Linz', APOPULSE_KONTAKT_EMAIL: 'hallo@apopulse.example' }, stdio: ['ignore', 'pipe', 'pipe'] });
   let log = '';
@@ -57,8 +57,8 @@ test('Erreichbar: Menü, Anmeldung, öffentliche Seiten, Teilseiten; Startseite 
     assert.match(t, /Hauptplatz 1, 4020 Linz/); assert.match(t, /hallo@apopulse\.example/); assert.ok(!/noch einzutragen/.test(t));
     assert.match(await (await fetch(B + '/datenschutz.html')).text(), /Hauptplatz 1, 4020 Linz/);
     assert.match(await (await fetch(B + '/')).text(), /<script type="application\/ld\+json">\{[^<]*"founder":\{"@type":"Person","name":"Leo Fernandes Gaspar"\}/);
-    assert.match(await (await fetch(B + '/engpaesse', { headers: { 'accept-language': 'fr' } })).text(), /<a href="\/impressum">Mentions légales<\/a> · <a href="\/datenschutz\.html">Confidentialité<\/a>/);
-    assert.match(await (await fetch(B + '/teilen/lage/GH')).text(), /<a href="\/impressum">Legal notice<\/a>/);
+    assert.match(await (await fetch(B + '/engpaesse', { headers: { 'accept-language': 'fr' } })).text(), /<a href="\/impressum\?sp=fr">Mentions légales<\/a> · <a href="\/datenschutz\.html\?sp=fr">Confidentialité<\/a>/);
+    assert.match(await (await fetch(B + '/teilen/lage/GH')).text(), /<a href="\/impressum\?sp=en">Legal notice<\/a>/);
   } finally {
     await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
   }

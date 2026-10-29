@@ -25,7 +25,7 @@ import { can as roleCan } from '../domain/roles.js';
 import { cleanSourceUrl } from '../domain/media.js';
 import { bilderAlsAdresse, bildHolen } from '../domain/bilder.js';
 import { startseiteKopf, kopfSprache, manifestSprache, startseiteCsp } from './startseiteKopf.js';
-import { impressumSeite, datenschutzMitAngaben, betreiberAngaben } from './impressum.js';
+import { impressumSeite, datenschutzMitAngaben, betreiberAngaben, datenschutzDatei, DATENSCHUTZ_SPRACHEN } from './impressum.js';
 import { schlankSicher } from './schlank.js';
 import { kodierungWaehlen, kodierenSync, createKompressionsSpeicher, createVersionsKennung } from './komprimierung.js';
 import { createSprachdateien } from './sprachdateien.js';
@@ -2983,10 +2983,12 @@ async function anfrage(req, res) {
   //  Abruf gelesen, damit eine Änderung in Render ohne Code wirkt.
   if (req.method === 'GET' && (pathname === '/impressum' || pathname === '/datenschutz.html')) {
     const angaben = betreiberAngaben(process.env);
-    const sp = kopfSprache(req.headers['accept-language']);
+    // Sprache: ?sp= (Links aus der App tragen die App-Sprache) — sonst die des Browsers.
+    const spWahl = String(url.searchParams.get('sp') || '').toLowerCase();
+    const sp = DATENSCHUTZ_SPRACHEN.includes(spWahl) ? spWahl : kopfSprache(req.headers['accept-language']);
     const html = pathname === '/impressum'
       ? impressumSeite({ sp, basis: oeffentlicheBasis(req), angaben })
-      : datenschutzMitAngaben(fs.readFileSync(path.join(PUBLIC_DIR, 'datenschutz.html'), 'utf8'), angaben, {
+      : datenschutzMitAngaben(fs.readFileSync(path.join(PUBLIC_DIR, datenschutzDatei(sp)), 'utf8'), angaben, {
         sms: sms.aktiv ? sms.anbieter : null,
         zahlwege: Object.keys(buildPaymentProvidersFromEnv()).filter((k) => k !== 'coinbase'),
         krypto: cryptoWallets().length > 0,
