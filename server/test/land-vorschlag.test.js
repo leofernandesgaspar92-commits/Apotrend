@@ -46,7 +46,7 @@ test('Widerspruch oder unbekannt: nichts festlegen, Kandidaten anbieten', () => 
 
 test('Oberfläche: Start ohne Länderliste, wenn sicher; Formulare wie bei Facebook', () => {
   const start = app.slice(app.lastIndexOf('const _hasCountry'));
-  assert.match(start, /else if \(await landAutomatisch\(\)\) authScreen\(\);\n {2}else countryScreen\(\);/);
+  assert.match(start, /if \(await landAutomatisch\(\)\) authScreen\(\);\n\s*else countryScreen\(\);/);
   assert.match(app, /fetch\('\/api\/land-vorschlag\?tz='/);
   // Echte Formulare: Enter schickt ab, Passwort-Manager erkennen sie.
   assert.match(app, /<form data-authpane="login" id="li_form"/);

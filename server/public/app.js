@@ -1318,8 +1318,13 @@ let oauthFehler = null;
 // Ein Wechsel des Landes filtert die Inhalte (News/Engpässe/Preise) auf dieses
 // Land und stellt die UI-Sprache automatisch auf die Landessprache um.
 let COUNTRIES_CACHE = null;
+let laenderLaden = null; // laufende Abfrage teilen statt doppelt zu schicken
 async function ensureCountries() {
-  if (!COUNTRIES_CACHE) { try { COUNTRIES_CACHE = (await api('GET','/api/countries')).countries; } catch { COUNTRIES_CACHE = []; } }
+  if (!COUNTRIES_CACHE) {
+    laenderLaden = laenderLaden || api('GET','/api/countries').then((d) => d.countries).catch(() => []);
+    COUNTRIES_CACHE = await laenderLaden;
+    laenderLaden = null;
+  }
   return COUNTRIES_CACHE;
 }
 function countryOptionsHtml(selected) {
@@ -1419,20 +1424,28 @@ window.addEventListener('orientationchange', setHeaderHeightVar);
 
 // ── Haupt-Screen (Feed) ──
 async function mainScreen() {
+  // Start-Abfragen GLEICHZEITIG losschicken (bis 10/2026 nacheinander: auf einem einfachen
+  // Android mit 3G fünf Runden à ~0,5 s, bevor überhaupt etwas zu sehen war). Gewartet wird
+  // erst dort, wo das Ergebnis gebraucht wird — die Reihenfolge der Wirkung bleibt gleich.
+  const vorabLaender = ensureCountries();
+  const vorabFeatures = ladeFeatures();
+  let vorabLand = api('GET', '/api/country-config').catch(() => null);
+  const vorabMerkliste = vorabFeatures.then(() => (featureAn('social') ? api('GET','/api/bookmarks/ids') : { ids: [] })).catch(() => ({ ids: [] }));
   let meData = await api('GET','/api/me');
   // Konto ohne Profil (bis 10/2026 möglich, wenn die Registrierung am Handle
   // scheiterte): Profil nachholen statt einer halb kaputten Anwendung.
   if (!meData.profile) {
     try { await api('POST', '/api/profil/nachholen', { country: localStorage.getItem('apo_country') || 'AT', locale: LOCALE }); meData = await api('GET','/api/me'); } catch { /* weiter wie bisher */ }
+    vorabLand = api('GET', '/api/country-config').catch(() => null); // Land kam eben erst dazu
   }
   me = meData.profile;
   iAmModerator = !!meData.is_moderator;
   // Sprache folgt dem Land des Profils (Owner-Vorgabe: länderbasierte Plattform) —
   // in mehrsprachigen Ländern die dort selbst gewählte Sprache.
-  await ensureCountries();
+  await vorabLaender;
   setLocale(spracheFuer((COUNTRIES_CACHE || []).find((x) => me && x.code === me.country), me && me.locale ? me.locale : 'de'));
   renderWhoami();
-  await ladeFeatures();
+  await vorabFeatures;
   document.getElementById('btnLogout').classList.remove('hidden');
   document.getElementById('btnNotif').classList.remove('hidden');
   if (featureAn('direktnachrichten')) document.getElementById('btnDm')?.classList.remove('hidden');
@@ -1464,9 +1477,7 @@ async function mainScreen() {
   // als rote Fehler in der Browser-Konsole und sehen aus wie ein Defekt.
   if (featureAn('direktnachrichten')) refreshDmCount();
   if (featureAn('bestellung')) refreshCartCount();
-  if (featureAn('social')) {
-    try { myBookmarks = new Set((await api('GET','/api/bookmarks/ids')).ids); } catch { myBookmarks = new Set(); }
-  } else { myBookmarks = new Set(); }
+  myBookmarks = new Set((await vorabMerkliste).ids || []);
 
   app.innerHTML = '';
   app.classList.remove('auth-mode'); // Haupt-App in Standardbreite
@@ -1627,7 +1638,7 @@ async function mainScreen() {
       mehr.setAttribute('aria-expanded', String(offen));
     };
   }
-  await applyCountryGating(); // rechtlich gesperrte Reiter fürs Heimatland ausblenden
+  await applyCountryGating(vorabLand); // rechtlich gesperrte Reiter fürs Heimatland ausblenden
   applyI18n();          // Navigation/Suche in aktueller Sprache beschriften
   applyTheme();         // Theme-Label (Hell/Dunkel) in aktueller Sprache
   initCountrySwitcher(); // Länder-/Sprach-Umschalter in der Kopfzeile aktivieren
@@ -2960,9 +2971,9 @@ function setDocTitle(section) { document.title = section ? `${section} · ${BASE
 const TAB_TITLES = { overview:'dt_overview', public:'dt_public', home:'dt_home', shortages:'dt_shortages', prices:'dt_prices', rabatte:'dt_rabatte', exchange:'dt_exchange', signals:'dt_signals', news:'dt_news' };
 
 // Rechtlich gesperrte Reiter fürs Heimatland ausblenden (aus /api/country-config).
-async function applyCountryGating() {
+async function applyCountryGating(vorab = null) {
   try {
-    const cfg = await api('GET', '/api/country-config');
+    const cfg = (await vorab) || await api('GET', '/api/country-config');
     COUNTRY_FEAT = {}; COUNTRY_NAME = cfg.country_name || '';
     (cfg.active_features || []).forEach(f => {
       if (f.status === 'blocked' || f.status === 'restricted') {
@@ -11168,6 +11179,11 @@ const _hasCountry = () => !!localStorage.getItem('apo_country');
   if (pwLink) { pwLinkScreen(pwLink); return; }
   if (localStorage.getItem('apo_token')) mainScreen().catch(() => (_hasCountry() ? authScreen() : countryScreen()));
   else if (_hasCountry()) authScreen();
-  else if (await landAutomatisch()) authScreen();
-  else countryScreen();
+  else {
+    // Länderliste gleichzeitig mit dem Land-Vorschlag holen — Länderwahl wie Anmeldung brauchen
+    // sie (bis 10/2026 erst danach: eine Netz-Runde mehr, auf 3G ~0,5 s).
+    ensureCountries();
+    if (await landAutomatisch()) authScreen();
+    else countryScreen();
+  }
 })();

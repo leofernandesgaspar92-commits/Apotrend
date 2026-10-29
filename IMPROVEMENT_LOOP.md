@@ -3902,3 +3902,18 @@ eingeschaltet"; Zahlwege nur die freigeschalteten (Stripe, PayPal, eigene Krypto
 Dienstleister, Überweisung). Der Hinweis „Entwurf — noch nicht rechtlich geprüft" verschwindet erst, wenn
 der Owner `APOPULSE_DATENSCHUTZ_GEPRUEFT=ja` setzt; Startklar-Check hat dafür einen Punkt.
 **Tests.** impressum (+1). 2 Gegenproben, rot.
+
+### Cycle · Schnellerer Start auf einfachen Handys: Start-Abfragen gleichzeitig (2026-10-29)
+
+Gemessen (CPU 6× gedrosselt, 3G mit 400 ms Latenz, 360 px): angemeldet war die App erst nach **7,0 s**
+bedienbar — `mainScreen()` fragte `/api/me`, `/api/countries`, `/api/features`, `/api/country-config` und
+die Merkliste **nacheinander** ab (fünf Netz-Runden à ~0,5 s). **Jetzt** starten alle unabhängigen
+Abfragen sofort gleichzeitig; gewartet wird erst, wo das Ergebnis gebraucht wird (Wirkung in derselben
+Reihenfolge wie vorher). `ensureCountries()` teilt eine laufende Abfrage statt sie doppelt zu schicken.
+Konto ohne Profil: nach dem Nachholen wird die Länder-Einstellung neu geholt. **Ergebnis: 5,1 s**
+(4 Abfragen parallel 4,26→4,83 s). Erster Besuch ohne Land: Länderliste startet gleichzeitig mit dem
+Land-Vorschlag statt danach — **5,7 → 5,1 s**. Rest ist das Laden von HTML+JS (~4,3 s): durch die Bandbreite
+begrenzt (164 KB, Brotli höchster Stufe und Verschlankung sind schon drin); weniger ginge nur mit Aufteilen
+von app.js — vorgemerkt, nicht vor dem Start (zu großer Umbau, andere Session arbeitet am Design).
+**Tests.** start-gleichzeitig.test.js (3). 7 Gegenproben, rot (eine siebte — zusätzliches Warten
+nach `/api/me` — blieb zu Recht grün: die Abfrage läuft dann schon).
