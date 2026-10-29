@@ -100,9 +100,34 @@ ${angaben.uid ? zeile(T.uid, angaben.uid) : ''}
 </div></div></body></html>`;
 }
 
-/** Datenschutzerklärung: Platzhalter beim Verantwortlichen/Kontakt durch die Angaben ersetzen (soweit vorhanden). */
-export function datenschutzMitAngaben(html, angaben = betreiberAngaben()) {
+// Dienstleister in der Datenschutzerklärung: NUR Name, Sitzland und Hauptdomain — keine erfundenen
+// Unterseiten-Links (die Adressen der Anbieter ändern sich; die Domain führt sicher hin).
+const SMS_ANBIETER = {
+  africastalking: "Africa's Talking (Sitz in Kenia, außerhalb der EU) — Datenschutzerklärung des Anbieters auf africastalking.com.",
+  twilio: 'Twilio (Sitz in den USA, außerhalb der EU) — Datenschutzerklärung des Anbieters auf twilio.com.',
+};
+const ZAHL_ANBIETER = {
+  stripe: 'Kartenzahlung über Stripe — Datenschutzerklärung auf stripe.com.',
+  paypal: 'PayPal — Datenschutzerklärung auf paypal.com.',
+};
+
+/** Datenschutzerklärung: Platzhalter durch die tatsächliche Einrichtung ersetzen (soweit bekannt). */
+export function datenschutzMitAngaben(html, angaben = betreiberAngaben(), { sms = null, zahlwege = [], krypto = false, ueberweisung = false, geprueft = false } = {}) {
   let s = String(html);
+  // Hinweis „Entwurf — noch nicht rechtlich geprüft" erst weg, wenn der Owner die Prüfung bestätigt
+  // (APOPULSE_DATENSCHUTZ_GEPRUEFT=ja) — nicht automatisch, nur weil keine Lücke mehr offen ist.
+  if (geprueft) s = s.replace(/\s*<div class="entwurf">[\s\S]*?<\/div>/, '');
+  // SMS: der tatsächlich eingestellte Anbieter — oder ehrlich „nicht eingeschaltet".
+  s = s.replace(/<span class="luecke">\[Noch einzutragen: der tatsächlich eingestellte Anbieter[\s\S]*?<\/span>/,
+    () => esc(SMS_ANBIETER[sms] ? 'Anbieter: ' + SMS_ANBIETER[sms] : 'Derzeit ist die Anmeldung per SMS nicht eingeschaltet; es werden keine SMS versendet.'));
+  // Zahlungen: was wirklich freigeschaltet ist.
+  const wege = [
+    ...zahlwege.filter((z) => ZAHL_ANBIETER[z]).map((z) => ZAHL_ANBIETER[z]),
+    ...(krypto ? ['Krypto-Zahlung direkt an unsere eigene Wallet-Adresse: Es ist kein Zahlungsdienstleister beteiligt. Die Transaktion (Adresse, Betrag, Zeitpunkt) ist auf der jeweiligen Blockchain öffentlich einsehbar; wir speichern die von Ihnen gemeldete Transaktions-ID, um die Zahlung Ihrem Konto zuzuordnen.'] : []),
+    ...(ueberweisung ? ['Banküberweisung: Ihre Bank und unsere Bank verarbeiten die Zahlungsdaten (Name, IBAN, Betrag, Verwendungszweck).'] : []),
+  ];
+  s = s.replace(/<span class="luecke">\[Noch einzutragen: welche Anbieter tatsächlich[\s\S]*?<\/span>/,
+    () => (wege.length ? `<ul>${wege.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>` : esc('Derzeit sind keine kostenpflichtigen Funktionen freigeschaltet.')));
   if (angaben.anschrift && angaben.email) {
     const verantwortlich = `${esc(angaben.name)}${angaben.name !== angaben.gruender ? ` (${esc(angaben.gruender)})` : ''}<br>${esc(angaben.anschrift).replace(/\n/g, '<br>')}<br>E-Mail: <a href="mailto:${esc(angaben.email)}">${esc(angaben.email)}</a>`;
     s = s.replace(/<span class="luecke">\[Noch einzutragen: Name bzw\. Firma[\s\S]*?<\/span>/, verantwortlich);

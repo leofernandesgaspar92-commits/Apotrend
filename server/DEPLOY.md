@@ -252,3 +252,8 @@ Einstellungen gefüllt — Gründer steht fest drin (Leo Fernandes Gaspar). In R
 - optional `APOPULSE_FIRMA_NAME` (falls eine Firma gegründet ist; sonst steht der Gründer als Betreiber) und
   `APOPULSE_FIRMA_UST_ID`. Dieselben Werte nutzen die Rechnungen.
 Fehlt etwas, steht es auf der Seite sichtbar als „[noch einzutragen]" und im Startklar-Check als „fehlt".
+
+Die Datenschutzerklärung setzt außerdem selbst ein, was wirklich eingerichtet ist: den SMS-Anbieter
+(Africa's Talking/Twilio oder „nicht eingeschaltet") und die Zahlwege (Stripe, PayPal, Krypto-Wallet,
+Überweisung). Der Hinweis „Entwurf — noch nicht rechtlich geprüft" bleibt, bis eine Fachperson den Text
+geprüft hat; danach `APOPULSE_DATENSCHUTZ_GEPRUEFT=ja` setzen.

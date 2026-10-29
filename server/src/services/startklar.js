@@ -59,6 +59,10 @@ export function startklar({ env = {}, dauerhaft = { level: 'flüchtig' }, quelle
     'Impressum vollständig',
     'Ohne Anschrift und E-Mail ist das Impressum unvollständig (in Österreich Pflicht) und die Datenschutzerklärung nennt keinen Verantwortlichen — beides prüft auch der Google Play Store. Als Gründer steht bereits Leo Fernandes Gaspar drin.',
     'In Render APOPULSE_FIRMA_ANSCHRIFT (z. B. „Musterstraße 1, 4020 Linz, Österreich") und APOPULSE_KONTAKT_EMAIL eintragen; optional APOPULSE_FIRMA_NAME (Firma, falls gegründet) und APOPULSE_FIRMA_UST_ID. Ansehen unter /impressum.');
+  punkt('datenschutz', /^(ja|yes|1|true)$/i.test(String(env.APOPULSE_DATENSCHUTZ_GEPRUEFT || '').trim()) ? 'ok' : 'warnung',
+    'Datenschutzerklärung rechtlich geprüft',
+    'Der Text beschreibt, was die Software tut, und setzt Betreiber, SMS- und Zahlungsanbieter selbst ein — er ist aber noch als „Entwurf, nicht rechtlich geprüft" markiert. Das prüft auch der Google Play Store.',
+    'Text unter /datenschutz.html von einer Fachperson prüfen lassen, danach in Render APOPULSE_DATENSCHUTZ_GEPRUEFT=ja setzen (der Entwurfs-Hinweis verschwindet).');
   punkt('adresse', gesetzt('APOPULSE_PUBLIC_URL') ? 'ok' : 'warnung',
     'Eigene Domain eingetragen',
     'Google-Seiten, geteilte Links und E-Mails sollen auf die echte Domain zeigen, nicht auf die Render-Adresse.',

@@ -28,7 +28,7 @@ test('Impressum: Gründer fest, Rest aus den Einstellungen; Fehlendes sichtbar a
 
 test('Datenschutz: Verantwortlicher und Kontakt werden eingesetzt, sobald Anschrift und E-Mail eingetragen sind', () => {
   const roh = readFileSync(join(HIER, '..', 'public', 'datenschutz.html'), 'utf8');
-  assert.equal(datenschutzMitAngaben(roh, betreiberAngaben({})), roh, 'ohne Angaben unverändert (Platzhalter bleibt sichtbar)');
+  assert.match(datenschutzMitAngaben(roh, betreiberAngaben({})), /Noch einzutragen: Name bzw\. Firma/, 'ohne Angaben bleibt der Platzhalter sichtbar');
   const mit = datenschutzMitAngaben(roh, betreiberAngaben({ APOPULSE_FIRMA_ANSCHRIFT: 'Hauptplatz 1, 4020 Linz', APOPULSE_KONTAKT_EMAIL: 'datenschutz@apopulse.example' }));
   assert.ok(!/Noch einzutragen: Name bzw\. Firma/.test(mit), 'Verantwortlicher noch Platzhalter');
   assert.ok(!/Noch einzutragen: E-Mail-Adresse für Datenschutzanfragen/.test(mit), 'Kontakt noch Platzhalter');
@@ -62,4 +62,21 @@ test('Erreichbar: Menü, Anmeldung, öffentliche Seiten, Teilseiten; Startseite 
   } finally {
     await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
   }
+});
+
+test('Datenschutz: SMS- und Zahlungsanbieter aus der tatsächlichen Einrichtung; Entwurfs-Hinweis erst nach Bestätigung weg', async () => {
+  const roh = readFileSync(join(HIER, '..', 'public', 'datenschutz.html'), 'utf8');
+  const a = betreiberAngaben({ APOPULSE_FIRMA_ANSCHRIFT: 'Hauptplatz 1, 4020 Linz', APOPULSE_KONTAKT_EMAIL: 'd@apopulse.example' });
+  const voll = datenschutzMitAngaben(roh, a, { sms: 'africastalking', zahlwege: ['stripe'], krypto: true });
+  assert.ok(!/Noch einzutragen/.test(voll), 'Lücke übrig');
+  assert.match(voll, /Anbieter: Africa&#39;s Talking|Anbieter: Africa's Talking/);
+  assert.match(voll, /Kartenzahlung über Stripe/); assert.ok(!/PayPal —/.test(voll), 'nicht eingerichteter Anbieter genannt');
+  assert.match(voll, /Krypto-Zahlung direkt an unsere eigene Wallet-Adresse/);
+  assert.match(voll, /Entwurf — noch nicht rechtlich geprüft/, 'Hinweis verschwand ohne Bestätigung');
+  assert.ok(!/class="entwurf"/.test(datenschutzMitAngaben(roh, a, { geprueft: true })));
+  const nichts = datenschutzMitAngaben(roh, a, {});
+  assert.match(nichts, /Derzeit ist die Anmeldung per SMS nicht eingeschaltet/);
+  assert.match(nichts, /Derzeit sind keine kostenpflichtigen Funktionen freigeschaltet/);
+  // Keine erfundenen Unterseiten-Links zu Anbietern.
+  assert.ok(!/https?:\/\/(www\.)?(africastalking|twilio|stripe|paypal)\.com\//.test(voll));
 });

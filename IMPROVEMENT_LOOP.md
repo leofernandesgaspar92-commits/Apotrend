@@ -3893,3 +3893,12 @@ Anmeldung, auf öffentlichen Engpass-Seiten und Teilseiten (5 Sprachen). Startse
 den Gründer als schema.org-Angabe für Suchmaschinen. Startklar-Check: neuer Punkt „Impressum vollständig".
 **Offen (Owner):** Anschrift + E-Mail in Render; Datenschutz-Platzhalter zu SMS- und Zahlungsanbietern.
 **Tests.** impressum.test.js (3), startklar (angepasst). 4 Gegenproben, rot.
+
+### Cycle · Datenschutzerklärung füllt sich aus der tatsächlichen Einrichtung (2026-10-29)
+
+Offene Platzhalter (SMS-Anbieter, Zahlungsanbieter) werden jetzt aus den Einstellungen gesetzt: Africa's
+Talking/Twilio mit Sitzland und Hauptdomain (keine erfundenen Unterseiten-Links) oder ehrlich „nicht
+eingeschaltet"; Zahlwege nur die freigeschalteten (Stripe, PayPal, eigene Krypto-Wallet ohne
+Dienstleister, Überweisung). Der Hinweis „Entwurf — noch nicht rechtlich geprüft" verschwindet erst, wenn
+der Owner `APOPULSE_DATENSCHUTZ_GEPRUEFT=ja` setzt; Startklar-Check hat dafür einen Punkt.
+**Tests.** impressum (+1). 2 Gegenproben, rot.

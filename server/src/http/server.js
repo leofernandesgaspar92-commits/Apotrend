@@ -2971,7 +2971,13 @@ async function anfrage(req, res) {
     const sp = kopfSprache(req.headers['accept-language']);
     const html = pathname === '/impressum'
       ? impressumSeite({ sp, basis: oeffentlicheBasis(req), angaben })
-      : datenschutzMitAngaben(fs.readFileSync(path.join(PUBLIC_DIR, 'datenschutz.html'), 'utf8'), angaben);
+      : datenschutzMitAngaben(fs.readFileSync(path.join(PUBLIC_DIR, 'datenschutz.html'), 'utf8'), angaben, {
+        sms: sms.aktiv ? sms.anbieter : null,
+        zahlwege: Object.keys(buildPaymentProvidersFromEnv()).filter((k) => k !== 'coinbase'),
+        krypto: cryptoWallets().length > 0,
+        ueberweisung: !!(process.env.APOPULSE_BANK_IBAN && process.env.APOPULSE_FIRMA_NAME && process.env.APOPULSE_FIRMA_ANSCHRIFT),
+        geprueft: /^(ja|yes|1|true)$/i.test(String(process.env.APOPULSE_DATENSCHUTZ_GEPRUEFT || '').trim()),
+      });
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', Vary: 'Accept-Language', 'X-Content-Type-Options': 'nosniff' });
     return res.end(html);
   }
