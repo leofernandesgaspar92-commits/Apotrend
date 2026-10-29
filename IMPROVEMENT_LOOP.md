@@ -3870,3 +3870,11 @@ Lizenznummer und Rx-Folge. Funde:
    vorgesehen" (5 Sprachen).
 **Tests.** verifizierung-entscheidung.test.js (2). 4 Gegenproben: 3 rot; die vierte (Grund nur bei Status
 „abgelehnt" zeigen) ist eine zweite Sicherung — ein neuer Antrag ersetzt den alten samt Grund ohnehin.
+
+### Cycle · Push-Nachricht bei Ergebnis der Betriebs-Bestätigung (2026-10-29)
+
+Wer die App nicht öffnet, erfuhr von Bestätigung oder Ablehnung nichts (nur Glocke). Jetzt Web-Push für
+„verified" und „verify_rejected" (5 Sprachen); der Freitext der Redaktion steht bewusst NICHT im Push (er
+erscheint auf dem Sperrbildschirm), sondern in der App. Tipp auf „abgelehnt" öffnet `/?bestaetigung=1` →
+direkt der Antrag mit Grund.
+**Tests.** verifizierung-entscheidung (+1). 2 Gegenproben, rot.

@@ -1658,6 +1658,8 @@ async function mainScreen() {
     openWirkstoff(absicht.beobachten);
     return;
   }
+  // Push „Bestätigung abgelehnt" (services/webPush.js): direkt zum Antrag mit Grund.
+  if (params.get('bestaetigung') === '1') { history.replaceState(null, '', location.pathname); zurVerifizierung(); return; }
   if (sharedPost) { history.replaceState(null, '', location.pathname); openPost(sharedPost); }
   else if (sharedWirkstoff) { history.replaceState(null, '', location.pathname); openWirkstoff(sharedWirkstoff); }
   else if (sharedProfile) { history.replaceState(null, '', location.pathname); openProfile(sharedProfile); }

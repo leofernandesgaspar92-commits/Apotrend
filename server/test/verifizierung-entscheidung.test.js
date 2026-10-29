@@ -62,3 +62,17 @@ test('App: Standardgründe in allen Sprachen, Grund in der Sprache der Leserin, 
   assert.match(APP, /if \(!code && !zusatz\) \{ card\.querySelector\('\[data-vferr\]'\)\.textContent = t\('vg_grund_fehlt'\); return; \}/);
   assert.match(APP, /n\.type==='verify_rejected'\?vfGrund\(n\.label\)/);
 });
+
+test('Push: Ergebnis der Bestätigung in 5 Sprachen, ohne Freitext der Redaktion; „abgelehnt" öffnet den Antrag', async () => {
+  const { pushNachricht, PUSH_TYPEN } = await import('../src/services/webPush.js');
+  assert.ok(PUSH_TYPEN.has('verified') && PUSH_TYPEN.has('verify_rejected'));
+  for (const sprache of ['de', 'en', 'pt', 'fr', 'ar']) {
+    const nein = pushNachricht({ type: 'verify_rejected', label: '#nicht_gefunden: geheimer Zusatz der Redaktion' }, { sprache });
+    const ja = pushNachricht({ type: 'verified' }, { sprache });
+    assert.ok(nein.titel && nein.text && ja.titel && ja.text, sprache);
+    assert.ok(!/geheimer|#nicht_gefunden/.test(nein.text + nein.titel), 'Freitext im Push');
+    assert.equal(nein.url, '/?bestaetigung=1'); assert.equal(ja.url, '/');
+  }
+  assert.notEqual(pushNachricht({ type: 'verified' }, { sprache: 'fr' }).titel, pushNachricht({ type: 'verified' }, { sprache: 'en' }).titel);
+  assert.match(APP, /if \(params\.get\('bestaetigung'\) === '1'\) \{ history\.replaceState\(null, '', location\.pathname\); zurVerifizierung\(\); return; \}/);
+});

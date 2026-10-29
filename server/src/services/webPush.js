@@ -152,6 +152,8 @@ const TEXTE = {
     watch_wieder: (w) => [`Wieder verfügbar: ${w}`, `${w} ist laut Meldung aus Apotheken wieder lieferbar (nicht amtlich).`],
     watch_eingeschraenkt: (w) => [`Eingeschränkt lieferbar: ${w}`, `Eine Apotheke meldet ${w} als eingeschränkt lieferbar (nicht amtlich).`],
     watch_termin: (w, d) => [`Neuer Termin: ${w}`, d ? `${w} voraussichtlich wieder lieferbar bis ${d} (Meldung aus Apotheken).` : `Für ${w} gibt es noch keinen Liefertermin (Meldung aus Apotheken).`],
+    verified: () => ['Betrieb bestätigt ✔', 'Ihr Betrieb ist jetzt in ApoPulse bestätigt. Tippen zum Öffnen.'],
+    verify_rejected: () => ['Bestätigung abgelehnt', 'Ihr Antrag wurde abgelehnt. Grund und neuen Antrag finden Sie in ApoPulse.'],
     test: () => ['ApoPulse: Benachrichtigung funktioniert', 'So kommt ein Engpass-Alarm an, auch wenn die App geschlossen ist.'],
   },
   en: {
@@ -163,6 +165,8 @@ const TEXTE = {
     watch_wieder: (w) => [`Available again: ${w}`, `According to a pharmacy report, ${w} is available again (not official).`],
     watch_eingeschraenkt: (w) => [`Limited availability: ${w}`, `A pharmacy reports limited availability of ${w} (not official).`],
     watch_termin: (w, d) => [`New date: ${w}`, d ? `${w} expected back in stock by ${d} (pharmacy report).` : `No delivery date for ${w} yet (pharmacy report).`],
+    verified: () => ['Business verified ✔', 'Your business is now verified on ApoPulse. Tap to open.'],
+    verify_rejected: () => ['Verification rejected', 'Your request was rejected. See the reason and send a new request in ApoPulse.'],
     test: () => ['ApoPulse: notifications work', 'This is how a shortage alert arrives, even when the app is closed.'],
   },
   pt: {
@@ -174,6 +178,8 @@ const TEXTE = {
     watch_wieder: (w) => [`Novamente disponível: ${w}`, `Segundo uma farmácia, ${w} está novamente disponível (não oficial).`],
     watch_eingeschraenkt: (w) => [`Disponibilidade limitada: ${w}`, `Uma farmácia comunica disponibilidade limitada de ${w} (não oficial).`],
     watch_termin: (w, d) => [`Nova data: ${w}`, d ? `${w} previsto de novo em stock até ${d} (comunicação de farmácias).` : `Ainda sem data de entrega para ${w} (comunicação de farmácias).`],
+    verified: () => ['Estabelecimento verificado ✔', 'O seu estabelecimento está agora verificado no ApoPulse. Toque para abrir.'],
+    verify_rejected: () => ['Verificação recusada', 'O seu pedido foi recusado. Veja o motivo e envie um novo pedido no ApoPulse.'],
     test: () => ['ApoPulse: notificações a funcionar', 'É assim que chega um alerta de rutura, mesmo com a app fechada.'],
   },
   fr: {
@@ -185,6 +191,8 @@ const TEXTE = {
     watch_wieder: (w) => [`De nouveau disponible : ${w}`, `Selon le signalement d’une pharmacie, ${w} est de nouveau disponible (non officiel).`],
     watch_eingeschraenkt: (w) => [`Disponibilité limitée : ${w}`, `Une pharmacie signale une disponibilité limitée de ${w} (non officiel).`],
     watch_termin: (w, d) => [`Nouvelle date : ${w}`, d ? `${w} de nouveau en stock prévu d’ici le ${d} (signalement de pharmacie).` : `Pas encore de date de livraison pour ${w} (signalement de pharmacie).`],
+    verified: () => ['Établissement vérifié ✔', 'Votre établissement est désormais vérifié sur ApoPulse. Touchez pour ouvrir.'],
+    verify_rejected: () => ['Vérification refusée', 'Votre demande a été refusée. Consultez le motif et envoyez une nouvelle demande dans ApoPulse.'],
     test: () => ['ApoPulse : les notifications fonctionnent', 'Voici comment arrive une alerte de pénurie, même quand l’application est fermée.'],
   },
   ar: {
@@ -196,10 +204,14 @@ const TEXTE = {
     watch_wieder: (w) => [`متوفر من جديد: ${w}`, `وفق بلاغ صيدلية، ${w} متوفر من جديد (غير رسمي).`],
     watch_eingeschraenkt: (w) => [`توفر محدود: ${w}`, `صيدلية تبلّغ عن توفر محدود لـ ${w} (غير رسمي).`],
     watch_termin: (w, d) => [`موعد جديد: ${w}`, d ? `يُتوقع توفر ${w} من جديد حتى ${d} (بلاغ صيدلية).` : `لا يوجد بعد موعد توريد لـ ${w} (بلاغ صيدلية).`],
+    verified: () => ['تم توثيق المنشأة ✔', 'منشأتك موثَّقة الآن في ApoPulse. اضغط للفتح.'],
+    verify_rejected: () => ['تم رفض التوثيق', 'تم رفض طلبك. اطّلع على السبب وأرسل طلبًا جديدًا في ApoPulse.'],
     test: () => ['ApoPulse: الإشعارات تعمل', 'هكذا يصل تنبيه النقص، حتى عندما يكون التطبيق مغلقًا.'],
   },
 };
-export const PUSH_TYPEN = new Set(['shortage_home', 'shortage_ended', 'shortage_abroad', 'watch_alert', 'shortage_bestaetigt']);
+// verified / verify_rejected: Ergebnis der Betriebs-Bestätigung — wer die App nicht öffnet, erfuhr sonst
+// nichts davon. Den Grund (Freitext der Redaktion) nennt der Push bewusst nicht: Er steht in der App.
+export const PUSH_TYPEN = new Set(['shortage_home', 'shortage_ended', 'shortage_abroad', 'watch_alert', 'shortage_bestaetigt', 'verified', 'verify_rejected']);
 
 /** Benachrichtigung -> Push-Nachricht in der Sprache der Person. */
 export function pushNachricht(n, { sprache = 'de', landName = (c) => c } = {}) {
@@ -216,6 +228,10 @@ export function pushNachricht(n, { sprache = 'de', landName = (c) => c } = {}) {
   }
   const f = T[typ];
   if (!f) return null;
+  if (typ === 'verified' || typ === 'verify_rejected') {
+    const [titel, text] = f();
+    return { titel, text, url: typ === 'verify_rejected' ? '/?bestaetigung=1' : '/', tag: 'verifizierung' };
+  }
   const wirkstoff = n.ref_type === 'wirkstoff' || n.refType === 'wirkstoff' ? (n.ref_id || n.refId || teile[0]) : teile[0];
   const land = teile[1] && /^[A-Z]{2}$/.test(teile[1]) ? landName(teile[1]) : (teile[1] || '');
   const termin = typ === 'watch_termin' ? ((teile[1] || '').match(/(\d{4})-(\d{2})-(\d{2})/) || null) : null;
