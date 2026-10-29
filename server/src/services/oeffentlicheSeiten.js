@@ -246,13 +246,15 @@ ul.l{list-style:none;margin:0;padding:0}ul.l li{padding:10px 0;border-top:1px so
 .s{font-weight:700;white-space:nowrap}.s.kritisch{color:#b42318}.s.eingeschraenkt{color:#9a6700}nav.p{font-size:15px;margin:8px 0}
 @media (prefers-color-scheme:dark){body{background:#0f1419;color:#e7e9ea}.c{background:#16202a;border-color:#2f3b45}.mu{color:#9aa8b4}ul.l li{border-color:#2f3b45}a{color:#6cb6ff}.m{color:#22cc5c}a.b{background:#22cc5c;color:#04170a}.s.kritisch{color:#ff8a80}.s.eingeschraenkt{color:#ffd166}}
 </style></head>
-<body><div class="k"><a class="m" href="/"><svg width="28" height="28" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="7" fill="#0b7f28"/><path d="M13 6.2v13.6M6.2 13h13.6" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/></svg>ApoPulse</a>
+<body><div class="k"><a class="m" href="/"><svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lgo1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a5562"/><stop offset="1" stop-color="#1d242d"/></linearGradient><mask id="lmo1"><rect width="32" height="32" fill="#fff"/><path d="M4 16.2h7.2l2.2-4.4 3.4 8.6 2.2-4.2H28" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><path d="M11.5 3h9a1 1 0 0 1 1 1v7.5H29a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-7.5V28a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-7.5H3a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h7.5V4a1 1 0 0 1 1-1z" fill="url(#lgo1)" mask="url(#lmo1)"/></svg>ApoPulse</a>
 ${inhalt}
 </div></body></html>`;
   }
 
   return {
     slug, laenderMitDaten, nameZu,
+    // Für die Funktionsvorschau der App (/api/vorschau): dieselben amtlichen Einträge wie hier.
+    eintraege,
 
     laenderOhneQuelle,
 

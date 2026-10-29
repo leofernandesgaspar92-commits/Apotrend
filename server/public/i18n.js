@@ -34,6 +34,9 @@
 
 const I18N = {
   de: {
+    km_land_zuerst:"Wähle zuerst dein Land – dann siehst du die aktuellen Einträge.",
+    km_live:"Aktuell", km_leer:"Für dieses Land gerade keine Einträge.", km_laedt:"Wird geladen …", km_m_engpass:"Engpass", km_alle_engpaesse:"Alle Engpässe ansehen",
+    km_funktionen:"Funktionen", km_konto:"Konto & Werkzeuge", km_darstellung:"Darstellung", km_oeffnen:"Öffnen", km_f_shortages_t:"Lieferengpässe", km_f_shortages_d:"Behördenlisten je Land – mit Quelle, Datum und Status.", km_f_signals_t:"Live-Warnungen", km_f_signals_d:"Rückrufe und Behördenwarnungen, nach Schweregrad sortiert.", km_f_news_t:"Fach-News", km_f_news_d:"Meldungen aus geprüften Fachquellen, laufend aktualisiert.", km_f_prices_t:"Preisvergleich", km_f_prices_d:"Präparate mit gleichem Wirkstoff nebeneinander vergleichen.", km_m_krit:"Kritisch", km_m_eing:"Eingeschränkt", km_m_rueckruf:"Rückruf", km_m_hinweis:"Hinweis", km_d_dm:"Direkte Nachrichten an Kolleg:innen", km_d_cart:"Vorgemerkte Präparate für die Bestellung", km_d_einladen:"Team per Link einladen", km_d_werben:"Mediadaten und Werbeplätze", km_d_datenapi:"Daten als CSV oder per Schnittstelle abrufen", km_d_mod:"Gemeldete Inhalte prüfen", km_d_help:"Anleitung und häufige Fragen", km_landing_titel:"Das bietet ApoPulse",
     nav_overview:'✨ Für dich', nav_public:'🌍 Öffentlich', nav_home:'🏠 Mein Feed',
     nav_shortages:'📦 Engpässe', nav_prices:'💶 Preise', nav_rabatte:'🏷️ Top-Rabatte',
     nav_exchange:'🔄 Biete/Suche', nav_news:'📰 News', nav_signals:'⚠️ Live-Warnungen',
@@ -492,6 +495,9 @@ const I18N = {
     skiplink:'Zum Inhalt springen', print_head:'ApoPulse — Lieferengpässe', offline_banner:'📴 Keine Internetverbindung — Inhalte können nicht geladen werden.',
   },
   en: {
+    km_land_zuerst:"Choose your country first – then you will see the latest entries.",
+    km_live:"Latest", km_leer:"No entries for this country right now.", km_laedt:"Loading …", km_m_engpass:"Shortage", km_alle_engpaesse:"View all shortages",
+    km_funktionen:"Features", km_konto:"Account & tools", km_darstellung:"Display", km_oeffnen:"Open", km_f_shortages_t:"Supply shortages", km_f_shortages_d:"Official lists per country – with source, date and status.", km_f_signals_t:"Live alerts", km_f_signals_d:"Recalls and regulatory alerts, sorted by severity.", km_f_news_t:"Industry news", km_f_news_d:"Updates from verified professional sources, refreshed continuously.", km_f_prices_t:"Price comparison", km_f_prices_d:"Compare products with the same active substance side by side.", km_m_krit:"Critical", km_m_eing:"Limited", km_m_rueckruf:"Recall", km_m_hinweis:"Notice", km_d_dm:"Direct messages to colleagues", km_d_cart:"Products saved for your order", km_d_einladen:"Invite your team via link", km_d_werben:"Media kit and ad placements", km_d_datenapi:"Export data as CSV or via API", km_d_mod:"Review reported content", km_d_help:"Guide and FAQ", km_landing_titel:"What ApoPulse offers",
     nav_overview:'✨ For you', nav_public:'🌍 Public', nav_home:'🏠 My feed',
     nav_shortages:'📦 Shortages', nav_prices:'💶 Prices', nav_rabatte:'🏷️ Top deals',
     nav_exchange:'🔄 Offer/Seek', nav_news:'📰 News', nav_signals:'⚠️ Live alerts',
@@ -950,6 +956,9 @@ const I18N = {
     skiplink:'Skip to content', print_head:'ApoPulse — Shortages', offline_banner:'📴 No internet connection — content cannot be loaded.',
   },
   pt: {
+    km_land_zuerst:"Escolha primeiro o seu país – depois verá as entradas mais recentes.",
+    km_live:"Mais recentes", km_leer:"Sem entradas para este país neste momento.", km_laedt:"A carregar …", km_m_engpass:"Rutura", km_alle_engpaesse:"Ver todas as ruturas",
+    km_funktionen:"Funcionalidades", km_konto:"Conta e ferramentas", km_darstellung:"Visualização", km_oeffnen:"Abrir", km_f_shortages_t:"Ruturas de abastecimento", km_f_shortages_d:"Listas oficiais por país – com fonte, data e estado.", km_f_signals_t:"Alertas em direto", km_f_signals_d:"Recolhas e alertas oficiais, ordenados por gravidade.", km_f_news_t:"Notícias do setor", km_f_news_d:"Notícias de fontes profissionais verificadas, atualizadas continuamente.", km_f_prices_t:"Comparação de preços", km_f_prices_d:"Compare lado a lado produtos com a mesma substância ativa.", km_m_krit:"Crítico", km_m_eing:"Limitado", km_m_rueckruf:"Recolha", km_m_hinweis:"Aviso", km_d_dm:"Mensagens diretas a colegas", km_d_cart:"Produtos guardados para a encomenda", km_d_einladen:"Convidar a equipa por link", km_d_werben:"Dados de media e espaços publicitários", km_d_datenapi:"Obter dados em CSV ou via API", km_d_mod:"Rever conteúdos denunciados", km_d_help:"Guia e perguntas frequentes", km_landing_titel:"O que o ApoPulse oferece",
     nav_overview:'✨ Para si', nav_public:'🌍 Público', nav_home:'🏠 Meu feed',
     nav_shortages:'📦 Faltas', nav_prices:'💶 Preços', nav_rabatte:'🏷️ Descontos',
     nav_exchange:'🔄 Oferta/Procura', nav_news:'📰 Notícias', nav_signals:'⚠️ Alertas em direto',
@@ -1408,6 +1417,9 @@ const I18N = {
     skiplink:'Saltar para o conteúdo', print_head:'ApoPulse — Faltas', offline_banner:'📴 Sem ligação à internet — não é possível carregar conteúdos.',
   },
   fr: {
+    km_land_zuerst:"Choisissez d'abord votre pays – vous verrez ensuite les dernières entrées.",
+    km_live:"Dernières entrées", km_leer:"Aucune entrée pour ce pays en ce moment.", km_laedt:"Chargement …", km_m_engpass:"Rupture", km_alle_engpaesse:"Voir toutes les ruptures",
+    km_funktionen:"Fonctionnalités", km_konto:"Compte et outils", km_darstellung:"Affichage", km_oeffnen:"Ouvrir", km_f_shortages_t:"Ruptures d'approvisionnement", km_f_shortages_d:"Listes officielles par pays – avec source, date et statut.", km_f_signals_t:"Alertes en direct", km_f_signals_d:"Rappels et alertes officielles, triés par gravité.", km_f_news_t:"Actualités du secteur", km_f_news_d:"Informations issues de sources professionnelles vérifiées, mises à jour en continu.", km_f_prices_t:"Comparaison des prix", km_f_prices_d:"Comparez côte à côte les produits ayant la même substance active.", km_m_krit:"Critique", km_m_eing:"Limité", km_m_rueckruf:"Rappel", km_m_hinweis:"Avis", km_d_dm:"Messages directs aux collègues", km_d_cart:"Produits mis de côté pour la commande", km_d_einladen:"Inviter votre équipe par lien", km_d_werben:"Kit média et emplacements publicitaires", km_d_datenapi:"Récupérer les données en CSV ou via API", km_d_mod:"Examiner les contenus signalés", km_d_help:"Guide et FAQ", km_landing_titel:"Ce qu'offre ApoPulse",
     nav_overview:'✨ Pour vous', nav_public:'🌍 Public', nav_home:'🏠 Mon fil', nav_shortages:'📦 Ruptures', nav_prices:'💶 Prix',
     nav_rabatte:'🏷️ Meilleures offres', nav_exchange:'🔄 Offre/Recherche', nav_news:'📰 Actualités', nav_signals:'⚠️ Alertes en direct',
     sig_title:'⚠️ Alertes réglementaires en direct',
@@ -2327,6 +2339,9 @@ const I18N = {
     offline_banner:'📴 Pas de connexion Internet — le contenu ne peut pas être chargé.',
   },
   ar: {
+    km_land_zuerst:"اختر بلدك أولًا – ثم سترى أحدث الإدخالات.",
+    km_live:"الأحدث", km_leer:"لا توجد إدخالات لهذا البلد حاليًا.", km_laedt:"جارٍ التحميل …", km_m_engpass:"نقص", km_alle_engpaesse:"عرض كل حالات النقص",
+    km_funktionen:"الميزات", km_konto:"الحساب والأدوات", km_darstellung:"العرض", km_oeffnen:"فتح", km_f_shortages_t:"نقص الإمدادات", km_f_shortages_d:"القوائم الرسمية لكل بلد – مع المصدر والتاريخ والحالة.", km_f_signals_t:"تنبيهات مباشرة", km_f_signals_d:"عمليات السحب والتنبيهات الرسمية مرتبة حسب الخطورة.", km_f_news_t:"أخبار القطاع", km_f_news_d:"أخبار من مصادر مهنية موثوقة يتم تحديثها باستمرار.", km_f_prices_t:"مقارنة الأسعار", km_f_prices_d:"قارن المنتجات ذات المادة الفعالة نفسها جنبًا إلى جنب.", km_m_krit:"حرج", km_m_eing:"محدود", km_m_rueckruf:"سحب", km_m_hinweis:"إشعار", km_d_dm:"رسائل مباشرة إلى الزملاء", km_d_cart:"منتجات محفوظة للطلب", km_d_einladen:"دعوة فريقك عبر رابط", km_d_werben:"بيانات الإعلان والمساحات الإعلانية", km_d_datenapi:"تصدير البيانات بصيغة CSV أو عبر واجهة برمجية", km_d_mod:"مراجعة المحتوى المُبلّغ عنه", km_d_help:"الدليل والأسئلة الشائعة", km_landing_titel:"ما يقدمه ApoPulse",
     nav_overview:'✨ لك', nav_public:'🌍 عام', nav_home:'🏠 موجزي', nav_shortages:'📦 حالات النقص', nav_prices:'💶 الأسعار', nav_rabatte:'🏷️ أفضل العروض',
     nav_exchange:'🔄 عرض/طلب', nav_news:'📰 الأخبار', nav_signals:'⚠️ تنبيهات مباشرة', sig_title:'⚠️ تنبيهات تنظيمية مباشرة',
     sig_sub:'بلاغات الجهات الرسمية مفصّلة حسب المادة الفعالة ودرجة الخطورة. كل سطر يذكر مصدره مع رابط إلى الأصل.', sig_count:'{n} بلاغ',

@@ -13,7 +13,7 @@
 // sich die Liste unten aendert.
 // v4: Statt /i18n.js (alle Sprachen) lädt die Seite nur noch /i18n/<sprache>.js —
 // die landet beim Abruf im Speicher (Netz zuerst, unten), nicht vorab alle fünf.
-const CACHE = 'apopulse-shell-v4';
+const CACHE = 'apopulse-shell-v5';
 // Gespeicherte Lese-Antworten für offline. Schlüssel enthält einen Hash des
 // Anmelde-Tokens: Auf einem geteilten Gerät sieht kein Konto die Daten eines
 // anderen. Abmelden löscht den ganzen Speicher (Seite: caches.delete).
@@ -48,7 +48,7 @@ async function netzZuerst(req) {
   }
 }
 const SHELL = ['/', '/index.html', '/app.js', '/app.css', '/manifest.webmanifest',
-  '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
+  '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/icon.svg', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil((async () => {

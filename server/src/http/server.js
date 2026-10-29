@@ -1360,6 +1360,26 @@ const routes = [
     if (!COUNTRIES[cc]) { const e = Object.assign(new Error('Unbekanntes Land.'), { code: 'unknown_country' }); e.status = 404; throw e; }
     return lageDaten(cc);
   }],
+  // Funktionsvorschau (öffentlich): je Bereich die drei neuesten ECHTEN Einträge,
+  // damit Menü und Startseite zeigen, was ApoPulse wirklich enthält — statt
+  // erfundener Beispiele. Gleiche Linie wie die öffentlichen Engpass-Seiten
+  // (services/oeffentlicheSeiten.js): Engpässe nur amtlich, jede Zeile mit
+  // Quelle; keine Apotheken-Meldungen, keine Therapie- oder Austauschempfehlung.
+  ['GET', /^\/api\/vorschau\/([A-Za-z]{2})$/, false, async ({ params }) => {
+    const cc = params[0].toUpperCase();
+    if (!COUNTRIES[cc]) { const e = Object.assign(new Error('Unbekanntes Land.'), { code: 'unknown_country' }); e.status = 404; throw e; }
+    const host = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return null; } };
+    const engpaesse = oeffentlich.eintraege(cc).slice(0, 3)
+      .map((e) => ({ wirkstoff: e.wirkstoff, status: e.status, quelle: e.quelle }));
+    const signale = signalStore.list({ country: cc, limit: 3 })
+      .map((x) => ({ titel: x.title, kategorie: x.category, quelle: x.sourceName || host(x.originalUrl), datum: x.publishedAt || x.verifiedAt || null }));
+    const news = socialRepo.listAllPosts()
+      .filter((p) => p.kind === 'news' && p.visibility === 'public' && (p.country || 'AT') === cc)
+      .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+      .slice(0, 3)
+      .map((p) => ({ titel: String(p.body || '').split('\n')[0].slice(0, 200), quelle: host(p.source_url || p.sourceUrl), datum: p.created_at || null }));
+    return { land: cc, engpaesse, signale, news };
+  }],
   // Datenabdeckung für Kundschaft (öffentlich): Aus welchen Ländern kommen
   // wirklich Behördendaten? Wer zahlen soll, muss wissen, wofür — und wo
   // (noch) nichts ankommt. Nur Zustände und Zahlen, keine Wirkstoffnamen.

@@ -210,11 +210,11 @@ async function main() {
           });
           return bad;
         });
-        if (a11y.controls) findings.push(`A11y: ${a11y.controls} Formularelement(e) ohne Namen [${name}]`);
-        if (a11y.imgs) findings.push(`A11y: ${a11y.imgs} Bild(er) ohne alt [${name}]`);
-        if (a11y.clickables) findings.push(`A11y: ${a11y.clickables} anklickbare(s) Element(e) nicht tastaturbedienbar [${name}]`);
-        if (a11y.nested) findings.push(`A11y: ${a11y.nested} verschachtelte(s) Klick-Element(e) (Button im Button) [${name}]`);
-        if (a11y.onclickKbd) findings.push(`A11y: ${a11y.onclickKbd} onclick-Element(e) ohne Tastaturzugang [${name}]`);
+        if (a11y.controls) findings.push(`A11y: ${a11y.controls} Formularelement(e) ohne Namen [${label || tab}]`);
+        if (a11y.imgs) findings.push(`A11y: ${a11y.imgs} Bild(er) ohne alt [${label || tab}]`);
+        if (a11y.clickables) findings.push(`A11y: ${a11y.clickables} anklickbare(s) Element(e) nicht tastaturbedienbar [${label || tab}]`);
+        if (a11y.nested) findings.push(`A11y: ${a11y.nested} verschachtelte(s) Klick-Element(e) (Button im Button) [${label || tab}]`);
+        if (a11y.onclickKbd) findings.push(`A11y: ${a11y.onclickKbd} onclick-Element(e) ohne Tastaturzugang [${label || tab}]`);
       }
     }
     if (errors.length) findings.push(`JS-Fehler [${theme}]: ${[...new Set(errors)].slice(0, 3).join(' | ')}`);
@@ -2328,7 +2328,9 @@ async function main() {
     if (await quer() > 0) findings.push(`Ägypten: erste Schritte ${await quer()} px Querscrollen`);
     await page.click('#btnMenue'); await page.waitForTimeout(250);
     const m = await page.evaluate(() => { const r = document.getElementById('kopfMenue').getBoundingClientRect(); return { l: r.left, r: r.right, w: innerWidth }; });
-    if (!(m.l < m.w - m.r)) findings.push('Ägypten: Menü öffnet nicht auf der linken Seite (RTL)');
+    // Am Handy ist das Menü ein fast bildschirmbreites Panel (links und rechts je 12 px) —
+    // dann gibt es kein „links" mehr; gleich große Ränder sind korrekt. Rechtsbündig bleibt ein Fehler.
+    if (!(m.l <= m.w - m.r + 0.5)) findings.push('Ägypten: Menü öffnet nicht auf der linken Seite (RTL)');
     if (!/English/.test(await page.textContent('#spracheLabel').catch(() => ''))) findings.push('Ägypten: Sprachknopf „English" fehlt');
     await page.keyboard.press('Escape');
     await page.evaluate(() => openPremium()); await page.waitForTimeout(1200);

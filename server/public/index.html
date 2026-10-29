@@ -15,6 +15,7 @@
 <meta name="twitter:card" content="summary_large_image" />
 <link rel="manifest" href="/manifest.webmanifest" />
 <meta name="theme-color" content="#ffffff" />
+<link rel="icon" type="image/svg+xml" href="/icon.svg" />
 <link rel="icon" type="image/png" href="/icon-192.png" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -27,7 +28,7 @@
 <div id="offlineBanner" class="offline-banner hidden" role="status" aria-live="polite">📴 Keine Internetverbindung — Inhalte können nicht geladen werden.</div>
 <div id="printhead"><h1 style="margin:0" data-i18n="print_head">ApoPulse — Lieferengpässe</h1><div id="printdate" style="color:#444"></div></div>
 <header>
-  <span class="logo clickable" id="logoHome" role="button" tabindex="0" data-i18n-title="logo_home" data-i18n-aria="logo_home" title="Zur Startseite" aria-label="Zur Startseite"><svg class="logo-ic" width="28" height="28" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="7" fill="#0b7f28"/><path d="M13 6.2v13.6M6.2 13h13.6" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/></svg><span class="logo-txt">ApoPulse</span></span>
+  <span class="logo clickable" id="logoHome" role="button" tabindex="0" data-i18n-title="logo_home" data-i18n-aria="logo_home" title="Zur Startseite" aria-label="Zur Startseite"><svg class="logo-ic" width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lgk1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--logo-1)"/><stop offset="1" style="stop-color:var(--logo-2)"/></linearGradient><mask id="lmk1"><rect width="32" height="32" fill="#fff"/><path d="M4 16.2h7.2l2.2-4.4 3.4 8.6 2.2-4.2H28" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><path d="M11.5 3h9a1 1 0 0 1 1 1v7.5H29a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-7.5V28a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-7.5H3a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h7.5V4a1 1 0 0 1 1-1z" fill="url(#lgk1)" mask="url(#lmk1)"/></svg><span class="logo-txt">ApoPulse</span></span>
   <span class="muted" id="whoami"></span>
   <span class="sp"></span>
   <select class="hidden" id="countrySwitch" data-i18n-title="country_title" data-i18n-aria="country_title" title="Land wechseln (stellt auch die Sprache um)" aria-label="Land wechseln"></select>
@@ -35,18 +36,38 @@
        alles Seltene steht im Menü — statt fünf umrandeter Knöpfe nebeneinander. -->
   <button class="kopf-btn bell hidden" id="btnNotif" data-i18n-aria="hdr_notif" data-i18n-title="hdr_notif" title="Benachrichtigungen" aria-label="Benachrichtigungen"><span class="ic" data-ic="bell"></span><span class="hlabel" data-i18n="hdr_notif">Meldungen</span><span class="badge hidden" id="notifBadge">0</span></button>
   <button class="kopf-btn" id="btnMenue" aria-haspopup="true" aria-expanded="false" aria-controls="kopfMenue" data-i18n-aria="hdr_menu"><span class="ic" data-ic="menu"></span><span class="hlabel" data-i18n="hdr_menu">Menü</span><span class="badge punkt hidden" id="menuBadge" aria-hidden="true"></span></button>
-  <div class="kopf-menue" id="kopfMenue" role="menu" hidden>
-    <button role="menuitem" class="bell hidden" id="btnMod" data-i18n-title="hdr_mod" title="Moderation"><span class="ic" data-ic="shield"></span><span class="hlabel" data-i18n="hdr_mod">Moderation</span></button>
-    <button role="menuitem" class="bell hidden" id="btnDm" data-i18n-title="hdr_dm" title="Nachrichten"><span class="ic" data-ic="mail"></span><span class="hlabel" data-i18n="hdr_dm">Nachrichten</span><span class="badge hidden" id="dmBadge">0</span></button>
-    <button role="menuitem" class="bell hidden" id="btnCart" data-i18n-title="cart_title" title="Einkaufsliste"><span class="ic" data-ic="cart"></span><span class="hlabel" data-i18n="cart_title">Einkaufsliste</span><span class="badge hidden" id="cartBadge">0</span></button>
-    <button role="menuitem" class="hidden" id="btnEinladen"><span class="ic" data-ic="users"></span><span class="hlabel" data-i18n="ei_menu">Kolleg:innen einladen</span></button>
-    <button role="menuitem" class="hidden" id="btnWerben"><span class="ic" data-ic="radio"></span><span class="hlabel" data-i18n="wb2_menu">Werben auf ApoPulse</span></button>
-    <button role="menuitem" class="hidden" id="btnDatenApi"><span class="ic" data-ic="download"></span><span class="hlabel" data-i18n="da_menu">Daten-Schnittstelle</span></button>
-    <button role="menuitem" id="btnTheme" data-i18n-title="aria_theme" title="Hell/Dunkel umschalten"><span class="ic" id="themeIcon" data-ic="moon"></span><span class="hlabel" id="themeLabel">Dunkel</span></button>
-    <button role="menuitem" class="hidden" id="btnSprache" title="Sprache · Language · Langue · Idioma · اللغة"><span class="ic ic-text" aria-hidden="true">A</span><span class="hlabel" id="spracheLabel"></span></button>
-    <button role="menuitem" id="btnFont" data-i18n-title="font_label" title="Schriftgröße ändern"><span class="ic ic-text" id="fontIcon" aria-hidden="true">A</span><span class="hlabel" data-i18n="font_label">Schrift</span></button>
-    <button role="menuitem" class="bell hidden" id="btnHelp" data-i18n-title="hdr_help" title="Hilfe"><span class="ic" data-ic="help"></span><span class="hlabel" data-i18n="hdr_help">Hilfe</span></button>
-    <button role="menuitem" class="hidden" id="btnLogout" data-i18n-title="hdr_logout" title="Abmelden"><span class="ic" data-ic="logout"></span><span class="hlabel" data-i18n="hdr_logout">Abmelden</span></button>
+  <!-- Menü als Panel: links gruppierte Liste, rechts (ab Tablet) eine Vorschau der
+       gerade gewählten Funktion. Die Funktionsliste baut app.js (kmFunktionen),
+       weil sie vom Land und den freigeschalteten Bereichen abhängt. -->
+  <div class="kopf-menue" id="kopfMenue" hidden>
+    <div class="km-liste" role="menu" aria-labelledby="btnMenue">
+      <div class="km-gruppe" role="group" aria-labelledby="kmTitelFunktionen">
+        <div class="km-titel" id="kmTitelFunktionen" data-i18n="km_funktionen">Funktionen</div>
+        <div id="kmFunktionen" class="km-funktionen"></div>
+      </div>
+      <div class="km-gruppe" role="group" aria-labelledby="kmTitelKonto">
+        <div class="km-titel" id="kmTitelKonto" data-i18n="km_konto">Konto &amp; Werkzeuge</div>
+      <button role="menuitem" class="bell hidden" id="btnDm" data-i18n-title="hdr_dm" title="Nachrichten"><span class="ic" data-ic="mail"></span><span class="km-tx"><span class="hlabel" data-i18n="hdr_dm">Nachrichten</span><small class="km-desc" data-i18n="km_d_dm">Direkte Nachrichten an Kolleg:innen</small></span><span class="badge hidden" id="dmBadge">0</span></button>
+      <button role="menuitem" class="bell hidden" id="btnCart" data-i18n-title="cart_title" title="Einkaufsliste"><span class="ic" data-ic="cart"></span><span class="km-tx"><span class="hlabel" data-i18n="cart_title">Einkaufsliste</span><small class="km-desc" data-i18n="km_d_cart">Vorgemerkte Präparate für die Bestellung</small></span><span class="badge hidden" id="cartBadge">0</span></button>
+      <button role="menuitem" class="hidden" id="btnEinladen"><span class="ic" data-ic="users"></span><span class="km-tx"><span class="hlabel" data-i18n="ei_menu">Kolleg:innen einladen</span><small class="km-desc" data-i18n="km_d_einladen">Team per Link einladen</small></span></button>
+      <button role="menuitem" class="hidden" id="btnDatenApi"><span class="ic" data-ic="download"></span><span class="km-tx"><span class="hlabel" data-i18n="da_menu">Daten-Schnittstelle</span><small class="km-desc" data-i18n="km_d_datenapi">Daten als CSV oder per Schnittstelle abrufen</small></span></button>
+      <button role="menuitem" class="hidden" id="btnWerben"><span class="ic" data-ic="radio"></span><span class="km-tx"><span class="hlabel" data-i18n="wb2_menu">Werben auf ApoPulse</span><small class="km-desc" data-i18n="km_d_werben">Mediadaten und Werbeplätze</small></span></button>
+      <button role="menuitem" class="bell hidden" id="btnMod" data-i18n-title="hdr_mod" title="Moderation"><span class="ic" data-ic="shield"></span><span class="km-tx"><span class="hlabel" data-i18n="hdr_mod">Moderation</span><small class="km-desc" data-i18n="km_d_mod">Gemeldete Inhalte prüfen</small></span></button>
+      </div>
+      <div class="km-gruppe" role="group" aria-labelledby="kmTitelDarstellung">
+        <div class="km-titel" id="kmTitelDarstellung" data-i18n="km_darstellung">Darstellung</div>
+        <div class="km-einstellungen">
+          <button role="menuitem" id="btnTheme" data-i18n-title="aria_theme" title="Hell/Dunkel umschalten"><span class="ic" id="themeIcon" data-ic="moon"></span><span class="hlabel" id="themeLabel">Dunkel</span></button>
+          <button role="menuitem" id="btnFont" data-i18n-title="font_label" title="Schriftgröße ändern"><span class="ic ic-text" id="fontIcon" aria-hidden="true">A</span><span class="hlabel" data-i18n="font_label">Schrift</span></button>
+          <button role="menuitem" class="hidden" id="btnSprache" title="Sprache · Language · Langue · Idioma · اللغة"><span class="ic ic-text" aria-hidden="true">A</span><span class="hlabel" id="spracheLabel"></span></button>
+        </div>
+      </div>
+      <div class="km-gruppe km-fuss" role="group">
+      <button role="menuitem" class="bell hidden" id="btnHelp" data-i18n-title="hdr_help" title="Hilfe"><span class="ic" data-ic="help"></span><span class="km-tx"><span class="hlabel" data-i18n="hdr_help">Hilfe</span><small class="km-desc" data-i18n="km_d_help">Anleitung und häufige Fragen</small></span></button>
+        <button role="menuitem" class="hidden" id="btnLogout" data-i18n-title="hdr_logout" title="Abmelden"><span class="ic" data-ic="logout"></span><span class="hlabel" data-i18n="hdr_logout">Abmelden</span></button>
+      </div>
+    </div>
+    <div class="km-vorschau" id="kmVorschau"></div>
   </div>
 </header>
 <!-- Rechte Spalte (Desktop, wie bei X): Schnellzugriff und News untereinander. -->

@@ -185,7 +185,7 @@ a.b{display:block;text-align:center;background:#0b7f28;color:#fff;text-decoratio
 @media (prefers-color-scheme:dark){body{background:#0f1419;color:#e7e9ea}.c{background:#16202a;border-color:#2f3b45}p,.s{color:#9aa8b4}.m{color:#22cc5c}a.b{background:#22cc5c;color:#04170a}}
 </style></head>
 <body><div class="k"><div class="c">
-<div class="m"><svg width="28" height="28" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="7" fill="#0b7f28"/><path d="M13 6.2v13.6M6.2 13h13.6" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/></svg>ApoPulse</div>
+<div class="m"><svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lgt1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a5562"/><stop offset="1" stop-color="#1d242d"/></linearGradient><mask id="lmt1"><rect width="32" height="32" fill="#fff"/><path d="M4 16.2h7.2l2.2-4.4 3.4 8.6 2.2-4.2H28" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><path d="M11.5 3h9a1 1 0 0 1 1 1v7.5H29a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-7.5V28a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-7.5H3a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h7.5V4a1 1 0 0 1 1-1z" fill="url(#lgt1)" mask="url(#lmt1)"/></svg>ApoPulse</div>
 <h1>${esc(flagge(d.land))} ${esc(titel)}</h1>
 <p>${esc(beschr)}</p>
 <a class="b" href="${esc(ziel)}">${esc(cta)}</a>
