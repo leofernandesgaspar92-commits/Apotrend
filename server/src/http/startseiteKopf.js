@@ -15,6 +15,7 @@
 import { createHash } from 'node:crypto';
 import { richtung } from '../domain/schreibrichtung.js';
 import { vorschaubild } from '../domain/vorschaubild.js';
+import { organisationJsonLd } from './impressum.js';
 
 const KOPF = {
   de: {
@@ -64,7 +65,9 @@ export function startseiteKopf(html, { sp = 'en', basis = '' } = {}) {
     .replace(/<meta name="description" content="[^"]*" \/>/, `<meta name="description" content="${esc(K.beschr)}" />`)
     .replace(/<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${esc(K.titel)}" />`)
     .replace(/<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${esc(K.og)}" />`)
-    .replace(/<meta property="og:image" content="\/og-bild\.png" \/>/, `<meta property="og:image" content="${esc(basis)}${vorschaubild(sp)}" />`);
+    .replace(/<meta property="og:image" content="\/og-bild\.png" \/>/, `<meta property="og:image" content="${esc(basis)}${vorschaubild(sp)}" />`)
+    // Wer hinter ApoPulse steht (schema.org, kein ausführbares Skript — die CSP bleibt unberührt).
+    .replace('</head>', `<script type="application/ld+json">${JSON.stringify(organisationJsonLd(basis)).replace(/</g, '\\u003c')}</script>\n</head>`);
 }
 
 // ── Manifest (App auf dem Startbildschirm) ───────────────────────────────────

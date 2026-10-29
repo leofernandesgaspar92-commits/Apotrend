@@ -16,6 +16,7 @@
 import { frLand } from '../domain/franzLand.js';
 import { richtung } from '../domain/schreibrichtung.js';
 import { vorschaubild } from '../domain/vorschaubild.js';
+import { rechtsLinksHtml } from './impressum.js';
 
 const TEXTE = {
   de: {
@@ -190,6 +191,7 @@ a.b{display:block;text-align:center;background:#0b7f28;color:#fff;text-decoratio
 <p>${esc(beschr)}</p>
 <a class="b" href="${esc(ziel)}">${esc(cta)}</a>
 <div class="s">${esc(T.mehr)}</div>
+${rechtsLinksHtml(d.sprache)}
 </div></div></body></html>`;
 }
 

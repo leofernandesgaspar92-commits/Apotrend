@@ -961,6 +961,8 @@ function authScreen() {
   zeigeAuth(kontoBekannt || oauthFehler ? 'login' : 'register');
   // Anmeldung über Google/Facebook gescheitert: sagen warum, statt still zurückzufallen.
   if (oauthFehler) { document.getElementById('li_err').textContent = oauthFehler; oauthFehler = null; }
+  // Impressum · Datenschutz (Pflichtangaben) — auch vor der Anmeldung erreichbar.
+  app.appendChild(el(`<div class="auth-recht"><a href="/impressum">${esc(t('rc_impressum'))}</a> · <a href="/datenschutz.html">${esc(t('rc_datenschutz'))}</a></div>`));
   // Kontotyp-Auswahl befüllen (Apotheke als Vorauswahl).
   ensureAccountTypes().then(() => {
     const sel = document.getElementById('rg_accounttype');

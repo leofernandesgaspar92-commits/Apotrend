@@ -3878,3 +3878,18 @@ Wer die App nicht öffnet, erfuhr von Bestätigung oder Ablehnung nichts (nur Gl
 erscheint auf dem Sperrbildschirm), sondern in der App. Tipp auf „abgelehnt" öffnet `/?bestaetigung=1` →
 direkt der Antrag mit Grund.
 **Tests.** verifizierung-entscheidung (+1). 2 Gegenproben, rot.
+
+### Cycle · Impressum, Betreiberangaben, Datenschutz verlinkt (2026-10-29)
+
+**Anlass (Owner):** Googles KI-Antwort ordnete apopulse.com einer „apoInnovo GmbH, Wien" zu und verneinte,
+dass Leo Fernandes Gaspar der Gründer ist. Eine Websuche fand keine solche Firma — und auf der eigenen
+Seite stand nirgends, wer ApoPulse betreibt: **kein Impressum** (in Österreich Pflicht), die
+**Datenschutzerklärung war nirgends verlinkt** und nannte beim Verantwortlichen nur einen Platzhalter.
+**Jetzt:** `/impressum` (Deutsch, sonst Englisch) mit Betreiber/Medieninhaber und **Gründer Leo Fernandes
+Gaspar**, Anschrift/E-Mail/Firma/UID aus den Einstellungen (dieselben wie bei Rechnungen, dazu
+`APOPULSE_KONTAKT_EMAIL`); Fehlendes sichtbar als „[noch einzutragen]", nichts erfunden. Datenschutz setzt
+Verantwortlichen und Kontakt ein, sobald eingetragen. Links „Impressum · Datenschutz" im Menü, unter der
+Anmeldung, auf öffentlichen Engpass-Seiten und Teilseiten (5 Sprachen). Startseite und Impressum nennen
+den Gründer als schema.org-Angabe für Suchmaschinen. Startklar-Check: neuer Punkt „Impressum vollständig".
+**Offen (Owner):** Anschrift + E-Mail in Render; Datenschutz-Platzhalter zu SMS- und Zahlungsanbietern.
+**Tests.** impressum.test.js (3), startklar (angepasst). 4 Gegenproben, rot.

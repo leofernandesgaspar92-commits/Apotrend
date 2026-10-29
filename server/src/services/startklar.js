@@ -54,6 +54,11 @@ export function startklar({ env = {}, dauerhaft = { level: 'flüchtig' }, quelle
       ? `${quellen.liefern} von ${quellen.gesamt} Engpass-Quellen liefern${quellen.fehler ? `, ${quellen.fehler} melden Fehler` : ''}. Davon leben Alarme, Radar, Daten-Schnittstelle und Google-Seiten.`
       : 'Noch keine Behördenliste ist angekommen. Ohne sie gibt es keine Alarme, kein Radar und keine öffentlichen Seiten.',
     'Redaktion → Datenquellen: „Jetzt abrufen" drücken und die Fehlermeldung je Quelle ansehen (docs/LIVE_DATA.md).');
+  // Impressum (§ 5 ECG, § 25 MedienG) und Verantwortlicher in der Datenschutzerklärung (DSGVO, Play Store).
+  punkt('impressum', gesetzt('APOPULSE_FIRMA_ANSCHRIFT') && gesetzt('APOPULSE_KONTAKT_EMAIL') ? 'ok' : 'fehlt',
+    'Impressum vollständig',
+    'Ohne Anschrift und E-Mail ist das Impressum unvollständig (in Österreich Pflicht) und die Datenschutzerklärung nennt keinen Verantwortlichen — beides prüft auch der Google Play Store. Als Gründer steht bereits Leo Fernandes Gaspar drin.',
+    'In Render APOPULSE_FIRMA_ANSCHRIFT (z. B. „Musterstraße 1, 4020 Linz, Österreich") und APOPULSE_KONTAKT_EMAIL eintragen; optional APOPULSE_FIRMA_NAME (Firma, falls gegründet) und APOPULSE_FIRMA_UST_ID. Ansehen unter /impressum.');
   punkt('adresse', gesetzt('APOPULSE_PUBLIC_URL') ? 'ok' : 'warnung',
     'Eigene Domain eingetragen',
     'Google-Seiten, geteilte Links und E-Mails sollen auf die echte Domain zeigen, nicht auf die Render-Adresse.',

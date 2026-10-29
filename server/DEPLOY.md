@@ -242,3 +242,13 @@ npm start
 # → http://localhost:4000  (registrieren, posten, Tabs durchklicken)
 npm test   # 60 automatisierte Tests
 ```
+
+## Impressum und Verantwortlicher (Pflicht vor dem Start)
+
+`/impressum` (§ 5 ECG, § 25 MedienG) und der „Verantwortliche" in `/datenschutz.html` werden aus den
+Einstellungen gefüllt — Gründer steht fest drin (Leo Fernandes Gaspar). In Render eintragen:
+- `APOPULSE_FIRMA_ANSCHRIFT` — Anschrift (Pflicht; mehrere Zeilen mit Zeilenumbruch möglich)
+- `APOPULSE_KONTAKT_EMAIL` — E-Mail für Kontakt und Datenschutzanfragen (Pflicht)
+- optional `APOPULSE_FIRMA_NAME` (falls eine Firma gegründet ist; sonst steht der Gründer als Betreiber) und
+  `APOPULSE_FIRMA_UST_ID`. Dieselben Werte nutzen die Rechnungen.
+Fehlt etwas, steht es auf der Seite sichtbar als „[noch einzutragen]" und im Startklar-Check als „fehlt".

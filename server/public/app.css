@@ -849,3 +849,6 @@ body.dark .kopf-menue { box-shadow:0 12px 32px rgba(0,0,0,.6); }
 .km-karte { box-shadow:var(--shadow); gap:12px; }
 .km-karte .km-mock { background:transparent; }
 .km-karte .km-v-kopf { min-height:5.2em; }
+/* Impressum · Datenschutz: im Menü und unter der Anmeldung — klein, aber als Links erkennbar. */
+.km-recht, .auth-recht { font-size:14px; padding:8px 12px 2px; color:var(--muted); }
+.km-recht a, .auth-recht a { color:inherit; text-decoration:underline; }

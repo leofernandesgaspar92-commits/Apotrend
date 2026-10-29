@@ -20,7 +20,7 @@ test('Nichts eingerichtet: das Gefährliche steht oben und heißt „fehlt"', ()
 });
 
 test('Alles eingerichtet: alles erledigt, keine Anleitungen mehr', () => {
-  const env = { APOPULSE_TOKEN_SECRET: 'x', APOPULSE_PUBLIC_URL: 'https://a.example', APOPULSE_FIRMA_NAME: 'A', APOPULSE_FIRMA_ANSCHRIFT: 'B', APOPULSE_BANK_IBAN: 'AT00', APOPULSE_UST_SATZ: '20',
+  const env = { APOPULSE_TOKEN_SECRET: 'x', APOPULSE_PUBLIC_URL: 'https://a.example', APOPULSE_FIRMA_NAME: 'A', APOPULSE_FIRMA_ANSCHRIFT: 'B', APOPULSE_KONTAKT_EMAIL: 'c@a.example', APOPULSE_BANK_IBAN: 'AT00', APOPULSE_UST_SATZ: '20',
     APOPULSE_SMS_PROVIDER: 'africastalking', APOPULSE_SMS_USERNAME: 'u', APOPULSE_SMS_API_KEY: 'k',
     OAUTH_GOOGLE_CLIENT_ID: 'g', OAUTH_GOOGLE_CLIENT_SECRET: 'gs', OAUTH_FACEBOOK_APP_ID: 'f', OAUTH_FACEBOOK_APP_SECRET: 'fs',
     APOPULSE_ANDROID_PACKAGE: 'com.apopulse.app', APOPULSE_ANDROID_SHA256: `${'A'.repeat(64)},${'b'.repeat(64)}` };

@@ -22,6 +22,7 @@
 //     Engpässen).
 // ============================================================================
 import { vorschaubild } from '../domain/vorschaubild.js';
+import { rechtsLinksHtml } from '../http/impressum.js';
 import { wirkstoffSchluessel } from '../domain/inn.js';
 import { frLand } from '../domain/franzLand.js';
 import { richtung } from '../domain/schreibrichtung.js';
@@ -248,6 +249,7 @@ ul.l{list-style:none;margin:0;padding:0}ul.l li{padding:10px 0;border-top:1px so
 </style></head>
 <body><div class="k"><a class="m" href="/"><svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lgo1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a5562"/><stop offset="1" stop-color="#1d242d"/></linearGradient><mask id="lmo1"><rect width="32" height="32" fill="#fff"/><path d="M4 16.2h7.2l2.2-4.4 3.4 8.6 2.2-4.2H28" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><path d="M11.5 3h9a1 1 0 0 1 1 1v7.5H29a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-7.5V28a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-7.5H3a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h7.5V4a1 1 0 0 1 1-1z" fill="url(#lgo1)" mask="url(#lmo1)"/></svg>ApoPulse</a>
 ${inhalt}
+${rechtsLinksHtml(sp)}
 </div></body></html>`;
   }
 

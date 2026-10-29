@@ -25,6 +25,7 @@ import { can as roleCan } from '../domain/roles.js';
 import { cleanSourceUrl } from '../domain/media.js';
 import { bilderAlsAdresse, bildHolen } from '../domain/bilder.js';
 import { startseiteKopf, kopfSprache, manifestSprache, startseiteCsp } from './startseiteKopf.js';
+import { impressumSeite, datenschutzMitAngaben, betreiberAngaben } from './impressum.js';
 import { schlankSicher } from './schlank.js';
 import { kodierungWaehlen, kodierenSync, createKompressionsSpeicher, createVersionsKennung } from './komprimierung.js';
 import { createSprachdateien } from './sprachdateien.js';
@@ -2960,6 +2961,19 @@ async function anfrage(req, res) {
       const einladung = e && EINLADUNG_RE.test(e) && einladungen.aufloesen(e) ? e : null;
       return res.end(teilseite({ ...d, land: cc, sprache, pfad: pathname, einladung }, { basis }));
     }
+  }
+
+  // ── Impressum und Datenschutzerklärung (http/impressum.js) ──
+  //  Angaben aus den Einstellungen (APOPULSE_FIRMA_*, APOPULSE_KONTAKT_EMAIL) — bei jedem
+  //  Abruf gelesen, damit eine Änderung in Render ohne Code wirkt.
+  if (req.method === 'GET' && (pathname === '/impressum' || pathname === '/datenschutz.html')) {
+    const angaben = betreiberAngaben(process.env);
+    const sp = kopfSprache(req.headers['accept-language']);
+    const html = pathname === '/impressum'
+      ? impressumSeite({ sp, basis: oeffentlicheBasis(req), angaben })
+      : datenschutzMitAngaben(fs.readFileSync(path.join(PUBLIC_DIR, 'datenschutz.html'), 'utf8'), angaben);
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', Vary: 'Accept-Language', 'X-Content-Type-Options': 'nosniff' });
+    return res.end(html);
   }
 
   // ── Öffentliche Engpass-Seiten, robots.txt, sitemap.xml ──
