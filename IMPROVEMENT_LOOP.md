@@ -3949,3 +3949,19 @@ Zähler abgefangener Server-Fehler (wurde gesammelt, aber nie angezeigt). Datens
 Im Browser geprüft (Chromium, Android-User-Agent): Fehler → Bericht → Cockpit, keine CSP-Verstöße.
 **Tests.** geraete-fehler.test.js (5). 14 Gegenproben, rot (eine — Adress-Zusätze — blieb zunächst grün,
 weil im Test zufällig von der Schlüssel-Regel mit erfasst; Fall mit kurzem Suchbegriff ergänzt).
+
+### Cycle · Klickrunde vor dem Start: jede Ansicht, jeder harmlose Knopf (2026-10-29)
+
+Neues Werkzeug `server/tools/klickrunde.mjs`: öffnet je Kontoart und Sprache (Apotheke en-GH, Großhandel
+fr-SN, Klinik ar-EG, Privat pt-AO, Apotheke de-AT, Moderation) bei 360 px jeden Reiter, jeden Menüpunkt
+und die Benachrichtigungen; Stufe 2 klickt in jeder Ansicht bis zu 8 harmlose Knöpfe (nichts
+Löschendes/Zahlendes/Sendendes). Gesammelt: Skriptfehler, Konsolenfehler, Server-5xx, Fehlerberichte.
+**Stufe 1:** 102 Ansichten, kein Fund. **Stufe 2 — zwei echte Funde:**
+1. Die **Hilfe erklärte ausgeschaltete Bereiche** (Biete/Suche, Kolleg:innen folgen, Direktnachrichten,
+   „#Hashtags anklickbar") — wer danach suchte, fand nichts. Jetzt nur, was läuft (data/features.js,
+   Tauschbörse auch nach Landesrecht); Suchtext ohne Hashtags in 5 Sprachen.
+2. **Leerer Beitrag** schickte eine Anfrage, die der Server ablehnte (400). Jetzt Hinweis sofort im
+   Gerät, Cursor ins Textfeld, Fehlerzeile wird vorgelesen (role="alert").
+Die übrigen Treffer (Klicks hinter dem offenen Hilfe-Fenster) waren gewolltes Verhalten — die Knöpfe
+im Fenster selbst einzeln geprüft: in Ordnung.
+**Tests.** klickrunde-funde.test.js (2). 6 Gegenproben, rot.

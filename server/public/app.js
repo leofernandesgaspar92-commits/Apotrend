@@ -1563,7 +1563,7 @@ async function mainScreen() {
           <span class="sp" style="flex:1"></span>
           <button id="pgo" data-i18n="sc_post_send">Posten</button>
         </div>
-        <div class="err" id="perr"></div>
+        <div class="err" id="perr" role="alert"></div>
       </div>
       <div class="card">
         <label data-i18n="co_follow_label">Jemandem folgen (@Handle)</label>
@@ -1642,6 +1642,8 @@ async function mainScreen() {
       const isFrage = pfrage.checked, isPoll = ppoll.checked;
       const payload = { body:v('pb'), visibility:document.getElementById('pv').value, image:composeImage, sourceUrl:v('psrc'), kind: isPoll ? 'poll' : (isFrage ? 'frage' : 'post') };
       if (isPoll) payload.pollOptions = pollOptInputs().map(i => i.value.trim()).filter(Boolean);
+      // Leer: gleich hier sagen und ins Textfeld setzen, statt eine Anfrage zu schicken, die der Server ablehnt.
+      if (!payload.body && (isPoll || !composeImage)) { document.getElementById('perr').textContent = t('e_post_empty'); document.getElementById('pb').focus(); return; }
       await api('POST','/api/posts', payload);
       document.getElementById('pb').value=''; document.getElementById('psrc').value=''; pfrage.checked=false;
       clearDraft(); // erfolgreich gepostet -> Entwurf verwerfen
@@ -1784,13 +1786,23 @@ function ersteSchritteAlarm(n) {
   app.appendChild(w);
 }
 
+// Hilfe: nur erklären, was gerade läuft (data/features.js). Bis 10/2026 beschrieb sie auch
+// Biete/Suche, Folgen und Direktnachrichten — ausgeschaltete Bereiche, die man dann vergeblich suchte.
+function hilfeSchritte() {
+  const social = featureAn('social');
+  return [
+    ['⭐', 'wc_s1_t', 'wc_s1_d'], ['➕', 'wc_s2_t', 'wc_s2_d'],
+    featureAn('preise') && ['💶', 'wc_s3_t', 'wc_s3_d'],
+    ['📝', 'wc_s4_t', 'wc_s4_d'],
+    tauschAn() && ['🔄', 'wc_s5_t', 'wc_s5_d'],
+    social && ['👥', 'wc_s6_t', 'wc_s6_d'],
+    featureAn('direktnachrichten') && ['✉️', 'wc_s7_t', 'wc_s7_d'],
+    social ? ['🔎', 'wc_s8_t', 'wc_s8_d'] : ['🔎', 'wc_s8_t_einfach', 'wc_s8_d_einfach'],
+  ].filter(Boolean);
+}
 function showWelcome(reopened) {
   document.getElementById('welcomeOverlay')?.remove();
-  const steps = [
-    ['⭐', 'wc_s1_t', 'wc_s1_d'], ['➕', 'wc_s2_t', 'wc_s2_d'], ['💶', 'wc_s3_t', 'wc_s3_d'],
-    ['📝', 'wc_s4_t', 'wc_s4_d'], ['🔄', 'wc_s5_t', 'wc_s5_d'], ['👥', 'wc_s6_t', 'wc_s6_d'],
-    ['✉️', 'wc_s7_t', 'wc_s7_d'], ['🔎', 'wc_s8_t', 'wc_s8_d'],
-  ];
+  const steps = hilfeSchritte();
   const ov = el(`<div id="welcomeOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px">
     <div class="card" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle" style="max-width:520px;width:100%;max-height:90vh;overflow-y:auto">
       <div class="row"><h1 id="welcomeTitle" style="flex:1;margin:0">${esc(t('wc_title'))}</h1></div>
