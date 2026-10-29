@@ -3965,3 +3965,17 @@ Löschendes/Zahlendes/Sendendes). Gesammelt: Skriptfehler, Konsolenfehler, Serve
 Die übrigen Treffer (Klicks hinter dem offenen Hilfe-Fenster) waren gewolltes Verhalten — die Knöpfe
 im Fenster selbst einzeln geprüft: in Ordnung.
 **Tests.** klickrunde-funde.test.js (2). 6 Gegenproben, rot.
+
+### Cycle · Sprachlecks gesucht; ausgeschaltete Social-Mechanik auch im Feed verborgen (2026-10-29)
+
+Klickrunde um eine **Sprachprüfung** erweitert: je Ansicht alle sichtbaren Texte (auch Platzhalter,
+aria-label, title) auf rohe Text-Schlüssel und — außerhalb der deutschen Oberfläche — deutsche Wörter.
+Ergebnis über 6 Personen/5 Sprachen: **keine Sprachlecks**. Ein Treffer „ben_mayer" führte zu einem
+echten Fund: Auf „Öffentlich"/„Mein Feed" stand **„Jemandem folgen (@Handle)"**, obwohl die
+Social-Mechanik ruht — ein Klick lief ins Leere. Dazu gehörten außerdem: Sichtbarkeit „Nur meine
+Follower", der Umfrage-Schalter, „Merken" auf jeder Karte (die Lesezeichen-Liste ruht) und
+Abstimm-Knöpfe bei Umfragen (/api/polls ruht). Jetzt ausgeblendet, solange `social` ruht; bestehende
+Umfragen bleiben als Ergebnis lesbar; Posten funktioniert unverändert (im Browser geprüft, keine
+fehlgeschlagene Anfrage). Die Klickrunde legt jetzt Beiträge und eine Umfrage an, damit Karten-Knöpfe
+mitgeprüft werden.
+**Tests.** klickrunde-funde (+1, mit DOM-Attrappe für wendeFeaturesAn). 5 Gegenproben, rot.

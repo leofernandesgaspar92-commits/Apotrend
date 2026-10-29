@@ -35,3 +35,37 @@ test('Leerer Beitrag: Hinweis sofort im Gerät (vorgelesen), Cursor ins Textfeld
   assert.match(knopf.slice(leer, senden), /t\('e_post_empty'\)[\s\S]*\.focus\(\); return; \}/);
   assert.match(app, /<div class="err" id="perr" role="alert"><\/div>/, 'Fehlerzeile wird nicht vorgelesen');
 });
+
+test('Social-Mechanik ruht: kein Folgen-Feld, keine „Nur Follower", keine Umfrage, kein Merken, kein Abstimmen', () => {
+  // wendeFeaturesAn mit einer kleinen DOM-Attrappe
+  const code = abschnitt('function wendeFeaturesAn()', 'async function renderAdSlot(');
+  const lauf = (aus) => {
+    const el = (name) => ({ name, style: {}, removed: false, remove() { this.removed = true; } });
+    const elemente = { '[data-folgen-box]': [el('folgen')], '#pv': [el('pv')] };
+    const label = el('umfrage-label');
+    const ctx = {
+      featureAn: (id) => !aus.includes(id),
+      document: {
+        querySelectorAll: (sel) => sel.split(',').map((x) => x.trim()).flatMap((x) => elemente[x] || []),
+        getElementById: (id) => (id === 'ppoll' ? { closest: () => label } : null),
+      },
+    };
+    vm.runInNewContext(code + ';wendeFeaturesAn();', ctx);
+    return JSON.stringify([...elemente['[data-folgen-box]'], ...elemente['#pv'], label].map((x) => x.style.display || 'sichtbar'));
+  };
+  assert.equal(lauf(['social']), JSON.stringify(['none', 'none', 'none']));
+  assert.equal(lauf([]), JSON.stringify(['sichtbar', 'sichtbar', 'sichtbar']));
+  assert.match(app, /<div class="card" data-folgen-box>\s*<label data-i18n="co_follow_label">/);
+  // Umfrage: ohne Social nur lesbar
+  const poll = abschnitt('function pollHtml(p)', '\n}\n') + '\n}';
+  const html = (an) => {
+    const ctx = { featureAn: () => an, esc: (x) => String(x), t: (k) => k, ti: (k) => k };
+    vm.runInNewContext(poll + ';this.h = pollHtml({ poll: { options: [{ id: "a", text: "Ja" }, { id: "b", text: "Nein" }], counts: { a: 1 }, total: 0 } });', ctx);
+    return ctx.h;
+  };
+  assert.ok(!/data-pollvote|<button/.test(html(false)), 'Abstimm-Knöpfe trotz ruhender Social-Mechanik');
+  assert.ok(!html(false).includes('pl_tap'), '„Zum Abstimmen tippen" trotz ruhender Social-Mechanik');
+  assert.match(html(true), /<button class="poll-opt" data-pollvote="a"/);
+  // Merken: nur mit Social (Liste der Lesezeichen ruht sonst)
+  assert.match(app, /\$\{featureAn\('social'\) \? `<button class="ghost small" data-bookmark/);
+});

@@ -35,6 +35,9 @@ for (const [name, locale, reg] of PERSONEN) {
   let token;
   if (reg) token = (await post('/api/register', { name: 'Test ' + name, email: `p${i++}@kr.test`, password: 'Passwort-1234', ...reg })).token;
   else token = (await post('/api/login', { email: 'red@kr.test', password: 'kr-test-PW-123' })).token;
+  // Inhalt, damit Beitrags-Karten (Reaktionen, Merken, Umfrage) mitgeprüft werden.
+  await post('/api/posts', { body: 'Amoxicillin knapp? ' + name, visibility: 'public', kind: 'poll', pollOptions: ['Ja', 'Nein'] }, token);
+  await post('/api/posts', { body: 'Hinweis von ' + name, visibility: 'public' }, token);
   const ctx = await br.newContext({ viewport: { width: 360, height: 740 }, locale, serviceWorkers: 'block' });
   await ctx.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); localStorage.setItem('apo_install', 'fertig'); }, token);
   const p = await ctx.newPage();
@@ -45,8 +48,32 @@ for (const [name, locale, reg] of PERSONEN) {
   p.on('response', (r) => { if (r.status() >= 500) merk('Server ' + r.status(), r.url().replace(B, '')); });
   p.on('request', (r) => { if (r.url().endsWith('/api/fehlerbericht')) merk('Fehlerbericht', r.postData()?.slice(0, 160)); });
   p.on('dialog', (d) => d.dismiss());
+  // Sprachlecks: rohe Text-Schlüssel (wc_s8_t) oder deutsche Wörter in einer anderen Sprache.
+  const sprache = locale.slice(0, 2);
+  const DEUTSCH = /\b(und|oder|nicht|bitte|Bitte|noch|keine|deine|dein|Ihre|wird|werden|wurde|gemeldet|Engpass|Engpässe|Lieferengpass|Apotheke|Wirkstoff|anzeigen|Meldung|Benachrichtigung|einloggen|anmelden|Konto|zurück|Zurück|Speichern|speichern|Suchen|über|für|Für|mit)\b/;
+  const sprachpruefung = async () => {
+    const zeilen = await p.evaluate(() => {
+      const raus = [];
+      const sicht = (el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; };
+      const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      for (let n = w.nextNode(); n; n = w.nextNode()) {
+        const t = n.textContent.trim(); const el = n.parentElement;
+        if (!t || !el || !sicht(el) || el.closest('script,style,[data-nutzerinhalt],.post-body,.c-body,[lang="de"]')) continue;
+        raus.push(t);
+      }
+      for (const el of document.querySelectorAll('[placeholder],[aria-label],[title]')) if (sicht(el)) for (const a of ['placeholder', 'aria-label', 'title']) { const v = el.getAttribute(a); if (v) raus.push(v); }
+      return raus;
+    });
+    for (const z of zeilen) {
+      const k = z.match(/\b[a-z]{2,4}_[a-z0-9]+(?:_[a-z0-9]+)*\b/);
+      if (k && !/[@.\/]/.test(z) && !/^[a-z0-9_]+$/.test(z.trim()) === false) merk('Roher Schlüssel', z.slice(0, 100));
+      else if (k && /^[a-z]{2,4}_[a-z0-9_]+$/.test(z.trim())) merk('Roher Schlüssel', z.slice(0, 100));
+      if (sprache !== 'de' && DEUTSCH.test(z) && !/Test |ApoPulse/.test(z)) merk('Deutsch in ' + sprache, z.slice(0, 120));
+    }
+  };
   const start = async () => { await p.goto(B); await p.waitForSelector('#hauptnav', { timeout: 20000 }); await p.waitForTimeout(600); };
   await start();
+  wo = 'Start'; await sprachpruefung();
   // Ziele sammeln
   const tabs = await p.$$eval('#hauptnav [data-tab]', (xs) => xs.map((x) => x.dataset.tab));
   await p.click('#btnMenue'); await p.waitForTimeout(300);
@@ -65,6 +92,7 @@ for (const [name, locale, reg] of PERSONEN) {
       await oeffne();
       const leer = await p.evaluate(() => (document.getElementById('app')?.innerText || '').trim().length < 20);
       if (leer) merk('Leere Ansicht', '');
+      await sprachpruefung();
       if (TIEF) {
         const knoepfe = await p.$$eval('#app button, #app [role=button]', (xs, g) => xs.filter((x) => x.offsetParent && !x.disabled).map((x) => (x.innerText || x.getAttribute('aria-label') || '').trim().slice(0, 40)).filter((t) => t && !new RegExp(g, 'i').test(t)), GEFAHR.source);
         const einzeln = [...new Set(knoepfe)].slice(0, N);

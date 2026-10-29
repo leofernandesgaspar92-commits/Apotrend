@@ -1565,7 +1565,7 @@ async function mainScreen() {
         </div>
         <div class="err" id="perr" role="alert"></div>
       </div>
-      <div class="card">
+      <div class="card" data-folgen-box>
         <label data-i18n="co_follow_label">Jemandem folgen (@Handle)</label>
         <div class="row"><input id="fh" placeholder="ben_mayer"><button class="ghost small" id="fgo" data-i18n="co_follow_btn">Folgen</button></div>
         <div class="err" id="ferr"></div>
@@ -3249,6 +3249,14 @@ function wendeFeaturesAn() {
   if (!featureAn('bestellung')) raus.push('#btnCart');
   if (!featureAn('direktnachrichten')) raus.push('#btnDm');
   for (const sel of raus) document.querySelectorAll(sel).forEach((el) => el.remove());
+  // Social-Mechanik ruht (Klickrunde 29.10.2026): Folgen, „Nur meine Follower" und Umfragen liefen
+  // ins Leere (/api/follow, /api/polls ruhen). Ausblenden statt entfernen — der Beitrags-Knopf liest
+  // #pv und #ppoll; display:none ist wie entfernt nicht per Tastatur erreichbar.
+  if (!featureAn('social')) {
+    for (const x of document.querySelectorAll('[data-folgen-box], #pv')) x.style.display = 'none';
+    const umfrage = document.getElementById('ppoll');
+    if (umfrage) umfrage.closest('label').style.display = 'none';
+  }
 }
 
 async function renderAdSlot() {
@@ -9796,6 +9804,7 @@ function qBadgeHtml(answered) {
 function pollHtml(p) {
   const poll = p.poll; if (!poll || !Array.isArray(poll.options)) return '';
   const total = poll.total || 0;
+  const abstimmen = featureAn('social');
   const rows = poll.options.map(o => {
     const n = (poll.counts || {})[o.id] || 0;
     const pct = total ? Math.round((n / total) * 100) : 0;
@@ -9803,14 +9812,15 @@ function pollHtml(p) {
     // Rohe Stimmenzahl neben dem Prozentwert: 40% von 5 ≠ 40% von 200 — wichtig für die
     // Einordnung bei kleinen Fach-Umfragen (Klartext/Transparenz, CLAUDE.md).
     const cntTitle = n === 1 ? t('pl_total_one') : ti('pl_total', { n });
-    return `<button class="poll-opt${mine ? ' mine' : ''}" data-pollvote="${esc(o.id)}" aria-pressed="${mine}">
-      <span class="poll-bar" style="width:${pct}%"></span>
+    // Abstimmen nur, wenn die Social-Mechanik läuft (/api/polls) — sonst Ergebnis nur lesbar.
+    const inhalt = `<span class="poll-bar" style="width:${pct}%"></span>
       <span class="poll-lbl">${esc(o.text)}${mine ? ` <span class="poll-you">${esc(t('pl_you'))}</span>` : ''}</span>
-      <span class="poll-pct" title="${esc(cntTitle)}">${total ? n + ' · ' + pct + '%' : ''}</span>
-    </button>`;
+      <span class="poll-pct" title="${esc(cntTitle)}">${total ? n + ' · ' + pct + '%' : ''}</span>`;
+    return abstimmen ? `<button class="poll-opt${mine ? ' mine' : ''}" data-pollvote="${esc(o.id)}" aria-pressed="${mine}">${inhalt}</button>`
+      : `<div class="poll-opt${mine ? ' mine' : ''}">${inhalt}</div>`;
   }).join('');
   const totalLbl = total === 0 ? t('pl_total_zero') : (total === 1 ? t('pl_total_one') : ti('pl_total', { n: total }));
-  return `<div class="poll" data-poll>${rows}<div class="poll-total muted">${esc(totalLbl)}${total ? '' : ' · ' + esc(t('pl_tap'))}</div></div>`;
+  return `<div class="poll" data-poll>${rows}<div class="poll-total muted">${esc(totalLbl)}${total || !abstimmen ? '' : ' · ' + esc(t('pl_tap'))}</div></div>`;
 }
 // Eingebettetes Original eines Reposts: kompakt, anklickbar (öffnet das Original).
 function repostEmbedHtml(o) {
@@ -9887,7 +9897,7 @@ function postCard(p) {
     <div class="reacts">
       ${REACTS.map(([k,keyLab])=>`<button data-react="${k}"${p.my_reaction===k?' class="reacted" aria-pressed="true"':' aria-pressed="false"'}>${esc(t(keyLab))}${rc[k]?` ${rc[k]}`:''}</button>`).join('')}
       <button data-comments>${esc(commentLabel(p.comment_count||0))}</button>
-      <button class="ghost small" data-bookmark title="${esc(t('pc_save'))}">${myBookmarks.has(p.id)?esc(t('pc_saved')):esc(t('pc_save'))}</button>
+      ${featureAn('social') ? `<button class="ghost small" data-bookmark title="${esc(t('pc_save'))}">${myBookmarks.has(p.id)?esc(t('pc_saved')):esc(t('pc_save'))}</button>` : ''}
       <button class="ghost small" data-share title="${esc(t('pc_share'))}">${esc(t('pc_share'))}</button>
       ${mine?'':`<button class="ghost small${p.reposted_by_me?' reacted':''}" data-repost aria-pressed="${!!p.reposted_by_me}" title="${esc(t('pc_repost'))}">${esc(p.reposted_by_me?t('pc_reposted_on'):t('pc_repost'))}${p.repost_count?` ${p.repost_count}`:''}</button>`}
       <span class="sp" style="flex:1"></span>
