@@ -3843,3 +3843,13 @@ Wirkstoff schon über „Amoxil" erkannt war. Wer seine Liste abhakt, sucht die 
 Wirkstoff, darunter „Also in your list (same substance): …" (5 Sprachen); CSV-Export (App und
 Daten-Schnittstelle) gibt jede eingegebene Zeile zurück, JSON der Schnittstelle hat `auch`.
 **Tests.** sortiment (+1), daten-api (erweitert). 2 Gegenproben, rot.
+
+### Cycle · Rundgang Logistik (Spedition Lagos): Weg zur Betriebs-Bestätigung (2026-10-29)
+
+„Cold chain & transport" ist bewusst nur für bestätigte Betriebe (keine anonymen Behauptungen über
+Lieferketten) — zum Start sind aber fast alle Konten unbestätigt, der Weg dorthin entscheidet. Funde:
+1. „Get your business verified" öffnete das Profil oben; der Antrag stand weit unten unter Profilstärke und
+   Besuchern. Jetzt springt der Knopf (Logistik und Tauschbörse) direkt zum Antrag, Cursor im Feld.
+2. Antragstext „Prove your **pharmacy** (licence number, pharmacy name …)" — auch für Spedition, Großhandel,
+   Klinik. Jetzt neutral „Betrieb / business / estabelecimento / établissement / منشأة".
+**Tests.** verifizierung-weg.test.js (2). 2 Gegenproben, rot.

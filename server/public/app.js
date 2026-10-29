@@ -5908,7 +5908,7 @@ async function loadExchange() {
           ${d.rx_reason === 'unverifiziert' ? `<div style="margin-top:10px"><button class="small" data-verify>${esc(t('ex_rx_verify_cta'))}</button></div>` : ''}
         </div>`);
         const vb = karte.querySelector('[data-verify]');
-        if (vb) vb.onclick = () => { mainScreen().then(() => me && openProfile(me.handle)); };
+        if (vb) vb.onclick = () => zurVerifizierung();
         feed.appendChild(karte);
       }
       if (!d.entries.length) {
@@ -8545,6 +8545,18 @@ function editProfileForm(p) {
   form.querySelector('[data-cancel]').onclick = () => openProfile(p.handle);
 }
 
+// „Betrieb bestätigen lassen": ins eigene Profil UND direkt zum Antrag. Bis 10/2026 landete man
+// oben im Profil — der Antrag stand weit unten unter Profilstärke und Besuchern.
+async function zurVerifizierung() {
+  await mainScreen();
+  if (!me) return;
+  await openProfile(me.handle);
+  for (let i = 0; i < 30; i++) {
+    const feld = document.getElementById('vf_lic') || document.getElementById('vf_note');
+    if (feld) { feld.scrollIntoView({ behavior: 'smooth', block: 'center' }); feld.focus({ preventScroll: true }); return; }
+    await new Promise((r) => setTimeout(r, 100));
+  }
+}
 async function openProfile(handle) {
   setDocTitle('@' + handle);
   if (!handle) return;
@@ -9533,7 +9545,7 @@ async function openLogistik() {
       const c = el(`<div class="card" data-lglocked><b>🔒 ${esc(t('lg_locked_t'))}</b>
         <div class="muted" style="margin-top:6px">${esc(t('lg_locked_s'))}</div>
         <div style="margin-top:10px"><button class="small" data-verify>${esc(t('ex_rx_verify_cta'))}</button></div></div>`);
-      c.querySelector('[data-verify]').onclick = () => { mainScreen().then(() => me && openProfile(me.handle)); };
+      c.querySelector('[data-verify]').onclick = () => zurVerifizierung();
       liste.appendChild(c);
       return;
     }
