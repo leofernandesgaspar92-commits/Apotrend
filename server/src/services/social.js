@@ -1635,7 +1635,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
         };
       }
       return v
-        ? { status: v.status, note: v.note, license_number: v.license_number || null, created_at: v.created_at }
+        ? { status: v.status, note: v.note, license_number: v.license_number || null, created_at: v.created_at, grund: v.status === 'abgelehnt' ? (v.grund || null) : null }
         : { status: 'keine', account_type: prof ? (prof.account_type || null) : null };
     },
 
@@ -1673,7 +1673,10 @@ export function createSocialService(social, foundationRepo, options = {}) {
      *
      * Die Stufe wird aus dem ANTRAG abgeleitet, nicht aus dem heutigen Profil.
      */
-    resolveVerification(moderatorUserId, userId, approve) {
+    // `grund` (nur bei Ablehnung): Standardgrund „#code" oder „#code: Zusatz" oder Freitext —
+    // die App zeigt ihn der Antragstellerin in ihrer Sprache. Bis 10/2026 erfuhr sie von einer
+    // Ablehnung nichts (keine Benachrichtigung, kein Grund).
+    resolveVerification(moderatorUserId, userId, approve, grund = null) {
       if (!isModerator(moderatorUserId)) throw new ForbiddenError('Nur Moderation.');
       const antrag = social.getVerification(userId);
       if (!antrag) throw new AppError('verify_no_request', 'Kein Antrag vorhanden.', 400);
@@ -1687,8 +1690,10 @@ export function createSocialService(social, foundationRepo, options = {}) {
         if (antrag.license_number) social.setProfileLicense(userId, antrag.license_number);
       }
       const status = approve ? 'verifiziert' : 'abgelehnt';
-      social.updateVerification(userId, { status, resolved_at: new Date().toISOString() });
+      const g = approve ? null : (String(grund || '').trim().slice(0, 300) || null);
+      social.updateVerification(userId, { status, resolved_at: new Date().toISOString(), grund: g });
       if (approve) this.pushNotification({ userId, type: 'verified', actorUserId: moderatorUserId });
+      else this.pushNotification({ userId, type: 'verify_rejected', actorUserId: moderatorUserId, label: g });
       return { user_id: userId, status, rx_allowed: rxFrei };
     },
 

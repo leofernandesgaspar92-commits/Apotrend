@@ -3853,3 +3853,20 @@ Lieferketten) — zum Start sind aber fast alle Konten unbestätigt, der Weg dor
 2. Antragstext „Prove your **pharmacy** (licence number, pharmacy name …)" — auch für Spedition, Großhandel,
    Klinik. Jetzt neutral „Betrieb / business / estabelecimento / établissement / منشأة".
 **Tests.** verifizierung-weg.test.js (2). 2 Gegenproben, rot.
+
+### Cycle · Redaktion: Betriebs-Bestätigungen entscheiden (Handy, 3 Anträge GH/NG/KE) (2026-10-29)
+
+Zum Start werden viele Betriebe die Bestätigung beantragen (Logistik und Tauschbörse setzen sie voraus).
+Rundgang Redaktion (de-AT, 360 px): „3 Aufgaben warten" auf der Startseite, Karten mit Kontoart, Land,
+Lizenznummer und Rx-Folge. Funde:
+1. **Freigeben/Ablehnen ohne Rückfrage** — ein Fehltipp am Handy war endgültig. Jetzt: Freigabe MIT
+   Rx-Einblick fragt nach („nur freigeben, wenn die Nummer im amtlichen Register geprüft ist"); Ablehnen
+   öffnet die Grundwahl, Senden erst mit Grund.
+2. **Abgelehnte erfuhren nichts** (keine Benachrichtigung, kein Grund). Jetzt Standardgründe (Nummer
+   fehlt/unlesbar, nicht im Register, Name/Ort passt nicht, falsche Kontoart) + Zusatz oder Freitext,
+   gespeichert als „#code: Zusatz" — die Person liest ihn in IHRER Sprache in der Glocke und oben im
+   Antrag; Tipp auf die Benachrichtigung führt direkt zum neuen Antrag (Cursor im Feld).
+3. Klinik-Karte begründete „kein Rx-Einblick" mit „(Logistik/Behörde)" — jetzt „für diese Kontoart nicht
+   vorgesehen" (5 Sprachen).
+**Tests.** verifizierung-entscheidung.test.js (2). 4 Gegenproben: 3 rot; die vierte (Grund nur bei Status
+„abgelehnt" zeigen) ist eine zweite Sicherung — ein neuer Antrag ersetzt den alten samt Grund ohnehin.

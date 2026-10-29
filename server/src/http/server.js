@@ -2095,7 +2095,7 @@ const routes = [
   ['POST', /^\/api\/verify\/request$/, true, async ({ userId, body }) =>
     social.requestVerification(userId, { note: body.note, licenseNumber: body.licenseNumber })],
   ['GET', /^\/api\/verify\/requests$/, true, async ({ userId }) => ({ requests: social.verificationQueue(userId) })],
-  ['POST', /^\/api\/verify\/([^/]+)\/resolve$/, true, async ({ userId, params, body }) => social.resolveVerification(userId, params[0], !!body.approve)],
+  ['POST', /^\/api\/verify\/([^/]+)\/resolve$/, true, async ({ userId, params, body }) => social.resolveVerification(userId, params[0], !!body.approve, body.grund)],
   // Rx-Einblick entziehen/zurueckgeben, OHNE die Verifizierung anzutasten.
   // Der Hebel fuer eine erloschene Betriebserlaubnis (domain/jurisdiction.js).
   ['POST', /^\/api\/verify\/([^/]+)\/rx$/, true, async ({ userId, params, body }) =>

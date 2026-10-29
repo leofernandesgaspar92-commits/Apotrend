@@ -7722,6 +7722,14 @@ const produktAusName = (name) => (PRODUKT_NAMEN[name] ? produktName(PRODUKT_NAME
 // Ablehnungsgründe für Krypto-Zahlungen: Die Redaktion wählt einen Standardgrund, gespeichert wird
 // nur „#code" (optional „#code: Zusatz"); die Kundin liest ihn in IHRER Sprache. Vorher schrieb die
 // Redaktion frei auf Deutsch — und die Apothekerin in Ghana bekam einen deutschen Satz.
+// Standardgründe für abgelehnte Betriebs-Bestätigungen (gespeichert als „#code" bzw. „#code: Zusatz";
+// die Antragstellerin liest den Satz in IHRER Sprache — wie bei Krypto-Zahlungen).
+const VF_GRUENDE = ['lizenz_fehlt', 'nicht_gefunden', 'name_passt_nicht', 'kontoart'];
+function vfGrund(g) {
+  const m = /^#([a-z_]+)(?::\s*([\s\S]*))?$/.exec(String(g || '').trim());
+  if (!m || !VF_GRUENDE.includes(m[1])) return String(g || '');
+  return t('vg_' + m[1]) + (m[2] ? ' — ' + m[2] : '');
+}
 const ABLEHN_GRUENDE = ['tx_vor_start', 'betrag_zu_niedrig', 'falsche_adresse', 'falsches_netz', 'nicht_gefunden'];
 function ablehnGrund(g) {
   const m = /^#([a-z_]+)(?::\s*([\s\S]*))?$/.exec(String(g || '').trim());
@@ -9677,7 +9685,8 @@ async function renderVerifyCard(card) {
   // Redaktion nichts zu pruefen.
   const behoerde = s.account_type === 'authority';
   card.innerHTML = `<b>${esc(t('vf_title'))}</b>
-    <div class="muted" style="margin-top:4px">${abgelehnt?esc(t('vf_rejected')):''}${esc(t('vf_desc'))}</div>
+    ${abgelehnt ? `<div data-vfabgelehnt style="margin-top:6px;padding:8px 10px;border-radius:8px;background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-fg)">${esc(t('vf_rejected'))}${s.grund ? `<div style="margin-top:4px"><b>${esc(t('vg_grund'))}:</b> ${esc(vfGrund(s.grund))}</div>` : ''}</div>` : ''}
+    <div class="muted" style="margin-top:4px">${esc(t('vf_desc'))}</div>
     ${behoerde ? '' : `<label for="vf_lic" style="display:block;margin-top:8px;font-size:13px">${esc(t('vf_license_label'))}</label>
     <input id="vf_lic" placeholder="${esc(t('vf_license_ph'))}" aria-label="${esc(t('vf_license_label'))}" style="margin-top:4px">`}
     <label for="vf_note" style="display:block;margin-top:8px;font-size:13px">${esc(t('vf_note_label'))}</label>
@@ -10063,7 +10072,7 @@ async function showNotifications() {
   setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_home:'🔴', shortage_ended:'✅', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', shortage_abroad:'🌍', shortage_bestaetigt:'🤝', shortage_noch_aktuell:'⏰', einladung:'👥', shortage_entfernt:'🛡️', meldung_pruefen:'🛡️', premium_ablauf:'⏳', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_home:'🔴', shortage_ended:'✅', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', shortage_abroad:'🌍', shortage_bestaetigt:'🤝', shortage_noch_aktuell:'⏰', einladung:'👥', shortage_entfernt:'🛡️', meldung_pruefen:'🛡️', premium_ablauf:'⏳', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️', verify_rejected:'⚠️' };
   app.innerHTML = '';
   const procCount = d.notifications.filter(n => NOTIF_PROCUREMENT.has(n.type)).length;
   const showFilter = d.notifications.length >= 5 && procCount > 0 && procCount < d.notifications.length;
@@ -10096,14 +10105,14 @@ async function showNotifications() {
     const who = n.actor ? n.actor.display_name : t('notif_someone');
     // Systemmeldungen ohne handelnde Person: Hier hat niemand etwas getan,
     // eine Behoerde hat gemeldet. „Jemand hat …" waere schlicht falsch.
-    const noWho = n.type === 'shortage_entfernt' || n.type === 'meldung_pruefen' || n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'shortage_bestaetigt' || n.type === 'shortage_noch_aktuell' || n.type === 'shortage_home' || n.type === 'shortage_ended' || /^anzeige_/.test(n.type) || n.type === 'premium_ablauf' || n.type === 'payment_confirmed' || n.type === 'payment_rejected';
+    const noWho = n.type === 'shortage_entfernt' || n.type === 'meldung_pruefen' || n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'shortage_bestaetigt' || n.type === 'shortage_noch_aktuell' || n.type === 'shortage_home' || n.type === 'shortage_ended' || /^anzeige_/.test(n.type) || n.type === 'premium_ablauf' || n.type === 'payment_confirmed' || n.type === 'payment_rejected' || n.type === 'verify_rejected';
     // Profilbild der handelnden Person (wer) + Typ-Emoji (was) — auf einen Blick erkennbar,
     // konsistent zu Feed/Verzeichnis/Suche. Ohne Person (System-Meldung) nur das Emoji.
     const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:var(--ok-bg)'}">
       <div class="row" style="align-items:center">
         ${n.actor ? avatarHtml(n.actor, 34, false) : ''}
         <span${n.actor?' style="font-size:16px"':''}>${icons[n.type]||'🔔'}</span>
-        <span style="margin-inline-start:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' '+esc(zitat(/^shortage_(abroad|home|ended)$/.test(n.type)?n.label.replace(/ · ([A-Z]{2})$/, (m, cc) => ' · ' + landLabel(cc)):n.type==='premium_ablauf'?fmtDateDe(n.label):n.type==='watch_alert'?notifLabel(n.label):n.type==='payment_confirmed'?produktAusName(n.label):n.type==='payment_rejected'?ablehnGrund(n.label):n.label)):''}${n.read?'':'</b>'}</span>
+        <span style="margin-inline-start:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' '+esc(zitat(/^shortage_(abroad|home|ended)$/.test(n.type)?n.label.replace(/ · ([A-Z]{2})$/, (m, cc) => ' · ' + landLabel(cc)):n.type==='premium_ablauf'?fmtDateDe(n.label):n.type==='watch_alert'?notifLabel(n.label):n.type==='payment_confirmed'?produktAusName(n.label):n.type==='payment_rejected'?ablehnGrund(n.label):n.type==='verify_rejected'?vfGrund(n.label):n.label)):''}${n.read?'':'</b>'}</span>
         <span class="sp" style="flex:1"></span>
         <span class="muted" style="font-size:13px">${relTime(n.created_at)}</span>
       </div></div>`);
@@ -10123,6 +10132,7 @@ async function showNotifications() {
       else if (/^shortage_(abroad|home|ended)$/.test(n.type)) { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
       else if (n.type === 'shortage_noch_aktuell') { mainScreen().then(() => goTab('shortages')); }
       else if (n.type === 'shortage_bestaetigt') { const w = n.ref_id || (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
+      else if (n.type === 'verify_rejected') zurVerifizierung(); // Grund steht im Antrag, gleich neu stellen
       else if (n.type === 'watch_alert') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
       // Der Klick fuehrt in die Live-Warnungen, auf den Wirkstoff gefiltert —
       // dort steht die Meldung mit Herkunfts-Link. NICHT auf die
@@ -10594,9 +10604,29 @@ async function showModeration() {
           ${esc(rq.would_allow_rx ? t('md_grants_rx') : t('md_grants_no_rx'))}
         </div>
         <div class="row"><button class="small" data-approve>${esc(t('md_verify_btn'))}</button><button class="ghost small" data-reject>${esc(t('md_reject'))}</button></div>
+        <div data-vfgrundbox class="hidden" style="margin-top:8px">
+          <label style="display:block;font-size:14px;margin-bottom:4px">${esc(t('vg_waehlen'))}</label>
+          <select data-vfgrundwahl><option value="" selected disabled>${esc(t('kg_bitte'))}</option>${VF_GRUENDE.map((c) => `<option value="${c}">${esc(t('vg_' + c))}</option>`).join('')}<option value="__frei">${esc(t('kg_anderer'))}</option></select>
+          <input data-vfzusatz placeholder="${esc(t('vg_zusatz'))}" style="margin-top:6px">
+          <div class="row" style="margin-top:8px;gap:8px"><button class="small" data-vfabsenden>${esc(t('vg_senden'))}</button><span class="err" data-vferr></span></div>
+        </div>
       </div>`);
-      card.querySelector('[data-approve]').onclick = async () => { try { await api('POST',`/api/verify/${encodeURIComponent(rq.user_id)}/resolve`,{ approve:true }); showModeration(); } catch(e){ alert(e.message); } };
-      card.querySelector('[data-reject]').onclick = async () => { try { await api('POST',`/api/verify/${encodeURIComponent(rq.user_id)}/resolve`,{ approve:false }); showModeration(); } catch(e){ alert(e.message); } };
+      const entscheiden = async (approve, grund) => { await api('POST',`/api/verify/${encodeURIComponent(rq.user_id)}/resolve`,{ approve, grund }); showModeration(); };
+      // Freigabe mit Rx-Einblick ist folgenreich — einmal nachfragen (ein Fehltipp am Handy war sonst endgültig).
+      card.querySelector('[data-approve]').onclick = async () => {
+        if (rq.would_allow_rx && !confirm(ti('vg_rx_frage', { name: rq.display_name || '' }))) return;
+        try { await entscheiden(true); } catch(e){ alert(e.message); }
+      };
+      // Ablehnen: erst Grund wählen (die Antragstellerin bekommt ihn in ihrer Sprache), dann senden.
+      card.querySelector('[data-reject]').onclick = () => { const b = card.querySelector('[data-vfgrundbox]'); b.classList.remove('hidden'); b.querySelector('select').focus(); };
+      card.querySelector('[data-vfabsenden]').onclick = async () => {
+        const code = card.querySelector('[data-vfgrundwahl]').value;
+        const zusatz = card.querySelector('[data-vfzusatz]').value.trim();
+        if (!code && !zusatz) { card.querySelector('[data-vferr]').textContent = t('vg_grund_fehlt'); return; }
+        const grund = code && code !== '__frei' ? '#' + code + (zusatz ? ': ' + zusatz : '') : zusatz;
+        if (!grund) { card.querySelector('[data-vferr]').textContent = t('vg_grund_fehlt'); return; }
+        try { await entscheiden(false, grund); } catch(e){ card.querySelector('[data-vferr]').textContent = e.message; }
+      };
       aufgaben.appendChild(card);
     });
   }
