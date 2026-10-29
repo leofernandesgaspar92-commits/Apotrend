@@ -95,3 +95,26 @@ test('Anzeige in der eigenen Sprache; „ähnlich" nur als Hinweis', () => {
   assert.equal(cef.aehnlich.length, 1, 'ein Hinweis statt „nie gemeldet" — beide Schreibweisen nur einmal: ' + JSON.stringify(cef.aehnlich));
   assert.match(cef.aehnlich[0], /Cefuroxim/);
 });
+
+test('Handelsnamen aus den Engpassdaten: „Amoxil 500mg caps" → Amoxicillin (mit Herkunft); mehrdeutig, Gattungswort oder mitten in der Zeile: nicht', () => {
+  const t = Date.parse('2026-10-29T09:00:00Z');
+  const chronik = createChronik({ jetzt: () => t, log: { warn() {} } });
+  const repo = createShortagesRepo({ seed: false });
+  const m = (wirkstoff, bezeichnung, country = 'KE') => ({ wirkstoff, bezeichnung, status: 'kritisch', country, provenance: 'verified', quelle: 'PPB' });
+  // „Sandoz" steht vor zwei verschiedenen Wirkstoffen → mehrdeutig; „Tablets" ist ein Gattungswort.
+  repo.replaceFeed([m('Amoxicillin', 'Amoxil 500 mg capsules'), m('Metformin', 'Sandoz Metformin 850'), m('Ibuprofen', 'Sandoz Ibuprofen 400'),
+    m('Paracetamol', 'Tablets paracetamol 500')], { provenance: 'verified', quelle: 'PPB', laender: ['KE'] });
+  chronik.beobachte({ zeilen: repo.list(), laender: ['KE'] });
+  const s = createSortiment({ shortagesRepo: repo, chronik, istPremium: () => true });
+  const r = s.pruefen('u', 'Amoxil 500mg caps x100\nSandoz cough syrup\nTablets for pain\nBox of Amoxil', 'KE');
+  const amox = r.ergebnisse.find((e) => e.eingabe.startsWith('Amoxil'));
+  assert.equal(amox.einstufung, 'knapp');
+  assert.equal(amox.wirkstoff, 'Amoxicillin');
+  assert.equal(amox.erkannt_ueber, 'Amoxil 500 mg capsules', 'Herkunft der Zuordnung fehlt');
+  for (const zeile of ['Sandoz cough syrup', 'Tablets for pain', 'Box of Amoxil']) {
+    assert.equal(r.ergebnisse.find((e) => e.eingabe === zeile).einstufung, 'unbekannt', zeile);
+  }
+  // Wirkstoffname direkt: wie bisher, ohne „erkannt über".
+  const direkt = s.pruefen('u', 'Metformin 850 mg', 'KE').ergebnisse[0];
+  assert.equal(direkt.einstufung, 'knapp'); assert.equal(direkt.erkannt_ueber, null);
+});

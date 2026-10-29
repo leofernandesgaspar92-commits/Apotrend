@@ -3816,3 +3816,22 @@ hospital", kein Querscrollen, keine JS-Fehler. Zwei Funde dabei:
 **Offen (Owner):** Die Vertrauensstufe sagt „von 3 Apotheken bestätigt" — gezählt werden alle Fachkreise
 (auch Großhandel, Behörde und jetzt Kliniken). Wortlaut ggf. auf „Fachleute" ändern?
 **Tests.** kontoart-klinik.test.js (5). 5 Gegenproben, alle rot.
+
+### Cycle · Rundgang Großhandels-Einkauf Kenia: Sortiments-Check erkennt Handelsnamen (2026-10-29)
+
+**Rundgang (Wanjiru, Großhandel, en-KE, 360 px):** Start mit „Check my product list", Liste aus der
+Warenwirtschaft eingefügt (Handelsnamen, Stärken, Tippfehler, Kombination, Zahl), kein Querscrollen,
+keine JS-Fehler. **Sicherheitsrelevanter Fund:** Gemeldet und von 3 Apotheken bestätigt war „Amoxil 500 mg
+capsules" (Amoxicillin, kritisch) — die Zeile „Amoxil 500mg caps x100" ergab **„Nothing found: never
+reported short"**. In Afrika wird fast nur nach Handelsnamen bestellt; falsche Entwarnung ist schlimmer
+als keine Antwort.
+**Jetzt:** Steht kein Wirkstoffname in der Zeile, zählt das erste Wort als Produktname, wenn es in den
+Engpassdaten (Meldung oder Behördenliste) genau EINEM Wirkstoff zugeordnet ist — keine selbst gebaute
+Markenliste. Die Zeile sagt, worüber erkannt wurde („recognised from the product name „Amoxil 500 mg
+capsules" in the shortage data", 5 Sprachen); Gattungswörter (Tablets, Syrup …) und mehrdeutige Namen
+(Hersteller vor mehreren Wirkstoffen) zählen nicht, ein Name mitten in der Zeile auch nicht. Hinweistext
+unter dem Eingabefeld angepasst; Daten-Schnittstelle liefert `erkannt_ueber` (docs/DATEN_API.md).
+**Tests.** sortiment.test.js (+1). 5 Gegenproben, alle rot.
+**Owner-Hinweis (Design, nicht geändert):** Im neuen Silber/Graphit-Design haben Nebenknöpfe („Share
+situation", „Open form", „Africa/World", Länderliste) einen Rand mit nur ~1,3:1 Kontrast (WCAG 1.4.11
+empfiehlt 3:1). Sichtbar sind sie als Kästen; wer es deutlicher will: Randfarbe der Knöpfe dunkler.

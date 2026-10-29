@@ -15,8 +15,9 @@
 //  Ehrlichkeitsregeln:
 //   1. KEINE PROGNOSE. „ausland" ist eine Tatsache mit Quelle, keine Vorhersage.
 //   2. „unbekannt" heißt nicht „sicher lieferbar": Wir kennen nur Namen, die je
-//      in einer Behördenliste standen. Handelsnamen und PZN erkennen wir nur,
-//      wenn der Wirkstoff in der Zeile steht. Das sagt die Antwort auch.
+//      in einer Behördenliste standen. Handelsnamen erkennen wir, wenn der
+//      Wirkstoff in der Zeile steht ODER der Name in einer Meldung/Liste genau
+//      einem Wirkstoff zugeordnet ist (dann mit Herkunft); PZN nie.
 //   3. Geprüft wird nur gegen Länder, deren Liste wir mitschreiben — die
 //      Antwort nennt sie (`laender`), damit niemand mehr Abdeckung annimmt.
 //
@@ -124,6 +125,31 @@ export function createSortiment({ shortagesRepo, chronik, istPremium }) {
     return null;
   }
 
+  /**
+   * Produkt-/Markennamen aus den Engpassdaten selbst: „Amoxil 500 mg capsules"
+   * mit Wirkstoff Amoxicillin heißt: „Amoxil" ist Amoxicillin. In Afrika bestellt
+   * man fast nur nach Markennamen — bis 10/2026 meldete der Check bei
+   * „Amoxil 500mg caps" „nichts gefunden", obwohl genau dieses Präparat als
+   * kritisch gemeldet war. KEINE eigene Markenliste: nur, was in einer Meldung
+   * oder Behördenliste steht, mit Herkunft im Ergebnis. Ein Name, der in den
+   * Daten zu mehr als einem Wirkstoff gehört (Hersteller wie „Sandoz"), zählt nicht.
+   */
+  const GATTUNG = /^(tabs?|tablets?|tabletten|filmtabletten|caps?|capsules?|kapseln?|syrup|sirup|saft|susp|suspension|inj|injection|injektion|infusion|cream|creme|ointment|salbe|solution|l[oö]sung|sachets?|drops|tropfen|gel|spray|retard|forte|mite|plus|extra|comp|depot|junior|kids|generic|generique|g[eé]n[eé]rique)$/i;
+  const ersteWort = (s) => (String(s || '').trim().match(/^\p{L}[\p{L}-]{3,}/u) || [])[0] || null;
+  function handelsnamen(v) {
+    const m = new Map(); // wort -> { schluessel: Set, beispiel }
+    for (const z of shortagesRepo.list()) {
+      if (!z.wirkstoff || !z.bezeichnung) continue;
+      const k = wirkstoffSchluessel(z.wirkstoff);
+      const w = ersteWort(z.bezeichnung);
+      if (!k || !w || GATTUNG.test(w) || v.has(wirkstoffSchluessel(w))) continue; // Wirkstoffname selbst: erkennt erkenne()
+      const key = w.toLowerCase();
+      if (!m.has(key)) m.set(key, { schluessel: new Set(), beispiel: String(z.bezeichnung).trim().slice(0, 80) });
+      m.get(key).schluessel.add(k);
+    }
+    return m;
+  }
+
   return {
     // `zeilenFilter` (Daten-Schnittstelle): nur Engpasszeilen echter Herkunft.
     pruefen(userId, text, land, { zeilenFilter = null } = {}) {
@@ -137,10 +163,16 @@ export function createSortiment({ shortagesRepo, chronik, istPremium }) {
         && aktualitaet(z, new Date().toISOString().slice(0, 10)).stufe !== 'veraltet'); // veraltete Apotheken-Meldungen nicht
       const beobachtet = new Set(shortagesRepo.listWatch(userId).map((w) => wirkstoffSchluessel(w) || w.toLowerCase()));
 
+      const hn = handelsnamen(v);
       const gesehen = new Set();
       const ergebnisse = [];
       for (const zeile of zuPruefen) {
-        const k = erkenne(zeile, v);
+        let k = erkenne(zeile, v);
+        let ueber = null; // über welchen Produktnamen erkannt (Herkunft für die Anzeige)
+        if (!k) {
+          const h = hn.get((ersteWort(zeile) || '').toLowerCase());
+          if (h && h.schluessel.size === 1) { k = [...h.schluessel][0]; ueber = h.beispiel; }
+        }
         if (k && gesehen.has(k)) continue; // dieselbe Substanz zweimal in der Liste
         if (k) gesehen.add(k);
         if (!k) { ergebnisse.push({ eingabe: zeile, einstufung: 'unbekannt', aehnlich: aehnliche(zeile, v) }); continue; }
@@ -152,7 +184,7 @@ export function createSortiment({ shortagesRepo, chronik, istPremium }) {
         const m = meldungen[0];
         const einstufung = m ? 'knapp' : ausland.length ? 'ausland' : verlauf && verlauf.anzahl ? 'wiederholt' : 'ruhig';
         ergebnisse.push({
-          eingabe: zeile, wirkstoff: name, einstufung,
+          eingabe: zeile, wirkstoff: name, einstufung, erkannt_ueber: ueber,
           status: m ? m.status : null,
           quelle: m ? (m.quelle || null) : null,
           herkunft: m ? (m.provenance || null) : null, // verified = Behörde, community = Meldung aus Apotheken

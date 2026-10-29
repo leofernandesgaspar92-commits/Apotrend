@@ -2798,6 +2798,7 @@ async function datenSchnittstelle(req, res, url) {
       const r = sortiment.pruefen(userId, liste, land, { zeilenFilter: fuerSchnittstelle });
       const ergebnisse = r.ergebnisse.map((e) => ({
         eingabe: e.eingabe, wirkstoff: e.wirkstoff || null, einstufung: e.einstufung, status: e.status || null,
+        erkannt_ueber: e.erkannt_ueber || null, // Produktname aus den Engpassdaten, über den die Zeile erkannt wurde
         voraussichtlich_bis: e.voraussichtlich_bis || null, seit_tagen: e.seit_tagen ?? null,
         herkunft: e.herkunft === 'verified' ? 'behoerde' : e.herkunft === 'community' ? 'apotheken_meldung' : null,
         quelle: e.quelle || null,

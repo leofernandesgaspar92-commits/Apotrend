@@ -5376,11 +5376,12 @@ function srtZeileText(e) {
     if (e.herkunft === 'community') teile.push(t('srt_community'));
     else if (e.herkunft === 'reference') teile.push(t('prov_reference'));
     else if (e.quelle) teile.push(t('srt_quelle') + ' ' + e.quelle);
+    if (e.erkannt_ueber) teile.push(ti('srt_ueber', { name: e.erkannt_ueber }));
     return teile.join(' · ');
   }
   if (e.einstufung === 'ausland') return ti('srt_r_ausland', { laender: e.ausland.map((a) => `${landAnzeige(a.land)} (${seitTage(a.seit_tagen)})`).join(', ') });
   if (e.einstufung === 'wiederholt') return ti('srt_r_wiederholt', { n: e.verlauf.anzahl }) + (e.verlauf.durchschnitt_tage != null ? ' · ' + ti('srt_r_schnitt', { n: e.verlauf.durchschnitt_tage }) : '');
-  if (e.einstufung === 'ruhig') return t('srt_r_ruhig');
+  if (e.einstufung === 'ruhig') return t('srt_r_ruhig') + (e.erkannt_ueber ? ' · ' + ti('srt_ueber', { name: e.erkannt_ueber }) : '');
   if (e.aehnlich && e.aehnlich.length) return ti('srt_r_aehnlich', { namen: e.aehnlich.join(', ') });
   return t('srt_r_unbekannt');
 }

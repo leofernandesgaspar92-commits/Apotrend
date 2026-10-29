@@ -50,6 +50,10 @@ Felder einer Engpass-Zeile: `wirkstoff`, `wirkstoff_schluessel` (sprachübergrei
 Prüf-Ergebnis je Zeile: `einstufung` = `knapp` (im Land gemeldet) | `ausland` (anderswo knapp,
 hier nicht) | `wiederholt` (früher schon knapp) | `ruhig` | `unbekannt` (kein Treffer), dazu
 Status, voraussichtliches Ende, Tage seit Beginn, Herkunft, Quelle, Länder im Ausland.
+`erkannt_ueber`: Steht in der Zeile kein Wirkstoffname, sondern ein Handelsname (z. B. „Amoxil 500mg"),
+wird sie erkannt, wenn genau dieser Produktname in einer Meldung oder Behördenliste genau einem Wirkstoff
+zugeordnet ist — das Feld nennt dann den Produktnamen aus den Daten (sonst `null`). Mehrdeutige Namen
+(Hersteller vor mehreren Wirkstoffen) werden nicht zugeordnet.
 
 CSV: Semikolon, UTF-8 mit BOM (Umlaute in Excel), Zellen mit `= + - @` am Anfang werden mit `'`
 entschärft (keine Formel-Ausführung in Excel).
