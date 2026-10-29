@@ -8,13 +8,14 @@ const app = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
 const abschnitt = (von, bis) => app.slice(app.indexOf(von), app.indexOf(bis, app.indexOf(von)));
 
 test('Bereiche: online gemerkt, offline der gemerkte Stand statt „alles an"', async () => {
-  const code = abschnitt('const FEATURE_ZUSTAND = {};', 'const featureAn');
+  // ladeFeatures nutzt die Frist für Start-Abfragen (mitFrist) — mit in den Ausschnitt.
+  const code = app.match(/const START_FRIST_MS = [^\n]+\n/)[0] + app.match(/const mitFrist = [^\n]+\n/)[0] + abschnitt('const FEATURE_ZUSTAND = {};', 'const featureAn');
   const speicher = {};
   const ls = { getItem: (k) => speicher[k] ?? null, setItem: (k, v) => { speicher[k] = String(v); } };
-  const online = { localStorage: ls, fetch: async () => ({ json: async () => ({ features: [{ id: 'tauschboerse', zustand: 'ruht' }, { id: 'social', zustand: 'an' }] }) }) };
+  const online = { localStorage: ls, setTimeout, fetch: async () => ({ json: async () => ({ features: [{ id: 'tauschboerse', zustand: 'ruht' }, { id: 'social', zustand: 'an' }] }) }) };
   await vm.runInNewContext(code + ';ladeFeatures()', online);
   assert.equal(JSON.parse(speicher.apo_features).tauschboerse, 'ruht');
-  const offline = { localStorage: ls, fetch: async () => { throw new TypeError('Failed to fetch'); } };
+  const offline = { localStorage: ls, setTimeout, fetch: async () => { throw new TypeError('Failed to fetch'); } };
   await vm.runInNewContext(code + ';this.p = ladeFeatures().then(() => FEATURE_ZUSTAND)', offline);
   assert.equal((await offline.p).tauschboerse, 'ruht');
 });

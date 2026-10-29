@@ -3917,3 +3917,20 @@ begrenzt (164 KB, Brotli höchster Stufe und Verschlankung sind schon drin); wen
 von app.js — vorgemerkt, nicht vor dem Start (zu großer Umbau, andere Session arbeitet am Design).
 **Tests.** start-gleichzeitig.test.js (3). 7 Gegenproben, rot (eine siebte — zusätzliches Warten
 nach `/api/me` — blieb zu Recht grün: die Abfrage läuft dann schon).
+
+### Cycle · Netz hängt: App startet trotzdem aus dem Speicher (2026-10-29)
+
+Gemessen mit einem TCP-Zwischenstück, das für Seite UND Service Worker gilt (Playwrights
+Netz-Drosselung/Abfangen erfasst Anfragen des Service Workers nicht — eine erste Messung war deshalb
+falsch). Zweiter Besuch, angemeldet: bei 3G 2,0 s. Aber bei **hängendem Netz** (Verbindung steht,
+Antwort kommt nie — in afrikanischen Mobilnetzen häufig) blieb die App **endlos weiß**, obwohl alles
+im Speicher lag: „Netz zuerst" ohne Frist. **Jetzt:** Hülle nach 4 s, API-Lese-Ansichten nach 6 s aus
+dem Speicher; der Abruf läuft weiter und aktualisiert ihn. Ist das Netz als hängend erkannt, kommen
+weitere Dateien sofort aus dem Speicher (15 s); hängt sogar die kleine Startseite, auch die Daten (eine
+langsame große app.js auf 2G zählt nicht — sonst würden Daten bei langsamem Netz als „offline"
+angezeigt). Daten aus dem Speicher immer mit Hinweis „Offline — gespeicherter Stand von …, Engpass-Angaben
+können veraltet sein". Nichts gespeichert → weiter aufs Netz warten statt Fehler. Neu offline vorgehalten:
+Länder-Einstellung, Merkliste (je Konto), Funktionsschaltung (öffentlich). In der Seite: Frist für die
+Start-Abfragen; Länder-Einstellung fällt auf den letzten bekannten Stand zurück (rechtlich gesperrte
+Reiter bleiben gesperrt, statt beim Netzwackler aufzutauchen). **Ergebnis: nie → 4,6 s** bedienbar.
+**Tests.** netz-haengt.test.js (6, Service Worker in Node mit Speicher- und Netz-Attrappe), netz-schwach (angepasst: Ausschnitt braucht mitFrist). 12 Gegenproben, rot.

@@ -377,6 +377,10 @@ function applyI18n(root) {
   // alt-Text mehrsprachig: Bildvorschauen brauchen einen Alt-Text (Screenreader/Bild-aus).
   scope.querySelectorAll('[data-i18n-alt]').forEach(n => { n.setAttribute('alt', t(n.getAttribute('data-i18n-alt'))); });
 }
+// Frist für Start-Abfragen: Hängt das Netz (Verbindung da, aber keine Antwort), startet die
+// App trotzdem — mit dem Ersatzwert (bzw. dem Fehler) statt endlos zu warten.
+const START_FRIST_MS = 6000;
+const mitFrist = (p, ms, ersatz) => Promise.race([p, new Promise((ok, fail) => setTimeout(() => (ersatz instanceof Error ? fail(ersatz) : ok(ersatz)), ms))]);
 const api = async (method, path, body) => {
   const tok = localStorage.getItem('apo_token');
   let r;
@@ -1429,14 +1433,14 @@ async function mainScreen() {
   // erst dort, wo das Ergebnis gebraucht wird — die Reihenfolge der Wirkung bleibt gleich.
   const vorabLaender = ensureCountries();
   const vorabFeatures = ladeFeatures();
-  let vorabLand = api('GET', '/api/country-config').catch(() => null);
-  const vorabMerkliste = vorabFeatures.then(() => (featureAn('social') ? api('GET','/api/bookmarks/ids') : { ids: [] })).catch(() => ({ ids: [] }));
+  let vorabLand = mitFrist(api('GET', '/api/country-config').catch(() => null), START_FRIST_MS, null);
+  const vorabMerkliste = vorabFeatures.then(() => (featureAn('social') ? mitFrist(api('GET','/api/bookmarks/ids'), START_FRIST_MS, { ids: [] }) : { ids: [] })).catch(() => ({ ids: [] }));
   let meData = await api('GET','/api/me');
   // Konto ohne Profil (bis 10/2026 möglich, wenn die Registrierung am Handle
   // scheiterte): Profil nachholen statt einer halb kaputten Anwendung.
   if (!meData.profile) {
     try { await api('POST', '/api/profil/nachholen', { country: localStorage.getItem('apo_country') || 'AT', locale: LOCALE }); meData = await api('GET','/api/me'); } catch { /* weiter wie bisher */ }
-    vorabLand = api('GET', '/api/country-config').catch(() => null); // Land kam eben erst dazu
+    vorabLand = mitFrist(api('GET', '/api/country-config').catch(() => null), START_FRIST_MS, null); // Land kam eben erst dazu
   }
   me = meData.profile;
   iAmModerator = !!meData.is_moderator;
@@ -2973,7 +2977,12 @@ const TAB_TITLES = { overview:'dt_overview', public:'dt_public', home:'dt_home',
 // Rechtlich gesperrte Reiter fürs Heimatland ausblenden (aus /api/country-config).
 async function applyCountryGating(vorab = null) {
   try {
-    const cfg = (await vorab) || await api('GET', '/api/country-config');
+    let cfg = vorab ? await vorab : await api('GET', '/api/country-config');
+    // Kein Netz / Frist abgelaufen: zuletzt bekannte Einstellung — rechtlich gesperrte Reiter
+    // bleiben dann gesperrt, statt beim ersten Netzwackler aufzutauchen.
+    if (cfg) { try { localStorage.setItem('apo_land_cfg', JSON.stringify(cfg)); } catch { /* nur Komfort */ } }
+    else cfg = JSON.parse(localStorage.getItem('apo_land_cfg') || 'null');
+    if (!cfg) throw new Error('keine Länder-Einstellung');
     COUNTRY_FEAT = {}; COUNTRY_NAME = cfg.country_name || '';
     (cfg.active_features || []).forEach(f => {
       if (f.status === 'blocked' || f.status === 'restricted') {
@@ -3151,7 +3160,7 @@ function stopQuickRail() {
 const FEATURE_ZUSTAND = {};
 async function ladeFeatures() {
   try {
-    const d = await (await fetch('/api/features')).json();
+    const d = await mitFrist(fetch('/api/features').then((r) => r.json()), START_FRIST_MS, new Error('frist'));
     for (const f of (d.features || [])) FEATURE_ZUSTAND[f.id] = f.zustand;
     try { localStorage.setItem('apo_features', JSON.stringify(FEATURE_ZUSTAND)); } catch { /* nur Komfort */ }
   } catch {
