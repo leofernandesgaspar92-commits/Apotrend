@@ -4005,3 +4005,7 @@ Commit (7 Zeichen), Branch und Startzeit aus Render (`RENDER_GIT_COMMIT`, `RENDE
 selbst); ohne Render ehrlich „unbekannt". DEPLOY.md: 30-Sekunden-Prüfung „Läuft der neueste Stand?".
 Tiefe Klickrunde vom 29.10. hing nach Pausieren der Sitzung (4/6 Personen ohne Fund) — neu gestartet.
 **Tests.** laufende-version.test.js (1). 3 Gegenproben, rot.
+Tiefe Klickrunde (Stufe 2, 6 Personen, mit Beiträgen und Umfrage im Feed) danach vollständig: **kein
+echter Fund mehr** — die früheren (leerer Beitrag, Folgen-Feld) sind weg. Einziges Rauschen waren Klicks
+hinter dem offenen Hilfe-Fenster; das Werkzeug prüft bei offenem Fenster jetzt dessen Knöpfe (danach
+0 Funde) und kann mit `NUR="…"` auf eine Person beschränkt werden.

@@ -2,6 +2,7 @@
 // Sprache, Handy-Breite 360 px — und Skriptfehler, Konsolenfehler, Server-5xx und Fehlerberichte sammeln.
 //   node tools/klickrunde.mjs              Stufe 1 (~2 min)
 //   TIEF=1 N=8 node tools/klickrunde.mjs   Stufe 2: in jeder Ansicht bis zu N harmlose Knöpfe (~40 min)
+//   NUR="Klinik ar-EG" …                   nur eine Person
 // Harmlos = nichts Löschendes, Zahlendes, Sendendes, Abmeldendes (GEFAHR unten). Nicht Teil von verify.
 // Erster Lauf 29.10.2026: Stufe 1 ohne Fund; Stufe 2 fand die Hilfe, die ausgeschaltete Bereiche
 // erklärte, und eine unnötige Anfrage bei leerem Beitrag (test/klickrunde-funde.test.js).
@@ -31,7 +32,8 @@ const GEFAHR = /abmeld|log ?out|sign out|déconnex|sair|terminar|خروج|lösch
 const br = await pkg.chromium.launch();
 const funde = [];
 let i = 0;
-for (const [name, locale, reg] of PERSONEN) {
+// NUR="Apotheke en-GH" prüft nur Personen, deren Name den Text enthält.
+for (const [name, locale, reg] of PERSONEN.filter(([n]) => !process.env.NUR || n.includes(process.env.NUR))) {
   let token;
   if (reg) token = (await post('/api/register', { name: 'Test ' + name, email: `p${i++}@kr.test`, password: 'Passwort-1234', ...reg })).token;
   else token = (await post('/api/login', { email: 'red@kr.test', password: 'kr-test-PW-123' })).token;
@@ -94,13 +96,15 @@ for (const [name, locale, reg] of PERSONEN) {
       if (leer) merk('Leere Ansicht', '');
       await sprachpruefung();
       if (TIEF) {
-        const knoepfe = await p.$$eval('#app button, #app [role=button]', (xs, g) => xs.filter((x) => x.offsetParent && !x.disabled).map((x) => (x.innerText || x.getAttribute('aria-label') || '').trim().slice(0, 40)).filter((t) => t && !new RegExp(g, 'i').test(t)), GEFAHR.source);
+        // Offenes Fenster (z. B. Hilfe): dessen Knöpfe prüfen — die Seite dahinter ist bewusst gesperrt.
+        const BEREICH = (await p.$('[role=dialog][aria-modal=true]')) ? '[role=dialog][aria-modal=true]' : '#app';
+        const knoepfe = await p.$$eval(`${BEREICH} button, ${BEREICH} [role=button]`, (xs, g) => xs.filter((x) => x.offsetParent && !x.disabled).map((x) => (x.innerText || x.getAttribute('aria-label') || '').trim().slice(0, 40)).filter((t) => t && !new RegExp(g, 'i').test(t)), GEFAHR.source);
         const einzeln = [...new Set(knoepfe)].slice(0, N);
         for (const text of einzeln) {
           const vorher = wo; wo = vorher + ' › ' + text;
           try {
             await start(); await oeffne();
-            const k = p.locator('#app button, #app [role=button]').filter({ hasText: text }).first();
+            const k = p.locator(`${BEREICH} button, ${BEREICH} [role=button]`).filter({ hasText: text }).first();
             if (await k.isVisible({ timeout: 500 }).catch(() => false)) { await k.click({ timeout: 2000 }); await p.waitForTimeout(900); }
           } catch (e) { merk('Klick', e.message.split('\n')[0]); }
           wo = vorher;
