@@ -531,6 +531,14 @@ if (persistence && !restoring) saveNow(); // Ausgangszustand (Seed) sofort siche
 //  fehler (uncaughtException) ist der Zustand unsicher: dann ERST sichern (Datei
 //  sofort, Datenbank mit Deckel), DANN beenden — Render startet neu.
 const betriebsFehler = { anfragen: 0, hintergrund: 0, zuletzt: null };
+// Welche Version läuft? Render setzt RENDER_GIT_COMMIT/RENDER_GIT_BRANCH selbst. Damit sieht der
+// Owner unter /api/health und im Betriebs-Cockpit, ob der letzte Stand wirklich live ist — genau
+// diese Lücke (Feature-Branch ≠ Deploy-Branch) ließ einmal ~20 fertige Funktionen nie live gehen.
+const LAUFENDE_VERSION = {
+  commit: String(process.env.RENDER_GIT_COMMIT || '').trim().slice(0, 7) || null,
+  branch: String(process.env.RENDER_GIT_BRANCH || '').trim().slice(0, 60) || null,
+  gestartet: new Date().toISOString(),
+};
 process.on('unhandledRejection', (e) => {
   betriebsFehler.hintergrund++; betriebsFehler.zuletzt = new Date().toISOString();
   console.error('Hintergrund-Fehler (Server läuft weiter):', (e && e.stack) || e);
@@ -1428,6 +1436,7 @@ const routes = [
   ['GET', /^\/api\/health$/, false, async () => ({
     ok: true, service: 'apopulse', ts: new Date().toISOString(),
     durability: durabilityReport().level,
+    version: LAUFENDE_VERSION,
   })],
 
   // Eigener Einladungs-Link (services/einladungen.js). __sichern: Der erste Abruf legt den Code an.
@@ -2518,6 +2527,7 @@ const routes = [
       geraete_fehler: geraeteFehler.bericht({ tage: 7, anzahl: 10 }),
       // Abgefangene Fehler seit dem letzten Start (Details im Render-Protokoll).
       fehler: { ...betriebsFehler },
+      version: LAUFENDE_VERSION,
     };
   }],
   // Startklar-Check (services/startklar.js): was der Betreiber noch einrichten muss.

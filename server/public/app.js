@@ -1991,7 +1991,8 @@ function betriebsKarte(b) {
     <div class="muted" style="font-size:14px;margin-top:8px">${esc(t('bt_fetch'))}: ${esc(b.abruf.zuletzt ? vorZeit(b.abruf.zuletzt) || '' : t('dq_never'))} · ${esc(t('bt_mail'))}: ${esc(b.mail.aktiv ? t('dq_on') : t('dq_off'))} · ${esc(t('dq_ai'))}: ${esc(b.ki === 'aktiv' ? t('dq_on') : t('dq_off'))}</div>
     ${b.teilen ? `<div class="muted" style="font-size:14px;margin-top:4px" data-btwachstum>${esc(ti('bt_teilen', { n: b.teilen.aufrufe_7 }))}${b.anzeigen ? ' · ' + esc(ti('bt_anzeigen', { l: b.anzeigen.laufend, p: b.anzeigen.zur_pruefung })) : ''}</div>` : ''}
     ${kanalListe(b.kanaele)}
-    ${fehlerListe(b.geraete_fehler, b.fehler)}</div>`);
+    ${fehlerListe(b.geraete_fehler, b.fehler)}
+    ${b.version ? `<div class="muted" style="font-size:14px;margin-top:12px" data-btversion>${esc(b.version.commit ? ti('bt_version', { c: b.version.commit, b: b.version.branch || '?', z: vorZeit(b.version.gestartet) || '' }) : t('bt_version_unbekannt'))}</div>` : ''}</div>`);
   const qk = c.querySelector('[data-btquellen]');
   qk.onclick = openDatenquellen;
   qk.onkeydown = (e) => { if (e.key === 'Enter') openDatenquellen(); };

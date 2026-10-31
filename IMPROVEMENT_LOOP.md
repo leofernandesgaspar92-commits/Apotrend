@@ -3995,3 +3995,13 @@ außerhalb der EU (nur Länder mit bestehender Behörde genannt). Im Browser gep
 Querscrollen bei 360 px.
 **Offen (Owner):** rechtliche Prüfung (gilt für alle Fassungen), danach `APOPULSE_DATENSCHUTZ_GEPRUEFT=ja`.
 **Tests.** datenschutz-sprachen.test.js (3), impressum (angepasst). 9 Gegenproben, rot.
+
+### Cycle · Vor dem Start: Welche Version läuft live? (2026-10-31)
+
+Die Live-Seite ist aus dieser Umgebung nicht erreichbar (Netzwerk-Richtlinie) — und auch der Owner
+konnte bisher nicht sehen, **welcher Stand** live läuft. Genau diese Lücke (Feature-Branch ≠ Deploy-Branch)
+ließ einmal ~20 fertige Funktionen nie live gehen. **Jetzt** nennen `/api/health` und das Betriebs-Cockpit
+Commit (7 Zeichen), Branch und Startzeit aus Render (`RENDER_GIT_COMMIT`, `RENDER_GIT_BRANCH`, setzt Render
+selbst); ohne Render ehrlich „unbekannt". DEPLOY.md: 30-Sekunden-Prüfung „Läuft der neueste Stand?".
+Tiefe Klickrunde vom 29.10. hing nach Pausieren der Sitzung (4/6 Personen ohne Fund) — neu gestartet.
+**Tests.** laufende-version.test.js (1). 3 Gegenproben, rot.

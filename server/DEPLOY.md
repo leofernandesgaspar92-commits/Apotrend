@@ -181,6 +181,18 @@ Einzelheiten: `docs/PUSH.md`.
 Einrichtung. Wichtig: `APOPULSE_PUBLIC_URL` auf die echte Domain setzen und die Sitemap in der
 Google Search Console einreichen. Einzelheiten: `docs/OEFFENTLICHE_SEITEN.md`.
 
+## Läuft der neueste Stand? (30-Sekunden-Prüfung)
+
+Render baut **nur den Branch `feed-first`** (siehe `render.yaml`). Ob der neueste Stand wirklich live ist:
+
+1. Im Browser `https://<deine-adresse>/api/health` öffnen.
+2. Dort steht z. B. `"version":{"commit":"8edf065","branch":"feed-first","gestartet":"…"}`.
+3. Auf GitHub den neuesten Commit von `feed-first` ansehen — die ersten 7 Zeichen müssen gleich sein.
+   Stimmt es nicht: in Render „Manual Deploy → Deploy latest commit".
+
+Dasselbe steht im Betriebs-Cockpit (Menü → Moderation) unten: „Läuft: Version … vom Branch …".
+`commit: null` heißt: nicht auf Render (z. B. lokal) — dort gibt es diese Angabe nicht.
+
 ## Startklar-Check (was fehlt noch?)
 
 Im Redaktions-Dashboard ganz oben: **„Startklar: X von Y erledigt"** — Datenbank, Anmeldung,
