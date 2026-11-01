@@ -138,5 +138,8 @@ test('Oberfläche: verständliche Meldung in allen Sprachen; Eingabe bleibt gesp
   const senden = app.slice(app.indexOf("card.querySelector('[data-send]').onclick"), app.indexOf("card.querySelector('[data-send]').onclick") + 3000);
   // Nur nach Erfolg wird der Entwurf gelöscht — bei der Tagesgrenze bleibt er für morgen.
   assert.ok(senden.indexOf('entwurfLoeschen()') < senden.indexOf('catch(e)'));
-  assert.ok(!senden.slice(senden.indexOf('catch(e)')).includes('entwurfLoeschen()'));
+  // Im Fehlerfall nur dort, wo die Meldung vorher SICHER im Ausgang liegt (11/2026: kein Netz).
+  const fehlerTeil = senden.slice(senden.indexOf('catch(e)'));
+  const loeschen = [...fehlerTeil.matchAll(/entwurfLoeschen\(\)/g)].map((m) => m.index);
+  assert.ok(loeschen.every((i) => /await meldungInAusgang\(meldung\);\s*$/.test(fehlerTeil.slice(0, i))), 'Entwurf im Fehlerfall gelöscht, ohne dass die Meldung im Ausgang liegt');
 });

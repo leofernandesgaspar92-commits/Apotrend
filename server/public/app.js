@@ -1690,6 +1690,7 @@ async function mainScreen() {
   renderAdSlot();       // Anzeigen-Fläche rechts unter dem Schnellzugriff (Monetarisierung)
   setHeaderHeightVar(); // Kopfhöhe für die klebrige mobile Reiter-Leiste
   loadTab();
+  ausgangSenden();      // ohne Netz gespeicherte Meldungen nachsenden (Ausgang, s. u.)
   // Deep-Links: /?post=ID öffnet einen Beitrag, /?wirkstoff=Name die Wirkstoff-Seite,
   // /?profile=Handle ein Profil, /?hashtag=Tag einen Hashtag-Feed.
   const params = new URLSearchParams(location.search);
@@ -4293,14 +4294,15 @@ function reportShortageCard(existing = []) {
     const err = card.querySelector('[data-err]'); err.textContent = '';
     const wirkstoff = card.querySelector('[data-w]').value.trim();
     if (!wirkstoff) { err.textContent = t('sh_rep_need_w'); return; }
+    const meldung = {
+      wirkstoff,
+      bezeichnung: card.querySelector('[data-b]').value.trim(),
+      status: card.querySelector('[data-s]').value,
+      grund: card.querySelector('[data-g]').value.trim(),
+      voraussichtlichBis: card.querySelector('[data-vb]').value || undefined,
+    };
     try {
-      const r = await api('POST','/api/shortages/report',{
-        wirkstoff,
-        bezeichnung: card.querySelector('[data-b]').value.trim(),
-        status: card.querySelector('[data-s]').value,
-        grund: card.querySelector('[data-g]').value.trim(),
-        voraussichtlichBis: card.querySelector('[data-vb]').value || undefined,
-      });
+      const r = await api('POST','/api/shortages/report', meldung);
       entwurfLoeschen();
       await loadShortages();
       // Rückmeldung oben (bis 10/2026 lud nur die Liste neu — ob es geklappt hat, sah man erst
@@ -4322,12 +4324,21 @@ function reportShortageCard(existing = []) {
         document.getElementById('feed')?.prepend(el(`<div role="status" data-zusammengefuehrt style="background:var(--ok-bg);border:1px solid var(--ok-bd);color:var(--ok-fg);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:15px">${esc(ti('sh_rep_merged', { w: r.wirkstoff }))}</div>`));
       }
     } catch(e){
-      // Netz weg: nicht „Fehler" und nicht verlieren — gespeichert lassen und senden, sobald
-      // das Netz zurück ist (solange die Seite offen ist; sonst kommt der Entwurf beim nächsten Mal).
-      if (e && e.code === 'network') {
-        const w8 = card.querySelector('[data-wartet]'); w8.textContent = t('sh_rep_wartet'); w8.classList.remove('hidden');
-        entwurfSichern();
-        window.addEventListener('online', () => { if (card.isConnected) card.querySelector('[data-send]').click(); }, { once: true });
+      // Netz weg (oder Server startet gerade neu): nicht „Fehler" und nicht verlieren — in den
+      // Ausgang; er sendet von selbst, auch nach dem Schließen der App (siehe ausgangSenden).
+      if (e && (e.code === 'network' || e.code === 'db_startet')) {
+        const w8 = card.querySelector('[data-wartet]');
+        try {
+          await meldungInAusgang(meldung);
+          entwurfLoeschen();
+          for (const sel of Object.values(felder)) { const f = card.querySelector(sel); if (f && f.tagName !== 'SELECT') f.value = ''; }
+          w8.textContent = t('sh_rep_ausgang'); w8.classList.remove('hidden');
+        } catch {
+          // Ohne IndexedDB (privater Modus): wie bisher — Entwurf behalten, senden, sobald online.
+          w8.textContent = t('sh_rep_wartet'); w8.classList.remove('hidden');
+          entwurfSichern();
+          window.addEventListener('online', () => { if (card.isConnected) card.querySelector('[data-send]').click(); }, { once: true });
+        }
         return;
       }
       err.textContent = e.message;
@@ -10935,8 +10946,91 @@ async function openDmThread(threadId, prefill) {
   refreshDmCount();
 }
 
+// ── Ausgang für Engpass-Meldungen (schwaches Netz) ───────────────────────────
+//  Bis 11/2026 wurde eine Meldung ohne Netz nur gesendet, solange das Meldeformular OFFEN blieb
+//  (und nur, wenn der Browser „online" meldete — bei hängendem Netz oft nie). Schloss die
+//  Apothekerin die App, lag die Meldung nur als Entwurf da und musste von Hand neu gesendet werden.
+//  Jetzt: Ausgang in IndexedDB (der Service Worker liest ihn auch). Gesendet wird
+//   – im Hintergrund per Background Sync, auch bei geschlossener App (Chrome/Android),
+//   – sonst beim nächsten Öffnen, wenn das Netz zurückkommt und alle 30 s, solange etwas wartet.
+//  Doppelt gesendet zählt nicht doppelt: Der Server antwortet dann „bereits gemeldet" (4xx) —
+//  das gilt als erledigt. Abmelden leert den Ausgang (geteiltes Gerät, offlineSpeicherLeeren).
+const AUSGANG_DB = 'apopulse-ausgang', AUSGANG_TABELLE = 'meldungen', AUSGANG_TAG = 'apo-meldungen';
+const AUSGANG_MAX_ALTER_MS = 7 * 86400000;
+function ausgangDb() {
+  return new Promise((ok, fail) => {
+    if (!window.indexedDB) return fail(new Error('kein IndexedDB'));
+    const r = indexedDB.open(AUSGANG_DB, 1);
+    r.onupgradeneeded = () => r.result.createObjectStore(AUSGANG_TABELLE, { keyPath: 'id' });
+    r.onsuccess = () => ok(r.result); r.onerror = () => fail(r.error);
+  });
+}
+async function ausgangTun(modus, fn) {
+  const db = await ausgangDb();
+  try {
+    return await new Promise((ok, fail) => {
+      const tx = db.transaction(AUSGANG_TABELLE, modus); const st = tx.objectStore(AUSGANG_TABELLE);
+      const req = fn(st); let erg;
+      if (req) req.onsuccess = () => { erg = req.result; };
+      tx.oncomplete = () => ok(erg); tx.onerror = () => fail(tx.error); tx.onabort = () => fail(tx.error);
+    });
+  } finally { db.close(); }
+}
+const ausgangAlle = () => ausgangTun('readonly', (st) => st.getAll()).then((x) => x || []);
+const ausgangRaus = (id) => ausgangTun('readwrite', (st) => st.delete(id));
+const ausgangLeeren = () => ausgangTun('readwrite', (st) => st.clear()).catch(() => {});
+/** Meldung in den Ausgang legen; Hintergrund-Versand anmelden, wo der Browser es kann. */
+async function meldungInAusgang(body) {
+  const e = { id: (crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random()), body, token: localStorage.getItem('apo_token'), ts: Date.now() };
+  await ausgangTun('readwrite', (st) => st.put(e));
+  // getRegistration statt .ready: .ready wartet EWIG, wenn kein Service Worker registriert ist
+  // (manche Browser/Modi) — die Meldung bliebe dann ohne jeden Hinweis hängen.
+  try { const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(); if (reg && reg.sync) await reg.sync.register(AUSGANG_TAG); } catch { /* ohne Background Sync: beim nächsten Öffnen */ }
+  return e;
+}
+let ausgangLaeuft = false;
+/** Wartende Meldungen senden. Liefert die gesendeten Wirkstoffe. Nie ein Fehler nach oben. */
+async function ausgangSenden() {
+  if (ausgangLaeuft) return [];
+  ausgangLaeuft = true;
+  const gesendet = [];
+  try {
+    for (const e of await ausgangAlle()) {
+      if (Date.now() - e.ts > AUSGANG_MAX_ALTER_MS) { await ausgangRaus(e.id); continue; }
+      const tok = localStorage.getItem('apo_token') || e.token;
+      if (!tok) break;
+      let r;
+      try {
+        const ab = new AbortController(); const zeit = setTimeout(() => ab.abort(), 20000);
+        r = await fetch('/api/shortages/report', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: JSON.stringify(e.body), signal: ab.signal });
+        clearTimeout(zeit);
+      } catch { break; } // Netz weg oder hängt: später
+      // Erledigt: angenommen — oder dauerhaft abgelehnt (z. B. „bereits gemeldet"). Später: Server
+      // startet (503), überlastet (429), Sitzung abgelaufen (401, nach Neuanmeldung nachholen).
+      if (r.ok || (r.status >= 400 && r.status < 500 && ![401, 408, 429].includes(r.status))) {
+        await ausgangRaus(e.id);
+        if (r.ok) gesendet.push(e.body.wirkstoff);
+      } else break;
+    }
+  } catch { /* ohne IndexedDB: nichts zu tun */ } finally { ausgangLaeuft = false; }
+  if (gesendet.length) ausgangGesendet(gesendet);
+  return gesendet;
+}
+/** Rückmeldung nach dem Nachsenden (aus der Seite oder vom Service Worker). */
+async function ausgangGesendet(wirkstoffe) {
+  // Erst die Liste neu laden (sonst überschreibt sie die Rückmeldung gleich wieder), dann melden.
+  if (typeof tab !== 'undefined' && tab === 'shortages') { try { await loadShortages(); } catch { /* Rückmeldung trotzdem */ } }
+  const feed = document.getElementById('feed');
+  if (feed) feed.prepend(el(`<div role="status" data-nachgesendet style="background:var(--ok-bg);border:1px solid var(--ok-bd);color:var(--ok-fg);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:15px">${esc(ti('sh_rep_nachgesendet', { w: wirkstoffe.join(', ') }))}</div>`));
+}
+window.addEventListener('online', () => { ausgangSenden(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') ausgangSenden(); });
+setInterval(() => { if (localStorage.getItem('apo_token')) ausgangSenden(); }, 30000);
+
 // PWA: Service Worker registrieren (macht die App installierbar).
 if (swVerfuegbar()) {
+  // Der Service Worker hat wartende Meldungen im Hintergrund gesendet.
+  try { navigator.serviceWorker.addEventListener('message', (m) => { if (m.data && m.data.typ === 'ausgang-gesendet' && Array.isArray(m.data.wirkstoffe)) ausgangGesendet(m.data.wirkstoffe); }); } catch { /* egal */ }
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(()=>{}));
   // Die geladene Sprachdatei einmal durch den Service Worker holen — sonst fehlte sie
   // offline nach dem allerersten Besuch (da lief die Seite noch ohne Service Worker).
@@ -10980,6 +11074,7 @@ async function offlineSpeicherLeeren() {
   OFFLINE_STAND = null;
   // Geteiltes Gerät in der Offizin: ein nicht gesendeter Meldungs-Entwurf gehört dem Konto, das abmeldet.
   try { localStorage.removeItem('apo_meldeentwurf'); } catch { /* egal */ }
+  await ausgangLeeren(); // wartende Meldungen gehören dem Konto, das abmeldet
   try { if (window.caches) await caches.delete('apopulse-api-v1'); } catch { /* egal */ }
 }
 function updateOfflineBanner() {

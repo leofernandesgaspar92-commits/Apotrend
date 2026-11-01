@@ -1771,8 +1771,8 @@ async function main() {
   }
 
   // ── Schwaches Netz beim Melden (25.10.2026): nichts geht verloren ─────────
-  //  Netz weg beim Absenden → Hinweis „wird automatisch gesendet", Entwurf auf dem Gerät;
-  //  Netz zurück → ohne erneutes Tippen gesendet, Entwurf gelöscht. Getipptes übersteht
+  //  Netz weg beim Absenden → Hinweis „wird automatisch gesendet", Meldung im Ausgang (11/2026;
+  //  ohne IndexedDB: Entwurf); Netz zurück → ohne erneutes Tippen gesendet. Getipptes übersteht
   //  das Schließen der App; Abmelden löscht den Entwurf (geteiltes Gerät).
   {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -1785,10 +1785,10 @@ async function main() {
     await ctx.setOffline(true);
     await page.click('[data-meldekarte] [data-send]'); await page.waitForTimeout(800);
     const wartet = await page.locator('[data-meldekarte] [data-wartet]:visible').innerText().catch(() => '');
-    const entwurf = await page.evaluate(() => localStorage.getItem('apo_meldeentwurf'));
-    if (!/automati/i.test(wartet) || !/Cefixim/.test(entwurf || '')) findings.push(`Netz: ohne Verbindung kein „wird automatisch gesendet" oder kein Entwurf (${wartet.slice(0, 60)} · ${entwurf})`);
-    await ctx.setOffline(false); await page.evaluate(() => window.dispatchEvent(new Event('online'))); await page.waitForTimeout(1800);
-    if (!(await page.locator('[data-gemeldet], [data-zusammengefuehrt]').count())) findings.push('Netz: nach Rückkehr des Netzes nicht automatisch gesendet');
+    const entwurf = await page.evaluate(async () => localStorage.getItem('apo_meldeentwurf') || JSON.stringify(await ausgangAlle().catch(() => [])));
+    if (!/automati/i.test(wartet) || !/Cefixim/.test(entwurf || '')) findings.push(`Netz: ohne Verbindung kein „wird automatisch gesendet" oder weder Ausgang noch Entwurf (${wartet.slice(0, 60)} · ${entwurf})`);
+    await ctx.setOffline(false); await page.evaluate(() => window.dispatchEvent(new Event('online'))); await page.waitForTimeout(2500);
+    if (!(await page.locator('[data-gemeldet], [data-zusammengefuehrt], [data-nachgesendet]').count())) findings.push('Netz: nach Rückkehr des Netzes nicht automatisch gesendet');
     if (await page.evaluate(() => localStorage.getItem('apo_meldeentwurf'))) findings.push('Netz: Entwurf bleibt nach dem Senden liegen');
     await page.evaluate(() => { meldeFormAuf = true; goTab('shortages'); }); await page.waitForTimeout(1000);
     await page.fill('[data-meldekarte] [data-w]', 'Entwurfprobe');
@@ -1798,7 +1798,7 @@ async function main() {
     await page.evaluate(() => offlineSpeicherLeeren());
     if (await page.evaluate(() => localStorage.getItem('apo_meldeentwurf'))) findings.push('Netz: Abmelden lässt den Meldungs-Entwurf auf dem Gerät');
     for (const f of fehler) findings.push('Netz: JS-Fehler ' + f);
-    if (!findings.some((f) => f.startsWith('Netz'))) console.log('✓ Netz: Melden ohne Verbindung → Hinweis + Entwurf; Netz zurück → automatisch gesendet; Entwurf übersteht Schließen, Abmelden löscht ihn');
+    if (!findings.some((f) => f.startsWith('Netz'))) console.log('✓ Netz: Melden ohne Verbindung → Hinweis + Ausgang; Netz zurück → automatisch gesendet; Entwurf übersteht Schließen, Abmelden löscht ihn');
     await ctx.close();
   }
 
@@ -2820,6 +2820,54 @@ async function main() {
       console.log(`✓ Warnung vor flüchtiger Speicherung steht am Registrierungs-Formular — ${text.slice(0, 60)}…`);
     }
     await ctx.close();
+  }
+
+  // ── Ausgang: ohne Netz gemeldet → wird nachgesendet, auch bei geschlossener App ──
+  //  (Sprint 1, 11/2026). Seite offen: beim Zurückkommen des Netzes. App zu: der Service Worker
+  //  (Sync-Ereignis gezielt über die DevTools-Schnittstelle — wann Chrome es von selbst auslöst,
+  //  ist im Testbrowser nicht steuerbar). Jede Meldung genau einmal; Abmelden leert den Ausgang.
+  {
+    const r2 = await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Ausgang', email: `ausgang_${uniq}@ex.com`, password: 'Passwort123!', country: 'GH', locale: 'en', accountType: 'pharmacy' }) });
+    const tok = r2 && r2.token;
+    const gemeldet = async () => (await api('/api/shortages?country=GH', { headers: { authorization: 'Bearer ' + tok } })) || [];
+    const anzahl = async (w) => { const l = await gemeldet(); return (Array.isArray(l) ? l : (l.shortages || l.items || [])).filter((x) => x.wirkstoff === w).length; };
+    const bis = async (fn, ms) => { for (let t = 0; t < ms; t += 400) { if (await fn()) return true; await new Promise((r) => setTimeout(r, 400)); } return false; };
+    const ctx = await browser.newContext({ viewport: { width: 360, height: 740 }, locale: 'en-GH', serviceWorkers: 'allow' });
+    await ctx.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); localStorage.setItem('apo_install', 'fertig'); }, tok);
+    const p = await ctx.newPage();
+    const fehler = []; p.on('pageerror', (e) => fehler.push(e.message));
+    await p.goto(BASE); await p.waitForSelector('#hauptnav'); await p.evaluate(() => navigator.serviceWorker.ready);
+    await p.reload(); await p.waitForSelector('#hauptnav');
+    await p.evaluate(() => goTab('shortages')); await p.waitForSelector('[data-toggle]');
+    if (await p.locator('[data-form]').isHidden()) await p.click('[data-toggle]');
+    await p.fill('[data-w]', 'Paracetamol');
+    await ctx.setOffline(true);
+    await p.click('[data-send]');
+    const hinweis = await p.waitForFunction(() => { const x = document.querySelector('[data-wartet]'); return x && !x.classList.contains('hidden') && x.textContent; }, null, { timeout: 15000 }).then((h) => h.jsonValue()).catch(() => '');
+    const imAusgang = await p.evaluate(async () => (await ausgangAlle()).length);
+    if (!/close the app/i.test(hinweis)) findings.push('Ausgang: Hinweis ohne „App kann geschlossen werden": ' + hinweis.slice(0, 90));
+    if (imAusgang !== 1) findings.push('Ausgang: Meldung nicht im Ausgang (' + imAusgang + ')');
+    await ctx.setOffline(false);
+    if (!(await bis(async () => (await anzahl('Paracetamol')) === 1, 15000))) findings.push('Ausgang: bei offener Seite nach Rückkehr des Netzes nicht gesendet');
+    // App geschlossen: Eintrag direkt in den Ausgang, Seite zu, Sync-Ereignis an den Service Worker.
+    await p.evaluate(async (t) => { await ausgangTun('readwrite', (st) => st.put({ id: 'audit-sync', body: { wirkstoff: 'Ceftriaxon', status: 'kritisch' }, token: t, ts: Date.now() })); }, tok);
+    const cdp = await ctx.newCDPSession(p);
+    await cdp.send('ServiceWorker.enable');
+    const regId = await new Promise((ok) => { cdp.on('ServiceWorker.workerRegistrationUpdated', (e) => { const r = e.registrations.find((x) => x.scopeURL.startsWith(BASE)); if (r) ok(r.registrationId); }); setTimeout(() => ok(null), 5000); });
+    await p.close();
+    const leer = await ctx.newPage(); await leer.goto(BASE + '/api/health');
+    const c3 = await ctx.newCDPSession(leer); await c3.send('ServiceWorker.enable');
+    if (regId) await c3.send('ServiceWorker.dispatchSyncEvent', { origin: BASE, registrationId: regId, tag: 'apo-meldungen', lastChance: false });
+    if (!(await bis(async () => (await anzahl('Ceftriaxon')) === 1, 10000))) findings.push('Ausgang: Service Worker sendet bei geschlossener App nicht (Sync-Ereignis)');
+    // Abmelden leert den Ausgang (geteiltes Gerät)
+    const p2 = await ctx.newPage(); await p2.goto(BASE); await p2.waitForSelector('#hauptnav');
+    await p2.evaluate(async (t) => { await ausgangTun('readwrite', (st) => st.put({ id: 'audit-ab', body: { wirkstoff: 'Metformin', status: 'kritisch' }, token: t, ts: Date.now() })); await offlineSpeicherLeeren(); }, tok);
+    const rest = await p2.evaluate(async () => (await ausgangAlle()).length);
+    if (rest !== 0) findings.push('Ausgang: Abmelden leert den Ausgang nicht');
+    if ((await anzahl('Paracetamol')) !== 1 || (await anzahl('Ceftriaxon')) !== 1) findings.push('Ausgang: Meldung doppelt angekommen');
+    if (fehler.length) findings.push('Ausgang: Skriptfehler ' + fehler.join(' | '));
+    await ctx.close();
+    if (!findings.some((f) => f.startsWith('Ausgang:'))) console.log('✓ Ausgang: ohne Netz gemeldet → gesendet bei offener Seite und (Service Worker) bei geschlossener App, je genau einmal; Abmelden leert ihn');
   }
 
   await browser.close();

@@ -23,6 +23,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { laufzeitUrl, migrationsUrl, dbZiel } from '../src/repo/dbUrl.js';
 
 const serverDir = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const schema = path.join(serverDir, 'prisma', 'schema.prisma');
@@ -59,8 +60,17 @@ if (!existsSync(schema)) {
 // Der Platzhalter gilt AUSSCHLIESSLICH hier. Fuer die Migrationen weiter unten
 // wird die echte Variable geprueft; mit dem Platzhalter zu migrieren hiesse,
 // gegen einen Rechner zu laufen, den es nicht gibt.
+// Supabase/Render: Laufzeit-Adresse (pgbouncer=true beim Transaktions-Pooler) und eigene
+// Adresse für Migrationen (Sitzungsmodus) — der Owner setzt nur DATABASE_URL (src/repo/dbUrl.js).
+if (echteUrl) {
+  process.env.DIRECT_URL = migrationsUrl(echteUrl, process.env.DIRECT_URL);
+  process.env.DATABASE_URL = laufzeitUrl(echteUrl);
+  console.log(`ApoPulse DB: Ziel ${dbZiel(echteUrl)}, Migrationen über ${dbZiel(process.env.DIRECT_URL)}.`);
+}
+
 if (!(process.env.DATABASE_URL || '').trim()) {
   process.env.DATABASE_URL = 'postgresql://platzhalter:platzhalter@127.0.0.1:5432/platzhalter';
+  process.env.DIRECT_URL = process.env.DATABASE_URL;
   console.log('ApoPulse DB: keine DATABASE_URL — Client wird mit Platzhalter erzeugt '
     + '(es wird dabei nichts verbunden).');
 }

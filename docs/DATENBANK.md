@@ -480,9 +480,22 @@ Drei Riegel, alle getestet (`test/prisma-store.test.js`):
    wegen eines optionalen Zusatzes tot.
 2. **Jeder Schreibvorgang ist gekapselt.** Ein Datenbankfehler beendet den
    Hintergrundlauf nicht; die übrigen Meldungen werden weiter verarbeitet.
-3. **Ein Verbindungsabbruch schaltet den Spiegel ab.** Sonst liefe jede einzelne
-   von 50 Zeilen in denselben Zeitablauf. Der Test prüft, dass nach dem
-   Abbruch **kein** weiterer Schreibversuch folgt.
+3. **Ein Verbindungsabbruch trennt den Spiegel — vorübergehend.** Sonst liefe jede
+   einzelne von 50 Zeilen in denselben Zeitablauf. Der Test prüft, dass nach dem
+   Abbruch **kein** weiterer Schreibversuch folgt. **Seit 11/2026** ist das nicht mehr
+   endgültig: Nach 2 s, 5 s, 10 s, 30 s, dann jede Minute verbindet der Store neu
+   (Zustand `getrennt` statt `disabled`). Vorher hieß ein kurzer Datenbank-Neustart:
+   bis zum nächsten Deploy keine Sicherung — und genau diese Konten waren danach weg.
+   Endgültig aus ist der Spiegel nur noch, wenn der Prisma-Client fehlt.
+
+**Überschreib-Schutz (11/2026):** Der Server schreibt seinen Zustand erst in die
+Datenbank, wenn feststeht, was dort liegt (`ladeSnapshotGenau`: wiederhergestellt
+oder sicher leer). Startet er bei unerreichbarer Datenbank, wiederholt er das Laden
+und nimmt so lange keine Schreib-Anfragen an (503 `db_startet`); auch SIGTERM und
+Programmfehler schreiben dann nicht. Geprüft gegen echtes PostgreSQL 16
+(`test/datenbank-stabil.test.js`, mit `APOPULSE_TEST_DATABASE_URL` und
+`APOPULSE_TEST_PG_STEUERN=1`: harter Neustart, Ausfall im Betrieb, Start bei
+ausgefallener Datenbank).
 
 Die Reihenfolge ist ebenfalls Absicht: Der Feed-Beitrag wird **zuerst** angelegt,
 der Datenbankschreibvorgang folgt. Was die Nutzer:innen sehen, hängt nicht an

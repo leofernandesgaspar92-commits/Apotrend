@@ -4009,3 +4009,29 @@ Tiefe Klickrunde (Stufe 2, 6 Personen, mit Beiträgen und Umfrage im Feed) danac
 echter Fund mehr** — die früheren (leerer Beitrag, Folgen-Feld) sind weg. Einziges Rauschen waren Klicks
 hinter dem offenen Hilfe-Fenster; das Werkzeug prüft bei offenem Fenster jetzt dessen Knöpfe (danach
 0 Funde) und kann mit `NUR="…"` auf eine Person beschränkt werden.
+
+### Sprint 1 · Datenbank & Live-Stabilität (2026-11-01)
+
+Owner-Auftrag: lückenlos und absturzsicher auf Render/Supabase. Befunde und Änderungen:
+1. **Migrationen** gegen echtes PostgreSQL 16 eingespielt: alle 9 laufen; einzige Abweichung zum Schema
+   ist der dokumentierte `NULLS LAST`-Index (rohes SQL, für `migrate deploy` richtig). **Supabase**:
+   `directUrl` im Schema; aus einer `DATABASE_URL` leitet `src/repo/dbUrl.js` die Laufzeit-Adresse
+   (`pgbouncer=true` beim Transaktions-Pooler 6543) und die Migrations-Adresse (Sitzungsmodus 5432) ab.
+2. **Gefährlichster Fund:** Ein einziger Verbindungsabbruch schaltete die Sicherung **bis zum nächsten
+   Deploy ab** — danach war alles seit dem Abbruch weg. Jetzt Wiederverbinden mit wachsender Pause
+   (2 s … 60 s) und Nachholen der fehlgeschlagenen Sicherung.
+3. **Zweiter Fund:** Startete der Server bei kurz unerreichbarer Datenbank, hätte die erste Sicherung den
+   guten Stand mit einem leeren überschrieben (auch beim Beenden per SIGTERM). Jetzt Überschreib-Schutz:
+   erst schreiben, wenn wiederhergestellt oder sicher leer; bis dahin 503 „startet gerade" für Schreib-
+   Anfragen.
+4. Sicherung **binnen 5 statt 20 Sekunden**; `DATABASE_URL` auf Render/Produktion **Pflicht** (sonst kein
+   Start, Notausgang `APOPULSE_OHNE_DATENBANK=ja`).
+5. `/api/health`: `version.commit` + `database.connected` **live** (SELECT 1, max. 2 s, höchstens alle
+   5 s), `restored`, `last_backup`, Fehler ohne Zugangsdaten.
+6. **Offline-Meldungen:** Ausgang in IndexedDB statt „Seite offen lassen" — Versand bei Rückkehr des
+   Netzes, alle 30 s, beim nächsten Öffnen und per **Background Sync auch bei geschlossener App**.
+   Dabei gefunden und behoben: `serviceWorker.ready` wartet ewig ohne registrierten Service Worker —
+   die Meldung wäre ohne Hinweis hängen geblieben.
+**Geprüft:** datenbank-stabil.test.js (5, davon 2 gegen echtes PostgreSQL: SIGKILL-Neustart, Ausfall im
+Betrieb, Start bei ausgefallener DB), prisma-store (+3), Browser-Audit (Ausgang: Seite offen, Service
+Worker bei geschlossener App via Sync-Ereignis, je genau einmal, Abmelden leert). 12 Gegenproben, rot.

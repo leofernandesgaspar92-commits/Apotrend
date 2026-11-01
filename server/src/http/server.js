@@ -162,6 +162,26 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, '..', '..', 'public');
 const PORT = process.env.PORT || 4000;
 
+// ── DATABASE_URL ist im Produktivbetrieb Pflicht (11/2026) ─────────────────────
+//  Auf Render ist das Dateisystem flüchtig (render.yaml: keine Platte). Ohne Datenbank war jedes
+//  Konto nach dem nächsten Deploy weg — ohne dass es jemand merkte, bis sich Apotheken neu
+//  registrieren mussten. Jetzt startet der Dienst dort gar nicht erst: Render behält dann die
+//  laufende Version, und das fehlgeschlagene Deploy zeigt den Grund im Protokoll.
+//  Notausgang (bewusst, z. B. reine Vorführung ohne Daten): APOPULSE_OHNE_DATENBANK=ja.
+export function datenbankPflichtVerletzt(env = process.env) {
+  const produktiv = !!String(env.RENDER || '').trim() || env.NODE_ENV === 'production';
+  const ohne = /^(ja|yes|1|true)$/i.test(String(env.APOPULSE_OHNE_DATENBANK || '').trim());
+  return produktiv && !ohne && !String(env.DATABASE_URL || '').trim();
+}
+if (datenbankPflichtVerletzt()) {
+  console.error('\n❌ ApoPulse startet NICHT: DATABASE_URL fehlt.\n'
+    + '   Ohne Datenbank sind nach dem nächsten Deploy alle Konten und Meldungen weg.\n'
+    + '   Abhilfe: In Render beim Web-Service die Umgebungsvariable DATABASE_URL setzen\n'
+    + '   (Render-PostgreSQL: „Internal Database URL"; Supabase: Connection Pooler, Port 6543 oder 5432).\n'
+    + '   Nur bewusst ohne Daten: APOPULSE_OHNE_DATENBANK=ja.\n');
+  process.exit(1);
+}
+
 // ── Persistenz (optional, über APOPULSE_DATA_FILE). Ohne die Variable: In-Memory. ──
 const persistence = createPersistence(process.env.APOPULSE_DATA_FILE || null);
 const snapshot = persistence ? persistence.load() : null;
@@ -508,18 +528,29 @@ function saveNow() { if (persistence) { try { persistence.save(collectSnapshot()
 //  Zustands ueber das Netz zu schicken. 20 Sekunden reichen: Diese Sicherung
 //  soll einen DEPLOY ueberleben, nicht die letzte Sekunde vor einem Absturz.
 //  Fuer Letzteres ist die Datei da.
-const DB_SNAPSHOT_INTERVAL_MS = 20_000;
+//  11/2026: 5 statt 20 Sekunden — ein neues Konto oder eine Engpass-Meldung soll nicht 20 Sekunden
+//  lang nur im Speicher liegen (Render beendet bei Speichermangel ohne SIGTERM). Und: Schlägt die
+//  Sicherung fehl (Datenbank kurz weg), wird sie nachgeholt, statt bis zur nächsten Änderung zu warten.
+const DB_SNAPSHOT_INTERVAL_MS = 5_000;
+const DB_NACHHOLEN_MS = 10_000;
 let dbSaveTimer = null;
 let dbSavePending = false;
+// ÜBERSCHREIB-SCHUTZ: Erst wenn feststeht, was in der Datenbank liegt (wiederhergestellt ODER sicher
+// leer), darf der Server dort schreiben. Sonst überschriebe ein Start bei kurz unerreichbarer
+// Datenbank die gute Sicherung mit einem leeren Stand — alle Konten weg. Ohne Datenbank oder mit
+// frischerem Datei-Stand gibt es nichts zu schützen.
+let dbBereit = !db || restoring;
 
-function saveToDbSoon() {
-  if (!db || dbSaveTimer) return;
+function saveToDbSoon(inMs = DB_SNAPSHOT_INTERVAL_MS) {
+  if (!db || !dbBereit) return;
   dbSavePending = true;
+  if (dbSaveTimer) return;
   dbSaveTimer = setTimeout(async () => {
     dbSaveTimer = null;
     dbSavePending = false;
-    await db.saveSnapshot(collectSnapshot()).catch(() => {}); // Store meldet selbst
-  }, DB_SNAPSHOT_INTERVAL_MS);
+    const r = await db.saveSnapshot(collectSnapshot()).catch(() => ({ ok: false })); // Store meldet selbst
+    if (!r.ok) saveToDbSoon(DB_NACHHOLEN_MS); // Datenbank kurz weg: nachholen, sobald sie wieder da ist
+  }, inMs);
   if (dbSaveTimer.unref) dbSaveTimer.unref();
 }
 if (persistence && !restoring) saveNow(); // Ausgangszustand (Seed) sofort sichern
@@ -546,7 +577,7 @@ process.on('unhandledRejection', (e) => {
 process.on('uncaughtException', (e) => {
   console.error('Programmfehler — sichere und starte neu:', (e && e.stack) || e);
   saveNow();
-  if (!db) process.exit(1);
+  if (!db || !dbBereit) process.exit(1); // vor der Wiederherstellung NIE in die Datenbank schreiben
   const notbremse = setTimeout(() => process.exit(1), 4000);
   if (notbremse.unref) notbremse.unref();
   db.saveSnapshot(collectSnapshot()).catch(() => {}).finally(() => process.exit(1));
@@ -557,7 +588,7 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => {
   // dieses Abwarten ginge genau der Stand verloren, den die Sicherung retten
   // soll — der letzte vor dem Deploy. Mit Deckel, damit eine haengende
   // Datenbank das Herunterfahren nicht blockiert.
-  if (!db) return process.exit(0);
+  if (!db || !dbBereit) return process.exit(0); // vor der Wiederherstellung NIE in die Datenbank schreiben
   let fertig = false;
   const raus = () => { if (!fertig) { fertig = true; process.exit(0); } };
   const notbremse = setTimeout(raus, 4000);
@@ -581,6 +612,24 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => {
  * wird benannt, was sicher gilt: Nur die Datenbank überlebt ein Deploy
  * garantiert.
  */
+/**
+ * Live-Status der Datenbank für /api/health: echte Anfrage (SELECT 1, max. 2 s), höchstens alle
+ * 5 Sekunden — Render fragt den Gesundheitsstatus ständig ab, das soll die Datenbank nicht belasten.
+ */
+let dbLebtCache = null;
+async function datenbankLebt() {
+  if (!db) return { configured: false, connected: false, restored: true };
+  const jetzt = Date.now();
+  if (!dbLebtCache || jetzt - dbLebtCache.zeit > 5_000) {
+    const st = await db.ping({ zeitlimitMs: 2_000 }).catch(() => db.status());
+    dbLebtCache = { zeit: jetzt, st };
+  }
+  const { connected, state, zuletzt_ok, letzte_sicherung, fehler, naechster_versuch } = dbLebtCache.st;
+  return { configured: true, connected, state, restored: dbBereit, last_ok: zuletzt_ok, last_backup: letzte_sicherung,
+    // Fehlertext ohne Zugangsdaten (Prisma nennt Host/Port, nie das Passwort) — gekürzt.
+    error: fehler ? String(fehler).replace(/postgres(ql)?:\/\/[^\s]*/gi, '[adresse]').slice(0, 200) : null, next_retry: naechster_versuch };
+}
+
 function durabilityReport() {
   const db_an = !!db;
   const datei = persistence ? persistence.filePath : null;
@@ -780,8 +829,23 @@ async function restoreStateFromDb() {
   if (restoring) {
     return { skipped: true, reason: 'Datei-Snapshot vorhanden und frischer' };
   }
-  const gesichert = await db.loadSnapshot();
-  if (!gesichert) return { skipped: true, reason: 'keine Sicherung in der Datenbank' };
+  // Bis die Datenbank antwortet, wird wiederholt (2 s … 60 s, services im Store). Solange
+  // nehmen Schreib-Anfragen 503 „startet gerade" an (siehe anfrage) — kein Konto landet in
+  // einem leeren Stand, den die Wiederherstellung gleich darauf ersetzen würde.
+  let r = await db.ladeSnapshotGenau();
+  while (r.status !== 'ok') {
+    if (r.dauerhaft) {
+      console.error(`ApoPulse DB: Datenbank dauerhaft nicht nutzbar (${r.fehler}) — der Server läuft OHNE `
+        + 'Sicherung weiter. Abhilfe: npm run db:setup im Build (render.yaml).');
+      dbBereit = true; // Warten hätte keinen Zweck; Schreiben geht ohnehin ins Leere
+      return { skipped: true, reason: 'Prisma-Client fehlt' };
+    }
+    await new Promise((ok) => setTimeout(ok, 2_000));
+    r = await db.ladeSnapshotGenau();
+  }
+  const gesichert = r.zustand;
+  dbBereit = true;
+  if (!gesichert) { saveToDbSoon(500); return { skipped: true, reason: 'keine Sicherung in der Datenbank' }; }
 
   applySnapshot(gesichert.data);
   console.log(`ApoPulse: Zustand aus der Datenbank wiederhergestellt `
@@ -1437,6 +1501,7 @@ const routes = [
     ok: true, service: 'apopulse', ts: new Date().toISOString(),
     durability: durabilityReport().level,
     version: LAUFENDE_VERSION,
+    database: await datenbankLebt(),
   })],
 
   // Eigener Einladungs-Link (services/einladungen.js). __sichern: Der erste Abruf legt den Code an.
@@ -2924,6 +2989,14 @@ async function anfrage(req, res) {
     // Eigener Code, damit das Frontend eine ABGELAUFENE/UNGÜLTIGE Sitzung von anderen
     // 401 (falscher Login, falsches Passwort) unterscheiden und sauber zum Login führen kann.
     if (authRequired && !userId) return json(req, res, 401, { error: 'Nicht angemeldet', code: 'not_authenticated' });
+    // Während der Wiederherstellung aus der Datenbank (Sekunden nach einem Deploy, länger nur bei
+    // unerreichbarer Datenbank): keine Schreib-Anfragen. Ein jetzt angelegtes Konto landete in einem
+    // Stand, den die Wiederherstellung gleich ersetzt. 503 + Retry-After — die App wiederholt
+    // Meldungen selbst (Warteschlange), Formulare zeigen „gleich noch einmal versuchen".
+    if (req.method !== 'GET' && !dbBereit && pathname !== '/api/fehlerbericht') {
+      res.setHeader('Retry-After', '5');
+      return json(req, res, 503, { error: 'ApoPulse startet gerade neu. Bitte in ein paar Sekunden erneut versuchen.', code: 'db_startet', retry_after_s: 5 });
+    }
     try {
       const body = (req.method === 'POST') ? await readBody(req) : {};
       const params = (pathname.match(rx) || []).slice(1);

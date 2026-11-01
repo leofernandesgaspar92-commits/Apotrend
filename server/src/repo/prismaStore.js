@@ -32,6 +32,7 @@
 //     Demozeile darf in der Datenbank nicht aussehen wie eine Behoerdenmeldung.
 // ============================================================================
 
+import { laufzeitUrl } from './dbUrl.js';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { dbAddressWarning } from './dbAddress.js';
 
@@ -163,14 +164,25 @@ export function createPrismaStore({
   databaseUrl = process.env.DATABASE_URL,
   clientFactory = null,
   log = console,
+  jetzt = () => Date.now(),
 } = {}) {
-  const url = (databaseUrl || '').trim();
+  // Supabase-Transaktions-Pooler braucht pgbouncer=true (src/repo/dbUrl.js).
+  const url = laufzeitUrl(databaseUrl);
   if (!url && !clientFactory) return null;
 
   let client = null;
-  let state = 'idle'; // idle | ready | disabled
+  // idle | ready | getrennt (Verbindung weg, neuer Versuch nach Rückzugszeit) | disabled (endgültig:
+  // Prisma-Client fehlt). Bis 11/2026 schaltete JEDER Verbindungsabbruch den Spiegel endgültig ab —
+  // ein kurzer Datenbank-Neustart hieß: bis zum nächsten Deploy keine Sicherung mehr, und genau
+  // diese Konten waren nach dem Deploy weg.
+  let state = 'idle';
   let disabledReason = null;
-  const counts = { newsUpserts: 0, shortageUpserts: 0, signalUpserts: 0, transactionUpserts: 0, snapshotSaves: 0, errors: 0 };
+  let fehlversuche = 0;
+  let naechsterVersuch = 0;
+  let zuletztOk = null;
+  let letzteSicherung = null;
+  const RUECKZUG_MS = [2_000, 5_000, 10_000, 30_000, 60_000];
+  const counts = { newsUpserts: 0, shortageUpserts: 0, signalUpserts: 0, transactionUpserts: 0, snapshotSaves: 0, errors: 0, reconnects: 0 };
 
   function disable(reason) {
     state = 'disabled';
@@ -178,6 +190,18 @@ export function createPrismaStore({
     log.warn?.(`ApoPulse DB: Spiegel abgeschaltet — ${reason}. `
       + 'Die Anwendung laeuft unveraendert weiter (In-Memory + Snapshot).');
   }
+  /** Verbindung weg: nicht aufgeben, sondern nach wachsender Pause neu versuchen (2 s … 60 s). */
+  function trennen(reason) {
+    const war = state;
+    state = 'getrennt';
+    disabledReason = reason;
+    fehlversuche++;
+    const pause = RUECKZUG_MS[Math.min(fehlversuche - 1, RUECKZUG_MS.length - 1)];
+    naechsterVersuch = jetzt() + pause;
+    if (war !== 'getrennt') log.warn?.(`ApoPulse DB: Verbindung verloren — ${reason}. Neuer Versuch in ${Math.round(pause / 1000)} s; `
+      + 'bis dahin läuft die Anwendung weiter, die Sicherung wird nachgeholt.');
+  }
+  const istVerbindungsfehler = (msg) => /P10\d\d|P1017|ECONNREFUSED|ECONNRESET|ETIMEDOUT|EHOSTUNREACH|ENOTFOUND|terminating connection|Can't reach database|closed the connection|Connection terminated|Timed out fetching/i.test(msg);
 
   /**
    * Verbindung herstellen. Der Import ist ABSICHTLICH dynamisch: `@prisma/client`
@@ -188,6 +212,10 @@ export function createPrismaStore({
   async function connect() {
     if (state === 'ready') return true;
     if (state === 'disabled') return false;
+    if (state === 'getrennt' && jetzt() < naechsterVersuch) return false;
+    const wiederverbinden = state === 'getrennt';
+    if (client && client.$disconnect) { try { await client.$disconnect(); } catch { /* alte Verbindung: egal */ } }
+    client = null;
     try {
       if (clientFactory) {
         client = await clientFactory();
@@ -202,7 +230,11 @@ export function createPrismaStore({
         await client.$connect();
       }
       state = 'ready';
-      log.log?.('ApoPulse DB: Spiegel aktiv (PostgreSQL).');
+      disabledReason = null;
+      fehlversuche = 0;
+      zuletztOk = jetzt();
+      if (wiederverbinden) { counts.reconnects++; log.log?.('ApoPulse DB: Verbindung wieder da.'); }
+      else log.log?.('ApoPulse DB: Spiegel aktiv (PostgreSQL).');
       // Erst NACH erfolgreicher Verbindung: Vorher waere die Warnung Laerm
       // neben einem echten Fehler. Sie nennt nur den Hostnamen, nie die
       // Zugangsdaten aus derselben URL.
@@ -211,9 +243,8 @@ export function createPrismaStore({
       return true;
     } catch (e) {
       const msg = (e && e.message) || String(e);
-      disable(msg.includes('Cannot find module') || msg.includes('did not initialize')
-        ? 'Prisma-Client nicht erzeugt (npm run db:setup)'
-        : msg);
+      if (msg.includes('Cannot find module') || msg.includes('did not initialize')) disable('Prisma-Client nicht erzeugt (npm run db:setup)');
+      else trennen(msg);
       return false;
     }
   }
@@ -226,17 +257,16 @@ export function createPrismaStore({
     if (state !== 'ready' && !(await connect())) return { ok: false, skipped: true };
     try {
       await fn(client);
+      zuletztOk = jetzt();
       return { ok: true };
     } catch (e) {
       counts.errors++;
       const msg = (e && e.message) || String(e);
       log.warn?.(`ApoPulse DB: ${what} nicht gespeichert — ${msg}`);
-      // Verbindungsfehler (Datenbank weg/Netz weg) schalten den Spiegel ab,
-      // damit nicht jede einzelne Zeile in denselben Zeitablauf laeuft.
-      if (/P10\d\d|ECONNREFUSED|ETIMEDOUT|terminating connection/i.test(msg)) {
-        disable('Verbindung verloren: ' + msg);
-      }
-      return { ok: false, error: msg };
+      // Verbindungsfehler (Datenbank weg/Netz weg): als getrennt markieren, damit nicht jede
+      // einzelne Zeile in denselben Zeitablauf läuft — und nach der Rückzugszeit neu verbinden.
+      if (istVerbindungsfehler(msg)) trennen('Verbindung verloren: ' + msg);
+      return { ok: false, error: msg, verbindung: istVerbindungsfehler(msg) };
     }
   }
 
@@ -303,9 +333,9 @@ export function createPrismaStore({
           create: { ...data, drugName, country: cc },
         }));
         if (res.ok) { written++; counts.shortageUpserts++; }
-        if (state === 'disabled') break; // Verbindung weg — Rest hat keinen Zweck
+        if (state === 'disabled' || state === 'getrennt') break; // Verbindung weg — Rest hat keinen Zweck
       }
-      return { ok: state !== 'disabled', written, received: list.length };
+      return { ok: state === 'ready', written, received: list.length };
     },
 
     // ── VerifiedSignal ───────────────────────────────────────────────────────
@@ -529,6 +559,7 @@ export function createPrismaStore({
         create: { id: 'main', ...payload },
       }));
       if (res.ok) {
+        letzteSicherung = jetzt();
         counts.snapshotSaves++;
         counts.snapshotBytes = payload.data.length;
         counts.snapshotRawSize = payload.rawSize;
@@ -538,22 +569,64 @@ export function createPrismaStore({
 
     /** Zustand laden. `null`, wenn keiner da ist oder die Datenbank schweigt. */
     async loadSnapshot() {
+      const r = await this.ladeSnapshotGenau();
+      return r.status === 'ok' ? r.zustand : null;
+    },
+
+    /**
+     * Wie loadSnapshot, aber unterscheidet „keine Sicherung da" (status ok, zustand null) von
+     * „Datenbank nicht erreichbar" (status fehler). Der Unterschied ist lebenswichtig: Nur im
+     * ersten Fall darf der Server danach seinen (leeren) Zustand in die Datenbank schreiben —
+     * im zweiten würde er eine gute Sicherung mit einem leeren Stand überschreiben.
+     */
+    async ladeSnapshotGenau() {
       let row = null;
       const res = await guarded('Zustand lesen', async (c) => {
         row = await c.appSnapshot.findUnique({ where: { id: 'main' } });
       });
-      if (!res.ok || !row) return null;
+      // dauerhaft: Prisma-Client fehlt — darauf zu warten hätte keinen Zweck.
+      if (!res.ok) return { status: 'fehler', fehler: res.error || disabledReason || 'nicht erreichbar', dauerhaft: state === 'disabled' };
+      if (!row) return { status: 'ok', zustand: null };
       try {
         const obj = JSON.parse(gunzipSync(Buffer.from(row.data)).toString('utf8'));
-        return { data: obj, updatedAt: row.updatedAt, rawSize: row.rawSize };
+        return { status: 'ok', zustand: { data: obj, updatedAt: row.updatedAt, rawSize: row.rawSize } };
       } catch (e) {
         // Kaputter Blob: NICHT werfen. Die App startet dann mit dem
         // Datei-Snapshot bzw. leer weiter — das ist immer noch besser, als
         // wegen einer unlesbaren Sicherung gar nicht hochzukommen.
         log.warn?.(`ApoPulse DB: Zustandssicherung unlesbar — ${(e && e.message) || e}. `
           + 'Start ohne sie.');
-        return null;
+        return { status: 'ok', zustand: null, unlesbar: true };
       }
+    },
+
+    /**
+     * Lebt die Verbindung JETZT? Echte Anfrage (SELECT 1) mit Zeitlimit — für /api/health.
+     * Verbindet bei Bedarf (auch nach einem Abbruch, sobald die Rückzugszeit um ist).
+     */
+    async ping({ zeitlimitMs = 2_000 } = {}) {
+      if (state !== 'ready' && !(await connect())) return this.status();
+      let zeit;
+      const res = await guarded('Verbindungsprüfung', (c) => Promise.race([
+        c.$queryRawUnsafe ? c.$queryRawUnsafe('SELECT 1') : Promise.resolve(),
+        new Promise((_, fail) => { zeit = setTimeout(() => fail(Object.assign(new Error('ETIMEDOUT: keine Antwort binnen ' + zeitlimitMs + ' ms'), { code: 'db_zeitlimit' })), zeitlimitMs); }),
+      ]));
+      clearTimeout(zeit);
+      void res;
+      return this.status();
+    },
+
+    /** Zustand ohne Netzzugriff (für Statusseiten). Nie Zugangsdaten. */
+    status() {
+      return {
+        connected: state === 'ready',
+        state,
+        zuletzt_ok: zuletztOk ? new Date(zuletztOk).toISOString() : null,
+        letzte_sicherung: letzteSicherung ? new Date(letzteSicherung).toISOString() : null,
+        fehler: state === 'ready' ? null : disabledReason,
+        naechster_versuch: state === 'getrennt' ? new Date(naechsterVersuch).toISOString() : null,
+        neu_verbunden: counts.reconnects,
+      };
     },
 
     /**

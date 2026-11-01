@@ -201,6 +201,37 @@ Krypto (inkl. USDT über Tron für Afrika), Karte/PayPal. Je Punkt „Warum" und
 Die Prüfung sieht nur, OB etwas gesetzt ist — sie zeigt nie einen Wert oder ein Geheimnis
 (`server/src/services/startklar.js`).
 
+## Datenbank (Pflicht auf Render) — Sprint 1, 11/2026
+
+**Auf Render startet ApoPulse ohne `DATABASE_URL` nicht mehr.** Grund: Das Dateisystem dort ist
+flüchtig — ohne Datenbank waren nach jedem Deploy alle Konten weg. Ein fehlgeschlagener Start lässt
+die bisher laufende Version weiterlaufen; im Deploy-Protokoll steht dann „startet NICHT: DATABASE_URL
+fehlt". Nur bewusst ohne Daten (reine Vorführung): `APOPULSE_OHNE_DATENBANK=ja`.
+
+**Render-PostgreSQL:** „Internal Database URL" als `DATABASE_URL` beim Web-Service eintragen
+(gleiche Region: Frankfurt).
+
+**Supabase:** Von Render aus den **Connection Pooler** nehmen (Supabase → Connect → „Transaction
+pooler", Port 6543, oder „Session pooler", Port 5432) und als `DATABASE_URL` eintragen. Mehr ist nicht
+nötig: Beim Transaktions-Pooler hängt ApoPulse `pgbouncer=true` selbst an und spielt die Migrationen
+über den Sitzungsmodus (Port 5432) ein (`src/repo/dbUrl.js`). Eigene direkte Adresse für Migrationen
+optional als `DIRECT_URL`.
+
+**Was der Server tut:**
+- Beim Build: `npm run db:setup` spielt alle Migrationen ein (bricht bei Fehler ab — besser ein
+  fehlgeschlagenes Deploy als eine Datenbank mit unklarem Stand).
+- Beim Start: Zustand aus der Datenbank holen. Ist sie gerade nicht erreichbar, wird wiederholt
+  (2 s … 60 s) — solange antworten Schreib-Anfragen mit „startet gerade neu, gleich erneut"
+  (503). So landet kein Konto in einem leeren Stand, und **eine gute Sicherung wird nie mit einem
+  leeren Stand überschrieben**.
+- Im Betrieb: Sicherung spätestens **5 Sekunden** nach jeder Änderung und beim Herunterfahren.
+  Bricht die Verbindung ab, verbindet der Server von selbst neu und holt die Sicherung nach.
+
+**Prüfen:** `https://<adresse>/api/health` →
+`"database":{"configured":true,"connected":true,"restored":true,"last_backup":"…"}` und
+`"version":{"commit":"…"}`. `connected:false` mit `error` und `next_retry` heißt: Datenbank gerade
+nicht erreichbar, der Server versucht es selbst weiter.
+
 ## Datenspeicherung (Persistenz)
 
 Der Server kann seinen kompletten Zustand als **JSON-Snapshot** auf die Platte

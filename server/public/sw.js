@@ -132,6 +132,49 @@ self.addEventListener('fetch', (e) => {
   })());
 });
 
+// ── Ausgang: ohne Netz gespeicherte Engpass-Meldungen im Hintergrund senden ──
+//  Die Seite legt sie in IndexedDB ab (app.js, meldungInAusgang) und meldet „apo-meldungen" an.
+//  Der Browser weckt den Service Worker, sobald wieder Netz da ist — auch bei geschlossener App.
+//  Schlägt der Versand fehl (Netz weg, Server startet), wirft die Funktion: Der Browser versucht es
+//  später erneut. Dauerhafte Ablehnungen (z. B. „bereits gemeldet") gelten als erledigt.
+const AUSGANG_DB = 'apopulse-ausgang', AUSGANG_TABELLE = 'meldungen';
+function ausgangTun(modus, fn) {
+  return new Promise((ok, fail) => {
+    const r = indexedDB.open(AUSGANG_DB, 1);
+    r.onupgradeneeded = () => r.result.createObjectStore(AUSGANG_TABELLE, { keyPath: 'id' });
+    r.onerror = () => fail(r.error);
+    r.onsuccess = () => {
+      const db = r.result; const tx = db.transaction(AUSGANG_TABELLE, modus); const req = fn(tx.objectStore(AUSGANG_TABELLE)); let erg;
+      if (req) req.onsuccess = () => { erg = req.result; };
+      tx.oncomplete = () => { db.close(); ok(erg); }; tx.onerror = () => { db.close(); fail(tx.error); };
+    };
+  });
+}
+async function ausgangSendenSW() {
+  const alle = (await ausgangTun('readonly', (st) => st.getAll())) || [];
+  const gesendet = [];
+  let spaeter = false;
+  for (const e of alle) {
+    if (Date.now() - e.ts > 7 * 86400000) { await ausgangTun('readwrite', (st) => st.delete(e.id)); continue; }
+    let r;
+    try {
+      r = await fetch('/api/shortages/report', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + e.token }, body: JSON.stringify(e.body) });
+    } catch { spaeter = true; break; }
+    if (r.ok || (r.status >= 400 && r.status < 500 && ![401, 408, 429].includes(r.status))) {
+      await ausgangTun('readwrite', (st) => st.delete(e.id));
+      if (r.ok) gesendet.push(e.body.wirkstoff);
+    } else { spaeter = true; break; }
+  }
+  if (gesendet.length) {
+    const fenster = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const f of fenster) f.postMessage({ typ: 'ausgang-gesendet', wirkstoffe: gesendet });
+  }
+  if (spaeter) throw new Error('Ausgang: später erneut'); // Browser wiederholt die Synchronisierung
+}
+self.addEventListener('sync', (e) => {
+  if (e.tag === 'apo-meldungen') e.waitUntil(ausgangSendenSW());
+});
+
 // ── Web-Push: Engpass-Alarm, auch wenn ApoPulse geschlossen ist ──────────────
 //  Der Server (services/webPush.js) schickt verschlüsselt; der Browser
 //  entschlüsselt, hier wird nur angezeigt. Nur Meldungen mit Quelle

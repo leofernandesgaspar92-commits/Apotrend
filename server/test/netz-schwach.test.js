@@ -20,10 +20,11 @@ test('Bereiche: online gemerkt, offline der gemerkte Stand statt „alles an"', 
   assert.equal((await offline.p).tauschboerse, 'ruht');
 });
 
-test('Melden ohne Netz: Hinweis statt Fehler, Entwurf, automatisch senden, danach löschen', () => {
+test('Melden ohne Netz: Hinweis statt Fehler, Ausgang (sonst Entwurf), automatisch senden, danach löschen', () => {
   const rk = abschnitt('function reportShortageCard(', '// Von der Startseite');
-  assert.match(rk, /if \(e && e\.code === 'network'\) \{[\s\S]*?sh_rep_wartet[\s\S]*?entwurfSichern\(\);[\s\S]*?addEventListener\('online'[\s\S]*?\{ once: true \}/);
-  assert.match(rk, /voraussichtlichBis:[^\n]*\n\s*\}\);\n\s*entwurfLoeschen\(\);/);
+  // 11/2026: in den Ausgang (sendet auch bei geschlossener App); ohne IndexedDB wie bisher Entwurf + online.
+  assert.match(rk, /if \(e && \(e\.code === 'network' \|\| e\.code === 'db_startet'\)\) \{[\s\S]*?await meldungInAusgang\(meldung\);[\s\S]*?sh_rep_ausgang[\s\S]*?catch \{[\s\S]*?sh_rep_wartet[\s\S]*?entwurfSichern\(\);[\s\S]*?addEventListener\('online'[\s\S]*?\{ once: true \}/);
+  assert.match(rk, /const r = await api\('POST','\/api\/shortages\/report', meldung\);\n\s*entwurfLoeschen\(\);/);
   assert.match(rk, /form\.addEventListener\('input', entwurfSichern\)/);
   assert.match(rk, /Date\.now\(\) - \(ent\.ts \|\| 0\) < 3 \* 86400000/);
 });

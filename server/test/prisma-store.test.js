@@ -39,7 +39,12 @@ function fakeClient({ failOn = null, error = new Error('boom') } = {}) {
     },
     count: async () => calls[name].length,
   });
-  return { calls, stored, newsPost: table('newsPost'), shortage: table('shortage'), $connect: async () => {}, $disconnect: async () => {} };
+  let snap = null; // AppSnapshot: eine Zeile 'main'
+  const appSnapshot = {
+    upsert: async (args) => { if (failOn === 'appSnapshot') throw error; snap = { ...args.create, ...args.update, updatedAt: new Date() }; return snap; },
+    findUnique: async () => { if (failOn === 'appSnapshot') throw error; return snap; },
+  };
+  return { calls, stored, newsPost: table('newsPost'), shortage: table('shortage'), appSnapshot, $connect: async () => {}, $disconnect: async () => {} };
 }
 
 // ── Reine Abbildungsfunktionen ──────────────────────────────────────────────
@@ -196,14 +201,14 @@ test('ein Datenbankfehler wirft nicht — der Aufrufer läuft weiter', async () 
   assert.equal(store.state, 'ready', 'ein einzelner Schreibfehler darf den Spiegel nicht abschalten');
 });
 
-test('ein Verbindungsabbruch schaltet den Spiegel ab, statt jede Zeile hineinlaufen zu lassen', async () => {
+test('ein Verbindungsabbruch trennt den Spiegel (neuer Versuch später), statt jede Zeile hineinlaufen zu lassen', async () => {
   const client = fakeClient({ failOn: 'shortage', error: new Error('P1001: Can\'t reach database server') });
   const store = createPrismaStore({ clientFactory: () => client, log: stumm });
 
   const rows = Array.from({ length: 50 }, (_, i) => ({ bezeichnung: `Präparat ${i}`, status: 'kritisch' }));
   const r = await store.saveShortages(rows);
 
-  assert.equal(store.state, 'disabled');
+  assert.equal(store.state, 'getrennt', 'nicht endgültig aus — sonst bis zum nächsten Deploy keine Sicherung');
   assert.equal(r.written, 0);
   assert.equal(r.ok, false);
   // Genau EIN Versuch, nicht fünfzig: nach dem Abbruch hat der Rest keinen Zweck.
@@ -245,13 +250,13 @@ test('stats() verbindet bei Bedarf — sonst steht nach dem Deploy nur „idle" 
   assert.equal(s.newsRows, 0);
 });
 
-test('stats() meldet eine unerreichbare Datenbank als abgeschaltet mit Begründung', async () => {
+test('stats() meldet eine unerreichbare Datenbank als getrennt mit Begründung', async () => {
   const store = createPrismaStore({
     clientFactory: () => { throw new Error("Can't reach database server at `localhost:59999`"); },
     log: stumm,
   });
   const s = await store.stats();
-  assert.equal(s.state, 'disabled');
+  assert.equal(s.state, 'getrennt');
   assert.match(s.reason, /Can't reach database server/);
   // Und keine erfundenen Zeilenzahlen: Was nicht gelesen werden konnte, wird
   // auch nicht als 0 gemeldet — 0 hieße „nachgesehen, nichts da".
@@ -385,4 +390,51 @@ test('ein nicht serialisierbarer Zustand wird als Programmfehler gemeldet, nicht
   const res = await store.saveSnapshot(zyklisch);
   assert.equal(res.ok, false);
   assert.equal(res.error, 'nicht serialisierbar');
+});
+
+// ── Wiederverbinden (11/2026) ──────────────────────────────────────────────
+//  Bis 11/2026 schaltete jeder Verbindungsabbruch den Spiegel bis zum nächsten Neustart ab.
+
+test('nach einem Abbruch: Rückzugszeit abwarten, dann neu verbinden und wieder sichern', async () => {
+  let uhr = 1_000_000;
+  let erreichbar = false;
+  const client = fakeClient();
+  const store = createPrismaStore({
+    clientFactory: () => { if (!erreichbar) throw new Error("P1001: Can't reach database server"); return client; },
+    log: stumm, jetzt: () => uhr,
+  });
+  assert.equal((await store.saveSnapshot({ a: 1 })).ok, false);
+  assert.equal(store.state, 'getrennt');
+  assert.equal(store.status().connected, false);
+  erreichbar = true;
+  assert.equal((await store.saveSnapshot({ a: 1 })).skipped, true, 'vor Ablauf der Rückzugszeit kein Sturm von Versuchen');
+  uhr += 2_000;
+  assert.equal((await store.saveSnapshot({ a: 2 })).ok, true, 'nach der Rückzugszeit wieder verbunden');
+  assert.equal(store.state, 'ready');
+  assert.equal(store.status().connected, true);
+  assert.equal(store.status().neu_verbunden, 1);
+  assert.ok(store.status().letzte_sicherung);
+});
+
+test('Rückzugszeit wächst (2 s, 5 s, 10 s …) und ist gedeckelt', async () => {
+  let uhr = 0;
+  const store = createPrismaStore({ clientFactory: () => { throw new Error('ECONNREFUSED'); }, log: stumm, jetzt: () => uhr });
+  const pausen = [];
+  for (let i = 0; i < 7; i++) {
+    await store.connect();
+    pausen.push(Date.parse(store.status().naechster_versuch) - uhr);
+    uhr = Date.parse(store.status().naechster_versuch);
+  }
+  assert.deepEqual(pausen, [2000, 5000, 10000, 30000, 60000, 60000, 60000]);
+});
+
+test('ladeSnapshotGenau unterscheidet „keine Sicherung" von „Datenbank weg"', async () => {
+  const leer = createPrismaStore({ clientFactory: () => fakeClient(), log: stumm });
+  assert.deepEqual(await leer.ladeSnapshotGenau(), { status: 'ok', zustand: null });
+  const weg = createPrismaStore({ clientFactory: () => { throw new Error('ECONNREFUSED'); }, log: stumm });
+  const r = await weg.ladeSnapshotGenau();
+  assert.equal(r.status, 'fehler');
+  assert.equal(r.dauerhaft, false);
+  const ohneClient = createPrismaStore({ clientFactory: () => { throw new Error("Cannot find module '.prisma/client/default'"); }, log: stumm });
+  assert.equal((await ohneClient.ladeSnapshotGenau()).dauerhaft, true);
 });

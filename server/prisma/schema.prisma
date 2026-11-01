@@ -11,8 +11,11 @@
 // ============================================================================
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Migrationen über eine direkte Verbindung (Supabase: Pooler im Sitzungsmodus, Port 5432).
+  // tools/db-setup.mjs setzt DIRECT_URL selbst aus DATABASE_URL, wenn sie fehlt (src/repo/dbUrl.js).
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
