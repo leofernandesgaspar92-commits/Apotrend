@@ -4035,3 +4035,30 @@ Owner-Auftrag: lückenlos und absturzsicher auf Render/Supabase. Befunde und Än
 **Geprüft:** datenbank-stabil.test.js (5, davon 2 gegen echtes PostgreSQL: SIGKILL-Neustart, Ausfall im
 Betrieb, Start bei ausgefallener DB), prisma-store (+3), Browser-Audit (Ausgang: Seite offen, Service
 Worker bei geschlossener App via Sync-Ereignis, je genau einmal, Abmelden leert). 12 Gegenproben, rot.
+
+### Sprint 2 · Kostenlose Datenquellen, Zwischenspeicher, Ausfallsicherheit (2026-11-01)
+
+Owner-Auftrag: „API für Datenbanken, damit die Informationen stimmen" — openFDA, RxNav, AISStream,
+World Bank, Open-Meteo, CoinGecko, Frankfurter; mit Zwischenspeicher, Rückfall, Typen, Tests.
+1. **Geldfehler gefunden und behoben (Krypto, Afrika):** USDT über Tron wurde mit dem **TRX-Kurs**
+   berechnet (Wallet `coin: 'tron'`). Der verlangte USDT-Betrag war damit etwa viermal zu hoch. Jetzt hat
+   jede Wallet ein eigenes Kursfeld (`kurs: 'tether'`), und `payments.js` rechnet über `kursId(w)`.
+   Test `krypto-kurs-usdt.test.js`.
+2. **Schon vorhanden, nicht doppelt gebaut:** openFDA (Engpässe `drug/shortages.json`, Rückrufe
+   `drug/enforcement.json`), RxNav (`rxnorm.js`), CoinGecko.
+3. **CoinGecko** gehärtet: Zwischenspeicher je Münze (holt nur fehlende/alte), Zeitlimit, 429 = Fehler,
+   letzter guter Kurs bleibt. **Frankfurter** als Rückfall für Wechselkurse; ergänzt nur, was es kennt —
+   afrikanische Währungen werden nie erfunden.
+4. **Neu:** gemeinsamer Abruf-Baustein `src/services/extern/abruf.js` (Zwischenspeicher, gemeinsamer
+   Abruf bei gleichzeitigen Anfragen, Zeitlimit, Pause nach 429, letzter guter Stand in der
+   DB-Sicherung). Darauf: **World Bank LPI** (Land, mit Jahr), **Open-Meteo** (Starkregen ≥ 50 mm,
+   Sturmböen ≥ 75 km/h an 6 Häfen), **AISStream** (WebSocket, nur mit `AISSTREAM_API_KEY`, Neuverbindung
+   5 s … 5 min). Typen in `src/services/extern/typen.d.ts` (kein TS-Build nötig, `// @ts-check`).
+5. Oberfläche: Karte „Wetter und Schiffe an wichtigen Häfen" in „Kühlkette & Transport", immer mit
+   Quelle und dem Hinweis, dass es keine Aussage über einzelne Lieferungen ist. Cockpit-Zeile
+   „Externe Daten". 5 Sprachen.
+**Geprüft:** extern-quellen.test.js (8), krypto-kurs-usdt.test.js (2), 13 Gegenproben rot. Sichtprüfung
+bei 360 px mit gesperrten Quellen: Neustart zeigt den gespeicherten Stand, kein Querscrollen; dabei
+Ländernamen statt „SI"/„NL" korrigiert. **Grenze:** Aus dieser Umgebung sind die Anbieter nicht
+erreichbar; die Antwortformate stammen aus deren Dokumentation. Ob sie live antworten, zeigt nach dem
+Deploy die Cockpit-Zeile „Externe Daten".

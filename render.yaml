@@ -135,6 +135,10 @@ services:
         sync: false
       - key: APOPULSE_VAPID_PRIVATE_KEY
         sync: false
+      # Schiffe an Häfen (AISStream.io, optional, kostenlos). Ohne Schlüssel fehlt nur die
+      # Schiffs-Zeile in „Kühlkette & Transport". Siehe server/DEPLOY.md „Externe Datenquellen".
+      - key: AISSTREAM_API_KEY
+        sync: false
       # PORT wird von Render automatisch gesetzt — der Server liest process.env.PORT.
     # Dauerhafte Platte (nur Bezahltarif). Zum Aktivieren einkommentieren:
     # disk:

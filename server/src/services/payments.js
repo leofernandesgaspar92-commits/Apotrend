@@ -40,6 +40,8 @@ export function plusMonate(ms, n) {
 // Signatur, also Bruchteile eines Cents). Tron/USDT bewusst NICHT: Ohne eigene „Energie"
 // kostet eine TRC-20-Überweisung oft rund einen Dollar.
 const NIEDRIGE_GEBUEHR = new Set(['solana']);
+// Kurs-Kennung des gezahlten Betrags (data/cryptoWallets.js: Tron-Wallet = USDT → 'tether').
+const kursId = (w) => w.kurs || w.coin;
 const KLEINBETRAG_EUR = 20;
 
 export function createPaymentsService({
@@ -112,9 +114,9 @@ export function createPaymentsService({
   /** Coins mit Betrag zum aktuellen Kurs — gemeinsam für Produkte und freie Beträge. */
   async function kryptoAngebot(eur) {
     const ws = wallets();
-    const rateMap = rates ? await rates.ratesEur([...new Set(ws.map(w => w.coin))]) : {};
+    const rateMap = rates ? await rates.ratesEur([...new Set(ws.map(kursId))]) : {};
     return ws.map(w => {
-      const rate = rateMap[w.coin];
+      const rate = rateMap[kursId(w)];
       const amount = rate ? Number((eur / rate).toFixed(8)) : null;
       return { id: w.id, coin: w.coin, symbol: w.symbol, label: w.label, address: w.address, network: w.network, amount_eur: eur, amount_crypto: amount, uri: walletUri(w, amount) };
     });
@@ -134,7 +136,7 @@ export function createPaymentsService({
       const w = wallets().find(x => x.id === walletId);
       if (!w) throw new AppError('coin_unavailable', 'Wallet nicht verfügbar.');
       let rate = null;
-      try { rate = rates ? ((await rates.ratesEur([w.coin])) || {})[w.coin] || null : null; } catch { rate = null; }
+      try { rate = rates ? ((await rates.ratesEur([kursId(w)])) || {})[kursId(w)] || null : null; } catch { rate = null; }
       const eur = Number(amountCents) / 100;
       const payment = repo.createPayment({ userId, productId: ref, amountCents: Number(amountCents), currency, method: 'crypto_direct', provider: 'direct', coin: w.coin, walletId: w.id, address: w.address, status: 'pending' });
       const mitBetrag = repo.updatePaymentReview
@@ -152,9 +154,9 @@ export function createPaymentsService({
       if (!product) throw new AppError('product_unknown', 'Unbekanntes Produkt.');
       const ws = wallets(); // Liste (mehrere Wallets je Coin möglich)
       const eur = preis(userId, product, { country }) / 100;
-      const rateMap = rates ? await rates.ratesEur([...new Set(ws.map(w => w.coin))]) : {};
+      const rateMap = rates ? await rates.ratesEur([...new Set(ws.map(kursId))]) : {};
       const coins = ws.map(w => {
-        const rate = rateMap[w.coin]; // EUR pro 1 Coin
+        const rate = rateMap[kursId(w)]; // EUR pro 1 Coin
         const amount = rate ? Number((eur / rate).toFixed(8)) : null;
         return { id: w.id, coin: w.coin, symbol: w.symbol, label: w.label, address: w.address, network: w.network, amount_eur: eur, amount_crypto: amount, uri: walletUri(w, amount), low_fee: NIEDRIGE_GEBUEHR.has(w.coin) };
       });
@@ -183,7 +185,7 @@ export function createPaymentsService({
       const w = wallets().find(x => x.id === walletId);
       if (!w) throw new AppError('coin_unavailable', 'Wallet nicht verfügbar.');
       let rate = null;
-      try { rate = rates ? ((await rates.ratesEur([w.coin])) || {})[w.coin] || null : null; } catch { rate = null; }
+      try { rate = rates ? ((await rates.ratesEur([kursId(w)])) || {})[kursId(w)] || null : null; } catch { rate = null; }
       const cents = preis(userId, product);
       const eur = cents / 100;
       const payment = repo.createPayment({ userId, productId, amountCents: cents, currency: product.currency, method: 'crypto_direct', provider: 'direct', coin: w.coin, walletId: w.id, address: w.address, status: 'pending' });

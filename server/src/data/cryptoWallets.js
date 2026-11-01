@@ -24,8 +24,11 @@ export function cryptoWallets(env = defaultEnv()) {
   // will, setzt die Variable auf leer und ist fertig.
   const configured = (value, fallback) => (value === undefined ? fallback : String(value).trim());
 
-  const push = (id, coin, symbol, address, network, decimals, label = null) => {
-    if (address) list.push({ id, coin, symbol, address, network, decimals, label });
+  // kurs: CoinGecko-Kennung des Betrags, der tatsächlich gezahlt wird. Meist = coin — aber die
+  // Tron-Wallet empfängt USDT (Kurs ~1 USD), nicht TRX (Bruchteil davon). Bis 11/2026 wurde der
+  // USDT-Betrag mit dem TRX-Kurs gerechnet: verlangt wurde rund das Vierfache.
+  const push = (id, coin, symbol, address, network, decimals, label = null, kurs = coin) => {
+    if (address) list.push({ id, coin, symbol, address, network, decimals, label, kurs });
   };
 
   push('btc', 'bitcoin', 'BTC',
@@ -44,7 +47,7 @@ export function cryptoWallets(env = defaultEnv()) {
   // Tron braucht eine EIGENE Adresse (kein EVM-Format). Ohne gesetzte Variable
   // erscheint USDT über TRC-20 gar nicht — eine erfundene Adresse wäre der
   // teuerste denkbare Platzhalter.
-  push('tron', 'tron', 'USDT', configured(env.APOPULSE_WALLET_TRON, ''), 'Tron (TRC-20)', 6);
+  push('tron', 'tron', 'USDT', configured(env.APOPULSE_WALLET_TRON, ''), 'Tron (TRC-20)', 6, null, 'tether');
 
   return list;
 }

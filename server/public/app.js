@@ -1993,6 +1993,11 @@ function betriebsKarte(b) {
     ${b.teilen ? `<div class="muted" style="font-size:14px;margin-top:4px" data-btwachstum>${esc(ti('bt_teilen', { n: b.teilen.aufrufe_7 }))}${b.anzeigen ? ' · ' + esc(ti('bt_anzeigen', { l: b.anzeigen.laufend, p: b.anzeigen.zur_pruefung })) : ''}</div>` : ''}
     ${kanalListe(b.kanaele)}
     ${fehlerListe(b.geraete_fehler, b.fehler)}
+    ${Array.isArray(b.extern) ? `<div style="font-size:14px;margin-top:12px" data-btextern><b>${esc(t('bt_extern'))}:</b> ${b.extern.map((q) => {
+      const zustand = !q.aktiv ? t('bt_extern_aus') : q.letzter_fehler && !q.zuletzt_ok ? t('bt_extern_fehler') : q.zuletzt_ok ? t('bt_extern_ok') : t('bt_extern_noch');
+      const farbe = !q.aktiv || (!q.zuletzt_ok && !q.letzter_fehler) ? 'var(--muted-fg,#5f7370)' : q.letzter_fehler ? 'var(--crit-fg)' : 'var(--ok-fg)';
+      return `<span style="white-space:nowrap" title="${esc(q.letzter_fehler || '')}">${esc(q.quelle)} <span style="color:${farbe}">${esc(zustand)}</span></span>`;
+    }).join(' · ')}</div>` : ''}
     ${b.version ? `<div class="muted" style="font-size:14px;margin-top:12px" data-btversion>${esc(b.version.commit ? ti('bt_version', { c: b.version.commit, b: b.version.branch || '?', z: vorZeit(b.version.gestartet) || '' }) : t('bt_version_unbekannt'))}</div>` : ''}</div>`);
   const qk = c.querySelector('[data-btquellen]');
   qk.onclick = openDatenquellen;
@@ -9618,6 +9623,38 @@ async function renderAusweich(feed, wirkstoff) {
  *   · erlaubt und leer             -> Meldeweg anbieten
  *   · erlaubt mit Meldungen        -> Liste, jede mit Herkunft
  */
+// Wetter und Schiffe an Häfen (Open-Meteo, AISStream) + Logistik-Index des eigenen Landes (Weltbank).
+// Hinweise auf Transportrisiken — nie eine Aussage über Engpässe. Fällt eine Quelle aus, steht der
+// gespeicherte Stand da (gekennzeichnet) oder ehrlich „nicht verfügbar"; die Ansicht bricht nie ab.
+async function zeigeHaefen(box) {
+  let d, lpi = null;
+  try { d = await api('GET', '/api/logistik/haefen'); } catch { return; }
+  if (me && me.country) { try { lpi = await api('GET', '/api/laender/' + encodeURIComponent(me.country) + '/logistik-index'); } catch { lpi = null; } }
+  const tag = (iso) => { try { return new Date(iso + 'T12:00:00Z').toLocaleDateString(LOCALE, { weekday: 'short', day: 'numeric', month: 'numeric' }); } catch { return iso; } };
+  // Häfen außerhalb der App-Länder (Koper, Rotterdam): Ländername vom Browser statt Kürzel „SI".
+  const hafenLand = (cc) => { const l = landLabel(cc); if (l && l !== cc) return l; try { return new Intl.DisplayNames([LOCALE], { type: 'region' }).of(cc) || cc; } catch { return cc; } };
+  const zeile = (h) => {
+    const w = h.wetter;
+    const heute = w.tage[0];
+    const wetter = !w.verfuegbar ? `<span class="muted">${esc(t('hf_kein_wetter'))}</span>`
+      : esc([heute && heute.regen_mm != null ? ti('hf_regen', { n: heute.regen_mm }) : null, heute && heute.boeen_kmh != null ? ti('hf_boeen', { n: Math.round(heute.boeen_kmh) }) : null].filter(Boolean).join(' · '));
+    const warn = (w.hinweise || []).map((x) => `<div data-hfwarn style="color:var(--warn-fg,#8a5a00);font-weight:600;margin-top:2px">⚠ ${esc(ti(x.art === 'sturm' ? 'hf_sturm' : 'hf_starkregen', { d: tag(x.datum) }))}</div>`).join('');
+    const schiffe = h.schiffe && h.schiffe.im_gebiet ? `<div style="margin-top:2px">${esc(ti('hf_schiffe', { n: h.schiffe.im_gebiet, a: h.schiffe.vor_anker }))}</div>` : '';
+    const stand = w.stand ? `<span class="muted" style="font-size:13px">${esc(vorZeit(w.stand) || '')}${w.veraltet ? ' · ' + esc(t('hf_gespeichert')) : ''}</span>` : '';
+    return `<div data-hafen="${esc(h.id)}" style="padding:8px 0;border-top:1px solid var(--line);font-size:15px">
+      <div class="row" style="justify-content:space-between;gap:8px"><b>${esc(h.name)} <span class="muted" style="font-weight:400">${esc(hafenLand(h.land))}</span></b>${stand}</div>
+      <div>${wetter}</div>${warn}${schiffe}</div>`;
+  };
+  const quellen = ['<a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>'];
+  if (d.haefen.some((h) => h.schiffe)) quellen.push('<a href="https://aisstream.io/" target="_blank" rel="noopener">AISStream</a>');
+  const lpiZeile = lpi && lpi.index ? `<div data-lpi style="margin-top:10px;font-size:15px">${esc(ti('hf_lpi', { land: landLabel(lpi.land), w: lpi.index.wert, j: lpi.index.jahr }))} · <a href="${esc(lpi.index.link)}" target="_blank" rel="noopener">${esc(t('hf_quelle'))}</a></div>` : '';
+  box.innerHTML = '';
+  box.appendChild(el(`<div class="card"><b style="font-size:16px">⚓ ${esc(t('hf_titel'))}</b>
+    <div class="muted" style="font-size:14px;margin:4px 0 6px">${esc(t('hf_hinweis'))}</div>
+    ${d.haefen.map(zeile).join('')}
+    <div class="muted" style="font-size:13px;margin-top:8px">${esc(t('hf_quelle'))}: ${quellen.join(' · ')}</div>${lpiZeile}</div>`));
+}
+
 async function openLogistik() {
   setDocTitle(t('lg_title'));
   app.innerHTML = '';
@@ -9631,6 +9668,9 @@ async function openLogistik() {
     <div class="row" data-lgart style="gap:6px;flex-wrap:wrap;margin-top:10px"></div>
   </div>`);
   app.appendChild(kopf);
+  const haefenKarte = el('<div data-haefen></div>');
+  app.appendChild(haefenKarte);
+  zeigeHaefen(haefenKarte); // lädt für sich — blockiert die Meldungen nicht
   const liste = el('<div data-lglist></div>');
   app.appendChild(liste);
 

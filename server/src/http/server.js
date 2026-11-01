@@ -64,6 +64,10 @@ import { createRechnungen } from '../services/rechnungen.js';
 import { createEinladungen, CODE_RE as EINLADUNG_RE } from '../services/einladungen.js';
 import { createKanaele, istVorschauAbruf } from '../services/kanaele.js';
 import { createGeraeteFehler } from '../services/geraeteFehler.js';
+import { createExternerSpeicher } from '../services/extern/abruf.js';
+import { createWeltbank } from '../services/extern/weltbank.js';
+import { createHafenWetter, HAEFEN, SCHWELLE } from '../services/extern/wetter.js';
+import { createAisStream } from '../services/extern/aisstream.js';
 import { createDatenApi, zugangPruefen, engpassZeile, fuerSchnittstelle, alsCsv } from '../services/datenApi.js';
 import { werbeplaetzeAusUmgebung, ZIELGRUPPEN } from '../data/werbeplaetze.js';
 import { createOverviewService } from '../services/overview.js';
@@ -296,6 +300,13 @@ const einladungen = createEinladungen();
 const kanaele = createKanaele();
 // Abbrüche auf den Geräten (services/geraeteFehler.js): je Fehlerart gezählt, ohne IP und Konto.
 const geraeteFehler = createGeraeteFehler();
+// Externe Schnittstellen (services/extern/): letzter guter Stand wird mitgesichert (Rückfall nach Neustart).
+const externerSpeicher = createExternerSpeicher();
+// Tests: keine echten Abrufe ins Netz (APOPULSE_EXTERN_AUS=1) — der Rückfallweg wird dabei mitgeprüft.
+const externFetch = process.env.APOPULSE_EXTERN_AUS === '1' ? async () => { throw Object.assign(new Error('externe Abrufe abgeschaltet (Test)'), { code: 'quelle_gestoert' }); } : globalThis.fetch;
+const weltbank = createWeltbank({ speicher: externerSpeicher, fetchImpl: externFetch });
+const hafenWetter = createHafenWetter({ speicher: externerSpeicher, fetchImpl: externFetch });
+const ais = createAisStream({ apiKey: process.env.AISSTREAM_API_KEY, haefen: HAEFEN });
 // Je Gerät höchstens 30 Fehlerberichte pro Stunde (die Seite selbst schickt höchstens 5 je Aufruf).
 const fehlerberichtLimiter = createRateLimiter({ max: 30, windowMs: 60 * 60 * 1000 });
 // Eine Rechnungsnummern-Reihe für Anzeigen UND Tarife (lückenlos, eindeutig).
@@ -447,6 +458,7 @@ function applySnapshot(snap) {
   einladungen.__load(snap.einladungen);
   kanaele.__load(snap.kanaele);
   geraeteFehler.__load(snap.geraeteFehler);
+  externerSpeicher.__load(snap.extern);
   // Alte, unbefristete Premium-Freischaltungen aus bezahlten Monats-/Jahres-
   // käufen bekommen ihr Ablaufdatum (services/payments.js, laufzeitenUmstellen).
   const umgestellt = payments.laufzeitenUmstellen();
@@ -504,6 +516,7 @@ function collectSnapshot() {
     einladungen: einladungen.__dump(),
     kanaele: kanaele.__dump(),
     geraeteFehler: geraeteFehler.__dump(),
+    extern: externerSpeicher.__dump(),
   };
 }
 let saveTimer = null;
@@ -1495,6 +1508,32 @@ const routes = [
       ...landStatus(params[0], { store: coverage, quellen: art === 'shortages' ? engpassQuellen() : sourcesByKind(art), art }),
       abruf: abrufStand(job, { intervallMs: art === 'shortages' ? INTERVALS.shortages : INTERVALS.news }),
     };
+  }],
+
+  // ── Externe Daten: Häfen (Wetter, Schiffe), Logistik-Index, Status der Quellen ──
+  //  Hinweise auf Transportrisiken, keine Aussage über Engpässe. Fällt eine Quelle aus,
+  //  kommt der letzte gesicherte Stand (gekennzeichnet) — nie ein Fehler, nie erfundene Werte.
+  ['GET', /^\/api\/logistik\/haefen$/, true, async () => {
+    const haefen = await Promise.all(HAEFEN.map(async (h) => {
+      const w = await hafenWetter.fuerHafen(h);
+      return {
+        id: h.id, name: h.name, land: h.land,
+        wetter: { verfuegbar: !!w.daten, tage: w.daten ? w.daten.tage : [], hinweise: w.daten ? w.daten.hinweise : [], stand: w.stand, veraltet: w.veraltet, quelle: 'Open-Meteo', link: 'https://open-meteo.com/' },
+        schiffe: ais.aktiv ? { ...ais.lage(h.id), quelle: 'AISStream.io', link: 'https://aisstream.io/' } : null,
+      };
+    }));
+    return { haefen, schwellen: SCHWELLE, hinweis: 'Wetter und Schiffsbewegungen sind Hinweise auf Transportrisiken — keine Aussage über einzelne Lieferungen oder Engpässe.' };
+  }],
+  ['GET', /^\/api\/laender\/([A-Za-z]{2})\/logistik-index$/, true, async ({ params }) => {
+    const cc = params[0].toUpperCase();
+    if (!COUNTRIES[cc]) { const e = new Error('Unbekanntes Land.'); e.status = 404; e.code = 'land_unbekannt'; throw e; }
+    const r = await weltbank.logistikIndex(cc);
+    return { land: cc, index: r.daten, stand: r.stand, veraltet: r.veraltet, quelle: 'World Bank — Logistics Performance Index',
+      skala: '1 (schwach) bis 5 (sehr gut)', hinweis: 'Durchschnittswert aus Befragungen der Weltbank, erscheint nur alle paar Jahre — Jahr beachten.' };
+  }],
+  ['GET', /^\/api\/extern\/status$/, true, async ({ userId }) => {
+    if (!social.isModerator(userId)) { const e = new Error('Nur Moderation.'); e.status = 403; e.code = 'forbidden'; throw e; }
+    return { quellen: [weltbank.status(), hafenWetter.status(), ais.status(), cryptoRates.status(), fxRates.status()], gesichert: externerSpeicher.groesse };
   }],
 
   ['GET', /^\/api\/health$/, false, async () => ({
@@ -2593,6 +2632,8 @@ const routes = [
       // Abgefangene Fehler seit dem letzten Start (Details im Render-Protokoll).
       fehler: { ...betriebsFehler },
       version: LAUFENDE_VERSION,
+      // Externe Schnittstellen: antwortet die Quelle? (services/extern/)
+      extern: [weltbank.status(), hafenWetter.status(), ais.status(), cryptoRates.status(), fxRates.status()],
     };
   }],
   // Startklar-Check (services/startklar.js): was der Betreiber noch einrichten muss.
@@ -3237,6 +3278,8 @@ server.listen(PORT, () => {
   // nach einem Deploy nicht mit mehreren Netzabrufen um die CPU kämpft.
   // In Tests deaktiviert — sonst greift jeder Testlauf ins Netz.
   if (process.env.NODE_ENV !== 'test') {
+    // Schiffe an Häfen (AISStream): nur mit AISSTREAM_API_KEY, verbindet selbst neu (services/extern/aisstream.js).
+    if (ais.aktiv) ais.start();
     scheduler.add('news', {
       run: runNewsIngest,
       intervalMs: INTERVALS.news,

@@ -232,6 +232,34 @@ optional als `DIRECT_URL`.
 `"version":{"commit":"…"}`. `connected:false` mit `error` und `next_retry` heißt: Datenbank gerade
 nicht erreichbar, der Server versucht es selbst weiter.
 
+## Externe Datenquellen (kostenlos, ohne Schlüssel — außer AIS)
+
+Alle externen Abrufe laufen über einen gemeinsamen Baustein (`src/services/extern/abruf.js`):
+**Zwischenspeicher** (nicht bei jedem Seitenaufruf neu), **Zeitlimit 8 s**, nach „Grenze erreicht"
+(HTTP 429) 5 Minuten Pause, und **Rückfall auf den letzten guten Stand**. Dieser Stand wird mit der
+Datenbank-Sicherung gespeichert und übersteht so auch Neustarts. Fällt eine Quelle aus, zeigt die App
+den gespeicherten Stand mit „gespeicherter Stand" und Uhrzeit — oder ehrlich „gerade nicht
+verfügbar". Erfunden wird nie etwas, und die Seite stürzt nie ab.
+
+| Quelle | Wofür | Schlüssel | Zwischenspeicher |
+|---|---|---|---|
+| openFDA (`drug/shortages`, `drug/enforcement`) | US-Engpässe und Rückrufe | keiner | Quellen-Takt |
+| RxNav / RxNorm (NIH) | Wirkstoff-Namen zuordnen | keiner | je Name |
+| CoinGecko | Kurse für Krypto-Zahlung (BTC, ETH, SOL, **USDT** über Tron) | keiner | 5 min je Münze |
+| open.er-api.com → **Frankfurter** (EZB) | Wechselkurse; Frankfurter springt ein, wenn die erste Quelle ausfällt (ohne afrikanische Währungen — die bleiben auf dem letzten Stand) | keiner | 1 h |
+| World Bank Open Data (`LP.LPI.OVRL.XQ`) | Logistik-Index des eigenen Landes (1–5, mit Jahr) | keiner | 7 Tage |
+| Open-Meteo | Starkregen-/Sturm-Hinweise an Häfen (Koper, Rotterdam, Tema, Lagos, Mombasa, Durban) | keiner | 1 h je Hafen |
+| AISStream.io | Schiffe im Hafengebiet, davon vor Anker (wartend) | **`AISSTREAM_API_KEY`** | live, 2 h Fenster |
+
+**`AISSTREAM_API_KEY` (optional):** kostenlos auf <https://aisstream.io> (mit GitHub anmelden →
+„API Keys" → neuen Schlüssel erzeugen) und in Render beim Web-Service als Umgebungsvariable
+eintragen. Ohne Schlüssel fehlt nur die Schiffs-Zeile; alles andere läuft. Den Schlüssel nie in
+einen Chat oder ins Repo kopieren.
+
+**Wo sehe ich, ob die Quellen antworten?** Betriebs-Cockpit → Zeile „Externe Daten" (je Quelle
+„antwortet", „Fehler" oder „aus (kein Schlüssel)"). Für die Redaktion zusätzlich
+`GET /api/extern/status`.
+
 ## Datenspeicherung (Persistenz)
 
 Der Server kann seinen kompletten Zustand als **JSON-Snapshot** auf die Platte
