@@ -90,7 +90,7 @@ import { isLive, isPriceLive, isRabatteLive, liveSources, livePriceSources, live
 import { createScheduler, INTERVALS } from '../services/scheduler.js';
 import { createNewsSeenStore, ingestNews } from '../services/newsIngest.js';
 import { activeSources, sourcesByKind, shortagesFromCsv, shortagesFromJson, dedupeShortages, fetchTextDefault, fetchSourceAlleSeiten, newsKey } from '../services/sources.js';
-import { createDealsService, seedDemoDealsIfNoneRunning } from '../services/deals.js';
+import { createDealsService, seedDemoDealsIfNoneRunning, demoAktionenErlaubt } from '../services/deals.js';
 import { createPrismaStore } from '../repo/prismaStore.js';
 import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
 import { issueToken, tokenDetails, sitzungGueltig, issueZweckToken, verifyZweckToken } from './token.js';
@@ -459,6 +459,8 @@ function applySnapshot(snap) {
   kanaele.__load(snap.kanaele);
   geraeteFehler.__load(snap.geraeteFehler);
   externerSpeicher.__load(snap.extern);
+  // Letzte gute Wechsel-/Krypto-Kurse: Rückfall nach Neustart ohne Netz (Sprint 4).
+  if (snap.kurse) { fxRates.__load(snap.kurse.fx); cryptoRates.__load(snap.kurse.krypto); }
   // Alte, unbefristete Premium-Freischaltungen aus bezahlten Monats-/Jahres-
   // käufen bekommen ihr Ablaufdatum (services/payments.js, laufzeitenUmstellen).
   const umgestellt = payments.laufzeitenUmstellen();
@@ -517,6 +519,7 @@ function collectSnapshot() {
     kanaele: kanaele.__dump(),
     geraeteFehler: geraeteFehler.__dump(),
     extern: externerSpeicher.__dump(),
+    kurse: { fx: fxRates.__dump(), krypto: cryptoRates.__dump() },
   };
 }
 let saveTimer = null;
@@ -814,7 +817,10 @@ const deals = createDealsService({
 //  statt nur die Repo-Einstellung; genau so ist er aufgefallen.
 //
 //  Beide Schalter muessen an sein, damit erfundene Aktionen erscheinen.
-if (referenzDaten && process.env.NODE_ENV !== 'test' && process.env.APOPULSE_DEMO_DEALS !== 'off') {
+//  Und NIE im Live-Betrieb (Sprint 4, 11/2026): Auf Render/Produktion entstehen keine
+//  erfundenen Aktionen, auch wenn jemand die Referenzdaten einschaltet — sie wären dort
+//  von echten Angeboten nur an einem kleinen Herkunfts-Hinweis zu unterscheiden.
+if (demoAktionenErlaubt(process.env, referenzDaten)) {
   seedDemoDealsIfNoneRunning({ rabatteRepo });
 }
 
@@ -1031,6 +1037,7 @@ function wirkstoffLage(cc, name) {
     herkunft: m ? m.provenance : null, quelle: m ? m.quelle : null,
     apotheken: c ? 1 + (c.confirmations || []).length : 0,
     bestaetigt: c ? istBestaetigt(c, new Date().toISOString().slice(0, 10)) : false,
+    vertrauen: m ? shortages.vertrauenVon(m) : c ? shortages.vertrauenVon(c) : null,
     stand: job && job.lastRunAt ? String(job.lastRunAt).slice(0, 10) : null,
   };
 }
@@ -2297,6 +2304,28 @@ const routes = [
   //
   //  Ohne RxNorm (APOPULSE_RXNORM=off) antwortet der Endpunkt mit
   //  `available: false` statt zu schweigen.
+  // ── Wirkstoff-Schreibweise prüfen (Melde-Formular, Sprint 4) ───────────────
+  //  1. Eigenes Verzeichnis: derselbe Wirkstoff-Schlüssel (domain/inn.js) wie ein Name, den
+  //     eine Behördenliste oder frühere Meldungen führen → „wird geführt als …".
+  //  2. Sonst RxNorm-Rechtschreibhilfe (NIH). Immer nur Vorschlag mit Quelle; übernimmt die
+  //     Fachperson mit einem Tipp. Ohne Netz: keine Vorschläge, das Melden geht trotzdem.
+  ['GET', /^\/api\/wirkstoff-pruefen$/, true, async ({ query }) => {
+    const name = String(query.get('name') || '').trim().slice(0, 120);
+    if (name.length < 3) return { eingabe: name, bekannt: null, vorschlaege: [] };
+    const key = wirkstoffSchluessel(name);
+    const gefuehrt = new Map(); // Schlüssel -> Name (amtliche Schreibweise zuerst)
+    for (const z of [...shortagesRepo.list()].sort((a, b) => (a.provenance === 'verified' ? -1 : 0) - (b.provenance === 'verified' ? -1 : 0))) {
+      const k = z.wirkstoff ? wirkstoffSchluessel(z.wirkstoff) : null;
+      if (k && !gefuehrt.has(k)) gefuehrt.set(k, z.wirkstoff.trim());
+    }
+    if (key && gefuehrt.has(key)) {
+      const n = gefuehrt.get(key);
+      return { eingabe: name, bekannt: true, vorschlaege: n.toLowerCase() === name.toLowerCase() ? [] : [{ name: n, quelle: 'ApoPulse' }] };
+    }
+    if (!rxnorm) return { eingabe: name, bekannt: null, vorschlaege: [] };
+    const r = await rxnorm.schreibweise(name);
+    return { eingabe: name, bekannt: r.bekannt, vorschlaege: r.vorschlaege.map((v) => ({ name: v, quelle: 'RxNorm (NIH)' })) };
+  }],
   ['GET', /^\/api\/alternativen$/, true, async ({ userId, query }) => {
     const nutzer = rxBetrachter(userId);
     if (!rxErlaubt(nutzer)) {
@@ -2425,7 +2454,10 @@ const routes = [
   // Live-Wechselkurse (EUR-Basis) für den Umrechner. null-rates -> Frontend zeigt „nicht verfügbar".
   ['GET', /^\/api\/fx-rates$/, true, async () => {
     const d = await fxRates.rates();
-    return d ? { base: d.base, rates: d.rates, updated_at: d.updated_at } : { base: 'EUR', rates: null, updated_at: null };
+    // quellen: je Währung „EZB (Frankfurter)" oder „open.er-api.com"; veraltet: letzter
+    // gesicherter Stand (Quellen nicht erreichbar) — der Umrechner sagt das dazu.
+    return d ? { base: d.base, rates: d.rates, updated_at: d.updated_at, quellen: d.quellen || null, quelle: d.quelle || null, veraltet: fxRates.istVeraltet(d) }
+      : { base: 'EUR', rates: null, updated_at: null, quellen: null, quelle: null, veraltet: true };
   }],
   // Kontotyp-Register (öffentlich): für die Kontotyp-Auswahl bei der Registrierung.
   ['GET', /^\/api\/account-types$/, false, async () => ({ account_types: listAccountTypes() })],
@@ -2721,6 +2753,9 @@ const routes = [
     country: userCountry(userId) })],
   ['POST', /^\/api\/shortages\/([^/]+)\/confirm$/, true, async ({ userId, params }) => shortages.confirmShortage(userId, params[0])],
   ['POST', /^\/api\/shortages\/([^/]+)\/unconfirm$/, true, async ({ userId, params }) => shortages.unconfirmShortage(userId, params[0])],
+  // Widerspruch („Stimmt nicht", mit Grund) und Rücknahme — Schutz gegen Falschmeldungen (domain/vertrauen.js).
+  ['POST', /^\/api\/shortages\/([^/]+)\/widerspruch$/, true, async ({ userId, params, body }) => shortages.widersprechen(userId, params[0], { grund: body.grund, text: body.text })],
+  ['DELETE', /^\/api\/shortages\/([^/]+)\/widerspruch$/, true, async ({ userId, params }) => shortages.widerspruchZuruecknehmen(userId, params[0])],
   // Aktualität von Apotheken-Meldungen: „Still short" / „Wieder lieferbar".
   ['POST', /^\/api\/shortages\/([^/]+)\/noch-aktuell$/, true, async ({ userId, params }) => shortages.nochAktuell(userId, params[0])],
   ['POST', /^\/api\/shortages\/([^/]+)\/wieder-lieferbar$/, true, async ({ userId, params }) => shortages.wiederLieferbar(userId, params[0])],
@@ -2872,7 +2907,7 @@ const routes = [
 ];
 
 // ── Daten-Schnittstelle: Abfragen mit Schlüssel ─────────────────────────────
-const V1_ENGPASS_SPALTEN = ['wirkstoff', 'wirkstoff_schluessel', 'bezeichnung', 'land', 'status', 'grund', 'gemeldet_am', 'voraussichtlich_bis', 'herkunft', 'quelle', 'bestaetigt_von'];
+const V1_ENGPASS_SPALTEN = ['wirkstoff', 'wirkstoff_schluessel', 'bezeichnung', 'land', 'status', 'grund', 'gemeldet_am', 'voraussichtlich_bis', 'herkunft', 'quelle', 'bestaetigt_von', 'vertrauensstufe', 'vertrauenswert'];
 const V1_PRUEF_SPALTEN = ['eingabe', 'wirkstoff', 'einstufung', 'status', 'voraussichtlich_bis', 'seit_tagen', 'herkunft', 'quelle', 'ausland'];
 function v1Stand() {
   const job = scheduler.status().find((j) => j.name === 'shortages') || null;
@@ -2916,7 +2951,7 @@ async function datenSchnittstelle(req, res, url) {
         .filter((z) => !laender.length || laender.includes(String(z.country || '').toUpperCase()))
         .filter((z) => !nurBehoerde || z.provenance === 'verified')
         .filter((z) => !status || z.status === status)
-        .map((z) => engpassZeile(z, wirkstoffSchluessel));
+        .map((z) => engpassZeile(z, wirkstoffSchluessel, shortages.vertrauenVon(z)));
       if (format === 'csv') return csv(alsCsv(zeilen, V1_ENGPASS_SPALTEN), 'apopulse-engpaesse.csv');
       return antwort(200, { stand, anzahl: zeilen.length, engpaesse: zeilen, hinweis });
     }

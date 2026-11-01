@@ -110,7 +110,7 @@ export function zugangPruefen(roh, { api, hatTarif, tarifBis }) {
  * Referenzdaten (Beispielzeilen ohne Live-Quelle) gehören NICHT hinein — eine
  * Warenwirtschaft würde danach umbestellen. Das filtert `ausgeben`.
  */
-export function engpassZeile(z, wirkstoffSchluessel) {
+export function engpassZeile(z, wirkstoffSchluessel, bewertung = null) {
   return {
     wirkstoff: z.wirkstoff || null,
     wirkstoff_schluessel: z.wirkstoff ? (wirkstoffSchluessel(z.wirkstoff) || null) : null,
@@ -124,6 +124,10 @@ export function engpassZeile(z, wirkstoffSchluessel) {
     // Apotheken-Meldung: wie viele Apotheken sie tragen (Meldende + Bestätigungen).
     bestaetigt_von: z.provenance === 'community' ? 1 + (z.confirmations || []).length : null,
     quelle: z.quelle || null,
+    // Vertrauensstufe (domain/vertrauen.js): offiziell, redaktion, hoch, bestaetigt,
+    // ungeprueft, unklar, umstritten — und der Vertrauenswert 0–100. Seit 11/2026.
+    vertrauensstufe: bewertung ? bewertung.stufe : null,
+    vertrauenswert: bewertung ? bewertung.punkte : null,
   };
 }
 

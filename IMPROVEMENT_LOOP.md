@@ -4062,3 +4062,30 @@ bei 360 px mit gesperrten Quellen: Neustart zeigt den gespeicherten Stand, kein 
 Ländernamen statt „SI"/„NL" korrigiert. **Grenze:** Aus dieser Umgebung sind die Anbieter nicht
 erreichbar; die Antwortformate stammen aus deren Dokumentation. Ob sie live antworten, zeigt nach dem
 Deploy die Cockpit-Zeile „Externe Daten".
+
+### Sprint 4 · Datenwahrheit: Vertrauensstufen, Widerspruch, keine erfundenen Werte (2026-11-01)
+
+Owner-Auftrag: absolute Datenwahrheit — Quellentrennung, Trust Score, Schutz gegen Falschmeldungen,
+ehrliche Preise/Kurse, Wirkstoff-Abgleich, 14-Tage-Regel. **Bestand (nicht doppelt gebaut):**
+Herkunft amtlich/Community, Schwelle 3 Apotheken mit 24-Stunden-Bremse gegen Schein-Konten,
+14/30-Tage-Aktualität mit „Noch knapp", Moderations-Prüfliste, Sperre für Referenz-/Demodaten.
+1. **Vertrauens-Engine** `src/domain/vertrauen.js`: sieben Stufen (Offiziell, Redaktion, Hohe
+   Zuverlässigkeit, Community-verifiziert, Ungeprüft, Status unklar, Umstritten) + Vertrauenswert
+   0–100 mit erklärbarer Formel; in Liste, Detail, Vorschau und Daten-Schnittstelle (+CSV).
+2. **Hohe Zuverlässigkeit** nur für VERIFIZIERTE Großhändler/Hersteller (unverifiziert zählt nicht).
+3. **„✋ Stimmt nicht"** mit Pflicht-Grund; Redaktion nur mit öffentlicher Begründung; Bestätigen und
+   Widersprechen schließen sich je Person aus; Meldende wird anonym benachrichtigt; keine
+   Benutzer-IDs nach außen; „bestätigt"-Alarm nicht bei umstrittener Meldung.
+4. **14 Tage ohne Bestätigung → „Status unklar — Prüfung erforderlich"** (auch bei Fachbetrieb).
+5. **Preise:** Leerzustand „Keine Echtzeit-Lieferantenpreise … — nie geschätzt" + „Community-Richtwert
+   anfragen" (Frage im Feed). **Kurse:** EZB (Frankfurter) vor open.er-api, Quelle je Währung im
+   Umrechner, Fiat- und Krypto-Kurse in der DB-Sicherung, „zuletzt gespeichert"-Hinweis.
+   **Demo-Aktionen** auf Render/Produktion hart gesperrt.
+6. **Wirkstoff-Prüfung:** eigenes Verzeichnis (INN-Schlüssel), dann RxNorm `spellingsuggestions`;
+   „Meinten Sie …" mit Quelle, Übernahme nur per Tipp (bewusst kein stilles Auto-Korrigieren).
+**Geprüft:** vertrauensstufen.test.js (6), daten-integritaet.test.js (6), bestehende vertrauen.test.js (2) weiter grün, Browser-Audit „Datenwahrheit"
+(7 Stufen, Widerspruch im Browser, Preis-Leere, Kurs-Ausfall/-Altstand per abgefangener Antwort,
+„Did you mean"), 21 Gegenproben rot (eine zunächst grün → Rundweg-Test für die Sicherung ergänzt).
+Sichtprüfung 360 px: kein Querscrollen; fehlender Satzpunkt korrigiert. Französisch: „au Sénégal"
+über die Präpositions-Hilfe (Audit fand „pour le").
+

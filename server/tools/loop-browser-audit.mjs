@@ -2423,10 +2423,10 @@ async function main() {
     await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); localStorage.setItem('apo_ebene_engpaesse', 'land'); }, b2);
     await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(600);
     await reiterOeffnen(page, 'shortages'); await page.waitForTimeout(1000);
-    const einzeln = await page.locator('[data-vertrauen="einzeln"]').first().innerText().catch(() => '');
+    const einzeln = await page.locator('[data-vertrauen="ungeprueft"]').first().innerText().catch(() => '');
     const best = await page.locator('[data-vertrauen="bestaetigt"]').first().innerText().catch(() => '');
-    if (!m1 || !/not yet confirmed/.test(einzeln)) findings.push(`Vertrauen: einzelne Meldung ohne „not yet confirmed" (${einzeln})`);
-    if (!m2 || !/Confirmed by 3 pharmacies/.test(best)) findings.push(`Vertrauen: bestätigte Meldung ohne „Confirmed by 3 pharmacies" (${best})`);
+    if (!m1 || !/Unverified report/.test(einzeln) || !/not yet confirmed/.test(einzeln)) findings.push(`Vertrauen: einzelne Meldung ohne „Unverified report … not yet confirmed" (${einzeln})`);
+    if (!m2 || !/Community-verified/.test(best) || !/Confirmed by 3 pharmacies/.test(best)) findings.push(`Vertrauen: bestätigte Meldung ohne „Community-verified … Confirmed by 3 pharmacies" (${best})`);
     for (const f of fehler) findings.push('Vertrauen: JS-Fehler ' + f);
     if (!findings.some((f) => f.startsWith('Vertrauen'))) console.log('✓ Vertrauen: „1 pharmacy reports — not yet confirmed" und „Confirmed by 3 pharmacies (not official)" sichtbar');
     await ctx.close();
@@ -2868,6 +2868,84 @@ async function main() {
     if (fehler.length) findings.push('Ausgang: Skriptfehler ' + fehler.join(' | '));
     await ctx.close();
     if (!findings.some((f) => f.startsWith('Ausgang:'))) console.log('✓ Ausgang: ohne Netz gemeldet → gesendet bei offener Seite und (Service Worker) bei geschlossener App, je genau einmal; Abmelden leert ihn');
+  }
+
+  // ── Datenwahrheit (Sprint 4): Vertrauensstufen, Quellen-Ausfall, keine erfundenen Preise ──
+  //  Jede Engpass-Zeile trägt eine Stufe im Klartext; fällt eine Kursquelle aus oder fehlen
+  //  Preise, sagt die Oberfläche das — sie zeigt nie eine leere oder erfundene Zahl.
+  {
+    const r2 = await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'DI Apo', email: `di_${uniq}@ex.com`, password: 'Passwort123!', country: 'NG', locale: 'en', accountType: 'pharmacy' }) });
+    const tok = r2 && r2.token;
+    const ctx = await browser.newContext({ viewport: { width: 360, height: 740 }, locale: 'en-NG', serviceWorkers: 'block' });
+    const page = await ctx.newPage();
+    const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); localStorage.setItem('apo_install', 'fertig'); }, tok);
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(600);
+    // 1) Alle sieben Stufen in Klartext (Karte direkt gezeichnet)
+    const stufen = await page.evaluate(() => {
+      const basis = { id: 'x', wirkstoff: 'Oxytocin', bezeichnung: 'Oxytocin 10 IU', status: 'kritisch', confirm_count: 0, country: 'NG' };
+      const fall = (extra) => { const c = shortageCard({ ...basis, ...extra }); const v = c.querySelector('[data-vertrauen]'); return v ? v.textContent.replace(/\s+/g, ' ').trim() : ''; };
+      return {
+        offiziell: fall({ provenance: 'verified', quelle: 'NAFDAC', vertrauen: { stufe: 'offiziell', punkte: 100 } }),
+        hoch: fall({ provenance: 'community', apotheken: 1, vertrauen: { stufe: 'hoch', punkte: 85 } }),
+        bestaetigt: fall({ provenance: 'community', apotheken: 3, bestaetigt: true, vertrauen: { stufe: 'bestaetigt', punkte: 65 } }),
+        ungeprueft: fall({ provenance: 'community', apotheken: 1, vertrauen: { stufe: 'ungeprueft', punkte: 25 } }),
+        unklar: fall({ provenance: 'community', apotheken: 3, aktualitaet: 'pruefen', tage_ohne_bestaetigung: 15, vertrauen: { stufe: 'unklar', punkte: 45 } }),
+        umstritten: fall({ provenance: 'community', apotheken: 1, widerspruch_anzahl: 2, vertrauen: { stufe: 'umstritten', punkte: 0 } }),
+        redaktion: fall({ provenance: 'community', apotheken: 1, redaktion_zweifel: 'Gemeint ist Salmeterol', vertrauen: { stufe: 'umstritten', punkte: 10 } }),
+      };
+    });
+    const erwartet = { offiziell: /Official.*medicines authority/, hoch: /High reliability.*verified wholesaler or manufacturer/, bestaetigt: /Community-verified.*Confirmed by 3 pharmacies.*Trust score: 65 out of 100/,
+      ungeprueft: /Unverified report.*If in doubt/, unklar: /Status unclear — needs checking.*15 days/, umstritten: /Disputed.*2 professionals/, redaktion: /Disputed.*editors have doubts.*Salmeterol/ };
+    for (const [k, rx] of Object.entries(erwartet)) if (!rx.test(stufen[k])) findings.push(`Datenwahrheit: Stufe „${k}" unklar beschriftet (${stufen[k]})`);
+    if (/Trust score/.test(stufen.offiziell)) findings.push('Datenwahrheit: amtliche Zeile mit Vertrauenswert (gehört nur zu Meldungen)');
+    // 2) „Not correct": Grund wählen und senden — Server zählt den Widerspruch
+    const m = await api('/api/shortages/report', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + (await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'DI Melder', email: `dim_${uniq}@ex.com`, password: 'Passwort123!', country: 'NG', locale: 'en', accountType: 'pharmacy' }) })).token }, body: JSON.stringify({ wirkstoff: 'Ceftriaxon', bezeichnung: 'Ceftriaxon 1 g', status: 'kritisch', country: 'NG' }) });
+    await page.evaluate(() => { localStorage.setItem('apo_ebene_engpaesse', 'land'); });
+    await reiterOeffnen(page, 'shortages'); await page.waitForTimeout(900);
+    const karte = page.locator('.card', { has: page.locator('text=Ceftriaxon 1 g') }).first();
+    const wk = karte.locator('[data-widerspruch]');
+    if (!m || !(await wk.count())) findings.push('Datenwahrheit: Knopf „Not correct" fehlt auf fremder Meldung');
+    else {
+      await wk.click(); await karte.locator('[data-wsgrund]').selectOption('bei_uns_lieferbar');
+      await karte.locator('[data-wssenden]').click(); await page.waitForTimeout(900);
+      const z = ((await api('/api/shortages?country=NG', { headers: { authorization: 'Bearer ' + tok } })).shortages || []).find((x) => x.id === m.id) || {};
+      if (z.widerspruch_anzahl !== 1 || !z.i_disputed) findings.push(`Datenwahrheit: Widerspruch nicht angekommen (${z.widerspruch_anzahl})`);
+      if (!(await page.locator('[data-widerruf]').count())) findings.push('Datenwahrheit: nach dem Widerspruch kein „Withdraw"');
+    }
+    // 3) Keine Preise für Nigeria → ehrlich, mit Community-Frage; kein Preis erfunden
+    await reiterOeffnen(page, 'prices'); await page.waitForTimeout(900);
+    const leer = await page.locator('[data-preiseleer]').innerText().catch(() => '');
+    if (leer && (!/No real-time supplier prices available/.test(leer) || !/never estimates or invents/.test(leer) || !(await page.locator('[data-rwgo]').count()))) findings.push(`Preise: Leerzustand nicht ehrlich/ohne Community-Frage (${leer.slice(0, 120)})`);
+    if (leer) {
+      await page.fill('[data-rwp]', 'Amoxicillin 500 mg'); await page.click('[data-rwgo]'); await page.waitForTimeout(700);
+      if (!/published in the feed/.test(await page.locator('[data-rwok]').innerText().catch(() => ''))) findings.push('Preise: Community-Richtwert-Frage nicht bestätigt');
+    }
+    // 4) Kursquellen: aus → „not available"; gesicherter Stand → Hinweis + Quelle je Währung
+    const kasten = async () => page.evaluate(async () => { const b = document.createElement('div'); document.body.appendChild(b); await buildCurrencyConverter(b); const t = b.innerText; b.remove(); return t; });
+    await page.route('**/api/fx-rates', (rt) => rt.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ base: 'EUR', rates: null, veraltet: true }) }));
+    const aus = await kasten();
+    if (!/not available|unavailable/i.test(aus) || /\d+[.,]\d{2} NGN/.test(aus)) findings.push(`Kurse: Ausfall nicht ehrlich angezeigt (${aus.slice(0, 80)})`);
+    await page.unroute('**/api/fx-rates');
+    await page.route('**/api/fx-rates', (rt) => rt.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ base: 'EUR', rates: { EUR: 1, USD: 1.09, NGN: 1650 }, quellen: { EUR: 'EZB (Frankfurter)', USD: 'EZB (Frankfurter)', NGN: 'open.er-api.com' }, updated_at: Date.now() - 3 * 864e5, veraltet: true }) }));
+    const alt = await kasten();
+    if (!/last saved rates/.test(alt)) findings.push(`Kurse: gesicherter (veralteter) Stand ohne Hinweis (${alt.slice(0, 120)})`);
+    if (!/EZB \(Frankfurter\)|open\.er-api\.com/.test(alt)) findings.push('Kurse: keine Quelle beim Kurs');
+    await page.unroute('**/api/fx-rates');
+    // 5) Melde-Formular: Tippfehler → „Did you mean" mit Quelle, Übernahme per Tipp
+    await page.route('**/api/wirkstoff-pruefen**', (rt) => rt.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ eingabe: 'Amoxicilin', bekannt: false, vorschlaege: [{ name: 'amoxicillin', quelle: 'RxNorm (NIH)' }] }) }));
+    await reiterOeffnen(page, 'shortages'); await page.waitForTimeout(900);
+    const tg = page.locator('[data-toggle]').first();
+    if (await tg.count()) {
+      await tg.click().catch(() => {});
+      await page.fill('#rep_w', 'Amoxicilin'); await page.locator('#rep_b').focus(); await page.waitForTimeout(700);
+      const h = await page.locator('[data-swhinweis]').innerText().catch(() => '');
+      if (!/Did you mean/.test(h) || !/RxNorm/.test(h)) findings.push(`Wirkstoff-Prüfung: kein „Did you mean" mit Quelle (${h})`);
+      else { await page.click('[data-swnimm="0"]'); if ((await page.inputValue('#rep_w')) !== 'amoxicillin') findings.push('Wirkstoff-Prüfung: Vorschlag nicht übernommen'); }
+    } else findings.push('Wirkstoff-Prüfung: Melde-Formular nicht gefunden');
+    for (const f of fehler) findings.push('Datenwahrheit: JS-Fehler ' + f);
+    if (!findings.some((f) => /^(Datenwahrheit|Preise|Kurse|Wirkstoff-Prüfung)/.test(f))) console.log('✓ Datenwahrheit: 7 Stufen in Klartext, Widerspruch kommt an, ehrliche Preis-Leere mit Community-Frage, Kurs-Ausfall/-Altstand mit Hinweis und Quelle, „Did you mean" per Tipp');
+    await ctx.close();
   }
 
   await browser.close();

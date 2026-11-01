@@ -232,6 +232,49 @@ optional als `DIRECT_URL`.
 `"version":{"commit":"…"}`. `connected:false` mit `error` und `next_retry` heißt: Datenbank gerade
 nicht erreichbar, der Server versucht es selbst weiter.
 
+## Datenwahrheit: Vertrauensstufen, Widerspruch, keine erfundenen Werte (Sprint 4)
+
+Jede Engpass-Zeile zeigt im Klartext, woher sie stammt und wie verlässlich sie ist (eine Stelle
+für alle Ansichten: `src/domain/vertrauen.js`):
+
+| Stufe | Wann |
+|---|---|
+| **Offiziell** | Behördenliste (BfArM, BASG, openFDA …), Quelle an der Zeile |
+| **Redaktion (mit Quelle)** | von der Redaktion mit Quellen-Link gesetzt |
+| **Hohe Zuverlässigkeit** | ein **verifizierter** Großhandel oder Hersteller meldet oder bestätigt |
+| **Community-verifiziert** | mindestens 3 Apotheken (Konten ab 24 Stunden) |
+| **Ungeprüfte Meldung** | einzelne Erst-Meldung, mit „Bitte im Zweifel selbst prüfen" |
+| **Status unklar — Prüfung erforderlich** | 14 Tage von niemandem bestätigt (nach 30 Tagen zählt sie nicht mehr) |
+| **Umstritten** | Redaktion zweifelt (Begründung Pflicht, wird angezeigt) oder mind. 2 Fachleute sagen „stimmt nicht" und es widersprechen mindestens so viele, wie bestätigen |
+
+**Vertrauenswert 0–100** (klein neben der Stufe): Erst-Meldung 25 · je weitere Apotheke +20
+(höchstens +50) · verifizierter Betrieb meldet +10 · verifizierter Großhandel/Hersteller mindestens
+85 · je Widerspruch −25 · Redaktion zweifelt höchstens 10 · 14 Tage ohne Bestätigung −20, 30 Tage −40.
+
+**„✋ Stimmt nicht"** (Fachkreise, nicht die Meldende): Grund wählen (bei uns lieferbar, falscher
+Wirkstoff, doppelt, anderer Grund), optional begründen. Die Meldung bleibt sichtbar; Namen der
+Widersprechenden werden nie angezeigt. Wer bestätigt, nimmt seinen Widerspruch zurück (und
+umgekehrt). Löschen bleibt der Redaktion vorbehalten. Die Daten-Schnittstelle liefert
+`vertrauensstufe` und `vertrauenswert` mit (auch im CSV).
+
+**Keine erfundenen Werte:**
+- Preise: Ohne Lieferantendaten zeigt die App „Keine Echtzeit-Lieferantenpreise für {Land}
+  verfügbar" und bietet „Community-Richtwert anfragen" an (eine Frage im Feed — Antworten sind
+  Erfahrungswerte, keine Lieferantenangebote). Es wird nie ein Preis geschätzt.
+- Wechselkurse: EZB-Referenzkurse (Frankfurter) haben Vorrang; was die EZB nicht führt (NGN, GHS,
+  KES, XOF …), kommt von open.er-api.com. Der Umrechner nennt die Quelle je Währung. Kurse und
+  Krypto-Kurse (CoinGecko) wandern mit der Datenbank-Sicherung — nach einem Neustart ohne Netz gilt
+  der letzte Stand, deutlich als „zuletzt gespeichert" gekennzeichnet. Ohne jeden Stand: „nicht
+  verfügbar". (Der Währungsrechner selbst ist ein ruhender Bereich; einschalten mit
+  `APOPULSE_FEATURE_WAEHRUNGSRECHNER=an`. Die Premium-Preise in Landeswährung nutzen die Kurse immer.)
+- Demo-Aktionen (`simulated`) entstehen auf Render bzw. mit `NODE_ENV=production` **nie**, auch
+  wenn jemand `APOPULSE_REFERENCE_DATA` einschaltet.
+
+**Wirkstoff-Schreibweise:** Beim Melden prüft die App den Namen — zuerst gegen die bei ApoPulse
+geführten Namen (gleicher Wirkstoff-Schlüssel), dann über die RxNorm-Rechtschreibhilfe (NIH).
+Ein Treffer erscheint als „Meinten Sie: …" mit Quelle und wird **erst nach einem Tipp**
+übernommen — ein still geänderter Wirkstoff wäre eine Aussage, die niemand gemacht hat.
+
 ## Externe Datenquellen (kostenlos, ohne Schlüssel — außer AIS)
 
 Alle externen Abrufe laufen über einen gemeinsamen Baustein (`src/services/extern/abruf.js`):

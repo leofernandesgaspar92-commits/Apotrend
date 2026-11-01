@@ -36,6 +36,17 @@ export function createCryptoRates({ fetchImpl = globalThis.fetch, ttlMs = 5 * 60
       for (const id of gesucht) { const c = cache.get(id); if (c) rates[id] = c.eur; }
       return rates;
     },
+    // Zustandssicherung (Datenbank, server.js): Der letzte gute Kurs je Münze übersteht einen
+    // Neustart ohne Netz. Sein Zeitstempel bleibt — er gilt also nicht als frisch, wird beim
+    // nächsten Bedarf neu abgerufen und dient nur als Rückfall.
+    __dump() { return [...cache].map(([id, c]) => [id, { at: c.at, eur: c.eur }]); },
+    __load(snap) {
+      for (const e of Array.isArray(snap) ? snap : []) {
+        if (Array.isArray(e) && typeof e[0] === 'string' && e[1] && typeof e[1].eur === 'number' && e[1].eur > 0 && typeof e[1].at === 'number') cache.set(e[0], { at: e[1].at, eur: e[1].eur });
+      }
+    },
+    /** Stand je Münze (für die Anzeige „Kurs von …"). */
+    stand(id) { const c = cache.get(id); return c ? new Date(c.at).toISOString() : null; },
     /** Für Statusseiten: nie Geheimnisse, nur Zeitpunkte. */
     status() {
       return { quelle: 'CoinGecko', zuletzt_ok: letzterErfolg ? new Date(letzterErfolg).toISOString() : null, fehler: letzterFehler, coins: cache.size };

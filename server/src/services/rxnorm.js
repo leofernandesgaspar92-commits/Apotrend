@@ -324,6 +324,36 @@ export function createRxNormService({
       }
     },
 
+    /**
+     * Schreibweise prüfen (Sprint 4): Ist der Begriff in RxNorm bekannt? Wenn nicht,
+     * Vorschläge aus der Rechtschreibhilfe von RxNav (spellingsuggestions). Nur VORSCHLÄGE —
+     * übernommen wird erst nach einem Tipp der Fachperson: Ein still „korrigierter"
+     * Wirkstoff in einer Engpass-Meldung wäre eine Aussage, die niemand gemacht hat.
+     * Netzfehler: `{ bekannt: null, vorschlaege: [] }` (weiß es nicht) — nie gemerkt.
+     */
+    async schreibweise(term) {
+      const begriff = String(term || '').trim();
+      if (begriff.length < 4 || /[^\p{L}\p{N}\s\-/.,()]/u.test(begriff)) return { bekannt: null, vorschlaege: [] };
+      const key = 'sp:' + begriff.toLowerCase();
+      const gecacht = cache.get(key);
+      if (gecacht !== undefined) { stats.cached++; return gecacht; }
+      stats.lookups++;
+      try {
+        if (parseRxcui(await holen(`/rxcui.json?name=${encodeURIComponent(begriff)}&search=1`))) {
+          const erg = { bekannt: true, vorschlaege: [] };
+          cache.set(key, erg); return erg;
+        }
+        const j = await holen(`/spellingsuggestions.json?name=${encodeURIComponent(begriff)}`);
+        const liste = (j && j.suggestionGroup && j.suggestionGroup.suggestionList && j.suggestionGroup.suggestionList.suggestion) || [];
+        const vorschlaege = [...new Set((Array.isArray(liste) ? liste : []).map((x) => String(x).trim()).filter((x) => x && x.toLowerCase() !== begriff.toLowerCase()))].slice(0, 3);
+        const erg = { bekannt: false, vorschlaege };
+        stats.hits++; cache.set(key, erg); return erg;
+      } catch (e) {
+        stats.errors++;
+        log.warn?.(`ApoPulse RxNorm: Schreibweise "${begriff}" nicht prüfbar — ${(e && e.message) || e}`);
+        return { bekannt: null, vorschlaege: [] };
+      }
+    },
     stats: () => ({ ...stats, cacheSize: cache.size() }),
   };
 }

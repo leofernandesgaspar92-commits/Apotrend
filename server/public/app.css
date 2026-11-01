@@ -685,6 +685,10 @@ span.vt-ok { color:var(--ok-fg); }
 
 /* Aktualität von Apotheken-Meldungen */
 .vt-alt { margin-top:6px; font-size:14px; font-weight:700; color:var(--warn-fg); }
+/* Vertrauensstufen (Sprint 4): grün = verlässlich, gelb = ungeprüft/umstritten, grau = unklar */
+.vt-detail { margin-top:4px; font-size:14px; color:var(--text, inherit); }
+.vt-stufe.vt-unklar { background:var(--chip-bg); color:var(--text, inherit); border-color:var(--line); }
+.vt-stufe.vt-umstritten { background:var(--warn-bg); color:var(--warn-fg); border:2px solid var(--warn-fg); }
 .vt-alt.vt-veraltet { color:var(--muted); font-weight:600; }
 
 /* Warnungen in Behördenmeldungen (Fälschung / Rückruf) */

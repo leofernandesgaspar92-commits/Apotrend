@@ -99,6 +99,7 @@ export function createShortagesRepo({ seed = true, today = null } = {}) {
     }));
   }
 
+  const dienstKopie = (s) => ({ ...s, confirmations: [...(s.confirmations || [])], widersprueche: (s.widersprueche || []).map(w => ({ ...w })) });
   return {
     upsert,
     // Live-/Referenz-Feed ersetzen: entfernt die NICHT von Nutzer:innen gemeldeten Einträge
@@ -145,7 +146,7 @@ export function createShortagesRepo({ seed = true, today = null } = {}) {
       s.voraussichtlich_bis = voraussichtlich_bis ?? null;
       return { ...s };
     },
-    get(id) { const s = shortages.get(id); return s ? { ...s, confirmations: [...(s.confirmations || [])], history: (s.history || []).map(h => ({ ...h })) } : null; },
+    get(id) { const s = shortages.get(id); return s ? { ...s, confirmations: [...(s.confirmations || [])], widersprueche: (s.widersprueche || []).map(w => ({ ...w })), history: (s.history || []).map(h => ({ ...h })) } : null; },
     /**
      * `country` filtert auf ein Land. Zeilen OHNE Land ("gilt ueberall")
      * kommen immer mit — sonst verschwaende ein bewusst laenderloser Eintrag
@@ -158,7 +159,7 @@ export function createShortagesRepo({ seed = true, today = null } = {}) {
       return [...shortages.values()]
         .filter((s) => !cc || !s.country || s.country === cc)
         .sort((a, b) => rank[b.status] - rank[a.status])
-        .map(s => ({ ...s, confirmations: [...(s.confirmations || [])], history: (s.history || []).map(h => ({ ...h })) }));
+        .map(s => ({ ...s, confirmations: [...(s.confirmations || [])], widersprueche: (s.widersprueche || []).map(w => ({ ...w })), history: (s.history || []).map(h => ({ ...h })) }));
     },
     // Bestätigung ("auch bei uns") durch eine Apotheke; kein Doppel, nicht der Melder.
     confirm(id, userId, am = heute()) {
@@ -174,6 +175,22 @@ export function createShortagesRepo({ seed = true, today = null } = {}) {
       if (!s || s.provenance !== 'community') return null;
       shortages.delete(id);
       return { ...s, confirmations: [...(s.confirmations || [])] };
+    },
+    // Widerspruch („stimmt nicht", mit Grund) — je Konto höchstens einer; wer widerspricht,
+    // bestätigt nicht mehr (beides zugleich wäre eine widersprüchliche Stimme).
+    widersprechen(id, eintrag) {
+      const s = shortages.get(id);
+      if (!s) return null;
+      s.widersprueche = (s.widersprueche || []).filter((w) => w.userId !== eintrag.userId);
+      s.widersprueche.push({ ...eintrag });
+      if (Array.isArray(s.confirmations)) s.confirmations = s.confirmations.filter((u) => u !== eintrag.userId);
+      return dienstKopie(s);
+    },
+    widerspruchEntfernen(id, userId) {
+      const s = shortages.get(id);
+      if (!s) return null;
+      if (Array.isArray(s.widersprueche)) s.widersprueche = s.widersprueche.filter((w) => w.userId !== userId);
+      return dienstKopie(s);
     },
     unconfirm(id, userId) {
       const s = shortages.get(id);

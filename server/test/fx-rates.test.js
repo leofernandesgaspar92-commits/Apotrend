@@ -6,7 +6,8 @@ const okResponse = () => ({ json: async () => ({ result: 'success', base_code: '
 
 test('fxRates.rates: parst gültige Antwort, cached innerhalb der TTL', async () => {
   let calls = 0;
-  const fx = createFxRates({ fetchImpl: async () => { calls++; return okResponse(); }, now: () => 1000 });
+  // Je Abruf zwei Quellen parallel (EZB/Frankfurter + open.er-api) — gezählt wird open.er-api.
+  const fx = createFxRates({ fetchImpl: async (u) => { if (String(u).includes('er-api')) calls++; return okResponse(); }, now: () => 1000 });
   const a = await fx.rates();
   assert.equal(a.base, 'EUR');
   assert.equal(a.rates.USD, 1.1);
@@ -35,7 +36,8 @@ test('fxRates: bei API-/Netzfehler letzter Stand, sonst null', async () => {
   assert.ok(first && first.rates.USD === 1.1);
   fail = true;
   const second = await fx.rates(); // TTL 0 -> neuer Versuch schlägt fehl -> letzter Stand
-  assert.deepEqual(second, first, 'Fallback auf letzten bekannten Stand');
+  assert.deepEqual(second.rates, first.rates, 'Fallback auf letzten bekannten Stand');
+  assert.equal(second.veraltet, true, 'letzter Stand nicht als veraltet gekennzeichnet');
 });
 
 test('fxRates: leere/ungültige API-Antwort -> null (kein erfundener Kurs)', async () => {

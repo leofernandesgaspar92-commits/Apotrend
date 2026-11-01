@@ -216,6 +216,15 @@ export function generateDemoDeals({ count = 8, today = new Date().toISOString().
  * Erfunden wird nur, was nötig ist: Sobald eine einzige echte Aktion läuft —
  * aus dem Feed oder selbst eingetragen — passiert hier nichts.
  */
+/**
+ * Dürfen erfundene Demo-Aktionen angelegt werden? Nur mit Referenzdaten, nicht im Test,
+ * nicht ausdrücklich abgeschaltet — und nie im Live-Betrieb (Render oder NODE_ENV=production).
+ */
+export function demoAktionenErlaubt(env, referenzDaten) {
+  const live = !!env.RENDER || env.NODE_ENV === 'production';
+  return !!referenzDaten && !live && env.NODE_ENV !== 'test' && env.APOPULSE_DEMO_DEALS !== 'off';
+}
+
 export function seedDemoDealsIfNoneRunning({ rabatteRepo, today = null, log = console } = {}) {
   const laufend = rabatteRepo.listTop10()
     .filter((r) => r.provenance !== 'simulated');

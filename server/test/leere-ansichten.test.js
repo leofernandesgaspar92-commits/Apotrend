@@ -28,7 +28,8 @@ test('Leere Engpass-Liste: keine Filterleiste; leere Preise: ein ehrlicher Satz 
   const sh = app.slice(app.indexOf('async function loadShortages('), app.indexOf('async function ladeEngpassEbene('));
   assert.match(sh, /if \(!d\.shortages\.length\) bar\.hidden = true;/);
   const pr = app.slice(app.indexOf('async function loadPrices('), app.indexOf('// CSV-Export für Einkauf/Großhandel'));
-  assert.match(pr, /if \(!d\.comparisons\.length\) \{[\s\S]*data-preiseleer[\s\S]*pr_leer_land[\s\S]*return;/);
+  // Sprint 4: „Keine Echtzeit-Lieferantenpreise …", „nie geschätzt" + Community-Richtwert statt Suche/Export.
+  assert.match(pr, /if \(!d\.comparisons\.length\) \{[\s\S]*data-preiseleer[\s\S]*pr_keine_echtzeit[\s\S]*pr_nie_erfunden[\s\S]*return;/);
 });
 
 test('Codes-Karte zweispaltig auch am Handy', () => {

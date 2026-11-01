@@ -90,7 +90,8 @@ test('Die alte Antwortform bleibt erhalten (keine Regression)', async () => {
 
 test('Der Kurs wird gecacht, nicht bei jedem Aufruf neu geholt', async () => {
   let calls = 0;
-  const counting = async () => { calls++; return okFetch(); };
+  // Je Aktualisierung zwei Quellen (EZB + open.er-api) — gezählt wird eine davon.
+  const counting = async (u) => { if (String(u).includes('er-api')) calls++; return okFetch(); };
   const svc = service(createFxRates({ fetchImpl: counting }));
   await svc.cryptoOptions('premium_monthly', { currency: 'CHF' });
   await svc.cryptoOptions('premium_monthly', { currency: 'AOA' });

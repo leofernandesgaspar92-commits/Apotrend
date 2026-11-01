@@ -5,6 +5,7 @@ import { cleanSourceUrl } from '../domain/media.js';
 import { AppError } from '../domain/errors.js';
 import { gehoertZuLand } from '../domain/land.js';
 import { wirkstoffSchluessel } from '../domain/inn.js';
+import { bewerte, HOCH_KONTOARTEN, WIDERSPRUCH_GRUENDE } from '../domain/vertrauen.js';
 
 const STATUS_LABEL = { kritisch: 'Kritischer Engpass', eingeschraenkt: 'Eingeschränkt lieferbar', verfuegbar: 'Wieder verfügbar' };
 const VALID_STATUS = Object.keys(STATUS_LABEL);
@@ -112,6 +113,20 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
   const today = () => (options.today ? options.today() : new Date().toISOString().slice(0, 10));
   // Premium-Gate (injiziert): Notizen an beobachteten Wirkstoffen sind ein Premium-Vorteil.
   const hasPremium = options.hasPremium || (() => false);
+  // Vertrauensstufe + -wert (domain/vertrauen.js) — eine Stelle für alle Ansichten.
+  // „Fachbetrieb": ein VERIFIZIERTER Großhandel/Hersteller hat gemeldet oder bestätigt.
+  function vertrauenVon(s) {
+    const profil = (uid) => (uid && social.getProfile ? social.getProfile(uid) : null);
+    const melder = profil(s.reporter_user_id);
+    const fachbetrieb = s.provenance === 'community' && [s.reporter_user_id, ...(s.confirmations || [])]
+      .map(profil).some((p) => p && p.verified && HOCH_KONTOARTEN.includes(p.account_type));
+    const wid = s.widersprueche || [];
+    return bewerte({
+      provenance: s.provenance, bestaetigt: istBestaetigt(s, today()), zaehlend: zaehlendeApotheken(s),
+      aktualitaet: aktualitaet(s, today()).stufe, meldendVerifiziert: !!(melder && melder.verified), fachbetrieb,
+      widersprueche: wid.filter((w) => !w.redaktion).length, redaktionZweifel: wid.some((w) => w.redaktion),
+    });
+  }
   // Engpass-Zeile für die Anzeige anreichern: Melder-Profil + Bestätigungen.
   function decorate(s, viewerUserId) {
     const confirmations = s.confirmations || [];
@@ -132,6 +147,14 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       apotheken_neu: s.provenance === 'community' ? apotheken - zaehlend : 0,
       aktualitaet: akt.stufe, tage_ohne_bestaetigung: akt.tage,
       erinnert: undefined, pruef_gemeldet: undefined, bestaetigt_gemeldet: undefined,
+      // Widersprüche: nur Anzahl und Gründe nach außen, keine Benutzer-IDs. Die Begründung
+      // der Redaktion ist öffentlich (sie ist die Aussage), die der Community nicht.
+      widersprueche: undefined,
+      widerspruch_anzahl: (s.widersprueche || []).filter((w) => !w.redaktion).length,
+      widerspruch_gruende: (s.widersprueche || []).filter((w) => !w.redaktion).reduce((o, w) => ({ ...o, [w.grund]: (o[w.grund] || 0) + 1 }), {}),
+      redaktion_zweifel: ((s.widersprueche || []).find((w) => w.redaktion) || {}).text || null,
+      i_disputed: !!viewerUserId && (s.widersprueche || []).some((w) => w.userId === viewerUserId),
+      vertrauen: vertrauenVon(s),
       i_confirmed: !!viewerUserId && confirmations.includes(viewerUserId),
       reporter: reporter ? { handle: reporter.handle, display_name: reporter.display_name, verified: !!reporter.verified } : null,
       is_reporter: !!viewerUserId && s.reporter_user_id === viewerUserId,
@@ -169,6 +192,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
   function bestaetigtMelden(s, actorUserId = null) {
     if (s.provenance !== 'community' || !istBestaetigt(s, today()) || shortagesRepo.wasBestaetigtGemeldet(s.id)) return false;
     if (!['kritisch', 'eingeschraenkt'].includes(s.status)) return false;
+    if (vertrauenVon(s).stufe === 'umstritten') return false;
     shortagesRepo.markBestaetigtGemeldet(s.id);
     const n = zaehlendeApotheken(s);
     const empf = new Set([...beobachterImLand(s.wirkstoff, s.country), s.reporter_user_id].filter(Boolean));
@@ -257,6 +281,8 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
     // Rohe Repo-Zeile → Anzeige-Form (für andere Dienste, z. B. die Suche): mit
     // Vertrauensstufe, OHNE interne Listen (Benutzer-IDs der Bestätigenden).
     fuerAnzeige(viewerUserId, s) { return decorate(s, viewerUserId); },
+    /** Nur die Bewertung (Daten-Schnittstelle, Vorschau) — ohne Anreicherung. */
+    vertrauenVon(s) { return vertrauenVon(s); },
 
     // ── Community-Meldung: eine Apotheke meldet einen selbst beobachteten Engpass ──
     // Herkunft klar als 'community' gekennzeichnet (nicht offiziell/BASG-verifiziert).
@@ -324,6 +350,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       requireProfessional(userId);
       const before = shortagesRepo.get(id);
       if (!before) throw new AppError('shortage_not_found', 'Engpass nicht gefunden.', 404);
+      shortagesRepo.widerspruchEntfernen(id, userId); // wer bestätigt, widerspricht nicht mehr
       const updated = shortagesRepo.confirm(id, userId, today());
       // Melder:in über Bestätigung informieren (soziales Feedback) — aber nur EINMAL je Apotheke,
       // sonst würde ein confirm/unconfirm/confirm-Toggle die Melder:in mit Meldungen fluten.
@@ -470,7 +497,36 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       const s = shortagesRepo.get(id);
       if (!s) throw new AppError('shortage_not_found', 'Engpass nicht gefunden.', 404);
       if (s.provenance !== 'community' || !['kritisch', 'eingeschraenkt'].includes(s.status)) throw new AppError('shortage_not_community', 'Nur offene Meldungen aus Apotheken lassen sich auffrischen.', 409);
+      shortagesRepo.widerspruchEntfernen(id, userId);
       return decorate(shortagesRepo.nochAktuell(id, userId, today()), userId);
+    },
+    // ── Widerspruch: „Stimmt nicht" mit Grund (Fachkreise) bzw. Zweifel der Redaktion ──
+    //  Gegen Falschmeldungen. Die Meldung bleibt sichtbar — nur ihre Stufe sinkt auf
+    //  „umstritten", sobald genug widersprechen (domain/vertrauen.js). Löschen bleibt der
+    //  Redaktion vorbehalten (modEntfernen). Die Meldende widerspricht sich nicht selbst:
+    //  Sie hat „wieder lieferbar" bzw. „Meldung ändern".
+    widersprechen(userId, id, { grund, text } = {}) {
+      requireProfessional(userId);
+      const s = shortagesRepo.get(id);
+      if (!s) throw new AppError('shortage_not_found', 'Engpass nicht gefunden.', 404);
+      if (s.provenance !== 'community') throw new AppError('widerspruch_amtlich', 'Amtliche Einträge ändert nur die Behörde. Bitte dort melden.', 409);
+      if (s.reporter_user_id === userId) throw new AppError('widerspruch_eigene', 'Eigene Meldung: bitte „Wieder lieferbar" oder „Meldung ändern" nutzen.', 409);
+      const redaktion = !!social.isModerator(userId);
+      const g = String(grund || '').trim();
+      if (!WIDERSPRUCH_GRUENDE.includes(g)) throw new AppError('widerspruch_grund', 'Bitte einen Grund wählen.', 400);
+      const t = String(text || '').trim().slice(0, 300);
+      // Die Redaktion muss begründen — ihr Zweifel wird allen angezeigt.
+      if (redaktion && t.length < 5) throw new AppError('widerspruch_text', 'Bitte kurz begründen (wird bei der Meldung angezeigt).', 400);
+      const updated = shortagesRepo.widersprechen(id, { userId, grund: g, text: t || null, am: today(), redaktion });
+      if (s.reporter_user_id && !(s.widersprueche || []).some((w) => w.userId === userId)) {
+        social.pushNotification({ userId: s.reporter_user_id, type: 'shortage_widerspruch', actorUserId: null, refType: 'shortage', refId: id, label: s.wirkstoff });
+      }
+      return decorate(updated, userId);
+    },
+    widerspruchZuruecknehmen(userId, id) {
+      const s = shortagesRepo.get(id);
+      if (!s) throw new AppError('shortage_not_found', 'Engpass nicht gefunden.', 404);
+      return decorate(shortagesRepo.widerspruchEntfernen(id, userId), userId);
     },
     // „Wieder lieferbar": nur wer gemeldet oder bestätigt hat (oder die Redaktion).
     wiederLieferbar(userId, id) {

@@ -3947,7 +3947,8 @@ async function buildCurrencyConverter(box) {
       <button class="ghost small" data-swap title="${esc(t('cc_swap'))}" aria-label="${esc(t('cc_swap'))}">⇅</button>
     </div>
     <div data-res style="font-weight:700;font-size:18px;margin-top:8px"></div>
-    <div class="muted" style="font-size:13px;margin-top:2px">${esc(ti('cc_updated', { date: data.updated_at ? new Date(data.updated_at).toLocaleDateString(bcp47()) : '—' }))} · open.er-api.com</div>`;
+    ${data.veraltet ? `<div data-ccalt style="font-size:14px;font-weight:600;color:var(--warn-fg);margin-top:4px">${esc(t('cc_veraltet'))}</div>` : ''}
+    <div class="muted" style="font-size:13px;margin-top:2px">${esc(ti('cc_updated', { date: data.updated_at ? new Date(data.updated_at).toLocaleDateString(bcp47()) : '—' }))} · <span data-ccquelle></span></div>`;
   const amt = box.querySelector('[data-amt]'), from = box.querySelector('[data-from]'), to = box.querySelector('[data-to]'), res = box.querySelector('[data-res]');
   const fmt = (n) => n.toLocaleString(t('_bcp47'), { maximumFractionDigits: 2, minimumFractionDigits: 2 });
   const recompute = () => {
@@ -3955,6 +3956,9 @@ async function buildCurrencyConverter(box) {
     if (!(a >= 0) || !(rf > 0) || !(rt > 0)) { res.textContent = '—'; return; }
     const out = (a / rf) * rt;
     res.textContent = `${fmt(a)} ${from.value} = ${fmt(out)} ${to.value}`;
+    // Quelle der beiden Kurse nennen (EZB oder open.er-api) — nie einen Kurs ohne Herkunft.
+    const q = data.quellen || {};
+    box.querySelector('[data-ccquelle]').textContent = [...new Set([q[from.value], q[to.value]].filter(Boolean))].join(' + ') || data.quelle || 'open.er-api.com';
   };
   amt.oninput = recompute; from.onchange = recompute; to.onchange = recompute;
   box.querySelector('[data-swap]').onclick = () => { const f = from.value; from.value = to.value; to.value = f; recompute(); };
@@ -3971,6 +3975,7 @@ function provenanceLegend() {
       <div class="comment">${t('pl_r')}</div>
       <div class="comment">${t('pl_e')}</div>
       <div class="comment">${t('pl_c')}</div>
+      <div class="comment" data-plvs>${t('pl_vs')}</div>
       <div class="muted" style="margin-top:6px">${esc(t('pl_note'))}</div>
     </div>
   </div>`);
@@ -4221,6 +4226,7 @@ function reportShortageCard(existing = []) {
       <label for="rep_w">${esc(t('sh_rep_w'))}</label>
       <input id="rep_w" data-w list="wkVorschlaege" autocomplete="off" placeholder="${esc(t('sh_rep_w_ph'))}"><datalist id="wkVorschlaege"></datalist>
       <div data-latein></div>
+      <div data-schreibweise aria-live="polite"></div>
       <div data-exists style="margin-top:6px"></div>
       <label for="rep_b" style="margin-top:6px">${esc(t('sh_rep_b'))}</label>
       <input id="rep_b" data-b placeholder="${esc(t('sh_rep_b_ph'))}">
@@ -4276,9 +4282,32 @@ function reportShortageCard(existing = []) {
     const dl = card.querySelector('#wkVorschlaege');
     if (dl) dl.innerHTML = [...namen.values()].sort((a, b) => a.localeCompare(b, LOCALE)).map((n) => `<option value="${esc(n)}"></option>`).join('');
   })();
+  // Schreibweise prüfen (Server: eigenes Verzeichnis, dann RxNorm): „Meinten Sie …?" mit
+  // Quelle; übernommen wird nur per Tipp. Ohne Netz kommt nichts — Melden geht trotzdem.
+  const swBox = card.querySelector('[data-schreibweise]');
+  let swNr = 0, swGeprueft = null;
+  const schreibweisePruefen = async () => {
+    const w = winput.value.trim();
+    // Gleicher Wert schon geprüft (z. B. Fokus wandert auf einen Vorschlag-Knopf): nichts
+    // neu zeichnen — sonst verschwände der Knopf genau beim Antippen.
+    if (w === swGeprueft) return;
+    swGeprueft = w; const nr = ++swNr;
+    swBox.innerHTML = '';
+    if (w.length < 4 || NICHT_LATEIN.test(w)) return;
+    let d; try { d = await api('GET', '/api/wirkstoff-pruefen?name=' + encodeURIComponent(w)); } catch { return; }
+    if (nr !== swNr || winput.value.trim() !== w || !d || !(d.vorschlaege || []).length) return;
+    const hint = el(`<div data-swhinweis role="note" style="font-size:15px;margin-top:6px;background:var(--info-bg,#eef);border:1px solid var(--info-bd,#cce);border-radius:8px;padding:8px 10px">
+      <div>${esc(t(d.bekannt ? 'sw_gefuehrt' : 'sw_meinten'))}</div>
+      <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px">${d.vorschlaege.map((v, i) => `<button class="small" data-swnimm="${i}" style="min-height:44px">${esc(v.name)}</button>`).join('')}</div>
+      <div class="muted" style="font-size:13px;margin-top:4px">${esc(ti('sw_quelle', { q: [...new Set(d.vorschlaege.map((v) => v.quelle))].join(', ') }))}</div></div>`);
+    hint.querySelectorAll('[data-swnimm]').forEach((b) => b.onclick = () => { winput.value = d.vorschlaege[Number(b.dataset.swnimm)].name; swBox.innerHTML = ''; winput.dispatchEvent(new Event('input')); winput.focus(); });
+    swBox.appendChild(hint);
+  };
+  winput.addEventListener('blur', () => { schreibweisePruefen(); });
   let deb;
   winput.oninput = () => {
     lateinHinweis(card.querySelector('[data-latein]'), winput.value);
+    swBox.innerHTML = ''; swGeprueft = null;
     clearTimeout(deb);
     deb = setTimeout(() => {
       const w = winput.value.trim().toLowerCase();
@@ -4388,6 +4417,39 @@ function shortageCountdown(s) {
     : chip(label, 'var(--chip-bg)', 'var(--muted)', 'var(--line)');
 }
 
+// ── Vertrauensstufe einer Engpass-Zeile (Server: domain/vertrauen.js) ──────
+// Jede Zeile sagt in Klartext, woher sie stammt und wie verlässlich sie ist:
+// Offiziell · Redaktion · Hohe Zuverlässigkeit · Community-verifiziert ·
+// Ungeprüfte Meldung · Status unklar · Umstritten. Der Vertrauenswert (0–100)
+// steht klein daneben — die Stufe zuerst, weil sie ohne Rechnen verständlich ist.
+function vertrauenVon(s) {
+  if (s.vertrauen && s.vertrauen.stufe) return s.vertrauen;
+  const stufe = s.provenance === 'verified' ? 'offiziell' : s.provenance === 'editorial' ? 'redaktion'
+    : s.provenance !== 'community' ? null : (s.aktualitaet && s.aktualitaet !== 'aktuell') ? 'unklar' : s.bestaetigt ? 'bestaetigt' : 'ungeprueft';
+  return { stufe, punkte: null };
+}
+function vertrauensZeile(s) {
+  const v = vertrauenVon(s);
+  const satz = (x) => (/[.!?。؟]$/.test(x) ? x : x + '.'); // Satzende vor dem nächsten Satz
+  if (!v.stufe) return '';
+  const n = s.apotheken || 1;
+  const detail = {
+    offiziell: t('vs_d_offiziell'),
+    redaktion: t('vs_d_redaktion'),
+    hoch: t('vs_d_hoch'),
+    bestaetigt: ti('vt_bestaetigt', { n }),
+    ungeprueft: satz(n >= 3 && s.apotheken_neu ? ti('vt_neu', { n }) : n === 1 ? t('vt_einzeln_1') : ti('vt_einzeln', { n })) + ' ' + t('vs_d_selbst'),
+    unklar: s.aktualitaet === 'veraltet' ? ti('ak_veraltet', { n: s.tage_ohne_bestaetigung }) : ti('ak_pruefen', { n: s.tage_ohne_bestaetigung }),
+    umstritten: s.redaktion_zweifel ? ti('vs_d_redaktion_zweifel', { text: s.redaktion_zweifel }) : ti('vs_d_widerspruch', { n: s.widerspruch_anzahl || 0 }),
+  }[v.stufe] || '';
+  const gut = ['offiziell', 'redaktion', 'hoch', 'bestaetigt'].includes(v.stufe);
+  const wid = v.stufe !== 'umstritten' && s.widerspruch_anzahl > 0 ? ` · ${ti(s.widerspruch_anzahl === 1 ? 'vs_wid_1' : 'vs_wid', { n: s.widerspruch_anzahl })}` : '';
+  const punkte = v.punkte != null && s.provenance === 'community' ? ` · ${ti('vs_punkte', { p: v.punkte })}` : '';
+  return `<div data-vertrauen="${esc(v.stufe)}" style="margin-top:6px">
+    <span class="vt-stufe vt-${esc(v.stufe)} ${gut ? 'vt-ok' : ''}" style="margin-top:0">${esc(t('vs_' + v.stufe))}</span>
+    <div class="vt-detail" ${v.stufe === 'unklar' ? `data-aktualitaet="${esc(s.aktualitaet || 'pruefen')}"` : ''}>${esc(detail)}${esc(wid)}${esc(punkte)}</div></div>`;
+}
+
 function shortageCard(s) {
   const [slabel, scol] = statusShort(s.status);
   const card = el(`<div class="card">
@@ -4403,8 +4465,7 @@ function shortageCard(s) {
     ${s.chronik&&s.chronik.anzahl>1?`<div style="margin-top:6px;font-size:14px" data-chronikzeile><span style="color:var(--warn-fg);font-weight:700">${esc(ti('ch_line',{n:s.chronik.anzahl,seit:fmtDateDe(s.chronik.aufzeichnung_seit)}))}</span>${s.chronik.durchschnitt_tage!=null?` <span class="muted">· ${esc(ti('ch_avg',{n:s.chronik.durchschnitt_tage}))}</span>`:''}</div>`:''}
     ${s.is_antibiotic?`<div style="margin-top:6px;font-size:13px"><span style="color:var(--ok-fg);font-weight:600">${esc(t('sc_abx'))}</span> — <span class="clickable" data-amr style="color:var(--ok-fg);text-decoration:underline">${esc(t('sc_abx_link'))}</span> <span class="muted">${esc(t('sc_abx_note'))}</span></div>`:''}
     ${s.price_alternatives>0&&s.status!=='verfuegbar'?`<div style="margin-top:6px"><button class="linklike small" data-alts style="color:var(--ok-fg);font-weight:700">${esc(ti('sc_alts',{n:s.price_alternatives}))}</button> <span class="muted" style="font-size:13px">${esc(t('sc_alts_note'))}</span></div>`:''}
-    ${s.provenance==='community'&&s.aktualitaet&&s.aktualitaet!=='aktuell'?`<div class="vt-alt ${s.aktualitaet==='veraltet'?'vt-veraltet':''}" data-aktualitaet="${esc(s.aktualitaet)}">${esc(s.aktualitaet==='veraltet'?ti('ak_veraltet',{n:s.tage_ohne_bestaetigung}):ti('ak_pruefen',{n:s.tage_ohne_bestaetigung}))}</div>`:''}
-    ${s.provenance==='community'?`<div class="vt-stufe ${s.bestaetigt?'vt-ok':''}" data-vertrauen="${s.bestaetigt?'bestaetigt':'einzeln'}">${esc(s.bestaetigt?ti('vt_bestaetigt',{n:s.apotheken}):s.apotheken>=3&&s.apotheken_neu?ti('vt_neu',{n:s.apotheken}):s.apotheken===1?t('vt_einzeln_1'):ti('vt_einzeln',{n:s.apotheken}))}</div>`:''}
+    ${vertrauensZeile(s)}
     ${s.provenance==='community'&&s.reporter?`<div class="muted" style="font-size:13px;margin-top:2px">${esc(t('sc_reported_by'))} <b><bdi dir="ltr">@${esc(s.reporter.handle)}</bdi></b>${s.reporter.verified?' <span class="verified">✔</span>':''}</div>`:''}
     ${s.provenance==='community'&&s.status!=='verfuegbar'&&!(me&&me.account_type==='private')?`<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px" data-aktknoepfe>
       ${s.aktualitaet&&s.aktualitaet!=='aktuell'?`<button class="small" data-nochaktuell style="min-height:44px">${esc(t('ak_noch_knapp'))}</button>`:''}
@@ -4420,10 +4481,24 @@ function shortageCard(s) {
       ${s.provenance==='community'&&!s.is_reporter&&!(me&&me.account_type==='private')?(s.i_confirmed
         ? `<span style="display:inline-flex;align-items:center;font-weight:700;color:var(--ok-fg)">${esc(t('sc_confd_btn'))}</span><button class="ghost" data-unconfirm>${esc(t('sc_unconfirm_btn'))}</button>`
         : `<button class="ghost" data-confirm>${esc(t('sc_conf_btn'))}</button>`):''}
+      ${s.provenance==='community'&&!s.is_reporter&&s.status!=='verfuegbar'&&!(me&&me.account_type==='private')?(s.i_disputed
+        ? `<span style="display:inline-flex;align-items:center;font-weight:700">${esc(t('ws_du'))}</span><button class="ghost" data-widerruf>${esc(t('ws_zurueck'))}</button>`
+        : `<button class="ghost" data-widerspruch aria-expanded="false">${esc(t('ws_btn'))}</button>`):''}
       ${/* „Wieder lieferbar" für Meldende steht schon oben (data-wiederlieferbar) — hier doppelt war verwirrend. */''}
       ${s.provenance==='community'&&s.is_reporter&&s.status!=='verfuegbar'?`<button class="ghost" data-datebtn>${esc(t('sc_setdate'))}</button>`:''}
       ${s.provenance==='community'&&s.is_reporter&&s.status!=='verfuegbar'?`<button class="ghost" data-repstatusbtn>${esc(t('sc_repstatus'))}</button>`:''}
       ${(s.history||[]).length>1?`<button class="ghost" data-hist aria-expanded="false">${esc(t('sc_history'))} (${s.history.length})</button>`:''}
+    </div>
+    <div class="comments hidden" data-widerspruchbox>
+      <label style="font-size:15px;font-weight:600" for="wsg_${esc(s.id)}">${esc(t('ws_frage'))}</label>
+      <select data-wsgrund id="wsg_${esc(s.id)}" style="margin-top:6px;min-height:44px;width:100%">
+        <option value="">${esc(t('kg_bitte'))}</option>
+        ${['bei_uns_lieferbar','falscher_wirkstoff','doppelt','sonstiges'].map((g) => `<option value="${g}">${esc(t('ws_g_' + g))}</option>`).join('')}
+      </select>
+      <label style="font-size:14px;display:block;margin-top:8px" for="wst_${esc(s.id)}">${esc(t(iAmModerator ? 'ws_text_red' : 'ws_text'))}</label>
+      <input data-wstext id="wst_${esc(s.id)}" maxlength="300" style="width:100%;min-height:44px">
+      <div class="muted" style="font-size:14px;margin-top:6px">${esc(t('ws_hinweis'))}</div>
+      <button data-wssenden style="margin-top:8px;min-height:44px">${esc(t('ws_senden'))}</button>
     </div>
     <div class="comments hidden" data-repstatusbox>
       <label style="font-size:13px" for="rst_${esc(s.id)}">${esc(t('sc_repstatus_label'))}</label>
@@ -4538,6 +4613,20 @@ function shortageCard(s) {
     }
     catch(e){ alert(e.message); confirmBtn.disabled = false; }
   };
+  { // Widerspruch: Grund wählen (Pflicht), optional begründen, senden. Zurücknehmen jederzeit.
+    const wb = card.querySelector('[data-widerspruch]'), box = card.querySelector('[data-widerspruchbox]');
+    if (wb && box) wb.onclick = () => { const offen = box.classList.toggle('hidden'); wb.setAttribute('aria-expanded', String(!offen)); if (!offen) box.querySelector('[data-wsgrund]').focus(); };
+    const send = card.querySelector('[data-wssenden]');
+    if (send) send.onclick = async () => {
+      const grund = box.querySelector('[data-wsgrund]').value;
+      if (!grund) { alert(t('vg_grund_fehlt')); return; }
+      send.disabled = true;
+      try { await api('POST', `/api/shortages/${s.id}/widerspruch`, { grund, text: box.querySelector('[data-wstext]').value }); loadShortages(); }
+      catch (e) { alert(e.message); send.disabled = false; }
+    };
+    const wr = card.querySelector('[data-widerruf]');
+    if (wr) wr.onclick = async () => { wr.disabled = true; try { await api('DELETE', `/api/shortages/${s.id}/widerspruch`); loadShortages(); } catch (e) { alert(e.message); wr.disabled = false; } };
+  }
   const unconfirmBtn = card.querySelector('[data-unconfirm]');
   if (unconfirmBtn) unconfirmBtn.onclick = async () => {
     unconfirmBtn.disabled = true;
@@ -4629,7 +4718,26 @@ async function loadPrices() {
     // Für dieses Land gibt es (noch) keine Preise: das sagen, statt „Kein Präparat für
     // diese Suche" unter einer leeren Suche — und ohne Export/Filter für null Zeilen.
     if (!d.comparisons.length) {
-      feed.appendChild(el(`<div class="card" data-preiseleer><div style="font-size:16px">${esc(ti('pr_leer_land', { land: landAnzeige(viewCountry()) }))}</div></div>`));
+      // Nie geschätzt, nie erfunden: ehrlich sagen und eine Community-Frage anbieten.
+      // Antworten sind Erfahrungswerte (als Frage im Feed), keine Lieferantenangebote.
+      const leer = el(`<div class="card" data-preiseleer>
+        <div style="font-size:17px;font-weight:700">${esc(ti('pr_keine_echtzeit', { land: landAnzeige(viewCountry()) }))}</div>
+        <div style="font-size:15px;margin-top:4px">${esc(t('pr_nie_erfunden'))}</div>
+        <label for="rw_p" style="display:block;font-size:15px;margin-top:10px">${esc(t('pr_rw_label'))}</label>
+        <input id="rw_p" data-rwp maxlength="120" placeholder="${esc(t('pr_rw_ph'))}" style="width:100%;min-height:44px">
+        <button data-rwgo style="margin-top:8px;min-height:44px">${esc(t('pr_rw_btn'))}</button>
+        <div data-rwok class="muted" style="font-size:15px;margin-top:6px" role="status"></div></div>`);
+      leer.querySelector('[data-rwgo]').onclick = async () => {
+        const p = leer.querySelector('[data-rwp]').value.trim();
+        if (!p) { leer.querySelector('[data-rwp]').focus(); return; }
+        const b = leer.querySelector('[data-rwgo]'); b.disabled = true;
+        try {
+          await api('POST', '/api/posts', { body: ti('pr_rw_text', { p, land: landAnzeige(viewCountry()) }), visibility: 'public', kind: 'frage' });
+          leer.querySelector('[data-rwok]').textContent = t('pr_rw_ok'); leer.querySelector('[data-rwp]').value = '';
+        } catch (e) { alert(e.message); }
+        b.disabled = false;
+      };
+      feed.appendChild(leer);
       return;
     }
     // CSV-Export für Einkauf/Großhandel (Excel-tauglich)
@@ -10223,7 +10331,7 @@ async function showNotifications() {
   setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_home:'🔴', shortage_ended:'✅', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', shortage_abroad:'🌍', shortage_bestaetigt:'🤝', shortage_noch_aktuell:'⏰', einladung:'👥', shortage_entfernt:'🛡️', meldung_pruefen:'🛡️', premium_ablauf:'⏳', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️', verify_rejected:'⚠️' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_home:'🔴', shortage_ended:'✅', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', shortage_abroad:'🌍', shortage_bestaetigt:'🤝', shortage_noch_aktuell:'⏰', shortage_widerspruch:'✋', einladung:'👥', shortage_entfernt:'🛡️', meldung_pruefen:'🛡️', premium_ablauf:'⏳', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️', verify_rejected:'⚠️' };
   app.innerHTML = '';
   const procCount = d.notifications.filter(n => NOTIF_PROCUREMENT.has(n.type)).length;
   const showFilter = d.notifications.length >= 5 && procCount > 0 && procCount < d.notifications.length;
@@ -10256,7 +10364,7 @@ async function showNotifications() {
     const who = n.actor ? n.actor.display_name : t('notif_someone');
     // Systemmeldungen ohne handelnde Person: Hier hat niemand etwas getan,
     // eine Behoerde hat gemeldet. „Jemand hat …" waere schlicht falsch.
-    const noWho = n.type === 'shortage_entfernt' || n.type === 'meldung_pruefen' || n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'shortage_bestaetigt' || n.type === 'shortage_noch_aktuell' || n.type === 'shortage_home' || n.type === 'shortage_ended' || /^anzeige_/.test(n.type) || n.type === 'premium_ablauf' || n.type === 'payment_confirmed' || n.type === 'payment_rejected' || n.type === 'verify_rejected';
+    const noWho = n.type === 'shortage_entfernt' || n.type === 'meldung_pruefen' || n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'shortage_bestaetigt' || n.type === 'shortage_noch_aktuell' || n.type === 'shortage_widerspruch' || n.type === 'shortage_home' || n.type === 'shortage_ended' || /^anzeige_/.test(n.type) || n.type === 'premium_ablauf' || n.type === 'payment_confirmed' || n.type === 'payment_rejected' || n.type === 'verify_rejected';
     // Profilbild der handelnden Person (wer) + Typ-Emoji (was) — auf einen Blick erkennbar,
     // konsistent zu Feed/Verzeichnis/Suche. Ohne Person (System-Meldung) nur das Emoji.
     const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:var(--ok-bg)'}">
@@ -10281,7 +10389,7 @@ async function showNotifications() {
       else if (n.type === 'anzeige_pruefen' || n.type === 'anzeige_gemeldet') { showModeration(); }
       else if (/^anzeige_/.test(n.type)) { openWerbung(); }
       else if (/^shortage_(abroad|home|ended)$/.test(n.type)) { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
-      else if (n.type === 'shortage_noch_aktuell') { mainScreen().then(() => goTab('shortages')); }
+      else if (n.type === 'shortage_noch_aktuell' || n.type === 'shortage_widerspruch') { mainScreen().then(() => goTab('shortages')); }
       else if (n.type === 'shortage_bestaetigt') { const w = n.ref_id || (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
       else if (n.type === 'verify_rejected') zurVerifizierung(); // Grund steht im Antrag, gleich neu stellen
       else if (n.type === 'watch_alert') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
