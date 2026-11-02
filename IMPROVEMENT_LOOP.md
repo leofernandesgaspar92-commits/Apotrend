@@ -4161,3 +4161,11 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Behoben:** nur offene Meldungen (kritisch/eingeschränkt), gezählt am Tag der Erstmeldung (`history[0]`).
 - Test (Entwarnung, Umstufung, kürzlich behoben, echte neue Meldungen) + 2 Gegenproben rot (eine erst nach
   Ergänzen des Falls „kürzlich gemeldet, schon behoben").
+
+### Zulassungs-Panel: nichts abgeschnitten, Generika getrennt (2026-11-02)
+- **Fund:** openFDA-Abfrage mit `limit=100` für 60 Tage Erstzulassungen — darunter Dutzende Generika (ANDA) je
+  Monat; neue Wirkstoffe konnten abgeschnitten werden, die Onkologie-Liste füllte sich mit Generika, und jedes
+  Generikum hätte Abonnent:innen benachrichtigt.
+- **Behoben:** `limit=1000` (openFDA-Höchstwert), Zeitlimit 20 s; Kennzeichnung NDA/BLA/ANDA („Neues Arzneimittel",
+  „Neues Biologikum", „Generikum (neue Bezugsquelle)"), neue Therapien zuerst; Benachrichtigung nur für NDA/BLA.
+  Test + 2 Gegenproben.

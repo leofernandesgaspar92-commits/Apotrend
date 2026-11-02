@@ -261,8 +261,10 @@ prüfen" statt einer Behauptung „zugelassen". Gleiche ATC-Gruppe heißt nicht 
 
 **3. Neue Zulassungen & Studienergebnisse:** US-FDA-Erstzulassungen (openFDA drugsfda) und neu
 veröffentlichte Studienergebnisse (ClinicalTrials.gov) der letzten 60 Tage, nach Fachgebiet
-(Onkologie, Infektionen & Impfstoffe, Diabetes, Herz & Kreislauf). Abo je Fachgebiet: neue
-Zulassungen kommen als Benachrichtigung (täglicher Lauf). Die WHO hat für Studienergebnisse keine
+(Onkologie, Infektionen & Impfstoffe, Diabetes, Herz & Kreislauf). Jeder Eintrag ist gekennzeichnet als
+„Neues Arzneimittel“ (NDA), „Neues Biologikum“ (BLA) oder „Generikum (neue Bezugsquelle)“ (ANDA); neue
+Therapien stehen oben. Abo je Fachgebiet: Benachrichtigung nur bei neuen Therapien, nicht bei Generika
+(täglicher Lauf). Die WHO hat für Studienergebnisse keine
 offene Schnittstelle; WHO-Daten nutzt der Radar.
 
 **4. Ausbruchs- & Nachfrage-Radar:** Signal = mindestens 3 neue Engpass-Einträge (Behördenlisten

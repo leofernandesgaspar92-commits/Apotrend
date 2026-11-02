@@ -288,3 +288,13 @@ test('Ausbruchs-Radar: Entwarnungen („wieder lieferbar") und Statuswechsel zä
   assert.equal(regionaleSignale({ episoden: [], meldungen: neu, regionVon, heute }).length, 1);
 });
 
+
+test('Zulassungen: Antragsart NDA/BLA/ANDA, neue Therapien zuerst; Benachrichtigung nur für neue Therapien, nicht für Generika', async () => {
+  const { zuBenachrichtigen } = await import('../src/services/extern/medint.js');
+  const r = (nr, datum) => ({ application_number: nr, submissions: [{ submission_type: 'ORIG', submission_status: 'AP', submission_status_date: datum }], products: [{ brand_name: nr }], openfda: { pharm_class_epc: ['Kinase Inhibitor [EPC]'] } });
+  const z = fdaLesen({ results: [r('ANDA212345', '20261030'), r('NDA219999', '20261001'), r('BLA761234', '20261015')] }, { ab: '20260901' });
+  assert.deepEqual(z.map((e) => [e.titel, e.typ]), [['BLA761234', 'biologikum'], ['NDA219999', 'neu'], ['ANDA212345', 'generikum']], 'Generikum vor neuer Therapie oder falsch eingeordnet');
+  const ab = createMedIntAbos(); ab.setzen('onko', ['onkologie']);
+  zuBenachrichtigen(ab, { daten: [] }); // erster Lauf
+  assert.deepEqual(zuBenachrichtigen(ab, { daten: z }).map((x) => x.eintrag.typ).sort(), ['biologikum', 'neu'], 'Generikum hat benachrichtigt');
+});

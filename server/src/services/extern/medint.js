@@ -37,13 +37,17 @@ export function fdaLesen(j, { ab }) {
     const prod = (r.products || [])[0] || {};
     const of = r.openfda || {};
     const wirkstoffe = [...new Set([...(of.generic_name || []), ...((prod.active_ingredients || []).map((a) => a && a.name))].filter(Boolean).map((x) => String(x).toLowerCase()))];
+    // Antragsart: NDA = neues Arzneimittel, BLA = Biologikum, ANDA = Generikum (neue Bezugsquelle,
+    // aber keine neue Therapie — darum ohne Benachrichtigung, siehe createMedIntAbos).
+    const typ = /^BLA/i.test(r.application_number) ? 'biologikum' : /^ANDA/i.test(r.application_number) ? 'generikum' : 'neu';
     out.push({
-      id: 'fda:' + r.application_number, art: 'zulassung', quelle: 'US-FDA (openFDA)', link: fdaLink(r.application_number),
+      id: 'fda:' + r.application_number, art: 'zulassung', typ, quelle: 'US-FDA (openFDA)', link: fdaLink(r.application_number),
       datum: ausFda(sub.submission_status_date), titel: String(prod.brand_name || (of.brand_name || [])[0] || wirkstoffe[0] || r.application_number),
       wirkstoffe, hersteller: r.sponsor_name || null, klassen: (of.pharm_class_epc || []).slice(0, 4), darreichung: prod.dosage_form || null,
     });
   }
-  return out.sort((a, b) => String(b.datum).localeCompare(String(a.datum)));
+  // Neue Therapien zuerst, darin die jüngsten.
+  return out.sort((a, b) => Number(a.typ === 'generikum') - Number(b.typ === 'generikum') || String(b.datum).localeCompare(String(a.datum)));
 }
 
 /** ClinicalTrials.gov v2 → Studien mit neu veröffentlichten Ergebnissen. Wirft bei unbrauchbarer Antwort. */
@@ -74,13 +78,15 @@ export function passtZu(eintrag, bereich) {
 }
 
 export function createMedInt({ speicher, fetchImpl, jetzt = () => Date.now(), tage = 60 } = /** @type {any} */ ({})) {
-  const fda = createAbruf({ name: 'openfda_zulassungen', quelle: 'US-FDA (openFDA drugsfda)', link: 'https://open.fda.gov/apis/drug/drugsfda/', ttlMs: 12 * 3_600_000, speicher, fetchImpl, jetzt });
+  // 60 Tage Erstzulassungen sind wegen der vielen Generika oft >100 Einträge; 1000 ist der openFDA-Höchstwert
+  // je Abfrage. Größere Antwort → mehr Zeit (nur zweimal am Tag abgerufen).
+  const fda = createAbruf({ name: 'openfda_zulassungen', quelle: 'US-FDA (openFDA drugsfda)', link: 'https://open.fda.gov/apis/drug/drugsfda/', ttlMs: 12 * 3_600_000, speicher, fetchImpl, jetzt, zeitlimitMs: 20_000 });
   const ct = createAbruf({ name: 'clinicaltrials', quelle: 'ClinicalTrials.gov (NIH)', link: 'https://clinicaltrials.gov/data-api/api', ttlMs: 12 * 3_600_000, speicher, fetchImpl, jetzt });
   return {
     async zulassungen() {
       const bis = new Date(jetzt()), von = new Date(jetzt() - tage * 86_400_000);
       const ab = tagFda(von);
-      const url = 'https://api.fda.gov/drug/drugsfda.json?search=' + encodeURIComponent(`submissions.submission_type:"ORIG" AND submissions.submission_status:"AP" AND submissions.submission_status_date:[${ab} TO ${tagFda(bis)}]`).replace(/%20/g, '+') + '&limit=100';
+      const url = 'https://api.fda.gov/drug/drugsfda.json?search=' + encodeURIComponent(`submissions.submission_type:"ORIG" AND submissions.submission_status:"AP" AND submissions.submission_status_date:[${ab} TO ${tagFda(bis)}]`).replace(/%20/g, '+') + '&limit=1000';
       return fda.holen('neu', url, (j) => fdaLesen(j, { ab }));
     },
     async studien(bereich) {
@@ -125,7 +131,8 @@ export function createMedIntAbos() {
       for (const z of neu) gesehen.add(z.id);
       if (ersterLauf) { ersterLauf = false; return []; }
       const out = [];
-      for (const [userId, bs] of abos) for (const z of neu) { const b = [...bs].find((x) => passtZu(z, x)); if (b) out.push({ userId, eintrag: z, bereich: b }); }
+      // Benachrichtigt wird nur über neue Therapien (NDA/BLA) — ein Generikum ist keine neue Behandlungsmöglichkeit.
+      for (const [userId, bs] of abos) for (const z of neu) { if (z.typ === 'generikum') continue; const b = [...bs].find((x) => passtZu(z, x)); if (b) out.push({ userId, eintrag: z, bereich: b }); }
       return out;
     },
     __dump: () => ({ abos: [...abos].map(([u, s]) => [u, [...s]]), gesehen: [...gesehen].slice(-2000), erster: ersterLauf }),

@@ -9919,7 +9919,7 @@ async function openMedInt(bereich = 'onkologie') {
   app.appendChild(box);
   let d; try { d = await api('GET', '/api/medint?bereich=' + encodeURIComponent(bereich)); } catch (e) { box.innerHTML = ''; box.appendChild(errorState(e.message, () => openMedInt(bereich))); return; }
   const eintrag = (e) => `<div class="comment" style="font-size:15px" data-mieintrag>
-    <div><b>${esc(e.titel)}</b>${e.wirkstoffe && e.wirkstoffe.length ? ` <span class="muted">(${esc(e.wirkstoffe.slice(0, 3).join(', '))})</span>` : ''}</div>
+    <div>${e.typ ? `<span class="vt-stufe ${e.typ === 'generikum' ? '' : 'vt-ok'}" style="margin:0 0 4px;font-size:13px">${esc(t('mi_typ_' + e.typ))}</span><br>` : ''}<b>${esc(e.titel)}</b>${e.wirkstoffe && e.wirkstoffe.length ? ` <span class="muted">(${esc(e.wirkstoffe.slice(0, 3).join(', '))})</span>` : ''}</div>
     <div class="muted" style="font-size:14px">${esc([e.datum ? fmtDateDe(e.datum) : null, e.hersteller, e.phase ? ti('mi_phase', { p: e.phase }) : null].filter(Boolean).join(' · '))}</div>
     <div style="font-size:14px;margin-top:2px"><a href="${esc(e.link)}" target="_blank" rel="noopener">${esc(t('hf_quelle'))}: ${esc(e.quelle)}</a>
     ${e.art === 'zulassung' ? ` · <button class="linklike small" data-mibezug="${esc(e.titel)}">${esc(t('mi_bezug'))}</button>` : ''}</div></div>`;
