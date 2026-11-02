@@ -4089,3 +4089,25 @@ Herkunft amtlich/Community, Schwelle 3 Apotheken mit 24-Stunden-Bremse gegen Sch
 Sichtprüfung 360 px: kein Querscrollen; fehlender Satzpunkt korrigiert. Französisch: „au Sénégal"
 über die Präpositions-Hilfe (Audit fand „pour le").
 
+### Sprint 5 · Internationale Beschaffung, Cross-Check, neue Therapien, Ausbruchs-Radar (2026-11-02)
+
+Owner-Auftrag: B2B-Beschaffung mit Einstandskosten/ETA/Proforma, Einfuhr-Alternativen,
+Zulassungs-/Studien-Signale, Pandemie-Frühwarnung. Leitlinie aus Sprint 4 beibehalten: rechnen ja,
+schätzen nein, Quelle an jedem Eintrag.
+1. **/sourcing** (`services/sourcing.js`): Einstandskosten mit korrekter Zoll-Basis (CIF; FOB für
+   US/CA/AU/NZ), Einfuhrumsatzsteuer auf Zollwert + Zoll, Kurse EZB/open.er-api mit Quelle; Fracht
+   und Zollsatz von der Fachperson (keine erfundenen Pauschalen). Ankunft = Transitzeit laut
+   Spediteur + echte Hafensignale. Proforma-Anfrage → Redaktions-Cockpit (+ optional E-Mail),
+   Status/Antwort mit Benachrichtigung.
+2. **Cross-Check**: ATC-Gruppe Stufe 4 über RxClass, Lage im Zielland je Wirkstoff, Behörden-Link.
+   Bewusst KEIN „zugelassen" (kein Register angebunden) und kein „baugleich".
+3. **Neue Zulassungen & Studien** (`extern/medint.js`): openFDA drugsfda (nur ORIG/AP im Zeitraum)
+   + ClinicalTrials.gov v2; Fachgebiets-Abo, erster Lauf still.
+4. **Ausbruchs-Radar** (`services/ausbruch.js`): WHO DON + regionaler Anstieg (≥3 neu und ≥2× Vorperiode),
+   Alarm nur an Großhandel/Hersteller anderer Regionen, Pause 14 Tage; keine „+25 %"-Empfehlung.
+**Geprüft:** global-b2b.test.js (8, u. a. HTTP mit Neustart: Redaktion + gesicherte Kurse), Browser-Audit
+„B2B" (360 px, Rechner offline ehrlich, Ergebnis mit Basis/Quelle/Ankunft/Hafen, Proforma, Cross-Check
+ohne Zulassungsbehauptung, Panels mit Einordnung, Privat gesperrt), 14 Gegenproben rot.
+**Grenze:** Live-Antworten von openFDA, ClinicalTrials.gov, WHO und RxClass von hier nicht erreichbar —
+Formate aus der Dokumentation; nach dem Deploy zeigt „Externe Daten" im Cockpit den Stand.
+

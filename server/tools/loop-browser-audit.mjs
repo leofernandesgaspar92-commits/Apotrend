@@ -2948,6 +2948,60 @@ async function main() {
     await ctx.close();
   }
 
+  // ── Sprint 5: Internationale Beschaffung, Cross-Check, neue Therapien, Ausbruchs-Radar ──
+  //  Rechner rechnet nur mit Eingaben/echten Kursen; Quellen offline → ehrlich; Privatkonto gesperrt.
+  {
+    const reg = async (n, typ) => (await api('/api/register', { method: 'POST', body: JSON.stringify({ name: n, email: `${n}_${uniq}@ex.com`, password: 'Passwort123!', country: 'KE', locale: 'en', accountType: typ }) })).token;
+    const tok = await reg('b2bgh', 'wholesale'), pv = await reg('b2bpv', 'private');
+    const seite = async (t, pfad = '/') => {
+      const ctx = await browser.newContext({ viewport: { width: 360, height: 740 }, locale: 'en-KE', serviceWorkers: 'block' });
+      const page = await ctx.newPage(); const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+      await page.addInitScript((x) => { localStorage.setItem('apo_token', x); localStorage.setItem('apo_welcome_seen', '1'); localStorage.setItem('apo_install', 'fertig'); }, t);
+      await page.goto(BASE + pfad, { waitUntil: 'networkidle' }); await page.waitForTimeout(900);
+      return { ctx, page, fehler };
+    };
+    const { ctx, page, fehler } = await seite(tok, '/sourcing');
+    if (!(await page.locator('[data-sourcing]').count())) findings.push('B2B: /sourcing öffnet den Rechner nicht');
+    const breite = await page.evaluate(() => document.documentElement.scrollWidth);
+    if (breite > 362) findings.push(`B2B: Rechner scrollt seitlich (${breite}px)`);
+    // a) Kurse offline → ehrliche Meldung statt Zahl
+    await page.fill('#sc_ware', '1000'); await page.click('[data-rechnen]'); await page.waitForTimeout(700);
+    const aus = await page.locator('[data-ergebnis]').innerText();
+    if (!/exchange rate|not available/i.test(aus) || /KES\s?[\d,]+\.\d\d/.test(aus)) findings.push(`B2B: Rechner ohne Kurse nicht ehrlich (${aus.slice(0, 100)})`);
+    // b) Mit Ergebnis (abgefangen): Posten, Basis, Quelle, Ankunft, Hafen-Hinweis, Proforma
+    await page.route('**/api/sourcing/kalkulation', (rt) => rt.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ waehrung: 'KES', menge: 1000, zoll_basis: 'CIF', posten: [{ art: 'ware', betrag: 127272.73 }, { art: 'fracht', betrag: 10181.82 }, { art: 'zoll', betrag: 13745.45, basis: 'CIF', satz: 10 }], cif: 137454.55, gesamt: 151200, je_einheit: 151.2, kurse: { stand: Date.now(), veraltet: false, quellen: ['EZB (Frankfurter)', 'open.er-api.com'] }, ankunft: '2026-12-01', transport: 'see', hafen: { id: 'mombasa', name: 'Mombasa', hinweise: [{ datum: '2026-11-03', art: 'sturm', wert: 80 }], schiffe: { im_gebiet: 40, vor_anker: 12 } } }) }));
+    await page.click('[data-rechnen]'); await page.waitForTimeout(600);
+    const erg = await page.locator('[data-scergebnis]').innerText().catch(() => '');
+    for (const [rx, was] of [[/Total landed cost/, 'Gesamt'], [/CIF/, 'Zoll-Basis'], [/EZB \(Frankfurter\)/, 'Kursquelle'], [/Expected arrival/, 'Ankunft'], [/Storm gusts/, 'Hafen-Warnung'], [/40 ships/, 'Schiffe']]) if (!rx.test(erg)) findings.push(`B2B: Ergebnis ohne ${was}`);
+    await page.unroute('**/api/sourcing/kalkulation');
+    await page.fill('#sc_prod', 'Amoxicillin 500 mg'); await page.click('[data-proforma]'); await page.waitForTimeout(900);
+    if (!/Request sent/.test(await page.locator('[data-pfok]').innerText().catch(() => ''))) findings.push('B2B: Proforma-Anfrage nicht bestätigt');
+    if (!/Amoxicillin 500 mg[\s\S]*Sent/.test(await page.locator('[data-meineanfragen]').innerText().catch(() => ''))) findings.push('B2B: „My requests" zeigt die Anfrage nicht');
+    // c) Cross-Check: keine Zulassungsbehauptung, Behörde, ATC offline ehrlich
+    await page.fill('#cx_w', 'Amoxicillin'); await page.selectOption('#cx_l', 'MA'); await page.click('[data-cxgo]'); await page.waitForTimeout(900);
+    const cx = await page.locator('[data-cxergebnis]').innerText().catch(() => '');
+    if (!/check authorisation .* in the official register/i.test(cx) || !/AMMPS/.test(cx)) findings.push(`B2B: Cross-Check ohne Register-Hinweis/Behörde (${cx.slice(0, 120)})`);
+    if (/\bauthorised\b(?! in the destination)/i.test(cx.replace(/check authorisation/i, ''))) findings.push('B2B: Cross-Check behauptet eine Zulassung');
+    await ctx.close();
+    // d) Neue Therapien & Radar: Regeln und ehrliche Leere
+    const m = await seite(tok);
+    await m.page.evaluate(() => openMedInt()); await m.page.waitForTimeout(900);
+    const mi = await m.page.locator('[data-medint]').innerText();
+    if (!/does not mean the medicine is authorised/.test(mi) || !/not a treatment recommendation/.test(mi)) findings.push('B2B: Zulassungs-Panel ohne Einordnung');
+    if (!/not reachable|Nothing new/.test(mi)) findings.push('B2B: Zulassungs-Panel ohne ehrlichen Leer-/Ausfallzustand');
+    await m.page.evaluate(() => openAusbruch()); await m.page.waitForTimeout(900);
+    const ab = await m.page.locator('[data-ausbruch]').innerText();
+    if (!/Not a purchase recommendation/.test(ab)) findings.push('B2B: Radar ohne „keine Kaufempfehlung"');
+    if (/\+\s?\d+\s?%/.test(ab)) findings.push('B2B: Radar nennt eine Prozent-Empfehlung');
+    for (const f of [...fehler, ...m.fehler]) findings.push('B2B: JS-Fehler ' + f);
+    await m.ctx.close();
+    // e) Privatkonto: gesperrt mit Klartext
+    const p2 = await seite(pv, '/sourcing');
+    if (!(await p2.page.locator('[data-b2bprivat]').count()) || (await p2.page.locator('[data-sourcing]').count())) findings.push('B2B: Privatkonto sieht den Beschaffungs-Rechner');
+    await p2.ctx.close();
+    if (!findings.some((f) => f.startsWith('B2B'))) console.log('✓ B2B: /sourcing rechnet nur mit Kursen (sonst ehrlich), Ergebnis mit Basis/Quelle/Ankunft/Hafen, Proforma kommt an, Cross-Check ohne Zulassungsbehauptung, Panels mit Einordnung, Privat gesperrt');
+  }
+
   await browser.close();
   stopServer();
 

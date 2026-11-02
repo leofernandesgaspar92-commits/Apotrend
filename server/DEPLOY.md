@@ -232,6 +232,51 @@ optional als `DIRECT_URL`.
 `"version":{"commit":"…"}`. `connected:false` mit `error` und `next_retry` heißt: Datenbank gerade
 nicht erreichbar, der Server versucht es selbst weiter.
 
+## Internationale Beschaffung, Cross-Check, neue Therapien, Ausbruchs-Radar (Sprint 5)
+
+Vier Bereiche für Fachkreise (nicht für Privatkonten), auf der Startseite unter den Werkzeugen:
+
+**1. Internationale Beschaffung — `https://<adresse>/sourcing`**
+- Einstandskosten-Rechner: Warenwert, Fracht, Versicherung, Zollsatz, Einfuhrumsatzsteuer,
+  Gebühren, Menge. **Fracht und Zollsatz trägt die Fachperson ein** (laut Spediteur bzw. Zoll) —
+  ApoPulse schätzt sie nicht, weil es keine verlässliche freie Quelle gibt und ein Pauschalwert
+  wie ein Angebot aussähe. Gerechnet wird richtig: Zoll auf **CIF** (die meisten Länder) bzw.
+  **FOB** (USA, Kanada, Australien, Neuseeland), Einfuhrumsatzsteuer auf Zollwert + Zoll.
+  Umrechnung über die vorhandenen Kurse (EZB/Frankfurter vor open.er-api), Quelle wird genannt.
+  Fehlt ein Kurs, sagt der Rechner das.
+- Ankunft = heute + Transitzeit laut Spediteur. Für Kenia/Uganda (Mombasa), Ghana (Tema),
+  Nigeria (Lagos), Südafrika (Durban) u. a. kommen echte Wetterwarnungen (Open-Meteo) und
+  wartende Schiffe (AISStream, mit Schlüssel) als **Hinweis** dazu.
+- „Angebot / Proforma-Rechnung anfordern": Die Anfrage landet im **Redaktions-Cockpit**
+  (Abschnitt „Proforma-Anfragen") mit Betrieb, Kontoart, Land, Verifizierung. Dort setzt das
+  Handelsteam den Stand (in Bearbeitung / beantwortet / abgelehnt) mit Antwort; der Betrieb wird
+  benachrichtigt. Optional zusätzlich per E-Mail: **`APOPULSE_HANDEL_EMAIL`** (braucht den
+  Mailversand). Weitervermittlung an Großhändler macht das Handelsteam selbst.
+
+**2. Zulassung & Alternativen prüfen** (auf derselben Seite): Lage des Wirkstoffs im Zielland
+(Behördenliste/Apotheken-Meldungen), Link zur zuständigen Behörde, und Wirkstoffe **derselben
+ATC-Gruppe** (WHO-ATC über RxClass/NIH) mit ihrer Lage im Zielland. ApoPulse führt **keine
+Zulassungsregister** — deshalb steht dort „Zulassung in {Land} bitte im amtlichen Register
+prüfen" statt einer Behauptung „zugelassen". Gleiche ATC-Gruppe heißt nicht austauschbar.
+
+**3. Neue Zulassungen & Studienergebnisse:** US-FDA-Erstzulassungen (openFDA drugsfda) und neu
+veröffentlichte Studienergebnisse (ClinicalTrials.gov) der letzten 60 Tage, nach Fachgebiet
+(Onkologie, Infektionen & Impfstoffe, Diabetes, Herz & Kreislauf). Abo je Fachgebiet: neue
+Zulassungen kommen als Benachrichtigung (täglicher Lauf). Die WHO hat für Studienergebnisse keine
+offene Schnittstelle; WHO-Daten nutzt der Radar.
+
+**4. Ausbruchs- & Nachfrage-Radar:** Signal = mindestens 3 neue Engpass-Einträge (Behördenlisten
++ Apotheken-Meldungen) zum selben Wirkstoff in einer Region binnen 14 Tagen und mindestens doppelt
+so viele wie in den 14 Tagen davor. Großhandel und Hersteller in **anderen** Regionen bekommen eine
+Frühwarnung (je Wirkstoff und Region höchstens alle 14 Tage). Dazu die WHO Disease Outbreak News
+und echte Lieferantenpreise im eigenen Land, falls vorhanden. **Keine Prozent-Empfehlung
+(„+25 % Lager")** — ApoPulse hat weder Absatz- noch Preisdaten der Händler; die Warnung nennt, was
+beobachtet wurde. Suchanfragen werden nicht ausgewertet (werden aus Datenschutzgründen nicht
+gespeichert). Redaktion kann den Lauf sofort auslösen: `POST /api/b2b/lauf`.
+
+Cockpit: Zeile „Internationale Beschaffung" (offene Anfragen, Signale); die neuen Quellen stehen in
+„Externe Daten".
+
 ## Datenwahrheit: Vertrauensstufen, Widerspruch, keine erfundenen Werte (Sprint 4)
 
 Jede Engpass-Zeile zeigt im Klartext, woher sie stammt und wie verlässlich sie ist (eine Stelle

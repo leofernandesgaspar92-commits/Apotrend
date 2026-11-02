@@ -68,6 +68,9 @@ import { createExternerSpeicher } from '../services/extern/abruf.js';
 import { createWeltbank } from '../services/extern/weltbank.js';
 import { createHafenWetter, HAEFEN, SCHWELLE } from '../services/extern/wetter.js';
 import { createAisStream } from '../services/extern/aisstream.js';
+import { einstandskosten, ankunft, createSourcingAnfragen, HAFEN_FUER_LAND } from '../services/sourcing.js';
+import { createMedInt, createMedIntAbos, BEREICHE as MEDINT_BEREICHE, passtZu as medintPasst } from '../services/extern/medint.js';
+import { createAusbruchsRadar, regionaleSignale, ALARM_KONTOARTEN } from '../services/ausbruch.js';
 import { createDatenApi, zugangPruefen, engpassZeile, fuerSchnittstelle, alsCsv } from '../services/datenApi.js';
 import { werbeplaetzeAusUmgebung, ZIELGRUPPEN } from '../data/werbeplaetze.js';
 import { createOverviewService } from '../services/overview.js';
@@ -307,6 +310,11 @@ const externFetch = process.env.APOPULSE_EXTERN_AUS === '1' ? async () => { thro
 const weltbank = createWeltbank({ speicher: externerSpeicher, fetchImpl: externFetch });
 const hafenWetter = createHafenWetter({ speicher: externerSpeicher, fetchImpl: externFetch });
 const ais = createAisStream({ apiKey: process.env.AISSTREAM_API_KEY, haefen: HAEFEN });
+// Sprint 5: Beschaffung international, neue Zulassungen/Studien, Ausbruchs-Radar.
+const sourcingAnfragen = createSourcingAnfragen();
+const medint = createMedInt({ speicher: externerSpeicher, fetchImpl: externFetch });
+const medintAbos = createMedIntAbos();
+const ausbruch = createAusbruchsRadar({ speicher: externerSpeicher, fetchImpl: externFetch });
 // Je Gerät höchstens 30 Fehlerberichte pro Stunde (die Seite selbst schickt höchstens 5 je Aufruf).
 const fehlerberichtLimiter = createRateLimiter({ max: 30, windowMs: 60 * 60 * 1000 });
 // Eine Rechnungsnummern-Reihe für Anzeigen UND Tarife (lückenlos, eindeutig).
@@ -461,6 +469,9 @@ function applySnapshot(snap) {
   externerSpeicher.__load(snap.extern);
   // Letzte gute Wechsel-/Krypto-Kurse: Rückfall nach Neustart ohne Netz (Sprint 4).
   if (snap.kurse) { fxRates.__load(snap.kurse.fx); cryptoRates.__load(snap.kurse.krypto); }
+  sourcingAnfragen.__load(snap.sourcing);
+  medintAbos.__load(snap.medintAbos);
+  ausbruch.__load(snap.ausbruch);
   // Alte, unbefristete Premium-Freischaltungen aus bezahlten Monats-/Jahres-
   // käufen bekommen ihr Ablaufdatum (services/payments.js, laufzeitenUmstellen).
   const umgestellt = payments.laufzeitenUmstellen();
@@ -520,6 +531,9 @@ function collectSnapshot() {
     geraeteFehler: geraeteFehler.__dump(),
     extern: externerSpeicher.__dump(),
     kurse: { fx: fxRates.__dump(), krypto: cryptoRates.__dump() },
+    sourcing: sourcingAnfragen.__dump(),
+    medintAbos: medintAbos.__dump(),
+    ausbruch: ausbruch.__dump(),
   };
 }
 let saveTimer = null;
@@ -1075,6 +1089,49 @@ function rxBetrachter(userId) {
   };
 }
 
+
+// ── Sprint 5: gemeinsame Helfer ─────────────────────────────────────────────
+// Fachkreise = jede Kontoart außer „privat" (wie beim Melden von Engpässen).
+function fachkreisPflicht(userId) {
+  const p = social.getProfile(userId);
+  if (!p || p.account_type === 'private') throw new AppError('b2b_fachkreis', 'Dieser Bereich ist für Apotheken, Kliniken, Großhandel und Hersteller.', 403);
+  return p;
+}
+/** Hafenlage für ein Zielland: echtes Wetter (Open-Meteo) und Schiffe (AIS) — oder null. */
+async function hafenLageFuer(land) {
+  const id = HAFEN_FUER_LAND[String(land || '').toUpperCase()];
+  const h = id && HAEFEN.find((x) => x.id === id);
+  if (!h) return null;
+  const w = await hafenWetter.fuerHafen(h);
+  return { id: h.id, name: h.name, land: h.land, hinweise: (w.daten && w.daten.hinweise) || [], wetter_stand: w.stand, wetter_veraltet: w.veraltet, schiffe: ais.lage(h.id) };
+}
+/** Aktuelle Ausbruchs-/Anstiegs-Signale (alle Regionen). */
+function aktuelleSignale() {
+  const heute = Date.now();
+  const ab = new Date(heute - 28 * 86_400_000).toISOString().slice(0, 10);
+  return regionaleSignale({ episoden: chronik.episodenSeit(ab), meldungen: shortagesRepo.list(), regionVon, heute });
+}
+/** Täglicher B2B-Lauf: neue Zulassungen an Abonnent:innen, Ausbruchs-Alarme an Großhandel/Hersteller anderer Regionen. */
+async function laufB2B() {
+  const z = await medint.zulassungen();
+  let zulassungen = 0, alarme = 0;
+  if (z.aus === 'live') for (const { userId, eintrag } of medintAbos.neue(z.daten || [])) {
+    social.pushNotification({ userId, type: 'medint_neu', actorUserId: null, refType: 'medint', refId: eintrag.id, label: `${eintrag.titel} · ${(eintrag.wirkstoffe || [])[0] || ''}`.trim() });
+    zulassungen++;
+  }
+  const neu = ausbruch.zuMelden(aktuelleSignale());
+  if (neu.length) {
+    const empf = socialRepo.listProfiles().filter((p) => ALARM_KONTOARTEN.includes(p.account_type) && p.country);
+    for (const sig of neu) for (const p of empf) {
+      if (regionVon(p.country) === sig.region) continue; // dort ist es schon angekommen — die Engpassliste zeigt es
+      social.pushNotification({ userId: p.user_id, type: 'ausbruch_signal', actorUserId: null, refType: 'wirkstoff', refId: sig.wirkstoff, label: `${sig.wirkstoff} · ${sig.region} · ${sig.neu}` });
+      alarme++;
+    }
+  }
+  if (zulassungen || alarme || neu.length) saveSoon();
+  return { zulassungen, signale: neu.length, alarme };
+}
+
 // Kuehlketten- und Transportmeldungen (services/logistik.js). Der Bereich ist
 // am Anfang LEER — es gibt keine Behoerdenschnittstelle fuer Kuehlketten-
 // Brueche, die Information entsteht bei den Beteiligten. Eine ehrliche
@@ -1520,6 +1577,93 @@ const routes = [
   // ── Externe Daten: Häfen (Wetter, Schiffe), Logistik-Index, Status der Quellen ──
   //  Hinweise auf Transportrisiken, keine Aussage über Engpässe. Fällt eine Quelle aus,
   //  kommt der letzte gesicherte Stand (gekennzeichnet) — nie ein Fehler, nie erfundene Werte.
+  // ── Sprint 5 · Modul A: Beschaffung international ──────────────────────────
+  ['POST', /^\/api\/sourcing\/kalkulation$/, true, async ({ userId, body }) => {
+    fachkreisPflicht(userId);
+    const kurse = await fxRates.rates();
+    const erg = einstandskosten(body || {}, fxRates, kurse);
+    return { ...erg, ankunft: ankunft({ transitTage: body.transitTage, ab: body.abDatum }), transport: body.transport === 'luft' ? 'luft' : 'see',
+      hafen: body.transport === 'luft' ? null : await hafenLageFuer(body.zielLand) };
+  }],
+  ['POST', /^\/api\/sourcing\/anfrage$/, true, async ({ userId, body }) => {
+    const p = fachkreisPflicht(userId);
+    const a = sourcingAnfragen.erstellen(userId, body || {});
+    for (const m of socialRepo.listProfiles().filter((x) => social.isModerator(x.user_id))) {
+      social.pushNotification({ userId: m.user_id, type: 'sourcing_anfrage', actorUserId: userId, refType: 'sourcing', refId: a.id, label: `${a.produkt} · ${a.herkunft} → ${a.ziel}` });
+    }
+    const an = String(process.env.APOPULSE_HANDEL_EMAIL || '').trim();
+    if (an && mailer.aktiv) {
+      mailer.sende({ an, betreff: `ApoPulse Proforma-Anfrage: ${a.produkt} (${a.herkunft} → ${a.ziel})`,
+        text: `Betrieb: ${p.display_name} (@${p.handle}, ${p.account_type}, ${p.country || '—'}, ${p.verified ? 'verifiziert' : 'nicht verifiziert'})\nProdukt: ${a.produkt}\nMenge: ${a.menge}\nVon ${a.herkunft} nach ${a.ziel}\nIncoterm: ${a.incoterm || '—'} · Transport: ${a.transport || '—'}\nNotiz: ${a.notiz || '—'}\n\nBearbeiten im Redaktions-Cockpit.` }).catch(() => {});
+    }
+    saveSoon();
+    return { ...a, userId: undefined };
+  }],
+  ['GET', /^\/api\/sourcing\/anfragen$/, true, async ({ userId }) => ({ anfragen: sourcingAnfragen.meine(userId).map((a) => ({ ...a, userId: undefined })) })],
+  ['GET', /^\/api\/sourcing\/anfragen\/alle$/, true, async ({ userId }) => {
+    if (!social.isModerator(userId)) throw new AppError('forbidden', 'Nur Redaktion/Handel.', 403);
+    return { anfragen: sourcingAnfragen.alle().map((a) => { const p = social.getProfile(a.userId); return { ...a, userId: undefined, betrieb: p ? { handle: p.handle, name: p.display_name, art: p.account_type, land: p.country, verifiziert: !!p.verified } : null }; }) };
+  }],
+  ['POST', /^\/api\/sourcing\/anfragen\/([a-z0-9]+)\/status$/, true, async ({ userId, params, body }) => {
+    if (!social.isModerator(userId)) throw new AppError('forbidden', 'Nur Redaktion/Handel.', 403);
+    const a = sourcingAnfragen.status(params[0], body.status, body.antwort);
+    social.pushNotification({ userId: a.userId, type: 'sourcing_antwort', actorUserId: null, refType: 'sourcing', refId: a.id, label: `${a.produkt} · ${a.status}` });
+    saveSoon();
+    return { ...a, userId: undefined };
+  }],
+  // ── Modul B: Regulatorischer Cross-Check (gleiche ATC-Gruppe, Lage im Zielland) ──
+  ['GET', /^\/api\/crosscheck$/, true, async ({ userId, query }) => {
+    fachkreisPflicht(userId);
+    const wirkstoff = String(query.get('wirkstoff') || '').trim().slice(0, 120);
+    const land = normalizeCountry(query.get('land') || activeCountry(userId, query));
+    if (wirkstoff.length < 3) throw new AppError('crosscheck_wirkstoff', 'Bitte einen Wirkstoff angeben.', 400);
+    const c = COUNTRIES[land] || {};
+    const lageIn = (w) => {
+      const amtlich = !!chronik.offenIn(w, land);
+      const apo = shortagesRepo.list({ country: land }).filter((z) => z.provenance === 'community' && ['kritisch', 'eingeschraenkt'].includes(z.status) && gleicherWirkstoff(z.wirkstoff, w));
+      return { amtlich_knapp: amtlich, apotheken_meldungen: apo.length, beobachtet: !!chronik.aufzeichnungSeit(land) };
+    };
+    const atc = rxnorm ? await rxnorm.atcGruppe(wirkstoff) : null;
+    return {
+      wirkstoff, land, behoerde: { name: c.regulator || null, url: c.regulator_url || null },
+      zulassung_bekannt: false, // ApoPulse führt keine Zulassungsregister — ehrlich so ausgewiesen
+      lage: lageIn(wirkstoff),
+      atc: atc ? atc.klassen.map((k) => ({ ...k, mitglieder: k.mitglieder.map((m) => ({ name: m, lage: lageIn(m) })) })) : null,
+      atc_hinweis: atc ? atc.hinweis : null, atc_verfuegbar: !!atc,
+    };
+  }],
+  // ── Modul C: Neue Zulassungen & Studienergebnisse ──────────────────────────
+  ['GET', /^\/api\/medint$/, true, async ({ userId, query }) => {
+    fachkreisPflicht(userId);
+    const bereich = MEDINT_BEREICHE[query.get('bereich')] ? query.get('bereich') : 'onkologie';
+    const [z, st] = await Promise.all([medint.zulassungen(), medint.studien(bereich)]);
+    return {
+      bereich, bereiche: Object.keys(MEDINT_BEREICHE), abos: medintAbos.von(userId),
+      zulassungen: { eintraege: (z.daten || []).filter((e) => medintPasst(e, bereich)).slice(0, 20), stand: z.stand, veraltet: z.veraltet, verfuegbar: z.daten != null },
+      studien: { eintraege: (st.daten || []).slice(0, 15), stand: st.stand, veraltet: st.veraltet, verfuegbar: st.daten != null },
+    };
+  }],
+  ['POST', /^\/api\/medint\/abo$/, true, async ({ userId, body }) => { fachkreisPflicht(userId); const abos = medintAbos.setzen(userId, body.bereiche); saveSoon(); return { abos }; }],
+  // ── Modul D: Ausbruchs- und Nachfrage-Radar ────────────────────────────────
+  ['GET', /^\/api\/ausbruch$/, true, async ({ userId, query }) => {
+    fachkreisPflicht(userId);
+    const land = activeCountry(userId, query);
+    const meine = regionVon(land);
+    const who = await ausbruch.whoMeldungen();
+    const preise = pricesRepo.listFlat().filter((pr) => String(pr.country || '').toUpperCase() === land);
+    const signale = aktuelleSignale().slice(0, 20).map((sg) => ({
+      ...sg, eigene_region: sg.region === meine,
+      lage_hier: { amtlich_knapp: !!chronik.offenIn(sg.wirkstoff, land), beobachtet: !!chronik.aufzeichnungSeit(land) },
+      // Nur echte Lieferantenpreise im eigenen Land, mit Herkunft — nie geschätzt.
+      preise: preise.filter((pr) => gleicherWirkstoff(pr.wirkstoff, sg.wirkstoff)).slice(0, 5).map((pr) => ({ bezeichnung: pr.bezeichnung, lieferant: pr.supplier, preis: pr.aep, waehrung: pr.currency || 'EUR', herkunft: pr.provenance, quelle: pr.quelle || null })),
+    }));
+    return { land, region: meine, signale, who: { meldungen: who.daten || [], stand: who.stand, veraltet: who.veraltet, verfuegbar: who.daten != null } };
+  }],
+  // Redaktion: B2B-Lauf sofort auslösen (sonst täglich im Zeitplan).
+  ['POST', /^\/api\/b2b\/lauf$/, true, async ({ userId }) => {
+    if (!social.isModerator(userId)) throw new AppError('forbidden', 'Nur Redaktion.', 403);
+    return laufB2B();
+  }],
   ['GET', /^\/api\/logistik\/haefen$/, true, async () => {
     const haefen = await Promise.all(HAEFEN.map(async (h) => {
       const w = await hafenWetter.fuerHafen(h);
@@ -1540,7 +1684,7 @@ const routes = [
   }],
   ['GET', /^\/api\/extern\/status$/, true, async ({ userId }) => {
     if (!social.isModerator(userId)) { const e = new Error('Nur Moderation.'); e.status = 403; e.code = 'forbidden'; throw e; }
-    return { quellen: [weltbank.status(), hafenWetter.status(), ais.status(), cryptoRates.status(), fxRates.status()], gesichert: externerSpeicher.groesse };
+    return { quellen: [weltbank.status(), hafenWetter.status(), ais.status(), cryptoRates.status(), fxRates.status(), ...medint.status(), ausbruch.status()], gesichert: externerSpeicher.groesse };
   }],
 
   ['GET', /^\/api\/health$/, false, async () => ({
@@ -2665,7 +2809,8 @@ const routes = [
       fehler: { ...betriebsFehler },
       version: LAUFENDE_VERSION,
       // Externe Schnittstellen: antwortet die Quelle? (services/extern/)
-      extern: [weltbank.status(), hafenWetter.status(), ais.status(), cryptoRates.status(), fxRates.status()],
+      extern: [weltbank.status(), hafenWetter.status(), ais.status(), cryptoRates.status(), fxRates.status(), ...medint.status(), ausbruch.status()],
+      b2b: { anfragen_offen: sourcingAnfragen.alle().filter((a) => a.status === 'neu').length, signale: aktuelleSignale().length },
     };
   }],
   // Startklar-Check (services/startklar.js): was der Betreiber noch einrichten muss.
@@ -3340,6 +3485,8 @@ server.listen(PORT, () => {
       intervalMs: 6 * 3_600_000,
       startDelayMs: 150_000,
     });
+    // Sprint 5: neue Zulassungen an Abonnent:innen, Ausbruchs-Alarme (täglich).
+    scheduler.add('b2b', { run: laufB2B, intervalMs: 24 * 3_600_000, startDelayMs: 240_000 });
     scheduler.add('shortages', {
       run: runShortageIngest,
       intervalMs: INTERVALS.shortages,

@@ -217,10 +217,10 @@ test('Server: Häfen, Logistik-Index, Status — ohne Netz kein Absturz, ehrlich
     assert.equal((await fetch(B + '/api/extern/status', { headers: A })).status, 403, 'Status für alle offen');
     const red = (await (await fetch(B + '/api/login', { method: 'POST', headers: H, body: JSON.stringify({ email: 'red@ext.test', password: 'ext-test-PW-123' }) })).json()).token;
     const st = await (await fetch(B + '/api/extern/status', { headers: { authorization: 'Bearer ' + red } })).json();
-    assert.deepEqual(st.quellen.map((q) => q.name), ['weltbank', 'openmeteo', 'aisstream', undefined, 'wechselkurse'].map((n, i) => n ?? st.quellen[i].name));
+    assert.deepEqual(st.quellen.map((q) => q.name), ['weltbank', 'openmeteo', 'aisstream', undefined, 'wechselkurse', 'openfda_zulassungen', 'clinicaltrials', 'who_ausbrueche'].map((n, i) => n ?? st.quellen[i].name));
     assert.match(st.quellen.find((q) => q.name === 'openmeteo').letzter_fehler, /abgeschaltet/);
     const b = await (await fetch(B + '/api/betrieb', { headers: { authorization: 'Bearer ' + red } })).json();
-    assert.equal(b.extern.length, 5);
+    assert.equal(b.extern.length, 8); // + openFDA, ClinicalTrials.gov, WHO (Sprint 5)
   } finally {
     await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
   }

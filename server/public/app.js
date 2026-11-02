@@ -1716,6 +1716,7 @@ async function mainScreen() {
   }
   // Push „Bestätigung abgelehnt" (services/webPush.js): direkt zum Antrag mit Grund.
   if (params.get('bestaetigung') === '1') { history.replaceState(null, '', location.pathname); zurVerifizierung(); return; }
+  if (location.pathname === '/sourcing') { openSourcing(); return; }
   if (sharedPost) { history.replaceState(null, '', location.pathname); openPost(sharedPost); }
   else if (sharedWirkstoff) { history.replaceState(null, '', location.pathname); openWirkstoff(sharedWirkstoff); }
   else if (sharedProfile) { history.replaceState(null, '', location.pathname); openProfile(sharedProfile); }
@@ -1993,6 +1994,7 @@ function betriebsKarte(b) {
     ${b.teilen ? `<div class="muted" style="font-size:14px;margin-top:4px" data-btwachstum>${esc(ti('bt_teilen', { n: b.teilen.aufrufe_7 }))}${b.anzeigen ? ' · ' + esc(ti('bt_anzeigen', { l: b.anzeigen.laufend, p: b.anzeigen.zur_pruefung })) : ''}</div>` : ''}
     ${kanalListe(b.kanaele)}
     ${fehlerListe(b.geraete_fehler, b.fehler)}
+    ${b.b2b ? `<div style="font-size:14px;margin-top:12px" data-btb2b><b>${esc(t('bt_b2b'))}:</b> ${esc(ti('bt_b2b_zeile', { a: b.b2b.anfragen_offen, s: b.b2b.signale }))}</div>` : ''}
     ${Array.isArray(b.extern) ? `<div style="font-size:14px;margin-top:12px" data-btextern><b>${esc(t('bt_extern'))}:</b> ${b.extern.map((q) => {
       const zustand = !q.aktiv ? t('bt_extern_aus') : q.letzter_fehler && !q.zuletzt_ok ? t('bt_extern_fehler') : q.zuletzt_ok ? t('bt_extern_ok') : t('bt_extern_noch');
       const farbe = !q.aktiv || (!q.zuletzt_ok && !q.letzter_fehler) ? 'var(--muted-fg,#5f7370)' : q.letzter_fehler ? 'var(--crit-fg)' : 'var(--ok-fg)';
@@ -2152,6 +2154,11 @@ async function loadOverview() {
     ['ov_sortiment', 'list', 'srt_nav', null, () => openSortiment()],
     ['ov_signals', 'alert', 'nav_signals', null],
     ['ov_logistik', 'truck', 'lg_nav', null],
+    ...(me && me.account_type === 'private' ? [] : [
+      ['ov_sourcing', 'globe', 'sc5_nav', null, () => openSourcing()],
+      ['ov_medint', 'flask', 'mi_nav', null, () => openMedInt()],
+      ['ov_ausbruch', 'alert', 'ab_nav', null, () => openAusbruch()],
+    ]),
     ['ov_bm', 'bookmark', 'ov_bookmarks', 'social', openBookmarks],
     ['ov_promos', 'tag', 'wb_nav', 'werbung', () => openPromotions()],
     ['ov_live', 'radio', 'lv_nav', 'termine', () => openLive()],
@@ -9763,6 +9770,221 @@ async function zeigeHaefen(box) {
     <div class="muted" style="font-size:13px;margin-top:8px">${esc(t('hf_quelle'))}: ${quellen.join(' · ')}</div>${lpiZeile}</div>`));
 }
 
+// ============================================================================
+//  Sprint 5: Beschaffung international (/sourcing), Cross-Check, neue Therapien,
+//  Ausbruchs-Radar. Alles nur mit echten Daten oder Eingaben der Fachperson —
+//  nie geschätzte Fracht, nie „zugelassen" ohne Register, nie „+25 % Lager".
+// ============================================================================
+const B2B_HERKUNFT = ['IN', 'CN', 'DE', 'FR', 'IT', 'CH', 'GB', 'US', 'NL', 'BE', 'ES', 'TR', 'KR', 'JP', 'ZA', 'EG', 'KE', 'BR'];
+const landName = (cc) => { try { return new Intl.DisplayNames([LOCALE], { type: 'region' }).of(cc) || cc; } catch { return cc; } };
+const b2bKopf = (titel, sub, zurueck = mainScreen) => {
+  app.innerHTML = '';
+  const back = el(`<div class="row" style="margin-bottom:8px"><button class="ghost small" data-zurueck>${esc(t('gen_back'))}</button></div>`);
+  back.querySelector('[data-zurueck]').onclick = () => { if (location.pathname === '/sourcing') history.replaceState(null, '', '/'); zurueck(); };
+  app.appendChild(back);
+  app.appendChild(el(`<div class="card"><h1 style="margin:0 0 4px">${esc(titel)}</h1><div style="font-size:15px">${esc(sub)}</div></div>`));
+};
+const b2bNurFachkreise = () => { if (me && me.account_type === 'private') { app.appendChild(el(`<div class="card" data-b2bprivat style="font-size:16px">${esc(t('b2b_privat'))}</div>`)); return true; } return false; };
+const geld = (n, w) => { try { return Number(n).toLocaleString(bcp47(), { style: 'currency', currency: w, maximumFractionDigits: 2 }); } catch { return fmtMoney(n) + ' ' + w; } };
+
+async function openSourcing() {
+  setDocTitle(t('sc5_title'));
+  if (location.pathname !== '/sourcing') history.replaceState(null, '', '/sourcing');
+  b2bKopf(t('sc5_title'), t('sc5_sub'));
+  if (b2bNurFachkreise()) return;
+  const meinLand = (me && me.country) || viewCountry();
+  const laender = (COUNTRIES_CACHE || []).map((c) => c.code);
+  const waehrungen = [...new Set(['USD', 'EUR', 'INR', 'CNY', 'GBP', 'CHF', ...(COUNTRIES_CACHE || []).map((c) => c.currency)].filter(Boolean))].sort();
+  const meineW = ((COUNTRIES_CACHE || []).find((c) => c.code === meinLand) || {}).currency || 'USD';
+  const opt = (liste, sel, name = (x) => x) => liste.map((x) => `<option value="${esc(x)}"${x === sel ? ' selected' : ''}>${esc(name(x))}</option>`).join('');
+  const feld = (id, label, inner, hilfe = '') => `<label for="${id}" style="display:block;font-size:15px;font-weight:600;margin-top:10px">${esc(label)}</label>${inner}${hilfe ? `<div class="muted" style="font-size:14px">${hilfe}</div>` : ''}`;
+  const zahlFeld = (id, attr = '') => `<input id="${id}" type="number" min="0" step="any" inputmode="decimal" style="width:100%;min-height:44px" ${attr}>`;
+  const k = el(`<div class="card" data-sourcing>
+    <h2 style="margin:0">${esc(t('sc5_rechner'))}</h2>
+    <div class="muted" style="font-size:15px;margin-top:2px">${esc(t('sc5_rechner_sub'))}</div>
+    ${feld('sc_prod', t('sc5_produkt'), `<input id="sc_prod" maxlength="160" placeholder="${esc(t('pr_rw_ph'))}" style="width:100%;min-height:44px">`)}
+    <div class="row" style="gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:140px">${feld('sc_von', t('sc5_herkunft'), `<select id="sc_von" style="width:100%;min-height:44px">${opt(B2B_HERKUNFT, 'IN', landName)}</select>`)}</div>
+      <div style="flex:1;min-width:140px">${feld('sc_nach', t('sc5_ziel'), `<select id="sc_nach" style="width:100%;min-height:44px">${opt(laender, meinLand, landName)}</select>`)}</div>
+    </div>
+    <div class="row" style="gap:10px;flex-wrap:wrap">
+      <div style="flex:2;min-width:150px">${feld('sc_ware', t('sc5_warenwert'), zahlFeld('sc_ware'))}</div>
+      <div style="flex:1;min-width:100px">${feld('sc_wareW', t('sc5_waehrung'), `<select id="sc_wareW" style="width:100%;min-height:44px">${opt(waehrungen, 'USD')}</select>`)}</div>
+    </div>
+    ${feld('sc_menge', t('sc5_menge'), zahlFeld('sc_menge', 'step="1" placeholder="1000"'))}
+    ${feld('sc_art', t('sc5_transport'), `<select id="sc_art" style="width:100%;min-height:44px"><option value="see">${esc(t('sc5_see'))}</option><option value="luft">${esc(t('sc5_luft'))}</option></select>`)}
+    <div class="row" style="gap:10px;flex-wrap:wrap">
+      <div style="flex:2;min-width:150px">${feld('sc_fracht', t('sc5_fracht'), zahlFeld('sc_fracht'), esc(t('sc5_fracht_hilfe')))}</div>
+      <div style="flex:1;min-width:100px">${feld('sc_frachtW', t('sc5_waehrung'), `<select id="sc_frachtW" style="width:100%;min-height:44px">${opt(waehrungen, 'USD')}</select>`)}</div>
+    </div>
+    ${feld('sc_tage', t('sc5_transit'), zahlFeld('sc_tage', 'step="1" max="365"'), esc(t('sc5_transit_hilfe')))}
+    <div class="row" style="gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:140px">${feld('sc_zoll', t('sc5_zoll'), zahlFeld('sc_zoll', 'max="1000"'), `${esc(t('sc5_zoll_hilfe'))} <a href="https://ttd.wto.org/en" target="_blank" rel="noopener">WTO Tariff Data</a>`)}</div>
+      <div style="flex:1;min-width:140px">${feld('sc_mwst', t('sc5_mwst'), zahlFeld('sc_mwst', 'max="100"'))}</div>
+    </div>
+    <div class="row" style="gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:140px">${feld('sc_vers', t('sc5_versicherung'), zahlFeld('sc_vers', 'max="100"'))}</div>
+      <div style="flex:1;min-width:140px">${feld('sc_geb', t('sc5_gebuehren'), zahlFeld('sc_geb'))}</div>
+    </div>
+    ${feld('sc_zielW', t('sc5_zielwaehrung'), `<select id="sc_zielW" style="width:100%;min-height:44px">${opt(waehrungen, meineW)}</select>`)}
+    <button class="auth-gross" data-rechnen style="margin-top:14px;min-height:52px;width:100%">${esc(t('sc5_rechnen'))}</button>
+    <div data-ergebnis role="status" aria-live="polite"></div>
+    <div class="muted" style="font-size:14px;margin-top:10px">${esc(t('sc5_recht'))}</div>
+  </div>`);
+  app.appendChild(k);
+  const v = (id) => k.querySelector('#' + id).value;
+  k.querySelector('#sc_nach').onchange = () => { const w = ((COUNTRIES_CACHE || []).find((c) => c.code === v('sc_nach')) || {}).currency; if (w) k.querySelector('#sc_zielW').value = w; };
+  const erg = k.querySelector('[data-ergebnis]');
+  k.querySelector('[data-rechnen]').onclick = async () => {
+    erg.innerHTML = '<div class="loading">…</div>';
+    let d;
+    try {
+      d = await api('POST', '/api/sourcing/kalkulation', { zielLand: v('sc_nach'), zielWaehrung: v('sc_zielW'), warenwert: v('sc_ware'), waehrung: v('sc_wareW'), fracht: v('sc_fracht'), frachtWaehrung: v('sc_frachtW'),
+        versicherungPct: v('sc_vers'), zollPct: v('sc_zoll'), mwstPct: v('sc_mwst'), gebuehren: v('sc_geb'), menge: v('sc_menge'), transitTage: v('sc_tage'), transport: v('sc_art') });
+    } catch (e) { erg.innerHTML = `<div class="card" style="border-color:var(--warn-bd);margin-top:10px">${esc(e.message)}</div>`; return; }
+    const zeile = (p) => `<tr><td style="padding:4px 0">${esc(t('sc5_p_' + p.art))}${p.satz ? ` (${esc(String(p.satz))} %${p.basis ? ', ' + esc(ti('sc5_basis', { b: p.basis })) : ''})` : ''}</td><td style="text-align:end;padding:4px 0">${esc(geld(p.betrag, d.waehrung))}</td></tr>`;
+    const hafen = d.hafen ? `<div data-schafen style="margin-top:8px;font-size:15px"><b>${esc(ti('sc5_hafen', { h: d.hafen.name }))}</b>
+        ${(d.hafen.hinweise || []).map((h) => `<div style="color:var(--warn-fg);font-weight:600">⚠ ${esc(ti(h.art === 'sturm' ? 'hf_sturm' : 'hf_starkregen', { d: h.datum }))}</div>`).join('')}
+        ${d.hafen.schiffe && d.hafen.schiffe.im_gebiet ? `<div>${esc(ti('hf_schiffe', { n: d.hafen.schiffe.im_gebiet, a: d.hafen.schiffe.vor_anker }))}</div>` : ''}
+        ${!(d.hafen.hinweise || []).length && !(d.hafen.schiffe && d.hafen.schiffe.im_gebiet) ? `<div class="muted">${esc(t('sc5_hafen_ruhig'))}</div>` : ''}</div>` : '';
+    erg.innerHTML = `<div class="card" data-scergebnis style="margin-top:10px;background:var(--bg)">
+      <table style="width:100%;font-size:15px;border-collapse:collapse">${d.posten.filter((p) => p.betrag || p.art === 'ware').map(zeile).join('')}
+        <tr style="border-top:2px solid var(--line);font-weight:800;font-size:18px"><td style="padding-top:6px">${esc(t('sc5_gesamt'))}</td><td style="text-align:end;padding-top:6px">${esc(geld(d.gesamt, d.waehrung))}</td></tr>
+        ${d.menge > 1 ? `<tr><td>${esc(t('sc5_je_einheit'))}</td><td style="text-align:end">${esc(geld(d.je_einheit, d.waehrung))}</td></tr>` : ''}</table>
+      <div class="muted" style="font-size:14px;margin-top:6px">${esc(ti(d.zoll_basis === 'FOB' ? 'sc5_basis_fob' : 'sc5_basis_cif', {}))}</div>
+      <div class="muted" style="font-size:14px">${esc(ti('sc5_kurse', { q: (d.kurse.quellen || []).join(' + ') || '—', d: d.kurse.stand ? new Date(d.kurse.stand).toLocaleDateString(bcp47()) : '—' }))}${d.kurse.veraltet ? ' · ' + esc(t('cc_veraltet')) : ''}</div>
+      ${d.ankunft ? `<div style="margin-top:8px;font-size:16px"><b>${esc(ti('sc5_ankunft', { d: fmtDateDe(d.ankunft) }))}</b> <span class="muted" style="font-size:14px">${esc(t('sc5_ankunft_hilfe'))}</span></div>` : ''}
+      ${hafen}
+      <div style="margin-top:12px"><label for="sc_inco" style="font-size:15px;font-weight:600">${esc(t('sc5_incoterm'))}</label>
+        <select id="sc_inco" style="width:100%;min-height:44px">${opt(['', 'EXW', 'FCA', 'FOB', 'CFR', 'CIF', 'CPT', 'CIP', 'DAP', 'DDP'], '', (x) => x || t('sc5_incoterm_offen'))}</select>
+        <label for="sc_notiz" style="display:block;font-size:15px;font-weight:600;margin-top:8px">${esc(t('sc5_notiz'))}</label>
+        <textarea id="sc_notiz" maxlength="1000" rows="3" style="width:100%"></textarea>
+        <button class="auth-gross" data-proforma style="margin-top:10px;min-height:52px;width:100%">${esc(t('sc5_proforma'))}</button>
+        <div class="muted" style="font-size:14px;margin-top:4px">${esc(t('sc5_proforma_hilfe'))}</div><div data-pfok role="status" style="font-size:15px;margin-top:6px"></div></div></div>`;
+    erg.querySelector('[data-proforma]').onclick = async () => {
+      const b = erg.querySelector('[data-proforma]');
+      if (!v('sc_prod').trim()) { alert(t('sc5_produkt_fehlt')); k.querySelector('#sc_prod').focus(); return; }
+      b.disabled = true;
+      try {
+        await api('POST', '/api/sourcing/anfrage', { produkt: v('sc_prod'), menge: (v('sc_menge') || '—') + ' ' + t('sc5_einheiten'), herkunft: v('sc_von'), ziel: v('sc_nach'), incoterm: erg.querySelector('#sc_inco').value, transport: v('sc_art'), notiz: erg.querySelector('#sc_notiz').value });
+        erg.querySelector('[data-pfok]').textContent = t('sc5_proforma_ok'); zeigeAnfragen();
+      } catch (e) { alert(e.message); b.disabled = false; }
+    };
+  };
+  // ── Cross-Check ──
+  const cc = el(`<div class="card" data-crosscheck>
+    <h2 style="margin:0">${esc(t('cx_title'))}</h2><div class="muted" style="font-size:15px;margin-top:2px">${esc(t('cx_sub'))}</div>
+    <div class="row" style="gap:10px;flex-wrap:wrap">
+      <div style="flex:2;min-width:160px">${feld('cx_w', t('sh_rep_w'), `<input id="cx_w" maxlength="120" placeholder="Amoxicillin" style="width:100%;min-height:44px">`)}</div>
+      <div style="flex:1;min-width:140px">${feld('cx_l', t('sc5_ziel'), `<select id="cx_l" style="width:100%;min-height:44px">${opt(laender, meinLand, landName)}</select>`)}</div>
+    </div>
+    <button data-cxgo style="margin-top:10px;min-height:48px;width:100%">${esc(t('cx_btn'))}</button><div data-cxerg aria-live="polite"></div></div>`);
+  app.appendChild(cc);
+  cc.querySelector('[data-cxgo]').onclick = async () => {
+    const box = cc.querySelector('[data-cxerg]'); const w = cc.querySelector('#cx_w').value.trim();
+    if (w.length < 3) { cc.querySelector('#cx_w').focus(); return; }
+    box.innerHTML = '<div class="loading">…</div>';
+    let d; try { d = await api('GET', '/api/crosscheck?wirkstoff=' + encodeURIComponent(w) + '&land=' + encodeURIComponent(cc.querySelector('#cx_l').value)); } catch (e) { box.innerHTML = `<div style="margin-top:8px">${esc(e.message)}</div>`; return; }
+    const lage = (l) => l.amtlich_knapp ? `<span style="color:var(--crit-fg);font-weight:700">${esc(t('cx_amtlich_knapp'))}</span>` : l.apotheken_meldungen ? `<span style="color:var(--warn-fg);font-weight:700">${esc(ti('cx_apo', { n: l.apotheken_meldungen }))}</span>` : `<span class="muted">${esc(t(l.beobachtet ? 'cx_keine' : 'cx_nicht_beobachtet'))}</span>`;
+    const anzahl = (d.atc || []).reduce((n, k) => n + k.mitglieder.length, 0);
+    const behoerde = d.behoerde.url ? `<a href="${esc(d.behoerde.url)}" target="_blank" rel="noopener">${esc(d.behoerde.name || d.behoerde.url)}</a>` : esc(d.behoerde.name || '—');
+    box.innerHTML = `<div style="margin-top:10px;font-size:15px" data-cxergebnis>
+      <div class="vt-stufe" style="margin:0 0 6px">${esc(ti('cx_transparenz', { land: landName(d.land), n: anzahl }))}</div>
+      <div>${esc(t('cx_zulassung'))} ${behoerde}</div>
+      <div style="margin-top:6px"><b>${esc(d.wirkstoff)}</b> — ${lage(d.lage)}</div>
+      ${d.atc_verfuegbar ? (d.atc || []).map((kl) => `<div style="margin-top:10px"><b>${esc(ti('cx_gruppe', { id: kl.id, name: kl.name }))}</b>
+          ${kl.mitglieder.length ? kl.mitglieder.map((m) => `<div class="comment" style="font-size:15px">${esc(m.name)} — ${lage(m.lage)}</div>`).join('') : `<div class="muted">${esc(t('cx_keine_mitglieder'))}</div>`}</div>`).join('') || `<div class="muted" style="margin-top:8px">${esc(t('cx_keine_atc'))}</div>`
+        : `<div class="muted" style="margin-top:8px">${esc(t('cx_atc_aus'))}</div>`}
+      ${d.atc_hinweis ? `<div class="muted" style="font-size:14px;margin-top:8px">${esc(t('cx_hinweis'))}</div>` : ''}</div>`;
+  };
+  // ── Meine Anfragen ──
+  const liste = el('<div data-meineanfragen></div>');
+  app.appendChild(liste);
+  async function zeigeAnfragen() {
+    let d; try { d = await api('GET', '/api/sourcing/anfragen'); } catch { return; }
+    liste.innerHTML = '';
+    if (!(d.anfragen || []).length) return;
+    liste.appendChild(el(`<div class="card"><h2 style="margin:0 0 6px">${esc(t('sc5_meine'))}</h2>${d.anfragen.map((a) => `<div class="comment" style="font-size:15px"><b>${esc(a.produkt)}</b> · ${esc(a.menge)} · ${esc(landName(a.herkunft))} → ${esc(landName(a.ziel))}
+      <div><span class="vt-stufe ${a.status === 'beantwortet' ? 'vt-ok' : ''}" style="margin-top:4px">${esc(t('sc5_st_' + a.status))}</span> <span class="muted" style="font-size:13px">${esc(fmtDateDe(String(a.erstellt).slice(0, 10)))}</span></div>
+      ${a.antwort ? `<div style="margin-top:4px">${esc(a.antwort)}</div>` : ''}</div>`).join('')}</div>`));
+  }
+  zeigeAnfragen();
+}
+
+async function openMedInt(bereich = 'onkologie') {
+  setDocTitle(t('mi_title'));
+  b2bKopf(t('mi_title'), t('mi_sub'));
+  if (b2bNurFachkreise()) return;
+  const box = el('<div data-medint><div class="loading">…</div></div>');
+  app.appendChild(box);
+  let d; try { d = await api('GET', '/api/medint?bereich=' + encodeURIComponent(bereich)); } catch (e) { box.innerHTML = ''; box.appendChild(errorState(e.message, () => openMedInt(bereich))); return; }
+  const eintrag = (e) => `<div class="comment" style="font-size:15px" data-mieintrag>
+    <div><b>${esc(e.titel)}</b>${e.wirkstoffe && e.wirkstoffe.length ? ` <span class="muted">(${esc(e.wirkstoffe.slice(0, 3).join(', '))})</span>` : ''}</div>
+    <div class="muted" style="font-size:14px">${esc([e.datum ? fmtDateDe(e.datum) : null, e.hersteller, e.phase ? ti('mi_phase', { p: e.phase }) : null].filter(Boolean).join(' · '))}</div>
+    <div style="font-size:14px;margin-top:2px"><a href="${esc(e.link)}" target="_blank" rel="noopener">${esc(t('hf_quelle'))}: ${esc(e.quelle)}</a>
+    ${e.art === 'zulassung' ? ` · <button class="linklike small" data-mibezug="${esc(e.titel)}">${esc(t('mi_bezug'))}</button>` : ''}</div></div>`;
+  const teil = (titel, hinweis, x) => `<div class="card"><h2 style="margin:0">${esc(titel)}</h2><div class="muted" style="font-size:14px;margin:2px 0 6px">${esc(hinweis)}</div>
+    ${!x.verfuegbar ? `<div data-miaus>${esc(t('mi_aus'))}</div>` : x.eintraege.length ? x.eintraege.map(eintrag).join('') : `<div class="muted">${esc(t('mi_leer'))}</div>`}
+    ${x.veraltet && x.verfuegbar ? `<div class="muted" style="font-size:13px">${esc(t('hf_gespeichert'))}</div>` : ''}</div>`;
+  box.innerHTML = `<div class="card"><div style="font-size:15px;font-weight:600;margin-bottom:6px">${esc(t('mi_bereich'))}</div>
+      <div class="row" style="gap:8px;flex-wrap:wrap">${d.bereiche.map((b) => `<button class="small sortbtn${b === d.bereich ? ' active' : ''}" data-mib="${b}" aria-pressed="${b === d.bereich}" style="min-height:44px">${esc(t('mi_b_' + b))}</button>`).join('')}</div>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:15px"><input type="checkbox" data-miabo ${d.abos.includes(d.bereich) ? 'checked' : ''} style="width:22px;height:22px"> ${esc(ti('mi_abo', { b: t('mi_b_' + d.bereich) }))}</label></div>
+    ${teil(t('mi_zulassungen'), t('mi_zul_hinweis'), d.zulassungen)}
+    ${teil(t('mi_studien'), t('mi_st_hinweis'), d.studien)}`;
+  box.querySelectorAll('[data-mib]').forEach((b) => b.onclick = () => openMedInt(b.dataset.mib));
+  box.querySelector('[data-miabo]').onchange = async (ev) => {
+    const neu = new Set(d.abos); if (ev.target.checked) neu.add(d.bereich); else neu.delete(d.bereich);
+    try { d.abos = (await api('POST', '/api/medint/abo', { bereiche: [...neu] })).abos; } catch (e) { alert(e.message); ev.target.checked = !ev.target.checked; }
+  };
+  box.querySelectorAll('[data-mibezug]').forEach((b) => b.onclick = () => { openSourcing().then(() => { const f = document.getElementById('sc_prod'); if (f) { f.value = b.dataset.mibezug; f.scrollIntoView({ block: 'center' }); } }); });
+}
+
+async function openAusbruch() {
+  setDocTitle(t('ab_title'));
+  b2bKopf(t('ab_title'), t('ab_sub'));
+  if (b2bNurFachkreise()) return;
+  const box = el('<div data-ausbruch><div class="loading">…</div></div>');
+  app.appendChild(box);
+  let d; try { d = await api('GET', '/api/ausbruch?country=' + encodeURIComponent(viewCountry())); } catch (e) { box.innerHTML = ''; box.appendChild(errorState(e.message, openAusbruch)); return; }
+  const region = (r) => (t('eb_region_' + r) !== 'eb_region_' + r ? t('eb_region_' + r) : r);
+  const signal = (s) => `<div class="card" data-absignal style="border-inline-start:4px solid var(--warn-fg)">
+    <div style="font-size:16px;font-weight:700">${esc(ti('ab_signal', { w: s.wirkstoff, r: region(s.region) }))}</div>
+    <div style="font-size:15px;margin-top:4px">${esc(ti('ab_zahlen', { n: s.neu, t: s.fenster_tage, v: s.vorher, l: s.laender.map(landName).join(', ') }))}</div>
+    <div class="muted" style="font-size:14px">${esc(ti('ab_quellen', { a: s.amtlich, p: s.apotheken }))}</div>
+    <div style="font-size:15px;margin-top:6px;font-weight:600">${esc(s.eigene_region ? t('ab_eigene') : s.lage_hier.amtlich_knapp ? t('ab_hier_knapp') : t('ab_pruefen'))}</div>
+    ${s.preise.length ? `<div style="margin-top:6px;font-size:15px"><b>${esc(t('ab_preise'))}</b>${s.preise.map((p) => `<div class="comment">${esc(p.bezeichnung)} · ${esc(geld(p.preis, p.waehrung))} · ${esc(p.lieferant || '—')} <span class="muted">(${esc(provLabel(p.herkunft, p.quelle))})</span></div>`).join('')}</div>`
+      : `<div class="muted" style="font-size:14px;margin-top:6px">${esc(t('ab_keine_preise'))}</div>`}
+    <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px"><button class="small" data-abwk="${esc(s.wirkstoff)}" style="min-height:44px">${esc(t('ab_details'))}</button>
+      <button class="ghost small" data-abbezug="${esc(s.wirkstoff)}" style="min-height:44px">${esc(t('mi_bezug'))}</button></div></div>`;
+  box.innerHTML = `<div class="muted" style="font-size:14px;margin:4px 2px 8px">${esc(t('ab_regel'))}</div>
+    ${d.signale.length ? d.signale.map(signal).join('') : `<div class="card" data-ableer>${esc(t('ab_leer'))}</div>`}
+    <div class="card"><h2 style="margin:0">${esc(t('ab_who'))}</h2><div class="muted" style="font-size:14px;margin:2px 0 6px">${esc(t('ab_who_hinweis'))}</div>
+      ${!d.who.verfuegbar ? `<div data-abwhoaus>${esc(t('mi_aus'))}</div>` : d.who.meldungen.map((m) => `<div class="comment" style="font-size:15px"><a href="${esc(m.link)}" target="_blank" rel="noopener">${esc(m.titel)}</a> <span class="muted" style="font-size:13px">${esc(fmtDateDe(m.datum))}</span></div>`).join('') || `<div class="muted">${esc(t('mi_leer'))}</div>`}</div>`;
+  box.querySelectorAll('[data-abwk]').forEach((b) => b.onclick = () => openWirkstoff(b.dataset.abwk));
+  box.querySelectorAll('[data-abbezug]').forEach((b) => b.onclick = () => { openSourcing().then(() => { const f = document.getElementById('sc_prod'); if (f) f.value = b.dataset.abbezug; }); });
+}
+
+// Redaktion/Handel: Proforma-Anfragen bearbeiten (Cockpit).
+async function sourcingPruefung(box) {
+  let d; try { d = await api('GET', '/api/sourcing/anfragen/alle'); } catch { return; }
+  const offen = (d.anfragen || []).filter((a) => a.status === 'neu' || a.status === 'in_bearbeitung');
+  if (!offen.length) return;
+  box.appendChild(el(`<div class="muted" style="margin:6px 2px;font-weight:700" data-sourcingsec>${esc(ti('sc5_cockpit', { n: offen.length }))}</div>`));
+  for (const a of offen) {
+    const k = el(`<div class="card" data-sourcingkarte>
+      <div style="font-size:16px"><b>${esc(a.produkt)}</b> · ${esc(a.menge)}</div>
+      <div style="font-size:15px">${esc(landName(a.herkunft))} → ${esc(landName(a.ziel))}${a.incoterm ? ' · ' + esc(a.incoterm) : ''}${a.transport ? ' · ' + esc(t(a.transport === 'luft' ? 'sc5_luft' : 'sc5_see')) : ''}</div>
+      <div style="font-size:15px">${a.betrieb ? `${esc(a.betrieb.name)} <span class="handle">@${esc(a.betrieb.handle)}</span> · ${esc(t(ACCT_I18N[a.betrieb.art] || '') || a.betrieb.art)} · ${esc(landName(a.betrieb.land || ''))} · ${esc(t(a.betrieb.verifiziert ? 'sc5_verifiziert' : 'sc5_nicht_verifiziert'))}` : '—'}</div>
+      ${a.notiz ? `<div class="comment" style="font-size:15px">${esc(a.notiz)}</div>` : ''}
+      <label for="sa_${esc(a.id)}" style="display:block;font-size:15px;margin-top:6px">${esc(t('sc5_antwort'))}</label><textarea id="sa_${esc(a.id)}" data-sa rows="2" maxlength="1000" style="width:100%"></textarea>
+      <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px">${['in_bearbeitung', 'beantwortet', 'abgelehnt'].map((st) => `<button class="small${st === 'beantwortet' ? '' : ' ghost'}" data-sst="${st}" style="min-height:44px">${esc(t('sc5_st_' + st))}</button>`).join('')}</div></div>`);
+    k.querySelectorAll('[data-sst]').forEach((b) => b.onclick = async () => {
+      try { await api('POST', `/api/sourcing/anfragen/${a.id}/status`, { status: b.dataset.sst, antwort: k.querySelector('[data-sa]').value }); k.remove(); } catch (e) { alert(e.message); }
+    });
+    box.appendChild(k);
+  }
+}
+
 async function openLogistik() {
   setDocTitle(t('lg_title'));
   app.innerHTML = '';
@@ -10331,7 +10553,7 @@ async function showNotifications() {
   setDocTitle(t('notif_doc'));
   const d = await api('GET','/api/notifications');
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
-  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_home:'🔴', shortage_ended:'✅', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', shortage_abroad:'🌍', shortage_bestaetigt:'🤝', shortage_noch_aktuell:'⏰', shortage_widerspruch:'✋', einladung:'👥', shortage_entfernt:'🛡️', meldung_pruefen:'🛡️', premium_ablauf:'⏳', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️', verify_rejected:'⚠️' };
+  const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_home:'🔴', shortage_ended:'✅', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', shortage_abroad:'🌍', shortage_bestaetigt:'🤝', shortage_noch_aktuell:'⏰', shortage_widerspruch:'✋', sourcing_anfrage:'📦', sourcing_antwort:'📦', medint_neu:'🧪', ausbruch_signal:'🌍', einladung:'👥', shortage_entfernt:'🛡️', meldung_pruefen:'🛡️', premium_ablauf:'⏳', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️', verify_rejected:'⚠️' };
   app.innerHTML = '';
   const procCount = d.notifications.filter(n => NOTIF_PROCUREMENT.has(n.type)).length;
   const showFilter = d.notifications.length >= 5 && procCount > 0 && procCount < d.notifications.length;
@@ -10364,7 +10586,7 @@ async function showNotifications() {
     const who = n.actor ? n.actor.display_name : t('notif_someone');
     // Systemmeldungen ohne handelnde Person: Hier hat niemand etwas getan,
     // eine Behoerde hat gemeldet. „Jemand hat …" waere schlicht falsch.
-    const noWho = n.type === 'shortage_entfernt' || n.type === 'meldung_pruefen' || n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'shortage_bestaetigt' || n.type === 'shortage_noch_aktuell' || n.type === 'shortage_widerspruch' || n.type === 'shortage_home' || n.type === 'shortage_ended' || /^anzeige_/.test(n.type) || n.type === 'premium_ablauf' || n.type === 'payment_confirmed' || n.type === 'payment_rejected' || n.type === 'verify_rejected';
+    const noWho = n.type === 'shortage_entfernt' || n.type === 'meldung_pruefen' || n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'shortage_bestaetigt' || n.type === 'shortage_noch_aktuell' || n.type === 'shortage_widerspruch' || n.type === 'sourcing_antwort' || n.type === 'medint_neu' || n.type === 'ausbruch_signal' || n.type === 'shortage_home' || n.type === 'shortage_ended' || /^anzeige_/.test(n.type) || n.type === 'premium_ablauf' || n.type === 'payment_confirmed' || n.type === 'payment_rejected' || n.type === 'verify_rejected';
     // Profilbild der handelnden Person (wer) + Typ-Emoji (was) — auf einen Blick erkennbar,
     // konsistent zu Feed/Verzeichnis/Suche. Ohne Person (System-Meldung) nur das Emoji.
     const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:var(--ok-bg)'}">
@@ -10390,6 +10612,10 @@ async function showNotifications() {
       else if (/^anzeige_/.test(n.type)) { openWerbung(); }
       else if (/^shortage_(abroad|home|ended)$/.test(n.type)) { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
       else if (n.type === 'shortage_noch_aktuell' || n.type === 'shortage_widerspruch') { mainScreen().then(() => goTab('shortages')); }
+      else if (n.type === 'sourcing_anfrage') { showModeration(); }
+      else if (n.type === 'sourcing_antwort') { openSourcing(); }
+      else if (n.type === 'medint_neu') { openMedInt(); }
+      else if (n.type === 'ausbruch_signal') { openAusbruch(); }
       else if (n.type === 'shortage_bestaetigt') { const w = n.ref_id || (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
       else if (n.type === 'verify_rejected') zurVerifizierung(); // Grund steht im Antrag, gleich neu stellen
       else if (n.type === 'watch_alert') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
@@ -10831,6 +11057,7 @@ async function showModeration() {
   app.append(head, aufgaben, ueberblick);
   anzeigenPruefung(aufgaben); // Anzeigen prüfen (lädt selbst)
   meldungsPruefung(aufgaben); // Apotheken-Meldungen mit Auffälligkeiten (lädt selbst)
+  sourcingPruefung(aufgaben); // Proforma-Anfragen an den Handelsarm (lädt selbst)
   api('GET', '/api/startklar').then((s) => { if (s) ueberblick.prepend(startklarKarte(s)); }).catch(() => {});
   api('GET', '/api/betrieb').then((b) => { if (b) ueberblick.appendChild(betriebsKarte(b)); }).catch(() => {});
   // Krypto-Zahlungen ZUERST: Hier wartet eine zahlende Kundin auf ihre Freischaltung.

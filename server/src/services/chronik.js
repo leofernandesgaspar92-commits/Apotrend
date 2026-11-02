@@ -245,6 +245,20 @@ export function createChronik({ jetzt = () => Date.now(), log = console } = {}) 
       return { land: cc, aufzeichnung_seit: start, heute, offen, neu, beendet };
     },
 
+    /**
+     * Episoden, die seit `ab` (YYYY-MM-DD) ERSTMALS gesehen wurden — über alle Länder
+     * (Ausbruchs-Radar). Wie bei der Wochenbilanz zählt nur, was nach dem ersten Abruf
+     * eines Landes auftauchte; sonst wäre beim Start alles „neu".
+     */
+    episodenSeit(ab) {
+      const out = [];
+      for (const liste of episoden.values()) for (const e of liste) {
+        const start = seit.get(e.land);
+        if (e.erstmals_gesehen >= ab && (!start || e.erstmals_gesehen > start)) out.push({ land: e.land, wirkstoff: e.wirkstoff, erstmals_gesehen: e.erstmals_gesehen, quelle: e.quelle });
+      }
+      return out;
+    },
+
     aufzeichnungSeit(land) { return seit.get(String(land || '').toUpperCase()) || null; },
 
     /** Länder, deren Behördenliste mitgeschrieben wird: [{ land, seit }]. */

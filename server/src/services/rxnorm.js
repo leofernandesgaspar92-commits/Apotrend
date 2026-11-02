@@ -47,6 +47,9 @@ export const RXNAV_BASE = 'https://rxnav.nlm.nih.gov/REST';
  * Ein Hinweis, den das Frontend vergessen kann, ist kein Hinweis. Ein Test
  * prueft, dass er in jeder Antwort steckt — auch in der leeren.
  */
+export const ATC_HINWEIS = 'Gleiche ATC-Gruppe laut WHO-ATC (über RxClass der National Library of Medicine). '
+  + 'Das sind VERSCHIEDENE Wirkstoffe mit ähnlicher Wirkung — keine Aussage über Austauschbarkeit, Dosierung oder '
+  + 'Zulassung im Zielland. Die Auswahl bleibt eine ärztliche bzw. pharmazeutische Entscheidung.';
 export const SUBSTITUTIONS_HINWEIS = 'Gleicher Wirkstoff laut RxNorm (US-Vokabular der National Library of Medicine). '
   + 'Das ist KEINE Aussage über Austauschbarkeit: Sie hängt an Darreichungsform, Stärke, Hilfsstoffen und '
   + 'nationaler Zulassung und ist hier nicht geprüft. Die Abgabeentscheidung bleibt bei der Apotheke.';
@@ -352,6 +355,46 @@ export function createRxNormService({
         stats.errors++;
         log.warn?.(`ApoPulse RxNorm: Schreibweise "${begriff}" nicht prüfbar — ${(e && e.message) || e}`);
         return { bekannt: null, vorschlaege: [] };
+      }
+    },
+    /**
+     * Wirkstoffe derselben ATC-Gruppe (WHO-ATC über RxClass, Stufe 4, z. B. J01CA
+     * „Penicilline mit erweitertem Spektrum"). Sprint 5, regulatorischer Cross-Check.
+     *
+     * GLEICHE ATC-GRUPPE HEISST NICHT AUSTAUSCHBAR: Die Gruppe fasst Wirkstoffe mit
+     * ähnlicher Wirkung zusammen — Dosierung, Spektrum, Gegenanzeigen unterscheiden
+     * sich. Die Liste ist ein Ausgangspunkt für die fachliche Prüfung (SUBSTITUTIONS_HINWEIS).
+     * Netzfehler: `null` (weiß es nicht) — nie gemerkt.
+     */
+    async atcGruppe(term, { max = 12 } = {}) {
+      const begriff = String(term || '').trim();
+      if (begriff.length < 3) return { klassen: [] };
+      const key = 'atc:' + begriff.toLowerCase();
+      const gecacht = cache.get(key);
+      if (gecacht !== undefined) { stats.cached++; return gecacht; }
+      stats.lookups++;
+      try {
+        const j = await holen(`/rxclass/class/byDrugName.json?drugName=${encodeURIComponent(begriff)}&relaSource=ATC`);
+        const infos = (j && j.rxclassDrugInfoList && j.rxclassDrugInfoList.rxclassDrugInfo) || [];
+        const klassen = new Map();
+        for (const i of Array.isArray(infos) ? infos : []) {
+          const k = i && i.rxclassMinConceptItem;
+          if (k && /^[A-Z]\d{2}[A-Z]{2}$/.test(String(k.classId || ''))) klassen.set(k.classId, String(k.className || k.classId));
+        }
+        const out = [];
+        for (const [id, name] of [...klassen].slice(0, 2)) {
+          const m = await holen(`/rxclass/classMembers.json?classId=${encodeURIComponent(id)}&relaSource=ATC&ttys=IN`);
+          const mitglieder = ((m && m.drugMemberGroup && m.drugMemberGroup.drugMember) || [])
+            .map((x) => x && x.minConcept && String(x.minConcept.name || '').trim()).filter(Boolean)
+            .filter((n, i, a) => a.indexOf(n) === i && n.toLowerCase() !== begriff.toLowerCase()).slice(0, max);
+          out.push({ id, name, mitglieder });
+        }
+        const erg = { klassen: out, hinweis: ATC_HINWEIS };
+        stats.hits++; cache.set(key, erg); return erg;
+      } catch (e) {
+        stats.errors++;
+        log.warn?.(`ApoPulse RxNorm: ATC-Gruppe "${begriff}" nicht abrufbar — ${(e && e.message) || e}`);
+        return null;
       }
     },
     stats: () => ({ ...stats, cacheSize: cache.size() }),

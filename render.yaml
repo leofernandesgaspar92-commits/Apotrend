@@ -139,6 +139,10 @@ services:
       # Schiffs-Zeile in „Kühlkette & Transport". Siehe server/DEPLOY.md „Externe Datenquellen".
       - key: AISSTREAM_API_KEY
         sync: false
+      # Proforma-Anfragen (Internationale Beschaffung) zusätzlich per E-Mail an das Handelsteam.
+      # Optional; ohne bleibt es beim Redaktions-Cockpit. Braucht den Mailversand (APOPULSE_MAIL_*).
+      - key: APOPULSE_HANDEL_EMAIL
+        sync: false
       # PORT wird von Render automatisch gesetzt — der Server liest process.env.PORT.
     # Dauerhafte Platte (nur Bezahltarif). Zum Aktivieren einkommentieren:
     # disk:
