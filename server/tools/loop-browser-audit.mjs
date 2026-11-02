@@ -2973,6 +2973,9 @@ async function main() {
     await page.click('[data-rechnen]'); await page.waitForTimeout(600);
     const erg = await page.locator('[data-scergebnis]').innerText().catch(() => '');
     for (const [rx, was] of [[/Total landed cost/, 'Gesamt'], [/CIF/, 'Zoll-Basis'], [/EZB \(Frankfurter\)/, 'Kursquelle'], [/Expected arrival/, 'Ankunft'], [/Storm gusts/, 'Hafen-Warnung'], [/40 ships/, 'Schiffe']]) if (!rx.test(erg)) findings.push(`B2B: Ergebnis ohne ${was}`);
+    // Geldbeträge dürfen nie mitten in der Zahl umbrechen (Fund 02.11.2026, Arabisch: „665,253.0 / 0 ج.م.").
+    const umbruch = await page.evaluate(() => [...document.querySelectorAll('[data-scergebnis] td:last-child')].filter((td) => getComputedStyle(td).whiteSpace !== 'nowrap').length);
+    if (umbruch) findings.push(`B2B: ${umbruch} Betragszelle(n) können mitten in der Zahl umbrechen`);
     await page.unroute('**/api/sourcing/kalkulation');
     await page.fill('#sc_prod', 'Amoxicillin 500 mg'); await page.click('[data-proforma]'); await page.waitForTimeout(900);
     if (!/Request sent/.test(await page.locator('[data-pfok]').innerText().catch(() => ''))) findings.push('B2B: Proforma-Anfrage nicht bestätigt');

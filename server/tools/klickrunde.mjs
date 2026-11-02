@@ -80,14 +80,18 @@ for (const [name, locale, reg] of PERSONEN.filter(([n]) => !process.env.NUR || n
   const tabs = await p.$$eval('#hauptnav [data-tab]', (xs) => xs.map((x) => x.dataset.tab));
   await p.click('#btnMenue'); await p.waitForTimeout(300);
   const menue = await p.$$eval('#kopfMenue .km-liste button', (xs) => xs.filter((x) => x.offsetParent && !['btnLogout','btnTheme','btnFont','btnSprache'].includes(x.id)).map((x, n) => ({ id: x.id, idx: n, text: x.innerText.split('\n')[0].trim() })));
-  const ziele = [...tabs.map((t) => ({ art: 'tab', t })), ...menue.map((m) => ({ art: 'menue', ...m })), { art: 'notif' }];
+  // Werkzeug-Links der Startseite (Sortiment, Logistik, Beschaffung, Zulassungen, Radar …).
+  await start();
+  const werkzeuge = await p.$$eval('.ov-links .ov-link', (xs) => xs.map((x) => ({ id: x.id, text: x.innerText.trim() })));
+  const ziele = [...tabs.map((t) => ({ art: 'tab', t })), ...menue.map((m) => ({ art: 'menue', ...m })), ...werkzeuge.map((w) => ({ art: 'werkzeug', ...w })), { art: 'notif' }];
   for (const z of ziele) {
-    wo = z.art === 'tab' ? 'Reiter ' + z.t : z.art === 'notif' ? 'Benachrichtigungen' : 'Menü ' + (z.text || z.id);
+    wo = z.art === 'tab' ? 'Reiter ' + z.t : z.art === 'notif' ? 'Benachrichtigungen' : z.art === 'werkzeug' ? 'Werkzeug ' + (z.text || z.id) : 'Menü ' + (z.text || z.id);
     try {
       await start();
       const oeffne = async () => {
         if (z.art === 'tab') await p.evaluate((t) => goTab(t), z.t);
         else if (z.art === 'notif') await p.click('#btnNotif');
+        else if (z.art === 'werkzeug') await p.click('#' + z.id);
         else { await p.click('#btnMenue'); await p.waitForTimeout(250); const xs = await p.$$('#kopfMenue .km-liste button'); const vis = []; for (const x of xs) if (await x.isVisible()) { const id = await x.getAttribute('id'); if (!['btnLogout','btnTheme','btnFont','btnSprache'].includes(id)) vis.push(x); } await vis[z.idx].click(); }
         await p.waitForTimeout(1200);
       };

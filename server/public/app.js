@@ -9842,17 +9842,17 @@ async function openSourcing() {
       d = await api('POST', '/api/sourcing/kalkulation', { zielLand: v('sc_nach'), zielWaehrung: v('sc_zielW'), warenwert: v('sc_ware'), waehrung: v('sc_wareW'), fracht: v('sc_fracht'), frachtWaehrung: v('sc_frachtW'),
         versicherungPct: v('sc_vers'), zollPct: v('sc_zoll'), mwstPct: v('sc_mwst'), gebuehren: v('sc_geb'), menge: v('sc_menge'), transitTage: v('sc_tage'), transport: v('sc_art') });
     } catch (e) { erg.innerHTML = `<div class="card" style="border-color:var(--warn-bd);margin-top:10px">${esc(e.message)}</div>`; return; }
-    const zeile = (p) => `<tr><td style="padding:4px 0">${esc(t('sc5_p_' + p.art))}${p.satz ? ` (${esc(String(p.satz))} %${p.basis ? ', ' + esc(ti('sc5_basis', { b: p.basis })) : ''})` : ''}</td><td style="text-align:end;padding:4px 0">${esc(geld(p.betrag, d.waehrung))}</td></tr>`;
+    const zeile = (p) => `<tr><td style="padding:4px 0">${esc(t('sc5_p_' + p.art))}${p.satz ? ` (${esc(String(p.satz))} %${p.basis ? ', ' + esc(ti('sc5_basis', { b: p.basis })) : ''})` : ''}</td><td style="text-align:end;padding:4px 0 4px 8px;white-space:nowrap">${esc(geld(p.betrag, d.waehrung))}</td></tr>`;
     const hafen = d.hafen ? `<div data-schafen style="margin-top:8px;font-size:15px"><b>${esc(ti('sc5_hafen', { h: d.hafen.name }))}</b>
         ${(d.hafen.hinweise || []).map((h) => `<div style="color:var(--warn-fg);font-weight:600">⚠ ${esc(ti(h.art === 'sturm' ? 'hf_sturm' : 'hf_starkregen', { d: h.datum }))}</div>`).join('')}
         ${d.hafen.schiffe && d.hafen.schiffe.im_gebiet ? `<div>${esc(ti('hf_schiffe', { n: d.hafen.schiffe.im_gebiet, a: d.hafen.schiffe.vor_anker }))}</div>` : ''}
         ${!(d.hafen.hinweise || []).length && !(d.hafen.schiffe && d.hafen.schiffe.im_gebiet) ? `<div class="muted">${esc(t('sc5_hafen_ruhig'))}</div>` : ''}</div>` : '';
     erg.innerHTML = `<div class="card" data-scergebnis style="margin-top:10px;background:var(--bg)">
       <table style="width:100%;font-size:15px;border-collapse:collapse">${d.posten.filter((p) => p.betrag || p.art === 'ware').map(zeile).join('')}
-        <tr style="border-top:2px solid var(--line);font-weight:800;font-size:18px"><td style="padding-top:6px">${esc(t('sc5_gesamt'))}</td><td style="text-align:end;padding-top:6px">${esc(geld(d.gesamt, d.waehrung))}</td></tr>
-        ${d.menge > 1 ? `<tr><td>${esc(t('sc5_je_einheit'))}</td><td style="text-align:end">${esc(geld(d.je_einheit, d.waehrung))}</td></tr>` : ''}</table>
+        <tr style="border-top:2px solid var(--line);font-weight:800;font-size:18px"><td style="padding-top:6px">${esc(t('sc5_gesamt'))}</td><td style="text-align:end;padding-top:6px;padding-inline-start:8px;white-space:nowrap">${esc(geld(d.gesamt, d.waehrung))}</td></tr>
+        ${d.menge > 1 ? `<tr><td>${esc(t('sc5_je_einheit'))}</td><td style="text-align:end;white-space:nowrap">${esc(geld(d.je_einheit, d.waehrung))}</td></tr>` : ''}</table>
       <div class="muted" style="font-size:14px;margin-top:6px">${esc(ti(d.zoll_basis === 'FOB' ? 'sc5_basis_fob' : 'sc5_basis_cif', {}))}</div>
-      <div class="muted" style="font-size:14px">${esc(ti('sc5_kurse', { q: (d.kurse.quellen || []).join(' + ') || '—', d: d.kurse.stand ? new Date(d.kurse.stand).toLocaleDateString(bcp47()) : '—' }))}${d.kurse.veraltet ? ' · ' + esc(t('cc_veraltet')) : ''}</div>
+      <div class="muted" style="font-size:14px">${esc(ti('sc5_kurse', { q: (d.kurse.quellen || []).map((x) => '\u2068' + x + '\u2069').join(' + ') || '—', d: d.kurse.stand ? new Date(d.kurse.stand).toLocaleDateString(bcp47()) : '—' }))}${d.kurse.veraltet ? ' · ' + esc(t('cc_veraltet')) : ''}</div>
       ${d.ankunft ? `<div style="margin-top:8px;font-size:16px"><b>${esc(ti('sc5_ankunft', { d: fmtDateDe(d.ankunft) }))}</b> <span class="muted" style="font-size:14px">${esc(t('sc5_ankunft_hilfe'))}</span></div>` : ''}
       ${hafen}
       <div style="margin-top:12px"><label for="sc_inco" style="font-size:15px;font-weight:600">${esc(t('sc5_incoterm'))}</label>

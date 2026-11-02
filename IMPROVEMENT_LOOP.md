@@ -4111,3 +4111,11 @@ ohne Zulassungsbehauptung, Panels mit Einordnung, Privat gesperrt), 14 Gegenprob
 **Grenze:** Live-Antworten von openFDA, ClinicalTrials.gov, WHO und RxClass von hier nicht erreichbar —
 Formate aus der Dokumentation; nach dem Deploy zeigt „Externe Daten" im Cockpit den Stand.
 
+
+### Prüfrunde nach Sprint 5 (2026-11-02)
+- **Klickrunde** erweitert um die Werkzeug-Links der Startseite (Sortiment, Logistik, Beschaffung,
+  Zulassungen, Radar): 6 Personen × 19–24 Ziele, 0 Funde (keine Skript-/Serverfehler, kein Deutsch in
+  anderen Sprachen, keine rohen Schlüssel).
+- **Sichtprüfung Arabisch, 360 px** (/sourcing mit Ergebnis): Der Gesamtbetrag brach mitten in der Zahl
+  um („665,253.0 / 0 ج.م.") — bei Geld missverständlich. Betragszellen jetzt `nowrap`; Kursquellen je
+  Name isoliert (sonst „+ EZB" in RTL verdreht). Audit prüft die Betragszellen.
