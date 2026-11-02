@@ -116,6 +116,20 @@ export function startklar({ env = {}, dauerhaft = { level: 'flüchtig' }, quelle
     '„Weiter mit Facebook" (optional)',
     'In vielen afrikanischen Ländern verbreiteter als Google-Konten.',
     'Bei Meta for Developers eine App anlegen und OAUTH_FACEBOOK_APP_ID / OAUTH_FACEBOOK_APP_SECRET setzen (docs/SOCIAL_LOGIN.md).');
+  // ── Internationale Beschaffung & Häfen (Sprint 5) ──────────────────────────
+  //  Beides optional. Fehlerfall, den sonst niemand bemerkt: Die Handels-E-Mail ist
+  //  eingetragen, der Mailversand aber nicht — dann kommen Anfragen nur im Cockpit an.
+  const handel = gesetzt('APOPULSE_HANDEL_EMAIL');
+  punkt('handel', handel && mail.aktiv ? 'ok' : handel ? 'warnung' : 'info',
+    'Proforma-Anfragen per E-Mail (optional)',
+    handel && !mail.aktiv
+      ? 'APOPULSE_HANDEL_EMAIL ist eingetragen, aber der E-Mail-Versand ist nicht eingerichtet — Anfragen kommen nur im Redaktions-Cockpit an.'
+      : 'Anfragen aus „Internationale Beschaffung" landen immer im Redaktions-Cockpit; zusätzlich per E-Mail ans Handelsteam, wenn gewünscht.',
+    handel ? 'E-Mail-Versand einrichten: APOPULSE_MAIL_PROVIDER, APOPULSE_MAIL_API_KEY, APOPULSE_MAIL_FROM (server/DEPLOY.md).' : 'APOPULSE_HANDEL_EMAIL auf die Adresse des Handelsteams setzen (braucht den E-Mail-Versand).');
+  punkt('schiffe', gesetzt('AISSTREAM_API_KEY') ? 'ok' : 'info',
+    'Schiffe an Häfen (optional)',
+    'Zeigt in „Kühlkette & Transport" und im Beschaffungs-Rechner, wie viele Schiffe vor Mombasa, Tema, Lagos, Durban u. a. warten. Ohne Schlüssel fehlt nur diese Zeile.',
+    'Kostenlos auf aisstream.io (mit GitHub anmelden → API Keys) einen Schlüssel erzeugen und als AISSTREAM_API_KEY in Render eintragen.');
   // ── Android-App (android/README.md, Schritt 4) ─────────────────────────────
   //  Ein einziger Fingerabdruck ist der typische Fehler: Der Selbsttest klappt, die
   //  Store-Installation zeigt eine Adressleiste (Google signiert neu).

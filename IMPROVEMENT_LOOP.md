@@ -4140,3 +4140,8 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Behoben:** „bestätigt" = 3 zählende Apotheken UND in den letzten 14 Tagen bestätigt UND nicht umstritten
   (`istUmstritten`, gleiche Regel wie domain/vertrauen.js). Die Meldung bleibt als Meldung sichtbar.
 - Test „Überall dieselbe Aussage" (Liste + Afrika-Übersicht), 2 Gegenproben rot; volle Suite unverändert grün.
+
+### Startklar-Check ergänzt (2026-11-02)
+- Neue Punkte „Proforma-Anfragen per E-Mail" (APOPULSE_HANDEL_EMAIL) und „Schiffe an Häfen" (AISSTREAM_API_KEY),
+  beide optional. Wichtig: Handels-E-Mail eingetragen, aber kein Mailversand → **Warnung** („kommen nur im
+  Cockpit an") statt stillem Nichts. Werte werden nie ausgegeben (Test). 1 Gegenprobe rot.

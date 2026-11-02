@@ -23,7 +23,8 @@ test('Alles eingerichtet: alles erledigt, keine Anleitungen mehr', () => {
   const env = { APOPULSE_TOKEN_SECRET: 'x', APOPULSE_PUBLIC_URL: 'https://a.example', APOPULSE_FIRMA_NAME: 'A', APOPULSE_FIRMA_ANSCHRIFT: 'B', APOPULSE_KONTAKT_EMAIL: 'c@a.example', APOPULSE_DATENSCHUTZ_GEPRUEFT: 'ja', APOPULSE_BANK_IBAN: 'AT00', APOPULSE_UST_SATZ: '20',
     APOPULSE_SMS_PROVIDER: 'africastalking', APOPULSE_SMS_USERNAME: 'u', APOPULSE_SMS_API_KEY: 'k',
     OAUTH_GOOGLE_CLIENT_ID: 'g', OAUTH_GOOGLE_CLIENT_SECRET: 'gs', OAUTH_FACEBOOK_APP_ID: 'f', OAUTH_FACEBOOK_APP_SECRET: 'fs',
-    APOPULSE_ANDROID_PACKAGE: 'com.apopulse.app', APOPULSE_ANDROID_SHA256: `${'A'.repeat(64)},${'b'.repeat(64)}` };
+    APOPULSE_ANDROID_PACKAGE: 'com.apopulse.app', APOPULSE_ANDROID_SHA256: `${'A'.repeat(64)},${'b'.repeat(64)}`,
+    APOPULSE_HANDEL_EMAIL: 'handel@a.example', AISSTREAM_API_KEY: 'k' };
   const r = startklar({ env, dauerhaft: { level: 'sicher' }, quellen: { gesamt: 3, liefern: 3, fehler: 0 }, mail: { aktiv: true }, vapidFest: true, wallets: [{ id: 'btc' }, { id: 'tron' }], zahlwege: ['stripe'] });
   assert.equal(r.erledigt, r.gesamt);
   assert.ok(r.punkte.every((p) => p.stufe === 'ok' && p.tun === null));
@@ -101,4 +102,16 @@ test('Über HTTP: nur Redaktion, ohne Geheimnisse', { timeout: 30000 }, async ()
   } finally {
     await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
   }
+});
+
+test('Handels-E-Mail und Schiffe (Sprint 5): optional; E-Mail ohne Mailversand ist eine Warnung, keine Erfolgsmeldung', () => {
+  const p = (r, id) => r.punkte.find((x) => x.id === id);
+  const leer = startklar({});
+  assert.deepEqual([p(leer, 'handel').stufe, p(leer, 'schiffe').stufe], ['info', 'info']);
+  const ohneMail = startklar({ env: { APOPULSE_HANDEL_EMAIL: 'handel@example.test' }, mail: { aktiv: false } });
+  assert.equal(p(ohneMail, 'handel').stufe, 'warnung');
+  assert.match(p(ohneMail, 'handel').warum, /nur im Redaktions-Cockpit/);
+  assert.equal(p(startklar({ env: { APOPULSE_HANDEL_EMAIL: 'x@example.test' }, mail: { aktiv: true } }), 'handel').stufe, 'ok');
+  assert.equal(p(startklar({ env: { AISSTREAM_API_KEY: 'k' } }), 'schiffe').stufe, 'ok');
+  assert.equal(JSON.stringify(startklar({ env: { APOPULSE_HANDEL_EMAIL: 'geheim-adresse@example.test', AISSTREAM_API_KEY: 'Zx9Qw3Zx9Qw3' } })).includes('Zx9Qw3'), false, 'Schlüssel im Ergebnis');
 });
