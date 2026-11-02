@@ -125,10 +125,10 @@ test('Ausbruchs-Radar: WHO-Meldungen mit Link; Signal erst ab 3 neuen und doppel
   const d = (n) => new Date(heute - n * 86_400_000).toISOString().slice(0, 10);
   const regionVon = (cc) => ({ KE: 'AFRICA', UG: 'AFRICA', TZ: 'AFRICA', EG: 'AFRICA', DE: 'EUROPE' })[cc] || null;
   const meldungen = [
-    { country: 'KE', wirkstoff: 'Oxytocin', gemeldet_am: d(2), provenance: 'community' },
-    { country: 'UG', wirkstoff: 'oxytocin', gemeldet_am: d(5), provenance: 'community' },
-    { country: 'DE', wirkstoff: 'Oxytocin', gemeldet_am: d(3), provenance: 'community' },
-    { country: 'EG', wirkstoff: 'Insulin', gemeldet_am: d(1), provenance: 'community' },
+    { country: 'KE', wirkstoff: 'Oxytocin', gemeldet_am: d(2), provenance: 'community', status: 'kritisch' },
+    { country: 'UG', wirkstoff: 'oxytocin', gemeldet_am: d(5), provenance: 'community', status: 'eingeschraenkt' },
+    { country: 'DE', wirkstoff: 'Oxytocin', gemeldet_am: d(3), provenance: 'community', status: 'kritisch' },
+    { country: 'EG', wirkstoff: 'Insulin', gemeldet_am: d(1), provenance: 'community', status: 'kritisch' },
     { country: 'EG', wirkstoff: 'Insulin', gemeldet_am: d(2), provenance: 'verified' }, // amtlich zählt über die Chronik, nicht doppelt
   ];
   const episoden = [{ land: 'TZ', wirkstoff: 'Oxytocin', erstmals_gesehen: d(4) }];
@@ -136,7 +136,7 @@ test('Ausbruchs-Radar: WHO-Meldungen mit Link; Signal erst ab 3 neuen und doppel
   assert.equal(s.length, 1, 'Signal ohne Schwelle oder mit Europa vermischt');
   assert.deepEqual([s[0].region, s[0].neu, s[0].vorher, s[0].amtlich, s[0].apotheken, s[0].laender], ['AFRICA', MIN_NEU, 0, 1, 2, ['KE', 'TZ', 'UG']]);
   // davor genauso viele → kein Anstieg
-  const flach = regionaleSignale({ episoden, meldungen: [...meldungen, ...['KE', 'UG'].map((c) => ({ country: c, wirkstoff: 'Oxytocin', gemeldet_am: d(20), provenance: 'community' }))], regionVon, heute });
+  const flach = regionaleSignale({ episoden, meldungen: [...meldungen, ...['KE', 'UG'].map((c) => ({ country: c, wirkstoff: 'Oxytocin', gemeldet_am: d(20), provenance: 'community', status: 'kritisch' }))], regionVon, heute });
   assert.equal(flach.length, 0, 'gleichbleibende Lage als Anstieg gemeldet');
   let uhr = heute;
   const r = createAusbruchsRadar({ speicher: { get: () => null, set() {} }, fetchImpl: async () => antwort({}), jetzt: () => uhr });
@@ -269,3 +269,22 @@ test('Zulassungs-Benachrichtigung auch aus dem Zwischenspeicher (vorher nur bei 
   assert.deepEqual(r.map((x) => x.eintrag.id), ['fda:2'], 'neue Zulassung aus dem Zwischenspeicher nicht gemeldet');
   assert.deepEqual(zuBenachrichtigen(ab, { daten: null, aus: 'keine' }), []);
 });
+
+test('Ausbruchs-Radar: Entwarnungen („wieder lieferbar") und Statuswechsel zählen nicht als neue Engpässe', () => {
+  const heute = Date.parse('2026-11-01T12:00:00Z');
+  const d = (n) => new Date(heute - n * 86_400_000).toISOString().slice(0, 10);
+  const regionVon = () => 'AFRICA';
+  // drei Meldungen von vor 40 Tagen, heute als „wieder lieferbar" gemeldet (gemeldet_am = heute)
+  const entwarnt = ['KE', 'UG', 'TZ'].map((c) => ({ country: c, wirkstoff: 'Oxytocin', gemeldet_am: d(0), provenance: 'community', status: 'verfuegbar', history: [{ am: d(40) }, { am: d(0) }] }));
+  assert.equal(regionaleSignale({ episoden: [], meldungen: entwarnt, regionVon, heute }).length, 0, 'Entwarnung als neue Engpassmeldung gezählt');
+  // offene Meldungen von vor 40 Tagen, heute nur von „kritisch" auf „eingeschränkt" geändert
+  const umgestuft = entwarnt.map((m) => ({ ...m, status: 'eingeschraenkt' }));
+  assert.equal(regionaleSignale({ episoden: [], meldungen: umgestuft, regionVon, heute }).length, 0, 'Statuswechsel als neue Meldung gezählt');
+  // kürzlich gemeldet, aber schon wieder lieferbar: kein offener Engpass mehr → keine Frühwarnung
+  const kurz = entwarnt.map((m) => ({ ...m, history: [{ am: d(3) }, { am: d(0) }] }));
+  assert.equal(regionaleSignale({ episoden: [], meldungen: kurz, regionVon, heute }).length, 0, 'bereits behobene Engpässe lösen eine Frühwarnung aus');
+  // echte neue Meldungen zählen weiter
+  const neu = entwarnt.map((m) => ({ ...m, status: 'kritisch', history: [{ am: d(1) }] }));
+  assert.equal(regionaleSignale({ episoden: [], meldungen: neu, regionVon, heute }).length, 1);
+});
+

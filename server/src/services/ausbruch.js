@@ -44,7 +44,7 @@ export function whoLesen(j) {
 /**
  * Regionaler Anstieg je Wirkstoff.
  * @param {{ episoden: Array<{land:string,wirkstoff:string,erstmals_gesehen:string,quelle?:string|null}>,
- *   meldungen: Array<{country?:string|null,wirkstoff:string,gemeldet_am:string,provenance:string}>,
+ *   meldungen: Array<{country?:string|null,wirkstoff:string,gemeldet_am:string,provenance:string,status?:string,history?:Array<{am:string}>}>,
  *   regionVon: (cc: string) => string|null, heute: number }} e
  */
 export function regionaleSignale({ episoden, meldungen, regionVon, heute }) {
@@ -61,7 +61,14 @@ export function regionaleSignale({ episoden, meldungen, regionVon, heute }) {
     if (datum >= grenze) { e.jetzt++; e.laender.add(land); if (art === 'amtlich') e.amtlich++; else e.apotheken++; } else e.vorher++;
   };
   for (const ep of episoden || []) zaehle(ep.land, ep.wirkstoff, ep.erstmals_gesehen, 'amtlich');
-  for (const m of meldungen || []) if (m.provenance === 'community') zaehle(String(m.country || '').toUpperCase(), m.wirkstoff, m.gemeldet_am, 'apotheke');
+  // Nur OFFENE Apotheken-Meldungen, gezählt am Tag der ERSTmeldung (Verlauf). `gemeldet_am` wird
+  // bei „wieder lieferbar" und Statuswechsel auf heute gesetzt — vorher zählte eine Entwarnung als
+  // neue Engpassmeldung und konnte eine falsche Frühwarnung an Großhändler auslösen (11/2026).
+  for (const m of meldungen || []) {
+    if (m.provenance !== 'community' || !['kritisch', 'eingeschraenkt'].includes(m.status)) continue;
+    const erst = (Array.isArray(m.history) && m.history[0] && m.history[0].am) || m.gemeldet_am;
+    zaehle(String(m.country || '').toUpperCase(), m.wirkstoff, erst, 'apotheke');
+  }
   return [...z.values()]
     .filter((e) => e.jetzt >= MIN_NEU && e.jetzt >= FAKTOR * e.vorher)
     .map((e) => ({

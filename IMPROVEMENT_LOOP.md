@@ -4153,3 +4153,11 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   Hatte jemand die Seite „Neue Zulassungen" in den 12 Stunden davor geöffnet, kam die Liste aus dem
   Zwischenspeicher — die neue Zulassung wurde nie gemeldet. Jetzt aus jedem Ergebnis mit Daten; doppelt
   meldet die Abo-Liste ohnehin nicht. Test + Gegenprobe.
+
+### Ausbruchs-Radar: keine Fehlalarme durch Entwarnungen (2026-11-02)
+- **Fund:** Der Radar zählte Apotheken-Meldungen nach `gemeldet_am` und ohne Statusprüfung. „Wieder lieferbar"
+  und Statuswechsel setzen `gemeldet_am` auf heute — drei Entwarnungen in einer Region hätten als „3 neue
+  Engpässe" gezählt und eine falsche Frühwarnung an Großhändler anderer Regionen ausgelöst.
+- **Behoben:** nur offene Meldungen (kritisch/eingeschränkt), gezählt am Tag der Erstmeldung (`history[0]`).
+- Test (Entwarnung, Umstufung, kürzlich behoben, echte neue Meldungen) + 2 Gegenproben rot (eine erst nach
+  Ergänzen des Falls „kürzlich gemeldet, schon behoben").
