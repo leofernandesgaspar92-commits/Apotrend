@@ -160,3 +160,33 @@ test('HTTP: Vertrauen in /api/shortages, Widerspruch-Routen, amtlich nicht wider
     await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
   }
 });
+
+test('Überall dieselbe Aussage: umstritten oder 14 Tage ohne Bestätigung ist nirgends mehr „bestätigt" (Liste, Afrika-Übersicht)', async () => {
+  const { regionLage } = await import('../src/services/regionLage.js');
+  const { COUNTRIES, laenderInRegion } = await import('../src/data/countries.js');
+  const { istBestaetigt } = await import('../src/services/shortages.js');
+  const { createShortagesRepo: repoNeu } = await import('../src/repo/shortagesRepo.js');
+  let tag = new Date().toISOString().slice(0, 10);
+  const repo = createMemoryRepo(); const orgAuth = createOrgAuthService(repo);
+  const socialRepo = createSocialRepo(); const mods = new Set();
+  const social = createSocialService(socialRepo, repo, { isModerator: (u) => mods.has(u) });
+  const shortagesRepo = repoNeu({ seed: false });
+  const svc = createShortagesService(shortagesRepo, social, { today: () => tag });
+  let i = 0;
+  const neu = (mod = false) => { const n = `Ü${++i}`; const r = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: n }, owner: { name: n, email: `u${i}@ue.test`, password: 'geheim123' } }); social.createProfile(r.user.id, { handle: `ue${i}`, displayName: n, country: 'UG', accountType: 'pharmacy' }); if (mod) mods.add(r.user.id); return r.user.id; };
+  const lage = () => regionLage({ shortagesRepo, chronik: { aufzeichnungSeit: () => null }, laender: COUNTRIES, codes: laenderInRegion('AFRICA'), heute: tag }).laender.find((l) => l.land === 'UG');
+  const [a, b, c, red] = [neu(), neu(), neu(), neu(true)];
+  const m = svc.reportShortage(a, { wirkstoff: 'Salbutamol', bezeichnung: 'Salbutamol', status: 'kritisch', country: 'UG' });
+  svc.confirmShortage(b, m.id); svc.confirmShortage(c, m.id);
+  assert.equal(istBestaetigt(svc.get(m.id), tag), true);
+  assert.equal(lage().apotheken_bestaetigt, 1);
+  svc.widersprechen(red, m.id, { grund: 'falscher_wirkstoff', text: 'Gemeint ist Salmeterol' });
+  assert.equal(istBestaetigt(svc.get(m.id), tag), false, 'trotz Zweifel der Redaktion „bestätigt"');
+  assert.equal(svc.fuerAnzeige(a, svc.get(m.id)).bestaetigt, false);
+  assert.equal(lage().apotheken_bestaetigt, 0, 'Afrika-Übersicht zählt umstrittene Meldung als bestätigt');
+  assert.equal(lage().apotheken, 1, 'Meldung verschwindet ganz (soll als Meldung sichtbar bleiben)');
+  svc.widerspruchZuruecknehmen(red, m.id);
+  tag = new Date(Date.parse(tag + 'T00:00:00Z') + 15 * 86400000).toISOString().slice(0, 10);
+  assert.equal(istBestaetigt(svc.get(m.id), tag), false, '15 Tage ohne Bestätigung noch „bestätigt"');
+  assert.equal(lage().apotheken_bestaetigt, 0);
+});

@@ -5,7 +5,7 @@ import { cleanSourceUrl } from '../domain/media.js';
 import { AppError } from '../domain/errors.js';
 import { gehoertZuLand } from '../domain/land.js';
 import { wirkstoffSchluessel } from '../domain/inn.js';
-import { bewerte, HOCH_KONTOARTEN, WIDERSPRUCH_GRUENDE } from '../domain/vertrauen.js';
+import { bewerte, HOCH_KONTOARTEN, WIDERSPRUCH_GRUENDE, UMSTRITTEN_AB } from '../domain/vertrauen.js';
 
 const STATUS_LABEL = { kritisch: 'Kritischer Engpass', eingeschraenkt: 'Eingeschränkt lieferbar', verfuegbar: 'Wieder verfügbar' };
 const VALID_STATUS = Object.keys(STATUS_LABEL);
@@ -85,9 +85,25 @@ export function zaehlendeApotheken(s) {
   const zaehlt = (uid) => { const seit = uid ? vertrauen.kontoSeit(uid) : null; const t = seit ? Date.parse(seit) : NaN; return Number.isNaN(t) || t <= grenze; };
   return (zaehlt(s.reporter_user_id) ? 1 : 0) + (s.confirmations || []).filter(zaehlt).length;
 }
-/** „Bestätigt": genug zählende Apotheken und nicht veraltet. Eine Stelle für alle Ansichten. */
+/**
+ * Umstritten (domain/vertrauen.js): Die Redaktion zweifelt, oder mindestens UMSTRITTEN_AB
+ * Fachleute widersprechen und es widersprechen mindestens so viele, wie bestätigen.
+ */
+export function istUmstritten(s) {
+  const w = (s && s.widersprueche) || [];
+  if (w.some((x) => x.redaktion)) return true;
+  const n = w.filter((x) => !x.redaktion).length;
+  return n >= UMSTRITTEN_AB && n >= zaehlendeApotheken(s);
+}
+/**
+ * „Bestätigt": genug zählende Apotheken, AKTUELL (in den letzten 14 Tagen bestätigt) und nicht
+ * umstritten. Eine Stelle für alle Ansichten — Liste, Afrika/Welt-Übersicht, öffentliche Seiten,
+ * Teilen-Vorschau, Alarme. Bis 11/2026 galt eine Meldung auch mit 20 Tagen ohne Bestätigung oder
+ * trotz Zweifel der Redaktion als „von 3 Apotheken bestätigt" — die Karte sagte dagegen
+ * „Status unklar" bzw. „Umstritten".
+ */
 export function istBestaetigt(s, heute) {
-  return zaehlendeApotheken(s) >= BESTAETIGT_AB_APOTHEKEN && aktualitaet(s, heute).stufe !== 'veraltet';
+  return zaehlendeApotheken(s) >= BESTAETIGT_AB_APOTHEKEN && aktualitaet(s, heute).stufe === 'aktuell' && !istUmstritten(s);
 }
 /** Apotheken-Meldung ohne Bestätigung seit … Tagen: „noch aktuell?" bzw. „veraltet". */
 export const PRUEFEN_NACH_TAGEN = 14;
@@ -192,7 +208,6 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
   function bestaetigtMelden(s, actorUserId = null) {
     if (s.provenance !== 'community' || !istBestaetigt(s, today()) || shortagesRepo.wasBestaetigtGemeldet(s.id)) return false;
     if (!['kritisch', 'eingeschraenkt'].includes(s.status)) return false;
-    if (vertrauenVon(s).stufe === 'umstritten') return false;
     shortagesRepo.markBestaetigtGemeldet(s.id);
     const n = zaehlendeApotheken(s);
     const empf = new Set([...beobachterImLand(s.wirkstoff, s.country), s.reporter_user_id].filter(Boolean));

@@ -4131,3 +4131,12 @@ Formate aus der Dokumentation; nach dem Deploy zeigt „Externe Daten" im Cockpi
   jetzt höchstens einmal je Person.
 - RxNorm läuft über denselben Abruf-Schalter wie die übrigen Quellen (Tests ohne Netz deterministisch).
 Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Gegenproben rot.
+
+### Konsistenz Datenwahrheit (2026-11-02)
+- **Fund:** `istBestaetigt` (eine Stelle für Afrika/Welt-Übersicht, öffentliche Länderseiten, Teilen-Vorschau,
+  „bestätigt"-Alarm) kannte die Widersprüche aus Sprint 4 nicht und galt bis 30 Tage ohne Bestätigung. Eine
+  Meldung, die die Redaktion angezweifelt hat oder seit 20 Tagen niemand bestätigt, stand dort weiter als
+  „von 3 Apotheken bestätigt" — während die Karte „Umstritten" bzw. „Status unklar" zeigte.
+- **Behoben:** „bestätigt" = 3 zählende Apotheken UND in den letzten 14 Tagen bestätigt UND nicht umstritten
+  (`istUmstritten`, gleiche Regel wie domain/vertrauen.js). Die Meldung bleibt als Meldung sichtbar.
+- Test „Überall dieselbe Aussage" (Liste + Afrika-Übersicht), 2 Gegenproben rot; volle Suite unverändert grün.
