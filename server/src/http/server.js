@@ -69,7 +69,7 @@ import { createWeltbank } from '../services/extern/weltbank.js';
 import { createHafenWetter, HAEFEN, SCHWELLE } from '../services/extern/wetter.js';
 import { createAisStream } from '../services/extern/aisstream.js';
 import { einstandskosten, ankunft, createSourcingAnfragen, HAFEN_FUER_LAND } from '../services/sourcing.js';
-import { createMedInt, createMedIntAbos, BEREICHE as MEDINT_BEREICHE, passtZu as medintPasst } from '../services/extern/medint.js';
+import { createMedInt, createMedIntAbos, BEREICHE as MEDINT_BEREICHE, passtZu as medintPasst, zuBenachrichtigen as medintZuBenachrichtigen } from '../services/extern/medint.js';
 import { createAusbruchsRadar, regionaleSignale, ALARM_KONTOARTEN } from '../services/ausbruch.js';
 import { createDatenApi, zugangPruefen, engpassZeile, fuerSchnittstelle, alsCsv } from '../services/datenApi.js';
 import { werbeplaetzeAusUmgebung, ZIELGRUPPEN } from '../data/werbeplaetze.js';
@@ -1127,7 +1127,7 @@ function aktuelleSignale() {
 async function laufB2B() {
   const z = await medint.zulassungen();
   let zulassungen = 0, alarme = 0;
-  if (z.aus === 'live') for (const { userId, eintrag } of medintAbos.neue(z.daten || [])) {
+  for (const { userId, eintrag } of medintZuBenachrichtigen(medintAbos, z)) {
     social.pushNotification({ userId, type: 'medint_neu', actorUserId: null, refType: 'medint', refId: eintrag.id, label: `${eintrag.titel} · ${(eintrag.wirkstoffe || [])[0] || ''}`.trim() });
     zulassungen++;
   }

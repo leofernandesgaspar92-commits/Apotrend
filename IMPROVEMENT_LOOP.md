@@ -4145,3 +4145,11 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - Neue Punkte „Proforma-Anfragen per E-Mail" (APOPULSE_HANDEL_EMAIL) und „Schiffe an Häfen" (AISSTREAM_API_KEY),
   beide optional. Wichtig: Handels-E-Mail eingetragen, aber kein Mailversand → **Warnung** („kommen nur im
   Cockpit an") statt stillem Nichts. Werte werden nie ausgegeben (Test). 1 Gegenprobe rot.
+
+### Ladezeit geprüft · Zulassungs-Benachrichtigung repariert (2026-11-02)
+- **Ladezeit:** app.js 843 KB → 175 KB per Brotli (einmal je Version gerechnet, beim Start vorgewärmt), dazu
+  Service-Worker-Cache. Kein weiterer sinnvoller Gewinn ohne großen Umbau — so gelassen.
+- **Fund:** Der tägliche B2B-Lauf meldete neue FDA-Zulassungen nur bei frischem Abruf (`aus === 'live'`).
+  Hatte jemand die Seite „Neue Zulassungen" in den 12 Stunden davor geöffnet, kam die Liste aus dem
+  Zwischenspeicher — die neue Zulassung wurde nie gemeldet. Jetzt aus jedem Ergebnis mit Daten; doppelt
+  meldet die Abo-Liste ohnehin nicht. Test + Gegenprobe.

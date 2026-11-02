@@ -259,3 +259,13 @@ test('HTTP: Fachkreise-Sperre, Rechnung mit gesicherten Kursen, Anfrage → Cock
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('Zulassungs-Benachrichtigung auch aus dem Zwischenspeicher (vorher nur bei frischem Abruf → nie gemeldet)', async () => {
+  const { zuBenachrichtigen } = await import('../src/services/extern/medint.js');
+  const ab = createMedIntAbos(); ab.setzen('onko', ['onkologie']);
+  const e = (id) => ({ id, art: 'zulassung', klassen: ['Kinase Inhibitor [EPC]'] });
+  assert.deepEqual(zuBenachrichtigen(ab, { daten: [e('fda:1')], aus: 'live' }), [], 'erster Lauf ist still');
+  const r = zuBenachrichtigen(ab, { daten: [e('fda:1'), e('fda:2')], aus: 'zwischenspeicher' });
+  assert.deepEqual(r.map((x) => x.eintrag.id), ['fda:2'], 'neue Zulassung aus dem Zwischenspeicher nicht gemeldet');
+  assert.deepEqual(zuBenachrichtigen(ab, { daten: null, aus: 'keine' }), []);
+});

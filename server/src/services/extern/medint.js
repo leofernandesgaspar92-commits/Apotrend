@@ -95,6 +95,16 @@ export function createMedInt({ speicher, fetchImpl, jetzt = () => Date.now(), ta
   };
 }
 
+/**
+ * Zu benachrichtigende Abonnent:innen aus einem Abruf-Ergebnis — egal ob frisch, aus dem
+ * Zwischenspeicher oder gesichert: Die Abo-Liste merkt sich, was schon gemeldet ist.
+ * Bis 11/2026 meldete der Lauf nur bei „live" — öffnete jemand die Seite vorher, kam die
+ * Liste aus dem Zwischenspeicher und die neue Zulassung wurde nie gemeldet.
+ */
+export function zuBenachrichtigen(abos, ergebnis) {
+  return ergebnis && Array.isArray(ergebnis.daten) ? abos.neue(ergebnis.daten) : [];
+}
+
 // ── Abos je Fachgebiet + Benachrichtigung über NEUE Zulassungen ──────────────
 //  Erster Lauf merkt nur, was schon da ist (sonst bekäme jede:r 60 Tage auf einmal).
 export function createMedIntAbos() {
