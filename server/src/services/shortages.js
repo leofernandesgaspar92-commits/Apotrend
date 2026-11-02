@@ -149,7 +149,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       erinnert: undefined, pruef_gemeldet: undefined, bestaetigt_gemeldet: undefined,
       // Widersprüche: nur Anzahl und Gründe nach außen, keine Benutzer-IDs. Die Begründung
       // der Redaktion ist öffentlich (sie ist die Aussage), die der Community nicht.
-      widersprueche: undefined,
+      widersprueche: undefined, widerspruch_gemeldet: undefined,
       widerspruch_anzahl: (s.widersprueche || []).filter((w) => !w.redaktion).length,
       widerspruch_gruende: (s.widersprueche || []).filter((w) => !w.redaktion).reduce((o, w) => ({ ...o, [w.grund]: (o[w.grund] || 0) + 1 }), {}),
       redaktion_zweifel: ((s.widersprueche || []).find((w) => w.redaktion) || {}).text || null,
@@ -518,7 +518,9 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       // Die Redaktion muss begründen — ihr Zweifel wird allen angezeigt.
       if (redaktion && t.length < 5) throw new AppError('widerspruch_text', 'Bitte kurz begründen (wird bei der Meldung angezeigt).', 400);
       const updated = shortagesRepo.widersprechen(id, { userId, grund: g, text: t || null, am: today(), redaktion });
-      if (s.reporter_user_id && !(s.widersprueche || []).some((w) => w.userId === userId)) {
+      // Höchstens einmal je Person benachrichtigen — auch bei Zurücknehmen und erneutem Widersprechen.
+      if (s.reporter_user_id && !shortagesRepo.wasWiderspruchGemeldet(id, userId)) {
+        shortagesRepo.markWiderspruchGemeldet(id, userId);
         social.pushNotification({ userId: s.reporter_user_id, type: 'shortage_widerspruch', actorUserId: null, refType: 'shortage', refId: id, label: s.wirkstoff });
       }
       return decorate(updated, userId);

@@ -96,6 +96,8 @@ test('Widerspruch: Grund Pflicht, umstritten ab 2, Bestätigen hebt eigenen Wide
   assert.equal(w1.i_disputed, true);
   assert.equal(w1.widersprueche, undefined, 'rohe Widersprüche (mit Benutzer-IDs) nach außen');
   assert.ok(social.notifications(a).some((n) => n.type === 'shortage_widerspruch' && !n.actor), 'Meldende nicht (anonym) benachrichtigt');
+  svc.widerspruchZuruecknehmen(b, m.id); svc.widersprechen(b, m.id, { grund: 'bei_uns_lieferbar' }); // Hin und Her
+  assert.equal(social.notifications(a).filter((n) => n.type === 'shortage_widerspruch').length, 1, 'Meldende per Hin und Her mit Benachrichtigungen geflutet');
   svc.widersprechen(b, m.id, { grund: 'doppelt' }); // zweites Mal: ersetzt, zählt nicht doppelt
   const w2 = svc.widersprechen(c, m.id, { grund: 'bei_uns_lieferbar' });
   assert.deepEqual([w2.widerspruch_anzahl, w2.vertrauen.stufe], [2, 'umstritten']);

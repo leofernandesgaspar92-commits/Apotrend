@@ -101,7 +101,8 @@ export function createSourcingAnfragen({ jetzt = () => Date.now() } = {}) {
   /** @type {Map<string, any>} */
   const anfragen = new Map();
   let nr = 0;
-  const text = (v, max) => String(v ?? '').trim().slice(0, max);
+  // Einzeilige Felder ohne Steuerzeichen (landen u. a. im E-Mail-Betreff); die Notiz behält Zeilenumbrüche.
+  const text = (v, max, zeilen = false) => String(v ?? '').replace(zeilen ? /[\u0000-\u0009\u000b-\u001f\u007f]/g : /[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, max);
   return {
     erstellen(userId, b = {}) {
       const produkt = text(b.produkt, 160);
@@ -115,7 +116,7 @@ export function createSourcingAnfragen({ jetzt = () => Date.now() } = {}) {
       if (offen >= 20) throw new AppError('sourcing_zu_viele', 'Sie haben schon 20 offene Anfragen. Bitte warten Sie auf Antworten.', 429);
       const id = `pf${(jetzt()).toString(36)}${(++nr).toString(36)}`;
       const a = { id, userId, produkt, menge, herkunft, ziel, incoterm, transport: TRANSPORTARTEN.includes(b.transport) ? b.transport : null,
-        notiz: text(b.notiz, 1000) || null, status: 'neu', antwort: null, erstellt: new Date(jetzt()).toISOString(), aktualisiert: null };
+        notiz: text(b.notiz, 1000, true) || null, status: 'neu', antwort: null, erstellt: new Date(jetzt()).toISOString(), aktualisiert: null };
       anfragen.set(id, a);
       return { ...a };
     },
@@ -126,7 +127,7 @@ export function createSourcingAnfragen({ jetzt = () => Date.now() } = {}) {
       const a = anfragen.get(id);
       if (!a) throw new AppError('sourcing_unbekannt', 'Anfrage nicht gefunden.', 404);
       if (!ANFRAGE_STATUS.includes(status)) throw new AppError('sourcing_status', 'Unbekannter Status.', 400);
-      a.status = status; a.antwort = text(antwort, 1000) || a.antwort; a.aktualisiert = new Date(jetzt()).toISOString();
+      a.status = status; a.antwort = text(antwort, 1000, true) || a.antwort; a.aktualisiert = new Date(jetzt()).toISOString();
       return { ...a };
     },
     get: (id) => (anfragen.has(id) ? { ...anfragen.get(id) } : null),

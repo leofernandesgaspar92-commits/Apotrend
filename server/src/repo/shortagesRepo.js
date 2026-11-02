@@ -211,6 +211,8 @@ export function createShortagesRepo({ seed = true, today = null } = {}) {
       s.zuletzt_aktiv = am; s.erinnert = false;
       return { ...s, confirmations: [...s.confirmations] };
     },
+    wasWiderspruchGemeldet(id, userId) { const s = shortages.get(id); return !!(s && Array.isArray(s.widerspruch_gemeldet) && s.widerspruch_gemeldet.includes(userId)); },
+    markWiderspruchGemeldet(id, userId) { const s = shortages.get(id); if (!s) return; if (!Array.isArray(s.widerspruch_gemeldet)) s.widerspruch_gemeldet = []; if (!s.widerspruch_gemeldet.includes(userId)) s.widerspruch_gemeldet.push(userId); },
     markErinnert(id) { const s = shortages.get(id); if (s) s.erinnert = true; },
     wasBestaetigtGemeldet(id) { const s = shortages.get(id); return !!(s && s.bestaetigt_gemeldet); },
     markBestaetigtGemeldet(id) { const s = shortages.get(id); if (s) s.bestaetigt_gemeldet = true; },

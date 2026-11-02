@@ -164,6 +164,18 @@ const translateLimiter = createRateLimiter({ max: 60, windowMs: 60 * 60 * 1000 }
 // Lagebild: jeder neue Belegstand ist ein Anbieter-Aufruf. Zwischengespeicherte
 // Antworten zaehlen nicht (siehe Route).
 const lagebildLimiter = createRateLimiter({ max: 30, windowMs: 60 * 60 * 1000 });
+// RxNorm (NIH) erlaubt rund 20 Abrufe je Sekunde und IP — darüber sperrt die NIH die ganze
+// Plattform. Jeder neue Begriff in Wirkstoff-Prüfung/Cross-Check löst bis zu drei Abrufe aus,
+// darum je Konto und insgesamt begrenzt (Sprint-5-Prüfung, 11/2026).
+const rxAbrufJeKonto = createRateLimiter({ max: 60, windowMs: 60 * 60 * 1000 });
+const rxAbrufGesamt = createRateLimiter({ max: 1500, windowMs: 60 * 60 * 1000 });
+const rxAbrufErlaubt = (userId) => {
+  if (rxAbrufJeKonto.check('rx:' + userId).blocked || rxAbrufGesamt.check('rx').blocked) return false;
+  rxAbrufJeKonto.fail('rx:' + userId); rxAbrufGesamt.fail('rx');
+  return true;
+};
+// Proforma-Anfragen lösen Benachrichtigungen und ggf. eine E-Mail an das Handelsteam aus.
+const sourcingJeKonto = createRateLimiter({ max: 10, windowMs: 60 * 60 * 1000 });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, '..', '..', 'public');
@@ -386,7 +398,7 @@ const exchange = createExchangeService(exchangeRepo, social, repo, shortagesRepo
 // bisher; die Ergaenzung kann die Suche nur besser machen, nie schlechter.
 const rxnorm = String(process.env.APOPULSE_RXNORM || '').toLowerCase() === 'off'
   ? null
-  : createRxNormService();
+  : createRxNormService({ fetchImpl: externFetch }); // derselbe Schalter wie die übrigen externen Quellen
 const search = createSearchService({ social, shortagesRepo, pricesRepo, rabatteRepo, exchange, rxnorm });
 const amr = createAmrService();
 const overview = createOverviewService({ shortages, exchange, social, rabatte, prices, amr });
@@ -1587,7 +1599,9 @@ const routes = [
   }],
   ['POST', /^\/api\/sourcing\/anfrage$/, true, async ({ userId, body }) => {
     const p = fachkreisPflicht(userId);
+    if (sourcingJeKonto.check('sf:' + userId).blocked) throw new AppError('sourcing_zu_schnell', 'Zu viele Anfragen in kurzer Zeit. Bitte in einer Stunde erneut versuchen.', 429);
     const a = sourcingAnfragen.erstellen(userId, body || {});
+    sourcingJeKonto.fail('sf:' + userId);
     for (const m of socialRepo.listProfiles().filter((x) => social.isModerator(x.user_id))) {
       social.pushNotification({ userId: m.user_id, type: 'sourcing_anfrage', actorUserId: userId, refType: 'sourcing', refId: a.id, label: `${a.produkt} · ${a.herkunft} → ${a.ziel}` });
     }
@@ -1623,6 +1637,7 @@ const routes = [
       const apo = shortagesRepo.list({ country: land }).filter((z) => z.provenance === 'community' && ['kritisch', 'eingeschraenkt'].includes(z.status) && gleicherWirkstoff(z.wirkstoff, w));
       return { amtlich_knapp: amtlich, apotheken_meldungen: apo.length, beobachtet: !!chronik.aufzeichnungSeit(land) };
     };
+    if (rxnorm && !rxAbrufErlaubt(userId)) throw new AppError('abfragen_zu_viele', 'Zu viele Abfragen in kurzer Zeit. Bitte in einigen Minuten erneut versuchen.', 429);
     const atc = rxnorm ? await rxnorm.atcGruppe(wirkstoff) : null;
     return {
       wirkstoff, land, behoerde: { name: c.regulator || null, url: c.regulator_url || null },
@@ -2453,7 +2468,7 @@ const routes = [
   //     eine Behördenliste oder frühere Meldungen führen → „wird geführt als …".
   //  2. Sonst RxNorm-Rechtschreibhilfe (NIH). Immer nur Vorschlag mit Quelle; übernimmt die
   //     Fachperson mit einem Tipp. Ohne Netz: keine Vorschläge, das Melden geht trotzdem.
-  ['GET', /^\/api\/wirkstoff-pruefen$/, true, async ({ query }) => {
+  ['GET', /^\/api\/wirkstoff-pruefen$/, true, async ({ userId, query }) => {
     const name = String(query.get('name') || '').trim().slice(0, 120);
     if (name.length < 3) return { eingabe: name, bekannt: null, vorschlaege: [] };
     const key = wirkstoffSchluessel(name);
@@ -2467,6 +2482,8 @@ const routes = [
       return { eingabe: name, bekannt: true, vorschlaege: n.toLowerCase() === name.toLowerCase() ? [] : [{ name: n, quelle: 'ApoPulse' }] };
     }
     if (!rxnorm) return { eingabe: name, bekannt: null, vorschlaege: [] };
+    // Über der Grenze: still keine Vorschläge — das Melden selbst geht immer weiter.
+    if (!rxAbrufErlaubt(userId)) return { eingabe: name, bekannt: null, vorschlaege: [], begrenzt: true };
     const r = await rxnorm.schreibweise(name);
     return { eingabe: name, bekannt: r.bekannt, vorschlaege: r.vorschlaege.map((v) => ({ name: v, quelle: 'RxNorm (NIH)' })) };
   }],

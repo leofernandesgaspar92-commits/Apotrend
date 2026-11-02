@@ -4119,3 +4119,15 @@ Formate aus der Dokumentation; nach dem Deploy zeigt „Externe Daten" im Cockpi
 - **Sichtprüfung Arabisch, 360 px** (/sourcing mit Ergebnis): Der Gesamtbetrag brach mitten in der Zahl
   um („665,253.0 / 0 ج.م.") — bei Geld missverständlich. Betragszellen jetzt `nowrap`; Kursquellen je
   Name isoliert (sonst „+ EZB" in RTL verdreht). Audit prüft die Betragszellen.
+
+### Sicherheitsprüfung Sprint 4/5 (2026-11-02)
+- **RxNorm-Abrufe gebremst:** `/api/wirkstoff-pruefen` und `/api/crosscheck` lösten je neuem Begriff bis zu
+  drei NIH-Abrufe aus — ohne Grenze. Mit Fantasiebegriffen hätte ein Konto die NIH-Grenze (~20/s je IP)
+  reißen und RxNorm für alle sperren können. Jetzt 60 je Konto und Stunde, 1500 gesamt; darüber zeigt die
+  Prüfung still keine Vorschläge (Melden geht immer), der Cross-Check sagt „kurz warten" (429).
+- **Proforma-Anfragen:** höchstens 10 je Konto und Stunde (jede löst Benachrichtigungen und ggf. eine E-Mail
+  aus); Steuerzeichen aus einzeiligen Feldern entfernt (kein „\r\nBcc:" im E-Mail-Betreff).
+- **Widerspruch:** Zurücknehmen + erneut widersprechen schickte der Meldenden jedes Mal eine Benachrichtigung —
+  jetzt höchstens einmal je Person.
+- RxNorm läuft über denselben Abruf-Schalter wie die übrigen Quellen (Tests ohne Netz deterministisch).
+Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Gegenproben rot.

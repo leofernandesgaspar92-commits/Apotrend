@@ -146,6 +146,38 @@ test('Ausbruchs-Radar: WHO-Meldungen mit Link; Signal erst ab 3 neuen und doppel
   assert.equal(r.zuMelden(s).length, 1, 'nach 14 Tagen nicht erneut gemeldet');
 });
 
+test('HTTP: Bremsen — RxNorm-Abrufe je Konto (Prüfung still, Cross-Check 429), Proforma-Anfragen je Stunde', { timeout: 90000 }, async () => {
+  const kind = spawn(process.execPath, [join(ROOT, 'src', 'http', 'server.js')], {
+    env: { ...process.env, PORT: '0', APOPULSE_TOKEN_SECRET: 'b2b-2', APOPULSE_PRESSE: 'aus', APOPULSE_EXTERN_AUS: '1', DATABASE_URL: '', APOPULSE_DATA_FILE: '' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  let log = '';
+  try {
+    const port = await new Promise((ok, fail) => {
+      const zeit = setTimeout(() => fail(new Error('Server kam nicht hoch:\n' + log)), 20000);
+      const l = (x) => { log += x; const m = log.match(/läuft auf http:\/\/localhost:(\d+)/); if (m) { clearTimeout(zeit); ok(Number(m[1])); } };
+      kind.stdout.on('data', l); kind.stderr.on('data', l);
+    });
+    const B = `http://localhost:${port}`;
+    const tok = (await (await fetch(B + '/api/register', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'gh', email: 'gh@br.test', password: 'Passwort-1234', country: 'KE', accountType: 'wholesale' }) })).json()).token;
+    const H = { 'content-type': 'application/json', authorization: 'Bearer ' + tok };
+    for (let i = 0; i < 60; i++) {
+      const r = await (await fetch(B + '/api/wirkstoff-pruefen?name=Xylofantin' + String.fromCharCode(97 + (i % 26)) + i, { headers: H })).json();
+      assert.equal(r.begrenzt, undefined, `Abruf ${i + 1} schon begrenzt`);
+    }
+    const zuViel = await (await fetch(B + '/api/wirkstoff-pruefen?name=Xylofantinzz', { headers: H })).json();
+    assert.deepEqual([zuViel.begrenzt, zuViel.vorschlaege], [true, []], 'RxNorm-Abrufe je Konto nicht begrenzt');
+    const cx = await fetch(B + '/api/crosscheck?wirkstoff=Amoxicillin&land=KE', { headers: H });
+    assert.equal(cx.status, 429); assert.equal((await cx.json()).code, 'abfragen_zu_viele');
+    for (let i = 0; i < 10; i++) {
+      const r = await fetch(B + '/api/sourcing/anfrage', { method: 'POST', headers: H, body: JSON.stringify({ produkt: 'P' + i, menge: '1', herkunft: 'IN', ziel: 'KE' }) });
+      assert.equal(r.status, 200, 'Anfrage ' + (i + 1));
+    }
+    const elf = await fetch(B + '/api/sourcing/anfrage', { method: 'POST', headers: H, body: JSON.stringify({ produkt: 'P11', menge: '1', herkunft: 'IN', ziel: 'KE' }) });
+    assert.equal(elf.status, 429); assert.equal((await elf.json()).code, 'sourcing_zu_schnell');
+  } finally {
+    await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
+  }
+});
+
 test('HTTP: Fachkreise-Sperre, Rechnung mit gesicherten Kursen, Anfrage → Cockpit → Antwort, Cross-Check ehrlich, Ausbruchs-Alarm nur an andere Regionen', { timeout: 90000 }, async () => {
   const dir = mkdtempSync(join(tmpdir(), 'apo-b2b-'));
   const datei = join(dir, 'stand.json');
