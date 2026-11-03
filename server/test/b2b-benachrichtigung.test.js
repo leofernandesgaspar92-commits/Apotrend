@@ -18,7 +18,7 @@ function b2bLabel(sp) {
   const T = I[sp];
   const ctx = {
     t: (k) => T[k] || k, ti: (k, v) => (T[k] || k).replace(/\{(\w+)\}/g, (m, x) => v[x]),
-    landLabel: (cc) => ({ IN: '🇮🇳 India', KE: '🇰🇪 Kenya' })[cc] || cc,
+    landName: (cc) => new Intl.DisplayNames([sp], { type: 'region' }).of(cc),
   };
   vm.createContext(ctx); vm.runInContext(app.slice(start, ende) + ';globalThis.f = b2bLabel;', ctx);
   return ctx.f;
@@ -39,7 +39,9 @@ test('Proforma-Antwort: Status in Klartext, in allen 5 Sprachen und für jeden S
 });
 
 test('Proforma-Anfrage (Redaktion): Länder statt Codes', () => {
-  assert.equal(b2bLabel('en')('sourcing_anfrage', 'Amoxicillin · IN → KE'), 'Amoxicillin · 🇮🇳 India → 🇰🇪 Kenya');
+  // Herkunft ist oft kein Plattform-Land (Indien, China) — bis 11/2026 blieb dann „IN" stehen, Kenia stand englisch.
+  assert.equal(b2bLabel('en')('sourcing_anfrage', 'Amoxicillin · IN → KE'), 'Amoxicillin · India → Kenya');
+  assert.equal(b2bLabel('de')('sourcing_anfrage', 'Amoxicillin · CN → KE'), 'Amoxicillin · China → Kenia');
   assert.match(server, /type: 'sourcing_anfrage'[^\n]*label: `\$\{a\.produkt\} · \$\{a\.herkunft\} → \$\{a\.ziel\}`/);
 });
 

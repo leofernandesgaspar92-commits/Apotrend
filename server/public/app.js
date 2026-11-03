@@ -9813,7 +9813,7 @@ async function openSourcing() {
       <div style="flex:1;min-width:140px">${feld('sc_nach', t('sc5_ziel'), `<select id="sc_nach" style="width:100%;min-height:44px">${opt(laender, meinLand, landName)}</select>`)}</div>
     </div>
     <div class="row" style="gap:10px;flex-wrap:wrap">
-      <div style="flex:2;min-width:150px">${feld('sc_ware', t('sc5_warenwert'), zahlFeld('sc_ware'))}</div>
+      <div style="flex:2;min-width:150px">${feld('sc_ware', t('sc5_warenwert'), zahlFeld('sc_ware'), esc(t('sc5_warenwert_hilfe')))}</div>
       <div style="flex:1;min-width:100px">${feld('sc_wareW', t('sc5_waehrung'), `<select id="sc_wareW" style="width:100%;min-height:44px">${opt(waehrungen, 'USD')}</select>`)}</div>
     </div>
     ${feld('sc_menge', t('sc5_menge'), zahlFeld('sc_menge', 'step="1" placeholder="1000"'))}
@@ -9834,6 +9834,14 @@ async function openSourcing() {
     ${feld('sc_zielW', t('sc5_zielwaehrung'), `<select id="sc_zielW" style="width:100%;min-height:44px">${opt(waehrungen, meineW)}</select>`)}
     <button class="auth-gross" data-rechnen style="margin-top:14px;min-height:52px;width:100%">${esc(t('sc5_rechnen'))}</button>
     <div data-ergebnis role="status" aria-live="polite"></div>
+    <div data-proformabox style="margin-top:18px;border-top:2px solid var(--line);padding-top:12px">
+      <h3 style="margin:0;font-size:18px">${esc(t('sc5_proforma'))}</h3>
+      <div style="font-size:15px;margin-top:2px">${esc(t('sc5_proforma_ohne_preis'))}</div>
+      ${feld('sc_inco', t('sc5_incoterm'), `<select id="sc_inco" style="width:100%;min-height:44px">${opt(['', 'EXW', 'FCA', 'FOB', 'CFR', 'CIF', 'CPT', 'CIP', 'DAP', 'DDP'], '', (x) => x || t('sc5_incoterm_offen'))}</select>`)}
+      ${feld('sc_notiz', t('sc5_notiz'), `<textarea id="sc_notiz" maxlength="1000" rows="3" style="width:100%"></textarea>`)}
+      <button class="auth-gross" data-proforma style="margin-top:10px;min-height:52px;width:100%">${esc(t('sc5_proforma'))}</button>
+      <div class="muted" style="font-size:14px;margin-top:4px">${esc(t('sc5_proforma_hilfe'))}</div><div data-pfok role="status" style="font-size:15px;margin-top:6px"></div>
+    </div>
     <div class="muted" style="font-size:14px;margin-top:10px">${esc(t('sc5_recht'))}</div>
   </div>`);
   app.appendChild(k);
@@ -9860,21 +9868,20 @@ async function openSourcing() {
       <div class="muted" style="font-size:14px">${esc(ti('sc5_kurse', { q: (d.kurse.quellen || []).map((x) => '\u2068' + x + '\u2069').join(' + ') || '—', d: d.kurse.stand ? new Date(d.kurse.stand).toLocaleDateString(bcp47()) : '—' }))}${d.kurse.veraltet ? ' · ' + esc(t('cc_veraltet')) : ''}</div>
       ${d.ankunft ? `<div style="margin-top:8px;font-size:16px"><b>${esc(ti('sc5_ankunft', { d: fmtDateDe(d.ankunft) }))}</b> <span class="muted" style="font-size:14px">${esc(t('sc5_ankunft_hilfe'))}</span></div>` : ''}
       ${hafen}
-      <div style="margin-top:12px"><label for="sc_inco" style="font-size:15px;font-weight:600">${esc(t('sc5_incoterm'))}</label>
-        <select id="sc_inco" style="width:100%;min-height:44px">${opt(['', 'EXW', 'FCA', 'FOB', 'CFR', 'CIF', 'CPT', 'CIP', 'DAP', 'DDP'], '', (x) => x || t('sc5_incoterm_offen'))}</select>
-        <label for="sc_notiz" style="display:block;font-size:15px;font-weight:600;margin-top:8px">${esc(t('sc5_notiz'))}</label>
-        <textarea id="sc_notiz" maxlength="1000" rows="3" style="width:100%"></textarea>
-        <button class="auth-gross" data-proforma style="margin-top:10px;min-height:52px;width:100%">${esc(t('sc5_proforma'))}</button>
-        <div class="muted" style="font-size:14px;margin-top:4px">${esc(t('sc5_proforma_hilfe'))}</div><div data-pfok role="status" style="font-size:15px;margin-top:6px"></div></div></div>`;
-    erg.querySelector('[data-proforma]').onclick = async () => {
-      const b = erg.querySelector('[data-proforma]');
-      if (!v('sc_prod').trim()) { alert(t('sc5_produkt_fehlt')); k.querySelector('#sc_prod').focus(); return; }
-      b.disabled = true;
-      try {
-        await api('POST', '/api/sourcing/anfrage', { produkt: v('sc_prod'), menge: (v('sc_menge') || '—') + ' ' + t('sc5_einheiten'), herkunft: v('sc_von'), ziel: v('sc_nach'), incoterm: erg.querySelector('#sc_inco').value, transport: v('sc_art'), notiz: erg.querySelector('#sc_notiz').value });
-        erg.querySelector('[data-pfok]').textContent = t('sc5_proforma_ok'); zeigeAnfragen();
-      } catch (e) { alert(e.message); b.disabled = false; }
-    };
+      <div class="muted" style="font-size:14px;margin-top:8px">${esc(t('sc5_weiter_anfrage'))}</div></div>`;
+  };
+  // Angebotsanfrage: immer möglich — ohne Preis und ohne Wechselkurse (bis 11/2026 erst nach einer
+  // erfolgreichen Kostenrechnung, die den „Warenwert laut Angebot" verlangt: ohne Angebot kein Angebot).
+  k.querySelector('[data-proforma]').onclick = async () => {
+    const b = k.querySelector('[data-proforma]'), ok = k.querySelector('[data-pfok]');
+    if (!v('sc_prod').trim()) { alert(t('sc5_produkt_fehlt')); k.querySelector('#sc_prod').focus(); return; }
+    if (!(Number(v('sc_menge')) > 0)) { alert(t('sc5_menge_fehlt')); k.querySelector('#sc_menge').focus(); return; }
+    b.disabled = true; ok.textContent = '';
+    try {
+      await api('POST', '/api/sourcing/anfrage', { produkt: v('sc_prod'), menge: v('sc_menge') + ' ' + t('sc5_einheiten'), herkunft: v('sc_von'), ziel: v('sc_nach'), incoterm: v('sc_inco'), transport: v('sc_art'), notiz: v('sc_notiz') });
+      ok.textContent = t('sc5_proforma_ok'); k.querySelector('#sc_notiz').value = ''; zeigeAnfragen();
+    } catch (e) { alert(e.message); }
+    b.disabled = false;
   };
   // ── Cross-Check ──
   const cc = el(`<div class="card" data-crosscheck>
@@ -10560,7 +10567,7 @@ function b2bLabel(type, label) {
   const s = String(label || '');
   const tOder = (k, roh) => (t(k) !== k ? t(k) : roh);
   if (type === 'sourcing_antwort') return s.replace(/ · ([a-z_]+)$/, (m, st) => ' · ' + tOder('sc5_st_' + st, st));
-  if (type === 'sourcing_anfrage') return s.replace(/ · ([A-Z]{2}) → ([A-Z]{2})$/, (m, a, b) => ` · ${landLabel(a)} → ${landLabel(b)}`);
+  if (type === 'sourcing_anfrage') return s.replace(/ · ([A-Z]{2}) → ([A-Z]{2})$/, (m, a, b) => ` · ${landName(a)} → ${landName(b)}`);
   if (type === 'ausbruch_signal') return s.replace(/ · ([A-Z_]+) · (\d+)$/, (m, r, n) => ` · ${tOder('eb_region_' + r, r)} · ${ti('nl_ab_neu', { n })}`);
   if (type === 'medint_neu') return s.replace(/ ·$/, '');
   return s;

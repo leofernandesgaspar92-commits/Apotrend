@@ -4207,3 +4207,16 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   „Afrika · 5 neue Meldungen in 14 Tagen". Server baut das Zulassungs-Label ohne leeren Trenner; alte, schon
   gespeicherte Benachrichtigungen werden in der Anzeige bereinigt. Test mit der echten Funktion aus app.js für
   alle Sprachen und Status, 4 Gegenproben rot.
+
+### Rundgang Beschaffung (en-KE, 360 px): Angebot anfragen ohne Preis (2026-11-03)
+- **Fund 1 (schwer):** „Angebot / Proforma anfordern" erschien erst nach einer erfolgreichen Kostenrechnung — und
+  die verlangt den „Warenwert laut Angebot". Wer noch kein Angebot hat, konnte keins anfragen. Ohne Wechselkurse
+  (Kursquelle gestört) ging die Anfrage überhaupt nicht.
+- **Fund 2:** Ohne Menge ging „— Einheiten" an das Handelsteam.
+- **Fund 3:** Redaktions-Benachrichtigung „IN → 🇰🇪 Kenya" — Herkunftsländer wie Indien sind keine Plattform-Länder
+  und blieben Code; Zielland stand englisch in der deutschen Oberfläche.
+- **Behoben:** Anfrage-Bereich fest auf der Seite (Incoterm, Notiz, Knopf), unabhängig von Rechnung und Kursen;
+  Hinweis „Noch kein Preis? … genügen"; Warenwert-Feld sagt „nur für die Kostenrechnung"; Menge ist Pflicht;
+  Länder in der Benachrichtigung über `Intl.DisplayNames` in der Sprache der Oberfläche. Ganzer Weg im Browser:
+  Apotheke fragt an → Redaktion antwortet am Handy → Apotheke sieht „Answered" + Antworttext. Browser-Audit prüft
+  Anfrage ohne Preis und ohne Menge; Gegenprobe mit alter app.js → Audit rot.

@@ -2982,6 +2982,18 @@ async function main() {
     if (!(await page.locator('[data-sourcing]').count())) findings.push('B2B: /sourcing öffnet den Rechner nicht');
     const breite = await page.evaluate(() => document.documentElement.scrollWidth);
     if (breite > 362) findings.push(`B2B: Rechner scrollt seitlich (${breite}px)`);
+    // 0) Angebotsanfrage OHNE Preis und ohne Rechnung (bis 11/2026 erst nach erfolgreicher Rechnung —
+    //    die verlangt den Warenwert laut Angebot, und ohne Kurse ging gar nichts).
+    if (!(await page.locator('[data-proforma]').isVisible().catch(() => false))) findings.push('B2B: Angebotsanfrage erst nach Kostenrechnung möglich');
+    else {
+      let meldung = ''; page.once('dialog', (d) => { meldung = d.message(); d.dismiss(); });
+      await page.fill('#sc_prod', 'Oxytocin 10 IU'); await page.click('[data-proforma]'); await page.waitForTimeout(500);
+      if (!/quantity/i.test(meldung)) findings.push(`B2B: Anfrage ohne Menge nicht abgefangen (${meldung || 'kein Hinweis'})`);
+      await page.fill('#sc_menge', '500'); await page.click('[data-proforma]'); await page.waitForTimeout(900);
+      if (!/Request sent/.test(await page.locator('[data-pfok]').innerText().catch(() => ''))) findings.push('B2B: Anfrage ohne Preis nicht gesendet');
+      if (!/Oxytocin 10 IU[\s\S]*500 units/.test(await page.locator('[data-meineanfragen]').innerText().catch(() => ''))) findings.push('B2B: Anfrage ohne Preis fehlt unter „My requests"');
+      await page.fill('#sc_menge', '');
+    }
     // a) Kurse offline → ehrliche Meldung statt Zahl
     await page.fill('#sc_ware', '1000'); await page.click('[data-rechnen]'); await page.waitForTimeout(700);
     const aus = await page.locator('[data-ergebnis]').innerText();
@@ -2995,7 +3007,7 @@ async function main() {
     const umbruch = await page.evaluate(() => [...document.querySelectorAll('[data-scergebnis] td:last-child')].filter((td) => getComputedStyle(td).whiteSpace !== 'nowrap').length);
     if (umbruch) findings.push(`B2B: ${umbruch} Betragszelle(n) können mitten in der Zahl umbrechen`);
     await page.unroute('**/api/sourcing/kalkulation');
-    await page.fill('#sc_prod', 'Amoxicillin 500 mg'); await page.click('[data-proforma]'); await page.waitForTimeout(900);
+    await page.fill('#sc_prod', 'Amoxicillin 500 mg'); await page.fill('#sc_menge', '1000'); await page.click('[data-proforma]'); await page.waitForTimeout(900);
     if (!/Request sent/.test(await page.locator('[data-pfok]').innerText().catch(() => ''))) findings.push('B2B: Proforma-Anfrage nicht bestätigt');
     if (!/Amoxicillin 500 mg[\s\S]*Sent/.test(await page.locator('[data-meineanfragen]').innerText().catch(() => ''))) findings.push('B2B: „My requests" zeigt die Anfrage nicht');
     // c) Cross-Check: keine Zulassungsbehauptung, Behörde, ATC offline ehrlich
