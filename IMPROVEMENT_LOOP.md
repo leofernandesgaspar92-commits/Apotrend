@@ -4241,3 +4241,16 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   prüft vorher; „Anfrage zurückziehen" (mit Rückfrage) bei offenen Anfragen — nur eigene, danach für das
   Handelsteam gesperrt (`sourcing_zurueckgezogen`), graues Etikett „Zurückgezogen"; Karte bleibt bei „In Bearbeitung"
   und zeigt den Status. 5 Sprachen. Unit- + HTTP-Tests, 4 Gegenproben rot, Klicktest beider Seiten (360 px).
+
+### DSGVO: Kontolöschung und Datenexport vollständig (2026-11-03)
+- **Fund (schwer):** „Konto löschen" meldete „ok", ließ aber Daten aus Sprint 4/5 liegen: Proforma-Anfragen (mit
+  Freitext-Notiz), Fachgebiets-Abos, Frühwarnungs-Schalter, Wochenbericht-Einstellung, Werbe-Firmenangaben
+  (Anschrift, E-Mail) sowie Widersprüche mit Konto-ID und Freitext-Grund. Der Datenexport (Auskunft) enthielt
+  weder diese Daten noch Beobachtungsliste, eigene Engpassmeldungen oder Bestätigungen.
+- **Behoben:** `nutzerEntfernen` in Beschaffung, Zulassungs-Abos, Ausbruchs-Radar, Wochenbericht, Werbung
+  (Firmenangaben, Einblendungen, Ausblendungen); Widersprüche und Benachrichtigungs-Merker beim Löschen entfernt.
+  Gebuchte Kampagnen und Rechnungen bleiben (Geschäftsunterlagen, Aufbewahrungspflicht). Export um alle
+  genannten Daten ergänzt.
+- **Wächter:** test/konto-loeschen-vollstaendig.test.js legt Daten in vielen Bereichen an, löscht und durchsucht
+  die GANZE Sicherung nach der Konto-ID und den Freitexten — fängt auch jeden künftigen vergessenen Speicher.
+  Vor der Korrektur rot (7 Fundstellen), 4 Gegenproben rot.

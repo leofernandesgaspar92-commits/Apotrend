@@ -147,6 +147,8 @@ export function createSourcingAnfragen({ jetzt = () => Date.now() } = {}) {
       return { ...a };
     },
     get: (id) => (anfragen.has(id) ? { ...anfragen.get(id) } : null),
+    /** DSGVO: alle Anfragen des Kontos löschen (Freitext-Notiz, Betrieb, Menge). */
+    nutzerEntfernen(userId) { for (const [id, a] of anfragen) if (a.userId === userId) anfragen.delete(id); },
     __dump: () => [...anfragen.values()],
     __load(liste) {
       anfragen.clear();

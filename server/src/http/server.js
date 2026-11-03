@@ -2191,7 +2191,23 @@ const routes = [
   ['GET', /^\/api\/discover\/open-to$/, true, async ({ userId }) => social.openToCounts(userId)],
   ['GET', /^\/api\/discover\/open-to\/([^/]+)$/, true, async ({ userId, params }) => social.discoverByOpenTo(userId, decodeURIComponent(params[0]))],
   ['GET', /^\/api\/handles$/, true, async ({ query }) => ({ handles: social.searchHandles(query.get('q') || '') })],
-  ['GET', /^\/api\/me\/export$/, true, async ({ userId }) => ({ ...social.exportData(userId), exchange_entries: exchange.mine(userId) })],
+  // DSGVO-Auskunft (Art. 15/20): alles, was ApoPulse zu diesem Konto speichert. Bis 11/2026 fehlten
+  // Beobachtungsliste, eigene Engpassmeldungen, Widersprüche und alle B2B-Daten (Sprint 4/5).
+  ['GET', /^\/api\/me\/export$/, true, async ({ userId }) => {
+    const alle = shortagesRepo.list();
+    return {
+      ...social.exportData(userId), exchange_entries: exchange.mine(userId),
+      watchlist: shortagesRepo.listWatch(userId).map((w) => ({ wirkstoff: w, notiz: shortagesRepo.getWatchNote(userId, w) || null })),
+      shortage_reports: alle.filter((x) => x.reporter_user_id === userId).map((x) => ({ id: x.id, wirkstoff: x.wirkstoff, status: x.status, land: x.country, gemeldet_am: x.gemeldet_am })),
+      shortage_confirmations: alle.filter((x) => (x.confirmations || []).includes(userId)).map((x) => ({ id: x.id, wirkstoff: x.wirkstoff })),
+      shortage_disputes: alle.flatMap((x) => (x.widersprueche || []).filter((w) => w.userId === userId).map((w) => ({ id: x.id, wirkstoff: x.wirkstoff, grund: w.grund, text: w.text || null, am: w.am || null }))),
+      sourcing_requests: sourcingAnfragen.meine(userId).map((x) => ({ ...x, userId: undefined })),
+      medint_subscriptions: medintAbos.von(userId),
+      outbreak_alerts_on: ausbruch.alarmAn(userId),
+      weekly_report_unsubscribed: wochenbericht.istAbbestellt(userId),
+      advertiser_company: anzeigen.firma(userId),
+    };
+  }],
   // Passwort ändern beendet alle Sitzungen — dieses Gerät bekommt gleich ein neues Token.
   ['POST', /^\/api\/me\/password$/, true, async ({ userId, body }) => ({ ...orgAuth.changePassword(userId, { oldPassword: body.oldPassword, newPassword: body.newPassword }), token: issueToken(userId) })],
   // „Auf allen anderen Geräten abmelden" (verlorenes Handy, Gerät in der Offizin geteilt).
@@ -2320,6 +2336,12 @@ const routes = [
     einladungen.nutzerEntfernen(userId);
     webPush.nutzerEntfernen(userId); // keine Alarme mehr an Geräte eines gelöschten Kontos
     rechnungen.nutzerEntfernen(userId); // Angaben weg; ausgestellte Rechnungen bleiben (Aufbewahrungspflicht)
+    // Sprint 4/5 — fehlten bis 11/2026 (test/konto-loeschen-vollstaendig.test.js durchsucht die ganze Sicherung):
+    sourcingAnfragen.nutzerEntfernen(userId);
+    medintAbos.nutzerEntfernen(userId);
+    ausbruch.nutzerEntfernen(userId);
+    wochenbericht.nutzerEntfernen(userId);
+    anzeigen.nutzerEntfernen(userId); // Firmenangaben + Einblendungen; gebuchte Kampagnen bleiben (Rechnungen)
     repo.deleteUser(userId);
     return { ok: true };
   }],

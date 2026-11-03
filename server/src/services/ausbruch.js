@@ -101,6 +101,7 @@ export function createAusbruchsRadar({ speicher, fetchImpl, jetzt = () => Date.n
     },
     alarmAn: (userId) => !abbestellt.has(userId),
     alarmSetzen(userId, an) { if (an) abbestellt.delete(userId); else abbestellt.add(userId); return !abbestellt.has(userId); },
+    nutzerEntfernen(userId) { abbestellt.delete(userId); },
     status: () => who.status(),
     __dump: () => ({ gemeldet: [...gemeldet], abbestellt: [...abbestellt] }),
     __load(d) {

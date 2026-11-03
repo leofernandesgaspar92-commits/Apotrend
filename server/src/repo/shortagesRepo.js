@@ -316,6 +316,9 @@ export function createShortagesRepo({ seed = true, today = null } = {}) {
       for (const s of shortages.values()) {
         if (s.reporter_user_id === userId) s.reporter_user_id = null;
         if (Array.isArray(s.confirmations)) s.confirmations = s.confirmations.filter(u => u !== userId);
+        // Widersprüche tragen Konto-ID und Freitext-Grund (Sprint 4) — mit dem Konto weg.
+        if (Array.isArray(s.widersprueche)) s.widersprueche = s.widersprueche.filter(w => w.userId !== userId);
+        if (Array.isArray(s.widerspruch_gemeldet)) s.widerspruch_gemeldet = s.widerspruch_gemeldet.filter(u => u !== userId);
       }
     },
 

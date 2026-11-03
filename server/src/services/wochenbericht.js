@@ -206,6 +206,7 @@ export function createWochenbericht({ repo, social, chronik, fruehwarnung, short
   return {
     vorschau(userId) { return { ...rendereWochenbericht(daten(userId)), mail_aktiv: mailer.aktiv, mail_grund: mailer.grund, abbestellt: abbestellt.has(userId) }; },
     abbestellen(userId) { abbestellt.add(userId); },
+    nutzerEntfernen(userId) { abbestellt.delete(userId); gesendet.delete(userId); },
     bestellen(userId) { abbestellt.delete(userId); },
     istAbbestellt(userId) { return abbestellt.has(userId); },
 

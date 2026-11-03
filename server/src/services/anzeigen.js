@@ -320,6 +320,12 @@ export function createAnzeigen({
       }
       return k.link;
     },
+    /** DSGVO: Firmenangaben und Einblendungs-/Ausblende-Daten des Kontos löschen. Gebuchte Kampagnen
+     *  bleiben — sie hängen an Rechnungen (Aufbewahrungspflicht, siehe rechnungen.nutzerEntfernen). */
+    nutzerEntfernen(uid) {
+      kunden.delete(uid); ausgeblendet.delete(uid);
+      for (const k of [...gesehen.keys()]) if (k.split('|')[1] === uid) gesehen.delete(k);
+    },
     ausblenden(uid, id) {
       if (!ausgeblendet.has(uid)) ausgeblendet.set(uid, new Set());
       ausgeblendet.get(uid).add(String(id));

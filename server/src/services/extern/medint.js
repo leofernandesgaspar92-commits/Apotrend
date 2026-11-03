@@ -125,6 +125,7 @@ export function createMedIntAbos() {
       return gueltig;
     },
     von: (userId) => [...(abos.get(userId) || [])],
+    nutzerEntfernen(userId) { abos.delete(userId); },
     /** Neue Zulassungen → [{ userId, eintrag, bereich }] (je Person und Eintrag höchstens einmal). */
     neue(zulassungen) {
       const neu = (zulassungen || []).filter((z) => z && !gesehen.has(z.id));
