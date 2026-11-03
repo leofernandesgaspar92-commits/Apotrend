@@ -4220,3 +4220,13 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   Länder in der Benachrichtigung über `Intl.DisplayNames` in der Sprache der Oberfläche. Ganzer Weg im Browser:
   Apotheke fragt an → Redaktion antwortet am Handy → Apotheke sieht „Answered" + Antworttext. Browser-Audit prüft
   Anfrage ohne Preis und ohne Menge; Gegenprobe mit alter app.js → Audit rot.
+
+### Rundgang B2B auf Arabisch (ar-EG, 360 px): Pfeile zeigten falsch herum (2026-11-03)
+- **Geprüft:** Beschaffung, Neue Zulassungen, Ausbruchs-Radar — keine deutschen/englischen Textreste (nur Eigennamen
+  wie ApoPulse, WTO, Incoterm), kein Querscrollen, keine Skriptfehler.
+- **Fund:** Pfeile werden in Rechts-nach-links-Schrift nicht gespiegelt. „الهند → مصر" (Indien → Ägypten) zeigte auf
+  Arabisch von Ägypten nach Indien — eine Einfuhr las sich wie eine Ausfuhr. Betroffen: „Meine Anfragen", Redaktions-
+  Karte, Benachrichtigung zur Anfrage, Währungsrechner (von → nach), Preisverlauf-Tooltip, „Weiter"-Pfeil in der
+  Kundentyp-Vorschau. Die arabischen Übersetzungen selbst nutzen schon richtig „←".
+- **Behoben:** `richtungsPfeil()` (→ bzw. ← je Schreibrichtung) an allen sechs Stellen. Test-Wächter: kein fester „→"
+  mehr im Oberflächentext; Benachrichtigung auf Arabisch mit „←". 3 Gegenproben rot; Browser-Kontrolle ar-EG/en-KE.

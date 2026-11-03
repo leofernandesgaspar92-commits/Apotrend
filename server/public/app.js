@@ -3950,7 +3950,7 @@ async function buildCurrencyConverter(box) {
   box.innerHTML = `<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
       <input data-amt type="number" min="0" step="any" value="100" style="width:110px" aria-label="${esc(t('cc_amount'))}">
       <select data-from aria-label="${esc(t('cc_from'))}">${opts(fromDef)}</select>
-      <span>→</span>
+      <span aria-hidden="true">${richtungsPfeil()}</span>
       <select data-to aria-label="${esc(t('cc_to'))}">${opts(toDef)}</select>
       <button class="ghost small" data-swap title="${esc(t('cc_swap'))}" aria-label="${esc(t('cc_swap'))}">⇅</button>
     </div>
@@ -5925,7 +5925,7 @@ function priceGroup(g, watchedSet, onWatchChange) {
       <div class="row">
         <span>${i===0?'⭐ ':''}<b>${esc(o.supplier)}</b>${i===0?` <span style="color:var(--ok-fg);font-size:13px;font-weight:700">${esc(t('pg_cheapest'))}</span>`:''}</span>
         <span class="sp" style="flex:1"></span>
-        <span title="${Array.isArray(o.series)&&o.series.length?o.series.map(v=>'€ '+fmtMoney(v)).join(' → '):esc(t('pg_no_series'))}">${sparkline(o.series)}</span>
+        <span title="${Array.isArray(o.series)&&o.series.length?o.series.map(v=>'€ '+fmtMoney(v)).join(' ' + richtungsPfeil() + ' '):esc(t('pg_no_series'))}">${sparkline(o.series)}</span>
         <span style="margin-inline-start:8px"><b>€ ${fmtMoney(o.aep)}</b> ${trendStr(o.trend_pct)}</span>
       </div>
       <div class="row" style="margin-top:4px">
@@ -9781,6 +9781,10 @@ async function zeigeHaefen(box) {
 //  nie geschätzte Fracht, nie „zugelassen" ohne Register, nie „+25 % Lager".
 // ============================================================================
 const B2B_HERKUNFT = ['IN', 'CN', 'DE', 'FR', 'IT', 'CH', 'GB', 'US', 'NL', 'BE', 'ES', 'TR', 'KR', 'JP', 'ZA', 'EG', 'KE', 'BR'];
+// Richtungspfeil „von → nach", der der Schreibrichtung folgt. Pfeile werden in Rechts-nach-links-Schrift
+// NICHT gespiegelt: „الهند → مصر" (Indien → Ägypten) zeigte auf Arabisch von Ägypten nach Indien (11/2026).
+// Die arabischen Übersetzungen nutzen schon „←"; hier geht es um Pfeile, die der Code selbst einsetzt.
+function richtungsPfeil() { return document.documentElement.dir === 'rtl' ? '←' : '→'; }
 const landName = (cc) => { try { return new Intl.DisplayNames([LOCALE], { type: 'region' }).of(cc) || cc; } catch { return cc; } };
 const b2bKopf = (titel, sub, zurueck = mainScreen) => {
   app.innerHTML = '';
@@ -9916,7 +9920,7 @@ async function openSourcing() {
     let d; try { d = await api('GET', '/api/sourcing/anfragen'); } catch { return; }
     liste.innerHTML = '';
     if (!(d.anfragen || []).length) return;
-    liste.appendChild(el(`<div class="card"><h2 style="margin:0 0 6px">${esc(t('sc5_meine'))}</h2>${d.anfragen.map((a) => `<div class="comment" style="font-size:15px"><b>${esc(a.produkt)}</b> · ${esc(a.menge)} · ${esc(landName(a.herkunft))} → ${esc(landName(a.ziel))}
+    liste.appendChild(el(`<div class="card"><h2 style="margin:0 0 6px">${esc(t('sc5_meine'))}</h2>${d.anfragen.map((a) => `<div class="comment" style="font-size:15px"><b>${esc(a.produkt)}</b> · ${esc(a.menge)} · ${esc(landName(a.herkunft))} ${richtungsPfeil()} ${esc(landName(a.ziel))}
       <div><span class="vt-stufe ${a.status === 'beantwortet' ? 'vt-ok' : ''}" style="margin-top:4px">${esc(t('sc5_st_' + a.status))}</span> <span class="muted" style="font-size:13px">${esc(fmtDateDe(String(a.erstellt).slice(0, 10)))}</span></div>
       ${a.antwort ? `<div style="margin-top:4px">${esc(a.antwort)}</div>` : ''}</div>`).join('')}</div>`));
   }
@@ -9987,7 +9991,7 @@ async function sourcingPruefung(box) {
   for (const a of offen) {
     const k = el(`<div class="card" data-sourcingkarte>
       <div style="font-size:16px"><b>${esc(a.produkt)}</b> · ${esc(a.menge)}</div>
-      <div style="font-size:15px">${esc(landName(a.herkunft))} → ${esc(landName(a.ziel))}${a.incoterm ? ' · ' + esc(a.incoterm) : ''}${a.transport ? ' · ' + esc(t(a.transport === 'luft' ? 'sc5_luft' : 'sc5_see')) : ''}</div>
+      <div style="font-size:15px">${esc(landName(a.herkunft))} ${richtungsPfeil()} ${esc(landName(a.ziel))}${a.incoterm ? ' · ' + esc(a.incoterm) : ''}${a.transport ? ' · ' + esc(t(a.transport === 'luft' ? 'sc5_luft' : 'sc5_see')) : ''}</div>
       <div style="font-size:15px">${a.betrieb ? `${esc(a.betrieb.name)} <span class="handle">@${esc(a.betrieb.handle)}</span> · ${esc(t(ACCT_I18N[a.betrieb.art] || '') || a.betrieb.art)} · ${esc(landName(a.betrieb.land || ''))} · ${esc(t(a.betrieb.verifiziert ? 'sc5_verifiziert' : 'sc5_nicht_verifiziert'))}` : '—'}</div>
       ${a.notiz ? `<div class="comment" style="font-size:15px">${esc(a.notiz)}</div>` : ''}
       <label for="sa_${esc(a.id)}" style="display:block;font-size:15px;margin-top:6px">${esc(t('sc5_antwort'))}</label><textarea id="sa_${esc(a.id)}" data-sa rows="2" maxlength="1000" style="width:100%"></textarea>
@@ -10567,7 +10571,7 @@ function b2bLabel(type, label) {
   const s = String(label || '');
   const tOder = (k, roh) => (t(k) !== k ? t(k) : roh);
   if (type === 'sourcing_antwort') return s.replace(/ · ([a-z_]+)$/, (m, st) => ' · ' + tOder('sc5_st_' + st, st));
-  if (type === 'sourcing_anfrage') return s.replace(/ · ([A-Z]{2}) → ([A-Z]{2})$/, (m, a, b) => ` · ${landName(a)} → ${landName(b)}`);
+  if (type === 'sourcing_anfrage') return s.replace(/ · ([A-Z]{2}) → ([A-Z]{2})$/, (m, a, b) => ` · ${landName(a)} ${richtungsPfeil()} ${landName(b)}`);
   if (type === 'ausbruch_signal') return s.replace(/ · ([A-Z_]+) · (\d+)$/, (m, r, n) => ` · ${tOder('eb_region_' + r, r)} · ${ti('nl_ab_neu', { n })}`);
   if (type === 'medint_neu') return s.replace(/ ·$/, '');
   return s;
@@ -11575,8 +11579,8 @@ function kmAktion(id) {
 }
 function kmCta(a) {
   if (!a) return '';
-  return a.href ? `<a class="km-v-cta" href="${esc(a.href)}">${esc(a.label)} <span aria-hidden="true">→</span></a>`
-    : `<button type="button" class="km-v-cta" data-kmcta>${esc(a.label)} <span aria-hidden="true">→</span></button>`;
+  return a.href ? `<a class="km-v-cta" href="${esc(a.href)}">${esc(a.label)} <span aria-hidden="true">${richtungsPfeil()}</span></a>`
+    : `<button type="button" class="km-v-cta" data-kmcta>${esc(a.label)} <span aria-hidden="true">${richtungsPfeil()}</span></button>`;
 }
 function kmVorschauHtml(f, daten) {
   return `<div class="km-v-kopf"><span class="km-v-ic">${ico(f.ic, 20)}</span><div><div class="km-v-titel">${esc(t(f.t))}</div><div class="km-v-text">${esc(t(f.d))}</div></div></div>

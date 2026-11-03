@@ -11,7 +11,7 @@ const app = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
 const server = readFileSync(new URL('../src/http/server.js', import.meta.url), 'utf8');
 const I = (() => { const c = {}; vm.runInNewContext(readFileSync(new URL('../public/i18n.js', import.meta.url), 'utf8') + ';__I=I18N', c); return c.__I; })();
 
-function b2bLabel(sp) {
+function b2bLabel(sp, dir = sp === 'ar' ? 'rtl' : 'ltr') {
   const start = app.indexOf('function b2bLabel(type, label) {');
   assert.ok(start > 0, 'b2bLabel nicht gefunden');
   const ende = app.indexOf('\n}\n', start) + 3;
@@ -19,8 +19,11 @@ function b2bLabel(sp) {
   const ctx = {
     t: (k) => T[k] || k, ti: (k, v) => (T[k] || k).replace(/\{(\w+)\}/g, (m, x) => v[x]),
     landName: (cc) => new Intl.DisplayNames([sp], { type: 'region' }).of(cc),
+    document: { documentElement: { dir } },
   };
-  vm.createContext(ctx); vm.runInContext(app.slice(start, ende) + ';globalThis.f = b2bLabel;', ctx);
+  const pf = app.indexOf('function richtungsPfeil() {');
+  assert.ok(pf > 0, 'richtungsPfeil nicht gefunden');
+  vm.createContext(ctx); vm.runInContext(app.slice(pf, app.indexOf('\n', pf)) + '\n' + app.slice(start, ende) + ';globalThis.f = b2bLabel;', ctx);
   return ctx.f;
 }
 
@@ -42,6 +45,8 @@ test('Proforma-Anfrage (Redaktion): Länder statt Codes', () => {
   // Herkunft ist oft kein Plattform-Land (Indien, China) — bis 11/2026 blieb dann „IN" stehen, Kenia stand englisch.
   assert.equal(b2bLabel('en')('sourcing_anfrage', 'Amoxicillin · IN → KE'), 'Amoxicillin · India → Kenya');
   assert.equal(b2bLabel('de')('sourcing_anfrage', 'Amoxicillin · CN → KE'), 'Amoxicillin · China → Kenia');
+  // Arabisch: Pfeile werden in RTL nicht gespiegelt — „→" zeigte von Ägypten nach Indien.
+  assert.equal(b2bLabel('ar')('sourcing_anfrage', 'Amoxicillin · IN → EG'), `Amoxicillin · ${new Intl.DisplayNames(['ar'], { type: 'region' }).of('IN')} ← ${new Intl.DisplayNames(['ar'], { type: 'region' }).of('EG')}`);
   assert.match(server, /type: 'sourcing_anfrage'[^\n]*label: `\$\{a\.produkt\} · \$\{a\.herkunft\} → \$\{a\.ziel\}`/);
 });
 
@@ -65,4 +70,12 @@ test('Neue Zulassung ohne Wirkstoff: kein einzelnes „·" am Ende', () => {
 test('Andere Typen bleiben unverändert; die Liste nutzt b2bLabel', () => {
   assert.equal(b2bLabel('en')('comment', 'Hallo · in_bearbeitung'), 'Hallo · in_bearbeitung');
   assert.match(app, /n\.type==='verify_rejected'\?vfGrund\(n\.label\):b2bLabel\(n\.type, n\.label\)/);
+});
+
+test('Richtungspfeile im Code folgen der Schreibrichtung (kein fester „→" in Oberflächentext)', () => {
+  // Erlaubt: Kommentare, die Hilfsfunktion selbst und das Muster, das Server-Labels („IN → KE") erkennt.
+  const fest = app.split('\n').map((z, i) => [i + 1, z]).filter(([, z]) => z.includes('→'))
+    .filter(([, z]) => !/^\s*\/\//.test(z) && !/function richtungsPfeil\(\)/.test(z) && !/\/\* .*→.* \*\//.test(z) && !/s\.replace\(\/ · \(\[A-Z\]\{2\}\) → /.test(z));
+  assert.deepEqual(fest, [], 'Fester Pfeil im Oberflächentext — richtungsPfeil() verwenden');
+  assert.match(app, /function richtungsPfeil\(\) \{ return document\.documentElement\.dir === 'rtl' \? '←' : '→'; \}/);
 });
