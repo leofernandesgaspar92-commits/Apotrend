@@ -4267,3 +4267,15 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   auch außerhalb der EU) — keine erfundenen Namen. Tabelle am Handy als Blöcke mit Beschriftung.
   Tests je Sprache, Browser-Audit prüft 5 Sprachen auf 360 px; 4 Gegenproben rot. Rechtliche Prüfung bleibt beim
   Owner (Entwurfs-Hinweis bleibt bis APOPULSE_DATENSCHUTZ_GEPRUEFT=ja).
+
+### Öffentliche Seiten am Handy + WhatsApp-Vorschau mit Vertrauensstufe (2026-11-03)
+- **Geprüft ohne Fund:** 30 öffentliche Seiten (Impressum, /engpaesse je Land und Wirkstoff aus der Sitemap,
+  Teilen-Seiten) × 5 Sprachen auf 360 px — kein Querscrollen, keine Fehler. Öffentliche Engpass-Seiten zeigen nur
+  amtliche Einträge — in Ordnung.
+- **Fund:** Die Teilen-Vorschau (WhatsApp/Facebook) wertete die Vertrauensstufe nicht aus: Eine Apotheken-Meldung,
+  der Fachleute widersprechen („umstritten"), oder eine seit 14+ Tagen unbestätigte („Status unklar") sah aus wie
+  eine frische — samt Knopf „Bei Ihnen auch knapp? Bestätigen". Die Länder-Vorschau zählte umstrittene Meldungen
+  als knapp.
+- **Behoben:** Eigene Titel für umstritten/unklar (5 Sprachen); umstrittene Meldung bittet nicht um Bestätigung;
+  Länder-Lage zählt sie nicht; bei mehreren Meldungen wird eine nicht umstrittene bevorzugt. HTTP-Test (Uganda:
+  2 Widersprüche) + Einheitentest; 4 Gegenproben rot.

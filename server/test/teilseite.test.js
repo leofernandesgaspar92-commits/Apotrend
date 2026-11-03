@@ -132,6 +132,12 @@ test('Ohne Behördenliste (Afrika): Apotheken-Meldungen mit Vertrauensstufe, nie
   const lage = teilseite({ art: 'lage', land: 'UG', sprache: 'en', pfad: '/x', daten: false, apotheken: 2, apotheken_bestaetigt: 1 }, { basis });
   assert.equal(meta(lage, 'og:title'), '2 substances reported short by pharmacies in Uganda');
   assert.equal(meta(lage, 'og:description'), '1 of them confirmed by several pharmacies · not official');
+  // Vertrauensstufe (Sprint 4) auch in der Vorschau: umstritten bzw. seit 14+ Tagen unbestätigt.
+  const T = (sp, v) => meta(teilseite({ art: 'wirkstoff', land: 'SN', sprache: sp, pfad: '/x', wirkstoff: 'Oxytocin', beobachtet_land: false, knapp: false, apotheken: 2, vertrauen: { stufe: v } }, { basis }), 'og:title');
+  assert.equal(T('en', 'unklar'), 'Oxytocin in Senegal: pharmacy report not confirmed for over 14 days — status unclear');
+  assert.equal(T('de', 'umstritten'), 'Oxytocin in Senegal: Apotheken-Meldung umstritten — Fachleute widersprechen');
+  assert.equal(T('fr', 'umstritten'), 'Oxytocin au Sénégal : signalement de pharmacie contesté — des professionnels s’y opposent');
+  for (const sp of ['pt', 'ar']) for (const v of ['umstritten', 'unklar']) assert.notEqual(T(sp, v), T(sp, 'ungeprueft'), `${sp}/${v}`);
 });
 
 test('Über HTTP: geteilter Link aus Uganda — erst Hinweis, dann bestätigt', { timeout: 60000 }, async () => {
@@ -164,6 +170,18 @@ test('Über HTTP: geteilter Link aus Uganda — erst Hinweis, dann bestätigt', 
     const lage = await (await fetch(B + '/teilen/lage/UG')).text();
     assert.equal(meta(lage, 'og:title'), '1 substance reported short by pharmacies in Uganda');
     assert.equal(meta(lage, 'og:description'), '1 of them confirmed by several pharmacies · not official');
+    // Umstritten (11/2026): Zwei Fachleute widersprechen einer Meldung — die Vorschau darf sie nicht
+    // als normalen Engpass-Hinweis zeigen und die Länder-Lage zählt sie nicht als knapp.
+    const [, o] = [0, await (await fetch(B + '/api/shortages/report', { method: 'POST', headers: H(a), body: JSON.stringify({ wirkstoff: 'Oxytocin', status: 'kritisch', country: 'UG' }) })).json()];
+    for (const t of [b2, c2]) {
+      const r = await fetch(B + `/api/shortages/${o.id}/widerspruch`, { method: 'POST', headers: H(t), body: JSON.stringify({ grund: 'bei_uns_lieferbar' }) });
+      assert.equal(r.status, 200, await r.text());
+    }
+    const tu = await titel('/teilen/w/UG/Oxytocin');
+    assert.equal(tu, 'Oxytocin in Uganda: pharmacy report disputed — professionals object');
+    const seiteU = await (await fetch(B + '/teilen/w/UG/Oxytocin')).text();
+    assert.ok(!/Confirm Oxytocin/.test(seiteU), 'umstrittene Meldung: Knopf bittet um Bestätigung');
+    assert.equal(meta(await (await fetch(B + '/teilen/lage/UG')).text(), 'og:title'), '1 substance reported short by pharmacies in Uganda', 'umstrittene Meldung als knapp gezählt');
   } finally {
     await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
   }

@@ -29,6 +29,8 @@ const TEXTE = {
     w_nicht: (w, land) => `${w}: in ${land} derzeit nicht als knapp gemeldet`,
     w_unbekannt: (w, land) => `${w}: für ${land} liegt noch keine Behördenliste vor`,
     w_apo_best: (w, land, n) => `${w}: von ${n} Apotheken in ${land} als knapp gemeldet`,
+    w_apo_umstritten: (w, land) => `${w} in ${land}: Apotheken-Meldung umstritten — Fachleute widersprechen`,
+    w_apo_unklar: (w, land) => `${w} in ${land}: Apotheken-Meldung seit über 14 Tagen nicht bestätigt — Status unklar`,
     w_apo: (w, land, n) => (n === 1 ? `${w}: 1 Apotheke in ${land} meldet einen Engpass (noch nicht bestätigt)` : `${w}: ${n} Apotheken in ${land} melden einen Engpass (noch nicht bestätigt)`),
     lage_apo: (n, land) => (n === 1 ? `1 Wirkstoff von Apotheken in ${land} als knapp gemeldet` : `${n} Wirkstoffe von Apotheken in ${land} als knapp gemeldet`),
     lage_apo_beschr: (b) => `davon ${b} von mehreren Apotheken bestätigt · nicht amtlich`,
@@ -48,6 +50,8 @@ const TEXTE = {
     w_nicht: (w, land) => `${w}: currently not reported short in ${land}`,
     w_unbekannt: (w, land) => `${w}: no authority list for ${land} yet`,
     w_apo_best: (w, land, n) => `${w}: reported short by ${n} pharmacies in ${land}`,
+    w_apo_umstritten: (w, land) => `${w} in ${land}: pharmacy report disputed — professionals object`,
+    w_apo_unklar: (w, land) => `${w} in ${land}: pharmacy report not confirmed for over 14 days — status unclear`,
     w_apo: (w, land, n) => (n === 1 ? `${w}: 1 pharmacy in ${land} reports a shortage (not yet confirmed)` : `${w}: ${n} pharmacies in ${land} report a shortage (not yet confirmed)`),
     lage_apo: (n, land) => (n === 1 ? `1 substance reported short by pharmacies in ${land}` : `${n} substances reported short by pharmacies in ${land}`),
     lage_apo_beschr: (b) => `${b} of them confirmed by several pharmacies · not official`,
@@ -67,6 +71,8 @@ const TEXTE = {
     w_nicht: (w, land) => `${w}: sem rutura comunicada atualmente em ${land}`,
     w_unbekannt: (w, land) => `${w}: ainda não há lista de autoridade para ${land}`,
     w_apo_best: (w, land, n) => `${w}: comunicado em rutura por ${n} farmácias em ${land}`,
+    w_apo_umstritten: (w, land) => `${w} em ${land}: notificação de farmácia contestada — profissionais discordam`,
+    w_apo_unklar: (w, land) => `${w} em ${land}: notificação de farmácia sem confirmação há mais de 14 dias — estado incerto`,
     w_apo: (w, land, n) => (n === 1 ? `${w}: 1 farmácia em ${land} comunica uma rutura (ainda não confirmado)` : `${w}: ${n} farmácias em ${land} comunicam uma rutura (ainda não confirmado)`),
     lage_apo: (n, land) => (n === 1 ? `1 substância comunicada em rutura por farmácias em ${land}` : `${n} substâncias comunicadas em rutura por farmácias em ${land}`),
     lage_apo_beschr: (b) => `${b} delas confirmadas por várias farmácias · não oficial`,
@@ -86,6 +92,8 @@ const TEXTE = {
     w_nicht: (w, land) => `${w} : actuellement pas signalé en pénurie ${frLand(land)}`,
     w_unbekannt: (w, land) => `${w} : pas encore de liste officielle ${frLand(land, 'pour')}`,
     w_apo_best: (w, land, n) => `${w} : signalé en pénurie par ${n} pharmacies ${frLand(land)}`,
+    w_apo_umstritten: (w, land) => `${w} ${frLand(land)} : signalement de pharmacie contesté — des professionnels s’y opposent`,
+    w_apo_unklar: (w, land) => `${w} ${frLand(land)} : signalement de pharmacie non confirmé depuis plus de 14 jours — statut incertain`,
     w_apo: (w, land, n) => (n === 1 ? `${w} : 1 pharmacie ${frLand(land)} signale une pénurie (pas encore confirmée)` : `${w} : ${n} pharmacies ${frLand(land)} signalent une pénurie (pas encore confirmée)`),
     lage_apo: (n, land) => (n === 1 ? `1 substance signalée en pénurie par des pharmacies ${frLand(land)}` : `${n} substances signalées en pénurie par des pharmacies ${frLand(land)}`),
     lage_apo_beschr: (b) => `dont ${b} confirmée(s) par plusieurs pharmacies · non officiel`,
@@ -105,6 +113,8 @@ const TEXTE = {
     w_nicht: (w, land) => `${w}: غير مُبلَّغ عن نقصه حاليًا في ${land}`,
     w_unbekannt: (w, land) => `${w}: لا توجد بعد قائمة رسمية لـ ${land}`,
     w_apo_best: (w, land, n) => `${w}: أبلغت ${n} صيدليات في ${land} عن نقصه`,
+    w_apo_umstritten: (w, land) => `${w} في ${land}: بلاغ صيدلية متنازع عليه — يعترض مختصون`,
+    w_apo_unklar: (w, land) => `${w} في ${land}: بلاغ صيدلية غير مؤكد منذ أكثر من 14 يومًا — الحالة غير واضحة`,
     w_apo: (w, land, n) => (n === 1 ? `${w}: صيدلية واحدة في ${land} تبلّغ عن نقص (لم يتأكد بعد)` : `${w}: ${n} صيدليات في ${land} تبلّغ عن نقص (لم يتأكد بعد)`),
     lage_apo: (n, land) => (n === 1 ? `مادة واحدة أبلغت صيدليات في ${land} عن نقصها` : `${n} مواد أبلغت صيدليات في ${land} عن نقصها`),
     lage_apo_beschr: (b) => `منها ${b} أكدتها عدة صيدليات · غير رسمي`,
@@ -150,7 +160,12 @@ export function teilseite(d, { basis }) {
   } else {
     const w = d.wirkstoff;
     const apo = !d.knapp && d.apotheken > 0;
+    // Vertrauensstufe wie in der App (Sprint 4): Eine umstrittene oder seit 14+ Tagen unbestätigte
+    // Apotheken-Meldung sah in der geteilten Vorschau bis 11/2026 aus wie eine frische.
+    const stufe = apo && d.vertrauen ? d.vertrauen.stufe : null;
     if (d.knapp) titel = `${T.w_knapp(w, land)}${d.seit_tagen != null ? ' ' + T.w_seit(d.seit_tagen) : ''}`;
+    else if (apo && stufe === 'umstritten') titel = T.w_apo_umstritten(w, land);
+    else if (apo && stufe === 'unklar') titel = T.w_apo_unklar(w, land);
     else if (apo) titel = d.bestaetigt ? T.w_apo_best(w, land, d.apotheken) : T.w_apo(w, land, d.apotheken);
     else if (!d.beobachtet_land) titel = T.w_unbekannt(w, land);
     else titel = T.w_nicht(w, land);
@@ -159,7 +174,8 @@ export function teilseite(d, { basis }) {
     ziel = `/?land=${encodeURIComponent(d.land)}&beobachten=${encodeURIComponent(w)}`;
     // Noch nicht bestätigte Apotheken-Meldung: Der Knopf bittet um Bestätigung
     // und führt nach der Anmeldung direkt zur Meldung (dort „Bestätigen").
-    if (apo && !d.bestaetigt) { d.bitte = true; ziel += '&bestaetigen=1'; }
+    // Umstritten: nicht zum Bestätigen auffordern — erst die Lage ansehen (dort Bestätigen oder Widersprechen).
+    if (apo && !d.bestaetigt && stufe !== 'umstritten') { d.bitte = true; ziel += '&bestaetigen=1'; }
   }
   // Persönlicher Einladungs-Code (services/einladungen.js) — vom Server geprüft.
   if (d.einladung) ziel += `&e=${encodeURIComponent(d.einladung)}`;

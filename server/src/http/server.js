@@ -59,7 +59,7 @@ import { startklar } from '../services/startklar.js';
 import { createOeffentlicheSeiten } from '../services/oeffentlicheSeiten.js';
 import { createWebPush, pushNachricht, testNachricht, PUSH_TYPEN } from '../services/webPush.js';
 import { createRechnungsnummern } from '../services/rechnungsnummern.js';
-import { aktualitaet, zaehlendeApotheken, istBestaetigt, vertrauenEinstellen, ZAEHLT_AB_STUNDEN } from '../services/shortages.js';
+import { aktualitaet, zaehlendeApotheken, istBestaetigt, istUmstritten, vertrauenEinstellen, ZAEHLT_AB_STUNDEN } from '../services/shortages.js';
 import { createRechnungen } from '../services/rechnungen.js';
 import { createEinladungen, CODE_RE as EINLADUNG_RE } from '../services/einladungen.js';
 import { createKanaele, istVorschauAbruf } from '../services/kanaele.js';
@@ -1030,6 +1030,7 @@ function lageDaten(cc) {
   for (const z of shortagesRepo.list({ country: cc })) {
     if (z.provenance !== 'community' || !['kritisch', 'eingeschraenkt'].includes(z.status) || !z.wirkstoff || String(z.country || '').toUpperCase() !== cc) continue;
     if (aktualitaet(z, new Date().toISOString().slice(0, 10)).stufe === 'veraltet') continue; // 30+ Tage ohne Bestätigung
+    if (istUmstritten(z)) continue; // Fachleute widersprechen — nicht als „knapp" zählen (11/2026)
     const k = z.wirkstoff.trim().toLowerCase();
     apo.set(k, (apo.get(k) || false) || istBestaetigt(z, new Date().toISOString().slice(0, 10)));
   }
@@ -1052,7 +1053,7 @@ function wirkstoffLage(cc, name) {
   // daten (reference) gehören gar nicht auf eine öffentliche Seite.
   const amtlich = treffer.filter((z) => z.provenance === 'verified' && !z.reporter_user_id)
     .sort((a, b) => (a.status === 'kritisch' ? -1 : 0) - (b.status === 'kritisch' ? -1 : 0));
-  const apo = treffer.filter((z) => z.provenance === 'community' && aktualitaet(z, new Date().toISOString().slice(0, 10)).stufe !== 'veraltet').sort((a, b) => zaehlendeApotheken(b) - zaehlendeApotheken(a) || (b.confirmations || []).length - (a.confirmations || []).length);
+  const apo = treffer.filter((z) => z.provenance === 'community' && aktualitaet(z, new Date().toISOString().slice(0, 10)).stufe !== 'veraltet').sort((a, b) => Number(istUmstritten(a)) - Number(istUmstritten(b)) || zaehlendeApotheken(b) - zaehlendeApotheken(a) || (b.confirmations || []).length - (a.confirmations || []).length);
   const m = amtlich[0]; const c = apo[0];
   const wirkstoff = m ? m.wirkstoff : c ? c.wirkstoff : name;
   const kurz = chronik.kurz(wirkstoff, cc);
