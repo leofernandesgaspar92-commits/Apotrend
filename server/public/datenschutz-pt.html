@@ -21,6 +21,18 @@
              padding: 14px 16px; border-radius: 0 6px 6px 0; margin: 20px 0; }
   .luecke { font-weight: 600; color: var(--crit-fg, #a4232b); }
   .zurueck { display: inline-block; margin-bottom: 20px; }
+  /* Handy: Die dreispaltige Tabelle war bis 11/2026 breiter als der Bildschirm (lange Wörter wie
+     „Rechtsgrundlage"). Unter 560 px wird jede Zeile ein Block mit Beschriftung. */
+  .dsg td, .dsg th { overflow-wrap: anywhere; hyphens: auto; }
+  @media (max-width: 560px) {
+    .dsg thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .dsg table, .dsg tbody, .dsg tr, .dsg td { display: block; width: auto; }
+    .dsg tr { border-bottom: 1px solid var(--line); padding: 10px 0; }
+    .dsg td { border: 0; padding: 2px 0; }
+    .dsg td:first-child { font-weight: 600; }
+    .dsg td:nth-child(2)::before { content: 'Finalidade: '; font-weight: 600; }
+    .dsg td:nth-child(3)::before { content: 'Fundamento jurídico: '; font-weight: 600; }
+  }
 </style>
 </head>
 <body>
@@ -91,6 +103,26 @@
         <td>Acesso à conta se esquecer a palavra-passe</td>
         <td>Execução de contrato</td>
       </tr>
+      <tr>
+        <td>Confirmações e contestações de notificações de rutura (motivo, opcionalmente um texto livre curto)</td>
+        <td>Avaliar a fiabilidade das notificações. Quem notificou só fica a saber o número e os motivos — não quem contestou. O texto livre não é mostrado publicamente.</td>
+        <td>Execução de contrato</td>
+      </tr>
+      <tr>
+        <td>Pedidos de proposta e de fatura pró-forma: produto, quantidade, país de origem e de destino, condições de entrega, a sua nota; e ainda nome, nome de utilizador, tipo de conta, país e estado de verificação da sua empresa</td>
+        <td>Obter uma proposta para si. O pedido segue para a equipa comercial da ApoPulse, que o transmite a grossistas verificados. Os destinatários são, portanto, grossistas — também fora da UE, p. ex. no país de origem da mercadoria. Só é transmitido o necessário para a proposta.</td>
+        <td>Diligências pré-contratuais a seu pedido (art. 6.º, n.º 1, al. b) do RGPD)</td>
+      </tr>
+      <tr>
+        <td>Dados de faturação e da empresa (empresa, morada, e-mail) — apenas em funções pagas ou publicidade</td>
+        <td>Emitir faturas; gerir campanhas publicitárias</td>
+        <td>Execução de contrato; obrigação legal de conservação (art. 6.º, n.º 1, al. c) do RGPD)</td>
+      </tr>
+      <tr>
+        <td>Definições: substâncias seguidas, notificações, subscrições por especialidade, relatório semanal, alertas precoces; nas notificações push, o endereço de entrega do seu dispositivo</td>
+        <td>Enviar-lhe os alertas que pediu</td>
+        <td>Execução de contrato</td>
+      </tr>
     </tbody>
   </table>
 
@@ -126,9 +158,13 @@
     O prestador trata o número apenas para entregar o SMS.</li>
     <li><strong>Prestadores de pagamento</strong> (opcional, apenas em funções pagas):
     <span class="luecke" data-luecke="zahlung">[A preencher: os prestadores efetivamente ativados.]</span></li>
+    <li><strong>Notificações push</strong> (opcional): a mensagem segue cifrada através do serviço push do fabricante do seu navegador ou dispositivo (p. ex. Google, Apple, Mozilla), que pode estar fora da UE. O serviço recebe o endereço de entrega do seu dispositivo, mas não consegue ler o conteúdo.</li>
+    <li><strong>Envio de e-mails</strong> (p. ex. ligação para uma nova palavra-passe, relatório semanal): <span class="luecke" data-luecke="mail">[A preencher: o prestador de e-mail utilizado.]</span></li>
+    <li><strong>Verificação de substância</strong>: se pedir a verificação de um nome de substância (grafia, grupo de substâncias), o servidor envia apenas esse nome — sem ligação à sua conta — para o RxNorm/RxClass da US National Library of Medicine (EUA).</li>
   </ul>
   <p>As listas oficiais de ruturas (p. ex. das autoridades do medicamento) são obtidas pelo <em>servidor</em>,
   não pelo seu dispositivo. Assim, as autoridades nada ficam a saber sobre utilizadores individuais.</p>
+  <p>O servidor obtém também dados públicos: taxas de câmbio, aprovações da FDA dos EUA, resultados de estudos (ClinicalTrials.gov), notícias de surtos da OMS, dados meteorológicos e de navios nos portos. Nenhum dado sobre si é transmitido nesse processo.</p>
 
   <h2>6. Prazo de conservação</h2>
   <p>Os dados da conta são guardados enquanto a conta existir. Após a eliminação são apagados; as
@@ -137,6 +173,8 @@
   e não de forma permanente.</p>
   <p>Os relatórios técnicos de erro da app são apagados 30 dias após a última ocorrência. Para limitar
   envios em massa, o endereço IP é contado na memória de trabalho durante no máximo uma hora e não é guardado.</p>
+
+  <p>Os pedidos de proposta e pró-forma, as contestações e as definições são apagados com a conta. As faturas emitidas e as campanhas publicitárias reservadas são conservadas após a eliminação da conta durante o tempo exigido pelo direito fiscal e comercial; os dados para faturas futuras são apagados.</p>
 
   <h2>7. Os seus direitos</h2>
   <p>Tem direito de acesso, retificação, apagamento, limitação do tratamento, portabilidade dos dados e

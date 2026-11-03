@@ -21,12 +21,18 @@ test('Alle fünf Fassungen: gleicher Aufbau (Abschnitte, Tabellenzeilen, Platzha
     assert.match(s, new RegExp(`<html lang="${sp}"${sp === 'ar' ? ' dir="rtl"' : ''}>`), sp + ': lang/dir');
     assert.equal(zaehle(s, /<h2>/g), zaehle(de, /<h2>/g), sp + ': Abschnitte');
     assert.equal(zaehle(s, /<tr>/g), zaehle(de, /<tr>/g), sp + ': Tabellenzeilen');
-    for (const l of ['verantwortlich', 'sms', 'zahlung', 'kontakt']) assert.equal(zaehle(s, new RegExp(`data-luecke="${l}"`, 'g')), 1, `${sp}: Platzhalter ${l}`);
+    for (const l of ['verantwortlich', 'sms', 'zahlung', 'kontakt', 'mail']) assert.equal(zaehle(s, new RegExp(`data-luecke="${l}"`, 'g')), 1, `${sp}: Platzhalter ${l}`);
     assert.equal(zaehle(s, /<!--sprachen-->/g), 1, sp + ': Platz für die Sprachwahl');
     assert.match(s, /class="entwurf"/, sp + ': Entwurfs-Hinweis');
     assert.match(s, /Frankfurt|Francfort|فرانكفورت/, sp + ': Speicherort');
     assert.match(s, /scrypt/, sp + ': Passwort-Prüfwert');
     assert.match(s, /\b30\b/, sp + ': Fehlerberichte 30 Tage');
+    // Sprint 4/5 (11/2026): Proforma-Weitergabe, Push, E-Mail, Wirkstoff-Prüfung (USA), Rechnungen nach Löschung.
+    assert.match(s, /RxNorm\/RxClass/, sp + ': Wirkstoff-Prüfung über RxNorm');
+    assert.match(s, /Google, Apple, Mozilla|Google وApple وMozilla/, sp + ': Push-Dienste');
+    assert.match(s, /ClinicalTrials\.gov/, sp + ': öffentliche Quellen');
+    assert.match(s, /pro ?forma|Proforma|pró-forma|المبدئية/i, sp + ': Proforma-Anfragen');
+    assert.match(s, /außerhalb der EU, z\. B\. im Herkunftsland|outside the EU, e\.g\. in the country the goods|hors de l’UE, p\. ex\. dans le pays d’origine|fora da UE, p\. ex\. no país de origem|خارج الاتحاد الأوروبي، مثلًا في بلد منشأ/, sp + ': Empfänger der Proforma-Anfragen (auch außerhalb der EU)');
   }
   // Übersetzungen nennen die maßgebliche Fassung.
   assert.match(lies('en'), /German version prevails/);
@@ -61,6 +67,9 @@ test('Platzhalter je Sprache gefüllt; Sprachwahl oben', () => {
     assert.equal(zaehle(s, /<a href="\/datenschutz\.html\?sp=[a-z]{2}" hreflang=/g), 4, sp + ': Links zu den anderen Sprachen');
     // Ohne Angaben: ehrlich „nicht eingeschaltet" in der Sprache der Seite.
     const leer = datenschutzMitAngaben(lies(sp), betreiberAngaben({}), {});
+    // E-Mail: ohne Dienst ehrlich „nicht eingeschaltet"; mit Dienst der richtige Name.
+    assert.ok(!/data-luecke="mail"/.test(leer), sp + ': E-Mail-Platzhalter offen');
+    for (const [k, name] of [['resend', 'Resend'], ['postmark', 'Postmark']]) assert.ok(datenschutzMitAngaben(lies(sp), a, { mail: k }).includes(name), `${sp}: ${name} fehlt`);
     assert.ok(!/data-luecke="sms"|data-luecke="zahlung"/.test(leer), sp);
     assert.match(leer, /data-luecke="verantwortlich"/, sp + ': fehlende Anschrift wurde erfunden');
   }

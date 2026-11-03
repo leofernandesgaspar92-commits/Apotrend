@@ -114,6 +114,8 @@ const DS_TEXT = {
   de: {
     anbieter: 'Anbieter: ', email: 'E-Mail',
     sms: { africastalking: "Africa's Talking (Sitz in Kenia, außerhalb der EU) — Datenschutzerklärung des Anbieters auf africastalking.com.", twilio: 'Twilio (Sitz in den USA, außerhalb der EU) — Datenschutzerklärung des Anbieters auf twilio.com.' },
+    mail: { resend: 'Anbieter: Resend (USA) — erhält Ihre E-Mail-Adresse und den Inhalt der Nachricht, um sie zuzustellen; Datenschutzerklärung auf resend.com.', postmark: 'Anbieter: Postmark (ActiveCampaign, USA) — erhält Ihre E-Mail-Adresse und den Inhalt der Nachricht, um sie zuzustellen; Datenschutzerklärung auf postmarkapp.com.' },
+    mailAus: 'Derzeit ist kein E-Mail-Versand eingeschaltet; es werden keine E-Mails versendet.',
     smsAus: 'Derzeit ist die Anmeldung per SMS nicht eingeschaltet; es werden keine SMS versendet.',
     zahl: { stripe: 'Kartenzahlung über Stripe — Datenschutzerklärung auf stripe.com.', paypal: 'PayPal — Datenschutzerklärung auf paypal.com.' },
     krypto: 'Krypto-Zahlung direkt an unsere eigene Wallet-Adresse: Es ist kein Zahlungsdienstleister beteiligt. Die Transaktion (Adresse, Betrag, Zeitpunkt) ist auf der jeweiligen Blockchain öffentlich einsehbar; wir speichern die von Ihnen gemeldete Transaktions-ID, um die Zahlung Ihrem Konto zuzuordnen.',
@@ -123,6 +125,8 @@ const DS_TEXT = {
   en: {
     anbieter: 'Provider: ', email: 'Email',
     sms: { africastalking: "Africa's Talking (based in Kenya, outside the EU) — the provider's privacy policy is on africastalking.com.", twilio: "Twilio (based in the USA, outside the EU) — the provider's privacy policy is on twilio.com." },
+    mail: { resend: 'Provider: Resend (USA) — receives your email address and the content of the message in order to deliver it; privacy policy at resend.com.', postmark: 'Provider: Postmark (ActiveCampaign, USA) — receives your email address and the content of the message in order to deliver it; privacy policy at postmarkapp.com.' },
+    mailAus: 'Sending emails is currently not switched on; no emails are sent.',
     smsAus: 'Sign-in by SMS is currently not switched on; no SMS are sent.',
     zahl: { stripe: 'Card payment via Stripe — privacy policy on stripe.com.', paypal: 'PayPal — privacy policy on paypal.com.' },
     krypto: 'Crypto payment directly to our own wallet address: no payment service provider is involved. The transaction (address, amount, time) is publicly visible on the respective blockchain; we store the transaction ID you report in order to assign the payment to your account.',
@@ -132,6 +136,8 @@ const DS_TEXT = {
   fr: {
     anbieter: 'Prestataire : ', email: 'E-mail',
     sms: { africastalking: "Africa's Talking (siège au Kenya, hors UE) — politique de confidentialité du prestataire sur africastalking.com.", twilio: 'Twilio (siège aux États-Unis, hors UE) — politique de confidentialité du prestataire sur twilio.com.' },
+    mail: { resend: 'Prestataire : Resend (États-Unis) — reçoit votre adresse e-mail et le contenu du message afin de le remettre ; politique de confidentialité sur resend.com.', postmark: 'Prestataire : Postmark (ActiveCampaign, États-Unis) — reçoit votre adresse e-mail et le contenu du message afin de le remettre ; politique de confidentialité sur postmarkapp.com.' },
+    mailAus: 'L’envoi d’e-mails n’est actuellement pas activé ; aucun e-mail n’est envoyé.',
     smsAus: 'La connexion par SMS n’est actuellement pas activée ; aucun SMS n’est envoyé.',
     zahl: { stripe: 'Paiement par carte via Stripe — politique de confidentialité sur stripe.com.', paypal: 'PayPal — politique de confidentialité sur paypal.com.' },
     krypto: 'Paiement en crypto directement à notre propre adresse de portefeuille : aucun prestataire de paiement n’intervient. La transaction (adresse, montant, date) est publiquement visible sur la blockchain concernée ; nous conservons l’identifiant de transaction que vous indiquez afin d’attribuer le paiement à votre compte.',
@@ -141,6 +147,8 @@ const DS_TEXT = {
   pt: {
     anbieter: 'Prestador: ', email: 'E-mail',
     sms: { africastalking: "Africa's Talking (sede no Quénia, fora da UE) — política de privacidade do prestador em africastalking.com.", twilio: 'Twilio (sede nos EUA, fora da UE) — política de privacidade do prestador em twilio.com.' },
+    mail: { resend: 'Prestador: Resend (EUA) — recebe o seu endereço de e-mail e o conteúdo da mensagem para a entregar; política de privacidade em resend.com.', postmark: 'Prestador: Postmark (ActiveCampaign, EUA) — recebe o seu endereço de e-mail e o conteúdo da mensagem para a entregar; política de privacidade em postmarkapp.com.' },
+    mailAus: 'O envio de e-mails não está ativado de momento; não são enviados e-mails.',
     smsAus: 'A entrada por SMS não está ativada de momento; não são enviados SMS.',
     zahl: { stripe: 'Pagamento com cartão via Stripe — política de privacidade em stripe.com.', paypal: 'PayPal — política de privacidade em paypal.com.' },
     krypto: 'Pagamento em cripto diretamente para o nosso próprio endereço de carteira: não intervém nenhum prestador de pagamentos. A transação (endereço, montante, data) é publicamente visível na respetiva blockchain; guardamos o ID da transação que indicar para associar o pagamento à sua conta.',
@@ -150,6 +158,8 @@ const DS_TEXT = {
   ar: {
     anbieter: 'المزوّد: ', email: 'البريد الإلكتروني',
     sms: { africastalking: "Africa's Talking (مقرها كينيا، خارج الاتحاد الأوروبي) — سياسة خصوصية المزوّد على africastalking.com.", twilio: 'Twilio (مقرها الولايات المتحدة، خارج الاتحاد الأوروبي) — سياسة خصوصية المزوّد على twilio.com.' },
+    mail: { resend: 'المزوّد: Resend (الولايات المتحدة) — يتلقى عنوان بريدك الإلكتروني ومحتوى الرسالة لتسليمها؛ سياسة الخصوصية على resend.com.', postmark: 'المزوّد: Postmark (ActiveCampaign، الولايات المتحدة) — يتلقى عنوان بريدك الإلكتروني ومحتوى الرسالة لتسليمها؛ سياسة الخصوصية على postmarkapp.com.' },
+    mailAus: 'إرسال البريد الإلكتروني غير مفعّل حاليًا؛ لا تُرسَل أي رسائل بريد إلكتروني.',
     smsAus: 'تسجيل الدخول عبر الرسائل القصيرة غير مفعّل حاليًا؛ لا تُرسَل أي رسائل.',
     zahl: { stripe: 'الدفع بالبطاقة عبر Stripe — سياسة الخصوصية على stripe.com.', paypal: 'PayPal — سياسة الخصوصية على paypal.com.' },
     krypto: 'الدفع بالعملات الرقمية مباشرة إلى عنوان محفظتنا الخاص: لا يشارك أي مقدم خدمات دفع. المعاملة (العنوان، المبلغ، الوقت) مرئية للعموم على سلسلة الكتل المعنية؛ ونحفظ معرّف المعاملة الذي تُبلغ عنه لربط الدفع بحسابك.',
@@ -168,7 +178,7 @@ function sprachwahl(sp) {
 }
 
 /** Datenschutzerklärung: Platzhalter durch die tatsächliche Einrichtung ersetzen (soweit bekannt). */
-export function datenschutzMitAngaben(html, angaben = betreiberAngaben(), { sms = null, zahlwege = [], krypto = false, ueberweisung = false, geprueft = false } = {}) {
+export function datenschutzMitAngaben(html, angaben = betreiberAngaben(), { sms = null, mail = null, zahlwege = [], krypto = false, ueberweisung = false, geprueft = false } = {}) {
   let s = String(html);
   const sp = (s.match(/<html lang="([a-z]{2})"/) || [])[1] || 'de';
   const T = DS_TEXT[sp] || DS_TEXT.de;
@@ -178,6 +188,8 @@ export function datenschutzMitAngaben(html, angaben = betreiberAngaben(), { sms 
   if (geprueft) s = s.replace(/\s*<div class="entwurf">[\s\S]*?<\/div>/, '');
   // SMS: der tatsächlich eingestellte Anbieter — oder ehrlich „nicht eingeschaltet".
   s = s.replace(luecke('sms'), () => esc(T.sms[sms] ? T.anbieter + T.sms[sms] : T.smsAus));
+  // E-Mail: der tatsächlich eingestellte Dienst (services/mailer.js) — oder ehrlich „nicht eingeschaltet".
+  s = s.replace(luecke('mail'), () => esc(T.mail[mail] || T.mailAus));
   // Zahlungen: was wirklich freigeschaltet ist.
   const wege = [
     ...zahlwege.filter((z) => T.zahl[z]).map((z) => T.zahl[z]),

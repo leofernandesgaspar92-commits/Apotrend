@@ -3035,6 +3035,21 @@ async function main() {
     if (!findings.some((f) => f.startsWith('B2B'))) console.log('✓ B2B: /sourcing rechnet nur mit Kursen (sonst ehrlich), Ergebnis mit Basis/Quelle/Ankunft/Hafen, Proforma kommt an, Cross-Check ohne Zulassungsbehauptung, Panels mit Einordnung, Privat gesperrt');
   }
 
+  // ── Datenschutzerklärung am Handy (360 px), alle fünf Sprachen ──
+  //  Die dreispaltige Tabelle war bis 11/2026 auf Deutsch 455 px breit (lange Wörter wie
+  //  „Rechtsgrundlage"); jetzt wird jede Zeile ein Block mit Beschriftung.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 360, height: 740 } });
+    const page = await ctx.newPage();
+    for (const sp of ['de', 'en', 'fr', 'pt', 'ar']) {
+      await page.goto(`${BASE}/datenschutz.html?sp=${sp}`, { waitUntil: 'load' });
+      const b = await page.evaluate(() => document.documentElement.scrollWidth);
+      if (b > 362) findings.push(`Datenschutz (${sp}): scrollt am Handy seitlich (${b}px)`);
+    }
+    await ctx.close();
+    if (!findings.some((f) => f.startsWith('Datenschutz'))) console.log('✓ Datenschutzerklärung: 5 Sprachen am Handy (360 px) ohne Querscrollen');
+  }
+
   await browser.close();
   stopServer();
 

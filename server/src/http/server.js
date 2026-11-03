@@ -3341,6 +3341,7 @@ async function anfrage(req, res) {
       ? impressumSeite({ sp, basis: oeffentlicheBasis(req), angaben })
       : datenschutzMitAngaben(fs.readFileSync(path.join(PUBLIC_DIR, datenschutzDatei(sp)), 'utf8'), angaben, {
         sms: sms.aktiv ? sms.anbieter : null,
+        mail: mailer.aktiv ? mailer.anbieter : null,
         zahlwege: Object.keys(buildPaymentProvidersFromEnv()).filter((k) => k !== 'coinbase'),
         krypto: cryptoWallets().length > 0,
         ueberweisung: !!(process.env.APOPULSE_BANK_IBAN && process.env.APOPULSE_FIRMA_NAME && process.env.APOPULSE_FIRMA_ANSCHRIFT),

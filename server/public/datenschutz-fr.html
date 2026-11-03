@@ -21,6 +21,18 @@
              padding: 14px 16px; border-radius: 0 6px 6px 0; margin: 20px 0; }
   .luecke { font-weight: 600; color: var(--crit-fg, #a4232b); }
   .zurueck { display: inline-block; margin-bottom: 20px; }
+  /* Handy: Die dreispaltige Tabelle war bis 11/2026 breiter als der Bildschirm (lange Wörter wie
+     „Rechtsgrundlage"). Unter 560 px wird jede Zeile ein Block mit Beschriftung. */
+  .dsg td, .dsg th { overflow-wrap: anywhere; hyphens: auto; }
+  @media (max-width: 560px) {
+    .dsg thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .dsg table, .dsg tbody, .dsg tr, .dsg td { display: block; width: auto; }
+    .dsg tr { border-bottom: 1px solid var(--line); padding: 10px 0; }
+    .dsg td { border: 0; padding: 2px 0; }
+    .dsg td:first-child { font-weight: 600; }
+    .dsg td:nth-child(2)::before { content: 'Finalité: '; font-weight: 600; }
+    .dsg td:nth-child(3)::before { content: 'Base juridique: '; font-weight: 600; }
+  }
 </style>
 </head>
 <body>
@@ -91,6 +103,26 @@
         <td>Accès au compte en cas d’oubli du mot de passe</td>
         <td>Exécution du contrat</td>
       </tr>
+      <tr>
+        <td>Confirmations et contestations de signalements de rupture (motif, éventuellement un court texte libre)</td>
+        <td>Évaluer la fiabilité des signalements. L’auteur du signalement ne voit que le nombre et les motifs — pas qui a contesté. Le texte libre n’est pas affiché publiquement.</td>
+        <td>Exécution du contrat</td>
+      </tr>
+      <tr>
+        <td>Demandes de devis et de facture pro forma : produit, quantité, pays d’origine et de destination, conditions de livraison, votre note ; ainsi que le nom, l’identifiant, le type de compte, le pays et le statut de vérification de votre établissement</td>
+        <td>Obtenir un devis pour vous. La demande est transmise à l’équipe commerciale d’ApoPulse, qui la communique à des grossistes vérifiés. Les destinataires sont donc des grossistes — y compris hors de l’UE, p. ex. dans le pays d’origine de la marchandise. Seul ce qui est nécessaire au devis est transmis.</td>
+        <td>Mesures précontractuelles prises à votre demande (art. 6, par. 1, point b RGPD)</td>
+      </tr>
+      <tr>
+        <td>Données de facturation et d’entreprise (société, adresse, e-mail) — uniquement pour les fonctions payantes ou la publicité</td>
+        <td>Émettre des factures ; gérer les campagnes publicitaires</td>
+        <td>Exécution du contrat ; obligation légale de conservation (art. 6, par. 1, point c RGPD)</td>
+      </tr>
+      <tr>
+        <td>Paramètres : substances suivies, notifications, abonnements par spécialité, rapport hebdomadaire, alertes précoces ; pour les notifications push, l’adresse de remise de votre appareil</td>
+        <td>Vous envoyer les alertes demandées</td>
+        <td>Exécution du contrat</td>
+      </tr>
     </tbody>
   </table>
 
@@ -128,9 +160,13 @@
     Le prestataire ne traite le numéro que pour délivrer le SMS.</li>
     <li><strong>Prestataires de paiement</strong> (facultatif, uniquement pour les fonctions payantes) :
     <span class="luecke" data-luecke="zahlung">[À compléter : les prestataires effectivement activés.]</span></li>
+    <li><strong>Notifications push</strong> (facultatif) : le message est envoyé chiffré via le service push du fabricant de votre navigateur ou appareil (p. ex. Google, Apple, Mozilla), qui peut être situé hors de l’UE. Le service reçoit l’adresse de remise de votre appareil, mais ne peut pas lire le contenu.</li>
+    <li><strong>Envoi d’e-mails</strong> (p. ex. lien pour un nouveau mot de passe, rapport hebdomadaire) : <span class="luecke" data-luecke="mail">[À compléter : le prestataire d’e-mail utilisé.]</span></li>
+    <li><strong>Vérification de substance</strong> : si vous faites vérifier un nom de substance (orthographe, groupe de substances), le serveur envoie uniquement ce nom — sans lien avec votre compte — à RxNorm/RxClass de la US National Library of Medicine (États-Unis).</li>
   </ul>
   <p>Les listes officielles de ruptures (p. ex. des autorités du médicament) sont récupérées par le
   <em>serveur</em>, pas par votre appareil. Les autorités n’apprennent ainsi rien sur les utilisateurs individuels.</p>
+  <p>Le serveur récupère de même des données publiques : taux de change, autorisations de la FDA américaine, résultats d’études (ClinicalTrials.gov), bulletins d’épidémies de l’OMS, données météo et maritimes des ports. Aucune donnée vous concernant n’est transmise à cette occasion.</p>
 
   <h2>6. Durée de conservation</h2>
   <p>Les données du compte sont conservées tant que le compte existe. Après suppression, elles sont
@@ -141,6 +177,8 @@
   <p>Les rapports d’erreur techniques de l’application sont supprimés 30 jours après leur dernière
   apparition. Pour limiter les envois massifs, l’adresse IP est comptée en mémoire vive pendant une
   heure au plus et n’est pas enregistrée.</p>
+
+  <p>Les demandes de devis et pro forma, les contestations et les paramètres sont supprimés avec le compte. Les factures émises et les campagnes publicitaires réservées sont conservées après la suppression du compte aussi longtemps que l’exige le droit fiscal et commercial ; les données pour de futures factures sont supprimées.</p>
 
   <h2>7. Vos droits</h2>
   <p>Vous disposez d’un droit d’accès, de rectification, d’effacement, de limitation du traitement,

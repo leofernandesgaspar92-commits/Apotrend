@@ -22,6 +22,18 @@
              padding: 14px 16px; border-radius: 0 6px 6px 0; margin: 20px 0; }
   .luecke { font-weight: 600; color: var(--crit-fg, #a4232b); }
   .zurueck { display: inline-block; margin-bottom: 20px; }
+  /* Handy: Die dreispaltige Tabelle war bis 11/2026 breiter als der Bildschirm (lange Wörter wie
+     „Rechtsgrundlage"). Unter 560 px wird jede Zeile ein Block mit Beschriftung. */
+  .dsg td, .dsg th { overflow-wrap: anywhere; hyphens: auto; }
+  @media (max-width: 560px) {
+    .dsg thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .dsg table, .dsg tbody, .dsg tr, .dsg td { display: block; width: auto; }
+    .dsg tr { border-bottom: 1px solid var(--line); padding: 10px 0; }
+    .dsg td { border: 0; padding: 2px 0; }
+    .dsg td:first-child { font-weight: 600; }
+    .dsg td:nth-child(2)::before { content: 'Wozu: '; font-weight: 600; }
+    .dsg td:nth-child(3)::before { content: 'Rechtsgrundlage: '; font-weight: 600; }
+  }
 </style>
 </head>
 <body>
@@ -93,6 +105,26 @@
         <td>Kontozugang bei vergessenem Passwort</td>
         <td>Vertragserfüllung</td>
       </tr>
+      <tr>
+        <td>Bestätigungen und Widersprüche zu Engpass-Meldungen (Grund, optional ein kurzer Freitext)</td>
+        <td>Verlässlichkeit von Meldungen einschätzen. Die meldende Stelle erfährt nur Anzahl und Gründe — nicht, wer widersprochen hat. Der Freitext wird nicht öffentlich angezeigt.</td>
+        <td>Vertragserfüllung</td>
+      </tr>
+      <tr>
+        <td>Angebots- und Proforma-Anfragen: Präparat, Menge, Herkunfts- und Zielland, Lieferbedingung, Ihre Notiz; dazu Name, Benutzername, Kontotyp, Land und Verifizierungsstand Ihres Betriebs</td>
+        <td>Für Sie ein Angebot einholen. Die Anfrage geht an das ApoPulse-Handelsteam, das sie an geprüfte Großhändler weitergibt. Empfänger sind damit Großhändler — auch außerhalb der EU, z. B. im Herkunftsland der Ware. Weitergegeben wird nur, was für das Angebot nötig ist.</td>
+        <td>Vorvertragliche Maßnahmen auf Ihre Anfrage (Art. 6 Abs. 1 lit. b DSGVO)</td>
+      </tr>
+      <tr>
+        <td>Rechnungs- und Firmenangaben (Firma, Anschrift, E-Mail) — nur bei kostenpflichtigen Funktionen oder Werbung</td>
+        <td>Rechnungen ausstellen; Werbekampagnen abwickeln</td>
+        <td>Vertragserfüllung; gesetzliche Aufbewahrungspflicht (Art. 6 Abs. 1 lit. c DSGVO)</td>
+      </tr>
+      <tr>
+        <td>Einstellungen: beobachtete Wirkstoffe, Benachrichtigungen, Fachgebiets-Abos, Wochenbericht, Frühwarnungen; bei Push-Benachrichtigungen die Zustell-Adresse Ihres Geräts</td>
+        <td>Ihnen die gewünschten Hinweise zustellen</td>
+        <td>Vertragserfüllung</td>
+      </tr>
     </tbody>
   </table>
 
@@ -134,9 +166,13 @@
     <li><strong>Zahlungsdienstleister</strong> (optional, nur bei kostenpflichtigen
     Funktionen): <span class="luecke" data-luecke="zahlung">[Noch einzutragen: welche Anbieter tatsächlich
     freigeschaltet sind, mit Verweis auf deren Datenschutzerklärung.]</span></li>
+    <li><strong>Push-Benachrichtigungen</strong> (optional): Die Nachricht geht verschlüsselt über den Push-Dienst Ihres Browser- bzw. Geräteherstellers (z. B. Google, Apple, Mozilla), der außerhalb der EU sitzen kann. Der Dienst erhält die Zustell-Adresse Ihres Geräts, kann den Inhalt aber nicht lesen.</li>
+    <li><strong>E-Mail-Versand</strong> (z. B. Link für ein neues Passwort, Wochenbericht): <span class="luecke" data-luecke="mail">[Noch einzutragen: der eingestellte E-Mail-Dienstleister.]</span></li>
+    <li><strong>Wirkstoff-Prüfung</strong>: Lassen Sie einen Wirkstoffnamen prüfen (Schreibweise, Wirkstoffgruppe), sendet der Server nur diesen Namen — ohne Bezug zu Ihrem Konto — an RxNorm/RxClass der US National Library of Medicine (USA).</li>
   </ul>
   <p>Behördenmeldungen (z. B. BfArM, BASG) holt der <em>Server</em> ab, nicht Ihr Gerät.
   Die Behörden erfahren dadurch nichts über einzelne Nutzerinnen und Nutzer.</p>
+  <p>Ebenso holt der Server öffentliche Daten ab: Wechselkurse, Zulassungen der US-FDA, Studienergebnisse (ClinicalTrials.gov), Ausbruchsmeldungen der WHO, Wetter- und Schiffsdaten zu Häfen. Dabei werden keine Daten über Sie übermittelt.</p>
 
   <h2>6. Speicherdauer</h2>
   <p>Kontodaten werden gespeichert, solange das Konto besteht. Nach einer Löschung werden
@@ -147,6 +183,8 @@
   <p>Technische Fehlermeldungen der App werden 30 Tage nach ihrem letzten Auftreten gelöscht. Um
   massenhafte Meldungen zu begrenzen, wird die IP-Adresse dabei höchstens eine Stunde im
   Arbeitsspeicher gezählt und nicht gespeichert.</p>
+
+  <p>Angebots- und Proforma-Anfragen, Widersprüche und Einstellungen werden mit dem Konto gelöscht. Ausgestellte Rechnungen und gebuchte Werbekampagnen bewahren wir auch nach einer Kontolöschung so lange auf, wie es das Steuer- und Handelsrecht vorschreibt; die Angaben für künftige Rechnungen werden gelöscht.</p>
 
   <h2>7. Ihre Rechte</h2>
   <p>Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der

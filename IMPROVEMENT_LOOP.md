@@ -4254,3 +4254,16 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Wächter:** test/konto-loeschen-vollstaendig.test.js legt Daten in vielen Bereichen an, löscht und durchsucht
   die GANZE Sicherung nach der Konto-ID und den Freitexten — fängt auch jeden künftigen vergessenen Speicher.
   Vor der Korrektur rot (7 Fundstellen), 4 Gegenproben rot.
+
+### Datenschutzerklärung: neue Verarbeitungen genannt, am Handy lesbar (2026-11-03)
+- **Fund 1:** Die Erklärung (5 Sprachen) nannte nicht: Weitergabe der Proforma-Anfragen an Großhändler (auch
+  außerhalb der EU), Widersprüche, Rechnungs-/Firmenangaben, Einstellungen/Push-Geräteadresse, Push-Dienste der
+  Browser-Hersteller, E-Mail-Dienstleister (Resend/Postmark), Wirkstoff-Prüfung über RxNorm (USA), öffentliche
+  Quellen (FDA, ClinicalTrials.gov, WHO …) und dass Rechnungen/Kampagnen nach einer Kontolöschung bleiben.
+- **Fund 2:** Am Handy (360 px) war die Seite breiter als der Bildschirm — Deutsch 455 px, Portugiesisch 385 px
+  (dreispaltige Tabelle, lange Wörter); mit den neuen Zeilen noch mehr.
+- **Behoben:** 4 Tabellenzeilen, 3 Dienste, 2 Absätze in allen 5 Sprachen; E-Mail-Dienst wird wie SMS automatisch
+  aus der Einrichtung eingetragen (sonst „nicht eingeschaltet"). Empfänger der Anfragen als Kategorie (Großhändler,
+  auch außerhalb der EU) — keine erfundenen Namen. Tabelle am Handy als Blöcke mit Beschriftung.
+  Tests je Sprache, Browser-Audit prüft 5 Sprachen auf 360 px; 4 Gegenproben rot. Rechtliche Prüfung bleibt beim
+  Owner (Entwurfs-Hinweis bleibt bis APOPULSE_DATENSCHUTZ_GEPRUEFT=ja).

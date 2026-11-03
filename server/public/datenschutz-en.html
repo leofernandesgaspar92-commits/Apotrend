@@ -21,6 +21,18 @@
              padding: 14px 16px; border-radius: 0 6px 6px 0; margin: 20px 0; }
   .luecke { font-weight: 600; color: var(--crit-fg, #a4232b); }
   .zurueck { display: inline-block; margin-bottom: 20px; }
+  /* Handy: Die dreispaltige Tabelle war bis 11/2026 breiter als der Bildschirm (lange Wörter wie
+     „Rechtsgrundlage"). Unter 560 px wird jede Zeile ein Block mit Beschriftung. */
+  .dsg td, .dsg th { overflow-wrap: anywhere; hyphens: auto; }
+  @media (max-width: 560px) {
+    .dsg thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .dsg table, .dsg tbody, .dsg tr, .dsg td { display: block; width: auto; }
+    .dsg tr { border-bottom: 1px solid var(--line); padding: 10px 0; }
+    .dsg td { border: 0; padding: 2px 0; }
+    .dsg td:first-child { font-weight: 600; }
+    .dsg td:nth-child(2)::before { content: 'Purpose: '; font-weight: 600; }
+    .dsg td:nth-child(3)::before { content: 'Legal basis: '; font-weight: 600; }
+  }
 </style>
 </head>
 <body>
@@ -91,6 +103,26 @@
         <td>Access to the account if you forget your password</td>
         <td>Performance of a contract</td>
       </tr>
+      <tr>
+        <td>Confirmations of and objections to shortage reports (reason, optionally a short free text)</td>
+        <td>Assessing how reliable reports are. The reporting party only learns the number and the reasons — not who objected. The free text is not shown publicly.</td>
+        <td>Performance of a contract</td>
+      </tr>
+      <tr>
+        <td>Quote and proforma requests: product, quantity, country of origin and destination, delivery terms, your note; plus name, user name, account type, country and verification status of your business</td>
+        <td>Obtaining a quote for you. The request goes to the ApoPulse trade team, which passes it on to verified wholesalers. Recipients are therefore wholesalers — including outside the EU, e.g. in the country the goods come from. Only what is needed for the quote is passed on.</td>
+        <td>Steps prior to a contract at your request (Art. 6(1)(b) GDPR)</td>
+      </tr>
+      <tr>
+        <td>Billing and company details (company, address, email) — only for paid features or advertising</td>
+        <td>Issuing invoices; handling advertising campaigns</td>
+        <td>Performance of a contract; legal retention obligation (Art. 6(1)(c) GDPR)</td>
+      </tr>
+      <tr>
+        <td>Settings: watched substances, notifications, specialty subscriptions, weekly report, early warnings; for push notifications the delivery address of your device</td>
+        <td>Delivering the alerts you asked for</td>
+        <td>Performance of a contract</td>
+      </tr>
     </tbody>
   </table>
 
@@ -128,9 +160,13 @@
     The provider processes the number only to deliver the SMS.</li>
     <li><strong>Payment providers</strong> (optional, only for paid features):
     <span class="luecke" data-luecke="zahlung">[To be added: which providers are actually enabled.]</span></li>
+    <li><strong>Push notifications</strong> (optional): the message is sent encrypted via the push service of your browser or device maker (e.g. Google, Apple, Mozilla), which may be located outside the EU. The service receives the delivery address of your device but cannot read the content.</li>
+    <li><strong>Sending emails</strong> (e.g. link for a new password, weekly report): <span class="luecke" data-luecke="mail">[To be added: the email service provider in use.]</span></li>
+    <li><strong>Substance check</strong>: if you have a substance name checked (spelling, substance group), the server sends only that name — without any link to your account — to RxNorm/RxClass of the US National Library of Medicine (USA).</li>
   </ul>
   <p>Official shortage lists (e.g. from medicines authorities) are fetched by the <em>server</em>,
   not by your device. The authorities therefore learn nothing about individual users.</p>
+  <p>The server likewise fetches public data: exchange rates, US FDA approvals, study results (ClinicalTrials.gov), WHO outbreak news, weather and shipping data for ports. No data about you is transmitted in the process.</p>
 
   <h2>6. Storage period</h2>
   <p>Account data is stored for as long as the account exists. After deletion it is removed;
@@ -140,6 +176,8 @@
   <p>Technical error reports of the app are deleted 30 days after they last occurred. To limit
   mass reports, the IP address is counted in working memory for at most one hour and is not
   stored.</p>
+
+  <p>Quote and proforma requests, objections and settings are deleted together with the account. Issued invoices and booked advertising campaigns are kept after an account is deleted for as long as tax and commercial law require; the details for future invoices are deleted.</p>
 
   <h2>7. Your rights</h2>
   <p>You have the right of access, rectification, erasure, restriction of processing, data
