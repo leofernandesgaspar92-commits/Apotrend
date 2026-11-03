@@ -2913,6 +2913,10 @@ async function main() {
       if (z.widerspruch_anzahl !== 1 || !z.i_disputed) findings.push(`Datenwahrheit: Widerspruch nicht angekommen (${z.widerspruch_anzahl})`);
       if (!(await page.locator('[data-widerruf]').count())) findings.push('Datenwahrheit: nach dem Widerspruch kein „Withdraw"');
     }
+    // 2b) Wirkstoff-Seite trägt dieselbe Vertrauensstufe (vorher nur „Community-Meldung")
+    await page.evaluate(() => openWirkstoff('Ceftriaxon')); await page.waitForTimeout(900);
+    const wkStufe = await page.locator('[data-vertrauen]').first().innerText().catch(() => '');
+    if (!/Unverified report|Community-verified|Disputed/.test(wkStufe)) findings.push(`Datenwahrheit: Wirkstoff-Seite ohne Vertrauensstufe (${wkStufe.slice(0, 80)})`);
     // 3) Keine Preise für Nigeria → ehrlich, mit Community-Frage; kein Preis erfunden
     await reiterOeffnen(page, 'prices'); await page.waitForTimeout(900);
     const leer = await page.locator('[data-preiseleer]').innerText().catch(() => '');

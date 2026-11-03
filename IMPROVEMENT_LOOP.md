@@ -4169,3 +4169,8 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Behoben:** `limit=1000` (openFDA-Höchstwert), Zeitlimit 20 s; Kennzeichnung NDA/BLA/ANDA („Neues Arzneimittel",
   „Neues Biologikum", „Generikum (neue Bezugsquelle)"), neue Therapien zuerst; Benachrichtigung nur für NDA/BLA.
   Test + 2 Gegenproben.
+
+### Wirkstoff-Seite zeigt die Vertrauensstufe (2026-11-03)
+- **Fund:** Auf der Wirkstoff-Detailseite (alle Engpässe eines Wirkstoffs) stand bei Apotheken-Meldungen nur
+  „Community-Meldung" — ohne „Ungeprüft / Community-verifiziert / Umstritten / Status unklar". Der Server lieferte
+  die Stufe bereits mit. Jetzt dieselbe Zeile wie auf der Engpass-Karte; Browser-Audit prüft es.

@@ -9532,7 +9532,7 @@ async function openWirkstoff(name) {
     // Erstmeldedatum aus dem Statusverlauf (Fallback: gemeldet_am) — zeigt „seit wann".
     const hist = Array.isArray(s.history) ? s.history.filter(h => h && h.am) : [];
     const firstAm = (hist[0] && hist[0].am) || s.gemeldet_am || null;
-    const row = el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:13px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:13px">· ${esc(provLabel(s.provenance, s.quelle))}${s.grund?' · '+esc(grundLabel(s.grund)):''}${firstAm?' · '+esc(ti('wk_since',{date:fmtDateDe(firstAm)})):''}${s.quelle&&/^https?:\/\//i.test(s.quelle)?` · <a href="${esc(s.quelle)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(t('wk_hist_src'))}${srcDomSuffix(s.quelle)}</a>`:''}</span></div>`);
+    const row = el(`<div class="comment"><span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:13px">${lab}</span> <b>${esc(s.bezeichnung)}</b> <span class="muted" style="font-size:13px">· ${esc(provLabel(s.provenance, s.quelle))}${s.grund?' · '+esc(grundLabel(s.grund)):''}${firstAm?' · '+esc(ti('wk_since',{date:fmtDateDe(firstAm)})):''}${s.quelle&&/^https?:\/\//i.test(s.quelle)?` · <a href="${esc(s.quelle)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(t('wk_hist_src'))}${srcDomSuffix(s.quelle)}</a>`:''}</span>${vertrauensZeile(s)}</div>`); // Vertrauensstufe wie auf der Engpass-Karte (Sprint 4)
     // Statusverlauf (nur ab 2 dokumentierten Schritten): macht sichtbar, wie lange und
     // wie stabil der Engpass ist — hilft bei der Entscheidung, ob aktiv beschafft werden
     // muss. Standardmäßig eingeklappt, damit die Detailseite kompakt bleibt.
