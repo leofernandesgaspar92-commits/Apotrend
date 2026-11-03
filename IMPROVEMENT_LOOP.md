@@ -4174,3 +4174,10 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Fund:** Auf der Wirkstoff-Detailseite (alle Engpässe eines Wirkstoffs) stand bei Apotheken-Meldungen nur
   „Community-Meldung" — ohne „Ungeprüft / Community-verifiziert / Umstritten / Status unklar". Der Server lieferte
   die Stufe bereits mit. Jetzt dieselbe Zeile wie auf der Engpass-Karte; Browser-Audit prüft es.
+
+### Druck-Dossier und CSV mit Herkunft + Vertrauensstufe (2026-11-03)
+- **Fund:** Das druckbare Wirkstoff-Dossier zeigte bei Behörden-Engpässen die Behörde, bei Apotheken-Meldungen
+  aber gar nichts (kein Quellenfeld) — gedruckt stand „Kritisch — Amoxicillin 500 mg" und sah amtlich aus.
+  Der CSV-Export hatte keine Vertrauensstufe.
+- **Behoben:** Dossier nennt je Zeile Herkunft und Stufe („Community-Meldung · Ungeprüfte Meldung"); CSV hat die
+  Spalte „Vertrauensstufe" (5 Sprachen). Browser-Audit prüft beides.

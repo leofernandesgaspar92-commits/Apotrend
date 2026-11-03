@@ -2917,6 +2917,20 @@ async function main() {
     await page.evaluate(() => openWirkstoff('Ceftriaxon')); await page.waitForTimeout(900);
     const wkStufe = await page.locator('[data-vertrauen]').first().innerText().catch(() => '');
     if (!/Unverified report|Community-verified|Disputed/.test(wkStufe)) findings.push(`Datenwahrheit: Wirkstoff-Seite ohne Vertrauensstufe (${wkStufe.slice(0, 80)})`);
+    // 2c) Druck-Dossier und CSV tragen Herkunft + Vertrauensstufe (gedruckt sah eine Apotheken-Meldung amtlich aus)
+    const export_ = await page.evaluate(() => {
+      const z = { wirkstoff: 'Ceftriaxon', bezeichnung: 'Ceftriaxon 1 g', status: 'kritisch', provenance: 'community', apotheken: 1, vertrauen: { stufe: 'ungeprueft', punkte: 25 } };
+      let druck = '', csv = null;
+      const altD = window.openPrintDoc, altC = window.downloadCsv;
+      window.openPrintDoc = (titel, css, body) => { druck = body; };
+      window.downloadCsv = (n, kopf, zeilen) => { csv = { kopf, zeilen }; };
+      try { printWirkstoff({ wirkstoff: 'Ceftriaxon', shortages: [z], prices: [], rabatte: [], exchange: [] }); } catch (e) { druck = 'FEHLER ' + e.message; }
+      try { exportShortagesCsv([z]); } catch (e) { csv = { fehler: e.message }; }
+      window.openPrintDoc = altD; window.downloadCsv = altC;
+      return { druck: String(druck).replace(/<[^>]+>/g, ' '), csv };
+    });
+    if (!/Unverified report/.test(export_.druck)) findings.push(`Datenwahrheit: Druck-Dossier ohne Vertrauensstufe (${export_.druck.slice(0, 120)})`);
+    if (!export_.csv || !export_.csv.kopf || !export_.csv.kopf.includes('Trust level') || !export_.csv.zeilen[0].includes('Unverified report')) findings.push(`Datenwahrheit: CSV ohne Spalte „Trust level" (${JSON.stringify(export_.csv).slice(0, 120)})`);
     // 3) Keine Preise für Nigeria → ehrlich, mit Community-Frage; kein Preis erfunden
     await reiterOeffnen(page, 'prices'); await page.waitForTimeout(900);
     const leer = await page.locator('[data-preiseleer]').innerText().catch(() => '');

@@ -5682,7 +5682,9 @@ function printWirkstoff(d) {
   const money = printMoney;
   const section = (title, inner) => inner ? `<h2>${esc(title)}</h2>${inner}` : '';
   const shortHtml = (d.shortages && d.shortages.length)
-    ? '<ul>' + d.shortages.map(s => { const [lbl, col] = statusShort(s.status); return `<li><b style="color:${col}">${esc(lbl)}</b> — ${esc(s.bezeichnung || d.wirkstoff)}${s.quelle ? ` <span class="muted">(${esc(s.quelle)})</span>` : ''}</li>`; }).join('') + '</ul>'
+    // Herkunft + Vertrauensstufe auch auf Papier: Eine einzelne Apotheken-Meldung hat kein Quellenfeld —
+    // gedruckt stand sonst nur „Kritisch — …" und sah aus wie eine amtliche Angabe.
+    ? '<ul>' + d.shortages.map(s => { const [lbl, col] = statusShort(s.status); const v = vertrauenVon(s); const stufe = v.stufe ? t('vs_' + v.stufe).replace(/^[^\p{L}]+/u, '') : ''; return `<li><b style="color:${col}">${esc(lbl)}</b> — ${esc(s.bezeichnung || d.wirkstoff)} <span class="muted">(${esc([provLabel(s.provenance, s.quelle), stufe].filter(Boolean).join(' · '))})</span></li>`; }).join('') + '</ul>'
     : `<p class="muted">${esc(t('wk_print_no_shortage'))}</p>`;
   let cheapest = null;
   (d.prices || []).forEach(g => (g.offers || []).forEach(o => { if (!cheapest || o.aep < cheapest.aep) cheapest = o; }));
@@ -5832,9 +5834,11 @@ function exportShortagesCsv(list) {
     // Amtlich mit der tatsächlichen Behörde (z. B. „Official (SAHPRA)").
     (s.provenance === 'verified' && s.quelle ? `${provText.verified} (${s.quelle})` : (provText[s.provenance] || s.provenance || '')),
     s.provenance === 'community' && s.reporter ? '@' + s.reporter.handle : '',
+    // Vertrauensstufe (Sprint 4) ohne Symbol — „Ungeprüfte Meldung", „Community-verifiziert" …
+    (() => { const v = vertrauenVon(s); return v.stufe ? t('vs_' + v.stufe).replace(/^[^\p{L}]+/u, '') : ''; })(),
     csvYesNo(s.watched),
   ]);
-  downloadCsv('apopulse-engpaesse', [t('csv_wirkstoff'), t('csv_praeparat'), t('csv_status'), t('csv_grund'), t('csv_gemeldet_am'), t('csv_tage_gemeldet'), t('csv_wieder_bis'), t('csv_antibiotikum'), t('csv_herkunft'), t('csv_melder'), t('csv_beobachtet')], rows);
+  downloadCsv('apopulse-engpaesse', [t('csv_wirkstoff'), t('csv_praeparat'), t('csv_status'), t('csv_grund'), t('csv_gemeldet_am'), t('csv_tage_gemeldet'), t('csv_wieder_bis'), t('csv_antibiotikum'), t('csv_herkunft'), t('csv_melder'), t('csv_vertrauen'), t('csv_beobachtet')], rows);
 }
 
 function trendStr(t) { if (t>0) return `<span style="color:var(--crit-fg)">▲ +${t}%</span>`; if (t<0) return `<span style="color:var(--ok-fg)">▼ ${t}%</span>`; return '<span class="muted">±0%</span>'; }
