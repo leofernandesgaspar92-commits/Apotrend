@@ -144,6 +144,8 @@ export function createWebPush({ schluessel = vapidSchluesselErzeugen(), subject 
 // ── Texte ───────────────────────────────────────────────────────────────────
 const TEXTE = {
   de: {
+    watch_redaktion: (w, s) => [`Redaktion: ${w}`, `Die ApoPulse-Redaktion meldet ${w} als ${s} — mit Quelle in der App.`],
+    status: { kritisch: 'kritisch knapp', eingeschraenkt: 'eingeschränkt lieferbar', verfuegbar: 'wieder lieferbar' },
     shortage_home: (w, l) => [`Engpass: ${w}`, `${w} ist laut Behörde in ${l} knapp. Tippen für Quelle und Verlauf.`],
     shortage_ended: (w, l) => [`Wieder lieferbar: ${w}`, `${w} steht in ${l} nicht mehr auf der Engpassliste.`],
     shortage_abroad: (w, l) => [`Frühwarnung: ${w}`, `${w} ist in ${l} knapp — bei Ihnen noch nicht. Vorrat prüfen.`],
@@ -157,6 +159,8 @@ const TEXTE = {
     test: () => ['ApoPulse: Benachrichtigung funktioniert', 'So kommt ein Engpass-Alarm an, auch wenn die App geschlossen ist.'],
   },
   en: {
+    watch_redaktion: (w, s) => [`Editors: ${w}`, `The ApoPulse editors report ${w} as ${s} — with the source in the app.`],
+    status: { kritisch: 'critically short', eingeschraenkt: 'of limited availability', verfuegbar: 'available again' },
     shortage_home: (w, l) => [`Shortage: ${w}`, `${w} is short in ${l} according to the authority. Tap for source and history.`],
     shortage_ended: (w, l) => [`Available again: ${w}`, `${w} is no longer on the shortage list in ${l}.`],
     shortage_abroad: (w, l) => [`Early warning: ${w}`, `${w} is short in ${l} — not yet in your country. Check your stock.`],
@@ -170,6 +174,8 @@ const TEXTE = {
     test: () => ['ApoPulse: notifications work', 'This is how a shortage alert arrives, even when the app is closed.'],
   },
   pt: {
+    watch_redaktion: (w, s) => [`Redação: ${w}`, `A redação do ApoPulse indica ${w} como ${s} — com fonte na app.`],
+    status: { kritisch: 'em rutura crítica', eingeschraenkt: 'com disponibilidade limitada', verfuegbar: 'novamente disponível' },
     shortage_home: (w, l) => [`Rutura: ${w}`, `${w} está em rutura em ${l} segundo a autoridade. Toque para ver fonte e histórico.`],
     shortage_ended: (w, l) => [`Novamente disponível: ${w}`, `${w} já não consta da lista de ruturas em ${l}.`],
     shortage_abroad: (w, l) => [`Alerta precoce: ${w}`, `${w} está em rutura em ${l} — no seu país ainda não. Verifique o stock.`],
@@ -183,6 +189,8 @@ const TEXTE = {
     test: () => ['ApoPulse: notificações a funcionar', 'É assim que chega um alerta de rutura, mesmo com a app fechada.'],
   },
   fr: {
+    watch_redaktion: (w, s) => [`Rédaction : ${w}`, `La rédaction d’ApoPulse signale ${w} comme ${s} — avec la source dans l’app.`],
+    status: { kritisch: 'en pénurie critique', eingeschraenkt: 'de disponibilité limitée', verfuegbar: 'de nouveau disponible' },
     shortage_home: (w, l) => [`Pénurie : ${w}`, `${w} est en pénurie ${frLand(l)} selon l’autorité. Touchez pour voir la source et l’historique.`],
     shortage_ended: (w, l) => [`De nouveau disponible : ${w}`, `${w} ne figure plus sur la liste des pénuries ${frLand(l)}.`],
     shortage_abroad: (w, l) => [`Alerte précoce : ${w}`, `${w} est en pénurie ${frLand(l)} — pas encore dans votre pays. Vérifiez votre stock.`],
@@ -196,6 +204,8 @@ const TEXTE = {
     test: () => ['ApoPulse : les notifications fonctionnent', 'Voici comment arrive une alerte de pénurie, même quand l’application est fermée.'],
   },
   ar: {
+    watch_redaktion: (w, s) => [`التحرير: ${w}`, `يفيد تحرير ApoPulse بأن ${w} ${s} — مع المصدر في التطبيق.`],
+    status: { kritisch: 'في نقص حرج', eingeschraenkt: 'متوفر بشكل محدود', verfuegbar: 'متوفر مجددًا' },
     shortage_home: (w, l) => [`نقص: ${w}`, `${w} ناقص في ${l} وفق الجهة الرسمية. اضغط لرؤية المصدر والسجل.`],
     shortage_ended: (w, l) => [`متوفر من جديد: ${w}`, `لم يعد ${w} على قائمة النقص في ${l}.`],
     shortage_abroad: (w, l) => [`إنذار مبكر: ${w}`, `${w} ناقص في ${l} — ليس في بلدك بعد. تحقق من مخزونك.`],
@@ -222,7 +232,9 @@ export function pushNachricht(n, { sprache = 'de', landName = (c) => c } = {}) {
   let typ = n.type;
   if (typ === 'watch_alert') {
     const was = teile[1] || '';
-    if (/Wieder verfügbar/.test(was)) typ = 'watch_wieder';
+    // Von der Redaktion mit Quellen-Link gesetzt — nicht „Meldung aus Apotheken".
+    if (/\(Redaktion\)/.test(was)) typ = 'watch_redaktion';
+    else if (/Wieder verfügbar/.test(was)) typ = 'watch_wieder';
     else if (/Eingeschränkt lieferbar/.test(was)) typ = 'watch_eingeschraenkt';
     else if (/^Termin/.test(was)) typ = 'watch_termin';
   }
@@ -235,6 +247,11 @@ export function pushNachricht(n, { sprache = 'de', landName = (c) => c } = {}) {
   const wirkstoff = n.ref_type === 'wirkstoff' || n.refType === 'wirkstoff' ? (n.ref_id || n.refId || teile[0]) : teile[0];
   const land = teile[1] && /^[A-Z]{2}$/.test(teile[1]) ? landName(teile[1]) : (teile[1] || '');
   const termin = typ === 'watch_termin' ? ((teile[1] || '').match(/(\d{4})-(\d{2})-(\d{2})/) || null) : null;
+  if (typ === 'watch_redaktion') {
+    const st = /Wieder verfügbar/.test(teile[1] || '') ? 'verfuegbar' : /Eingeschränkt/.test(teile[1] || '') ? 'eingeschraenkt' : 'kritisch';
+    const [titel, text] = f(wirkstoff, (T.status || TEXTE.de.status)[st]);
+    return { titel, text, url: `/?wirkstoff=${encodeURIComponent(wirkstoff)}`, tag: `${n.type}:${wirkstoff}` };
+  }
   const [titel, text] = typ === 'watch_termin'
     ? f(wirkstoff, termin ? (sprache === 'de' ? `${termin[3]}.${termin[2]}.${termin[1]}` : `${termin[3]}/${termin[2]}/${termin[1]}`) : '')
     : f(wirkstoff, land, teile[2] || '');

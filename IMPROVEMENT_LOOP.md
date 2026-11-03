@@ -4181,3 +4181,12 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   Der CSV-Export hatte keine Vertrauensstufe.
 - **Behoben:** Dossier nennt je Zeile Herkunft und Stufe („Community-Meldung · Ungeprüfte Meldung"); CSV hat die
   Spalte „Vertrauensstufe" (5 Sprachen). Browser-Audit prüft beides.
+
+### Push-Nachrichten: Redaktion statt „Apotheke (nicht amtlich)" (2026-11-03)
+- **Fund:** Setzt die Redaktion einen Status mit Quellen-Link, ging dieselbe Benachrichtigung (`watch_alert`) raus
+  wie bei Apotheken-Meldungen — der Push lautete „Eine Apotheke meldet … als knapp (nicht amtlich)". Falsche
+  Herkunftsangabe auf dem Sperrbildschirm.
+- **Behoben:** Label trägt „(Redaktion)"; Push „Redaktion: X — Die ApoPulse-Redaktion meldet X als kritisch knapp
+  — mit Quelle in der App" (5 Sprachen, Status übersetzt), App-Liste und „Seit deinem letzten Besuch" zeigen
+  „Redaktion, mit Quelle". Wochenbericht geprüft: nutzt nur Behördenlisten mit Quelle — in Ordnung.
+  Test + Gegenprobe.

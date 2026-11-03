@@ -2029,7 +2029,8 @@ function seitBesuchZeilen(notifs) {
     else if (n.type === 'shortage_abroad') art = 'ausland';
     else if (n.type === 'shortage_confirm' || n.type === 'shortage_bestaetigt') art = 'bestaetigt';
     // Herkunft (CLAUDE.md: Engpass-Aussagen nur mit Quelle): Apotheken-Meldung oder amtliche Liste.
-    const quelle = / \(Community-Meldung\)/.test(n.label || '') || n.type === 'shortage_confirm' || n.type === 'shortage_bestaetigt' ? 'apotheke'
+    const quelle = / \(Redaktion\)$/.test(n.label || '') ? 'redaktion'
+      : / \(Community-Meldung\)/.test(n.label || '') || n.type === 'shortage_confirm' || n.type === 'shortage_bestaetigt' ? 'apotheke'
       : (n.type === 'shortage_home' || n.type === 'shortage_ended' || n.type === 'shortage_abroad') ? 'amtlich' : null;
     return { w, art, quelle, wer: n.actor && n.actor.display_name, zeit: n.created_at, ids };
   });
@@ -2043,7 +2044,7 @@ async function seitBesuchKarte(feed, kopf) {
   // „أكّده Sara Mahmoud" sonst auseinander („Sara" oben rechts, „Mahmoud" eine Zeile tiefer).
   const text = (z) => z.art === 'bestaetigt' ? (z.wer ? esc(ti('seit_bestaetigt', { wer: '\u0000' })).replace('\u0000', `<bdi>${esc(z.wer)}</bdi>`) : esc(t('seit_bestaetigt_kurz'))) : esc(t('seit_' + z.art));
   const k = el(`<div class="card" data-seitbesuch><h2 style="margin:0 0 6px;font-size:19px">${esc(t('seit_titel'))}</h2>
-    ${zeilen.slice(0, 5).map((z, i) => `<button class="ov-link" data-seitw="${i}" style="align-items:flex-start"><span aria-hidden="true" style="font-size:18px;flex:none">${zeichen[z.art]}</span><span style="text-align:start;font-weight:400"><b><bdi>${esc(z.w)}</bdi></b> — ${text(z)}<br><span class="muted" style="font-size:14px">${esc(relTime(z.zeit))}${z.quelle ? ' · ' + esc(t(z.quelle === 'amtlich' ? 'seit_q_amtlich' : 'nl_community')) : ''}</span></span>${ico('chevron', 18)}</button>`).join('')}
+    ${zeilen.slice(0, 5).map((z, i) => `<button class="ov-link" data-seitw="${i}" style="align-items:flex-start"><span aria-hidden="true" style="font-size:18px;flex:none">${zeichen[z.art]}</span><span style="text-align:start;font-weight:400"><b><bdi>${esc(z.w)}</bdi></b> — ${text(z)}<br><span class="muted" style="font-size:14px">${esc(relTime(z.zeit))}${z.quelle ? ' · ' + esc(t(z.quelle === 'amtlich' ? 'seit_q_amtlich' : z.quelle === 'redaktion' ? 'nl_redaktion' : 'nl_community')) : ''}</span></span>${ico('chevron', 18)}</button>`).join('')}
     <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><button class="ghost small" data-seitgesehen>${esc(t('seit_gesehen'))}</button>${zeilen.length > 5 || d.unread > zeilen.length ? `<button class="linklike small" data-seitalle>${esc(ti('seit_alle', { n: d.unread }))}</button>` : ''}</div></div>`);
   k.querySelectorAll('[data-seitw]').forEach((b) => { b.onclick = () => openWirkstoff(zeilen[Number(b.dataset.seitw)].w); });
   k.querySelector('[data-seitgesehen]').onclick = async () => {
@@ -10548,7 +10549,8 @@ function notifLabel(label) {
     .replace(/ · Termin offen$/, () => ' · ' + t('nl_termin_offen'))
     .replace(/ · Termin (\d{4}-\d{2}-\d{2})$/, (m, d) => ' · ' + ti('nl_termin', { d: fmtDateDe(d) }))
     .replace(/ \(Community-Meldung\)$/, () => ' (' + t('nl_community') + ')')
-    .replace(/ \(aktualisiert\)$/, () => ' (' + t('nl_aktualisiert') + ')');
+    .replace(/ \(aktualisiert\)$/, () => ' (' + t('nl_aktualisiert') + ')')
+    .replace(/ \(Redaktion\)$/, () => ' (' + t('nl_redaktion') + ')');
 }
 const NOTIF_PROCUREMENT = new Set(['shortage_home','shortage_ended','shortage_abroad','shortage_bestaetigt','watch_alert','shortage_confirm','watch_offer','exchange_offer','exchange_want','signal_alert']);
 let notifFilter = 'all'; // 'all' | 'procurement' | 'social'

@@ -177,3 +177,13 @@ test('Von Ende zu Ende: neuer Behörden-Engpass -> verschlüsselter Push aufs Ge
     behoerde.close(); dienst.close();
   }
 });
+
+test('Push: Status von der Redaktion heißt „Redaktion … mit Quelle", nicht „Eine Apotheke meldet … (nicht amtlich)"', async () => {
+  const { pushNachricht } = await import('../src/services/webPush.js');
+  for (const [label, rx] of [['Amoxicillin · Kritischer Engpass (Redaktion)', /Redaktion meldet Amoxicillin als kritisch knapp/], ['Amoxicillin · Wieder verfügbar (Redaktion)', /als wieder lieferbar/], ['Amoxicillin · Eingeschränkt lieferbar (Redaktion)', /eingeschränkt lieferbar/]]) {
+    const p = pushNachricht({ type: 'watch_alert', label }, { sprache: 'de' });
+    assert.match(p.text, rx); assert.doesNotMatch(p.text, /Apotheke|nicht amtlich/, label);
+  }
+  for (const sp of ['en', 'pt', 'fr', 'ar']) assert.ok(pushNachricht({ type: 'watch_alert', label: 'X · Kritischer Engpass (Redaktion)' }, { sprache: sp }).titel, sp);
+  assert.match(pushNachricht({ type: 'watch_alert', label: 'X · Wieder verfügbar (Community-Meldung)' }, { sprache: 'de' }).text, /Meldung aus Apotheken/, 'Apotheken-Meldung verändert');
+});

@@ -496,7 +496,8 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
 
       // Nur bei tatsächlicher Änderung die Beobachter:innen informieren.
       if (before.status !== status) {
-        const label = `${updated.wirkstoff} · ${STATUS_LABEL[status]}`;
+        // „(Redaktion)": Herkunft im Label — sonst hieß der Push „Eine Apotheke meldet … (nicht amtlich)".
+        const label = `${updated.wirkstoff} · ${STATUS_LABEL[status]} (Redaktion)`;
         for (const uid of beobachterImLand(updated.wirkstoff, updated.country)) {
           social.pushNotification({ userId: uid, type: 'watch_alert', actorUserId, refType: 'shortage', refId: id, label });
         }

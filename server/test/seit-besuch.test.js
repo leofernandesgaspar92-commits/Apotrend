@@ -33,7 +33,8 @@ test('Je Wirkstoff nur die neueste ungelesene Engpass-Nachricht; Gelesenes und F
 test('Karte steht VOR dem Überblick und nennt die Herkunft; „Gesehen" markiert genau diese als gelesen', () => {
   const k = app.slice(app.indexOf('async function seitBesuchKarte('), app.indexOf('async function loadOverview('));
   assert.match(k, /if \(!kopf \|\| !kopf\.isConnected\) return;\s*feed\.querySelectorAll\('\[data-seitbesuch\]'\)\.forEach\(\(x\) => x\.remove\(\)\);\s*kopf\.before\(k\);/, 'nie zwei Karten, nie in eine verworfene Seite');
-  assert.match(k, /seit_q_amtlich' : 'nl_community'/);
+  // Drei Herkünfte: amtlich, Redaktion (mit Quelle, 11/2026), Apotheken-Meldung.
+  assert.match(k, /seit_q_amtlich' : z\.quelle === 'redaktion' \? 'nl_redaktion' : 'nl_community'/);
   assert.match(k, /zeilen\.flatMap\(\(z\) => z\.ids\)[\s\S]*\/api\/notifications\/\$\{encodeURIComponent\(id\)\}\/read/);
   for (const key of ['seit_titel', 'seit_kritisch', 'seit_eing', 'seit_wieder', 'seit_ausland', 'seit_bestaetigt', 'seit_bestaetigt_kurz', 'seit_gesehen', 'seit_alle', 'seit_q_amtlich']) {
     assert.equal((i18n.match(new RegExp(`\\b${key}:'`, 'g')) || []).length, 5, key);
