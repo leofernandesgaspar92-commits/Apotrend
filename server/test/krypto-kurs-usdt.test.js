@@ -59,3 +59,26 @@ test('Kurs-Speicher je Coin: nach Bitcoin-Abfrage gibt es trotzdem Tether; Ausfa
   assert.deepEqual(await r2.ratesEur(['tether']), {});
   assert.match(r2.status().fehler, /429/);
 });
+
+// Fund 11/2026 (Rundgang en-GH): Angezeigt wurde „≈ 3.26086957 USDT" — 8 Nachkommastellen, USDT auf Tron
+// hat nur 6. Eine Wallet nimmt den Betrag so nicht an, abtippen kann ihn niemand. Stablecoin: auf ganze
+// Cent AUFrunden (nie zu wenig); andere Münzen: höchstens so viele Stellen, wie die Kette kennt.
+test('Krypto-Betrag: USDT auf Cent aufgerundet; nie mehr Stellen als die Münze kennt; Prüfwert = Anzeige', async () => {
+  const repo = createMemoryRepo();
+  const kundin = repo.createUser({ email: 'k2@k.gh', name: 'K', passwordHash: 'x' });
+  const ws = () => cryptoWallets({ APOPULSE_WALLET_TRON: TRON });
+  const svc = createPaymentsService({ repo, wallets: ws, rates: { ratesEur: async (ids) => Object.fromEntries(ids.map((i) => [i, KURSE[i]])) } });
+  const stellen = (x) => (String(x).split('.')[1] || '').length;
+  const angebot = await svc.cryptoOptionsBetrag({ amountCents: 300, name: 'Test' });
+  const usdt = angebot.coins.find((c) => c.id === 'tron');
+  assert.equal(usdt.amount_crypto, 3.27, `USDT: ${usdt.amount_crypto} (3,00 € / 0,92 = 3,2609 → aufgerundet 3,27)`);
+  for (const c of angebot.coins) {
+    const w = ws().find((x) => x.id === c.id);
+    assert.ok(stellen(c.amount_crypto) <= Math.min(8, w.decimals), `${c.id}: ${c.amount_crypto} hat mehr Stellen als ${w.symbol} kennt`);
+    assert.ok(c.amount_crypto * KURSE[w.kurs] >= 3 - 1e-9 || c.id !== 'tron', 'Stablecoin abgerundet — Kundin zahlt zu wenig');
+  }
+  const prem = await svc.cryptoOptions('premium_monthly', {});
+  const start = await svc.startCryptoPayment(kundin.id, 'premium_monthly', 'tron');
+  const p = repo.listAllPayments().find((x) => x.id === start.payment_id);
+  assert.equal(p.expected_crypto, prem.coins.find((c) => c.id === 'tron').amount_crypto, 'Prüfwert der Redaktion weicht von der Anzeige ab');
+});

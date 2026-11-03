@@ -4294,3 +4294,13 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   herausgenommen — das widersprach dieser bewusst getesteten Regel der Afrika-Übersicht. Zurückgenommen; die
   Wirkstoff-Vorschau sagt weiterhin „umstritten".
 - Tests (Regel, Übersicht, Radar, Sortiment, Lage im Zielland); vor der Korrektur 4 rot, 4 Gegenproben rot.
+
+### Krypto-Zahlung echt durchgespielt (en-GH, 360 px): USDT-Betrag war nicht zahlbar (2026-11-03)
+- **Geprüft ohne Attrappen:** Premium mit USDT (Tron) — Melden der Transaktion, Prüfliste der Redaktion,
+  Bestätigung, „You have Premium ✓". Zwei Fälle: Kursquelle offline ohne gesicherten Kurs (ehrlich „Kurs gerade
+  nicht verfügbar — Gegenwert von 3,00 € senden", Meldung geht trotzdem) und mit gesichertem Kurs. Beides läuft.
+- **Fund:** Angezeigt wurde „≈ 3.26086957 USDT" — 8 Nachkommastellen, USDT auf Tron kennt nur 6: keine Wallet
+  nimmt das an, abtippen kann es niemand. Derselbe Wert stand als Prüfwert bei der Redaktion.
+- **Behoben:** `betragInCoin` — Stablecoins auf ganze Cent AUFgerundet (3,27; nie zu wenig), andere Münzen
+  höchstens so viele Stellen wie die Kette kennt; dieselbe Rechnung für Anzeige, Angebot (Werbung) und Prüfwert.
+  Test + 2 Gegenproben rot; Browser zeigt „≈ 3.27 USDT", Redaktion erwartet 3,27.

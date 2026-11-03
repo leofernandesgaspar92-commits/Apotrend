@@ -44,6 +44,22 @@ const NIEDRIGE_GEBUEHR = new Set(['solana']);
 const kursId = (w) => w.kurs || w.coin;
 const KLEINBETRAG_EUR = 20;
 
+/** Münzen mit festem Wert (1 USD) — Betrag auf ganze Cent. */
+const STABLECOINS = new Set(['tether', 'usd-coin']);
+/**
+ * Betrag in der Münze: Stablecoin auf ganze Cent AUFgerundet (nie zu wenig, abtippbar); sonst
+ * höchstens so viele Nachkommastellen, wie die Münze kennt (max. 8). Bis 11/2026 stand für USDT auf
+ * Tron „≈ 3.26086957 USDT" — 8 Stellen, die Kette kennt 6: keine Wallet nimmt das an.
+ * Dieselbe Rechnung für Anzeige und Prüfwert der Redaktion.
+ */
+export function betragInCoin(eur, rate, w) {
+  if (!rate || !(rate > 0) || !(eur > 0)) return null;
+  const roh = eur / rate;
+  if (STABLECOINS.has(w && (w.kurs || w.coin))) return Math.ceil(Number((roh * 100).toFixed(6))) / 100;
+  const stellen = Math.min(8, Number.isInteger(w && w.decimals) ? w.decimals : 8);
+  return Number(roh.toFixed(stellen));
+}
+
 export function createPaymentsService({
   repo, providers = {}, onPaid = null, wallets = () => ({}), rates = null, fx = null, isModerator = () => false, mirror = null,
   // Benachrichtigungen der manuellen Krypto-Prüfung. Optional, damit die
@@ -117,7 +133,7 @@ export function createPaymentsService({
     const rateMap = rates ? await rates.ratesEur([...new Set(ws.map(kursId))]) : {};
     return ws.map(w => {
       const rate = rateMap[kursId(w)];
-      const amount = rate ? Number((eur / rate).toFixed(8)) : null;
+      const amount = betragInCoin(eur, rate, w);
       return { id: w.id, coin: w.coin, symbol: w.symbol, label: w.label, address: w.address, network: w.network, amount_eur: eur, amount_crypto: amount, uri: walletUri(w, amount) };
     });
   }
@@ -140,7 +156,7 @@ export function createPaymentsService({
       const eur = Number(amountCents) / 100;
       const payment = repo.createPayment({ userId, productId: ref, amountCents: Number(amountCents), currency, method: 'crypto_direct', provider: 'direct', coin: w.coin, walletId: w.id, address: w.address, status: 'pending' });
       const mitBetrag = repo.updatePaymentReview
-        ? repo.updatePaymentReview(payment.id, { rate_eur: rate, expected_crypto: rate ? Number((eur / rate).toFixed(8)) : null, bezeichnung: name })
+        ? repo.updatePaymentReview(payment.id, { rate_eur: rate, expected_crypto: betragInCoin(eur, rate, w), bezeichnung: name })
         : payment;
       spiegeln(mitBetrag || payment);
       return { payment_id: payment.id, coin: w.coin, address: w.address, network: w.network, label: w.label };
@@ -157,7 +173,7 @@ export function createPaymentsService({
       const rateMap = rates ? await rates.ratesEur([...new Set(ws.map(kursId))]) : {};
       const coins = ws.map(w => {
         const rate = rateMap[kursId(w)]; // EUR pro 1 Coin
-        const amount = rate ? Number((eur / rate).toFixed(8)) : null;
+        const amount = betragInCoin(eur, rate, w);
         return { id: w.id, coin: w.coin, symbol: w.symbol, label: w.label, address: w.address, network: w.network, amount_eur: eur, amount_crypto: amount, uri: walletUri(w, amount), low_fee: NIEDRIGE_GEBUEHR.has(w.coin) };
       });
       // Kleiner Betrag (Afrika-Preis 3,00 €): Netzwerkgebühren auf Bitcoin/Ethereum schwanken
@@ -190,7 +206,7 @@ export function createPaymentsService({
       const eur = cents / 100;
       const payment = repo.createPayment({ userId, productId, amountCents: cents, currency: product.currency, method: 'crypto_direct', provider: 'direct', coin: w.coin, walletId: w.id, address: w.address, status: 'pending' });
       const mitBetrag = repo.updatePaymentReview
-        ? repo.updatePaymentReview(payment.id, { rate_eur: rate, expected_crypto: rate ? Number((eur / rate).toFixed(8)) : null })
+        ? repo.updatePaymentReview(payment.id, { rate_eur: rate, expected_crypto: betragInCoin(eur, rate, w) })
         : payment;
       spiegeln(mitBetrag || payment);
       return { payment_id: payment.id, coin: w.coin, address: w.address, network: w.network, label: w.label };
