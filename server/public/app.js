@@ -9921,8 +9921,15 @@ async function openSourcing() {
     liste.innerHTML = '';
     if (!(d.anfragen || []).length) return;
     liste.appendChild(el(`<div class="card"><h2 style="margin:0 0 6px">${esc(t('sc5_meine'))}</h2>${d.anfragen.map((a) => `<div class="comment" style="font-size:15px"><b>${esc(a.produkt)}</b> · ${esc(a.menge)} · ${esc(landName(a.herkunft))} ${richtungsPfeil()} ${esc(landName(a.ziel))}
-      <div><span class="vt-stufe ${a.status === 'beantwortet' ? 'vt-ok' : ''}" style="margin-top:4px">${esc(t('sc5_st_' + a.status))}</span> <span class="muted" style="font-size:13px">${esc(fmtDateDe(String(a.erstellt).slice(0, 10)))}</span></div>
-      ${a.antwort ? `<div style="margin-top:4px">${esc(a.antwort)}</div>` : ''}</div>`).join('')}</div>`));
+      <div><span class="vt-stufe ${a.status === 'beantwortet' ? 'vt-ok' : a.status === 'zurueckgezogen' ? 'vt-unklar' : ''}" style="margin-top:4px">${esc(t('sc5_st_' + a.status))}</span> <span class="muted" style="font-size:13px">${esc(fmtDateDe(String(a.erstellt).slice(0, 10)))}</span></div>
+      ${a.antwort ? `<div style="margin-top:4px">${esc(a.antwort)}</div>` : ''}
+      ${a.status === 'neu' || a.status === 'in_bearbeitung' ? `<button class="ghost small" data-pfzurueck="${esc(a.id)}" style="margin-top:6px;min-height:44px">${esc(t('sc5_zurueckziehen'))}</button>` : ''}</div>`).join('')}</div>`));
+    // Anderweitig beschafft? Zurückziehen, damit das Handelsteam nicht umsonst Angebote einholt.
+    liste.querySelectorAll('[data-pfzurueck]').forEach((b) => b.onclick = async () => {
+      if (!confirm(t('sc5_zurueckziehen_frage'))) return;
+      b.disabled = true;
+      try { await api('POST', `/api/sourcing/anfragen/${encodeURIComponent(b.dataset.pfzurueck)}/zurueckziehen`); zeigeAnfragen(); } catch (e) { alert(e.message); b.disabled = false; }
+    });
   }
   zeigeAnfragen();
 }
@@ -9990,14 +9997,21 @@ async function sourcingPruefung(box) {
   box.appendChild(el(`<div class="muted" style="margin:6px 2px;font-weight:700" data-sourcingsec>${esc(ti('sc5_cockpit', { n: offen.length }))}</div>`));
   for (const a of offen) {
     const k = el(`<div class="card" data-sourcingkarte>
-      <div style="font-size:16px"><b>${esc(a.produkt)}</b> · ${esc(a.menge)}</div>
+      <div style="font-size:16px"><b>${esc(a.produkt)}</b> · ${esc(a.menge)} <span class="vt-stufe" data-sstatus style="margin-inline-start:4px">${esc(t('sc5_st_' + a.status))}</span></div>
       <div style="font-size:15px">${esc(landName(a.herkunft))} ${richtungsPfeil()} ${esc(landName(a.ziel))}${a.incoterm ? ' · ' + esc(a.incoterm) : ''}${a.transport ? ' · ' + esc(t(a.transport === 'luft' ? 'sc5_luft' : 'sc5_see')) : ''}</div>
       <div style="font-size:15px">${a.betrieb ? `${esc(a.betrieb.name)} <span class="handle">@${esc(a.betrieb.handle)}</span> · ${esc(t(ACCT_I18N[a.betrieb.art] || '') || a.betrieb.art)} · ${esc(landName(a.betrieb.land || ''))} · ${esc(t(a.betrieb.verifiziert ? 'sc5_verifiziert' : 'sc5_nicht_verifiziert'))}` : '—'}</div>
       ${a.notiz ? `<div class="comment" style="font-size:15px">${esc(a.notiz)}</div>` : ''}
       <label for="sa_${esc(a.id)}" style="display:block;font-size:15px;margin-top:6px">${esc(t('sc5_antwort'))}</label><textarea id="sa_${esc(a.id)}" data-sa rows="2" maxlength="1000" style="width:100%"></textarea>
       <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px">${['in_bearbeitung', 'beantwortet', 'abgelehnt'].map((st) => `<button class="small${st === 'beantwortet' ? '' : ' ghost'}" data-sst="${st}" style="min-height:44px">${esc(t('sc5_st_' + st))}</button>`).join('')}</div></div>`);
     k.querySelectorAll('[data-sst]').forEach((b) => b.onclick = async () => {
-      try { await api('POST', `/api/sourcing/anfragen/${a.id}/status`, { status: b.dataset.sst, antwort: k.querySelector('[data-sa]').value }); k.remove(); } catch (e) { alert(e.message); }
+      const st = b.dataset.sst, feld = k.querySelector('[data-sa]');
+      // Ohne Text sähe die Apotheke nur „Beantwortet"/„Abgelehnt" — und nichts zu lesen.
+      if ((st === 'beantwortet' || st === 'abgelehnt') && !feld.value.trim() && !a.antwort) { alert(t('sc5_antwort_pflicht')); feld.focus(); return; }
+      try {
+        const neu = await api('POST', `/api/sourcing/anfragen/${a.id}/status`, { status: st, antwort: feld.value });
+        // „In Bearbeitung" bleibt offen — Karte stehen lassen (vorher verschwand sie bis zum Neuladen).
+        if (st === 'in_bearbeitung') { a.antwort = neu.antwort; k.querySelector('[data-sstatus]').textContent = t('sc5_st_in_bearbeitung'); } else k.remove();
+      } catch (e) { alert(e.message); }
     });
     box.appendChild(k);
   }

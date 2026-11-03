@@ -1618,6 +1618,11 @@ const routes = [
     if (!social.isModerator(userId)) throw new AppError('forbidden', 'Nur Redaktion/Handel.', 403);
     return { anfragen: sourcingAnfragen.alle().map((a) => { const p = social.getProfile(a.userId); return { ...a, userId: undefined, betrieb: p ? { handle: p.handle, name: p.display_name, art: p.account_type, land: p.country, verifiziert: !!p.verified } : null }; }) };
   }],
+  ['POST', /^\/api\/sourcing\/anfragen\/([a-z0-9]+)\/zurueckziehen$/, true, async ({ userId, params }) => {
+    const a = sourcingAnfragen.zurueckziehen(userId, params[0]);
+    saveSoon();
+    return { ...a, userId: undefined };
+  }],
   ['POST', /^\/api\/sourcing\/anfragen\/([a-z0-9]+)\/status$/, true, async ({ userId, params, body }) => {
     if (!social.isModerator(userId)) throw new AppError('forbidden', 'Nur Redaktion/Handel.', 403);
     const a = sourcingAnfragen.status(params[0], body.status, body.antwort);

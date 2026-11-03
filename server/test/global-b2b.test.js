@@ -64,6 +64,20 @@ test('Proforma-Anfragen: Pflichtfelder, Incoterm, Status, Grenze, Sicherung', ()
   assert.equal(b.meine('u1').length, 2);
 });
 
+test('Proforma-Anfragen: Antwort/Grund Pflicht, Zurückziehen nur eigene und offene', () => {
+  const a = createSourcingAnfragen();
+  const x = a.erstellen('u1', { produkt: 'Oxytocin 10 IU', menge: '500', herkunft: 'IN', ziel: 'GH' });
+  for (const st of ['beantwortet', 'abgelehnt']) assert.throws(() => a.status(x.id, st, ''), (e) => e.code === 'sourcing_antwort_fehlt', st);
+  assert.equal(a.status(x.id, 'in_bearbeitung').status, 'in_bearbeitung', '„In Bearbeitung" braucht keinen Text');
+  assert.throws(() => a.zurueckziehen('u2', x.id), (e) => e.code === 'sourcing_unbekannt');
+  assert.equal(a.zurueckziehen('u1', x.id).status, 'zurueckgezogen');
+  assert.throws(() => a.zurueckziehen('u1', x.id), (e) => e.code === 'sourcing_abgeschlossen');
+  assert.throws(() => a.status(x.id, 'beantwortet', 'Angebot'), (e) => e.code === 'sourcing_zurueckgezogen');
+  const y = a.erstellen('u1', { produkt: 'Amoxicillin', menge: '1', herkunft: 'IN', ziel: 'GH' });
+  a.status(y.id, 'abgelehnt', 'Kein Lieferant mit Zulassung in Ghana');
+  assert.equal(a.status(y.id, 'beantwortet', '').antwort, 'Kein Lieferant mit Zulassung in Ghana', 'vorhandene Antwort genügt');
+});
+
 test('ATC-Gruppe (RxClass): Gruppe Stufe 4, Mitglieder ohne den Wirkstoff selbst, Hinweis „nicht austauschbar"; Netzfehler → null, nicht gemerkt', async () => {
   let netz = true; const urls = [];
   const rx = createRxNormService({ log: { warn() {} }, fetchImpl: async (u) => {
@@ -228,9 +242,21 @@ test('HTTP: Fachkreise-Sperre, Rechnung mit gesicherten Kursen, Anfrage → Cock
     assert.equal(alle[0].betrieb.handle && alle[0].betrieb.art, 'wholesale');
     const nRed = (await j('GET', '/api/notifications', red))[1].notifications;
     assert.ok(nRed.some((n) => n.type === 'sourcing_anfrage'), 'Handelsteam nicht benachrichtigt');
+    // „Beantwortet" ohne Text: Apotheke hätte nur den Status gesehen.
+    const leer = await j('POST', `/api/sourcing/anfragen/${a.id}/status`, red, { status: 'beantwortet', antwort: '  ' });
+    assert.deepEqual([leer[0], leer[1].code], [400, 'sourcing_antwort_fehlt']);
     await j('POST', `/api/sourcing/anfragen/${a.id}/status`, red, { status: 'beantwortet', antwort: 'Angebot folgt per E-Mail' });
+    // Zurückziehen: nur eigene, nur offene; danach kann das Handelsteam sie nicht mehr bearbeiten.
+    const [, a2] = await j('POST', '/api/sourcing/anfrage', ghKE, { produkt: 'Metformin 500 mg', menge: '5000', herkunft: 'IN', ziel: 'KE' });
+    assert.equal((await j('POST', `/api/sourcing/anfragen/${a2.id}/zurueckziehen`, red))[0], 404, 'fremde Anfrage zurückgezogen');
+    const [sz, z] = await j('POST', `/api/sourcing/anfragen/${a2.id}/zurueckziehen`, ghKE);
+    assert.deepEqual([sz, z.status, z.userId], [200, 'zurueckgezogen', undefined]);
+    assert.equal((await j('POST', `/api/sourcing/anfragen/${a2.id}/status`, red, { status: 'beantwortet', antwort: 'x' }))[1].code, 'sourcing_zurueckgezogen');
+    assert.equal((await j('POST', `/api/sourcing/anfragen/${a.id}/zurueckziehen`, ghKE))[1].code, 'sourcing_abgeschlossen', 'beantwortete Anfrage zurückgezogen');
+    assert.ok(!(await j('GET', '/api/sourcing/anfragen/alle', red))[1].anfragen.some((x) => x.id === a2.id && ['neu', 'in_bearbeitung'].includes(x.status)), 'zurückgezogene Anfrage im Cockpit offen');
     const meine = (await j('GET', '/api/sourcing/anfragen', ghKE))[1].anfragen;
-    assert.deepEqual([meine[0].status, meine[0].antwort], ['beantwortet', 'Angebot folgt per E-Mail']);
+    const m1 = meine.find((x) => x.id === a.id);
+    assert.deepEqual([m1.status, m1.antwort], ['beantwortet', 'Angebot folgt per E-Mail']);
     assert.ok((await j('GET', '/api/notifications', ghKE))[1].notifications.some((n) => n.type === 'sourcing_antwort'));
     // Cross-Check: keine Zulassungsbehauptung, Behörde verlinkt, ohne RxNorm ehrlich „nicht verfügbar"
     const cx = (await j('GET', '/api/crosscheck?wirkstoff=Amoxicillin&land=MA', ghKE))[1];

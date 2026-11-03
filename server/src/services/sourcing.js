@@ -25,7 +25,10 @@ export const FOB_LAENDER = new Set(['US', 'CA', 'AU', 'NZ']);
 export const HAFEN_FUER_LAND = { KE: 'mombasa', UG: 'mombasa', GH: 'tema', NG: 'lagos', ZA: 'durban', LS: 'durban', SZ: 'durban', AT: 'koper', SI: 'koper', NL: 'rotterdam' };
 export const TRANSPORTARTEN = ['see', 'luft'];
 export const INCOTERMS = ['EXW', 'FCA', 'FOB', 'CFR', 'CIF', 'CPT', 'CIP', 'DAP', 'DDP'];
-export const ANFRAGE_STATUS = ['neu', 'in_bearbeitung', 'beantwortet', 'abgelehnt'];
+export const ANFRAGE_STATUS = ['neu', 'in_bearbeitung', 'beantwortet', 'abgelehnt']; // setzt das Handelsteam
+/** Setzt nur, wer angefragt hat — solange die Anfrage offen ist. */
+export const ZURUECKGEZOGEN = 'zurueckgezogen';
+export const OFFENE_STATUS = ['neu', 'in_bearbeitung'];
 
 const zahl = (v, feld, { max = 1e12 } = {}) => {
   if (v === undefined || v === null || v === '') return 0;
@@ -127,7 +130,20 @@ export function createSourcingAnfragen({ jetzt = () => Date.now() } = {}) {
       const a = anfragen.get(id);
       if (!a) throw new AppError('sourcing_unbekannt', 'Anfrage nicht gefunden.', 404);
       if (!ANFRAGE_STATUS.includes(status)) throw new AppError('sourcing_status', 'Unbekannter Status.', 400);
-      a.status = status; a.antwort = text(antwort, 1000, true) || a.antwort; a.aktualisiert = new Date(jetzt()).toISOString();
+      if (a.status === ZURUECKGEZOGEN) throw new AppError('sourcing_zurueckgezogen', 'Diese Anfrage wurde vom Betrieb zurückgezogen.', 409);
+      const neu = text(antwort, 1000, true) || a.antwort;
+      // „Beantwortet" ohne Text hieß für die Apotheke: Benachrichtigung „beantwortet" — und nichts zu lesen.
+      // Bei „Abgelehnt" braucht sie den Grund, um anders zu bestellen.
+      if ((status === 'beantwortet' || status === 'abgelehnt') && !neu) throw new AppError('sourcing_antwort_fehlt', 'Bitte die Antwort bzw. den Grund eintragen — die anfragende Stelle sieht sonst nur den Status.', 400);
+      a.status = status; a.antwort = neu; a.aktualisiert = new Date(jetzt()).toISOString();
+      return { ...a };
+    },
+    /** Eigene, noch offene Anfrage zurückziehen (z. B. anderweitig beschafft). */
+    zurueckziehen(userId, id) {
+      const a = anfragen.get(id);
+      if (!a || a.userId !== userId) throw new AppError('sourcing_unbekannt', 'Anfrage nicht gefunden.', 404);
+      if (!OFFENE_STATUS.includes(a.status)) throw new AppError('sourcing_abgeschlossen', 'Diese Anfrage ist schon abgeschlossen.', 409);
+      a.status = ZURUECKGEZOGEN; a.aktualisiert = new Date(jetzt()).toISOString();
       return { ...a };
     },
     get: (id) => (anfragen.has(id) ? { ...anfragen.get(id) } : null),

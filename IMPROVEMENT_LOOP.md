@@ -4230,3 +4230,14 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   Kundentyp-Vorschau. Die arabischen Übersetzungen selbst nutzen schon richtig „←".
 - **Behoben:** `richtungsPfeil()` (→ bzw. ← je Schreibrichtung) an allen sechs Stellen. Test-Wächter: kein fester „→"
   mehr im Oberflächentext; Benachrichtigung auf Arabisch mit „←". 3 Gegenproben rot; Browser-Kontrolle ar-EG/en-KE.
+
+### Proforma-Anfragen: Antwort Pflicht, Zurückziehen, Cockpit-Karte bleibt (2026-11-03)
+- **Fund 1:** Die Redaktion konnte „Beantwortet"/„Abgelehnt" ohne Text setzen — die Apotheke bekam die
+  Benachrichtigung „beantwortet" und sah nichts zu lesen (bei „Abgelehnt" keinen Grund).
+- **Fund 2:** Eine Anfrage, die sich erledigt hatte (anderweitig beschafft), ließ sich nicht zurückziehen — das
+  Handelsteam hätte weiter Angebote eingeholt.
+- **Fund 3:** „In Bearbeitung" ließ die Karte aus dem Cockpit verschwinden, obwohl die Anfrage offen blieb.
+- **Behoben:** Server verlangt Antwort/Grund bei beantwortet/abgelehnt (`sourcing_antwort_fehlt`), Oberfläche
+  prüft vorher; „Anfrage zurückziehen" (mit Rückfrage) bei offenen Anfragen — nur eigene, danach für das
+  Handelsteam gesperrt (`sourcing_zurueckgezogen`), graues Etikett „Zurückgezogen"; Karte bleibt bei „In Bearbeitung"
+  und zeigt den Status. 5 Sprachen. Unit- + HTTP-Tests, 4 Gegenproben rot, Klicktest beider Seiten (360 px).
