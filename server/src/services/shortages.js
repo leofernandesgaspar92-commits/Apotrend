@@ -122,6 +122,19 @@ export function aktualitaet(s, today) {
   return { stufe: tage >= VERALTET_NACH_TAGEN ? 'veraltet' : tage >= PRUEFEN_NACH_TAGEN ? 'pruefen' : 'aktuell', tage };
 }
 
+/**
+ * Darf aus diesem Eintrag ein AUTOMATISCHER Schluss gezogen werden — Frühwarnung an Großhändler,
+ * Einstufung „knapp" im Sortiments-Check? Amtlich und offen immer; Apotheken-Meldungen nur, wenn
+ * nicht veraltet und nicht umstritten. (Anzeigen und Übersichten zeigen umstrittene Meldungen
+ * dagegen weiter — gekennzeichnet, nie als „bestätigt" —, damit zwei Widersprüche keinen echten
+ * Engpass verstecken können.) Bis 11/2026 lösten umstrittene Meldungen Frühwarnungen aus.
+ */
+export function zaehltAlsKnapp(z, heute) {
+  if (!z || !['kritisch', 'eingeschraenkt'].includes(z.status)) return false;
+  if (z.provenance !== 'community') return true;
+  return aktualitaet(z, heute).stufe !== 'veraltet' && !istUmstritten(z);
+}
+
 export const MAX_NEUE_MELDUNGEN_TAG = 10;
 
 export function createShortagesService(shortagesRepo, social, options = {}) {

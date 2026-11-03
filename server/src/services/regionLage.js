@@ -26,7 +26,9 @@ export function regionLage({ shortagesRepo, chronik, laender, codes, heute = new
   for (const cc of codes) {
     const zeilen = alle.filter((z) => String(z.country || '').toUpperCase() === cc && AKTIV.has(z.status) && z.wirkstoff);
     const amtlich = zeilen.filter((z) => z.provenance === 'verified' && !z.reporter_user_id);
-    // Veraltete Apotheken-Meldungen (30+ Tage ohne Bestätigung) zählen nicht mehr.
+    // Veraltete Apotheken-Meldungen (30+ Tage ohne Bestätigung) zählen nicht mehr. Umstrittene bleiben als
+    // MELDUNG sichtbar (sonst könnten zwei Widersprüche einen echten Engpass verstecken), zählen aber nie
+    // als „bestätigt" (istBestaetigt). Automatische Schlüsse nutzen zaehltAlsKnapp (services/shortages.js).
     const apotheken = zeilen.filter((z) => z.provenance === 'community' && aktualitaet(z, heute).stufe !== 'veraltet');
     const amtlichW = new Set(); const apoW = new Set();
     for (const z of amtlich) {

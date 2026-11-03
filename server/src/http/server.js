@@ -1030,7 +1030,6 @@ function lageDaten(cc) {
   for (const z of shortagesRepo.list({ country: cc })) {
     if (z.provenance !== 'community' || !['kritisch', 'eingeschraenkt'].includes(z.status) || !z.wirkstoff || String(z.country || '').toUpperCase() !== cc) continue;
     if (aktualitaet(z, new Date().toISOString().slice(0, 10)).stufe === 'veraltet') continue; // 30+ Tage ohne Bestätigung
-    if (istUmstritten(z)) continue; // Fachleute widersprechen — nicht als „knapp" zählen (11/2026)
     const k = z.wirkstoff.trim().toLowerCase();
     apo.set(k, (apo.get(k) || false) || istBestaetigt(z, new Date().toISOString().slice(0, 10)));
   }
@@ -1640,7 +1639,7 @@ const routes = [
     const c = COUNTRIES[land] || {};
     const lageIn = (w) => {
       const amtlich = !!chronik.offenIn(w, land);
-      const apo = shortagesRepo.list({ country: land }).filter((z) => z.provenance === 'community' && ['kritisch', 'eingeschraenkt'].includes(z.status) && gleicherWirkstoff(z.wirkstoff, w));
+      const apo = shortagesRepo.list({ country: land }).filter((z) => z.provenance === 'community' && ['kritisch', 'eingeschraenkt'].includes(z.status) && aktualitaet(z, new Date().toISOString().slice(0, 10)).stufe !== 'veraltet' && gleicherWirkstoff(z.wirkstoff, w));
       return { amtlich_knapp: amtlich, apotheken_meldungen: apo.length, beobachtet: !!chronik.aufzeichnungSeit(land) };
     };
     if (rxnorm && !rxAbrufErlaubt(userId)) throw new AppError('abfragen_zu_viele', 'Zu viele Abfragen in kurzer Zeit. Bitte in einigen Minuten erneut versuchen.', 429);

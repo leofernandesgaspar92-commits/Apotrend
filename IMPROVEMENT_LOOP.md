@@ -4279,3 +4279,18 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Behoben:** Eigene Titel für umstritten/unklar (5 Sprachen); umstrittene Meldung bittet nicht um Bestätigung;
   Länder-Lage zählt sie nicht; bei mehreren Meldungen wird eine nicht umstrittene bevorzugt. HTTP-Test (Uganda:
   2 Widersprüche) + Einheitentest; 4 Gegenproben rot.
+
+### Umstrittene Meldungen: eine Regel je Zweck (2026-11-03)
+- **Fund 1 (schwer):** Der Ausbruchs-Radar zählte umstrittene Apotheken-Meldungen mit — zwei Meldungen, denen
+  Fachleute widersprechen, konnten zusammen mit einer echten eine Frühwarnung an Großhändler auslösen.
+- **Fund 2:** Der Sortiments-Check stufte einen Wirkstoff als „knapp" ein, auch wenn die einzige Meldung umstritten war.
+- **Fund 3:** Die Lage im Zielland (Zulassungs-Check) zählte auch Apotheken-Meldungen, die 30+ Tage niemand
+  bestätigt hatte.
+- **Regel festgelegt** (`zaehltAlsKnapp` in services/shortages.js): Automatische Schlüsse (Frühwarnung, Einstufung
+  „knapp") nur aus nicht umstrittenen, nicht veralteten Meldungen. Anzeigen/Übersichten (Afrika/Welt, Länder-
+  Vorschau, Lage im Zielland) zeigen umstrittene Meldungen weiter — gekennzeichnet, nie „bestätigt" —, damit zwei
+  Widersprüche keinen echten Engpass verstecken können.
+- **Korrektur des vorigen Durchlaufs:** Dort hatte ich umstrittene Meldungen aus der Länder-Vorschau (Teilen) ganz
+  herausgenommen — das widersprach dieser bewusst getesteten Regel der Afrika-Übersicht. Zurückgenommen; die
+  Wirkstoff-Vorschau sagt weiterhin „umstritten".
+- Tests (Regel, Übersicht, Radar, Sortiment, Lage im Zielland); vor der Korrektur 4 rot, 4 Gegenproben rot.

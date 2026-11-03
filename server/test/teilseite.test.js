@@ -170,8 +170,9 @@ test('Über HTTP: geteilter Link aus Uganda — erst Hinweis, dann bestätigt', 
     const lage = await (await fetch(B + '/teilen/lage/UG')).text();
     assert.equal(meta(lage, 'og:title'), '1 substance reported short by pharmacies in Uganda');
     assert.equal(meta(lage, 'og:description'), '1 of them confirmed by several pharmacies · not official');
-    // Umstritten (11/2026): Zwei Fachleute widersprechen einer Meldung — die Vorschau darf sie nicht
-    // als normalen Engpass-Hinweis zeigen und die Länder-Lage zählt sie nicht als knapp.
+    // Umstritten (11/2026): Zwei Fachleute widersprechen einer Meldung — die Wirkstoff-Vorschau sagt
+    // „umstritten" statt „meldet einen Engpass". Die Länder-Lage zeigt sie weiter als MELDUNG (wie die
+    // Afrika-Übersicht, damit zwei Widersprüche keinen Engpass verstecken), nie als bestätigt.
     const [, o] = [0, await (await fetch(B + '/api/shortages/report', { method: 'POST', headers: H(a), body: JSON.stringify({ wirkstoff: 'Oxytocin', status: 'kritisch', country: 'UG' }) })).json()];
     for (const t of [b2, c2]) {
       const r = await fetch(B + `/api/shortages/${o.id}/widerspruch`, { method: 'POST', headers: H(t), body: JSON.stringify({ grund: 'bei_uns_lieferbar' }) });
@@ -181,7 +182,9 @@ test('Über HTTP: geteilter Link aus Uganda — erst Hinweis, dann bestätigt', 
     assert.equal(tu, 'Oxytocin in Uganda: pharmacy report disputed — professionals object');
     const seiteU = await (await fetch(B + '/teilen/w/UG/Oxytocin')).text();
     assert.ok(!/Confirm Oxytocin/.test(seiteU), 'umstrittene Meldung: Knopf bittet um Bestätigung');
-    assert.equal(meta(await (await fetch(B + '/teilen/lage/UG')).text(), 'og:title'), '1 substance reported short by pharmacies in Uganda', 'umstrittene Meldung als knapp gezählt');
+    const lageU = await (await fetch(B + '/teilen/lage/UG')).text();
+    assert.equal(meta(lageU, 'og:title'), '2 substances reported short by pharmacies in Uganda');
+    assert.equal(meta(lageU, 'og:description'), '1 of them confirmed by several pharmacies · not official', 'umstrittene Meldung als bestätigt gezählt');
   } finally {
     await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
   }

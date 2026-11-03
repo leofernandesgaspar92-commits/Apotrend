@@ -19,6 +19,7 @@
 // ============================================================================
 import { createAbruf } from './extern/abruf.js';
 import { wirkstoffSchluessel } from '../domain/inn.js';
+import { istUmstritten } from './shortages.js';
 
 export const FENSTER_TAGE = 14;
 export const MIN_NEU = 3;              // mindestens so viele neue Meldungen in der Region …
@@ -66,6 +67,7 @@ export function regionaleSignale({ episoden, meldungen, regionVon, heute }) {
   // neue Engpassmeldung und konnte eine falsche Frühwarnung an Großhändler auslösen (11/2026).
   for (const m of meldungen || []) {
     if (m.provenance !== 'community' || !['kritisch', 'eingeschraenkt'].includes(m.status)) continue;
+    if (istUmstritten(m)) continue; // Fachleute widersprechen — keine Frühwarnung daraus (11/2026)
     const erst = (Array.isArray(m.history) && m.history[0] && m.history[0].am) || m.gemeldet_am;
     zaehle(String(m.country || '').toUpperCase(), m.wirkstoff, erst, 'apotheke');
   }
