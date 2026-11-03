@@ -4198,3 +4198,12 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   sie bekommen). Abschalten betrifft nur die Frühwarnung, nicht Wirkstoff-Alarme. Wird gesichert; alte
   Sicherungen (nur Liste) werden weiter gelesen. Checkbox-Beschriftungen (`label.schalter`) jetzt in kräftiger
   Textfarbe statt Grau. Test + Gegenprobe (Filter entfernt → rot), Klicktest 360 px ohne Fehler.
+
+### B2B-Benachrichtigungen in Klartext (2026-11-03)
+- **Fund:** Die Benachrichtigungsliste zeigte bei B2B-Meldungen Rohdaten des Servers: „Paracetamol · in_bearbeitung"
+  (Proforma-Antwort), „amoxicillin · AFRICA · 5" (Frühwarnung), „Amoxicillin · IN → KE" (Anfrage, Redaktion), und
+  bei neuen Zulassungen ohne Wirkstoff ein einzelnes „·" am Ende.
+- **Behoben:** `b2bLabel` übersetzt Status, Region und Länder (5 Sprachen); Frühwarnung lautet jetzt
+  „Afrika · 5 neue Meldungen in 14 Tagen". Server baut das Zulassungs-Label ohne leeren Trenner; alte, schon
+  gespeicherte Benachrichtigungen werden in der Anzeige bereinigt. Test mit der echten Funktion aus app.js für
+  alle Sprachen und Status, 4 Gegenproben rot.

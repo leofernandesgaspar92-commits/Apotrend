@@ -10554,6 +10554,17 @@ function notifLabel(label) {
     .replace(/ \(aktualisiert\)$/, () => ' (' + t('nl_aktualisiert') + ')')
     .replace(/ \(Redaktion\)$/, () => ' (' + t('nl_redaktion') + ')');
 }
+// B2B-Benachrichtigungen speichern Rohdaten (Status-Code, Länder-/Regionscode, Anzahl) — bis 11/2026
+// standen die so in der Liste („Paracetamol · in_bearbeitung", „amoxicillin · AFRICA · 5"). Hier Klartext.
+function b2bLabel(type, label) {
+  const s = String(label || '');
+  const tOder = (k, roh) => (t(k) !== k ? t(k) : roh);
+  if (type === 'sourcing_antwort') return s.replace(/ · ([a-z_]+)$/, (m, st) => ' · ' + tOder('sc5_st_' + st, st));
+  if (type === 'sourcing_anfrage') return s.replace(/ · ([A-Z]{2}) → ([A-Z]{2})$/, (m, a, b) => ` · ${landLabel(a)} → ${landLabel(b)}`);
+  if (type === 'ausbruch_signal') return s.replace(/ · ([A-Z_]+) · (\d+)$/, (m, r, n) => ` · ${tOder('eb_region_' + r, r)} · ${ti('nl_ab_neu', { n })}`);
+  if (type === 'medint_neu') return s.replace(/ ·$/, '');
+  return s;
+}
 const NOTIF_PROCUREMENT = new Set(['shortage_home','shortage_ended','shortage_abroad','shortage_bestaetigt','watch_alert','shortage_confirm','watch_offer','exchange_offer','exchange_want','signal_alert']);
 let notifFilter = 'all'; // 'all' | 'procurement' | 'social'
 let notifUnreadOnly = false; // Zusatzfilter: nur ungelesene zeigen
@@ -10601,7 +10612,7 @@ async function showNotifications() {
       <div class="row" style="align-items:center">
         ${n.actor ? avatarHtml(n.actor, 34, false) : ''}
         <span${n.actor?' style="font-size:16px"':''}>${icons[n.type]||'🔔'}</span>
-        <span style="margin-inline-start:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' '+esc(zitat(/^shortage_(abroad|home|ended)$/.test(n.type)?n.label.replace(/ · ([A-Z]{2})$/, (m, cc) => ' · ' + landLabel(cc)):n.type==='premium_ablauf'?fmtDateDe(n.label):n.type==='watch_alert'?notifLabel(n.label):n.type==='payment_confirmed'?produktAusName(n.label):n.type==='payment_rejected'?ablehnGrund(n.label):n.type==='verify_rejected'?vfGrund(n.label):n.label)):''}${n.read?'':'</b>'}</span>
+        <span style="margin-inline-start:6px">${n.read?'':'<b>'}${noWho?'':'<b>'+esc(who)+'</b> '}${esc(verb(n.type))}${n.label?' '+esc(zitat(/^shortage_(abroad|home|ended)$/.test(n.type)?n.label.replace(/ · ([A-Z]{2})$/, (m, cc) => ' · ' + landLabel(cc)):n.type==='premium_ablauf'?fmtDateDe(n.label):n.type==='watch_alert'?notifLabel(n.label):n.type==='payment_confirmed'?produktAusName(n.label):n.type==='payment_rejected'?ablehnGrund(n.label):n.type==='verify_rejected'?vfGrund(n.label):b2bLabel(n.type, n.label))):''}${n.read?'':'</b>'}</span>
         <span class="sp" style="flex:1"></span>
         <span class="muted" style="font-size:13px">${relTime(n.created_at)}</span>
       </div></div>`);

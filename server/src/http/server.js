@@ -1128,7 +1128,7 @@ async function laufB2B() {
   const z = await medint.zulassungen();
   let zulassungen = 0, alarme = 0;
   for (const { userId, eintrag } of medintZuBenachrichtigen(medintAbos, z)) {
-    social.pushNotification({ userId, type: 'medint_neu', actorUserId: null, refType: 'medint', refId: eintrag.id, label: `${eintrag.titel} · ${(eintrag.wirkstoffe || [])[0] || ''}`.trim() });
+    social.pushNotification({ userId, type: 'medint_neu', actorUserId: null, refType: 'medint', refId: eintrag.id, label: [eintrag.titel, (eintrag.wirkstoffe || [])[0]].filter(Boolean).join(' · ') });
     zulassungen++;
   }
   const neu = ausbruch.zuMelden(aktuelleSignale());
