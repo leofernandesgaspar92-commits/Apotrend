@@ -1133,7 +1133,7 @@ async function laufB2B() {
   }
   const neu = ausbruch.zuMelden(aktuelleSignale());
   if (neu.length) {
-    const empf = socialRepo.listProfiles().filter((p) => ALARM_KONTOARTEN.includes(p.account_type) && p.country);
+    const empf = socialRepo.listProfiles().filter((p) => ALARM_KONTOARTEN.includes(p.account_type) && p.country && ausbruch.alarmAn(p.user_id));
     for (const sig of neu) for (const p of empf) {
       if (regionVon(p.country) === sig.region) continue; // dort ist es schon angekommen — die Engpassliste zeigt es
       social.pushNotification({ userId: p.user_id, type: 'ausbruch_signal', actorUserId: null, refType: 'wirkstoff', refId: sig.wirkstoff, label: `${sig.wirkstoff} · ${sig.region} · ${sig.neu}` });
@@ -1672,8 +1672,11 @@ const routes = [
       // Nur echte Lieferantenpreise im eigenen Land, mit Herkunft — nie geschätzt.
       preise: preise.filter((pr) => gleicherWirkstoff(pr.wirkstoff, sg.wirkstoff)).slice(0, 5).map((pr) => ({ bezeichnung: pr.bezeichnung, lieferant: pr.supplier, preis: pr.aep, waehrung: pr.currency || 'EUR', herkunft: pr.provenance, quelle: pr.quelle || null })),
     }));
-    return { land, region: meine, signale, who: { meldungen: who.daten || [], stand: who.stand, veraltet: who.veraltet, verfuegbar: who.daten != null } };
+    const p = social.getProfile(userId);
+    return { land, region: meine, signale, who: { meldungen: who.daten || [], stand: who.stand, veraltet: who.veraltet, verfuegbar: who.daten != null },
+      alarm: { moeglich: !!(p && ALARM_KONTOARTEN.includes(p.account_type)), an: ausbruch.alarmAn(userId) } };
   }],
+  ['POST', /^\/api\/ausbruch\/alarm$/, true, async ({ userId, body }) => { fachkreisPflicht(userId); const an = ausbruch.alarmSetzen(userId, body.an !== false); saveSoon(); return { an }; }],
   // Redaktion: B2B-Lauf sofort auslösen (sonst täglich im Zeitplan).
   ['POST', /^\/api\/b2b\/lauf$/, true, async ({ userId }) => {
     if (!social.isModerator(userId)) throw new AppError('forbidden', 'Nur Redaktion.', 403);

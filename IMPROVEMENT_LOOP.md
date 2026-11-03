@@ -4190,3 +4190,11 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   — mit Quelle in der App" (5 Sprachen, Status übersetzt), App-Liste und „Seit deinem letzten Besuch" zeigen
   „Redaktion, mit Quelle". Wochenbericht geprüft: nutzt nur Behördenlisten mit Quelle — in Ordnung.
   Test + Gegenprobe.
+
+### Ausbruchs-Frühwarnung je Konto abschaltbar (2026-11-03)
+- **Fund:** Die Frühwarnung des Ausbruchs-Radars an Großhandel/Hersteller ist die einzige Benachrichtigung, die
+  niemand selbst bestellt hat — und sie ließ sich nicht abschalten (nur alle Benachrichtigungen zusammen).
+- **Behoben:** Schalter „Frühwarnungen als Benachrichtigung erhalten" auf der Radar-Seite (nur für Konten, die
+  sie bekommen). Abschalten betrifft nur die Frühwarnung, nicht Wirkstoff-Alarme. Wird gesichert; alte
+  Sicherungen (nur Liste) werden weiter gelesen. Checkbox-Beschriftungen (`label.schalter`) jetzt in kräftiger
+  Textfarbe statt Grau. Test + Gegenprobe (Filter entfernt → rot), Klicktest 360 px ohne Fehler.

@@ -638,6 +638,8 @@
   .wb-raster { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:0 12px; }
   .wb-wahl { display:grid; gap:6px; margin:6px 0; }
   .wb-wahl label { display:flex; align-items:center; gap:8px; color:var(--text); font-size:15px; margin:0; }
+  /* Schalter (Kontrollkästchen mit Satz): Beschriftung ist die Aussage — kräftig, nicht grau */
+  label.schalter { display:flex; align-items:center; gap:10px; color:var(--text); font-size:16px; margin:0; }
   .wb-wahl input { width:auto; min-height:0; }
   .wb-mehrspaltig { grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); }
   .wb-summe { margin-top:12px; font-weight:800; font-size:17px; color:var(--green); }

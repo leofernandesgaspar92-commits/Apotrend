@@ -82,6 +82,9 @@ export function createAusbruchsRadar({ speicher, fetchImpl, jetzt = () => Date.n
   const who = createAbruf({ name: 'who_ausbrueche', quelle: 'WHO Disease Outbreak News', link: 'https://www.who.int/emergencies/disease-outbreak-news', ttlMs: 6 * 3_600_000, speicher, fetchImpl, jetzt });
   /** @type {Map<string, number>} */
   const gemeldet = new Map(); // region|schluessel -> Zeitpunkt des letzten Alarms
+  // Wer die Frühwarnung nicht will (sie ist die einzige Benachrichtigung, die niemand selbst
+  // bestellt hat) — abschaltbar auf der Radar-Seite, ohne die übrigen Alarme zu verlieren.
+  const abbestellt = new Set();
   return {
     whoMeldungen() {
       return who.holen('neu', 'https://www.who.int/api/news/diseaseoutbreaknews?sf_culture=en&$orderby=PublicationDateAndTime%20desc&$top=15', whoLesen);
@@ -96,8 +99,15 @@ export function createAusbruchsRadar({ speicher, fetchImpl, jetzt = () => Date.n
       }
       return out;
     },
+    alarmAn: (userId) => !abbestellt.has(userId),
+    alarmSetzen(userId, an) { if (an) abbestellt.delete(userId); else abbestellt.add(userId); return !abbestellt.has(userId); },
     status: () => who.status(),
-    __dump: () => [...gemeldet],
-    __load(d) { gemeldet.clear(); for (const e of Array.isArray(d) ? d : []) if (Array.isArray(e) && typeof e[0] === 'string' && typeof e[1] === 'number') gemeldet.set(e[0], e[1]); },
+    __dump: () => ({ gemeldet: [...gemeldet], abbestellt: [...abbestellt] }),
+    __load(d) {
+      gemeldet.clear(); abbestellt.clear();
+      const g = Array.isArray(d) ? d : (d && Array.isArray(d.gemeldet) ? d.gemeldet : []); // alte Sicherung: nur die Liste
+      for (const e of g) if (Array.isArray(e) && typeof e[0] === 'string' && typeof e[1] === 'number') gemeldet.set(e[0], e[1]);
+      for (const u of (d && Array.isArray(d.abbestellt) ? d.abbestellt : [])) if (typeof u === 'string') abbestellt.add(u);
+    },
   };
 }

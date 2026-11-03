@@ -9933,7 +9933,7 @@ async function openMedInt(bereich = 'onkologie') {
     ${x.veraltet && x.verfuegbar ? `<div class="muted" style="font-size:13px">${esc(t('hf_gespeichert'))}</div>` : ''}</div>`;
   box.innerHTML = `<div class="card"><div style="font-size:15px;font-weight:600;margin-bottom:6px">${esc(t('mi_bereich'))}</div>
       <div class="row" style="gap:8px;flex-wrap:wrap">${d.bereiche.map((b) => `<button class="small sortbtn${b === d.bereich ? ' active' : ''}" data-mib="${b}" aria-pressed="${b === d.bereich}" style="min-height:44px">${esc(t('mi_b_' + b))}</button>`).join('')}</div>
-      <label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:15px"><input type="checkbox" data-miabo ${d.abos.includes(d.bereich) ? 'checked' : ''} style="width:22px;height:22px"> ${esc(ti('mi_abo', { b: t('mi_b_' + d.bereich) }))}</label></div>
+      <label class="schalter" style="margin-top:12px"><input type="checkbox" data-miabo ${d.abos.includes(d.bereich) ? 'checked' : ''} style="width:22px;height:22px"> ${esc(ti('mi_abo', { b: t('mi_b_' + d.bereich) }))}</label></div>
     ${teil(t('mi_zulassungen'), t('mi_zul_hinweis'), d.zulassungen)}
     ${teil(t('mi_studien'), t('mi_st_hinweis'), d.studien)}`;
   box.querySelectorAll('[data-mib]').forEach((b) => b.onclick = () => openMedInt(b.dataset.mib));
@@ -9961,10 +9961,12 @@ async function openAusbruch() {
       : `<div class="muted" style="font-size:14px;margin-top:6px">${esc(t('ab_keine_preise'))}</div>`}
     <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px"><button class="small" data-abwk="${esc(s.wirkstoff)}" style="min-height:44px">${esc(t('ab_details'))}</button>
       <button class="ghost small" data-abbezug="${esc(s.wirkstoff)}" style="min-height:44px">${esc(t('mi_bezug'))}</button></div></div>`;
-  box.innerHTML = `<div class="muted" style="font-size:14px;margin:4px 2px 8px">${esc(t('ab_regel'))}</div>
+  box.innerHTML = `${d.alarm && d.alarm.moeglich ? `<div class="card"><label class="schalter"><input type="checkbox" data-abalarm ${d.alarm.an ? 'checked' : ''} style="width:24px;height:24px;flex:none"> ${esc(t('ab_alarm'))}</label><div class="muted" style="font-size:14px;margin-top:4px">${esc(t('ab_alarm_hilfe'))}</div></div>` : ''}
+    <div class="muted" style="font-size:14px;margin:4px 2px 8px">${esc(t('ab_regel'))}</div>
     ${d.signale.length ? d.signale.map(signal).join('') : `<div class="card" data-ableer>${esc(t('ab_leer'))}</div>`}
     <div class="card"><h2 style="margin:0">${esc(t('ab_who'))}</h2><div class="muted" style="font-size:14px;margin:2px 0 6px">${esc(t('ab_who_hinweis'))}</div>
       ${!d.who.verfuegbar ? `<div data-abwhoaus>${esc(t('mi_aus'))}</div>` : d.who.meldungen.map((m) => `<div class="comment" style="font-size:15px"><a href="${esc(m.link)}" target="_blank" rel="noopener">${esc(m.titel)}</a> <span class="muted" style="font-size:13px">${esc(fmtDateDe(m.datum))}</span></div>`).join('') || `<div class="muted">${esc(t('mi_leer'))}</div>`}</div>`;
+  { const cb = box.querySelector('[data-abalarm]'); if (cb) cb.onchange = async () => { try { cb.checked = (await api('POST', '/api/ausbruch/alarm', { an: cb.checked })).an; } catch (e) { alert(e.message); cb.checked = !cb.checked; } }; }
   box.querySelectorAll('[data-abwk]').forEach((b) => b.onclick = () => openWirkstoff(b.dataset.abwk));
   box.querySelectorAll('[data-abbezug]').forEach((b) => b.onclick = () => { openSourcing().then(() => { const f = document.getElementById('sc_prod'); if (f) f.value = b.dataset.abbezug; }); });
 }

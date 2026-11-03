@@ -205,7 +205,7 @@ test('HTTP: Fachkreise-Sperre, Rechnung mit gesicherten Kursen, Anfrage → Cock
     const H = (t) => ({ 'content-type': 'application/json', authorization: 'Bearer ' + t });
     const reg = async (n, country, accountType) => (await (await fetch(B + '/api/register', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: n, email: n + '@b2b.test', password: 'Passwort-1234', country, accountType }) })).json()).token;
     const j = async (m, p, t, b) => { const r = await fetch(B + p, { method: m, headers: H(t), body: b ? JSON.stringify(b) : undefined }); return [r.status, await r.json()]; };
-    const [ghKE, ghDE, ghUG, privat] = [await reg('ghke', 'KE', 'wholesale'), await reg('ghde', 'DE', 'wholesale'), await reg('ghug', 'UG', 'wholesale'), await reg('pv', 'KE', 'private')];
+    const [ghKE, ghDE, ghUG, privat, ghBR] = [await reg('ghke', 'KE', 'wholesale'), await reg('ghde', 'DE', 'wholesale'), await reg('ghug', 'UG', 'wholesale'), await reg('pv', 'KE', 'private'), await reg('ghbr', 'BR', 'wholesale')];
     const red = (await (await fetch(B + '/api/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'red@b2b.test', password: 'b2b-test-PW-123' }) })).json()).token;
     // Fachkreise-Sperre
     for (const [m, p] of [['POST', '/api/sourcing/kalkulation'], ['GET', '/api/crosscheck?wirkstoff=Amoxicillin'], ['GET', '/api/medint'], ['GET', '/api/ausbruch']]) {
@@ -248,11 +248,15 @@ test('HTTP: Fachkreise-Sperre, Rechnung mit gesicherten Kursen, Anfrage → Cock
     assert.ok(sig && sig.region === 'AFRICA' && sig.neu === 3, 'Anstieg nicht erkannt: ' + JSON.stringify(ab.signale));
     assert.deepEqual(sig.preise, [], 'Preise ohne Lieferantendaten erfunden');
     assert.equal((await j('POST', '/api/b2b/lauf', ghKE))[0], 403, 'Lauf für Kund:innen auslösbar');
+    // Großhändler in Brasilien schaltet die Frühwarnung auf der Radar-Seite ab
+    assert.deepEqual((await j('GET', '/api/ausbruch', ghBR))[1].alarm, { moeglich: true, an: true });
+    assert.equal((await j('POST', '/api/ausbruch/alarm', ghBR, { an: false }))[1].an, false);
     const lauf = (await j('POST', '/api/b2b/lauf', red))[1];
     assert.ok(lauf.alarme >= 1, JSON.stringify(lauf));
     const hatAlarm = async (t) => (await j('GET', '/api/notifications', t))[1].notifications.some((n) => n.type === 'ausbruch_signal');
     assert.equal(await hatAlarm(ghDE), true, 'Großhandel in Europa nicht gewarnt');
     assert.equal(await hatAlarm(ghUG), false, 'Großhandel in der betroffenen Region bekam die Fernwarnung');
+    assert.equal(await hatAlarm(ghBR), false, 'abgeschaltete Frühwarnung trotzdem zugestellt');
     assert.equal((await j('POST', '/api/b2b/lauf', red))[1].alarme, 0, 'Alarm sofort wiederholt');
   } finally {
     await ende();
@@ -298,3 +302,17 @@ test('Zulassungen: Antragsart NDA/BLA/ANDA, neue Therapien zuerst; Benachrichtig
   zuBenachrichtigen(ab, { daten: [] }); // erster Lauf
   assert.deepEqual(zuBenachrichtigen(ab, { daten: z }).map((x) => x.eintrag.typ).sort(), ['biologikum', 'neu'], 'Generikum hat benachrichtigt');
 });
+
+test('Frühwarnung abschaltbar: je Konto, übersteht Neustart; alte Sicherung (nur Liste) wird gelesen', () => {
+  const r = createAusbruchsRadar({ speicher: { get: () => null, set() {} }, fetchImpl: async () => antwort({}) });
+  assert.equal(r.alarmAn('u1'), true);
+  assert.equal(r.alarmSetzen('u1', false), false);
+  const b = createAusbruchsRadar({ speicher: { get: () => null, set() {} }, fetchImpl: async () => antwort({}) });
+  b.__load(JSON.parse(JSON.stringify(r.__dump())));
+  assert.equal(b.alarmAn('u1'), false, 'Abmeldung nach Neustart verloren');
+  assert.equal(b.alarmSetzen('u1', true), true);
+  const alt = createAusbruchsRadar({ speicher: { get: () => null, set() {} }, fetchImpl: async () => antwort({}) });
+  alt.__load([['AFRICA|oxytocin', 123]]);
+  assert.deepEqual(alt.__dump(), { gemeldet: [['AFRICA|oxytocin', 123]], abbestellt: [] });
+});
+
