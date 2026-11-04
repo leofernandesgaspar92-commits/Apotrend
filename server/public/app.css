@@ -348,6 +348,9 @@
   .comments { border-top:1px solid var(--line); margin-top:10px; padding-top:10px; }
   .comment { font-size:0.9em; padding:6px 0; border-bottom:1px solid var(--line); }
   .comment:last-child { border-bottom:none; }
+  /* Aus der Benachrichtigung angesprungene Proforma-Anfrage: unter dem festen Kopf sichtbar, hervorgehoben. */
+  .pf-markiert { scroll-margin-top:96px; background:var(--ok-bg); border:2px solid var(--ok-bd); border-radius:8px; padding:8px 10px; }
+  .pf-markiert:focus { outline:3px solid var(--link); outline-offset:2px; }
   /* Verzeichnis: mehrspaltiges Karten-Raster ab genug Breite (auto-fill füllt den Platz),
      am Handy automatisch einspaltig — bessere Raumnutzung auf Laptop/Desktop. */
   .dir-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:14px; }

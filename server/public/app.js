@@ -9826,7 +9826,9 @@ const b2bKopf = (titel, sub, zurueck = mainScreen) => {
 const b2bNurFachkreise = () => { if (me && me.account_type === 'private') { app.appendChild(el(`<div class="card" data-b2bprivat style="font-size:16px">${esc(t('b2b_privat'))}</div>`)); return true; } return false; };
 const geld = (n, w) => { try { return Number(n).toLocaleString(bcp47(), { style: 'currency', currency: w, maximumFractionDigits: 2 }); } catch { return fmtMoney(n) + ' ' + w; } };
 
-async function openSourcing() {
+// zuAnfrage: aus der Benachrichtigung „beantwortet" direkt zur Antwort (11/2026: sie stand ~4 Bildschirme
+// tiefer unter Rechner und Cross-Check, oben nur das leere Formular).
+async function openSourcing(zuAnfrage = null) {
   setDocTitle(t('sc5_title'));
   if (location.pathname !== '/sourcing') history.replaceState(null, '', '/sourcing');
   b2bKopf(t('sc5_title'), t('sc5_sub'));
@@ -9950,7 +9952,7 @@ async function openSourcing() {
     let d; try { d = await api('GET', '/api/sourcing/anfragen'); } catch { return; }
     liste.innerHTML = '';
     if (!(d.anfragen || []).length) return;
-    liste.appendChild(el(`<div class="card"><h2 style="margin:0 0 6px">${esc(t('sc5_meine'))}</h2>${d.anfragen.map((a) => `<div class="comment" style="font-size:15px"><b>${esc(a.produkt)}</b> · ${esc(a.menge)} · ${esc(landName(a.herkunft))} ${richtungsPfeil()} ${esc(landName(a.ziel))}
+    liste.appendChild(el(`<div class="card"><h2 style="margin:0 0 6px">${esc(t('sc5_meine'))}</h2>${d.anfragen.map((a) => `<div class="comment" data-pfanfrage="${esc(a.id)}" tabindex="-1" style="font-size:15px"><b>${esc(a.produkt)}</b> · ${esc(a.menge)} · ${esc(landName(a.herkunft))} ${richtungsPfeil()} ${esc(landName(a.ziel))}
       <div><span class="vt-stufe ${a.status === 'beantwortet' ? 'vt-ok' : a.status === 'zurueckgezogen' ? 'vt-unklar' : ''}" style="margin-top:4px">${esc(t('sc5_st_' + a.status))}</span> <span class="muted" style="font-size:13px">${esc(fmtDateDe(String(a.erstellt).slice(0, 10)))}</span></div>
       ${a.antwort ? `<div style="margin-top:4px">${esc(a.antwort)}</div>` : ''}
       ${a.status === 'neu' || a.status === 'in_bearbeitung' ? `<button class="ghost small" data-pfzurueck="${esc(a.id)}" style="margin-top:6px;min-height:44px">${esc(t('sc5_zurueckziehen'))}</button>` : ''}</div>`).join('')}</div>`));
@@ -9961,7 +9963,9 @@ async function openSourcing() {
       try { await api('POST', `/api/sourcing/anfragen/${encodeURIComponent(b.dataset.pfzurueck)}/zurueckziehen`); zeigeAnfragen(); } catch (e) { alert(e.message); b.disabled = false; }
     });
   }
-  zeigeAnfragen();
+  await zeigeAnfragen();
+  const ziel = typeof zuAnfrage === 'string' && [...liste.querySelectorAll('[data-pfanfrage]')].find((x) => x.dataset.pfanfrage === zuAnfrage);
+  if (ziel) { ziel.classList.add('pf-markiert'); ziel.scrollIntoView({ block: 'start' }); ziel.focus({ preventScroll: true }); }
 }
 
 async function openMedInt(bereich = 'onkologie') {
@@ -10697,7 +10701,7 @@ async function showNotifications() {
       else if (/^shortage_(abroad|home|ended)$/.test(n.type)) { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }
       else if (n.type === 'shortage_noch_aktuell' || n.type === 'shortage_widerspruch') { mainScreen().then(() => goTab('shortages')); }
       else if (n.type === 'sourcing_anfrage') { showModeration(); }
-      else if (n.type === 'sourcing_antwort') { openSourcing(); }
+      else if (n.type === 'sourcing_antwort') { openSourcing(n.ref_id); }
       else if (n.type === 'medint_neu') { openMedInt(); }
       else if (n.type === 'ausbruch_signal') { openAusbruch(); }
       else if (n.type === 'shortage_bestaetigt') { const w = n.ref_id || (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('shortages')); }

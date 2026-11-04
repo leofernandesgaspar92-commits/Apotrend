@@ -4371,3 +4371,14 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   damit kein später fertiger Reiter die gewünschte Seite überschreibt. 23 Unterseiten-Funktionen nutzen es.
   Browser-Audit: von Radar, Premium, Benachrichtigungen, Beschaffung zur Wirkstoff-Seite, nach 2,5 s noch da;
   Gegenprobe mit altem Code rot (4 Befunde + JS-Fehler).
+
+### Offline-Verhalten der B2B-Seiten; „Anfrage beantwortet" führt zur Antwort (2026-11-04)
+- **Geprüft (ohne Fund):** B2B-Seiten ohne Netz (360 px): Angebotsanfrage, Kostenrechner, Zulassungs-Abo,
+  Frühwarnungs-Schalter, Widerspruch — überall „Verbindungsproblem", Knöpfe wieder bedienbar, Haken zurückgesetzt,
+  keine falsche Erfolgsmeldung, keine JS-Fehler. Die Seite /sourcing öffnet offline mit dem Formular.
+- **Fund:** Tippt eine Apotheke auf die Benachrichtigung „Ihre Anfrage wurde beantwortet", öffnete sich /sourcing
+  oben beim leeren Kostenrechner. Die Antwort stand ~3000 px tiefer (am Handy etwa vier Bildschirme) unter Rechner
+  und Cross-Check — wer nicht weiß, dass sie ganz unten steht, findet sie nicht.
+- **Behoben:** `openSourcing(zuAnfrage)` — die Benachrichtigung übergibt die Anfrage-Nummer; die Seite springt zur
+  Anfrage, hebt sie grün umrandet hervor (unter dem festen Kopf sichtbar) und setzt den Fokus darauf (Bildschirmleser).
+  Browser-Audit prüft: Antwort nach dem Tipp im Bild und fokussiert; Gegenprobe ohne Übergabe rot (oben 2938 px).

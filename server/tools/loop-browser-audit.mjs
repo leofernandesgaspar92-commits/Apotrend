@@ -3050,6 +3050,26 @@ async function main() {
     const cx = await page.locator('[data-cxergebnis]').innerText().catch(() => '');
     if (!/check authorisation .* in the official register/i.test(cx) || !/AMMPS/.test(cx)) findings.push(`B2B: Cross-Check ohne Register-Hinweis/Behörde (${cx.slice(0, 120)})`);
     if (/\bauthorised\b(?! in the destination)/i.test(cx.replace(/check authorisation/i, ''))) findings.push('B2B: Cross-Check behauptet eine Zulassung');
+    // c2) Benachrichtigung „Anfrage beantwortet" führt direkt zur Antwort. Bis 11/2026 stand sie
+    //     ~3000 px tiefer unter Rechner und Cross-Check — oben nur das leere Formular.
+    {
+      const jetzt = new Date().toISOString();
+      const anfragen = [
+        { id: 'pfneu1', produkt: 'Metformin 500 mg', menge: '200 units', herkunft: 'IN', ziel: 'KE', status: 'neu', antwort: null, erstellt: jetzt },
+        { id: 'pfziel', produkt: 'Ceftriaxone 1 g', menge: '300 units', herkunft: 'IN', ziel: 'KE', status: 'beantwortet', antwort: 'PFANTWORT USD 0.90 per vial, 3 weeks', erstellt: jetzt },
+      ];
+      await page.route('**/api/sourcing/anfragen', (rt) => rt.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ anfragen }) }));
+      await page.route('**/api/notifications', (rt) => rt.request().method() === 'GET' ? rt.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ notifications: [{ id: 'npf', type: 'sourcing_antwort', read: true, created_at: jetzt, label: 'Ceftriaxone 1 g · beantwortet', ref_type: 'sourcing', ref_id: 'pfziel' }] }) }) : rt.continue());
+      await page.evaluate(() => showNotifications()); await page.waitForTimeout(700);
+      await page.locator('#notiflist .clickable').first().click(); await page.waitForTimeout(1000);
+      const lage = await page.evaluate(() => { const z = document.querySelector('[data-pfanfrage="pfziel"]'); if (!z) return null; const b = z.getBoundingClientRect(); return { oben: b.top, unten: b.bottom, h: innerHeight, kopf: (document.querySelector('header') || { getBoundingClientRect: () => ({ bottom: 0 }) }).getBoundingClientRect().bottom, fokus: document.activeElement === z }; });
+      if (!lage) findings.push('B2B: Benachrichtigung „beantwortet" öffnet die Anfrage nicht');
+      else {
+        if (lage.oben < lage.kopf || lage.unten > lage.h) findings.push(`B2B: Antwort nach Tipp auf die Benachrichtigung nicht im Bild (oben ${Math.round(lage.oben)} px, Bildschirm ${lage.h} px)`);
+        if (!lage.fokus) findings.push('B2B: angesprungene Anfrage hat keinen Fokus (Bildschirmleser)');
+      }
+      await page.unroute('**/api/sourcing/anfragen'); await page.unroute('**/api/notifications');
+    }
     await ctx.close();
     // d) Neue Therapien & Radar: Regeln und ehrliche Leere
     const m = await seite(tok);
