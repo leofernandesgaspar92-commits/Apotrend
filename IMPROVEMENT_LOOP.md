@@ -4382,3 +4382,18 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Behoben:** `openSourcing(zuAnfrage)` — die Benachrichtigung übergibt die Anfrage-Nummer; die Seite springt zur
   Anfrage, hebt sie grün umrandet hervor (unter dem festen Kopf sichtbar) und setzt den Fokus darauf (Bildschirmleser).
   Browser-Audit prüft: Antwort nach dem Tipp im Bild und fokussiert; Gegenprobe ohne Übergabe rot (oben 2938 px).
+
+### Push aufs Handy auch für Zahlung, Angebots-Antwort und Frühwarnung (2026-11-04)
+- **Fund:** Push gab es nur für Engpässe und die Betriebs-Bestätigung. Drei Ereignisse, auf die jemand WARTET, kamen
+  nur in die Glocke: (1) Krypto-Zahlung bestätigt/abgelehnt — von Hand geprüft, kann Stunden dauern; (2) Antwort des
+  Handelsteams auf eine Angebotsanfrage; (3) die Ausbruchs-Frühwarnung an den Großhandel. Wer die App nicht öffnet,
+  erfuhr nichts, obwohl Push eingeschaltet war.
+- **Behoben:** `PUSH_TYPEN` + Texte in 5 Sprachen. Ziele: `/?zahlung=1` (Premium-Seite mit Zahlungsstand),
+  `/sourcing?anfrage=<id>` (springt zur Antwort), `/?radar=1` (Ausbruchs-Radar). Ohne Freitext auf dem Sperrbildschirm
+  (kein Ablehnungsgrund, kein Antworttext). Frühwarnung mit Region in Klartext und „Behörden und Apotheken" — das
+  Signal zählt beides (erster Entwurf „Apotheken melden" war falsch, vor dem Commit korrigiert). Push-Karte sagt jetzt,
+  was außer Engpässen noch kommt.
+- **Tests:** `push-zahlung-b2b.test.js` (Typen, 5 Sprachen, Ziele, kein Freitext, kein Regions-Code) + Ende-zu-Ende in
+  `web-push.test.js` (Handelsteam antwortet → verschlüsselter Push mit Präparat und Link). Browser: alle drei Links
+  öffnen die richtige Seite (fr-SN, 360 px). Gegenproben (Typ entfernt, Ablehnung ohne Text, Region als Code, Radar-
+  Link ohne Ziel) rot.

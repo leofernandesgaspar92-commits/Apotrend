@@ -167,11 +167,23 @@ test('Von Ende zu Ende: neuer Behörden-Engpass -> verschlüsselter Push aufs Ge
     // Die Benachrichtigung in der App gibt es weiterhin.
     assert.ok((await req('GET', '/api/notifications', apo)).d.notifications.some((n) => n.type === 'shortage_home'));
 
+    // Antwort des Handelsteams auf eine Angebotsanfrage: ebenfalls als Push (11/2026: nur in der Glocke).
+    const anfrage = (await req('POST', '/api/sourcing/anfrage', apo, { produkt: 'Oxytocin 10 IU', menge: '500', herkunft: 'IN', ziel: 'AT' })).d;
+    assert.ok(anfrage.id, 'Anfrage nicht angelegt');
+    assert.equal((await req('POST', `/api/sourcing/anfragen/${anfrage.id}/status`, red, { status: 'beantwortet', antwort: 'USD 0.30 je Ampulle' })).status, 200);
+    await warte(3);
+    assert.equal(eingang.length, 3, 'kein Push bei Antwort auf die Angebotsanfrage');
+    const pf = JSON.parse(g.entschluesseln(eingang[2].rumpf));
+    assert.equal(pf.titel, 'Antwort auf Ihre Angebotsanfrage');
+    assert.match(pf.text, /Oxytocin 10 IU/);
+    assert.ok(!/USD 0\.30/.test(pf.text), 'Antworttext gehört in die App, nicht auf den Sperrbildschirm');
+    assert.equal(pf.url, `/sourcing?anfrage=${anfrage.id}`);
+
     // Push-Dienst meldet „Abo abgelaufen": Gerät wird entfernt.
     pushStatus = 410;
     await req('POST', '/api/push/test', apo);
     assert.equal((await req('GET', '/api/push', apo)).d.geraete, 0);
-    assert.equal((await req('GET', '/api/betrieb', red)).d.push.gesendet, 2);
+    assert.equal((await req('GET', '/api/betrieb', red)).d.push.gesendet, 3);
   } finally {
     await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
     behoerde.close(); dienst.close();

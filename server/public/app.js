@@ -1732,7 +1732,10 @@ async function mainScreen({ ohneReiter = false } = {}) {
   }
   // Push „Bestätigung abgelehnt" (services/webPush.js): direkt zum Antrag mit Grund.
   if (params.get('bestaetigung') === '1') { history.replaceState(null, '', location.pathname); zurVerifizierung(); return; }
-  if (location.pathname === '/sourcing') { openSourcing(); return; }
+  // Push „Zahlung bestätigt/abgelehnt" und „Frühwarnung" (services/webPush.js).
+  if (params.get('zahlung') === '1') { history.replaceState(null, '', location.pathname); openPremium(); return; }
+  if (params.get('radar') === '1') { history.replaceState(null, '', location.pathname); openAusbruch(); return; }
+  if (location.pathname === '/sourcing') { const anfrage = params.get('anfrage'); if (anfrage) history.replaceState(null, '', '/sourcing'); openSourcing(anfrage); return; }
   if (sharedPost) { history.replaceState(null, '', location.pathname); openPost(sharedPost); }
   else if (sharedWirkstoff) { history.replaceState(null, '', location.pathname); openWirkstoff(sharedWirkstoff); }
   else if (sharedProfile) { history.replaceState(null, '', location.pathname); openProfile(sharedProfile); }
@@ -4968,7 +4971,7 @@ async function pushAusschalten() {
 }
 function pushKarte() {
   const c = el(`<div class="card" data-pushkarte><div class="row" style="gap:10px;align-items:flex-start"><span class="karte-ic" aria-hidden="true">${ico('bell', 22)}</span>
-    <div style="flex:1"><b style="font-size:17px">${esc(t('push_titel'))}</b><div class="muted" style="font-size:15px;margin-top:2px">${esc(t('push_sub'))}</div><div data-pushinhalt style="margin-top:10px"></div></div></div></div>`);
+    <div style="flex:1"><b style="font-size:17px">${esc(t('push_titel'))}</b><div class="muted" style="font-size:15px;margin-top:2px">${esc(t('push_sub'))}</div><div class="muted" style="font-size:14px;margin-top:4px" data-pushauch>${esc(t('push_auch'))}</div><div data-pushinhalt style="margin-top:10px"></div></div></div></div>`);
   const inhalt = c.querySelector('[data-pushinhalt]');
   const zeichne = async () => {
     inhalt.innerHTML = '';

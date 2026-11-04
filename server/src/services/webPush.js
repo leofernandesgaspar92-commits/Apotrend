@@ -156,6 +156,11 @@ const TEXTE = {
     watch_termin: (w, d) => [`Neuer Termin: ${w}`, d ? `${w} voraussichtlich wieder lieferbar bis ${d} (Meldung aus Apotheken).` : `Für ${w} gibt es noch keinen Liefertermin (Meldung aus Apotheken).`],
     verified: () => ['Betrieb bestätigt ✔', 'Ihr Betrieb ist jetzt in ApoPulse bestätigt. Tippen zum Öffnen.'],
     verify_rejected: () => ['Bestätigung abgelehnt', 'Ihr Antrag wurde abgelehnt. Grund und neuen Antrag finden Sie in ApoPulse.'],
+    payment_confirmed: () => ['Zahlung bestätigt ✔', 'Ihre Zahlung ist eingegangen und freigeschaltet. Tippen zum Öffnen.'],
+    payment_rejected: () => ['Zahlung nicht bestätigt', 'Ihre Zahlung konnte nicht bestätigt werden. Den Grund finden Sie in ApoPulse.'],
+    sourcing_antwort: (p) => ['Antwort auf Ihre Angebotsanfrage', `Neuer Stand zu ${p}. Tippen, um die Antwort zu lesen.`],
+    ausbruch_signal: (w, r, n) => [`Frühwarnung: ${w}`, `In ${r} wird ${w} deutlich öfter als knapp gemeldet: ${n} neue Meldungen in 14 Tagen (Behörden und Apotheken). Keine Kaufempfehlung.`],
+    region: { AFRICA: 'Afrika', EUROPE: 'Europa', AMERICAS: 'Amerika', OCEANIA: 'Ozeanien' },
     test: () => ['ApoPulse: Benachrichtigung funktioniert', 'So kommt ein Engpass-Alarm an, auch wenn die App geschlossen ist.'],
   },
   en: {
@@ -171,6 +176,11 @@ const TEXTE = {
     watch_termin: (w, d) => [`New date: ${w}`, d ? `${w} expected back in stock by ${d} (pharmacy report).` : `No delivery date for ${w} yet (pharmacy report).`],
     verified: () => ['Business verified ✔', 'Your business is now verified on ApoPulse. Tap to open.'],
     verify_rejected: () => ['Verification rejected', 'Your request was rejected. See the reason and send a new request in ApoPulse.'],
+    payment_confirmed: () => ['Payment confirmed ✔', 'Your payment was received and is now active. Tap to open.'],
+    payment_rejected: () => ['Payment not confirmed', 'Your payment could not be confirmed. See the reason in ApoPulse.'],
+    sourcing_antwort: (p) => ['Reply to your quote request', `Update on ${p}. Tap to read the reply.`],
+    ausbruch_signal: (w, r, n) => [`Early warning: ${w}`, `${w} is reported as short much more often in ${r}: ${n} new reports in 14 days (authorities and pharmacies). Not a purchase recommendation.`],
+    region: { AFRICA: 'Africa', EUROPE: 'Europe', AMERICAS: 'the Americas', OCEANIA: 'Oceania' },
     test: () => ['ApoPulse: notifications work', 'This is how a shortage alert arrives, even when the app is closed.'],
   },
   pt: {
@@ -186,6 +196,11 @@ const TEXTE = {
     watch_termin: (w, d) => [`Nova data: ${w}`, d ? `${w} previsto de novo em stock até ${d} (comunicação de farmácias).` : `Ainda sem data de entrega para ${w} (comunicação de farmácias).`],
     verified: () => ['Estabelecimento verificado ✔', 'O seu estabelecimento está agora verificado no ApoPulse. Toque para abrir.'],
     verify_rejected: () => ['Verificação recusada', 'O seu pedido foi recusado. Veja o motivo e envie um novo pedido no ApoPulse.'],
+    payment_confirmed: () => ['Pagamento confirmado ✔', 'O seu pagamento foi recebido e está ativo. Toque para abrir.'],
+    payment_rejected: () => ['Pagamento não confirmado', 'Não foi possível confirmar o seu pagamento. Veja o motivo no ApoPulse.'],
+    sourcing_antwort: (p) => ['Resposta ao seu pedido de cotação', `Novidades sobre ${p}. Toque para ler a resposta.`],
+    ausbruch_signal: (w, r, n) => [`Alerta precoce: ${w}`, `${w} é comunicado em rutura com muito mais frequência em ${r}: ${n} novas comunicações em 14 dias (autoridades e farmácias). Não é uma recomendação de compra.`],
+    region: { AFRICA: 'África', EUROPE: 'Europa', AMERICAS: 'Américas', OCEANIA: 'Oceânia' },
     test: () => ['ApoPulse: notificações a funcionar', 'É assim que chega um alerta de rutura, mesmo com a app fechada.'],
   },
   fr: {
@@ -201,6 +216,11 @@ const TEXTE = {
     watch_termin: (w, d) => [`Nouvelle date : ${w}`, d ? `${w} de nouveau en stock prévu d’ici le ${d} (signalement de pharmacie).` : `Pas encore de date de livraison pour ${w} (signalement de pharmacie).`],
     verified: () => ['Établissement vérifié ✔', 'Votre établissement est désormais vérifié sur ApoPulse. Touchez pour ouvrir.'],
     verify_rejected: () => ['Vérification refusée', 'Votre demande a été refusée. Consultez le motif et envoyez une nouvelle demande dans ApoPulse.'],
+    payment_confirmed: () => ['Paiement confirmé ✔', 'Votre paiement a été reçu et est maintenant actif. Touchez pour ouvrir.'],
+    payment_rejected: () => ['Paiement non confirmé', 'Votre paiement n’a pas pu être confirmé. Le motif se trouve dans ApoPulse.'],
+    sourcing_antwort: (p) => ['Réponse à votre demande de devis', `Du nouveau pour ${p}. Touchez pour lire la réponse.`],
+    ausbruch_signal: (w, r, n) => [`Alerte précoce : ${w}`, `Région ${r} : ${w} est signalé en pénurie bien plus souvent — ${n} nouveaux signalements en 14 jours (autorités et pharmacies). Pas une recommandation d’achat.`],
+    region: { AFRICA: 'Afrique', EUROPE: 'Europe', AMERICAS: 'Amériques', OCEANIA: 'Océanie' },
     test: () => ['ApoPulse : les notifications fonctionnent', 'Voici comment arrive une alerte de pénurie, même quand l’application est fermée.'],
   },
   ar: {
@@ -216,12 +236,20 @@ const TEXTE = {
     watch_termin: (w, d) => [`موعد جديد: ${w}`, d ? `يُتوقع توفر ${w} من جديد حتى ${d} (بلاغ صيدلية).` : `لا يوجد بعد موعد توريد لـ ${w} (بلاغ صيدلية).`],
     verified: () => ['تم توثيق المنشأة ✔', 'منشأتك موثَّقة الآن في ApoPulse. اضغط للفتح.'],
     verify_rejected: () => ['تم رفض التوثيق', 'تم رفض طلبك. اطّلع على السبب وأرسل طلبًا جديدًا في ApoPulse.'],
+    payment_confirmed: () => ['تم تأكيد الدفع ✔', 'تم استلام دفعتك وأصبحت مفعّلة. اضغط للفتح.'],
+    payment_rejected: () => ['لم يتم تأكيد الدفع', 'تعذّر تأكيد دفعتك. ستجد السبب في ApoPulse.'],
+    sourcing_antwort: (p) => ['رد على طلب عرض السعر', `تحديث بشأن ${p}. اضغط لقراءة الرد.`],
+    ausbruch_signal: (w, r, n) => [`إنذار مبكر: ${w}`, `يُبلَّغ عن نقص ${w} في ${r} أكثر بكثير: ${n} بلاغات جديدة خلال 14 يومًا (جهات رسمية وصيدليات). ليست توصية بالشراء.`],
+    region: { AFRICA: 'أفريقيا', EUROPE: 'أوروبا', AMERICAS: 'الأمريكتين', OCEANIA: 'أوقيانوسيا' },
     test: () => ['ApoPulse: الإشعارات تعمل', 'هكذا يصل تنبيه النقص، حتى عندما يكون التطبيق مغلقًا.'],
   },
 };
 // verified / verify_rejected: Ergebnis der Betriebs-Bestätigung — wer die App nicht öffnet, erfuhr sonst
 // nichts davon. Den Grund (Freitext der Redaktion) nennt der Push bewusst nicht: Er steht in der App.
-export const PUSH_TYPEN = new Set(['shortage_home', 'shortage_ended', 'shortage_abroad', 'watch_alert', 'shortage_bestaetigt', 'verified', 'verify_rejected']);
+// payment_* / sourcing_antwort / ausbruch_signal (11/2026): Ereignisse, auf die jemand wartet — eine von Hand
+// geprüfte Krypto-Zahlung, die Antwort des Handelsteams, die Frühwarnung an den Großhandel. Vorher nur in der Glocke.
+export const PUSH_TYPEN = new Set(['shortage_home', 'shortage_ended', 'shortage_abroad', 'watch_alert', 'shortage_bestaetigt', 'verified', 'verify_rejected',
+  'payment_confirmed', 'payment_rejected', 'sourcing_antwort', 'ausbruch_signal']);
 
 /** Benachrichtigung -> Push-Nachricht in der Sprache der Person. */
 export function pushNachricht(n, { sprache = 'de', landName = (c) => c } = {}) {
@@ -243,6 +271,17 @@ export function pushNachricht(n, { sprache = 'de', landName = (c) => c } = {}) {
   if (typ === 'verified' || typ === 'verify_rejected') {
     const [titel, text] = f();
     return { titel, text, url: typ === 'verify_rejected' ? '/?bestaetigung=1' : '/', tag: 'verifizierung' };
+  }
+  // Den Grund einer Ablehnung (Freitext der Prüfung) nennt der Push nicht — er steht in der App.
+  if (typ === 'payment_confirmed' || typ === 'payment_rejected') { const [titel, text] = f(); return { titel, text, url: '/?zahlung=1', tag: 'zahlung' }; }
+  if (typ === 'sourcing_antwort') {
+    const [titel, text] = f(teile[0] || '');
+    return { titel, text, url: `/sourcing?anfrage=${encodeURIComponent(String(n.ref_id || n.refId || ''))}`, tag: `sourcing:${n.ref_id || n.refId || ''}` };
+  }
+  if (typ === 'ausbruch_signal') {
+    const w = n.ref_id || n.refId || teile[0] || '';
+    const [titel, text] = f(w, (T.region || TEXTE.de.region)[teile[1]] || teile[1] || '', teile[2] || '');
+    return { titel, text, url: '/?radar=1', tag: `ausbruch:${w}:${teile[1] || ''}` };
   }
   const wirkstoff = n.ref_type === 'wirkstoff' || n.refType === 'wirkstoff' ? (n.ref_id || n.refId || teile[0]) : teile[0];
   const land = teile[1] && /^[A-Z]{2}$/.test(teile[1]) ? landName(teile[1]) : (teile[1] || '');
