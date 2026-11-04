@@ -161,6 +161,10 @@ const TEXTE = {
     sourcing_antwort: (p) => ['Antwort auf Ihre Angebotsanfrage', `Neuer Stand zu ${p}. Tippen, um die Antwort zu lesen.`],
     ausbruch_signal: (w, r, n) => [`Frühwarnung: ${w}`, `In ${r} wird ${w} deutlich öfter als knapp gemeldet: ${n} neue Meldungen in 14 Tagen (Behörden und Apotheken). Keine Kaufempfehlung.`],
     region: { AFRICA: 'Afrika', EUROPE: 'Europa', AMERICAS: 'Amerika', OCEANIA: 'Ozeanien' },
+    payment_review: (art, betrag) => ['Zahlung prüfen', `Eine Zahlung wartet auf Ihre Prüfung: ${art}, ${betrag}. Die Freischaltung wartet auf Sie.`],
+    ueberweisung: 'Überweisung',
+    sourcing_anfrage: (p, weg) => ['Neue Angebotsanfrage', `${p} (${weg}). Tippen zum Bearbeiten.`],
+    anzeige_pruefen: (titel) => ['Anzeige prüfen', `Eine Anzeige wartet auf Freigabe: ${titel}.`],
     test: () => ['ApoPulse: Benachrichtigung funktioniert', 'So kommt ein Engpass-Alarm an, auch wenn die App geschlossen ist.'],
   },
   en: {
@@ -181,6 +185,10 @@ const TEXTE = {
     sourcing_antwort: (p) => ['Reply to your quote request', `Update on ${p}. Tap to read the reply.`],
     ausbruch_signal: (w, r, n) => [`Early warning: ${w}`, `${w} is reported as short much more often in ${r}: ${n} new reports in 14 days (authorities and pharmacies). Not a purchase recommendation.`],
     region: { AFRICA: 'Africa', EUROPE: 'Europe', AMERICAS: 'the Americas', OCEANIA: 'Oceania' },
+    payment_review: (art, betrag) => ['Payment to review', `A payment is waiting for your review: ${art}, ${betrag}. Activation is waiting for you.`],
+    ueberweisung: 'bank transfer',
+    sourcing_anfrage: (p, weg) => ['New quote request', `${p} (${weg}). Tap to handle it.`],
+    anzeige_pruefen: (titel) => ['Ad to review', `An ad is waiting for approval: ${titel}.`],
     test: () => ['ApoPulse: notifications work', 'This is how a shortage alert arrives, even when the app is closed.'],
   },
   pt: {
@@ -201,6 +209,10 @@ const TEXTE = {
     sourcing_antwort: (p) => ['Resposta ao seu pedido de cotação', `Novidades sobre ${p}. Toque para ler a resposta.`],
     ausbruch_signal: (w, r, n) => [`Alerta precoce: ${w}`, `${w} é comunicado em rutura com muito mais frequência em ${r}: ${n} novas comunicações em 14 dias (autoridades e farmácias). Não é uma recomendação de compra.`],
     region: { AFRICA: 'África', EUROPE: 'Europa', AMERICAS: 'Américas', OCEANIA: 'Oceânia' },
+    payment_review: (art, betrag) => ['Pagamento a verificar', `Um pagamento aguarda a sua verificação: ${art}, ${betrag}. A ativação aguarda por si.`],
+    ueberweisung: 'transferência bancária',
+    sourcing_anfrage: (p, weg) => ['Novo pedido de cotação', `${p} (${weg}). Toque para tratar.`],
+    anzeige_pruefen: (titel) => ['Anúncio a verificar', `Um anúncio aguarda aprovação: ${titel}.`],
     test: () => ['ApoPulse: notificações a funcionar', 'É assim que chega um alerta de rutura, mesmo com a app fechada.'],
   },
   fr: {
@@ -221,6 +233,10 @@ const TEXTE = {
     sourcing_antwort: (p) => ['Réponse à votre demande de devis', `Du nouveau pour ${p}. Touchez pour lire la réponse.`],
     ausbruch_signal: (w, r, n) => [`Alerte précoce : ${w}`, `Région ${r} : ${w} est signalé en pénurie bien plus souvent — ${n} nouveaux signalements en 14 jours (autorités et pharmacies). Pas une recommandation d’achat.`],
     region: { AFRICA: 'Afrique', EUROPE: 'Europe', AMERICAS: 'Amériques', OCEANIA: 'Océanie' },
+    payment_review: (art, betrag) => ['Paiement à vérifier', `Un paiement attend votre vérification : ${art}, ${betrag}. L’activation attend votre décision.`],
+    ueberweisung: 'virement bancaire',
+    sourcing_anfrage: (p, weg) => ['Nouvelle demande de devis', `${p} (${weg}). Touchez pour la traiter.`],
+    anzeige_pruefen: (titel) => ['Annonce à vérifier', `Une annonce attend sa validation : ${titel}.`],
     test: () => ['ApoPulse : les notifications fonctionnent', 'Voici comment arrive une alerte de pénurie, même quand l’application est fermée.'],
   },
   ar: {
@@ -241,6 +257,10 @@ const TEXTE = {
     sourcing_antwort: (p) => ['رد على طلب عرض السعر', `تحديث بشأن ${p}. اضغط لقراءة الرد.`],
     ausbruch_signal: (w, r, n) => [`إنذار مبكر: ${w}`, `يُبلَّغ عن نقص ${w} في ${r} أكثر بكثير: ${n} بلاغات جديدة خلال 14 يومًا (جهات رسمية وصيدليات). ليست توصية بالشراء.`],
     region: { AFRICA: 'أفريقيا', EUROPE: 'أوروبا', AMERICAS: 'الأمريكتين', OCEANIA: 'أوقيانوسيا' },
+    payment_review: (art, betrag) => ['دفعة بانتظار المراجعة', `دفعة بانتظار مراجعتك: ${art}، ${betrag}. التفعيل بانتظارك.`],
+    ueberweisung: 'تحويل بنكي',
+    sourcing_anfrage: (p, weg) => ['طلب عرض سعر جديد', `${p} (${weg}). اضغط للمعالجة.`],
+    anzeige_pruefen: (titel) => ['إعلان بانتظار المراجعة', `إعلان بانتظار الموافقة: ${titel}.`],
     test: () => ['ApoPulse: الإشعارات تعمل', 'هكذا يصل تنبيه النقص، حتى عندما يكون التطبيق مغلقًا.'],
   },
 };
@@ -249,7 +269,9 @@ const TEXTE = {
 // payment_* / sourcing_antwort / ausbruch_signal (11/2026): Ereignisse, auf die jemand wartet — eine von Hand
 // geprüfte Krypto-Zahlung, die Antwort des Handelsteams, die Frühwarnung an den Großhandel. Vorher nur in der Glocke.
 export const PUSH_TYPEN = new Set(['shortage_home', 'shortage_ended', 'shortage_abroad', 'watch_alert', 'shortage_bestaetigt', 'verified', 'verify_rejected',
-  'payment_confirmed', 'payment_rejected', 'sourcing_antwort', 'ausbruch_signal']);
+  'payment_confirmed', 'payment_rejected', 'sourcing_antwort', 'ausbruch_signal',
+  // An die Redaktion: hier wartet eine Kundin auf uns (Krypto-Freischaltung, Angebotsanfrage, bezahlte Anzeige).
+  'payment_review', 'sourcing_anfrage', 'anzeige_pruefen']);
 
 /** Benachrichtigung -> Push-Nachricht in der Sprache der Person. */
 export function pushNachricht(n, { sprache = 'de', landName = (c) => c } = {}) {
@@ -274,6 +296,11 @@ export function pushNachricht(n, { sprache = 'de', landName = (c) => c } = {}) {
   }
   // Den Grund einer Ablehnung (Freitext der Prüfung) nennt der Push nicht — er steht in der App.
   if (typ === 'payment_confirmed' || typ === 'payment_rejected') { const [titel, text] = f(); return { titel, text, url: '/?zahlung=1', tag: 'zahlung' }; }
+  if (typ === 'payment_review' || typ === 'sourcing_anfrage' || typ === 'anzeige_pruefen') {
+    const art = teile[0] === 'Überweisung' ? (T.ueberweisung || teile[0]) : teile[0] || '';
+    const [titel, text] = typ === 'payment_review' ? f(art, teile[1] || '') : typ === 'sourcing_anfrage' ? f(teile[0] || '', teile[1] || '') : f(String(n.label || ''));
+    return { titel, text, url: '/?moderation=1', tag: `${typ}:${n.ref_id || n.refId || ''}` };
+  }
   if (typ === 'sourcing_antwort') {
     const [titel, text] = f(teile[0] || '');
     return { titel, text, url: `/sourcing?anfrage=${encodeURIComponent(String(n.ref_id || n.refId || ''))}`, tag: `sourcing:${n.ref_id || n.refId || ''}` };

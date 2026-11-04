@@ -115,7 +115,7 @@ test('Von Ende zu Ende: neuer Behörden-Engpass -> verschlüsselter Push aufs Ge
   const eingang = []; let pushStatus = 201;
   const dienst = http.createServer((req, res) => {
     const teile = []; req.on('data', (c) => teile.push(c));
-    req.on('end', () => { eingang.push({ headers: req.headers, rumpf: Buffer.concat(teile) }); res.writeHead(pushStatus); res.end(); });
+    req.on('end', () => { eingang.push({ pfad: req.url, headers: req.headers, rumpf: Buffer.concat(teile) }); res.writeHead(pushStatus); res.end(); });
   });
   await new Promise((ok) => dienst.listen(0, ok));
   const kind = spawn(process.execPath, [SERVER], {
@@ -168,8 +168,19 @@ test('Von Ende zu Ende: neuer Behörden-Engpass -> verschlüsselter Push aufs Ge
     assert.ok((await req('GET', '/api/notifications', apo)).d.notifications.some((n) => n.type === 'shortage_home'));
 
     // Antwort des Handelsteams auf eine Angebotsanfrage: ebenfalls als Push (11/2026: nur in der Glocke).
+    // Die Redaktion hat ebenfalls ein Gerät: Eine neue Anfrage erreicht sie als Push (11/2026: nur Glocke).
+    const gr = geraet(`http://localhost:${dienst.address().port}/push/redaktion`);
+    assert.equal((await req('POST', '/api/push/abo', red, { abo: gr.abo })).d.geraete, 1);
     const anfrage = (await req('POST', '/api/sourcing/anfrage', apo, { produkt: 'Oxytocin 10 IU', menge: '500', herkunft: 'IN', ziel: 'AT' })).d;
     assert.ok(anfrage.id, 'Anfrage nicht angelegt');
+    await warte(3);
+    const anRed = eingang.slice(2).find((e) => e.pfad === '/push/redaktion');
+    assert.ok(anRed, 'kein Push an die Redaktion bei neuer Angebotsanfrage');
+    const rm = JSON.parse(gr.entschluesseln(anRed.rumpf));
+    assert.equal(rm.titel, 'Neue Angebotsanfrage');
+    assert.match(rm.text, /Oxytocin 10 IU \(IN → AT\)/);
+    assert.equal(rm.url, '/?moderation=1');
+    eingang.splice(eingang.indexOf(anRed), 1);
     assert.equal((await req('POST', `/api/sourcing/anfragen/${anfrage.id}/status`, red, { status: 'beantwortet', antwort: 'USD 0.30 je Ampulle' })).status, 200);
     await warte(3);
     assert.equal(eingang.length, 3, 'kein Push bei Antwort auf die Angebotsanfrage');
@@ -183,7 +194,7 @@ test('Von Ende zu Ende: neuer Behörden-Engpass -> verschlüsselter Push aufs Ge
     pushStatus = 410;
     await req('POST', '/api/push/test', apo);
     assert.equal((await req('GET', '/api/push', apo)).d.geraete, 0);
-    assert.equal((await req('GET', '/api/betrieb', red)).d.push.gesendet, 3);
+    assert.equal((await req('GET', '/api/betrieb', red)).d.push.gesendet, 4);
   } finally {
     await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
     behoerde.close(); dienst.close();

@@ -4397,3 +4397,16 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   `web-push.test.js` (Handelsteam antwortet → verschlüsselter Push mit Präparat und Link). Browser: alle drei Links
   öffnen die richtige Seite (fr-SN, 360 px). Gegenproben (Typ entfernt, Ablehnung ohne Text, Region als Code, Radar-
   Link ohne Ziel) rot.
+
+### Push an die Redaktion: Krypto-Zahlung prüfen, neue Angebotsanfrage, Anzeige freigeben (2026-11-04)
+- **Fund:** Meldet eine Kundin ihre Krypto-Zahlung, stand das nur in der Glocke der Redaktion — die Freischaltung
+  wartete, bis zufällig jemand die App öffnete (Gegenstück zum vorigen Eintrag: Die Kundin bekommt jetzt den Push,
+  sobald bestätigt wird, aber niemand bekam einen, DASS geprüft werden muss). Ebenso neue Angebotsanfragen (E-Mail
+  nur mit APOPULSE_HANDEL_EMAIL) und bezahlte Anzeigen vor der Freigabe.
+- **Behoben:** `payment_review`, `sourcing_anfrage`, `anzeige_pruefen` als Push, 5 Sprachen (Sprache des
+  Redaktionskontos), Betrag/Präparat/Titel genannt, „Überweisung" übersetzt; eigener `tag` je Vorgang, damit zwei
+  offene Zahlungen sich auf dem Sperrbildschirm nicht verdrängen. Ziel `/?moderation=1` öffnet die Prüfliste — nur
+  für die Redaktion. Nebenfund: Tab-Titel der Prüfliste blieb „Für dich" (parallel startender Reiter) — behoben.
+- **Tests:** `push-redaktion.test.js`; Ende-zu-Ende in `web-push.test.js` (Redaktions-Gerät bekommt bei neuer
+  Anfrage einen verschlüsselten Push mit Präparat, Weg und Link). Browser: Redaktion landet in der Prüfliste,
+  Apotheke nicht. Gegenproben rot.

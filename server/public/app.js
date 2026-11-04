@@ -1733,6 +1733,7 @@ async function mainScreen({ ohneReiter = false } = {}) {
   // Push „Bestätigung abgelehnt" (services/webPush.js): direkt zum Antrag mit Grund.
   if (params.get('bestaetigung') === '1') { history.replaceState(null, '', location.pathname); zurVerifizierung(); return; }
   // Push „Zahlung bestätigt/abgelehnt" und „Frühwarnung" (services/webPush.js).
+  if (params.get('moderation') === '1' && iAmModerator) { history.replaceState(null, '', location.pathname); showModeration(); return; }
   if (params.get('zahlung') === '1') { history.replaceState(null, '', location.pathname); openPremium(); return; }
   if (params.get('radar') === '1') { history.replaceState(null, '', location.pathname); openAusbruch(); return; }
   if (location.pathname === '/sourcing') { const anfrage = params.get('anfrage'); if (anfrage) history.replaceState(null, '', '/sourcing'); openSourcing(anfrage); return; }
@@ -11123,6 +11124,7 @@ async function showModeration() {
   // Moderation nicht blockieren — aber er wird benannt, nicht verschluckt.
   try { kz = (await api('GET','/api/payments/pending')).payments || []; } catch (e) { kz = null; }
   app.innerHTML = '';
+  setDocTitle(t('md_doc')); // nach dem Laden erneut: der parallel startende Reiter setzte sonst „Für dich"
   const krit = (sh.shortages||[]).filter(s => s.status === 'kritisch').length;
   const comm = (sh.shortages||[]).filter(s => s.provenance === 'community').length;
   const mtile = (icon, num, label, col) => `<div style="flex:1;min-width:min(120px,100%);background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:12px">
