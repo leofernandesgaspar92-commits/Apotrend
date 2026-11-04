@@ -2000,12 +2000,15 @@ function betriebsKarte(b) {
     ${b.teilen ? `<div class="muted" style="font-size:14px;margin-top:4px" data-btwachstum>${esc(ti('bt_teilen', { n: b.teilen.aufrufe_7 }))}${b.anzeigen ? ' · ' + esc(ti('bt_anzeigen', { l: b.anzeigen.laufend, p: b.anzeigen.zur_pruefung })) : ''}</div>` : ''}
     ${kanalListe(b.kanaele)}
     ${fehlerListe(b.geraete_fehler, b.fehler)}
+    ${b.sicherung ? `<div style="font-size:14px;margin-top:12px" data-btsicherung><b>${esc(t('bt_sicherung'))}:</b> ${esc(ti('bt_sicherung_zeile', { mb: Number(b.sicherung.roh_mb).toLocaleString(bcp47()), ms: b.sicherung.dauer_ms, n: b.sicherung.apotheken_meldungen, e: b.sicherung.erledigt }))}${b.sicherung.hinweis ? `<div data-btsicherunghinweis style="margin-top:4px;color:var(--warn-fg);font-weight:700">⚠ ${esc(t('bt_sicherung_hinweis'))}</div>` : ''}</div>` : ''}
     ${b.b2b ? `<div style="font-size:14px;margin-top:12px" data-btb2b><b>${esc(t('bt_b2b'))}:</b> ${esc(ti('bt_b2b_zeile', { a: b.b2b.anfragen_offen, s: b.b2b.signale }))}</div>` : ''}
     ${Array.isArray(b.extern) ? `<div style="font-size:14px;margin-top:12px" data-btextern><b>${esc(t('bt_extern'))}:</b> ${b.extern.map((q) => {
       const zustand = !q.aktiv ? t('bt_extern_aus') : q.letzter_fehler && !q.zuletzt_ok ? t('bt_extern_fehler') : q.zuletzt_ok ? t('bt_extern_ok') : t('bt_extern_noch');
       const farbe = !q.aktiv || (!q.zuletzt_ok && !q.letzter_fehler) ? 'var(--muted-fg,#5f7370)' : q.letzter_fehler ? 'var(--crit-fg)' : 'var(--ok-fg)';
-      return `<span style="white-space:nowrap" title="${esc(q.letzter_fehler || '')}">${esc(q.quelle)} <span style="color:${farbe}">${esc(zustand)}</span></span>`;
-    }).join(' · ')}</div>` : ''}
+      // Eine Quelle je Zeile: Mit „nowrap" in einer Reihe ragten lange Namen („US-FDA (openFDA drugsfda)
+      // noch nicht abgefragt") am Handy bis 507 px über den Rand (11/2026).
+      return `<div data-btexternquelle style="margin-top:2px" title="${esc(q.letzter_fehler || '')}">${esc(q.quelle)}: <span style="color:${farbe};font-weight:600">${esc(zustand)}</span></div>`;
+    }).join('')}</div>` : ''}
     ${b.version ? `<div class="muted" style="font-size:14px;margin-top:12px" data-btversion>${esc(b.version.commit ? ti('bt_version', { c: b.version.commit, b: b.version.branch || '?', z: vorZeit(b.version.gestartet) || '' }) : t('bt_version_unbekannt'))}</div>` : ''}</div>`);
   const qk = c.querySelector('[data-btquellen]');
   qk.onclick = openDatenquellen;

@@ -4339,3 +4339,14 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   Tests weisen das Wachstum vorher nach (10 Einträge nach 10 Tagen; 7000 Schlüssel nach Ablauf), 3 Gegenproben rot.
 - **Geprüft ohne Fund:** Zwischenspeicher der Wirkstoff-Prüfung (RxNorm) und der externen Quellen sind begrenzt
   (Höchstzahl + Ablaufzeit); Tageszähler mit einem Eintrag je Tag (Aufrufe, Kanäle) bleiben klein.
+
+### Größe der Datensicherung im Cockpit + Cockpit am Handy (2026-11-04)
+- **Geprüft:** Gesicherte Bestände auf unbegrenztes Wachstum. Benachrichtigungen sind begrenzt (Höchstzahl je Konto,
+  gelesene verfallen), amtliche Einträge werden je Abruf ersetzt, Zwischenspeicher sind begrenzt. **Offen:** erledigte
+  Apotheken-Meldungen verfallen nie. Gemessen: 10.000 erledigte Meldungen ≈ 4,4 MB in der Sicherung — heute
+  unkritisch. Eine Löschregel ist eine Betreiber-Entscheidung (eigene Inhalte der Apotheken, Datenschutzerklärung) —
+  NICHT eigenmächtig eingebaut.
+- **Stattdessen:** Betriebs-Cockpit zeigt „Datensicherung: X MB, Zusammensetzen dauert Y ms · N Apotheken-Meldungen,
+  davon M erledigt" (höchstens alle 10 Minuten gemessen), ab 50 MB mit Hinweis „Aufbewahrungsregel festlegen".
+- **Nebenfund:** Die Cockpit-Zeile „Externe Daten" (nowrap) ragte am Handy bis 507 px über den Rand — jetzt eine
+  Quelle je Zeile. Browser-Audit prüft die Cockpit-Breite mit langen Quellennamen; Gegenprobe mit alter Zeile rot.

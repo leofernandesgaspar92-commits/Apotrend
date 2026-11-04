@@ -672,6 +672,23 @@ async function datenbankLebt() {
     error: fehler ? String(fehler).replace(/postgres(ql)?:\/\/[^\s]*/gi, '[adresse]').slice(0, 200) : null, next_retry: naechster_versuch };
 }
 
+// Größe der Sicherung fürs Betriebs-Cockpit — höchstens alle 10 Minuten gemessen (das Zusammensetzen
+// kostet Zeit). Wächst sie (vor allem durch erledigte Apotheken-Meldungen, die bisher nie verfallen),
+// muss der Betreiber eine Aufbewahrungsregel festlegen — das sieht er hier rechtzeitig.
+const SICHERUNG_HINWEIS_MB = 50;
+let sicherungMessung = null;
+function sicherungsGroesse() {
+  if (sicherungMessung && Date.now() - sicherungMessung.at < 10 * 60_000) return sicherungMessung;
+  const t0 = Date.now();
+  const roh = Buffer.byteLength(JSON.stringify(collectSnapshot()), 'utf8');
+  const dauer = Date.now() - t0;
+  const apo = shortagesRepo.list().filter((z) => z.provenance === 'community');
+  sicherungMessung = { at: Date.now(), roh_mb: Math.round(roh / 1e5) / 10, dauer_ms: dauer,
+    apotheken_meldungen: apo.length, erledigt: apo.filter((z) => z.status === 'verfuegbar').length,
+    hinweis: roh / 1e6 >= SICHERUNG_HINWEIS_MB };
+  return sicherungMessung;
+}
+
 function durabilityReport() {
   const db_an = !!db;
   const datei = persistence ? persistence.filePath : null;
@@ -2858,6 +2875,7 @@ const routes = [
       // Externe Schnittstellen: antwortet die Quelle? (services/extern/)
       extern: [weltbank.status(), hafenWetter.status(), ais.status(), cryptoRates.status(), fxRates.status(), ...medint.status(), ausbruch.status()],
       b2b: { anfragen_offen: sourcingAnfragen.alle().filter((a) => a.status === 'neu').length, signale: aktuelleSignale().length },
+      sicherung: sicherungsGroesse(),
     };
   }],
   // Startklar-Check (services/startklar.js): was der Betreiber noch einrichten muss.

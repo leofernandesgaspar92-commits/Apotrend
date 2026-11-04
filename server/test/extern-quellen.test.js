@@ -221,7 +221,20 @@ test('Server: Häfen, Logistik-Index, Status — ohne Netz kein Absturz, ehrlich
     assert.match(st.quellen.find((q) => q.name === 'openmeteo').letzter_fehler, /abgeschaltet/);
     const b = await (await fetch(B + '/api/betrieb', { headers: { authorization: 'Bearer ' + red } })).json();
     assert.equal(b.extern.length, 8); // + openFDA, ClinicalTrials.gov, WHO (Sprint 5)
+    // Größe der Sicherung (11/2026): erledigte Apotheken-Meldungen verfallen bisher nie — der Betreiber
+    // soll das Wachstum sehen, bevor es teuer wird.
+    assert.equal(typeof b.sicherung.roh_mb, 'number'); assert.ok(b.sicherung.roh_mb >= 0);
+    assert.equal(typeof b.sicherung.dauer_ms, 'number');
+    assert.deepEqual([typeof b.sicherung.apotheken_meldungen, typeof b.sicherung.erledigt, b.sicherung.hinweis], ['number', 'number', false]);
   } finally {
     await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
   }
+});
+
+test('Cockpit: Hinweis auf Aufbewahrungsregel ab 50 MB Sicherung, Zeile in 5 Sprachen', () => {
+  const server = readFileSync(join(ROOT, 'src', 'http', 'server.js'), 'utf8');
+  assert.match(server, /const SICHERUNG_HINWEIS_MB = 50;/);
+  assert.match(server, /hinweis: roh \/ 1e6 >= SICHERUNG_HINWEIS_MB/);
+  const app = readFileSync(join(ROOT, 'public', 'app.js'), 'utf8');
+  assert.match(app, /data-btsicherung>/); assert.match(app, /b\.sicherung\.hinweis \? `<div data-btsicherunghinweis/);
 });

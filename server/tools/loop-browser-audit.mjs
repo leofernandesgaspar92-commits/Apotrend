@@ -1577,6 +1577,10 @@ async function main() {
         quellen: { gesamt: 3, liefern: 2, offen: 0, fehler: 1, fehlerhaft: [{ id: 'openfda_shortages', land: 'US', label: 'FDA', fehler: 'HTTP 403' }] },
         abruf: { zuletzt: new Date(Date.now() - 3600000).toISOString(), ok: true }, mail: { aktiv: false, grund: 'kein_anbieter' }, ki: 'aus',
         kanaele: [{ kanal: 'tiktok', besuche: 120, konten: 14 }, { kanal: 'play', besuche: 30, konten: 3 }],
+        // Lange Quellennamen: ragten mit „nowrap" bis 507 px über den Handy-Rand (11/2026).
+        extern: ['US-FDA (openFDA drugsfda)', 'ClinicalTrials.gov (NIH)', 'WHO Disease Outbreak News', 'Wechselkurse (EZB / open.er-api)']
+          .map((quelle) => ({ quelle, aktiv: true, zuletzt_ok: null, letzter_fehler: null })),
+        sicherung: { roh_mb: 61.5, dauer_ms: 240, apotheken_meldungen: 52000, erledigt: 47000, hinweis: true },
       };
       const leer = (pfad, body) => page.route(pfad, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) }));
       await leer('**/api/betrieb', betrieb);
@@ -1590,6 +1594,9 @@ async function main() {
       await page.evaluate(() => showModeration());
       await page.waitForSelector('[data-betrieb]', { timeout: 6000 }).catch(() => {});
       const cockpit = await page.locator('[data-betrieb]').innerText().catch(() => '');
+      const cockpitBreite = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+      if (cockpitBreite > 2) findings.push(`Cockpit: scrollt am Handy seitlich (${cockpitBreite}px zu breit)`);
+      if (!/61,5 MB/.test(cockpit) || !/47000 davon erledigt|davon 47000 erledigt/.test(cockpit) || !/Aufbewahrungsregel/.test(cockpit)) findings.push(`Cockpit: Datensicherung/Hinweis fehlt (${cockpit.replace(/\s+/g, ' ').slice(0, 120)})`);
       await page.click('[data-btquellen]').catch(() => {});
       await page.waitForTimeout(600);
       const aufDq = await page.locator('[data-dqneu]').count();
