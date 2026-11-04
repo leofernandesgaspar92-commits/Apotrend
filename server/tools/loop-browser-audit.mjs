@@ -59,6 +59,76 @@ async function api(path, opts = {}) {
   return r.json().catch(() => null);
 }
 
+// Kontrast (WCAG AA) und Bedienbarkeit — als Funktionen, damit dieselbe Prüfung auf den Reitern
+// UND auf den B2B-Seiten (Beschaffung, Zulassungen, Radar) läuft.
+const KONTRAST_MESSEN = () => {
+        const rgba = (s) => { const m = String(s).match(/rgba?\(([^)]+)\)/); if (!m) return null; const p = m[1].split(',').map((x) => parseFloat(x)); return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 }; };
+        const ueber = (o, u) => ({ r: o.r * o.a + u.r * (1 - o.a), g: o.g * o.a + u.g * (1 - o.a), b: o.b * o.a + u.b * (1 - o.a), a: 1 });
+        const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b); };
+        const hex = (c) => '#' + [c.r, c.g, c.b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+        const hintergrund = (el) => {
+          const ebenen = [];
+          for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+            const cs = getComputedStyle(n);
+            if (cs.backgroundImage && cs.backgroundImage !== 'none') return null; // nicht messbar
+            const c = rgba(cs.backgroundColor);
+            if (c && c.a > 0) { ebenen.push(c); if (c.a >= 0.99) break; }
+          }
+          let basis = { r: 255, g: 255, b: 255, a: 1 };
+          for (let i = ebenen.length - 1; i >= 0; i--) basis = ueber(ebenen[i], basis);
+          return basis;
+        };
+        const schlecht = [];
+        let geprueft = 0;
+        for (const el of document.querySelectorAll('body *')) {
+          if (!el.getClientRects().length || el.closest('[aria-hidden="true"],.hidden,script,style,noscript')) continue;
+          const text = [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('').trim();
+          if (!/[\p{L}\p{N}]/u.test(text)) continue;
+          const cs = getComputedStyle(el);
+          if (cs.visibility === 'hidden' || parseFloat(cs.opacity) < 0.1 || el.disabled) continue;
+          const bg = hintergrund(el); const fg0 = rgba(cs.color);
+          if (!bg || !fg0) continue;
+          const fg = ueber(fg0, bg);
+          const [l1, l2] = [lum(fg), lum(bg)].sort((a, b) => b - a);
+          const r = (l1 + 0.05) / (l2 + 0.05);
+          const groesse = parseFloat(cs.fontSize); const fett = parseInt(cs.fontWeight, 10) >= 700;
+          const grenze = (groesse >= 24 || (fett && groesse >= 18.66)) ? 3 : 4.5;
+          geprueft++;
+          if (r < grenze) schlecht.push({ text: text.slice(0, 28), r: Math.round(r * 10) / 10, fg: hex(fg), bg: hex(bg) });
+        }
+        return { geprueft, schlecht };
+      };
+const A11Y_MESSEN = () => {
+          const bad = { controls: 0, imgs: 0 };
+          document.querySelectorAll('input,textarea,select').forEach((el) => {
+            if (el.type === 'hidden') return;
+            const id = el.id;
+            const named = el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.getAttribute('title')
+              || (id && document.querySelector(`label[for="${id}"]`)) || el.closest('label');
+            if (!named) bad.controls++;
+          });
+          document.querySelectorAll('img').forEach((el) => { if (el.getAttribute('alt') === null) bad.imgs++; });
+          // Anklickbare Nicht-Button-Elemente (.clickable) müssen per Tastatur bedienbar sein
+          // (tabindex + role), sonst sind sie für Tastatur-/Screenreader-Nutzer:innen unerreichbar.
+          bad.clickables = 0;
+          const NATIVE = new Set(['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA']);
+          document.querySelectorAll('.clickable').forEach((el) => {
+            if (NATIVE.has(el.tagName)) return;
+            if (!el.hasAttribute('tabindex') || el.getAttribute('role') === null) bad.clickables++;
+          });
+          // Verschachtelte Klick-Elemente (Button im Button) sind ungültiges ARIA.
+          bad.nested = document.querySelectorAll('.clickable .clickable').length;
+          // Umfassender: JEDES Nicht-Button-Element mit onclick-Handler muss tastaturbedienbar
+          // sein (tabindex+role) — fängt auch interaktive Elemente, die nicht .clickable sind.
+          bad.onclickKbd = 0;
+          const NATIVE2 = new Set(['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA', 'LABEL']);
+          document.querySelectorAll('*').forEach((el) => {
+            if (typeof el.onclick !== 'function' || NATIVE2.has(el.tagName)) return;
+            if (!el.hasAttribute('tabindex') || el.getAttribute('role') === null) bad.onclickKbd++;
+          });
+          return bad;
+        };
+
 async function main() {
   // Server sicherstellen (nutzt laufenden ODER startet einen und beendet ihn am Ende).
   let stopServer = () => {};
@@ -135,43 +205,7 @@ async function main() {
       //  Gemessen wird jede sichtbare Textstelle gegen ihren TATSÄCHLICHEN
       //  Hintergrund (durchsichtige Ebenen werden verrechnet); Hintergrund-
       //  bilder gelten als nicht messbar und werden übersprungen.
-      const kontrast = await page.evaluate(() => {
-        const rgba = (s) => { const m = String(s).match(/rgba?\(([^)]+)\)/); if (!m) return null; const p = m[1].split(',').map((x) => parseFloat(x)); return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 }; };
-        const ueber = (o, u) => ({ r: o.r * o.a + u.r * (1 - o.a), g: o.g * o.a + u.g * (1 - o.a), b: o.b * o.a + u.b * (1 - o.a), a: 1 });
-        const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b); };
-        const hex = (c) => '#' + [c.r, c.g, c.b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
-        const hintergrund = (el) => {
-          const ebenen = [];
-          for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
-            const cs = getComputedStyle(n);
-            if (cs.backgroundImage && cs.backgroundImage !== 'none') return null; // nicht messbar
-            const c = rgba(cs.backgroundColor);
-            if (c && c.a > 0) { ebenen.push(c); if (c.a >= 0.99) break; }
-          }
-          let basis = { r: 255, g: 255, b: 255, a: 1 };
-          for (let i = ebenen.length - 1; i >= 0; i--) basis = ueber(ebenen[i], basis);
-          return basis;
-        };
-        const schlecht = [];
-        let geprueft = 0;
-        for (const el of document.querySelectorAll('body *')) {
-          if (!el.getClientRects().length || el.closest('[aria-hidden="true"],.hidden,script,style,noscript')) continue;
-          const text = [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('').trim();
-          if (!/[\p{L}\p{N}]/u.test(text)) continue;
-          const cs = getComputedStyle(el);
-          if (cs.visibility === 'hidden' || parseFloat(cs.opacity) < 0.1 || el.disabled) continue;
-          const bg = hintergrund(el); const fg0 = rgba(cs.color);
-          if (!bg || !fg0) continue;
-          const fg = ueber(fg0, bg);
-          const [l1, l2] = [lum(fg), lum(bg)].sort((a, b) => b - a);
-          const r = (l1 + 0.05) / (l2 + 0.05);
-          const groesse = parseFloat(cs.fontSize); const fett = parseInt(cs.fontWeight, 10) >= 700;
-          const grenze = (groesse >= 24 || (fett && groesse >= 18.66)) ? 3 : 4.5;
-          geprueft++;
-          if (r < grenze) schlecht.push({ text: text.slice(0, 28), r: Math.round(r * 10) / 10, fg: hex(fg), bg: hex(bg) });
-        }
-        return { geprueft, schlecht };
-      });
+      const kontrast = await page.evaluate(KONTRAST_MESSEN);
       if (kontrast.schlecht.length) {
         const bsp = kontrast.schlecht.slice(0, 3).map((x) => `„${x.text}" ${x.r}:1 (${x.fg} auf ${x.bg})`).join(' · ');
         findings.push(`Kontrast: ${kontrast.schlecht.length} Textstelle(n) unter WCAG AA [${label || tab} · ${theme}] — z. B. ${bsp}`);
@@ -180,41 +214,24 @@ async function main() {
       // zugänglichen Namen (aria-label/Placeholder/title/<label>) + Bilder ohne alt.
       // Fängt die Klasse aus Cycle #39 (unbenannte Selects, Vorschau-Bilder ohne alt).
       if (theme === 'hell') {
-        const a11y = await page.evaluate(() => {
-          const bad = { controls: 0, imgs: 0 };
-          document.querySelectorAll('input,textarea,select').forEach((el) => {
-            if (el.type === 'hidden') return;
-            const id = el.id;
-            const named = el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.getAttribute('title')
-              || (id && document.querySelector(`label[for="${id}"]`)) || el.closest('label');
-            if (!named) bad.controls++;
-          });
-          document.querySelectorAll('img').forEach((el) => { if (el.getAttribute('alt') === null) bad.imgs++; });
-          // Anklickbare Nicht-Button-Elemente (.clickable) müssen per Tastatur bedienbar sein
-          // (tabindex + role), sonst sind sie für Tastatur-/Screenreader-Nutzer:innen unerreichbar.
-          bad.clickables = 0;
-          const NATIVE = new Set(['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA']);
-          document.querySelectorAll('.clickable').forEach((el) => {
-            if (NATIVE.has(el.tagName)) return;
-            if (!el.hasAttribute('tabindex') || el.getAttribute('role') === null) bad.clickables++;
-          });
-          // Verschachtelte Klick-Elemente (Button im Button) sind ungültiges ARIA.
-          bad.nested = document.querySelectorAll('.clickable .clickable').length;
-          // Umfassender: JEDES Nicht-Button-Element mit onclick-Handler muss tastaturbedienbar
-          // sein (tabindex+role) — fängt auch interaktive Elemente, die nicht .clickable sind.
-          bad.onclickKbd = 0;
-          const NATIVE2 = new Set(['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA', 'LABEL']);
-          document.querySelectorAll('*').forEach((el) => {
-            if (typeof el.onclick !== 'function' || NATIVE2.has(el.tagName)) return;
-            if (!el.hasAttribute('tabindex') || el.getAttribute('role') === null) bad.onclickKbd++;
-          });
-          return bad;
-        });
+        const a11y = await page.evaluate(A11Y_MESSEN);
         if (a11y.controls) findings.push(`A11y: ${a11y.controls} Formularelement(e) ohne Namen [${label || tab}]`);
         if (a11y.imgs) findings.push(`A11y: ${a11y.imgs} Bild(er) ohne alt [${label || tab}]`);
         if (a11y.clickables) findings.push(`A11y: ${a11y.clickables} anklickbare(s) Element(e) nicht tastaturbedienbar [${label || tab}]`);
         if (a11y.nested) findings.push(`A11y: ${a11y.nested} verschachtelte(s) Klick-Element(e) (Button im Button) [${label || tab}]`);
         if (a11y.onclickKbd) findings.push(`A11y: ${a11y.onclickKbd} onclick-Element(e) ohne Tastaturzugang [${label || tab}]`);
+      }
+    }
+    // B2B-Seiten (Sprint 5): dieselben Prüfungen. Hier fand sich 11/2026 ein Link in Browser-Blau
+    // auf dunklem Grund (1,9:1) — die App hatte keine Linkfarbe für einfache Links.
+    for (const [label, fn] of [['Beschaffung', () => openSourcing()], ['Zulassungen', () => openMedInt()], ['Ausbruchs-Radar', () => openAusbruch()]]) {
+      await page.evaluate(fn); await page.waitForTimeout(900);
+      const kontrast = await page.evaluate(KONTRAST_MESSEN);
+      if (kontrast.schlecht.length) findings.push(`Kontrast: ${kontrast.schlecht.length} Textstelle(n) unter WCAG AA [${label} · ${theme}] — z. B. ${kontrast.schlecht.slice(0, 2).map((x) => `„${x.text}" ${x.r}:1 (${x.fg} auf ${x.bg})`).join(' · ')}`);
+      if (theme === 'hell') {
+        const a11y = await page.evaluate(A11Y_MESSEN);
+        const summe = a11y.controls + a11y.imgs + a11y.clickables + a11y.nested + a11y.onclickKbd;
+        if (summe) findings.push(`A11y: ${summe} Lücke(n) [${label}] ${JSON.stringify(a11y)}`);
       }
     }
     if (errors.length) findings.push(`JS-Fehler [${theme}]: ${[...new Set(errors)].slice(0, 3).join(' | ')}`);

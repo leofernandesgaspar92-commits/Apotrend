@@ -1,4 +1,4 @@
-  :root { --green:#2b3440; --green-d:#1a2028; --bg:#f2f3f5; --card:#fff; --line:#e0e3e8; --text:#13171c; --muted:#5a6370;
+  :root { --link:#1d4ed8; --green:#2b3440; --green-d:#1a2028; --bg:#f2f3f5; --card:#fff; --line:#e0e3e8; --text:#13171c; --muted:#5a6370;
     --chip-bg:#eef0f3;
     /* Metall-Optik: dezente Verläufe statt Flächenfarbe (Graphit hell, Silber dunkel). */
     --accent-fill:linear-gradient(180deg, #3b4552 0%, #242b34 100%);
@@ -24,7 +24,7 @@
     /* Design-System: einheitliche Radien & Abstandsraster (Social-Feed-Ruhe). */
     --radius:8px; --radius-sm:6px; --radius-btn:6px; --radius-chip:4px;
     --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; }
-  body.dark { --green:#d3d8df; --green-d:#eef1f4; --bg:#0d1014; --card:#151920; --line:#262c35; --text:#e8ebef; --muted:#9ba4b0;
+  body.dark { --link:#8ab4ff; --green:#d3d8df; --green-d:#eef1f4; --bg:#0d1014; --card:#151920; --line:#262c35; --text:#e8ebef; --muted:#9ba4b0;
     --chip-bg:#1c2129;
     --on-green:#11151a; /* Graphit auf Silber: >12:1 */
     --accent-fill:linear-gradient(180deg, #f1f3f6 0%, #c3c9d2 100%);
@@ -44,6 +44,10 @@
     --crit-bg:#3a1c18; --crit-fg:#f0857a; --crit-bd:#5e2b25;
     --info-bg:#1a2338; --info-fg:#8aa4f7; --info-bd:#33436f; }
   body.dark .reacts button, body.dark .spec { background:var(--chip-bg); }
+  /* Linkfarbe für ALLE einfachen Links (Quellen, Behörden, Register). Bis 11/2026 gab es keine —
+     im dunklen Design stand Browser-Blau #0000ee auf #151920 (1,9:1, praktisch unlesbar), auch an
+     Quellen-Links von Engpassmeldungen. Hell #1d4ed8 (≈6,7:1), dunkel #8ab4ff (≈8:1). */
+  :where(a, a:visited) { color:var(--link); } /* :where = Gewicht 0: gestaltete Links (.btn-link …) behalten ihre Farbe, auch besucht */
   body.dark input, body.dark textarea, body.dark select { background:#0f1419; }
   body.dark .editorial { background:#1e2f5a; color:#bcd0ff; border-color:#2e4680; }
   * { box-sizing:border-box; }

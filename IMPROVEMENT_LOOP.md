@@ -4350,3 +4350,13 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   davon M erledigt" (höchstens alle 10 Minuten gemessen), ab 50 MB mit Hinweis „Aufbewahrungsregel festlegen".
 - **Nebenfund:** Die Cockpit-Zeile „Externe Daten" (nowrap) ragte am Handy bis 507 px über den Rand — jetzt eine
   Quelle je Zeile. Browser-Audit prüft die Cockpit-Breite mit langen Quellennamen; Gegenprobe mit alter Zeile rot.
+
+### Linkfarbe im dunklen Design; B2B-Seiten in der Barrierefreiheits-Prüfung (2026-11-04)
+- **Geprüft:** Beschaffung, Zulassungen, Ausbruchs-Radar mit denselben Prüfungen wie die Reiter (Kontrast WCAG AA
+  hell + dunkel, Beschriftung von Feldern, Bilder mit alt, Tastaturbedienung) — bisher liefen sie nur auf den Reitern.
+- **Fund:** Die App hatte keine Linkfarbe für einfache Links. Im dunklen Design stand Browser-Blau #0000ee auf #151920
+  (1,9:1, praktisch unlesbar) — gefunden am WTO-Link, betrifft aber jeden einfachen Link, darunter Quellen-Links von
+  Engpassmeldungen (sicherheitsrelevant: dort prüft man, woher eine Aussage stammt).
+- **Behoben:** Farbvariable `--link` (hell #1d4ed8 ≈ 6,7:1, dunkel #8ab4ff ≈ 8:1) mit `:where(a, a:visited)` — Gewicht 0,
+  gestaltete Links (Knöpfe) behalten ihre Farbe auch nach dem Besuch. Audit: Prüfungen als Funktionen
+  (KONTRAST_MESSEN, A11Y_MESSEN), jetzt auch auf den drei B2B-Seiten; Gegenprobe ohne Linkfarbe rot.
