@@ -1471,7 +1471,14 @@ window.addEventListener('resize', setHeaderHeightVar);
 window.addEventListener('orientationchange', setHeaderHeightVar);
 
 // ── Haupt-Screen (Feed) ──
-async function mainScreen() {
+// Hauptbereich (#feed) für Unterseiten. Premium, Benachrichtigungen, Beschaffung, Radar … ersetzen die
+// ganze App-Fläche; danach lief z. B. ein Wirkstoff-Knopf im Ausbruchs-Radar ins Leere
+// (`null.innerHTML`, 11/2026). Fehlt #feed, wird die Hauptansicht ohne Reiter aufgebaut.
+async function hauptbereich() {
+  if (!document.getElementById('feed') && me) await mainScreen({ ohneReiter: true });
+  return document.getElementById('feed');
+}
+async function mainScreen({ ohneReiter = false } = {}) {
   // Start-Abfragen GLEICHZEITIG losschicken (bis 10/2026 nacheinander: auf einem einfachen
   // Android mit 3G fünf Runden à ~0,5 s, bevor überhaupt etwas zu sehen war). Gewartet wird
   // erst dort, wo das Ergebnis gebraucht wird — die Reihenfolge der Wirkung bleibt gleich.
@@ -1695,6 +1702,9 @@ async function mainScreen() {
   startNewsRail();      // News-Livestream links starten (nur auf breiten Bildschirmen sichtbar)
   seitenleisteZeichnen(); // rechte Spalte: Schnellzugriff, Anzeige, Werbefläche
   setHeaderHeightVar(); // Kopfhöhe für die klebrige mobile Reiter-Leiste
+  // Aufbau für eine Unterseite (hauptbereich()): kein Reiter, keine Start-Sprünge — sonst überschriebe
+  // der Reiter, der später fertig wird, die gewünschte Seite.
+  if (ohneReiter) { ausgangSenden(); return; }
   loadTab();
   ausgangSenden();      // ohne Netz gespeicherte Meldungen nachsenden (Ausgang, s. u.)
   // Deep-Links: /?post=ID öffnet einen Beitrag, /?wirkstoff=Name die Wirkstoff-Seite,
@@ -5572,7 +5582,7 @@ const SRT_SYMBOL = { knapp: 'alert', ausland: 'globe', wiederholt: 'clock', ruhi
 let srtLetzterText = '';
 async function openSortiment() {
   setDocTitle(t('srt_title'));
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   if (!feed) return;
   document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('active')); setTabAria();
   window.scrollTo({ top: 0 });
@@ -6468,7 +6478,7 @@ async function copySupplierOrder(supplier, items, btn) {
 
 // Einkaufsliste (Bestell-Merkzettel): Positionen mit Menge, Entfernen, CSV/Ausdruck.
 async function openCart(flash) {
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   setDocTitle(t('cart_title'));
   feed.innerHTML = '<div class="loading">…</div>';
@@ -6761,7 +6771,7 @@ function sortAppointments(list, today) {
 }
 
 async function openAppointments(flash) {
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   setDocTitle(t('vc_my'));
   feed.innerHTML = '<div class="loading">…</div>';
@@ -6804,7 +6814,7 @@ async function openAppointments(flash) {
 const TEAM_ROLES = ['admin', 'apotheker', 'pta', 'lehrling'];
 function roleLabel(r) { return t('tm_role_' + r) !== 'tm_role_' + r ? t('tm_role_' + r) : r; }
 async function openTeam() {
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   setDocTitle(t('tm_title'));
   feed.innerHTML = '<div class="loading">…</div>';
@@ -6865,7 +6875,7 @@ async function openTeam() {
 
 // ── Team-Arbeitsbereich (Hub: Aufgaben, Notizen, Verwaltung) ────────────────
 async function openTeamHub() {
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   setDocTitle(t('th_nav'));
   feed.innerHTML = '<div class="loading">…</div>';
@@ -6898,7 +6908,7 @@ function taskStatusMeta(s) {
   return ['var(--muted)', 'var(--chip-bg)', t('tk_st_offen')];
 }
 async function openTasks() {
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   setDocTitle(t('tk_title'));
   feed.innerHTML = '<div class="loading">…</div>';
@@ -7034,7 +7044,7 @@ async function openTasks() {
 
 // ── Team-Notizen (gemeinsame Wissensablage) ─────────────────────────────────
 async function openNotes() {
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   setDocTitle(t('kb_title'));
   feed.innerHTML = '<div class="loading">…</div>';
@@ -7138,7 +7148,7 @@ const DIR_ICON = { pharmacy: '🏥', pharma: '🏭', authority: '🏛️' };
 let dirState = { type: 'pharmacy', q: '', bl: '', verified: false };
 async function openDirectory(type) {
   if (type) dirState.type = type;
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   setDocTitle(t('dir_title'));
   feed.innerHTML = '<div class="loading">…</div>';
@@ -7249,7 +7259,7 @@ function promoCard(p) {
 }
 
 async function openPromotions(flash) {
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   setDocTitle(t('wb_title'));
   feed.innerHTML = '<div class="loading">…</div>';
@@ -7359,7 +7369,7 @@ function openPromoForm(existing) {
 }
 
 async function openPromotionDetail(id) {
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">…</div>';
   let d;
@@ -7424,7 +7434,7 @@ function liveWhen(g) { // "YYYY-MM-DDTHH:MM" -> "01.09.2026 · 18:00" (bzw. loka
   return `${fmtDateDe(d)}${tm ? ' · ' + tm : ''}`;
 }
 async function openLive(flash) {
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   setDocTitle(t('lv_title'));
   feed.innerHTML = '<div class="loading">…</div>';
@@ -7615,7 +7625,7 @@ function printProcurementReport(orders) {
 }
 
 async function openOrders(flash) {
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   setDocTitle(t('ord_title'));
   feed.innerHTML = '<div class="loading">…</div>';
@@ -8227,7 +8237,7 @@ async function openPremium() {
 
 async function openBookmarks() {
   setDocTitle(t('bm_doc'));
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">…</div>';
   try {
@@ -8271,7 +8281,7 @@ function startDetailView(titleEl) {
 async function openHashtag(tag) {
   setDocTitle('#' + String(tag||'').replace(/^#/, ''));
   if (!tag) return;
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">…</div>';
   try {
@@ -8296,7 +8306,7 @@ async function openHashtag(tag) {
 // Patientenberatung, keine personenbezogenen Patientendaten.
 async function openStewardship() {
   setDocTitle(t('stew_doc'));
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">…</div>';
   let d;
@@ -8362,7 +8372,7 @@ function printPatientInfo(d) {
   openPrintDoc(patientInfoHeading(d.lang), css, body, d.lang);
 }
 async function openPatientInfo() {
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">…</div>';
   let d;
@@ -8558,7 +8568,7 @@ function openBegleitzettel() {
 async function renderSearch(q) {
   setDocTitle(t('search_doc') + ': ' + q);
   recordRecentSearch(q); // jede Suche lokal merken (für „Letzte Suchen")
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">…</div>';
   try {
@@ -8822,7 +8832,7 @@ async function zurVerifizierung() {
 async function openProfile(handle) {
   setDocTitle('@' + handle);
   if (!handle) return;
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   // Tab-Markierung entfernen (wir sind auf einer Detailseite)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">…</div>';
@@ -9149,7 +9159,7 @@ function recommendationsCard(d, handle) {
 
 // Follower- bzw. Folge-Liste eines Profils.
 async function openFollowList(handle, which) {
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">…</div>';
   let d;
@@ -9187,7 +9197,7 @@ async function openFollowList(handle, which) {
 
 // „Offen für"-Entdecken: Kolleg:innen, die für dieselbe Kategorie offen sind.
 async function openDiscoverOpenTo(key) {
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   setDocTitle(openToLabel(key));
   feed.innerHTML = '<div class="loading">…</div>';
@@ -9236,7 +9246,7 @@ async function openDiscoverOpenTo(key) {
 // Eigene Aktivität an einem Ort: Fragen, Engpass-Meldungen, Austausch-Einträge.
 async function openMyActivity() {
   setDocTitle(t('ma_doc'));
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">…</div>';
   let d;
@@ -9397,7 +9407,7 @@ function chronikKarte(c, wirkstoff) {
 async function openWirkstoff(name) {
   setDocTitle('💊 ' + name);
   if (!name) return;
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">…</div>';
   let d;
@@ -10776,7 +10786,7 @@ async function openNotifSettings() {
 // Einzelbeitrag-Ansicht (z.B. aus einer Benachrichtigung heraus), Kommentare offen.
 async function openPost(postId) {
   setDocTitle(t('post_doc'));
-  const feed = document.getElementById('feed');
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   if (!feed) return;
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '<div class="loading">…</div>';

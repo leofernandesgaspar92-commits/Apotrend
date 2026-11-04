@@ -3070,6 +3070,25 @@ async function main() {
     if (!findings.some((f) => f.startsWith('B2B'))) console.log('✓ B2B: /sourcing rechnet nur mit Kursen (sonst ehrlich), Ergebnis mit Basis/Quelle/Ankunft/Hafen, Proforma kommt an, Cross-Check ohne Zulassungsbehauptung, Panels mit Einordnung, Privat gesperrt');
   }
 
+  // ── Von einer Unterseite zur Wirkstoff-/Profil-Seite ──
+  //  Premium, Benachrichtigungen, Radar … ersetzen die ganze App-Fläche. Bis 11/2026 lief danach
+  //  openWirkstoff/openProfile ins Leere (`null.innerHTML`) — z. B. die Wirkstoff-Knöpfe im Radar.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage(); const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
+    await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
+    for (const unterseite of ['openAusbruch()', 'openPremium()', 'showNotifications()', 'openSourcing()']) {
+      await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
+      await page.evaluate((x) => eval(x), unterseite); await page.waitForTimeout(700);
+      await page.evaluate(() => { openWirkstoff('Amoxicillin'); }); await page.waitForTimeout(2500); // 2,5 s: kein Reiter darf sie überschreiben
+      const ok = await page.evaluate(() => !!document.getElementById('feed') && /Amoxicillin/i.test(document.getElementById('feed').innerText));
+      if (!ok) findings.push(`Navigation: von ${unterseite} öffnet „Wirkstoff" nicht (oder wird überschrieben)`);
+    }
+    for (const f of [...new Set(fehler)]) findings.push('Navigation: JS-Fehler ' + f.slice(0, 120));
+    await ctx.close();
+    if (!findings.some((f) => f.startsWith('Navigation'))) console.log('✓ Navigation: Wirkstoff-Seite öffnet sich von Unterseiten (Radar, Premium, Benachrichtigungen, Beschaffung) und bleibt stehen');
+  }
+
   // ── Datenschutzerklärung am Handy (360 px), alle fünf Sprachen ──
   //  Die dreispaltige Tabelle war bis 11/2026 auf Deutsch 455 px breit (lange Wörter wie
   //  „Rechtsgrundlage"); jetzt wird jede Zeile ein Block mit Beschriftung.

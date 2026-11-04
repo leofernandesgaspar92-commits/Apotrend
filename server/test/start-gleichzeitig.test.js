@@ -8,7 +8,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const APP = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app.js'), 'utf8');
-const haupt = APP.slice(APP.indexOf('async function mainScreen()'), APP.indexOf('\n}\n', APP.indexOf('async function mainScreen()')));
+const haupt = APP.slice(APP.indexOf('async function mainScreen('), APP.indexOf('\n}\n', APP.indexOf('async function mainScreen(')));
 
 test('mainScreen: alle unabhängigen Start-Abfragen sind unterwegs, bevor auf /api/me gewartet wird', () => {
   const vorMe = haupt.slice(0, haupt.indexOf("await api('GET','/api/me')"));

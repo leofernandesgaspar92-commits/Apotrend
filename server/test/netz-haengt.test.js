@@ -140,7 +140,7 @@ test('API: persönliche Daten ohne Anmeldung oder außerhalb der Liste werden ni
 test('Seite: Start-Abfragen haben eine Frist; Länder-Einstellung fällt auf den letzten Stand zurück', () => {
   assert.match(APP, /const START_FRIST_MS = \d+;/);
   assert.match(APP, /mitFrist\(fetch\('\/api\/features'\)/, 'Funktionsschaltung ohne Frist');
-  const haupt = APP.slice(APP.indexOf('async function mainScreen()'), APP.indexOf("let meData = await api('GET','/api/me')"));
+  const haupt = APP.slice(APP.indexOf('async function mainScreen('), APP.indexOf("let meData = await api('GET','/api/me')"));
   assert.match(haupt, /mitFrist\(api\('GET', '\/api\/country-config'\)/);
   assert.match(haupt, /mitFrist\(api\('GET','\/api\/bookmarks\/ids'\)/);
   const gating = APP.slice(APP.indexOf('async function applyCountryGating('), APP.indexOf('async function applyCountryGating(') + 900);

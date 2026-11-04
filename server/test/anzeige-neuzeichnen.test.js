@@ -14,7 +14,7 @@ test('Sprachwechsel zeichnet auch die rechte Spalte neu', () => {
   assert.match(fn('function neuZeichnen() {'), /if \(me\) \{ updateViewContext\(\); seitenleisteZeichnen\(\); loadTab\(\); \}/);
   const sl = fn('function seitenleisteZeichnen() {');
   for (const teil of ['renderQuickRail()', "zeigeAnzeige('seite', sp)", 'renderAdSlot()']) assert.ok(sl.includes(teil), teil);
-  assert.match(fn('async function mainScreen() {'), /seitenleisteZeichnen\(\);/);
+  assert.match(fn('async function mainScreen('), /seitenleisteZeichnen\(\);/);
 });
 
 test('Neuzeichnen ist keine neue Einblendung: laufende Anfrage gemerkt (je Konto und Platz, 60 s); Ausblenden/Melden leert', () => {

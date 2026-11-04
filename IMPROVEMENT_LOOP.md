@@ -4360,3 +4360,14 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Behoben:** Farbvariable `--link` (hell #1d4ed8 ≈ 6,7:1, dunkel #8ab4ff ≈ 8:1) mit `:where(a, a:visited)` — Gewicht 0,
   gestaltete Links (Knöpfe) behalten ihre Farbe auch nach dem Besuch. Audit: Prüfungen als Funktionen
   (KONTRAST_MESSEN, A11Y_MESSEN), jetzt auch auf den drei B2B-Seiten; Gegenprobe ohne Linkfarbe rot.
+
+### Navigation von Unterseiten: Wirkstoff-/Profil-Knöpfe liefen ins Leere (2026-11-04)
+- **Geprüft:** Kontrast + Bedienbarkeit auf 12 weiteren Unterseiten (Premium, Benachrichtigungen, Einstellungen,
+  Sortiment, Daten-Schnittstelle, Werbung, Logistik, Datenquellen …), hell + dunkel — ohne Fund.
+- **Fund (schwer):** Unterseiten wie Premium, Benachrichtigungen, Beschaffung, Zulassungen, Ausbruchs-Radar ersetzen
+  die ganze App-Fläche. Danach lief `openWirkstoff`/`openProfile`/`openBookmarks` … ins Leere (`null.innerHTML`) —
+  z. B. die Wirkstoff-Knöpfe im Ausbruchs-Radar taten nichts. Von 12 Unterseiten funktionierte nur der Sortiments-Check.
+- **Behoben:** `hauptbereich()` baut die Hauptansicht auf, wenn #feed fehlt — mit `mainScreen({ ohneReiter: true })`,
+  damit kein später fertiger Reiter die gewünschte Seite überschreibt. 23 Unterseiten-Funktionen nutzen es.
+  Browser-Audit: von Radar, Premium, Benachrichtigungen, Beschaffung zur Wirkstoff-Seite, nach 2,5 s noch da;
+  Gegenprobe mit altem Code rot (4 Befunde + JS-Fehler).
