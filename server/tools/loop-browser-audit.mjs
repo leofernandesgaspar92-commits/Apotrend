@@ -1661,10 +1661,16 @@ async function main() {
   //  wird die Kennzeichnung UND, dass auf Engpass-, Live-Warnungs- und
   //  Wirkstoff-Seiten keine Anzeige auch nur angefragt wird.
   {
-    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    // Browser bewusst auf Englisch, Konto auf Deutsch: Die App lädt Deutsch nach und zeichnet neu.
+    // Bis 11/2026 blieb dabei die Anzeige in der rechten Spalte englisch (nur der Hauptbereich wurde
+    // neu gezeichnet) — der Befund trat sporadisch auf, je nachdem, was zuerst fertig war.
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'en-US' });
     const page = await ctx.newPage();
     const fehler = []; page.on('pageerror', (e) => fehler.push(e.message));
     const anfragen = [];
+    // Langsame Leitung nachstellen: Die deutsche Sprachdatei kommt erst NACH der Anzeige an —
+    // so tritt der Fall jedes Mal auf, nicht nur zufällig.
+    await page.route('**/i18n/de.js', async (route) => { await new Promise((r) => setTimeout(r, 1500)); return route.continue(); });
     await page.route('**/api/anzeigen/platz/**', (route) => {
       anfragen.push(new URL(route.request().url()).pathname);
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ anzeige: {
@@ -1673,7 +1679,7 @@ async function main() {
         warum: { firma: 'Prüf GmbH', bezahlt_von: 'Prüf GmbH', laender: ['AT'], zielgruppen: ['pharmacy'], nur_fachkreise: false } } }) });
     });
     await page.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
-    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(900);
+    await page.goto(BASE, { waitUntil: 'networkidle' }); await page.waitForTimeout(2500);
     const karte = page.locator('.anz-karte').first();
     if (!(await karte.count())) findings.push('Anzeigen: Startseite zeigt die (nachgebildete) Anzeige nicht');
     else {
@@ -1686,6 +1692,11 @@ async function main() {
       const warum = await karte.locator('[data-anzwarumtext]').innerText().catch(() => '');
       if (!/bezahlt/.test(warum) || !/Österreich/.test(warum)) findings.push(`Anzeigen: „Warum sehe ich das?" nennt Zahler oder Merkmale nicht (${warum.slice(0, 80)})`);
     }
+    // JEDE Anzeigen-Karte (Startseite UND rechte Spalte) in der Sprache des Kontos.
+    const alleWarum = await page.locator('[data-anzwarumtext]').evaluateAll((els) => els.map((e) => e.textContent.replace(/\s+/g, ' ').trim()));
+    const fremd = alleWarum.filter((x) => !/bezahlt/.test(x));
+    if (alleWarum.length < 2) findings.push(`Anzeigen: erwartet Startseite + rechte Spalte, gefunden ${alleWarum.length}`);
+    if (fremd.length) findings.push(`Anzeigen: ${fremd.length} Karte(n) nach dem Sprachwechsel noch in alter Sprache (${fremd[0].slice(0, 60)})`);
     // Sicherheitsrelevante Seiten: keine Anfrage.
     const vorher = anfragen.length;
     for (const tab of ['shortages', 'signals']) { await reiterOeffnen(page, tab); await page.waitForTimeout(800); }

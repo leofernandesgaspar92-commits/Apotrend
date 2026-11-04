@@ -4304,3 +4304,26 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Behoben:** `betragInCoin` — Stablecoins auf ganze Cent AUFgerundet (3,27; nie zu wenig), andere Münzen
   höchstens so viele Stellen wie die Kette kennt; dieselbe Rechnung für Anzeige, Angebot (Werbung) und Prüfwert.
   Test + 2 Gegenproben rot; Browser zeigt „≈ 3.27 USDT", Redaktion erwartet 3,27.
+
+### Benachrichtigungs-Filter: neue Arten unter „Beschaffung" (2026-11-04)
+- **Fund:** Der Filter „Beschaffung" kannte nur eine feste Liste älterer Arten; alles andere fiel unter „Sozial" —
+  Proforma-Antworten, neue Zulassungen, Frühwarnungen, Widersprüche, „noch aktuell?", Preisalarme, sogar
+  Zahlungsbestätigungen und Verifizierung.
+- **Behoben:** Regel `notifGruppe` statt Liste: Beschaffung (Vorsilben shortage_/watch_/exchange_/sourcing_ und
+  Preis-/Behörden-/Zulassungs-/Frühwarnungs-Alarme), Sozial (ausdrücklich), Rest = Konto (nur unter „Alle").
+  Filterleiste nur, wenn beide Filter etwas zeigen. Test prüft auch gegen die Server-Kategorien (jede „watch"-Art
+  = Beschaffung) — neue Arten können nicht mehr unbemerkt falsch landen. 3 Gegenproben rot; Klicktest (360 px).
+
+### Anzeigen nach Sprachwechsel + doppelt gezählte Einblendungen (2026-11-04)
+- **Anlass:** `verify` war einmal rot (Browser-Audit: „Warum sehe ich das?" auf Englisch), beim nächsten Lauf grün.
+  Nicht als Zufall abgetan, sondern nachgestellt: Browser englisch, Konto deutsch → die App lädt Deutsch nach und
+  zeichnet neu — aber nur den Hauptbereich. Die Anzeige in der rechten Spalte (und der Schnellzugriff) blieb in
+  der Browser-Sprache, sobald sie vor der Sprachdatei ankam (langsame Leitung: der Normalfall in Afrika).
+- **Zweiter Fund:** Jede Neuzeichnung holte die Anzeigen erneut — der Server zählt jede Auslieferung als
+  Einblendung; beim ersten Start mit fremder Browser-Sprache wurden Anzeigen bis zu doppelt gezählt (Werbekunden-
+  Statistik und Abrechnung).
+- **Behoben:** `seitenleisteZeichnen()` beim Start und nach jedem Sprachwechsel; Anzeigen-Merker je Konto und Platz
+  (60 s, merkt schon die laufende Anfrage) — Neuzeichnen = keine neue Einblendung; Ausblenden/Melden leert ihn.
+  Browser-Audit jetzt deterministisch (Sprachdatei absichtlich 1,5 s verzögert, ALLE Karten geprüft): mit altem
+  Code rot, mit neuem grün; 2 Anfragen statt bis zu 4.
+- **Außerdem in diesem Durchlauf:** Benachrichtigungs-Filter (Eintrag oben).

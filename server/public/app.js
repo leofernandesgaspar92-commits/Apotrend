@@ -171,9 +171,17 @@ function spracheLaden(l) {
   return _sprachLaden[l];
 }
 // Nach dem Nachladen einer Sprache die aktuelle Ansicht neu zeichnen.
+// Rechte Spalte (Laptop/Desktop). Eigene Funktion, weil sie auch nach einem Sprachwechsel neu
+// gezeichnet werden muss: Bis 11/2026 wurde nur der Hauptbereich neu gezeichnet — bei langsamer
+// Leitung blieb die Anzeige rechts (und der Schnellzugriff) in der Sprache des Browsers stehen.
+function seitenleisteZeichnen() {
+  renderQuickRail();    // Schnellzugriff-Rail rechts (nur auf Laptop/Desktop sichtbar)
+  { const sp = document.getElementById('anzeigeSeite'); if (sp) { sp.innerHTML = ''; zeigeAnzeige('seite', sp); } }
+  renderAdSlot();       // Anzeigen-Fläche rechts unter dem Schnellzugriff (Monetarisierung)
+}
 function neuZeichnen() {
   applyI18n(); applyTheme(); applyFontScale();
-  if (me) { updateViewContext(); loadTab(); }
+  if (me) { updateViewContext(); seitenleisteZeichnen(); loadTab(); }
   else if (document.querySelector('[data-laenderwahl]')) countryScreen();
   else authScreen();
 }
@@ -1685,9 +1693,7 @@ async function mainScreen() {
   applyTheme();         // Theme-Label (Hell/Dunkel) in aktueller Sprache
   initCountrySwitcher(); // Länder-/Sprach-Umschalter in der Kopfzeile aktivieren
   startNewsRail();      // News-Livestream links starten (nur auf breiten Bildschirmen sichtbar)
-  renderQuickRail();    // Schnellzugriff-Rail rechts (nur auf Laptop/Desktop sichtbar)
-  { const sp = document.getElementById('anzeigeSeite'); if (sp) { sp.innerHTML = ''; zeigeAnzeige('seite', sp); } } // rechte Spalte (Desktop)
-  renderAdSlot();       // Anzeigen-Fläche rechts unter dem Schnellzugriff (Monetarisierung)
+  seitenleisteZeichnen(); // rechte Spalte: Schnellzugriff, Anzeige, Werbefläche
   setHeaderHeightVar(); // Kopfhöhe für die klebrige mobile Reiter-Leiste
   loadTab();
   ausgangSenden();      // ohne Netz gespeicherte Meldungen nachsenden (Ausgang, s. u.)
@@ -5211,22 +5217,33 @@ function anzeigeKarte(a) {
   const toggle = (knopf, ziel2) => { const auf = ziel2.hidden; ziel2.hidden = !auf; knopf.setAttribute('aria-expanded', String(auf)); };
   karte.querySelector('[data-anzwarum]').onclick = (e) => toggle(e.currentTarget, karte.querySelector('[data-anzwarumtext]'));
   const pf = karte.querySelector('[data-anzpfl]'); if (pf) pf.onclick = () => toggle(pf, karte.querySelector('[data-anzpfltext]'));
-  karte.querySelector('[data-anzweg]').onclick = async () => { try { await api('POST', `/api/anzeigen/${a.id}/ausblenden`); karte.replaceWith(el(`<div class="muted anz-weg">${esc(t('anz_ausgeblendet'))}</div>`)); } catch (e) { alert(e.message); } };
+  karte.querySelector('[data-anzweg]').onclick = async () => { try { await api('POST', `/api/anzeigen/${a.id}/ausblenden`); ANZEIGE_MERKER.clear(); karte.replaceWith(el(`<div class="muted anz-weg">${esc(t('anz_ausgeblendet'))}</div>`)); } catch (e) { alert(e.message); } };
   karte.querySelector('[data-anzmelden]').onclick = async () => {
     const grund = prompt(t('anz_melden_grund')); if (grund === null) return;
-    try { await api('POST', `/api/anzeigen/${a.id}/melden`, { grund }); karte.replaceWith(el(`<div class="muted anz-weg">${esc(t('anz_gemeldet'))}</div>`)); } catch (e) { alert(e.message); }
+    try { await api('POST', `/api/anzeigen/${a.id}/melden`, { grund }); ANZEIGE_MERKER.clear(); karte.replaceWith(el(`<div class="muted anz-weg">${esc(t('anz_gemeldet'))}</div>`)); } catch (e) { alert(e.message); }
   };
   return karte;
 }
 // Nur relative Klick-Adressen unseres Servers (die Zielseite liegt dahinter).
 const sichererLinkRel = (u) => (/^\/api\/anzeigen\/[a-z0-9]+\/klick\?z=/.test(String(u || '')) ? String(u) : null);
 
+const ANZEIGE_MERKER = new Map(); // `${konto}|${platz}` -> { at, p (Anfrage) }
 /** Anzeige für einen Platz holen und an `ziel` hängen (oder vor `vor` einsetzen). */
 async function zeigeAnzeige(platz, ziel, vor = null) {
   if (!featureAn('anzeigen') || !ziel) return;
   const halter = el('<div data-anzplatz></div>');
   if (vor) ziel.insertBefore(halter, vor); else ziel.appendChild(halter);
-  let d; try { d = await api('GET', '/api/anzeigen/platz/' + platz); } catch { halter.remove(); return; }
+  // Neu zeichnen (Sprachwechsel, Rückkehr zur Startseite) ist keine neue Einblendung: Der Server zählt
+  // jede Auslieferung — ohne Merker wurden Anzeigen beim ersten Start bis zu doppelt gezählt (11/2026).
+  // Gemerkt wird schon die LAUFENDE Anfrage — sonst fragen zwei gleichzeitige Zeichnungen doppelt.
+  const merk = ((me && me.id) || '') + '|' + platz;
+  let eintrag = ANZEIGE_MERKER.get(merk);
+  if (!eintrag || Date.now() - eintrag.at >= 60000) {
+    eintrag = { at: Date.now(), p: api('GET', '/api/anzeigen/platz/' + platz) };
+    ANZEIGE_MERKER.set(merk, eintrag);
+    eintrag.p.catch(() => { if (ANZEIGE_MERKER.get(merk) === eintrag) ANZEIGE_MERKER.delete(merk); });
+  }
+  let d; try { d = await eintrag.p; } catch { halter.remove(); return; }
   if (!d || !d.anzeige || !halter.isConnected) { halter.remove(); return; }
   halter.replaceWith(anzeigeKarte(d.anzeige));
 }
@@ -10590,7 +10607,16 @@ function b2bLabel(type, label) {
   if (type === 'medint_neu') return s.replace(/ ·$/, '');
   return s;
 }
-const NOTIF_PROCUREMENT = new Set(['shortage_home','shortage_ended','shortage_abroad','shortage_bestaetigt','watch_alert','shortage_confirm','watch_offer','exchange_offer','exchange_want','signal_alert']);
+// Filter „Beschaffung" / „Sozial". Bis 11/2026 eine feste Liste älterer Arten — alles andere fiel unter
+// „Sozial" (Proforma-Antwort, neue Zulassung, Frühwarnung, Widerspruch, Preisalarm, sogar Zahlungen).
+// Jetzt eine Regel: Beschaffung nach Vorsilbe/Liste, Sozial ausdrücklich, Rest = Konto (nur unter „Alle").
+const NOTIF_SOZIAL = new Set(['follow','einladung','comment','reaction','mention','repost','poll_vote','answer_accepted','endorsement','recommendation','dm','live_start','promo_like','promo_comment']);
+function notifGruppe(type) {
+  const t = String(type || '');
+  if (/^(shortage_|watch_|exchange_|sourcing_)/.test(t) || ['price_alert','signal_alert','medint_neu','ausbruch_signal','meldung_pruefen'].includes(t)) return 'beschaffung';
+  if (NOTIF_SOZIAL.has(t)) return 'sozial';
+  return 'konto';
+}
 let notifFilter = 'all'; // 'all' | 'procurement' | 'social'
 let notifUnreadOnly = false; // Zusatzfilter: nur ungelesene zeigen
 async function showNotifications() {
@@ -10599,8 +10625,9 @@ async function showNotifications() {
   const verb = (ty) => t('nv_'+ty) !== 'nv_'+ty ? t('nv_'+ty) : ty;
   const icons = { follow:'👥', comment:'💬', reaction:'👍', mention:'@', dm:'✉️', poll_vote:'📊', repost:'🔁', exchange_offer:'🔄', exchange_want:'🔄', verified:'✔', watch_alert:'⭐', shortage_home:'🔴', shortage_ended:'✅', shortage_confirm:'✅', answer_accepted:'🏆', watch_offer:'📦', endorsement:'👏', recommendation:'💬', price_alert:'🔔', appt_request:'📹', appt_confirmed:'✅', appt_declined:'🚫', appt_cancelled:'🗑️', promo_like:'❤️', promo_comment:'💬', live_start:'🔴', task_assigned:'✅', task_done:'🏁', signal_alert:'⚠️', shortage_abroad:'🌍', shortage_bestaetigt:'🤝', shortage_noch_aktuell:'⏰', shortage_widerspruch:'✋', sourcing_anfrage:'📦', sourcing_antwort:'📦', medint_neu:'🧪', ausbruch_signal:'🌍', einladung:'👥', shortage_entfernt:'🛡️', meldung_pruefen:'🛡️', premium_ablauf:'⏳', payment_review:'💰', payment_confirmed:'✅', payment_rejected:'⚠️', verify_rejected:'⚠️' };
   app.innerHTML = '';
-  const procCount = d.notifications.filter(n => NOTIF_PROCUREMENT.has(n.type)).length;
-  const showFilter = d.notifications.length >= 5 && procCount > 0 && procCount < d.notifications.length;
+  const procCount = d.notifications.filter(n => notifGruppe(n.type) === 'beschaffung').length;
+  const sozCount = d.notifications.filter(n => notifGruppe(n.type) === 'sozial').length;
+  const showFilter = d.notifications.length >= 5 && procCount > 0 && sozCount > 0; // beide Filter zeigen etwas
   const unreadN = d.notifications.filter(n => !n.read).length;
   const showUnreadToggle = unreadN > 0 && d.notifications.some(n => n.read); // nur sinnvoll bei Mix aus gelesen/ungelesen
   if (!showUnreadToggle) notifUnreadOnly = false;
@@ -10618,7 +10645,7 @@ async function showNotifications() {
   head.after(pushKarte()); // Sofort-Alarm aufs Handy: Einschalten, Test, Ausschalten
   const list = head.querySelector('#notiflist');
   if (!showFilter) notifFilter = 'all';
-  const matchesCat = (n) => notifFilter === 'all' || (notifFilter === 'procurement' ? NOTIF_PROCUREMENT.has(n.type) : !NOTIF_PROCUREMENT.has(n.type));
+  const matchesCat = (n) => notifFilter === 'all' || (notifFilter === 'procurement' ? notifGruppe(n.type) === 'beschaffung' : notifGruppe(n.type) === 'sozial');
   const matchesFilter = (n) => matchesCat(n) && (!notifUnreadOnly || !n.read);
   const drawNotifs = () => {
   list.innerHTML = '';
