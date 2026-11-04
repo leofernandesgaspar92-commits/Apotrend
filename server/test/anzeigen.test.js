@@ -165,3 +165,13 @@ test('Sicherung: Kampagnen, Firmen und Ausblendungen überleben den Neustart', (
   assert.equal(b.firma('pharma').firma, 'Pharma AG');
   assert.equal(b.ausliefern('apo', 'start'), null, 'Ausblendung bleibt');
 });
+
+// Speicher (11/2026): `gesehen`/`geklickt` legten je Person, Anzeige und TAG einen Eintrag an und wurden nie
+// aufgeräumt — bei 10.000 Nutzer:innen und 3 Anzeigen rund 11 Mio. Einträge pro Jahr ohne Neustart.
+test('Einblendungs-Zähler je Tag wachsen nicht endlos (nur heute und gestern bleiben)', () => {
+  const { a, weiter } = aufbau();
+  laufende(a, { start: '2026-10-14', wochen: 4 });
+  weiter(1);
+  for (let tag = 0; tag < 10; tag++) { assert.ok(a.ausliefern('apo', 'start'), 'Tag ' + tag); weiter(1); }
+  assert.ok(a._groesse().gesehen <= 2, `nach 10 Tagen ${a._groesse().gesehen} Einträge`);
+});

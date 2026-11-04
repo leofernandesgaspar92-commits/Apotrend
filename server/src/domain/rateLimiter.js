@@ -4,6 +4,7 @@
 // Fehlversuch, `reset()` löscht nach erfolgreicher Anmeldung.
 export function createRateLimiter({ max = 5, windowMs = 15 * 60 * 1000, now = () => Date.now() } = {}) {
   const hits = new Map(); // key -> aufsteigend sortierte Zeitstempel der Fehlversuche im Fenster
+  let seitPutz = 0;
 
   const prune = (arr, t) => { const cut = t - windowMs; let i = 0; while (i < arr.length && arr[i] <= cut) i++; return i ? arr.slice(i) : arr; };
 
@@ -23,6 +24,10 @@ export function createRateLimiter({ max = 5, windowMs = 15 * 60 * 1000, now = ()
     // Einen Fehlversuch verbuchen; liefert die Anzahl im Fenster.
     fail(key) {
       const t = now();
+      // Alle 1000 Fehlversuche einmal alle Schlüssel durchgehen: Abgelaufene gingen sonst nur weg,
+      // wenn derselbe Schlüssel (z. B. dieselbe IP) erneut geprüft wurde — bis 11/2026 blieb jede
+      // einmalige Adresse für immer im Speicher.
+      if (++seitPutz >= 1000) { seitPutz = 0; for (const [k, a] of hits) { const r = prune(a, t); if (r.length) hits.set(k, r); else hits.delete(k); } }
       const arr = prune(hits.get(key) || [], t);
       arr.push(t);
       hits.set(key, arr);

@@ -4327,3 +4327,15 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   Browser-Audit jetzt deterministisch (Sprachdatei absichtlich 1,5 s verzögert, ALLE Karten geprüft): mit altem
   Code rot, mit neuem grün; 2 Anfragen statt bis zu 4.
 - **Außerdem in diesem Durchlauf:** Benachrichtigungs-Filter (Eintrag oben).
+
+### Dauerbetrieb: zwei Speicher wuchsen ohne Grenze (2026-11-04)
+- **Fund 1:** Die Anzeigen-Zähler (`gesehen`/`geklickt`) legten je Person, Anzeige und Tag einen Eintrag an und
+  räumten nie auf — rechnerisch rund 11 Mio. Einträge pro Jahr bei 10.000 Nutzer:innen und 3 Anzeigen.
+- **Fund 2:** Die Zugriffsbremse (Login, SMS, Anfragen) entfernte einen Schlüssel nur, wenn derselbe Schlüssel
+  erneut geprüft wurde — jede IP-Adresse, die einmal ein falsches Passwort probierte und nie wiederkam, blieb für
+  immer im Speicher (bei Angriffen mit wechselnden Adressen schnell Hunderttausende).
+- **Behoben:** Tagesputz für die Anzeigen-Zähler (heute und gestern bleiben — gestern für Klick-Zeichen von
+  gestern); die Zugriffsbremse geht alle 1000 Fehlversuche einmal alle Schlüssel durch, laufende Sperren bleiben.
+  Tests weisen das Wachstum vorher nach (10 Einträge nach 10 Tagen; 7000 Schlüssel nach Ablauf), 3 Gegenproben rot.
+- **Geprüft ohne Fund:** Zwischenspeicher der Wirkstoff-Prüfung (RxNorm) und der externen Quellen sind begrenzt
+  (Höchstzahl + Ablaufzeit); Tageszähler mit einem Eintrag je Tag (Aufrufe, Kanäle) bleiben klein.

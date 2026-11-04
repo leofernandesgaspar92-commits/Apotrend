@@ -44,3 +44,19 @@ test('Schlüssel sind unabhängig (verschiedene IP/E-Mail)', () => {
   assert.equal(rl.check('ip2|x').blocked, false, 'andere IP nicht betroffen');
   assert.equal(rl.check('ip1|y').blocked, false, 'andere E-Mail nicht betroffen');
 });
+
+// Speicher (11/2026): Ein Schlüssel (z. B. IP-Adresse) verschwand nur, wenn er erneut geprüft wurde. Jede
+// Adresse, die einmal ein falsches Passwort probierte und nie wiederkam, blieb für immer gespeichert.
+test('abgelaufene Schlüssel werden auch ohne erneute Prüfung aufgeräumt', () => {
+  let t = 0;
+  const rl = createRateLimiter({ max: 5, windowMs: 1000, now: () => t });
+  for (let i = 0; i < 5000; i++) rl.fail('ip-' + i);
+  assert.equal(rl._size(), 5000);
+  t += 2000; // Fenster für alle abgelaufen
+  for (let i = 0; i < 2000; i++) rl.fail('neu-' + i);
+  assert.ok(rl._size() <= 2000, `nach Ablauf noch ${rl._size()} Schlüssel (alte nicht aufgeräumt)`);
+  // Laufende Sperren bleiben unangetastet.
+  for (let i = 0; i < 5; i++) rl.fail('angreifer');
+  for (let i = 0; i < 3000; i++) rl.fail('x-' + i);
+  assert.equal(rl.check('angreifer').blocked, true);
+});

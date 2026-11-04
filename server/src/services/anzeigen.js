@@ -65,6 +65,17 @@ export function createAnzeigen({
   const geklickt = new Set();    // `${tag}|${uid}|${id}`
   const ausgeblendet = new Map(); // uid -> Set(id)
   let zaehler = 0; let rechnungsNr = 0;
+  // Tageszähler aufräumen: nur heute und gestern behalten (gestern für Klicks mit Zeichen von gestern).
+  // Bis 11/2026 wuchsen gesehen/geklickt je Person, Anzeige und Tag unbegrenzt bis zum Neustart.
+  let geputztAm = null;
+  const tagesputz = (tag) => {
+    if (geputztAm === tag) return;
+    geputztAm = tag;
+    const gestern = isoTag(Date.parse(tag + 'T00:00:00Z') - 86_400_000);
+    const bleibt = (k) => k.startsWith(tag + '|') || k.startsWith(gestern + '|');
+    for (const k of [...gesehen.keys()]) if (!bleibt(k)) gesehen.delete(k);
+    for (const k of [...geklickt]) if (!bleibt(k)) geklickt.delete(k);
+  };
 
   const melde = (o) => { try { benachrichtige(o); } catch { /* eine Glocke hält nichts auf */ } };
   const heute = () => isoTag(jetzt());
@@ -286,6 +297,7 @@ export function createAnzeigen({
       if (!prof) return null;
       const land = String(prof.country || '').toUpperCase();
       const tag = heute();
+      tagesputz(tag);
       const weg = ausgeblendet.get(uid) || new Set();
       const kandidaten = [...kampagnen.values()].filter((k) => k.platz === platz && zustand(k, tag) === 'laeuft'
         && k.user_id !== uid && k.laender.includes(land) && k.zielgruppen.includes(prof.account_type) && !weg.has(k.id)
@@ -315,6 +327,7 @@ export function createAnzeigen({
       if (!k) return null;
       const z = klickZeichen && zeichen ? klickZeichen.pruefen(zeichen, k.id) : null;
       if (z) {
+        tagesputz(heute());
         const sk = `${z.tag}|${z.uid}|${k.id}`;
         if (!geklickt.has(sk)) { geklickt.add(sk); k.stats.klick[z.tag] = (k.stats.klick[z.tag] || 0) + 1; }
       }
@@ -340,6 +353,7 @@ export function createAnzeigen({
       return { ok: true };
     },
 
+    _groesse: () => ({ gesehen: gesehen.size, geklickt: geklickt.size }),
     __dump() {
       return { zaehler, rechnungsNr, kampagnen: [...kampagnen.values()], kunden: [...kunden], ausgeblendet: [...ausgeblendet].map(([u, s]) => [u, [...s]]) };
     },
