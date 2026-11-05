@@ -107,6 +107,7 @@ test('Oberfläche: Hinweis „Sonderpreis" in drei Sprachen, nur bei Ermäßigun
   assert.match(app, /gewaehlt\.list_cents > gewaehlt\.amount_cents && gewaehlt\.preis_region/);
   assert.match(app, /ti\('pr_region_hint', \{ region: t\('cs_region_' \+ gewaehlt\.preis_region\)/);
   const i18n = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'i18n.js'), 'utf8');
-  for (const w of ['Sonderpreis für Apotheken in {region}', 'Special price for pharmacies in {region}', 'Preço especial para farmácias em {region}']) assert.ok(i18n.includes(w), w);
+  // 11/2026: „für Apotheken" gestrichen — der Regionspreis gilt für jede Kontoart (kontoart-neutral.test.js).
+  for (const w of ['Sonderpreis in {region}', 'Special price in {region}', 'Preço especial em {region}', 'Prix spécial en {region}']) assert.ok(i18n.includes(w), w);
 });
 

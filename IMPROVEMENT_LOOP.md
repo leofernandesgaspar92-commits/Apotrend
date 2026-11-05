@@ -4508,3 +4508,14 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   CI → Abidjan. Binnenländer mit mehreren üblichen Häfen (Mali, Burkina Faso) bewusst ohne Zuordnung.
 - **Tests:** `haefen-westafrika.test.js` (Lage, Zuordnung, keine Zuordnung ins Leere) rot→grün. Browser fr-SN:
   Dakar oben. DEPLOY.md ergänzt.
+
+### Rundgang als Klinik: Texte setzten eine Apotheke voraus (2026-11-05)
+- **Fund (en-NG, Kontoart „Arztpraxis / Klinik / Krankenhaus", 360 px):** „Is something short at your
+  pharmacy?" (leere Engpassliste) und „Special price for pharmacies in Africa" (Premium) — der Regionspreis gilt
+  aber für jede Kontoart. Insgesamt 7 Texte sprachen die Nutzer:in als Apotheke an (Bestätigen, Einladungstext,
+  Team-Zugang …); Deutsch war oft schon neutral („Ist bei Ihnen etwas knapp?"), die Übersetzungen machten daraus
+  „Ihre Apotheke". Ein bestehender Test schrieb sogar „Sonderpreis für Apotheken" fest.
+- **Behoben:** neutral in 5 Sprachen („bei Ihnen", „in Ihrem Betrieb", „Sonderpreis in Afrika").
+  Die Übersicht „Nutzen je Kundentyp" (Apotheke / Großhandel / Ärzt:innen) bleibt — dort ist es richtig.
+- **Tests:** `kontoart-neutral.test.js` rot→grün; `region-preis.test.js` auf die neue Formulierung umgestellt.
+  Rundgang danach: keine Apotheken-Ansprache mehr auf Start, Engpässen, Premium.
