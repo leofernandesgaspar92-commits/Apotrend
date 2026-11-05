@@ -41,7 +41,7 @@ export function startklar({ env = {}, dauerhaft = { level: 'flüchtig' }, quelle
   if (gesetzt('APOPULSE_BESTAETIGUNG_AB_STUNDEN') && !(Number(env.APOPULSE_BESTAETIGUNG_AB_STUNDEN) >= 24)) {
     punkt('schutz', 'fehlt',
       'Schutz vor Schein-Konten ist abgeschaltet',
-      'APOPULSE_BESTAETIGUNG_AB_STUNDEN ist gesetzt. Damit zählen frisch angelegte Konten sofort für „von 3 Apotheken bestätigt" — eine Person mit drei Konten könnte jede Meldung so erscheinen lassen.',
+      'APOPULSE_BESTAETIGUNG_AB_STUNDEN ist gesetzt. Damit zählen frisch angelegte Konten sofort für „von 3 Fachbetrieben bestätigt" — eine Person mit drei Konten könnte jede Meldung so erscheinen lassen.',
       'In Render beim Web-Service die Variable APOPULSE_BESTAETIGUNG_AB_STUNDEN löschen (sie ist nur für Tests gedacht) und neu deployen.');
   }
   punkt('anmeldung', gesetzt('APOPULSE_TOKEN_SECRET') ? 'ok' : 'fehlt',

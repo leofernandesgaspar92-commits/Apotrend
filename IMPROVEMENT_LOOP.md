@@ -4546,3 +4546,15 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   Feldwert `apotheken_meldung`; DEPLOY.md, OEFFENTLICHE_SEITEN.md angepasst, AFRIKA.md mit Begriffshinweis.
 - **Wächter erweitert:** `fachkreise-begriff.test.js` prüft jetzt auch die Store-Texte (mit alten Texten rot).
 - **Betreiber:** Die neuen Store-Texte müssen in der Play Console neu eingefügt werden (sobald die App dort ist).
+
+### Nachzug „aus Fachkreisen": WhatsApp-Vorschau der Startseite, Impressum, Startklar-Check (2026-11-05)
+- **Geprüft ohne Fund:** keine Anrede „Ihre Apotheke" mehr in allen Texten (5 Sprachen).
+- **Fund:** Der Kopf der Startseite — Vorschau, wenn jemand apopulse.com auf WhatsApp teilt, und Name/Beschreibung
+  im Installationsdialog — sagte in allen 5 Sprachen „Behördenlisten und Meldungen aus Apotheken … für Apotheken,
+  Großhandel und Einkauf". Das Impressum („Grundlegende Richtung", in Österreich Pflichtangabe) nannte als Quelle
+  „Meldung aus Apotheken"; der Startklar-Check „von 3 Apotheken bestätigt".
+- **Behoben:** „Meldungen aus Fachkreisen" bzw. professionals/profissionais/professionnels/جهات مهنية;
+  Zielgruppe um Ärzt:innen und Kliniken ergänzt.
+- **Wächter:** `fachkreise-begriff.test.js` durchsucht jetzt ALLE Server-Dateien und öffentlichen HTML-Seiten
+  (Kommentare ausgenommen) statt einer festen Liste — er fand dabei sofort den Startklar-Check. Mit altem
+  Startseiten-Kopf rot.

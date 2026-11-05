@@ -4,7 +4,8 @@
 // (Owner-Entscheidung 11/2026: „aus Fachkreisen").
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import vm from 'node:vm';
 import { pushNachricht } from '../src/services/webPush.js';
 
@@ -34,7 +35,8 @@ test('Push, öffentliche Seiten, Teilen-Vorschau: „aus Fachkreisen"', () => {
     const b = pushNachricht({ type: 'shortage_bestaetigt', label: 'Oxytocin · UG · 3' }, { sprache });
     assert.doesNotMatch(b.text, QUELLE_APO[sprache], b.text);
   }
-  for (const f of ['../src/http/teilseite.js', '../src/services/oeffentlicheSeiten.js']) {
+  // Startseiten-Kopf (WhatsApp-Vorschau von apopulse.com, Installationsdialog) — 11/2026 zunächst übersehen.
+  for (const f of ['../src/http/teilseite.js', '../src/services/oeffentlicheSeiten.js', '../src/http/startseiteKopf.js', '../src/http/impressum.js']) {
     const zeilen = readFileSync(new URL(f, import.meta.url), 'utf8').split('\n').filter((z) => !/^\s*\/\//.test(z));
     for (const [l, rx] of Object.entries(QUELLE_APO)) {
       const treffer = zeilen.filter((z) => rx.test(z));
@@ -50,4 +52,23 @@ test('Play-Store-Texte (alle Sprachen) nennen Meldungen nicht „aus Apotheken"'
     const treffer = store.split('\n').filter((z) => rx.test(z));
     assert.deepEqual(treffer, [], `store-listing.md (${l})`);
   }
+});
+
+// Nicht nur bekannte Dateien: ALLE Server-Dateien und öffentlichen HTML-Seiten (Kommentare ausgenommen).
+// Anlass 11/2026: Startseiten-Kopf (WhatsApp-Vorschau) und Impressum wurden beim ersten Durchgang übersehen.
+test('Wächter über den ganzen Server und alle öffentlichen HTML-Seiten', () => {
+  const wurzel = new URL('..', import.meta.url).pathname;
+  const dateien = [];
+  (function lauf(d) { for (const f of readdirSync(d)) { const p = join(d, f); if (statSync(p).isDirectory()) lauf(p); else if (p.endsWith('.js')) dateien.push(p); } })(join(wurzel, 'src'));
+  for (const f of readdirSync(join(wurzel, 'public'))) if (f.endsWith('.html')) dateien.push(join(wurzel, 'public', f));
+  assert.ok(dateien.length > 50, 'Dateisuche kaputt');
+  const treffer = [];
+  for (const f of dateien) {
+    readFileSync(f, 'utf8').split('\n').forEach((z, i) => {
+      if (/^\s*(\/\/|\*|\/\*)/.test(z) || /apotheken_meldung/.test(z)) return;
+      const ohneKommentar = z.replace(/\s\/\/ .*$/, '');
+      for (const [l, rx] of Object.entries(QUELLE_APO)) if (rx.test(ohneKommentar)) treffer.push(`${f.slice(wurzel.length)}:${i + 1} (${l})`);
+    });
+  }
+  assert.deepEqual(treffer, []);
 });

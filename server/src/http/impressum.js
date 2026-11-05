@@ -55,7 +55,7 @@ const TEXT = {
     betreiber: 'Betreiber und Medieninhaber', gruender: 'Gründer', anschrift: 'Anschrift', email: 'E-Mail', uid: 'UID-Nummer',
     fehlt: '[noch einzutragen]',
     gegenstand: 'Unternehmensgegenstand', gegenstand_t: 'Betrieb einer Informationsplattform zu Lieferengpässen bei Arzneimitteln für Apotheken, Ärzt:innen, Großhandel und Logistik.',
-    richtung: 'Grundlegende Richtung', richtung_t: 'Information der Fachkreise über Lieferengpässe — jede Angabe mit Quelle (Behörde oder Meldung aus Apotheken, als solche gekennzeichnet). Keine Therapie- oder Austauschempfehlung.',
+    richtung: 'Grundlegende Richtung', richtung_t: 'Information der Fachkreise über Lieferengpässe — jede Angabe mit Quelle (Behörde oder Meldung aus Fachkreisen, als solche gekennzeichnet). Keine Therapie- oder Austauschempfehlung.',
     datenschutz: 'Datenschutzerklärung', zurueck: 'Zur App',
   },
   en: {
@@ -63,7 +63,7 @@ const TEXT = {
     betreiber: 'Operator and media owner', gruender: 'Founder', anschrift: 'Address', email: 'Email', uid: 'VAT number',
     fehlt: '[to be added]',
     gegenstand: 'Business purpose', gegenstand_t: 'Operation of an information platform on medicine shortages for pharmacies, doctors, wholesalers and logistics.',
-    richtung: 'Editorial line', richtung_t: 'Informing healthcare professionals about shortages — every statement with its source (authority or pharmacy report, labelled as such). No therapy or substitution advice.',
+    richtung: 'Editorial line', richtung_t: 'Informing healthcare professionals about shortages — every statement with its source (authority or professional report, labelled as such). No therapy or substitution advice.',
     datenschutz: 'Privacy policy', zurueck: 'Open the app',
   },
 };
