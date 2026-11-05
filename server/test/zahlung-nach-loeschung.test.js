@@ -93,3 +93,12 @@ test('Ehrlich gesagt: Löschtext und Datenschutzerklärung nennen die aufbewahrt
   for (const [datei, wort] of [['datenschutz.html', 'Zahlungsbelege'], ['datenschutz-en.html', 'payment records'], ['datenschutz-pt.html', 'registos de pagamento'], ['datenschutz-fr.html', 'justificatifs de paiement'], ['datenschutz-ar.html', 'سجلات الدفع']])
     assert.ok(readFileSync(new URL('../public/' + datei, import.meta.url), 'utf8').includes(wort), datei);
 });
+
+// Fund 11/2026: „{d}" im Wartehinweis ist der Zeitpunkt der Meldung. Arabisch hieß es „Ihre Zahlung IN HÖHE VON
+// {Datum}", Englisch/Französisch/Portugiesisch lasen sich ebenso als Betrag („payment of 5 Nov").
+test('Wartehinweis: {d} ist ein Zeitpunkt, kein Betrag — in allen Sprachen', async () => {
+  const { readFileSync } = await import('node:fs');
+  const t = (readFileSync(new URL('../public/i18n.js', import.meta.url), 'utf8').match(/pr_review_t:'[^']*'/g) || []);
+  assert.equal(t.length, 5);
+  assert.ok(!t.some((x) => /البالغة|payment of \{d\}|paiement de \{d\}|pagamento de \{d\}/.test(x)), t.join('\n'));
+});

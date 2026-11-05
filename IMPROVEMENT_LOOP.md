@@ -4477,3 +4477,11 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   Buchungsbeleg; ob sie nach der Löschung pseudonymisiert werden soll, gehört zur rechtlichen Prüfung (Punkt 5).
 - **Tests:** `zahlung-nach-loeschung.test.js` (6 Fälle inkl. Neustart aus der Sicherung) — vorher 2 rot;
   Gegenproben (Sperre ohne gelöschte Belege; abgelehnte bleiben stehen) rot.
+
+### Krypto: Schreibvarianten der Transaktions-ID geprüft; Wartehinweis-Datum nicht mehr als Betrag (2026-11-05)
+- **Geprüft ohne Fund:** „Jede Transaktion nur einmal" lässt sich nicht mit Schreibvarianten umgehen —
+  Großbuchstaben, Leerzeichen, fehlendes oder großes „0X" werden für Bitcoin, Ethereum und Tron (USDT) auf
+  dieselbe Form gebracht und abgewiesen; Solana (Base58) unterscheidet Groß/Klein zu Recht.
+- **Fund:** Im Wartehinweis „Ihre Zahlung vom {d} wird geprüft" ist {d} der Zeitpunkt der Meldung. Arabisch stand
+  „دفعتك البالغة {d}" — „Ihre Zahlung IN HÖHE VON {Datum}"; Englisch/Französisch/Portugiesisch lasen sich ebenso
+  als Betrag („Your payment of 5 Nov…"). **Behoben:** „gemeldet am {d}" in allen vier Sprachen. Test rot→grün.
