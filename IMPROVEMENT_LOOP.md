@@ -4449,3 +4449,15 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Wächter:** `konto-loeschen-vollstaendig.test.js` ordnet jeden Speicher, in dem die Konto-ID steht, einem
   Auskunfts-Abschnitt zu — ein KÜNFTIGER Speicher ohne Abschnitt lässt den Test scheitern (wie schon bei der Löschung).
   Gegenproben (Handys/Rechnungsangaben weg, Passwort-Hash drin) rot.
+
+### Downloads auf dem iPhone absichern (Datenauskunft, Wiederherstellungscodes, CSV) (2026-11-05)
+- **Fund (Code-Prüfung, nicht nachgestellt):** Alle vier Download-Stellen gaben die Blob-Adresse gleich nach
+  `click()` frei. Safari (iPhone) kann den Download dann abbrechen — bekanntes WebKit-Verhalten, weshalb
+  FileSaver.js 40 s wartet. Hier steht nur Chromium zur Verfügung; der Abbruch selbst ist daher NICHT
+  nachgestellt, sondern eine Härtung nach bekanntem Muster. Am schwersten wöge ein stiller Fehlschlag bei den
+  Wiederherstellungscodes (Aussperren bei verlorenem zweiten Faktor).
+- **Behoben:** eine Funktion `dateiSpeichern(name, blob)`: Link kurz ins Dokument, klicken, entfernen; Freigabe
+  nach 40 s. Alle vier Stellen nutzen sie.
+- **Tests:** `download-iphone.test.js` (eine einzige Freigabe-Stelle, verzögert; kein eigener Download-Link
+  außerhalb) — mit altem Code rot. Browser (Chromium): Datenauskunft wird heruntergeladen (26 Abschnitte), kein
+  Link bleibt im Dokument.

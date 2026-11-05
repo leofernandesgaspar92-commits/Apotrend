@@ -467,6 +467,16 @@ const api = async (method, path, body) => {
   }
   return data;
 };
+// Datei herunterladen (Datenauskunft, Wiederherstellungscodes, CSV). Der Link hängt kurz im Dokument und die
+// Blob-Adresse bleibt 40 s gültig: Safari (iPhone) bricht den Download ab, wenn sie gleich nach click() freigegeben
+// wird — bis 11/2026 an vier Stellen so, u. a. bei den Wiederherstellungscodes. Gleiche Frist wie FileSaver.js.
+function dateiSpeichern(name, blob) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.rel = 'noopener'; a.style.display = 'none';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 40000);
+}
 const el = (h) => { const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.childElementCount===1 ? t.content.firstElementChild : t.content; };
 const esc = (s) => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 // Website-Link lesbar kürzen: ohne Protokoll und ohne trailing slash (z.B. „apopulse.at").
@@ -1094,8 +1104,7 @@ function rcKarte() {
       <button class="small" data-rcok>${esc(t('rc_card_ok'))}</button></div></details></div>`);
   k.querySelector('[data-rccopy]').onclick = async (e) => { try { await navigator.clipboard.writeText(text); e.target.textContent = t('rc_copied'); } catch { /* Download bleibt */ } };
   k.querySelector('[data-rcdl]').onclick = () => {
-    const url = URL.createObjectURL(new Blob([text + '\n'], { type: 'text/plain' }));
-    const a = document.createElement('a'); a.href = url; a.download = 'apopulse-wiederherstellungscodes.txt'; a.click(); URL.revokeObjectURL(url);
+    dateiSpeichern('apopulse-wiederherstellungscodes.txt', new Blob([text + '\n'], { type: 'text/plain' }));
   };
   k.querySelector('[data-rcok]').onclick = () => { try { sessionStorage.removeItem('apo_rc_neu'); } catch { /* egal */ } k.remove(); };
   return k;
@@ -1125,11 +1134,7 @@ function recoveryCodesScreen(codes, onDone) {
     catch { /* Clipboard nicht verfügbar — Download bleibt als Fallback */ }
   };
   card.querySelector('#rc_dl').onclick = () => {
-    const blob = new Blob([text + '\n'], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url; link.download = 'apopulse-wiederherstellungscodes.txt'; link.click();
-    URL.revokeObjectURL(url);
+    dateiSpeichern('apopulse-wiederherstellungscodes.txt', new Blob([text + '\n'], { type: 'text/plain' }));
   };
   card.querySelector('#rc_done').onclick = () => { if (typeof onDone === 'function') onDone(); };
 }
@@ -4841,11 +4846,7 @@ function downloadCsv(baseName, header, rows) {
   const entschaerft = (s) => (/^[=+@\t\r]/.test(s) || /^-[^\d]/.test(s) ? "'" + s : s);
   const cell = (v) => { const s = entschaerft(String(v ?? '')); return needsQuote.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   const csv = '﻿' + [header, ...rows].map(r => r.map(cell).join(sep)).join('\r\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = baseName + '-' + new Date().toISOString().slice(0, 10) + '.csv';
-  a.click(); URL.revokeObjectURL(url);
+  dateiSpeichern(baseName + '-' + new Date().toISOString().slice(0, 10) + '.csv', new Blob([csv], { type: 'text/csv;charset=utf-8' }));
 }
 
 // „seit heute" / „seit 1 Tag" / „seit 12 Tagen" — statt „seit 0 Tagen".
@@ -9097,11 +9098,7 @@ async function openProfile(handle) {
       dcard.querySelector('#dl_export').onclick = async () => {
         try {
           const data = await api('GET','/api/me/export');
-          const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url; link.download = 'apopulse-meine-daten.json'; link.click();
-          URL.revokeObjectURL(url);
+          dateiSpeichern('apopulse-meine-daten.json', new Blob([JSON.stringify(data, null, 2)], { type:'application/json' }));
         } catch(e){ alert(e.message); }
       };
       feed.appendChild(dcard);
