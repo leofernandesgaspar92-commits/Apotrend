@@ -19,6 +19,9 @@ export const HAEFEN = [
   { id: 'rotterdam', name: 'Rotterdam', land: 'NL', lat: 51.950, lon: 4.140 },
   { id: 'tema', name: 'Tema', land: 'GH', lat: 5.630, lon: 0.017 },
   { id: 'lagos', name: 'Lagos (Apapa)', land: 'NG', lat: 6.445, lon: 3.365 },
+  // Frankophones Westafrika (11/2026): Port Autonome de Dakar, Port Autonome d’Abidjan.
+  { id: 'dakar', name: 'Dakar', land: 'SN', lat: 14.680, lon: -17.420 },
+  { id: 'abidjan', name: 'Abidjan', land: 'CI', lat: 5.285, lon: -4.010 },
   { id: 'mombasa', name: 'Mombasa', land: 'KE', lat: -4.060, lon: 39.650 },
   { id: 'durban', name: 'Durban', land: 'ZA', lat: -29.870, lon: 31.030 },
 ];

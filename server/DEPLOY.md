@@ -245,7 +245,7 @@ Vier Bereiche für Fachkreise (nicht für Privatkonten), auf der Startseite unte
   Umrechnung über die vorhandenen Kurse (EZB/Frankfurter vor open.er-api), Quelle wird genannt.
   Fehlt ein Kurs, sagt der Rechner das.
 - Ankunft = heute + Transitzeit laut Spediteur. Für Kenia/Uganda (Mombasa), Ghana (Tema),
-  Nigeria (Lagos), Südafrika (Durban) u. a. kommen echte Wetterwarnungen (Open-Meteo) und
+  Nigeria (Lagos), Senegal (Dakar), Côte d'Ivoire (Abidjan), Südafrika (Durban) u. a. kommen echte Wetterwarnungen (Open-Meteo) und
   wartende Schiffe (AISStream, mit Schlüssel) als **Hinweis** dazu.
 - „Angebot / Proforma-Rechnung anfordern": Die Anfrage landet im **Redaktions-Cockpit**
   (Abschnitt „Proforma-Anfragen") mit Betrieb, Kontoart, Land, Verifizierung. Dort setzt das
@@ -338,7 +338,7 @@ verfügbar". Erfunden wird nie etwas, und die Seite stürzt nie ab.
 | CoinGecko | Kurse für Krypto-Zahlung (BTC, ETH, SOL, **USDT** über Tron) | keiner | 5 min je Münze |
 | open.er-api.com → **Frankfurter** (EZB) | Wechselkurse; Frankfurter springt ein, wenn die erste Quelle ausfällt (ohne afrikanische Währungen — die bleiben auf dem letzten Stand) | keiner | 1 h |
 | World Bank Open Data (`LP.LPI.OVRL.XQ`) | Logistik-Index des eigenen Landes (1–5, mit Jahr) | keiner | 7 Tage |
-| Open-Meteo | Starkregen-/Sturm-Hinweise an Häfen (Koper, Rotterdam, Tema, Lagos, Mombasa, Durban) | keiner | 1 h je Hafen |
+| Open-Meteo | Starkregen-/Sturm-Hinweise an Häfen (Koper, Rotterdam, Tema, Lagos, Dakar, Abidjan, Mombasa, Durban) | keiner | 1 h je Hafen |
 | AISStream.io | Schiffe im Hafengebiet, davon vor Anker (wartend) | **`AISSTREAM_API_KEY`** | live, 2 h Fenster |
 
 **`AISSTREAM_API_KEY` (optional):** kostenlos auf <https://aisstream.io> (mit GitHub anmelden →

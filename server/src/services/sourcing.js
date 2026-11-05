@@ -22,7 +22,7 @@ import { AppError } from '../domain/errors.js';
 /** Zielländer, deren Zollwert auf FOB beruht (Transaktionswert ohne internationale Fracht). */
 export const FOB_LAENDER = new Set(['US', 'CA', 'AU', 'NZ']);
 /** Seehafen, über den ein Land überwiegend beliefert wird (nur wo eindeutig; HAEFEN in extern/wetter.js). */
-export const HAFEN_FUER_LAND = { KE: 'mombasa', UG: 'mombasa', GH: 'tema', NG: 'lagos', ZA: 'durban', LS: 'durban', SZ: 'durban', AT: 'koper', SI: 'koper', NL: 'rotterdam' };
+export const HAFEN_FUER_LAND = { KE: 'mombasa', UG: 'mombasa', GH: 'tema', NG: 'lagos', SN: 'dakar', CI: 'abidjan', ZA: 'durban', LS: 'durban', SZ: 'durban', AT: 'koper', SI: 'koper', NL: 'rotterdam' };
 export const TRANSPORTARTEN = ['see', 'luft'];
 export const INCOTERMS = ['EXW', 'FCA', 'FOB', 'CFR', 'CIF', 'CPT', 'CIP', 'DAP', 'DDP'];
 export const ANFRAGE_STATUS = ['neu', 'in_bearbeitung', 'beantwortet', 'abgelehnt']; // setzt das Handelsteam

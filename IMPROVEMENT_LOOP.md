@@ -4499,3 +4499,12 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Offen (Vorschlag):** Für frankophones Westafrika fehlen Dakar und Abidjan in der Hafenliste.
 - **Tests:** `landname-sprache.test.js` (fr/en/de/pt/ar, rot→grün). Browser: fr-SN „Afrique du Sud", afrikanische
   Häfen oben; ar-EG Startseite ohne lateinische Ländernamen.
+
+### Häfen Dakar und Abidjan (frankophones Westafrika) (2026-11-05)
+- **Fund (Vorschlag aus dem vorigen Eintrag):** Senegal und Côte d'Ivoire bekamen keinen Hafen-Hinweis
+  (Starkregen/Sturm, Schiffe vor Anker) — weder auf der Logistik-Seite noch im Kostenrechner.
+- **Ergänzt:** Port Autonome de Dakar (14,68° N 17,42° W) und Port Autonome d’Abidjan (5,29° N 4,01° W) in der
+  gemeinsamen Hafenliste (Open-Meteo-Wetter und AISStream-Rechtecke lesen dieselbe Liste); Zuordnung SN → Dakar,
+  CI → Abidjan. Binnenländer mit mehreren üblichen Häfen (Mali, Burkina Faso) bewusst ohne Zuordnung.
+- **Tests:** `haefen-westafrika.test.js` (Lage, Zuordnung, keine Zuordnung ins Leere) rot→grün. Browser fr-SN:
+  Dakar oben. DEPLOY.md ergänzt.
