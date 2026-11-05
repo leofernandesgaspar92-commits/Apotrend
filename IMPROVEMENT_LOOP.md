@@ -4519,3 +4519,18 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   Die Übersicht „Nutzen je Kundentyp" (Apotheke / Großhandel / Ärzt:innen) bleibt — dort ist es richtig.
 - **Tests:** `kontoart-neutral.test.js` rot→grün; `region-preis.test.js` auf die neue Formulierung umgestellt.
   Rundgang danach: keine Apotheken-Ansprache mehr auf Start, Engpässen, Premium.
+
+### Quelle „aus Fachkreisen" statt „aus Apotheken" (Owner-Entscheidung) (2026-11-05)
+- **Geprüft ohne Fund:** Wochenbericht (5 Sprachen, Ländernamen in Berichtssprache, keine Apotheken-Ansprache).
+- **Fund:** Melden und bestätigen dürfen alle Fachkreise (Apotheke, Klinik, Großhandel, Hersteller, Logistik,
+  Behörde) — die App nannte jede Community-Meldung aber „Meldung aus Apotheken", „3 Apotheken melden — bestätigt",
+  Push „Eine Apotheke meldet …". Eine falsche Quellenangabe bei einer sicherheitsrelevanten Aussage.
+- **Entscheidung des Owners (11/2026):** „aus Fachkreisen". Umgesetzt in 5 Sprachen: 35 App-Texte, Push-Nachrichten
+  (watch_alert, wieder verfügbar, eingeschränkt, Termin, „bestätigt", Frühwarnung), öffentliche Engpass-Seiten,
+  Teilen-Vorschau (WhatsApp), Server-Meldungen. Zählung „{n} Fachbetriebe melden"; Kategorie „Meldung aus
+  Fachkreisen" (en professional report, pt aviso de profissionais, fr signalement de professionnels, ar بلاغ مهني).
+  Unverändert, weil richtig: „Mit Apotheke" (Videosprechstunde), Rolle „Apotheker:in", Werbe-Zielgruppen,
+  API-Feldwert `apotheken_meldung` (Schnittstelle bleibt stabil; die Doku erklärt ihn jetzt).
+- **Tests:** `fachkreise-begriff.test.js` (Wächter über alle Texte, Push, öffentliche Seiten; mit alten Texten rot);
+  7 bestehende Tests auf die neue Formulierung umgestellt — ihre Schutzaussagen („nicht amtlich", nie „laut
+  Behörde", Redaktion mit Quelle) gelten unverändert. Browser: Klinik meldet → „1 Fachbetrieb meldet".

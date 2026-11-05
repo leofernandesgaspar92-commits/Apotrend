@@ -525,7 +525,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       requireProfessional(userId);
       const s = shortagesRepo.get(id);
       if (!s) throw new AppError('shortage_not_found', 'Engpass nicht gefunden.', 404);
-      if (s.provenance !== 'community' || !['kritisch', 'eingeschraenkt'].includes(s.status)) throw new AppError('shortage_not_community', 'Nur offene Meldungen aus Apotheken lassen sich auffrischen.', 409);
+      if (s.provenance !== 'community' || !['kritisch', 'eingeschraenkt'].includes(s.status)) throw new AppError('shortage_not_community', 'Nur offene Meldungen aus Fachkreisen lassen sich auffrischen.', 409);
       shortagesRepo.widerspruchEntfernen(id, userId);
       return decorate(shortagesRepo.nochAktuell(id, userId, today()), userId);
     },
@@ -596,7 +596,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       const p = social.getProfile(String(handle || ''));
       if (!p) throw new AppError('profil_unbekannt', 'Konto nicht gefunden.', 404);
       const s = shortagesRepo.get(id);
-      if (!s || s.provenance !== 'community') throw new AppError('shortage_not_community', 'Nur Apotheken-Meldungen.', 404);
+      if (!s || s.provenance !== 'community') throw new AppError('shortage_not_community', 'Nur Meldungen aus Fachkreisen.', 404);
       return decorate(shortagesRepo.unconfirm(id, p.user_id), modUserId);
     },
     // Moderation: falsche Meldung entfernen. NICHT über „wieder lieferbar" —
@@ -604,7 +604,7 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
     modEntfernen(modUserId, id) {
       requireModerator(modUserId);
       const weg = shortagesRepo.remove(id);
-      if (!weg) throw new AppError('shortage_not_community', 'Nur Apotheken-Meldungen können entfernt werden.', 404);
+      if (!weg) throw new AppError('shortage_not_community', 'Nur Meldungen aus Fachkreisen können entfernt werden.', 404);
       if (weg.reporter_user_id) social.pushNotification({ userId: weg.reporter_user_id, type: 'shortage_entfernt', actorUserId: modUserId, refType: 'wirkstoff', refId: weg.wirkstoff, label: `${weg.wirkstoff} · ${weg.country || ''}` });
       return { ok: true, id };
     },

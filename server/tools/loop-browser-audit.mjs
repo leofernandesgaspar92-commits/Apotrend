@@ -1869,7 +1869,7 @@ async function main() {
     if (!r) findings.push('Wiederkehr: keine Karte „Seit deinem letzten Besuch" trotz ungelesener Engpass-Nachrichten');
     else {
       if (!r.vorUeberblick || !r.oben) findings.push(`Wiederkehr: Karte nicht oben vor dem Überblick (${JSON.stringify({ vor: r.vorUeberblick, oben: r.oben })})`);
-      if (!/Paracetamol/.test(r.text) || !/Oxytocin/.test(r.text) || !/Apotheke/i.test(r.text) || !/amtlich/i.test(r.text)) findings.push(`Wiederkehr: Wirkstoff oder Herkunft fehlt (${r.text.replace(/\s+/g, ' ').slice(0, 160)})`);
+      if (!/Paracetamol/.test(r.text) || !/Oxytocin/.test(r.text) || !/Fachkreis/i.test(r.text) || !/amtlich/i.test(r.text)) findings.push(`Wiederkehr: Wirkstoff oder Herkunft fehlt (${r.text.replace(/\s+/g, ' ').slice(0, 160)})`);
       await page.click('[data-seitgesehen]'); await page.waitForTimeout(800);
       if (await page.locator('[data-seitbesuch]').count() || gelesen.sort().join() !== 'n1,n2') findings.push(`Wiederkehr: „Gesehen" markiert nicht genau die gezeigten Nachrichten (${gelesen.join()})`);
     }
@@ -2444,7 +2444,7 @@ async function main() {
       // Uganda steht entweder als eigene Zeile oder in der Gruppe „ohne Liste und ohne Meldung" — beides benennt die fehlende Liste.
       const ug = await page.locator('[data-elland="UG"]').evaluate((e) => ((e.closest('[data-ohne]') && e.closest('[data-ohne]').querySelector('[data-ohnetitel]').textContent) || '') + ' ' + e.innerText).catch(() => '');
       if (!/No official shortage list/.test(ug)) findings.push(`Afrika: fehlende Behördenliste nicht ehrlich benannt (${ug.slice(0, 60)})`);
-      const gleich = await page.locator('[data-jeland] .el-landzeile', { hasText: 'No official shortage list available' }).evaluateAll((els) => els.filter((e) => !/pharmac/i.test(e.innerText)).length);
+      const gleich = await page.locator('[data-jeland] .el-landzeile', { hasText: 'No official shortage list available' }).evaluateAll((els) => els.filter((e) => !/professional/i.test(e.innerText)).length);
       if (gleich) findings.push(`Afrika: ${gleich} Länder als eigene Zeile ohne jede Information (gehören in die Sammelgruppe)`);
       if ((await quer()) > 0) findings.push(`Afrika: ${await quer()} px Querscrollen in der Engpasslage`);
       await page.click('[data-elland="KE"]'); await page.waitForTimeout(1200);
@@ -2474,9 +2474,9 @@ async function main() {
     const einzeln = await page.locator('[data-vertrauen="ungeprueft"]').first().innerText().catch(() => '');
     const best = await page.locator('[data-vertrauen="bestaetigt"]').first().innerText().catch(() => '');
     if (!m1 || !/Unverified report/.test(einzeln) || !/not yet confirmed/.test(einzeln)) findings.push(`Vertrauen: einzelne Meldung ohne „Unverified report … not yet confirmed" (${einzeln})`);
-    if (!m2 || !/Community-verified/.test(best) || !/Confirmed by 3 pharmacies/.test(best)) findings.push(`Vertrauen: bestätigte Meldung ohne „Community-verified … Confirmed by 3 pharmacies" (${best})`);
+    if (!m2 || !/Community-verified/.test(best) || !/Confirmed by 3 professionals/.test(best)) findings.push(`Vertrauen: bestätigte Meldung ohne „Community-verified … Confirmed by 3 professionals" (${best})`);
     for (const f of fehler) findings.push('Vertrauen: JS-Fehler ' + f);
-    if (!findings.some((f) => f.startsWith('Vertrauen'))) console.log('✓ Vertrauen: „1 pharmacy reports — not yet confirmed" und „Confirmed by 3 pharmacies (not official)" sichtbar');
+    if (!findings.some((f) => f.startsWith('Vertrauen'))) console.log('✓ Vertrauen: „1 professional reports — not yet confirmed" und „Confirmed by 3 professionals (not official)" sichtbar');
     await ctx.close();
   }
 
@@ -2943,7 +2943,7 @@ async function main() {
         redaktion: fall({ provenance: 'community', apotheken: 1, redaktion_zweifel: 'Gemeint ist Salmeterol', vertrauen: { stufe: 'umstritten', punkte: 10 } }),
       };
     });
-    const erwartet = { offiziell: /Official.*medicines authority/, hoch: /High reliability.*verified wholesaler or manufacturer/, bestaetigt: /Community-verified.*Confirmed by 3 pharmacies.*Trust score: 65 out of 100/,
+    const erwartet = { offiziell: /Official.*medicines authority/, hoch: /High reliability.*verified wholesaler or manufacturer/, bestaetigt: /Community-verified.*Confirmed by 3 professionals.*Trust score: 65 out of 100/,
       ungeprueft: /Unverified report.*If in doubt/, unklar: /Status unclear — needs checking.*15 days/, umstritten: /Disputed.*2 professionals/, redaktion: /Disputed.*editors have doubts.*Salmeterol/ };
     for (const [k, rx] of Object.entries(erwartet)) if (!rx.test(stufen[k])) findings.push(`Datenwahrheit: Stufe „${k}" unklar beschriftet (${stufen[k]})`);
     if (/Trust score/.test(stufen.offiziell)) findings.push('Datenwahrheit: amtliche Zeile mit Vertrauenswert (gehört nur zu Meldungen)');

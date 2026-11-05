@@ -125,18 +125,18 @@ test('Teilseiten über den Server: Behördenliste, unbekanntes Land, Aufrufe im 
 test('Ohne Behördenliste (Afrika): Apotheken-Meldungen mit Vertrauensstufe, nie als „laut Behörde"', () => {
   const basis = 'https://apopulse.example';
   const einzeln = teilseite({ art: 'wirkstoff', land: 'UG', sprache: 'en', pfad: '/x', wirkstoff: 'Salbutamol', beobachtet_land: false, knapp: false, apotheken: 1 }, { basis });
-  assert.equal(meta(einzeln, 'og:title'), 'Salbutamol: 1 pharmacy in Uganda reports a shortage (not yet confirmed)');
+  assert.equal(meta(einzeln, 'og:title'), 'Salbutamol: 1 professional in Uganda reports a shortage (not yet confirmed)');
   assert.match(meta(einzeln, 'og:description'), /not official/);
   const best = teilseite({ art: 'wirkstoff', land: 'UG', sprache: 'en', pfad: '/x', wirkstoff: 'Salbutamol', beobachtet_land: false, knapp: false, apotheken: 3, bestaetigt: true }, { basis });
-  assert.equal(meta(best, 'og:title'), 'Salbutamol: reported short by 3 pharmacies in Uganda');
+  assert.equal(meta(best, 'og:title'), 'Salbutamol: reported short by 3 professionals in Uganda');
   const lage = teilseite({ art: 'lage', land: 'UG', sprache: 'en', pfad: '/x', daten: false, apotheken: 2, apotheken_bestaetigt: 1 }, { basis });
-  assert.equal(meta(lage, 'og:title'), '2 substances reported short by pharmacies in Uganda');
-  assert.equal(meta(lage, 'og:description'), '1 of them confirmed by several pharmacies · not official');
+  assert.equal(meta(lage, 'og:title'), '2 substances reported short by professionals in Uganda');
+  assert.equal(meta(lage, 'og:description'), '1 of them confirmed by several professionals · not official');
   // Vertrauensstufe (Sprint 4) auch in der Vorschau: umstritten bzw. seit 14+ Tagen unbestätigt.
   const T = (sp, v) => meta(teilseite({ art: 'wirkstoff', land: 'SN', sprache: sp, pfad: '/x', wirkstoff: 'Oxytocin', beobachtet_land: false, knapp: false, apotheken: 2, vertrauen: { stufe: v } }, { basis }), 'og:title');
-  assert.equal(T('en', 'unklar'), 'Oxytocin in Senegal: pharmacy report not confirmed for over 14 days — status unclear');
-  assert.equal(T('de', 'umstritten'), 'Oxytocin in Senegal: Apotheken-Meldung umstritten — Fachleute widersprechen');
-  assert.equal(T('fr', 'umstritten'), 'Oxytocin au Sénégal : signalement de pharmacie contesté — des professionnels s’y opposent');
+  assert.equal(T('en', 'unklar'), 'Oxytocin in Senegal: professional report not confirmed for over 14 days — status unclear');
+  assert.equal(T('de', 'umstritten'), 'Oxytocin in Senegal: Meldung aus Fachkreisen umstritten — Fachleute widersprechen');
+  assert.equal(T('fr', 'umstritten'), 'Oxytocin au Sénégal : signalement de professionnels contesté — des professionnels s’y opposent');
   for (const sp of ['pt', 'ar']) for (const v of ['umstritten', 'unklar']) assert.notEqual(T(sp, v), T(sp, 'ungeprueft'), `${sp}/${v}`);
 });
 
@@ -163,13 +163,13 @@ test('Über HTTP: geteilter Link aus Uganda — erst Hinweis, dann bestätigt', 
     const m = await (await fetch(B + '/api/shortages/report', { method: 'POST', headers: H(a), body: JSON.stringify({ wirkstoff: 'Salbutamol', bezeichnung: 'Salbutamol Inhaler', status: 'kritisch', country: 'UG' }) })).json();
     assert.ok(m.id, 'Meldung nicht angelegt');
     const t1 = await titel('/teilen/w/UG/salbutamol');
-    assert.equal(t1, 'Salbutamol: 1 pharmacy in Uganda reports a shortage (not yet confirmed)');
+    assert.equal(t1, 'Salbutamol: 1 professional in Uganda reports a shortage (not yet confirmed)');
     assert.ok(!/: short in Uganda/.test(t1), 'Apotheken-Hinweis wie amtlich formuliert');
     for (const t of [b2, c2]) await fetch(B + `/api/shortages/${m.id}/confirm`, { method: 'POST', headers: H(t) });
-    assert.equal(await titel('/teilen/w/UG/Salbutamol'), 'Salbutamol: reported short by 3 pharmacies in Uganda');
+    assert.equal(await titel('/teilen/w/UG/Salbutamol'), 'Salbutamol: reported short by 3 professionals in Uganda');
     const lage = await (await fetch(B + '/teilen/lage/UG')).text();
-    assert.equal(meta(lage, 'og:title'), '1 substance reported short by pharmacies in Uganda');
-    assert.equal(meta(lage, 'og:description'), '1 of them confirmed by several pharmacies · not official');
+    assert.equal(meta(lage, 'og:title'), '1 substance reported short by professionals in Uganda');
+    assert.equal(meta(lage, 'og:description'), '1 of them confirmed by several professionals · not official');
     // Umstritten (11/2026): Zwei Fachleute widersprechen einer Meldung — die Wirkstoff-Vorschau sagt
     // „umstritten" statt „meldet einen Engpass". Die Länder-Lage zeigt sie weiter als MELDUNG (wie die
     // Afrika-Übersicht, damit zwei Widersprüche keinen Engpass verstecken), nie als bestätigt.
@@ -179,12 +179,12 @@ test('Über HTTP: geteilter Link aus Uganda — erst Hinweis, dann bestätigt', 
       assert.equal(r.status, 200, await r.text());
     }
     const tu = await titel('/teilen/w/UG/Oxytocin');
-    assert.equal(tu, 'Oxytocin in Uganda: pharmacy report disputed — professionals object');
+    assert.equal(tu, 'Oxytocin in Uganda: professional report disputed — professionals object');
     const seiteU = await (await fetch(B + '/teilen/w/UG/Oxytocin')).text();
     assert.ok(!/Confirm Oxytocin/.test(seiteU), 'umstrittene Meldung: Knopf bittet um Bestätigung');
     const lageU = await (await fetch(B + '/teilen/lage/UG')).text();
-    assert.equal(meta(lageU, 'og:title'), '2 substances reported short by pharmacies in Uganda');
-    assert.equal(meta(lageU, 'og:description'), '1 of them confirmed by several pharmacies · not official', 'umstrittene Meldung als bestätigt gezählt');
+    assert.equal(meta(lageU, 'og:title'), '2 substances reported short by professionals in Uganda');
+    assert.equal(meta(lageU, 'og:description'), '1 of them confirmed by several professionals · not official', 'umstrittene Meldung als bestätigt gezählt');
   } finally {
     await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
   }

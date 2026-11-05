@@ -17,7 +17,7 @@ test('Push-Text: Anzahl Apotheken, Land, „nicht amtlich"', () => {
   assert.ok(PUSH_TYPEN.has('shortage_bestaetigt'));
   const m = pushNachricht({ type: 'shortage_bestaetigt', refType: 'wirkstoff', refId: 'Salbutamol', label: 'Salbutamol · UG · 3' }, { sprache: 'en', landName: () => 'Uganda' });
   assert.equal(m.titel, 'Confirmed: Salbutamol');
-  assert.equal(m.text, '3 pharmacies in Uganda report Salbutamol as short (not official).');
+  assert.equal(m.text, '3 professionals in Uganda report Salbutamol as short (not official).');
 });
 
 test('Über HTTP: Meldung -> 2 -> 3 Apotheken; Alarm genau einmal, nur im Land', { timeout: 60000 }, async () => {

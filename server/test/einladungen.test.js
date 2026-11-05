@@ -61,7 +61,7 @@ test('Über HTTP: Link mit Code → Bitte um Bestätigung → Konto zugeordnet, 
 
     // Teilseite: bittet um Bestätigung und trägt den Code in den Knopf.
     const seite = await (await fetch(`${s.B}/teilen/w/UG/Oxytocin?e=${code}`)).text();
-    assert.match(seite, /Short at your pharmacy too\? Confirm Oxytocin in ApoPulse/);
+    assert.match(seite, /Short for you too\? Confirm Oxytocin in ApoPulse/);
     assert.match(seite, new RegExp(`href="/\\?land=UG&amp;beobachten=Oxytocin&amp;bestaetigen=1&amp;e=${code}"`));
     // Unbekannter Code: kommt nicht in den Knopf.
     assert.ok(!/&amp;e=/.test(await (await fetch(`${s.B}/teilen/w/UG/Oxytocin?e=ZZZZZZZZ`)).text()));

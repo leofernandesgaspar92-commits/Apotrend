@@ -15,7 +15,7 @@ const n = (label) => ({ type: 'watch_alert', label, ref_type: 'shortage', ref_id
 
 test('Push: Text folgt dem Inhalt — knapp, eingeschränkt, wieder verfügbar, Termin', () => {
   const knapp = pushNachricht(n('Oxytocin · Kritischer Engpass (Community-Meldung)'), { sprache: 'en' });
-  assert.match(knapp.titel, /^Pharmacy report: Oxytocin$/);
+  assert.match(knapp.titel, /^Professional report: Oxytocin$/);
   const wieder = pushNachricht(n('Oxytocin · Wieder verfügbar'), { sprache: 'en' });
   assert.equal(wieder.titel, 'Available again: Oxytocin');
   assert.doesNotMatch(wieder.text, /short/, 'Entwarnung als Engpass gemeldet');
@@ -36,7 +36,7 @@ test('App: deutsche Bausteine im Label werden übersetzt (echte Funktion aus app
   const E = c.__I.en;
   const ctx = { t: (k) => E[k] || k, ti: (k, v) => (E[k] || k).replace(/\{(\w+)\}/g, (m, x) => v[x]), fmtDateDe: (d) => d.split('-').reverse().join('/') };
   vm.createContext(ctx); vm.runInContext(app.slice(start, ende) + ';globalThis.f = notifLabel;', ctx);
-  assert.equal(ctx.f('Oxytocin · Kritischer Engpass (Community-Meldung)'), 'Oxytocin · Critical shortage (pharmacy report)');
+  assert.equal(ctx.f('Oxytocin · Kritischer Engpass (Community-Meldung)'), 'Oxytocin · Critical shortage (professional report)');
   assert.equal(ctx.f('Oxytocin · Wieder verfügbar'), 'Oxytocin · Available again');
   assert.equal(ctx.f('Oxytocin · Eingeschränkt lieferbar (aktualisiert)'), 'Oxytocin · Limited availability (updated)');
   assert.equal(ctx.f('Oxytocin · Termin 2026-11-02'), 'Oxytocin · expected until 02/11/2026');

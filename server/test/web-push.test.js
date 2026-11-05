@@ -208,5 +208,5 @@ test('Push: Status von der Redaktion heißt „Redaktion … mit Quelle", nicht 
     assert.match(p.text, rx); assert.doesNotMatch(p.text, /Apotheke|nicht amtlich/, label);
   }
   for (const sp of ['en', 'pt', 'fr', 'ar']) assert.ok(pushNachricht({ type: 'watch_alert', label: 'X · Kritischer Engpass (Redaktion)' }, { sprache: sp }).titel, sp);
-  assert.match(pushNachricht({ type: 'watch_alert', label: 'X · Wieder verfügbar (Community-Meldung)' }, { sprache: 'de' }).text, /Meldung aus Apotheken/, 'Apotheken-Meldung verändert');
+  assert.match(pushNachricht({ type: 'watch_alert', label: 'X · Wieder verfügbar (Community-Meldung)' }, { sprache: 'de' }).text, /Meldung aus Fachkreisen/, 'Meldung aus Fachkreisen verändert');
 });
