@@ -4437,3 +4437,15 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Geprüft ohne Fund:** Alle 189 Fehlercodes des Servers — bis auf 4 interne Schutzprüfungen in compliance.js,
   die keine Nutzer:in erreicht — haben Texte in 5 Sprachen (abgesichert durch fehler-sprache.test.js).
 - **Tests:** push-zahlung-b2b.test.js, push-redaktion.test.js; Gegenproben rot.
+
+### Datenauskunft (DSGVO Art. 15/20): sieben gespeicherte Bereiche fehlten (2026-11-05)
+- **Fund:** Konto mit Daten in vielen Bereichen angelegt, Sicherung nach der Konto-ID durchsucht und mit
+  `/api/me/export` verglichen. Gespeichert, aber NICHT in der Auskunft: Konto-Grunddaten (E-Mail), Zahlungen (inkl.
+  Krypto-Transaktions-ID), Rechnungsangaben (Anschrift) und Rechnungen, eigene Anzeigen-Kampagnen, eingerichtete
+  Handys (Push), Einladungscode, Benachrichtigungen, Organisations-Mitgliedschaften.
+- **Behoben:** neue Abschnitte `account`, `memberships`, `payments`, `invoice_details`, `invoices`, `ad_campaigns`,
+  `push_devices` (nur Push-Dienst und Datum, keine Geräteschlüssel), `invitation` (Code wird dafür nicht neu
+  angelegt), `notifications`. Keine Geheimnisse (Passwort-Hash, 2FA-Schlüssel) in der Auskunft.
+- **Wächter:** `konto-loeschen-vollstaendig.test.js` ordnet jeden Speicher, in dem die Konto-ID steht, einem
+  Auskunfts-Abschnitt zu — ein KÜNFTIGER Speicher ohne Abschnitt lässt den Test scheitern (wie schon bei der Löschung).
+  Gegenproben (Handys/Rechnungsangaben weg, Passwort-Hash drin) rot.

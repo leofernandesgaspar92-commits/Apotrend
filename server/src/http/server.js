@@ -2223,6 +2223,18 @@ const routes = [
       outbreak_alerts_on: ausbruch.alarmAn(userId),
       weekly_report_unsubscribed: wochenbericht.istAbbestellt(userId),
       advertiser_company: anzeigen.firma(userId),
+      // Bis 11/2026 fehlten diese Bereiche, obwohl sie gespeichert sind (Wächter: konto-loeschen-vollstaendig.test.js).
+      account: (() => { const u = repo.getUserById(userId); return u ? { email: u.email, name: u.name, status: u.status, created_at: u.created_at, two_factor_on: !!u.twofa_secret } : null; })(),
+      memberships: (repo.getMembershipsForUser ? repo.getMembershipsForUser(userId) : []).map((m) => ({ organization_id: m.organization_id, role: m.role, created_at: m.created_at || null })),
+      payments: repo.listPaymentsByUser(userId).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
+        .map((z) => ({ id: z.id, product_id: z.product_id, amount_cents: z.amount_cents, currency: z.currency, method: z.method, coin: z.coin || null, network: z.network || null,
+          transaction_ref: z.provider_ref || null, status: z.status, created_at: z.created_at, claimed_at: z.claimed_at || null, paid_at: z.paid_at || null, review_note: z.review_note || null })),
+      invoice_details: rechnungen.angaben(userId),
+      invoices: rechnungen.meine(userId).rechnungen,
+      ad_campaigns: anzeigen.meine(userId),
+      push_devices: webPush.geraeteVon(userId),
+      invitation: einladungen.auskunft(userId),
+      notifications: socialRepo.listNotifications(userId).map((n) => ({ type: n.type, label: n.label || null, read: !!n.read, created_at: n.created_at })),
     };
   }],
   // Passwort ändern beendet alle Sitzungen — dieses Gerät bekommt gleich ein neues Token.

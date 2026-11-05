@@ -117,6 +117,8 @@ export function createWebPush({ schluessel = vapidSchluesselErzeugen(), subject 
       return { ok: true, geraete: this.geraete(userId) };
     },
     geraete: (userId) => [...abos.values()].filter((x) => x.user_id === userId).length,
+    /** Auskunft (DSGVO Art. 15): welcher Push-Dienst, seit wann — ohne die Geräteschlüssel. */
+    geraeteVon: (userId) => [...abos.values()].filter((x) => x.user_id === userId).map((x) => { let dienst = ''; try { dienst = new URL(x.endpoint).host; } catch { /* egal */ } return { dienst, seit: x.seit || null }; }),
     nutzerEntfernen(userId) { for (const a of [...abos.values()]) if (a.user_id === userId) abos.delete(a.endpoint); },
     /** An alle Geräte einer Person. Fehler eines Geräts halten die anderen nicht auf. */
     async senden(userId, nachricht) {

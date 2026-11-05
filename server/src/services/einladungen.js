@@ -48,6 +48,8 @@ export function createEinladungen({ uhr = () => Date.now() } = {}) {
       eingeladen.set(neuId, { von, am: new Date(uhr()).toISOString() });
       return von;
     },
+    /** Auskunft (DSGVO Art. 15): eigener Code (ohne ihn anzulegen), ob/wann eingeladen, wie viele eingeladen. */
+    auskunft(userId) { const e = eingeladen.get(userId); return { code: codeVon.get(userId) || null, eingeladen_am: e ? e.am : null, eingeladene_konten: this.anzahl(userId) }; },
     /** Wer hat dieses Konto eingeladen? (Moderation: Prüfliste der Meldungen) */
     vonWem(userId) { const e = eingeladen.get(userId); return e ? e.von : null; },
     anzahl(userId) {

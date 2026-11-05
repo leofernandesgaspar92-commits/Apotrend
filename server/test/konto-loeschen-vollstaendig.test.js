@@ -14,6 +14,7 @@ import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import crypto from 'node:crypto';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ERLAUBT = [/^rechnungen\.rechnungen\./, /^anzeigen\.kampagnen\./];
@@ -57,16 +58,46 @@ test('Konto löschen: keine Spur der Konto-ID mehr in der Sicherung (außer Rech
       ['POST', '/api/wochenbericht/einstellung', { an: false }],
       ['POST', '/api/werbung/firma', { firma: 'X Gross Ltd', strasse: 'Moi Ave 1', ort: 'Nairobi', land: 'KE', email: 'x@del.test' }],
       ['POST', '/api/watchlist', { wirkstoff: 'Metformin' }],
+      ['POST', '/api/push/abo', { abo: { endpoint: 'https://fcm.googleapis.com/fcm/send/del1', keys: { p256dh: (() => { const e = crypto.createECDH('prime256v1'); e.generateKeys(); return e.getPublicKey().toString('base64url'); })(), auth: crypto.randomBytes(16).toString('base64url') } } }],
+      ['POST', '/api/rechnungen/angaben', { firma: 'X Gross', strasse: 'Kenyatta Ave 9', plz: '00100', ort: 'Nairobi', land: 'KE', email: 'x@del.test' }],
+      ['POST', '/api/payments/crypto/start', { productId: 'premium_monthly', walletId: 'sol_phantom' }],
+      ['POST', '/api/werbung/kampagnen', { titel: 'Kühlkette Nairobi', text: 'Temperaturgeführte Lagerung für Apotheken.', link: 'https://example.com', platz: 'start', laender: ['KE'], zielgruppen: ['pharmacy'], wochen: 1, start: new Date().toISOString().slice(0, 10) }],
+      ['GET', '/api/einladung', null],
     ];
     for (const [meth, pfad, body] of schritte) { const [st, r] = await j(meth, pfad, x, body); assert.ok(st < 300, `${pfad}: ${st} ${JSON.stringify(r)}`); }
 
     // Auskunft (DSGVO Art. 15/20): der Export enthält diese Daten VOR dem Löschen.
     const [se, ex] = await j('GET', '/api/me/export', x);
-    assert.equal(se, 200);
+    assert.equal(se, 200, JSON.stringify(ex));
     assert.deepEqual(ex.watchlist.map((w) => w.wirkstoff), ['Metformin']);
     assert.deepEqual(ex.shortage_disputes.map((w) => [w.grund, w.text]), [['bei_uns_lieferbar', 'Bei uns in Nairobi lieferbar']]);
     assert.deepEqual(ex.sourcing_requests.map((a) => [a.produkt, a.notiz, a.userId]), [['Amoxicillin 500 mg', 'Bitte an Lager Mombasa', undefined]]);
     assert.deepEqual([ex.medint_subscriptions, ex.outbreak_alerts_on, ex.weekly_report_unsubscribed, ex.advertiser_company && ex.advertiser_company.strasse], [['onkologie'], false, true, 'Moi Ave 1']);
+    // Fund 11/2026: Zahlungen, Rechnungsangaben, Anzeigen, Handys, Einladungscode, Benachrichtigungen und die
+    // Konto-Grunddaten (E-Mail) standen gespeichert, aber NICHT in der Auskunft.
+    assert.equal(ex.account.email, 'xgross@del.test');
+    assert.ok(!('password_hash' in ex.account) && !('twofa_secret' in ex.account), 'Geheimnisse in der Auskunft');
+    assert.deepEqual(ex.payments.map((z) => [z.product_id, z.method]), [['premium_monthly', 'crypto_direct']]);
+    assert.equal(ex.invoice_details && ex.invoice_details.strasse, 'Kenyatta Ave 9');
+    assert.deepEqual(ex.ad_campaigns.map((k) => k.titel), ['Kühlkette Nairobi']);
+    assert.deepEqual(ex.push_devices.map((g) => g.dienst), ['fcm.googleapis.com']);
+    assert.ok(!JSON.stringify(ex.push_devices).includes('p256dh'), 'Geräteschlüssel in der Auskunft');
+    assert.match(ex.invitation.code, /^[\w-]{6,}$/);
+    assert.ok(Array.isArray(ex.notifications));
+    // Wächter: Jeder Speicher, in dem die Konto-ID steht, hat einen Abschnitt in der Auskunft.
+    await new Promise((ok) => setTimeout(ok, 700));
+    const vorher = JSON.parse(readFileSync(datei, 'utf8'));
+    const speicher = [...new Set(fundstellen(vorher, xid).map((p) => p.replace(/^\./, '').split('.').slice(0, 2).join('.').replace(/\.\d+$/, '')))];
+    const AUSKUNFT = {
+      'foundation.users': 'account', 'foundation.usersByEmail': 'account', 'foundation.payments': 'payments', 'foundation.memberships': 'account',
+      'social.profiles': 'profile', 'social.profilesByHandle': 'profile', 'social.notifications': 'notifications',
+      'shortages.watch': 'watchlist', 'shortages.shortages': 'shortage_disputes', 'sourcing': 'sourcing_requests',
+      'medintAbos.abos': 'medint_subscriptions', 'ausbruch.abbestellt': 'outbreak_alerts_on', 'wochenbericht.abbestellt': 'weekly_report_unsubscribed',
+      'anzeigen.kunden': 'advertiser_company', 'anzeigen.kampagnen': 'ad_campaigns', 'rechnungen.angaben': 'invoice_details',
+      'webPush.abos': 'push_devices', 'einladungen.codes': 'invitation',
+    };
+    const ohne = speicher.filter((k) => !AUSKUNFT[k] || !(AUSKUNFT[k] in ex));
+    assert.deepEqual(ohne, [], 'Gespeichert, aber nicht in der Auskunft (DSGVO Art. 15) — Abschnitt in /api/me/export ergänzen:\n' + ohne.join('\n'));
     const exY = (await j('GET', '/api/me/export', y))[1];
     assert.deepEqual(exY.shortage_reports.map((r) => r.wirkstoff), ['Oxytocin'], 'eigene Engpassmeldung fehlt im Export');
     assert.deepEqual(exY.shortage_disputes, [], 'fremder Widerspruch im Export');
