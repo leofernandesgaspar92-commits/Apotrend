@@ -4425,3 +4425,15 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   auch als Push (5 Sprachen, Ablehnungsgrund nur in der App), Ziel `/?werbung=1`.
 - **Tests:** `anzeigen-http.test.js` (Ende-zu-Ende: kein „Premium freigeschaltet" für Werbekunden, Ablehnung zeigt
   auf die Anzeige), `push-zahlung-b2b.test.js`. Gegenproben rot.
+
+### Angebotsanfrage: Push sagt, was passiert ist (eigener Fehler korrigiert) (2026-11-05)
+- **Fund (eigener Fehler aus dem Push-Ausbau 11/2026):** Setzte das Handelsteam eine Anfrage nur auf „In Bearbeitung",
+  kam aufs Handy „Antwort auf Ihre Angebotsanfrage — tippen, um die Antwort zu lesen", obwohl es keine Antwort gab.
+  Auch „Abgelehnt" kam als „Antwort". Dazu: Ein Präparat mit „ · " im Namen (z. B. „Paracetamol · Sirup") wurde in
+  beiden Anfrage-Pushes (Apotheke und Redaktion) zerschnitten.
+- **Behoben:** drei Fassungen je Sprache (in Bearbeitung / beantwortet / abgelehnt); Status bzw. Weg ist das LETZTE
+  Stück der Beschriftung. Redaktion: Hat der Betrieb die Anfrage inzwischen zurückgezogen, verschwindet die Karte
+  nach dem Hinweis (vorher blieb sie stehen und lud zum erneuten Antworten ein).
+- **Geprüft ohne Fund:** Alle 189 Fehlercodes des Servers — bis auf 4 interne Schutzprüfungen in compliance.js,
+  die keine Nutzer:in erreicht — haben Texte in 5 Sprachen (abgesichert durch fehler-sprache.test.js).
+- **Tests:** push-zahlung-b2b.test.js, push-redaktion.test.js; Gegenproben rot.

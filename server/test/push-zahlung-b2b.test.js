@@ -78,3 +78,25 @@ test('Anzeige freigegeben/abgelehnt/bezahlt: als Push, 5 Sprachen, öffnet „We
   assert.match(APP, /if \(params\.get\('werbung'\) === '1'\) \{ history\.replaceState\(null, '', location\.pathname\); openWerbung\(\); return; \}/);
   assert.match(APP, /else if \(n\.type === 'payment_rejected' && n\.ref_type === 'anzeige'\) \{ openWerbung\(\); \}/);
 });
+
+// Fund 11/2026 (eigener Fehler aus dem Push-Ausbau): „In Bearbeitung" und „Abgelehnt" kamen als
+// „Antwort auf Ihre Angebotsanfrage — tippen, um die Antwort zu lesen", obwohl es (noch) keine Antwort gab.
+test('Angebotsanfrage: Push sagt, was passiert ist — in Bearbeitung, beantwortet, abgelehnt', () => {
+  const p = (st, sprache = 'de', produkt = 'Amoxicillin 500 mg') => pushNachricht({ type: 'sourcing_antwort', refId: 'pf1', label: `${produkt} · ${st}` }, { sprache });
+  assert.doesNotMatch(p('in_bearbeitung').titel + p('in_bearbeitung').text, /Antwort zu lesen|^Antwort/);
+  assert.match(p('in_bearbeitung').titel, /Bearbeitung/);
+  assert.match(p('abgelehnt').titel, /abgelehnt/i);
+  assert.match(p('beantwortet').titel, /Antwort/);
+  for (const sprache of SPRACHEN) {
+    const titel = new Set(['in_bearbeitung', 'beantwortet', 'abgelehnt'].map((st) => p(st, sprache).titel));
+    assert.equal(titel.size, 3, `drei verschiedene Titel (${sprache})`);
+    assert.match(p('abgelehnt', sprache).text, /Amoxicillin 500 mg/);
+  }
+  // Präparat mit „ · " im Namen: Status ist das LETZTE Stück.
+  const m = p('beantwortet', 'de', 'Paracetamol · Sirup');
+  assert.match(m.text, /Paracetamol · Sirup/);
+});
+
+test('Redaktion: zurückgezogene Anfrage verschwindet nach dem Hinweis aus der Liste', () => {
+  assert.match(APP, /if \(e\.code === 'sourcing_zurueckgezogen' \|\| e\.code === 'sourcing_unbekannt'\) k\.remove\(\);/);
+});

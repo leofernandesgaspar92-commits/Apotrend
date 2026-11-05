@@ -26,6 +26,7 @@ test('Texte in 5 Sprachen, Betrag/Präparat/Titel genannt, öffnen die Prüflist
     assert.match(s.text, /Amoxicillin 500 mg/);
     assert.match(a.text, /Lagos Pharma Großhandel/);
   }
+  assert.match(pushNachricht({ type: 'sourcing_anfrage', label: 'Paracetamol · Sirup · IN → KE' }).text, /^Paracetamol · Sirup \(IN → KE\)/, 'Präparat mit „ · " zerlegt');
   // Mehrere offene Zahlungen ersetzen sich nicht gegenseitig auf dem Sperrbildschirm.
   assert.notEqual(pushNachricht({ type: 'payment_review', refId: 'p1', label: 'x · 1.00 EUR' }).tag, pushNachricht({ type: 'payment_review', refId: 'p2', label: 'x · 1.00 EUR' }).tag);
 });

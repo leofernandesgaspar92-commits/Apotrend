@@ -158,7 +158,9 @@ const TEXTE = {
     verify_rejected: () => ['Bestätigung abgelehnt', 'Ihr Antrag wurde abgelehnt. Grund und neuen Antrag finden Sie in ApoPulse.'],
     payment_confirmed: () => ['Zahlung bestätigt ✔', 'Ihre Zahlung ist eingegangen und freigeschaltet. Tippen zum Öffnen.'],
     payment_rejected: () => ['Zahlung nicht bestätigt', 'Ihre Zahlung konnte nicht bestätigt werden. Den Grund finden Sie in ApoPulse.'],
-    sourcing_antwort: (p) => ['Antwort auf Ihre Angebotsanfrage', `Neuer Stand zu ${p}. Tippen, um die Antwort zu lesen.`],
+    sourcing_antwort: (p, st) => st === 'in_bearbeitung' ? ['Angebotsanfrage in Bearbeitung', `${p}: Das Handelsteam holt Angebote ein. Die Antwort kommt mit einer weiteren Nachricht.`]
+      : st === 'abgelehnt' ? ['Angebotsanfrage abgelehnt', `${p}: Den Grund finden Sie in ApoPulse.`]
+      : ['Antwort auf Ihre Angebotsanfrage', `Neuer Stand zu ${p}. Tippen, um die Antwort zu lesen.`],
     ausbruch_signal: (w, r, n) => [`Frühwarnung: ${w}`, `In ${r} wird ${w} deutlich öfter als knapp gemeldet: ${n} neue Meldungen in 14 Tagen (Behörden und Apotheken). Keine Kaufempfehlung.`],
     region: { AFRICA: 'Afrika', EUROPE: 'Europa', AMERICAS: 'Amerika', OCEANIA: 'Ozeanien' },
     payment_review: (art, betrag) => ['Zahlung prüfen', `Eine Zahlung wartet auf Ihre Prüfung: ${art}, ${betrag}. Die Freischaltung wartet auf Sie.`],
@@ -185,7 +187,9 @@ const TEXTE = {
     verify_rejected: () => ['Verification rejected', 'Your request was rejected. See the reason and send a new request in ApoPulse.'],
     payment_confirmed: () => ['Payment confirmed ✔', 'Your payment was received and is now active. Tap to open.'],
     payment_rejected: () => ['Payment not confirmed', 'Your payment could not be confirmed. See the reason in ApoPulse.'],
-    sourcing_antwort: (p) => ['Reply to your quote request', `Update on ${p}. Tap to read the reply.`],
+    sourcing_antwort: (p, st) => st === 'in_bearbeitung' ? ['Quote request in progress', `${p}: the trade team is collecting offers. The reply will follow in another message.`]
+      : st === 'abgelehnt' ? ['Quote request declined', `${p}: see the reason in ApoPulse.`]
+      : ['Reply to your quote request', `Update on ${p}. Tap to read the reply.`],
     ausbruch_signal: (w, r, n) => [`Early warning: ${w}`, `${w} is reported as short much more often in ${r}: ${n} new reports in 14 days (authorities and pharmacies). Not a purchase recommendation.`],
     region: { AFRICA: 'Africa', EUROPE: 'Europe', AMERICAS: 'the Americas', OCEANIA: 'Oceania' },
     payment_review: (art, betrag) => ['Payment to review', `A payment is waiting for your review: ${art}, ${betrag}. Activation is waiting for you.`],
@@ -212,7 +216,9 @@ const TEXTE = {
     verify_rejected: () => ['Verificação recusada', 'O seu pedido foi recusado. Veja o motivo e envie um novo pedido no ApoPulse.'],
     payment_confirmed: () => ['Pagamento confirmado ✔', 'O seu pagamento foi recebido e está ativo. Toque para abrir.'],
     payment_rejected: () => ['Pagamento não confirmado', 'Não foi possível confirmar o seu pagamento. Veja o motivo no ApoPulse.'],
-    sourcing_antwort: (p) => ['Resposta ao seu pedido de cotação', `Novidades sobre ${p}. Toque para ler a resposta.`],
+    sourcing_antwort: (p, st) => st === 'in_bearbeitung' ? ['Pedido de cotação em tratamento', `${p}: a equipa comercial está a recolher ofertas. A resposta segue noutra mensagem.`]
+      : st === 'abgelehnt' ? ['Pedido de cotação recusado', `${p}: veja o motivo no ApoPulse.`]
+      : ['Resposta ao seu pedido de cotação', `Novidades sobre ${p}. Toque para ler a resposta.`],
     ausbruch_signal: (w, r, n) => [`Alerta precoce: ${w}`, `${w} é comunicado em rutura com muito mais frequência em ${r}: ${n} novas comunicações em 14 dias (autoridades e farmácias). Não é uma recomendação de compra.`],
     region: { AFRICA: 'África', EUROPE: 'Europa', AMERICAS: 'Américas', OCEANIA: 'Oceânia' },
     payment_review: (art, betrag) => ['Pagamento a verificar', `Um pagamento aguarda a sua verificação: ${art}, ${betrag}. A ativação aguarda por si.`],
@@ -239,7 +245,9 @@ const TEXTE = {
     verify_rejected: () => ['Vérification refusée', 'Votre demande a été refusée. Consultez le motif et envoyez une nouvelle demande dans ApoPulse.'],
     payment_confirmed: () => ['Paiement confirmé ✔', 'Votre paiement a été reçu et est maintenant actif. Touchez pour ouvrir.'],
     payment_rejected: () => ['Paiement non confirmé', 'Votre paiement n’a pas pu être confirmé. Le motif se trouve dans ApoPulse.'],
-    sourcing_antwort: (p) => ['Réponse à votre demande de devis', `Du nouveau pour ${p}. Touchez pour lire la réponse.`],
+    sourcing_antwort: (p, st) => st === 'in_bearbeitung' ? ['Demande de devis en cours', `${p} : l’équipe commerciale recueille des offres. La réponse suivra dans un autre message.`]
+      : st === 'abgelehnt' ? ['Demande de devis refusée', `${p} : le motif se trouve dans ApoPulse.`]
+      : ['Réponse à votre demande de devis', `Du nouveau pour ${p}. Touchez pour lire la réponse.`],
     ausbruch_signal: (w, r, n) => [`Alerte précoce : ${w}`, `Région ${r} : ${w} est signalé en pénurie bien plus souvent — ${n} nouveaux signalements en 14 jours (autorités et pharmacies). Pas une recommandation d’achat.`],
     region: { AFRICA: 'Afrique', EUROPE: 'Europe', AMERICAS: 'Amériques', OCEANIA: 'Océanie' },
     payment_review: (art, betrag) => ['Paiement à vérifier', `Un paiement attend votre vérification : ${art}, ${betrag}. L’activation attend votre décision.`],
@@ -266,7 +274,9 @@ const TEXTE = {
     verify_rejected: () => ['تم رفض التوثيق', 'تم رفض طلبك. اطّلع على السبب وأرسل طلبًا جديدًا في ApoPulse.'],
     payment_confirmed: () => ['تم تأكيد الدفع ✔', 'تم استلام دفعتك وأصبحت مفعّلة. اضغط للفتح.'],
     payment_rejected: () => ['لم يتم تأكيد الدفع', 'تعذّر تأكيد دفعتك. ستجد السبب في ApoPulse.'],
-    sourcing_antwort: (p) => ['رد على طلب عرض السعر', `تحديث بشأن ${p}. اضغط لقراءة الرد.`],
+    sourcing_antwort: (p, st) => st === 'in_bearbeitung' ? ['طلب عرض السعر قيد المعالجة', `${p}: يجمع فريق التجارة العروض. سيصلك الرد في رسالة أخرى.`]
+      : st === 'abgelehnt' ? ['تم رفض طلب عرض السعر', `${p}: ستجد السبب في ApoPulse.`]
+      : ['رد على طلب عرض السعر', `تحديث بشأن ${p}. اضغط لقراءة الرد.`],
     ausbruch_signal: (w, r, n) => [`إنذار مبكر: ${w}`, `يُبلَّغ عن نقص ${w} في ${r} أكثر بكثير: ${n} بلاغات جديدة خلال 14 يومًا (جهات رسمية وصيدليات). ليست توصية بالشراء.`],
     region: { AFRICA: 'أفريقيا', EUROPE: 'أوروبا', AMERICAS: 'الأمريكتين', OCEANIA: 'أوقيانوسيا' },
     payment_review: (art, betrag) => ['دفعة بانتظار المراجعة', `دفعة بانتظار مراجعتك: ${art}، ${betrag}. التفعيل بانتظارك.`],
@@ -321,11 +331,12 @@ export function pushNachricht(n, { sprache = 'de', landName = (c) => c } = {}) {
   }
   if (typ === 'payment_review' || typ === 'sourcing_anfrage' || typ === 'anzeige_pruefen') {
     const art = teile[0] === 'Überweisung' ? (T.ueberweisung || teile[0]) : teile[0] || '';
-    const [titel, text] = typ === 'payment_review' ? f(art, teile[1] || '') : typ === 'sourcing_anfrage' ? f(teile[0] || '', teile[1] || '') : f(String(n.label || ''));
+    const [titel, text] = typ === 'payment_review' ? f(art, teile[1] || '') : typ === 'sourcing_anfrage' ? f(teile.slice(0, -1).join(' · ') || teile[0] || '', teile.length > 1 ? teile[teile.length - 1] : '') : f(String(n.label || ''));
     return { titel, text, url: '/?moderation=1', tag: `${typ}:${n.ref_id || n.refId || ''}` };
   }
   if (typ === 'sourcing_antwort') {
-    const [titel, text] = f(teile[0] || '');
+    // Status ist das LETZTE Stück — ein Präparat darf selbst „ · " enthalten.
+    const [titel, text] = f(teile.length > 1 ? teile.slice(0, -1).join(' · ') : teile[0] || '', teile.length > 1 ? teile[teile.length - 1] : '');
     return { titel, text, url: `/sourcing?anfrage=${encodeURIComponent(String(n.ref_id || n.refId || ''))}`, tag: `sourcing:${n.ref_id || n.refId || ''}` };
   }
   if (typ === 'ausbruch_signal') {

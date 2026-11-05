@@ -10072,7 +10072,11 @@ async function sourcingPruefung(box) {
         const neu = await api('POST', `/api/sourcing/anfragen/${a.id}/status`, { status: st, antwort: feld.value });
         // „In Bearbeitung" bleibt offen — Karte stehen lassen (vorher verschwand sie bis zum Neuladen).
         if (st === 'in_bearbeitung') { a.antwort = neu.antwort; k.querySelector('[data-sstatus]').textContent = t('sc5_st_in_bearbeitung'); } else k.remove();
-      } catch (e) { alert(e.message); }
+      } catch (e) {
+        alert(e.message);
+        // Inzwischen vom Betrieb zurückgezogen: Karte weg, sonst lädt sie zum erneuten Antworten ein.
+        if (e.code === 'sourcing_zurueckgezogen' || e.code === 'sourcing_unbekannt') k.remove();
+      }
     });
     box.appendChild(k);
   }
