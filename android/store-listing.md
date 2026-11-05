@@ -27,9 +27,9 @@ Gezählt, nicht geschätzt (`server/tools/check-store-listing.mjs` prüft es bei
 ApoPulse – Pharmacy Network
 ```
 
-### Short description (72 characters)
+### Short description (75 characters)
 ```
-Medicine shortages in your country – reported by pharmacies, with source
+Medicine shortages in your country – reported by professionals, with source
 ```
 
 ### Full description
@@ -39,7 +39,7 @@ ApoPulse is the network for medicine supply: pharmacies see which medicines are 
 WHAT APOPULSE DOES
 
 • Shortages in your country, with the date reported, the reason and the expected return date
-• Report a shortage in about 20 seconds — pharmacies watching that medicine are alerted
+• Report a shortage in about 20 seconds — colleagues watching that medicine are alerted
 • Watch the medicines you stock and get an alert when their status changes
 • Early warning: see when a medicine is short in other countries before it reaches yours
 • Check your whole product list at once
@@ -49,7 +49,7 @@ WHAT APOPULSE DOES
 EVERY ENTRY SHOWS WHERE IT COMES FROM
 
 • Official — taken from the list of a medicines authority, which is named on the entry
-• Pharmacy report — reported by a pharmacy, not officially confirmed; it counts as confirmed once three pharmacies report it
+• Professional report — reported by a pharmacy, clinic or wholesaler, not officially confirmed; it counts as confirmed once three professionals report it
 
 If you reorder because of a shortage, you should know what it is based on.
 
@@ -87,7 +87,7 @@ ApoPulse est le réseau de l’approvisionnement en médicaments : les pharmacie
 CE QUE FAIT APOPULSE
 
 • Les ruptures dans votre pays, avec la date de signalement, le motif et la date de retour prévue
-• Signaler une rupture en 20 secondes environ — les pharmacies qui suivent ce médicament sont prévenues
+• Signaler une rupture en 20 secondes environ — les collègues qui suivent ce médicament sont prévenus
 • Suivez les médicaments que vous stockez et soyez alerté quand leur statut change
 • Alerte précoce : voyez quand un médicament manque dans d’autres pays avant qu’il ne manque chez vous
 • Vérifiez toute votre liste de produits en une fois
@@ -97,7 +97,7 @@ CE QUE FAIT APOPULSE
 CHAQUE ENTRÉE INDIQUE SON ORIGINE
 
 • Officiel — repris de la liste d’une autorité du médicament, nommée sur l’entrée
-• Signalement de pharmacie — signalé par une pharmacie, non confirmé officiellement ; il est considéré comme confirmé dès que trois pharmacies le signalent
+• Signalement de professionnels — signalé par une pharmacie, une clinique ou un grossiste, non confirmé officiellement ; il est considéré comme confirmé dès que trois professionnels le signalent
 
 Si vous recommandez à cause d’une rupture, vous devez savoir sur quoi vous vous appuyez.
 
@@ -123,9 +123,9 @@ Les fonctions de base sont gratuites. ApoPulse s’adresse aux pharmacies, méde
 ApoPulse – Rede de farmácias
 ```
 
-### Descrição breve (74 caracteres)
+### Descrição breve (72 caracteres)
 ```
-Ruturas de medicamentos no seu país – comunicadas por farmácias, com fonte
+Ruturas de medicamentos no seu país – avisos de profissionais, com fonte
 ```
 
 ### Descrição completa
@@ -135,7 +135,7 @@ O ApoPulse é a rede do abastecimento de medicamentos: as farmácias veem que me
 O QUE O APOPULSE FAZ
 
 • Ruturas no seu país, com a data da comunicação, o motivo e a data prevista de regresso
-• Comunicar uma rutura em cerca de 20 segundos — as farmácias que acompanham esse medicamento são avisadas
+• Comunicar uma rutura em cerca de 20 segundos — os colegas que acompanham esse medicamento são avisados
 • Acompanhe os medicamentos que tem em stock e receba um alerta quando o estado muda
 • Alerta precoce: veja quando um medicamento falta noutros países antes de faltar no seu
 • Verifique toda a sua lista de produtos de uma vez
@@ -145,7 +145,7 @@ O QUE O APOPULSE FAZ
 CADA ENTRADA MOSTRA A SUA ORIGEM
 
 • Oficial — retirado da lista de uma autoridade do medicamento, indicada na entrada
-• Comunicação de farmácia — comunicada por uma farmácia, não confirmada oficialmente; conta como confirmada quando três farmácias a comunicam
+• Aviso de profissionais — comunicado por uma farmácia, clínica ou grossista, não confirmado oficialmente; conta como confirmado quando três profissionais o comunicam
 
 Quem encomenda por causa de uma rutura deve saber em que se baseia.
 
@@ -171,9 +171,9 @@ As funções básicas são gratuitas. O ApoPulse destina-se a farmácias, médic
 ApoPulse – شبكة الصيدليات
 ```
 
-### الوصف المختصر (56 حرفًا)
+### الوصف المختصر (57 حرفًا)
 ```
-نقص الأدوية في بلدك – تبلّغ عنه الصيدليات، مع ذكر المصدر
+نقص الأدوية في بلدك – تبلّغ عنه جهات مهنية، مع ذكر المصدر
 ```
 
 ### الوصف الكامل
@@ -183,7 +183,7 @@ ApoPulse هي شبكة إمداد الأدوية: ترى الصيدليات ال
 ما يقدّمه ApoPulse
 
 • حالات النقص في بلدك، مع تاريخ البلاغ والسبب والموعد المتوقع للعودة
-• الإبلاغ عن نقص في نحو 20 ثانية — تتلقى الصيدليات التي تتابع هذا الدواء تنبيهًا
+• الإبلاغ عن نقص في نحو 20 ثانية — يتلقى الزملاء الذين يتابعون هذا الدواء تنبيهًا
 • تابع الأدوية التي تخزّنها واحصل على تنبيه عند تغيّر حالتها
 • إنذار مبكر: اعرف متى ينقص دواء في بلدان أخرى قبل أن يصل النقص إلى بلدك
 • افحص قائمة منتجاتك كاملة دفعة واحدة
@@ -193,7 +193,7 @@ ApoPulse هي شبكة إمداد الأدوية: ترى الصيدليات ال
 كل إدخال يوضّح مصدره
 
 • رسمي — مأخوذ من قائمة هيئة دواء، واسمها مذكور في الإدخال
-• بلاغ صيدلية — أبلغت عنه صيدلية، غير مؤكد رسميًا؛ ويُعدّ مؤكدًا عندما تبلّغ عنه ثلاث صيدليات
+• بلاغ مهني — أبلغت عنه صيدلية أو عيادة أو تاجر جملة، غير مؤكد رسميًا؛ ويُعدّ مؤكدًا عندما تبلّغ عنه ثلاث جهات مهنية
 
 من يعيد الطلب بسبب نقص يجب أن يعرف على ماذا يستند.
 
@@ -231,7 +231,7 @@ ApoPulse ist das Netzwerk für die Arzneimittelversorgung: Apotheken sehen, welc
 WAS APOPULSE ZEIGT
 
 • Lieferengpässe mit Meldedatum, Grund und voraussichtlichem Termin
-• Engpass melden in etwa 20 Sekunden — Apotheken, die den Wirkstoff beobachten, werden benachrichtigt
+• Engpass melden in etwa 20 Sekunden — Kolleg:innen, die den Wirkstoff beobachten, werden benachrichtigt
 • Beobachtete Wirkstoffe: Alarm, sobald sich ihr Status ändert
 • Frühwarnung: Was im Ausland knapp ist, bevor es bei uns knapp wird
 • Ganze Bestellliste auf einmal prüfen
@@ -242,7 +242,7 @@ WAS APOPULSE ZEIGT
 JEDE ANGABE TRÄGT IHRE HERKUNFT
 
 • Amtlich — aus der Liste einer Arzneimittelbehörde übernommen, die Behörde steht beim Eintrag
-• Apotheken-Meldung — von einer Apotheke gemeldet, nicht amtlich bestätigt; ab drei meldenden Apotheken gilt sie als bestätigt
+• Meldung aus Fachkreisen — von einer Apotheke, Klinik oder einem Großhändler gemeldet, nicht amtlich bestätigt; ab drei meldenden Fachbetrieben gilt sie als bestätigt
 
 Wer auf eine Engpassmeldung hin umbestellt, soll wissen, worauf er sich stützt.
 

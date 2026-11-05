@@ -18,7 +18,7 @@ Jede Seite führt mit einem großen Knopf in die App — auf der Wirkstoff-Seite
 
 ## Regeln (`server/src/services/oeffentlicheSeiten.js`)
 
-- **Nur amtliche Daten.** Meldungen aus Apotheken und Beispieldaten erscheinen hier nicht:
+- **Nur amtliche Daten.** Meldungen aus Fachkreisen und Beispieldaten erscheinen hier nicht:
   Suchmaschinen zeigen Ausschnitte ohne Kennzeichnung — „nicht amtlich" ginge verloren.
 - Jede Aussage mit Behörde und Stand; Hinweis „keine Therapie- oder Austauschempfehlung".
 - Nur Wirkstoffe, die in der Behördenliste des Landes stehen oder standen — unbekannte Adressen

@@ -43,3 +43,11 @@ test('Push, öffentliche Seiten, Teilen-Vorschau: „aus Fachkreisen"', () => {
   }
   assert.equal(I.de.nl_community, 'Meldung aus Fachkreisen');
 });
+
+test('Play-Store-Texte (alle Sprachen) nennen Meldungen nicht „aus Apotheken"', () => {
+  const store = readFileSync(new URL('../../android/store-listing.md', import.meta.url), 'utf8');
+  for (const [l, rx] of Object.entries(QUELLE_APO)) {
+    const treffer = store.split('\n').filter((z) => rx.test(z));
+    assert.deepEqual(treffer, [], `store-listing.md (${l})`);
+  }
+});

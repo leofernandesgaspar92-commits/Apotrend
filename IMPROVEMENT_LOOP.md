@@ -4534,3 +4534,15 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Tests:** `fachkreise-begriff.test.js` (Wächter über alle Texte, Push, öffentliche Seiten; mit alten Texten rot);
   7 bestehende Tests auf die neue Formulierung umgestellt — ihre Schutzaussagen („nicht amtlich", nie „laut
   Behörde", Redaktion mit Quelle) gelten unverändert. Browser: Klinik meldet → „1 Fachbetrieb meldet".
+
+### Nachzug „aus Fachkreisen": Play-Store-Texte und Kunden-Doku (2026-11-05)
+- **Fund:** Der Wächter des vorigen Eintrags prüfte App, Push und öffentliche Seiten — nicht die Play-Store-Texte
+  (`android/store-listing.md`). Dort stand in allen 5 Sprachen weiter „reported by pharmacies" (Kurzbeschreibung)
+  und „Pharmacy report — … once three pharmacies report it" (Vertrauensstufen). Ebenso die Doku für
+  Business-Kunden der Daten-Schnittstelle (DATEN_API.md).
+- **Behoben:** Store-Texte in 5 Sprachen („reported by professionals", „Professional report — reported by a
+  pharmacy, clinic or wholesaler …", „colleagues watching that medicine are alerted"); Zeichenzahlen neu gezählt
+  (check-store-listing grün). Titel bleiben („ApoPulse – für Apotheken" ist Marke). DATEN_API.md erklärt den
+  Feldwert `apotheken_meldung`; DEPLOY.md, OEFFENTLICHE_SEITEN.md angepasst, AFRIKA.md mit Begriffshinweis.
+- **Wächter erweitert:** `fachkreise-begriff.test.js` prüft jetzt auch die Store-Texte (mit alten Texten rot).
+- **Betreiber:** Die neuen Store-Texte müssen in der Play Console neu eingefügt werden (sobald die App dort ist).

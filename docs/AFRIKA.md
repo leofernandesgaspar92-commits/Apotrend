@@ -60,7 +60,11 @@ Quellen**. Wer eine strukturierte Liste einer afrikanischen Behörde kennt (CSV/
 eigene Quelle eintragen — dann füllen sich Liste, Alarme, Radar, Daten-Schnittstelle und
 Google-Seiten automatisch.
 
-## Meldungen aus Apotheken: Vertrauensstufen
+## Meldungen aus Fachkreisen: Vertrauensstufen
+
+> **Begriff (11/2026):** In der App heißen diese Meldungen „Meldung aus Fachkreisen" — melden und bestätigen
+> dürfen Apotheken, Kliniken, Großhandel, Hersteller, Logistik und Behörden. Ältere Abschnitte unten nennen sie
+> noch „Apotheken-Meldungen"; die zitierten Oberflächentexte lauten heute „1 Fachbetrieb meldet …" usw.
 
 Wo es keine amtliche Liste gibt, sind Meldungen aus Apotheken die schnellste Information. Damit
 man ihnen richtig traut:

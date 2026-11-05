@@ -254,7 +254,7 @@ Vier Bereiche für Fachkreise (nicht für Privatkonten), auf der Startseite unte
   Mailversand). Weitervermittlung an Großhändler macht das Handelsteam selbst.
 
 **2. Zulassung & Alternativen prüfen** (auf derselben Seite): Lage des Wirkstoffs im Zielland
-(Behördenliste/Apotheken-Meldungen), Link zur zuständigen Behörde, und Wirkstoffe **derselben
+(Behördenliste/Meldungen aus Fachkreisen), Link zur zuständigen Behörde, und Wirkstoffe **derselben
 ATC-Gruppe** (WHO-ATC über RxClass/NIH) mit ihrer Lage im Zielland. ApoPulse führt **keine
 Zulassungsregister** — deshalb steht dort „Zulassung in {Land} bitte im amtlichen Register
 prüfen" statt einer Behauptung „zugelassen". Gleiche ATC-Gruppe heißt nicht austauschbar.
@@ -268,7 +268,7 @@ Therapien stehen oben. Abo je Fachgebiet: Benachrichtigung nur bei neuen Therapi
 offene Schnittstelle; WHO-Daten nutzt der Radar.
 
 **4. Ausbruchs- & Nachfrage-Radar:** Signal = mindestens 3 neue Engpass-Einträge (Behördenlisten
-+ Apotheken-Meldungen) zum selben Wirkstoff in einer Region binnen 14 Tagen und mindestens doppelt
++ Meldungen aus Fachkreisen) zum selben Wirkstoff in einer Region binnen 14 Tagen und mindestens doppelt
 so viele wie in den 14 Tagen davor. Großhandel und Hersteller in **anderen** Regionen bekommen eine
 Frühwarnung (je Wirkstoff und Region höchstens alle 14 Tage). Dazu die WHO Disease Outbreak News
 und echte Lieferantenpreise im eigenen Land, falls vorhanden. **Keine Prozent-Empfehlung

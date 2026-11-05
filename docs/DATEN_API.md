@@ -45,7 +45,7 @@ dem Web") kann keine Kopfzeilen setzen. Wer das nutzt, behandelt die Adresse wie
 Felder einer Engpass-Zeile: `wirkstoff`, `wirkstoff_schluessel` (sprachübergreifend, z. B. für
 „Cefuroxim-Axetil" = „Cefuroxime Axetil"), `bezeichnung`, `land`, `status` (`kritisch` |
 `eingeschraenkt`), `grund`, `gemeldet_am`, `voraussichtlich_bis`, `herkunft`, `quelle`,
-`bestaetigt_von` (nur Apotheken-Meldungen: wie viele Apotheken sie tragen; ab 3 gilt sie als bestätigt).
+`bestaetigt_von` (nur Meldungen aus Fachkreisen: wie viele Fachbetriebe — Apotheken, Kliniken, Großhandel … — sie tragen; ab 3 gilt sie als bestätigt).
 
 Prüf-Ergebnis je Zeile: `einstufung` = `knapp` (im Land gemeldet) | `ausland` (anderswo knapp,
 hier nicht) | `wiederholt` (früher schon knapp) | `ruhig` | `unbekannt` (kein Treffer), dazu
@@ -61,7 +61,7 @@ entschärft (keine Formel-Ausführung in Excel).
 ### Regeln (im Code, `server/src/services/datenApi.js`)
 
 - **Nur echte Herkunft:** `herkunft` = `behoerde` (amtliche Liste) oder `apotheken_meldung`
-  (gemeldet aus Apotheken, nicht amtlich). **Referenz-/Beispieldaten sind nie enthalten** — eine
+  (gemeldet aus Fachkreisen, nicht amtlich; der Feldwert heißt aus Kompatibilitätsgründen weiter `apotheken_meldung`). **Referenz-/Beispieldaten sind nie enthalten** — eine
   Warenwirtschaft würde danach umbestellen.
 - Keine Therapie- oder Austauschempfehlung; die Antwort sagt das im Feld `hinweis`.
 - Schlüssel werden **nur einmal** im Klartext gezeigt; gespeichert ist der SHA-256-Hash.
