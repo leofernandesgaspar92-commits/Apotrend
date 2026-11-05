@@ -4410,3 +4410,18 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Tests:** `push-redaktion.test.js`; Ende-zu-Ende in `web-push.test.js` (Redaktions-Gerät bekommt bei neuer
   Anfrage einen verschlüsselten Push mit Präparat, Weg und Link). Browser: Redaktion landet in der Prüfliste,
   Apotheke nicht. Gegenproben rot.
+
+### Warten auf die Krypto-Prüfung: Handy-Benachrichtigung dort anbieten; Werbe-Zahlungen richtig melden (2026-11-05)
+- **Fund 1:** Auf der Premium-Seite stand beim Warten „Sie bekommen eine Benachrichtigung, sobald Premium
+  freigeschaltet ist" — der Schalter für die Handy-Benachrichtigung lag aber versteckt unter „Benachrichtigungen".
+  **Behoben:** `pushAngebot()` direkt im Wartehinweis (und nach dem Melden einer Anzeigen-Zahlung): „Ja, aufs Handy
+  benachrichtigen", nur wenn das Gerät Push kann, nicht blockiert und hier noch nicht an ist (hängender Service
+  Worker: nach 2,5 s wie „noch nicht an"). 5 Sprachen. Browser-Audit prüft Angebot + Bestätigung; Gegenprobe rot.
+- **Fund 2 (falsche Aussage):** Wer eine ANZEIGE per Krypto bezahlte, bekam bei der Bestätigung zusätzlich „Ihre
+  Zahlung wurde bestätigt — Premium ist freigeschaltet" (neben dem richtigen „Zahlung verbucht, Anzeige läuft"). Eine
+  abgelehnte Anzeigen-Zahlung führte zur Premium-Seite statt zur Anzeige. **Behoben:** `payment_confirmed` entfällt
+  bei Anzeigen; `payment_rejected` zeigt bei Anzeigen auf die Anzeige (App-Klick und Push öffnen „Werbung").
+- **Fund 3:** Werbekunden bekamen Freigabe, Ablehnung und Zahlungseingang ihrer Anzeige nur in die Glocke. Jetzt
+  auch als Push (5 Sprachen, Ablehnungsgrund nur in der App), Ziel `/?werbung=1`.
+- **Tests:** `anzeigen-http.test.js` (Ende-zu-Ende: kein „Premium freigeschaltet" für Werbekunden, Ablehnung zeigt
+  auf die Anzeige), `push-zahlung-b2b.test.js`. Gegenproben rot.

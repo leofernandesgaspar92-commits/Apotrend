@@ -59,3 +59,22 @@ test('App öffnet die Ziele der neuen Push-Links', () => {
   assert.match(APP, /if \(location\.pathname === '\/sourcing'\) \{ const anfrage = params\.get\('anfrage'\); if \(anfrage\) history\.replaceState\(null, '', '\/sourcing'\); openSourcing\(anfrage\); return; \}/);
   assert.match(APP, /data-pushauch>\$\{esc\(t\('push_auch'\)\)\}/, 'Push-Karte sagt nicht, was sonst noch kommt');
 });
+
+// Werbekunden (11/2026): Freigabe, Ablehnung, Zahlungseingang ihrer Anzeige kamen nur in die Glocke;
+// eine abgelehnte Krypto-Zahlung einer Anzeige führte zur Premium-Seite.
+test('Anzeige freigegeben/abgelehnt/bezahlt: als Push, 5 Sprachen, öffnet „Werbung"', () => {
+  for (const t of ['anzeige_freigegeben', 'anzeige_abgelehnt', 'anzeige_bezahlt']) assert.ok(PUSH_TYPEN.has(t), t);
+  for (const sprache of SPRACHEN) {
+    for (const type of ['anzeige_freigegeben', 'anzeige_abgelehnt', 'anzeige_bezahlt']) {
+      const m = pushNachricht({ type, refType: 'anzeige', refId: 'k1', label: 'Kühlkette Süd' }, { sprache });
+      assert.ok(m && m.titel && m.text, `${type} ${sprache}`);
+      assert.match(m.text, /Kühlkette Süd/);
+      assert.equal(m.url, '/?werbung=1');
+    }
+  }
+  const nein = pushNachricht({ type: 'payment_rejected', refType: 'anzeige', refId: 'k1', label: 'Betrag zu niedrig' }, { sprache: 'en' });
+  assert.equal(nein.url, '/?werbung=1', 'abgelehnte Anzeigen-Zahlung führt zur Premium-Seite');
+  assert.ok(!/Betrag/.test(nein.text));
+  assert.match(APP, /if \(params\.get\('werbung'\) === '1'\) \{ history\.replaceState\(null, '', location\.pathname\); openWerbung\(\); return; \}/);
+  assert.match(APP, /else if \(n\.type === 'payment_rejected' && n\.ref_type === 'anzeige'\) \{ openWerbung\(\); \}/);
+});

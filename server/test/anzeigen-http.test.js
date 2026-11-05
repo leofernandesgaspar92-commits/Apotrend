@@ -100,6 +100,23 @@ test('Anzeige: buchen, prüfen, bezahlen, ausliefern, zählen', { timeout: 60000
     const meine = (await get('/api/werbung/kampagnen', pharma)).d.kampagnen;
     assert.equal(meine.find((x) => x.id === k2.id).zustand, 'laeuft', 'Krypto-Bestätigung startet die Kampagne');
     assert.ok((await get('/api/anzeigen/platz/feed', apo)).d.anzeige, 'Feed-Anzeige wird ausgeliefert');
+    // Glocke nach der Krypto-Bestätigung: „Zahlung verbucht, Anzeige läuft" — NICHT „Premium ist
+    // freigeschaltet" (bis 11/2026 kamen beide, die zweite falsch).
+    const glocke = (await get('/api/notifications', pharma)).d.notifications;
+    assert.ok(glocke.some((n) => n.type === 'anzeige_bezahlt' && n.ref_id === k2.id), 'Anzeige-Bestätigung fehlt');
+    assert.ok(!glocke.some((n) => n.type === 'payment_confirmed'), 'Werbekunde bekommt „Premium ist freigeschaltet"');
+
+    // Abgelehnte Krypto-Zahlung einer Anzeige: führt zur Anzeige (Werbung), nicht zur Premium-Seite.
+    const k4 = (await post('/api/werbung/kampagnen', pharma, { ...anzeige, platz: 'seite', titel: 'Kühlkette Süd' })).d.kampagne;
+    await post(`/api/werbung/kampagnen/${k4.id}/einreichen`, pharma);
+    await post(`/api/werbung/kampagnen/${k4.id}/freigeben`, red);
+    const s4 = (await post(`/api/werbung/kampagnen/${k4.id}/krypto/start`, pharma, { walletId: btc.id })).d;
+    const tx4 = Array.from({ length: 64 }, (_, i) => '0123456789abcdef'[(i * 7 + 3) % 16]).join('');
+    assert.equal((await post(`/api/payments/crypto/${s4.payment_id}/claim`, pharma, { txRef: tx4 })).status, 200);
+    assert.equal((await post(`/api/payments/${s4.payment_id}/reject`, red, { grund: 'Betrag zu niedrig' })).status, 200);
+    const nein = (await get('/api/notifications', pharma)).d.notifications.find((n) => n.type === 'payment_rejected');
+    assert.ok(nein, 'Ablehnung nicht gemeldet');
+    assert.deepEqual([nein.ref_type, nein.ref_id], ['anzeige', k4.id], 'Ablehnung einer Anzeigen-Zahlung zeigt nicht auf die Anzeige');
   } finally {
     await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
   }

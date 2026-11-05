@@ -1293,6 +1293,19 @@ async function main() {
       findings.push('Premium-Seite: eine gemeldete Zahlung wird nicht als „wird geprüft" angezeigt — Kundin könnte doppelt zahlen');
     } else {
       console.log('✓ Premium-Seite: gemeldete Zahlung erscheint als „wird geprüft — nicht erneut zahlen"');
+      // Wer wartet, bekommt das Einschalten der Handy-Benachrichtigung GENAU dort angeboten (bis 11/2026 nur
+      // „Sie werden benachrichtigt", der Schalter lag unter „Benachrichtigungen"). Headless meldet „denied".
+      await page.evaluate(() => { try { Object.defineProperty(Notification, 'permission', { configurable: true, get: () => 'default' }); } catch { /* egal */ } });
+      await page.evaluate(() => window.openPremium && window.openPremium());
+      await page.waitForTimeout(3200);
+      const knopf = page.locator('[data-prstand="review"] [data-pushangebot-knopf]');
+      if (!(await knopf.count())) findings.push('Premium-Seite: beim Warten auf die Krypto-Prüfung wird keine Handy-Benachrichtigung angeboten');
+      else {
+        await page.evaluate(() => { window.pushEinschalten = async () => ({ geraete: 1 }); });
+        await knopf.click(); await page.waitForTimeout(400);
+        if (!(await page.locator('[data-prstand="review"] [data-pushangebot-an]').count())) findings.push('Premium-Seite: Handy-Benachrichtigung einschalten ohne Bestätigung');
+        else console.log('✓ Premium-Seite: beim Warten „Ja, aufs Handy benachrichtigen" mit Bestätigung');
+      }
     }
 
     // ── 8. Datenquellen-Seite (Redaktion) ──────────────────────────────────

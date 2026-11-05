@@ -74,6 +74,7 @@ export function createPaymentsService({
   preisFuer = null,
 }) {
   const preis = (userId, product, opt = {}) => (typeof preisFuer === 'function' ? preisFuer(userId || null, product, opt) : product.amount_cents);
+  const istAnzeige = (productId) => String(productId || '').startsWith('anzeige:');
   const melde = (o) => { if (typeof benachrichtige === 'function') { try { benachrichtige(o); } catch { /* eine Glocke darf keine Zahlung aufhalten */ } } };
   const pick = (method) => {
     const kandidaten = Object.values(providers).filter(p => (p.methods || []).includes(method));
@@ -258,7 +259,9 @@ export function createPaymentsService({
       if (p.status === 'paid') return { ok: true, already: true };
       const r = await freischalten(p);
       if (repo.updatePaymentReview) repo.updatePaymentReview(paymentId, { reviewed_by: moderatorUserId, reviewed_at: new Date().toISOString() });
-      melde({ userId: p.user_id, type: 'payment_confirmed', actorUserId: moderatorUserId, refType: 'payment', refId: paymentId, label: getProduct(p.product_id)?.name || null });
+      // Anzeige: die Werbung meldet selbst „Zahlung verbucht, Anzeige läuft" (anzeigen.bezahlt). Bis 11/2026
+      // kam zusätzlich „Premium ist freigeschaltet" — falsch für Werbekunden.
+      if (!istAnzeige(p.product_id)) melde({ userId: p.user_id, type: 'payment_confirmed', actorUserId: moderatorUserId, refType: 'payment', refId: paymentId, label: getProduct(p.product_id)?.name || null });
       return r;
     },
     // Ablehnen: Betrag falsch, Transaktion nicht gefunden, oder zeitlich vor dem
@@ -273,7 +276,8 @@ export function createPaymentsService({
       if (!g) throw new AppError('reject_reason_missing', 'Bitte einen Grund angeben — die Kundin bekommt ihn mitgeteilt.', 400);
       if (repo.updatePaymentReview) repo.updatePaymentReview(paymentId, { reviewed_by: moderatorUserId, reviewed_at: new Date().toISOString(), review_note: g });
       spiegeln(repo.setPaymentStatus(paymentId, 'failed'));
-      melde({ userId: p.user_id, type: 'payment_rejected', actorUserId: moderatorUserId, refType: 'payment', refId: paymentId, label: g });
+      // Bei einer Anzeige zeigt die Meldung auf die Anzeige — dort zahlt man neu (nicht auf der Premium-Seite).
+      melde({ userId: p.user_id, type: 'payment_rejected', actorUserId: moderatorUserId, ...(istAnzeige(p.product_id) ? { refType: 'anzeige', refId: String(p.product_id).slice(8) } : { refType: 'payment', refId: paymentId }), label: g });
       return { ok: true };
     },
     // Prüfliste: alles, was die Moderation für die Entscheidung braucht.

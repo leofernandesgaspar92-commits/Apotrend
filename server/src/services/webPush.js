@@ -165,6 +165,9 @@ const TEXTE = {
     ueberweisung: 'Überweisung',
     sourcing_anfrage: (p, weg) => ['Neue Angebotsanfrage', `${p} (${weg}). Tippen zum Bearbeiten.`],
     anzeige_pruefen: (titel) => ['Anzeige prüfen', `Eine Anzeige wartet auf Freigabe: ${titel}.`],
+    anzeige_freigegeben: (x) => ['Anzeige freigegeben', `„${x}" ist geprüft und freigegeben. Bitte jetzt bezahlen, dann läuft sie.`],
+    anzeige_abgelehnt: (x) => ['Anzeige abgelehnt', `„${x}" wurde nicht freigegeben. Den Grund finden Sie in ApoPulse.`],
+    anzeige_bezahlt: (x) => ['Anzeige läuft ✔', `Zahlung verbucht: „${x}" wird jetzt angezeigt.`],
     test: () => ['ApoPulse: Benachrichtigung funktioniert', 'So kommt ein Engpass-Alarm an, auch wenn die App geschlossen ist.'],
   },
   en: {
@@ -189,6 +192,9 @@ const TEXTE = {
     ueberweisung: 'bank transfer',
     sourcing_anfrage: (p, weg) => ['New quote request', `${p} (${weg}). Tap to handle it.`],
     anzeige_pruefen: (titel) => ['Ad to review', `An ad is waiting for approval: ${titel}.`],
+    anzeige_freigegeben: (x) => ['Ad approved', `“${x}” has been reviewed and approved. Please pay now and it will go live.`],
+    anzeige_abgelehnt: (x) => ['Ad rejected', `“${x}” was not approved. See the reason in ApoPulse.`],
+    anzeige_bezahlt: (x) => ['Ad is live ✔', `Payment received: “${x}” is now being shown.`],
     test: () => ['ApoPulse: notifications work', 'This is how a shortage alert arrives, even when the app is closed.'],
   },
   pt: {
@@ -213,6 +219,9 @@ const TEXTE = {
     ueberweisung: 'transferência bancária',
     sourcing_anfrage: (p, weg) => ['Novo pedido de cotação', `${p} (${weg}). Toque para tratar.`],
     anzeige_pruefen: (titel) => ['Anúncio a verificar', `Um anúncio aguarda aprovação: ${titel}.`],
+    anzeige_freigegeben: (x) => ['Anúncio aprovado', `“${x}” foi verificado e aprovado. Pague agora para que fique ativo.`],
+    anzeige_abgelehnt: (x) => ['Anúncio recusado', `“${x}” não foi aprovado. Veja o motivo no ApoPulse.`],
+    anzeige_bezahlt: (x) => ['Anúncio ativo ✔', `Pagamento registado: “${x}” está agora a ser exibido.`],
     test: () => ['ApoPulse: notificações a funcionar', 'É assim que chega um alerta de rutura, mesmo com a app fechada.'],
   },
   fr: {
@@ -237,6 +246,9 @@ const TEXTE = {
     ueberweisung: 'virement bancaire',
     sourcing_anfrage: (p, weg) => ['Nouvelle demande de devis', `${p} (${weg}). Touchez pour la traiter.`],
     anzeige_pruefen: (titel) => ['Annonce à vérifier', `Une annonce attend sa validation : ${titel}.`],
+    anzeige_freigegeben: (x) => ['Annonce validée', `« ${x} » a été vérifiée et validée. Payez maintenant pour la mettre en ligne.`],
+    anzeige_abgelehnt: (x) => ['Annonce refusée', `« ${x} » n’a pas été validée. Le motif se trouve dans ApoPulse.`],
+    anzeige_bezahlt: (x) => ['Annonce en ligne ✔', `Paiement enregistré : « ${x} » est maintenant diffusée.`],
     test: () => ['ApoPulse : les notifications fonctionnent', 'Voici comment arrive une alerte de pénurie, même quand l’application est fermée.'],
   },
   ar: {
@@ -261,6 +273,9 @@ const TEXTE = {
     ueberweisung: 'تحويل بنكي',
     sourcing_anfrage: (p, weg) => ['طلب عرض سعر جديد', `${p} (${weg}). اضغط للمعالجة.`],
     anzeige_pruefen: (titel) => ['إعلان بانتظار المراجعة', `إعلان بانتظار الموافقة: ${titel}.`],
+    anzeige_freigegeben: (x) => ['تمت الموافقة على الإعلان', `تمت مراجعة «${x}» والموافقة عليه. ادفع الآن ليبدأ عرضه.`],
+    anzeige_abgelehnt: (x) => ['تم رفض الإعلان', `لم تتم الموافقة على «${x}». ستجد السبب في ApoPulse.`],
+    anzeige_bezahlt: (x) => ['الإعلان قيد العرض ✔', `تم تسجيل الدفع: يُعرض «${x}» الآن.`],
     test: () => ['ApoPulse: الإشعارات تعمل', 'هكذا يصل تنبيه النقص، حتى عندما يكون التطبيق مغلقًا.'],
   },
 };
@@ -271,7 +286,9 @@ const TEXTE = {
 export const PUSH_TYPEN = new Set(['shortage_home', 'shortage_ended', 'shortage_abroad', 'watch_alert', 'shortage_bestaetigt', 'verified', 'verify_rejected',
   'payment_confirmed', 'payment_rejected', 'sourcing_antwort', 'ausbruch_signal',
   // An die Redaktion: hier wartet eine Kundin auf uns (Krypto-Freischaltung, Angebotsanfrage, bezahlte Anzeige).
-  'payment_review', 'sourcing_anfrage', 'anzeige_pruefen']);
+  'payment_review', 'sourcing_anfrage', 'anzeige_pruefen',
+  // An Werbekunden: Freigabe, Ablehnung (ohne Grund), Zahlungseingang ihrer Anzeige.
+  'anzeige_freigegeben', 'anzeige_abgelehnt', 'anzeige_bezahlt']);
 
 /** Benachrichtigung -> Push-Nachricht in der Sprache der Person. */
 export function pushNachricht(n, { sprache = 'de', landName = (c) => c } = {}) {
@@ -295,7 +312,13 @@ export function pushNachricht(n, { sprache = 'de', landName = (c) => c } = {}) {
     return { titel, text, url: typ === 'verify_rejected' ? '/?bestaetigung=1' : '/', tag: 'verifizierung' };
   }
   // Den Grund einer Ablehnung (Freitext der Prüfung) nennt der Push nicht — er steht in der App.
-  if (typ === 'payment_confirmed' || typ === 'payment_rejected') { const [titel, text] = f(); return { titel, text, url: '/?zahlung=1', tag: 'zahlung' }; }
+  const anzeige = (n.ref_type || n.refType) === 'anzeige';
+  // Abgelehnte Zahlung einer Anzeige: zurück zur Anzeige (dort neu zahlen), nicht zur Premium-Seite.
+  if (typ === 'payment_confirmed' || typ === 'payment_rejected') { const [titel, text] = f(); return { titel, text, url: anzeige ? '/?werbung=1' : '/?zahlung=1', tag: 'zahlung' }; }
+  if (typ === 'anzeige_freigegeben' || typ === 'anzeige_abgelehnt' || typ === 'anzeige_bezahlt') {
+    const [titel, text] = f(String(n.label || ''));
+    return { titel, text, url: '/?werbung=1', tag: `anzeige:${n.ref_id || n.refId || ''}` };
+  }
   if (typ === 'payment_review' || typ === 'sourcing_anfrage' || typ === 'anzeige_pruefen') {
     const art = teile[0] === 'Überweisung' ? (T.ueberweisung || teile[0]) : teile[0] || '';
     const [titel, text] = typ === 'payment_review' ? f(art, teile[1] || '') : typ === 'sourcing_anfrage' ? f(teile[0] || '', teile[1] || '') : f(String(n.label || ''));

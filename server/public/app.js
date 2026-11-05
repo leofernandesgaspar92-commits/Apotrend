@@ -1735,6 +1735,7 @@ async function mainScreen({ ohneReiter = false } = {}) {
   // Push „Zahlung bestätigt/abgelehnt" und „Frühwarnung" (services/webPush.js).
   if (params.get('moderation') === '1' && iAmModerator) { history.replaceState(null, '', location.pathname); showModeration(); return; }
   if (params.get('zahlung') === '1') { history.replaceState(null, '', location.pathname); openPremium(); return; }
+  if (params.get('werbung') === '1') { history.replaceState(null, '', location.pathname); openWerbung(); return; }
   if (params.get('radar') === '1') { history.replaceState(null, '', location.pathname); openAusbruch(); return; }
   if (location.pathname === '/sourcing') { const anfrage = params.get('anfrage'); if (anfrage) history.replaceState(null, '', '/sourcing'); openSourcing(anfrage); return; }
   if (sharedPost) { history.replaceState(null, '', location.pathname); openPost(sharedPost); }
@@ -4970,6 +4971,25 @@ async function pushAusschalten() {
   const abo = await pushAboHier();
   if (abo) { await api('POST', '/api/push/abbestellen', { endpoint: abo.endpoint }).catch(() => {}); try { await abo.unsubscribe(); } catch { /* egal */ } }
 }
+// Wer auf etwas WARTET (Krypto-Zahlung in Prüfung), bekommt das Einschalten genau dort angeboten —
+// bis 11/2026 stand dort nur „Sie bekommen eine Benachrichtigung", der Knopf lag versteckt unter
+// „Benachrichtigungen". Nur wenn das Gerät es kann und Push hier noch nicht an ist.
+function pushAngebot(frageKey, anKey) {
+  const box = el('<div data-pushangebot style="margin-top:8px"></div>');
+  (async () => {
+    if (!pushMoeglich() || Notification.permission === 'denied') { box.remove(); return; }
+    // Ohne aktiven Service Worker wartet .ready ewig — dann wie „noch nicht an" behandeln.
+    const abo = await Promise.race([pushAboHier(), new Promise((ok) => setTimeout(() => ok(null), 2500))]);
+    if (abo && Notification.permission === 'granted') { box.remove(); return; }
+    box.innerHTML = `<div style="font-size:15px">${esc(t(frageKey))}</div><button data-pushangebot-knopf style="margin-top:6px;min-height:48px;font-weight:700">${esc(t('pw_knopf'))}</button><div class="err" data-pushangebot-err></div>`;
+    box.querySelector('[data-pushangebot-knopf]').onclick = async (e) => {
+      e.target.disabled = true;
+      try { await pushEinschalten(); box.innerHTML = `<div class="ok-box" data-pushangebot-an style="padding:8px 12px">${esc(t(anKey))}</div>`; }
+      catch (err) { e.target.disabled = false; box.querySelector('[data-pushangebot-err]').textContent = err.message || t('push_geht_nicht'); }
+    };
+  })();
+  return box;
+}
 function pushKarte() {
   const c = el(`<div class="card" data-pushkarte><div class="row" style="gap:10px;align-items:flex-start"><span class="karte-ic" aria-hidden="true">${ico('bell', 22)}</span>
     <div style="flex:1"><b style="font-size:17px">${esc(t('push_titel'))}</b><div class="muted" style="font-size:15px;margin-top:2px">${esc(t('push_sub'))}</div><div class="muted" style="font-size:14px;margin-top:4px" data-pushauch>${esc(t('push_auch'))}</div><div data-pushinhalt style="margin-top:10px"></div></div></div></div>`);
@@ -5399,7 +5419,9 @@ async function zahlungKampagne(k, box, rechnungMoeglich) {
         try {
           const st = await api('POST', `/api/werbung/kampagnen/${k.id}/krypto/start`, { walletId: c.id });
           await api('POST', `/api/payments/crypto/${st.payment_id}/claim`, { txRef: zeile.querySelector('[data-tx]').value });
-          zeile.replaceWith(el(`<div class="ok-box" style="padding:10px 12px">${esc(t('wb2_tx_ok'))}</div>`));
+          const ok = el(`<div class="ok-box" style="padding:10px 12px">${esc(t('wb2_tx_ok'))}</div>`);
+          ok.appendChild(pushAngebot('pw_frage_zahlung', 'pw_an_zahlung'));
+          zeile.replaceWith(ok);
         } catch (e) { zeile.querySelector('[data-txerr]').textContent = e.message; }
       };
       weg.appendChild(zeile);
@@ -8049,6 +8071,7 @@ async function openPremium() {
     if (letzte && letzte.status === 'pending_review') {
       stand = el(`<div data-prstand="review" style="background:var(--info-bg);border:1px solid var(--info-bd);color:var(--info-fg);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:15px;line-height:1.5">
         ⏳ <b>${esc(ti('pr_review_t', { d: fmtZeit(letzte.claimed_at || letzte.created_at) }))}</b><div style="margin-top:4px">${esc(t('pr_review_s'))}</div></div>`);
+      stand.appendChild(pushAngebot('pw_frage_zahlung', 'pw_an_zahlung'));
     } else if (letzte && letzte.status === 'failed') {
       stand = el(`<div data-prstand="failed" style="background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-fg);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:15px;line-height:1.5">
         ⚠️ <b>${esc(t('pr_rejected_t'))}</b>${letzte.review_note ? `<div style="margin-top:4px">${esc(t('pr_rejected_why'))}: ${esc(zitat(ablehnGrund(letzte.review_note)))}</div>` : ''}<div style="margin-top:4px">${esc(t('pr_rejected_s'))}</div></div>`);
@@ -10719,6 +10742,7 @@ async function showNotifications() {
       else if (n.type === 'price_alert') { const w = (n.label||'').split(' · ')[0].trim(); mainScreen().then(()=> w ? openWirkstoff(w) : goTab('rabatte')); }
       else if (n.type === 'shortage_confirm') { mainScreen().then(()=>goTab('shortages')); }
       else if (n.type === 'payment_review') { showModeration(); }
+      else if (n.type === 'payment_rejected' && n.ref_type === 'anzeige') { openWerbung(); } // Anzeige: dort neu zahlen
       else if (n.type === 'payment_confirmed' || n.type === 'payment_rejected') { openPremium(); }
       else if (n.type === 'appt_request' || n.type === 'appt_confirmed' || n.type === 'appt_declined' || n.type === 'appt_cancelled') { mainScreen().then(()=>openAppointments()); }
       else if (n.type === 'promo_like' || n.type === 'promo_comment') { mainScreen().then(()=> n.ref_id ? openPromotionDetail(n.ref_id) : openPromotions()); }
