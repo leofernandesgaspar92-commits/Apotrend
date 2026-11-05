@@ -4485,3 +4485,17 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Fund:** Im Wartehinweis „Ihre Zahlung vom {d} wird geprüft" ist {d} der Zeitpunkt der Meldung. Arabisch stand
   „دفعتك البالغة {d}" — „Ihre Zahlung IN HÖHE VON {Datum}"; Englisch/Französisch/Portugiesisch lasen sich ebenso
   als Betrag („Your payment of 5 Nov…"). **Behoben:** „gemeldet am {d}" in allen vier Sprachen. Test rot→grün.
+
+### Ländernamen in der Sprache der App; Häfen nach Nähe (2026-11-05)
+- **Geprüft ohne Fund:** Platzhalter ({d}, {n} …) stimmen in allen 5 Sprachen überein; keine unübersetzten
+  deutschen Texte; arabische Krypto-Texte inhaltlich korrekt; Tron/USDT bewusst nicht als „niedrige Gebühr"
+  markiert; Auslieferung komprimiert (Brotli, Erstaufruf ≈ 190 KB) und bei Wiederkehr 304 ohne Datenvolumen.
+- **Fund (Rundgang Logistik, fr-SN, 360 px):** „Durban 🇿🇦 South Africa" mitten im französischen Text. Ursache:
+  `landLabel` nahm den Registernamen — gemischt deutsch/englisch („Deutschland", „South Africa", „Kenya"). Betraf
+  18 Stellen (Afrika-Übersicht, Presse, Lagebild, Häfen, Benachrichtigungen …); im Arabischen stand ein
+  lateinisches „Egypt"/„Kenya" im Satz. **Behoben:** Name per `Intl.DisplayNames` in der App-Sprache (Register als
+  Rückfall). Dazu: Häfen nach Nähe (eigenes Land, eigene Region, dann Rest) — für Senegal standen Koper und
+  Rotterdam oben.
+- **Offen (Vorschlag):** Für frankophones Westafrika fehlen Dakar und Abidjan in der Hafenliste.
+- **Tests:** `landname-sprache.test.js` (fr/en/de/pt/ar, rot→grün). Browser: fr-SN „Afrique du Sud", afrikanische
+  Häfen oben; ar-EG Startseite ohne lateinische Ländernamen.

@@ -3775,7 +3775,16 @@ async function loadNews() {
 // geprüft — hier zählt es trotzdem: Ein `javascript:`-Link in einer Quelle
 // wäre ein Klick, der Code ausführt.
 const sichererLink = (u) => (/^https?:\/\//i.test(String(u || '')) ? String(u) : null);
-const landLabel = (cc) => { const c = (COUNTRIES_CACHE || []).find(x => x.code === cc); return c ? `${c.flag} ${c.name}` : cc; };
+// Name in der Sprache der App (11/2026: vorher der Registername — gemischt deutsch/englisch, z. B. „South Africa"
+// oder „Deutschland" mitten im französischen bzw. arabischen Satz). Register-Name nur als Rückfall.
+let LAND_DN = null;
+const landLabel = (cc) => {
+  const c = (COUNTRIES_CACHE || []).find(x => x.code === cc);
+  if (!c) return cc;
+  let name = c.name;
+  try { if (!LAND_DN || LAND_DN.l !== LOCALE) LAND_DN = { l: LOCALE, dn: new Intl.DisplayNames([LOCALE], { type: 'region' }) }; const n = LAND_DN.dn.of(cc); if (n && n !== cc) name = n; } catch { /* Register-Name */ }
+  return `${c.flag} ${name}`;
+};
 
 // ── Drei Ebenen: Land / Region / Welt ──────────────────────────────────────
 // Region = die des angesehenen Landes (Uganda -> Afrika, Österreich -> Europa).
@@ -9807,6 +9816,10 @@ async function zeigeHaefen(box) {
   const tag = (iso) => { try { return new Date(iso + 'T12:00:00Z').toLocaleDateString(LOCALE, { weekday: 'short', day: 'numeric', month: 'numeric' }); } catch { return iso; } };
   // Häfen außerhalb der App-Länder (Koper, Rotterdam): Ländername vom Browser statt Kürzel „SI".
   const hafenLand = (cc) => { const l = landLabel(cc); if (l && l !== cc) return l; try { return new Intl.DisplayNames([LOCALE], { type: 'region' }).of(cc) || cc; } catch { return cc; } };
+  // Eigenes Land, dann eigene Region zuerst (11/2026: für Senegal standen Koper und Rotterdam oben).
+  const heim = (me && me.country) || viewCountry();
+  const naeheZuerst = (liste) => liste.map((h, i) => ({ h, i, r: h.land === heim ? 0 : REGION_VON(h.land) && REGION_VON(h.land) === REGION_VON(heim) ? 1 : 2 }))
+    .sort((a, b) => a.r - b.r || a.i - b.i).map((x) => x.h);
   const zeile = (h) => {
     const w = h.wetter;
     const heute = w.tage[0];
@@ -9825,7 +9838,7 @@ async function zeigeHaefen(box) {
   box.innerHTML = '';
   box.appendChild(el(`<div class="card"><b style="font-size:16px">⚓ ${esc(t('hf_titel'))}</b>
     <div class="muted" style="font-size:14px;margin:4px 0 6px">${esc(t('hf_hinweis'))}</div>
-    ${d.haefen.map(zeile).join('')}
+    ${naeheZuerst(d.haefen).map(zeile).join('')}
     <div class="muted" style="font-size:13px;margin-top:8px">${esc(t('hf_quelle'))}: ${quellen.join(' · ')}</div>${lpiZeile}</div>`));
 }
 
