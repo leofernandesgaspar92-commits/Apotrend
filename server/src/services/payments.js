@@ -238,7 +238,8 @@ export function createPaymentsService({
       }
       const ref = tx.ok ? tx.id : roh;
       const schon = repo.getPaymentByRef(p.provider, ref);
-      if (schon && schon.id !== p.id && ['pending_review', 'paid'].includes(schon.status)) {
+      // Auch Belege gelöschter Konten sperren ihre Transaktion (sonst zweites Premium für eine Zahlung).
+      if (schon && schon.id !== p.id && (['pending_review', 'paid'].includes(schon.status) || schon.konto_geloescht)) {
         throw new AppError('tx_already_claimed', 'Diese Transaktion wurde bereits gemeldet. Wenn es Ihre Zahlung ist, wenden Sie sich bitte an den Support.', 409);
       }
       repo.setPaymentRef(paymentId, ref);

@@ -4461,3 +4461,19 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Tests:** `download-iphone.test.js` (eine einzige Freigabe-Stelle, verzögert; kein eigener Download-Link
   außerhalb) — mit altem Code rot. Browser (Chromium): Datenauskunft wird heruntergeladen (26 Abschnitte), kein
   Link bleibt im Dokument.
+
+### Konto-Löschung: Zahlungen nicht mehr spurlos löschen — Beleg bleibt, Transaktion bleibt gesperrt (2026-11-05)
+- **Fund:** Beim Löschen eines Kontos wurden ALLE Zahlungen gelöscht, auch bezahlte. Folgen: (1) Der Schutz
+  „eine Krypto-Transaktion nur einmal melden" hing am gelöschten Datensatz — mit neuem Konto ließ sich dieselbe
+  Transaktion erneut melden (zweites Premium für eine Zahlung, wenn die Prüfung es übersieht). (2) Der Beleg einer
+  bezahlten Zahlung verschwand; Rechnungen bleiben schon wegen der Aufbewahrungspflicht. (3) Die Einnahmen im
+  Betriebs-Cockpit sanken, wenn ein zahlendes Konto gelöscht wurde.
+- **Behoben:** Bezahlte und gemeldete Zahlungen bleiben OHNE Personenbezug stehen (`user_id: null`,
+  `konto_geloescht`); gemeldete, noch ungeprüfte werden „abgebrochen" (nicht mehr in der Prüfliste); ihre
+  Transaktion bleibt gesperrt. Abgelehnte Meldungen verschwinden — sie dürfen die echte Zahlerin nicht blockieren.
+  Nie gemeldete Starts verschwinden. Löschtext in der App und Datenschutzerklärung (5 Sprachen) nennen die
+  Ausnahme ehrlich.
+- **Offen (Betreiber):** Die Buchungszeile in PostgreSQL (nur mit DATABASE_URL) behält die Konto-ID — als
+  Buchungsbeleg; ob sie nach der Löschung pseudonymisiert werden soll, gehört zur rechtlichen Prüfung (Punkt 5).
+- **Tests:** `zahlung-nach-loeschung.test.js` (6 Fälle inkl. Neustart aus der Sicherung) — vorher 2 rot;
+  Gegenproben (Sperre ohne gelöschte Belege; abgelehnte bleiben stehen) rot.

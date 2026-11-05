@@ -192,7 +192,18 @@ export function createMemoryRepo({ jetzt = () => Date.now() } = {}) {
       for (const [id, m] of memberships) if (m.user_id === userId) memberships.delete(id);
       for (const [k, uid] of identities) if (uid === userId) identities.delete(k);
       entitlements.delete(userId);
-      for (const [id, p] of payments) if (p.user_id === userId) { payments.delete(id); if (p.provider_ref) paymentsByRef.delete(`${p.provider}:${p.provider_ref}`); }
+      // Zahlungen (11/2026): Bezahlte und gemeldete bleiben als Beleg stehen — OHNE Personenbezug. Vorher wurde
+      // alles gelöscht: Der Beleg fehlte, und dieselbe Krypto-Transaktion ließ sich mit neuem Konto erneut melden.
+      // Gemeldete, noch ungeprüfte: abgebrochen (niemand mehr freizuschalten), Transaktion bleibt gesperrt.
+      // Nie gemeldete Starts (ohne Transaktion) verschwinden ganz.
+      for (const [id, p] of payments) {
+        if (p.user_id !== userId) continue;
+        // Abgelehnte Meldungen verschwinden: Sie dürfen die Transaktion nicht sperren (sonst blockiert eine abgelehnte,
+        // abgeschriebene fremde ID samt Konto-Löschung die echte Zahlerin).
+        if (p.status === 'paid' || p.status === 'pending_review') {
+          payments.set(id, { ...p, user_id: null, konto_geloescht: true, ...(p.status === 'pending_review' ? { status: 'failed', review_note: 'Konto gelöscht' } : {}) });
+        } else { payments.delete(id); if (p.provider_ref) paymentsByRef.delete(`${p.provider}:${p.provider_ref}`); }
+      }
     },
 
     createMembership({ userId, organizationId, role }) {
