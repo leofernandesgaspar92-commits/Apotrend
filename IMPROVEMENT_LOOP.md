@@ -4571,3 +4571,16 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   `openBegleitzettel` baut die Hauptansicht selbst auf (wie die anderen Unterseiten).
 - **Audit erweitert:** Patienten-Infokarten und Begleitzettel laufen jetzt durch Kontrast- und A11y-Prüfung
   (hell + dunkel). Vor dem Fix rot (1 Feld ohne Namen, 2× Kontrast), danach grün.
+
+### „Passwort vergessen": Ausweg, wenn kein Wiederherstellungscode mehr da ist (2026-11-06)
+- **Fund:** Solange kein E-Mail-Versand eingerichtet ist, bot „Passwort vergessen" nur das Formular mit
+  Wiederherstellungscode. Die Codes werden einmal angezeigt — wer sie nicht notiert hat, stand vor einer Sackgasse:
+  kein Hinweis, kein Kontakt. Für eine Apothekerin in Kenia heißt das: Konto weg, neues anlegen, Meldungen verloren.
+- **Behoben:** Kasten „Keinen Code mehr?" (5 Sprachen) unter dem Formular. Ist `APOPULSE_KONTAKT_EMAIL` gesetzt,
+  steht dort die Adresse als großer Knopf (Mail mit vorausgefülltem Betreff, Bitte: von der Konto-Adresse schreiben,
+  wir prüfen die Zugehörigkeit). Sonst Knopf zum Impressum in der eigenen Sprache. `/api/auth/providers` liefert dafür
+  `hilfe_email` — dieselbe Adresse, die das Impressum ohnehin öffentlich nennt, sonst `null`.
+- **Geprüft im Browser (360 px):** en mit Adresse, fr ohne Adresse (Impressum-Link), ar (RTL, Adresse links→rechts
+  isoliert); kein Querscrollen, Knöpfe 44–68 px hoch.
+- **Test:** `passwort-hilfe.test.js` (Server mit/ohne Adresse, Kasten auf der Seite, Texte in 5 Sprachen).
+  Gegenproben: ohne `hilfe_email` im Server, ohne Auslesen in der App, Kasten nicht eingesetzt — jeweils rot.

@@ -2083,7 +2083,8 @@ const routes = [
       if (redirectUri) { try { authorize_url = oauth.authorizeUrl(name, redirectUri, name); } catch { /* Provider ohne Authorize-URL */ } }
       return { provider: name, authorize_url };
     });
-    return { providers, passwort_link: passwortLink.aktiv, telefon: telefonLogin.aktiv, ...(telefonLogin.aktiv ? { vorwahlen: VORWAHL } : {}) };
+    // hilfe_email: öffentliche Kontakt-Adresse (steht ohnehin im Impressum) — Ausweg für „keinen Code mehr".
+    return { providers, passwort_link: passwortLink.aktiv, telefon: telefonLogin.aktiv, hilfe_email: betreiberAngaben(process.env).email, ...(telefonLogin.aktiv ? { vorwahlen: VORWAHL } : {}) };
   }],
   ['POST', /^\/api\/auth\/oauth\/([a-z0-9_]+)$/, false, async ({ params, body }) => {
     const { userId, created } = await oauth.loginOrRegister(params[0], body.code, body.redirectUri, { country: normalizeCountry(body.country), locale: body.locale });

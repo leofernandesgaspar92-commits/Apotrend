@@ -1155,8 +1155,15 @@ async function resetScreen() {
   setDocTitle(t('rs_title'));
   hideHeaderForAuth();
   app.innerHTML = '';
-  let mitLink = false, mitTelefon = false;
-  try { const pv = await api('GET', '/api/auth/providers'); mitLink = !!pv.passwort_link; mitTelefon = !!pv.telefon; } catch { /* dann nur Code */ }
+  let mitLink = false, mitTelefon = false, hilfeEmail = null;
+  try { const pv = await api('GET', '/api/auth/providers'); mitLink = !!pv.passwort_link; mitTelefon = !!pv.telefon; hilfeEmail = pv.hilfe_email || null; } catch { /* dann nur Code */ }
+  // Ausweg, wenn kein Code mehr da ist (Codes werden nur einmal angezeigt): Kontakt, keine Sackgasse.
+  const hilfe = `<div data-rshilfe style="margin-top:18px;padding:12px;border:1px solid var(--line);border-radius:10px">
+    <h2 style="font-size:17px;margin:0 0 6px">${esc(t('rs_hilfe_titel'))}</h2>
+    ${hilfeEmail
+    ? `<p style="font-size:16px;margin:0 0 8px">${esc(t('rs_hilfe_mail'))}</p><a class="btn-link" style="font-size:16px;word-break:break-all" href="mailto:${esc(hilfeEmail)}?subject=${encodeURIComponent(t('rs_hilfe_betreff'))}">✉ <span dir="ltr">${esc(hilfeEmail)}</span></a>`
+    : `<p style="font-size:16px;margin:0 0 8px">${esc(t('rs_hilfe_ohne'))}</p><a class="btn-link" style="font-size:16px" href="/impressum?sp=${esc(LOCALE)}" target="_blank" rel="noopener">${esc(t('rs_hilfe_impressum'))}</a>`}
+  </div>`;
   const codeForm = `<form id="rs_form">
     <div class="muted" style="margin-top:4px">${esc(t('rs_intro'))}</div>
     <label for="rs_email" style="margin-top:10px">${esc(t('au_email'))}</label><input id="rs_email" type="email" autocomplete="username" placeholder="${esc(t('au_email_ph'))}">
@@ -1172,6 +1179,7 @@ async function resetScreen() {
       <button type="submit" id="rs_l_go" class="auth-gross" style="width:100%;margin-top:12px">${esc(t('rs_link_go'))}</button>
       <div id="rs_l_msg" role="status" style="margin-top:8px;font-size:16px"></div></form>
       <details style="margin-top:18px"><summary style="cursor:pointer;font-size:16px;padding:6px 0">${esc(t('rs_code_toggle'))}</summary>${codeForm}</details>` : codeForm}
+    ${hilfe}
     <button type="button" class="linklike small" id="rs_back" style="margin-top:14px">${esc(t('rs_back'))}</button>
   </div>`);
   app.appendChild(card);
