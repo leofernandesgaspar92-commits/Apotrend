@@ -3304,10 +3304,13 @@ async function anfrage(req, res) {
     // Token gültig signiert, aber Nutzer existiert nicht mehr (Konto gelöscht) oder die
     // Sitzung wurde beendet (Passwort geändert, „überall abmelden") -> wie nicht angemeldet
     // behandeln, damit ein sauberes 401 statt eines Folgefehlers (400) kommt.
-    if (userId && !sitzungGueltig(sitzung, repo.getUserById(userId))) userId = null;
+    // grund 'sitzung_beendet': Konto besteht, Sitzung wurde beendet — die App sagt es (Sicherheitssignal:
+    // „Waren Sie das nicht? Passwort zurücksetzen"). Gelöschtes Konto / kaputter Schlüssel: kein Grund.
+    let sitzungBeendet = false;
+    if (userId) { const u = repo.getUserById(userId); if (!sitzungGueltig(sitzung, u)) { sitzungBeendet = !!u; userId = null; } }
     // Eigener Code, damit das Frontend eine ABGELAUFENE/UNGÜLTIGE Sitzung von anderen
     // 401 (falscher Login, falsches Passwort) unterscheiden und sauber zum Login führen kann.
-    if (authRequired && !userId) return json(req, res, 401, { error: 'Nicht angemeldet', code: 'not_authenticated' });
+    if (authRequired && !userId) return json(req, res, 401, { error: 'Nicht angemeldet', code: 'not_authenticated', ...(sitzungBeendet ? { grund: 'sitzung_beendet' } : {}) });
     // Während der Wiederherstellung aus der Datenbank (Sekunden nach einem Deploy, länger nur bei
     // unerreichbarer Datenbank): keine Schreib-Anfragen. Ein jetzt angelegtes Konto landete in einem
     // Stand, den die Wiederherstellung gleich ersetzt. 503 + Retry-After — die App wiederholt

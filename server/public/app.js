@@ -447,9 +447,11 @@ const api = async (method, path, body) => {
     // Abgelaufene/ungültige Sitzung: Token verwerfen und sauber zum Login-/Länder-Screen —
     // statt die Nutzer:in mit „Nicht angemeldet"-Fehlern an jeder Aktion hängen zu lassen.
     if (data.code === 'not_authenticated' && localStorage.getItem('apo_token')) {
-      localStorage.removeItem('apo_token'); offlineSpeicherLeeren();
+      // Von woanders beendet (Passwort geändert, „auf allen anderen Geräten abmelden"): auf der Anmeldeseite sagen.
+      if (data.grund === 'sitzung_beendet') { try { sessionStorage.setItem('apo_sitzung_beendet', '1'); } catch { /* dann ohne Hinweis */ } }
+      localStorage.removeItem('apo_token'); offlineSpeicherLeeren(); pushLokalBeenden();
       (_hasCountry() ? authScreen() : countryScreen());
-      throw new Error(t('e_network')); // stoppt die weitere Verarbeitung beim Aufrufer
+      const e = new Error(t('e_network')); e.code = 'not_authenticated'; throw e; // stoppt die weitere Verarbeitung beim Aufrufer
     }
     // Fehler-Code (falls vorhanden) übersetzen — sonst die (deutsche) Server-message.
     // So werden alle e.message-Anzeigestellen automatisch mehrsprachig.
@@ -1016,7 +1018,13 @@ function authScreen() {
   };
   app.querySelectorAll('[data-auth]').forEach((b) => { b.onclick = () => zeigeAuth(b.dataset.auth); });
   let kontoBekannt = false; try { kontoBekannt = !!localStorage.getItem('apo_konto_bekannt'); } catch { /* ohne Speicher: Registrierung zuerst */ }
-  zeigeAuth(kontoBekannt || oauthFehler ? 'login' : 'register');
+  let sitzungBeendet = false; try { sitzungBeendet = !!sessionStorage.getItem('apo_sitzung_beendet'); sessionStorage.removeItem('apo_sitzung_beendet'); } catch { /* egal */ }
+  zeigeAuth(kontoBekannt || oauthFehler || sitzungBeendet ? 'login' : 'register');
+  // Von woanders abgemeldet: erklären — und was zu tun ist, wenn man es nicht selbst war.
+  if (sitzungBeendet) {
+    const f = document.getElementById('li_form');
+    if (f) f.prepend(el(`<div class="lage-box" data-sitzungbeendet role="status" style="margin:0 0 12px;font-size:16px"><b>${esc(t('sb_titel'))}</b><div style="margin-top:4px">${esc(ti('sb_text', { abmelden: t('ac_sess_btn'), vergessen: t('au_forgot') }))}</div></div>`));
+  }
   // Anmeldung über Google/Facebook gescheitert: sagen warum, statt still zurückzufallen.
   if (oauthFehler) { document.getElementById('li_err').textContent = oauthFehler; oauthFehler = null; }
   // Impressum · Datenschutz (Pflichtangaben) — auch vor der Anmeldung erreichbar.
@@ -5017,6 +5025,11 @@ async function pushEinschalten() {
 async function pushAusschalten() {
   const abo = await pushAboHier();
   if (abo) { await api('POST', '/api/push/abbestellen', { endpoint: abo.endpoint }).catch(() => {}); try { await abo.unsubscribe(); } catch { /* egal */ } }
+}
+// Gerät wurde von woanders abgemeldet: Abo nur im Browser beenden (der Server nimmt es ohnehin nicht mehr an).
+// Sonst übernähme die nächste Person an diesem Gerät das alte Abo beim Start (pushNeuMelden).
+async function pushLokalBeenden() {
+  try { const abo = await pushAboHier(); if (abo) await abo.unsubscribe(); } catch { /* egal */ }
 }
 // Abmelden = auch keine Benachrichtigungen mehr auf DIESEM Gerät (geteilter Rechner am Tresen, weitergegebenes
 // Handy). Höchstens 3 s — offline oder ohne Service Worker darf das Abmelden nicht hängen.

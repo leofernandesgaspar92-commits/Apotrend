@@ -4622,3 +4622,19 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Test:** `push-sitzungen.test.js` (Baustein; über HTTP mit nachgestelltem Push-Dienst: Tresen-Rechner bekommt nach
   „alle anderen abmelden" nichts mehr, kann sich nicht neu anmelden; nach Reset per Code keine Geräte mehr; App-Abläufe).
   Sechs Gegenproben — jeweils rot. Browser (360 px): Abmelden mit/ohne Service Worker, keine JS-Fehler.
+
+### Von woanders abgemeldet: Erklärung statt kommentarloser Anmeldeseite (2026-11-06)
+- **Geprüft ohne Fund:** Normales Abmelden leert Offline-Speicher, Entwurf und Warteschlange; ein hinausgeworfenes Gerät
+  räumt beim ersten 401 ebenso auf.
+- **Fund (Rundgang fr-SN, 360 px, Tresen-Rechner):** Wird ein Gerät durch „Auf allen anderen Geräten abmelden" oder einen
+  Passwortwechsel hinausgeworfen, stand die Person kommentarlos vor der Anmeldung — ohne Hinweis, dass das ein
+  Sicherheitssignal sein kann („Waren Sie das nicht?"). Außerdem blieb das Push-Abo im Browser dieses Geräts; die nächste
+  Person am Tresen hätte es beim Start (pushNeuMelden) übernommen.
+- **Behoben:** Der Server nennt bei 401 den Grund `grund: 'sitzung_beendet'` — nur wenn das Konto besteht und die Sitzung
+  beendet wurde (kaputter Schlüssel / gelöschtes Konto: kein Grund, nichts über Konten verraten). Der Code bleibt
+  `not_authenticated` (alte App-Versionen). Die App öffnet „Anmelden" mit Hinweis (5 Sprachen) und nennt, was zu tun ist,
+  wenn man es nicht selbst war; die zitierten Knöpfe kommen aus denselben Texten wie die Knöpfe (en/pt/fr wichen im ersten
+  Entwurf ab). Der Hinweis erscheint einmal. Push wird im Browser dieses Geräts beendet.
+- **Test:** `sitzung-beendet-hinweis.test.js` (HTTP: Grund nur bei beendeter Sitzung; App: Hinweis, Reiter, Push,
+  Platzhalter). Fünf Gegenproben — jeweils rot. Browser fr/ar/en (360 px): Hinweis sichtbar, „Anmelden" offen, kein
+  Querscrollen, nach Neuladen weg.
