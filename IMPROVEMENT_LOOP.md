@@ -4605,3 +4605,20 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Test:** `zugang-redaktion.test.js` (Ende-zu-Ende über HTTP: Rechte, Redaktionskonto gesperrt, unbekannte Adresse,
   24 h, Glocke, Sprache des Kontos, Einlösen einmalig, altes Passwort ungültig, kein Link im Log; Karte + Texte).
   Sechs Gegenproben (Redaktionskonto-Sperre, Glocke, Sprache, Gültigkeit, Karte, Glocken-Text) — jeweils rot.
+
+### Push-Benachrichtigungen enden mit der Sitzung (2026-11-06)
+- **Geprüft ohne Fund:** Zurücksetzen per Code, per Link und per Redaktions-Link sowie Passwortwechsel beenden alle
+  Anmeldungen (`sitzungen_ab`) — korrekt.
+- **Fund:** Die Push-Abos hingen NICHT an der Sitzung. (1) „Abmelden" löschte nur den Anmelde-Schlüssel im Browser —
+  ein geteilter Rechner am Tresen oder ein weitergegebenes Handy bekam weiter „Zahlung bestätigt", Präparate aus
+  Angebotsanfragen, Bestätigungs-Entscheidungen. (2) Nach Passwort-Reset oder „auf allen anderen Geräten abmelden" war
+  die Anmeldung des fremden Geräts ungültig, seine Benachrichtigungen liefen weiter.
+- **Behoben:** Eine Regel wie bei Anmelde-Schlüsseln: Ein Abo, das älter ist als „Sitzungen beendet", gilt nicht
+  (wird beim nächsten Versand entfernt, zählt nicht als Gerät, steht nicht in der Auskunft). Abmelden meldet Push auf
+  diesem Gerät ab (höchstens 3 s, nie blockierend). Das eigene Gerät meldet sein Abo nach Passwortwechsel / „alle
+  anderen abmelden" und bei jedem Start still neu an — „Push an" stimmt dann auch wirklich.
+- **Nebenbei:** Ohne Service Worker (blockiert, privater Modus) wartete die Push-Abfrage auf `serviceWorker.ready`,
+  das nie kommt — Abmelden dauerte 3 s. Jetzt `getRegistration()`: 69 ms.
+- **Test:** `push-sitzungen.test.js` (Baustein; über HTTP mit nachgestelltem Push-Dienst: Tresen-Rechner bekommt nach
+  „alle anderen abmelden" nichts mehr, kann sich nicht neu anmelden; nach Reset per Code keine Geräte mehr; App-Abläufe).
+  Sechs Gegenproben — jeweils rot. Browser (360 px): Abmelden mit/ohne Service Worker, keine JS-Fehler.

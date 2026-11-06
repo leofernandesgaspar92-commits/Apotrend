@@ -84,9 +84,12 @@ export function aboPruefen(sub, { lokalErlaubt = false } = {}) {
   return { endpoint: u.href, keys: { p256dh: b64u(p), auth: b64u(a) } };
 }
 
-export function createWebPush({ schluessel = vapidSchluesselErzeugen(), subject = 'mailto:kontakt@apopulse.com', fetchImpl = globalThis.fetch, lokalErlaubt = false, ausUmgebung = false } = {}) {
+export function createWebPush({ schluessel = vapidSchluesselErzeugen(), subject = 'mailto:kontakt@apopulse.com', fetchImpl = globalThis.fetch, lokalErlaubt = false, ausUmgebung = false, sitzungenAb = () => null } = {}) {
   let keys = schluessel;
   const abos = new Map(); // endpoint -> { user_id, endpoint, keys, seit }
+  // Ein Abo endet mit der Sitzung, in der es entstand: älter als „Sitzungen beendet" (Passwort geändert/
+  // zurückgesetzt, „auf allen anderen Geräten abmelden") = ungültig — dieselbe Regel wie für Anmelde-Schlüssel.
+  const gueltig = (a) => { const ab = sitzungenAb(a.user_id); return !ab || Date.parse(a.seit || 0) >= ab; };
   let gesendetGesamt = 0;
 
   async function an(abo, text) {
@@ -116,15 +119,17 @@ export function createWebPush({ schluessel = vapidSchluesselErzeugen(), subject 
       if (a && a.user_id === userId) abos.delete(a.endpoint);
       return { ok: true, geraete: this.geraete(userId) };
     },
-    geraete: (userId) => [...abos.values()].filter((x) => x.user_id === userId).length,
+    geraete: (userId) => [...abos.values()].filter((x) => x.user_id === userId && gueltig(x)).length,
     /** Auskunft (DSGVO Art. 15): welcher Push-Dienst, seit wann — ohne die Geräteschlüssel. */
-    geraeteVon: (userId) => [...abos.values()].filter((x) => x.user_id === userId).map((x) => { let dienst = ''; try { dienst = new URL(x.endpoint).host; } catch { /* egal */ } return { dienst, seit: x.seit || null }; }),
+    geraeteVon: (userId) => [...abos.values()].filter((x) => x.user_id === userId && gueltig(x)).map((x) => { let dienst = ''; try { dienst = new URL(x.endpoint).host; } catch { /* egal */ } return { dienst, seit: x.seit || null }; }),
     nutzerEntfernen(userId) { for (const a of [...abos.values()]) if (a.user_id === userId) abos.delete(a.endpoint); },
     /** An alle Geräte einer Person. Fehler eines Geräts halten die anderen nicht auf. */
     async senden(userId, nachricht) {
       const text = JSON.stringify(nachricht);
-      const ziele = [...abos.values()].filter((x) => x.user_id === userId);
+      const alle = [...abos.values()].filter((x) => x.user_id === userId);
       const erg = { ok: 0, entfernt: 0, fehler: 0 };
+      for (const a of alle) if (!gueltig(a)) { abos.delete(a.endpoint); erg.entfernt++; }
+      const ziele = alle.filter(gueltig);
       await Promise.all(ziele.map(async (a) => {
         try { const s = await an(a, text); if (s === 'ok') erg.ok++; else if (s === 'entfernt') erg.entfernt++; else erg.fehler++; } catch { erg.fehler++; }
       }));

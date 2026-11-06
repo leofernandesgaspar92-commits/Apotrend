@@ -1515,6 +1515,7 @@ async function mainScreen({ ohneReiter = false } = {}) {
   renderWhoami();
   await vorabFeatures;
   document.getElementById('btnLogout').classList.remove('hidden');
+  pushNeuMelden(); // Start: Abo dieses Geräts beim Server bestätigen (gehört es noch zu diesem Konto?)
   document.getElementById('btnNotif').classList.remove('hidden');
   if (featureAn('direktnachrichten')) document.getElementById('btnDm')?.classList.remove('hidden');
   const btnMod = document.getElementById('btnMod');
@@ -1530,7 +1531,7 @@ async function mainScreen({ ohneReiter = false } = {}) {
   if (btnDatenApi) { btnDatenApi.classList.toggle('hidden', !featureAn('daten_api')); btnDatenApi.onclick = () => openDatenApi(); }
   const btnEinladen = document.getElementById('btnEinladen');
   if (btnEinladen) { btnEinladen.classList.toggle('hidden', !!(me && me.account_type === 'private')); btnEinladen.onclick = () => openEinladen(); }
-  document.getElementById('btnLogout').onclick = async () => { localStorage.removeItem('apo_token'); await offlineSpeicherLeeren(); location.reload(); };
+  document.getElementById('btnLogout').onclick = async () => { await pushBeimAbmelden(); localStorage.removeItem('apo_token'); await offlineSpeicherLeeren(); location.reload(); };
   document.getElementById('btnNotif').onclick = showNotifications;
   // Knöpfe ruhender Bereiche entfernt wendeFeaturesAn() aus der Seite. Beim
   // ZWEITEN mainScreen()-Aufruf (z. B. Klick auf eine Benachrichtigung) gab es
@@ -5001,7 +5002,9 @@ const istIphoneOhneApp = () => /iPhone|iPad|iPod/.test(navigator.userAgent) && !
 const b64uBytes = (s) => { const r = atob(String(s).replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(s.length / 4) * 4, '=')); return Uint8Array.from(r, (c) => c.charCodeAt(0)); };
 async function pushAboHier() {
   if (!pushMoeglich()) return null;
-  try { const reg = await navigator.serviceWorker.ready; return await reg.pushManager.getSubscription(); } catch { return null; }
+  // getRegistration statt .ready: .ready wartet ewig, wenn kein Service Worker läuft (blockiert, privater
+  // Modus) — Abmelden hing dann 3 s. Ohne Registrierung gibt es auch kein Abo.
+  try { const reg = await navigator.serviceWorker.getRegistration(); return reg ? await reg.pushManager.getSubscription() : null; } catch { return null; }
 }
 async function pushEinschalten() {
   const erlaubt = await Notification.requestPermission();
@@ -5014,6 +5017,21 @@ async function pushEinschalten() {
 async function pushAusschalten() {
   const abo = await pushAboHier();
   if (abo) { await api('POST', '/api/push/abbestellen', { endpoint: abo.endpoint }).catch(() => {}); try { await abo.unsubscribe(); } catch { /* egal */ } }
+}
+// Abmelden = auch keine Benachrichtigungen mehr auf DIESEM Gerät (geteilter Rechner am Tresen, weitergegebenes
+// Handy). Höchstens 3 s — offline oder ohne Service Worker darf das Abmelden nicht hängen.
+async function pushBeimAbmelden() {
+  if (!pushMoeglich()) return;
+  await Promise.race([pushAusschalten().catch(() => {}), new Promise((ok) => setTimeout(ok, 3000))]);
+}
+// Vorhandenes Abo dieses Geräts beim Server (neu) anmelden: Nach „Sitzungen beendet" gilt ein älteres Abo
+// nicht mehr (webPush.js), und beim Start stimmt „Push an" so auch wirklich. Still — Fehler sind egal.
+async function pushNeuMelden() {
+  try {
+    if (!pushMoeglich() || Notification.permission !== 'granted') return;
+    const abo = await Promise.race([pushAboHier(), new Promise((ok) => setTimeout(() => ok(null), 2500))]);
+    if (abo) await api('POST', '/api/push/abo', { abo: abo.toJSON ? abo.toJSON() : abo });
+  } catch { /* still */ }
 }
 // Wer auf etwas WARTET (Krypto-Zahlung in Prüfung), bekommt das Einschalten genau dort angeboten —
 // bis 11/2026 stand dort nur „Sie bekommen eine Benachrichtigung", der Knopf lag versteckt unter
@@ -9127,14 +9145,13 @@ async function openProfile(handle) {
         const msg = dcard.querySelector('#pw_msg');
         try { const r = await api('POST','/api/me/password',{ oldPassword:v('pw_old'), newPassword:v('pw_new') });
           // Alle Sitzungen sind beendet — dieses Gerät bleibt mit dem neuen Token angemeldet.
-          if (r && r.token) localStorage.setItem('apo_token', r.token);
+          if (r && r.token) localStorage.setItem('apo_token', r.token); pushNeuMelden();
           msg.style.color='var(--green)'; msg.textContent=t('ac_pw_ok2'); dcard.querySelector('#pw_old').value=''; dcard.querySelector('#pw_new').value='';
         } catch(e){ msg.style.color='var(--crit-fg)'; msg.textContent=e.message; }
       };
       dcard.querySelector('#sess_end').onclick = async () => {
         const msg = dcard.querySelector('#sess_msg');
-        try { const r = await api('POST','/api/me/sitzungen/beenden');
-          if (r && r.token) localStorage.setItem('apo_token', r.token);
+        try { const r = await api('POST','/api/me/sitzungen/beenden'); if (r && r.token) localStorage.setItem('apo_token', r.token); pushNeuMelden();
           msg.style.color='var(--green)'; msg.textContent=t('ac_sess_ok'); dcard.querySelector('#sess_end').disabled = true;
         } catch(e){ msg.style.color='var(--crit-fg)'; msg.textContent=e.message; }
       };

@@ -238,6 +238,8 @@ const webPush = createWebPush({
   subject: String(process.env.APOPULSE_PUBLIC_URL || 'https://www.apopulse.com').replace(/\/+$/, ''),
   // Nur für Tests: lokaler nachgestellter Push-Dienst.
   lokalErlaubt: process.env.APOPULSE_PUSH_LOKAL_ERLAUBT === '1',
+  // Push-Abos enden mit der Sitzung (Passwort neu, „alle anderen Geräte abmelden").
+  sitzungenAb: (uid) => { const u = repo.getUserById(uid); return (u && u.sitzungen_ab) || null; },
 });
 function pushSprache(userId) {
   const p = social.getProfile(userId);
