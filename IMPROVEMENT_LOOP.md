@@ -4558,3 +4558,16 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Wächter:** `fachkreise-begriff.test.js` durchsucht jetzt ALLE Server-Dateien und öffentlichen HTML-Seiten
   (Kommentare ausgenommen) statt einer festen Liste — er fand dabei sofort den Startklar-Check. Mit altem
   Startseiten-Kopf rot.
+
+### Patienten-Infokarten und Begleitzettel: Barrierefreiheit (2026-11-06)
+- **Geprüft ohne Fund:** Bestandsaustausch ruht (nicht live) — übersprungen. Krypto-Zahlung bleibt ausdrücklich
+  von „zahlungen ruht" ausgenommen (Test schützt das). Patienten-Infokarten fr-SN / ar-EG / en-KE (360 px):
+  richtige Sprache vorgewählt, kein Querscrollen, Quelle (WHO außerhalb Österreichs), keine JS-Fehler.
+- **Fund (Begleitzettel):** Die Etiketten waren nicht mit den Feldern verknüpft. Die Auswahl „Einnahme & Essen"
+  hatte gar keinen Namen (Bildschirmleser sagt nur den Wert), Präparat/Dauer/Hinweise nur den Platzhalter, der beim
+  Tippen verschwindet; Antippen des Etiketts setzte den Cursor nicht ins Feld. Dazu: der Leer-Hinweis der Vorschau
+  in #777 auf Weiß — knapp unter WCAG AA (hell und dunkel).
+- **Behoben:** `for`/`id` an allen Feldern, Sprachauswahl als benannte Gruppe, Hinweis in #595959;
+  `openBegleitzettel` baut die Hauptansicht selbst auf (wie die anderen Unterseiten).
+- **Audit erweitert:** Patienten-Infokarten und Begleitzettel laufen jetzt durch Kontrast- und A11y-Prüfung
+  (hell + dunkel). Vor dem Fix rot (1 Feld ohne Namen, 2× Kontrast), danach grün.

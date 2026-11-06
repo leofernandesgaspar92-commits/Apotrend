@@ -8517,8 +8517,8 @@ function writeZettel(w, z, cards) {
   w.document.close();
   druckenWennGeladen(w);
 }
-function openBegleitzettel() {
-  const feed = document.getElementById('feed');
+async function openBegleitzettel() {
+  const feed = await hauptbereich(); // fehlt nach einer Unterseite: Hauptansicht aufbauen (11/2026)
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); setTabAria();
   feed.innerHTML = '';
   const head = el(`<div class="card" style="border-inline-start:4px solid var(--green)">
@@ -8529,25 +8529,25 @@ function openBegleitzettel() {
   head.querySelector('[data-back]').onclick = () => goTab('overview');
   feed.appendChild(head);
   const form = el(`<div class="card">
-    <label>${esc(t('bz_med'))}</label>
-    <input data-z-p placeholder="${esc(t('bz_med_ph'))}">
+    <label for="bz_p">${esc(t('bz_med'))}</label>
+    <input id="bz_p" data-z-p placeholder="${esc(t('bz_med_ph'))}">
     <label style="margin-top:8px">${esc(t('bz_schema'))}</label>
     <div class="row" style="gap:6px;flex-wrap:wrap">
       ${[['m',t('bz_morning')],['mi',t('bz_noon')],['a',t('bz_evening')],['n',t('bz_night')]].map(([k,l])=>`<label style="flex:1;min-width:80px;font-size:13px">${esc(l)}<input data-z-${k} value="0" style="width:100%;text-align:center"></label>`).join('')}
     </div>
-    <label style="margin-top:8px">${esc(t('bz_food'))}</label>
-    <select data-z-e>
+    <label for="bz_e" style="margin-top:8px">${esc(t('bz_food'))}</label>
+    <select id="bz_e" data-z-e>
       <option value="unabh">${esc(t('bz_food_indep'))}</option>
       <option value="vor">${esc(t('bz_food_before'))}</option>
       <option value="zum">${esc(t('bz_food_with'))}</option>
       <option value="nach">${esc(t('bz_food_after'))}</option>
     </select>
-    <label style="margin-top:8px">${esc(t('bz_duration'))}</label>
-    <input data-z-d placeholder="${esc(t('bz_duration_ph'))}">
-    <label style="margin-top:8px">${esc(t('bz_notes'))}</label>
-    <textarea data-z-h placeholder="${esc(t('bz_notes_ph'))}"></textarea>
+    <label for="bz_d" style="margin-top:8px">${esc(t('bz_duration'))}</label>
+    <input id="bz_d" data-z-d placeholder="${esc(t('bz_duration_ph'))}">
+    <label for="bz_h" style="margin-top:8px">${esc(t('bz_notes'))}</label>
+    <textarea id="bz_h" data-z-h placeholder="${esc(t('bz_notes_ph'))}"></textarea>
     <label style="margin-top:8px">${esc(t('bz_lang_label'))}</label>
-    <div class="row" data-z-langs style="gap:6px;flex-wrap:wrap"></div>
+    <div class="row" data-z-langs role="group" aria-label="${esc(t('bz_lang_label'))}" style="gap:6px;flex-wrap:wrap"></div>
     <label style="margin-top:10px;display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer">
       <input type="checkbox" data-z-cards style="width:auto;margin:0"> ${esc(t('bz_cards'))}
     </label>
@@ -8569,7 +8569,7 @@ function openBegleitzettel() {
     const z = readZ(); const box = preview.querySelector('[data-z-prev]');
     // Vorschau in der Richtung der Zettel-Sprache (Arabisch von rechts nach links).
     box.setAttribute('dir', richtungVon(z.praeparat ? z.lang : LOCALE)); box.setAttribute('lang', z.praeparat ? z.lang : LOCALE);
-    box.innerHTML = z.praeparat ? zettelBody(z) : `<span style="color:#777">${esc(t('bz_preview_empty'))}</span>`;
+    box.innerHTML = z.praeparat ? zettelBody(z) : `<span style="color:#595959">${esc(t('bz_preview_empty'))}</span>`;
   };
   const langBox = form.querySelector('[data-z-langs]');
   const drawLangs = () => {

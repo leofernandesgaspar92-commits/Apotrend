@@ -224,7 +224,8 @@ async function main() {
     }
     // B2B-Seiten (Sprint 5): dieselben Prüfungen. Hier fand sich 11/2026 ein Link in Browser-Blau
     // auf dunklem Grund (1,9:1) — die App hatte keine Linkfarbe für einfache Links.
-    for (const [label, fn] of [['Beschaffung', () => openSourcing()], ['Zulassungen', () => openMedInt()], ['Ausbruchs-Radar', () => openAusbruch()]]) {
+    // Patienten-Infokarten + Begleitzettel (11/2026): Auswahl „zum Essen" ohne Namen, Etiketten nicht mit den Feldern verknüpft.
+    for (const [label, fn] of [['Beschaffung', () => openSourcing()], ['Zulassungen', () => openMedInt()], ['Ausbruchs-Radar', () => openAusbruch()], ['Patienten-Infokarten', () => openPatientInfo()], ['Begleitzettel', () => openBegleitzettel()]]) {
       await page.evaluate(fn); await page.waitForTimeout(900);
       const kontrast = await page.evaluate(KONTRAST_MESSEN);
       if (kontrast.schlecht.length) findings.push(`Kontrast: ${kontrast.schlecht.length} Textstelle(n) unter WCAG AA [${label} · ${theme}] — z. B. ${kontrast.schlecht.slice(0, 2).map((x) => `„${x.text}" ${x.r}:1 (${x.fg} auf ${x.bg})`).join(' · ')}`);
