@@ -4638,3 +4638,18 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Test:** `sitzung-beendet-hinweis.test.js` (HTTP: Grund nur bei beendeter Sitzung; App: Hinweis, Reiter, Push,
   Platzhalter). Fünf Gegenproben — jeweils rot. Browser fr/ar/en (360 px): Hinweis sichtbar, „Anmelden" offen, kein
   Querscrollen, nach Neuladen weg.
+
+### Erstbesuch: 27 % weniger mobile Daten (2026-11-06)
+- **Gemessen** (Proxy mit gemeinsamer 400-kbit/s-Leitung und 400 ms Verzögerung, fr-SN, 360 px — die Drosselung des
+  Browsers gilt nicht für den Service Worker, darum im Proxy): bedienbar nach ≈ 6 s, Erstbesuch 300 KB in 25 Abrufen.
+  Davon **92 KB Icons**, die der Service Worker vorab speicherte (512er 47 KB, maskable 28 KB, 192er 11 KB, Apple 6 KB).
+  Offline braucht die App davon nur das 192er (Benachrichtigungen); die großen holt beim Installieren der Browser bzw.
+  das Betriebssystem selbst, am Vorab-Speicher vorbei. Bremste die Anmeldeseite nicht (läuft danach), kostete aber fast
+  ein Drittel des Prepaid-Volumens beim ersten Besuch.
+- **Behoben:** Vorab-Speicher nur noch mit dem, was offline gebraucht wird; beim Aktivieren werden nicht mehr benötigte
+  Einträge entfernt (Speicher am Handy). PNGs verlustfrei verkleinert (pixelgleich geprüft): 512er 47→38 KB, maskable
+  28→24 KB, 192er 11→10 KB.
+- **Ergebnis:** Erstbesuch **218 KB statt 300 KB** (22 Abrufe), bedienbar unverändert nach ≈ 6 s (größter Posten bleibt
+  app.js mit 128 KB komprimiert — Kandidat für später: Aufteilen in Start- und Nachlade-Teil).
+- **Test:** `datensparen-erstbesuch.test.js` (sw.js in Node: Install lädt keine großen Icons, Activate räumt auf, Größen).
+  Gegenproben (Icon zurück in die Liste, Aufräumen entfernt, alte Datei) — jeweils rot.

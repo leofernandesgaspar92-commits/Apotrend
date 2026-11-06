@@ -70,8 +70,10 @@ async function netzZuerst(req) {
     throw err;
   }
 }
-const SHELL = ['/', '/index.html', '/app.js', '/app.css', '/manifest.webmanifest',
-  '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/icon.svg', '/apple-touch-icon.png'];
+// Nur, was die App OFFLINE braucht. Große Icons (512er, maskable, Apple) holt beim Installieren der
+// Browser bzw. das Betriebssystem selbst — vorab gespeichert kosteten sie 92 von 300 KB des Erstbesuchs
+// (Prepaid-Daten in den Zielmärkten). icon-192: Benachrichtigungen; icon.svg: Tab-Symbol.
+const SHELL = ['/', '/index.html', '/app.js', '/app.css', '/manifest.webmanifest', '/icon-192.png', '/icon.svg'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil((async () => {
@@ -86,6 +88,12 @@ self.addEventListener('activate', (e) => {
   e.waitUntil((async () => {
     const keys = await caches.keys();
     await Promise.all(keys.filter((k) => k !== CACHE && k !== API_CACHE).map((k) => caches.delete(k)));
+    // Einträge, die nicht mehr zur Hülle gehören (z. B. früher vorab gespeicherte große Icons): weg.
+    try {
+      const hulle = await caches.open(CACHE);
+      const soll = new Set(SHELL.map((u) => new URL(u, self.location.origin).href));
+      await Promise.all((await hulle.keys()).filter((r) => !soll.has(r.url)).map((r) => hulle.delete(r)));
+    } catch { /* Aufräumen ist Komfort */ }
     await self.clients.claim();
   })());
 });
