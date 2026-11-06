@@ -4584,3 +4584,24 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   isoliert); kein Querscrollen, Knöpfe 44–68 px hoch.
 - **Test:** `passwort-hilfe.test.js` (Server mit/ohne Adresse, Kasten auf der Seite, Texte in 5 Sprachen).
   Gegenproben: ohne `hilfe_email` im Server, ohne Auslesen in der App, Kasten nicht eingesetzt — jeweils rot.
+
+### Redaktion: „Zugang wiederherstellen" für ausgesperrte Konten (2026-11-06)
+- **Fund (Folge des letzten Zyklus):** Die Hilfe „Keinen Code mehr? Schreiben Sie uns, wir helfen" versprach etwas, das
+  die Redaktion nicht konnte — es gab kein Werkzeug, um einem Konto ohne Code (und ohne E-Mail-Versand) wieder Zugang zu
+  geben. Einziger Weg wäre ein Eingriff direkt in der Datenbank gewesen.
+- **Behoben:** Karte „Zugang wiederherstellen" in der Prüfliste (zugeklappt, selten gebraucht). Die Redaktion gibt die
+  Konto-Adresse ein und erhält einen Einmal-Link (derselbe Mechanismus wie der Passwort-Link per Mail: Zweck-Schlüssel,
+  Fingerabdruck des Passworts → nach Benutzung ungültig), **24 Stunden** gültig, mit fester Adresse (APOPULSE_PUBLIC_URL).
+  Der Knopf öffnet eine fertige Mail **an die Adresse des Kontos** — nie an eine andere.
+- **Grenzen (Sicherheit):** nur Redaktion; **nie für Redaktionskonten** (sonst könnte eine Redaktionsperson ein anderes
+  Redaktionskonto übernehmen — deren Zugang läuft über Render); höchstens 20 Links je Stunde und Redaktionsperson; die
+  Kontoinhaberin bekommt eine Nachricht in der Glocke („Haben Sie nicht darum gebeten? Dann schreiben Sie uns"); das
+  Server-Log nennt nur Konto- und Redaktions-ID, nie den Link.
+- **Zweiter Fund im Rundgang (360 px, fr-SN):** Die vorbereitete Mail an eine Apothekerin in Senegal war deutsch — in der
+  Sprache der Redaktion. Jetzt erzeugt der Server die Mail in der Sprache des Kontos (5 Sprachen, mit Hinweis, danach
+  neue Wiederherstellungscodes anzulegen).
+- **Eigener Fehler unterwegs:** Mehrzeilige Texte zerbrachen `i18n.js` (echte Zeilenumbrüche in '…'); vor dem Commit
+  bemerkt, Hilfsskript maskiert Umbrüche jetzt.
+- **Test:** `zugang-redaktion.test.js` (Ende-zu-Ende über HTTP: Rechte, Redaktionskonto gesperrt, unbekannte Adresse,
+  24 h, Glocke, Sprache des Kontos, Einlösen einmalig, altes Passwort ungültig, kein Link im Log; Karte + Texte).
+  Sechs Gegenproben (Redaktionskonto-Sperre, Glocke, Sprache, Gültigkeit, Karte, Glocken-Text) — jeweils rot.

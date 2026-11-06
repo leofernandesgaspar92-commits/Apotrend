@@ -1987,6 +1987,32 @@ function startklarKarte(s) {
   return c;
 }
 
+// Redaktion: Zugang für ein ausgesperrtes Konto (Hilfe-Seite „Keinen Code mehr?"). Einmal-Link, 24 h.
+// Der Link geht NUR an die Adresse des Kontos — die Mail ist darum gleich an sie adressiert.
+function zugangKarte(ziel) {
+  const c = el(`<details class="card" data-zugangkarte><summary style="cursor:pointer;min-height:44px;display:flex;align-items:center;font-size:17px;font-weight:700">🔑 ${esc(t('zl_titel'))}</summary>
+    <p style="font-size:16px;margin:8px 0">${esc(t('zl_text'))}</p>
+    <form data-zlform><label for="zl_email">${esc(t('zl_email'))}</label><input id="zl_email" type="email" autocomplete="off" required>
+      <button type="submit" style="margin-top:10px;min-height:44px">${esc(t('zl_knopf'))}</button></form>
+    <div data-zlerg role="status" style="margin-top:10px;font-size:16px"></div></details>`);
+  const erg = c.querySelector('[data-zlerg]');
+  c.querySelector('[data-zlform]').onsubmit = async (ev) => {
+    ev.preventDefault();
+    erg.innerHTML = '';
+    try {
+      const r = await api('POST', '/api/mod/zugang-link', { email: c.querySelector('#zl_email').value });
+      const bis = new Date(r.gueltig_bis).toLocaleString(LOCALE, { dateStyle: 'medium', timeStyle: 'short' });
+      erg.innerHTML = `<div style="padding:10px;border:1px solid var(--line);border-radius:10px">
+        <div><b>${esc(ti('zl_gueltig', { bis }))}</b></div>
+        <div style="margin:6px 0">${esc(t('zl_hinweis'))}</div>
+        <code style="display:block;word-break:break-all;margin:6px 0">${esc(r.link)}</code>
+        <a class="btn-link" style="font-size:16px;word-break:break-all" href="mailto:${encodeURIComponent(r.email)}?subject=${encodeURIComponent(r.mail.betreff)}&body=${encodeURIComponent(r.mail.text)}">✉ <span dir="ltr">${esc(r.email)}</span></a></div>`;
+    } catch (e) { erg.innerHTML = `<div style="color:var(--crit-fg)">${esc(e.message)}</div>`; }
+  };
+  ziel.appendChild(c);
+  return c;
+}
+
 // Herkunft der neuen Konten (?k=tiktok …, server/src/services/kanaele.js): nur Summen.
 function kanalListe(liste) {
   if (!Array.isArray(liste)) return '';
@@ -10723,7 +10749,7 @@ async function showNotifications() {
     const who = n.actor ? n.actor.display_name : t('notif_someone');
     // Systemmeldungen ohne handelnde Person: Hier hat niemand etwas getan,
     // eine Behoerde hat gemeldet. „Jemand hat …" waere schlicht falsch.
-    const noWho = n.type === 'shortage_entfernt' || n.type === 'meldung_pruefen' || n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'shortage_bestaetigt' || n.type === 'shortage_noch_aktuell' || n.type === 'shortage_widerspruch' || n.type === 'sourcing_antwort' || n.type === 'medint_neu' || n.type === 'ausbruch_signal' || n.type === 'shortage_home' || n.type === 'shortage_ended' || /^anzeige_/.test(n.type) || n.type === 'premium_ablauf' || n.type === 'payment_confirmed' || n.type === 'payment_rejected' || n.type === 'verify_rejected';
+    const noWho = n.type === 'shortage_entfernt' || n.type === 'meldung_pruefen' || n.type === 'verified' || n.type === 'watch_alert' || n.type === 'watch_offer' || n.type === 'price_alert' || n.type === 'signal_alert' || n.type === 'shortage_abroad' || n.type === 'shortage_bestaetigt' || n.type === 'shortage_noch_aktuell' || n.type === 'shortage_widerspruch' || n.type === 'sourcing_antwort' || n.type === 'medint_neu' || n.type === 'ausbruch_signal' || n.type === 'shortage_home' || n.type === 'shortage_ended' || /^anzeige_/.test(n.type) || n.type === 'premium_ablauf' || n.type === 'payment_confirmed' || n.type === 'payment_rejected' || n.type === 'verify_rejected' || n.type === 'zugang_link';
     // Profilbild der handelnden Person (wer) + Typ-Emoji (was) — auf einen Blick erkennbar,
     // konsistent zu Feed/Verzeichnis/Suche. Ohne Person (System-Meldung) nur das Emoji.
     const row = el(`<div class="comment clickable" style="cursor:pointer;${n.read?'':'background:var(--ok-bg)'}">
@@ -11199,6 +11225,7 @@ async function showModeration() {
   sourcingPruefung(aufgaben); // Proforma-Anfragen an den Handelsarm (lädt selbst)
   api('GET', '/api/startklar').then((s) => { if (s) ueberblick.prepend(startklarKarte(s)); }).catch(() => {});
   api('GET', '/api/betrieb').then((b) => { if (b) ueberblick.appendChild(betriebsKarte(b)); }).catch(() => {});
+  zugangKarte(ueberblick); // ausgesperrtes Konto: Einmal-Link (selten, darum zugeklappt)
   // Krypto-Zahlungen ZUERST: Hier wartet eine zahlende Kundin auf ihre Freischaltung.
   if (kz === null) aufgaben.appendChild(el(`<div class="card" style="border-color:var(--crit-bd)">${esc(t('kp_load_err'))}</div>`));
   else if (kz.length) {

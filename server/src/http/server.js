@@ -145,6 +145,7 @@ const linkJeKonto = createRateLimiter({ max: 3, windowMs: 60 * 60 * 1000 });
 // Link einlösen: Der Link ist ein langes Zufallsgeheimnis (nicht erratbar) — Fehlversuche je IP
 // zählen nur gegen Durchprobieren. Eigene Bremse, damit Tippfehler beim neuen Passwort von
 // Nachbarn im selben Netz nicht den Wiederherstellungscode-Schutz oben auslösen.
+const zugangJeRedaktion = createRateLimiter({ max: 20, windowMs: 60 * 60 * 1000 }); // Redaktion: Einmal-Links für ausgesperrte Konten
 const linkEinloesen = createRateLimiter({ max: 30, windowMs: 15 * 60 * 1000 });
 // SMS-Codes kosten je Stück Geld: je Nummer 3 pro Stunde, je IP 30 (geteilte Netze, s. o.),
 // alle zusammen APOPULSE_SMS_MAX_STUNDE. Code-Prüfung: 20 Fehlversuche / 15 min je IP UND Nummer
@@ -1760,6 +1761,23 @@ const routes = [
     if (st.blocked) { const e = new Error('Zu viele Versuche. Bitte später erneut.'); e.status = 429; e.code = 'too_many_attempts'; e.retryAfterS = Math.ceil(st.retryAfterMs / 1000); throw e; }
     linkLimiter.fail(ip || 'unknown'); linkJeKonto.fail(konto); // jede Anfrage zählt — sie verschickt eine Mail
     return passwortLink.anfordern({ email: konto, sprache: SUPPORTED_LOCALES.includes(body.sprache) ? body.sprache : 'en' });
+  }],
+  // Redaktion: Zugang für ein ausgesperrtes Konto wiederherstellen (Hilfe-Seite „Keinen Code mehr?").
+  // Einmal-Link, 24 h, an die Adresse des Kontos. Nie für Redaktionskonten — sonst könnte eine
+  // Redaktionsperson ein anderes Redaktionskonto übernehmen. Die Kontoinhaberin erfährt es in der Glocke.
+  ['POST', /^\/api\/mod\/zugang-link$/, true, async ({ userId, body }) => {
+    if (!social.isModerator(userId)) throw new AppError('forbidden', 'Nur Redaktion.', 403);
+    const st = zugangJeRedaktion.check(userId);
+    if (st.blocked) { const e = new Error('Zu viele Links in kurzer Zeit. Bitte später erneut.'); e.status = 429; e.code = 'too_many_attempts'; e.retryAfterS = Math.ceil(st.retryAfterMs / 1000); throw e; }
+    const user = repo.getUserByEmail(String(body.email || '').trim().toLowerCase());
+    if (!user || user.status !== 'active') throw new AppError('konto_unbekannt', 'Kein aktives Konto mit dieser E-Mail-Adresse.', 404);
+    if (social.isModerator(user.id)) throw new AppError('zugang_redaktion', 'Für Redaktionskonten nicht möglich — Zugang über die Betreiber-Einstellungen (Render).', 403);
+    zugangJeRedaktion.fail(userId);
+    const prof = social.getProfile(user.id);
+    const r = passwortLink.fuerRedaktion(user, (prof && prof.locale) || user.locale);
+    social.pushNotification({ userId: user.id, type: 'zugang_link', actorUserId: null, refType: null, refId: null, label: '' });
+    console.log(`[zugang] Redaktion ${userId} hat einen Einmal-Link für Konto ${user.id} erstellt.`); // ohne Link
+    return { email: user.email, ...r };
   }],
   // Link einlösen: neues Passwort setzen und gleich angemeldet sein.
   ['POST', /^\/api\/password\/reset-mit-link$/, false, async ({ body, ip }) => {
