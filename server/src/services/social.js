@@ -959,6 +959,10 @@ export function createSocialService(social, foundationRepo, options = {}) {
       // Existenz prüfen, damit keine Meldungen auf Geister-IDs entstehen.
       if (targetType === 'promotion' && !social.getPromotion(targetId)) throw new AppError('promo_not_found', 'Angebot nicht gefunden.', 404);
       if (targetType === 'live' && !social.getLiveSession(targetId)) throw new AppError('live_not_found', 'Session nicht gefunden.', 404);
+      // Dasselbe Konto, derselbe Inhalt, noch offen: kein zweiter Eintrag (Fund 11/2026: 120-mal gemeldet = 120 Zeilen
+      // in der Prüfliste). Nach der Erledigung darf erneut gemeldet werden.
+      const schon = social.listReports('offen').find((r) => r.reporter_user_id === actorUserId && r.target_type === targetType && r.target_id === targetId);
+      if (schon) return schon;
       return social.createReport({ reporterUserId: actorUserId, targetType, targetId, reason });
     },
     // Nur Moderatoren: Reports einsehen und aufloesen.

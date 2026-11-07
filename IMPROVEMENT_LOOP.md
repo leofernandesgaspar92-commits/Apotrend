@@ -4767,3 +4767,20 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   „volle Liste + schon vorhanden").
 - **Nebenbei:** Der Rauchtest (`loop-smoke.mjs`) wartete fest 700 ms auf Suchergebnisse — unter Last einmal zu kurz
   (Schritt rot, Folgeschritt stürzte ab). Jetzt wartet er auf das Ergebnis (höchstens 8 s); einzeln war er zweimal grün.
+
+### Bremse gegen Massen-Beiträge, Mehrfach-Melden zählt einmal (2026-11-07)
+- **Geprüft:** Flut-Probe mit einem verifizierten Großhandelskonto, je 120 Versuche. Engpass-Meldungen (10 am Tag)
+  und Proforma-Anfragen (10 pro Stunde) waren schon gebremst.
+- **Fund:** Beiträge, Kommentare und Logistik-Meldungen nahm der Server ohne Grenze an (je 120/120). Jeder Beitrag
+  benachrichtigt die Folgenden, jede Logistik-Meldung steht im Lagebild des Landes — ein gekapertes oder
+  missbrauchtes Konto hätte Feed und Lagebild in Minuten überflutet. Außerdem: dasselbe Konto konnte denselben
+  Beitrag 120-mal melden — 120 Zeilen in der Prüfliste der Redaktion.
+- **Behoben:** Bremse je Konto, gezählt wird nur, was angenommen wurde: höchstens 30 Beiträge pro Stunde, 60
+  Kommentare pro Stunde, 20 Logistik-Meldungen pro Tag. Danach 429 mit übersetzter Meldung (5 Sprachen, mit Zahl);
+  der Text bleibt im Feld. Die Redaktion ist ausgenommen (Nachrichten). Melden: solange eine Meldung desselben Kontos
+  zum selben Inhalt offen ist, gibt es keinen zweiten Eintrag; nach der Erledigung darf erneut gemeldet werden.
+  `APOPULSE_BEITRAEGE_JE_STUNDE` nur für Lasttests (der Dauerbetriebs-Test schreibt 130 Beiträge).
+- **Test:** `flut-bremse.test.js` (HTTP: 31. Beitrag 429 mit max, anderes Konto und Redaktion nicht gebremst; 61.
+  Kommentar und 21. Logistik-Meldung 429; fünfmal gemeldet = ein Eintrag, zweites Konto = zweiter Eintrag; Texte in 5
+  Sprachen). Sechs Gegenproben — rot.
+- **Offen:** Direktnachrichten in der Flut-Probe nicht geprüft (Probe lief gegen einen falschen Pfad) — nächster Durchlauf.

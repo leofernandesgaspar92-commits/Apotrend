@@ -184,6 +184,24 @@ const rxAbrufErlaubt = (userId) => {
 };
 // Proforma-Anfragen lösen Benachrichtigungen und ggf. eine E-Mail an das Handelsteam aus.
 const sourcingJeKonto = createRateLimiter({ max: 10, windowMs: 60 * 60 * 1000 });
+// Flut-Bremse je Konto (Fund 11/2026: Beiträge, Kommentare, Logistik-Meldungen waren unbegrenzt — jeder Beitrag
+// benachrichtigt Folgende, jede Logistik-Meldung steht im Lagebild des Landes). Redaktion ausgenommen (Nachrichten).
+// Gezählt wird nur, was angenommen wurde. APOPULSE_BEITRAEGE_JE_STUNDE nur für Lasttests.
+const BREMSE = {
+  beitraege: { max: Math.max(1, Number(process.env.APOPULSE_BEITRAEGE_JE_STUNDE) || 30), windowMs: 60 * 60 * 1000, text: 'Beiträge pro Stunde' },
+  kommentare: { max: 60, windowMs: 60 * 60 * 1000, text: 'Kommentare pro Stunde' },
+  logistik: { max: 20, windowMs: 24 * 60 * 60 * 1000, text: 'Logistik-Meldungen pro Tag' },
+};
+for (const b of Object.values(BREMSE)) b.limiter = createRateLimiter({ max: b.max, windowMs: b.windowMs });
+function gebremst(art, userId, tun) {
+  const b = BREMSE[art];
+  if (!social.isModerator(userId) && b.limiter.check(userId).blocked) {
+    throw Object.assign(new AppError(`${art}_zu_viele`, `Höchstens ${b.max} ${b.text}. Bitte später erneut versuchen.`, 429), { params: { max: b.max } });
+  }
+  const erg = tun();
+  b.limiter.fail(userId);
+  return erg;
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, '..', '..', 'public');
@@ -2497,11 +2515,11 @@ const routes = [
     offen: query.get('offen') !== '0',
   })],
   ['GET', /^\/api\/logistik\/mine$/, true, async ({ userId }) => ({ meldungen: logistik.mine(userId) })],
-  ['POST', /^\/api\/logistik$/, true, async ({ userId, body }) => logistik.create(userId, {
+  ['POST', /^\/api\/logistik$/, true, async ({ userId, body }) => gebremst('logistik', userId, () => logistik.create(userId, {
     art: body.art, titel: body.titel, beschreibung: body.beschreibung,
     region: body.region, betroffen: body.betroffen,
     dringlichkeit: body.dringlichkeit, gueltigBis: body.gueltigBis,
-  })],
+  }))],
   ['POST', /^\/api\/logistik\/([^/]+)\/behoben$/, true, async ({ userId, params }) => logistik.behoben(userId, params[0])],
   ['POST', /^\/api\/logistik\/([^/]+)\/delete$/, true, async ({ userId, params }) => logistik.remove(userId, params[0])],
 
@@ -2650,7 +2668,7 @@ const routes = [
   ['GET', /^\/api\/feed\/home$/, true, async ({ userId, query }) => feedSeite(social.homeFeed(userId), query, userId)],
   ['GET', /^\/api\/feed\/public$/, true, async ({ userId, query }) => ({ country: activeCountry(userId, query), ...feedSeite(social.publicFeed(userId, { sort: query.get('sort') || 'neu', filter: query.get('filter') || 'all', country: activeCountry(userId, query) }), query, userId) })],
 
-  ['POST', /^\/api\/posts$/, true, async ({ userId, body }) => social.createPost(userId, { body: body.body, visibility: body.visibility, kind: body.kind, image: body.image, sourceUrl: body.sourceUrl, pollOptions: body.pollOptions })],
+  ['POST', /^\/api\/posts$/, true, async ({ userId, body }) => gebremst('beitraege', userId, () => social.createPost(userId, { body: body.body, visibility: body.visibility, kind: body.kind, image: body.image, sourceUrl: body.sourceUrl, pollOptions: body.pollOptions }))],
   // Drei Ebenen (docs/AFRIKA.md): `ebene=land` (Standard) | `region` | `welt`.
   //  region: alle Länder der Region des angesehenen Landes + die Regionsquelle
   //          (Afrika: Africa CDC, WHO Afrika; Europa: EMA).
@@ -2722,7 +2740,7 @@ const routes = [
     return { post: enrichPosts([p], userId)[0] };
   }],
   ['GET', /^\/api\/posts\/([^/]+)\/comments$/, true, async ({ userId, params }) => ({ comments: social.listComments(userId, params[0]) })],
-  ['POST', /^\/api\/posts\/([^/]+)\/comments$/, true, async ({ userId, params, body }) => social.comment(userId, params[0], { body: body.body, parentCommentId: body.parentCommentId, image: body.image })],
+  ['POST', /^\/api\/posts\/([^/]+)\/comments$/, true, async ({ userId, params, body }) => gebremst('kommentare', userId, () => social.comment(userId, params[0], { body: body.body, parentCommentId: body.parentCommentId, image: body.image }))],
   ['POST', /^\/api\/comments\/([^/]+)\/edit$/, true, async ({ userId, params, body }) => social.editComment(userId, params[0], body.body)],
   ['POST', /^\/api\/comments\/([^/]+)\/delete$/, true, async ({ userId, params }) => social.deleteComment(userId, params[0])],
   ['POST', /^\/api\/comments\/([^/]+)\/react$/, true, async ({ userId, params, body }) => social.react(userId, 'comment', params[0], body.type)],

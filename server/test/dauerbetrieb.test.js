@@ -14,7 +14,7 @@ const SERVER = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'http'
 
 function starte(env) {
   const kind = spawn(process.execPath, [SERVER], {
-    env: { ...process.env, PORT: '0', APOPULSE_TOKEN_SECRET: 'dauerbetrieb-test-1', APOPULSE_PRESSE: 'aus', ...env },
+    env: { ...process.env, PORT: '0', APOPULSE_TOKEN_SECRET: 'dauerbetrieb-test-1', APOPULSE_PRESSE: 'aus', APOPULSE_BEITRAEGE_JE_STUNDE: '1000', ...env },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   let log = '';
