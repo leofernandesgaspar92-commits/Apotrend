@@ -227,7 +227,7 @@ export function createPaymentsService({
     //       abgelehnt wird, sperrt die echte Zahlerin damit nicht aus.
     claimCryptoPayment(userId, paymentId, txRef) {
       const p = repo.getPayment(paymentId);
-      if (!p || p.user_id !== userId) throw new AppError('payment_not_found', 'Zahlung nicht gefunden.');
+      if (!p || p.user_id !== userId) throw new AppError('payment_not_found', 'Zahlung nicht gefunden.', 404);
       const roh = String(txRef || '').trim();
       if (roh.length < 6) throw new AppError('tx_ref_missing', 'Bitte die Transaktions-ID angeben.');
       if (p.status === 'paid') throw new AppError('payment_already_paid', 'Diese Zahlung ist bereits bestätigt.', 409);
@@ -254,9 +254,9 @@ export function createPaymentsService({
     },
     // Betreiber/Moderation bestätigt manuell (nach Blick in die Wallet) -> Feature frei.
     async confirmPayment(moderatorUserId, paymentId) {
-      if (!isModerator(moderatorUserId)) throw new AppError('forbidden', 'Nur Moderation.');
+      if (!isModerator(moderatorUserId)) throw new AppError('forbidden', 'Nur Moderation.', 403);
       const p = repo.getPayment(paymentId);
-      if (!p) throw new AppError('payment_not_found', 'Zahlung nicht gefunden.');
+      if (!p) throw new AppError('payment_not_found', 'Zahlung nicht gefunden.', 404);
       if (p.status === 'paid') return { ok: true, already: true };
       const r = await freischalten(p);
       if (repo.updatePaymentReview) repo.updatePaymentReview(paymentId, { reviewed_by: moderatorUserId, reviewed_at: new Date().toISOString() });
@@ -269,9 +269,9 @@ export function createPaymentsService({
     // Start (abgeschriebene fremde Zahlung). Die Kundin erfährt es MIT Grund —
     // sonst wartet sie weiter auf eine Freischaltung, die nicht kommt.
     rejectPayment(moderatorUserId, paymentId, grund) {
-      if (!isModerator(moderatorUserId)) throw new AppError('forbidden', 'Nur Moderation.');
+      if (!isModerator(moderatorUserId)) throw new AppError('forbidden', 'Nur Moderation.', 403);
       const p = repo.getPayment(paymentId);
-      if (!p) throw new AppError('payment_not_found', 'Zahlung nicht gefunden.');
+      if (!p) throw new AppError('payment_not_found', 'Zahlung nicht gefunden.', 404);
       if (p.status !== 'pending_review') throw new AppError('payment_not_in_review', 'Nur gemeldete, offene Zahlungen lassen sich ablehnen.', 409);
       const g = String(grund || '').trim().slice(0, 300);
       if (!g) throw new AppError('reject_reason_missing', 'Bitte einen Grund angeben — die Kundin bekommt ihn mitgeteilt.', 400);
@@ -283,7 +283,7 @@ export function createPaymentsService({
     },
     // Prüfliste: alles, was die Moderation für die Entscheidung braucht.
     listPendingReview(moderatorUserId, { kunde = () => null } = {}) {
-      if (!isModerator(moderatorUserId)) throw new AppError('forbidden', 'Nur Moderation.');
+      if (!isModerator(moderatorUserId)) throw new AppError('forbidden', 'Nur Moderation.', 403);
       return repo.listAllPayments()
         .filter(p => p.status === 'pending_review')
         .sort((a, b) => String(a.claimed_at || a.created_at).localeCompare(String(b.claimed_at || b.created_at)))

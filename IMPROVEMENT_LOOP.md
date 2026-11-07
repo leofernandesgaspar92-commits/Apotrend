@@ -4697,3 +4697,15 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   Stapel — kein Anfragetext) und in den Zähler „Server-Fehler" des Betriebs-Cockpits. Gilt für App-Routen und `/api/v1`.
 - **Geprüft:** Abklopfen danach (POST mit null/Zahl/Text/Liste, GET mit kaputten Parametern): 0 Funde, keine 500er.
   `fehler-roh.test.js` (Baustein, Verdrahtung, HTTP über alle 22 Routen). Gegenproben einzeln und kombiniert — rot.
+
+### Fremde Daten: Zugriffsschutz abgeklopft und dauerhaft festgehalten (2026-11-07)
+- **Geprüft:** Konto B (auch als bestätigter Betrieb) mit den IDs von Konto A gegen alle live genutzten Bereiche mit
+  Eigentümer — Werbe-Kampagnen (ändern, einreichen, pausieren, Statistik, Krypto, Rechnung, Freigabe), Krypto-Zahlungen
+  (melden, bestätigen, ablehnen), Rechnungs-Zahlungen, Beschaffungsanfragen, Beiträge, Kommentare, Engpass-Meldungen,
+  Logistik-Meldungen, Direktnachrichten. **Ergebnis: alles abgewehrt** — Kampagnen verraten nicht einmal, dass es sie
+  gibt (404); A's Daten bleiben unverändert.
+- **Kleinigkeit behoben:** Zahlungen antworteten Nicht-Redakteur:innen mit 400 statt 403 und auf fremde/unbekannte
+  Zahlungen mit 400 statt 404 — jetzt wie alle anderen Bereiche (die App wertet den Code aus, nicht den Status).
+- **Neu:** `zugriff-fremd.test.js` hält das fest (28 Versuche, Status nur 403/404, A unverändert), damit eine künftige
+  Änderung keine Eigentümer-Prüfung still entfernt. Gegenproben: Eigentümer-Prüfung bei Logistik, Krypto-Meldung,
+  Zahlungsbestätigung, Kampagne entfernt — jeweils rot.

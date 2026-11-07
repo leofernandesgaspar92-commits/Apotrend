@@ -1018,7 +1018,7 @@ test('Direkt-Krypto über HTTP: Adressen anzeigen, Zahlung starten + Tx melden, 
   assert.equal((await j('/api/payments/mine', cust)).payments.find(p => p.id === start.payment_id).status, 'pending_review');
   // Kunde ist NICHT Moderator -> darf nicht bestätigen; Premium noch nicht frei
   const forbid = await post(`/api/payments/${start.payment_id}/confirm`, cust, {});
-  assert.equal(forbid.status, 400);
+  assert.equal(forbid.status, 403);
   assert.equal((await forbid.json()).code, 'forbidden');
   assert.equal((await j('/api/me/premium', cust)).premium, false);
   // Admin (Redaktion) meldet sich an, sieht die offene Zahlung, bestätigt -> Premium frei
@@ -1033,7 +1033,7 @@ test('Direkt-Krypto über HTTP: Adressen anzeigen, Zahlung starten + Tx melden, 
   assert.equal(offen.explorer_url, `https://mempool.space/tx/${btcTx}`);
   assert.ok(offen.kunde && offen.kunde.handle, 'wer gezahlt hat');
   assert.equal(offen.kunde.email, undefined, 'keine E-Mail in der Prüfliste');
-  assert.equal((await post(`/api/payments/${start.payment_id}/reject`, cust, { grund: 'x' })).status, 400, 'Kundin darf nicht ablehnen');
+  assert.equal((await post(`/api/payments/${start.payment_id}/reject`, cust, { grund: 'x' })).status, 403, 'Kundin darf nicht ablehnen');
   const conf = await post(`/api/payments/${start.payment_id}/confirm`, admin, {});
   assert.equal(conf.status, 200);
   assert.equal((await conf.json()).granted, true);
