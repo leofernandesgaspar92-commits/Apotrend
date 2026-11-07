@@ -27,6 +27,10 @@ function daysBetween(a, b) {
 // Alters-/Fristsignal eines Engpasses (rein aus Datumsfeldern abgeleitet, keine
 // Sicherheitsaussage): Tage seit Meldung und Tage bis zum voraussichtlichen Termin
 // (negativ = Termin überschritten). „verfuegbar" hat keinen offenen Termin mehr.
+// Beobachtungsliste: höchstens so viele Wirkstoffe je Konto. Eine Apotheke beobachtet realistisch 50–150;
+// ganze Bestandslisten gehören in den Sortiments-Check (bis 11/2026 ohne Grenze — 2.000 Handelsnamen möglich).
+export const MAX_BEOBACHTUNG = 300;
+
 export function shortageAging(gemeldetAm, voraussichtlichBis, status, today) {
   const dr = gemeldetAm ? daysBetween(gemeldetAm, today) : null;
   const days_until = (voraussichtlichBis && status !== 'verfuegbar') ? daysBetween(today, voraussichtlichBis) : null;
@@ -627,6 +631,10 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
       const w = String(wirkstoff || '').trim();
       if (!w) throw new AppError('shortage_wirkstoff_missing', 'Wirkstoff fehlt.');
       if (w.length > 120) throw new AppError('wirkstoff_zu_lang', 'Wirkstoff zu lang.');
+      const schon = new Set(shortagesRepo.listWatch(userId).map((x) => String(x).toLowerCase()));
+      if (!schon.has(w.toLowerCase()) && schon.size >= MAX_BEOBACHTUNG) {
+        throw Object.assign(new AppError('watch_voll', `Ihre Beobachtungsliste ist voll (höchstens ${MAX_BEOBACHTUNG} Wirkstoffe). Für ganze Bestandslisten gibt es den Sortiments-Check.`, 409), { params: { max: MAX_BEOBACHTUNG } });
+      }
       shortagesRepo.addWatch(userId, w);
       return this.myWatchlist(userId);
     },
@@ -644,8 +652,17 @@ export function createShortagesService(shortagesRepo, social, options = {}) {
         seen.add(k); names.push(w);
       }
       if (!names.length) throw new AppError('watch_none', 'Kein gültiger Wirkstoff angegeben.');
-      for (const w of names) shortagesRepo.addWatch(userId, w);
-      return this.myWatchlist(userId);
+      // Nimmt, was bis zur Obergrenze passt; schon Beobachtetes zählt nicht doppelt.
+      const schon = new Set(shortagesRepo.listWatch(userId).map((x) => String(x).toLowerCase()));
+      let nichtUebernommen = 0;
+      for (const w of names) {
+        if (schon.has(w.toLowerCase())) continue;
+        if (schon.size >= MAX_BEOBACHTUNG) { nichtUebernommen++; continue; }
+        shortagesRepo.addWatch(userId, w); schon.add(w.toLowerCase());
+      }
+      const liste = this.myWatchlist(userId);
+      liste.nicht_uebernommen = nichtUebernommen; // die Route gibt es mit aus
+      return liste;
     },
     unwatch(userId, wirkstoff) {
       shortagesRepo.removeWatch(userId, wirkstoff);

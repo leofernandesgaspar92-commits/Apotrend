@@ -176,7 +176,9 @@ async function main() {
   // 4d) Übergreifende Suche: ein Wirkstoff liefert gebündelte Treffer (Beiträge/Engpässe/Preise …).
   await page.fill('#sq', 'Amoxicillin');
   await page.click('#sgo');
-  await page.waitForTimeout(700);
+  // Auf das Ergebnis warten statt fest 700 ms: Unter Last (verify startet viele Server) kam die Suche
+  // gelegentlich später — der Schritt war dann rot und der Folgeschritt stürzte ab (11/2026).
+  await page.waitForFunction(() => { const f = document.getElementById('feed'); return f && /Suchergebnisse|Search results|Resultados/.test(f.textContent) && !!f.querySelector('[data-wchips] button'); }, null, { timeout: 8000 }).catch(() => {});
   const searchOk = await page.evaluate(() => {
     const feed = document.getElementById('feed');
     if (!feed) return false;
@@ -188,7 +190,7 @@ async function main() {
   step('Übergreifende Suche liefert gebündelte Treffer', searchOk);
   // Zurück in den Feed für die folgenden Schritte
   await page.evaluate(() => { const b = document.querySelector('#feed [data-back]'); if (b) b.click(); });
-  await page.waitForTimeout(400);
+  await page.waitForFunction((m) => [...document.querySelectorAll('.card')].some((c) => c.textContent.includes(m) && c.querySelector('[data-comments]')), marker, { timeout: 8000 }).catch(() => {});
 
   // 5) Sprachwechsel wirkt (Header-Label „Schrift" -> „Text size") — auf dem Auth-Screen abgesichert,
   //    hier prüfen wir eingeloggt: Reiter-Beschriftung wechselt via Länder-/Sprachlogik nicht direkt,

@@ -2834,6 +2834,7 @@ async function renderWatchlistCard(feed, items, suggestions = [], premium = fals
     try {
       const r = multi ? await api('POST','/api/watchlist/bulk',{ wirkstoffe:w }) : await api('POST','/api/watchlist',{ wirkstoff:w });
       input.value=''; draw(r.items); refreshWatchAlerts(r.items);
+      if (r.nicht_uebernommen) err.textContent = ti('wl_teil_voll', { n: r.nicht_uebernommen, max: r.max });
     } catch(e){ err.textContent = e.message; }
   }
   card.querySelector('[data-wl-add]').onclick = add;
@@ -5787,10 +5788,14 @@ function zeigeSortiment(box, d) {
   const w = kopf.querySelector('[data-srtwatch]');
   if (w) w.onclick = async () => {
     try {
-      await api('POST', '/api/watchlist/bulk', { wirkstoffe: betroffen });
-      d.ergebnisse.forEach((e) => { if (betroffen.includes(e.wirkstoff)) e.beobachtet = true; });
+      const r = await api('POST', '/api/watchlist/bulk', { wirkstoffe: betroffen });
+      const drin = new Set((r.items || []).map((x) => String(x.wirkstoff || x).toLowerCase()));
+      d.ergebnisse.forEach((e) => { if (drin.has(String(e.wirkstoff).toLowerCase())) e.beobachtet = true; });
       zeigeSortiment(box, d);
-      box.querySelector('[data-srterr]').textContent = ti('srt_beobachtet_ok', { n: betroffen.length });
+      // Liste voll: ehrlich sagen, wie viele fehlen — statt „alle beobachtet".
+      box.querySelector('[data-srterr]').textContent = r.nicht_uebernommen
+        ? ti('wl_teil_voll', { n: r.nicht_uebernommen, max: r.max })
+        : ti('srt_beobachtet_ok', { n: betroffen.length });
     } catch (e2) { kopf.querySelector('[data-srterr]').textContent = e2.message; }
   };
   const c = kopf.querySelector('[data-srtcsv]');

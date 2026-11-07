@@ -4750,3 +4750,20 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Test:** `umgebung-raender.test.js` (Baustein; Reihenfolge der Importe; Server mit „Passwort + Leerzeichen +
   Zeilenumbruch" und Google-ID mit Umbruch: Anmeldung klappt, client_id sauber, kein Wert im Protokoll). Drei
   Gegenproben — rot.
+
+### Beobachtungsliste mit Obergrenze und klarer Ansage (2026-11-07)
+- **Geprüft ohne Fund:** Meta-Beschreibung (Backlog-Punkt) liegt längst in 5 Sprachen vor; Sitemap (63 Adressen, alle
+  200) und robots.txt in Ordnung; Kontolöschung räumt alle Bausteine (inkl. Push, Abos, Firmenangaben) ab; Premium-Preis
+  ohne Kurse ehrlich nur in Euro, je Sprache korrekt formatiert.
+- **Fund:** Die Sammel-Übernahme in die Beobachtungsliste nahm beliebig viele Einträge. Wer seine ganze Bestandsliste
+  einfügte, bekam z. B. 2.000 Handelsnamen auf die Liste — Alarme unbrauchbar laut; ein einzelnes Konto konnte mit
+  wiederholten großen Anfragen Speicher und Sicherung aufblähen. Für ganze Listen gibt es den Sortiments-Check.
+- **Behoben:** höchstens 300 Wirkstoffe je Konto (`MAX_BEOBACHTUNG`; eine Apotheke beobachtet realistisch 50–150).
+  Die Sammel-Übernahme nimmt, was passt, und die App sagt „{n} Einträge nicht übernommen … Für ganze Bestandslisten gibt
+  es den Sortiments-Check" (5 Sprachen); einzelner Eintrag bei voller Liste: übersetzte Meldung `watch_voll` (409).
+  Schon Beobachtetes zählt nicht doppelt. Der Sortiments-Check meldet nicht mehr „alle beobachtet", wenn die Liste voll war.
+- **Test:** `beobachtung-grenze.test.js` (HTTP: 350 Einträge → 300 + „50 nicht"; voller Einzel-Eintrag 409 mit
+  max; Wiederholung zählt nicht doppelt; Texte 5 Sprachen). Vier Gegenproben — rot (eine erst nach Ergänzung des Falls
+  „volle Liste + schon vorhanden").
+- **Nebenbei:** Der Rauchtest (`loop-smoke.mjs`) wartete fest 700 ms auf Suchergebnisse — unter Last einmal zu kurz
+  (Schritt rot, Folgeschritt stürzte ab). Jetzt wartet er auf das Ergebnis (höchstens 8 s); einzeln war er zweimal grün.

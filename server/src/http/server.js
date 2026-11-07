@@ -34,7 +34,7 @@ import { createSprachdateien } from './sprachdateien.js';
 import { landVorschlag } from '../domain/landVorschlag.js';
 import { faktorenAusUmgebung, preisCents } from '../domain/regionPreis.js';
 import { createSocialService } from '../services/social.js';
-import { createShortagesService } from '../services/shortages.js';
+import { createShortagesService, MAX_BEOBACHTUNG } from '../services/shortages.js';
 import { createPricesService } from '../services/prices.js';
 import { createRabatteService } from '../services/rabatte.js';
 import { createExchangeService } from '../services/exchange.js';
@@ -3089,7 +3089,7 @@ const routes = [
   }],
   ['GET', /^\/api\/watchlist$/, true, async ({ userId, query }) => ({ items: shortages.myWatchlist(userId, { country: activeCountry(userId, query) }) })],
   ['POST', /^\/api\/watchlist$/, true, async ({ userId, body }) => ({ items: shortages.watch(userId, body.wirkstoff) })],
-  ['POST', /^\/api\/watchlist\/bulk$/, true, async ({ userId, body }) => ({ items: shortages.watchMany(userId, body.wirkstoffe) })],
+  ['POST', /^\/api\/watchlist\/bulk$/, true, async ({ userId, body }) => { const items = shortages.watchMany(userId, body.wirkstoffe); return { items, nicht_uebernommen: items.nicht_uebernommen || 0, max: MAX_BEOBACHTUNG }; }],
   ['POST', /^\/api\/watchlist\/alert-all$/, true, async ({ userId, body }) => shortages.setWatchAlertAll(userId, body.pct)],
   ['DELETE', /^\/api\/watchlist\/([^/]+)$/, true, async ({ userId, params }) => ({ items: shortages.unwatch(userId, decodeURIComponent(params[0])) })],
   ['POST', /^\/api\/watchlist\/([^/]+)\/note$/, true, async ({ userId, params, body }) => ({ items: shortages.setWatchNote(userId, decodeURIComponent(params[0]), body.note) })],
