@@ -4653,3 +4653,18 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   app.js mit 128 KB komprimiert — Kandidat für später: Aufteilen in Start- und Nachlade-Teil).
 - **Test:** `datensparen-erstbesuch.test.js` (sw.js in Node: Install lädt keine großen Icons, Activate räumt auf, Größen).
   Gegenproben (Icon zurück in die Liste, Aufräumen entfernt, alte Datei) — jeweils rot.
+
+### Krypto-Premium: „Gestartet" liegt jetzt vor der Zahlung (Prüfpunkt 3 trägt wieder) (2026-11-06)
+- **Fund:** Die Premium-Seite startete die Krypto-Zahlung erst beim Melden der Transaktions-ID — „Gestartet" und
+  „Gemeldet" waren gleich, jede echte Zahlung lag also VOR „Gestartet". Prüfpunkt 3 der Redaktion lautet aber: „Liegt
+  die Transaktion davor, ist es vermutlich eine abgeschriebene fremde Zahlung." Wer sich daran hielt, musste jede echte
+  Premium-Zahlung für Betrug halten — mitten in der Afrika-Strategie. (Anzeigen machten es richtig: Start vor dem Zahlen.)
+  Außerdem galt der Kurs des Meldezeitpunkts statt des Zahlzeitpunkts als „erwarteter Betrag".
+- **Behoben:** Start beim ersten Griff zur Adresse („In Wallet-App öffnen" / „Adresse kopieren"), gemerkt auf dem Gerät
+  (je Konto, Plan, Wallet, 24 h) — übersteht das Neuladen nach dem Wechsel in die Wallet-App; zweites Kopieren startet
+  nicht erneut; die Meldung nutzt genau diese Zahlung (gibt es sie nicht mehr: einmal frisch starten); danach gelöscht,
+  beim Abmelden ebenso. Meldung ohne vorherigen Start (anderes Gerät): Die Prüfliste sagt ausdrücklich, dass Punkt 3
+  dort nicht greift (Start und Meldung < 15 s auseinander) — 5 Sprachen. Doku: docs/PAYMENTS.md.
+- **Geprüft:** Browser-Ablauf gegen echten Server (en-GH, 360 px): kopieren → 1,5 s → nochmal kopieren → Seite neu →
+  melden: **eine** Zahlung, Start 2,6 s vor Meldung, gemerkter Start gelöscht. Mit altem Verhalten: zwei Zahlungen,
+  Abstand 10 ms. Neu im Browser-Audit (Abschnitt 13b). `krypto-start-zeitpunkt.test.js` + fünf Gegenproben — rot.

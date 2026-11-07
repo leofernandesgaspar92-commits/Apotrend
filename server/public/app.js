@@ -8315,12 +8315,20 @@ async function openPremium() {
           <div class="tx-msg" style="margin-top:6px"></div>
         </div>
       </div>`);
-      cc.querySelector('[data-copy]').onclick = async (e) => { try { await navigator.clipboard.writeText(c.address); e.target.textContent = t('pr_copied'); } catch { /* Clipboard n/a */ } };
+      cc.querySelector('.btn-link').addEventListener('click', () => { kryptoStartMerken(prPlan, c.id).catch(() => {}); });
+      cc.querySelector('[data-copy]').onclick = async (e) => { kryptoStartMerken(prPlan, c.id).catch(() => {}); try { await navigator.clipboard.writeText(c.address); e.target.textContent = t('pr_copied'); } catch { /* Clipboard n/a */ } };
       cc.querySelector('[data-report]').onclick = async () => {
         const inp = cc.querySelector('.tx-in'); const msg = cc.querySelector('.tx-msg');
         try {
-          const s = await api('POST', '/api/payments/crypto/start', { productId: prPlan, walletId: c.id });
-          await api('POST', `/api/payments/crypto/${encodeURIComponent(s.payment_id)}/claim`, { txRef: inp.value });
+          const pid = await kryptoStartMerken(prPlan, c.id);
+          try { await api('POST', `/api/payments/crypto/${encodeURIComponent(pid)}/claim`, { txRef: inp.value }); }
+          catch (e) {
+            if (e.code !== 'payment_not_found') throw e;
+            // Gemerkter Start existiert nicht mehr (z. B. Server-Neustart ohne Datenbank): einmal frisch starten.
+            try { localStorage.removeItem('apo_krypto_start'); } catch { /* egal */ }
+            await api('POST', `/api/payments/crypto/${encodeURIComponent(await kryptoStartMerken(prPlan, c.id))}/claim`, { txRef: inp.value });
+          }
+          try { localStorage.removeItem('apo_krypto_start'); } catch { /* egal */ } // nächste Zahlung startet neu
           msg.style.color = 'var(--green)'; msg.textContent = t('pr_reported'); inp.value = '';
           // Seite neu aufbauen: Oben steht dann „⏳ Ihre Zahlung wird geprüft — bitte nicht noch einmal
           // zahlen". Vorher stand der Dank nur klein in der Wallet-Karte, weit unten am Handy.
@@ -10923,6 +10931,17 @@ const fmtZeit = (iso) => { const d = new Date(iso); return iso && !Number.isNaN(
  * unsere Adresse" — sie scheitert erst am Zeitpunkt (liegt vor dem Start) und
  * am Betrag. Wer bestätigt, soll genau das geprüft haben.
  */
+// Krypto-Premium: Die Zahlung startet beim ERSTEN Griff zur Adresse (Wallet öffnen / Adresse kopieren) — so liegt
+// „Gestartet" vor der echten Zahlung, und Prüfpunkt 3 der Redaktion (abgeschriebene fremde Zahlung liegt davor)
+// greift. Bis 11/2026 startete sie erst beim Melden: „Gestartet" = „Gemeldet", jede echte Zahlung lag davor.
+// Gemerkt auf dem Gerät (Wechsel in die Wallet-App lädt die Seite oft neu), je Konto, Plan und Wallet, 24 h.
+async function kryptoStartMerken(plan, walletId) {
+  let st = null; try { st = JSON.parse(localStorage.getItem('apo_krypto_start') || 'null'); } catch { st = null; }
+  if (st && st.uid === (me && me.id) && st.plan === plan && st.wallet === walletId && Date.now() - st.ts < 86400000) return st.id;
+  const s = await api('POST', '/api/payments/crypto/start', { productId: plan, walletId });
+  try { localStorage.setItem('apo_krypto_start', JSON.stringify({ id: s.payment_id, uid: me && me.id, plan, wallet: walletId, ts: Date.now() })); } catch { /* dann Start beim Melden */ }
+  return s.payment_id;
+}
 function kryptoPruefKarte(z) {
   const k = z.kunde || {};
   const land = (COUNTRIES_CACHE || []).find(c => c.code === k.country);
@@ -10944,6 +10963,7 @@ function kryptoPruefKarte(z) {
     <div class="muted" style="font-size:14px;margin-top:2px">${esc(z.network || z.coin || '')}${z.wallet_label ? ' · ' + esc(z.wallet_label) : ''}</div>
     <div style="font-size:14px;margin-top:6px">${esc(erwartet)}</div>
     <div style="font-size:14px;margin-top:2px">${esc(t('kp_started'))}: <b>${esc(fmtZeit(z.created_at))}</b> · ${esc(t('kp_claimed'))}: ${esc(fmtZeit(z.claimed_at))}</div>
+    ${z.claimed_at && z.created_at && Math.abs(Date.parse(z.claimed_at) - Date.parse(z.created_at)) < 15000 ? `<div data-kpgleichzeitig style="margin-top:6px;background:var(--info-bg);border:1px solid var(--info-bd);color:var(--info-fg);border-radius:8px;padding:8px 12px;font-size:14px">${esc(t('kp_gleichzeitig'))}</div>` : ''}
     <div style="font-size:13px;margin-top:6px"><span class="muted">${esc(t('kp_address'))}:</span> <code style="word-break:break-all">${esc(z.address || '')}</code></div>
     <div style="font-size:13px;margin-top:2px"><span class="muted">${esc(t('kp_tx'))}:</span> <code style="word-break:break-all" data-kptx>${esc(z.provider_ref || '')}</code></div>
     ${link ? `<div style="margin-top:8px"><a class="btn-link small" href="${esc(link)}" target="_blank" rel="noopener noreferrer" data-kpexplorer style="min-height:40px;display:inline-flex;align-items:center">🔎 ${esc(t('kp_explorer'))} ↗</a></div>`
@@ -11644,7 +11664,7 @@ function zeigeOfflineStand(iso) { OFFLINE_STAND = iso || null; updateOfflineBann
 async function offlineSpeicherLeeren() {
   OFFLINE_STAND = null;
   // Geteiltes Gerät in der Offizin: ein nicht gesendeter Meldungs-Entwurf gehört dem Konto, das abmeldet.
-  try { localStorage.removeItem('apo_meldeentwurf'); } catch { /* egal */ }
+  try { localStorage.removeItem('apo_meldeentwurf'); localStorage.removeItem('apo_krypto_start'); } catch { /* egal */ }
   await ausgangLeeren(); // wartende Meldungen gehören dem Konto, das abmeldet
   try { if (window.caches) await caches.delete('apopulse-api-v1'); } catch { /* egal */ }
 }

@@ -157,6 +157,13 @@ an die **eigenen** öffentlichen Empfangsadressen des Betreibers.
   (`…/crypto/:id/claim`) → Status `pending_review` → **Moderation/Betreiber bestätigt manuell**
   (`GET /api/payments/pending`, `POST /api/payments/:id/confirm`) nach Blick in die Wallet →
   Feature frei. Damit gibt es einen sauberen Datensatz und eine bewusste Freigabe.
+- **Wann „gestartet" wird (seit 06.11.2026):** beim ersten Griff zur Adresse („In Wallet-App
+  öffnen" / „Adresse kopieren"), nicht erst beim Melden. Die App merkt sich den Start auf dem
+  Gerät (je Konto, Plan, Wallet; 24 h) — auch über das Neuladen nach dem Wechsel in die Wallet-App —,
+  und die Meldung nutzt genau diese Zahlung. Nur so liegt „Gestartet" VOR der echten Zahlung und
+  Prüfpunkt 3 (abgeschriebene fremde Transaktion liegt davor) trägt. Bis dahin waren „Gestartet" und
+  „Gemeldet" bei Premium gleich. Kommt eine Meldung ohne vorherigen Start (anderes Gerät), sagt die
+  Prüfliste ausdrücklich, dass Punkt 3 dort nicht greift.
 - **Wichtig:** Auch der Direkt-Weg entbindet nicht von **Steuer/Buchführung** (Krypto-Eingänge
   sind zu erfassen) und ggf. gewerbe-/aufsichtsrechtlichen Pflichten.
 

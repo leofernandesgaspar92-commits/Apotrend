@@ -1600,6 +1600,45 @@ async function main() {
       else console.log('✓ Premium: Monat und Jahr wählbar, Ersparnis gerechnet, gewähltes Produkt kommt beim Kauf an');
     }
 
+    // ── 13b. Krypto-Premium: Start vor der Meldung (echter Ablauf gegen den Server) ──
+    //  Bis 11/2026 startete die Premium-Seite die Zahlung erst beim Melden: „Gestartet" = „Gemeldet",
+    //  jede echte Zahlung lag davor — Prüfpunkt 3 der Redaktion hielt sie für abgeschrieben.
+    //  Ablauf wie am Handy: Adresse kopieren → (Wallet-App) Seite lädt neu → Transaktions-ID melden.
+    {
+      const k = await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Krypto Start', email: `ks_${Date.now().toString(36)}@ex.com`, password: 'Passwort123!', country: 'GH', accountType: 'pharmacy' }) });
+      const ctxK = await browser.newContext({ viewport: { width: 360, height: 760 } });
+      const pk = await ctxK.newPage();
+      await pk.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1');
+        try { Object.defineProperty(navigator, 'clipboard', { value: { writeText: async () => {} }, configurable: true }); } catch { /* egal */ } }, k.token);
+      const zurPremium = async () => {
+        await pk.goto(BASE, { waitUntil: 'networkidle' }); await pk.evaluate(() => openPremium());
+        await pk.waitForSelector('.crypto-pay', { timeout: 8000 }).catch(() => {});
+        const btc = pk.locator('[data-coin]', { hasText: 'BTC' }); if (await btc.count()) await btc.first().click();
+        return pk.locator('.crypto-pay:not([hidden])').first();
+      };
+      let karte = await zurPremium();
+      if (!(await karte.count())) findings.push('Krypto-Premium: keine Zahlkarte');
+      else {
+        await karte.locator('[data-copy]').click();
+        await pk.waitForTimeout(1500);
+        await karte.locator('[data-copy]').click(); // zweites Kopieren: kein zweiter Start
+        await pk.waitForTimeout(300);
+        karte = await zurPremium(); // zurück aus der Wallet-App: Seite neu geladen
+        const tx = Array.from({ length: 64 }, () => '0123456789abcdef'[Math.floor(Math.random() * 16)]).join('');
+        await karte.locator('.tx-in').fill(tx);
+        await karte.locator('[data-report]').click();
+        await pk.waitForTimeout(1200);
+        const z = await pk.evaluate(() => api('GET', '/api/payments/mine').then((d) => d.payments));
+        const abstand = z[0] ? Date.parse(z[0].claimed_at) - Date.parse(z[0].created_at) : 0;
+        if (z.length !== 1) findings.push(`Krypto-Premium: ${z.length} Zahlungen angelegt statt 1 (${z.map((x) => x.status).join(', ')})`);
+        else if (z[0].status !== 'pending_review') findings.push(`Krypto-Premium: Meldung kam nicht an (${z[0].status})`);
+        else if (!(abstand >= 1500)) findings.push(`Krypto-Premium: Start vor der Meldung fehlt (Abstand ${abstand} ms — „Gestartet" = „Gemeldet")`);
+        else if (await pk.evaluate(() => localStorage.getItem('apo_krypto_start'))) findings.push('Krypto-Premium: gemerkter Start bleibt nach der Meldung liegen');
+        else console.log(`✓ Krypto-Premium: Start vor der Meldung (kopieren → neu laden → melden: eine Zahlung, Start ${(abstand / 1000).toFixed(1)} s vor Meldung)`);
+      }
+      await ctxK.close();
+    }
+
     // ── 14. Betriebs-Cockpit und Quellen-Hinweis (Redaktion) ────────────────
     {
       const betrieb = {
