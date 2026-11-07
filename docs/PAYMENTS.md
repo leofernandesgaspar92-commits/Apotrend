@@ -157,6 +157,11 @@ an die **eigenen** öffentlichen Empfangsadressen des Betreibers.
   (`…/crypto/:id/claim`) → Status `pending_review` → **Moderation/Betreiber bestätigt manuell**
   (`GET /api/payments/pending`, `POST /api/payments/:id/confirm`) nach Blick in die Wallet →
   Feature frei. Damit gibt es einen sauberen Datensatz und eine bewusste Freigabe.
+- **Adressen werden geprüft (seit 07.11.2026):** Jede `APOPULSE_WALLET_*`-Adresse wird beim Start nach dem
+  Format ihrer Kette geprüft (Tron/Bitcoin mit Prüfsumme, Ethereum 0x+40 Hex, Solana 32 Byte Base58 — Solana hat
+  keine Prüfsumme). Eine ungültige Adresse (Kopierfehler, falsche Kette) wird Kundinnen **nicht** angezeigt; das
+  Server-Protokoll warnt, und der Startklar-Check nennt die Variable. Adressen immer mit „Kopieren" aus der
+  Wallet-App übernehmen, nie abtippen.
 - **Wann „gestartet" wird (seit 06.11.2026):** beim ersten Griff zur Adresse („In Wallet-App
   öffnen" / „Adresse kopieren"), nicht erst beim Melden. Die App merkt sich den Start auf dem
   Gerät (je Konto, Plan, Wallet; 24 h) — auch über das Neuladen nach dem Wechsel in die Wallet-App —,

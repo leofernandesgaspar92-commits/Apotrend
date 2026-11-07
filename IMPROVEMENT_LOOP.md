@@ -4709,3 +4709,19 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Neu:** `zugriff-fremd.test.js` hält das fest (28 Versuche, Status nur 403/404, A unverändert), damit eine künftige
   Änderung keine Eigentümer-Prüfung still entfernt. Gegenproben: Eigentümer-Prüfung bei Logistik, Krypto-Meldung,
   Zahlungsbestätigung, Kampagne entfernt — jeweils rot.
+
+### Tippfehler in den Render-Einstellungen: kein Stillstand, kein verlorenes Geld (2026-11-07)
+- **Geprüft** (Server mit absichtlich falschen Einstellungen gestartet): ungültige Admin-Mail, kaputte VAPID-Schlüssel,
+  Steuersatz „abc", IBAN-Unsinn, Adresse ohne https, kurzer Token-Schlüssel … — startet jeweils.
+- **Fund 1:** `APOPULSE_ADMIN_PASSWORD` mit weniger als 8 Zeichen → der Server startete **nicht** (Stapel mit
+  „Passwort muss mindestens 8 Zeichen haben"). Trifft den ersten Start mit neuer Datenbank — also genau, wenn
+  DATABASE_URL eingetragen wird. Jetzt: deutliche Warnung im Protokoll, Zufallspasswort (wie ohne Variable), App läuft.
+- **Fund 2 (Krypto, wichtiger):** Wallet-Adressen wurden ungeprüft angezeigt. Ein Kopierfehler in
+  `APOPULSE_WALLET_TRON` (abgeschnitten, Leerzeichen, versehentlich die Ethereum-Adresse) → Kundinnen schicken USDT an
+  eine Adresse, die es nicht gibt oder die nicht dem Betreiber gehört. Jetzt: `domain/walletAdresse.js` prüft je Kette
+  (Tron Base58Check, Bitcoin bech32/bech32m oder Base58Check, Ethereum 0x+40 Hex, Solana 32 Byte — Solana ohne
+  Prüfsumme, ehrlich vermerkt); ungültige Wallets erscheinen nirgends (Premium, Anzeigen, Mediadaten, Startseite),
+  das Protokoll warnt beim Start, der Startklar-Check nennt Variable und erwartetes Format.
+- **Test:** `einstellungen-tippfehler.test.js` (Prüfregeln inkl. Standard-Wallets; Server mit kurzem Passwort startet,
+  das kurze Passwort gilt nicht; Server mit Ethereum-Adresse im Tron-Feld und abgeschnittener BTC-Adresse: beide
+  ausgeblendet, Startklar „fehlt" mit beiden Variablen). Fünf Gegenproben — rot.

@@ -22,7 +22,7 @@ const SMS_GRUND = {
   kein_absender: 'Twilio braucht eine Absendernummer: APOPULSE_SMS_FROM fehlt.',
 };
 
-export function startklar({ env = {}, dauerhaft = { level: 'flüchtig' }, quellen = { gesamt: 0, liefern: 0, fehler: 0 }, mail = { aktiv: false }, vapidFest = false, wallets = [], zahlwege = [] } = {}) {
+export function startklar({ env = {}, dauerhaft = { level: 'flüchtig' }, quellen = { gesamt: 0, liefern: 0, fehler: 0 }, mail = { aktiv: false }, vapidFest = false, wallets = [], ungueltigeWallets = [], zahlwege = [] } = {}) {
   const gesetzt = (k) => String(env[k] || '').trim() !== '';
   const p = [];
   const punkt = (id, stufe, titel, warum, tun) => p.push({ id, stufe, titel, warum, tun: stufe === 'ok' ? null : tun });
@@ -91,11 +91,16 @@ export function startklar({ env = {}, dauerhaft = { level: 'flüchtig' }, quelle
       'Mit der Steuerberatung klären und APOPULSE_UST_SATZ setzen (z. B. 20 für Österreich, 19 für Deutschland).');
   }
   const tron = wallets.some((w) => w.id === 'tron');
-  punkt('krypto', wallets.length && tron ? 'ok' : wallets.length ? 'warnung' : 'fehlt',
+  // Ungültige Adresse (Kopierfehler): Die Wallet wird Kundinnen NICHT angezeigt — hier steht, welche und warum.
+  const kaputt = ungueltigeWallets.map((w) => `${w.variable} (${w.erwartet})`).join('; ');
+  punkt('krypto', ungueltigeWallets.length || !wallets.length ? 'fehlt' : tron ? 'ok' : 'warnung',
     'Krypto-Zahlung (Afrika-Strategie)',
-    !wallets.length ? 'Keine Wallet hinterlegt — Krypto-Zahlung ist aus.'
-      : tron ? `${wallets.length} Wallets aktiv, inklusive USDT über Tron.` : `${wallets.length} Wallets aktiv, aber kein USDT über Tron — in Afrika verbreitet, günstig und ohne Kursschwankung.`,
-    'APOPULSE_WALLET_TRON auf die eigene Tron-Adresse (beginnt mit T) setzen — sie empfängt USDT (TRC-20).');
+    (ungueltigeWallets.length ? `Keine gültige Adresse und darum ausgeblendet: ${kaputt}. ` : '')
+      + (!wallets.length ? 'Keine Wallet hinterlegt — Krypto-Zahlung ist aus.'
+        : tron ? `${wallets.length} Wallets aktiv, inklusive USDT über Tron.` : `${wallets.length} Wallets aktiv, aber kein USDT über Tron — in Afrika verbreitet, günstig und ohne Kursschwankung.`),
+    ungueltigeWallets.length
+      ? `In Render die Adresse(n) neu aus der Wallet-App kopieren (Knopf „Kopieren", nicht abtippen): ${ungueltigeWallets.map((w) => w.variable).join(', ')}.`
+      : 'APOPULSE_WALLET_TRON auf die eigene Tron-Adresse (beginnt mit T) setzen — sie empfängt USDT (TRC-20).');
   punkt('karte', zahlwege.length ? 'ok' : 'info',
     'Karte / PayPal (optional)',
     'Für Apotheken in Europa der gewohnte Weg; Krypto bleibt daneben vollständig erhalten.',

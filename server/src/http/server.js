@@ -79,7 +79,12 @@ import { createOAuthService, buildProvidersFromEnv } from '../services/oauth.js'
 import { createPaymentsService, buildPaymentProvidersFromEnv } from '../services/payments.js';
 import { createCryptoRates } from '../services/cryptoRates.js';
 import { createFxRates } from '../services/fxRates.js';
-import { cryptoWallets, paymentRoutes } from '../data/cryptoWallets.js';
+import { cryptoWallets as alleWallets, paymentRoutes } from '../data/cryptoWallets.js';
+import { walletsPruefen } from '../domain/walletAdresse.js';
+// Nur Wallets mit gültiger Adresse (domain/walletAdresse.js) — ein Kopierfehler in Render darf kein Geld kosten.
+const cryptoWallets = () => walletsPruefen(alleWallets()).gueltig;
+const ungueltigeWallets = () => walletsPruefen(alleWallets()).ungueltig;
+for (const w of ungueltigeWallets()) console.warn(`⚠️  ${w.variable} ist keine gültige Adresse (${w.erwartet}) — diese Wallet wird Kundinnen NICHT angezeigt. Bitte in Render neu aus der Wallet-App kopieren.`);
 import { listProducts, getProduct } from '../data/products.js';
 import { createAmrService } from '../services/amr.js';
 import { createPatientInfoService } from '../services/patientInfo.js';
@@ -504,10 +509,15 @@ if (restoring) {
   // Frischstart. Zugangsdaten über ENV steuerbar; sonst zufälliges Passwort, das
   // beim Start einmalig geloggt wird, damit sich die Redaktion anmelden kann.
   const adminEmail = process.env.APOPULSE_ADMIN_EMAIL || 'redaktion@apopulse.at';
-  const adminPassword = process.env.APOPULSE_ADMIN_PASSWORD || crypto.randomUUID();
+  // Zu kurzes Passwort (unter 8 Zeichen): bis 11/2026 startete der Server dann NICHT. Jetzt: klare Warnung,
+  // Zufallspasswort wie ohne Variable — die App läuft, die Redaktion kommt mit dem geloggten Passwort hinein.
+  const envPw = process.env.APOPULSE_ADMIN_PASSWORD;
+  const pwZuKurz = !!envPw && envPw.length < 8;
+  if (pwZuKurz) console.warn('⚠️  APOPULSE_ADMIN_PASSWORD hat weniger als mindestens 8 Zeichen und wird nicht verwendet. Bitte in Render ein längeres Passwort setzen (empfohlen: 12+ Zeichen). Bis dahin gilt das zufällige Passwort unten.');
+  const adminPassword = (envPw && !pwZuKurz) ? envPw : crypto.randomUUID();
   const red = orgAuth.registerPharmacyWithOwner({ pharmacy: { name: 'ApoPulse' }, owner: { name: 'ApoPulse-Redaktion', email: adminEmail, password: adminPassword } });
   social.createProfile(red.user.id, { handle: 'apopulse', displayName: 'ApoPulse-Redaktion', isEditorial: true });
-  if (!process.env.APOPULSE_ADMIN_PASSWORD) console.log(`ℹ️  Redaktions-/Moderations-Login: ${adminEmail} / ${adminPassword}`);
+  if (!process.env.APOPULSE_ADMIN_PASSWORD || pwZuKurz) console.log(`ℹ️  Redaktions-/Moderations-Login: ${adminEmail} / ${adminPassword}`);
   // Früher legte der Frischstart hier sechs „News"-Beiträge an (AT/DE/BR), z. B.
   // „BASG: Aktualisierte Engpassliste veröffentlicht — mehrere Antibiotika
   // betroffen" — mit der Startseite der Behörde als „Quelle". Keiner davon war
@@ -2922,7 +2932,7 @@ const routes = [
       env: process.env, dauerhaft: durabilityReport(),
       quellen: betriebsZahlen({ quellen: engpassQuellen(), gemessen: coverage.alle() }).quellen,
       mail: { aktiv: mailer.aktiv }, vapidFest: vapidAusUmgebung,
-      wallets: cryptoWallets().map(({ id }) => ({ id })),
+      wallets: cryptoWallets().map(({ id }) => ({ id })), ungueltigeWallets: ungueltigeWallets(),
       zahlwege: Object.keys(buildPaymentProvidersFromEnv()).filter((k) => k !== 'coinbase'),
     });
   }],
