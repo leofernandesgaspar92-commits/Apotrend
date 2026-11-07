@@ -4725,3 +4725,14 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Test:** `einstellungen-tippfehler.test.js` (Prüfregeln inkl. Standard-Wallets; Server mit kurzem Passwort startet,
   das kurze Passwort gilt nicht; Server mit Ethereum-Adresse im Tron-Feld und abgeschnittener BTC-Adresse: beide
   ausgeblendet, Startklar „fehlt" mit beiden Variablen). Fünf Gegenproben — rot.
+
+### Redaktions-Ansichten: kein Durchgriff für normale Konten — festgehalten (2026-11-07)
+- **Geprüft:** alle 84 abrufenden Funktionen als normales Konto und als Redaktion. Die 10 Redaktions-Ansichten
+  (Krypto-Prüfliste mit Kundinnen und Transaktions-IDs, Anzeigen-Prüfung, Betriebs-Cockpit, Startklar, alle
+  Beschaffungsanfragen, Meldungen, Aufgaben, gemeldete Inhalte, Bestätigungsanträge, externe Schnittstellen):
+  normal 403, Redaktion 200. Übrige Unterschiede nur bei persönlichen Daten (eigener Feed, eigene Glocke, Auskunft).
+  **Kein Fund.**
+- **Neu:** `redaktion-zugriff.test.js` — 10 Ansichten (normal 403, ohne Anmeldung 401, Redaktion 200) und 5 Aktionen
+  (Abruf sofort, B2B-Lauf, Quelle testen/anlegen, Zugangs-Link; normal 403, ohne 401). Gegenproben (Sperre bei
+  Startklar, B2B-Lauf, Quellen-Test entfernt) rot. Beim Betriebs-Cockpit greift eine zweite Sperre im
+  Anzeigen-Baustein — doppelter Schutz, darum dort keine Gegenprobe.
