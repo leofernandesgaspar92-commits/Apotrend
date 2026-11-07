@@ -4682,3 +4682,18 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   nochmal → neu laden → melden: **ein** Start, 2,6 s vor der Meldung. Mit altem Verhalten: „2 Starts, 1 Meldung".
   `krypto-start-zeitpunkt.test.js` erweitert; Gegenproben (Wallet-Start, Kopier-Start, Kopier-Knopf) — rot (die
   letzte griff erst nach Nachschärfen des Musters).
+
+### Keine rohen Programmfehler an Nutzer:innen — und keiner geht dem Betreiber verloren (2026-11-07)
+- **Geprüft ohne Fund:** Speicher ohne Sicherung (coverage, signals) — bewusst so (neu berechnet bzw. direkt in der
+  Datenbank). Alle Krypto-Zahlstellen der Oberfläche — nur Premium und Anzeigen, beide abgedeckt.
+- **Fund (alle 64 POST-Routen mit ungewöhnlichen Eingaben abgeklopft):** 22 Routen antworteten auf den Anfragetext
+  `null` mit „Cannot read properties of null (reading 'email')" — darunter Anmeldung, Krypto-Start, Engpass-Meldung,
+  Beobachtungsliste. Ursache 1: `readBody` nahm jedes gültige JSON (auch null/Zahl/Text). Ursache 2 (die wichtigere):
+  Die Routen und `/api/v1` gaben JEDEN Fehler roh mit 400 zurück — auch echte Programmfehler. Die erschienen weder im
+  Log noch im Betriebs-Cockpit; ein Fehler in der Live-App wäre unbemerkt geblieben, die Nutzerin hätte englischen
+  Technik-Text gesehen.
+- **Behoben:** Anfragetext ist immer ein Objekt. Neuer Baustein `http/fehlerAntwort.js`: Fehler mit Code oder Status
+  bleiben wie gehabt; alles andere → 500 mit übersetzbarem Code „unbekannt" ohne Interna, ins Server-Log (Methode, Pfad,
+  Stapel — kein Anfragetext) und in den Zähler „Server-Fehler" des Betriebs-Cockpits. Gilt für App-Routen und `/api/v1`.
+- **Geprüft:** Abklopfen danach (POST mit null/Zahl/Text/Liste, GET mit kaputten Parametern): 0 Funde, keine 500er.
+  `fehler-roh.test.js` (Baustein, Verdrahtung, HTTP über alle 22 Routen). Gegenproben einzeln und kombiniert — rot.

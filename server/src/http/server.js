@@ -20,6 +20,7 @@ import { createRabatteRepo } from '../repo/rabatteRepo.js';
 import { createExchangeRepo } from '../repo/exchangeRepo.js';
 import { createPersistence } from '../repo/persistence.js';
 import { createOrgAuthService, ForbiddenError } from '../services/orgAuth.js';
+import { fehlerAntwort as fehlerAntwortRoh } from './fehlerAntwort.js';
 import { createCollabService } from '../services/collab.js';
 import { can as roleCan } from '../domain/roles.js';
 import { cleanSourceUrl } from '../domain/media.js';
@@ -607,6 +608,7 @@ if (persistence && !restoring) saveNow(); // Ausgangszustand (Seed) sofort siche
 //  fehler (uncaughtException) ist der Zustand unsicher: dann ERST sichern (Datei
 //  sofort, Datenbank mit Deckel), DANN beenden — Render startet neu.
 const betriebsFehler = { anfragen: 0, hintergrund: 0, zuletzt: null };
+const fehlerAntwort = (e) => fehlerAntwortRoh(e, { verboten: (x) => x instanceof ForbiddenError });
 // Welche Version läuft? Render setzt RENDER_GIT_COMMIT/RENDER_GIT_BRANCH selbst. Damit sieht der
 // Owner unter /api/health und im Betriebs-Cockpit, ob der letzte Stand wirklich live ist — genau
 // diese Lücke (Feature-Branch ≠ Deploy-Branch) ließ einmal ~20 fertige Funktionen nie live gehen.
@@ -826,7 +828,8 @@ const json = (req, res, code, obj, { bilderEinbetten = false } = {}) => {
 };
 const readBody = (req) => new Promise((resolve) => {
   let d = ''; req.on('data', c => { d += c; if (d.length > 2e6) req.destroy(); }); // 2 MB (Bilder als data-URL)
-  req.on('end', () => { try { resolve(d ? JSON.parse(d) : {}); } catch { resolve({}); } });
+  // Immer ein Objekt: Gültiges JSON wie `null`, `5` oder `[]` führte zu „Cannot read properties of null" in 22 Routen.
+  req.on('end', () => { try { const p = d ? JSON.parse(d) : {}; resolve(p && typeof p === 'object' && !Array.isArray(p) ? p : {}); } catch { resolve({}); } });
 });
 const sitzungAus = (req) => tokenDetails((req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
 // Nutzerobjekt vor der Auslieferung von Geheimnissen befreien (Passwort-Hash,
@@ -3221,8 +3224,10 @@ async function datenSchnittstelle(req, res, url) {
     }
     return antwort(404, { error: 'Unbekannter Endpunkt. Verfügbar: /api/v1/status, /api/v1/engpaesse, /api/v1/pruefen' });
   } catch (e) {
-    const code = e.status || 400;
-    return antwort(code, e.code ? { error: e.message, code: e.code } : { error: e.message }, e.retryAfterS != null ? { 'Retry-After': String(e.retryAfterS) } : {});
+    const f = fehlerAntwort(e);
+    if (f.unerwartet) { betriebsFehler.anfragen++; betriebsFehler.zuletzt = new Date().toISOString(); console.error('Programmfehler in /api/v1', (e && e.stack) || e); }
+    delete f.body.retry_after_s; // Daten-Schnittstelle: Wartezeit steht im Kopf Retry-After
+    return antwort(f.status, f.body, e && e.retryAfterS != null ? { 'Retry-After': String(e.retryAfterS) } : {});
   }
 }
 
@@ -3335,13 +3340,11 @@ async function anfrage(req, res) {
       if (result && result.__sichern) delete result.__sichern;
       return json(req, res, 200, result ?? { ok: true }, { bilderEinbetten: pathname === '/api/me/export' });
     } catch (e) {
-      const code = e instanceof ForbiddenError ? 403 : (e.status || 400);
-      // e.code (falls gesetzt) erlaubt dem Frontend, die Meldung zu übersetzen.
-      const payload = e.code ? { error: e.message, code: e.code } : { error: e.message };
-      // Werte für Platzhalter der übersetzten Meldung (z. B. erwartetes Format der Transaktions-ID).
-      if (e.code && e.params && typeof e.params === 'object') payload.params = e.params;
-      if (e.retryAfterS != null) payload.retry_after_s = e.retryAfterS; // 429: Wartezeit fürs Frontend
-      return json(req, res, code, payload);
+      // Erwartete Fehler (Code/Status) gehen mit ihrer Meldung an die App; Programmfehler als 500 „unbekannt",
+      // ins Log und in den Zähler des Betriebs-Cockpits (http/fehlerAntwort.js).
+      const f = fehlerAntwort(e);
+      if (f.unerwartet) { betriebsFehler.anfragen++; betriebsFehler.zuletzt = new Date().toISOString(); console.error('Programmfehler in', req.method, pathname, (e && e.stack) || e); }
+      return json(req, res, f.status, f.body);
     }
   }
 
