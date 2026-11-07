@@ -4736,3 +4736,17 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   (Abruf sofort, B2B-Lauf, Quelle testen/anlegen, Zugangs-Link; normal 403, ohne 401). Gegenproben (Sperre bei
   Startklar, B2B-Lauf, Quellen-Test entfernt) rot. Beim Betriebs-Cockpit greift eine zweite Sperre im
   Anzeigen-Baustein — doppelter Schutz, darum dort keine Gegenprobe.
+
+### Kopierfehler am Rand von Render-Variablen machen nichts mehr kaputt (2026-11-07)
+- **Geprüft:** Admin-Mail mit Leerzeichen, Zeilenumbruch oder Großbuchstaben — Anmeldung klappt (wurde schon bereinigt).
+- **Fund:** `APOPULSE_ADMIN_PASSWORD` mit Leerzeichen oder Zeilenumbruch am Ende (beim Kopieren in Render leicht
+  passiert) → die Redaktion kam nicht mehr hinein, ohne jeden Hinweis (401). Ebenso ungeprüft: Google-/Facebook-Zugang
+  (der Umbruch landete in der client_id des Anmeldelinks), Stripe, PayPal, SMS-Benutzer, AIS-Schlüssel, Bankdaten. Mail,
+  Wallets, VAPID bereinigten selbst — uneinheitlich.
+- **Behoben:** `http/umgebung.js`, direkt nach `env-compat.js` geladen (vor allem, was Werte beim Laden liest):
+  bereinigt die Ränder aller App-Variablen (APOPULSE_/APOTREND_/OAUTH_/STRIPE_/PAYPAL_/COINBASE_/AISSTREAM_,
+  DATABASE_URL, DIRECT_URL); innen bleibt alles (mehrzeilige Anschrift), fremde Variablen bleiben unangetastet. Das
+  Protokoll nennt nur die NAMEN der bereinigten Variablen, nie Werte.
+- **Test:** `umgebung-raender.test.js` (Baustein; Reihenfolge der Importe; Server mit „Passwort + Leerzeichen +
+  Zeilenumbruch" und Google-ID mit Umbruch: Anmeldung klappt, client_id sauber, kein Wert im Protokoll). Drei
+  Gegenproben — rot.

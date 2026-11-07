@@ -6,6 +6,7 @@
 // allen anderen Importen stehen — manche Module lesen ihre Werte beim Laden
 // (z. B. http/token.js). ESM wertet Importe in Quelltextreihenfolge aus.
 import '../env-compat.js';
+import './umgebung.js'; // direkt danach: Ränder bereinigen, bevor ein Baustein die Werte liest
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
