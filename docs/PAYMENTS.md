@@ -164,6 +164,8 @@ an die **eigenen** öffentlichen Empfangsadressen des Betreibers.
   Prüfpunkt 3 (abgeschriebene fremde Transaktion liegt davor) trägt. Bis dahin waren „Gestartet" und
   „Gemeldet" bei Premium gleich. Kommt eine Meldung ohne vorherigen Start (anderes Gerät), sagt die
   Prüfliste ausdrücklich, dass Punkt 3 dort nicht greift.
+  Gilt seit 07.11.2026 genauso für **Anzeigen** (dort fehlten zudem „Adresse kopieren" und
+  „In Wallet-App öffnen"; der Start lief ebenfalls erst beim Melden).
 - **Wichtig:** Auch der Direkt-Weg entbindet nicht von **Steuer/Buchführung** (Krypto-Eingänge
   sind zu erfassen) und ggf. gewerbe-/aufsichtsrechtlichen Pflichten.
 

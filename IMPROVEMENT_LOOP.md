@@ -4668,3 +4668,17 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Geprüft:** Browser-Ablauf gegen echten Server (en-GH, 360 px): kopieren → 1,5 s → nochmal kopieren → Seite neu →
   melden: **eine** Zahlung, Start 2,6 s vor Meldung, gemerkter Start gelöscht. Mit altem Verhalten: zwei Zahlungen,
   Abstand 10 ms. Neu im Browser-Audit (Abschnitt 13b). `krypto-start-zeitpunkt.test.js` + fünf Gegenproben — rot.
+
+### Krypto-Anzeigen: derselbe Start-Fehler wie bei Premium — und keine Kopier-/Wallet-Knöpfe (2026-11-07)
+- **Eigener Irrtum korrigiert:** Im letzten Eintrag stand „Anzeigen machten es richtig". Falsch — der HTTP-Test
+  rief die Schnittstelle in der richtigen Reihenfolge (start → claim), die Oberfläche aber startete die Zahlung
+  ebenfalls erst beim Melden. „Gestartet" = „Gemeldet", Prüfpunkt 3 hätte echte Anzeigen-Zahlungen als
+  abgeschrieben eingestuft. Außerdem fehlten „Adresse kopieren" und „In Wallet-App öffnen" (der Server liefert den
+  Wallet-Link mit): Ein Großhändler musste die lange Adresse am Handy von Hand markieren.
+- **Behoben:** Beide Knöpfe ergänzt (dieselben Texte wie bei Premium, 5 Sprachen); Start beim ersten Griff zur
+  Adresse über denselben Merk-Baustein wie Premium (jetzt mit eigener Start-Funktion je Zweck), übersteht das
+  Neuladen nach der Wallet-App, Meldung nutzt genau diese Zahlung. Doku: docs/PAYMENTS.md.
+- **Geprüft:** Neuer Audit-Abschnitt 13c (Oberfläche echt, Server-Antworten nachgebildet): kopieren → 1,5 s →
+  nochmal → neu laden → melden: **ein** Start, 2,6 s vor der Meldung. Mit altem Verhalten: „2 Starts, 1 Meldung".
+  `krypto-start-zeitpunkt.test.js` erweitert; Gegenproben (Wallet-Start, Kopier-Start, Kopier-Knopf) — rot (die
+  letzte griff erst nach Nachschärfen des Musters).

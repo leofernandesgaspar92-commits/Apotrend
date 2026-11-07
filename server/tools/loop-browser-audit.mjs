@@ -1639,6 +1639,40 @@ async function main() {
       await ctxK.close();
     }
 
+    // ── 13c. Krypto-Anzeige: Start vor der Meldung (Oberfläche echt, Server-Antworten nachgebildet) ──
+    //  Derselbe Fehler wie bei Premium (Start erst beim Melden), dazu fehlten Kopieren/Wallet-Knopf.
+    {
+      const ctxA = await browser.newContext({ viewport: { width: 360, height: 760 } });
+      const pa = await ctxA.newPage();
+      await pa.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1');
+        try { Object.defineProperty(navigator, 'clipboard', { value: { writeText: async () => {} }, configurable: true }); } catch { /* egal */ } }, token);
+      const starts = []; const claims = [];
+      const json = (r, d) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(d) });
+      await pa.route('**/api/werbung/kampagnen/kz1/krypto', (r) => json(r, { coins: [{ id: 'btc1', coin: 'bitcoin', symbol: 'BTC', network: 'Bitcoin', address: 'bc1qaudit', amount_crypto: 0.005, uri: 'bitcoin:bc1qaudit?amount=0.005' }] }));
+      await pa.route('**/api/werbung/kampagnen/kz1/krypto/start', (r) => { starts.push(Date.now()); return json(r, { payment_id: 'pz' + starts.length }); });
+      await pa.route('**/api/payments/crypto/*/claim', (r) => { claims.push({ t: Date.now(), url: r.request().url() }); return json(r, { ok: true }); });
+      const zurZahlung = async () => {
+        await pa.goto(BASE, { waitUntil: 'networkidle' });
+        await pa.evaluate(() => { const box = document.createElement('div'); box.id = 'wbtest'; document.getElementById('app').prepend(box); zahlungKampagne({ id: 'kz1', preis_cents: 49000 }, box, false); });
+        await pa.click('#wbtest button'); await pa.waitForSelector('#wbtest .crypto-pay', { timeout: 6000 }).catch(() => {});
+        return pa.locator('#wbtest .crypto-pay').first();
+      };
+      let z = await zurZahlung();
+      if (!(await z.count())) findings.push('Krypto-Anzeige: keine Zahlkarte');
+      else if (!(await z.locator('[data-wbwallet]').count()) || !(await z.locator('[data-wbkopie]').count())) findings.push('Krypto-Anzeige: „In Wallet-App öffnen" oder „Adresse kopieren" fehlt');
+      else {
+        await z.locator('[data-wbkopie]').click(); await pa.waitForTimeout(1500);
+        await z.locator('[data-wbkopie]').click(); await pa.waitForTimeout(300);
+        z = await zurZahlung(); // zurück aus der Wallet-App
+        await z.locator('[data-tx]').fill('a'.repeat(64)); await z.locator('[data-melden]').click(); await pa.waitForTimeout(800);
+        if (starts.length !== 1 || claims.length !== 1) findings.push(`Krypto-Anzeige: ${starts.length} Starts, ${claims.length} Meldungen (erwartet je 1)`);
+        else if (!claims[0].url.includes('/pz1/')) findings.push('Krypto-Anzeige: Meldung nutzt nicht den gemerkten Start');
+        else if (!(claims[0].t - starts[0] >= 1500)) findings.push(`Krypto-Anzeige: Start vor der Meldung fehlt (${claims[0].t - starts[0]} ms)`);
+        else console.log(`✓ Krypto-Anzeige: Start vor der Meldung (kopieren → neu laden → melden: ein Start, ${((claims[0].t - starts[0]) / 1000).toFixed(1)} s vor der Meldung; Wallet-Knopf und Kopieren da)`);
+      }
+      await ctxA.close();
+    }
+
     // ── 14. Betriebs-Cockpit und Quellen-Hinweis (Redaktion) ────────────────
     {
       const betrieb = {

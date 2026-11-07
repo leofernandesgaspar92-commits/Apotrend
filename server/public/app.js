@@ -5488,12 +5488,27 @@ async function zahlungKampagne(k, box, rechnungMoeglich) {
       const zeile = el(`<div class="crypto-pay"><b>${esc(c.symbol || c.coin)}</b> <span class="muted">${esc(c.network || '')}</span>
         <div>${c.amount_crypto != null ? esc(`${c.amount_crypto} ${c.symbol || ''}`) : esc(t('wb2_kurs_fehlt'))} · ${esc(eur(k.preis_cents))}</div>
         <div class="crypto-addr"><code>${esc(c.address)}</code></div>
+        <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap">
+          ${c.uri ? `<a class="btn-link" href="${esc(c.uri)}" data-wbwallet>${esc(t('pr_open_wallet'))}</a>` : ''}
+          <button class="ghost small" data-wbkopie>${esc(t('pr_copy_addr'))}</button>
+        </div>
         <div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap"><input data-tx placeholder="${esc(t('wb2_tx_ph'))}" style="flex:1;min-width:min(180px,100%)"><button class="small" data-melden>${esc(t('wb2_tx_melden'))}</button></div>
         <div class="err" data-txerr></div></div>`);
+      // Wie Premium: Start beim ersten Griff zur Adresse, damit „Gestartet" vor der Zahlung liegt (Prüfpunkt 3).
+      const starten = () => kryptoStartMerken('anzeige:' + k.id, c.id, () => api('POST', `/api/werbung/kampagnen/${k.id}/krypto/start`, { walletId: c.id }));
+      if (c.uri) zeile.querySelector('[data-wbwallet]').addEventListener('click', () => { starten().catch(() => {}); });
+      zeile.querySelector('[data-wbkopie]').onclick = async (e) => { starten().catch(() => {}); try { await navigator.clipboard.writeText(c.address); e.target.textContent = t('pr_copied'); } catch { /* Clipboard n/a */ } };
       zeile.querySelector('[data-melden]').onclick = async () => {
         try {
-          const st = await api('POST', `/api/werbung/kampagnen/${k.id}/krypto/start`, { walletId: c.id });
-          await api('POST', `/api/payments/crypto/${st.payment_id}/claim`, { txRef: zeile.querySelector('[data-tx]').value });
+          const tx = zeile.querySelector('[data-tx]').value;
+          const pid = await starten();
+          try { await api('POST', `/api/payments/crypto/${encodeURIComponent(pid)}/claim`, { txRef: tx }); }
+          catch (e) {
+            if (e.code !== 'payment_not_found') throw e;
+            try { localStorage.removeItem('apo_krypto_start'); } catch { /* egal */ }
+            await api('POST', `/api/payments/crypto/${encodeURIComponent(await starten())}/claim`, { txRef: tx });
+          }
+          try { localStorage.removeItem('apo_krypto_start'); } catch { /* egal */ }
           const ok = el(`<div class="ok-box" style="padding:10px 12px">${esc(t('wb2_tx_ok'))}</div>`);
           ok.appendChild(pushAngebot('pw_frage_zahlung', 'pw_an_zahlung'));
           zeile.replaceWith(ok);
@@ -10935,10 +10950,11 @@ const fmtZeit = (iso) => { const d = new Date(iso); return iso && !Number.isNaN(
 // „Gestartet" vor der echten Zahlung, und Prüfpunkt 3 der Redaktion (abgeschriebene fremde Zahlung liegt davor)
 // greift. Bis 11/2026 startete sie erst beim Melden: „Gestartet" = „Gemeldet", jede echte Zahlung lag davor.
 // Gemerkt auf dem Gerät (Wechsel in die Wallet-App lädt die Seite oft neu), je Konto, Plan und Wallet, 24 h.
-async function kryptoStartMerken(plan, walletId) {
+// `plan`: Premium-Produkt oder „anzeige:<id>"; `starten`: Anzeigen haben eine eigene Start-Schnittstelle.
+async function kryptoStartMerken(plan, walletId, starten = () => api('POST', '/api/payments/crypto/start', { productId: plan, walletId })) {
   let st = null; try { st = JSON.parse(localStorage.getItem('apo_krypto_start') || 'null'); } catch { st = null; }
   if (st && st.uid === (me && me.id) && st.plan === plan && st.wallet === walletId && Date.now() - st.ts < 86400000) return st.id;
-  const s = await api('POST', '/api/payments/crypto/start', { productId: plan, walletId });
+  const s = await starten();
   try { localStorage.setItem('apo_krypto_start', JSON.stringify({ id: s.payment_id, uid: me && me.id, plan, wallet: walletId, ts: Date.now() })); } catch { /* dann Start beim Melden */ }
   return s.payment_id;
 }
