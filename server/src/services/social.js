@@ -55,6 +55,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
     live_start: 'live',
     promo_like: 'promos', promo_comment: 'promos',
   };
+  const MAX_NAME = 80, MAX_TITEL = 120; // Höchstlängen Profil (Name steht an jedem Beitrag im Feed)
   const NOTIF_CATEGORIES = ['follows', 'community', 'dm', 'watch', 'live', 'promos'];
   // Darf dieser Typ an diese:n Empfänger:in zugestellt werden (Einstellungen)?
   function notifAllowed(userId, type) {
@@ -139,6 +140,9 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (!handle || !/^[a-z0-9_]{3,30}$/i.test(handle)) throw new AppError('profile_handle_format', 'Handle: 3–30 Zeichen, nur a–z 0–9 _.');
       if (!displayName) throw new AppError('display_name_required', 'Anzeigename erforderlich.');
       const c = normalizeCountry(country);
+      // Sicherheitsnetz für interne Wege (Google, Telefon): kürzen statt ablehnen.
+      displayName = String(displayName).trim().slice(0, MAX_NAME);
+      title = title ? String(title).trim().slice(0, MAX_TITEL) : title;
       return social.createProfile({ userId: actorUserId, handle, displayName, title, pharmacyOrgId, bio, specializations, avatarUrl, visibility, isEditorial, country: c, locale: normalizeLocale(locale, c), accountType: normalizeAccountType(accountType) });
     },
     getProfile(handleOrUserId) {
@@ -170,9 +174,14 @@ export function createSocialService(social, foundationRepo, options = {}) {
       if (displayName !== undefined) {
         const dn = String(displayName).trim();
         if (!dn) throw new AppError('display_name_required', 'Anzeigename erforderlich.');
+        if (dn.length > MAX_NAME) throw Object.assign(new AppError('display_name_too_long', `Name: höchstens ${MAX_NAME} Zeichen.`), { params: { max: MAX_NAME } });
         patch.display_name = dn;
       }
-      if (title !== undefined) patch.title = String(title).trim() || null;
+      if (title !== undefined) {
+        const ti = String(title).trim();
+        if (ti.length > MAX_TITEL) throw Object.assign(new AppError('title_too_long', `Berufsbezeichnung: höchstens ${MAX_TITEL} Zeichen.`), { params: { max: MAX_TITEL } });
+        patch.title = ti || null;
+      }
       if (bio !== undefined) {
         const b = String(bio).trim();
         if (b.length > 500) throw new AppError('bio_too_long', 'Bio zu lang (max 500 Zeichen).');
@@ -180,7 +189,7 @@ export function createSocialService(social, foundationRepo, options = {}) {
       }
       if (specializations !== undefined) {
         const list = (Array.isArray(specializations) ? specializations : String(specializations).split(','))
-          .map(s => String(s).trim()).filter(Boolean).slice(0, 12);
+          .map(s => String(s).trim().slice(0, 60)).filter(Boolean).slice(0, 12);
         patch.specializations = list;
       }
       // Werdegang/Berufserfahrung (wie bei LinkedIn): Liste von Stationen. Rolle ist
@@ -963,7 +972,9 @@ export function createSocialService(social, foundationRepo, options = {}) {
       // in der Prüfliste). Nach der Erledigung darf erneut gemeldet werden.
       const schon = social.listReports('offen').find((r) => r.reporter_user_id === actorUserId && r.target_type === targetType && r.target_id === targetId);
       if (schon) return schon;
-      return social.createReport({ reporterUserId: actorUserId, targetType, targetId, reason });
+      // Grund gekürzt wie andere Freitext-Gründe (Fund 11/2026: 200.000 Zeichen landeten in der Prüfliste).
+      const grund = reason == null ? null : (String(reason).trim().slice(0, 500) || null);
+      return social.createReport({ reporterUserId: actorUserId, targetType, targetId, reason: grund });
     },
     // Nur Moderatoren: Reports einsehen und aufloesen.
     listReports(moderatorUserId, status = null) {

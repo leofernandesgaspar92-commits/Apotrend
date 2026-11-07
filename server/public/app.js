@@ -926,7 +926,7 @@ function authScreen() {
         <div id="rg_durability" class="err" hidden></div>
         <!-- Nur, was wirklich gebraucht wird: Land steht schon fest (Schritt 1),
              der @Handle entsteht aus dem Namen. -->
-        <label for="rg_name">${esc(t('au_name'))}</label><input id="rg_name" name="name" autocomplete="name" placeholder="${esc(t('au_name_ph'))}">
+        <label for="rg_name">${esc(t('au_name'))}</label><input id="rg_name" name="name" autocomplete="name" maxlength="80" placeholder="${esc(t('au_name_ph'))}">
         <label for="rg_email">${esc(t('au_email'))}</label><input id="rg_email" name="email" type="email" autocomplete="username" inputmode="email" placeholder="${esc(t('au_email_ph'))}">
         <label for="rg_pw">${esc(t('au_pw8'))}</label><div class="pw-zeile"><input id="rg_pw" name="new-password" type="password" autocomplete="new-password"><button type="button" class="ghost small pw-zeigen" data-pw="rg_pw" aria-controls="rg_pw">${esc(t('au_pw_show'))}</button></div>
         <label for="rg_accounttype">${esc(t('at_label'))}</label><select id="rg_accounttype" name="account-type"></select>
@@ -8833,8 +8833,8 @@ function editProfileForm(p) {
       <button type="button" class="ghost small" id="ep_avclear"${p.avatar_url?'':' style="display:none"'}>${esc(t('ep_photo_remove'))}</button>
     </div>
     <div class="muted" style="font-size:13px;margin-bottom:8px">${esc(t('ep_photo_hint'))}</div>
-    <label for="ep_name">${esc(t('ep_name'))}</label><input id="ep_name" value="${esc(p.display_name||'')}">
-    <label for="ep_title">${esc(t('ep_func'))}</label><input id="ep_title" value="${esc(p.title||'')}" placeholder="${esc(t('ep_func_ph'))}">
+    <label for="ep_name">${esc(t('ep_name'))}</label><input id="ep_name" maxlength="80" value="${esc(p.display_name||'')}">
+    <label for="ep_title">${esc(t('ep_func'))}</label><input id="ep_title" maxlength="120" value="${esc(p.title||'')}" placeholder="${esc(t('ep_func_ph'))}">
     <label for="ep_bio">${esc(t('ep_about'))}</label><textarea id="ep_bio" placeholder="${esc(t('ep_about_ph'))}">${esc(p.bio||'')}</textarea>
     <label for="ep_specs">${esc(t('ep_specs_l'))}</label><input id="ep_specs" value="${esc(specs)}" placeholder="${esc(t('ep_specs_ph'))}">
     <label style="margin-top:8px">${esc(t('ep_opento'))}</label>

@@ -4784,3 +4784,22 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   Kommentar und 21. Logistik-Meldung 429; fünfmal gemeldet = ein Eintrag, zweites Konto = zweiter Eintrag; Texte in 5
   Sprachen). Sechs Gegenproben — rot.
 - **Offen:** Direktnachrichten in der Flut-Probe nicht geprüft (Probe lief gegen einen falschen Pfad) — nächster Durchlauf.
+
+### Höchstlängen für Name, Berufsbezeichnung, Fachgebiete, Meldegrund (2026-11-07)
+- **Verworfen:** Direktnachrichten und Stummschalten haben keine Grenze, und Stummschalten hält keine Nachrichten
+  ab — aber beide Bereiche ruhen (`features.js`, 404 live). Kein Fund für heute. **Vor einer Einschaltung von
+  `direktnachrichten`/`social` nachholen:** Stumm = keine Nachrichten und keine Benachrichtigungen von dieser Person,
+  Nachrichten höchstens 2000 Zeichen, Mengengrenze.
+- **Geprüft ohne Fund:** Logistik-Felder, Verifizierungs-Notiz, Engpass-Meldung, Proforma-Anfrage, Werbe-Angaben,
+  Fehlerberichte kürzen oder lehnen ab. Die Tarif-Sperre betrifft nur `/api/plans`, Krypto (`/api/payments`) bleibt aktiv.
+- **Fund:** Probe mit 200.000 Zeichen je Feld: Name (Registrierung und Profil), Name des Betriebs,
+  Berufsbezeichnung, einzelne Fachgebiete und der Grund beim Melden wurden ungekürzt gespeichert. Der Name steht an
+  jedem Beitrag: ein Konto mit langem Namen und 5 Beiträgen → öffentlicher Feed 504 KB statt rund 5 KB für jede
+  Leserin im Land (mobile Daten). Die Prüfliste der Redaktion wuchs je Meldung um 200 KB.
+- **Behoben:** Name höchstens 80 Zeichen, Betrieb 120, Berufsbezeichnung 120 — bei Eingabe übersetzte Meldung (5
+  Sprachen, mit Zahl), Eingabefelder begrenzen schon beim Tippen (`maxlength`). Google-/Telefon-Anmeldung kürzt
+  stattdessen (niemand wird ausgesperrt). Fachgebiete je 60 Zeichen, Meldegrund 500 (gekürzt wie andere Gründe).
+- **Test:** `feldlaengen.test.js` (HTTP: 81 Zeichen → 400 mit max, 80 → 200; Betrieb, Profil-Name,
+  Berufsbezeichnung; Fachgebiet gekürzt; Meldegrund und Prüfliste klein; Feed mit 5 Beiträgen < 20 KB; Felder
+  `maxlength`; Texte 5 Sprachen). Sieben Gegenproben — rot. Das Kürzen auf den internen Wegen (Google/Telefon) ist
+  ein Sicherheitsnetz ohne eigenen Test (SMS/Google im Test nicht eingerichtet).

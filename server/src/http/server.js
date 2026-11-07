@@ -1468,6 +1468,7 @@ function kontoKennung(eingabe, land) {
   return nummer ? telefonAdresse(nummer) : s.toLowerCase();
 }
 
+const MAX_NAME = 80, MAX_BETRIEB = 120;
 async function kontoAnlegen(body, { intern = false } = {}) {
   const { email, password, displayName, pharmacyName } = body;
   const name = String(body.name || '').trim();
@@ -1477,6 +1478,10 @@ async function kontoAnlegen(body, { intern = false } = {}) {
   const wunsch = normalizeHandle(body.handle);
   const pruefen = () => {
     if (!name && !displayName) throw new AppError('display_name_required', 'Anzeigename erforderlich.');
+    // Höchstlängen (Fund 11/2026: 200.000 Zeichen gespeichert; der Name steht an jedem Beitrag im Feed).
+    // Interne Wege (Google, Telefon) kürzen stattdessen in createProfile — ein langer Anbieter-Name sperrt niemanden aus.
+    if (!intern && String(displayName || name).trim().length > MAX_NAME) throw Object.assign(new AppError('display_name_too_long', `Name: höchstens ${MAX_NAME} Zeichen.`), { params: { max: MAX_NAME } });
+    if (!intern && String(pharmacyName || '').trim().length > MAX_BETRIEB) throw Object.assign(new AppError('betrieb_name_too_long', `Name des Betriebs: höchstens ${MAX_BETRIEB} Zeichen.`), { params: { max: MAX_BETRIEB } });
     if (wunsch && !HANDLE_RE.test(wunsch)) throw new AppError('profile_handle_format', 'Handle: 3–30 Zeichen, nur a–z 0–9 _.');
     if (wunsch && social.getProfile(wunsch)) throw new AppError('handle_taken', 'Handle ist bereits vergeben.');
     if (!intern && /@(telefon|oauth)\.local$/i.test(String(email || '').trim())) throw new AppError('email_reserviert', 'Diese Adresse ist reserviert.');
@@ -1495,7 +1500,7 @@ async function kontoAnlegen(body, { intern = false } = {}) {
   const reg = orgAuth.registerPharmacyWithOwner({
     // Name der Organisation: angegeben, sonst der Name der Person. Bis 10/2026 hieß jede
     // „<Name> Apotheke" — auch Kliniken, Großhändler und Konten in Ghana (deutsches Wort im Team-Kopf).
-    pharmacy: { name: String(pharmacyName || '').trim() || name || displayName || 'ApoPulse' },
+    pharmacy: { name: (String(pharmacyName || '').trim() || name || displayName || 'ApoPulse').slice(0, MAX_BETRIEB) },
     owner: { name, email, password },
     vorab: { passwordHash, recovery },
   });
