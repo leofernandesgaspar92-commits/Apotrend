@@ -2134,6 +2134,34 @@ async function seitBesuchKarte(feed, kopf) {
   kopf.before(k);
 }
 
+// Neue Warnungen (Rückruf/Fälschung) seit dem letzten Ansehen — je Gerät und Land.
+// Bis 11/2026 standen amtliche Fälschungswarnungen nur unter „Nachrichten": Wer den Reiter nicht öffnete, sah
+// eine neue NAFDAC-Warnung nie (seit 10/2026 als „Gelesen-Zustand für den Warnungs-Feed" offen). Erstes Mal:
+// die letzten 7 Tage gelten als neu. Erkennung per Stichwort in der Behördenmeldung, Quelle steht am Beitrag.
+const warnSchluessel = (land) => 'apo_warn_gesehen_' + land;
+function warnGesehen(land) {
+  try { const v = Number(localStorage.getItem(warnSchluessel(land))); if (v > 0) return v; } catch { /* privat */ }
+  return Date.now() - 7 * 864e5;
+}
+function warnGesehenSetzen(land) { try { localStorage.setItem(warnSchluessel(land), String(Date.now())); } catch { /* privat */ } }
+const neueWarnungen = (posts, seit) => (posts || []).filter((p) => p.warnung && Date.parse(p.created_at) > seit);
+async function warnKarte(feed, kopf) {
+  const land = viewCountry();
+  let d; try { d = await api('GET', `/api/news?country=${encodeURIComponent(land)}&nur=warnungen`); } catch { return; }
+  const neu = neueWarnungen(d.posts, warnGesehen(land));
+  if (!neu.length || !kopf || !kopf.isConnected) return;
+  const f = neu.filter((p) => p.warnung === 'faelschung').length;
+  feed.querySelectorAll('[data-warnneu]').forEach((x) => x.remove());
+  const k = el(`<div class="card" data-warnneu style="border-inline-start:4px solid ${f ? 'var(--crit-fg)' : 'var(--warn-fg)'}">
+    <h2 style="margin:0 0 6px;font-size:19px">⚠️ ${esc(neu.length === 1 ? ti('wn_neu_1', { land: landName(land) }) : ti('wn_neu', { n: neu.length, land: landName(land) }))}</h2>
+    ${f ? `<p style="margin:0 0 6px;font-weight:600" data-warnfaelschung>${esc(ti('wn_neu_faelschung', { n: f }))}</p>` : ''}
+    <p class="muted" style="margin:0 0 10px;font-size:15px">${esc(t('wn_neu_hinweis'))}</p>
+    <div class="row" style="gap:8px;flex-wrap:wrap"><button class="auth-gross" data-warnansehen>${esc(t('wn_ansehen'))}</button><button class="ghost small" data-warngesehen>${esc(t('seit_gesehen'))}</button></div></div>`);
+  k.querySelector('[data-warnansehen]').onclick = () => { try { localStorage.setItem('apo_news_warnungen', '1'); } catch { /* egal */ } switchTab('news'); };
+  k.querySelector('[data-warngesehen]').onclick = () => { warnGesehenSetzen(land); k.remove(); };
+  kopf.before(k);
+}
+
 // Redaktion: Was wartet? Ganz oben auf der Startseite, nur wenn etwas offen ist — vorher sah man
 // eine wartende Krypto-Zahlung (Kundin ohne Freischaltung) oder Anzeige erst über Menü → Moderation.
 async function modAufgabenKarte(feed, kopf) {
@@ -2270,6 +2298,7 @@ async function loadOverview() {
   head.querySelector('[data-lageteilen]').onclick = () => teileLage();
   feed.appendChild(head);
   seitBesuchKarte(feed, head);
+  warnKarte(feed, head); // neue Rückrufe/Fälschungswarnungen seit dem letzten Ansehen
   modAufgabenKarte(feed, head);
   // Codes und App-Karte NACH dem Überblick: Wer neu ist, sieht zuerst, wofür er da ist —
   // nicht acht Codes (die bleiben, bis „Codes gesichert" getippt ist).
@@ -3803,11 +3832,14 @@ async function loadNews() {
       list.appendChild(el(`<div class="card muted">${esc(t('nw_empty'))}</div>`));
       return;
     }
+    // Gesehen-Stand nur für das eigene Land (Ebene „Land"): neu = nach dem letzten Ansehen; danach gilt alles als gesehen.
+    const warnSeit = ebene === 'land' ? warnGesehen(viewCountry()) : Infinity;
+    if (ebene === 'land') warnGesehenSetzen(viewCountry());
     d.posts.forEach(p => {
       const c = postCard(p);
       // Region/Welt: Herkunft an jeder Meldung — sonst liest sich eine NAFDAC-
       // Warnung in Uganda wie eine ugandische.
-      if (p.warnung) c.prepend(el(`<div class="warn-etikett ${esc(p.warnung)}" data-warnung="${esc(p.warnung)}"><b>${esc(t(p.warnung === 'faelschung' ? 'wn_faelschung' : 'wn_rueckruf'))}</b> <span>· ${esc(t('wn_auto'))}</span></div>`));
+      if (p.warnung) c.prepend(el(`<div class="warn-etikett ${esc(p.warnung)}" data-warnung="${esc(p.warnung)}">${Date.parse(p.created_at) > warnSeit ? `<b class="warn-neu" data-warnneumarke>${esc(t('wn_neu_marke'))}</b> ` : ''}<b>${esc(t(p.warnung === 'faelschung' ? 'wn_faelschung' : 'wn_rueckruf'))}</b> <span>· ${esc(t('wn_auto'))}</span></div>`));
       if (ebene !== 'land') c.prepend(el(`<div class="news-herkunft" data-herkunft="${esc(p.country || '')}">${esc(herkunftLabel(p.country))}</div>`));
       list.appendChild(c);
     });

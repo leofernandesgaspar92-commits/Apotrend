@@ -1673,6 +1673,48 @@ async function main() {
       await ctxA.close();
     }
 
+    // ── 13d. Neue Warnungen (Rückruf/Fälschung): Karte auf der Startseite, „Neu" in den Nachrichten ──
+    //  Bis 11/2026 standen Fälschungswarnungen nur im Reiter „Nachrichten" — ohne Gesehen-Stand.
+    {
+      const ctxW = await browser.newContext({ viewport: { width: 360, height: 760 } });
+      const pw = await ctxW.newPage();
+      await pw.addInitScript((t) => { localStorage.setItem('apo_token', t); localStorage.setItem('apo_welcome_seen', '1'); }, token);
+      // Echte Beitragsform als Vorlage (eigener Beitrag aus dem öffentlichen Feed), nur Text/Zeit/Art ersetzt.
+      const vorlage = ((await api('/api/feed/public?sort=neu', { headers: { authorization: `Bearer ${token}` } })) || {}).posts?.[0];
+      const warnPost = (id, tageAlt, typ, text) => ({ ...vorlage, id, kind: 'news', body: text, warnung: typ, country: 'AT', created_at: new Date(Date.now() - tageAlt * 864e5).toISOString() });
+      const posts = [warnPost('wneu', 0, 'faelschung', 'Behörde warnt: counterfeit Amoxicillin 500 mg, Charge X12'), warnPost('walt', 30, 'rueckruf', 'Recall: Ibuprofen 400 mg, Charge Y7')];
+      await pw.route('**/api/news?*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ country: 'AT', ebene: 'land', region: 'EUROPE', posts }) }));
+      const karte = async () => { await pw.goto(BASE, { waitUntil: 'networkidle' }); await pw.waitForTimeout(700); const k = pw.locator('[data-warnneu]'); return (await k.count()) ? k.first() : null; };
+      let k = vorlage ? await karte() : null;
+      const kText = k ? await k.innerText() : '';
+      if (!vorlage) findings.push('Warnungen: keine Beitragsvorlage');
+      else if (!k) findings.push('Warnungen: keine Karte trotz neuer Fälschungswarnung');
+      else if (!/1 neue Warnung/.test(kText) || !/gefälscht/.test(kText) || !/Quelle/.test(kText)) findings.push(`Warnungen: Kartentext falsch („${kText.slice(0, 160)}")`);
+      else {
+        await k.locator('[data-warngesehen]').click(); await pw.waitForTimeout(200);
+        const nachGesehen = await karte();
+        // Nachrichten: frisches Gerät → die neue Warnung trägt „Neu", die alte nicht; nach dem Ansehen keine mehr.
+        await pw.evaluate(() => { for (const k of Object.keys(localStorage)) if (k.startsWith('apo_warn_gesehen_')) localStorage.removeItem(k); });
+        k = await karte();
+        await k?.locator('[data-warnansehen]').click(); await pw.waitForTimeout(900);
+        const marken = await pw.locator('[data-warnneumarke]').count();
+        const markeBei = await pw.locator('[data-warnneumarke]').first().evaluate((m) => m.closest('.card')?.innerText || '').catch(() => '');
+        const filterAn = await pw.locator('[data-nurwarnungen][aria-pressed="true"]').count();
+        await pw.evaluate(() => loadNews()); await pw.waitForTimeout(700);
+        const markenDanach = await pw.locator('[data-warnneumarke]').count();
+        const nachNachrichten = await karte();
+        if (nachGesehen) findings.push('Warnungen: Karte kommt nach „Gesehen" wieder');
+        else if (!k) findings.push('Warnungen: Karte fehlt auf frischem Gerät');
+        else if (marken !== 1 || !/counterfeit/.test(markeBei)) findings.push(`Warnungen: „Neu" an ${marken} Beiträgen (erwartet 1, an der neuen Warnung)`);
+        else if (!filterAn) findings.push('Warnungen: „Warnungen ansehen" schaltet den Filter nicht ein');
+        else if (markenDanach !== 0) findings.push('Warnungen: „Neu" bleibt nach dem Ansehen stehen');
+        else if (nachNachrichten) findings.push('Warnungen: Karte kommt nach dem Ansehen der Nachrichten wieder');
+        else console.log('✓ Warnungen: Karte nur bei Neuem (mit Fälschungs-Hinweis und Quelle), „Gesehen" und Ansehen merken sich den Stand, „Neu" nur an der neuen Warnung');
+      }
+      await pw.evaluate(() => { try { localStorage.setItem('apo_news_warnungen', '0'); } catch { /* egal */ } }).catch(() => {});
+      await ctxW.close();
+    }
+
     // ── 14. Betriebs-Cockpit und Quellen-Hinweis (Redaktion) ────────────────
     {
       const betrieb = {

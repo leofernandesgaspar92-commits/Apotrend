@@ -705,6 +705,7 @@ span.vt-ok { color:var(--ok-fg); }
 .warn-etikett { font-size:14px; padding:6px 10px; border-radius:var(--radius-sm); margin-bottom:8px; background:var(--warn-bg); color:var(--warn-fg); border:1px solid var(--warn-bd); }
 .warn-etikett.faelschung { background:var(--crit-bg); color:var(--crit-fg); border-color:var(--crit-bd); }
 .warn-etikett span { font-weight:400; }
+.warn-etikett .warn-neu { display:inline-block; padding:1px 8px; margin-inline-end:6px; border-radius:999px; background:var(--crit-fg); color:var(--card); font-size:13px; }
 
 /* ── Arabisch: von rechts nach links (dir="rtl" auf <html>) ──────────────────
    Abstände, Rahmen und Textausrichtung sind logisch geschrieben (margin-inline-start

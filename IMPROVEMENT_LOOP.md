@@ -4803,3 +4803,27 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   Berufsbezeichnung; Fachgebiet gekürzt; Meldegrund und Prüfliste klein; Feed mit 5 Beiträgen < 20 KB; Felder
   `maxlength`; Texte 5 Sprachen). Sieben Gegenproben — rot. Das Kürzen auf den internen Wegen (Google/Telefon) ist
   ein Sicherheitsnetz ohne eigenen Test (SMS/Google im Test nicht eingerichtet).
+
+### Neue Rückrufe und Fälschungswarnungen fallen auf (2026-11-09)
+- **Geprüft ohne Fund:** Die neue Bremse kommt in der Oberfläche richtig an: Kommentar, Antwort und Logistik-Meldung
+  behalten den Text und zeigen die übersetzte Meldung. Benachrichtigungen sind je Konto schon begrenzt (`kuerzen`).
+  `watchersForText` beachtet Wortgrenzen seit 10/2026.
+- **Fund:** Seit 10/2026 fünfmal als „Offen: Gelesen-Zustand für den Warnungs-Feed" vermerkt und nie erledigt.
+  Amtliche Fälschungs- und Rückrufwarnungen (automatisch erkannt in Behördenmeldungen) standen nur im Reiter
+  „Nachrichten". Wer ihn nicht öffnete, sah eine neue NAFDAC-Fälschungswarnung nie — weder auf der Startseite noch in
+  „Seit deinem letzten Besuch". Und im Reiter war nicht zu erkennen, welche Warnung neu ist.
+- **Behoben:** Startseite: Karte „⚠️ 1 neue Warnung in {Land}" (bzw. {n}), nur wenn es seit dem letzten Ansehen
+  Neues gibt; bei Fälschungen der Satz „Davon {n} zu gefälschten oder minderwertigen Arzneimitteln" und roter Rand,
+  sonst gelb; Hinweis „automatisch erkannt — Einzelheiten in der Quelle". „Warnungen ansehen" öffnet die Nachrichten
+  mit Warnungs-Filter, „Gesehen" blendet die Karte aus. In den Nachrichten trägt jede neue Warnung ein Schild „Neu";
+  das Ansehen (Ebene „Land") setzt den Stand. Gesehen-Stand je Gerät und Land (`localStorage`), erstes Mal gelten die
+  letzten 7 Tage als neu. 5 Sprachen. Schild-Kontrast hell und dunkel ≥ 5:1.
+- **Test:** Browser-Audit Abschnitt 13d (360 px, echte Oberfläche, Nachrichten-Antwort nachgebildet aus einem echten
+  Beitrag: eine neue Fälschungswarnung, ein 30 Tage alter Rückruf): Karte mit Text, Fälschungs-Satz und Quelle;
+  nach „Gesehen" weg; frisches Gerät → „Warnungen ansehen" schaltet den Filter ein, „Neu" genau an der neuen
+  Warnung; nach dem Ansehen kein „Neu" und keine Karte mehr. Drei Gegenproben im Browser-Audit — rot, jede mit
+  dem passenden Befund (Karte nicht aufgerufen → „keine Karte"; Ansehen setzt keinen Stand → „Neu bleibt";
+  „Gesehen" merkt nichts → „Karte kommt wieder").
+- **Grenze:** Der Gesehen-Stand gilt je Gerät, nicht je Konto. Eine Benachrichtigung aufs Handy bei neuen
+  Fälschungswarnungen gibt es noch nicht — die Erkennung ist eine Stichwortsuche, und eine Fehl-Erkennung als
+  Sofort-Alarm an alle wäre teurer als eine Karte auf der Startseite. Entscheidung für später.
