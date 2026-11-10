@@ -2293,6 +2293,15 @@ const routes = [
       push_devices: webPush.geraeteVon(userId),
       invitation: einladungen.auskunft(userId),
       notifications: socialRepo.listNotifications(userId).map((n) => ({ type: n.type, label: n.label || null, read: !!n.read, created_at: n.created_at })),
+      // Fund 11/2026: gespeichert, aber nicht in der Auskunft — eigene Meldungen von Inhalten (mit Begründung)
+      // und eigene Logistik-Meldungen.
+      content_reports: socialRepo.listReports().filter((r) => r.reporter_user_id === userId)
+        .map((r) => ({ target_type: r.target_type, target_id: r.target_id, reason: r.reason || null, status: r.status, created_at: r.created_at })),
+      // Direkt aus dem Speicher: logistik.mine() verlangt einen verifizierten Betrieb — die Auskunft gilt für jedes Konto
+      // (auch eines, dem die Verifizierung inzwischen entzogen wurde).
+      logistics_reports: logistikRepo.list().filter((m) => m.author_user_id === userId).map((m) => ({ id: m.id, art: m.art, titel: m.titel,
+        beschreibung: m.beschreibung, region: m.region, betroffen: m.betroffen, dringlichkeit: m.dringlichkeit, land: m.country,
+        gueltig_bis: m.gueltig_bis, created_at: m.created_at })),
     };
   }],
   // Passwort ändern beendet alle Sitzungen — dieses Gerät bekommt gleich ein neues Token.

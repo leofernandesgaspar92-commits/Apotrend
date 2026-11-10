@@ -4827,3 +4827,19 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Grenze:** Der Gesehen-Stand gilt je Gerät, nicht je Konto. Eine Benachrichtigung aufs Handy bei neuen
   Fälschungswarnungen gibt es noch nicht — die Erkennung ist eine Stichwortsuche, und eine Fehl-Erkennung als
   Sofort-Alarm an alle wäre teurer als eine Karte auf der Startseite. Entscheidung für später.
+
+### Datenauskunft: Inhaltsmeldungen und Logistik-Meldungen fehlten (2026-11-10)
+- **Geprüft:** Probe mit einem aktiven, verifizierten Großhandelskonto (Beitrag, Kommentar, Inhalt melden,
+  Logistik-Meldung, Engpass-Meldung, Beobachtung) — danach alle Speicher der Sicherung nach der Konto-ID durchsucht
+  und mit `/api/me/export` verglichen.
+- **Fund:** Eigene Meldungen von Inhalten (mit Begründung) und eigene Logistik-Meldungen waren gespeichert, standen
+  aber nicht in der Auskunft (DSGVO Art. 15). Der Wächter `konto-loeschen-vollstaendig.test.js` sah das nicht, weil
+  sein Testkonto diese Bereiche nie befüllte (auch Beiträge, Kommentare, Verifizierung nicht). Die Löschung selbst
+  räumte beides schon ab.
+- **Behoben:** Auskunft um `content_reports` (Ziel, Begründung, Stand, Datum) und `logistics_reports` (alle Felder)
+  ergänzt. Eigener Fehler im ersten Entwurf, vom Test gefunden: `logistik.mine()` verlangt einen verifizierten
+  Betrieb — die Auskunft wäre für jedes unverifizierte Konto mit 403 abgebrochen. Jetzt direkt aus dem Speicher.
+- **Test:** Wächter erweitert: Testkonto wird verifiziert, schreibt Beitrag und Kommentar, meldet einen Inhalt und
+  eine Logistik-Störung; die Speicher-Zuordnung kennt jetzt auch Beiträge, Kommentare, Verifizierung, Inhaltsmeldungen,
+  Logistik; Auskunft eines unverifizierten Kontos funktioniert und enthält nichts Fremdes; nach der Löschung keine
+  Spur. Vier Gegenproben — rot.

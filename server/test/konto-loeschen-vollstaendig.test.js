@@ -30,7 +30,8 @@ function fundstellen(wert, nadel, pfad = '', out = []) {
 test('Konto löschen: keine Spur der Konto-ID mehr in der Sicherung (außer Rechnungen/Kampagnen)', { timeout: 90000 }, async () => {
   const dir = mkdtempSync(join(tmpdir(), 'apo-del-'));
   const datei = join(dir, 'stand.json');
-  const env = { ...process.env, PORT: '0', APOPULSE_TOKEN_SECRET: 'del-1', APOPULSE_PRESSE: 'aus', APOPULSE_EXTERN_AUS: '1', APOPULSE_RXNORM: 'off', DATABASE_URL: '', APOPULSE_DATA_FILE: datei };
+  const env = { ...process.env, PORT: '0', APOPULSE_TOKEN_SECRET: 'del-1', APOPULSE_PRESSE: 'aus', APOPULSE_EXTERN_AUS: '1', APOPULSE_RXNORM: 'off', DATABASE_URL: '', APOPULSE_DATA_FILE: datei,
+    APOPULSE_ADMIN_EMAIL: 'red@del.test', APOPULSE_ADMIN_PASSWORD: 'del-redaktion-PW-1' };
   const kind = spawn(process.execPath, [join(ROOT, 'src', 'http', 'server.js')], { env, stdio: ['ignore', 'pipe', 'pipe'] });
   let log = '';
   try {
@@ -45,6 +46,12 @@ test('Konto löschen: keine Spur der Konto-ID mehr in der Sicherung (außer Rech
     const x = await reg('xgross', 'wholesale'), y = await reg('yapo', 'pharmacy');
     const xid = (await j('GET', '/api/me', x))[1].user.id;
     assert.ok(xid && xid.length >= 8, 'Konto-ID nicht ermittelt');
+    // Verifiziert (Logistik-Meldungen sind verifizierten Betrieben vorbehalten).
+    const red = (await j('POST', '/api/login', null, { email: 'red@del.test', password: 'del-redaktion-PW-1' }))[1].token;
+    assert.equal((await j('POST', '/api/verify/request', x, { note: 'Großhandel Nairobi', licenseNumber: 'PPB-W-123' }))[0], 200);
+    assert.equal((await j('POST', `/api/verify/${xid}/resolve`, red, { approve: true }))[0], 200);
+    const [, yp] = await j('POST', '/api/posts', y, { body: 'Oxytocin bei euch lieferbar?', visibility: 'public' });
+    const ypid = yp.id || (yp.post && yp.post.id);
 
     // Daten in möglichst vielen Bereichen
     const [, m] = await j('POST', '/api/shortages/report', y, { wirkstoff: 'Oxytocin', status: 'kritisch', country: 'KE' });
@@ -63,6 +70,11 @@ test('Konto löschen: keine Spur der Konto-ID mehr in der Sicherung (außer Rech
       ['POST', '/api/payments/crypto/start', { productId: 'premium_monthly', walletId: 'sol_phantom' }],
       ['POST', '/api/werbung/kampagnen', { titel: 'Kühlkette Nairobi', text: 'Temperaturgeführte Lagerung für Apotheken.', link: 'https://example.com', platz: 'start', laender: ['KE'], zielgruppen: ['pharmacy'], wochen: 1, start: new Date().toISOString().slice(0, 10) }],
       ['GET', '/api/einladung', null],
+      // Fund 11/2026: eigene Meldungen von Inhalten (mit Begründung) und Logistik-Meldungen fehlten in der Auskunft.
+      ['POST', '/api/posts', { body: 'Eigener Beitrag aus Nairobi', visibility: 'public' }],
+      ['POST', `/api/posts/${ypid}/comments`, { body: 'Bei uns auch knapp' }],
+      ['POST', `/api/posts/${ypid}/report`, { reason: 'Werbung für ein nicht zugelassenes Präparat' }],
+      ['POST', '/api/logistik', { art: 'transport', titel: 'Grenzstau Malaba', beschreibung: 'Wartezeit 2 Tage', region: 'Malaba' }],
     ];
     for (const [meth, pfad, body] of schritte) { const [st, r] = await j(meth, pfad, x, body); assert.ok(st < 300, `${pfad}: ${st} ${JSON.stringify(r)}`); }
 
@@ -84,6 +96,8 @@ test('Konto löschen: keine Spur der Konto-ID mehr in der Sicherung (außer Rech
     assert.ok(!JSON.stringify(ex.push_devices).includes('p256dh'), 'Geräteschlüssel in der Auskunft');
     assert.match(ex.invitation.code, /^[\w-]{6,}$/);
     assert.ok(Array.isArray(ex.notifications));
+    assert.deepEqual(ex.content_reports.map((r) => [r.target_type, r.reason]), [['post', 'Werbung für ein nicht zugelassenes Präparat']]);
+    assert.deepEqual(ex.logistics_reports.map((r) => [r.titel, r.region]), [['Grenzstau Malaba', 'Malaba']]);
     // Wächter: Jeder Speicher, in dem die Konto-ID steht, hat einen Abschnitt in der Auskunft.
     await new Promise((ok) => setTimeout(ok, 700));
     const vorher = JSON.parse(readFileSync(datei, 'utf8'));
@@ -95,12 +109,16 @@ test('Konto löschen: keine Spur der Konto-ID mehr in der Sicherung (außer Rech
       'medintAbos.abos': 'medint_subscriptions', 'ausbruch.abbestellt': 'outbreak_alerts_on', 'wochenbericht.abbestellt': 'weekly_report_unsubscribed',
       'anzeigen.kunden': 'advertiser_company', 'anzeigen.kampagnen': 'ad_campaigns', 'rechnungen.angaben': 'invoice_details',
       'webPush.abos': 'push_devices', 'einladungen.codes': 'invitation',
+      'social.posts': 'posts', 'social.comments': 'comments', 'social.verifications': 'verification',
+      'social.reports': 'content_reports', 'logistik': 'logistics_reports',
     };
     const ohne = speicher.filter((k) => !AUSKUNFT[k] || !(AUSKUNFT[k] in ex));
     assert.deepEqual(ohne, [], 'Gespeichert, aber nicht in der Auskunft (DSGVO Art. 15) — Abschnitt in /api/me/export ergänzen:\n' + ohne.join('\n'));
     const exY = (await j('GET', '/api/me/export', y))[1];
     assert.deepEqual(exY.shortage_reports.map((r) => r.wirkstoff), ['Oxytocin'], 'eigene Engpassmeldung fehlt im Export');
     assert.deepEqual(exY.shortage_disputes, [], 'fremder Widerspruch im Export');
+    // Unverifiziertes Konto: Auskunft funktioniert (logistik.mine() hätte 403 geworfen) und enthält nichts Fremdes.
+    assert.deepEqual([exY.logistics_reports, exY.content_reports], [[], []], 'Auskunft eines unverifizierten Kontos');
 
     const [sd, d] = await j('POST', '/api/me/delete', x, { password: 'Passwort-1234' });
     assert.deepEqual([sd, d.ok], [200, true]);
