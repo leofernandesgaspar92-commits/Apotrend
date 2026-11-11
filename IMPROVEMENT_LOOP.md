@@ -4927,3 +4927,21 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   bräche; die App bettet nur ihre eigene Mail-Vorschau per `srcdoc` ein (nicht betroffen).
 - **Test:** `sicherheits-kopf.test.js` (11 Antworten je Art; HSTS nur hinter HTTPS, ein Jahr, ohne Unterdomänen; die
   App-Seite bleibt bei `frame-ancestors 'none'`). Vier Gegenproben rot.
+
+### Geteilter Rechner: fremde Wiederherstellungscodes nach dem Abmelden (2026-11-12)
+- **Geprüft ohne Fund:** Alle persönlichen Antworten der Schnittstelle tragen `Cache-Control: no-store`; die
+  Offline-Ablage des Service Workers, Meldungs-Entwürfe und wartende Meldungen werden beim Abmelden gelöscht.
+- **Fund (im Browser nachgestellt):** Nach der Registrierung legt die App die Wiederherstellungscodes im
+  Sitzungsspeicher des Tabs ab (Karte auf der Startseite, bis „Codes gesichert"). Abmelden lud im selben Tab neu —
+  der Sitzungsspeicher blieb. Wer sich danach am selben Rechner anmeldete, bekam „Your recovery codes … Show the
+  codes (8)" des VORIGEN Kontos angezeigt. Mit E-Mail und einem Code lässt sich das Passwort zurücksetzen — Konto
+  übernommen. In Apotheken teilen sich oft mehrere Personen einen Rechner. Ebenso blieb der Suchverlauf (gesuchte
+  Wirkstoffe) für die nächste Person stehen.
+- **Behoben:** Codes werden mit der Konto-ID gespeichert und nur für dieses Konto gezeigt (fremde oder alte Einträge
+  werden verworfen, nie angezeigt). Abmelden, beendete Sitzung und Kontolöschung löschen Codes und Suchverlauf.
+- **Test:** Browser-Audit 13e (360 px, echte Registrierung über das Formular → Abmelden-Knopf → anderes Konto im selben
+  Tab): neue Person sieht ihre Codes; nach dem Abmelden nichts mehr im Browser; die nächste Person sieht keine Codes,
+  auch nicht bei einem untergeschobenen fremden Eintrag. Drei Gegenproben im Browser-Audit — rot, jede mit passendem
+  Befund (ohne Löschen: Codes und Verlauf bleiben; ohne Konto-Bindung: fremde Codes sichtbar; ohne Verlauf-Löschen).
+  Zwei Quelltext-Wächter (`land-vorschlag`, `telefon-login`) auf `rcMerken` umgestellt; „Codes nie dauerhaft im
+  Browser" prüfen sie weiter.

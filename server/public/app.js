@@ -997,7 +997,7 @@ function authScreen() {
       // Direkt in die App (wie bei Facebook). Die Wiederherstellungscodes erscheinen
       // als Karte oben auf der Startseite, bis sie gesichert sind — sie halten den
       // Einstieg nicht mehr auf. Nur in dieser Sitzung gespeichert, nie dauerhaft.
-      if (Array.isArray(d.recovery_codes) && d.recovery_codes.length) { try { sessionStorage.setItem('apo_rc_neu', JSON.stringify(d.recovery_codes)); } catch { /* dann im Konto neu erzeugen */ } }
+      rcMerken(d);
       afterAuth(d);
     } catch(e){
       document.getElementById('rg_err').textContent = e.message;
@@ -1096,9 +1096,20 @@ function installKarte() {
 
 // Nach der Registrierung: Codes als Karte auf der Startseite, bis „gesichert" — statt
 // eines Bildschirms, der den Einstieg aufhält.
+// Wiederherstellungscodes nur für DIESES Konto merken (nur in dieser Sitzung). Fund 11/2026: Abmelden lädt die Seite
+// im selben Tab neu — der Sitzungsspeicher blieb, und wer sich danach am selben Rechner anmeldete, bekam die Codes des
+// vorigen Kontos angezeigt (Passwort zurücksetzen = Konto übernehmen). Jetzt: an die Konto-ID gebunden, beim Abmelden weg.
+function rcMerken(d) {
+  if (!Array.isArray(d.recovery_codes) || !d.recovery_codes.length) return;
+  try { sessionStorage.setItem('apo_rc_neu', JSON.stringify({ uid: (d.user && d.user.id) || (d.profile && d.profile.user_id) || null, codes: d.recovery_codes })); } catch { /* dann im Konto neu erzeugen */ }
+}
 function rcKarte() {
   let codes = null;
-  try { codes = JSON.parse(sessionStorage.getItem('apo_rc_neu') || 'null'); } catch { /* keine */ }
+  try {
+    const g = JSON.parse(sessionStorage.getItem('apo_rc_neu') || 'null');
+    if (g && g.uid && me && g.uid === me.user_id && Array.isArray(g.codes)) codes = g.codes;
+    else if (g) sessionStorage.removeItem('apo_rc_neu'); // fremdes Konto oder altes Format: nie anzeigen
+  } catch { /* keine */ }
   if (!Array.isArray(codes) || !codes.length) return null;
   const text = codes.join('\n');
   const k = el(`<div class="card" data-rckarte style="border-inline-start:4px solid var(--warn-bd, #e0a800)">
@@ -1297,7 +1308,7 @@ function telefonScreen(vorwahlen) {
   let nummer = '', ticket = '';
   const zeige = (id) => ['tel_form', 'tel_code_form', 'tel_neu_form'].forEach((f) => { $(f).hidden = f !== id; });
   const fertig = (d) => {
-    if (Array.isArray(d.recovery_codes) && d.recovery_codes.length) { try { sessionStorage.setItem('apo_rc_neu', JSON.stringify(d.recovery_codes)); } catch { /* im Konto neu erzeugen */ } }
+    rcMerken(d);
     afterAuth(d);
   };
   $('tel_back').onclick = () => authScreen();
@@ -11736,6 +11747,8 @@ async function offlineSpeicherLeeren() {
   OFFLINE_STAND = null;
   // Geteiltes Gerät in der Offizin: ein nicht gesendeter Meldungs-Entwurf gehört dem Konto, das abmeldet.
   try { localStorage.removeItem('apo_meldeentwurf'); localStorage.removeItem('apo_krypto_start'); } catch { /* egal */ }
+  // Ebenso: Wiederherstellungscodes und der Suchverlauf (welche Wirkstoffe gesucht wurden) gehören dem Konto.
+  try { sessionStorage.removeItem('apo_rc_neu'); localStorage.removeItem('apo_recent_searches'); localStorage.removeItem('apo_recent_wirkstoff'); } catch { /* egal */ }
   await ausgangLeeren(); // wartende Meldungen gehören dem Konto, das abmeldet
   try { if (window.caches) await caches.delete('apopulse-api-v1'); } catch { /* egal */ }
 }

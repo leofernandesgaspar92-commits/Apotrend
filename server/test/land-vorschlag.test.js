@@ -57,7 +57,9 @@ test('Oberfläche: Start ohne Länderliste, wenn sicher; Formulare wie bei Faceb
   // Keine Pflicht-Zwischenseite nach der Registrierung; Codes nur für diese Sitzung.
   const reg = app.slice(app.indexOf('const registrieren = async'), app.indexOf('const forgot ='));
   assert.doesNotMatch(reg, /recoveryCodesScreen\(/);
-  assert.match(reg, /sessionStorage\.setItem\('apo_rc_neu'/);
+  // Seit 11/2026 über rcMerken (an die Konto-ID gebunden, nur Sitzungsspeicher).
+  assert.match(reg, /rcMerken\(d\);/);
+  assert.match(app, /function rcMerken\(d\) \{[\s\S]{0,200}sessionStorage\.setItem\('apo_rc_neu'/);
   assert.doesNotMatch(app, /localStorage\.setItem\('apo_rc_neu'/, 'Codes nie dauerhaft im Browser');
   // Handy: Formular vor den Werbetexten.
   assert.match(css, /@media \(max-width:819\.98px\)\{ \.auth-forms \{ order:-1; \} \}/);

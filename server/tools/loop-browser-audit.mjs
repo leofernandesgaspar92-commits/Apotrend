@@ -1722,6 +1722,38 @@ async function main() {
       await ctxW.close();
     }
 
+    // ── 13e. Geteilter Rechner: Abmelden nimmt Wiederherstellungscodes und Suchverlauf mit ──
+    //  Fund 11/2026: Codes lagen im Sitzungsspeicher des Tabs; Abmelden lädt im selben Tab neu — die nächste Person
+    //  sah „Ihre Wiederherstellungscodes" des vorigen Kontos (Passwort zurücksetzen = Konto übernehmen).
+    {
+      const ctxR = await browser.newContext({ viewport: { width: 360, height: 760 } });
+      const pr = await ctxR.newPage();
+      await pr.addInitScript(() => { try { if (!sessionStorage.getItem('_init')) { sessionStorage.setItem('_init', '1'); localStorage.setItem('apo_country', 'KE'); localStorage.setItem('apo_welcome_seen', '1'); } } catch { /* egal */ } });
+      const u2 = Date.now().toString(36);
+      const tokB = (await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Zweite Person', email: `rc_b_${u2}@ex.com`, password: 'Passwort123!', country: 'KE', accountType: 'pharmacy' }) }))?.token;
+      await pr.goto(BASE, { waitUntil: 'networkidle' });
+      await pr.waitForSelector('#rg_name', { timeout: 6000 }).catch(() => {});
+      await pr.fill('#rg_name', 'Erste Person').catch(() => {}); await pr.fill('#rg_email', `rc_a_${u2}@ex.com`).catch(() => {}); await pr.fill('#rg_pw', 'Passwort123!').catch(() => {});
+      await pr.click('#rg_go').catch(() => {}); await pr.waitForTimeout(2500);
+      const karteA = await pr.locator('[data-rckarte]').count();
+      await pr.evaluate(() => { try { localStorage.setItem('apo_recent_searches', JSON.stringify(['Oxytocin'])); localStorage.setItem('apo_recent_wirkstoff', JSON.stringify(['Oxytocin'])); } catch { /* egal */ } });
+      await pr.evaluate(() => document.getElementById('btnLogout').click()).catch(() => {});
+      await pr.waitForLoadState('networkidle').catch(() => {}); await pr.waitForTimeout(1200);
+      const nachAbmelden = await pr.evaluate(() => [sessionStorage.getItem('apo_rc_neu'), localStorage.getItem('apo_recent_searches'), localStorage.getItem('apo_recent_wirkstoff')]);
+      await pr.evaluate((t) => localStorage.setItem('apo_token', t), tokB); await pr.reload({ waitUntil: 'networkidle' }); await pr.waitForTimeout(1200);
+      const karteB = await pr.locator('[data-rckarte]').count();
+      // Auch ohne Abmelden (z. B. Sitzung im Hintergrund beendet): fremde Codes nie zeigen.
+      await pr.evaluate(() => sessionStorage.setItem('apo_rc_neu', JSON.stringify({ uid: 'fremdes-konto', codes: ['AAAA-BBBB'] })));
+      await pr.reload({ waitUntil: 'networkidle' }); await pr.waitForTimeout(1000);
+      const karteFremd = await pr.locator('[data-rckarte]').count();
+      if (!tokB) findings.push('Geteilter Rechner: zweites Konto nicht angelegt');
+      else if (karteA !== 1) findings.push(`Geteilter Rechner: neue Person sieht ihre Codes nicht (${karteA})`);
+      else if (nachAbmelden.some((x) => x)) findings.push(`Geteilter Rechner: nach dem Abmelden noch im Browser: ${JSON.stringify(nachAbmelden)}`);
+      else if (karteB || karteFremd) findings.push(`Geteilter Rechner: nächste Person sieht fremde Wiederherstellungscodes (${karteB}/${karteFremd})`);
+      else console.log('✓ Geteilter Rechner: Codes nur für das eigene Konto; Abmelden löscht Codes und Suchverlauf');
+      await ctxR.close();
+    }
+
     // ── 14. Betriebs-Cockpit und Quellen-Hinweis (Redaktion) ────────────────
     {
       const betrieb = {

@@ -105,7 +105,7 @@ test('Oberfläche: Knopf nur mit SMS-Anbieter, Code-Feld mit Autofill aus der SM
   assert.match(tel, /autocomplete="one-time-code"/);
   assert.match(tel, /type="tel" inputmode="tel"/);
   assert.match(tel, /'\/api\/telefon\/code'[\s\S]*'\/api\/telefon\/pruefen'[\s\S]*'\/api\/telefon\/konto'/);
-  assert.match(tel, /sessionStorage\.setItem\('apo_rc_neu'/, 'Codes-Karte wie bei der E-Mail-Registrierung');
+  assert.match(tel, /rcMerken\(d\);/, 'Codes-Karte wie bei der E-Mail-Registrierung (rcMerken: Sitzungsspeicher, an das Konto gebunden)');
   // Anmelde- und Reset-Feld nehmen dann auch die Nummer (type="email" würde sie abweisen).
   assert.match(knopf, /if \(d\.telefon\) \{\n {6}emailOderTelefon\('li_email'\);/);
   assert.match(app, /if \(mitTelefon\) emailOderTelefon\('rs_email'\);/);
