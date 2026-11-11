@@ -4894,3 +4894,18 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   Klickrunde danach: Apotheke de-AT (lief schon mit der Korrektur) 0 Funde; Wiederholung en-GH 0 Funde (vorher 2);
   Redaktion 0 Funde. Der
   erste Lauf der Redaktion zählt nicht — mein Hintergrundauftrag erreichte sein Zeitlimit und schloss den Browser.
+
+### Eingaben: kein „Programmfehler" mehr durch toString-Felder (2026-11-12)
+- **Geprüft ohne Fund:** Probe über alle 125 Abfragen (GET) mit unbekanntem Land, leerer/falscher Zahl, Sonderzeichen
+  und Pfad-Tricks, als normales Konto und als Redaktion: kein einziger Absturz (nur das erwartete 503 „keine Datenbank
+  angebunden" der zwei DB-Ansichten). Probe über alle 157 Eingaben (POST) mit Listen statt Text, riesigen negativen
+  Zahlen, Steuerzeichen und leeren Körpern: sauber abgelehnt.
+- **Fund:** Ein Feld mit einem Objekt wie `{"toString":"x"}` ließ 46 Routen mit 500 „unbekannt" abbrechen — Anmeldung,
+  Registrierung, Passwort vergessen, Krypto-Start, Engpass-Meldung, Beitrag, Profil, Proforma … (`String(feld)` wirft,
+  wenn `toString` kein Aufruf ist). Kein Nutzer schickt das; aber jeder Versuch stand als „Programmfehler" im Protokoll
+  und im Fehlerzähler des Betriebs-Cockpits — von außen beliebig hochzutreiben, echte Fehler gingen darin unter.
+- **Behoben:** An der einen Einlese-Stelle (`readBody`, für alle Routen): Schlüssel, die eingebaute Methoden
+  überdecken (`toString`, `valueOf`, `__proto__`, `constructor` …), fallen beim Einlesen weg. Kein Feld der App heißt
+  so (geprüft). Probe danach: 157 Routen, 0 Funde, nichts im Protokoll.
+- **Test:** `fehler-roh.test.js` (19 betroffene Routen als Konto und Redaktion: nie 500, kein „Programmfehler" im
+  Protokoll; ein `__proto__`-Schlüssel macht niemanden zur Redaktion). Zwei Gegenproben rot.

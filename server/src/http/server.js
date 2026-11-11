@@ -858,8 +858,11 @@ const json = (req, res, code, obj, { bilderEinbetten = false } = {}) => {
 const readBody = (req) => new Promise((resolve) => {
   let d = ''; req.on('data', c => { d += c; if (d.length > 2e6) req.destroy(); }); // 2 MB (Bilder als data-URL)
   // Immer ein Objekt: Gültiges JSON wie `null`, `5` oder `[]` führte zu „Cannot read properties of null" in 22 Routen.
-  req.on('end', () => { try { const p = d ? JSON.parse(d) : {}; resolve(p && typeof p === 'object' && !Array.isArray(p) ? p : {}); } catch { resolve({}); } });
+  // Schlüssel, die eingebaute Methoden überdecken ("toString", "valueOf", "__proto__" …), fallen weg: {"toString":"x"}
+  // ließ String(feld) werfen — 46 Routen brachen mit 500 ab, jeder Versuch zählte als „Programmfehler" (Fund 11/2026).
+  req.on('end', () => { try { const p = d ? JSON.parse(d, ohneEingebaute) : {}; resolve(p && typeof p === 'object' && !Array.isArray(p) ? p : {}); } catch { resolve({}); } });
 });
+const ohneEingebaute = (k, v) => (k !== '' && Object.prototype.hasOwnProperty.call(Object.prototype, k) ? undefined : v);
 const sitzungAus = (req) => tokenDetails((req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
 // Nutzerobjekt vor der Auslieferung von Geheimnissen befreien (Passwort-Hash,
 // 2FA-Geheimnis, Wiederherstellungs-Hashes gehören nie in eine API-Antwort).

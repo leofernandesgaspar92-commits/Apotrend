@@ -78,3 +78,44 @@ test('Über HTTP: Anfragetext null/Zahl/Liste liefert nie einen rohen Programmfe
     await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
   }
 });
+
+// Fund 11/2026 (Probe über alle 157 POST-Routen): Ein Feld mit einem Objekt wie {"toString":"x"} ließ 46 Routen mit
+// 500 „unbekannt" abbrechen — Anmeldung, Registrierung, Krypto-Start, Engpass-Meldung, Beitrag … (String(obj) wirft,
+// wenn toString kein Aufruf ist). Kein Nutzer schickt das, aber jeder Versuch stand als „Programmfehler" im Protokoll
+// und im Fehlerzähler des Betriebs-Cockpits — beliebig hochzutreiben. Jetzt: readBody verwirft solche Schlüssel.
+test('Über HTTP: Felder mit toString/valueOf-Schlüsseln führen nie zu einem Programmfehler', { timeout: 120000 }, async () => {
+  const kind = spawn(process.execPath, [SERVER], {
+    env: { ...process.env, PORT: '0', APOPULSE_TOKEN_SECRET: 'fehler-roh-2', APOPULSE_DATA_FILE: '', APOPULSE_PRESSE: 'aus', APOPULSE_EXTERN_AUS: '1',
+      APOPULSE_ADMIN_EMAIL: 'red@roh2.test', APOPULSE_ADMIN_PASSWORD: 'fehler-roh-PW-2' },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let log = '';
+  try {
+    const port = await new Promise((ok, fail) => {
+      const zeit = setTimeout(() => fail(new Error('Server kam nicht hoch:\n' + log)), 20000);
+      const lies = (d) => { log += d; const m = log.match(/läuft auf http:\/\/localhost:(\d+)/); if (m) { clearTimeout(zeit); ok(Number(m[1])); } };
+      kind.stdout.on('data', lies); kind.stderr.on('data', lies);
+      kind.on('exit', (c) => { clearTimeout(zeit); fail(new Error(`Server beendet (${c}):\n${log}`)); });
+    });
+    const B = `http://localhost:${port}`;
+    const post = async (p, tok, body) => { const r = await fetch(B + p, { method: 'POST', headers: { 'content-type': 'application/json', ...(tok ? { authorization: 'Bearer ' + tok } : {}) }, body }); let d = {}; try { d = await r.json(); } catch { /* leer */ } return { s: r.status, d }; };
+    const apo = (await post('/api/register', '', JSON.stringify({ name: 'Roh Zwei', email: 'roh2@ex.com', password: 'Passwort123!', country: 'KE', accountType: 'wholesale' }))).d.token;
+    const red = (await post('/api/login', '', JSON.stringify({ email: 'red@roh2.test', password: 'fehler-roh-PW-2' }))).d.token;
+    assert.ok(apo && red);
+    const FELDER = ['name', 'email', 'password', 'body', 'text', 'wirkstoff', 'status', 'grund', 'reason', 'produkt', 'menge', 'herkunft', 'ziel', 'notiz',
+      'warenwert', 'zielLand', 'zielWaehrung', 'productId', 'walletId', 'note', 'licenseNumber', 'title', 'displayName', 'endpoint', 'firma', 'url', 'format', 'land'];
+    const koerper = '{' + FELDER.map((f) => `"${f}":{"toString":"x","valueOf":"y"}`).join(',') + ',"__proto__":{"isModerator":true}}';
+    const pfade = ['/api/register', '/api/login', '/api/password/reset', '/api/password/reset-link', '/api/payments/checkout', '/api/payments/crypto/start',
+      '/api/shortages/report', '/api/posts', '/api/profile', '/api/verify/request', '/api/translate', '/api/sourcing/kalkulation', '/api/sourcing/anfrage',
+      '/api/rechnungen/angaben', '/api/werbung/firma', '/api/push/abbestellen', '/api/mod/zugang-link', '/api/quellen/probe', '/api/quellen'];
+    const fuenfhundert = [];
+    for (const p of pfade) for (const tok of [apo, red]) { const a = await post(p, tok, koerper); if (a.s === 500) fuenfhundert.push(`${p}: ${a.s} ${a.d.code}`); }
+    assert.deepEqual(fuenfhundert, [], 'Programmfehler bei toString-Feldern');
+    assert.ok(!/Programmfehler/.test(log), 'Programmfehler im Protokoll:\n' + log.split('\n').filter((l) => /Programmfehler/.test(l)).slice(0, 5).join('\n'));
+    // Ein __proto__-Schlüssel macht niemanden zur Redaktion.
+    const mod = await fetch(B + '/api/mod/aufgaben', { headers: { authorization: 'Bearer ' + apo } });
+    assert.equal(mod.status, 403);
+  } finally {
+    await new Promise((ok) => { if (kind.exitCode !== null) return ok(); kind.once('exit', ok); kind.kill(); });
+  }
+});
