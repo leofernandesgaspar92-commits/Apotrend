@@ -69,3 +69,22 @@ test('Social-Mechanik ruht: kein Folgen-Feld, keine „Nur Follower", keine Umfr
   // Merken: nur mit Social (Liste der Lesezeichen ruht sonst)
   assert.match(app, /\$\{featureAn\('social'\) \? `<button class="ghost small" data-bookmark/);
 });
+
+// Klickrunde 11/2026 (tief, je Person): „Jetzt prüfen" im Sortiments-Check und „Kosten berechnen" in der
+// internationalen Beschaffung schickten bei leerem Feld eine Anfrage, die der Server mit 400 ablehnte — in allen Sprachen.
+test('Leere Liste / leerer Warenwert: Hinweis im Gerät, Cursor ins Feld, keine Anfrage', () => {
+  const srt = abschnitt("card.querySelector('#srtGo').onclick", 'function srtZeileText(');
+  const leer = srt.indexOf("if (!ta.value.trim())"), senden = srt.indexOf("await api('POST', '/api/sortiment/pruefen'");
+  assert.ok(leer > 0 && leer < senden, 'Sortiment: Prüfung fehlt oder erst nach dem Senden');
+  assert.match(srt.slice(leer, senden), /t\('e_sortiment_leer'\); ta\.focus\(\); return; \}/);
+  assert.match(app, /<div class="err" id="srtErr" role="alert"><\/div>/, 'Fehlerzeile wird nicht vorgelesen');
+  const rechnen = abschnitt("k.querySelector('[data-rechnen]').onclick", 'const zeile = (p) =>');
+  const leer2 = rechnen.indexOf("if (!v('sc_ware').trim())"), senden2 = rechnen.indexOf("await api('POST', '/api/sourcing/kalkulation'");
+  assert.ok(leer2 > 0 && leer2 < senden2, 'Kostenrechner: Prüfung fehlt oder erst nach dem Senden');
+  assert.match(rechnen.slice(leer2, senden2), /t\('e_sourcing_warenwert'\)[\s\S]*querySelector\('#sc_ware'\)\.focus\(\); return; \}/);
+  for (const sp of ['de', 'en', 'pt', 'fr', 'ar']) {
+    const blk = i18n.slice(i18n.indexOf('\n  ' + sp + ': {'));
+    const b = blk.slice(0, blk.indexOf('\n  },'));
+    for (const k of ['e_sortiment_leer', 'e_sourcing_warenwert']) assert.match(b, new RegExp(`[\\s,]${k}:(?:'[^']+'|"[^"]+")`), `${sp}: ${k}`);
+  }
+});

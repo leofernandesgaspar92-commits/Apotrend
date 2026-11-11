@@ -4879,3 +4879,18 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Nebenbei:** Klickrunde Stufe 1 (6 Personen, 5 Sprachen, 360 px, 135 Ansichten): 0 Funde. Die tiefe Klickrunde
   (Stufe 2) lief in mein eigenes Zeitlimit von 25 Minuten — bei der letzten Person abgebrochen, Ergebnis verloren
   (das Werkzeug gibt Funde erst am Ende aus). Nächstes Mal mit längerem Limit oder je Person (`NUR=…`).
+
+### Tiefe Klickrunde je Person: leere Felder schickten Anfragen (2026-11-12)
+- **Geprüft ohne Fund:** Handy-Benachrichtigungen (25 Arten), Wochenbericht- und Passwort-Mails: alle Texte in allen
+  fünf Sprachen vollständig.
+- **Fund (tiefe Klickrunde, diesmal je Person, damit kein Ergebnis mehr verloren geht):** „Jetzt prüfen" im
+  Sortiments-Check und „Kosten berechnen" in der internationalen Beschaffung schickten bei leerem Feld eine Anfrage,
+  die der Server mit 400 ablehnte — bei jeder Kontoart und in jeder Sprache (en-GH, fr-SN, ar-EG, pt-AO). Die
+  Nutzerin bekam zwar eine verständliche Meldung, aber erst nach einer unnötigen Anfrage, und der Cursor blieb, wo er war.
+  Gleiche Fehlerklasse wie der leere Beitrag aus der ersten Klickrunde (10/2026).
+- **Behoben:** Leere Liste bzw. leerer Warenwert: Hinweis sofort im Gerät (dieselben übersetzten Texte wie vom Server),
+  Cursor ins Feld, keine Anfrage. Fehlerzeile des Sortiments-Checks wird vorgelesen (`role="alert"`).
+- **Test:** `klickrunde-funde.test.js` (Prüfung vor dem Senden, Fokus, Texte in 5 Sprachen). Drei Gegenproben rot.
+  Klickrunde danach: Apotheke de-AT (lief schon mit der Korrektur) 0 Funde; Wiederholung en-GH 0 Funde (vorher 2);
+  Redaktion 0 Funde. Der
+  erste Lauf der Redaktion zählt nicht — mein Hintergrundauftrag erreichte sein Zeitlimit und schloss den Browser.

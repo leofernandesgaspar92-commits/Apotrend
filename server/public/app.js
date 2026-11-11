@@ -5750,7 +5750,7 @@ async function openSortiment() {
       <button id="srtGo" class="auth-gross" style="width:auto;padding:0 28px">${esc(t('srt_go'))}</button>
     </div>
     <div class="muted" style="font-size:13px;margin-top:8px">${esc(t('srt_hinweis'))}</div>
-    <div class="err" id="srtErr"></div>
+    <div class="err" id="srtErr" role="alert"></div>
   </div>`);
   feed.appendChild(card);
   const box = el('<div data-srtergebnis></div>');
@@ -5767,6 +5767,9 @@ async function openSortiment() {
   };
   card.querySelector('#srtGo').onclick = async () => {
     const err = card.querySelector('#srtErr'); err.textContent = '';
+    // Leer: gleich im Gerät sagen und ins Textfeld setzen, statt eine Anfrage zu schicken, die der Server ablehnt
+    // (Klickrunde 11/2026: 400 in allen Sprachen).
+    if (!ta.value.trim()) { err.textContent = t('e_sortiment_leer'); ta.focus(); return; }
     srtLetzterText = ta.value;
     box.innerHTML = '<div class="loading">…</div>';
     let d;
@@ -10047,6 +10050,8 @@ async function openSourcing(zuAnfrage = null) {
   k.querySelector('#sc_nach').onchange = () => { const w = ((COUNTRIES_CACHE || []).find((c) => c.code === v('sc_nach')) || {}).currency; if (w) k.querySelector('#sc_zielW').value = w; };
   const erg = k.querySelector('[data-ergebnis]');
   k.querySelector('[data-rechnen]').onclick = async () => {
+    // Ohne Warenwert gibt es nichts zu rechnen: Hinweis sofort, Cursor ins Feld, keine Anfrage (Klickrunde 11/2026).
+    if (!v('sc_ware').trim()) { erg.innerHTML = `<div class="card" data-scleer style="border-color:var(--warn-bd);margin-top:10px">${esc(t('e_sourcing_warenwert'))}</div>`; k.querySelector('#sc_ware').focus(); return; }
     erg.innerHTML = '<div class="loading">…</div>';
     let d;
     try {
