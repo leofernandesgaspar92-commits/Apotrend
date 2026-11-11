@@ -34,6 +34,18 @@ test('Alle fünf Fassungen: gleicher Aufbau (Abschnitte, Tabellenzeilen, Platzha
     assert.match(s, /pro ?forma|Proforma|pró-forma|المبدئية/i, sp + ': Proforma-Anfragen');
     assert.match(s, /außerhalb der EU, z\. B\. im Herkunftsland|outside the EU, e\.g\. in the country the goods|hors de l’UE, p\. ex\. dans le pays d’origine|fora da UE, p\. ex\. no país de origem|خارج الاتحاد الأوروبي، مثلًا في بلد منشأ/, sp + ': Empfänger der Proforma-Anfragen (auch außerhalb der EU)');
   }
+  // Fund 11/2026: Verifizierung, Logistik-Meldungen, Meldungen von Inhalten, Zahlungen (Krypto-Transaktions-ID) und
+  // Einladungen wurden gespeichert, standen aber nicht in der Erklärung; „Keine Zahlungsdaten bei uns" stimmte für die
+  // direkte Krypto-Zahlung nicht. Je Sprache: Kennwort für jede dieser Datenarten.
+  const ART = {
+    de: [/Lizenz- bzw\. Registernummer/, /Logistik-Meldungen: Art der Störung/, /Meldungen von Inhalten an die Redaktion/, /Transaktions-ID ist in der Blockchain öffentlich/, /Einladungscode/],
+    en: [/licence or registration number/, /Logistics reports: type of disruption/, /Reports of content to the editorial team/, /transaction ID is publicly visible/, /invitation code/],
+    fr: [/numéro de licence ou d’enregistrement/, /Signalements logistiques : type de perturbation/, /Signalements de contenus à la rédaction/, /identifiant de transaction est visible publiquement/, /code d’invitation/],
+    pt: [/número de licença ou de registo/, /Comunicações logísticas: tipo de perturbação/, /Denúncias de conteúdos à redação/, /ID de transação é visível publicamente/, /código de convite/],
+    ar: [/رقم الترخيص أو التسجيل/, /بلاغات النقل: نوع الاضطراب/, /الإبلاغ عن محتوى إلى هيئة التحرير/, /معرّف المعاملة مرئي للعموم/, /رمز دعوتك/],
+  };
+  for (const sp of DATENSCHUTZ_SPRACHEN) for (const rx of ART[sp]) assert.match(lies(sp), rx, `${sp}: ${rx}`);
+  assert.ok(!/Keine Zahlungsdaten bei uns/.test(de), '„Keine Zahlungsdaten bei uns" stimmt für die Krypto-Zahlung nicht');
   // Übersetzungen nennen die maßgebliche Fassung.
   assert.match(lies('en'), /German version prevails/);
   assert.match(lies('fr'), /la version allemande fait foi/);

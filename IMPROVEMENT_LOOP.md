@@ -4857,3 +4857,25 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
 - **Test:** Browser-Audit 13d zählt beim Laden der Startseite die Anfragen: je genau eine. Zwei Gegenproben rot (ohne
   die geteilte Abfrage sogar je 3×, nicht 2×). Eine dritte blieb grün: Ein Extra-Schalter „beim Start nicht frisch
   fragen" war überflüssig — die Glocke fragt zuerst und legt die Antwort ab. Schalter beim Start wieder entfernt.
+
+### Datenschutzerklärung nennt jetzt alles, was gespeichert wird (2026-11-11)
+- **Geprüft:** Abschnitt 2 der Erklärung (fünf Sprachen) gegen die Speicher, die die Auskunft seit gestern vollständig
+  abbildet.
+- **Fund:** Fünf Datenarten standen nicht in der Erklärung, obwohl sie gespeichert werden: Verifizierungsangaben
+  (Lizenz-/Registernummer, Notiz), Logistik-Meldungen, Meldungen von Inhalten an die Redaktion (mit Begründung),
+  Zahlungen (bei direkter Krypto-Zahlung Kette, Netzwerk, gemeldete Transaktions-ID) und Einladungen (Code, wer wen
+  eingeladen hat — die Redaktion sieht das bei auffälligen Meldungen). Abschnitt 3 sagte „Keine Zahlungsdaten bei
+  uns" — für die direkte Krypto-Zahlung stimmte das nicht (die Transaktions-ID ist öffentlich in der Blockchain,
+  samt Absender-Adresse).
+- **Behoben:** Fünf neue Tabellenzeilen (Daten, Zweck, Rechtsgrundlage — Begriffe wie in den vorhandenen Zeilen) in
+  allen fünf Sprachen; Abschnitt 3 sachlich richtig („Keine Karten- oder Kontodaten bei uns … eine Krypto-Zahlung
+  senden Sie aus Ihrer eigenen Wallet-App. Bei uns liegen nur die Angaben aus Punkt 2"); Abschnitt 6 nennt die neuen
+  Arten bei „werden mit dem Konto gelöscht" (geprüft vom Wächter `konto-loeschen-vollstaendig`). Stand 11. November
+  2026. Gegengeprüft: Die gemeldete Person erfährt nicht, wer sie gemeldet hat (nur die Prüfliste der Redaktion
+  zeigt es). Die Erklärung bleibt als Entwurf markiert — die juristische Prüfung steht beim Owner aus.
+- **Test:** `datenschutz-sprachen.test.js` verlangt je Sprache ein Kennwort für jede der fünf Datenarten und verbietet
+  den alten Satz; Aufbau (Zeilenzahl) bleibt je Sprache gleich. Vier Gegenproben rot (eine erst im zweiten Anlauf —
+  die erste ließ die Zeilenzahl versehentlich unverändert).
+- **Nebenbei:** Klickrunde Stufe 1 (6 Personen, 5 Sprachen, 360 px, 135 Ansichten): 0 Funde. Die tiefe Klickrunde
+  (Stufe 2) lief in mein eigenes Zeitlimit von 25 Minuten — bei der letzten Person abgebrochen, Ergebnis verloren
+  (das Werkzeug gibt Funde erst am Ende aus). Nächstes Mal mit längerem Limit oder je Person (`NUR=…`).
