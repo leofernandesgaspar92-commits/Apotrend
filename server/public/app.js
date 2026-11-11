@@ -1549,7 +1549,7 @@ async function mainScreen({ ohneReiter = false } = {}) {
   const btnCart = document.getElementById('btnCart');
   if (btnCart && featureAn('bestellung')) btnCart.classList.remove('hidden');
   if (btnCart) btnCart.onclick = () => openCart(); // ohne Argument: sonst landet das Klick-Event als „flash"-Text in der Liste
-  refreshNotifCount();
+  refreshNotifCount(); // legt die Antwort in notifKurz ab — „Seit deinem letzten Besuch" nutzt sie mit
   // Ruhende Bereiche werden gar nicht erst abgefragt: Ihre 404 landen sonst
   // als rote Fehler in der Browser-Konsole und sehen aus wie ein Defekt.
   if (featureAn('direktnachrichten')) refreshDmCount();
@@ -2108,7 +2108,7 @@ function seitBesuchZeilen(notifs) {
   });
 }
 async function seitBesuchKarte(feed, kopf) {
-  let d; try { d = await api('GET', '/api/notifications'); } catch { return; }
+  let d; try { d = await notifKurz(); } catch { return; }
   const zeilen = seitBesuchZeilen(d.notifications);
   if (!zeilen.length) return;
   const zeichen = { kritisch: '🔴', eing: '🟠', wieder: '🟢', ausland: '🌍', bestaetigt: '✅' };
@@ -2147,7 +2147,8 @@ function warnGesehenSetzen(land) { try { localStorage.setItem(warnSchluessel(lan
 const neueWarnungen = (posts, seit) => (posts || []).filter((p) => p.warnung && Date.parse(p.created_at) > seit);
 async function warnKarte(feed, kopf) {
   const land = viewCountry();
-  let d; try { d = await api('GET', `/api/news?country=${encodeURIComponent(land)}&nur=warnungen`); } catch { return; }
+  // Dieselbe (kurz geteilte) Abfrage wie die Nachrichten-Karten — keine zweite Anfrage beim Start.
+  let d; try { d = await newsKurz(); } catch { return; }
   const neu = neueWarnungen(d.posts, warnGesehen(land));
   if (!neu.length || !kopf || !kopf.isConnected) return;
   const f = neu.filter((p) => p.warnung === 'faelschung').length;
@@ -10755,9 +10756,21 @@ function commentRow(postId, c, card, depth = 0) {
   return row;
 }
 
-async function refreshNotifCount() {
+// Kurz geteilte Benachrichtigungs-Abfrage: Beim Start fragten Glocken-Zähler und „Seit deinem letzten Besuch"
+// dieselbe Liste zweimal ab (Fund 11/2026, Netzmessung der Startseite). Nach Änderungen (gelesen, gelöscht)
+// fragt refreshNotifCount() frisch.
+let _notifKurz = null;
+function notifKurz(frisch = false) {
+  if (frisch || !_notifKurz || Date.now() - _notifKurz.zeit > 5000) {
+    const p = api('GET', '/api/notifications');
+    _notifKurz = { zeit: Date.now(), p };
+    p.catch(() => { if (_notifKurz && _notifKurz.p === p) _notifKurz = null; });
+  }
+  return _notifKurz.p;
+}
+async function refreshNotifCount(frisch = true) {
   try {
-    const d = await api('GET','/api/notifications');
+    const d = await notifKurz(frisch);
     const badge = document.getElementById('notifBadge');
     if (d.unread > 0) { badge.textContent = d.unread; badge.classList.remove('hidden'); }
     else badge.classList.add('hidden');

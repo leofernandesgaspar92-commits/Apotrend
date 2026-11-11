@@ -1685,7 +1685,14 @@ async function main() {
       const posts = [warnPost('wneu', 0, 'faelschung', 'Behörde warnt: counterfeit Amoxicillin 500 mg, Charge X12'), warnPost('walt', 30, 'rueckruf', 'Recall: Ibuprofen 400 mg, Charge Y7')];
       await pw.route('**/api/news?*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ country: 'AT', ebene: 'land', region: 'EUROPE', posts }) }));
       const karte = async () => { await pw.goto(BASE, { waitUntil: 'networkidle' }); await pw.waitForTimeout(700); const k = pw.locator('[data-warnneu]'); return (await k.count()) ? k.first() : null; };
+      // Netz sparen: Beim Start jede Liste nur EINMAL (Warnungs-Karte, Nachrichten-Karten, Glocke, „Seit deinem letzten Besuch").
+      const zaehler = { news: 0, notif: 0 };
+      const mitzaehlen = (r) => { const u = new URL(r.url()); if (u.pathname === '/api/news') zaehler.news++; if (u.pathname === '/api/notifications') zaehler.notif++; };
+      pw.on('request', mitzaehlen);
       let k = vorlage ? await karte() : null;
+      pw.off('request', mitzaehlen);
+      if (zaehler.news !== 1 || zaehler.notif !== 1) findings.push(`Startseite: Nachrichten ${zaehler.news}×, Benachrichtigungen ${zaehler.notif}× abgefragt (erwartet je 1)`);
+      else console.log('✓ Startseite: Nachrichten und Benachrichtigungen je einmal abgefragt');
       const kText = k ? await k.innerText() : '';
       if (!vorlage) findings.push('Warnungen: keine Beitragsvorlage');
       else if (!k) findings.push('Warnungen: keine Karte trotz neuer Fälschungswarnung');

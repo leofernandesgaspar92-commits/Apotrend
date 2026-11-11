@@ -4843,3 +4843,17 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   eine Logistik-Störung; die Speicher-Zuordnung kennt jetzt auch Beiträge, Kommentare, Verifizierung, Inhaltsmeldungen,
   Logistik; Auskunft eines unverifizierten Kontos funktioniert und enthält nichts Fremdes; nach der Löschung keine
   Spur. Vier Gegenproben — rot.
+
+### Startseite fragt jede Liste nur einmal ab (2026-11-11)
+- **Geprüft ohne Fund:** Netzmessung der Startseite (360 px, Konto in Kenia): App, Stil und Sprache werden komprimiert
+  (Brotli) ausgeliefert — rund 190 KB beim ersten Aufruf, danach Prüfung per ETag (nur „unverändert"). 14 API-Anfragen,
+  zusammen rund 20 KB.
+- **Fund:** Zwei davon doppelt. `/api/news` — die gestern eingebaute Warnungs-Karte fragte selbst nach, obwohl die
+  Nachrichten-Karten dieselbe Liste schon über die geteilte Abfrage `newsKurz()` holen (eigener Fehler). Und
+  `/api/notifications` — Glocken-Zähler und „Seit deinem letzten Besuch" fragten unabhängig voneinander.
+- **Behoben:** Warnungs-Karte nutzt `newsKurz()` (die Antwort trägt `warnung` an jedem Beitrag). Neue geteilte Abfrage
+  `notifKurz()` (5 s gültig) für den Start; nach Änderungen (Gesehen, alle gelesen, Gelesene löschen) fragt
+  `refreshNotifCount()` weiterhin frisch.
+- **Test:** Browser-Audit 13d zählt beim Laden der Startseite die Anfragen: je genau eine. Zwei Gegenproben rot (ohne
+  die geteilte Abfrage sogar je 3×, nicht 2×). Eine dritte blieb grün: Ein Extra-Schalter „beim Start nicht frisch
+  fragen" war überflüssig — die Glocke fragt zuerst und legt die Antwort ab. Schalter beim Start wieder entfernt.
