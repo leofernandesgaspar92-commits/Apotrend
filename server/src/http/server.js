@@ -3285,6 +3285,15 @@ async function datenSchnittstelle(req, res, url) {
 //  Jetzt: Adresse gegen einen festen Platzhalter lesen (Host wird hier nicht gebraucht —
 //  öffentliche Adressen baut oeffentlicheBasis), und alles, was in einer Anfrage schief-
 //  geht, endet als Antwort 500 statt als Absturz.
+// Sicherheits-Kopfzeilen für JEDE Antwort (Fund 11/2026: nur die App-Seite trug sie, HSTS nirgends). Routen, die
+// etwas anderes brauchen (z. B. Referrer-Policy no-referrer beim Anmelde-Rücksprung), überschreiben per writeHead.
+// HSTS nur, wenn die Anfrage über HTTPS kam (Render beendet TLS und setzt x-forwarded-proto) — ohne includeSubDomains.
+function sicherheitsKopf(req, res) {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  if (String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https') res.setHeader('Strict-Transport-Security', 'max-age=31536000');
+}
 const server = http.createServer((req, res) => {
   anfrage(req, res).catch((e) => {
     betriebsFehler.anfragen++;
@@ -3296,6 +3305,7 @@ const server = http.createServer((req, res) => {
   });
 });
 async function anfrage(req, res) {
+  sicherheitsKopf(req, res); // als Erstes, innerhalb des Absturzschutzes
   let url;
   try { url = new URL(req.url, 'http://localhost'); }
   catch { res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('Bad Request'); }

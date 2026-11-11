@@ -4909,3 +4909,21 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   so (geprüft). Probe danach: 157 Routen, 0 Funde, nichts im Protokoll.
 - **Test:** `fehler-roh.test.js` (19 betroffene Routen als Konto und Redaktion: nie 500, kein „Programmfehler" im
   Protokoll; ein `__proto__`-Schlüssel macht niemanden zur Redaktion). Zwei Gegenproben rot.
+
+### Sicherheits-Kopfzeilen auf jeder Antwort, HTTPS-Zwang (2026-11-12)
+- **Geprüft:** Kopfzeilen von App-Seite, öffentlichen Engpass-Seiten, Datenschutzerklärung, Checkout-Demo, Skripten,
+  Sitemap, Schnittstelle und 404. Die App-Seite war gut geschützt (Inhaltsrichtlinie, `frame-ancestors 'none'`,
+  nosniff, Referrer-Regel).
+- **Fund:** Alle anderen Antworten ohne nosniff, Referrer-Regel und Einbettungsschutz (Datenschutzerklärung,
+  Checkout-Demo ließen sich in fremde Seiten einbetten). Und nirgends `Strict-Transport-Security`: Wer einmal über
+  HTTPS da war, konnte in einem offenen WLAN auf eine unverschlüsselte, manipulierte Fassung umgeleitet werden — das
+  Anmelde-Token liegt im Browser und wäre lesbar gewesen.
+- **Behoben:** Als erste Zeile jeder Anfrage (innerhalb des Absturzschutzes — der Wächter `absturz-schutz.test.js`
+  schlug an, als ich den Aufruf zuerst davor gesetzt hatte): `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: SAMEORIGIN`; `Strict-Transport-Security:
+  max-age=31536000` nur, wenn die Anfrage über HTTPS kam (Render setzt `x-forwarded-proto`) — bewusst ohne
+  `includeSubDomains`, damit andere Dienste auf Unterdomänen nicht unbeabsichtigt HTTPS-pflichtig werden. Routen mit
+  eigener Regel (Anmelde-Rücksprung: `no-referrer`) überschreiben weiter. Kein Einbett-Widget vorhanden, das dadurch
+  bräche; die App bettet nur ihre eigene Mail-Vorschau per `srcdoc` ein (nicht betroffen).
+- **Test:** `sicherheits-kopf.test.js` (11 Antworten je Art; HSTS nur hinter HTTPS, ein Jahr, ohne Unterdomänen; die
+  App-Seite bleibt bei `frame-ancestors 'none'`). Vier Gegenproben rot.
