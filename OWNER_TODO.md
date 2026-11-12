@@ -39,6 +39,9 @@ Der Verbesserungs-Loop hält diese Liste aktuell. Stand: 11. November 2026.
 
 ## Entscheidungen, die auf Sie warten (keine Eile)
 
+- **Sitzungsdauer:** Seit 12.11. wird abgemeldet, wer ApoPulse **60 Tage** nicht benutzt hat (aktive Nutzung verlängert
+  automatisch). Anders gewünscht? In Render `APOPULSE_SITZUNG_TAGE` setzen (z. B. 30 oder 90).
+
 - Sollen neue **Fälschungswarnungen** zusätzlich als Handy-Benachrichtigung kommen? (Heute: Karte auf der
   Startseite. Die Erkennung ist eine Stichwortsuche — ein Fehlalarm ginge dann an alle.)
 - Bevor **Direktnachrichten** oder **Social** je eingeschaltet werden: Stummschalten muss dann auch Nachrichten und

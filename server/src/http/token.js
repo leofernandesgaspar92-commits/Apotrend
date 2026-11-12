@@ -38,6 +38,21 @@ export function verifyToken(token) {
   return d ? d.userId : null;
 }
 
+// Ablauf bei Nichtnutzung (Fund 11/2026: Token liefen nie ab — vergessener Rechner in der Apotheke, verlorenes Handy,
+// kopiertes Token = dauerhafter Zugang). Gleitend: Wer die App benutzt, bekommt ab einem Tag Alter bei der nächsten
+// Anfrage ein frisches Token (Kopfzeile X-Apo-Token) — aktiv Nutzende merken nichts. APOPULSE_SITZUNG_TAGE ändert die Dauer.
+export const SITZUNG_MAX_TAGE = Math.max(1, Math.floor(Number(process.env.APOPULSE_SITZUNG_TAGE)) || 60);
+const MAX_MS = SITZUNG_MAX_TAGE * 864e5;
+const ERNEUERN_AB_MS = 864e5;
+/** Zu lange nicht benutzt? Token ohne Zeitpunkt (vor 10/2026) nicht — sie werden beim nächsten Aufruf erneuert. */
+export function sitzungAbgelaufen(details, jetzt = Date.now()) {
+  return !!details && details.ausgestellt != null && jetzt - details.ausgestellt > MAX_MS;
+}
+/** Soll die Antwort ein frisches Token mitbringen? */
+export function sitzungErneuern(details, jetzt = Date.now()) {
+  return !!details && (details.ausgestellt == null || jetzt - details.ausgestellt > ERNEUERN_AB_MS);
+}
+
 /** Gilt die Sitzung noch? Nein, wenn das Konto danach alle Sitzungen beendet hat. */
 export function sitzungGueltig(details, user) {
   if (!details || !user) return false;

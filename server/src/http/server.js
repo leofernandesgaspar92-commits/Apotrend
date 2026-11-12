@@ -103,7 +103,7 @@ import { activeSources, sourcesByKind, shortagesFromCsv, shortagesFromJson, dedu
 import { createDealsService, seedDemoDealsIfNoneRunning, demoAktionenErlaubt } from '../services/deals.js';
 import { createPrismaStore } from '../repo/prismaStore.js';
 import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
-import { issueToken, tokenDetails, sitzungGueltig, issueZweckToken, verifyZweckToken } from './token.js';
+import { issueToken, tokenDetails, sitzungGueltig, sitzungAbgelaufen, sitzungErneuern, issueZweckToken, verifyZweckToken } from './token.js';
 import { createMailer } from '../services/mailer.js';
 import { createPasswortLink } from '../services/passwortLink.js';
 import { createSms } from '../services/sms.js';
@@ -3367,11 +3367,15 @@ async function anfrage(req, res) {
     // behandeln, damit ein sauberes 401 statt eines Folgefehlers (400) kommt.
     // grund 'sitzung_beendet': Konto besteht, Sitzung wurde beendet — die App sagt es (Sicherheitssignal:
     // „Waren Sie das nicht? Passwort zurücksetzen"). Gelöschtes Konto / kaputter Schlüssel: kein Grund.
-    let sitzungBeendet = false;
+    let sitzungBeendet = false, sitzungAbgel = false;
     if (userId) { const u = repo.getUserById(userId); if (!sitzungGueltig(sitzung, u)) { sitzungBeendet = !!u; userId = null; } }
+    // Zu lange nicht benutzt → abgelaufen (eigener Grund: die App sagt „lange nicht benutzt", nicht „Passwort geändert").
+    // Sonst gleitend erneuern: ab einem Tag Alter bringt die Antwort ein frisches Token mit.
+    if (userId && sitzungAbgelaufen(sitzung)) { sitzungAbgel = true; userId = null; }
+    if (userId && sitzungErneuern(sitzung)) res.setHeader('X-Apo-Token', issueToken(userId));
     // Eigener Code, damit das Frontend eine ABGELAUFENE/UNGÜLTIGE Sitzung von anderen
     // 401 (falscher Login, falsches Passwort) unterscheiden und sauber zum Login führen kann.
-    if (authRequired && !userId) return json(req, res, 401, { error: 'Nicht angemeldet', code: 'not_authenticated', ...(sitzungBeendet ? { grund: 'sitzung_beendet' } : {}) });
+    if (authRequired && !userId) return json(req, res, 401, { error: 'Nicht angemeldet', code: 'not_authenticated', ...(sitzungBeendet ? { grund: 'sitzung_beendet' } : sitzungAbgel ? { grund: 'sitzung_abgelaufen' } : {}) });
     // Während der Wiederherstellung aus der Datenbank (Sekunden nach einem Deploy, länger nur bei
     // unerreichbarer Datenbank): keine Schreib-Anfragen. Ein jetzt angelegtes Konto landete in einem
     // Stand, den die Wiederherstellung gleich ersetzt. 503 + Retry-After — die App wiederholt

@@ -1754,6 +1754,34 @@ async function main() {
       await ctxR.close();
     }
 
+    // ── 13f. Abgemeldet: Hinweis „von woanders beendet" bzw. „abgelaufen" erscheint wirklich ──
+    //  Fund 11/2026: Beide Hinweise erschienen im Browser nie — die Anmeldeseite wird beim Start mehrfach aufgebaut,
+    //  der erste Aufbau verbrauchte den Merker. Hier im echten Ablauf geprüft.
+    {
+      const u3 = Date.now().toString(36);
+      const mail = `sb_${u3}@ex.com`;
+      const t1 = (await api('/api/register', { method: 'POST', body: JSON.stringify({ name: 'Beendet Person', email: mail, password: 'Passwort123!', country: 'KE', accountType: 'pharmacy' }) }))?.token;
+      await new Promise((r) => setTimeout(r, 30));
+      const t2 = (await api('/api/login', { method: 'POST', body: JSON.stringify({ email: mail, password: 'Passwort123!' }) }))?.token;
+      await new Promise((r) => setTimeout(r, 30));
+      await api('/api/me/sitzungen/beenden', { method: 'POST', headers: { authorization: `Bearer ${t2}` }, body: '{}' });
+      const seite = async (tok, nachbilden) => {
+        const c = await browser.newContext({ viewport: { width: 360, height: 760 } });
+        const pg = await c.newPage();
+        await pg.addInitScript((t) => { if (!sessionStorage.getItem('_i')) { sessionStorage.setItem('_i', '1'); localStorage.setItem('apo_token', t); localStorage.setItem('apo_country', 'KE'); localStorage.setItem('apo_welcome_seen', '1'); } }, tok);
+        if (nachbilden) await pg.route('**/api/me', (r) => r.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ error: 'Nicht angemeldet', code: 'not_authenticated', grund: 'sitzung_abgelaufen' }) }));
+        await pg.goto(BASE, { waitUntil: 'networkidle' }); await pg.waitForTimeout(1200);
+        const r = { beendet: await pg.locator('[data-sitzungbeendet]').count(), abgelaufen: await pg.locator('[data-sitzungabgelaufen]').count(), token: await pg.evaluate(() => localStorage.getItem('apo_token')) };
+        await c.close(); return r;
+      };
+      const b1 = t1 && t2 ? await seite(t1, false) : null;
+      const a1 = t2 ? await seite(t2, true) : null;
+      if (!b1 || !a1) findings.push('Abgemeldet: Konten nicht angelegt');
+      else if (b1.beendet !== 1 || b1.token) findings.push(`Abgemeldet: Hinweis „von woanders beendet" fehlt (${JSON.stringify(b1)})`);
+      else if (a1.abgelaufen !== 1 || a1.beendet || a1.token) findings.push(`Abgemeldet: Hinweis „abgelaufen" fehlt oder falsch (${JSON.stringify(a1)})`);
+      else console.log('✓ Abgemeldet: Hinweis „von woanders beendet" bzw. „lange nicht benutzt" erscheint, Token gelöscht');
+    }
+
     // ── 14. Betriebs-Cockpit und Quellen-Hinweis (Redaktion) ────────────────
     {
       const betrieb = {

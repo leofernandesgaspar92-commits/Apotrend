@@ -58,7 +58,8 @@ test('App: Hinweis auf der Anmeldeseite, Reiter „Anmelden", Push im Browser be
   assert.match(APP, /pushLokalBeenden\(\);/, 'Push-Abo des hinausgeworfenen Geräts bleibt im Browser');
   assert.match(APP, /async function pushLokalBeenden\(\) \{[\s\S]{0,200}abo\.unsubscribe\(\)/);
   const as = APP.slice(APP.indexOf('function authScreen()'), APP.indexOf('\nfunction afterAuth('));
-  assert.match(as, /zeigeAuth\(kontoBekannt \|\| oauthFehler \|\| sitzungBeendet \? 'login' : 'register'\)/);
+  // Seit 11/2026 auch „abgelaufen"; ob der Hinweis im Browser wirklich erscheint, prüft der Browser-Audit (13f).
+  assert.match(as, /zeigeAuth\(kontoBekannt \|\| oauthFehler \|\| sitzungBeendet \|\| sitzungAbgelaufen \? 'login' : 'register'\)/);
   assert.match(as, /data-sitzungbeendet/);
   // Zitierte Knöpfe aus denselben Texten wie die Knöpfe selbst (en/pt/fr wichen ab).
   assert.match(as, /ti\('sb_text', \{ abmelden: t\('ac_sess_btn'\), vergessen: t\('au_forgot'\) \}\)/);

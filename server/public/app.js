@@ -439,6 +439,10 @@ const api = async (method, path, body) => {
     // technischen „Failed to fetch" eine freundliche, lokalisierte Meldung zeigen.
     const err = new Error(t('e_network')); err.code = 'network'; throw err;
   }
+  // Gleitende Erneuerung: frisches Token übernehmen — nur aus einer echten Server-Antwort (nicht aus der Offline-Ablage)
+  // und nur, solange noch DIESES Token angemeldet ist (nicht nach einem Abmelden in der Zwischenzeit).
+  const neuesToken = r.headers.get('x-apo-token');
+  if (neuesToken && !r.headers.get('x-apo-offline') && localStorage.getItem('apo_token') === tok) localStorage.setItem('apo_token', neuesToken);
   // Offline-Stand aus dem Service Worker: anzeigen, von wann er ist.
   if (r.headers.get('x-apo-offline')) zeigeOfflineStand(r.headers.get('x-apo-gespeichert'));
   else if (method === 'GET' && OFFLINE_STAND && navigator.onLine) zeigeOfflineStand(null);
@@ -449,6 +453,7 @@ const api = async (method, path, body) => {
     if (data.code === 'not_authenticated' && localStorage.getItem('apo_token')) {
       // Von woanders beendet (Passwort geändert, „auf allen anderen Geräten abmelden"): auf der Anmeldeseite sagen.
       if (data.grund === 'sitzung_beendet') { try { sessionStorage.setItem('apo_sitzung_beendet', '1'); } catch { /* dann ohne Hinweis */ } }
+      if (data.grund === 'sitzung_abgelaufen') { try { sessionStorage.setItem('apo_sitzung_abgelaufen', '1'); } catch { /* dann ohne Hinweis */ } }
       localStorage.removeItem('apo_token'); offlineSpeicherLeeren(); pushLokalBeenden();
       (_hasCountry() ? authScreen() : countryScreen());
       const e = new Error(t('e_network')); e.code = 'not_authenticated'; throw e; // stoppt die weitere Verarbeitung beim Aufrufer
@@ -1018,8 +1023,17 @@ function authScreen() {
   };
   app.querySelectorAll('[data-auth]').forEach((b) => { b.onclick = () => zeigeAuth(b.dataset.auth); });
   let kontoBekannt = false; try { kontoBekannt = !!localStorage.getItem('apo_konto_bekannt'); } catch { /* ohne Speicher: Registrierung zuerst */ }
-  let sitzungBeendet = false; try { sitzungBeendet = !!sessionStorage.getItem('apo_sitzung_beendet'); sessionStorage.removeItem('apo_sitzung_beendet'); } catch { /* egal */ }
-  zeigeAuth(kontoBekannt || oauthFehler || sitzungBeendet ? 'login' : 'register');
+  // Merker NICHT hier löschen: Beim Start bauen mehrere 401-Antworten die Anmeldeseite nacheinander auf — der erste
+  // Aufbau verbrauchte den Merker, der zweite zeichnete ohne Hinweis (Fund 11/2026, im Browser: Hinweis erschien nie).
+  // Gelöscht wird nach erfolgreicher Anmeldung (afterAuth).
+  let sitzungBeendet = false; try { sitzungBeendet = !!sessionStorage.getItem('apo_sitzung_beendet'); } catch { /* egal */ }
+  let sitzungAbgelaufen = false; try { sitzungAbgelaufen = !!sessionStorage.getItem('apo_sitzung_abgelaufen'); } catch { /* egal */ }
+  zeigeAuth(kontoBekannt || oauthFehler || sitzungBeendet || sitzungAbgelaufen ? 'login' : 'register');
+  // Lange nicht benutzt: ruhig erklären (kein Sicherheitsalarm wie bei „von woanders beendet").
+  if (sitzungAbgelaufen && !sitzungBeendet) {
+    const f = document.getElementById('li_form');
+    if (f) f.prepend(el(`<div class="lage-box" data-sitzungabgelaufen role="status" style="margin:0 0 12px;font-size:16px"><b>${esc(t('sa_titel'))}</b><div style="margin-top:4px">${esc(t('sa_text'))}</div></div>`));
+  }
   // Von woanders abgemeldet: erklären — und was zu tun ist, wenn man es nicht selbst war.
   if (sitzungBeendet) {
     const f = document.getElementById('li_form');
@@ -1041,6 +1055,7 @@ const v = (id) => document.getElementById(id).value.trim();
 function afterAuth(d) {
   localStorage.setItem('apo_token', d.token);
   try { localStorage.removeItem('apo_kanal'); } catch { /* egal */ }
+  try { sessionStorage.removeItem('apo_sitzung_beendet'); sessionStorage.removeItem('apo_sitzung_abgelaufen'); } catch { /* egal */ }
   try { localStorage.setItem('apo_konto_bekannt', '1'); } catch { /* nur Komfort */ }
   me = d.profile || d.user;
   mainScreen();

@@ -46,6 +46,7 @@ async function netzZuerst(req) {
       const kopf = new Headers(res.headers);
       // Der Körper wird entpackt gespeichert — Kompressions-Angaben passen dann nicht mehr.
       kopf.delete('content-encoding'); kopf.delete('content-length');
+      kopf.delete('x-apo-token'); // ein erneuertes Anmelde-Token gehört nicht in die Offline-Ablage
       kopf.set('x-apo-gespeichert', new Date().toISOString());
       res.clone().arrayBuffer().then((koerper) => caches.open(API_CACHE).then((c) => c.put(schluessel, new Response(koerper, { status: 200, headers: kopf })))).catch(() => {});
     }

@@ -4945,3 +4945,25 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   Befund (ohne Löschen: Codes und Verlauf bleiben; ohne Konto-Bindung: fremde Codes sichtbar; ohne Verlauf-Löschen).
   Zwei Quelltext-Wächter (`land-vorschlag`, `telefon-login`) auf `rcMerken` umgestellt; „Codes nie dauerhaft im
   Browser" prüfen sie weiter.
+
+### Sitzungen laufen nach 60 Tagen ohne Nutzung ab; Abmelde-Hinweise erscheinen wirklich (2026-11-12)
+- **Fund 1:** Anmelde-Token liefen nie ab. Ein vergessener Rechner in der Apotheke, ein verlorenes Handy oder ein
+  kopiertes Token gab dauerhaft Zugang, bis jemand „Auf allen anderen Geräten abmelden" wählte.
+- **Behoben:** Gleitend: Ab einem Tag Alter bringt jede Antwort ein frisches Token mit (`X-Apo-Token`), die App
+  übernimmt es — aktiv Nutzende merken nichts. Wer 60 Tage nicht da war, ist abgemeldet (401 mit eigenem Grund
+  `sitzung_abgelaufen`; ruhiger Hinweis „Bitte neu anmelden … längere Zeit nicht benutzt", 5 Sprachen — kein
+  Sicherheitsalarm). Dauer per `APOPULSE_SITZUNG_TAGE`. Token ohne Zeitpunkt (vor 10/2026) werden beim nächsten Aufruf
+  erneuert statt hinausgeworfen. Die App übernimmt ein neues Token nur aus einer echten Antwort (nicht aus der
+  Offline-Ablage) und nur, solange dasselbe Token angemeldet ist; der Service Worker speichert es nicht mit.
+  Push-Benachrichtigungen an das Gerät laufen weiter (gewollt: Alarme auch ohne Öffnen der App).
+- **Fund 2 (eigener Fehler aus einem früheren Durchlauf, im Browser entdeckt):** Der Sicherheitshinweis „Sie wurden
+  abgemeldet — waren Sie das nicht?" erschien nie. Beim Start bauen mehrere 401-Antworten die Anmeldeseite nacheinander
+  auf; der erste Aufbau verbrauchte den Merker, der zweite zeichnete ohne Hinweis. Mein damaliger Test prüfte nur den
+  Quelltext. Jetzt bleibt der Merker bis zur erfolgreichen Anmeldung.
+- **Test:** `sitzung-ablauf.test.js` (Regel, HTTP: 61 Tage → 401 `sitzung_abgelaufen`, 2 Tage → frisches Token, frisch →
+  keins, fremdes Konto → keins, Dauer einstellbar; App/Service Worker/Texte). Browser-Audit 13f: echter Ablauf
+  „überall abmelden" → Hinweis erscheint; nachgebildeter Ablauf → Hinweis „lange nicht benutzt". Browser-Probe:
+  2 Tage altes Token wird beim Öffnen unbemerkt durch ein frisches ersetzt. Sechs Gegenproben rot (vier im Test:
+  Ablauf, Erneuerung, Übernahme-Bedingung, Service Worker; zwei im Browser-Audit: Merker verbraucht, Ablauf-Merker fehlt).
+  Zwei Quelltext-Wächter angepasst (`sitzung-beendet-hinweis`: Bedingung mit „abgelaufen"; `kanaele`: Reihenfolge in
+  `afterAuth`).
