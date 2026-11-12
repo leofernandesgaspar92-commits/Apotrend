@@ -4967,3 +4967,24 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   Ablauf, Erneuerung, Übernahme-Bedingung, Service Worker; zwei im Browser-Audit: Merker verbraucht, Ablauf-Merker fehlt).
   Zwei Quelltext-Wächter angepasst (`sitzung-beendet-hinweis`: Bedingung mit „abgelaufen"; `kanaele`: Reihenfolge in
   `afterAuth`).
+
+### IP-Erkennung hinter Render: einstellbar und von der Live-App selbst geprüft (2026-11-12)
+- **Fund:** Die Sperren gegen Passwort-Durchprobieren, SMS-Code- und Link-Flut zählen je IP. Der Server nahm fest
+  den ERSTEN Eintrag von `X-Forwarded-For`. Hängt der Proxy nur hinten an, setzt diesen Eintrag der Absender selbst —
+  mit wechselnden erfundenen Adressen wären die IP-Sperren umgehbar (die Sperre je Konto greift weiter; massenhaftes
+  Durchprobieren über viele Konten aber nicht).
+- **Nicht geraten:** Render dokumentiert das Verhalten nicht offiziell; Community-Aussagen widersprechen sich
+  („hängt an" vs. „erster ist echt"; evtl. Cloudflare davor → `CF-Connecting-IP`). Die Live-App war aus dieser
+  Umgebung nicht erreichbar (Proxy verweigert), render.com-Doku ebenso. Eine blinde Umstellung hätte womöglich alle
+  Nutzer unter eine Adresse gelegt (gegenseitiges Aussperren).
+- **Behoben:** `http/clientIp.js`: Quelle per `APOPULSE_CLIENT_IP` (xff-erster = bisher/Standard, xff-letzter,
+  cf-connecting-ip, true-client-ip, x-real-ip). Selbstprüfung: Öffnet die Redaktion den Startklar-Check, schickt die
+  App eine erfundene Adresse (TEST-NET-3) in allen Kandidaten-Kopfzeilen; kommt sie beim gewählten Weg an → gelber
+  Punkt „Schutz vor Passwort-Durchprobieren (IP-Erkennung)" mit der passenden Einstellung (bevorzugt Kopfzeilen, die die
+  Infrastruktur überschreibt). Ohne Variable ändert sich für niemanden etwas, bevor gemessen ist. Owner-To-do 6b.
+- **Test:** `client-ip.test.js` (Quelle wählbar/Rückfall; Prüfung für „hängt an", Cloudflare, „ersetzt"; Startklar-Punkt
+  gelb/grün/ohne Empfehlung; App schickt die Prüf-Kopfzeilen; HTTP: mit `xff-letzter` greift die Anmeldesperre trotz
+  wechselnder erfundener Adressen). Test nach dem Code geschrieben — darum fünf Gegenproben, alle rot. Browser:
+  Chromium sendet die Prüf-Kopfzeilen, der Punkt erscheint im Startklar-Check.
+- **Quellen (Community, nicht offiziell):** feedback.render.com/features/p/send-the-correct-xforwardedfor,
+  community.render.com/t/c-clientip-always-returns-127-0-0-1/3086.

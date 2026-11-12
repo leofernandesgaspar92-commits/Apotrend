@@ -15,6 +15,9 @@ Der Verbesserungs-Loop hält diese Liste aktuell. Stand: 11. November 2026.
 4. [ ] **VAPID-Schlüssel** (empfohlen) — damit „Sofort-Alarm aufs Handy" nach einem Neustart weiter funktioniert.
 5. [ ] Optional: **`AISSTREAM_API_KEY`** (Schiffe an Häfen) und **`APOPULSE_HANDEL_EMAIL`** (Proforma-Anfragen per E-Mail).
 6. [ ] **Admin-Passwort prüfen:** mindestens 12 Zeichen (unter 8 Zeichen wird es nicht angenommen).
+6b. [ ] **Schutz vor Passwort-Durchprobieren:** In der App (Redaktion → Startklar-Check) den Punkt
+   „Schutz vor Passwort-Durchprobieren (IP-Erkennung)" ansehen. Ist er **gelb**, die dort genannte Einstellung
+   (z. B. `APOPULSE_CLIENT_IP=cf-connecting-ip`) in Render eintragen, neu deployen, Check erneut öffnen → muss grün sein.
 
 ## Rechtliches (mit Anwält:in / Datenschutzberatung)
 

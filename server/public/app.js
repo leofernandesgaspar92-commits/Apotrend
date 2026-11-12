@@ -425,13 +425,13 @@ function applyI18n(root) {
 // App trotzdem — mit dem Ersatzwert (bzw. dem Fehler) statt endlos zu warten.
 const START_FRIST_MS = 6000;
 const mitFrist = (p, ms, ersatz) => Promise.race([p, new Promise((ok, fail) => setTimeout(() => (ersatz instanceof Error ? fail(ersatz) : ok(ersatz)), ms))]);
-const api = async (method, path, body) => {
+const api = async (method, path, body, extraKopf = null) => {
   const tok = localStorage.getItem('apo_token');
   let r;
   try {
     r = await fetch(path, {
       method,
-      headers: { 'Content-Type':'application/json', ...(tok ? { Authorization:'Bearer '+tok } : {}) },
+      headers: { 'Content-Type':'application/json', ...(tok ? { Authorization:'Bearer '+tok } : {}), ...(extraKopf || {}) },
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch (netErr) {
@@ -11370,7 +11370,10 @@ async function showModeration() {
   anzeigenPruefung(aufgaben); // Anzeigen prüfen (lädt selbst)
   meldungsPruefung(aufgaben); // Apotheken-Meldungen mit Auffälligkeiten (lädt selbst)
   sourcingPruefung(aufgaben); // Proforma-Anfragen an den Handelsarm (lädt selbst)
-  api('GET', '/api/startklar').then((s) => { if (s) ueberblick.prepend(startklarKarte(s)); }).catch(() => {});
+  // Selbstprüfung der IP-Erkennung: erfundene Adresse (TEST-NET-3) in allen Kandidaten-Kopfzeilen — kommt sie beim
+  // gewählten Weg an, ist die Erkennung fälschbar, und der Check nennt die richtige Render-Einstellung (http/clientIp.js).
+  const ipPruefKopf = { 'x-apo-ip-pruefung': '1', 'X-Forwarded-For': '203.0.113.77', 'CF-Connecting-IP': '203.0.113.77', 'True-Client-IP': '203.0.113.77', 'X-Real-IP': '203.0.113.77' };
+  api('GET', '/api/startklar', null, ipPruefKopf).then((s) => { if (s) ueberblick.prepend(startklarKarte(s)); }).catch(() => {});
   api('GET', '/api/betrieb').then((b) => { if (b) ueberblick.appendChild(betriebsKarte(b)); }).catch(() => {});
   zugangKarte(ueberblick); // ausgesperrtes Konto: Einmal-Link (selten, darum zugeklappt)
   // Krypto-Zahlungen ZUERST: Hier wartet eine zahlende Kundin auf ihre Freischaltung.

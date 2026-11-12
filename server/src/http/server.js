@@ -103,6 +103,7 @@ import { activeSources, sourcesByKind, shortagesFromCsv, shortagesFromJson, dedu
 import { createDealsService, seedDemoDealsIfNoneRunning, demoAktionenErlaubt } from '../services/deals.js';
 import { createPrismaStore } from '../repo/prismaStore.js';
 import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
+import { clientIp, ipPruefung } from './clientIp.js';
 import { issueToken, tokenDetails, sitzungGueltig, sitzungAbgelaufen, sitzungErneuern, issueZweckToken, verifyZweckToken } from './token.js';
 import { createMailer } from '../services/mailer.js';
 import { createPasswortLink } from '../services/passwortLink.js';
@@ -2962,7 +2963,7 @@ const routes = [
   }],
   // Startklar-Check (services/startklar.js): was der Betreiber noch einrichten muss.
   //  Nur OB etwas gesetzt ist — nie ein Wert, nie ein Geheimnis.
-  ['GET', /^\/api\/startklar$/, true, async ({ userId }) => {
+  ['GET', /^\/api\/startklar$/, true, async ({ userId, ipPruef }) => {
     if (!social.isModerator(userId)) { const e = new Error('Nur Moderation.'); e.status = 403; e.code = 'forbidden'; throw e; }
     return startklar({
       env: process.env, dauerhaft: durabilityReport(),
@@ -2970,6 +2971,7 @@ const routes = [
       mail: { aktiv: mailer.aktiv }, vapidFest: vapidAusUmgebung,
       wallets: cryptoWallets().map(({ id }) => ({ id })), ungueltigeWallets: ungueltigeWallets(),
       zahlwege: Object.keys(buildPaymentProvidersFromEnv()).filter((k) => k !== 'coinbase'),
+      ip: ipPruef,
     });
   }],
   // ── Quellen testen und eintragen (Moderation) ─────────────────────────────
@@ -3387,9 +3389,9 @@ async function anfrage(req, res) {
     try {
       const body = (req.method === 'POST') ? await readBody(req) : {};
       const params = (pathname.match(rx) || []).slice(1);
-      // Client-IP (hinter dem Render-Proxy steht die echte IP in x-forwarded-for).
-      const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
-      const result = await handler({ userId, body, params, query: url.searchParams, ip, ua: req.headers['user-agent'] });
+      // Client-IP hinter dem Render-Proxy: Quelle einstellbar (APOPULSE_CLIENT_IP), prüfbar im Startklar-Check (clientIp.js).
+      const ip = clientIp(req.headers, req.socket.remoteAddress);
+      const result = await handler({ userId, body, params, query: url.searchParams, ip, ua: req.headers['user-agent'], ipPruef: ipPruefung(req.headers, req.socket.remoteAddress) });
       // Weiterleitung (Anzeigen-Klick): gezählt ist schon, jetzt zum Ziel.
       if (result && result.__weiterleitung) {
         saveSoon();

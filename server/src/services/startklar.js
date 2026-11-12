@@ -22,7 +22,7 @@ const SMS_GRUND = {
   kein_absender: 'Twilio braucht eine Absendernummer: APOPULSE_SMS_FROM fehlt.',
 };
 
-export function startklar({ env = {}, dauerhaft = { level: 'flüchtig' }, quellen = { gesamt: 0, liefern: 0, fehler: 0 }, mail = { aktiv: false }, vapidFest = false, wallets = [], ungueltigeWallets = [], zahlwege = [] } = {}) {
+export function startklar({ env = {}, dauerhaft = { level: 'flüchtig' }, quellen = { gesamt: 0, liefern: 0, fehler: 0 }, mail = { aktiv: false }, vapidFest = false, wallets = [], ungueltigeWallets = [], zahlwege = [], ip = null } = {}) {
   const gesetzt = (k) => String(env[k] || '').trim() !== '';
   const p = [];
   const punkt = (id, stufe, titel, warum, tun) => p.push({ id, stufe, titel, warum, tun: stufe === 'ok' ? null : tun });
@@ -43,6 +43,18 @@ export function startklar({ env = {}, dauerhaft = { level: 'flüchtig' }, quelle
       'Schutz vor Schein-Konten ist abgeschaltet',
       'APOPULSE_BESTAETIGUNG_AB_STUNDEN ist gesetzt. Damit zählen frisch angelegte Konten sofort für „von 3 Fachbetrieben bestätigt" — eine Person mit drei Konten könnte jede Meldung so erscheinen lassen.',
       'In Render beim Web-Service die Variable APOPULSE_BESTAETIGUNG_AB_STUNDEN löschen (sie ist nur für Tests gedacht) und neu deployen.');
+  }
+  // IP-Erkennung (nur mit Prüf-Anfrage aus dem Browser der Redaktion, siehe http/clientIp.js): Die Sperren gegen
+  // Passwort-Durchprobieren, SMS- und Link-Flut zählen je IP. Fälschbar = umgehbar.
+  if (ip) {
+    punkt('ip', ip.faelschbar ? 'warnung' : 'ok',
+      'Schutz vor Passwort-Durchprobieren (IP-Erkennung)',
+      ip.faelschbar
+        ? 'Die Sperren gegen massenhafte Anmeldeversuche, SMS-Codes und Passwort-Links zählen je IP-Adresse. Der Server liest die Adresse derzeit aus einer Angabe, die jeder Absender selbst setzen kann — so lassen sich die Sperren umgehen. Die Sperre je Konto greift weiter.'
+        : 'Die IP-Adresse lässt sich nicht fälschen.',
+      ip.empfehlung
+        ? `In Render beim Web-Service APOPULSE_CLIENT_IP=${ip.empfehlung} eintragen und neu deployen. Danach diesen Check erneut öffnen — der Punkt muss grün sein.`
+        : 'Keine sichere Angabe gefunden. Bitte beim Render-Support fragen, welche Kopfzeile die echte Client-Adresse enthält, und diese als APOPULSE_CLIENT_IP eintragen (xff-letzter, cf-connecting-ip, true-client-ip oder x-real-ip).');
   }
   punkt('anmeldung', gesetzt('APOPULSE_TOKEN_SECRET') ? 'ok' : 'fehlt',
     'Anmeldungen bleiben nach Neustart gültig',
