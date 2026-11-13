@@ -4988,3 +4988,21 @@ Tests: global-b2b (+1, Bremsen per HTTP), vertrauensstufen (+Hin-und-Her); 4 Geg
   Chromium sendet die Prüf-Kopfzeilen, der Punkt erscheint im Startklar-Check.
 - **Quellen (Community, nicht offiziell):** feedback.render.com/features/p/send-the-correct-xforwardedfor,
   community.render.com/t/c-clientip-always-returns-127-0-0-1/3086.
+
+### Zu leicht zu erratende Passwörter werden abgelehnt (2026-11-13)
+- **Fund:** Bei Registrierung, Passwortwechsel und beiden Zurücksetz-Wegen (Code, E-Mail-Link) wurde nur „mindestens
+  8 Zeichen" geprüft. `12345678`, `password`, `00000000`, `apotheke`, `pharmacie`, `qwertyuiop` wurden angenommen —
+  genau die Passwörter, die beim massenhaften Durchprobieren zuerst versucht werden (zumal die IP-Sperren hinter
+  Render evtl. umgehbar sind, siehe vorigen Eintrag).
+- **Behoben:** `passwortZuEinfach()` in `domain/password.js`: kurze, erklärbare Liste der häufigsten Passwörter
+  weltweit und aus unseren Sprachen/Branche (u. a. passwort1, motdepasse1, senha123, farmacia, pharmacie, apotheke,
+  apopulse); Wiederholungen (aaaaaaaa, 12121212); Zahlen-/Buchstabenfolgen und Tastaturreihen (auch AZERTY/QWERTZ);
+  eigener Name bzw. E-Mail-Name mit höchstens 4 Zeichen dazu (wanjiru123, aminaokafor1). Übersetzte Meldung mit Tipp
+  „drei bis vier Wörter, z. B. Kaffee-Regen-Tisch-7" (5 Sprachen). Beim Zurücksetzen per Code wird VOR der Kontosuche
+  geprüft (verrät nicht, ob es die Adresse gibt). Interne Wege (Google, Telefon: Zufallspasswort) nicht betroffen;
+  bestehende Konten behalten ihr Passwort.
+- **Grenze:** Keine Liste mit Millionen Einträgen — `geheim123` (in 169 Tests verwendet) z. B. bleibt erlaubt.
+- **Test:** `passwort-einfach.test.js` (Regel: 18 schwache abgelehnt, 6 gute erlaubt; HTTP: Registrierung, Name im
+  Passwort, Wechsel, Zurücksetzen mit gleicher Antwort für bekannte/unbekannte Adresse, Code danach noch gültig;
+  Texte 5 Sprachen); `passwort-link.test.js` um den Link-Weg ergänzt. Sechs Gegenproben rot. Zwei Tests nutzten selbst
+  `Passwort1`/`motdepasse1` — auf gute Passwörter umgestellt.

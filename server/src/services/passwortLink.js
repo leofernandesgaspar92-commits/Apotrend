@@ -22,6 +22,7 @@
 
 import crypto from 'node:crypto';
 import { AppError } from '../domain/errors.js';
+import { pruefeNeuesPasswort } from '../domain/password.js';
 import { richtung } from '../domain/schreibrichtung.js';
 
 export const GUELTIG_MINUTEN = 60;
@@ -129,6 +130,7 @@ export function createPasswortLink({ repo, mailer, ausstellen, pruefen, basis, h
         throw new AppError('pwlink_invalid', 'Der Link ist ungültig oder wurde schon benutzt.');
       }
       if (!newPassword || String(newPassword).length < 8) throw new AppError('new_pw_short', 'Neues Passwort: mindestens 8 Zeichen.');
+      pruefeNeuesPasswort(newPassword, { email: user.email, name: user.name });
       repo.setUserPassword(uid, hashPassword(newPassword));
       return { userId: uid };
     },

@@ -22,15 +22,15 @@ test('Team: Inhaber ist Admin und darf verwalten; Team enthält zunächst nur ih
 
 test('Team: Mitglied hinzufügen (Rolle geprüft) und auflisten', () => {
   const { orgAuth, owner } = setup();
-  const r = orgAuth.addTeamMember(owner, { name: 'PTA Meier', email: 'pta@a.at', password: 'Passwort1', role: 'pta' });
+  const r = orgAuth.addTeamMember(owner, { name: 'PTA Meier', email: 'pta@a.at', password: 'Team-Regen-Tisch-1', role: 'pta' });
   assert.equal(r.membership.role, 'pta');
   const team = orgAuth.teamMembers(owner);
   assert.equal(team.length, 2);
   assert.ok(team.some(m => m.email === 'pta@a.at' && m.role === 'pta'));
   // Ungültige Rolle für Apotheke (pharmareferent gehört zu supplier)
-  assert.throws(() => orgAuth.addTeamMember(owner, { name: 'Rolle Falsch', email: 'x@a.at', password: 'Passwort1', role: 'pharmareferent' }), /zulaessig|zulässig/i);
+  assert.throws(() => orgAuth.addTeamMember(owner, { name: 'Rolle Falsch', email: 'x@a.at', password: 'Team-Regen-Tisch-1', role: 'pharmareferent' }), /zulaessig|zulässig/i);
   // Validierung
-  assert.throws(() => orgAuth.addTeamMember(owner, { name: 'Mail Fehlt', email: 'keinemail', password: 'Passwort1', role: 'pta' }), /E-Mail/);
+  assert.throws(() => orgAuth.addTeamMember(owner, { name: 'Mail Fehlt', email: 'keinemail', password: 'Team-Regen-Tisch-1', role: 'pta' }), /E-Mail/);
   assert.throws(() => orgAuth.addTeamMember(owner, { name: 'Pw Kurz', email: 'z@a.at', password: 'kurz', role: 'pta' }), /8 Zeichen/);
 });
 
@@ -38,7 +38,7 @@ test('Team: doppelte E-Mail wird als 400-Feldfehler gemeldet', () => {
   const { orgAuth, owner } = setup();
   // chef@a.at existiert bereits (Inhaber)
   try {
-    orgAuth.addTeamMember(owner, { name: 'Doppelt', email: 'chef@a.at', password: 'Passwort1', role: 'pta' });
+    orgAuth.addTeamMember(owner, { name: 'Doppelt', email: 'chef@a.at', password: 'Team-Regen-Tisch-1', role: 'pta' });
     assert.fail('sollte werfen');
   } catch (e) {
     assert.equal(e.status, 400, 'Feldfehler, kein Serverfehler');
@@ -48,16 +48,16 @@ test('Team: doppelte E-Mail wird als 400-Feldfehler gemeldet', () => {
 
 test('Team: Nicht-Admin darf nicht verwalten', () => {
   const { orgAuth, owner } = setup();
-  const r = orgAuth.addTeamMember(owner, { name: 'Azubi', email: 'azubi@a.at', password: 'Passwort1', role: 'lehrling' });
+  const r = orgAuth.addTeamMember(owner, { name: 'Azubi', email: 'azubi@a.at', password: 'Team-Regen-Tisch-1', role: 'lehrling' });
   const azubi = r.user.id;
   assert.equal(orgAuth.myMembership(azubi).can_manage_users, false);
   assert.throws(() => orgAuth.teamMembers(azubi), ForbiddenError);
-  assert.throws(() => orgAuth.addTeamMember(azubi, { name: 'Q', email: 'q@a.at', password: 'Passwort1', role: 'pta' }), ForbiddenError);
+  assert.throws(() => orgAuth.addTeamMember(azubi, { name: 'Q', email: 'q@a.at', password: 'Team-Regen-Tisch-1', role: 'pta' }), ForbiddenError);
 });
 
 test('Team: Rolle ändern; letzter Admin ist geschützt', () => {
   const { orgAuth, owner } = setup();
-  const r = orgAuth.addTeamMember(owner, { name: 'Apo Zwei', email: 'apo2@a.at', password: 'Passwort1', role: 'apotheker' });
+  const r = orgAuth.addTeamMember(owner, { name: 'Apo Zwei', email: 'apo2@a.at', password: 'Team-Regen-Tisch-1', role: 'apotheker' });
   const other = r.user.id;
   // hochstufen auf admin
   orgAuth.setMemberRole(owner, other, 'admin');
@@ -71,7 +71,7 @@ test('Team: Rolle ändern; letzter Admin ist geschützt', () => {
 
 test('Team: orgMembers listet Kolleg:innen ohne manage_users-Pflicht (für Aufgaben-Zuweisung)', () => {
   const { orgAuth, owner } = setup();
-  const r = orgAuth.addTeamMember(owner, { name: 'PTA', email: 'pta@a.at', password: 'Passwort1', role: 'pta' });
+  const r = orgAuth.addTeamMember(owner, { name: 'PTA', email: 'pta@a.at', password: 'Team-Regen-Tisch-1', role: 'pta' });
   const pta = r.user.id;
   // PTA darf das Team NICHT verwalten, aber die Kolleg:innen-Liste (zum Zuweisen) sehen
   assert.throws(() => orgAuth.teamMembers(pta), ForbiddenError);
@@ -83,7 +83,7 @@ test('Team: orgMembers listet Kolleg:innen ohne manage_users-Pflicht (für Aufga
 
 test('Team: Mitglied entfernen; nicht sich selbst; nicht letzten Admin', () => {
   const { orgAuth, owner } = setup();
-  const r = orgAuth.addTeamMember(owner, { name: 'PTA', email: 'pta@a.at', password: 'Passwort1', role: 'pta' });
+  const r = orgAuth.addTeamMember(owner, { name: 'PTA', email: 'pta@a.at', password: 'Team-Regen-Tisch-1', role: 'pta' });
   const pta = r.user.id;
   assert.throws(() => orgAuth.removeTeamMember(owner, owner), /selbst/);
   orgAuth.removeTeamMember(owner, pta);

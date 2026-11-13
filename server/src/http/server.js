@@ -104,6 +104,7 @@ import { createDealsService, seedDemoDealsIfNoneRunning, demoAktionenErlaubt } f
 import { createPrismaStore } from '../repo/prismaStore.js';
 import { listAccountTypes, normalizeAccountType } from '../data/accountTypes.js';
 import { clientIp, ipPruefung } from './clientIp.js';
+import { pruefeNeuesPasswort } from '../domain/password.js';
 import { issueToken, tokenDetails, sitzungGueltig, sitzungAbgelaufen, sitzungErneuern, issueZweckToken, verifyZweckToken } from './token.js';
 import { createMailer } from '../services/mailer.js';
 import { createPasswortLink } from '../services/passwortLink.js';
@@ -1491,6 +1492,7 @@ async function kontoAnlegen(body, { intern = false } = {}) {
     if (!intern && /@(telefon|oauth)\.local$/i.test(String(email || '').trim())) throw new AppError('email_reserviert', 'Diese Adresse ist reserviert.');
     if (repo.getUserByEmail(String(email || '').trim())) throw new AppError('email_taken', 'E-Mail ist bereits vergeben.');
     if (String(password || '').length < 8) throw new AppError('pw_too_short', 'Passwort muss mindestens 8 Zeichen haben.');
+    if (!intern) pruefeNeuesPasswort(password, { email, name: name || displayName });
   };
   pruefen();
   // Hashes im Hintergrund-Thread rechnen (Start-Ansturm: synchron hielt jede

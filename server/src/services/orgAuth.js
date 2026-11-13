@@ -1,7 +1,7 @@
 // Fundament-Service: Registrierung, Login, Mitgliedschaften/Rollen und die
 // zentrale Mandanten-Isolation. Kennt nur das Repository-Interface + Domaenen-
 // regeln — keine DB-Details, kein HTTP.
-import { hashPassword, verifyPassword, verifyPasswordAsync } from '../domain/password.js';
+import { hashPassword, verifyPassword, verifyPasswordAsync, pruefeNeuesPasswort } from '../domain/password.js';
 import { generateRecoveryCodes, matchRecoveryCode } from '../domain/recoveryCodes.js';
 import { ROLES, ORG_TYPES, roleAllowedForOrgType, can } from '../domain/roles.js';
 import { AppError } from '../domain/errors.js';
@@ -67,6 +67,7 @@ export function createOrgAuthService(repo) {
       if (!user) throw Object.assign(new Error('Unbekannter Nutzer.'), { code: 'user_unknown' });
       if (!verifyPassword(oldPassword ?? '', user.password_hash)) throw new AppError('current_pw_wrong', 'Aktuelles Passwort ist falsch.');
       if (!newPassword || String(newPassword).length < 8) throw new AppError('new_pw_short', 'Neues Passwort: mindestens 8 Zeichen.');
+      pruefeNeuesPasswort(newPassword, { email: user.email, name: user.name });
       repo.setUserPassword(userId, hashPassword(newPassword));
       return { ok: true };
     },
@@ -76,6 +77,8 @@ export function createOrgAuthService(repo) {
     // generischen Fehler (reset_invalid) — verrät nicht, ob die E-Mail existiert.
     resetPassword({ email, code, newPassword }) {
       if (!newPassword || String(newPassword).length < 8) throw new AppError('new_pw_short', 'Neues Passwort: mindestens 8 Zeichen.');
+      // VOR der Kontosuche, nur mit der eingegebenen Adresse: verrät nicht, ob es das Konto gibt.
+      pruefeNeuesPasswort(newPassword, { email });
       const user = repo.getUserByEmail(email || '');
       const idx = user ? matchRecoveryCode(code, user.recovery_hashes || []) : -1;
       if (!user || idx === -1) throw new AppError('reset_invalid', 'E-Mail oder Wiederherstellungscode ist ungültig.');
@@ -165,6 +168,7 @@ export function createOrgAuthService(repo) {
       if (nm.length < 2) throw new AppError('team_name', 'Name fehlt.', 400);
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) throw new AppError('team_email', 'Gültige E-Mail erforderlich.', 400);
       if (!password || String(password).length < 8) throw new AppError('new_pw_short', 'Passwort: mindestens 8 Zeichen.', 400);
+      pruefeNeuesPasswort(password, { email, name });
       // Doppelte E-Mail als 400-Feldfehler melden (nicht als 500), konsistent mit den übrigen Prüfungen.
       if (repo.getUserByEmail(em)) throw new AppError('team_email_taken', 'E-Mail ist bereits vergeben.', 400);
       // addMember prüft roleAllowedForOrgType (wirft bei ungültiger Rolle für den Org-Typ).

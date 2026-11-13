@@ -39,8 +39,8 @@ test('HTTP: Engpass-Treffer der Suche mit Vertrauensstufe, ohne Benutzer-IDs', {
       });
       r.on('error', fehler); if (body) r.write(JSON.stringify(body)); r.end();
     });
-    const a = (await req('POST', '/api/register', { name: 'Pharmacie A', email: 'a@suche.sn', password: 'motdepasse1', country: 'SN', locale: 'fr' })).json;
-    const b = (await req('POST', '/api/register', { name: 'Pharmacie B', email: 'b@suche.sn', password: 'motdepasse1', country: 'SN', locale: 'fr' })).json;
+    const a = (await req('POST', '/api/register', { name: 'Pharmacie A', email: 'a@suche.sn', password: 'Dakar-Pluie-Table-1', country: 'SN', locale: 'fr' })).json;
+    const b = (await req('POST', '/api/register', { name: 'Pharmacie B', email: 'b@suche.sn', password: 'Dakar-Pluie-Table-1', country: 'SN', locale: 'fr' })).json;
     const m = await req('POST', '/api/shortages/report', { wirkstoff: 'Amoxicilline', bezeichnung: 'Amoxicilline 500 mg', status: 'kritisch' }, a.token);
     assert.equal(m.status, 200, JSON.stringify(m.json));
     const id = m.json.id || (m.json.shortage && m.json.shortage.id);

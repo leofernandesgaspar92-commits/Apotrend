@@ -56,6 +56,8 @@ test('Link setzt das Passwort genau einmal; danach verbraucht', async () => {
   pl.anfordern({ email: nutzer.email, sprache: 'fr' }); await warte();
   const t = tokenAus(post[0]);
   assert.throws(() => pl.einloesen({ t, newPassword: 'kurz' }), { code: 'new_pw_short' });
+  // Seit 11/2026: zu leicht zu erratende Passwörter auch auf dem Link-Weg abgelehnt; der Link bleibt gültig.
+  assert.throws(() => pl.einloesen({ t, newPassword: '12345678' }), { code: 'pw_zu_einfach' });
   assert.deepEqual(pl.einloesen({ t, newPassword: 'neues-passwort-1' }), { userId: 'u1' });
   assert.ok(verifyPassword('neues-passwort-1', nutzer.password_hash));
   assert.throws(() => pl.einloesen({ t, newPassword: 'noch-ein-passwort' }), { code: 'pwlink_invalid' }, 'zweites Mal');
